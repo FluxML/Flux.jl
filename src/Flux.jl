@@ -12,8 +12,6 @@ abstract Activation <: Model
 back!(m::Model, ∇) = error("Backprop not implemented for $(typeof(m))")
 update!(m::Model, η) = m
 
-include("capacitor.jl")
-
 include("compiler/diff.jl")
 include("compiler/code.jl")
 
