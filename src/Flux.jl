@@ -15,7 +15,6 @@ update!(m::Model, η) = m
 include("capacitor.jl")
 
 include("compiler/diff.jl")
-include("compiler/loop.jl")
 include("compiler/code.jl")
 
 include("cost.jl")

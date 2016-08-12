@@ -17,27 +17,20 @@ function build_type(T, params)
 end
 
 function build_forward(body, args)
-  body = cut_forward(body, args)
   cse(body)
 end
 
 function build_backward(body, x, params)
-  Δs, Δloops = cut_backward(body, [x])
+  Δs = invert(body)
   back = IVertex{Any}(Flow.Do())
   for param in params
     haskey(Δs, :(self.$param)) || continue
     k = symbol("Δ", param)
     ksym = Expr(:quote, k)
     ex = Δs[:(self.$param)]
-    for Δloop in Δloops
-      ex = addΔ(ex, get(Δloop, :(self.$param), vertex(0)))
-    end
     thread!(back, @v(setfield!(:self, ksym, :(self.$k) + ex)))
   end
   ex = Δs[x]
-  for Δloop in Δloops
-    ex = addΔ(ex, get(Δloop, x, vertex(0)))
-  end
   thread!(back, @flow(tuple($ex)))
   cse(back)
 end
@@ -69,16 +62,5 @@ end
 # process_type(:(type Sigmoid
 #   W
 #   b
-#   bp
 #   x -> σ(W*x+b)
 # end)) |> prettify
-
-process_type(:(type Recurrent
-  Wxh; Whh; Bh
-  Why; By
-
-  function (x)
-    hidden = σ( Wxh*x + Whh*Delay(hidden) + Bh )
-    y = σ( Why*hidden + By )
-  end
-end)) |> prettify
