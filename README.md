@@ -2,21 +2,15 @@
 
 ## What?
 
-Flux is an experimental machine perception / ANN library for Julia. It's designed to make experimenting with novel layer types and architectures really fast, without sacrificing runtime speed.
+Flux is a programming model for building neural networks, implemented in Julia.
 
 ## Why?
 
-Flux has a few key differences from other libraries:
+Flux is designed to be much more intuitive than traditional frameworks. For starters, that means having a simple notation for models that's as close to the mathematical description as possible (like `σ(W*x + b)`). But it's deeper than syntax; we also reuse concepts from regular programming languages (like the class/object distinction) to create principled semantics. Flux is fully declarative, so there's no more mental juggling of multiple execution paths as you read imperative graph-building code.
 
-* Flux's [graph-based DSL](https://github.com/MikeInnes/Flow.jl), which provides optimisations and automatic differentiation, is very tightly integrated with the language. This means nice syntax for your equations (`σ(W*x+b)` anyone?) and no unwieldy `compile` steps.
-* The graph DSL directly is used to represent models (not just computations), so custom architectures – and in particular, recurrent models – are easy to express.
-* Those fancy features are completely optional. You can implement functionality in a Torch-like fashion if you wish, since layers are simply objects that satisfy a small interface.
-* Flux is written in [Julia](http://julialang.org), which means there's no "dropping down" to C. It's Julia all the way down, and you can prototype both high-level architectures and high-performance GPU kernels from the same language. This also makes the library itself very easy to understand and extend.
+Flux's semantics include native support for recurrent loops, which it can automatically unroll for you – never do it by hand again.
 
-Future work will also include:
-
-* Integration with other backends, so that models can be described using Flux and run using (say) TensorFlow.
-* Carrying out runtime optimisations of the graph, in particular to handle small matrices efficiently.
+But it's also designed to be extremely flexible. Flux supports multiple backends – MXNet to begin with and TensorFlow in future – transparently taking advantage of all their features rather than providing a lowest common denominator. Flux's design allows for custom layer types – say custom GPU kernels – to be implemented in pure Julia, for backends that support it.
 
 ## How?
 
