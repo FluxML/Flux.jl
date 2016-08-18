@@ -1,10 +1,3 @@
-import Flow: isconstant, il, dl, cse, prewalk, graphm, syntax, @vertex
-
-vertex(a...) = IVertex{Any}(a...)
-vertex(v::Vertex) = convert(IVertex{Any}, v)
-constant(x) = vertex(Flow.Constant(x))
-constant(x::Vertex) = vertex(x)
-
 addΔ(a, b) = vertex(:+, a, b)
 
 # Special case a couple of operators to clean up output code
@@ -18,11 +11,11 @@ function ∇v(v::Vertex, Δ)
   map(i -> @flow(getindex($Δ, $i)), 1:Flow.nin(v))
 end
 
-function invert(v::IVertex, Δ = constant(:Δ), out = d())
+function invert(v::IVertex, Δ = :Δ, out = d())
   @assert !iscyclic(v)
   if isconstant(v)
     @assert !haskey(out, value(v))
-    out[value(v).value] = il(Δ)
+    out[value(v).value] = constant(Δ)
   else
     Δ′s = ∇v(v, Δ)
     for (v′, Δ′) in zip(inputs(v), Δ′s)

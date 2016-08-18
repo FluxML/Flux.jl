@@ -1,8 +1,8 @@
-import Flow: mapconst
+import Flow: mapconst, cse
 
 function process_func(ex, params)
   @capture(shortdef(ex), (args__,) -> body_)
-  body = il(graphm(body))
+  body = Flow.il(graphm(body))
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
   return args, body
 end
@@ -30,7 +30,7 @@ function build_backward(body, x, params)
     k = symbol("Δ", param)
     ksym = Expr(:quote, k)
     ex = Δs[:(self.$param)]
-    thread!(back, @vertex(setfield!(:self, ksym, :(self.$k) + ex)))
+    thread!(back, @dvertex(setfield!(:self, ksym, :(self.$k) + ex)))
   end
   ex = Δs[x]
   thread!(back, @flow(tuple($ex)))
