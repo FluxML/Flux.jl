@@ -1,6 +1,9 @@
-import Flow: isconstant, il, dl, cse, prewalk, graphm, syntax, @v
+import Flow: isconstant, il, dl, cse, prewalk, graphm, syntax, @vertex
 
 vertex(a...) = IVertex{Any}(a...)
+vertex(v::Vertex) = convert(IVertex{Any}, v)
+constant(x) = vertex(Flow.Constant(x))
+constant(x::Vertex) = vertex(x)
 
 addΔ(a, b) = vertex(:+, a, b)
 
@@ -11,15 +14,15 @@ symbolic[:+] = (Δ, args...) -> map(_->Δ, args)
 
 function ∇v(v::Vertex, Δ)
   haskey(symbolic, value(v)) && return symbolic[value(v)](Δ, inputs(v)...)
-  Δ = vertex(:back!, vertex(value(v)), Δ, inputs(v)...)
+  Δ = vertex(:back!, constant(value(v)), constant(Δ), inputs(v)...)
   map(i -> @flow(getindex($Δ, $i)), 1:Flow.nin(v))
 end
 
-function invert(v::IVertex, Δ = vertex(:Δ), out = d())
+function invert(v::IVertex, Δ = constant(:Δ), out = d())
   @assert !iscyclic(v)
   if isconstant(v)
     @assert !haskey(out, value(v))
-    out[value(v)] = il(Δ)
+    out[value(v).value] = il(Δ)
   else
     Δ′s = ∇v(v, Δ)
     for (v′, Δ′) in zip(inputs(v), Δ′s)
