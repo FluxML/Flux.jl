@@ -10,7 +10,7 @@ type Input{N} <: Model
   dims::Dims{N}
 end
 
-Input(i) = Input(dims(i))
+Input(i...) = Input(dims(i...))
 
 (::Input)(x) = x
 back!(::Input, ∇) = ∇

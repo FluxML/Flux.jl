@@ -7,7 +7,6 @@ using MacroTools, Lazy, Flow
 export Model, back!, update!
 
 abstract Model
-abstract Activation <: Model
 
 back!(m::Model, ∇) = error("Backprop not implemented for $(typeof(m))")
 update!(m::Model, η) = m

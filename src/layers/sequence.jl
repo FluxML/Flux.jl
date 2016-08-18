@@ -1,6 +1,6 @@
 export Sequence
 
-type Sequence
+type Sequence <: Model
   layers::Vector{Model}
 end
 
