@@ -71,12 +71,12 @@ function process_type(ex)
     (self::$T)($(args...),) = $(syntax(build_forward(body, args)))
     back!(self::$T, Δ, $(args...)) = $(syntax(build_backward(body, args[1], params)))
     $(build_update(T, params))
-  end |> longdef
     graph(::$T) = $(Flow.constructor(makegraph(body, args)))
+    nothing
+  end |> esc
 end
 
-# process_type(:(type Sigmoid
-#   W
-#   b
-#   x -> σ(W*x+b)
-# end)) |> prettify
+macro model(ex)
+  isexpr(ex, :type) ? process_type(ex) :
+  error("Unsupported model expression $ex")
+end
