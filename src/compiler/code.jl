@@ -24,7 +24,7 @@ function build_type(T, params)
   quote
     type $T <: Model
       $(params...)
-      $([symbol("Δ", s) for s in params]...)
+      $([Symbol("Δ", s) for s in params]...)
     end
     $T($(params...)) = $T($(params...),
                           $((:(zeros($p)) for p in params)...))
@@ -40,7 +40,7 @@ function build_backward(body, x, params)
   back = IVertex{Any}(Flow.Do())
   for param in params
     haskey(Δs, :(self.$param)) || continue
-    k = symbol("Δ", param)
+    k = Symbol("Δ", param)
     ksym = Expr(:quote, k)
     ex = Δs[:(self.$param)]
     thread!(back, @dvertex(setfield!(:self, ksym, :(self.$k) + ex)))
@@ -53,7 +53,7 @@ end
 function build_update(T, params)
   updates = []
   for p in params
-    Δp = symbol("Δ", p)
+    Δp = Symbol("Δ", p)
     push!(updates, :(self.$p += self.$Δp; fill!(self.$Δp, 0)))
   end
   :(update!(self::$T) = $(updates...))
