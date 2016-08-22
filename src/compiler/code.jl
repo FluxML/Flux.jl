@@ -7,6 +7,19 @@ function process_func(ex, params)
   return args, body
 end
 
+immutable Parameter
+  name
+end
+
+function makegraph(graph, args)
+  @assert length(args) == 1
+  mapconst(graph) do x
+    x == args[1] ? Parameter(1) :
+    @capture(x, self.p_) ? Parameter(p) :
+      x
+  end
+end
+
 function build_type(T, params)
   quote
     type $T
@@ -59,6 +72,7 @@ function process_type(ex)
     back!(self::$T, Δ, $(args...)) = $(syntax(build_backward(body, args[1], params)))
     $(build_update(T, params))
   end |> longdef
+    graph(::$T) = $(Flow.constructor(makegraph(body, args)))
 end
 
 # process_type(:(type Sigmoid
