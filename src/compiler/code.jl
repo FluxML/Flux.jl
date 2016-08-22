@@ -22,7 +22,7 @@ end
 
 function build_type(T, params)
   quote
-    type $T
+    type $T <: Model
       $(params...)
       $([symbol("Δ", s) for s in params]...)
     end
