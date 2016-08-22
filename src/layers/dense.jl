@@ -1,3 +1,5 @@
+export Dense
+
 @model type Dense
   W
   b

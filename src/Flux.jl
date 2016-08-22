@@ -21,4 +21,6 @@ include("layers/dense.jl")
 include("layers/sequence.jl")
 include("utils.jl")
 
+include("backend/mxnet/mxnet.jl")
+
 end # module
