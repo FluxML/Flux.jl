@@ -88,7 +88,7 @@ function process_anon(ex)
     isexpr(value(v), Symbol) && push!(layers, value(v))
   end
   @assert length(args) == 1
-  :(Capacitor(
+  :(Flux.Capacitor(
       ($(args...)) -> $(syntax(build_forward(body, args))),
       (Δ, $(args...)) -> $(syntax(build_backward(body, args[1]))),
       η -> $(map(p -> :(update!($p, η)), layers)...),
