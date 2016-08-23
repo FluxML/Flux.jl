@@ -12,7 +12,7 @@ Flux decouples the model (what you'd find in a paper) from the implementation (d
 
 It's also designed to be extremely flexible. Flux supports multiple backends (like MXNet and TensorFlow) and can transparently take advantage of features unique to the backend. Custom layer types can be implemented in pure Julia, and you can even mix and match different backends together.
 
-Finally, Flux is hackable. Using Julia enables custom kernels, including GPU code, to be written in an interactive and high-level way. Flux itself is very hackable, and its whole implementation – including all built-in layers and utilities – is under 500 lines of pure Julia code.
+Finally, Flux is hackable. Using Julia enables custom kernels, including GPU code, to be written in an interactive and high-level way. Flux's whole implementation – including all built-in layers and utilities – is under 500 lines of pure Julia code.
 
 ## How?
 
