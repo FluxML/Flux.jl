@@ -5,7 +5,7 @@ end
 
 param(x) = Param(x, zero(x))
 
-state(p::Param) = p
+state(p::Param) = p.x
 state(x) = x
 
 function accumulate!(p::Param, Δ)
