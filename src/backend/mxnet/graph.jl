@@ -7,7 +7,8 @@ graph(vars, model, args...) = node(model, args...)
 graph(vars, x::mx.SymbolicNode) = x
 
 # TODO: detect parameters used more than once
-function graph(vars, value::AArray)
+function graph{T<:AArray}(vars, p::Flux.Param{T})
+  value = p.x
   id = gensym()
   vars[id] = value
   return mx.Variable(id)
@@ -28,3 +29,4 @@ end
 
 node(::typeof(*), args...) = mx.dot(args...)
 node(::typeof(+), args...) = mx.broadcast_plus(args...)
+node(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)

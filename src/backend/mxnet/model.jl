@@ -7,6 +7,8 @@ end
 mxdims(dims::NTuple) =
   length(dims) == 1 ? (1, dims...) : reverse(dims)
 
+mxdims(n::Integer) = mxdims((n,))
+
 function mxargs(args)
   map(args) do kv
     arg, value = kv
@@ -37,13 +39,3 @@ function (model::MXModel)(input)
   mx.forward(model.exec)
   copy(model.exec.outputs[1])'
 end
-
-# d = Dense(20, 10)
-
-# x = randn(20)
-
-# model = mxnet(d, (20,))
-
-# d(x)
-
-# model(x)
