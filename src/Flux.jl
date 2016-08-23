@@ -16,6 +16,7 @@ include("compiler/code.jl")
 
 include("cost.jl")
 include("activation.jl")
+include("layers/params.jl")
 include("layers/input.jl")
 include("layers/dense.jl")
 include("layers/sequence.jl")
