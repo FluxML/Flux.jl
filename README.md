@@ -2,17 +2,17 @@
 
 ## What?
 
-Flux is a programming model for building neural networks, implemented in Julia.
+Flux is an experimental programming model for building neural networks, implemented in Julia. It's not complete yet but you can check out the current functionality in the `examples` folder.
 
 ## Why?
 
-Flux is designed to be much more intuitive. For starters, that means having a simple notation for models that's as close to the mathematical description as possible (like `σ(W*x + b)`). More importantly, Flux is fully declarative, so there's no more mental juggling of multiple execution paths as you read imperative graph-building code.
+Flux has several design goals. Firstly, it's designed to be extremely intuitive. It has a simple notation for models that's as close to the mathematical description as possible (like `σ(W*x + b)`). It's fully declarative, so there's no mental juggling of multiple execution paths as you read imperative graph-building code.
 
-Most frameworks intrinsically couple the model (what you'd find in a paper) with its implementation (details like batching and loop unrolling). This greatly increases the overhead involved in both getting a model to work and changing it afterwards. Flux's solution is to distinguish between a *description* of a model and the model itself, just like the class/object distinction. Once you instantiate a model you can alter its implementation as simply as with a call to `batch(model, 100)` or `unroll(model, 10)`.
+Flux decouples the model (what you'd find in a paper) from the implementation (details like batching and unrolling), increasing flexibility when defining and modifying models. It provides functions which operate over entire models at once, which means you can alter the implementation as simply as with a call to `batch(model, 100)` or `unroll(model, 10)`. (And yes, Flux natively supports recurrent loops, which it can automatically unroll for you – never do it by hand again.)
 
-Flux natively supports for recurrent loops, which it can automatically unroll for you – never do it by hand again.
+It's also designed to be extremely flexible. Flux supports multiple backends (like MXNet and TensorFlow) and can transparently take advantage of features unique to the backend. Custom layer types can be implemented in pure Julia, and you can even mix and match different backends together.
 
-It's also designed to be extremely flexible. Flux supports multiple backends – MXNet to begin with and TensorFlow in future – transparently taking advantage of all their features rather than providing a lowest common denominator. Flux's design allows for custom layer types – say custom GPU kernels – to be implemented in pure Julia, for backends that support it.
+Finally, Flux is hackable. Using Julia enables custom kernels, including GPU code, to be written in an interactive and high-level way. Flux itself is very hackable, and its whole implementation – including all built-in layers and utilities – is under 500 lines of pure Julia code.
 
 ## How?
 
