@@ -13,7 +13,7 @@ end
 Input(i...) = Input(dims(i...))
 
 (::Input)(x) = x
-back!(::Input, ∇) = ∇
+back!(::Input, ∇, x) = ∇
 
 shape(i::Input) = i.dims
 
