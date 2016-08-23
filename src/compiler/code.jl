@@ -9,15 +9,15 @@ function process_func(ex, params)
   return args, body
 end
 
-immutable Parameter
+immutable ModelInput
   name
 end
 
 function makegraph(graph, args)
   @assert length(args) == 1
   mapconst(graph) do x
-    x == args[1] ? Parameter(1) :
-    @capture(x, self.p_) ? Parameter(p) :
+    x == args[1] ? ModelInput(1) :
+    @capture(x, self.p_) ? ModelInput(p) :
       x
   end
 end

@@ -17,7 +17,7 @@ end
 function graph(vars, model::Model, args...)
   g = Flux.graph(model)
   g = Flow.mapconst(g) do x
-    !isa(x, Flux.Parameter) ? x :
+    !isa(x, Flux.ModelInput) ? x :
     isa(x.name, Integer) ? args[x.name] : getfield(model, x.name)
   end
   postwalk(g) do v
