@@ -2,7 +2,9 @@
 
 import Flow: mapconst, cse
 
-function process_func(ex, params)
+export @model
+
+function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
   body = Flow.il(graphm(body))
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
@@ -46,7 +48,7 @@ function build_forward(body, args)
   cse(deref_params(body))
 end
 
-function build_backward(body, x, params)
+function build_backward(body, x, params = [])
   Δs = invert(body)
   back = IVertex{Any}(Flow.Do())
   for param in params
@@ -79,7 +81,22 @@ function process_type(ex)
   end |> esc
 end
 
+function process_anon(ex)
+  args, body = process_func(ex)
+  layers = Set{Symbol}()
+  Flow.prefor(body) do v
+    isexpr(value(v), Symbol) && push!(layers, value(v))
+  end
+  @assert length(args) == 1
+  :(Capacitor(
+      ($(args...)) -> $(syntax(build_forward(body, args))),
+      (Δ, $(args...)) -> $(syntax(build_backward(body, args[1]))),
+      η -> $(map(p -> :(update!($p, η)), layers)...),
+      $(Flow.constructor(makegraph(body, args))))) |> esc
+end
+
 macro model(ex)
   isexpr(ex, :type) ? process_type(ex) :
+  isexpr(ex, :->, :function) ? process_anon(ex) :
   error("Unsupported model expression $ex")
 end
