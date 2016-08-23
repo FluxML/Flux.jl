@@ -27,4 +27,4 @@ end
 
 back!(::typeof(+), Δ, args...) = map(_ -> Δ, args)
 
-back!(::typeof(*), Δ, a, b) = Δ*b', Δ*a'
+back!(::typeof(*), Δ, a, b) = Δ*b', a'*Δ
