@@ -24,7 +24,7 @@ function accumulate!(p::Param, Δ)
 end
 
 function update!(p::Param, η)
-  p.x .+= p.Δx .* η
+  p.x .-= p.Δx .* η
   p.Δx[:] = 0
   return p
 end

@@ -70,7 +70,7 @@ end
 function Flux.update!(model::MXModel, η)
   for (arg, grad) in zip(model.exec.arg_arrays, model.exec.grad_arrays)
     mx.@nd_as_jl rw = (arg, grad) begin
-      arg .+= grad .* η
+      arg .-= grad .* η
       grad[:] = 0
     end
   end
