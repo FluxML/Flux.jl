@@ -5,7 +5,7 @@ export Model, back!, update!, param
 abstract Model
 
 back!(m::Model, ∇) = error("Backprop not implemented for $(typeof(m))")
-update!(m::Model, η) = m
+update!(m, η) = m
 
 # Model parameters
 
