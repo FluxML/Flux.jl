@@ -1,4 +1,4 @@
-type MXModel
+type MXModel <: Model
   model::Any
   params::Dict{Symbol,Any}
   grads::Dict{Symbol,Any}
@@ -59,7 +59,7 @@ end
 
 function (model::MXModel)(input)
   tond!(model.exec.arg_dict[:input], input)
-  mx.forward(model.exec)
+  mx.forward(model.exec, is_train = true)
   fromnd(model.exec.outputs[1])
 end
 
