@@ -17,7 +17,8 @@ function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
         any(isnan, pred) && error("NaN")
         err = mse!(∇, pred, y)
         back!(m, ∇, x)
-        i % batch == 0 && (update!(m, η); @show accuracy(m, test))
+        i % batch == 0 && update!(m, η)
+        i % 1000 == 0 && @show accuracy(m, test)
       end
     end
     return m
