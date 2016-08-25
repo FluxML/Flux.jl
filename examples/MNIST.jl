@@ -1,13 +1,20 @@
-using Flux, MNIST
+using Flux, MNIST, Flow, MacroTools
+import Flux.MX: mxnet
+import Flux: back!, update!, graph
 
-const data = collect(zip([trainfeatures(i) for i = 1:60_000],
-                         [onehot(trainlabel(i), 1:10) for i = 1:60_000]))
-const train = data[1:50_000]
-const test = data[50_001:60_000]
+@time begin
+  const data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
+  const train = data[1:50_000]
+  const test = data[50_001:60_000]
+  nothing
+end
 
-const m = Sequence(
+m = Chain(
   Input(784),
-  Dense(30), Sigmoid(),
-  Dense(10), Sigmoid())
+  Dense(784, 128), relu,
+  Dense(128, 64), relu,
+  Dense(64, 10), softmax)
 
-@time Flux.train!(m, train, test, epoch = 30)
+model = mxnet(m, 784)
+
+@time Flux.train!(model, train, test, epoch = 1, η=0.001)
