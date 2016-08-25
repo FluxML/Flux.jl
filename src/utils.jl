@@ -6,6 +6,8 @@ onehot(label, labels) = [i == label for i in labels]
 onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
 
 function train!(m::Model, train, test = []; epoch = 1, batch = 10, η = 0.1)
+initn(dims...) = randn(dims...)/100
+
     i = 0
     ∇ = zeros(length(train[1][2]))
     for _ in 1:epoch

@@ -6,7 +6,7 @@ export Dense
   x -> W*x + b
 end
 
-Dense(in::Integer, out::Integer; init = randn) =
+Dense(in::Integer, out::Integer; init = initn) =
   Dense(init(out, in), init(out))
 
 Base.show(io::IO, ::Dense) = print(io, "Flux.Dense(...)")
