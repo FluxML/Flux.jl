@@ -1,6 +1,4 @@
-using Flux, MNIST, Flow, MacroTools
-import Flux.MX: mxnet
-import Flux: back!, update!, graph
+using Flux, MNIST
 
 @time begin
   const data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
@@ -11,9 +9,9 @@ end
 
 m = Chain(
   Input(784),
-  Dense(784, 128), relu,
-  Dense(128, 64), relu,
-  Dense(64, 10), softmax)
+  Dense(128), relu,
+  Dense( 64), relu,
+  Dense( 10), softmax)
 
 model = mxnet(m, 784)
 

@@ -8,4 +8,4 @@ relu(x) = max(0, x)
 
 back(::typeof(relu), Δ, x) = Δ .* (x .< 0)
 
-softmax(x) = error("not implemented")
+softmax(xs) = exp.(xs) ./ sum(exp.(xs))

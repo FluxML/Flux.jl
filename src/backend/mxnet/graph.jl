@@ -32,3 +32,6 @@ node(::typeof(+), args...) = mx.broadcast_plus(args...)
 node(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)
 node(::typeof(relu), x) = mx.Activation(data = x, act_type=:relu)
 node(::typeof(softmax), xs) = mx.broadcast_div(exp(xs), mx.Reshape(mx.sum(exp(xs)), shape = (1,1)))
+
+graph(vars, ::Input, x) = x
+graph(vars, ::Input, x, args...) = error("too many arguments to Input")
