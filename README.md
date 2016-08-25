@@ -16,7 +16,7 @@ Finally, Flux is hackable. Using Julia enables custom kernels, including GPU cod
 
 ## How?
 
-See [the design docs](design.md).
+See [docs](/docs).
 
 ## Is it any good?
 
