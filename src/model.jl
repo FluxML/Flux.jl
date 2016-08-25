@@ -50,3 +50,5 @@ back!(cap::Capacitor, args...) = cap.backward(args...)
 update!(cap::Capacitor, η) = cap.update(η)
 
 graph(cap::Capacitor) = cap.graph
+
+Base.show(io::IO, ::Capacitor) = print(io, "Flux.Capacitor(...)")

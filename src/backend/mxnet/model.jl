@@ -5,6 +5,8 @@ type MXModel
   exec::mx.Executor
 end
 
+Base.show(io::IO, ::MXModel) = print(io, "MXModel(...)")
+
 mxdims(dims::NTuple) =
   length(dims) == 1 ? (1, dims...) : reverse(dims)
 
