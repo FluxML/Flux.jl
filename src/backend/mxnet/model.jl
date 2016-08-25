@@ -1,3 +1,5 @@
+using MacroTools
+
 type MXModel <: Model
   model::Any
   params::Dict{Symbol,Any}
@@ -5,7 +7,8 @@ type MXModel <: Model
   exec::mx.Executor
 end
 
-Base.show(io::IO, ::MXModel) = print(io, "MXModel(...)")
+Base.show(io::IO, m::MXModel) =
+  print(io, "MXModel($(unblock(syntax(Flux.graph(m.model)))))")
 
 mxdims(dims::NTuple) =
   length(dims) == 1 ? (1, dims...) : reverse(dims)
