@@ -21,13 +21,3 @@ end
 
 Sigmoid(in::Integer, out::Integer; init = randn) =
   Sigmoid(Dense(in, out, init = init))
-
-# @model type Recurrent
-#   Wxh; Whh; Bh
-#   Wxy; Why; By
-#
-#   function (x)
-#     hidden = σ( Wxh*x + Whh*hidden + Bh )
-#     y = σ( Wxy*x + Why*hidden + By )
-#   end
-# end

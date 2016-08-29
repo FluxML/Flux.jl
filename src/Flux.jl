@@ -9,6 +9,7 @@ include("utils.jl")
 
 include("compiler/diff.jl")
 include("compiler/code.jl")
+include("compiler/loops.jl")
 
 include("layers/dense.jl")
 include("layers/shape.jl")

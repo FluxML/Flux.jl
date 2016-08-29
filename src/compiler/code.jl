@@ -6,7 +6,7 @@ export @model
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
-  body = Flow.il(graphm(unblock(body)))
+  body = @> body MacroTools.flatten liftloops!(params) graphm Flow.il
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
   return args, body
 end
