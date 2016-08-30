@@ -6,7 +6,7 @@ Flux is an experimental programming model for building neural networks, implemen
 
 ## How?
 
-See [docs](/docs).
+See [examples](/examples).
 
 ## Is it any good?
 
