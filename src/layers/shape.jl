@@ -1,7 +1,5 @@
 export Input
 
-# Shim for kicking off shape inference
-
 typealias Dims{N} NTuple{N,Int}
 
 dims(d::Dims) = d
@@ -10,6 +8,8 @@ dims(i...) = (i...,)
 
 single(i) = i
 single(i::Dims) = length(i) == 1 ? first(i) : i
+
+# Shim for kicking off shape inference
 
 type Input{N} <: Model
   dims::Dims{N}
