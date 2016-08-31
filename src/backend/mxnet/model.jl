@@ -8,7 +8,7 @@ type MXModel <: Model
 end
 
 Base.show(io::IO, m::MXModel) =
-  print(io, "MXModel($(unblock(syntax(Flux.graph(m.model)))))")
+  print(io, "MXModel($(m.model))")
 
 mxdims(dims::NTuple) =
   length(dims) == 1 ? (1, dims...) : reverse(dims)

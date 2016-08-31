@@ -26,5 +26,11 @@ end
 back!(s::Chain, ∇) = foldr((m, ∇) -> back!(m, ∇), ∇, s.layers)
 update!(s::Chain, η) = foreach(l -> update!(l, η), s.layers)
 
+function Base.show(io::IO, c::Chain)
+  print(io, "Chain(")
+  print_joined(io, c.layers, ", ")
+  print(io, ")")
+end
+
 graph(s::Chain) =
   foldl((v, m) -> vertex(m, v), constant(ModelInput(1)), s.layers)

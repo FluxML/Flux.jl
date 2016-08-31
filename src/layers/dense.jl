@@ -12,7 +12,7 @@ Dense(in::Integer, out::Integer; init = initn) =
   Dense(init(out, in), init(out))
 
 Base.show(io::IO, d::Dense) =
-  print(io, "Flux.Dense($(size(d.W.x,2)),$(size(d.W.x,1)))")
+  print(io, "Dense($(size(d.W.x,2)),$(size(d.W.x,1)))")
 
 @model type Sigmoid
   layer::Model
