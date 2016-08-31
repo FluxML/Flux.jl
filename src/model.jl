@@ -7,6 +7,8 @@ abstract Model
 back!(m::Model, ∇) = error("Backprop not implemented for $(typeof(m))")
 update!(m, η) = m
 
+graph(m) = nothing
+
 # Model parameters
 
 type Param{T}

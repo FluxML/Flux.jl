@@ -7,6 +7,7 @@ using MacroTools, Lazy, Flow
 include("model.jl")
 include("utils.jl")
 
+include("compiler/graph.jl")
 include("compiler/diff.jl")
 include("compiler/code.jl")
 include("compiler/loops.jl")

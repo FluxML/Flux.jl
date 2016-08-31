@@ -15,48 +15,70 @@ function liftloops!(ex, params)
   return ex
 end
 
-bumpinput(i::ModelInput) = isa(i.name, Integer) ? ModelInput(i.name + 1) : i
-bumpinput(x) = x
+function hasloops(model)
+  g = graph(model)
+  g == nothing && return false
+  iscyclic(g) && return true
+  result = false
+  map(m -> hasloops(m) && (result = true), g)
+  return result
+end
 
-bumpinputs(v::IVertex) = mapconst(bumpinput, v)
-
-function unroll(delay::IVertex)
-  prewalk(delay[1]) do v
-    isa(value(v), Delay) ? constant(ModelInput(1)) : v
+function atomise(model)
+  postwalk(graph(model)) do v
+    hasloops(value(v)) || return v
+    spliceinputs(atomise(value(v)), inputs(v)...)
   end
 end
 
-function break!(model)
-  iscyclic(graph(model)) || return model
-  g = bumpinputs(graph(model))
+hinput(n) = vertex(getindex, constant(ModelInput(1)), constant(n))
+
+function unroll!(delay::IVertex, n)
+  prewalk!(delay[1]) do v
+    v === delay ? hinput(n) : v
+  end
+end
+
+function break!(g::IVertex)
+  g = bumpinputs(g)
   loops = []
-  g = prewalk(g) do v
+  g = prewalk!(g) do v
     isa(value(v), Delay) || return v
-    push!(loops, unroll(v))
-    constant(ModelInput(1))
+    n = length(loops)+1
+    push!(loops, unroll!(v, n))
+    hinput(n)
   end
-  cse(vertex(tuple, loops..., g))
+  cse(vertex(tuple, vertex(tuple, loops...), g))
 end
 
-# r = Recurrent(784, 10, 50)
+# r = Recurrent(10, 10)
+# r = Chain(Dense(10,10), Recurrent(10,10))
+# r = Chain(Recurrent(10,10),Recurrent(10,10))
 
-# break!(r)
+# break!(atomise(r)) |> syntax |> prettify |> display
+
+# @model type Recurrent
+#   Wx; Wh; B
+#   hidden
+#
+#   function (x)
+#     hidden = σ( Wx*x + Wh*hidden + B )
+#   end
+# end
+#
+# Recurrent(in::Integer, out::Integer; init = initn) =
+#   Recurrent(init(out, in), init(out, out), init(out), zeros(out))
 
 @model type Recurrent
-  Wxh; Whh; Bh
-  Wxy; Why; By
+  model
   hidden
-
   function (x)
-    hidden = σ( Wxh*x + Whh*hidden + Bh )
-    y = σ( Wxy*x + Why*hidden + By )
+    hidden = σ(model(vcat(x, hidden)))
   end
 end
 
-Recurrent(in::Integer, out::Integer, hidden::Integer; init = initn) =
-  Recurrent(init(hidden, in), init(hidden, hidden), init(hidden),
-            init(out, in), init(out, hidden), init(hidden),
-            zeros(hidden))
+Recurrent(in::Integer, out::Integer; init = initn) =
+  Recurrent(Dense(in + out, out, init = init), zeros(out))
 
 Base.show(io::IO, r::Recurrent) =
   print(io, "Flux.Recurrent(...)")

@@ -11,10 +11,6 @@ function process_func(ex, params = [])
   return args, body
 end
 
-immutable ModelInput
-  name
-end
-
 function makegraph(graph, args)
   @assert length(args) == 1
   mapconst(graph) do x
