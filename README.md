@@ -9,7 +9,7 @@ Flux is designed to experiment with two core principles:
 * *Walking the ladder of abstraction:* It should be possible to describe models at the highest level (e.g. the equations in the paper) or the lowest (e.g. custom GPU kernels) and mix and match the two. Model descriptions should be separated from their implementations, and changes to the way a model is used should never require changes to the model itself.
 * *Cranking the lever of expression:* The same problems that come up when building ML models (composition and reuse, variable scoping, applying optimisations etc.) have already been solved by programming languages. If we think of building models as programming, we can reuse those solutions, greatly reducing the barriers to learning and using ML systems.
 
-Right now Flux may be more appropriate for those interested in learning about neural networks than those who want the utmost performance. However, since we are able to make use of backends like TensorFlow and MXNet, top performance is a very achievable goal.
+Right now Flux may be more appropriate for those interested in learning about neural networks than those with advanced needs in terms of features or performance. However, since we are able to make use of backends like TensorFlow and MXNet, more filling those needs is a very achievable goal as well.
 
 ## How?
 
