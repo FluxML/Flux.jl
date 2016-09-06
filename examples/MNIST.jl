@@ -1,9 +1,9 @@
 using Flux, MNIST
 
 @time begin
-  const data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
-  const train = data[1:50_000]
-  const test = data[50_001:60_000]
+  data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
+  train = data[1:50_000]
+  test = data[50_001:60_000]
   nothing
 end
 
