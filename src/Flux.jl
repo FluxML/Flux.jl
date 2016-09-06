@@ -1,6 +1,6 @@
 module Flux
 
-using MacroTools, Lazy, Flow
+using MacroTools, Lazy, Flow, Juno
 
 # Zero Flux Given
 

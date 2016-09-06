@@ -11,7 +11,7 @@ function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
     i = 0
     ∇ = zeros(length(train[1][2]))
     for _ in 1:epoch
-      for (x, y) in train
+      @progress for (x, y) in train
         i += 1
         pred = m(x)
         any(isnan, pred) && error("NaN")
