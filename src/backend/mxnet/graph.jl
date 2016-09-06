@@ -50,6 +50,9 @@ node(::typeof(softmax), xs) =
 
 node(s::SoftmaxOutput, xs) = mx.SoftmaxOutput(data = xs, name = s.name)
 
+node(::typeof(cat), dim::Integer, a...) = mx.Concat(a..., dim = dim)
+node(::typeof(vcat), a...) = node(cat, 1, a...)
+
 graph(vars, ::Input, x) = x
 
 graph(vars, c::Conv, x) =
