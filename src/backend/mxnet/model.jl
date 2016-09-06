@@ -47,9 +47,14 @@ function load!(model::MXModel)
   return model
 end
 
-function mxnet(model::Model, input)
+function mxgraph(model, input)
   vars = Dict{Symbol,Any}()
-  node = graph(vars, model, mx.Variable(:input))
+  node = graph(vars, model, mx.Variable(input))
+  return node, vars
+end
+
+function mxnet(model::Model, input)
+  node, vars = mxgraph(model, :input)
   args = merge(mxargs(vars), Dict(:input => mx.zeros(mxdims(input))))
   grads = mxgrads(args)
   model = MXModel(model, vars, grads,
@@ -80,4 +85,12 @@ function Flux.update!(model::MXModel, η)
     end
   end
   return model
+end
+
+# MX FeedForward interface
+
+function mx.FeedForward(model::Model; input = :data, label = :softmax, context = mx.cpu())
+  model = rewrite_softmax(model, label)
+  node, _ = mxgraph(model, input)
+  return mx.FeedForward(node, context = context)
 end

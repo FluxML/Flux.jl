@@ -15,6 +15,7 @@ include("compiler/loops.jl")
 include("layers/dense.jl")
 include("layers/shape.jl")
 include("layers/chain.jl")
+include("layers/shims.jl")
 
 include("cost.jl")
 include("activation.jl")

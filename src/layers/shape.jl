@@ -11,6 +11,11 @@ single(i::Dims) = length(i) == 1 ? first(i) : i
 
 # Shim for kicking off shape inference
 
+type ShapeError <: Exception
+  layer
+  shape
+end
+
 type Input{N} <: Model
   dims::Dims{N}
 end

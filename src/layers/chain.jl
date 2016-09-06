@@ -34,3 +34,5 @@ end
 
 graph(s::Chain) =
   foldl((v, m) -> vertex(m, v), constant(ModelInput(1)), s.layers)
+
+shape(c::Chain, in) = c.shape
