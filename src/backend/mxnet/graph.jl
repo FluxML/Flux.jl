@@ -7,7 +7,7 @@ graph(vars, model, args...) = node(model, args...)
 graph(vars, x::mx.SymbolicNode) = x
 
 # TODO: detect parameters used more than once
-function graph{T<:AArray}(vars, p::Flux.Param{T})
+function graph{T<:AArray}(vars::Associative, p::Flux.Param{T})
   value = p.x
   id = gensym()
   vars[id] = value
@@ -68,7 +68,7 @@ graph(vars, p::MaxPool, x) =
              stride = p.stride)
 
 # TODO: fix the initialisation issue
-graph(vars, d::Dense, x) =
+graph(vars::Void, d::Dense, x) =
   mx.FullyConnected(data = x,
                     num_hidden = size(d.W.x, 1),
                     # weight = graph(vars, d.W),

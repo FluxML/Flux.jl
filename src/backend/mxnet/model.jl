@@ -47,8 +47,8 @@ function load!(model::MXModel)
   return model
 end
 
-function mxgraph(model, input)
-  vars = Dict{Symbol,Any}()
+function mxgraph(model, input; vars = true)
+  vars = vars ? Dict{Symbol,Any}() : nothing
   node = graph(vars, model, mx.Variable(input))
   return node, vars
 end
@@ -91,6 +91,6 @@ end
 
 function mx.FeedForward(model::Model; input = :data, label = :softmax, context = mx.cpu())
   model = rewrite_softmax(model, label)
-  node, _ = mxgraph(model, input)
+  node, _ = mxgraph(model, input, vars = false)
   return mx.FeedForward(node, context = context)
 end
