@@ -81,16 +81,8 @@ end
 
 function process_anon(ex)
   args, body = process_func(ex)
-  layers = Set{Symbol}()
-  Flow.prefor(body) do v
-    isexpr(value(v), Symbol) && push!(layers, value(v))
-  end
   @assert length(args) == 1
-  :(Flux.Capacitor(
-      ($(args...)) -> $(build_forward(body, args)),
-      (Δ, $(args...)) -> $(build_backward(body, args[1])),
-      η -> $(map(p -> :(update!($p, η)), layers)...),
-      $(Flow.constructor(makegraph(body, args))))) |> esc
+  :(Flux.Capacitor($(Flow.constructor(makegraph(body, args))))) |> esc
 end
 
 macro model(ex)
