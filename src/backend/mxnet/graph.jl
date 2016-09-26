@@ -38,7 +38,7 @@ end
 
 # Built-in implemenations
 
-node(::typeof(*), args...) = mx.dot(args...)
+node(::typeof(*), args...) = mx.dot(reverse(args)...)
 node(::typeof(+), args...) = mx.broadcast_plus(args...)
 node(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)
 node(::typeof(relu), x) = mx.Activation(data = x, act_type=:relu)
