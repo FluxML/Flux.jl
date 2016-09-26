@@ -10,8 +10,7 @@ end
 Base.show(io::IO, m::MXModel) =
   print(io, "MXModel($(m.model))")
 
-mxdims(dims::NTuple) =
-  length(dims) == 1 ? (1, dims...) : reverse(dims)
+mxdims(dims::NTuple) = reverse(dims)
 
 mxdims(n::Integer) = mxdims((n,))
 
@@ -29,7 +28,7 @@ ndzero!(xs::mx.NDArray) = copy!(xs, mx.zeros(size(xs)))
 function mxargs(args)
   map(args) do kv
     arg, value = kv
-    arg => mx.zeros(mxdims(size(value)))
+    arg => tond(value)
   end
 end
 
@@ -91,6 +90,8 @@ end
 
 function mx.FeedForward(model::Model; input = :data, label = :softmax, context = mx.cpu())
   model = rewrite_softmax(model, label)
-  node, _ = mxgraph(model, input, vars = false)
-  return mx.FeedForward(node, context = context)
+  node, vars = mxgraph(model, input)
+  ff = mx.FeedForward(node, context = context)
+  ff.arg_params = mxargs(vars)
+  return ff
 end
