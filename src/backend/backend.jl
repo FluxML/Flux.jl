@@ -1,7 +1,9 @@
 # TODO: load backends lazily
 
-include("mxnet/mxnet.jl")
+# include("mxnet/mxnet.jl")
+# using .MX
+# export mxnet
 
-using .MX
-
-export mxnet
+include("tensorflow/tensorflow.jl")
+using .TF
+export tf
