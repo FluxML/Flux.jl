@@ -35,6 +35,7 @@ type Model
   session::Session
   inputs::Vector{Tensor}
   graph::Tensor
+  grad::Tensor
 end
 
 Media.render(::Juno.Clipboard, ::Model) = "Flux.TF.Model()"
@@ -44,12 +45,22 @@ function tf(model)
   input = placeholder(Float64)
   g = graph(model, input)
   run(sess, initialize_all_variables())
-  Model(sess, [input], g)
+  Model(sess, [input], g, gradients(g, input))
 end
 
 function (m::Model)(args...)
   @assert length(args) == length(m.inputs)
   run(m.session, m.graph, Dict(zip(m.inputs, args)))
+end
+
+function Flux.back!(m::Model, Δ, args...)
+  @assert length(args) == length(m.inputs)
+  # TODO: keyword arguments to `gradients`
+  run(m.session, m.grad, Dict(zip(m.inputs, args)))
+end
+
+function Flux.update!(m::Model)
+  error("update! is not yet supported on TensorFlow models")
 end
 
 # m = Flux.Dense(784, 10)
