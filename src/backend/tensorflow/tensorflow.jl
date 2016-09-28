@@ -63,8 +63,4 @@ function Flux.update!(m::Model)
   error("update! is not yet supported on TensorFlow models")
 end
 
-# m = Flux.Dense(784, 10)
-# t = tf(m)
-# t(randn(784,1))
-
 end
