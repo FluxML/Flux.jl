@@ -5,7 +5,7 @@ const AArray = AbstractArray
 onehot(label, labels) = [i == label for i in labels]
 onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
 
-initn(dims...) = randn(dims...)/100
+initn(dims...) = randn(dims...)/1000
 
 function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
     i = 0
@@ -24,7 +24,7 @@ function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
     return m
 end
 
-function accuracy(m::Model, data)
+function accuracy(m, data)
   correct = 0
   for (x, y) in data
     onecold(m(x)) == onecold(y) && (correct += 1)
