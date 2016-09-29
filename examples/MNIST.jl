@@ -1,11 +1,8 @@
 using Flux, MNIST
 
-@time begin
-  data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
-  train = data[1:50_000]
-  test = data[50_001:60_000]
-  nothing
-end
+data = [(trainfeatures(i), Vector{Float64}(onehot(trainlabel(i), 0:9))) for i = 1:60_000]
+train = data[1:50_000]
+test = data[50_001:60_000]
 
 m = Chain(
   Input(784),
@@ -13,6 +10,7 @@ m = Chain(
   Dense( 64), relu,
   Dense( 10), softmax)
 
-model = mxnet(m, 784)
+# Convert to TensorFlow
+model = tf(m)
 
-@time Flux.train!(model, train, test, epoch = 1, η=0.001)
+@time Flux.train!(model, train, test, η = 1e-3)

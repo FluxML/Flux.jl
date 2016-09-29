@@ -33,6 +33,9 @@ end
 graph(::typeof(*), args...) = *(reverse(args)...)
 graph(::typeof(+), args...) = +(args...)
 graph(::typeof(softmax), x) = nn.softmax(x)
+graph(::typeof(relu), x) = nn.relu(x)
+
+graph(::Input, x) = x
 
 type Model
   session::Session
@@ -73,12 +76,14 @@ function Flux.train!(m::Model, train, test=[]; epoch = 1, η = 0.1,
   Y = placeholder(Float64)
   Loss = loss(m.graph, Y)
   minimize_op = TensorFlow.train.minimize(opt, Loss)
-  run(m.session, initialize_all_variables())
   for e in 1:epoch
     info("Epoch $e\n")
     @progress for (x, y) in train
       y, cur_loss, _ = run(m.session, vcat(m.graph, Loss, minimize_op), Dict(m.inputs[1]=>x', Y=>y'))
-      i % 1000 == 0 && @show accuracy(m, test)
+      if i % 5000 == 0
+        @show y
+        @show accuracy(m, test)
+      end
       i += 1
     end
   end
