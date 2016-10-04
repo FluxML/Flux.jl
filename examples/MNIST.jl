@@ -13,4 +13,10 @@ m = Chain(
 # Convert to TensorFlow
 model = tf(m)
 
+# An example prediction pre-training
+model(data[1][1])
+
 @time Flux.train!(model, train, test, η = 1e-3)
+
+# An example prediction post-training
+model(data[1][1])
