@@ -86,9 +86,8 @@ Though further from the equations, this has the advantage of further reuse and c
 When it comes time to train the model, we have a number of options for tweaking its implementation, like the backend used, or batching and unrolling settings. In Flux this is as simple as calling some functions on the original model:
 
 ```julia
-model = unroll(model, 10)
-model = batch(model, 100)
-model = mxnet(model)
+model = unroll(model, 10) # Statically unroll the model
+model = tf(model) # Convert the model to TensorFlow
 
 Flux.train!(model, ...)
 ```
