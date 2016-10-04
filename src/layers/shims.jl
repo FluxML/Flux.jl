@@ -1,18 +1,17 @@
-export Conv, MaxPool
+export Conv2D, MaxPool
 
-type Conv <: Model
-  size::Dims{2}
-  features::Int
+type Conv2D <: Model
+  filter::Param{Array{Float64,4}} # [height, width, outchans, inchans]
   stride::Dims{2}
 end
 
-Conv(size, features; stride = (1,1)) =
-  Conv(size, features, stride)
+Conv2D(size; in = 1, out = 1, stride = (1,1), init = initn) =
+  Conv2D(param(initn(size..., in, out)), stride)
 
-shape(c::Conv, in::Dims{2}) =
-  (map(i -> (in[i]-c.size[i])÷c.stride[i]+1, (1,2))..., c.features)
+shape(c::Conv2D, in::Dims{2}) =
+  (map(i -> (in[i]-size(c.filter,i))÷c.stride[i]+1, (1,2))..., size(c.filter, 3))
 
-shape(c::Conv, in::Dims{3}) =
+shape(c::Conv2D, in::Dims{3}) =
   shape(c, (in[1],in[2]))
 
 type MaxPool <: Model
