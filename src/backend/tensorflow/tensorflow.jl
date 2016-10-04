@@ -36,6 +36,7 @@ graph(::typeof(+), args...) = +(args...)
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
 graph(::typeof(tanh), x) = tanh(x)
+graph(::typeof(flatten), x) = reshape(x, [-1])
 
 graph(::Input, x) = x
 
