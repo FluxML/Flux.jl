@@ -65,7 +65,7 @@ Media.render(::Juno.Clipboard, ::Model) = "Flux.TF.Model()"
 
 function tf(model)
   sess = Session(Graph())
-  input = placeholder(Float64)
+  input = placeholder(Float32)
   g = graph(model, input)
   run(sess, initialize_all_variables())
   Model(sess, [input], g, gradients(g, input))
@@ -90,7 +90,7 @@ function Flux.train!(m::Model, train, test=[]; epoch = 1, η = 0.1,
                      loss = (y, y′) -> reduce_sum((y - y′).^2)/2,
                      opt = TensorFlow.train.GradientDescentOptimizer(η))
   i = 0
-  Y = placeholder(Float64)
+  Y = placeholder(Float32)
   Loss = loss(m.graph, Y)
   minimize_op = TensorFlow.train.minimize(opt, Loss)
   for e in 1:epoch

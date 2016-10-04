@@ -1,6 +1,6 @@
 using Flux, MNIST
 
-data = [(trainfeatures(i), Vector{Float64}(onehot(trainlabel(i), 0:9))) for i = 1:60_000]
+data = [(trainfeatures(i), Vector{Float32}(onehot(trainlabel(i), 0:9))) for i = 1:60_000]
 train = data[1:50_000]
 test = data[50_001:60_000]
 

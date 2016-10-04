@@ -1,7 +1,7 @@
 export Conv2D, MaxPool
 
 type Conv2D <: Model
-  filter::Param{Array{Float64,4}} # [height, width, outchans, inchans]
+  filter::Param{Array{Float32,4}} # [height, width, outchans, inchans]
   stride::Dims{2}
 end
 

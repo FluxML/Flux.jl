@@ -5,7 +5,7 @@ const AArray = AbstractArray
 onehot(label, labels) = [i == label for i in labels]
 onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
 
-initn(dims...) = randn(dims...)/1000
+initn(dims...) = randn(Float32, dims...)/1000
 
 function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
     i = 0

@@ -40,8 +40,8 @@ using TensorFlow
 
 sess = Session(Graph())
 
-x  = placeholder(Float64)
-y′ = placeholder(Float64)
+x  = placeholder(Float32)
+y′ = placeholder(Float32)
 
 y = Tensor(lenet, x)
 
