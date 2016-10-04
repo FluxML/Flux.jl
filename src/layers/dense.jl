@@ -5,14 +5,14 @@ export Dense
 @model type Dense
   W
   b
-  x -> W*x + b
+  x -> x*W + b
 end
 
 Dense(in::Integer, out::Integer; init = initn) =
-  Dense(init(out, in), init(out))
+  Dense(init(in, out), init(1, out))
 
 Base.show(io::IO, d::Dense) =
-  print(io, "Dense($(size(d.W.x,2)),$(size(d.W.x,1)))")
+  print(io, "Dense($(size(d.W.x,1)),$(size(d.W.x,2)))")
 
 @model type Sigmoid
   layer::Model

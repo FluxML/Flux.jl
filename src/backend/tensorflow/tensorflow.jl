@@ -17,7 +17,7 @@ cvalue(v::Vertex) = cvalue(value(v))
 graph(x::Tensor) = x
 
 # TODO: detect variable reuse
-graph{T<:AArray}(p::Flux.Param{T}) = Variable(p.x')
+graph{T<:AArray}(p::Flux.Param{T}) = Variable(p.x)
 
 function graph(model::Model, args...)
   g = Flux.graph(model)
@@ -30,12 +30,19 @@ function graph(model::Model, args...)
   end |> value
 end
 
-graph(::typeof(*), args...) = *(reverse(args)...)
+graph(::typeof(*), args...) = *(args...)
 graph(::typeof(+), args...) = +(args...)
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
 
 graph(::Input, x) = x
+
+# Treat the first dimension as the batch index
+# TODO: custom data type for this
+batch(x) = reshape(x, (1,size(x)...))
+batch(xs...) = vcat(map(batch, xs)...)
+
+unbatch(xs) = reshape(xs, size(xs)[2:end])
 
 type Model
   session::Session
@@ -56,7 +63,7 @@ end
 
 function (m::Model)(args...)
   @assert length(args) == length(m.inputs)
-  run(m.session, m.graph, Dict(zip(m.inputs, map(transpose, args))))'
+  unbatch(run(m.session, m.graph, Dict(zip(m.inputs, map(batch, args)))))
 end
 
 function Flux.back!(m::Model, Δ, args...)
@@ -79,7 +86,8 @@ function Flux.train!(m::Model, train, test=[]; epoch = 1, η = 0.1,
   for e in 1:epoch
     info("Epoch $e\n")
     @progress for (x, y) in train
-      y, cur_loss, _ = run(m.session, vcat(m.graph, Loss, minimize_op), Dict(m.inputs[1]=>x', Y=>y'))
+      y, cur_loss, _ = run(m.session, vcat(m.graph, Loss, minimize_op),
+                           Dict(m.inputs[1]=>batch(x), Y=>batch(y)))
       if i % 5000 == 0
         @show y
         @show accuracy(m, test)
