@@ -34,6 +34,8 @@ end
 state(x) = x
 accumulate!(x, Δ) = x
 
+@forward Param.x Base.size
+
 # Anonymous models
 
 export Capacitor
