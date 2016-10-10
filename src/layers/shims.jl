@@ -1,4 +1,4 @@
-export Conv2D, MaxPool
+export Conv2D, MaxPool, Reshape
 
 type Conv2D <: Model
   filter::Param{Array{Float32,4}} # [height, width, inchans, outchans]
@@ -29,3 +29,16 @@ shape(c::MaxPool, in::Dims{3}) =
   (shape(c, (in[1],in[2]))..., in[3])
 
 shape(c::MaxPool, in) = throw(ShapeError(c, in))
+
+immutable Reshape{N}
+  dims::Dims{N}
+end
+
+Reshape(dims::Integer...) = Reshape(dims)
+
+function shape(r::Reshape, dims)
+    prod(dims) == prod(r.dims) || throw(ShapeError(r, dims))
+    return r.dims
+end
+
+shape(r::Reshape, ::Void) = r.dims

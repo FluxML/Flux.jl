@@ -35,7 +35,8 @@ graph(::typeof(tanh), x) = tanh(x)
 
 # reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79
 batchsize(x::Tensor) = reduce_sum(slice(TensorFlow.shape(x), [0], [1]))
-graph(::typeof(flatten), x) = reshape(x, pack([batchsize(x),Int32(-1)]))
+graph(::typeof(flatten), x) = reshape(x, pack([batchsize(x), Int32(-1)]))
+graph(r::Reshape, x) = reshape(x, pack([batchsize(x), map(Int32, r.dims)...]))
 
 graph(::Input, x) = x
 
