@@ -1,14 +1,10 @@
 module TF
 
-using ..Flux, Flow, TensorFlow
-import Juno: info
+using ..Flux, Flow, TensorFlow, Juno
 import Flux: accuracy
+import Juno: info
 
 export tf
-
-# Workaround for tensor display bug
-using Juno
-Media.render(::Juno.Clipboard, ::Tensor) = "Tensor()"
 
 cvalue(x) = x
 cvalue(c::Constant) = c.value
@@ -36,7 +32,10 @@ graph(::typeof(+), args...) = +(args...)
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
 graph(::typeof(tanh), x) = tanh(x)
-graph(::typeof(flatten), x) = reshape(x, [-1])
+
+# reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79
+batchsize(x::Tensor) = reduce_sum(slice(TensorFlow.shape(x), [0], [1]))
+graph(::typeof(flatten), x) = reshape(x, pack([batchsize(x),Int32(-1)]))
 
 graph(::Input, x) = x
 
@@ -61,8 +60,6 @@ type Model
   graph::Tensor
   grad::Tensor
 end
-
-Media.render(::Juno.Clipboard, ::Model) = "Flux.TF.Model()"
 
 function tf(model)
   sess = Session(Graph())
@@ -107,5 +104,15 @@ function Flux.train!(m::Model, train, test=[]; epoch = 1, η = 0.1,
     end
   end
 end
+
+type Op
+  f
+  shape
+end
+
+Op(f) = Op(f, (d...) -> nothing)
+
+graph(op::Op, xs...) = op.f(xs...)
+Flux.shape(op::Op, d...) = op.shape(d...)
 
 end
