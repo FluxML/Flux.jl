@@ -6,7 +6,7 @@ Flux is a high-level API for machine learning, implemented in Julia. It could be
 
 The current focus is on ANNs with TensorFlow as a backend. While it's in a very early working-prototype stage, you can see what works so far in the [examples folder](/examples).
 
-Flux's approach is heavily declarative (as opposed to imperative graph building, which has all the drawbacks of writing one huge macro). Models can be described in high-level terms close to the mathematical description. Model descriptions should be separated from their implementations, and changes to the way a model is used should never require changes to the model itself.
+Flux's approach is heavily declarative (as opposed to imperative graph building, which has all the drawbacks of writing one huge macro). Models can be described in high-level terms close to the mathematical notation. Model descriptions are be separated from their implementations, and changes to the way a model is used should never require changes to the model itself.
 
 A core part of the approach is the idea that the same problems that come up when building ML models (composition and reuse, variable scoping, applying optimisations etc.) have already been solved by programming languages. If we think of building models as programming, we can reuse those solutions, greatly reducing the barriers to learning and using ML systems.
 
