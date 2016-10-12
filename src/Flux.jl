@@ -19,6 +19,7 @@ include("layers/shims.jl")
 
 include("cost.jl")
 include("activation.jl")
+include("batching.jl")
 
 include("backend/backend.jl")
 

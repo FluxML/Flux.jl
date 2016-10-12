@@ -48,13 +48,6 @@ graph(p::MaxPool, x) =
 
 TensorFlow.Tensor(m::Flux.Model, args...) = graph(m, args...)
 
-# Treat the first dimension as the batch index
-# TODO: custom data type for this
-batch(x) = reshape(x, (1,size(x)...))
-batch(xs...) = vcat(map(batch, xs)...)
-
-unbatch(xs) = reshape(xs, size(xs)[2:end])
-
 type Model
   session::Session
   inputs::Vector{Tensor}
@@ -72,7 +65,7 @@ end
 
 function (m::Model)(args...)
   @assert length(args) == length(m.inputs)
-  unbatch(run(m.session, m.graph, Dict(zip(m.inputs, map(batch, args)))))
+  Flux.unbatch(run(m.session, m.graph, Dict(zip(m.inputs, map(batch, args)))))
 end
 
 function Flux.back!(m::Model, Δ, args...)
