@@ -1,6 +1,7 @@
 module Flux
 
 using MacroTools, Lazy, Flow, Juno
+import Juno: Tree, Row
 
 # Zero Flux Given
 
