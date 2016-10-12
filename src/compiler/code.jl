@@ -2,7 +2,7 @@
 
 import Flow: mapconst, cse
 
-export @model
+export @net
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
@@ -85,7 +85,7 @@ function process_anon(ex)
   :(Flux.Capacitor($(Flow.constructor(makegraph(body, args))))) |> esc
 end
 
-macro model(ex)
+macro net(ex)
   isexpr(ex, :type) ? process_type(ex) :
   isexpr(ex, :->, :function) ? process_anon(ex) :
   error("Unsupported model expression $ex")

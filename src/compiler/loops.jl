@@ -59,7 +59,7 @@ end
 #
 # break!(atomise(r)) |> syntax |> prettify |> display
 
-@model type Recurrent
+@net type Recurrent
   Wx; Wh; B
   hidden
 
