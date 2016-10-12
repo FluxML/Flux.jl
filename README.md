@@ -2,18 +2,19 @@
 
 ## What?
 
-Flux is attempt at creating a programming model for machine learning, implemented in Julia. Its current focus is on ANNs and you can see what works so far in the examples folder.
+Flux is a high-level API for machine learning, implemented in Julia. It could be seen has Julia's answer to Keras, though it has its own ideas, quirks and possibilities.
 
-Flux is designed to experiment with two core principles:
+The current focus is on ANNs with TensorFlow as a backend. While it's in a very early working-prototype stage, you can see what works so far in the [examples folder](/examples).
 
-* *Walking the ladder of abstraction:* It should be possible to describe models at the highest level (e.g. the equations in the paper) or the lowest (e.g. custom GPU kernels) and mix and match the two. Model descriptions should be separated from their implementations, and changes to the way a model is used should never require changes to the model itself.
-* *Cranking the lever of expression:* The same problems that come up when building ML models (composition and reuse, variable scoping, applying optimisations etc.) have already been solved by programming languages. If we think of building models as programming, we can reuse those solutions, greatly reducing the barriers to learning and using ML systems.
+Flux's approach is heavily declarative (as opposed to imperative graph building, which has all the drawbacks of writing one huge macro). Models can be described in high-level terms close to the mathematical description. Model descriptions should be separated from their implementations, and changes to the way a model is used should never require changes to the model itself.
 
-Right now Flux is at a very early stage and may be more appropriate for those interested in learning about neural networks than those with advanced needs in terms of features or performance. However, since we are able to make use of backends like TensorFlow and MXNet, more filling those needs is a very achievable goal as well. See the [examples](/examples) for what currently works.
+A core part of the approach is the idea that the same problems that come up when building ML models (composition and reuse, variable scoping, applying optimisations etc.) have already been solved by programming languages. If we think of building models as programming, we can reuse those solutions, greatly reducing the barriers to learning and using ML systems.
+
+There are also some unusual possibilities enabled by Julia itself. Julia's speed makes it trivial to prototype fully custom layers with reasonable performance. In future, GPU codegen may enable us to hook custom layers into TensorFlow and other backends.
 
 ## How?
 
-We can describe simple models through a convenient Torch-like interface:
+We can describe simple models through a convenient interface:
 
 ```julia
 m = Chain(
@@ -36,7 +37,7 @@ What if we need a custom layer? Here's one equivalent to `Dense` above:
 # backward pass
 @net type FullyConnected
   W; b
-  x -> W*x + b
+  x -> x*W + b
 end
 
 # Convenience constructor, initialise the parameters with random weights
@@ -57,7 +58,7 @@ end
 Perceptron(in, out) = Perceptron(Dense(in, out))
 ```
 
-This defines a simple perceptron layer which we can use in the same way as `Dense` above. We can draw arbitrary graphs, including those with splits, combines or recurrences, in a fully declarative way [this API is a WIP]:
+This defines a simple perceptron layer which we can use in the same way as `Dense` above. We can draw arbitrary graphs, including those with splits, combines or recurrences, in a fully declarative way *[this API is a WIP]*:
 
 ```julia
 @net type SimpleRecurrent
@@ -83,7 +84,7 @@ end
 
 Though further from the equations, this has the advantage of further reuse and customizability. For example, `layer` could be a simple `Dense(x, y)` as before or it could be a `Dropout(Dense(x, y))` in order to add dropout to the recurrent layer.
 
-When it comes time to train the model, we have a number of options for tweaking its implementation, like the backend used, or batching and unrolling settings. In Flux this is as simple as calling some functions on the original model:
+When it comes time to train the model, we have a number of options for tweaking its implementation, like the backend used or unrolling settings. In Flux this is as simple as calling some functions on the original model:
 
 ```julia
 model = unroll(model, 10) # Statically unroll the model
