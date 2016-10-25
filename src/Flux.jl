@@ -20,6 +20,7 @@ include("layers/shims.jl")
 
 include("dims/catmat.jl")
 include("dims/batching.jl")
+include("dims/seq.jl")
 
 include("cost.jl")
 include("activation.jl")
