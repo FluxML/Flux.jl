@@ -1,5 +1,10 @@
 using Flux
 using Base.Test
 
-# write your own tests here
-@test 1 == 1
+module MNISTBasic
+include("../examples/MNIST.jl")
+end
+
+module MNISTConv
+include("../examples/mnist-conv.jl")
+end

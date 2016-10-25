@@ -1,4 +1,4 @@
-using Flux
+using Flux, Juno
 
 # Flux aims to provide high-level APIs that work well across backends, but in
 # some cases you may want to take advantage of features specific to a given
