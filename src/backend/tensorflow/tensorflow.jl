@@ -2,6 +2,7 @@ module TF
 
 using ..Flux, Flow, TensorFlow, Juno
 import Flux: accuracy
+import TensorFlow: RawTensor
 import Juno: info
 
 export tf
@@ -63,10 +64,16 @@ function tf(model)
   Model(sess, [input], g, gradients(g, input))
 end
 
-function (m::Model)(args...)
+batch(x) = Batch((x,))
+
+RawTensor(data::Batch) = RawTensor(rawbatch(data))
+
+function (m::Model)(args::Batch...)
   @assert length(args) == length(m.inputs)
-  Flux.unbatch(run(m.session, m.graph, Dict(zip(m.inputs, map(batch, args)))))
+  run(m.session, m.graph, Dict(zip(m.inputs, args)))
 end
+
+(m::Model)(args...) = m(map(batch, args)...)
 
 function Flux.back!(m::Model, Δ, args...)
   @assert length(args) == length(m.inputs)

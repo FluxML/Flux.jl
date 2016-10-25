@@ -1,8 +1,4 @@
-export batch, Batch
-
-# TODO: support the Batch type only
-batch(x) = reshape(x, (1,size(x)...))
-batch(xs...) = vcat(map(batch, xs)...)
+export Batch
 
 immutable Batch{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
