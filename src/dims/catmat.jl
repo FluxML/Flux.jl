@@ -6,6 +6,9 @@ immutable CatMat{T,S} <: AbstractVector{T}
   data::S
 end
 
+convert{T,S}(::Type{CatMat{T,S}},storage::S) =
+  CatMat{T,S}(storage)
+
 eltype{T}(::CatMat{T}) = T
 
 size(b::CatMat) = (size(b.data, 1),)
@@ -45,6 +48,3 @@ end
 rawbatch(xs) = xs
 
 rawbatch(xs::CatMat) = xs.data
-
-convert{T,S}(::Type{CatMat{T,S}},storage::S) =
-  CatMat{T,S}(storage)
