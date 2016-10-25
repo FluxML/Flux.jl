@@ -2,7 +2,8 @@ export AArray, onehot, onecold
 
 const AArray = AbstractArray
 
-onehot(label, labels) = [i == label for i in labels]
+onehot(T::Type, label, labels) = T[i == label for i in labels]
+onehot(label, labels) = onehot(Int, label, labels)
 onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
 
 initn(dims...) = randn(Float32, dims...)/1000
