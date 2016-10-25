@@ -1,6 +1,9 @@
 type Delay
   name::Symbol
+  default::Nullable{Param}
 end
+
+Delay(name) = Delay(name, nothing)
 
 function liftloops!(ex, params)
   e = Flow.normedges(ex)
@@ -42,13 +45,15 @@ end
 function break!(g::IVertex)
   g = bumpinputs(g)
   loops = []
+  defaults = []
   g = prewalk!(g) do v
     isa(value(v), Delay) || return v
     n = length(loops)+1
     push!(loops, unroll!(v, n))
+    push!(defaults, get(value(v).default))
     hinput(n)
   end
-  cse(vertex(tuple, vertex(tuple, loops...), g))
+  cse(vertex(tuple, vertex(tuple, loops...), g)), defaults
 end
 
 # r = Recurrent(10, 10)
