@@ -1,8 +1,9 @@
 module Flux
 
 using MacroTools, Lazy, Flow, Juno
-import Flow: graphm, syntax, prewalk, postwalk, iscyclic, Constant, constant,
-  isconstant, value, inputs, thread!, value, inputs, Split, Group
+import Flow: graphm, syntax, prewalk!, prewalk, postwalk, iscyclic,
+  Constant, constant, isconstant, value, inputs, thread!, value, inputs,
+  Split, Group, group
 import Juno: Tree, Row
 
 # Zero Flux Given
