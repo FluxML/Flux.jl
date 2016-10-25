@@ -53,7 +53,7 @@ function build_backward(body, x, params = [])
     haskey(Δs, :(self.$param)) || continue
     ex = Δs[:(self.$param)]
     ex = deref_params(ex)
-    thread!(back, @dvertex(accumulate!(:(self.$param), ex)))
+    thread!(back, @vtx(accumulate!(:(self.$param), ex)))
   end
   ex = Δs[x]
   ex = deref_params(ex)
