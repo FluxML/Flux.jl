@@ -1,6 +1,7 @@
 module TF
 
 using ..Flux, Flow, TensorFlow, Juno
+import Flow: Constant, postwalk, value, inputs
 import Flux: accuracy
 import TensorFlow: RawTensor
 import Juno: info
