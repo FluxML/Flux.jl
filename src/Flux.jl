@@ -18,9 +18,11 @@ include("layers/shape.jl")
 include("layers/chain.jl")
 include("layers/shims.jl")
 
+include("dims/catmat.jl")
+include("dims/batching.jl")
+
 include("cost.jl")
 include("activation.jl")
-include("batching.jl")
 
 include("backend/backend.jl")
 
