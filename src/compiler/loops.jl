@@ -34,11 +34,11 @@ function atomise(model)
   end
 end
 
-hinput(n) = vertex(getindex, constant(ModelInput(1)), constant(n))
+hiddeninput(n) = vertex(Split(n), inputnode(1))
 
 function unroll!(delay::IVertex, n)
   prewalk!(delay[1]) do v
-    v === delay ? hinput(n) : v
+    v === delay ? hiddeninput(n) : v
   end
 end
 
@@ -51,23 +51,23 @@ function break!(g::IVertex)
     n = length(loops)+1
     push!(loops, unroll!(v, n))
     push!(defaults, get(value(v).default))
-    hinput(n)
+    hiddeninput(n)
   end
   cse(vertex(tuple, vertex(tuple, loops...), g)), defaults
 end
 
-function unroll(model, n)
-  graph, defaults = break!(atomise(model))
-  outputs = [spliceinputs(graph, vertex(tuple, map(constant, defaults)...), constant(ModelInput(1)))]
-  for i = 2:n
-    push!(outputs, spliceinputs(graph, outputs[end][1], constant(ModelInput(i))))
-  end
-  state = outputs[end][1]
-  outputs = map(x -> x[2], outputs)
-  vertex(tuple, state, vertex(tuple, outputs...))
-end
+# function unroll(model, n)
+#   graph, defaults = break!(atomise(model))
+#   outputs = [spliceinputs(graph, vertex(tuple, map(constant, defaults)...), inputnode(1))]
+#   for i = 2:n
+#     push!(outputs, spliceinputs(graph, outputs[end][1], constant(ModelInput(i))))
+#   end
+#   state = outputs[end][1]
+#   outputs = map(x -> x[2], outputs)
+#   vertex(tuple, state, vertex(tuple, outputs...))
+# end
 
-# r = Chain(Recurrent(30,10), Recurrent(10, 20))
+# r = Recurrent(10,10)
 # unroll(r, 1) |> syntax |> prettify |> display
 
 @net type Recurrent

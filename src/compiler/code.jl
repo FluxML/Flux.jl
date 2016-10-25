@@ -14,7 +14,7 @@ end
 function makegraph(graph, args)
   @assert length(args) == 1
   mapconst(graph) do x
-    x == args[1] ? ModelInput(1) :
+    x == args[1] ? inputnode(1) :
     isa(x, Delay) ? :(Delay($(Expr(:quote, x.name)), self.$(x.name))) :
     x
   end

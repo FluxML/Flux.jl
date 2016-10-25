@@ -1,19 +1,30 @@
-# TODO: change the input approach
-immutable ModelInput
-  n::Int
+immutable ModelInput end
+
+inputnode(n) = vertex(Split(n), constant(ModelInput()))
+
+# isinput(x) = isa(x, Constant) && value(x) == Input()
+
+# function bumpinput(v::IVertex)
+#   prewalk(v) do v
+#     isa(value(v), Split) && value(v[1]) == Input() ?
+#   end
+# end
+
+function spliceinput(v::IVertex, input::IVertex)
+  prewalk(v) do v
+    value(v) == Constant(ModelInput()) ? input : v
+  end
 end
 
-isinput(x) = isa(x, Constant) && isa(x.value, ModelInput)
+spliceinputs(v::IVertex, inputs::Vertex...) =
+  spliceinput(v, vertex(Group(), inputs...))
 
-bumpinput(i::ModelInput) = ModelInput(i.n + 1)
-bumpinput(x) = x
-
-bumpinputs(v::IVertex) = mapconst(bumpinput, v)
-
-function spliceinputs(v::IVertex, inputs::IVertex...)
-  postwalk(v) do v
-    isinput(value(v)) ?
-      inputs[value(v).value.n] :
+function detuple(v::IVertex)
+  prewalk(v) do v
+    if isa(value(v), Split) && isa(value(v[1]), Group)
+      v[1][value(v).n]
+    else
       v
+    end
   end
 end

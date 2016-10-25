@@ -1,8 +1,8 @@
 module TF
 
 using ..Flux, Flow, TensorFlow, Juno
-import Flow: Constant, postwalk, value, inputs
-import Flux: accuracy
+import Flow: Constant, postwalk, value, inputs, constant
+import Flux: accuracy, spliceinputs, detuple
 import TensorFlow: RawTensor
 import Juno: info
 
@@ -20,9 +20,7 @@ graph{T<:AArray}(p::Flux.Param{T}) = Variable(p.x)
 function graph(model::Model, args...)
   g = Flux.graph(model)
   g ≠ nothing || error("No graph for $model")
-  g = Flow.mapconst(g) do x
-    isa(x, Flux.ModelInput) ? args[x.n] : x
-  end
+  g = spliceinputs(g, map(constant, args)...) |> detuple
   postwalk(g) do v
     vertex(graph(cvalue(v), cvalue.(inputs(v))...))
   end |> value

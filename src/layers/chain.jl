@@ -33,6 +33,6 @@ function Base.show(io::IO, c::Chain)
 end
 
 graph(s::Chain) =
-  foldl((v, m) -> vertex(m, v), constant(ModelInput(1)), s.layers)
+  foldl((v, m) -> vertex(m, v), constant(inputnode(1)), s.layers)
 
 shape(c::Chain, in) = c.shape
