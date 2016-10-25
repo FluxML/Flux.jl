@@ -20,8 +20,7 @@ function graph(model::Model, args...)
   g = Flux.graph(model)
   g ≠ nothing || error("No graph for $model")
   g = Flow.mapconst(g) do x
-    !isa(x, Flux.ModelInput) ? x :
-    isa(x.name, Integer) ? args[x.name] : getfield(model, x.name)
+    isa(x, Flux.ModelInput) ? args[x.n] : x
   end
   postwalk(g) do v
     vertex(graph(cvalue(v), cvalue.(inputs(v))...))

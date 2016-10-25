@@ -14,9 +14,7 @@ end
 function makegraph(graph, args)
   @assert length(args) == 1
   mapconst(graph) do x
-    x == args[1] ? ModelInput(1) :
-    @capture(x, self.p_) ? ModelInput(p) :
-      x
+    x == args[1] ? ModelInput(1) : x
   end
 end
 
@@ -74,7 +72,7 @@ function process_type(ex)
     (self::$T)($(args...),) = $(build_forward(body, args))
     back!(self::$T, Δ, $(args...)) = $(build_backward(body, args[1], pnames))
     update!(self::$T, η) = $(map(p -> :(update!(self.$p, η)), pnames)...)
-    graph(::$T) = $(Flow.constructor(makegraph(body, args)))
+    graph(self::$T) = $(Flow.constructor(makegraph(body, args)))
     nothing
   end |> esc
 end

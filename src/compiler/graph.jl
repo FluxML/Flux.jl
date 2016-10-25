@@ -1,11 +1,11 @@
 # TODO: change the input approach
 immutable ModelInput
-  name
+  n::Int
 end
 
-isinput(x) = isa(x, Constant) && isa(x.value, ModelInput) && isa(x.value.name, Integer)
+isinput(x) = isa(x, Constant) && isa(x.value, ModelInput)
 
-bumpinput(i::ModelInput) = isa(i.name, Integer) ? ModelInput(i.name + 1) : i
+bumpinput(i::ModelInput) = ModelInput(i.n + 1)
 bumpinput(x) = x
 
 bumpinputs(v::IVertex) = mapconst(bumpinput, v)
@@ -13,7 +13,7 @@ bumpinputs(v::IVertex) = mapconst(bumpinput, v)
 function spliceinputs(v::IVertex, inputs::IVertex...)
   postwalk(v) do v
     isinput(value(v)) ?
-      inputs[value(v).value.name] :
+      inputs[value(v).value.n] :
       v
   end
 end
