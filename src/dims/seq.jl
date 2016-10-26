@@ -1,4 +1,4 @@
-export seq, Seq
+export seq, Seq, BatchSeq
 
 immutable Seq{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
@@ -19,3 +19,5 @@ Media.render{T<:Seq}(i::Juno.Inline, b::Type{T}) =
            Juno.fade("[$(length(b))]")),
        Juno.trim(collect(b)))
 end
+
+typealias BatchSeq{T<:Seq} Batch{T}
