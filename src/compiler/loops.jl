@@ -6,11 +6,14 @@ end
 Delay(name) = Delay(name, nothing)
 
 function liftloops!(ex, params)
-  e = Flow.normedges(ex)
+  ex = Flow.normedges(ex)
   hidden = intersect((b.args[1] for b in ex.args), params)
   edges = Dict(h => gensym("edge") for h in hidden)
+  declared = Dict(h => false for h in hidden)
+  liftvar(s) = get(declared, s, false) ? s : get(edges, s, s)
   for b in ex.args
-    b.args[2] = MacroTools.postwalk(x -> get(edges, x, x), b.args[2])
+    b.args[2] = MacroTools.postwalk(liftvar, b.args[2])
+    declared[b.args[1]] = true
   end
   for (h, e) in edges
     unshift!(ex.args, :($e = $(Delay(h))($h)))
