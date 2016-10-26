@@ -1,3 +1,5 @@
+export unroll
+
 type Delay
   name::Symbol
   default::Nullable{Param}
