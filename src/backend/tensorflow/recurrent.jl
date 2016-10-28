@@ -1,4 +1,4 @@
-immutable RModel
+immutable SeqModel
   m::Model
 end
 
@@ -11,7 +11,7 @@ function tf(model::Flux.Unrolled)
   run(sess, initialize_all_variables())
   Model(model, sess, params,
         [input], [output],
-        [gradients(output, input)]) |> RModel
+        [gradients(output, input)]) |> SeqModel
 end
 
 function batchseq(xs)
@@ -22,6 +22,6 @@ function batchseq(xs)
   Batch{Seq{T,S},B}(xs)
 end
 
-(m::RModel)(x::BatchSeq) = batchseq(rawbatch(m.m(x)))
+(m::SeqModel)(x::BatchSeq) = batchseq(rawbatch(m.m(x)))
 
-(m::RModel)(x::Seq) = first(m(batchone(x)))
+(m::SeqModel)(x::Seq) = first(m(batchone(x)))
