@@ -1,10 +1,13 @@
-export AArray, onehot, onecold
+export AArray, onehot, onecold, chunks
 
 const AArray = AbstractArray
 
 onehot(T::Type, label, labels) = T[i == label for i in labels]
 onehot(label, labels) = onehot(Int, label, labels)
 onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
+
+chunks(r::UnitRange, step::Integer) = (step*(i-1)+1:step*i for i in 1:(r.stop÷step))
+chunks(xs, step) = (xs[i] for i in chunks(1:length(xs), step))
 
 initn(dims...) = randn(Float32, dims...)/1000
 
