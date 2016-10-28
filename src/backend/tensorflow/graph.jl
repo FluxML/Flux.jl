@@ -42,13 +42,18 @@ Flux.shape(op::Op, d...) = op.shape(d...)
 # TODO: detect variable reuse
 graph{T<:AArray}(p::Flux.Param{T}) = Variable(p.x)
 
-function graph(model::Model, args...)
-  g = Flux.graph(model)
-  g ≠ nothing || error("No graph for $model")
-  g = spliceinputs(g, map(constant, args)...) |> detuple
-  postwalk(g) do v
+function graph(v::IVertex, args...)
+  # TODO: check number of arguments
+  v = spliceinputs(v, map(constant, args)...) |> detuple
+  postwalk(v) do v
     vertex(graph(cvalue(v), cvalue.(inputs(v))...))
   end |> value
+end
+
+function graph(model::Flux.Model, args...)
+  g = Flux.graph(model)
+  g ≠ nothing || error("No graph for $model")
+  graph(g, args...)
 end
 
 TensorFlow.Tensor(m::Flux.Model, args...) = graph(m, args...)

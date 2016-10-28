@@ -1,23 +1,26 @@
 type Model
+  model
   session::Session
+  vars::Dict{Flux.Param,Tensor}
   inputs::Vector{Tensor}
-  graph::Tensor
-  grad::Tensor
+  outputs::Vector{Tensor}
+  gradients::Vector{Tensor}
 end
 
 function tf(model)
-  sess = Session(Graph())
+  sess = Session()
+  vars = Dict{Flux.Param,Tensor}()
   input = placeholder(Float32)
-  g = graph(model, input)
+  output = graph(model, input)
   run(sess, initialize_all_variables())
-  Model(sess, [input], g, gradients(g, input))
+  Model(model, sess, vars, [input], [output], [gradients(output, input)])
 end
 
 batch(x) = Batch((x,))
 
 function (m::Model)(args::Batch...)
   @assert length(args) == length(m.inputs)
-  run(m.session, m.graph, Dict(zip(m.inputs, args)))
+  run(m.session, m.outputs[1], Dict(zip(m.inputs, args)))
 end
 
 (m::Model)(args...) = m(map(batch, args)...)
@@ -25,7 +28,7 @@ end
 function Flux.back!(m::Model, Δ, args...)
   @assert length(args) == length(m.inputs)
   # TODO: keyword arguments to `gradients`
-  run(m.session, m.grad, Dict(zip(m.inputs, args)))
+  run(m.session, m.gradients[1], Dict(zip(m.inputs, args)))
 end
 
 function Flux.update!(m::Model)
@@ -39,12 +42,12 @@ function Flux.train!(m::Model, train, test=[]; epoch = 1, η = 0.1,
                      opt = TensorFlow.train.GradientDescentOptimizer(η))
   i = 0
   Y = placeholder(Float32)
-  Loss = loss(m.graph, Y)
+  Loss = loss(m.outputs[1], Y)
   minimize_op = TensorFlow.train.minimize(opt, Loss)
   for e in 1:epoch
     info("Epoch $e\n")
     @progress for (x, y) in train
-      y, cur_loss, _ = run(m.session, vcat(m.graph, Loss, minimize_op),
+      y, cur_loss, _ = run(m.session, vcat(m.outputs[1], Loss, minimize_op),
                            Dict(m.inputs[1]=>batch(x), Y=>batch(y)))
       if i % 5000 == 0
         @show y
