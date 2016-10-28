@@ -1,3 +1,4 @@
+import Base: @get!
 import Flow: Constant, postwalk, value, inputs, constant
 import TensorFlow: RawTensor
 
@@ -21,13 +22,13 @@ graph(r::Reshape, x) = reshape(x, pack([batchsize(x), map(Int32, r.dims)...]))
 
 graph(::Input, x) = x
 
-graph(c::Conv2D, x) =
-  nn.conv2d(x, graph(c.filter), [1,c.stride...,1], "VALID")
-
 graph(p::MaxPool, x) =
   nn.max_pool(x, [1, p.size..., 1], [1, p.stride..., 1], "VALID")
 
 graph(::Flow.Group, xs...) = (xs...,)
+
+graph(params::Associative, c::Conv2D, x) =
+  nn.conv2d(x, graph(params, c.filter), [1,c.stride...,1], "VALID")
 
 type Op
   f
@@ -40,22 +41,29 @@ graph(op::Op, xs...) = op.f(xs...)
 Flux.shape(op::Op, d...) = op.shape(d...)
 
 # TODO: detect variable reuse
-graph{T<:AArray}(p::Flux.Param{T}) = Variable(p.x)
+graph{T<:AArray}(params::Associative, p::Flux.Param{T}) =
+  @get!(params, p, Variable(p.x))
 
-function graph(v::IVertex, args...)
+function graph(params::Associative, v::IVertex, args...)
   # TODO: check number of arguments
   v = spliceinputs(v, map(constant, args)...) |> detuple
   postwalk(v) do v
-    vertex(graph(cvalue(v), cvalue.(inputs(v))...))
+    vertex(graph(params, cvalue(v), cvalue.(inputs(v))...))
   end |> value
 end
 
-function graph(model::Flux.Model, args...)
+function graph(params::Associative, model, args...)
   g = Flux.graph(model)
-  g ≠ nothing || error("No graph for $model")
-  graph(g, args...)
+  g == nothing && return graph(model, args...)
+  graph(params, g, args...)
 end
 
-TensorFlow.Tensor(m::Flux.Model, args...) = graph(m, args...)
+function tograph(model, args...)
+  params = Dict{Flux.Param,Tensor}()
+  g = graph(params, model, args...)
+  return params, g
+end
+
+TensorFlow.Tensor(m::Flux.Model, args...) = graph(Dict(), m, args...)
 
 RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))

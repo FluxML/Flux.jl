@@ -1,7 +1,7 @@
 type Model
   model
   session::Session
-  vars::Dict{Flux.Param,Tensor}
+  params::Dict{Flux.Param,Tensor}
   inputs::Vector{Tensor}
   outputs::Vector{Tensor}
   gradients::Vector{Tensor}
@@ -9,11 +9,12 @@ end
 
 function tf(model)
   sess = Session()
-  vars = Dict{Flux.Param,Tensor}()
   input = placeholder(Float32)
-  output = graph(model, input)
+  params, output = tograph(model, input)
   run(sess, initialize_all_variables())
-  Model(model, sess, vars, [input], [output], [gradients(output, input)])
+  Model(model, sess, params,
+        [input], [output],
+        [gradients(output, input)])
 end
 
 batch(x) = Batch((x,))
