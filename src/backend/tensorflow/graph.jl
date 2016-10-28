@@ -54,6 +54,7 @@ end
 function graph(params::Associative, model, args...)
   g = Flux.graph(model)
   g == nothing && return graph(model, args...)
+  Flow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
   graph(params, g, args...)
 end
 
