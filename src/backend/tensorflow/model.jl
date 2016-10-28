@@ -8,7 +8,7 @@ type Model
 end
 
 function tf(model)
-  sess = Session()
+  sess = Session(Graph())
   input = placeholder(Float32)
   params, output = tograph(model, input)
   run(sess, initialize_all_variables())
