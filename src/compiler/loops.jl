@@ -95,7 +95,7 @@ end
 
 Recurrent(in::Integer, hidden::Integer, out::Integer; init = initn) =
   Recurrent(initn((in, hidden)), initn((hidden, hidden)), initn((hidden, out)),
-            initn(hidden), initn(out), zeros(hidden))
+            initn(hidden), initn(out), zeros(Float32, hidden)')
 
 # syntax′(x) = syntax(Flow.dl(x), bindconst = true)
 
