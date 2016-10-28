@@ -40,7 +40,6 @@ Op(f) = Op(f, (d...) -> nothing)
 graph(op::Op, xs...) = op.f(xs...)
 Flux.shape(op::Op, d...) = op.shape(d...)
 
-# TODO: detect variable reuse
 graph{T<:AArray}(params::Associative, p::Flux.Param{T}) =
   @get!(params, p, Variable(p.x))
 
