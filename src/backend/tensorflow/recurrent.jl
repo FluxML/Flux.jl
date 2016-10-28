@@ -1,17 +1,25 @@
-immutable SeqModel
+# TODO: refactor, some of this is more general than just the TF backend
+
+type SeqModel
   m::Model
+  state::Any
 end
+
+cgroup(xs...) = Flow.group(map(constant, xs)...)
 
 function tf(model::Flux.Unrolled)
   sess = Session(Graph())
   input = placeholder(Float32)
+  instates = [placeholder(Float32) for _ in model.states]
   inputs = TensorFlow.unpack(input, num = model.steps, axis = 1)
-  params, (state, outputs) = tograph(model.graph, inputs...)
+  params, (outstates, outputs) = tograph(model.graph, cgroup(instates...), cgroup(inputs...))
   output = TensorFlow.pack(outputs, axis = 1)
   run(sess, initialize_all_variables())
-  Model(model, sess, params,
-        [input], [output],
-        [gradients(output, input)]) |> SeqModel
+  SeqModel(
+    Model(model, sess, params,
+          [instates..., input], [outstates..., output],
+          [gradients(output, input)]),
+    [])
 end
 
 function batchseq(xs)
@@ -22,6 +30,13 @@ function batchseq(xs)
   Batch{Seq{T,S},B}(xs)
 end
 
-(m::SeqModel)(x::BatchSeq) = batchseq(rawbatch(m.m(x)))
+function (m::SeqModel)(x::BatchSeq)
+  if isempty(m.state) || length(first(m.state)) ≠ length(x)
+    m.state = map(batchone, m.m.model.states)
+  end
+  output = m.m(m.state..., x)
+  m.state, output = output[1:end-1], output[end]
+  return batchseq(rawbatch(output))
+end
 
 (m::SeqModel)(x::Seq) = first(m(batchone(x)))

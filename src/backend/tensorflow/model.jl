@@ -1,9 +1,9 @@
 type Model
-  model
+  model::Any
   session::Session
   params::Dict{Flux.Param,Tensor}
   inputs::Vector{Tensor}
-  output
+  output::Any
   gradients::Vector{Tensor}
 end
 

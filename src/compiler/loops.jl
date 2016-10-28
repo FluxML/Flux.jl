@@ -63,25 +63,26 @@ end
 
 function unrollgraph(model, n)
   graph, defaults = break!(atomise(model))
-  outputs = [spliceinputs(graph, group(map(constant, defaults)...), inputnode(1))]
-  detuple(outputs[end])
+  outputs = [spliceinputs(graph, group([constant(splitnode(inputnode(1),i)) for i = 1:length(defaults)]...),
+                                 splitnode(inputnode(2), 1))]
   for i = 2:n
-    push!(outputs, spliceinputs(graph, outputs[end][1], inputnode(i)))
+    push!(outputs, spliceinputs(graph, outputs[end][1], splitnode(inputnode(2), i)))
   end
   state = outputs[end][1]
   outputs = map(x -> x[2], outputs)
-  @> group(state, group(outputs...)) detuple
+  (@> group(state, group(outputs...)) detuple), map(x->x.x, defaults)
 end
 
 type Unrolled <: Model
   model
   graph::IVertex{Any}
+  states::Vector{Any}
   steps::Int
 end
 
 graph(u::Unrolled) = u.graph
 
-unroll(model, n) = Unrolled(model, unrollgraph(model, n), n)
+unroll(model, n) = Unrolled(model, unrollgraph(model, n)..., n)
 
 @net type Recurrent
   Wxh; Whh; Why
@@ -95,9 +96,9 @@ end
 
 Recurrent(in::Integer, hidden::Integer, out::Integer; init = initn) =
   Recurrent(initn((in, hidden)), initn((hidden, hidden)), initn((hidden, out)),
-            initn(hidden), initn(out), zeros(Float32, hidden)')
+            initn(hidden), initn(out), zeros(Float32, hidden))
 
 # syntax′(x) = syntax(Flow.dl(x), bindconst = true)
 
-# r = Recurrent(10, 30, 20)
-# unrollgraph(r,5) |> cse |> syntax′ |> prettify |> display
+# r = Chain(Recurrent(10, 30, 20), Recurrent(20, 40, 10))
+# unrollgraph(r,5)[1] |> syntax′ |> prettify |> clipboard

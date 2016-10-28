@@ -7,5 +7,6 @@ export tf
 
 include("graph.jl")
 include("model.jl")
+include("recurrent.jl")
 
 end

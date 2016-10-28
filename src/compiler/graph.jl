@@ -1,6 +1,8 @@
 immutable ModelInput end
 
-inputnode(n) = vertex(Split(n), constant(ModelInput()))
+splitnode(v, n) = vertex(Split(n), v)
+
+inputnode(n) = splitnode(constant(ModelInput()), n)
 
 function bumpinputs(v::IVertex)
   prewalk(v) do v
