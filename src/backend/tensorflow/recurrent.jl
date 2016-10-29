@@ -44,7 +44,6 @@ end
 function Flux.train!(m::SeqModel, train; epoch = 1, η = 0.1,
                      loss = (y, y′) -> reduce_sum((y - y′).^2)/2,
                      opt = TensorFlow.train.GradientDescentOptimizer(η))
-  i = 0
   Y = placeholder(Float32)
   Loss = loss(m.m.output[end], Y)
   minimize_op = TensorFlow.train.minimize(opt, Loss)
@@ -52,12 +51,8 @@ function Flux.train!(m::SeqModel, train; epoch = 1, η = 0.1,
     info("Epoch $e\n")
     @progress for (x, y) in train
       y, cur_loss, _ = run(m.m.session, vcat(m.m.output[end], Loss, minimize_op),
-                           merge(Dict(m.m.inputs[end]=>batchone(x), Y=>batchone(y)),
+                           merge(Dict(m.m.inputs[end]=>x, Y=>y),
                                  Dict(zip(m.m.inputs[1:end-1], m.state))))
-      if i % 5000 == 0
-        @show y
-      end
-      i += 1
     end
   end
 end

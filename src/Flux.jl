@@ -10,6 +10,7 @@ import Juno: Tree, Row
 
 include("model.jl")
 include("utils.jl")
+include("data.jl")
 
 include("compiler/graph.jl")
 include("compiler/diff.jl")

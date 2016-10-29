@@ -61,6 +61,8 @@ function build_backward(body, x, params = [])
   syntax(cse(back))
 end
 
+import Lazy: groupby
+
 function process_type(ex)
   @capture(ex, type T_ fs__ end)
   @destruct [params = false || [],
