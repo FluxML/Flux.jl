@@ -20,6 +20,7 @@ function tf(model)
 end
 
 batchone(x) = Batch((x,))
+batchone(x::Batch) = x
 
 function batch(xs)
   dims = ndims(xs)-1
