@@ -76,7 +76,7 @@ end
 type Unrolled <: Model
   model
   graph::IVertex{Any}
-  states::Vector{Any}
+  state::Vector{Any}
   steps::Int
 end
 
