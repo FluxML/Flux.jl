@@ -9,6 +9,8 @@ import Iterators: partition
 
 export partition
 
+Base.length(l::Iterators.Partition) = length(l.xs) ÷ l.step
+
 _partition(r::UnitRange, step::Integer) = (step*(i-1)+1:step*i for i in 1:(r.stop÷step))
 _partition(xs, step) = (xs[i] for i in _partition(1:length(xs), step))
 
