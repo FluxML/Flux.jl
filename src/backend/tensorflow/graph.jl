@@ -9,6 +9,7 @@ cvalue(v::Vertex) = cvalue(value(v))
 graph(x::Tensor) = x
 
 graph(::typeof(*), args...) = *(args...)
+graph(::typeof(.*), args...) = .*(args...)
 graph(::typeof(+), args...) = +(args...)
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
