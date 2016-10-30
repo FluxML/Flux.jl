@@ -18,7 +18,7 @@ function tf(model::Flux.Unrolled)
   SeqModel(
     Model(model, sess, params,
           [instates..., input], [outstates..., output],
-          [gradients(output, input)]),
+          [placeholder(Float32)]),
     batchone.(model.state))
 end
 
