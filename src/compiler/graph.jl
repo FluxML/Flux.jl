@@ -1,3 +1,5 @@
+# TODO: most (all?) of this could be in Flow
+
 immutable ModelInput end
 
 splitnode(v, n) = vertex(Split(n), v)
