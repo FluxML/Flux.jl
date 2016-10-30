@@ -2,7 +2,7 @@ export AArray
 
 const AArray = AbstractArray
 
-initn(dims...) = randn(Float32, dims...)/1000
+initn(dims...) = randn(Float32, dims...)/10
 
 function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
     i = 0
