@@ -68,3 +68,11 @@ end
 TensorFlow.Tensor(m::Flux.Model, args...) = graph(Dict(), m, args...)
 
 RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))
+
+function makesession(model, n)
+  sess = Session(Graph())
+  inputs = [placeholder(Float32) for _ = 1:n]
+  params, output = tograph(model, inputs...)
+  run(sess, initialize_all_variables())
+  sess, params, inputs, output
+end
