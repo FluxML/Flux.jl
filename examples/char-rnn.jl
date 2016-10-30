@@ -1,4 +1,5 @@
 using Flux
+import StatsBase: wsample
 
 getseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), 50)
 getbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, 50))...)
@@ -17,9 +18,7 @@ model = Chain(
 
 m = tf(unroll(model, 50))
 
-# Flux.train!(m, take(Xs,100), take(Ys,100),
-#             η = 0.1, epoch = 1)
-Flux.train!(m, Xs, Ys, η = 0.2e-3, epoch = 1)
+Flux.train!(m, Xs, Ys, η = 0.01, epoch = 1)
 
 string(map(c -> onecold(c, alphabet), m(first(first(Xs))))...)
 
@@ -27,7 +26,7 @@ function sample(model, n)
   s = [rand(alphabet)]
   m = tf(unroll(model, 1))
   for i = 1:n
-    push!(s, onecold(m(Seq((onehot(Float32, 'b', alphabet),)))[1], alphabet))
+    push!(s, wsample(alphabet, m(Seq((onehot(Float32, s[end], alphabet),)))[1]))
   end
   return string(s...)
 end
