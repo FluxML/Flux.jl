@@ -76,3 +76,9 @@ function makesession(model, n)
   run(sess, initialize_all_variables())
   sess, params, inputs, output
 end
+
+function storeparams!(sess, params)
+  for (p, t) in params
+    p.x = run(sess, t)
+  end
+end
