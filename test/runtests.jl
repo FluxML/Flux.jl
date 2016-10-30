@@ -6,5 +6,5 @@ include("../examples/MNIST.jl")
 end
 
 module MNISTConv
-include("../examples/mnist-conv.jl")
+include("../examples/integration.jl")
 end
