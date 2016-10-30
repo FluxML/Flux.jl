@@ -46,20 +46,25 @@ end
 
 (m::SeqModel)(x::Seq) = first(m(batchone(x)))
 
-function Flux.train!(m::SeqModel, train; epoch = 1, η = 0.1,
-                     loss = (y, y′) -> reduce_sum((y - y′).^2)/2,
+function Flux.train!(m::SeqModel, Xs, Ys; epoch = 1, η = 0.1,
+                     loss = (y, ŷ) -> -reduce_sum(y .* log2(ŷ)),
                      opt = TensorFlow.train.GradientDescentOptimizer(η))
+  batchlen, seqlen = length(first(Xs)), length(first(Xs)[1])
   state = batchone.(m.m.model.state)
   Y = placeholder(Float32)
-  Loss = loss(m.m.output[end], Y)
+  Loss = loss(Y, m.m.output[end])/batchlen/seqlen
   minimize_op = TensorFlow.train.minimize(opt, Loss)
   for e in 1:epoch
     info("Epoch $e\n")
-    @progress for (x, y) in train
+    @progress for (i, (x, y)) in enumerate(zip(Xs,Ys))
       out = run(m.m.session, vcat(m.m.output..., Loss, minimize_op),
                 merge(Dict(m.m.inputs[end]=>batchone(x), Y=>batchone(y)),
                       Dict(zip(m.m.inputs[1:end-1], state))))
       state = out[1:length(state)]
+      loss = out[end-1]
+      isnan(loss) && error("Loss is NaN")
+      isinf(loss) && error("Loss is Inf")
+      (i-1) % 10 == 0 && @show loss
     end
   end
 end
