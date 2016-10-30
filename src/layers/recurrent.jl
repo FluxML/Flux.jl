@@ -1,3 +1,5 @@
+export Recurrent
+
 @net type Recurrent
   Wxh; Whh; Why
   bh; by

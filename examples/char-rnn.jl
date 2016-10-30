@@ -10,7 +10,7 @@ train = zip(getbatches(input, alphabet), getbatches(input[2:end], alphabet))
 
 model = Chain(
   Input(length(alphabet)),
-  Flux.Recurrent(length(alphabet), 128, length(alphabet)),
+  Recurrent(length(alphabet), 128, length(alphabet)),
   softmax)
 
 m = tf(unroll(model, 50))
