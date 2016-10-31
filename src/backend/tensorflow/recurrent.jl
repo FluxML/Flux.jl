@@ -5,7 +5,7 @@ type SeqModel
   state::Any
 end
 
-cgroup(xs...) = Flow.group(map(constant, xs)...)
+cgroup(xs...) = DataFlow.group(map(constant, xs)...)
 
 function makesession(model::Flux.Unrolled)
   sess = Session(Graph())

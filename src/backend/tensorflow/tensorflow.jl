@@ -1,6 +1,6 @@
 module TF
 
-using ..Flux, Flow, TensorFlow, Juno
+using ..Flux, DataFlow, TensorFlow, Juno
 import Flux: accuracy, spliceinputs, detuple
 
 export tf

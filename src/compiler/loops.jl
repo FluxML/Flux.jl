@@ -8,7 +8,7 @@ end
 Delay(name) = Delay(name, nothing)
 
 function liftloops!(ex, params)
-  ex = Flow.normedges(ex)
+  ex = DataFlow.normedges(ex)
   hidden = intersect((b.args[1] for b in ex.args), params)
   edges = Dict(h => gensym("edge") for h in hidden)
   declared = Dict(h => false for h in hidden)

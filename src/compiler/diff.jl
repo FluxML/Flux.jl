@@ -8,7 +8,7 @@ symbolic[:+] = (Δ, args...) -> map(_->Δ, args)
 function ∇v(v::Vertex, Δ)
   haskey(symbolic, value(v)) && return symbolic[value(v)](Δ, inputs(v)...)
   Δ = vertex(:back!, constant(value(v)), constant(Δ), inputs(v)...)
-  map(i -> @flow(getindex($Δ, $i)), 1:Flow.nin(v))
+  map(i -> @flow(getindex($Δ, $i)), 1:DataFlow.nin(v))
 end
 
 function invert(v::IVertex, Δ = :Δ, out = d())

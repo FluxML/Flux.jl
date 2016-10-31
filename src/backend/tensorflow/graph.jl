@@ -1,5 +1,5 @@
 import Base: @get!
-import Flow: Constant, postwalk, value, inputs, constant
+import DataFlow: Constant, postwalk, value, inputs, constant
 import TensorFlow: RawTensor
 
 cvalue(x) = x
@@ -26,7 +26,7 @@ graph(::Input, x) = x
 graph(p::MaxPool, x) =
   nn.max_pool(x, [1, p.size..., 1], [1, p.stride..., 1], "VALID")
 
-graph(::Flow.Group, xs...) = (xs...,)
+graph(::DataFlow.Group, xs...) = (xs...,)
 
 graph(params::Associative, c::Conv2D, x) =
   nn.conv2d(x, graph(params, c.filter), [1,c.stride...,1], "VALID")
@@ -55,7 +55,7 @@ end
 function graph(params::Associative, model, args...)
   g = Flux.graph(model)
   g == nothing && return graph(model, args...)
-  Flow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
+  DataFlow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
   graph(params, g, args...)
 end
 

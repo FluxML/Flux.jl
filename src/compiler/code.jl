@@ -1,12 +1,12 @@
 # TODO: proper escaping
 
-import Flow: mapconst, cse
+import DataFlow: mapconst, cse
 
 export @net
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
-  body = @> body MacroTools.flatten liftloops!(params) graphm Flow.il
+  body = @> body MacroTools.flatten liftloops!(params) graphm DataFlow.il
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
   return args, body
 end
@@ -48,7 +48,7 @@ end
 function build_backward(body, x, params = [])
   iscyclic(body) && return :(error("Can't run backward pass on a cyclic graph"))
   Δs = invert(body)
-  back = IVertex{Any}(Flow.Do())
+  back = IVertex{Any}(DataFlow.Do())
   for param in params
     haskey(Δs, :(self.$param)) || continue
     ex = Δs[:(self.$param)]
@@ -76,7 +76,7 @@ function process_type(ex)
     (self::$T)($(args...),) = $(build_forward(body, args))
     back!(self::$T, Δ, $(args...)) = $(build_backward(body, args[1], pnames))
     update!(self::$T, η) = $(map(p -> :(update!(self.$p, η)), pnames)...)
-    graph(self::$T) = $(Flow.constructor(makegraph(body, args)))
+    graph(self::$T) = $(DataFlow.constructor(makegraph(body, args)))
     nothing
   end |> esc
 end
@@ -84,7 +84,7 @@ end
 function process_anon(ex)
   args, body = process_func(ex)
   @assert length(args) == 1
-  :(Flux.Capacitor($(Flow.constructor(makegraph(body, args))))) |> esc
+  :(Flux.Capacitor($(DataFlow.constructor(makegraph(body, args))))) |> esc
 end
 
 macro net(ex)
