@@ -12,7 +12,8 @@ Xs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)
 
 model = Chain(
   Input(N),
-  Recurrent(N, 128),
+  LSTM(N, 128),
+  LSTM(128, 128),
   Dense(128, N),
   softmax)
 
