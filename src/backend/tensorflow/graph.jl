@@ -2,14 +2,18 @@ import Base: @get!
 import DataFlow: Constant, postwalk, value, inputs, constant
 import TensorFlow: RawTensor
 
+# TODO: implement Julia's type promotion rules
+
 cvalue(x) = x
 cvalue(c::Constant) = c.value
 cvalue(v::Vertex) = cvalue(value(v))
 
 graph(x::Tensor) = x
+graph(x::Number) = TensorFlow.constant(Float32(x))
 
 graph(::typeof(*), args...) = *(args...)
 graph(::typeof(.*), args...) = .*(args...)
+graph(::typeof(.-), args...) = -(args...)
 graph(::typeof(+), args...) = +(args...)
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)

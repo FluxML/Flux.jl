@@ -1,4 +1,4 @@
-export Recurrent, LSTM
+export Recurrent, GatedRecurrent, LSTM
 
 @net type Recurrent
   Wxy; Wyy; by
@@ -10,6 +10,23 @@ end
 
 Recurrent(in, out; init = initn) =
   Recurrent(init((in, out)), init((out, out)), init(out), init(out))
+
+@net type GatedRecurrent
+  Wxr; Wyr; br
+  Wxu; Wyu; bu
+  Wxh; Wyh; bh
+  y
+  function (x)
+    reset  = σ( x * Wxr + y * Wyr + br )
+    update = σ( x * Wxu + y * Wyu + bu )
+    y′ = tanh( x * Wxh + (reset .* y) * Wyh + bh )
+    y = (1 .- update) .* y′ + update .* y
+  end
+end
+
+GatedRecurrent(in, out; init = initn) =
+  GatedRecurrent(vcat([[init((in, out)), init((out, out)), init(out)] for _ = 1:3]...)...,
+       zeros(Float32, out))
 
 @net type LSTM
   Wxf; Wyf; bf
@@ -32,20 +49,3 @@ end
 LSTM(in, out; init = initn) =
   LSTM(vcat([[init((in, out)), init((out, out)), init(out)] for _ = 1:4]...)...,
        zeros(Float32, out), zeros(Float32, out))
-
-@net type GatedRecurrent
-  Wxr; Wyr; br
-  Wxu; Wyu; bu
-  Wxh; Wyh; bh
-  state
-  function (x)
-    reset  = σ( x * Wxr + y * Wyr + br )
-    update = σ( x * Wxu + y * Wyu + bu )
-    state′ = tanh( x * Wxh + (reset .* y) * Wyh + bh )
-    state = (1 .- update) .* state′ + update .* y
-  end
-end
-
-GatedRecurrent(in, out; init = initn) =
-  GatedRecurrent(vcat([[init((in, out)), init((out, out)), init(out)] for _ = 1:3]...)...,
-       zeros(Float32, out))
