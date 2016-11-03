@@ -2,8 +2,8 @@ using Flux
 
 # Traditional Approach
 
-# 1000 samples of sequences of 100 28×28 3-colour images
-rand(100, 10, 28, 28, 3)
+# 100 samples of sequences of 15 28×28 3-colour images
+rand(100, 15, 28, 28, 3)
 
 # Basic Batching
 
