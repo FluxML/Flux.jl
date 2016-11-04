@@ -55,9 +55,9 @@ function Flux.train!(m::SeqModel, Xs, Ys; epoch = 1, η = 0.1,
   Y = placeholder(Float32)
   Loss = loss(Y, output)/batchlen/seqlen
   minimize_op = TensorFlow.train.minimize(opt(), Loss)
-  for e in 1:epoch
+  @progress "training" for e in 1:epoch
     info("Epoch $e\n")
-    @progress for (i, (x, y)) in enumerate(zip(Xs,Ys))
+    @progress "epoch" for (i, (x, y)) in enumerate(zip(Xs,Ys))
       out = run(sess, vcat(outstates..., output, Loss, minimize_op),
                 merge(Dict(input=>batchone(x), Y=>batchone(y)),
                       Dict(zip(instates, state))))
