@@ -6,7 +6,7 @@ export @net
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
-  body = @> body MacroTools.flatten liftloops!(params) graphm DataFlow.il
+  body = @> body MacroTools.flatten liftloops(params) graphm DataFlow.il
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
   return args, body
 end
@@ -15,7 +15,7 @@ function makegraph(graph, args)
   @assert length(args) == 1
   mapconst(graph) do x
     x == args[1] ? inputnode(1) :
-    isa(x, Delay) ? :(Delay($(Expr(:quote, x.name)), self.$(x.name))) :
+    isa(x, Offset) ? :(Offset($(Expr(:quote, x.name)), $(x.n), self.$(x.name))) :
     x
   end
 end
