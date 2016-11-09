@@ -2,8 +2,9 @@ module Flux
 
 using MacroTools, Lazy, DataFlow, Juno
 import DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
-  iscyclic, Constant, constant, isconstant, Group, group, value, inputs,
-  thread!, value, inputs, Split
+  iscyclic, Constant, constant, isconstant, Group, group, Split, splitnode,
+  detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
+  spliceinputs, bumpinputs
 import Juno: Tree, Row
 
 # Zero Flux Given
@@ -12,7 +13,6 @@ include("model.jl")
 include("utils.jl")
 include("data.jl")
 
-include("compiler/graph.jl")
 include("compiler/diff.jl")
 include("compiler/code.jl")
 include("compiler/loops.jl")
