@@ -6,7 +6,7 @@ export @net
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
-  body = @> body MacroTools.flatten liftloops(params) graphm DataFlow.il
+  body = @> body MacroTools.flatten block liftloops(params) graphm DataFlow.il
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
   return args, body
 end
