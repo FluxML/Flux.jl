@@ -1,11 +1,11 @@
 module Flux
 
 using MacroTools, Lazy, DataFlow, Juno
-import DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
+using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   iscyclic, Constant, constant, isconstant, Group, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
   spliceinputs, bumpinputs
-import Juno: Tree, Row
+using Juno: Tree, Row
 
 # Zero Flux Given
 
