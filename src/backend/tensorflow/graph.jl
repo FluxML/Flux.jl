@@ -35,13 +35,6 @@ graph(::DataFlow.Group, xs...) = (xs...,)
 graph(params::Associative, c::Conv2D, x) =
   nn.conv2d(x, graph(params, c.filter), [1,c.stride...,1], "VALID")
 
-type Op
-  f
-  shape
-end
-
-Op(f) = Op(f, (d...) -> nothing)
-
 graph(op::Op, xs...) = op.f(xs...)
 Flux.shape(op::Op, d...) = op.shape(d...)
 
