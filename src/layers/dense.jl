@@ -11,9 +11,6 @@ end
 Dense(in::Integer, out::Integer; init = initn) =
   Dense(init(in, out), init(1, out))
 
-Base.show(io::IO, d::Dense) =
-  print(io, "Dense($(size(d.W.x,1)),$(size(d.W.x,2)))")
-
 @net type Sigmoid
   layer::Model
   x -> σ(layer(x))

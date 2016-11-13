@@ -36,10 +36,6 @@ accumulate!(x, Δ) = x
 
 @forward Param.x Base.size
 
-function Base.show(io::IO, p::Param)
-  print(io, "Param", size(p.x))
-end
-
 # Anonymous models
 
 export Capacitor
@@ -51,5 +47,3 @@ end
 # TODO: Julia implementation that interprets the graph
 
 graph(cap::Capacitor) = cap.graph
-
-Base.show(io::IO, ::Capacitor) = print(io, "Flux.Capacitor(...)")
