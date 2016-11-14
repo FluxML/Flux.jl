@@ -1,15 +1,15 @@
-export Dense
+export Affine
 
 # TODO: type hints for parameters
 
-@net type Dense
+@net type Affine
   W
   b
   x -> x*W + b
 end
 
-Dense(in::Integer, out::Integer; init = initn) =
-  Dense(init(in, out), init(1, out))
+Affine(in::Integer, out::Integer; init = initn) =
+  Affine(init(in, out), init(1, out))
 
 @net type Sigmoid
   layer::Model
@@ -17,4 +17,4 @@ Dense(in::Integer, out::Integer; init = initn) =
 end
 
 Sigmoid(in::Integer, out::Integer; init = randn) =
-  Sigmoid(Dense(in, out, init = init))
+  Sigmoid(Affine(in, out, init = init))

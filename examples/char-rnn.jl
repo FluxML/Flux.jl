@@ -14,7 +14,7 @@ model = Chain(
   Input(N),
   LSTM(N, 256),
   LSTM(256, 256),
-  Dense(256, N),
+  Affine(256, N),
   softmax)
 
 m = tf(unroll(model, 50));

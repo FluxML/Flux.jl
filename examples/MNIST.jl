@@ -6,9 +6,9 @@ test = data[50_001:60_000]
 
 m = Chain(
   Input(784),
-  Dense(128), relu,
-  Dense( 64), relu,
-  Dense( 10), softmax)
+  Affine(128), relu,
+  Affine( 64), relu,
+  Affine( 10), softmax)
 
 # Convert to TensorFlow
 model = tf(m)

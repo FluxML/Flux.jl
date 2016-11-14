@@ -54,8 +54,8 @@ end
 
 hiddeninput(n) = vertex(Split(n), inputnode(1))
 
-function create_steps(v::IVertex, n)
-  [bumpinputs(spliceinputs(v, hiddeninput(i))) for i = 1:n]
+function create_steps(v::IVertex, n; seq = true)
+  [bumpinputs(seq ? spliceinputs(v, hiddeninput(i)) : v) for i = 1:n]
 end
 
 function getvar(n, step, steps, offset, default)
@@ -78,10 +78,10 @@ function stateout(steps, offset, default)
   group(outs...), defaults
 end
 
-function unrollgraph(v::IVertex, n)
+function unrollgraph(v::IVertex, n; seq = true)
   state, offset, default = collect_state(v)
   v = group(group(state...), v)
-  steps = create_steps(v, n)
+  steps = create_steps(v, n, seq = seq)
   for i = 1:n
     vars = inputs(steps[i][1])
     postwalk!(steps[i]) do v
@@ -94,7 +94,7 @@ function unrollgraph(v::IVertex, n)
   group(state,group(map(x->x[2], steps)...)), map(Flux.state, defaults)
 end
 
-unrollgraph(m, n) = unrollgraph(atomise(m), n)
+unrollgraph(m, n; seq = true) = unrollgraph(atomise(m), n; seq = seq)
 
 type Unrolled <: Model
   model
@@ -105,6 +105,6 @@ end
 
 graph(u::Unrolled) = u.graph
 
-unroll(model, n) = Unrolled(model, unrollgraph(model, n)..., n)
+unroll(model, n; seq = true) = Unrolled(model, unrollgraph(model, n; seq = seq)..., n)
 
 flip(model) = Capacitor(map(x -> isa(x, Offset) ? -x : x, atomise(model)))

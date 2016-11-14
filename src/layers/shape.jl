@@ -42,6 +42,6 @@ shape(i::Input, _) = i.dims
 
 # Implementation for bundled layers
 
-shape(d::Dense, _) = length(state(d.b)) # TODO: could perhaps infer this
+shape(d::Affine, _) = length(state(d.b)) # TODO: could perhaps infer this
 
-Dense(out::Integer) = Init(in::Integer -> Dense(in, out))
+Affine(out::Integer) = Init(in::Integer -> Affine(in, out))

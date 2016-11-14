@@ -28,8 +28,8 @@ conv2 = Chain(
 
 lenet = Chain(
   conv1, conv2, flatten,
-  Dense(500), tanh,
-  Dense(10), softmax)
+  Affine(500), tanh,
+  Affine(10), softmax)
 
 #--------------------------------------------------------------------------------
 

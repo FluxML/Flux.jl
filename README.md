@@ -19,9 +19,9 @@ We can describe simple models through a convenient interface:
 ```julia
 m = Chain(
   Input(784),
-  Dense(128), relu,
-  Dense( 64), relu,
-  Dense( 10), softmax)
+  Affine(128), relu,
+  Affine( 64), relu,
+  Affine( 10), softmax)
 ```
 
 Models are simple functions with state, so we can immediately see what the network does:
@@ -30,7 +30,7 @@ Models are simple functions with state, so we can immediately see what the netwo
 m(randn(784)) #> [0.101, 0.101, 0.099, 0.100, ...]
 ```
 
-What if we need a custom layer? Here's one equivalent to `Dense` above:
+What if we need a custom layer? Here's one equivalent to `Affine` above:
 
 ```julia
 # Simple Julia type with two fields – @net defines some extra methods like the
@@ -55,10 +55,10 @@ We can already insert this model into combining models like `Chain`. If you want
   x -> σ(layer(x))
 end
 
-Perceptron(in, out) = Perceptron(Dense(in, out))
+Perceptron(in, out) = Perceptron(Affine(in, out))
 ```
 
-This defines a simple perceptron layer which we can use in the same way as `Dense` above. We can draw arbitrary graphs, including those with splits, combines or recurrences, in a fully declarative way *[this API is a WIP]*:
+This defines a simple perceptron layer which we can use in the same way as `Affine` above. We can draw arbitrary graphs, including those with splits, combines or recurrences, in a fully declarative way *[this API is a WIP]*:
 
 ```julia
 @net type SimpleRecurrent
@@ -82,7 +82,7 @@ end
 end
 ```
 
-Though further from the equations, this has the advantage of further reuse and customizability. For example, `layer` could be a simple `Dense(x, y)` as before or it could be a `Dropout(Dense(x, y))` in order to add dropout to the recurrent layer.
+Though further from the equations, this has the advantage of further reuse and customizability. For example, `layer` could be a simple `Affine(x, y)` as before or it could be a `Dropout(Affine(x, y))` in order to add dropout to the recurrent layer.
 
 When it comes time to train the model, we have a number of options for tweaking its implementation, like the backend used or unrolling settings. In Flux this is as simple as calling some functions on the original model:
 
