@@ -74,6 +74,6 @@ end
 macro ml(ex)
   @capture(shortdef(ex), ((xs__,) -> body_ ) | (f_(xs__,) = body_)) ||
     error("@ml requires a function definition")
-  ex = process_anon(:($(xs...) -> $body))
-  f == nothing ? :($(esc(f)) = $ex) : ex
+  ex = process_anon(:($(xs...,) -> $body))
+  f == nothing ? ex : :($(esc(f)) = $ex)
 end
