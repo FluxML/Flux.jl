@@ -36,6 +36,10 @@ accumulate!(x, Δ) = x
 
 @forward Param.x Base.size
 
+function Base.show(io::IO, p::Param)
+  print(io, "Param", size(p.x))
+end
+
 # Anonymous models
 
 export Capacitor
