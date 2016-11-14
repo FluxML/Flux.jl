@@ -2,7 +2,7 @@
 
 import DataFlow: mapconst, cse
 
-export @net
+export @net, @ml
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
@@ -55,14 +55,21 @@ function process_type(ex)
   end |> esc
 end
 
+macro net(ex)
+  isexpr(ex, :type) ? process_type(ex) :
+  isexpr(ex, :->, :function) ? error("@net functions not implemented") :
+  error("Unsupported model expression $ex")
+end
+
 function process_anon(ex)
   args, body = process_func(ex)
   @assert length(args) == 1
-  :(Flux.Capacitor($(DataFlow.constructor(makegraph(body, args))))) |> esc
+  :(Flux.Capacitor($(DataFlow.constructor(makegraph(body, args)))))
 end
 
-macro net(ex)
-  isexpr(ex, :type) ? process_type(ex) :
-  isexpr(ex, :->, :function) ? process_anon(ex) :
-  error("Unsupported model expression $ex")
+macro ml(ex)
+  @capture(shortdef(ex), ((xs__,) -> body_ ) | (f_(xs__,) = body_)) ||
+    error("@ml requires a function definition")
+  ex = process_anon(:($(xs...) -> $body))
+  (f == nothing ? :($f = $ex) : ex) |> esc
 end
