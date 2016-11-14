@@ -8,6 +8,8 @@ end
 
 Offset(name, n) = Offset(name, n, nothing)
 
+Base.:-(o::Offset) = Offset(o.name, -o.n, o.default)
+
 function liftloops(ex, params)
   ex = DataFlow.normedges(ex)
   MacroTools.postwalk(ex) do ex
@@ -104,3 +106,5 @@ end
 graph(u::Unrolled) = u.graph
 
 unroll(model, n) = Unrolled(model, unrollgraph(model, n)..., n)
+
+flip(model) = Capacitor(map(x -> isa(x, Offset) ? -x : x, atomise(model)))
