@@ -10,12 +10,18 @@ Offset(name, n) = Offset(name, n, nothing)
 
 Base.:-(o::Offset) = Offset(o.name, -o.n, o.default)
 
-function liftloops(ex, params)
+function liftloops(ex)
   ex = DataFlow.normedges(ex)
-  MacroTools.postwalk(ex) do ex
+  decls = Dict()
+  ex = MacroTools.postwalk(ex) do ex
     @capture(ex, x_{n_}) || return ex
-    :($(Offset(x,n))($x))
+    haskey(decls, (x,n)) && return namify(decls[(x,n)])
+    @gensym edge
+    decls[(x,n)] = :($edge = $(Offset(x,n))($x))
+    edge
   end
+  prepend!(ex.args, collect(values(decls)))
+  ex
 end
 
 function hasloops(model)
