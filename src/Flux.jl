@@ -2,7 +2,7 @@ module Flux
 
 using MacroTools, Lazy, DataFlow, Juno
 using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
-  iscyclic, Constant, constant, isconstant, Group, group, Split, splitnode,
+  iscyclic, Constant, constant, isconstant, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
   spliceinputs, bumpinputs
 using Juno: Tree, Row

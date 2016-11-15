@@ -1,21 +1,23 @@
 using Base: @get!
-using DataFlow: Constant, constant, Context, interpret, interptuple
+using DataFlow: Constant, constant, Context, interpret, Split
 using TensorFlow: RawTensor
 
 # TODO: implement Julia's type promotion rules
 
-node(x::Tensor) = x
 node(x::Tuple) = map(node, x)
+node(x::Tensor) = x
 node(x::Number) = TensorFlow.constant(Float32(x))
 
-graph(::typeof(*), args...) = *(args...)
-graph(::typeof(.*), args...) = .*(args...)
-graph(::typeof(.-), args...) = -(args...)
-graph(::typeof(+), args...) = +(args...)
+graph(::typeof(tuple), args...) = (args...,)
+graph(s::Split, t::Tuple) = t[s.n]
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
-graph(::typeof(tanh), x) = tanh(x)
 graph(::typeof(σ), x) = nn.sigmoid(x)
+graph(::typeof(.+), args...) = +(args...)
+
+for op in (tanh, *, .*, +, -, .-)
+  @eval graph(::typeof($op), args...) = $op(args...)
+end
 
 # reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79
 batchsize(x::Tensor) = reduce_sum(slice(TensorFlow.shape(x), [0], [1]))
@@ -47,7 +49,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...)
-  ctx = Context(interptuple(interp), params = ObjectIdDict())
+  ctx = Context(interp, params = ObjectIdDict())
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], out
 end
