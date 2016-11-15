@@ -52,7 +52,7 @@ function process_type(ex)
   @assert length(args) == 1
   quote
     $(build_type(T, params))
-    (self::$(esc(T)))($(args...),) = interpret(reifyparams(graph(self)), $(args...))
+    $(esc(:(self::$T)))($(args...),) = interpret(reifyparams(graph(self)), $(args...))
     $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!(self.$p, η)), pnames)...);)
     $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(mapconst(esc, makegraph(body, args))))
     nothing
