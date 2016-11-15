@@ -26,10 +26,14 @@ function batch(xs)
   Batch{T,B}(xs)
 end
 
-function (m::Model)(args::Batch...)
+function runmodel(m, args...)
   @assert length(args) == length(m.inputs)
   output = run(m.session, m.output, Dict(zip(m.inputs, args)))
   ismultioutput(m) ? (batch.(output)...,) : batch(output)
+end
+
+function (m::Model)(args::Batch...)
+  runmodel(m, args...)
 end
 
 function (m::Model)(args...)

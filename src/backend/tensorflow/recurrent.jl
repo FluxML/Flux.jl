@@ -24,7 +24,7 @@ function tf(model::Flux.Unrolled)
     Model(model, sess, params,
           [instates..., input], [outstates..., output],
           [placeholder(Float32)]),
-    batchone.(model.state))
+    model.state)
 end
 
 function batchseq(xs)
@@ -35,11 +35,13 @@ function batchseq(xs)
   Batch{Seq{T,S},B}(xs)
 end
 
+TensorFlow.get_tensors(x::Tuple) = TensorFlow.get_tensors(collect(x))
+
 function (m::SeqModel)(x::BatchSeq)
   if isempty(m.state) || length(first(m.state)) ≠ length(x)
-    m.state = map(batchone, m.m.model.states)
+    m.state = m.m.model.state
   end
-  output = m.m(m.state..., x)
+  output = runmodel(m.m, m.state..., x)
   m.state, output = output[1:end-1], output[end]
   return batchseq(rawbatch(output))
 end
