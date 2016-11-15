@@ -54,14 +54,14 @@ end
 
 hiddeninput(n) = vertex(Split(n), inputnode(1))
 
-function create_steps(v::IVertex, n; seq = true)
-  [bumpinputs(seq ? spliceinputs(v, hiddeninput(i)) : v) for i = 1:n]
+function create_steps(v::IVertex, n; seq = true, stateful = true)
+  [(stateful ? bumpinputs : copy)(seq ? spliceinputs(v, hiddeninput(i)) : v) for i = 1:n]
 end
 
-function getvar(n, step, steps, offset, default)
-  if step < 1
+function getvar(n, step, steps, offset, default; stateful = true)
+  if stateful && step < 1
     hiddeninput(sum(offset[1:n-1]) + 1 - step)
-  elseif step > length(steps)
+  elseif step ∉ 1:length(steps)
     constant(default[n])
   else
     steps[step][1,n]
@@ -78,33 +78,43 @@ function stateout(steps, offset, default)
   group(outs...), defaults
 end
 
-function unrollgraph(v::IVertex, n; seq = true)
+function unrollgraph(v::IVertex, n; seq = true, stateful = true)
   state, offset, default = collect_state(v)
   v = group(group(state...), v)
-  steps = create_steps(v, n, seq = seq)
+  steps = create_steps(v, n, seq = seq, stateful = stateful)
   for i = 1:n
     vars = inputs(steps[i][1])
     postwalk!(steps[i]) do v
       isa(value(v), Offset) || return v
       varid = findfirst(vars,v[1])
-      getvar(varid, value(v).n + i, steps, offset, default)
+      getvar(varid, value(v).n + i, steps, offset, default, stateful = stateful)
     end
   end
-  state, defaults = stateout(steps, offset, default)
-  group(state,group(map(x->x[2], steps)...)), map(Flux.state, defaults)
+  out = group(map(x->x[2], steps)...)
+  if stateful
+    state, defaults = stateout(steps, offset, default)
+    group(state,out), map(Flux.state, defaults)
+  else
+    out, []
+  end
 end
 
-unrollgraph(m, n; seq = true) = unrollgraph(atomise(m), n; seq = seq)
+unrollgraph(m, n; kws...) = unrollgraph(atomise(m), n; kws...)
 
+# TODO: perhaps split into SeqModel + StatefulModel
 type Unrolled <: Model
   model
   graph::IVertex{Any}
   state::Vector{Any}
+  stateful::Bool
   steps::Int
 end
 
 graph(u::Unrolled) = u.graph
 
-unroll(model, n; seq = true) = Unrolled(model, unrollgraph(model, n; seq = seq)..., n)
+function unroll(model, n; seq = true, stateful = true)
+  graph, state = unrollgraph(model, n; seq = seq, stateful = stateful)
+  seq || stateful ? Unrolled(model, graph, state, stateful, n) : Capacitor(graph)
+end
 
 flip(model) = Capacitor(map(x -> isa(x, Offset) ? -x : x, atomise(model)))
