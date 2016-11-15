@@ -18,7 +18,7 @@ function makegraph(graph, args)
   end
   graph = map(graph) do x
     isa(x, Offset) ?
-      :(Offset($(Expr(:quote, x.name)), $(x.n), self.$(x.name))) :
+      :(Flux.Offset($(Expr(:quote, x.name)), $(x.n), self.$(x.name))) :
       x
   end
 end
