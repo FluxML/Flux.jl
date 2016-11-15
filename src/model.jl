@@ -48,6 +48,6 @@ type Capacitor <: Model
   graph::IVertex{Any}
 end
 
-# TODO: Julia implementation that interprets the graph
+(m::Capacitor)(xs...) = interpret(reifyparams(m.graph), xs...)
 
 graph(cap::Capacitor) = cap.graph

@@ -110,6 +110,8 @@ type Unrolled <: Model
   steps::Int
 end
 
+(m::Unrolled)(xs...) = interpret(reifyparams(m.graph), xs...)
+
 graph(u::Unrolled) = u.graph
 
 function unroll(model, n; seq = true, stateful = true)
