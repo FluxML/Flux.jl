@@ -1,4 +1,4 @@
-export unroll
+export unroll, unroll1
 
 type Offset
   name::Symbol
@@ -117,6 +117,12 @@ graph(u::Unrolled) = u.graph
 function unroll(model, n; seq = true, stateful = true)
   graph, state = unrollgraph(model, n; seq = seq, stateful = stateful)
   seq || stateful ? Unrolled(model, graph, state, stateful, n) : Capacitor(graph)
+end
+
+function unroll1(model)
+  graph, state = unrollgraph(model, 1; seq = false)
+  graph = group(graph[1], map(x->x[1], inputs(graph)[2:end])...)
+  Unrolled(model, graph, state, false, 1)
 end
 
 flip(model) = Capacitor(map(x -> isa(x, Offset) ? -x : x, atomise(model)))
