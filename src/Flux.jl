@@ -4,7 +4,7 @@ using MacroTools, Lazy, DataFlow, Juno
 using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   iscyclic, Constant, constant, isconstant, Group, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
-  spliceinputs, bumpinputs, interpret
+  spliceinputs, bumpinputs
 using Juno: Tree, Row
 
 # Zero Flux Given
@@ -16,6 +16,7 @@ include("data.jl")
 include("compiler/diff.jl")
 include("compiler/code.jl")
 include("compiler/loops.jl")
+include("compiler/interp.jl")
 
 include("layers/affine.jl")
 include("layers/recurrent.jl")
