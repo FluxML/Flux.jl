@@ -17,7 +17,7 @@ include("compiler/diff.jl")
 include("compiler/code.jl")
 include("compiler/loops.jl")
 
-include("layers/Affine.jl")
+include("layers/affine.jl")
 include("layers/recurrent.jl")
 include("layers/shape.jl")
 include("layers/chain.jl")
