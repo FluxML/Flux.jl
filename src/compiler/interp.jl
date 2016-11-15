@@ -11,15 +11,14 @@ function astuples(xs)
   all(x->!(x==nothing), xs) ? xs : nothing
 end
 
-# function interp(ctx, ::typeof(map), f, xs...)
-#   f = interpret(ctx, f)
-#   xs = interpret(ctx, xs)
-#   xs′ = astuples(xs)
-#   xs′ == nothing ? constant(:MAPFAIL) : @show map(f, xs...)
-# end
+function interp(ctx, ::typeof(map), f, xs...)
+  f = interpret(ctx, f)
+  xs = interpret(ctx, xs)
+  xs′ = astuples(xs)
+  xs′ == nothing ? vertex(map, constant(f), xs...) : group(map(f, xs′...)...)
+end
 
 function interp(ctx, model, xs...)
-  @show model
   g = graph(model)
   g == nothing && return vertex(model, map(constant, interpret(ctx, xs))...)
   interpret(ctx, g, xs...)
