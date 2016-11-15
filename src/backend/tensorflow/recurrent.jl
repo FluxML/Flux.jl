@@ -11,8 +11,13 @@ function makesession(model::Flux.Unrolled)
   sess = Session(Graph())
   input = placeholder(Float32)
   inputs = TensorFlow.unpack(input, num = model.steps, axis = 1)
-  instates = [placeholder(Float32) for _ in model.state]
-  params, (outstates, outputs) = tograph(model, cgroup(instates...), cgroup(inputs...))
+  params, outputs, instates, outstates = [], [], [], []
+  if model.stateful
+    instates = [placeholder(Float32) for _ in model.state]
+    params, (outstates, outputs) = tograph(model, cgroup(instates...), cgroup(inputs...))
+  else
+    params, outputs = tograph(model, cgroup(inputs...))
+  end
   output = TensorFlow.pack(outputs, axis = 1)
   run(sess, initialize_all_variables())
   sess, params, (instates, input), (outstates, output)
@@ -35,15 +40,18 @@ function batchseq(xs)
   Batch{Seq{T,S},B}(xs)
 end
 
+batchseq(xs::Batch) = batchseq(rawbatch(xs))
+
 TensorFlow.get_tensors(x::Tuple) = TensorFlow.get_tensors(collect(x))
 
 function (m::SeqModel)(x::BatchSeq)
+  m.m.model.stateful || return batchseq(runmodel(m.m, x)[end])
   if isempty(m.state) || length(first(m.state)) ≠ length(x)
     m.state = m.m.model.state
   end
   output = runmodel(m.m, m.state..., x)
   m.state, output = output[1:end-1], output[end]
-  return batchseq(rawbatch(output))
+  return batchseq(output)
 end
 
 (m::SeqModel)(x::Seq) = first(m(batchone(x)))
