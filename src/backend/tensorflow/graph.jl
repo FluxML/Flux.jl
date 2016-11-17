@@ -13,6 +13,8 @@ graph(s::Split, t::Tuple) = t[s.n]
 graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
 graph(::typeof(σ), x) = nn.sigmoid(x)
+graph(::typeof(hcat), xs...) = concat(1, xs)
+graph(::typeof(seq), xs, n) = TensorFlow.unpack(xs, num = n, axis = 1)
 graph(::typeof(.+), args...) = +(args...)
 
 for op in (tanh, *, .*, +, -, .-)
