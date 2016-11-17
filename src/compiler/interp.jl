@@ -1,10 +1,14 @@
 using DataFlow: interpret, interpret, interptuple, interplambda, interpconst, Context
 
-function astuple(xs)
+function astuple(xs::Vertex)
   isconstant(xs) && isa(value(xs).value, Tuple) ? value(xs).value :
   isa(xs, Vertex) && value(xs) == tuple ? inputs(xs) :
   nothing
 end
+
+astuple(xs::Tuple) = xs
+
+astuple(xs) = nothing
 
 function astuples(xs)
   xs = [astuple(x) for x in xs]
