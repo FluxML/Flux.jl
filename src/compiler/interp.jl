@@ -11,11 +11,15 @@ function astuples(xs)
   all(x->!(x==nothing), xs) ? xs : nothing
 end
 
-function interp(ctx, ::typeof(map), f, xs...)
-  f = interpret(ctx, f)
-  xs = interpret(ctx, xs)
-  xs′ = astuples(xs)
-  xs′ == nothing ? vertex(map, constant(f), xs...) : group(map(f, xs′...)...)
+function interpmap(cb)
+  function interp(ctx, ::typeof(map), f, xs...)
+    f, xs = interpret(ctx, (f, xs))
+    xs′ = astuples(xs)
+    xs′ ≠ nothing ?
+      group(map(f, xs′...)...) :
+      cb(ctx, map, constant(f), xs...)
+  end
+  interp(args...) = cb(args...)
 end
 
 function interp(ctx, model, xs...)
@@ -25,4 +29,4 @@ function interp(ctx, model, xs...)
 end
 
 expand(graph, xs...) =
-  interp(Context(interplambda(interpconst(interptuple(interp)))), graph, xs...)
+  interp(Context(interplambda(interpmap(interpconst(interptuple(interp))))), graph, xs...)
