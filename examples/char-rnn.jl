@@ -23,11 +23,11 @@ m = tf(unroll(model, 50));
 
 string(map(c -> onecold(c, alphabet), m(first(first(Xs))))...)
 
-function sample(model, n)
+function sample(model, n, temp = 1)
   s = [rand(alphabet)]
   m = tf(unroll(model, 1))
   for i = 1:n
-    push!(s, wsample(alphabet, m(Seq((onehot(Float32, s[end], alphabet),)))[1]))
+    push!(s, wsample(alphabet, softmax(m(Seq((onehot(Float32, s[end], alphabet),)))[1]./temp)))
   end
   return string(s...)
 end
