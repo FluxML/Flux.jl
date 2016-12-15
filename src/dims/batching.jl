@@ -14,9 +14,6 @@ convert{T,S}(::Type{Batch{T,S}},storage::S) =
 batchone(x) = Batch((x,))
 batchone(x::Batch) = x
 
-Media.render{T<:Batch}(i::Juno.Inline, b::Type{T}) =
-  render(i, Row(Juno.typ("Batch"), text"{", eltype(T), text"}"))
-
 @render Juno.Inline b::Batch begin
   Tree(Row(Text("Batch of "), eltype(b),
            Juno.fade("[$(length(b))]")),
