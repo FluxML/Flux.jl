@@ -18,6 +18,7 @@ include("compiler/loops.jl")
 include("compiler/interp.jl")
 
 include("layers/affine.jl")
+include("layers/activation.jl")
 include("layers/recurrent.jl")
 include("layers/shape.jl")
 include("layers/chain.jl")
@@ -28,7 +29,6 @@ include("dims/batching.jl")
 include("dims/seq.jl")
 
 include("cost.jl")
-include("activation.jl")
 
 include("backend/backend.jl")
 
