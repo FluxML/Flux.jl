@@ -13,7 +13,6 @@ include("model.jl")
 include("utils.jl")
 include("data.jl")
 
-include("compiler/diff.jl")
 include("compiler/code.jl")
 include("compiler/loops.jl")
 include("compiler/interp.jl")
