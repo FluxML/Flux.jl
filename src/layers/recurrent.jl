@@ -36,12 +36,12 @@ GatedRecurrent(in, out; init = initn) =
   y; state
   function (x)
     # Gates
-    forget = σ( x * Wxf .+ y{-1} * Wyf .+ bf )
-    input  = σ( x * Wxi .+ y{-1} * Wyi .+ bi )
-    output = σ( x * Wxo .+ y{-1} * Wyo .+ bo )
+    forget = σ( x * Wxf + y{-1} * Wyf + bf )
+    input  = σ( x * Wxi + y{-1} * Wyi + bi )
+    output = σ( x * Wxo + y{-1} * Wyo + bo )
     # State update and output
-    state′ = tanh( x * Wxc .+ y{-1} * Wyc .+ bc )
-    state  = forget .* state{-1} .+ input .* state′
+    state′ = tanh( x * Wxc + y{-1} * Wyc + bc )
+    state  = forget .* state{-1} + input .* state′
     y = output .* tanh(state)
   end
 end

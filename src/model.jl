@@ -74,7 +74,7 @@ Accumulates the update `Δ` on `p`. The value of `p` won't change until
 `update!`.
 """
 function accumulate!(p::Param, Δ)
-  p.Δx .+= Δ
+  p.Δx += Δ
   return p
 end
 
