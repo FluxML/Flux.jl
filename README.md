@@ -1,5 +1,7 @@
 # Флукс
 
+[![Build Status](https://travis-ci.org/MikeInnes/Flux.jl.svg?branch=master)](https://travis-ci.org/MikeInnes/Flux.jl)
+
 ## What?
 
 Flux is a high-level API for machine learning, implemented in Julia. It could be seen has Julia's answer to Keras, though it has its own ideas, quirks and possibilities.
