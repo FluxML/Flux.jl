@@ -48,4 +48,4 @@ end
 
 LSTM(in, out; init = initn) =
   LSTM(vcat([[init((in, out)), init((out, out)), init((1, out))] for _ = 1:4]...)...,
-       zeros(Float32, 1, out), zeros(Float32, 1, out))
+       zeros(Float32, out), zeros(Float32, out))
