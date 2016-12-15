@@ -47,7 +47,7 @@ TensorFlow.get_tensors(x::Tuple) = TensorFlow.get_tensors(collect(x))
 function (m::SeqModel)(x::BatchSeq)
   m.m.model.stateful || return batchseq(runmodel(m.m, x)[end])
   if isempty(m.state) || length(first(m.state)) ≠ length(x)
-    m.state = m.m.model.state
+    m.state = batchone.(m.m.model.state)
   end
   output = runmodel(m.m, m.state..., x)
   m.state, output = output[1:end-1], output[end]
