@@ -6,14 +6,14 @@ initn(dims...) = randn(Float32, dims...)/10
 
 function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)
     i = 0
-    ∇ = zeros(length(train[1][2]))
+    Δ = zeros(length(train[1][2]))
     for _ in 1:epoch
       @progress for (x, y) in train
         i += 1
         pred = m(x)
         any(isnan, pred) && error("NaN")
-        err = mse!(∇, pred, y)
-        back!(m, ∇, x)
+        err = mse!(Δ, pred, y)
+        back!(m, Δ, x)
         i % batch == 0 && update!(m, η)
         i % 1000 == 0 && @show accuracy(m, test)
       end

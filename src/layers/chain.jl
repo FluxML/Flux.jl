@@ -23,7 +23,7 @@ end
 @forward Chain.layers Base.getindex, Base.first, Base.last
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
-back!(s::Chain, ∇) = foldr((m, ∇) -> back!(m, ∇), ∇, s.layers)
+back!(s::Chain, Δ) = foldr((m, Δ) -> back!(m, Δ), Δ, s.layers)
 update!(s::Chain, η) = foreach(l -> update!(l, η), s.layers)
 
 graph(s::Chain) =

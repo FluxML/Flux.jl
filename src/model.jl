@@ -4,7 +4,7 @@ export Model, back!, update!, param
 
 abstract Model
 
-back!(m::Model, ∇) = error("Backprop not implemented for $(typeof(m))")
+back!(m::Model, Δ) = error("Backprop not implemented for $(typeof(m))")
 update!(m, η) = m
 
 graph(m) = nothing

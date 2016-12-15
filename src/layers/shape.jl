@@ -23,7 +23,7 @@ end
 Input(i...) = Input(dims(i...))
 
 (::Input)(x) = x
-back!(::Input, ∇, x) = ∇
+back!(::Input, Δ, x) = Δ
 
 # Initialise placeholder
 
