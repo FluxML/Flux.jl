@@ -6,13 +6,27 @@ type Model
   output::Any
 end
 
-ismultioutput(m::Model) = !isa(m.output, Tensor)
-
-function tf(model)
-  sess, params, input, output = makesession(model, 1)
-  Model(model, sess, params,
-        input, output)
+function makesession(model, inputs; session = Session(Graph()))
+  params, output = tograph(model, inputs...)
+  run(session, initialize_all_variables())
+  Model(model, session, params, inputs, output)
 end
+
+function makesession(model, n::Integer; session = Session(Graph()))
+  makesession(model, [placeholder(Float32) for _ = 1:n], session = session)
+end
+
+tf(model) = makesession(model, 1)
+
+function storeparams!(sess, params)
+  for (p, t) in params
+    p.x = run(sess, t)
+  end
+end
+
+storeparams!(m::Model) = storeparams!(m.session, m.params)
+
+ismultioutput(m::Model) = !isa(m.output, Tensor)
 
 function batch(xs)
   dims = ndims(xs)-1
