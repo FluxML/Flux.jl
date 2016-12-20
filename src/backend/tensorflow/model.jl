@@ -2,14 +2,15 @@ type Model
   model::Any
   session::Session
   params::Dict{Flux.Param,Tensor}
+  stacks::Dict
   inputs::Vector{Tensor}
   output::Any
 end
 
 function makesession(model, inputs; session = Session(Graph()))
-  params, output = tograph(model, inputs...)
+  params, stacks, output = tograph(model, inputs...)
   run(session, initialize_all_variables())
-  Model(model, session, params, inputs, output)
+  Model(model, session, params, stacks, inputs, output)
 end
 
 function makesession(model, n::Integer; session = Session(Graph()))

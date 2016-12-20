@@ -64,7 +64,7 @@ function tograph(model, args...)
   ctx = Context(interpline(interplambda(interptuple(interpmap(interp)))),
                 params = ObjectIdDict(), stacks = Dict())
   out = interp(ctx, model, map(constant, args)...)
-  return ctx[:params], out
+  return ctx[:params], ctx[:stacks], out
 end
 
 TensorFlow.Tensor(m::Flux.Model, args...) = tograph(m, args...)[2]
