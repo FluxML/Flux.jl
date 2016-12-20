@@ -11,16 +11,17 @@ function makesession(model::Flux.Unrolled)
   sess = Session(Graph())
   input = placeholder(Float32)
   inputs = TensorFlow.unpack(input, num = model.steps, axis = 1)
-  params, stacks, outputs, instates, outstates = [], [], [], [], []
-  if model.stateful
-    instates = [placeholder(Float32) for _ in model.state]
-    params, stacks, (outstates, outputs) = tograph(model, cgroup(instates...), cgroup(inputs...))
-  else
-    params, stacks, outputs = tograph(model, cgroup(inputs...))
+  let params, stacks, outputs, instates, outstates
+    if model.stateful
+      instates = [placeholder(Float32) for _ in model.state]
+      params, stacks, (outstates, outputs) = tograph(model, cgroup(instates...), cgroup(inputs...))
+    else
+      params, stacks, outputs = tograph(model, cgroup(inputs...))
+    end
+    output = TensorFlow.pack(outputs, axis = 1)
+    run(sess, initialize_all_variables())
+    sess, params, stacks, (instates, input), (outstates, output)
   end
-  output = TensorFlow.pack(outputs, axis = 1)
-  run(sess, initialize_all_variables())
-  sess, params, stacks, (instates, input), (outstates, output)
 end
 
 function tf(model::Flux.Unrolled)
