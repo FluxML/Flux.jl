@@ -1,5 +1,6 @@
 using Base: @get!
-using DataFlow: Constant, constant, Context, interpret, Split, interptuple, interplambda, interpconst
+using DataFlow: Constant, constant, Context, interpret, Split, interptuple,
+  interplambda, interpconst, interpline, stack
 using Flux: interpmap
 using TensorFlow: RawTensor
 
@@ -54,7 +55,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...)
-  ctx = Context(interplambda(interptuple(interpmap(interp))), params = ObjectIdDict())
+  ctx = Context(interpline(interplambda(interptuple(interpmap(interp)))), params = ObjectIdDict())
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], out
 end
