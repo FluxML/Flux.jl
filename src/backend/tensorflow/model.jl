@@ -36,10 +36,26 @@ function batch(xs)
   Batch{T,B}(xs)
 end
 
-function runmodel(m, args...)
+function tferr(model::Model, e)
+  m = match(r"Node: ([\w\d]+) =", string(e.status))
+  m == nothing && return
+  node = m.captures[1]
+  if haskey(model.stacks, node)
+    l = model.stacks[node][end]
+    println("TensorFlow error occured at $(l.file):$(l.line)")
+  end
+end
+
+function runmodel(m::Model, args...)
   @assert length(args) == length(m.inputs)
-  output = run(m.session, m.output, Dict(zip(m.inputs, args)))
-  ismultioutput(m) ? (batch.(output)...,) : batch(output)
+  try
+    output = run(m.session, m.output, Dict(zip(m.inputs, args)))
+    ismultioutput(m) ? (batch.(output)...,) : batch(output)
+  catch e
+    isa(e, TensorFlow.TFException) || rethrow(e)
+    tferr(m, e)
+    rethrow(e)
+  end
 end
 
 function (m::Model)(args::Batch...)
