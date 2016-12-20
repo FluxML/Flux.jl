@@ -27,8 +27,7 @@ function tf(model::Flux.Unrolled)
   sess, params, (instates, input), (outstates, output) = makesession(model)
   SeqModel(
     Model(model, sess, params,
-          [instates..., input], [outstates..., output],
-          [placeholder(Float32)]),
+          [instates..., input], [outstates..., output]),
     model.state)
 end
 
