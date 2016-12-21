@@ -3,7 +3,7 @@
 using Flux
 using Flux: flip
 
-# A recurrent model which takes a token and returns a context-depedent
+# A recurrent model which takes a token and returns a context-dependent
 # annotation.
 
 @net type Encoder
