@@ -50,10 +50,11 @@ function process_type(ex)
   pnames = namify.(params)
   args, body = process_func(funcs[1], pnames)
   @assert length(args) == 1
+  self = esc(:self)
   quote
     $(build_type(T, params))
-    $(esc(:(self::$T)))($(args...),) = interpret(reifyparams(graph(self)), $(args...))
-    $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!(self.$p, η)), pnames)...);)
+    $(esc(:(self::$T)))($(args...),) = interpret(reifyparams(graph($self)), $(args...))
+    $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!($self.$p, η)), pnames)...);)
     $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(mapconst(esc, makegraph(body, args))))
     nothing
   end
