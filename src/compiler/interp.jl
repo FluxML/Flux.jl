@@ -1,4 +1,4 @@
-using DataFlow: interpret, interpret, interptuple, interplambda, interpconst, Context
+using DataFlow: interpret, interpv, interptuple, interplambda, interpconst, Context
 
 function astuple(xs::Vertex)
   isconstant(xs) && isa(value(xs).value, Tuple) ? value(xs).value :
@@ -17,7 +17,7 @@ end
 
 function interpmap(cb)
   function interp(ctx, ::typeof(map), f, xs...)
-    f, xs = interpret(ctx, (f, xs))
+    f, xs = interpv(ctx, (f, xs))
     xs′ = astuples(xs)
     xs′ ≠ nothing ?
       group(map(f, xs′...)...) :
@@ -28,7 +28,7 @@ end
 
 function interp(ctx, model, xs...)
   g = graph(model)
-  g == nothing && return vertex(model, map(constant, interpret(ctx, xs))...)
+  g == nothing && return vertex(model, map(constant, interpv(ctx, xs))...)
   interpret(ctx, g, xs...)
 end
 

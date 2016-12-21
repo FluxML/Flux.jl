@@ -1,6 +1,6 @@
 using Base: @get!
 using DataFlow: Constant, constant, Context, interpret, Split, interptuple,
-  interplambda, interpconst, interpline, stack
+  interpv, interplambda, interpconst, interpline, stack
 using Flux: interpmap
 using TensorFlow: RawTensor
 
@@ -38,13 +38,13 @@ graph(p::MaxPool, x) =
 graph(op::Op, xs...) = op.f(xs...)
 
 function graph(ctx::Context, model, args...)
-  node = graph(model, interpret(ctx, args)...)
+  node = graph(model, interpv(ctx, args)...)
   isa(node, Tensor) && (ctx[:stacks][node.op.name] = stack(ctx))
   return node
 end
 
 interp(ctx, c::Conv2D, x) =
-  nn.conv2d(interpret(ctx, x), interp(ctx, Constant(c.filter)), [1,c.stride...,1], "VALID")
+  nn.conv2d(interpv(ctx, x), interp(ctx, Constant(c.filter)), [1,c.stride...,1], "VALID")
 
 interp{T<:AArray}(ctx, p::Constant{Flux.Param{T}}) =
   haskey(ctx[:params], p.value) ?
@@ -57,7 +57,7 @@ function interp(ctx, model, args...)
   g = Flux.graph(model)
   g == nothing && return graph(ctx, model, args...)
   DataFlow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
-  interpret(ctx, g, interpret(ctx, args)...)
+  interpret(ctx, g, interpv(ctx, args)...)
 end
 
 function tograph(model, args...)
