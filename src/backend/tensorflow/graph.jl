@@ -1,7 +1,7 @@
 using Base: @get!
-using DataFlow: Constant, constant, Context, interpret, Split, interptuple,
-  interpv, interplambda, interpconst, interpline, stack
-using Flux: interpmap
+using DataFlow: Constant, constant, Context, interpret, Split,
+  interpv, ituple, ilambda, iconst, iline, stack, mux
+using Flux: imap
 using TensorFlow: RawTensor
 
 # TODO: implement Julia's type promotion rules
@@ -61,7 +61,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...)
-  ctx = Context(interpline(interplambda(interptuple(interpmap(interp)))),
+  ctx = Context(mux(iline, ilambda, ituple, imap, interp),
                 params = ObjectIdDict(), stacks = Dict())
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out
