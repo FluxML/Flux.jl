@@ -24,12 +24,3 @@ function imap(cb, ctx, ::typeof(map), f, xs...)
 end
 
 imap(f, args...) = f(args...)
-
-function interp(ctx, model, xs...)
-  g = graph(model)
-  g == nothing && return vertex(model, map(constant, interpv(ctx, xs))...)
-  interpret(ctx, g, xs...)
-end
-
-expand(graph, xs...) =
-  interp(Context(mux(ilambda, imap, iconst, ituple, interp)), graph, xs...)
