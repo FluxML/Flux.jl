@@ -4,7 +4,7 @@ using MacroTools, Lazy, DataFlow, Juno
 using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   iscyclic, Constant, constant, isconstant, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
-  spliceinputs, bumpinputs
+  spliceinputs, bumpinputs, Frame
 using Juno: Tree, Row
 
 # Zero Flux Given

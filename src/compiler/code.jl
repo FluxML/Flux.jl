@@ -21,6 +21,7 @@ function makegraph(graph, args)
       :(Flux.Offset($(Expr(:quote, x.name)), $(x.n), self.$(x.name))) :
       x
   end
+  vertex(:(Flux.Frame(self)), graph)
 end
 
 function build_type(T, params)

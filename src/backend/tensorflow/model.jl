@@ -41,8 +41,9 @@ function tferr(model::Model, e)
   m == nothing && return
   node = m.captures[1]
   if haskey(model.stacks, node)
-    l = model.stacks[node][end]
-    println("TensorFlow error occured at $(l.file):$(l.line)")
+    stk = model.stacks[node]
+    println("TensorFlow error occured at:")
+    foreach(l -> println("$(l.file):$(l.line)"), stk)
   end
 end
 
