@@ -1,4 +1,4 @@
-using DataFlow: iline, iargs
+using DataFlow: ilinev, iargs, applylines, Line
 
 type Hint
   typ
@@ -7,6 +7,7 @@ end
 DataFlow.tocall(h::Hint, x) = :($x::$(h.typ))
 
 function gethint(v::IVertex)
+  while isa(value(v), Union{Line,Frame}) v = v[1] end
   isa(value(v), Hint) && return value(v).typ
   return
 end
@@ -17,7 +18,7 @@ ihint(f, args...) = f(args...)
 hintify(c::Constant) = hintify(state(c.value))
 hintify(xs::AbstractArray) = vertex(Hint(size(xs)), constant(:_))
 
-interpshape = mux(iline, ihint, iargs, ituple, hintify)
+interpshape = mux(ilinev, ihint, iargs, ituple, hintify)
 
 function hintify(f, xs...)
   sh = infer(f, map(gethint, xs)...)
@@ -26,15 +27,17 @@ function hintify(f, xs...)
     vertex(f, xs...)
 end
 
-function shapes(f, args...)
+function shapesv(f, args...)
   (g = graph(f)) == nothing && return
   ins = [vertex(Hint(d), inputnode(i)) for (i,d) in enumerate(args)]
   interpret(Context(interpshape), g, ins...)
 end
 
+shapes(args...) = shapesv(args...) |> syntax |> applylines |> (x->prettify(x, lines=true))
+
 # Inference primitives
 
-infer(f, args...) = graph(f) == nothing ? nothing : gethint(shapes(f, args...))
+infer(f, args...) = graph(f) == nothing ? nothing : gethint(shapesv(f, args...))
 
 function infer(::typeof(*), a::NTuple{2}, b::NTuple{2})
   a[2] == b[1] || return nothing
