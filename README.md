@@ -2,95 +2,49 @@
 
 [![Build Status](https://travis-ci.org/MikeInnes/Flux.jl.svg?branch=master)](https://travis-ci.org/MikeInnes/Flux.jl)
 
-## What?
+Flux is a high-level API for machine learning, implemented in Julia.
 
-Flux is a high-level API for machine learning, implemented in Julia. It could be seen has Julia's answer to Keras, though it has its own ideas, quirks and possibilities.
+Flux aims to provide a concise and expressive syntax for architectures that are hard to express within other frameworks. The notation should be familiar and extremely close to what you'd find in a paper or description of the model.
 
-The current focus is on ANNs with TensorFlow as a backend. While it's in a very early working-prototype stage, you can see what works so far in the [examples folder](/examples).
+The current focus is on ANNs with TensorFlow or MXNet as a backend. While it's in a very early working-prototype stage, you can see what works so far in the [examples folder](/examples).
 
-Flux's approach is heavily declarative (as opposed to imperative graph building, which has all the drawbacks of writing one huge macro). Models can be described in high-level terms close to the mathematical notation. Model descriptions are be separated from their implementations, and changes to the way a model is used should never require changes to the model itself.
+## Brief Examples
 
-A core idea is that the same problems that come up when building ML models (composition and reuse, variable scoping, applying optimisations etc.) have already been solved by programming languages. If we think of building models as programming, we can reuse those solutions, greatly reducing the barriers to learning and using ML systems.
-
-There are also some unusual possibilities enabled by Julia itself. Julia's speed makes it trivial to prototype fully custom layers with reasonable performance. In future, GPU codegen may enable us to hook custom layers into TensorFlow and other backends.
-
-## How?
-
-We can describe simple models through a convenient interface:
+Simple multi-layer-perceptron for MNIST:
 
 ```julia
-m = Chain(
+Chain(
   Input(784),
   Affine(128), relu,
   Affine( 64), relu,
   Affine( 10), softmax)
 ```
 
-Models are simple functions with state, so we can immediately see what the network does:
+LSTM example:
 
 ```julia
-m(randn(784)) #> [0.101, 0.101, 0.099, 0.100, ...]
-```
-
-What if we need a custom layer? Here's one equivalent to `Affine` above:
-
-```julia
-# Simple Julia type with two fields – @net defines some extra methods like the
-# backward pass
-@net type FullyConnected
-  W; b
-  x -> x*W + b
-end
-
-# Convenience constructor, initialise the parameters with random weights
-FullyConnected(in::Integer, out::Integer) = FullyConnected(randn(out, in), randn(out))
-
-foo = FullyConnected(10, 5)
-foo(randn(10)) #> [0.00981148,0.0456825,...]
-```
-
-We can already insert this model into combining models like `Chain`. If you want to use the layer more than once or make a copy, just do so; no variable scoping here. We can also define models that contain other models:
-
-```julia
-@net type Perceptron
-  layer
-  x -> σ(layer(x))
-end
-
-Perceptron(in, out) = Perceptron(Affine(in, out))
-```
-
-This defines a simple perceptron layer which we can use in the same way as `Affine` above. We can draw arbitrary graphs, including those with splits, combines or recurrences, in a fully declarative way *[this API is a WIP]*:
-
-```julia
-@net type SimpleRecurrent
-  Wx; Wh; b
-  hidden
+@net type LSTM
+  Wxf; Wyf; bf
+  Wxi; Wyi; bi
+  Wxo; Wyo; bo
+  Wxc; Wyc; bc
+  y; state
   function (x)
-    hidden = σ(Wx * x + Wh * hidden + b)
+    # Gates
+    forget = σ( x * Wxf + y{-1} * Wyf + bf )
+    input  = σ( x * Wxi + y{-1} * Wyi + bi )
+    output = σ( x * Wxo + y{-1} * Wyo + bo )
+    # State update and output
+    state′ = tanh( x * Wxc + y{-1} * Wyc + bc )
+    state  = forget .* state{-1} + input .* state′
+    y = output .* tanh(state)
   end
 end
-```
 
-`hidden`'s dependence on itself creates a cycle, and wherever `hidden` is used, that value will come from the last run of the network. We can also define this same layer as a composition of others:
-
-```julia
-@net type SimpleRecurrent2
-  layer
-  hidden
-  function (x)
-    hidden = σ(layer(vcat(x, hidden)))
-  end
-end
-```
-
-Though further from the equations, this has the advantage of further reuse and customizability. For example, `layer` could be a simple `Affine(x, y)` as before or it could be a `Dropout(Affine(x, y))` in order to add dropout to the recurrent layer.
-
-When it comes time to train the model, we have a number of options for tweaking its implementation, like the backend used or unrolling settings. In Flux this is as simple as calling some functions on the original model:
-
-```julia
-model = unroll(model, 10) # Statically unroll the model
-model = tf(model) # Convert the model to TensorFlow
-
-Flux.train!(model, ...)
+Chain(
+  Input(N),
+  LSTM(N, 256),
+  LSTM(256, 256),
+  Affine(256, N),
+  softmax)
 ```
