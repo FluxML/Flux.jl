@@ -3,6 +3,7 @@ using Documenter, Flux
 makedocs(modules=Module[Flux],
          doctest=false, clean=true,
          format = :html,
+         analytics = "UA-36890222-9",
          sitename="Flux Documentation",
          pages = [
            "Home" => "index.md",
