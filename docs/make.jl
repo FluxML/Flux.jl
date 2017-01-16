@@ -4,7 +4,7 @@ makedocs(modules=Module[Flux],
          doctest=false, clean=true,
          format = :html,
          analytics = "UA-36890222-9",
-         sitename="Flux Documentation",
+         sitename="Flux",
          pages = [
            "Home" => "index.md",
          ])
