@@ -1,7 +1,7 @@
 using Documenter, Flux
 
 makedocs(modules=Module[Flux],
-         doctest=false, clean=true,
+         doctest=false, clean=false,
          format = :html,
          analytics = "UA-36890222-9",
          sitename="Flux",
