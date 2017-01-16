@@ -1,0 +1,57 @@
+nav.toc {
+  padding-top: 0;
+  background: rgb(40, 40, 40);
+  box-shadow: inset -14px 0px 5px -12px rgb(0,0,0);
+  line-height: 2em;
+}
+
+/* Green banner in ToC */
+nav.toc > h1 {
+  margin-top: 0;
+  padding-top: 1em;
+  padding-bottom: 0.5em;
+  background: rgb(0, 100, 0);
+  border-bottom: 5px solid white;
+  color: white;
+  box-shadow: inset -14px 0px 5px -12px rgb(60,60,60);
+  letter-spacing: 0.05em;
+}
+
+#version-selector, #search-query {
+  color: white;
+  background: rgb(20, 20, 20);
+  border: 1px solid black;
+}
+
+/* Reduce ToC font size */
+.toctext {
+  font-size: 10pt;
+}
+
+/* Fade out non-clickable ToC headers */
+nav.toc > ul > li > span.toctext {
+  color: rgb(100, 100, 100);
+  user-select: none;
+}
+
+.current {
+  box-shadow: 0 2px 5px -12px rgb(0,0,0);
+}
+
+nav.toc li.current > .toctext {
+  background: linear-gradient(90deg, rgb(240,240,240) 0%, white 90%);;
+}
+
+nav.toc ul.internal {
+  color: rgb(80, 80, 80);
+}
+
+/* Content */
+
+a {
+  color: rgb(0, 150, 0);
+}
+
+a:visited {
+  color: rgb(0, 100, 0);
+}
