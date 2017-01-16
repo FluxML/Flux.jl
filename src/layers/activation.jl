@@ -13,3 +13,6 @@ softmax(xs) = exp.(xs) ./ sum(exp.(xs))
 flatten(xs) = reshape(xs, length(xs))
 
 shape(::typeof(flatten), in) = prod(in)
+
+infer(::typeof(softmax), x) = x
+infer(::typeof(σ), x) = x

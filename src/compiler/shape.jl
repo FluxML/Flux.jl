@@ -46,5 +46,3 @@ end
 
 # TODO: make correct
 infer(::typeof(+), a, b) = a
-infer(::typeof(softmax), x) = x
-infer(::typeof(σ), x) = x
