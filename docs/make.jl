@@ -6,7 +6,10 @@ makedocs(modules=Module[Flux],
          analytics = "UA-36890222-9",
          sitename="Flux",
          pages = [
-           "Home" => "index.md",
+            "Home" => "index.md",
+            "Getting Started" => [
+              "Basics" => "mnist.md"
+           ]
          ])
 
 deploydocs(
