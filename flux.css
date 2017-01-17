@@ -3,6 +3,8 @@ nav.toc {
   background: rgb(40, 40, 40);
   box-shadow: inset -14px 0px 5px -12px rgb(0,0,0);
   line-height: 2em;
+  cursor: default;
+  user-select: none;
 }
 
 /* Green banner in ToC */
@@ -31,7 +33,6 @@ nav.toc > h1 {
 /* Fade out non-clickable ToC headers */
 nav.toc > ul > li > span.toctext {
   color: rgb(100, 100, 100);
-  user-select: none;
 }
 
 .current {
