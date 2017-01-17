@@ -1,10 +1,11 @@
 using Documenter, Flux
 
-makedocs(modules=Module[Flux],
-         doctest=false, clean=false,
+makedocs(modules=[Flux],
+         doctest = false, clean = false,
          format = :html,
          analytics = "UA-36890222-9",
-         sitename="Flux",
+         sitename = "Flux",
+         assets = ["flux.css"],
          pages = [
             "Home" => "index.md",
             "Getting Started" => [
