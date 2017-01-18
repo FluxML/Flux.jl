@@ -29,7 +29,31 @@ var documenterSearchIndex = {"docs": [
     "page": "Basics",
     "title": "Basic Usage",
     "category": "section",
-    "text": "Charging Ion Capacitors"
+    "text": ""
+},
+
+{
+    "location": "manual/basics.html#Installation-1",
+    "page": "Basics",
+    "title": "Installation",
+    "category": "section",
+    "text": "Pkg.clone(\"https://github.com/MikeInnes/DataFlow.jl\")\nPkg.clone(\"https://github.com/MikeInnes/Flux.jl\")"
+},
+
+{
+    "location": "manual/basics.html#The-Model-1",
+    "page": "Basics",
+    "title": "The Model",
+    "category": "section",
+    "text": "Charging Ion Capacitors...The core concept in Flux is that of the model. A model is simply a function with parameters. In Julia, we might define the following function:W = randn(3,5)\nb = randn(3)\naffine(x) = W*x + b\n\nx1 = randn(5)\naffine(x1)\n> 3-element Array{Float64,1}:\n   -0.0215644\n   -4.07343  \n    0.312591"
+},
+
+{
+    "location": "manual/basics.html#An-MNIST-Example-1",
+    "page": "Basics",
+    "title": "An MNIST Example",
+    "category": "section",
+    "text": ""
 },
 
 {

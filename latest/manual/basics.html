@@ -56,7 +56,23 @@ Getting Started
               <a class="toctext" href="basics.html">
 Basics
               </a>
-              <ul class="internal"></ul>
+              <ul class="internal">
+                <li>
+                  <a class="toctext" href="#Installation-1">
+Installation
+                  </a>
+                </li>
+                <li>
+                  <a class="toctext" href="#The-Model-1">
+The Model
+                  </a>
+                </li>
+                <li>
+                  <a class="toctext" href="#An-MNIST-Example-1">
+An MNIST Example
+                  </a>
+                </li>
+              </ul>
             </li>
             <li>
               <a class="toctext" href="custom.html">
@@ -95,7 +111,7 @@ Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/d86226cfaa6a3219ba239a26ffd8dde41b350d8c/docs/src/manual/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/2e7971fb6d95f58de7b656acddb7ffade4b2ed16/docs/src/manual/basics.md">
             <span class="fa">
 
             </span>
@@ -109,11 +125,45 @@ Basics
 Basic Usage
         </a>
       </h1>
+      <h2>
+        <a class="nav-anchor" id="Installation-1" href="#Installation-1">
+Installation
+        </a>
+      </h2>
+<pre><code class="language-julia">Pkg.clone(&quot;https://github.com/MikeInnes/DataFlow.jl&quot;)
+Pkg.clone(&quot;https://github.com/MikeInnes/Flux.jl&quot;)</code></pre>
+      <h2>
+        <a class="nav-anchor" id="The-Model-1" href="#The-Model-1">
+The Model
+        </a>
+      </h2>
       <p>
         <em>
-Charging Ion Capacitors
+Charging Ion Capacitors...
         </em>
       </p>
+      <p>
+The core concept in Flux is that of the 
+        <em>
+model
+        </em>
+. A model is simply a function with parameters. In Julia, we might define the following function:
+      </p>
+<pre><code class="language-julia">W = randn(3,5)
+b = randn(3)
+affine(x) = W*x + b
+
+x1 = randn(5)
+affine(x1)
+&gt; 3-element Array{Float64,1}:
+   -0.0215644
+   -4.07343  
+    0.312591</code></pre>
+      <h2>
+        <a class="nav-anchor" id="An-MNIST-Example-1" href="#An-MNIST-Example-1">
+An MNIST Example
+        </a>
+      </h2>
       <footer>
         <hr/>
         <a class="previous" href="../index.html">
