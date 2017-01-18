@@ -57,13 +57,25 @@ a:visited {
   color: rgb(0, 100, 0);
 }
 
+article {
+  line-height: 2em;
+}
+
 /* Code */
 
+p > code {
+  background: rgb(230, 240, 230);
+  padding: 2px;
+  color: rgb(35, 48, 35);
+  border: 1px solid rgb(220, 230, 220);
+}
+
 pre {
-  background: rgb(40, 52, 44);
+  background: rgb(35, 48, 35);
   border: 1px solid black;
   border-radius: 10px;
-  box-shadow: inset -4px 4px 15px 3px rgb(35, 35, 35);
+  box-shadow: inset -4px 4px 15px 3px rgb(30, 30, 30);
+  line-height: 1.5em;
 }
 
 .hljs {
