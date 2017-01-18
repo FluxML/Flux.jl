@@ -17,7 +17,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "basics.html#",
+    "location": "manual/basics.html#",
     "page": "Basics",
     "title": "Basics",
     "category": "page",
@@ -25,19 +25,75 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "basics.html#Basic-Usage-1",
+    "location": "manual/basics.html#Basic-Usage-1",
     "page": "Basics",
     "title": "Basic Usage",
     "category": "section",
+    "text": "Charging Ion Capacitors"
+},
+
+{
+    "location": "manual/custom.html#",
+    "page": "Custom Layers",
+    "title": "Custom Layers",
+    "category": "page",
     "text": ""
 },
 
 {
-    "location": "basics.html#*Charging-Ion-Capacitors*-1",
-    "page": "Basics",
-    "title": "Charging Ion Capacitors",
+    "location": "manual/custom.html#Custom-Layers-1",
+    "page": "Custom Layers",
+    "title": "Custom Layers",
     "category": "section",
+    "text": "[WIP]"
+},
+
+{
+    "location": "manual/recurrent.html#",
+    "page": "Recurrence",
+    "title": "Recurrence",
+    "category": "page",
     "text": ""
+},
+
+{
+    "location": "manual/recurrent.html#Recurrent-Models-1",
+    "page": "Recurrence",
+    "title": "Recurrent Models",
+    "category": "section",
+    "text": "[WIP]"
+},
+
+{
+    "location": "manual/debugging.html#",
+    "page": "Debugging",
+    "title": "Debugging",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "manual/debugging.html#Debugging-Models-1",
+    "page": "Debugging",
+    "title": "Debugging Models",
+    "category": "section",
+    "text": "[WIP]"
+},
+
+{
+    "location": "contributing.html#",
+    "page": "Contributing & Help",
+    "title": "Contributing & Help",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "contributing.html#Contributing-1",
+    "page": "Contributing & Help",
+    "title": "Contributing",
+    "category": "section",
+    "text": "[WIP]"
 },
 
 ]}

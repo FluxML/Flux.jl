@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>
-Home · Flux
+Basics · Flux
     </title>
     <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -20,20 +20,20 @@ ga('send', 'pageview');
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/>
     <link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
-    <link href="assets/documenter.css" rel="stylesheet" type="text/css"/>
+    <link href="../assets/documenter.css" rel="stylesheet" type="text/css"/>
     <script>
-documenterBaseURL="."
+documenterBaseURL=".."
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script>
-    <script src="../versions.js"></script>
-    <link href="../flux.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script>
+    <script src="../../versions.js"></script>
+    <link href="../../flux.css" rel="stylesheet" type="text/css"/>
   </head>
   <body>
     <nav class="toc">
       <h1>
 Flux
       </h1>
-      <form class="search" action="search.html">
+      <form class="search" action="../search.html">
         <select id="version-selector" onChange="window.location.href=this.value">
           <option value="#" selected="selected" disabled="disabled">
 Version
@@ -42,41 +42,41 @@ Version
         <input id="search-query" name="q" type="text" placeholder="Search docs"/>
       </form>
       <ul>
-        <li class="current">
-          <a class="toctext" href="index.html">
+        <li>
+          <a class="toctext" href="../index.html">
 Home
           </a>
-          <ul class="internal"></ul>
         </li>
         <li>
           <span class="toctext">
 Getting Started
           </span>
           <ul>
-            <li>
-              <a class="toctext" href="manual/basics.html">
+            <li class="current">
+              <a class="toctext" href="basics.html">
 Basics
               </a>
+              <ul class="internal"></ul>
             </li>
             <li>
-              <a class="toctext" href="manual/custom.html">
+              <a class="toctext" href="custom.html">
 Custom Layers
               </a>
             </li>
             <li>
-              <a class="toctext" href="manual/recurrent.html">
+              <a class="toctext" href="recurrent.html">
 Recurrence
               </a>
             </li>
             <li>
-              <a class="toctext" href="manual/debugging.html">
+              <a class="toctext" href="debugging.html">
 Debugging
               </a>
             </li>
           </ul>
         </li>
         <li>
-          <a class="toctext" href="contributing.html">
+          <a class="toctext" href="../contributing.html">
 Contributing &amp; Help
           </a>
         </li>
@@ -87,12 +87,15 @@ Contributing &amp; Help
         <nav>
           <ul>
             <li>
-              <a href="index.html">
-Home
+Getting Started
+            </li>
+            <li>
+              <a href="basics.html">
+Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/5d3ff70f966718f8b9ebd04285558953f508ee66/docs/src/index.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/5d3ff70f966718f8b9ebd04285558953f508ee66/docs/src/manual/basics.md">
             <span class="fa">
 
             </span>
@@ -102,34 +105,31 @@ Home
         <hr/>
       </header>
       <h1>
-        <a class="nav-anchor" id="Flux-1" href="#Flux-1">
-Flux
+        <a class="nav-anchor" id="Basic-Usage-1" href="#Basic-Usage-1">
+Basic Usage
         </a>
       </h1>
       <p>
-Flux is a high-level interface for machine learning, implemented in Julia.
-      </p>
-      <p>
-Flux aims to be intuitive and powerful notation close to the mathematics, while providing advanced features like auto-unrolling and closures. Simple models are trivial, and the most complex architectures are tractable, taking orders of magnitude less code than in other frameworks. Meanwhile, the Flux compiler provides excellent error messages and tools for debugging when things go wrong.
-      </p>
-      <p>
-So what&#39;s the catch? Flux is at an early &quot;working prototype&quot; stage; many things work but the API is still in a state of- well, it might change.
-      </p>
-      <p>
-If you&#39;re interested to find out what 
         <em>
-does
+Charging Ion Capacitors
         </em>
- work, read on...
       </p>
       <footer>
         <hr/>
-        <a class="next" href="manual/basics.html">
+        <a class="previous" href="../index.html">
+          <span class="direction">
+Previous
+          </span>
+          <span class="title">
+Home
+          </span>
+        </a>
+        <a class="next" href="custom.html">
           <span class="direction">
 Next
           </span>
           <span class="title">
-Basics
+Custom Layers
           </span>
         </a>
       </footer>
