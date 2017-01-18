@@ -63,8 +63,18 @@ The Model
               </a>
             </li>
             <li>
-              <a class="toctext" href="#An-MNIST-Example-1">
-An MNIST Example
+              <a class="toctext" href="#Combining-Models-1">
+Combining Models
+              </a>
+            </li>
+            <li>
+              <a class="toctext" href="#A-Function-in-Model's-Clothing-1">
+A Function in Model&#39;s Clothing
+              </a>
+            </li>
+            <li>
+              <a class="toctext" href="#The-Template-1">
+The Template
               </a>
             </li>
           </ul>
@@ -113,7 +123,7 @@ First Steps
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/a146c478f3f39fd990ce94ce4a55ac0974a9f5b1/docs/src/manual/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/2b25491e40f2d595f063497a32f52227bca84f12/docs/src/manual/basics.md">
             <span class="fa">
 
             </span>
@@ -123,8 +133,8 @@ First Steps
         <hr/>
       </header>
       <h1>
-        <a class="nav-anchor" id="Basic-Usage-1" href="#Basic-Usage-1">
-Basic Usage
+        <a class="nav-anchor" id="First-Steps-1" href="#First-Steps-1">
+First Steps
         </a>
       </h1>
       <h2>
@@ -132,8 +142,14 @@ Basic Usage
 Installation
         </a>
       </h2>
+      <p>
+        <em>
+... Charging Ion Capacitors ...
+        </em>
+      </p>
 <pre><code class="language-julia">Pkg.clone(&quot;https://github.com/MikeInnes/DataFlow.jl&quot;)
-Pkg.clone(&quot;https://github.com/MikeInnes/Flux.jl&quot;)</code></pre>
+Pkg.clone(&quot;https://github.com/MikeInnes/Flux.jl&quot;)
+using Flux</code></pre>
       <h2>
         <a class="nav-anchor" id="The-Model-1" href="#The-Model-1">
 The Model
@@ -141,31 +157,146 @@ The Model
       </h2>
       <p>
         <em>
-Charging Ion Capacitors...
+... Initialising Photon Beams ...
         </em>
       </p>
       <p>
-The core concept in Flux is that of the 
+The core concept in Flux is the 
         <em>
 model
         </em>
-. A model is simply a function with parameters. In Julia, we might define the following function:
+. A model (or &quot;layer&quot;) is simply a function with parameters. For example, in plain Julia code, we could define the following function to represent a logistic regression (or simple neural network):
       </p>
 <pre><code class="language-julia">W = randn(3,5)
 b = randn(3)
 affine(x) = W*x + b
 
-x1 = randn(5)
-affine(x1)
-&gt; 3-element Array{Float64,1}:
-   -0.0215644
-   -4.07343  
-    0.312591</code></pre>
+x1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]
+y1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]</code></pre>
+      <p>
+<code>affine</code>
+ is simply a function which takes some vector 
+<code>x1</code>
+ and outputs a new one 
+<code>y1</code>
+. For example, 
+<code>x1</code>
+ could be data from an image and 
+<code>y1</code>
+ could be predictions about the content of that image. However, 
+<code>affine</code>
+ isn&#39;t static. It has 
+        <em>
+parameters
+        </em>
+ 
+<code>W</code>
+ and 
+<code>b</code>
+, and if we tweak those parameters we&#39;ll tweak the result – hopefully to make the predictions more accurate.
+      </p>
+      <p>
+This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a 
+        <em>
+template
+        </em>
+ which creates these functions for us:
+      </p>
+<pre><code class="language-julia">affine1 = Affine(5, 5)
+affine2 = Affine(5, 5)
+
+softmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]
+softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]</code></pre>
+      <p>
+We just created two separate 
+<code>Affine</code>
+ layers, and each contains its own version of 
+<code>W</code>
+ and 
+<code>b</code>
+, leading to a different result when called with our data. It&#39;s easy to define templates like 
+<code>Affine</code>
+ ourselves (see 
+        <a href="basics.html#The-Template-1">
+The Template
+        </a>
+), but Flux provides 
+<code>Affine</code>
+ out of the box.
+      </p>
       <h2>
-        <a class="nav-anchor" id="An-MNIST-Example-1" href="#An-MNIST-Example-1">
-An MNIST Example
+        <a class="nav-anchor" id="Combining-Models-1" href="#Combining-Models-1">
+Combining Models
         </a>
       </h2>
+      <p>
+        <em>
+... Inflating Graviton Zeppelins ...
+        </em>
+      </p>
+      <p>
+A more complex model usually involves many basic layers like 
+<code>affine</code>
+, where we use the output of one layer as the input to the next:
+      </p>
+<pre><code class="language-julia">mymodel1(x) = softmax(affine2(σ(affine1(x))))
+mymodel1(x1) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]</code></pre>
+      <p>
+This syntax is again a little unwieldy for larger networks, so Flux provides another template of sorts to create the function for us:
+      </p>
+<pre><code class="language-julia">mymodel2 = Chain(affine1, σ, affine2, softmax)
+mymodel2(x2) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]</code></pre>
+      <p>
+<code>mymodel2</code>
+ is exactly equivalent to 
+<code>mymodel1</code>
+ because it simply calls the provided functions in sequence. We don&#39;t have to predefine the affine layers and can also write this as:
+      </p>
+<pre><code class="language-julia">mymodel3 = Chain(
+  Affine(5, 5), σ,
+  Affine(5, 5), softmax)</code></pre>
+      <p>
+You now know understand enough to take a look at the 
+        <a href="../examples/logreg.html">
+logistic regression
+        </a>
+ example, if you haven&#39;t already.
+      </p>
+      <h2>
+        <a class="nav-anchor" id="A-Function-in-Model's-Clothing-1" href="#A-Function-in-Model's-Clothing-1">
+A Function in Model&#39;s Clothing
+        </a>
+      </h2>
+      <p>
+        <em>
+... Booting Dark Matter Transmogrifiers ...
+        </em>
+      </p>
+      <p>
+We noted above that a &quot;model&quot; is just a function with some trainable parameters. This goes both ways; a normal Julia function like 
+<code>exp</code>
+ is really just a model with 0 parameters. Flux doesn&#39;t care, and anywhere that you use one, you can use the other. For example, 
+<code>Chain</code>
+ will happily work with regular functions:
+      </p>
+<pre><code class="language-julia">foo = Chain(exp, sum, log)
+foo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))</code></pre>
+      <p>
+This unification opens up the floor for some powerful features, which we&#39;ll discuss later in the guide.
+      </p>
+      <h2>
+        <a class="nav-anchor" id="The-Template-1" href="#The-Template-1">
+The Template
+        </a>
+      </h2>
+      <p>
+        <em>
+... Calculating Tax Expenses ...
+        </em>
+      </p>
+      <p>
+[WIP]
+      </p>
       <footer>
         <hr/>
         <a class="previous" href="../index.html">
