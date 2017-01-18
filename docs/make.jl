@@ -11,9 +11,9 @@ makedocs(modules=[Flux],
                   "Recurrence" => "manual/recurrent.md",
                   "Debugging" => "manual/debugging.md",
                   "In Action" => [
-                    "Logistic Regression" => "examples/logreg.md"]
+                    "Logistic Regression" => "examples/logreg.md"],
                   "Contributing & Help" => "contributing.md",
-                  "Internals"])
+                  "Internals" => "internals.md"])
 
 deploydocs(
    repo = "github.com/MikeInnes/Flux.jl.git",
