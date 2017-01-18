@@ -7,9 +7,10 @@ makedocs(modules=[Flux],
          sitename = "Flux",
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
-                  "First Steps" => "manual/basics.md",
-                  "Recurrence" => "manual/recurrent.md",
-                  "Debugging" => "manual/debugging.md",
+                  "Building Models" => [
+                    "First Steps" => "models/basics.md",
+                    "Recurrence" => "models/recurrent.md",
+                    "Debugging" => "models/debugging.md"],
                   "In Action" => [
                     "Logistic Regression" => "examples/logreg.md"],
                   "Contributing & Help" => "contributing.md",
