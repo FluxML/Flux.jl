@@ -7,12 +7,13 @@ makedocs(modules=[Flux],
          sitename = "Flux",
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
-                  "Getting Started" => [
-                    "Basics" => "manual/basics.md",
-                    "Custom Layers" => "manual/custom.md",
-                    "Recurrence" => "manual/recurrent.md",
-                    "Debugging" => "manual/debugging.md"],
-                  "Contributing & Help" => "contributing.md"])
+                  "First Steps" => "manual/basics.md",
+                  "Recurrence" => "manual/recurrent.md",
+                  "Debugging" => "manual/debugging.md",
+                  "In Action" => [
+                    "Logistic Regression" => "examples/logreg.md"]
+                  "Contributing & Help" => "contributing.md",
+                  "Internals"])
 
 deploydocs(
    repo = "github.com/MikeInnes/Flux.jl.git",
