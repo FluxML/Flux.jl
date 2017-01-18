@@ -13,20 +13,20 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Flux",
     "category": "section",
-    "text": "Flux is a high-level interface for machine learning, implemented in Julia.Flux aims to be an intuitive and powerful notation, close to the mathematics, that provides advanced features like auto-unrolling and closures. Simple models are trivial, while the most complex architectures are tractable, taking orders of magnitude less code than in other frameworks. Meanwhile, the Flux compiler provides excellent error messages and tools for debugging when things go wrong.So what's the catch? Flux is at an early \"working prototype\" stage; many things work but the API is still in a state of... well, it might change.If you're interested to find out what does work, read on!"
+    "text": "Flux is a high-level interface for machine learning, implemented in Julia.Flux aims to be an intuitive and powerful notation, close to the mathematics, that provides advanced features like auto-unrolling and closures. Simple models are trivial, while the most complex architectures are tractable, taking orders of magnitude less code than in other frameworks. Meanwhile, the Flux compiler provides excellent error messages and tools for debugging when things go wrong.So what's the catch? Flux is at an early \"working prototype\" stage; many things work but the API is still in a state of... well, it might change. Also, this documentation is pretty incomplete.If you're interested to find out what does work, read on!"
 },
 
 {
     "location": "manual/basics.html#",
-    "page": "Basics",
-    "title": "Basics",
+    "page": "First Steps",
+    "title": "First Steps",
     "category": "page",
     "text": ""
 },
 
 {
     "location": "manual/basics.html#Basic-Usage-1",
-    "page": "Basics",
+    "page": "First Steps",
     "title": "Basic Usage",
     "category": "section",
     "text": ""
@@ -34,7 +34,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "manual/basics.html#Installation-1",
-    "page": "Basics",
+    "page": "First Steps",
     "title": "Installation",
     "category": "section",
     "text": "Pkg.clone(\"https://github.com/MikeInnes/DataFlow.jl\")\nPkg.clone(\"https://github.com/MikeInnes/Flux.jl\")"
@@ -42,7 +42,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "manual/basics.html#The-Model-1",
-    "page": "Basics",
+    "page": "First Steps",
     "title": "The Model",
     "category": "section",
     "text": "Charging Ion Capacitors...The core concept in Flux is that of the model. A model is simply a function with parameters. In Julia, we might define the following function:W = randn(3,5)\nb = randn(3)\naffine(x) = W*x + b\n\nx1 = randn(5)\naffine(x1)\n> 3-element Array{Float64,1}:\n   -0.0215644\n   -4.07343  \n    0.312591"
@@ -50,26 +50,10 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "manual/basics.html#An-MNIST-Example-1",
-    "page": "Basics",
+    "page": "First Steps",
     "title": "An MNIST Example",
     "category": "section",
     "text": ""
-},
-
-{
-    "location": "manual/custom.html#",
-    "page": "Custom Layers",
-    "title": "Custom Layers",
-    "category": "page",
-    "text": ""
-},
-
-{
-    "location": "manual/custom.html#Custom-Layers-1",
-    "page": "Custom Layers",
-    "title": "Custom Layers",
-    "category": "section",
-    "text": "[WIP]"
 },
 
 {
@@ -105,6 +89,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "examples/logreg.html#",
+    "page": "Logistic Regression",
+    "title": "Logistic Regression",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "examples/logreg.html#Logistic-Regression-with-MNIST-1",
+    "page": "Logistic Regression",
+    "title": "Logistic Regression with MNIST",
+    "category": "section",
+    "text": "[WIP]"
+},
+
+{
     "location": "contributing.html#",
     "page": "Contributing & Help",
     "title": "Contributing & Help",
@@ -116,6 +116,22 @@ var documenterSearchIndex = {"docs": [
     "location": "contributing.html#Contributing-1",
     "page": "Contributing & Help",
     "title": "Contributing",
+    "category": "section",
+    "text": "[WIP]"
+},
+
+{
+    "location": "internals.html#",
+    "page": "Internals",
+    "title": "Internals",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "internals.html#Internals-1",
+    "page": "Internals",
+    "title": "Internals",
     "category": "section",
     "text": "[WIP]"
 },

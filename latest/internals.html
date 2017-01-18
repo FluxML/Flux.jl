@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>
-Debugging · Flux
+Internals · Flux
     </title>
     <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -20,20 +20,20 @@ ga('send', 'pageview');
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/>
     <link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
-    <link href="../assets/documenter.css" rel="stylesheet" type="text/css"/>
+    <link href="assets/documenter.css" rel="stylesheet" type="text/css"/>
     <script>
-documenterBaseURL=".."
+documenterBaseURL="."
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script>
-    <script src="../../versions.js"></script>
-    <link href="../../flux.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script>
+    <script src="../versions.js"></script>
+    <link href="../flux.css" rel="stylesheet" type="text/css"/>
   </head>
   <body>
     <nav class="toc">
       <h1>
 Flux
       </h1>
-      <form class="search" action="../search.html">
+      <form class="search" action="search.html">
         <select id="version-selector" onChange="window.location.href=this.value">
           <option value="#" selected="selected" disabled="disabled">
 Version
@@ -43,25 +43,24 @@ Version
       </form>
       <ul>
         <li>
-          <a class="toctext" href="../index.html">
+          <a class="toctext" href="index.html">
 Home
           </a>
         </li>
         <li>
-          <a class="toctext" href="basics.html">
+          <a class="toctext" href="manual/basics.html">
 First Steps
           </a>
         </li>
         <li>
-          <a class="toctext" href="recurrent.html">
+          <a class="toctext" href="manual/recurrent.html">
 Recurrence
           </a>
         </li>
-        <li class="current">
-          <a class="toctext" href="debugging.html">
+        <li>
+          <a class="toctext" href="manual/debugging.html">
 Debugging
           </a>
-          <ul class="internal"></ul>
         </li>
         <li>
           <span class="toctext">
@@ -69,21 +68,22 @@ In Action
           </span>
           <ul>
             <li>
-              <a class="toctext" href="../examples/logreg.html">
+              <a class="toctext" href="examples/logreg.html">
 Logistic Regression
               </a>
             </li>
           </ul>
         </li>
         <li>
-          <a class="toctext" href="../contributing.html">
+          <a class="toctext" href="contributing.html">
 Contributing &amp; Help
           </a>
         </li>
-        <li>
-          <a class="toctext" href="../internals.html">
+        <li class="current">
+          <a class="toctext" href="internals.html">
 Internals
           </a>
+          <ul class="internal"></ul>
         </li>
       </ul>
     </nav>
@@ -92,12 +92,12 @@ Internals
         <nav>
           <ul>
             <li>
-              <a href="debugging.html">
-Debugging
+              <a href="internals.html">
+Internals
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/a146c478f3f39fd990ce94ce4a55ac0974a9f5b1/docs/src/manual/debugging.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/a146c478f3f39fd990ce94ce4a55ac0974a9f5b1/docs/src/internals.md">
             <span class="fa">
 
             </span>
@@ -107,8 +107,8 @@ Debugging
         <hr/>
       </header>
       <h1>
-        <a class="nav-anchor" id="Debugging-Models-1" href="#Debugging-Models-1">
-Debugging Models
+        <a class="nav-anchor" id="Internals-1" href="#Internals-1">
+Internals
         </a>
       </h1>
       <p>
@@ -116,20 +116,12 @@ Debugging Models
       </p>
       <footer>
         <hr/>
-        <a class="previous" href="recurrent.html">
+        <a class="previous" href="contributing.html">
           <span class="direction">
 Previous
           </span>
           <span class="title">
-Recurrence
-          </span>
-        </a>
-        <a class="next" href="../examples/logreg.html">
-          <span class="direction">
-Next
-          </span>
-          <span class="title">
-Logistic Regression
+Contributing &amp; Help
           </span>
         </a>
       </footer>
