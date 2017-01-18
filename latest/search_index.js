@@ -17,7 +17,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#",
+    "location": "models/basics.html#",
     "page": "First Steps",
     "title": "First Steps",
     "category": "page",
@@ -25,7 +25,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#First-Steps-1",
+    "location": "models/basics.html#First-Steps-1",
     "page": "First Steps",
     "title": "First Steps",
     "category": "section",
@@ -33,7 +33,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#Installation-1",
+    "location": "models/basics.html#Installation-1",
     "page": "First Steps",
     "title": "Installation",
     "category": "section",
@@ -41,7 +41,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#The-Model-1",
+    "location": "models/basics.html#The-Model-1",
     "page": "First Steps",
     "title": "The Model",
     "category": "section",
@@ -49,7 +49,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#Combining-Models-1",
+    "location": "models/basics.html#Combining-Models-1",
     "page": "First Steps",
     "title": "Combining Models",
     "category": "section",
@@ -57,7 +57,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#A-Function-in-Model's-Clothing-1",
+    "location": "models/basics.html#A-Function-in-Model's-Clothing-1",
     "page": "First Steps",
     "title": "A Function in Model's Clothing",
     "category": "section",
@@ -65,7 +65,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/basics.html#The-Template-1",
+    "location": "models/basics.html#The-Template-1",
     "page": "First Steps",
     "title": "The Template",
     "category": "section",
@@ -73,7 +73,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/recurrent.html#",
+    "location": "models/recurrent.html#",
     "page": "Recurrence",
     "title": "Recurrence",
     "category": "page",
@@ -81,7 +81,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/recurrent.html#Recurrent-Models-1",
+    "location": "models/recurrent.html#Recurrent-Models-1",
     "page": "Recurrence",
     "title": "Recurrent Models",
     "category": "section",
@@ -89,7 +89,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/debugging.html#",
+    "location": "models/debugging.html#",
     "page": "Debugging",
     "title": "Debugging",
     "category": "page",
@@ -97,7 +97,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/debugging.html#Debugging-Models-1",
+    "location": "models/debugging.html#Debugging-Models-1",
     "page": "Debugging",
     "title": "Debugging Models",
     "category": "section",
