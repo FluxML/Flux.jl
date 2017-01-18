@@ -8,7 +8,7 @@ makedocs(modules=[Flux],
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
                   "Getting Started" => [
-                    "Basics" => "mnist.md"]])
+                    "Basics" => "basics.md"]])
 
 deploydocs(
    repo = "github.com/MikeInnes/Flux.jl.git",
