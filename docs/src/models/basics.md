@@ -65,7 +65,7 @@ mymodel3 = Chain(
   Affine(5, 5), softmax)
 ```
 
-You now know understand enough to take a look at the [logistic regression](../examples/logreg.md) example, if you haven't already.
+You now know enough to take a look at the [logistic regression](../examples/logreg.md) example, if you haven't already.
 
 ## A Function in Model's Clothing
 
