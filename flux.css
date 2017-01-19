@@ -1,3 +1,7 @@
+body {
+  background: rgb(40, 40, 40);
+}
+
 nav.toc {
   padding-top: 0;
   background: rgb(40, 40, 40);
@@ -58,6 +62,7 @@ a:visited {
 }
 
 article {
+  background: white;
   line-height: 2em;
 }
 
