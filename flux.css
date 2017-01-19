@@ -1,5 +1,8 @@
+html { height: 100%; }
+
 body {
   background: rgb(40, 40, 40);
+  height: 100%;
 }
 
 nav.toc {
@@ -64,6 +67,8 @@ a:visited {
 article {
   background: white;
   line-height: 2em;
+  min-height: 100%;
+  padding-bottom: 33%;
 }
 
 /* Code */
