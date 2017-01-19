@@ -81,13 +81,13 @@ pre {
 .hljs {
   display: block;
   overflow-x: auto;
-  color: #abb2bf;
+  color: rgb(209, 209, 209);
   /*background: #282c34;*/
   padding: .5em;
 }
 
 .hljs-comment, .hljs-quote {
-  color: #5c6370;
+  color: rgb(55, 121, 84);
   font-style: italic;
 }
 
