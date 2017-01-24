@@ -54,7 +54,7 @@ function process_type(ex)
   self = esc(:self)
   quote
     $(build_type(T, params))
-    $(esc(:(self::$T)))($(args...),) = interpret(reifyparams(graph($self)), $(args...))
+    $(esc(:(self::$T)))($(args...),) = interpmodel($self, $(args...))
     $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!($self.$p, η)), pnames)...);)
     $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(mapconst(esc, makegraph(body, args))))
     nothing

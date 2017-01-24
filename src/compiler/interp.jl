@@ -24,3 +24,9 @@ function imap(cb, ctx, ::typeof(map), f, xs...)
 end
 
 imap(f, args...) = f(args...)
+
+function interpmodel(m, args::Batch...)
+  rebatch(interpret(reifyparams(graph(m)), map(rawbatch, args)...))
+end
+
+interpmodel(m, args...) = unbatchone(interpmodel(m, batchone(args)...))
