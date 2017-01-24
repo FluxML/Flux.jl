@@ -9,6 +9,10 @@ using Juno: Tree, Row
 
 # Zero Flux Given
 
+include("dims/catmat.jl")
+include("dims/batching.jl")
+include("dims/seq.jl")
+
 include("model.jl")
 include("utils.jl")
 include("data.jl")
@@ -24,10 +28,6 @@ include("layers/recurrent.jl")
 include("layers/shape.jl")
 include("layers/chain.jl")
 include("layers/shims.jl")
-
-include("dims/catmat.jl")
-include("dims/batching.jl")
-include("dims/seq.jl")
 
 include("cost.jl")
 

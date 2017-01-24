@@ -11,11 +11,28 @@ Batch(xs) = Batch(CatMat(xs))
 convert{T,S}(::Type{Batch{T,S}},storage::S) =
   Batch{T,S}(storage)
 
-batchone(x) = Batch((x,))
-batchone(x::Batch) = x
-
 @render Juno.Inline b::Batch begin
   Tree(Row(Text("Batch of "), eltype(b),
            Juno.fade("[$(length(b))]")),
        Juno.trim(collect(b)))
+end
+
+# Convenience methods for batch size 1
+
+batchone(x) = Batch((x,))
+batchone(x::Batch) = x
+batchone(x::Tuple) = map(batchone, x)
+
+function unbatchone(xs::Batch)
+  @assert length(xs) == 1
+  return first(xs)
+end
+
+unbatchone(xs::Tuple) = map(unbatchone, xs)
+
+function rebatch(xs)
+  dims = ndims(xs)-1
+  T = Array{eltype(xs),dims}
+  B = Array{eltype(xs),dims+1}
+  Batch{T,B}(xs)
 end

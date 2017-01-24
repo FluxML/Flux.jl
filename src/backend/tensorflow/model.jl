@@ -29,13 +29,6 @@ storeparams!(m::Model) = storeparams!(m.session, m.params)
 
 ismultioutput(m::Model) = !isa(m.output, Tensor)
 
-function batch(xs)
-  dims = ndims(xs)-1
-  T = Array{eltype(xs),dims}
-  B = Array{eltype(xs),dims+1}
-  Batch{T,B}(xs)
-end
-
 function tferr(model::Model, e)
   m = match(r"Node: ([\w\d]+) =", string(e.status))
   m == nothing && return
@@ -51,7 +44,7 @@ function runmodel(m::Model, args...)
   @assert length(args) == length(m.inputs)
   try
     output = run(m.session, m.output, Dict(zip(m.inputs, args)))
-    ismultioutput(m) ? (batch.(output)...,) : batch(output)
+    ismultioutput(m) ? (rebatch.(output)...,) : rebatch(output)
   catch e
     isa(e, TensorFlow.TFException) || rethrow(e)
     tferr(m, e)
