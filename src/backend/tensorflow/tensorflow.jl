@@ -1,7 +1,7 @@
 module TF
 
 using ..Flux, DataFlow, TensorFlow, Juno
-import Flux: accuracy, rebatch
+import Flux: accuracy, rebatch, convertel
 
 export tf
 

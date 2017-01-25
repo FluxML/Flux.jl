@@ -1,4 +1,4 @@
-xs = rand(Float32, 20)
+xs = rand(20)
 
 d = Affine(20, 10)
 

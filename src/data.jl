@@ -1,5 +1,8 @@
 export onehot, onecold, chunk, partition, batches, sequences
 
+convertel(T::Type, xs::AbstractArray) = map(x->convert(T, x), xs)
+convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
+
 """
     onehot('b', ['a', 'b', 'c', 'd']) => [false, true, false, false]
 

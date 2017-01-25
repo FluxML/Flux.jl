@@ -53,7 +53,7 @@ function runmodel(m::Model, args...)
 end
 
 function (m::Model)(args::Batch...)
-  runmodel(m, args...)
+  runmodel(m, map(x -> convertel(Float32, x), args)...)
 end
 
 function (m::Model)(args...)
