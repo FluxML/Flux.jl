@@ -25,6 +25,8 @@ end
 
 imap(f, args...) = f(args...)
 
+# TODO: batching should be secondary
+
 function interpmodel(m, args::Batch...)
   rebatch(interpret(reifyparams(graph(m)), map(rawbatch, args)...))
 end
