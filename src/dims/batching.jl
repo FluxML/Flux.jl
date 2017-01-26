@@ -36,3 +36,7 @@ function rebatch(xs)
   B = Array{eltype(xs),dims+1}
   Batch{T,B}(xs)
 end
+
+convertel(T::Type, xs::Batch) =
+  isa(eltype(eltype(xs)), T) ? xs :
+    Batch(map(x->convertel(T, x), xs))
