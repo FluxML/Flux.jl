@@ -67,6 +67,6 @@ function tograph(model, args...)
   return ctx[:params], ctx[:stacks], out
 end
 
-TensorFlow.Tensor(m::Flux.Model, args...) = tograph(m, args...)[2]
+TensorFlow.Tensor(m::Flux.Model, args...) = tograph(m, args...)[3]
 
 RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))
