@@ -20,10 +20,10 @@ graph(::typeof(hcat), xs...) = concat(1, xs)
 graph(::typeof(seq), xs, n) = TensorFlow.unpack(xs, num = n, axis = 1)
 
 for op in (tanh, *, .*, +, -)
-  @eval graph(::typeof($op), args...) = $op(node(args)...)
+  @eval graph(::typeof($op), args...) = $op(args...)
 end
 
-graph(::typeof(.-), args...) = -(node(args)...)
+graph(::typeof(.-), args...) = -(args...)
 
 # reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79
 batchsize(x::Tensor) = reduce_sum(slice(TensorFlow.shape(x), [0], [1]))
@@ -51,7 +51,7 @@ interp{T<:AArray}(ctx, p::Constant{Flux.Param{T}}) =
      ctx[:params][p.value] :
     (ctx[:params][p.value] = Variable(convertel(Float32, p.value.x)))
 
-interp(ctx, p::Constant) = p.value
+interp(ctx, p::Constant) = node(p.value)
 
 function interp(ctx, model, args...)
   g = Flux.graph(model)
