@@ -49,7 +49,7 @@ interp(ctx, c::Conv2D, x) =
 interp{T<:AArray}(ctx, p::Constant{Flux.Param{T}}) =
   haskey(ctx[:params], p.value) ?
      ctx[:params][p.value] :
-    (ctx[:params][p.value] = Variable(p.value.x))
+    (ctx[:params][p.value] = Variable(convertel(Float32, p.value.x)))
 
 interp(ctx, p::Constant) = p.value
 
