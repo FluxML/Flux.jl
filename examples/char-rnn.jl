@@ -24,8 +24,6 @@ m = tf(unroll(model, nunroll))
 
 @time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)
 
-string(map(c -> onecold(c, alphabet), m(first(first(Xs))))...)
-
 function sample(model, n, temp = 1)
   s = [rand(alphabet)]
   m = tf(unroll(model, 1))
