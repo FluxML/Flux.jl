@@ -1,3 +1,11 @@
+function symbolname(s::mx.SymbolicNode)
+  name = Ref{mx.char_p}(0)
+  success = Ref(0)
+  mx.@mxcall(:MXSymbolGetName, (mx.MX_handle, Ref{mx.char_p}, Ref{Int}), s.handle.value, name, success)
+  @assert success[] != -1
+  return Symbol(unsafe_wrap(String, name[]))
+end
+
 using Base: @get!
 using DataFlow: Constant, constant, Context, interpret, Split,
   interpv, ituple, ilambda, iconst, iline, stack, mux
