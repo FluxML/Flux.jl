@@ -1,4 +1,4 @@
-function symbolname(s::mx.SymbolicNode)
+function nodename(s::mx.SymbolicNode)
   name = Ref{mx.char_p}(0)
   success = Ref(0)
   mx.@mxcall(:MXSymbolGetName, (mx.MX_handle, Ref{mx.char_p}, Ref{Int}), s.handle.value, name, success)
@@ -62,7 +62,7 @@ interp(ctx, p::Constant) = node(p.value)
 
 function graph(ctx::Context, model, args...)
   node = graph(model, interpv(ctx, args)...)
-  # isa(node, Tensor) && (ctx[:stacks][node.op.name] = stack(ctx))
+  isa(node, mx.SymbolicNode) && (ctx[:stacks][nodename(node)] = stack(ctx))
   return node
 end
 
