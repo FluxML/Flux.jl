@@ -82,6 +82,9 @@ end
 
 # Error Handling
 
+using Juno
+Juno.errmsg(e::mx.MXError) = e.msg
+
 function errnode(e::mx.MXError)
   m = match(r"Error in (\w+):", e.msg)
   m == nothing && return
@@ -94,7 +97,6 @@ macro mxerr(stk, ex)
     catch e
       (isa(e, mx.MXError) && (node = errnode(e)) != nothing) || rethrow()
       stk = $(esc(stk))
-      @show stk[node]
-      rethrow()
+      throw(DataFlow.Exception(e, DataFlow.totrace(stk[node])))
     end)
 end
