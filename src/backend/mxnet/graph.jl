@@ -79,3 +79,22 @@ function tograph(model, args...)
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out
 end
+
+# Error Handling
+
+function errnode(e::mx.MXError)
+  m = match(r"Error in (\w+):", e.msg)
+  m == nothing && return
+  Symbol(m.captures[1])
+end
+
+macro mxerr(stk, ex)
+  :(try
+      $(esc(ex))
+    catch e
+      (isa(e, mx.MXError) && (node = errnode(e)) != nothing) || rethrow()
+      stk = $(esc(stk))
+      @show stk[node]
+      rethrow()
+    end)
+end

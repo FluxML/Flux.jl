@@ -37,10 +37,10 @@ function mxnet(model::Model, input)
   params, stacks, node = tograph(model, mx.Variable(:input))
   args = merge(mxargs(params), Dict(:input => mx.zeros(input)))
   grads = mxgrads(args)
-  model = MXModel(model, params, grads, stacks,
-                  mx.bind(node, args = args,
-                                args_grad = grads,
-                                grad_req = mx.GRAD_ADD))
+  model = @mxerr stacks MXModel(model, params, grads, stacks,
+                                mx.bind(node, args = args,
+                                              args_grad = grads,
+                                              grad_req = mx.GRAD_ADD))
   loadparams!(model)
   return model
 end
