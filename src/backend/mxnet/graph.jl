@@ -59,10 +59,15 @@ end
 
 interp(ctx, p::Constant) = node(p.value)
 
-function graph(ctx::Context, model, args...)
-  node = graph(model, args...)
-  isa(node, mx.SymbolicNode) && (ctx[:stacks][nodename(node)] = stack(ctx))
+function register(ctx::Context, node::mx.SymbolicNode)
+  ctx[:stacks][nodename(node)] = stack(ctx)
   return node
+end
+
+register(ctx::Context, node) = node
+
+function graph(ctx::Context, model, args...)
+  register(ctx, graph(model, args...))
 end
 
 function interp(ctx, model, args...)
