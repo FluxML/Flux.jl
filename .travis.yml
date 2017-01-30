@@ -15,4 +15,6 @@ script:
 after_success:
   # - julia -e 'Pkg.add("Documenter")'
   - julia -e 'Pkg.clone("https://github.com/MikeInnes/Documenter.jl")'
+  - julia -e 'VERSION < v"0.6-" && Pkg.add("TensorFlow")'
+  - julia -e 'Pkg.add("MXNet")'
   - julia -e 'cd(Pkg.dir("Flux")); include(joinpath("docs", "make.jl"))'
