@@ -61,7 +61,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...)
-  ctx = Context(mux(iline, ilambda, ituple, imap, interp),
+  ctx = Context(mux(iline, ilambda, imap, interp),
                 params = ObjectIdDict(), stacks = Dict())
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out
