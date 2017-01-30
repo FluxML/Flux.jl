@@ -7,7 +7,7 @@ end
 
 function tf(args...)
   loadtf()
-  TF.tf(args...)
+  eval(:(TF.tf($(args...))))
 end
 
 function loadmx()
@@ -17,5 +17,5 @@ end
 
 function mxnet(args...)
   loadmx()
-  MX.mxnet(args...)
+  eval(:(MX.mxnet($(args...))))
 end
