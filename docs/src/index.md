@@ -7,3 +7,15 @@ Flux aims to be an intuitive and powerful notation, close to the mathematics, th
 So what's the catch? Flux is at an early "working prototype" stage; many things work but the API is still in a state of... well, it might change. Also, this documentation is pretty incomplete.
 
 If you're interested to find out what *does* work, read on!
+
+## Installation
+
+*... Charging Ion Capacitors ...*
+
+```julia
+Pkg.clone("https://github.com/MikeInnes/DataFlow.jl")
+Pkg.clone("https://github.com/MikeInnes/Flux.jl")
+using Flux
+```
+
+You'll also need a backend to run real training, if you don't have one already. Choose from [MXNet](https://github.com/dmlc/MXNet.jl) or [TensorFlow](https://github.com/malmaud/TensorFlow.jl) (MXNet is the recommended option if you're not sure):
