@@ -43,7 +43,7 @@ softmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]
 softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]
 ```
 
-We just created two separate `Affine` layers, and each contains its own version of `W` and `b`, leading to a different result when called with our data. It's easy to define templates like `Affine` ourselves (see [The Template](@ref)), but Flux provides `Affine` out of the box.
+We just created two separate `Affine` layers, and each contains its own version of `W` and `b`, leading to a different result when called with our data. It's easy to define templates like `Affine` ourselves (see [The Template](@ref)), but Flux provides `Affine` out of the box, so we'll use that for now.
 
 ## Combining Models
 
