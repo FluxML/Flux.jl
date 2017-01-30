@@ -13,7 +13,7 @@ The core concept in Flux is the *model*. A model (or "layer") is simply a functi
 ```julia
 W = randn(3,5)
 b = randn(3)
-affine(x) = W*x + b
+affine(x) = W * x + b
 
 x1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]
 y1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]
@@ -65,17 +65,59 @@ You now know enough to take a look at the [logistic regression](../examples/logr
 
 *... Booting Dark Matter Transmogrifiers ...*
 
-We noted above that a "model" is just a function with some trainable parameters. This goes both ways; a normal Julia function like `exp` is really just a model with 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, `Chain` will happily work with regular functions:
+We noted above that a "model" is a function with some number of trainable parameters. This goes both ways; a normal Julia function like `exp` is effectively a model with 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, `Chain` will happily work with regular functions:
 
 ```julia
 foo = Chain(exp, sum, log)
 foo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))
 ```
 
-This unification opens up the floor for some powerful features, which we'll discuss later in the guide.
-
 ## The Template
 
 *... Calculating Tax Expenses ...*
 
-[WIP]
+So how does the `Affine` template work? We don't want to duplicate the code above whenever we need more than one affine layer:
+
+```julia
+W₁, b₁ = randn(...)
+affine₁(x) = W₁*x + b₁
+W₂, b₂ = randn(...)
+affine₂(x) = W₂*x + b₂
+model = Chain(affine₁, affine₂)
+```
+
+Here's one way we could solve this: just keep the parameters in a Julia type, and define how that type acts as a function:
+
+```julia
+type MyAffine
+  W
+  b
+end
+
+# Use the `MyAffine` layer as a model
+(l::MyAffine)(x) = l.W * x + l.b
+
+# Convenience constructor
+MyAffine(in::Integer, out::Integer) =
+  MyAffine(randn(out, in), randn(out))
+
+model = Chain(MyAffine(5, 5), MyAffine(5, 5))
+
+model(x1) # [-1.54458,0.492025,0.88687,1.93834,-4.70062]
+```
+
+This is much better: we can now make as many affine layers as we want. This is a very common pattern, so to make it more convenient we can use the `@net` macro:
+
+```julia
+@net type MyAffine
+  W
+  b
+  x -> W * x + b
+end
+```
+
+The function provided, `x -> W * x + b`, will be used when `MyAffine` is used as a model; it's just a shorter way of defining the `(::MyAffine)(x)` method above.
+
+However, `@net` does not simply save us some keystrokes; it's the secret sauce that makes everything else in Flux go. For example, it analyses the code for the forward function so that it can differentiate it or convert it to a TensorFlow graph.
+
+The above code is almost exactly how `Affine` is defined in Flux itself! There's no difference between "library-level" and "user-level" models, so making your code reusable doesn't involve a lot of extra complexity. Moreover, much more complex models than `Affine` are equally simple to define, and equally close to the mathematical notation; read on to find out how.
