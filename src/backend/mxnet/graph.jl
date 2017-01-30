@@ -18,7 +18,6 @@ node(x::mx.SymbolicNode) = x
 # node(x::Number) = TensorFlow.constant(Float32(x))
 
 graph(::typeof(tuple), args...) = (args...,)
-graph(s::Split, t::Tuple) = t[s.n]
 graph(::typeof(*), args...) = mx.dot(args...)
 graph(::typeof(+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)
@@ -74,7 +73,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...)
-  ctx = Context(mux(iline, ilambda, imap, iargs, interp),
+  ctx = Context(mux(iline, ilambda, imap, iargs, ituple, interp),
                 params = Dict(), stacks = Dict())
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out
