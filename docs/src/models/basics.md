@@ -10,6 +10,12 @@ Pkg.clone("https://github.com/MikeInnes/Flux.jl")
 using Flux
 ```
 
+You'll also need a backend to run real training, if you don't have one already. Choose from [MXNet](https://github.com/dmlc/MXNet.jl) or [TensorFlow](https://github.com/malmaud/TensorFlow.jl) (MXNet is the recommended option if you're not sure):
+
+```
+Pkg.add("MXNet") # or "TensorFlow"
+```
+
 ## The Model
 
 *... Initialising Photon Beams ...*
