@@ -1,4 +1,3 @@
-using MacroTools
 
 type MXModel <: Model
   model::Any
