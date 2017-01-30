@@ -1,3 +1,4 @@
+using Flux: batchone, rebatch
 
 type Model <: Flux.Model
   model::Any
@@ -49,6 +50,10 @@ function runmodel(model::Model, input)
   mx.forward(model.exec, is_train = true)
   copy(model.exec.outputs[1])
 end
+
+(m::Model)(x::Batch) = rebatch(runmodel(m, rawbatch(x)))
+
+(m::Model)(x) = first(m(batchone(x)))
 
 function Flux.back!(model::Model, Δ, x)
   ndzero!(model.grads[:input])

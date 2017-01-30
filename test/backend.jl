@@ -5,9 +5,8 @@ let dt = tf(d)
   @test d(xs) ≈ dt(xs)
 end
 
-# TODO: batch semantics
 let dm = mxnet(d, (1, 20))
-  @test d(xs)' ≈ dm(xs')
+  @test d(xs) ≈ dm(xs)
 end
 
 # TensorFlow native integration
