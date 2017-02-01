@@ -142,7 +142,7 @@ type TLP
 end
 
 function (self::TLP)(x)
-  l1 = σ(self.first)
+  l1 = σ(self.first(x))
   l2 = softmax(self.second(l1))
 end
 ```
