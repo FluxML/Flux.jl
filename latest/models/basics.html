@@ -128,7 +128,7 @@ Model Building Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/e15a6e4896ae4c433d476880b1a118ce4e655432/docs/src/models/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/2ae4a23efe49056eb55914c2984478747eb002c8/docs/src/models/basics.md">
             <span class="fa">
 
             </span>
@@ -340,7 +340,68 @@ The above code is almost exactly how
 <code>Affine</code>
  is defined in Flux itself! There&#39;s no difference between &quot;library-level&quot; and &quot;user-level&quot; models, so making your code reusable doesn&#39;t involve a lot of extra complexity. Moreover, much more complex models than 
 <code>Affine</code>
- are equally simple to define, and equally close to the mathematical notation; read on to find out how.
+ are equally simple to define.
+      </p>
+      <h3>
+        <a class="nav-anchor" id="Sub-Templates-1" href="#Sub-Templates-1">
+Sub-Templates
+        </a>
+      </h3>
+      <p>
+<code>@net</code>
+ models can contain sub-models as well as just array parameters:
+      </p>
+<pre><code class="language-julia">@net type TLP
+  first
+  second
+  function (x)
+    l1 = σ(first(x))
+    l2 = softmax(second(l1))
+  end
+end</code></pre>
+      <p>
+Just as above, this is roughly equivalent to writing:
+      </p>
+<pre><code class="language-julia">type TLP
+  first
+  second
+end
+
+function (self::TLP)(x)
+  l1 = σ(self.first)
+  l2 = softmax(self.second(l1))
+end</code></pre>
+      <p>
+Clearly, the 
+<code>first</code>
+ and 
+<code>second</code>
+ parameters are not arrays here, but should be models themselves, and produce a result when called with an input array 
+<code>x</code>
+. The 
+<code>Affine</code>
+ layer fits the bill so we can instantiate 
+<code>TLP</code>
+ with two of them:
+      </p>
+<pre><code class="language-julia">model = TLP(Affine(10, 20),
+            Affine(20, 15))
+x1 = rand(20)
+model(x1) # [0.057852,0.0409741,0.0609625,0.0575354 ...</code></pre>
+      <p>
+You may recognise this as being equivalent to
+      </p>
+<pre><code class="language-julia">Chain(
+  Affine(10, 20), σ
+  Affine(20, 15)), softmax</code></pre>
+      <p>
+given that it&#39;s just a sequence of calls. For simple networks 
+<code>Chain</code>
+ is completely fine, although the 
+<code>@net</code>
+ version is more powerful as we can (for example) reuse the output 
+<code>l1</code>
+ more than once.
       </p>
       <footer>
         <hr/>
