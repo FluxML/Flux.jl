@@ -128,7 +128,7 @@ Model Building Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/a1e35ea2c8838cc7e4e12fa290bab19d1b49c48a/docs/src/models/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/9b016085b05ad55c0bc4b96bf53be70d063adfa2/docs/src/models/basics.md">
             <span class="fa">
 
             </span>
@@ -368,7 +368,7 @@ Just as above, this is roughly equivalent to writing:
 end
 
 function (self::TLP)(x)
-  l1 = σ(self.first)
+  l1 = σ(self.first(x))
   l2 = softmax(self.second(l1))
 end</code></pre>
       <p>
