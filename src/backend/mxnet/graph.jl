@@ -8,7 +8,8 @@ end
 
 using Base: @get!
 using DataFlow: Constant, constant, Context, interpret, Split,
-  interpv, ituple, ilambda, iconst, iline, iargs, stack, mux
+  interpv, ituple, ilambda, iconst, iline, iargs, stack, mux,
+  @ithrow, @icatch
 using Flux: imap
 
 # TODO: implement Julia's type promotion rules
@@ -68,7 +69,7 @@ graph(ctx::Context, p::Constant) = node(p.value)
 
 function graph(ctx::Context, model, args...)
   g = Flux.graph(model)
-  g == nothing && return register(ctx, graph(model, args...))
+  g == nothing && return register(ctx, @ithrow ctx graph(model, args...))
   DataFlow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
   interpret(ctx, g, args...)
 end
@@ -76,7 +77,7 @@ end
 function tograph(model, args...)
   ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph),
                 params = Dict(), stacks = Dict())
-  out = graph(ctx, model, args...)
+  out = @icatch graph(ctx, model, args...)
   return ctx[:params], ctx[:stacks], out
 end
 
