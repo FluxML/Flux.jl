@@ -8,12 +8,12 @@ makedocs(modules=[Flux],
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
                   "Building Models" => [
-                    "First Steps" => "models/basics.md",
-                    "Recurrence" => "models/recurrent.md",
-                    "Debugging" => "models/debugging.md"],
+                    "Model Building Basics" => "models/basics.md",
+                    "Recurrence"            => "models/recurrent.md",
+                    "Debugging"             => "models/debugging.md"],
                   "In Action" => [
                     "Logistic Regression" => "examples/logreg.md"],
-                  "Contributing & Help" => "contributing.md",
+                  "Contributing & Help"   => "contributing.md",
                   "Internals" => "internals.md"])
 
 deploydocs(
