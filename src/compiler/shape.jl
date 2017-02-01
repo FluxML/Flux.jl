@@ -15,12 +15,12 @@ end
 ihint(f, ctx::Context, h::Hint, x) = vertex(h, x)
 ihint(f, args...) = f(args...)
 
-hintify(c::Constant) = hintify(state(c.value))
-hintify(xs::AbstractArray) = vertex(Hint(size(xs)), constant(:_))
+hintify(ctx, c::Constant) = hintify(ctx, state(c.value))
+hintify(ctx, xs::AbstractArray) = vertex(Hint(size(xs)), constant(:_))
 
 interpshape = mux(ilinev, ihint, iargs, ituple, hintify)
 
-function hintify(f, xs...)
+function hintify(ctx, f, xs...)
   sh = infer(f, map(gethint, xs)...)
   sh ≠ nothing ? vertex(Hint(sh), vertex(f, xs...)) :
   !any(x->x==nothing, xs) && graph(f) ≠ nothing ? interpret(Context(interpshape), graph(f), xs...) :

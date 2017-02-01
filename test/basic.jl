@@ -21,4 +21,5 @@ end
 let a1 = Affine(10, 20), a2 = Affine(20, 15)
   tlp = TLP(a1, a2)
   @test tlp(xs) ≈ softmax(a2(σ(a1(xs))))
+  @test Flux.infer(tlp, (1, 10)) == (1,15)
 end
