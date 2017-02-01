@@ -107,7 +107,7 @@ Debugging
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/9b016085b05ad55c0bc4b96bf53be70d063adfa2/docs/src/models/debugging.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/f932f4bd9fd95d98cacf96743b692f8e2b3d02c1/docs/src/models/debugging.md">
             <span class="fa">
 
             </span>
@@ -194,6 +194,15 @@ Notice that while the first
 <code>W * x + b</code>
  line was defined in Flux&#39;s source code. In this way Flux makes it easy to drill down into problem areas, without showing you the full graph of thousands of nodes at once.
       </p>
+      <p>
+With the typo fixed, the output of 
+<code>@shapes</code>
+ looks as follows:
+      </p>
+<pre><code class="language-julia"># /Users/mike/test.jl, line 18:
+opossum = σ(Affine(10, 20)(Input()[1]::(5,10))::(5,20))::(5,20)
+# /Users/mike/test.jl, line 19:
+wren = softmax(Affine(20, 15)(opossum)::(5,15))::(5,15)</code></pre>
       <footer>
         <hr/>
         <a class="previous" href="recurrent.html">
