@@ -161,7 +161,7 @@ You may recognise this as being equivalent to
 ```julia
 Chain(
   Affine(10, 20), σ
-  Affine(20, 15)), softmax
+  Affine(20, 15), softmax)
 ```
 
 given that it's just a sequence of calls. For simple networks `Chain` is completely fine, although the `@net` version is more powerful as we can (for example) reuse the output `l1` more than once.
