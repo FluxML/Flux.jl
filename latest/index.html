@@ -46,7 +46,13 @@ Version
           <a class="toctext" href="index.html">
 Home
           </a>
-          <ul class="internal"></ul>
+          <ul class="internal">
+            <li>
+              <a class="toctext" href="#Installation-1">
+Installation
+              </a>
+            </li>
+          </ul>
         </li>
         <li>
           <span class="toctext">
@@ -104,7 +110,7 @@ Home
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/4c8922270f2846e9af14dddffd2379add874f9c2/docs/src/index.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/3fdf01e62fcf94f75c58b1ffe1f9aa576d74fced/docs/src/index.md">
             <span class="fa">
 
             </span>
@@ -133,6 +139,30 @@ If you&#39;re interested to find out what
 does
         </em>
  work, read on!
+      </p>
+      <h2>
+        <a class="nav-anchor" id="Installation-1" href="#Installation-1">
+Installation
+        </a>
+      </h2>
+      <p>
+        <em>
+... Charging Ion Capacitors ...
+        </em>
+      </p>
+<pre><code class="language-julia">Pkg.clone(&quot;https://github.com/MikeInnes/DataFlow.jl&quot;)
+Pkg.clone(&quot;https://github.com/MikeInnes/Flux.jl&quot;)
+using Flux</code></pre>
+      <p>
+You&#39;ll also need a backend to run real training, if you don&#39;t have one already. Choose from 
+        <a href="https://github.com/dmlc/MXNet.jl">
+MXNet
+        </a>
+ or 
+        <a href="https://github.com/malmaud/TensorFlow.jl">
+TensorFlow
+        </a>
+ (MXNet is the recommended option if you&#39;re not sure):
       </p>
       <footer>
         <hr/>

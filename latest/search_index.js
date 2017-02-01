@@ -17,6 +17,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Installation-1",
+    "page": "Home",
+    "title": "Installation",
+    "category": "section",
+    "text": "... Charging Ion Capacitors ...Pkg.clone(\"https://github.com/MikeInnes/DataFlow.jl\")\nPkg.clone(\"https://github.com/MikeInnes/Flux.jl\")\nusing FluxYou'll also need a backend to run real training, if you don't have one already. Choose from MXNet or TensorFlow (MXNet is the recommended option if you're not sure):"
+},
+
+{
     "location": "models/basics.html#",
     "page": "First Steps",
     "title": "First Steps",
@@ -25,19 +33,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/basics.html#First-Steps-1",
+    "location": "models/basics.html#Model-Building-Basics-1",
     "page": "First Steps",
-    "title": "First Steps",
+    "title": "Model Building Basics",
     "category": "section",
-    "text": ""
-},
-
-{
-    "location": "models/basics.html#Installation-1",
-    "page": "First Steps",
-    "title": "Installation",
-    "category": "section",
-    "text": "... Charging Ion Capacitors ...Pkg.clone(\"https://github.com/MikeInnes/DataFlow.jl\")\nPkg.clone(\"https://github.com/MikeInnes/Flux.jl\")\nusing Flux"
+    "text": "Pkg.add(\"MXNet\") # or \"TensorFlow\""
 },
 
 {
@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "First Steps",
     "title": "The Model",
     "category": "section",
-    "text": "... Initialising Photon Beams ...The core concept in Flux is the model. A model (or \"layer\") is simply a function with parameters. For example, in plain Julia code, we could define the following function to represent a logistic regression (or simple neural network):W = randn(3,5)\nb = randn(3)\naffine(x) = W*x + b\n\nx1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]\ny1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]affine is simply a function which takes some vector x1 and outputs a new one y1. For example, x1 could be data from an image and y1 could be predictions about the content of that image. However, affine isn't static. It has parameters W and b, and if we tweak those parameters we'll tweak the result – hopefully to make the predictions more accurate.This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a template which creates these functions for us:affine1 = Affine(5, 5)\naffine2 = Affine(5, 5)\n\nsoftmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]\nsoftmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]We just created two separate Affine layers, and each contains its own version of W and b, leading to a different result when called with our data. It's easy to define templates like Affine ourselves (see The Template), but Flux provides Affine out of the box."
+    "text": "... Initialising Photon Beams ...The core concept in Flux is the model. A model (or \"layer\") is simply a function with parameters. For example, in plain Julia code, we could define the following function to represent a logistic regression (or simple neural network):W = randn(3,5)\nb = randn(3)\naffine(x) = W * x + b\n\nx1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]\ny1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]affine is simply a function which takes some vector x1 and outputs a new one y1. For example, x1 could be data from an image and y1 could be predictions about the content of that image. However, affine isn't static. It has parameters W and b, and if we tweak those parameters we'll tweak the result – hopefully to make the predictions more accurate.This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a template which creates these functions for us:affine1 = Affine(5, 5)\naffine2 = Affine(5, 5)\n\nsoftmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]\nsoftmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]We just created two separate Affine layers, and each contains its own version of W and b, leading to a different result when called with our data. It's easy to define templates like Affine ourselves (see The Template), but Flux provides Affine out of the box, so we'll use that for now."
 },
 
 {
@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "First Steps",
     "title": "A Function in Model's Clothing",
     "category": "section",
-    "text": "... Booting Dark Matter Transmogrifiers ...We noted above that a \"model\" is just a function with some trainable parameters. This goes both ways; a normal Julia function like exp is really just a model with 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, Chain will happily work with regular functions:foo = Chain(exp, sum, log)\nfoo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))This unification opens up the floor for some powerful features, which we'll discuss later in the guide."
+    "text": "... Booting Dark Matter Transmogrifiers ...We noted above that a \"model\" is a function with some number of trainable parameters. This goes both ways; a normal Julia function like exp is effectively a model with 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, Chain will happily work with regular functions:foo = Chain(exp, sum, log)\nfoo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))"
 },
 
 {
@@ -69,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "First Steps",
     "title": "The Template",
     "category": "section",
-    "text": "... Calculating Tax Expenses ...[WIP]"
+    "text": "... Calculating Tax Expenses ...So how does the Affine template work? We don't want to duplicate the code above whenever we need more than one affine layer:W₁, b₁ = randn(...)\naffine₁(x) = W₁*x + b₁\nW₂, b₂ = randn(...)\naffine₂(x) = W₂*x + b₂\nmodel = Chain(affine₁, affine₂)Here's one way we could solve this: just keep the parameters in a Julia type, and define how that type acts as a function:type MyAffine\n  W\n  b\nend\n\n# Use the `MyAffine` layer as a model\n(l::MyAffine)(x) = l.W * x + l.b\n\n# Convenience constructor\nMyAffine(in::Integer, out::Integer) =\n  MyAffine(randn(out, in), randn(out))\n\nmodel = Chain(MyAffine(5, 5), MyAffine(5, 5))\n\nmodel(x1) # [-1.54458,0.492025,0.88687,1.93834,-4.70062]This is much better: we can now make as many affine layers as we want. This is a very common pattern, so to make it more convenient we can use the @net macro:@net type MyAffine\n  W\n  b\n  x -> W * x + b\nendThe function provided, x -> W * x + b, will be used when MyAffine is used as a model; it's just a shorter way of defining the (::MyAffine)(x) method above.However, @net does not simply save us some keystrokes; it's the secret sauce that makes everything else in Flux go. For example, it analyses the code for the forward function so that it can differentiate it or convert it to a TensorFlow graph.The above code is almost exactly how Affine is defined in Flux itself! There's no difference between \"library-level\" and \"user-level\" models, so making your code reusable doesn't involve a lot of extra complexity. Moreover, much more complex models than Affine are equally simple to define, and equally close to the mathematical notation; read on to find out how."
 },
 
 {
