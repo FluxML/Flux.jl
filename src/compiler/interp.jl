@@ -25,10 +25,15 @@ end
 
 imap(f, args...) = f(args...)
 
+function interp(ctx, f, xs...)
+  @ithrow ctx f(xs...)
+end
+
 # TODO: batching should be secondary
 
 function interpmodel(m, args::Batch...)
-  rebatch(interpret(reifyparams(graph(m)), map(rawbatch, args)...))
+  ctx = Context(mux(iline, ilambda, iconst, iargs, ituple, interp))
+  rebatch(@icatch interpret(ctx, reifyparams(graph(m)), map(rawbatch, args)...))
 end
 
 interpmodel(m, args...) = unbatchone(interpmodel(m, batchone(args)...))
