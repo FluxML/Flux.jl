@@ -1,6 +1,6 @@
 using Base: @get!
-using DataFlow: Constant, constant, Context, interpret, Split,
-  interpv, ituple, ilambda, iconst, iline, stack, mux
+using DataFlow: Constant, constant, Split
+using DataFlow.Interpreter
 using Flux: imap
 using TensorFlow: RawTensor
 

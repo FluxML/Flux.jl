@@ -1,4 +1,4 @@
-using DataFlow: mux, interpret, interpv, ituple, ilambda, iconst, Context
+using DataFlow.Interpreter
 
 function astuple(xs::Vertex)
   isconstant(xs) && isa(value(xs).value, Tuple) ? value(xs).value :

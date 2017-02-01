@@ -7,9 +7,8 @@ function nodename(s::mx.SymbolicNode)
 end
 
 using Base: @get!
-using DataFlow: Constant, constant, Context, interpret, Split,
-  interpv, ituple, ilambda, iconst, iline, iargs, stack, mux,
-  @ithrow, @icatch
+using DataFlow: Constant, constant
+using DataFlow.Interpreter
 using Flux: imap
 
 # TODO: implement Julia's type promotion rules

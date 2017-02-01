@@ -1,4 +1,4 @@
-using DataFlow: ilinev, iargs, applylines, Line
+using DataFlow.Interpreter
 
 type Hint
   typ
