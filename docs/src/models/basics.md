@@ -1,9 +1,5 @@
 # Model Building Basics
 
-```
-Pkg.add("MXNet") # or "TensorFlow"
-```
-
 ## The Model
 
 *... Initialising Photon Beams ...*
