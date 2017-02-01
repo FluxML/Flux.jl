@@ -49,3 +49,12 @@ This is a lot like Julia's own `code_warntype`; but instead of annotating expres
 This makes the problem fairly obvious. We tried to multiply the output of the first layer `(5, 20)` by a parameter `(21, 15)`; the inner dimensions should have been equal.
 
 Notice that while the first `Affine` layer is displayed as-is, the second was inlined and we see a reference to where the `W * x + b` line was defined in Flux's source code. In this way Flux makes it easy to drill down into problem areas, without showing you the full graph of thousands of nodes at once.
+
+With the typo fixed, the output of `@shapes` looks as follows:
+
+```julia
+# /Users/mike/test.jl, line 18:
+opossum = σ(Affine(10, 20)(Input()[1]::(5,10))::(5,20))::(5,20)
+# /Users/mike/test.jl, line 19:
+wren = softmax(Affine(20, 15)(opossum)::(5,15))::(5,15)
+```
