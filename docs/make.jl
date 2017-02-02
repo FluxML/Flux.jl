@@ -9,6 +9,7 @@ makedocs(modules=[Flux],
          pages = ["Home" => "index.md",
                   "Building Models" => [
                     "Model Building Basics" => "models/basics.md",
+                    "Model Templates"       => "models/templates.md",
                     "Recurrence"            => "models/recurrent.md",
                     "Debugging"             => "models/debugging.md"],
                   "In Action" => [
