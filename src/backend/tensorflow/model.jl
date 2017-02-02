@@ -80,7 +80,8 @@ function Flux.train!(m::Model, train, test=[]; epoch = 1, η = 0.1,
     info("Epoch $e\n")
     @progress for (x, y) in train
       y, cur_loss, _ = run(m.session, vcat(m.output, Loss, minimize_op),
-                           Dict(m.inputs[1]=>batchone(x), Y=>batchone(y)))
+                           Dict(m.inputs[1] => batchone(convertel(Float32, x)),
+                                Y => batchone(convertel(Float32, y))))
       if i % 5000 == 0
         @show y
         @show accuracy(m, test)
