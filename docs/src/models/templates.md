@@ -48,7 +48,7 @@ However, `@net` does not simply save us some keystrokes; it's the secret sauce t
 
 The above code is almost exactly how `Affine` is defined in Flux itself! There's no difference between "library-level" and "user-level" models, so making your code reusable doesn't involve a lot of extra complexity. Moreover, much more complex models than `Affine` are equally simple to define.
 
-## Sub-Templates
+## Models in templates
 
 `@net` models can contain sub-models as well as just array parameters:
 
@@ -95,3 +95,34 @@ Chain(
 ```
 
 given that it's just a sequence of calls. For simple networks `Chain` is completely fine, although the `@net` version is more powerful as we can (for example) reuse the output `l1` more than once.
+
+## Constructors
+
+`Affine` has two array parameters, `W` and `b`. Just like any other Julia type, it's easy to instantiate an `Affine` layer with parameters of our choosing:
+
+```julia
+a = Affine(rand(10, 20), rand(20))
+```
+
+However, for convenience and to avoid errors, we'd probably rather specify the input and output dimension instead:
+
+```julia
+a = Affine(10, 20)
+```
+
+This is easy to implement using the usual Julia syntax for constructors:
+
+```julia
+Affine(in::Integer, out::Integer) = Affine(randn(in, out), randn(1, out))
+```
+
+In practice, these constructors tend to take the parameter initialisation function as an argument so that it's more easily customisable, and use `Flux.initn` by default (which is equivalent to `randn()/100`). So `Affine`'s constructor really looks like this:
+
+```julia
+Affine(in::Integer, out::Integer; init = initn) =
+  Affine(init(in, out), init(1, out))
+```
+
+## Supported syntax
+
+The syntax used to define a forward pass like `x -> W*x + b` behaves exactly like Julia code for the most part. However, it's important to remember that it's defining a dataflow graph, not a general Julia expression. In practice this means that anything side-effectful, or things like control flow and `println`s, won't work as expected. In future we'll continue expand support for Julia syntax and features.
