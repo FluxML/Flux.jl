@@ -72,11 +72,6 @@ Combining Models
 A Function in Model&#39;s Clothing
                   </a>
                 </li>
-                <li>
-                  <a class="toctext" href="#The-Template-1">
-The Template
-                  </a>
-                </li>
               </ul>
             </li>
             <li>
@@ -128,7 +123,7 @@ Model Building Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/f932f4bd9fd95d98cacf96743b692f8e2b3d02c1/docs/src/models/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/7387ec20dacb0bb017df885b4b5fad3f5a816449/docs/src/models/basics.md">
             <span class="fa">
 
             </span>
@@ -209,7 +204,7 @@ We just created two separate
 , leading to a different result when called with our data. It&#39;s easy to define templates like 
 <code>Affine</code>
  ourselves (see 
-        <a href="basics.html#The-Template-1">
+        <a href="@ref">
 The Template
         </a>
 ), but Flux provides 
@@ -273,136 +268,6 @@ We noted above that a &quot;model&quot; is a function with some number of traina
       </p>
 <pre><code class="language-julia">foo = Chain(exp, sum, log)
 foo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))</code></pre>
-      <h2>
-        <a class="nav-anchor" id="The-Template-1" href="#The-Template-1">
-The Template
-        </a>
-      </h2>
-      <p>
-        <em>
-... Calculating Tax Expenses ...
-        </em>
-      </p>
-      <p>
-So how does the 
-<code>Affine</code>
- template work? We don&#39;t want to duplicate the code above whenever we need more than one affine layer:
-      </p>
-<pre><code class="language-julia">W₁, b₁ = randn(...)
-affine₁(x) = W₁*x + b₁
-W₂, b₂ = randn(...)
-affine₂(x) = W₂*x + b₂
-model = Chain(affine₁, affine₂)</code></pre>
-      <p>
-Here&#39;s one way we could solve this: just keep the parameters in a Julia type, and define how that type acts as a function:
-      </p>
-<pre><code class="language-julia">type MyAffine
-  W
-  b
-end
-
-# Use the `MyAffine` layer as a model
-(l::MyAffine)(x) = l.W * x + l.b
-
-# Convenience constructor
-MyAffine(in::Integer, out::Integer) =
-  MyAffine(randn(out, in), randn(out))
-
-model = Chain(MyAffine(5, 5), MyAffine(5, 5))
-
-model(x1) # [-1.54458,0.492025,0.88687,1.93834,-4.70062]</code></pre>
-      <p>
-This is much better: we can now make as many affine layers as we want. This is a very common pattern, so to make it more convenient we can use the 
-<code>@net</code>
- macro:
-      </p>
-<pre><code class="language-julia">@net type MyAffine
-  W
-  b
-  x -&gt; W * x + b
-end</code></pre>
-      <p>
-The function provided, 
-<code>x -&gt; W * x + b</code>
-, will be used when 
-<code>MyAffine</code>
- is used as a model; it&#39;s just a shorter way of defining the 
-<code>(::MyAffine)(x)</code>
- method above.
-      </p>
-      <p>
-However, 
-<code>@net</code>
- does not simply save us some keystrokes; it&#39;s the secret sauce that makes everything else in Flux go. For example, it analyses the code for the forward function so that it can differentiate it or convert it to a TensorFlow graph.
-      </p>
-      <p>
-The above code is almost exactly how 
-<code>Affine</code>
- is defined in Flux itself! There&#39;s no difference between &quot;library-level&quot; and &quot;user-level&quot; models, so making your code reusable doesn&#39;t involve a lot of extra complexity. Moreover, much more complex models than 
-<code>Affine</code>
- are equally simple to define.
-      </p>
-      <h3>
-        <a class="nav-anchor" id="Sub-Templates-1" href="#Sub-Templates-1">
-Sub-Templates
-        </a>
-      </h3>
-      <p>
-<code>@net</code>
- models can contain sub-models as well as just array parameters:
-      </p>
-<pre><code class="language-julia">@net type TLP
-  first
-  second
-  function (x)
-    l1 = σ(first(x))
-    l2 = softmax(second(l1))
-  end
-end</code></pre>
-      <p>
-Just as above, this is roughly equivalent to writing:
-      </p>
-<pre><code class="language-julia">type TLP
-  first
-  second
-end
-
-function (self::TLP)(x)
-  l1 = σ(self.first(x))
-  l2 = softmax(self.second(l1))
-end</code></pre>
-      <p>
-Clearly, the 
-<code>first</code>
- and 
-<code>second</code>
- parameters are not arrays here, but should be models themselves, and produce a result when called with an input array 
-<code>x</code>
-. The 
-<code>Affine</code>
- layer fits the bill so we can instantiate 
-<code>TLP</code>
- with two of them:
-      </p>
-<pre><code class="language-julia">model = TLP(Affine(10, 20),
-            Affine(20, 15))
-x1 = rand(20)
-model(x1) # [0.057852,0.0409741,0.0609625,0.0575354 ...</code></pre>
-      <p>
-You may recognise this as being equivalent to
-      </p>
-<pre><code class="language-julia">Chain(
-  Affine(10, 20), σ
-  Affine(20, 15), softmax)</code></pre>
-      <p>
-given that it&#39;s just a sequence of calls. For simple networks 
-<code>Chain</code>
- is completely fine, although the 
-<code>@net</code>
- version is more powerful as we can (for example) reuse the output 
-<code>l1</code>
- more than once.
-      </p>
       <footer>
         <hr/>
         <a class="previous" href="../index.html">
