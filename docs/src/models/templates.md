@@ -38,11 +38,11 @@ This is much better: we can now make as many affine layers as we want. This is a
 @net type MyAffine
   W
   b
-  x -> W * x + b
+  x -> x * W + b
 end
 ```
 
-The function provided, `x -> W * x + b`, will be used when `MyAffine` is used as a model; it's just a shorter way of defining the `(::MyAffine)(x)` method above.
+The function provided, `x -> x * W + b`, will be used when `MyAffine` is used as a model; it's just a shorter way of defining the `(::MyAffine)(x)` method above. (You may notice that `W` and `x` have swapped order in the model; this is due to the way batching works, which will be covered in more detail later on.)
 
 However, `@net` does not simply save us some keystrokes; it's the secret sauce that makes everything else in Flux go. For example, it analyses the code for the forward function so that it can differentiate it or convert it to a TensorFlow graph.
 
@@ -77,7 +77,7 @@ function (self::TLP)(x)
 end
 ```
 
-Clearly, the `first` and `second` parameters are not arrays here, but should be models themselves, and produce a result when called with an input array `x`. The `Affine` layer fits the bill so we can instantiate `TLP` with two of them:
+Clearly, the `first` and `second` parameters are not arrays here, but should be models themselves, and produce a result when called with an input array `x`. The `Affine` layer fits the bill, so we can instantiate `TLP` with two of them:
 
 ```julia
 model = TLP(Affine(10, 20),
@@ -113,10 +113,11 @@ a = Affine(10, 20)
 This is easy to implement using the usual Julia syntax for constructors:
 
 ```julia
-Affine(in::Integer, out::Integer) = Affine(randn(in, out), randn(1, out))
+Affine(in::Integer, out::Integer) =
+  Affine(randn(in, out), randn(1, out))
 ```
 
-In practice, these constructors tend to take the parameter initialisation function as an argument so that it's more easily customisable, and use `Flux.initn` by default (which is equivalent to `randn()/100`). So `Affine`'s constructor really looks like this:
+In practice, these constructors tend to take the parameter initialisation function as an argument so that it's more easily customisable, and use `Flux.initn` by default (which is equivalent to `randn(...)/100`). So `Affine`'s constructor really looks like this:
 
 ```julia
 Affine(in::Integer, out::Integer; init = initn) =
@@ -125,4 +126,4 @@ Affine(in::Integer, out::Integer; init = initn) =
 
 ## Supported syntax
 
-The syntax used to define a forward pass like `x -> W*x + b` behaves exactly like Julia code for the most part. However, it's important to remember that it's defining a dataflow graph, not a general Julia expression. In practice this means that anything side-effectful, or things like control flow and `println`s, won't work as expected. In future we'll continue expand support for Julia syntax and features.
+The syntax used to define a forward pass like `x -> x*W + b` behaves exactly like Julia code for the most part. However, it's important to remember that it's defining a dataflow graph, not a general Julia expression. In practice this means that anything side-effectful, or things like control flow and `println`s, won't work as expected. In future we'll continue to expand support for Julia syntax and features.
