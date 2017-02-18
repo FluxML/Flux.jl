@@ -92,6 +92,16 @@ Debugging
           </ul>
         </li>
         <li>
+          <a class="toctext" href="../batching.html">
+Batching
+          </a>
+        </li>
+        <li>
+          <a class="toctext" href="../backends.html">
+Backends
+          </a>
+        </li>
+        <li>
           <span class="toctext">
 In Action
           </span>
@@ -128,7 +138,7 @@ Model Templates
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/ba22a5cedce39c2f7d38b4468f15e7eb45cc1f47/docs/src/models/templates.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/de0edf94456d9d826fc8543e1178eccf5ab035f7/docs/src/models/templates.md">
             <span class="fa">
 
             </span>
@@ -183,16 +193,20 @@ This is much better: we can now make as many affine layers as we want. This is a
 <pre><code class="language-julia">@net type MyAffine
   W
   b
-  x -&gt; W * x + b
+  x -&gt; x * W + b
 end</code></pre>
       <p>
 The function provided, 
-<code>x -&gt; W * x + b</code>
+<code>x -&gt; x * W + b</code>
 , will be used when 
 <code>MyAffine</code>
  is used as a model; it&#39;s just a shorter way of defining the 
 <code>(::MyAffine)(x)</code>
- method above.
+ method above. (You may notice that 
+<code>W</code>
+ and 
+<code>x</code>
+ have swapped order in the model; this is due to the way batching works, which will be covered in more detail later on.)
       </p>
       <p>
 However, 
@@ -244,7 +258,7 @@ Clearly, the
 <code>x</code>
 . The 
 <code>Affine</code>
- layer fits the bill so we can instantiate 
+ layer fits the bill, so we can instantiate 
 <code>TLP</code>
  with two of them:
       </p>
@@ -290,12 +304,13 @@ However, for convenience and to avoid errors, we&#39;d probably rather specify t
       <p>
 This is easy to implement using the usual Julia syntax for constructors:
       </p>
-<pre><code class="language-julia">Affine(in::Integer, out::Integer) = Affine(randn(in, out), randn(1, out))</code></pre>
+<pre><code class="language-julia">Affine(in::Integer, out::Integer) =
+  Affine(randn(in, out), randn(1, out))</code></pre>
       <p>
 In practice, these constructors tend to take the parameter initialisation function as an argument so that it&#39;s more easily customisable, and use 
 <code>Flux.initn</code>
  by default (which is equivalent to 
-<code>randn()/100</code>
+<code>randn(...)/100</code>
 ). So 
 <code>Affine</code>
 &#39;s constructor really looks like this:
@@ -309,10 +324,10 @@ Supported syntax
       </h2>
       <p>
 The syntax used to define a forward pass like 
-<code>x -&gt; W*x + b</code>
+<code>x -&gt; x*W + b</code>
  behaves exactly like Julia code for the most part. However, it&#39;s important to remember that it&#39;s defining a dataflow graph, not a general Julia expression. In practice this means that anything side-effectful, or things like control flow and 
 <code>println</code>
-s, won&#39;t work as expected. In future we&#39;ll continue expand support for Julia syntax and features.
+s, won&#39;t work as expected. In future we&#39;ll continue to expand support for Julia syntax and features.
       </p>
       <footer>
         <hr/>
