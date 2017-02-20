@@ -74,8 +74,10 @@ function graph(ctx::Context, model, args...)
   interpret(ctx, g, args...)
 end
 
+graph′(ctx::Context, args...) = @ithrow ctx graph(ctx, args...)
+
 function tograph(model, args...)
-  ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph),
+  ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph′),
                 params = Dict(), stacks = Dict())
   out = @icatch graph(ctx, model, args...)
   return ctx[:params], ctx[:stacks], out
