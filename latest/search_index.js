@@ -137,7 +137,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "batching.html#",
+    "location": "apis/batching.html#",
     "page": "Batching",
     "title": "Batching",
     "category": "page",
@@ -145,7 +145,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "batching.html#Batching-1",
+    "location": "apis/batching.html#Batching-1",
     "page": "Batching",
     "title": "Batching",
     "category": "section",
@@ -153,7 +153,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "backends.html#",
+    "location": "apis/backends.html#",
     "page": "Backends",
     "title": "Backends",
     "category": "page",
@@ -161,7 +161,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "backends.html#Batching-1",
+    "location": "apis/backends.html#Batching-1",
     "page": "Backends",
     "title": "Batching",
     "category": "section",
