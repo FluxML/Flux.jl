@@ -13,6 +13,7 @@ macro tfonly(ex)
   :(Base.find_in_path("TensorFlow") ≠ nothing && $(esc(ex)))
 end
 
+include("batching.jl")
 include("basic.jl")
 include("recurrent.jl")
 include("backend.jl")
