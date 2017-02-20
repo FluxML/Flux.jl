@@ -92,7 +92,8 @@ end
 state(x) = x
 accumulate!(x, Δ) = x
 
-@forward Param.x Base.size
+Base.size(p::Param) = size(p.x)
+Base.size(p::Param, n) = size(p.x, n)
 
 function Base.show(io::IO, p::Param)
   print(io, "Param", size(p.x))
