@@ -149,7 +149,31 @@ var documenterSearchIndex = {"docs": [
     "page": "Batching",
     "title": "Batching",
     "category": "section",
-    "text": "[WIP]"
+    "text": ""
+},
+
+{
+    "location": "apis/batching.html#Basics-1",
+    "page": "Batching",
+    "title": "Basics",
+    "category": "section",
+    "text": "Existing machine learning frameworks and libraries represent batching, and other properties of data, only implicitly. Your machine learning data is a large N-dimensional array, which may have a shape like:100 × 50 × 256 × 256Typically, this might represent that you have (say) a batch of 100 samples, where each sample is a 50-long sequence of 256×256 images. This is great for performance, but array operations often become much more cumbersome as a result. Especially if you manipulate dimensions at runtime as an optimisation, debugging models can become extremely fiddly, with a proliferation of X × Y × Z arrays and no information about where they came from.Flux introduces a new approach where the batch dimension is represented explicitly as part of the data. For example:julia> xs = Batch([[1,2,3], [4,5,6]])\n2-element Batch of Vector{Int64}:\n [1,2,3]\n [4,5,6]Batches are represented the way we think about them; as an list of data points. We can do all the usual array operations with them, including getting the first with xs[1], iterating over them and so on. The trick is that under the hood, the data is batched into a single array:julia> rawbatch(xs)\n2×3 Array{Int64,2}:\n 1  2  3\n 4  5  6When we put a Batch object into a model, the model is ultimately working with a single array, which means there's no performance overhead and we get the full benefit of standard batching.Turning a set of vectors into a matrix is fairly easy anyway, so what's the big deal? Well, it gets more interesting as we start working with more complex data. Say we were working with 4×4 images:julia> xs = Batch([[1 2; 3 4], [5 6; 7 8]])\n2-element Flux.Batch of Array{Int64,2}:\n [1 2; 3 4]\n [5 6; 7 8]The raw batch array is much messier, and harder to recognise:julia> rawbatch(xs)\n2×2×2 Array{Int64,3}:\n[:, :, 1] =\n 1  3\n 5  7\n\n[:, :, 2] =\n 2  4\n 6  8Furthermore, because the batches acts like a list of arrays, we can use simple and familiar operations on it:julia> map(flatten, xs)\n2-element Array{Array{Int64,1},1}:\n [1,3,2,4]\n [5,7,6,8]flatten is simple enough over a single data point, but flattening a batched data set is more complex and you end up needing arcane array operations like mapslices. A Batch can just handle this for you for free, and more importantly it ensures that your operations are correct – that you haven't mixed up your batch and data dimensions, or used the wrong array op, and so on."
+},
+
+{
+    "location": "apis/batching.html#Sequences-and-Nesting-1",
+    "page": "Batching",
+    "title": "Sequences and Nesting",
+    "category": "section",
+    "text": "As well as Batch, there's a structure called Seq which behaves very similarly. Let's say we have two one-hot encoded DNA sequences:julia> x1 = Seq([[0,1,0,0], [1,0,0,0], [0,0,0,1]]) # [A, T, C, G]\njulia> x2 = Seq([[0,0,1,0], [0,0,0,1], [0,0,1,0]])\n\njulia> rawbatch(x1)\n3×4 Array{Int64,2}:\n 0  1  0  0\n 1  0  0  0\n 0  0  0  1This is identical to Batch so far; but where it gets interesting is that you can actually nest these types:julia> xs = Batch([x1, x2])\n2-element Batch of Seq of Vector{Int64}:\n [[0,1,0,0],[1,0,0,0],[0,0,0,1]]\n [[0,0,1,0],[0,0,0,1],[0,0,1,0]]Again, this represents itself intuitively as a list-of-lists-of-lists, but rawbatch shows that the real underlying value is an Array{Int64,3} of shape 2×3×4."
+},
+
+{
+    "location": "apis/batching.html#Future-Work-1",
+    "page": "Batching",
+    "title": "Future Work",
+    "category": "section",
+    "text": "The design of batching is still a fairly early work in progress, though it's used in a few places in the system. For example, all Flux models expect to be given Batch objects which are unwrapped into raw arrays for the computation. Models will convert their arguments if necessary, so it's convenient to call a model with a single data point like f([1,2,3]).Right now, the Batch or Seq types always stack along the left-most dimension. In future, this will be customisable, and Flux will provide implementations of common functions that are generic across the batch dimension. This brings the following benefits:Code can be written in a batch-agnostic way, i.e. as if working with a single data point, with batching happening independently.\nAutomatic batching can be done with correctness assured, reducing programmer errors when manipulating dimensions.\nOptimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.\nThis also opens the door for more automatic optimisations, e.g. having the compiler explore the search base of possible batching combinations."
 },
 
 {
