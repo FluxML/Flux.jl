@@ -14,13 +14,14 @@ end
 
 model = TLP(Affine(10, 20), Affine(21, 15))
 
-mxmodel = mxnet(model, (1, 20))
+mxmodel = mxnet(model, (10, 1))
 ```
 
 Unfortunately, this model has a (fairly obvious) typo, which means that the code above won't run. Instead we get an error message:
 
 ```julia
-InferShape Error in dot5: [20:37:39] src/operator/./matrix_op-inl.h:271: Check failed: (lshape[1]) == (rshape[0]) dot shape error: (15,21) X (20,1)
+InferShape Error in dot5: [20:37:39] src/operator/./matrix_op-inl.h:271:
+Check failed: (lshape[1]) == (rshape[0]) dot shape error: (15,21) X (20,1)
  in Flux.Affine at affine.jl:8
  in TLP at test.jl:6
  in mxnet(::TLP, ::Tuple{Int64,Int64}) at model.jl:40
