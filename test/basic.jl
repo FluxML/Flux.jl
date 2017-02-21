@@ -23,3 +23,13 @@ let a1 = Affine(10, 20), a2 = Affine(20, 15)
   @test tlp(xs) ≈ softmax(a2(σ(a1(xs))))
   @test Flux.infer(tlp, (1, 10)) == (1,15)
 end
+
+let tlp = TLP(Affine(10, 21), Affine(20, 15))
+  e = try
+    tlp(rand(10))
+  catch e
+    e
+  end
+  @test e.trace[end].func == :TLP
+  @test e.trace[end-1].func == Symbol("Flux.Affine")
+end
