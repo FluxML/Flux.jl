@@ -34,10 +34,11 @@ graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 graph(::Input, x) = x
 
 graph(ctx::Context, d::Affine, x) =
-  mx.FullyConnected(data = x,
-                    num_hidden = size(d.W.x, 2),
-                    weight = var(ctx, d.W),
-                    bias = var(ctx, d.b, size(d.b, 2)))
+  register(ctx,
+    mx.FullyConnected(data = x,
+                      num_hidden = size(d.W.x, 2),
+                      weight = var(ctx, d.W),
+                      bias = var(ctx, d.b, size(d.b, 2))))
 
 # TODO: use actual params}
 graph(ctx::Context, c::Conv2D, x) =
@@ -91,7 +92,7 @@ using Juno
 Juno.errmsg(e::mx.MXError) = e.msg
 
 function errnode(e::mx.MXError)
-  m = match(r"Error in (\w+):", e.msg)
+  m = match(r"Error in (\w+)", e.msg)
   m == nothing && return
   Symbol(m.captures[1])
 end
