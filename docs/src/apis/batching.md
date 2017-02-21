@@ -96,7 +96,38 @@ The design of batching is still a fairly early work in progress, though it's use
 
 Right now, the `Batch` or `Seq` types always stack along the left-most dimension. In future, this will be customisable, and Flux will provide implementations of common functions that are generic across the batch dimension. This brings the following benefits:
 
-* Code can be written in a batch-agnostic way or be generic across batching setups. Code works with a single data point, and batching happens independently.
-* Automatic batching can be done with correctness assured, reducing programmer errors when manipulating dimensions.
-* Optimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.
+* Code can be written in a batch-agnostic way or be generic across batching strategies.
+* Batching and optimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.
 * This also opens the door for more automatic optimisations, e.g. having the compiler explore the search base of possible batching combinations.
+
+Here's a more detailed illustration of how it might look for code to be "generic across batching". Take for example a weight matrix `W` times a vector `x`, as used in a logistic regression or a simple neural network:
+
+```julia
+   W    *   x  =>   y
+(10×28) * (28) => (10)
+```
+
+If we want to work with a batch of 50 `x`s, one option is to stack the data into a matrix of size `28 × 50`.
+
+```julia
+   W    *    x    =>    y
+(10×28) * (28×50) => (10×50)
+```
+
+This works, but we may find that it's slow or doesn't fit well with the rest of the model, which batches on the first dimension. For that reason we may instead want to put the data in a `50 × 28` matrix and alter the code as follows:
+
+```julia
+   x    *    W'   =>    y
+(50×28) * (28×10) => (50×10)
+```
+
+to make the shapes work out. This code change is not ideal; in more complex cases it can become fiddly and error-prone, and it means that the code is less reusable, tied to a particular implementation strategy.
+
+There's an alternative. We keep the same code, but represent the batched `x`s as either a `Batch{Vector,1}` or a `Batch{Vector,2}`, depending on how the data is stacked. Then we can simply overload `*` as follows:
+
+```julia
+*(W::Matrix, x::Batch{Vector,1}) = x * W'
+*(W::Matrix, x::Batch{Vector,2}) = W * x
+```
+
+This means that we can always write `W*x`, and the code is reusable in a larger network regardless of the overall batching approach. Moreover, Julia's type system ensures there's no runtime cost to doing this, and we can compile the code appropriately for backends like TensorFlow as well.
