@@ -129,7 +129,7 @@ Debugging
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/b2b2c209c69764598896b6784fa3095d244c0e85/docs/src/models/debugging.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/08b67d9b76d93cf4c7ae971a4e5cf9ba07a7df69/docs/src/models/debugging.md">
             <span class="fa">
 
             </span>
@@ -157,11 +157,12 @@ end
 
 model = TLP(Affine(10, 20), Affine(21, 15))
 
-mxmodel = mxnet(model, (1, 20))</code></pre>
+mxmodel = mxnet(model, (10, 1))</code></pre>
       <p>
 Unfortunately, this model has a (fairly obvious) typo, which means that the code above won&#39;t run. Instead we get an error message:
       </p>
-<pre><code class="language-julia">InferShape Error in dot5: [20:37:39] src/operator/./matrix_op-inl.h:271: Check failed: (lshape[1]) == (rshape[0]) dot shape error: (15,21) X (20,1)
+<pre><code class="language-julia">InferShape Error in dot5: [20:37:39] src/operator/./matrix_op-inl.h:271:
+Check failed: (lshape[1]) == (rshape[0]) dot shape error: (15,21) X (20,1)
  in Flux.Affine at affine.jl:8
  in TLP at test.jl:6
  in mxnet(::TLP, ::Tuple{Int64,Int64}) at model.jl:40
