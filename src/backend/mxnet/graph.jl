@@ -57,11 +57,13 @@ end
 
 register(ctx::Context, node) = node
 
-function graph{T<:AArray}(ctx::Context, p::Constant{Flux.Param{T}})
+function var(ctx::Context, p::Flux.Param)
   id = gensym()
-  ctx[:params][id] = p.value.x
+  ctx[:params][id] = p.x
   return mx.Variable(id)
 end
+
+graph{T<:AArray}(ctx::Context, p::Constant{Flux.Param{T}}) = var(ctx, p.value)
 
 graph(ctx::Context, p::Constant) = node(p.value)
 
