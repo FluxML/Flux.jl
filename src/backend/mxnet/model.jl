@@ -13,6 +13,7 @@ tond(xs::AArray) = copy!(mx.zeros(size(xs)), xs)
 ndzero!(xs::mx.NDArray) = copy!(xs, mx.zeros(size(xs)))
 
 function mxargs(args)
+  isempty(args) && return Dict{Symbol,mx.NDArray}()
   map(args) do kv
     arg, value = kv
     arg => tond(value)
@@ -20,6 +21,7 @@ function mxargs(args)
 end
 
 function mxgrads(mxargs)
+  isempty(mxargs) && return Dict{Symbol,mx.NDArray}()
   map(mxargs) do kv
     arg, value = kv
     arg => mx.zeros(size(value))
