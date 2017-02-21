@@ -16,10 +16,8 @@ using Flux: imap
 
 node(x::Tuple) = map(node, x)
 node(x::mx.SymbolicNode) = x
-# node(x::Number) = TensorFlow.constant(Float32(x))
 
 graph(::typeof(tuple), args...) = (args...,)
-graph(::typeof(*), args...) = mx.dot(args...)
 graph(::typeof(+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(data = x, act_type=:relu)
