@@ -6,7 +6,7 @@ d = Affine(10, 20)
 
 let
   @capture(syntax(d), _Frame(_Line(x_[1] * W_ + b_)))
-  @test isa(x, Input) && isa(W, Param) && isa(b, Param)
+  @test isa(x, DataFlow.Input) && isa(W, Param) && isa(b, Param)
 end
 
 @net type TLP

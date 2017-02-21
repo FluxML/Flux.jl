@@ -1,6 +1,6 @@
 using Flux, DataFlow, MacroTools, Base.Test
 using Flux: graph, Param
-using DataFlow: Input, Line, Frame
+using DataFlow: Line, Frame
 
 syntax(v::Vertex) = prettify(DataFlow.syntax(v))
 syntax(x) = syntax(graph(x))

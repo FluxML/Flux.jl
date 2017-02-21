@@ -8,10 +8,15 @@ d = Affine(20, 10)
 end
 
 @mxonly let
+  # TODO: test run
   using MXNet
   f = mx.FeedForward(Chain(d, softmax))
-  @test isa(f, mx.FeedForward)
-  # TODO: test run
+  @test mx.infer_shape(f.arch, data = (20, 1))[2] == [(10, 1)]
+
+  m = Chain(Input(28,28), Conv2D((5,5), out = 3), MaxPool((2,2)),
+            flatten, Affine(1587, 10), softmax)
+  f = mx.FeedForward(m)
+  @test mx.infer_shape(f.arch, data = (20, 20, 5, 1))[2] == [(10, 1)]
 end
 
 # TensorFlow
