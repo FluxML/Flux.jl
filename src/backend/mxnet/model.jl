@@ -94,7 +94,7 @@ end
 
 function mx.FeedForward(model::Flux.Model; input = :data, label = :softmax, context = mx.cpu())
   model = rewrite_softmax(model, label)
-  vars, stacks, node = tograph(model, mx.Variable(input))
+  vars, stacks, node = tograph(model, mx.Variable(input), feedforward=true)
   ff = mx.FeedForward(node, context = context)
   isempty(vars) || (ff.arg_params = mxargs(vars))
   return ff

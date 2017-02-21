@@ -34,11 +34,12 @@ graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 graph(::Input, x) = x
 
 graph(ctx::Context, d::Affine, x) =
-  register(ctx,
-    mx.FullyConnected(data = x,
-                      num_hidden = size(d.W.x, 2),
-                      weight = var(ctx, d.W),
-                      bias = var(ctx, d.b, size(d.b, 2))))
+  !ctx[:feedforward] ? invoke(graph, (Context, Any, typeof(x)), ctx, d, x) :
+    register(ctx,
+      mx.FullyConnected(data = x,
+                        num_hidden = size(d.W.x, 2),
+                        weight = var(ctx, d.W),
+                        bias = var(ctx, d.b, size(d.b, 2))))
 
 # TODO: use actual params}
 graph(ctx::Context, c::Conv2D, x) =
@@ -79,9 +80,10 @@ end
 
 graph′(ctx::Context, args...) = @icatch ctx graph(ctx, args...)
 
-function tograph(model, args...)
+function tograph(model, args...; feedforward = false)
   ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph′),
-                params = Dict(), stacks = Dict())
+                params = Dict(), stacks = Dict(),
+                feedforward = feedforward)
   out = @ithrow graph(ctx, model, args...)
   return ctx[:params], ctx[:stacks], out
 end
