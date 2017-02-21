@@ -145,7 +145,7 @@ Batching
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/e1cd688917d90dd80ff59f926ae24e27e1c7635e/docs/src/apis/batching.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/c05ef6286aa284f818bb0f3b90d4347efe8c29e6/docs/src/apis/batching.md">
             <span class="fa">
 
             </span>
@@ -298,17 +298,12 @@ Right now, the
       <ul>
         <li>
           <p>
-Code can be written in a batch-agnostic way or be generic across batching setups. Code works with a single data point, and batching happens independently.
+Code can be written in a batch-agnostic way or be generic across batching strategies.
           </p>
         </li>
         <li>
           <p>
-Automatic batching can be done with correctness assured, reducing programmer errors when manipulating dimensions.
-          </p>
-        </li>
-        <li>
-          <p>
-Optimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.
+Batching and optimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.
           </p>
         </li>
         <li>
@@ -317,6 +312,52 @@ This also opens the door for more automatic optimisations, e.g. having the compi
           </p>
         </li>
       </ul>
+      <p>
+Here&#39;s a more detailed illustration of how it might look for code to be &quot;generic across batching&quot;. Take for example a weight matrix 
+<code>W</code>
+ times a vector 
+<code>x</code>
+, as used in a logistic regression or a simple neural network:
+      </p>
+<pre><code class="language-julia">   W    *   x  =&gt;   y
+(10×28) * (28) =&gt; (10)</code></pre>
+      <p>
+If we want to work with a batch of 50 
+<code>x</code>
+s, one option is to stack the data into a matrix of size 
+<code>28 × 50</code>
+.
+      </p>
+<pre><code class="language-julia">   W    *    x    =&gt;    y
+(10×28) * (28×50) =&gt; (10×50)</code></pre>
+      <p>
+This works, but we may find that it&#39;s slow or doesn&#39;t fit well with the rest of the model, which batches on the first dimension. For that reason we may instead want to put the data in a 
+<code>50 × 28</code>
+ matrix and alter the code as follows:
+      </p>
+<pre><code class="language-julia">   x    *    W&#39;   =&gt;    y
+(50×28) * (28×10) =&gt; (50×10)</code></pre>
+      <p>
+to make the shapes work out. This code change is not ideal; in more complex cases it can become fiddly and error-prone, and it means that the code is less reusable, tied to a particular implementation strategy.
+      </p>
+      <p>
+There&#39;s an alternative. We keep the same code, but represent the batched 
+<code>x</code>
+s as either a 
+<code>Batch{Vector,1}</code>
+ or a 
+<code>Batch{Vector,2}</code>
+, depending on how the data is stacked. Then we can simply overload 
+<code>*</code>
+ as follows:
+      </p>
+<pre><code class="language-julia">*(W::Matrix, x::Batch{Vector,1}) = x * W&#39;
+*(W::Matrix, x::Batch{Vector,2}) = W * x</code></pre>
+      <p>
+This means that we can always write 
+<code>W*x</code>
+, and the code is reusable in a larger network regardless of the overall batching approach. Moreover, Julia&#39;s type system ensures there&#39;s no runtime cost to doing this, and we can compile the code appropriately for backends like TensorFlow as well.
+      </p>
       <footer>
         <hr/>
         <a class="previous" href="../models/debugging.html">
