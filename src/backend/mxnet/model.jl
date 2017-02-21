@@ -47,13 +47,17 @@ function mxnet(model::Flux.Model, input)
   return model
 end
 
+# MNet batches on last dimension
+rebatch_last(xs) = permutedims(xs, (2:ndims(xs)..., 1))
+rebatch_first(xs) = permutedims(xs, (ndims(xs), 1:ndims(xs)-1...))
+
 function runmodel(model::Model, input)
   copy!(model.exec.arg_dict[:input], input)
   mx.forward(model.exec, is_train = true)
   copy(model.exec.outputs[1])
 end
 
-(m::Model)(x::Batch) = rebatch(runmodel(m, rawbatch(x)))
+(m::Model)(x::Batch) = rebatch(rebatch_first(runmodel(m, rebatch_last(rawbatch(x)))))
 
 (m::Model)(x) = first(m(batchone(x)))
 

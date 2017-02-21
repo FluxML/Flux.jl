@@ -3,7 +3,7 @@ d = Affine(20, 10)
 
 # MXNet
 
-@mxonly let dm = mxnet(d, (1, 20))
+@mxonly let dm = mxnet(d, (20, 1))
   @test d(xs) ≈ dm(xs)
 end
 

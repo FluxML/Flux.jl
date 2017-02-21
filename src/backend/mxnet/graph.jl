@@ -19,6 +19,7 @@ node(x::mx.SymbolicNode) = x
 
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(+), args...) = mx.broadcast_plus(args...)
+graph(::typeof(*), x, W) = mx.dot(transpose(W), x) # Adjustments for batching
 graph(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(data = x, act_type = :relu)
 graph(::typeof(tanh), x) = mx.Activation(data = x, act_type = :tanh)
@@ -32,12 +33,13 @@ graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 
 graph(::Input, x) = x
 
-# TODO: use actual params
-
 graph(ctx::Context, d::Affine, x) =
   mx.FullyConnected(data = x,
-                    num_hidden = size(d.W.x, 2))
+                    num_hidden = size(d.W.x, 2),
+                    weight = var(ctx, d.W),
+                    bias = var(ctx, d.b, size(d.b, 2)))
 
+# TODO: use actual params}
 graph(ctx::Context, c::Conv2D, x) =
   mx.Convolution(data = x,
                  kernel = size(c.filter, 1, 2),
@@ -57,9 +59,9 @@ end
 
 register(ctx::Context, node) = node
 
-function var(ctx::Context, p::Flux.Param)
+function var(ctx::Context, p::Flux.Param, size = nothing)
   id = gensym()
-  ctx[:params][id] = p.x
+  ctx[:params][id] = size == nothing ? p.x : reshape(p.x, size...)
   return mx.Variable(id)
 end
 
