@@ -1,6 +1,6 @@
 # Флукс
 
-[![Build Status](https://travis-ci.org/MikeInnes/Flux.jl.svg?branch=master)](https://travis-ci.org/MikeInnes/Flux.jl) [![Join the chat at https://gitter.im/MikeInnes/Flux.jl](https://badges.gitter.im/MikeInnes/Flux.jl.svg)](https://gitter.im/MikeInnes/Flux.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/MikeInnes/Flux.jl.svg?branch=master)](https://travis-ci.org/MikeInnes/Flux.jl) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://mikeinnes.github.io/Flux.jl/latest/) [![Join the chat at https://gitter.im/MikeInnes/Flux.jl](https://badges.gitter.im/MikeInnes/Flux.jl.svg)](https://gitter.im/MikeInnes/Flux.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Flux is a high-level API for machine learning, implemented in Julia.
 
