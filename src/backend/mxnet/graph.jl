@@ -20,8 +20,8 @@ node(x::mx.SymbolicNode) = x
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(σ), x) = mx.Activation(data = x, act_type = :sigmoid)
-graph(::typeof(relu), x) = mx.Activation(data = x, act_type=:relu)
-graph(::typeof(tanh), x) = mx.Activation(data = x, act_type=:tanh)
+graph(::typeof(relu), x) = mx.Activation(data = x, act_type = :relu)
+graph(::typeof(tanh), x) = mx.Activation(data = x, act_type = :tanh)
 graph(::typeof(flatten), x) = mx.Flatten(data = x)
 
 graph(::typeof(softmax), xs) =
