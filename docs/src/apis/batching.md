@@ -96,7 +96,7 @@ The design of batching is still a fairly early work in progress, though it's use
 
 Right now, the `Batch` or `Seq` types always stack along the left-most dimension. In future, this will be customisable, and Flux will provide implementations of common functions that are generic across the batch dimension. This brings the following benefits:
 
-* Code can be written in a batch-agnostic way, i.e. as if working with a single data point, with batching happening independently.
+* Code can be written in a batch-agnostic way or be generic across batching setups. Code works with a single data point, and batching happens independently.
 * Automatic batching can be done with correctness assured, reducing programmer errors when manipulating dimensions.
 * Optimisations, like switching batch dimensions, can be expressed by the programmer with compiler support; fewer code changes are required and optimisations are guaranteed not to break the model.
 * This also opens the door for more automatic optimisations, e.g. having the compiler explore the search base of possible batching combinations.
