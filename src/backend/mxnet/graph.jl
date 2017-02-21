@@ -69,17 +69,17 @@ graph(ctx::Context, p::Constant) = node(p.value)
 
 function graph(ctx::Context, model, args...)
   g = Flux.graph(model)
-  g == nothing && return register(ctx, @ithrow ctx graph(model, args...))
+  g == nothing && return register(ctx, @icatch ctx graph(model, args...))
   DataFlow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
   interpret(ctx, g, args...)
 end
 
-graph′(ctx::Context, args...) = @ithrow ctx graph(ctx, args...)
+graph′(ctx::Context, args...) = @icatch ctx graph(ctx, args...)
 
 function tograph(model, args...)
   ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph′),
                 params = Dict(), stacks = Dict())
-  out = @icatch graph(ctx, model, args...)
+  out = @ithrow graph(ctx, model, args...)
   return ctx[:params], ctx[:stacks], out
 end
 
