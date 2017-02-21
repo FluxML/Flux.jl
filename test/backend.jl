@@ -19,6 +19,16 @@ end
   @test mx.infer_shape(f.arch, data = (20, 20, 5, 1))[2] == [(10, 1)]
 end
 
+@mxonly let
+  model = TLP(Affine(10, 20), Affine(21, 15))
+  info("The following warning is normal")
+  e = try mxnet(model, (10, 1))
+  catch e e end
+
+  @test e.trace[1].func == Symbol("Flux.Affine")
+  @test e.trace[2].func == :TLP
+end
+
 # TensorFlow
 
 @tfonly let dt = tf(d)
