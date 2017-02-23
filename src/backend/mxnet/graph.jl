@@ -94,7 +94,7 @@ using Juno
 Juno.errmsg(e::mx.MXError) = e.msg
 
 function errnode(e::mx.MXError)
-  m = match(r"Error in (\w+)", e.msg)
+  m = match(r"Error in operator (\w+)", e.msg)
   m == nothing && return
   Symbol(m.captures[1])
 end
