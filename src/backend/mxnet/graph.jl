@@ -38,8 +38,8 @@ graph(ctx::Context, d::Affine, x) =
     register(ctx,
       mx.FullyConnected(x,
                         num_hidden = size(d.W.x, 2),
-                        weight = var(ctx, d.W, size(d.W)),
-                        bias = var(ctx, d.b, size(d.b, 2))))
+                        weight = var(ctx, AlterParam(d.W, false, false)),
+                        bias = var(ctx, AlterParam(d.b, true, false))))
 
 # TODO: use actual params}
 graph(ctx::Context, c::Conv2D, x) =
@@ -61,9 +61,9 @@ end
 
 register(ctx::Context, node) = node
 
-function var(ctx::Context, p::Flux.Param, size = nothing)
+function var(ctx::Context, p)
   id = gensym()
-  ctx[:params][id] = size == nothing ? rebatch_last(p.x) : reshape(p.x, size...)
+  ctx[:params][id] = p
   return mx.Variable(id)
 end
 
