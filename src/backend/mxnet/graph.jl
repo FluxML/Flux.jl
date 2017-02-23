@@ -85,7 +85,7 @@ function tograph(model, args...; feedforward = false)
                 params = Dict(), stacks = Dict(),
                 feedforward = feedforward)
   out = @ithrow graph(ctx, model, args...)
-  return ctx[:params], ctx[:stacks], out
+  return Graph(out, ctx[:params], ctx[:stacks])
 end
 
 # Error Handling
