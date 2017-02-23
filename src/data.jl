@@ -24,11 +24,11 @@ possible values, and produces the appropriate value.
 onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
 
 using Iterators
-import Iterators: partition
+import Iterators: Partition, partition
 
 export partition
 
-Base.length(l::Iterators.Partition) = length(l.xs) ÷ l.step
+Base.length(l::Partition) = length(l.xs) ÷ l.step
 
 _partition(r::UnitRange, step::Integer) = (step*(i-1)+1:step*i for i in 1:(r.stop÷step))
 _partition(xs, step) = (xs[i] for i in _partition(1:length(xs), step))
