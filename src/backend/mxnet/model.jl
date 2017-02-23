@@ -83,7 +83,7 @@ type SoftmaxOutput
   name::Symbol
 end
 
-graph(s::SoftmaxOutput, xs) = mx.SoftmaxOutput(data = xs, name = s.name)
+graph(s::SoftmaxOutput, xs) = mx.SoftmaxOutput(xs, name = s.name)
 
 function rewrite_softmax(model, name)
   model == softmax && return SoftmaxOutput(name)
