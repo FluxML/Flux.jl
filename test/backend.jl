@@ -25,6 +25,7 @@ end
   e = try mxnet(model, (10, 1))
   catch e e end
 
+  @test isa(e, DataFlow.Interpreter.Exception)
   @test e.trace[1].func == Symbol("Flux.Affine")
   @test e.trace[2].func == :TLP
 end
