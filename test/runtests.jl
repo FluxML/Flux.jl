@@ -15,6 +15,5 @@ end
 
 include("batching.jl")
 include("basic.jl")
-include("recurrent.jl")
 @tfonly include("backend/tensorflow.jl")
 @mxonly include("backend/mxnet.jl")
