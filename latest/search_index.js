@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Where do I start?",
     "category": "section",
-    "text": "The examples are the best way to get a feel for how Flux looks. This a great way to start if you're a relative newbie to machine learning or neural networks; you should be able to get the examples running fairly easily.If you have more experience with ML, or you just don't want to see those digits again, check out the model building guide instead. The Guide attempts to motivate Flux's programming model and approach with examples. However, it also gets into advanced usage very quickly, so it's not necessary to memorise all the details to use Flux effectively.The sections on Recurrence, Debugging and Batching best illustrate what makes Flux unique."
+    "text": "The examples are the best way to get a feel for how Flux looks. This a great way to start if you're a relative newbie to machine learning or neural networks; you should be able to get the examples running fairly easily.If you have more experience with ML, or you just don't want to see those digits again, check out the model building guide instead. The Guide attempts to motivate Flux's programming model and approach with examples. However, it also gets into advanced usage very quickly; it's not necessary to memorise all the details to use Flux effectively.The sections on Recurrence, Debugging and Batching best illustrate what makes Flux unique."
 },
 
 {
