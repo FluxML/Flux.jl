@@ -1,5 +1,4 @@
 import DataFlow: mapconst, cse
-import MacroTools: @q
 
 export @net, @ml
 
@@ -69,7 +68,7 @@ function process_type(ex)
   args, body = process_func(funcs[1], pnames)
   @assert length(args) == 1
   self = esc(:self)
-  @q begin
+  quote
     $(build_type(T, params))
     $(esc(:(Flux.runmodel(self::$T, $(args...)) = $(build_forward(body, args)))))
     ($self::$(esc(T)))($(map(arg -> :($arg::Batch), args)...)) = rebatch(runmodel($self, $(map(x->:(rawbatch($x)), args)...)))
