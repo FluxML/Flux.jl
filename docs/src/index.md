@@ -8,11 +8,11 @@ So what's the catch? Flux is at an early "working prototype" stage; many things 
 
 ## Where do I start?
 
-The [examples](@ref Logistic Regression) are the best way to get a feel for how Flux looks. This a great way to start if you're a relative newbie to machine learning or neural networks; you should be able to get the examples running fairly easily.
+The [examples](examples/logreg.html) are the best way to get a feel for how Flux looks. This a great way to start if you're a relative newbie to machine learning or neural networks; you should be able to get the examples running fairly easily.
 
-If you have more experience with ML, or you just don't want to see *those digits* again, check out the [model building guide](@ref Model Building Basics) instead. The Guide attempts to motivate Flux's programming model and approach with examples. However, it also gets into advanced usage very quickly, so it's not necessary to memorise all the details to use Flux effectively.
+If you have more experience with ML, or you just don't want to see *those digits* again, check out the [model building guide](models/basics.html) instead. The Guide attempts to motivate Flux's programming model and approach with examples. However, it also gets into advanced usage very quickly; it's not necessary to memorise all the details to use Flux effectively.
 
-The sections on [Recurrence](@ref), [Debugging](@ref) and [Batching](@ref) best illustrate what makes Flux unique.
+The sections on [Recurrence](models/recurrent.html), [Debugging](models/debugging.html) and [Batching](apis/batching.html) best illustrate what makes Flux unique.
 
 ## Installation
 
