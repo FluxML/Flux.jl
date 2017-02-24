@@ -1,3 +1,5 @@
+__precompile__()
+
 module Flux
 
 using MacroTools, Lazy, DataFlow, Juno
