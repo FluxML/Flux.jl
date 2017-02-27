@@ -85,6 +85,11 @@ function stateout(steps, offset, default)
 end
 
 function unrollgraph(v::IVertex, n; seq = true, stateful = true)
+# Input:  (hidden1, hidden2, ...), (x1, x2, ...)
+# Output: (hidden1, hidden2, ...), (y1, y2, ...)
+# If `seq` is false, takes a single `x` and uses this for each iteration.
+# If `stateful` is false there are no hidden inputs or outputs.
+
   state, offset, default = collect_state(v)
   v = group(group(state...), v)
   steps = create_steps(v, n, seq = seq, stateful = stateful)
