@@ -122,18 +122,20 @@ function unroll(model, n)
   Unrolled(model, graph, state, true, n)
 end
 
-function unseqinput(v::IVertex)
+function unseqin(v::IVertex)
   prewalk(v) do v
     # TODO: inputidx function
     isa(value(v), Split) && DataFlow.isinput(v[1]) && value(v[1]).n == 2 ? v[1] : v
   end
 end
 
+unseqout(v::IVertex) = group(v[1], map(x->x[1], inputs(v)[2:end])...)
+
+unseq(graph) = unseqout(unseqin(graph))
+
 function unroll1(model)
   graph, state = unrollgraph(model, 1)
-  graph = unseqinput(graph)
-  graph = group(graph[1], map(x->x[1], inputs(graph)[2:end])...)
-  Unrolled(model, graph, state, false, 1)
+  Unrolled(model, unseq(graph), state, false, 1)
 end
 
 flip(model) = Capacitor(map(x -> x isa Offset ? -x : x, atomise(model)))
