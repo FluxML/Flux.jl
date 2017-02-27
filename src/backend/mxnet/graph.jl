@@ -99,6 +99,8 @@ function errnode(e::mx.MXError)
   Symbol(m.captures[1])
 end
 
+striptrace(e::mx.MXError) = mx.MXError(split(e.msg, "\n")[1])
+
 macro mxerr(stk, ex)
   :(try
       $(esc(ex))
@@ -106,6 +108,6 @@ macro mxerr(stk, ex)
       (isa(e, mx.MXError) && (node = errnode(e)) != nothing) || rethrow()
       stk = $(esc(stk))
       haskey(stk, node) || rethrow()
-      throw(Exception(e, totrace(stk[node])))
+      throw(Exception(striptrace(e), totrace(stk[node])))
     end)
 end
