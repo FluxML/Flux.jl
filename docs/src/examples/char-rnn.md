@@ -16,12 +16,14 @@ N = length(alphabet)
 
 Xs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)
 
-model = Chain(
+basemodel = Chain(
   Input(N),
   LSTM(N, 256),
   LSTM(256, 256),
   Affine(256, N),
   softmax)
+
+model = Chain(basemodel, softmax)
 
 m = tf(unroll(model, nunroll))
 
@@ -36,5 +38,5 @@ function sample(model, n, temp = 1)
   return string(s...)
 end
 
-sample(model, 100)
+sample(basemodel, 100)
 ```
