@@ -89,6 +89,11 @@ Batching
 Backends
               </a>
             </li>
+            <li>
+              <a class="toctext" href="../apis/storage.html">
+Storing Models
+              </a>
+            </li>
           </ul>
         </li>
         <li>
@@ -134,7 +139,7 @@ Char RNN
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/1dcdf666517a8b5e1ecf1e4bb685fa3a731cf5c0/docs/src/examples/char-rnn.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/4d4979b401d04a212436021033c00f4c985b9222/docs/src/examples/char-rnn.md">
             <span class="fa">
 
             </span>
@@ -163,14 +168,12 @@ N = length(alphabet)
 
 Xs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)
 
-basemodel = Chain(
+model = Chain(
   Input(N),
   LSTM(N, 256),
   LSTM(256, 256),
   Affine(256, N),
   softmax)
-
-model = Chain(basemodel, softmax)
 
 m = tf(unroll(model, nunroll))
 
@@ -185,7 +188,7 @@ function sample(model, n, temp = 1)
   return string(s...)
 end
 
-sample(basemodel, 100)</code></pre>
+sample(model[1:end-1], 100)</code></pre>
       <footer>
         <hr/>
         <a class="previous" href="logreg.html">

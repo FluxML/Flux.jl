@@ -217,6 +217,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "apis/storage.html#",
+    "page": "Storing Models",
+    "title": "Storing Models",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "apis/storage.html#Loading-and-Save-Models-1",
+    "page": "Storing Models",
+    "title": "Loading and Save Models",
+    "category": "section",
+    "text": "model = Chain(Affine(10, 20), σ, Affine(20, 15), softmax)Since models are just simple Julia data structures, it's very easy to save and load them using any of Julia's existing serialisation formats. For example, using Julia's built-in serialize:open(io -> serialize(io, model), \"model.jls\", \"w\")\nopen(io -> deserialize(io), \"model.jls\")One issue with serialize is that it doesn't promise compatibility between major Julia versions. For longer-term storage it's good to use a package like JLD.using JLD\n@save \"model.jld\" model\n@load \"model.jld\"However, JLD will break for some models as functions are not supported on 0.5+. You can resolve that by checking out this branch.Right now this is the only storage format Flux supports. In future Flux will support loading and saving other model formats (on an as-needed basis)."
+},
+
+{
     "location": "examples/logreg.html#",
     "page": "Logistic Regression",
     "title": "Logistic Regression",
@@ -245,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Char RNN",
     "title": "Char RNN",
     "category": "section",
-    "text": "using Flux\nimport StatsBase: wsample\n\nnunroll = 50\nnbatch = 50\n\ngetseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)\ngetbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)\n\ninput = readstring(\"$(homedir())/Downloads/shakespeare_input.txt\")\nalphabet = unique(input)\nN = length(alphabet)\n\nXs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)\n\nbasemodel = Chain(\n  Input(N),\n  LSTM(N, 256),\n  LSTM(256, 256),\n  Affine(256, N),\n  softmax)\n\nmodel = Chain(basemodel, softmax)\n\nm = tf(unroll(model, nunroll))\n\n@time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)\n\nfunction sample(model, n, temp = 1)\n  s = [rand(alphabet)]\n  m = tf(unroll(model, 1))\n  for i = 1:n\n    push!(s, wsample(alphabet, softmax(m(Seq((onehot(Float32, s[end], alphabet),)))[1]./temp)))\n  end\n  return string(s...)\nend\n\nsample(basemodel, 100)"
+    "text": "using Flux\nimport StatsBase: wsample\n\nnunroll = 50\nnbatch = 50\n\ngetseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)\ngetbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)\n\ninput = readstring(\"$(homedir())/Downloads/shakespeare_input.txt\")\nalphabet = unique(input)\nN = length(alphabet)\n\nXs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)\n\nmodel = Chain(\n  Input(N),\n  LSTM(N, 256),\n  LSTM(256, 256),\n  Affine(256, N),\n  softmax)\n\nm = tf(unroll(model, nunroll))\n\n@time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)\n\nfunction sample(model, n, temp = 1)\n  s = [rand(alphabet)]\n  m = tf(unroll(model, 1))\n  for i = 1:n\n    push!(s, wsample(alphabet, softmax(m(Seq((onehot(Float32, s[end], alphabet),)))[1]./temp)))\n  end\n  return string(s...)\nend\n\nsample(model[1:end-1], 100)"
 },
 
 {
