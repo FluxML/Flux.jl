@@ -1,4 +1,4 @@
-# Loading and Save Models
+# Loading and Saving Models
 
 ```julia
 model = Chain(Affine(10, 20), σ, Affine(20, 15), softmax)
