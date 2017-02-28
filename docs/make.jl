@@ -16,7 +16,8 @@ makedocs(modules=[Flux],
                     "Batching" => "apis/batching.md",
                     "Backends" => "apis/backends.md"],
                   "In Action" => [
-                    "Logistic Regression" => "examples/logreg.md"],
+                    "Logistic Regression" => "examples/logreg.md"
+                    "Char RNN" => "examples/char-rnn.md"],
                   "Contributing & Help"   => "contributing.md",
                   "Internals" => "internals.md"])
 
