@@ -233,6 +233,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "examples/char-rnn.html#",
+    "page": "Char RNN",
+    "title": "Char RNN",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "examples/char-rnn.html#Char-RNN-1",
+    "page": "Char RNN",
+    "title": "Char RNN",
+    "category": "section",
+    "text": "using Flux\nimport StatsBase: wsample\n\nnunroll = 50\nnbatch = 50\n\ngetseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)\ngetbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)\n\ninput = readstring(\"$(homedir())/Downloads/shakespeare_input.txt\")\nalphabet = unique(input)\nN = length(alphabet)\n\nXs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)\n\nbasemodel = Chain(\n  Input(N),\n  LSTM(N, 256),\n  LSTM(256, 256),\n  Affine(256, N),\n  softmax)\n\nmodel = Chain(basemodel, softmax)\n\nm = tf(unroll(model, nunroll))\n\n@time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)\n\nfunction sample(model, n, temp = 1)\n  s = [rand(alphabet)]\n  m = tf(unroll(model, 1))\n  for i = 1:n\n    push!(s, wsample(alphabet, softmax(m(Seq((onehot(Float32, s[end], alphabet),)))[1]./temp)))\n  end\n  return string(s...)\nend\n\nsample(basemodel, 100)"
+},
+
+{
     "location": "contributing.html#",
     "page": "Contributing & Help",
     "title": "Contributing & Help",
