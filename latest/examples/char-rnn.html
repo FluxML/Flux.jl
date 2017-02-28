@@ -139,7 +139,7 @@ Char RNN
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/4d4979b401d04a212436021033c00f4c985b9222/docs/src/examples/char-rnn.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/015c3b0856fcfcb7949c9188fc9c3ab393eed950/docs/src/examples/char-rnn.md">
             <span class="fa">
 
             </span>
@@ -153,22 +153,41 @@ Char RNN
 Char RNN
         </a>
       </h1>
+      <p>
+This walkthrough will take you through a model like that used in 
+        <a href="http://karpathy.github.io/2015/05/21/rnn-effectiveness/">
+Karpathy&#39;s 2015 blog post
+        </a>
+, which can learn to generate text in the style of Shakespeare (or whatever else you may use as input). 
+<code>shakespeare_input.txt</code>
+ is 
+        <a href="http://cs.stanford.edu/people/karpathy/char-rnn/shakespeare_input.txt">
+here
+        </a>
+.
+      </p>
 <pre><code class="language-julia">using Flux
-import StatsBase: wsample
-
-nunroll = 50
+import StatsBase: wsample</code></pre>
+      <p>
+Firstly, we define up front how many steps we want to unroll the RNN, and the number of data points to batch together. Then we create some functions to prepare our data, using Flux&#39;s built-in utilities.
+      </p>
+<pre><code class="language-julia">nunroll = 50
 nbatch = 50
 
 getseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)
-getbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)
-
-input = readstring(&quot;$(homedir())/Downloads/shakespeare_input.txt&quot;)
+getbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)</code></pre>
+      <p>
+Because we want the RNN to predict the next letter at each iteration, our target data is simply our input data offset by one. For example, if the input is &quot;The quick brown fox&quot;, the target will be &quot;he quick brown fox &quot;. Each letter is one-hot encoded and sequences are batched together to create the training data.
+      </p>
+<pre><code class="language-julia">input = readstring(&quot;shakespeare_input.txt&quot;)
 alphabet = unique(input)
 N = length(alphabet)
 
-Xs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)
-
-model = Chain(
+Xs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)</code></pre>
+      <p>
+Creating the model and training it is straightforward:
+      </p>
+<pre><code class="language-julia">model = Chain(
   Input(N),
   LSTM(N, 256),
   LSTM(256, 256),
@@ -177,9 +196,13 @@ model = Chain(
 
 m = tf(unroll(model, nunroll))
 
-@time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)
-
-function sample(model, n, temp = 1)
+@time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)</code></pre>
+      <p>
+Finally, we can sample the model. For sampling we remove the 
+<code>softmax</code>
+ from the end of the chain so that we can &quot;sharpen&quot; the resulting probabilities.
+      </p>
+<pre><code class="language-julia">function sample(model, n, temp = 1)
   s = [rand(alphabet)]
   m = tf(unroll(model, 1))
   for i = 1:n
@@ -189,6 +212,10 @@ function sample(model, n, temp = 1)
 end
 
 sample(model[1:end-1], 100)</code></pre>
+      <p>
+<code>sample</code>
+ then produces a string of Shakespeare-like text. This won&#39;t produce great results after only a single epoch (though they will be recognisably different from the untrained model). Going for 30 epochs or so produces good results.
+      </p>
       <footer>
         <hr/>
         <a class="previous" href="logreg.html">
