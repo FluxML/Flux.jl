@@ -20,7 +20,7 @@ type Chain <: Model
   end
 end
 
-@forward Chain.layers Base.getindex, Base.first, Base.last
+@forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 back!(s::Chain, Δ) = foldr((m, Δ) -> back!(m, Δ), Δ, s.layers)
@@ -30,3 +30,5 @@ graph(s::Chain) =
   foldl((v, m) -> vertex(m, v), constant(inputnode(1)), s.layers)
 
 shape(c::Chain, in) = c.shape
+
+Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
