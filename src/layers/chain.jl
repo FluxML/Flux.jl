@@ -31,4 +31,4 @@ graph(s::Chain) =
 
 shape(c::Chain, in) = c.shape
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
+Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
