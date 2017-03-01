@@ -28,4 +28,5 @@ You'll also need a backend to run real training, if you don't have one already. 
 
 ```julia
 Pkg.add("MXNet") # or "TensorFlow"
+Pkg.test("Flux") # Make sure everything installed properly
 ```
