@@ -34,7 +34,7 @@ julia> data[1]
 Now we define our model, which will simply be a function from one to the other.
 
 ```julia
-m = Chain(
+model = Chain(
   Input(784),
   Affine(128), relu,
   Affine( 64), relu,
