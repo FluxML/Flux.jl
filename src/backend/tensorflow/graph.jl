@@ -51,7 +51,7 @@ interp{T<:AArray}(ctx, p::Constant{Flux.Param{T}}) =
      ctx[:params][p.value] :
     (ctx[:params][p.value] = Variable(convertel(Float32, p.value.x)))
 
-interp(ctx, p::Constant) = node(p.value)
+interp(ctx, p::Constant) = p.value
 
 function interp(ctx, model, args...)
   g = Flux.graph(model)
