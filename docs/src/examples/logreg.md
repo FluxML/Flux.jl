@@ -34,13 +34,13 @@ julia> data[1]
 Now we define our model, which will simply be a function from one to the other.
 
 ```julia
-model = Chain(
+m = Chain(
   Input(784),
   Affine(128), relu,
   Affine( 64), relu,
   Affine( 10), softmax)
 
-model = tf(model)
+model = tf(m)
 ```
 
 We can try this out on our data already:
