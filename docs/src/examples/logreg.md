@@ -40,7 +40,7 @@ m = Chain(
   Affine( 64), relu,
   Affine( 10), softmax)
 
-model = tf(model)
+model = tf(m)
 ```
 
 We can try this out on our data already:
