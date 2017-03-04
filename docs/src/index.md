@@ -19,8 +19,7 @@ The sections on [Recurrence](models/recurrent.html), [Debugging](models/debuggin
 *... Charging Ion Capacitors ...*
 
 ```julia
-Pkg.clone("https://github.com/MikeInnes/DataFlow.jl")
-Pkg.clone("https://github.com/MikeInnes/Flux.jl")
+Pkg.add("Flux.jl")
 using Flux
 ```
 
