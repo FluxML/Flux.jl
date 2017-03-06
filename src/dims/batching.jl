@@ -37,6 +37,8 @@ function rebatch(xs)
   Batch{T,B}(xs)
 end
 
+rebatch(xs::Tuple) = map(rebatch, xs)
+
 convertel(T::Type, xs::Batch) =
   isa(eltype(eltype(xs)), T) ? xs :
     Batch(map(x->convertel(T, x), xs))

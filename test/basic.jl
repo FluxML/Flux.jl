@@ -7,6 +7,15 @@
   end
 end
 
+@net type Multi
+  W
+  V
+  x -> (x*W, x*V)
+end
+
+Multi(in::Integer, out::Integer) =
+  Multi(randn(in, out), randn(in, out))
+
 @testset "Basics" begin
 
 xs = randn(10)
@@ -34,6 +43,11 @@ let tlp = TLP(Affine(10, 21), Affine(20, 15))
   end
   @test e.trace[end].func == :TLP
   @test e.trace[end-1].func == Symbol("Flux.Affine")
+end
+
+let m = Multi(10, 15)
+  x = rand(10)
+  @test all(isapprox.(m(x), (m.W.x' * x, m.V.x' * x)))
 end
 
 end
