@@ -2,11 +2,11 @@
 
 [![Build Status](https://travis-ci.org/MikeInnes/Flux.jl.svg?branch=master)](https://travis-ci.org/MikeInnes/Flux.jl) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://mikeinnes.github.io/Flux.jl/latest/) [![Join the chat at https://gitter.im/MikeInnes/Flux.jl](https://badges.gitter.im/MikeInnes/Flux.jl.svg)](https://gitter.im/MikeInnes/Flux.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Flux is a high-level API for machine learning, implemented in Julia.
+Flux is a high-level library for machine learning, implemented in Julia.
 
-Flux aims to provide a concise and expressive syntax for architectures that are hard to express within other frameworks. The notation should be familiar and extremely close to what you'd find in a paper or description of the model.
+Flux is designed to get the best performance (by running on TensorFlow or MXNet) while still being intuitive to work with – you get good error messages, can step through models with the debugger, and the notation is very close to what you'd find in a paper.
 
-The current focus is on ANNs with TensorFlow or MXNet as a backend. While it's in a very early working-prototype stage, you can see what works so far in the [examples folder](/examples).
+Check out the [docs](https://mikeinnes.github.io/Flux.jl/latest/) to get started. Flux is in alpha so **please open issues liberally**; if something is broken for you it can most likely be fixed easily, or if you're not sure how to do something we can help.
 
 ## Brief Examples
 
