@@ -21,6 +21,7 @@ type Chain <: Model
 end
 
 @forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof
+@forward Chain.layers Base.start, Base.next, Base.done
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 back!(s::Chain, Δ) = foldr((m, Δ) -> back!(m, Δ), Δ, s.layers)
