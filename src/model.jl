@@ -48,6 +48,7 @@ graph(m) = nothing
 
 # Model parameters
 
+# TODO: should be AbstractArray?
 """
 A `Param` object stores a parameter array along with an accumulated delta to
 that array. When converting to backends like TensorFlow, identical `Param`s will
@@ -98,6 +99,9 @@ Base.size(p::Param, n) = size(p.x, n)
 function Base.show(io::IO, p::Param)
   print(io, "Param", size(p.x))
 end
+
+Base.copy!(xs, p::Param) = copy!(xs, p.x)
+Base.copy!(p::Param, xs) = copy!(p.x, xs)
 
 # Anonymous models
 
