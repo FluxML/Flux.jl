@@ -35,3 +35,5 @@ function MXArray(xs::AbstractArray)
   mx = MXArray(size(xs))
   copy!(mx, xs)
 end
+
+Base.setindex!(xs::MXArray, x::Real, ::Colon) = xs.data[:] = x
