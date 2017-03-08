@@ -19,7 +19,7 @@ node(x::mx.SymbolicNode) = x
 
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(+), args...) = mx.broadcast_plus(args...)
-graph(::typeof(*), x, W) = mx.dot(W, x) # Adjustments for batching
+graph(::typeof(*), xs...) = mx.dot(reverse(xs)...) # Work around MXNet shape hack
 graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)
 graph(::typeof(tanh), x) = mx.Activation(x, act_type = :tanh)
@@ -38,10 +38,10 @@ graph(ctx::Context, d::Affine, x) =
     register(ctx,
       mx.FullyConnected(mx.SymbolicNode, data = x,
                         num_hidden = size(d.W.x, 2),
-                        weight = var(ctx, AlterParam(d.W, false, false)),
-                        bias = var(ctx, AlterParam(d.b, true, false))))
+                        weight = var(ctx, AlterParam(d.W, x->x', nothing)),
+                        bias = var(ctx, AlterParam(d.b, x->squeeze(x, 1), nothing))))
 
-# TODO: use actual params}
+# TODO: use actual params
 graph(ctx::Context, c::Conv2D, x) =
   mx.Convolution(x,
                  kernel = size(c.filter, 1, 2),

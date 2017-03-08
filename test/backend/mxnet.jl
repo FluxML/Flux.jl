@@ -6,11 +6,11 @@ Flux.loadmx()
 xs = rand(20)
 d = Affine(20, 10)
 
-dm = mxnet(d, (20, 1))
+dm = mxnet(d, (1, 20))
 @test d(xs) ≈ dm(xs)
 
 m = Multi(20, 15)
-mm = mxnet(m, (20, 1))
+mm = mxnet(m, (1, 20))
 @test all(isapprox.(mm(xs), m(xs)))
 
 @testset "Backward Pass" begin
