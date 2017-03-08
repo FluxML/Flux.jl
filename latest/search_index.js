@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "... Charging Ion Capacitors ...Pkg.add(\"Flux.jl\")\nusing FluxYou'll also need a backend to run real training, if you don't have one already. Choose from MXNet or TensorFlow (MXNet is the recommended option if you're not sure):Pkg.add(\"MXNet\") # or \"TensorFlow\"\nPkg.test(\"Flux\") # Make sure everything installed properly"
+    "text": "... Charging Ion Capacitors ...Pkg.update()\nPkg.add(\"Flux.jl\")You'll also need a backend to run real training, if you don't have one already. Choose from MXNet or TensorFlow (MXNet is the recommended option if you're not sure):Pkg.add(\"MXNet\") # or \"TensorFlow\"\nPkg.test(\"Flux\") # Make sure everything installed properly"
 },
 
 {
