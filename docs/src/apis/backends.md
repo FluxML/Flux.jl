@@ -18,7 +18,7 @@ directly won't have great performance. In order to run a computationally intensi
 This is easy to do. Just call either `mxnet` or `tf` on a model to convert it to a model of that kind:
 
 ```julia
-mxmodel = mxnet(model, (10, 1))
+mxmodel = mxnet(model)
 mxmodel(xs) #> [0.0650, 0.0655, ...]
 # or
 tfmodel = tf(model)

@@ -15,7 +15,7 @@ function loadmx()
   @eval include(joinpath(dirname($@__FILE__), "mxnet/mxnet.jl"))
 end
 
-function mxnet(args...)
+function mxnet(m)
   loadmx()
-  eval(:(MX.mxnet($(args...))))
+  eval(:(MX.mxnet($m)))
 end

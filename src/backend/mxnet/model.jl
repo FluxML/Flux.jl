@@ -8,6 +8,12 @@ end
 
 Base.size(p::AlterParam) = size(p.load(p.param.x))
 
+function copyargs!(as, bs)
+  for id in intersect(keys(as), keys(bs))
+    copy!(as[id], bs[id])
+  end
+end
+
 type Graph
   output
   params::Dict{Symbol,Any}
@@ -22,74 +28,94 @@ function mxparams(g::Graph)
   return params
 end
 
-function copyargs!(as, bs)
-  for id in intersect(keys(as), keys(bs))
-    copy!(as[id], bs[id])
-  end
-end
-
 ndparams(d::Dict{Symbol,MXArray}) = Dict(k => v.data for (k, v) in d)
 
-type Model <: Flux.Model
-  model::Any
+type Exec <: Flux.Model
   graph::Graph
+  exec::mx.Executor
   args::Dict{Symbol,MXArray}
   grads::Dict{Symbol,MXArray}
   outs::Vector{MXArray}
-  exec::mx.Executor
 end
 
-loadparams!(model::Model) = copyargs!(model.args, model.graph.params)
-storeparams!(model::Model) = copyargs!(model.graph.params, model.args)
+loadparams!(exec::Exec) = copyargs!(exec.args, exec.graph.params)
+storeparams!(exec::Exec) = copyargs!(exec.graph.params, exec.args)
 
 mxgroup(x) = x
 mxgroup(x::Tuple) = mx.Group(mxgroup.(x)...)
 mxungroup(x, outs) = copy(shift!(outs))
 mxungroup(x::Tuple, outs) = map(x -> mxungroup(x, outs), x)
 
-function mxnet(model::Flux.Model, input)
-  graph = tograph(model, mx.Variable(:input))
+function executor(graph::Graph, input)
   args  = merge(mxparams(graph), Dict(:input => MXArray(input)))
   grads = merge(mxparams(graph), Dict(:input => MXArray(input)))
-  exec = @mxerr graph.stacks mx.bind(mxgroup(graph.output),
-                                     args = ndparams(args),
-                                     args_grad = ndparams(grads),
-                                     grad_req = mx.GRAD_ADD)
-  model = Model(model, graph, args, grads, MXArray.(exec.outputs), exec)
-  loadparams!(model)
-  return model
+  exec = mx.bind(mxgroup(graph.output),
+                 args = ndparams(args),
+                 args_grad = ndparams(grads),
+                 grad_req = mx.GRAD_ADD)
+  exec = Exec(graph, exec, args, grads, MXArray.(exec.outputs))
+  loadparams!(exec)
+  return exec
 end
 
-function runmodel(model::Model, input)
-  copy!(model.args[:input], input)
-  mx.forward(model.exec, is_train = true)
-  mxungroup(model.graph.output, copy(model.outs))
+function (exec::Exec)(input)
+  copy!(exec.args[:input], input)
+  mx.forward(exec.exec, is_train = true)
+  mxungroup(exec.graph.output, copy(exec.outs))
 end
 
-(m::Model)(x::Batch) = rebatch(runmodel(m, rawbatch(x)))
-
-(m::Model)(x) = unbatchone(m(batchone(x)))
-
-function runback!(model::Model, Δ)
-  model.grads[:input][:] = 0
-  mx.backward(model.exec, MXArray(Δ).data)
-  copy(model.grads[:input])
+function Flux.back!(exec::Exec, Δ)
+  exec.grads[:input][:] = 0
+  mx.backward(exec.exec, MXArray(Δ).data)
+  copy(exec.grads[:input])
 end
 
-Flux.back!(m::Model, Δ::Batch, x) = rebatch(runback!(m, rawbatch(Δ)))
-
-Flux.back!(m::Model, Δ, x) = first(Flux.back!(m, batchone(Δ), x))
-
-function Flux.update!(model::Model, η)
-  for (arg, grad) in zip(model.exec.arg_arrays, model.exec.grad_arrays)
+function Flux.update!(exec::Exec, η)
+  for (arg, grad) in zip(exec.exec.arg_arrays, exec.exec.grad_arrays)
     mx.@nd_as_jl rw = (arg, grad) begin
       arg .-= grad .* η
       grad[:] = 0
     end
   end
-  storeparams!(model)
-  return model
+  storeparams!(exec)
+  return exec
 end
+
+# TODO: if `last` changes, update params appropriately
+
+type Model
+  model::Any
+  graph::Graph
+  execs::Dict{Tuple,Exec}
+  last::Exec
+  Model(model, graph, execs) = new(model, graph, execs)
+end
+
+function mxnet(model)
+  graph = tograph(model, mx.Variable(:input))
+  Model(model, graph, Dict())
+end
+
+import Base: @get!
+
+executor(m::Model, input) = @get!(m.execs, input, executor(m.graph, input))
+
+function (m::Model)(x::Batch)
+  x′ = rawbatch(x)
+  m.last = exec = @mxerr m.graph.stacks executor(m, size(x′))
+  rebatch(exec(x′))
+end
+
+(m::Model)(x) = unbatchone(m(batchone(x)))
+
+function Flux.back!(m::Model, Δ::Batch, x::Batch)
+  m.last = exec = m.execs[size(rawbatch(x))]
+  rebatch(back!(exec, rawbatch(Δ)))
+end
+
+Flux.back!(m::Model, Δ, x) = first(Flux.back!(m, batchone(Δ), batchone(x)))
+
+Flux.update!(m::Model, η) = (update!(m.last, η); m)
 
 # MX FeedForward interface
 

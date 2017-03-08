@@ -14,18 +14,20 @@ end
 
 model = TLP(Affine(10, 20), Affine(21, 15))
 
-mxmodel = mxnet(model, (10, 1))
+mxmodel = mxnet(model)
+
+mxmodel(rand(10))
 ```
 
 Unfortunately, this model has a (fairly obvious) typo, which means that the code above won't run. Instead we get an error message:
 
 ```julia
-InferShape Error in dot5: [20:37:39] src/operator/./matrix_op-inl.h:271:
-Check failed: (lshape[1]) == (rshape[0]) dot shape error: (15,21) X (20,1)
- in Flux.Affine at affine.jl:8
- in TLP at test.jl:6
- in mxnet(::TLP, ::Tuple{Int64,Int64}) at model.jl:40
- in mxnet(::TLP, ::Vararg{Any,N} where N) at backend.jl:20
+Error in operator dot2: [21:28:21] src/operator/tensor/./matrix_op-inl.h:460:
+Check failed: lshape[1] == rshape[0] (20 vs. 21) dot shape error: (1,20) X (21,15)
+Flux.Affine at affine.jl:8
+TLP at basic.jl:6
+(::Flux.MX.Model)(::Flux.Batch{Array{Float64,1},Array{Float64,2}}) at model.jl:105
+(::Flux.MX.Model)(::Array{Float64,1}) at model.jl:107
 ```
 
 Most frameworks would only give the error message here – not so helpful if you have thousands of nodes in your computational graph. However, Flux is able to give good error reports *even when no Julia code has been run*, e.g. when running on a backend like MXNet. This enables us to pinpoint the source of the error very quickly even in a large model.

@@ -6,11 +6,11 @@ Flux.loadmx()
 xs = rand(20)
 d = Affine(20, 10)
 
-dm = mxnet(d, (1, 20))
+dm = mxnet(d)
 @test d(xs) ≈ dm(xs)
 
 m = Multi(20, 15)
-mm = mxnet(m, (1, 20))
+mm = mxnet(m)
 @test all(isapprox.(mm(xs), m(xs)))
 
 @testset "Backward Pass" begin
@@ -40,7 +40,8 @@ end
 @testset "Stack Traces" begin
   model = TLP(Affine(10, 20), Affine(21, 15))
   info("The following warning is normal")
-  e = try mxnet(model, (10, 1))
+  dm = mxnet(model)
+  e = try dm(rand(10))
   catch e e end
 
   @test isa(e, DataFlow.Interpreter.Exception)
