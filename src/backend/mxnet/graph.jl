@@ -36,7 +36,7 @@ graph(::Input, x) = x
 graph(ctx::Context, d::Affine, x) =
   !ctx[:feedforward] ? invoke(graph, (Context, Any, typeof(x)), ctx, d, x) :
     register(ctx,
-      mx.FullyConnected(x,
+      mx.FullyConnected(mx.SymbolicNode, data = x,
                         num_hidden = size(d.W.x, 2),
                         weight = var(ctx, AlterParam(d.W, false, false)),
                         bias = var(ctx, AlterParam(d.b, true, false))))
