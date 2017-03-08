@@ -10,8 +10,6 @@ immutable MXArray{N}
   scratch::Array{Float32,N}
 end
 
-MXArray{T}(data::mx.NDArray, scratch::Array{Float32, T}) = MXArray{T}(data, scratch)
-
 MXArray(data::mx.NDArray) = MXArray(data, Array{Float32}(size(data)))
 
 MXArray(dims::Dims) = MXArray(mx.zeros(reverse(dims)))
