@@ -14,7 +14,7 @@ MXArray{T}(data::mx.NDArray, scratch::Array{Float32, T}) = MXArray{T}(data, scra
 
 MXArray(data::mx.NDArray) = MXArray(data, Array{Float32}(size(data)))
 
-MXArray(dims::Integer...) = MXArray(mx.zeros(reverse(dims)))
+MXArray(dims::Dims) = MXArray(mx.zeros(reverse(dims)))
 
 Base.size(xs::MXArray) = reverse(size(xs.data))
 
@@ -34,6 +34,6 @@ end
 Base.copy(mx::MXArray) = copy!(Array{Float32}(size(mx)), mx)
 
 function MXArray(xs::AbstractArray)
-  mx = MXArray(size(xs)...)
+  mx = MXArray(size(xs))
   copy!(mx, xs)
 end
