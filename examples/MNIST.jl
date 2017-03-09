@@ -10,13 +10,13 @@ m = Chain(
   Affine( 64), relu,
   Affine( 10), softmax)
 
-# Convert to TensorFlow
-model = tf(m)
+# Convert to MXNet
+model = mxnet(m)
 
 # An example prediction pre-training
 model(data[1][1])
 
-@time Flux.train!(model, train, test, η = 1e-4)
+Flux.train!(model, train, test, η = 1e-4)
 
 # An example prediction post-training
 model(data[1][1])

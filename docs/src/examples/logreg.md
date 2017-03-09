@@ -1,4 +1,4 @@
-# Logistic Regression with MNIST
+# Recognising MNIST Digits
 
 This walkthrough example will take you through writing a multi-layer perceptron that classifies MNIST digits with high accuracy.
 
@@ -40,7 +40,7 @@ m = Chain(
   Affine( 64), relu,
   Affine( 10), softmax)
 
-model = tf(m)
+model = mxnet(m) # Convert to MXNet
 ```
 
 We can try this out on our data already:
