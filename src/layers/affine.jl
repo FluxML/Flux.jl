@@ -1,7 +1,5 @@
 export Affine
 
-# TODO: type hints for parameters
-
 @net type Affine
   W
   b

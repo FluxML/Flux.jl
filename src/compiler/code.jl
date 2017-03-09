@@ -59,6 +59,8 @@ import Lazy: groupby
 
 reifyparams(v::IVertex) = mapconst(x -> isa(x, Param) ? x.x : x, v)
 
+# TODO: type hints for parameters
+
 function process_type(ex)
   @capture(ex, type T_ fs__ end)
   @destruct [params = false || [],
