@@ -1,4 +1,5 @@
 import DataFlow: mapconst, cse
+using MacroTools: @q
 
 export @net, @ml
 
@@ -72,7 +73,7 @@ function process_type(ex)
   self = esc(:self)
   quote
     $(build_type(T, params))
-    $(esc(:(Flux.runmodel(self::$T, $(args...)) = $(build_forward(body, args)))))
+    $(@q $(esc(:(Flux.runmodel(self::$T, $(args...)) = $(build_forward(body, args))))))
     ($self::$(esc(T)))($(args...)) = runrawbatched((xs...) -> runmodel($self, xs...), $(args...))
     $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!($self.$p, η)), pnames)...);)
     $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(mapconst(esc, makegraph(body, args))))
