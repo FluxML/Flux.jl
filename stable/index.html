@@ -147,7 +147,7 @@ Home
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/1c317eeefec910170cc72a4fe09ac54e187b3624/docs/src/index.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/854a1e18865742c59b6db6c58e16fee6ef9ef8ce/docs/src/index.md">
             <span class="fa">
 
             </span>
@@ -218,9 +218,8 @@ Installation
 ... Charging Ion Capacitors ...
         </em>
       </p>
-<pre><code class="language-julia">Pkg.clone(&quot;https://github.com/MikeInnes/DataFlow.jl&quot;)
-Pkg.clone(&quot;https://github.com/MikeInnes/Flux.jl&quot;)
-using Flux</code></pre>
+<pre><code class="language-julia">Pkg.update()
+Pkg.add(&quot;Flux.jl&quot;)</code></pre>
       <p>
 You&#39;ll also need a backend to run real training, if you don&#39;t have one already. Choose from 
         <a href="https://github.com/dmlc/MXNet.jl">
@@ -232,7 +231,8 @@ TensorFlow
         </a>
  (MXNet is the recommended option if you&#39;re not sure):
       </p>
-<pre><code class="language-julia">Pkg.add(&quot;MXNet&quot;) # or &quot;TensorFlow&quot;</code></pre>
+<pre><code class="language-julia">Pkg.add(&quot;MXNet&quot;) # or &quot;TensorFlow&quot;
+Pkg.test(&quot;Flux&quot;) # Make sure everything installed properly</code></pre>
       <footer>
         <hr/>
         <a class="next" href="models/basics.html">
