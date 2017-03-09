@@ -34,9 +34,9 @@ end
 
 # TODO: batching should be secondary
 
-function interpmodel(m, args::Batch...)
+function interpmodel_(m, args...)
   ctx = Context(mux(iline, ilambda, iconst, iargs, ituple, interp))
-  rebatch(@ithrow interp(ctx, m, map(rawbatch, args)...))
+  interp(ctx, m, args...)
 end
 
-interpmodel(m, args...) = unbatchone(interpmodel(m, batchone(args)...))
+interpmodel(m, args...) = @ithrow runrawbatched((xs...) -> interpmodel_(m, xs...), args...)

@@ -1,4 +1,4 @@
-using Flux: batchone, unbatchone, rebatch
+using Flux: runrawbatched
 
 type AlterParam
   param
@@ -100,20 +100,19 @@ import Base: @get!
 
 executor(m::Model, input) = @get!(m.execs, input, executor(m.graph, input))
 
-function (m::Model)(x::Batch)
-  x′ = rawbatch(x)
-  m.last = exec = @mxerr m.graph.stacks executor(m, size(x′))
-  rebatch(exec(x′))
+function (m::Model)(x)
+  runrawbatched(x) do x
+    m.last = exec = @mxerr m.graph.stacks executor(m, size(x))
+    exec(x)
+  end
 end
 
-(m::Model)(x) = unbatchone(m(batchone(x)))
-
-function Flux.back!(m::Model, Δ::Batch, x::Batch)
-  m.last = exec = m.execs[size(rawbatch(x))]
-  rebatch(back!(exec, rawbatch(Δ)))
+function Flux.back!(m::Model, Δ, x)
+  runrawbatched(Δ, x) do Δ, x
+    m.last = exec = m.execs[size(x)]
+    back!(exec, Δ)
+  end
 end
-
-Flux.back!(m::Model, Δ, x) = first(Flux.back!(m, batchone(Δ), batchone(x)))
 
 Flux.update!(m::Model, η) = (update!(m.last, η); m)
 

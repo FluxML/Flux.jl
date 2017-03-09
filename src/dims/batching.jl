@@ -17,19 +17,6 @@ convert{T,S}(::Type{Batch{T,S}},storage::S) =
        Juno.trim(collect(b)))
 end
 
-# Convenience methods for batch size 1
-
-batchone(x) = Batch((x,))
-batchone(x::Batch) = x
-batchone(x::Tuple) = map(batchone, x)
-
-function unbatchone(xs::Batch)
-  @assert length(xs) == 1
-  return first(xs)
-end
-
-unbatchone(xs::Tuple) = map(unbatchone, xs)
-
 function rebatch(xs)
   dims = ndims(xs)-1
   T = Array{eltype(xs),dims}
@@ -37,8 +24,38 @@ function rebatch(xs)
   Batch{T,B}(xs)
 end
 
-rebatch(xs::Tuple) = map(rebatch, xs)
-
 convertel(T::Type, xs::Batch) =
   isa(eltype(eltype(xs)), T) ? xs :
     Batch(map(x->convertel(T, x), xs))
+
+# Add batching semantics to functions operating on raw arrays
+# TODO: remove this in favour of full batching semantics
+
+mapt(f, x) = f(x)
+mapt(f, xs::Tuple) = map(f, xs)
+
+batchone(x) = Batch((x,))
+batchone(x::Batch) = x
+
+function unbatchone(xs::Batch)
+  @assert length(xs) == 1
+  return first(xs)
+end
+
+isbatched(x) = false
+isbatched(x::Batch) = true
+isbatched(xs::Tuple) = any(isbatched, xs)
+
+batchify(xs) = isbatched(xs) ? (xs, true) : (mapt(batchone, xs), false)
+
+function runbatched(f, xs...)
+  # TODO: decide what to do with mixed inputs
+  xs, batched = batchify(xs)
+  ys = f(xs...)
+  batched ? ys : mapt(unbatchone, ys)
+end
+
+runrawbatched(f, xs...) =
+  runbatched((xs...) -> mapt(rebatch,
+                             f(mapt(rawbatch, xs)...)),
+             xs...)
