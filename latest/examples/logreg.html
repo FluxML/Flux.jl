@@ -4,7 +4,7 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>
-Logistic Regression · Flux
+Simple MNIST · Flux
     </title>
     <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -103,7 +103,7 @@ In Action
           <ul>
             <li class="current">
               <a class="toctext" href="logreg.html">
-Logistic Regression
+Simple MNIST
               </a>
               <ul class="internal"></ul>
             </li>
@@ -135,11 +135,11 @@ In Action
             </li>
             <li>
               <a href="logreg.html">
-Logistic Regression
+Simple MNIST
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/15b3ce1adad9e07367e68c8c3758380b02d6a4a1/docs/src/examples/logreg.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/5c548fe1c4c9d23651dd364648cb28fc62b08855/docs/src/examples/logreg.md">
             <span class="fa">
 
             </span>
@@ -149,8 +149,8 @@ Logistic Regression
         <hr/>
       </header>
       <h1>
-        <a class="nav-anchor" id="Logistic-Regression-with-MNIST-1" href="#Logistic-Regression-with-MNIST-1">
-Logistic Regression with MNIST
+        <a class="nav-anchor" id="Recognising-MNIST-Digits-1" href="#Recognising-MNIST-Digits-1">
+Recognising MNIST Digits
         </a>
       </h1>
       <p>
@@ -196,7 +196,7 @@ Now we define our model, which will simply be a function from one to the other.
   Affine( 64), relu,
   Affine( 10), softmax)
 
-model = tf(m)</code></pre>
+model = mxnet(m) # Convert to MXNet</code></pre>
       <p>
 We can try this out on our data already:
       </p>
