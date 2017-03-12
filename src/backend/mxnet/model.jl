@@ -102,8 +102,8 @@ import Base: @get!
 executor(m::Model, input) = @get!(m.execs, input, executor(m.graph, input))
 
 function (m::Model)(x)
-  runrawbatched(x) do x
-    m.last = exec = @mxerr m.graph.stacks executor(m, size(x))
+  @mxerr m.graph.stacks runrawbatched(x) do x
+    m.last = exec = executor(m, size(x))
     exec(x)
   end
 end
