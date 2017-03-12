@@ -20,7 +20,6 @@ end
 
 @testset "Stack Traces" begin
   model = TLP(Affine(10, 20), Affine(21, 15))
-  info("The following warning is normal")
   dm = tf(model)
   e = try dm(rand(10))
   catch e e end
