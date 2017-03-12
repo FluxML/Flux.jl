@@ -2,7 +2,7 @@ using Base: @get!
 using DataFlow: Constant, constant, Split
 using DataFlow.Interpreter
 using Flux: imap
-using TensorFlow: RawTensor
+using TensorFlow: RawTensor, TFException
 
 # TODO: implement Julia's type promotion rules
 
@@ -70,3 +70,29 @@ end
 TensorFlow.Tensor(m::Flux.Model, args...) = tograph(m, args...)[3]
 
 RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))
+
+# Error Handling
+
+using Juno
+using MacroTools: @q
+using DataFlow.Interpreter: Exception, totrace
+Juno.errmsg(e::TFException) = string(e.status)
+
+function errnode(e::TFException)
+  m = match(r"Node: ([\w\d]+) =", string(e.status))
+  m == nothing && return
+  m.captures[1]
+end
+
+errnode(e) = nothing
+
+macro tferr(stk, ex)
+  @q try
+    $(esc(ex))
+  catch e
+    (node = errnode(e)) != nothing || rethrow()
+    stk = $(esc(stk))
+    haskey(stk, node) || rethrow()
+    throw(Exception(e, totrace(stk[node])))
+  end
+end

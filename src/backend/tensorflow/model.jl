@@ -27,38 +27,17 @@ end
 
 storeparams!(m::Model) = storeparams!(m.session, m.params)
 
-ismultioutput(m::Model) = !isa(m.output, Tensor)
-
-function tferr(model::Model, e)
-  m = match(r"Node: ([\w\d]+) =", string(e.status))
-  m == nothing && return
-  node = m.captures[1]
-  if haskey(model.stacks, node)
-    stk = model.stacks[node]
-    println("TensorFlow error occured at:")
-    foreach(l -> println("$(l.file):$(l.line)"), stk)
-  end
-end
-
 function runmodel(m::Model, args...)
   @assert length(args) == length(m.inputs)
-  try
-    output = run(m.session, m.output, Dict(zip(m.inputs, args)))
-    ismultioutput(m) ? (rebatch.(output)...,) : rebatch(output)
-  catch e
-    isa(e, TensorFlow.TFException) || rethrow(e)
-    tferr(m, e)
-    rethrow(e)
+  run(m.session, m.output, Dict(zip(m.inputs, args)))
+end
+
+using Flux: runrawbatched
+
+function (m::Model)(x)
+  @tferr m.stacks runrawbatched(convertel(Float32, x)) do x
+    output = runmodel(m, x)
   end
-end
-
-function (m::Model)(args::Batch...)
-  runmodel(m, map(x -> convertel(Float32, x), args)...)
-end
-
-function (m::Model)(args...)
-  output = m(map(batchone, args)...)
-  ismultioutput(m) ? map(first, output) : first(output)
 end
 
 for f in :[back!, update!].args

@@ -18,4 +18,16 @@ dt = tf(d)
   @test run(sess, Y, Dict(X=>xs')) ≈ d(xs)'
 end
 
+@testset "Stack Traces" begin
+  model = TLP(Affine(10, 20), Affine(21, 15))
+  info("The following warning is normal")
+  dm = tf(model)
+  e = try dm(rand(10))
+  catch e e end
+
+  @test isa(e, DataFlow.Interpreter.Exception)
+  @test e.trace[1].func == Symbol("Flux.Affine")
+  @test e.trace[2].func == :TLP
+end
+
 end
