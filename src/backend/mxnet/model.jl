@@ -31,7 +31,7 @@ end
 
 ndparams(d::Dict{Symbol,MXArray}) = Dict(k => v.data for (k, v) in d)
 
-type Exec <: Flux.Model
+type Exec
   graph::Graph
   exec::mx.Executor
   args::Dict{Symbol,MXArray}
@@ -84,7 +84,7 @@ end
 
 # TODO: if `last` changes, update params appropriately
 
-type Model
+type Model <: Flux.Model
   model::Any
   graph::Graph
   execs::Dict{Tuple,Exec}
