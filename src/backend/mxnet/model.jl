@@ -7,6 +7,7 @@ type AlterParam
 end
 
 Base.size(p::AlterParam) = size(p.load(p.param.x))
+Base.copy!(xs, p::AlterParam) = copy!(xs, p.load(p.param.x))
 
 function copyargs!(as, bs)
   for id in intersect(keys(as), keys(bs))
