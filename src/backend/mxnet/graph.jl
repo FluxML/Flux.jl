@@ -91,6 +91,7 @@ end
 # Error Handling
 
 using Juno
+using MacroTools: @q
 Juno.errmsg(e::mx.MXError) = e.msg
 
 function errnode(e::mx.MXError)
@@ -102,12 +103,12 @@ end
 striptrace(e::mx.MXError) = mx.MXError(split(e.msg, "\n")[1])
 
 macro mxerr(stk, ex)
-  :(try
-      $(esc(ex))
-    catch e
-      (isa(e, mx.MXError) && (node = errnode(e)) != nothing) || rethrow()
-      stk = $(esc(stk))
-      haskey(stk, node) || rethrow()
-      throw(Exception(striptrace(e), totrace(stk[node])))
-    end)
+  @q try
+    $(esc(ex))
+  catch e
+    (isa(e, mx.MXError) && (node = errnode(e)) != nothing) || rethrow()
+    stk = $(esc(stk))
+    haskey(stk, node) || rethrow()
+    throw(Exception(striptrace(e), totrace(stk[node])))
+  end
 end
