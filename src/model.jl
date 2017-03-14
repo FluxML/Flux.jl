@@ -15,7 +15,7 @@ where `W` and `b` are a trainable matrix and vector of weights repectively. The
 closer to a protocol, and models don't need to inherit from this type. Normal
 Julia functions are models with 0 parameters, for example.
 """
-abstract Model
+abstract type Model end
 
 """
     back!(m::Model, ΔY, X...) => ΔX

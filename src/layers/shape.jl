@@ -1,6 +1,6 @@
 export Input
 
-typealias Dims{N} NTuple{N,Int}
+Dims{N} = NTuple{N,Int}
 
 dims(d::Dims) = d
 

@@ -17,4 +17,4 @@ convert{T,S}(::Type{Seq{T,S}},storage::S) =
        Juno.trim(collect(b)))
 end
 
-typealias BatchSeq{T<:Seq} Batch{T}
+BatchSeq{T<:Seq} = Batch{T}
