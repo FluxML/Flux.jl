@@ -45,7 +45,7 @@ function collect_state(v::IVertex)
   offset = Int[]
   default = Param[]
   prewalk!(v) do v
-    isa(value(v), Offset) || return v
+    value(v) isa Offset || return v
     if (i = findfirst(state, v[1])) == 0
       push!(state, v[1])
       push!(offset, max(0, -value(v).n))
@@ -91,7 +91,7 @@ function unrollgraph(v::IVertex, n; seq = true, stateful = true)
   for i = 1:n
     vars = inputs(steps[i][1])
     postwalk!(steps[i]) do v
-      isa(value(v), Offset) || return v
+      value(v) isa Offset || return v
       varid = findfirst(vars,v[1])
       getvar(varid, value(v).n + i, steps, offset, default, stateful = stateful)
     end
@@ -131,4 +131,4 @@ function unroll1(model)
   Unrolled(model, graph, state, false, 1)
 end
 
-flip(model) = Capacitor(map(x -> isa(x, Offset) ? -x : x, atomise(model)))
+flip(model) = Capacitor(map(x -> x isa Offset ? -x : x, atomise(model)))

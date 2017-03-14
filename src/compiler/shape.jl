@@ -9,8 +9,8 @@ end
 DataFlow.tocall(h::Hint, x) = :($x::$(h.typ))
 
 function gethint(v::IVertex)
-  while isa(value(v), Union{Line,Frame}) v = v[1] end
-  isa(value(v), Hint) && return value(v).typ
+  while value(v) isa Union{Line,Frame} v = v[1] end
+  value(v) isa Hint && return value(v).typ
   return
 end
 

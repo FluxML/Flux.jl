@@ -25,7 +25,7 @@ function rebatch(xs)
 end
 
 convertel(T::Type, xs::Batch) =
-  isa(eltype(eltype(xs)), T) ? xs :
+  eltype(eltype(xs)) isa T ? xs :
     Batch(map(x->convertel(T, x), xs))
 
 # Add batching semantics to functions operating on raw arrays

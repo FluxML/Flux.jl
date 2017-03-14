@@ -39,7 +39,7 @@ graph(op::Op, xs...) = op.f(xs...)
 
 function graph(ctx::Context, model, args...)
   node = graph(model, interpv(ctx, args)...)
-  isa(node, Tensor) && (ctx[:stacks][node.op.name] = stack(ctx))
+  node isa Tensor && (ctx[:stacks][node.op.name] = stack(ctx))
   return node
 end
 

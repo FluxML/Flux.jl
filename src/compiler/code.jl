@@ -13,12 +13,12 @@ end
 function makegraph(graph, args)
   @assert length(args) == 1
   graph = prewalk(graph) do v
-    isa(value(v), Constant) && value(v).value == args[1] ?
+    value(v) isa Constant && value(v).value == args[1] ?
       inputnode(1) :
       v
   end
   graph = map(graph) do x
-    isa(x, Offset) ?
+    x isa Offset ?
       :(Flux.Offset($(Expr(:quote, x.name)), $(x.n), self.$(x.name))) :
       x
   end
@@ -44,7 +44,7 @@ runmodel(f, xs...) = f(xs...)
 
 function deref_params(v)
   v = map(v) do x
-    isa(x, Constant) && @capture(x.value, self.p_) ? Constant(:(Flux.state(self.$p))) : x
+    x isa Constant && @capture(x.value, self.p_) ? Constant(:(Flux.state(self.$p))) : x
   end
   prewalk(v) do v
     @capture(value(v), self.p_) ? vertex(:(Flux.runmodel), constant(:(self.$p)), inputs(v)...) : v
@@ -58,7 +58,7 @@ end
 
 import Lazy: groupby
 
-reifyparams(v::IVertex) = mapconst(x -> isa(x, Param) ? x.x : x, v)
+reifyparams(v::IVertex) = mapconst(x -> x isa Param ? x.x : x, v)
 
 # TODO: type hints for parameters
 

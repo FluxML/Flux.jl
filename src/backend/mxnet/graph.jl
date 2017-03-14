@@ -106,7 +106,7 @@ macro mxerr(stk, ex)
   @q try
     $(esc(ex))
   catch e
-    (isa(e, mx.MXError) && (node = errnode(e)) != nothing) || rethrow()
+    (e isa mx.MXError && (node = errnode(e)) != nothing) || rethrow()
     stk = $(esc(stk))
     haskey(stk, node) || rethrow()
     throw(Exception(striptrace(e), totrace(stk[node])))

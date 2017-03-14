@@ -1,8 +1,8 @@
 using DataFlow.Interpreter
 
 function astuple(xs::Vertex)
-  isconstant(xs) && isa(value(xs).value, Tuple) ? value(xs).value :
-  isa(xs, Vertex) && value(xs) == tuple ? inputs(xs) :
+  isconstant(xs) && value(xs).value isa Tuple ? value(xs).value :
+  xs isa Vertex && value(xs) == tuple ? inputs(xs) :
   nothing
 end
 
