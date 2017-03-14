@@ -5,7 +5,7 @@ using MXNet
 
 reversedims!(dest, xs) = permutedims!(dest, xs, ndims(xs):-1:1)
 
-immutable MXArray{N}
+struct MXArray{N}
   data::mx.NDArray
   scratch::Array{Float32,N}
 end

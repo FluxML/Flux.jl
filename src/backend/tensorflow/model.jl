@@ -1,4 +1,4 @@
-type Model
+struct Model
   model::Any
   session::Session
   params::Dict{Flux.Param,Tensor}

@@ -1,6 +1,6 @@
 export seq, Seq, BatchSeq
 
-immutable Seq{T,S} <: AbstractVector{T}
+struct Seq{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
 end
 

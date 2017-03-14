@@ -2,7 +2,7 @@ import Base: eltype, size, getindex, setindex!, convert
 
 export CatMat, rawbatch
 
-immutable CatMat{T,S} <: AbstractVector{T}
+struct CatMat{T,S} <: AbstractVector{T}
   data::S
 end
 

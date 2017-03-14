@@ -1,6 +1,6 @@
 export Conv2D, MaxPool, AvgPool, Reshape
 
-type Conv2D <: Model
+struct Conv2D <: Model
   filter::Param{Array{Float64,4}} # [height, width, inchans, outchans]
   stride::Dims{2}
 end
@@ -16,7 +16,7 @@ shape(c::Conv2D, in::Dims{3}) =
 
 for Pool in :[MaxPool, AvgPool].args
   @eval begin
-    type $Pool <: Model
+    struct $Pool <: Model
       size::Dims{2}
       stride::Dims{2}
     end
@@ -34,7 +34,7 @@ for Pool in :[MaxPool, AvgPool].args
   end
 end
 
-immutable Reshape{N}
+struct Reshape{N}
   dims::Dims{N}
 end
 

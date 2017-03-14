@@ -1,6 +1,6 @@
 export Batch, batchone
 
-immutable Batch{T,S} <: AbstractVector{T}
+struct Batch{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
 end
 

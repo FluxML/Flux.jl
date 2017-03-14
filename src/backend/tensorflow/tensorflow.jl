@@ -5,7 +5,7 @@ import Flux: accuracy, rebatch, convertel
 
 export tf
 
-type Op
+struct Op
   f
   shape
 end

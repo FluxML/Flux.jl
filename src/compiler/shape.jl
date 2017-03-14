@@ -2,7 +2,7 @@ using DataFlow.Interpreter
 
 export @shapes
 
-type Hint
+struct Hint
   typ
 end
 

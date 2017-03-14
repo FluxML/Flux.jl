@@ -1,6 +1,6 @@
 using Flux: runrawbatched
 
-type AlterParam
+struct AlterParam
   param
   load
   store
@@ -15,7 +15,7 @@ function copyargs!(as, bs)
   end
 end
 
-type Graph
+struct Graph
   output
   params::Dict{Symbol,Any}
   stacks::Dict{Any,Any}
@@ -31,7 +31,7 @@ end
 
 ndparams(d::Dict{Symbol,MXArray}) = Dict(k => v.data for (k, v) in d)
 
-type Exec
+struct Exec
   graph::Graph
   exec::mx.Executor
   args::Dict{Symbol,MXArray}
@@ -84,7 +84,7 @@ end
 
 # TODO: if `last` changes, update params appropriately
 
-type Model <: Flux.Model
+mutable struct Model <: Flux.Model
   model::Any
   graph::Graph
   execs::Dict{Tuple,Exec}
@@ -119,7 +119,7 @@ Flux.update!(m::Model, η) = (update!(m.last, η); m)
 
 # MX FeedForward interface
 
-type SoftmaxOutput
+struct SoftmaxOutput
   name::Symbol
 end
 

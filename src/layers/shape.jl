@@ -11,12 +11,12 @@ single(i::Dims) = length(i) == 1 ? first(i) : i
 
 # Shim for kicking off shape inference
 
-type ShapeError <: Exception
+struct ShapeError <: Exception
   layer
   shape
 end
 
-type Input{N} <: Model
+struct Input{N} <: Model
   dims::Dims{N}
 end
 
@@ -27,7 +27,7 @@ back!(::Input, Δ, x) = Δ
 
 # Initialise placeholder
 
-type Init{F}
+struct Init{F}
   f::F
 end
 

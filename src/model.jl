@@ -54,7 +54,7 @@ A `Param` object stores a parameter array along with an accumulated delta to
 that array. When converting to backends like TensorFlow, identical `Param`s will
 result in identical variable objects, making model reuse trivial.
 """
-type Param{T}
+struct Param{T}
   x::T
   Δx::T
 end
@@ -107,7 +107,7 @@ Base.copy!(p::Param, xs) = copy!(p.x, xs)
 
 export Capacitor
 
-type Capacitor <: Model
+struct Capacitor <: Model
   graph::IVertex{Any}
 end
 

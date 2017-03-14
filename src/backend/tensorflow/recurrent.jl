@@ -1,6 +1,6 @@
 # TODO: refactor, some of this is more general than just the TF backend
 
-type SeqModel
+struct SeqModel
   m::Model
   state::Any
 end

@@ -1,6 +1,6 @@
 export unroll, unroll1
 
-type Offset
+struct Offset
   name::Symbol
   n::Int
   default::Nullable{Param}
