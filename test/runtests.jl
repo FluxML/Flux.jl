@@ -15,5 +15,5 @@ end
 
 include("batching.jl")
 include("basic.jl")
-@tfonly include("backend/tensorflow.jl")
+@tfonly VERSION < v"0.6-" && include("backend/tensorflow.jl")
 @mxonly include("backend/mxnet.jl")
