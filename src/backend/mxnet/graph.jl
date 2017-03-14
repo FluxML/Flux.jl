@@ -3,7 +3,7 @@ function nodename(s::mx.SymbolicNode)
   success = Ref(0)
   mx.@mxcall(:MXSymbolGetName, (mx.MX_handle, Ref{mx.char_p}, Ref{Int}), s.handle.value, name, success)
   @assert success[] != -1
-  return Symbol(unsafe_wrap(String, name[]))
+  return Symbol(unsafe_string(name[]))
 end
 
 using Base: @get!
