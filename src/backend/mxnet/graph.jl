@@ -34,7 +34,7 @@ graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 graph(::Input, x) = x
 
 graph(ctx::Context, d::Affine, x) =
-  !ctx[:feedforward] ? invoke(graph, (Context, Any, typeof(x)), ctx, d, x) :
+  !ctx[:feedforward] ? invoke(graph, Tuple{Context, Any, typeof(x)}, ctx, d, x) :
     register(ctx,
       mx.FullyConnected(mx.SymbolicNode, data = x,
                         num_hidden = size(d.W.x, 2),
