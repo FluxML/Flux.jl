@@ -7,7 +7,7 @@ nbatch = 50
 getseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)
 getbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)
 
-input = readstring("$(homedir())/Downloads/shakespeare_input.txt")
+input = readstring("$(homedir())/Downloads/shakespeare_input.txt");
 alphabet = unique(input)
 N = length(alphabet)
 
