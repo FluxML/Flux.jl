@@ -20,7 +20,7 @@ getbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk
 Because we want the RNN to predict the next letter at each iteration, our target data is simply our input data offset by one. For example, if the input is "The quick brown fox", the target will be "he quick brown fox ". Each letter is one-hot encoded and sequences are batched together to create the training data.
 
 ```julia
-input = readstring("shakespeare_input.txt")
+input = readstring("shakespeare_input.txt");
 alphabet = unique(input)
 N = length(alphabet)
 
