@@ -8,11 +8,10 @@ end
 Conv2D(size; in = 1, out = 1, stride = (1,1), init = initn) =
   Conv2D(param(initn(size..., in, out)), stride)
 
-shape(c::Conv2D, in::Dims{2}) =
-  (map(i -> (in[i]-size(c.filter,i))÷c.stride[i]+1, (1,2))..., size(c.filter, 4))
+infer(c::Conv2D, in::Dims{4}) =
+  (in[1], map(i -> (in[i+1]-size(c.filter,i))÷c.stride[i]+1, (1,2))..., size(c.filter, 4))
 
-shape(c::Conv2D, in::Dims{3}) =
-  shape(c, (in[1],in[2]))
+# TODO: many of these should just be functions
 
 for Pool in :[MaxPool, AvgPool].args
   @eval begin
@@ -24,11 +23,8 @@ for Pool in :[MaxPool, AvgPool].args
     $Pool(size; stride = (1,1)) =
       $Pool(size, stride)
 
-    shape(c::$Pool, in::Dims{2}) =
-      map(i -> (in[i]-c.size[i])÷c.stride[i]+1, (1,2))
-
-    shape(c::$Pool, in::Dims{3}) =
-      (shape(c, (in[1],in[2]))..., in[3])
+    infer(c::$Pool, in::Dims{4}) =
+      (in[1], map(i -> (in[i+1]-c.size[i])÷c.stride[i]+1, (1,2))..., in[4])
 
     shape(c::$Pool) = nothing
   end
@@ -39,10 +35,5 @@ struct Reshape{N}
 end
 
 Reshape(dims::Integer...) = Reshape(dims)
-
-function shape(r::Reshape, dims)
-    prod(dims) == prod(r.dims) || throw(ShapeError(r, dims))
-    return r.dims
-end
 
 shape(r::Reshape, ::Void) = r.dims

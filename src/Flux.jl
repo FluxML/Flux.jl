@@ -7,6 +7,7 @@ using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   iscyclic, Constant, constant, isconstant, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
   spliceinputs, bumpinputs, Line, Frame, applylines
+using MacroTools: @q
 using Juno: Tree, Row
 
 # Zero Flux Given
@@ -27,7 +28,6 @@ include("compiler/shape.jl")
 include("layers/affine.jl")
 include("layers/activation.jl")
 include("layers/recurrent.jl")
-include("layers/shape.jl")
 include("layers/chain.jl")
 include("layers/shims.jl")
 

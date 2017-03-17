@@ -2,6 +2,8 @@ using DataFlow.Interpreter
 
 export @shapes
 
+Dims{N} = NTuple{N,Int}
+
 struct Hint
   typ
 end
@@ -41,7 +43,9 @@ shapes(args...) = shapesv(args...) |> syntax |> applylines |> (x->prettify(x, li
 
 infer(f, args...) = graph(f) == nothing ? nothing : gethint(shapesv(f, args...))
 
-function infer(::typeof(*), a::NTuple{2}, b::NTuple{2})
+infer(::typeof(identity), x) = x
+
+function infer(::typeof(*), a::Dims{2}, b::Dims{2})
   a[2] == b[1] || return nothing
   (a[1], b[2])
 end
@@ -55,3 +59,17 @@ macro shapes(ex)
   @capture(ex, f_(args__)) || error("@shapes f(args...)")
   :(shapes($(esc(f)), mapt(size, ($(map(esc, args)...),))...))
 end
+
+# Shim for kicking off shape inference
+
+export Input
+
+struct Input{N} <: Model
+  dims::Dims{N}
+end
+
+Input(i...) = Input((i...,))
+
+(::Input)(x) = x
+
+inferchain(f::Input, xs) = (-1, f.dims...)

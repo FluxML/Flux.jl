@@ -1,17 +1,17 @@
 using Flux, Juno
 
 conv1 = Chain(
-  Reshape(28,28,1),
   Conv2D((5,5), out = 20), tanh,
   MaxPool((2,2), stride = (2,2)))
 
 conv2 = Chain(
-  Input(12,12,20),
   Conv2D((5,5), in = 20, out = 50), tanh,
   MaxPool((2,2), stride = (2,2)))
 
-lenet = Chain(
-  conv1, conv2, flatten,
+lenet = @Chain(
+  Input(28,28,1),
+  conv1, conv2,
+  flatten,
   Affine(500), tanh,
   Affine(10), softmax)
 
