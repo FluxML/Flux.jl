@@ -51,10 +51,7 @@ infer(::typeof(+), a, b) = a
 
 # Shapes macro
 
-_shape(xs::AbstractArray) = size(xs)
-_shape(xs::Tuple) = map(_shape, xs)
-
 macro shapes(ex)
   @capture(ex, f_(args__)) || error("@shapes f(args...)")
-  :(shapes($(esc(f)), _shape(($(map(esc, args)...),))...))
+  :(shapes($(esc(f)), mapt(size, ($(map(esc, args)...),))...))
 end
