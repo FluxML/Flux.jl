@@ -16,6 +16,7 @@ flatten(xs) = reshape(xs, length(xs))
 
 infer(::typeof(softmax), x) = x
 infer(::typeof(tanh), x) = x
+infer(::typeof(relu), x) = x
 infer(::typeof(σ), x) = x
 
 infer(::typeof(flatten), x::Dims) = (x[1], prod(x[2:end])...)
