@@ -111,6 +111,7 @@ struct Capacitor <: Model
   graph::IVertex{Any}
 end
 
-(m::Capacitor)(xs...) = interpret(reifyparams(m.graph), xs...)
+# TODO: batching
+(m::Capacitor)(xs...) = interpmodel(m, xs...)
 
 graph(cap::Capacitor) = cap.graph

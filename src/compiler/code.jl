@@ -81,21 +81,16 @@ function process_type(ex)
   end
 end
 
-macro net(ex)
-  isexpr(ex, :type) ? process_type(ex) :
-  isexpr(ex, :->, :function) ? error("@net functions not implemented") :
-  error("Unsupported model expression $ex")
-end
-
 function process_anon(ex)
   args, body = process_func(ex)
   @assert length(args) == 1
-  :(Flux.Capacitor($(DataFlow.constructor(mapconst(esc, makegraph(body, args))))))
+  :(Capacitor($(DataFlow.constructor(mapconst(esc, makegraph(body, args)[1])))))
 end
 
-macro ml(ex)
-  @capture(shortdef(ex), ((xs__,) -> body_ ) | (f_(xs__,) = body_)) ||
-    error("@ml requires a function definition")
-  ex = process_anon(:($(xs...,) -> $body))
-  f == nothing ? ex : :($(esc(f)) = $ex)
+macro net(ex)
+  ex = shortdef(ex)
+  isexpr(ex, :type) ? process_type(ex) :
+  @capture(ex, (__,) -> _) ? process_anon(ex) :
+  @capture(ex, _(__) = _) ? error("@net functions not implemented") :
+  error("Unsupported model expression $ex")
 end
