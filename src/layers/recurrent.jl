@@ -9,7 +9,7 @@ export Recurrent, GatedRecurrent, LSTM
 end
 
 Recurrent(in, out; init = initn) =
-  Recurrent(init((in, out)), init((out, out)), init(out), init(out))
+  Recurrent(init((in, out)), init((out, out)), init(1, out), init(1, out))
 
 @net type GatedRecurrent
   Wxr; Wyr; br
