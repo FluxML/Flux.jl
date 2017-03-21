@@ -28,7 +28,8 @@ d1 = @net x -> x * d.W + d.b
 @test d(xs) == d1(xs)
 
 let
-  @capture(syntax(d), _Frame(_Line(x_[1] * W_ + b_)))
+  # In 0.6 `.+` evaluates to an anon function, so we must match on that.
+  @capture(syntax(d), _Frame(_Line(bplus_(x_[1] * W_, b_))))
   @test isa(x, DataFlow.Input) && isa(W, Param) && isa(b, Param)
 end
 

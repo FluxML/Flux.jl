@@ -52,7 +52,7 @@ function infer(::typeof(*), a::Dims{2}, b::Dims{2})
   (a[1], b[2])
 end
 
-infer(::typeof(+), xs::Dims...) = Base.Broadcast.broadcast_shape(xs...)
+infer(::typeof(.+), xs::Dims...) = Base.Broadcast.broadcast_shape(xs...)
 
 # Shapes macro
 
