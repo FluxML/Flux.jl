@@ -40,3 +40,5 @@ function interpmodel_(m, args...)
 end
 
 interpmodel(m, args...) = @ithrow runrawbatched((xs...) -> interpmodel_(m, xs...), args...)
+
+runmodel(m::Capacitor, xs...) = @ithrow interpmodel_(m, xs...)

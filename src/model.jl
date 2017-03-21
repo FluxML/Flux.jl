@@ -46,6 +46,16 @@ methods as necessary.
 """
 graph(m) = nothing
 
+"""
+`runmodel(m, ...)` is like `m(...)`, i.e. it runs the forward pass. However,
+unlike direct calling, it does not try to apply batching and simply uses the
+inputs directly.
+
+This function should be considered an implementation detail; it will be
+eventually be replaced by a non-hacky way of doing batching.
+"""
+function runmodel end
+
 # Model parameters
 
 # TODO: should be AbstractArray?
@@ -111,7 +121,30 @@ struct Capacitor <: Model
   graph::IVertex{Any}
 end
 
-# TODO: batching
 (m::Capacitor)(xs...) = interpmodel(m, xs...)
 
 graph(cap::Capacitor) = cap.graph
+
+# Recurrent Models
+
+mutable struct Stateful <: Model
+  model
+  state::Vector{Any}
+end
+
+function (m::Stateful)(x)
+  runrawbatched(x) do x
+    state, y = runmodel(m.model, (m.state...,), x)
+    m.state = collect(state)
+    return y
+  end
+end
+
+struct SeqModel
+  model
+  steps::Int
+end
+
+# TODO: multi input
+# TODO: lift sequences
+(m::SeqModel)(x) = m.model(x)

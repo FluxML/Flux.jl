@@ -104,22 +104,9 @@ end
 
 unrollgraph(m, n; kws...) = unrollgraph(atomise(m), n; kws...)
 
-# TODO: perhaps split into SeqModel + StatefulModel
-type Unrolled <: Model
-  model
-  graph::IVertex{Any}
-  state::Vector{Any}
-  stateful::Bool
-  steps::Int
-end
-
-(m::Unrolled)(xs...) = interpret(reifyparams(m.graph), xs...)
-
-graph(u::Unrolled) = u.graph
-
 function unroll(model, n)
   graph, state = unrollgraph(model, n)
-  Unrolled(model, graph, state, true, n)
+  SeqModel(Stateful(Capacitor(graph), state), n)
 end
 
 function unseqin(v::IVertex)
@@ -135,7 +122,7 @@ unseq(graph) = unseqout(unseqin(graph))
 
 function unroll1(model)
   graph, state = unrollgraph(model, 1)
-  Unrolled(model, unseq(graph), state, false, 1)
+  Stateful(Capacitor(graph), state)
 end
 
 flip(model) = Capacitor(map(x -> x isa Offset ? -x : x, atomise(model)))
