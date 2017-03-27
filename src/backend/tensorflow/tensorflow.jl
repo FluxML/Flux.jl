@@ -16,6 +16,5 @@ Flux.shape(op::Op, d...) = op.shape(d...)
 
 include("graph.jl")
 include("model.jl")
-include("recurrent.jl")
 
 end
