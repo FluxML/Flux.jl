@@ -15,7 +15,7 @@ dt = tf(d)
   Y = Tensor(d, X)
   run(sess, initialize_all_variables())
 
-  @test run(sess, Y, Dict(X=>xs')) ≈ d(xs)'
+  @test run(sess, Y, Dict(X=>Float32.(xs'))) ≈ d(xs)'
 end
 
 @testset "Stack Traces" begin
