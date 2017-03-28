@@ -1,5 +1,3 @@
-using DataFlow.Interpreter
-
 export @shapes
 
 Dims{N} = NTuple{N,Int}

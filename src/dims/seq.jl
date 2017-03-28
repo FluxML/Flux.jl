@@ -18,3 +18,11 @@ convert{T,S}(::Type{Seq{T,S}},storage::S) =
 end
 
 BatchSeq{T<:Seq} = Batch{T}
+
+function rebatchseq(xs)
+  dims = ndims(xs)-2
+  T = Array{eltype(xs),dims}
+  S = Array{eltype(xs),dims+1}
+  B = Array{eltype(xs),dims+2}
+  Batch{Seq{T,S},B}(xs)
+end

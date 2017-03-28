@@ -145,6 +145,13 @@ struct SeqModel
   steps::Int
 end
 
-# TODO: multi input
-# TODO: lift sequences
-(m::SeqModel)(x) = m.model(x)
+(m::SeqModel)(x::Tuple) = m.model(x)
+
+splitseq(xs) = rebatch.(unstack(rawbatch(xs), 2))
+joinseq(xs) = rebatchseq(stack(rawbatch.(xs), 2))
+
+function (m::SeqModel)(x::Union{Seq,BatchSeq})
+  runbatched(x) do x
+    joinseq(m.model((splitseq(x)...,)))
+  end
+end

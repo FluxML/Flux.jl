@@ -7,11 +7,13 @@ using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   iscyclic, Constant, constant, isconstant, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
   spliceinputs, bumpinputs, Line, Frame, applylines
+using DataFlow.Interpreter
 using MacroTools: @q
 using Juno: Tree, Row
 
 # Zero Flux Given
 
+include("dims/utils.jl")
 include("dims/catmat.jl")
 include("dims/batching.jl")
 include("dims/seq.jl")
