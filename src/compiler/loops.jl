@@ -122,7 +122,7 @@ unseq(graph) = unseqout(unseqin(graph))
 
 function unroll1(model)
   graph, state = unrollgraph(model, 1)
-  Stateful(Capacitor(graph), state)
+  Stateful(Capacitor(unseq(graph)), state)
 end
 
 flip(model) = Capacitor(map(x -> x isa Offset ? -x : x, atomise(model)))

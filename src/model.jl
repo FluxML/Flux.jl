@@ -140,6 +140,9 @@ function (m::Stateful)(x)
   end
 end
 
+stateless(m) = m
+stateless(m::Stateful) = m.model
+
 struct SeqModel
   model
   steps::Int
