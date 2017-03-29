@@ -143,7 +143,7 @@ end
 stateless(m) = m
 stateless(m::Stateful) = m.model
 
-struct SeqModel
+struct SeqModel <: Model
   model
   steps::Int
 end
