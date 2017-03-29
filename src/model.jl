@@ -127,7 +127,7 @@ graph(cap::Capacitor) = cap.graph
 
 # Recurrent Models
 
-mutable struct Stateful <: Model
+struct Stateful <: Model
   model
   state::Vector{Any}
 end
@@ -135,7 +135,7 @@ end
 function (m::Stateful)(x)
   runrawbatched(x) do x
     state, y = runmodel(m.model, (m.state...,), x)
-    m.state = collect(state)
+    m.state .= state
     return y
   end
 end
