@@ -106,20 +106,21 @@ mxnet(model) = Model(model)
 
 import Base: @get!
 
-executor(m::Model, input) = @get!(m.execs, size(input), executor(m.graph, input))
+# TODO: dims having its own type would be useful
+executor(m::Model, input...) = @get!(m.execs, mapt(size, input), executor(m.graph, input...))
 
-function (m::Model)(x)
+function (m::Model)(xs...)
   !isdefined(m, :graph) &&
-    (m.graph = tograph(m.model, mapt(_ -> gensym("input"), input)))
-  @mxerr m.graph.stacks runrawbatched(x) do x
-    m.last = exec = executor(m, x)
-    exec(x)
+    (m.graph = tograph(m.model, mapt(_ -> gensym("input"), xs)...))
+  @mxerr m.graph.stacks runrawbatched(xs) do xs
+    m.last = exec = executor(m, xs...)
+    exec(xs...)
   end
 end
 
-function Flux.back!(m::Model, Δ, x)
-  runrawbatched(Δ, x) do Δ, x
-    m.last = exec = m.execs[size(x)]
+function Flux.back!(m::Model, Δ, xs...)
+  runrawbatched(Δ, xs) do Δ, xs
+    m.last = exec = m.execs[mapt(size, xs)]
     back!(exec, Δ)
   end
 end
