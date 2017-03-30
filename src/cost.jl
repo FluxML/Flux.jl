@@ -5,4 +5,4 @@ function mse!(Δ, pred, target)
   sumabs2(Δ)/2
 end
 
-mse(pred, target) = mse(similar(pred), pred, target)
+mse(pred, target) = mse!(similar(pred), pred, target)
