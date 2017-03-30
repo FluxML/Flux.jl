@@ -10,7 +10,7 @@ end
 @net type Multi
   W
   V
-  x -> (x*W, x*V)
+  (x, y) -> (x*W, y*V)
 end
 
 Multi(in::Integer, out::Integer) =
@@ -51,8 +51,9 @@ let tlp = TLP(Affine(10, 21), Affine(20, 15))
 end
 
 let m = Multi(10, 15)
-  x = rand(10)
-  @test all(isapprox.(m(x), (m.W.x' * x, m.V.x' * x)))
+  x, y = rand(10), rand(10)
+  @test all(isapprox.(m(x, y), (m.W.x' * x, m.V.x' * y)))
+  @test all(isapprox.(m(x, y), Flux.interpmodel(m, x, y)))
 end
 
 end

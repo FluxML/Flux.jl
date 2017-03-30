@@ -9,9 +9,9 @@ d = Affine(20, 10)
 dm = mxnet(d)
 @test d(xs) ≈ dm(xs)
 
-m = Multi(20, 15)
-mm = mxnet(m)
-@test all(isapprox.(mm(xs), m(xs)))
+# m = Multi(20, 15)
+# mm = mxnet(m)
+# @test all(isapprox.(mm(xs), m(xs)))
 
 @testset "Backward Pass" begin
   d′ = deepcopy(d)

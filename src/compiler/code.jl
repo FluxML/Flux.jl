@@ -11,10 +11,9 @@ function process_func(ex, params = [])
 end
 
 function makegraph(graph, args)
-  @assert length(args) == 1
   graph = prewalk(graph) do v
-    value(v) isa Constant && value(v).value == args[1] ?
-      inputnode(1) :
+    value(v) isa Constant && (i = findfirst(x->x==value(v).value, args)) ≠ 0 ?
+      inputnode(i) :
       v
   end
   graph = map(graph) do x
@@ -69,7 +68,6 @@ function process_type(ex)
   @assert length(funcs) == 1
   pnames = namify.(params)
   args, body = process_func(funcs[1], pnames)
-  @assert length(args) == 1
   self = esc(:self)
   quote
     $(build_type(T, params))
