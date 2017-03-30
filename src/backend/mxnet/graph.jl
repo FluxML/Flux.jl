@@ -10,7 +10,7 @@ using Base: @get!
 using DataFlow: Constant, constant
 using DataFlow.Interpreter
 using DataFlow.Interpreter: Exception, totrace
-using Flux: imap
+using Flux: imap, mapt
 
 # TODO: implement Julia's type promotion rules
 
@@ -84,8 +84,8 @@ function tograph(model, args...; feedforward = false)
   ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph′),
                 params = Dict(), stacks = Dict(),
                 feedforward = feedforward)
-  out = @ithrow graph(ctx, model, args...)
-  return Graph(out, ctx[:params], ctx[:stacks])
+  out = @ithrow graph(ctx, model, mapt(mx.Variable, args)...)
+  return Graph(args, out, ctx[:params], ctx[:stacks])
 end
 
 # Error Handling
