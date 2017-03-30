@@ -76,9 +76,9 @@ function (exec::Exec)(input...)
 end
 
 function Flux.back!(exec::Exec, Δ)
-  exec.grads[exec.graph.input[1]][:] = 0
+  mapt(k -> exec.grads[k][:] = 0, exec.graph.input)
   mx.backward(exec.exec, MXArray(Δ).data)
-  copy(exec.grads[exec.graph.input[1]])
+  mapt(k -> copy(exec.grads[k]), exec.graph.input)
 end
 
 function Flux.update!(exec::Exec, η)

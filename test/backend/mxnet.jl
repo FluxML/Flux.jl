@@ -19,7 +19,7 @@ dm = mxnet(d)
   @test dm(xs) ≈ d′(xs)
 
   Δ = back!(dm, randn(10), xs)
-  @test length(Δ) == 20
+  @test length(Δ[1]) == 20
   update!(dm, 0.1)
 
   @test dm(xs) ≈ d(xs)
