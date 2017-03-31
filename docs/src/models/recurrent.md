@@ -34,7 +34,7 @@ end
 
 The only difference from a regular feed-forward layer is that we create a variable `y` which is defined as depending on itself. The `y{-1}` syntax means "take the value of `y` from the previous run of the network".
 
-Using recurrent layers is straightforward and no different feedforard ones in terms of the `Chain` macro etc. For example:
+Using recurrent layers is straightforward and no different feedforward ones in terms of the `Chain` macro etc. For example:
 
 ```julia
 model = Chain(
