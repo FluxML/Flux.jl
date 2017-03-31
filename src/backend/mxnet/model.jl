@@ -133,7 +133,7 @@ Flux.update!(m::Model, η) = (update!(m.last, η); m)
 
 using Flux: Stateful, SeqModel
 
-mxnet(m::Stateful) = Stateful(mxnet(m.model), m.state)
+mxnet(m::Stateful) = Stateful(mxnet(m.model), copy(m.state))
 mxnet(m::SeqModel) = SeqModel(mxnet(m.model), m.steps)
 
 # MX FeedForward interface

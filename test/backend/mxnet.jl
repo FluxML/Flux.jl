@@ -13,6 +13,13 @@ m = Multi(20, 15)
 mm = mxnet(m)
 @test all(isapprox.(mm(xs, ys), m(xs, ys)))
 
+@testset "Recurrence" begin
+  seq = Seq(rand(10) for i = 1:3)
+  r = unroll(Recurrent(10, 5), 3)
+  rm = mxnet(r)
+  @test r(seq) ≈ rm(seq)
+end
+
 @testset "Backward Pass" begin
   d′ = deepcopy(d)
   @test dm(xs) ≈ d(xs)
@@ -26,7 +33,7 @@ mm = mxnet(m)
   @test dm(xs) ≉ d′(xs)
 end
 
-@testset "FeedForward interface" begin
+@testset "Native interface" begin
   f = mx.FeedForward(Chain(d, softmax))
   @test mx.infer_shape(f.arch, data = (20, 1))[2] == [(10, 1)]
 
