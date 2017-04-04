@@ -19,7 +19,7 @@ julia> xs = Batch([[1,2,3], [4,5,6]])
  [4,5,6]
 ```
 
-Batches are represented the way we *think* about them; as an list of data points. We can do all the usual array operations with them, including getting the first with `xs[1]`, iterating over them and so on. The trick is that under the hood, the data is batched into a single array:
+Batches are represented the way we *think* about them; as a list of data points. We can do all the usual array operations with them, including getting the first with `xs[1]`, iterating over them and so on. The trick is that under the hood, the data is batched into a single array:
 
 ```julia
 julia> rawbatch(xs)
