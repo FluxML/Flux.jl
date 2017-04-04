@@ -12,7 +12,7 @@ end
 
 function makegraph(graph, args)
   graph = prewalk(graph) do v
-    value(v) isa Constant && (i = findfirst(x->x==value(v).value, args)) ≠ 0 ?
+    value(v) isa Constant && (i = findfirst(args, value(v).value)) ≠ 0 ?
       inputnode(i) :
       v
   end
