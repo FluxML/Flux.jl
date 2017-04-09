@@ -22,26 +22,19 @@ struct Graph
   stacks::Dict{Any,Any}
 end
 
-function mxparams(g::Graph)
-  params = Dict{Symbol,MXArray}()
-  for (name, param) in g.params
-    params[name] = MXArray(size(param))
-  end
-  return params
-end
-
+mxparams(d) = Dict{Symbol,MXArray}(k => MXArray(size(v)) for (k, v) in d)
 ndparams(d) = Dict{Symbol,mx.NDArray}(k => v.data for (k, v) in d)
 
 struct Exec
-  graph::Graph
+  model::Model
   exec::mx.Executor
   args::Dict{Symbol,MXArray}
   grads::Dict{Symbol,MXArray}
   outs::Vector{MXArray}
 end
 
-loadparams!(exec::Exec) = copyargs!(exec.args, exec.graph.params)
-storeparams!(exec::Exec) = copyargs!(exec.graph.params, exec.args)
+loadparams!(m::Model)  = copyargs!(m.args, m.graph.params)
+storeparams!(m::Model) = copyargs!(m.graph.params, m.args)
 
 mxgroup(x) = x
 mxgroup(x::Tuple) = mx.Group(mxgroup.(x)...)
@@ -50,40 +43,28 @@ mxungroup(x::Tuple, outs) = map(x -> mxungroup(x, outs), x)
 
 dictt(xs, ys) = Dict(zip(collectt(xs), collectt(ys)))
 
-function executor(graph::Graph, input...)
-  shapecheckt(graph.input, input)
-  args  = merge(mxparams(graph), dictt(graph.input, mapt(d->MXArray(size(d)), input)))
-  grads = merge(mxparams(graph), dictt(graph.input, mapt(d->MXArray(size(d)), input)))
-  exec = mx.bind(mxgroup(graph.output),
-                 args = ndparams(args),
-                 args_grad = ndparams(grads),
-                 grad_req = mx.GRAD_ADD)
-  exec = Exec(graph, exec, args, grads, MXArray.(exec.outputs))
-  loadparams!(exec)
-  return exec
-end
-
 function (exec::Exec)(input...)
-  foreach(kv -> copy!(exec.args[kv[1]], kv[2]), dictt(exec.graph.input, input))
+  foreach(kv -> copy!(exec.args[kv[1]], kv[2]), dictt(exec.model.graph.input, input))
   mx.forward(exec.exec, is_train = true)
-  mxungroup(exec.graph.output, copy(exec.outs))
+  mxungroup(exec.model.graph.output, copy(exec.outs))
 end
 
 function Flux.back!(exec::Exec, Δ)
-  mapt(k -> exec.grads[k][:] = 0, exec.graph.input)
+  mapt(k -> exec.grads[k][:] = 0, exec.model.graph.input)
   mx.backward(exec.exec, map(x -> MXArray(x).data, collectt(Δ)))
-  mapt(k -> copy(exec.grads[k]), exec.graph.input)
+  mapt(k -> copy(exec.grads[k]), exec.model.graph.input)
 end
 
-function Flux.update!(exec::Exec, η)
-  for (arg, grad) in zip(exec.exec.arg_arrays, exec.exec.grad_arrays)
+function Flux.update!(m::Model, η)
+  for param in keys(m.args)
+    arg, grad = m.args[param].data, m.grads[param].data
     mx.@nd_as_jl rw = (arg, grad) begin
       arg .-= grad .* η
       grad[:] = 0
     end
   end
-  storeparams!(exec)
-  return exec
+  storeparams!(m)
+  return m
 end
 
 # TODO: if `last` changes, update params appropriately
@@ -92,32 +73,44 @@ mutable struct Model <: Flux.Model
   model::Any
   execs::Dict{Tuple,Exec}
   graph::Graph
-  last::Exec
+  args::Dict{Symbol,MXArray}
+  grads::Dict{Symbol,MXArray}
   Model(model) = new(model, Dict())
 end
 
 mxnet(model) = Model(model)
 
-import Base: @get!
-
 # TODO: dims having its own type would be useful
-executor(m::Model, input...) = @get!(m.execs, mapt(size, input), executor(m.graph, input...))
+
+function executor(m::Model, input...)
+  shapecheckt(m.graph.input, input)
+  input_size = mapt(size, input)
+  if input_size ∉ keys(m.execs)
+    args  = merge(m.args,  dictt(m.graph.input, mapt(MXArray∘size, input)))
+    grads = merge(m.grads, dictt(m.graph.input, mapt(MXArray∘size, input)))
+    exec = mx.bind(mxgroup(m.graph.output),
+                   args = ndparams(args),
+                   args_grad = ndparams(grads),
+                   grad_req = mx.GRAD_ADD)
+    m.execs[input_size] = Exec(m, exec, args, grads, MXArray.(exec.outputs))
+  end
+  return m.execs[input_size]
+end
 
 function (m::Model)(xs...)
   @mxerr m.graph.stacks begin
-    !isdefined(m, :graph) &&
-      (m.graph = tograph(m.model, mapt(_ -> gensym("input"), xs)...))
-    m.last = exec = executor(m, xs...)
-    exec(xs...)
+    if !isdefined(m, :graph)
+      m.graph = tograph(m.model, mapt(_ -> gensym("input"), xs)...)
+      m.args  = mxparams(m.graph.params)
+      m.grads = mxparams(m.graph.params)
+      loadparams!(m)
+    end
+    executor(m, xs...)(xs...)
   end
 end
 
-function Flux.back!(m::Model, Δ, xs...)
-  m.last = exec = m.execs[mapt(size, xs)]
-  back!(exec, Δ)
-end
-
-Flux.update!(m::Model, η) = (update!(m.last, η); m)
+Flux.back!(m::Model, Δ, xs...) =
+  back!(m.execs[mapt(size, xs)], Δ)
 
 # Recurrent Models
 
@@ -145,6 +138,6 @@ function mx.FeedForward(model::Flux.Model; input = :data, label = :softmax, cont
   model = rewrite_softmax(model, label)
   graph = tograph(model, input, feedforward=true)
   ff = mx.FeedForward(graph.output, context = context)
-  isempty(graph.params) || (ff.arg_params = ndparams(mxparams(graph)))
+  isempty(graph.params) || (ff.arg_params = ndparams(mxparams(graph.params)))
   return ff
 end
