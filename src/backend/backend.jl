@@ -1,4 +1,4 @@
-export tf, mxnet
+export tf, mxnet, graphviz
 
 function loadtf()
   isdefined(Flux, :TF) && return
@@ -18,4 +18,10 @@ end
 function mxnet(m)
   loadmx()
   eval(:(MX.mxnet($m)))
+end
+
+include(joinpath(dirname(@__FILE__), "graphviz/graphviz.jl"))
+
+function graphviz(m)
+  GV.graphviz(m)
 end
