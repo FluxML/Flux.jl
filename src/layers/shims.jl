@@ -20,7 +20,7 @@ for Pool in :[MaxPool, AvgPool].args
       stride::Dims{2}
     end
 
-    $Pool(size; stride = (1,1)) =
+    $Pool(size; stride = size) =
       $Pool(size, stride)
 
     infer(c::$Pool, in::Dims{4}) =
