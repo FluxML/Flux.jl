@@ -1,6 +1,6 @@
 export onehot, onecold, chunk, partition, batches, sequences
 
-convertel(T::Type, xs::AbstractArray) = map(x->convert(T, x), xs)
+convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
 convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
 
 """
