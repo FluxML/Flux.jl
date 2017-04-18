@@ -81,7 +81,6 @@ end
 
 function process_anon(ex)
   args, body = process_func(ex)
-  @assert length(args) == 1
   :(Capacitor($(DataFlow.constructor(mapconst(esc, makegraph(body, args)[1])))))
 end
 
