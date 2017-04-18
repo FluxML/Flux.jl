@@ -1,7 +1,7 @@
 import DataFlow: mapconst, cse
 using MacroTools: @q
 
-export @net, @ml
+export @net
 
 function process_func(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
