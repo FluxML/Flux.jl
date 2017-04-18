@@ -32,12 +32,8 @@ function runmodel(m::Model, args...)
   run(m.session, m.output, Dict(zip(m.inputs, args)))
 end
 
-using Flux: runrawbatched
-
 function (m::Model)(x)
-  @tferr m.stacks runrawbatched(convertel(Float32, x)) do x
-    output = runmodel(m, x)
-  end
+  @tferr m.stacks runmodel(m, convert.(Float32, x))
 end
 
 for f in :[back!, update!].args

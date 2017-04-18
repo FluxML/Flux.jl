@@ -1,5 +1,3 @@
-using Flux: runrawbatched
-
 struct AlterParam
   param
   load
@@ -109,22 +107,18 @@ import Base: @get!
 # TODO: dims having its own type would be useful
 executor(m::Model, input...) = @get!(m.execs, mapt(size, input), executor(m.graph, input...))
 
-function Flux.runmodel(m::Model, xs...)
-  !isdefined(m, :graph) &&
-    (m.graph = tograph(m.model, mapt(_ -> gensym("input"), xs)...))
-  m.last = exec = executor(m, xs...)
-  exec(xs...)
-end
-
 function (m::Model)(xs...)
-  @mxerr m.graph.stacks runrawbatched(xs -> Flux.runmodel(m, xs...), xs)
+  @mxerr m.graph.stacks begin
+    !isdefined(m, :graph) &&
+      (m.graph = tograph(m.model, mapt(_ -> gensym("input"), xs)...))
+    m.last = exec = executor(m, xs...)
+    exec(xs...)
+  end
 end
 
 function Flux.back!(m::Model, Δ, xs...)
-  runrawbatched(Δ, xs) do Δ, xs
-    m.last = exec = m.execs[mapt(size, xs)]
-    back!(exec, Δ)
-  end
+  m.last = exec = m.execs[mapt(size, xs)]
+  back!(exec, Δ)
 end
 
 Flux.update!(m::Model, η) = (update!(m.last, η); m)

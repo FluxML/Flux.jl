@@ -71,8 +71,7 @@ function process_type(ex)
   self = esc(:self)
   quote
     $(build_type(T, params))
-    $(@q $(esc(:(Flux.runmodel(self::$T, $(args...)) = $(build_forward(body, args))))))
-    ($self::$(esc(T)))($(args...)) = runrawbatched((xs...) -> runmodel($self, xs...), $(args...))
+    $(esc(:((self::$T)($(args...)) = $(build_forward(body, args)))))
     $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!($self.$p, η)), pnames)...);)
     $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(mapconst(esc, makegraph(body, args))))
     nothing
