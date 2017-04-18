@@ -10,7 +10,7 @@ size(t::Tensor) = t.size
 uid = ((id)->()->id+=1)(0)
 
 function <<(ctx::Context, str)
-  println(ctx[:buffer], "  " ^ ctx[:depth], str...)
+  ctx[:depth] <= ctx[:max_depth] && println(ctx[:buffer], "  " ^ ctx[:depth], str...)
   ctx
 end
 
@@ -20,12 +20,7 @@ function <<(ctx::Context, t::Tensor)
 end
 
 function scope(f, ctx, name)
-  ctx << "subgraph cluster_$(uid()) {" << "  label = \"$name\""
-  ctx[:depth] += 1
-  result = f()
-  ctx[:depth] -= 1
-  ctx << "}"
-  result
+
 end
 
 function interp(ctx, c::DataFlow.Constant)
@@ -49,11 +44,30 @@ end
 interp(ctx, t::Tensor) = t
 
 function interp(ctx, m::Flux.Model, xs...)
-  scope(ctx, typeof(m)) do
-    g = Flux.graph(m)
-    g == nothing && error("graphviz backend doesn't support $m")
-    DataFlow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
-    interpret(ctx, g, xs...)
+  g = Flux.graph(m)
+  g == nothing && error("graphviz backend doesn't support $m")
+  DataFlow.iscyclic(g) && error("This model has a cycle; try unrolling it first.")
+
+  if ctx[:depth] < ctx[:max_depth]
+    ctx << "subgraph cluster_$(uid()) {" << "  label = \"$(typeof(m))\""
+  end
+
+  ctx[:depth] += 1
+  result = interpret(ctx, g, xs...)
+  ctx[:depth] -= 1
+
+  if ctx[:depth] < ctx[:max_depth]
+    ctx << "}"
+    result
+  else
+    t = Tensor(uid(), result.size)
+    ctx << """$(t.name) [shape=diamond, label="$(typeof(m))::$(t.size)"]"""
+
+    for x in xs
+      ctx << "$(x.name) -> $(t.name)"
+    end
+
+    t
   end
 end
 
