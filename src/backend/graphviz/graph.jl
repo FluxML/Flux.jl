@@ -1,4 +1,4 @@
-import Base: size, <<
+import Base: size
 
 struct Tensor
   name

@@ -3,6 +3,7 @@ mutable struct Model <: Flux.Model
 end
 
 graphviz(m::Flux.Model) = Model(Flux.graph(m))
+graphviz(m::Flux.Model, xs...) = graphviz(m)(xs...)
 
 function (m::Model)(xs...)
   xs = map(rawbatch, xs)

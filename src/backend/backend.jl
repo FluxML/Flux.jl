@@ -20,8 +20,6 @@ function mxnet(m)
   eval(:(MX.mxnet($m)))
 end
 
-include(joinpath(dirname(@__FILE__), "graphviz/graphviz.jl"))
+include("graphviz/graphviz.jl")
 
-function graphviz(m)
-  GV.graphviz(m)
-end
+const graphviz = GV.graphviz
