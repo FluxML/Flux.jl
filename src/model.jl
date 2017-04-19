@@ -151,4 +151,5 @@ end
 splitseq(xs) = unstack(rawbatch(xs), 2)
 joinseq(xs) = rebatchseq(stack(xs, 2))
 
-(m::SeqModel)(x::BatchSeq) = joinseq(m.model((splitseq(x)...,)))
+(m::SeqModel)(x::AbstractArray) = stack(m((unstack(x, 2)...,)), 2)
+(m::SeqModel)(x::BatchSeq) = rebatchseq(m(rawbatch(x)))
