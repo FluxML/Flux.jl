@@ -19,6 +19,8 @@ node(x::mx.SymbolicNode) = x
 
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(.+), args...) = mx.broadcast_plus(args...)
+graph(::typeof(.*), args...) = mx.broadcast_mul(args...)
+graph(::typeof(.-), args...) = mx.broadcast_sub(args...)
 graph(::typeof(*), xs...) = mx.dot(reverse(xs)...) # Work around MXNet shape hack
 graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)

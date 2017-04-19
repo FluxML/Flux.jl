@@ -25,8 +25,8 @@ Recurrent(in, out; init = initn) =
 end
 
 GatedRecurrent(in, out; init = initn) =
-  GatedRecurrent(vcat([[init((in, out)), init((out, out)), init(out)] for _ = 1:3]...)...,
-       zeros(Float32, out))
+  GatedRecurrent(vcat([[init((in, out)), init((out, out)), init(1, out)] for _ = 1:3]...)...,
+       zeros(Float32, (1, out)))
 
 @net type LSTM
   Wxf; Wyf; bf
@@ -48,4 +48,4 @@ end
 
 LSTM(in, out; init = initn) =
   LSTM(vcat([[init((in, out)), init((out, out)), init((1, out))] for _ = 1:4]...)...,
-       zeros(Float32, out), zeros(Float32, out))
+       zeros(Float32, (1, out)), zeros(Float32, (1, out)))
