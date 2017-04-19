@@ -1,5 +1,8 @@
 export onehot, onecold, chunk, partition, batches, sequences
 
+mapt(f, x) = f(x)
+mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
+
 convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
 convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
 
@@ -21,7 +24,11 @@ onehot(label, labels) = onehot(Int, label, labels)
 The inverse of `onehot`; takes an output prediction vector and a list of
 possible values, and produces the appropriate value.
 """
-onecold(pred, labels = 1:length(pred)) = labels[findfirst(pred, maximum(pred))]
+onecold(y::AbstractVector, labels = 1:length(y)) =
+  labels[findfirst(y, maximum(y))]
+
+onecold(y::AbstractMatrix, l...) =
+  squeeze(mapslices(y -> onecold(y, l...), y, 2), 2)
 
 using Iterators
 import Iterators: Partition, partition

@@ -14,7 +14,7 @@ m = @Chain(
 model = mxnet(m)
 
 # An example prediction pre-training
-model(data[1][1])
+model(unsqueeze(data[1][1]))
 
 Flux.train!(model, train, test, η = 1e-4)
 

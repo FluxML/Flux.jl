@@ -1,3 +1,5 @@
+export unsqueeze
+
 unsqueeze(xs, dim = 1) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 Base.squeeze(xs) = squeeze(xs, 1)
 
