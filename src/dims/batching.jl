@@ -27,3 +27,6 @@ end
 convertel(T::Type, xs::Batch) =
   eltype(eltype(xs)) isa T ? xs :
     Batch(map(x->convertel(T, x), xs))
+
+batchone(x) = Batch((x,))
+batchone(x::Batch) = x
