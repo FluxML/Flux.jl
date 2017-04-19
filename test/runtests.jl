@@ -1,5 +1,5 @@
 using Flux, DataFlow, MacroTools, Base.Test
-using Flux: graph, Param
+using Flux: graph, Param, unsqueeze
 using DataFlow: Line, Frame
 
 syntax(v::Vertex) = prettify(DataFlow.syntax(v))

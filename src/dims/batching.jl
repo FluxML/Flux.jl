@@ -45,17 +45,3 @@ end
 isbatched(x) = false
 isbatched(x::Batch) = true
 isbatched(xs::Tuple) = any(isbatched, xs)
-
-batchify(xs) = isbatched(xs) ? (xs, true) : (mapt(batchone, xs), false)
-
-function runbatched(f, xs...)
-  # TODO: decide what to do with mixed inputs
-  xs, batched = batchify(xs)
-  ys = f(xs...)
-  batched ? ys : mapt(unbatchone, ys)
-end
-
-runrawbatched(f, xs...) =
-  runbatched((xs...) -> mapt(rebatch,
-                             f(mapt(rawbatch, xs)...)),
-             xs...)

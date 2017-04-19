@@ -133,11 +133,9 @@ struct Stateful <: Model
 end
 
 function (m::Stateful)(x)
-  runrawbatched(x) do x
-    state, y = runmodel(m.model, (m.state...,), x)
-    m.state .= state
-    return y
-  end
+  state, y = runmodel(m.model, (m.state...,), x)
+  m.state .= state
+  return y
 end
 
 stateless(m) = m
@@ -150,11 +148,7 @@ end
 
 (m::SeqModel)(x::Tuple) = m.model(x)
 
-splitseq(xs) = rebatch.(unstack(rawbatch(xs), 2))
-joinseq(xs) = rebatchseq(stack(rawbatch.(xs), 2))
+splitseq(xs) = unstack(rawbatch(xs), 2)
+joinseq(xs) = rebatchseq(stack(xs, 2))
 
-function (m::SeqModel)(x::Union{Seq,BatchSeq})
-  runbatched(x) do x
-    joinseq(m.model((splitseq(x)...,)))
-  end
-end
+(m::SeqModel)(x::BatchSeq) = joinseq(m.model((splitseq(x)...,)))

@@ -1,9 +1,9 @@
 @testset "Basics" begin
 
-xs = randn(10)
+xs = randn(1, 10)
 d = Affine(10, 20)
 
-@test d(xs) ≈ (xs'*d.W.x + d.b.x)[1,:]
+@test d(xs) ≈ (xs*d.W.x + d.b.x)
 
 d1 = @net x -> x * d.W + d.b
 
@@ -24,7 +24,7 @@ end
 
 let tlp = TLP(Affine(10, 21), Affine(20, 15))
   e = try
-    Flux.interpmodel(tlp, rand(10))
+    Flux.interpmodel(tlp, rand(1, 10))
   catch e
     e
   end
@@ -33,8 +33,8 @@ let tlp = TLP(Affine(10, 21), Affine(20, 15))
 end
 
 let m = Multi(10, 15)
-  x, y = rand(10), rand(10)
-  @test all(isapprox.(m(x, y), (m.W.x' * x, m.V.x' * y)))
+  x, y = rand(1, 10), rand(1, 10)
+  @test all(isapprox.(m(x, y), (x * m.W.x, y * m.V.x)))
   @test all(isapprox.(m(x, y), Flux.interpmodel(m, x, y)))
 end
 

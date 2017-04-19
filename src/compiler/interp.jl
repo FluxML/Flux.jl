@@ -30,13 +30,7 @@ function interp(ctx, f, xs...)
     f(xs...))
 end
 
-# TODO: batching should be secondary
-
-function interpmodel_(m, args...)
+function interpmodel(m, args...)
   ctx = Context(mux(iline, ilambda, iconst, iargs, ituple, interp))
-  interp(ctx, m, args...)
+  @ithrow interp(ctx, m, args...)
 end
-
-interpmodel(m, args...) = @ithrow runrawbatched((xs...) -> interpmodel_(m, xs...), args...)
-
-runmodel(m::Capacitor, xs...) = @ithrow interpmodel_(m, xs...)
