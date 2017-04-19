@@ -2,6 +2,9 @@ export AArray
 
 const AArray = AbstractArray
 
+mapt(f, x) = f(x)
+mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
+
 initn(dims...) = randn(dims...)/100
 
 function train!(m, train, test = []; epoch = 1, batch = 10, η = 0.1)

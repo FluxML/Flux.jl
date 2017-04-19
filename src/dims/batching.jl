@@ -27,21 +27,3 @@ end
 convertel(T::Type, xs::Batch) =
   eltype(eltype(xs)) isa T ? xs :
     Batch(map(x->convertel(T, x), xs))
-
-# Add batching semantics to functions operating on raw arrays
-# TODO: remove this in favour of full batching semantics
-
-mapt(f, x) = f(x)
-mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
-
-batchone(x) = Batch((x,))
-batchone(x::Batch) = x
-
-function unbatchone(xs::Batch)
-  @assert length(xs) == 1
-  return first(xs)
-end
-
-isbatched(x) = false
-isbatched(x::Batch) = true
-isbatched(xs::Tuple) = any(isbatched, xs)
