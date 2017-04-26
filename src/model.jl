@@ -127,15 +127,23 @@ graph(cap::Capacitor) = cap.graph
 
 # Recurrent Models
 
-struct Stateful <: Model
+mutable struct Stateful <: Model
   model
-  state::Vector{Any}
+  istate::Vector{Any}
+  ostate::Vector{Any}
 end
 
+Stateful(model, state) = Stateful(model, state, state)
+
 function (m::Stateful)(x)
-  state, y = runmodel(m.model, (m.state...,), x)
-  m.state .= state
+  m.istate = m.ostate
+  state, y = runmodel(m.model, (m.istate...,), x)
+  m.ostate = collect(state)
   return y
+end
+
+function back!(m::Stateful, Δ, x)
+  back!(m.model, ((zeros.(m.ostate)...,), Δ), (m.istate...,), x)[2:end]
 end
 
 stateless(m) = m
@@ -157,5 +165,4 @@ function (m::SeqModel)(x)
   end
 end
 
-(m::SeqModel)(x::AbstractArray) = stack(m((unstack(x, 2)...,)), 2)
-(m::SeqModel)(x::BatchSeq) = rebatchseq(m(rawbatch(x)))
+back!(m::SeqModel, Δ, x) = (runseq((Δ, x) -> back!(m.model, Δ, x)[1], Δ, x),)
