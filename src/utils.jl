@@ -9,7 +9,8 @@ tobatch(xs) = tobatch(batchone(xs))
 
 function train!(m, train, test = []; epoch = 1, η = 0.1)
     i = 0
-    for _ in 1:epoch
+    for e in 1:epoch
+      info("Epoch $e")
       @progress for (x, y) in train
         x, y = tobatch.((x, y))
         i += 1
