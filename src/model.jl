@@ -146,6 +146,8 @@ function back!(m::Stateful, Δ, x)
   back!(m.model, ((zeros.(m.ostate)...,), Δ), (m.istate...,), x)[2:end]
 end
 
+update!(m::Stateful, η) = update!(m.model, η)
+
 stateless(m) = m
 stateless(m::Stateful) = m.model
 
@@ -166,3 +168,5 @@ function (m::SeqModel)(x)
 end
 
 back!(m::SeqModel, Δ, x) = (runseq((Δ, x) -> back!(m.model, Δ, x)[1], Δ, x),)
+
+update!(m::SeqModel, η) = update!(m.model, η)
