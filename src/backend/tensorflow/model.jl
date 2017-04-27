@@ -9,7 +9,7 @@ end
 
 function makesession(model, inputs; session = Session(Graph()))
   params, stacks, output = tograph(model, inputs...)
-  run(session, initialize_all_variables())
+  run(session, global_variables_initializer())
   Model(model, session, params, stacks, inputs, output)
 end
 

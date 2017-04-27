@@ -38,7 +38,7 @@ train_step = train.minimize(train.AdamOptimizer(1e-4), cross_entropy)
 
 accuracy = reduce_mean(cast(indmax(y, 2) .== indmax(y′, 2), Float32))
 
-run(session, initialize_all_variables())
+run(session, global_variables_initializer())
 
 @progress for i in 1:1000
     batch = next_batch(loader, 50)

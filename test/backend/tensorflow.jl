@@ -13,7 +13,7 @@ dt = tf(d)
   sess = TensorFlow.Session()
   X = placeholder(Float32)
   Y = Tensor(d, X)
-  run(sess, initialize_all_variables())
+  run(sess, global_variables_initializer())
 
   @test run(sess, Y, Dict(X=>Float32.(xs))) ≈ d(xs)
 end
