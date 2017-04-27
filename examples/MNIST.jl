@@ -19,4 +19,4 @@ model(unsqueeze(data[1][1]))
 Flux.train!(model, train, test, η = 1e-4)
 
 # An example prediction post-training
-model(data[1][1])
+model(unsqueeze(data[1][1]))
