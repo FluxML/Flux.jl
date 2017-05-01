@@ -1,5 +1,7 @@
 export AArray, unsqueeze
 
+# Arrays
+
 const AArray = AbstractArray
 
 initn(dims...) = randn(dims...)/100
@@ -10,11 +12,29 @@ Base.squeeze(xs) = squeeze(xs, 1)
 stack(xs, dim = 1) = cat(dim, unsqueeze.(xs, dim)...)
 unstack(xs, dim = 1) = [slicedim(xs, dim, i) for i = 1:size(xs, dim)]
 
+convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
+convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
+
+# Tuples
+
 mapt(f, x) = f(x)
 mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
 
-convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
-convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
+function collectt(xs)
+  ys = []
+  mapt(x -> push!(ys, x), xs)
+  return ys
+end
+
+function shapecheckt(xs::Tuple, ys::Tuple)
+  length(xs) == length(ys) || error("Expected tuple length $(length(xs)), got $ys")
+  shapecheckt.(xs, ys)
+end
+
+shapecheckt(xs::Tuple, ys) = error("Expected tuple, got $ys")
+shapecheckt(xs, ys) = nothing
+
+# Other
 
 function accuracy(m, data)
   n = 0

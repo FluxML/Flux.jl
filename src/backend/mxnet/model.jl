@@ -1,3 +1,5 @@
+using Flux: collectt, shapecheckt
+
 struct AlterParam
   param
   load
@@ -46,22 +48,10 @@ mxgroup(x::Tuple) = mx.Group(mxgroup.(x)...)
 mxungroup(x, outs) = copy(shift!(outs))
 mxungroup(x::Tuple, outs) = map(x -> mxungroup(x, outs), x)
 
-function collectt(xs)
-  ys = []
-  mapt(x -> push!(ys, x), xs)
-  return ys
-end
-
-function dictt(ks::Tuple, vs, d = Dict())
-  for i = 1:length(ks)
-    dictt(ks[i], vs[i], d)
-  end
-  return d
-end
-
-dictt(k, v, d = Dict()) = (d[k] = v; d)
+dictt(xs, ys) = Dict(zip(collectt(xs), collectt(ys)))
 
 function executor(graph::Graph, input...)
+  shapecheckt(graph.input, input)
   args  = merge(mxparams(graph), dictt(graph.input, mapt(d->MXArray(size(d)), input)))
   grads = merge(mxparams(graph), dictt(graph.input, mapt(d->MXArray(size(d)), input)))
   exec = mx.bind(mxgroup(graph.output),
