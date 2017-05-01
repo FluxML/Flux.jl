@@ -10,11 +10,11 @@ macro cb(ex, t, f)
   :(let
     t0 = time_ns()
     dt = $t*1e9
-    f = () -> $f
     @progress $(Expr(:for, cond, quote
       t = time_ns()
       if t - t0 > dt
         t0 = t
+        f = () -> $f
         f()
       end
       $body
