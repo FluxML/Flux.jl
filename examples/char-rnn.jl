@@ -28,7 +28,7 @@ m = mxnet(unroll(model, nunroll))
 
 function sample(model, n, temp = 1)
   s = [rand(alphabet)]
-  m = mxnet(unroll1(model))
+  m = unroll1(model)
   for i = 1:n-1
     push!(s, wsample(alphabet, softmax(m(unsqueeze(onehot(s[end], alphabet)))./temp)[1,:]))
   end
