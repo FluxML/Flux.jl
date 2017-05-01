@@ -22,7 +22,9 @@ dictt(xs, ys) = Dict(zip(collectt(xs), collectt(ys)))
 
 function (m::Exec)(args...)
   shapecheckt(m.input, args)
-  retuple(run(m.session, m.output, dictt(m.input, args)))
+  idict = dictt(m.input, args)
+  pdict = Dict(t => p.x for (p, t) in m.params)
+  retuple(run(m.session, m.output, merge(idict, pdict)))
 end
 
 mutable struct Model
@@ -34,7 +36,7 @@ end
 tf(model) = Model(model)
 
 function (m::Model)(args...)
-  args = mapt(x->convert.(Float32, x), args)
+  args = mapt(x->Float32.(x), args)
   isdefined(m, :graph) || (m.exec = makesession(m.model, args))
   @tferr m.exec.stacks m.exec(args...)
 end

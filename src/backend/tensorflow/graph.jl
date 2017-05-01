@@ -52,7 +52,10 @@ interp(ctx, c::Conv2D, x) =
 interp{T<:AArray}(ctx, p::Constant{Flux.Param{T}}) =
   haskey(ctx[:params], p.value) ?
      ctx[:params][p.value] :
-    (ctx[:params][p.value] = Variable(convertel(Float32, p.value.x)))
+    (ctx[:params][p.value] =
+       ctx[:variables] ?
+        Variable(Float32.(p.value.x)) :
+        placeholder(Float32))
 
 interp(ctx, p::Constant) = p.value
 
@@ -63,14 +66,15 @@ function interp(ctx, model, args...)
   interpret(ctx, g, interpv(ctx, args)...)
 end
 
-function tograph(model, args...)
+function tograph(model, args...; variables = false)
   ctx = Context(mux(iline, ilambda, imap, interp),
-                params = ObjectIdDict(), stacks = Dict())
+                params = ObjectIdDict(), stacks = Dict(), variables = variables)
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out
 end
 
-TensorFlow.Tensor(m::Flux.Model, args...) = tograph(m, args...)[3]
+TensorFlow.Tensor(m::Flux.Model, args...) =
+  tograph(m, args...; variables = true)[3]
 
 RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))
 
