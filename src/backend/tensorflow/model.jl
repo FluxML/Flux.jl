@@ -44,3 +44,10 @@ for f in :[back!, update!].args
     error($(string(f)) * " is not yet supported on TensorFlow models")
   end
 end
+
+# Recurrent Models
+
+using Flux: Stateful, SeqModel
+
+tf(m::Stateful) = Stateful(tf(m.model), m.istate, m.ostate)
+tf(m::SeqModel) = SeqModel(tf(m.model), m.steps)

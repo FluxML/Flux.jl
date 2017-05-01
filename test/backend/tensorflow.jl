@@ -14,6 +14,13 @@ dt = tf(d)
   @test tf(@net x -> x[1].*x[2])(([1,2,3],[4,5,6])) == [4,10,18]
 end
 
+@testset "Recurrence" begin
+  seq = batchone(Seq(rand(10) for i = 1:3))
+  r = unroll(Recurrent(10, 5), 3)
+  rm = tf(r)
+  @test r(seq) ≈ rm(seq)
+end
+
 @testset "Tensor interface" begin
   sess = TensorFlow.Session()
   X = placeholder(Float32)
