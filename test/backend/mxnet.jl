@@ -13,6 +13,11 @@ m = Multi(20, 15)
 mm = mxnet(m)
 @test all(isapprox.(mm(xs, ys), m(xs, ys)))
 
+@testset "Tuple I/O" begin
+  @test mxnet(@net x -> (x,))([1,2,3]) == ([1,2,3],)
+  @test mxnet(@net x -> x[1].*x[2])(([1,2,3],[4,5,6])) == [4,10,18]
+end
+
 @testset "Recurrence" begin
   seq = batchone(Seq(rand(10) for i = 1:3))
   r = unroll(Recurrent(10, 5), 3)
