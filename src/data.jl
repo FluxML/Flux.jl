@@ -1,11 +1,5 @@
 export onehot, onecold, chunk, partition, batches, sequences
 
-mapt(f, x) = f(x)
-mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
-
-convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
-convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
-
 """
     onehot('b', ['a', 'b', 'c', 'd']) => [false, true, false, false]
 

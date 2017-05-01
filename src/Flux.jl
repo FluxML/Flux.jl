@@ -12,14 +12,15 @@ using Juno: Tree, Row
 
 # Zero Flux Given
 
-include("dims/utils.jl")
+include("utils.jl")
+
 include("dims/catmat.jl")
 include("dims/batching.jl")
 include("dims/seq.jl")
 
 include("model.jl")
-include("utils.jl")
 include("data.jl")
+include("training.jl")
 
 include("compiler/code.jl")
 include("compiler/loops.jl")

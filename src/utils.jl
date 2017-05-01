@@ -1,36 +1,17 @@
-export AArray
+export AArray, unsqueeze
 
 const AArray = AbstractArray
 
 initn(dims...) = randn(dims...)/100
 
-tobatch(xs::Batch) = rawbatch(xs)
-tobatch(xs) = tobatch(batchone(xs))
+unsqueeze(xs, dim = 1) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
+Base.squeeze(xs) = squeeze(xs, 1)
 
-function train!(m, train, test = [];
-                epoch = 1, η = 0.1, loss = mse)
-    i = 0
-    for e in 1:epoch
-      info("Epoch $e")
-      @progress for (x, y) in train
-        x, y = tobatch.((x, y))
-        i += 1
-        ŷ = m(x)
-        any(isnan, ŷ) && error("NaN")
-        Δ = back!(loss, 1, ŷ, y)
-        back!(m, Δ, x)
-        update!(m, η)
-        i % 1000 == 0 && @show accuracy(m, test)
-      end
-    end
-    return m
-end
+stack(xs, dim = 1) = cat(dim, unsqueeze.(xs, dim)...)
+unstack(xs, dim = 1) = [slicedim(xs, dim, i) for i = 1:size(xs, dim)]
 
-function accuracy(m, data)
-  correct = 0
-  for (x, y) in data
-    x, y = tobatch.((x, y))
-    correct += sum(onecold(m(x)) .== onecold(y))
-  end
-  return correct/length(data)
-end
+mapt(f, x) = f(x)
+mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
+
+convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
+convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
