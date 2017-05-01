@@ -3,11 +3,15 @@ Flux.loadtf()
 
 @testset "TensorFlow" begin
 
-xs = rand(1, 20)
+xs, ys = rand(1, 20), rand(1, 20)
 d = Affine(20, 10)
 
 dt = tf(d)
 @test d(xs) ≈ dt(xs)
+
+m = Multi(20, 15)
+mm = tf(m)
+@test all(isapprox.(mm(xs, ys), m(xs, ys)))
 
 @testset "Tensor interface" begin
   sess = TensorFlow.Session()
