@@ -24,7 +24,7 @@ model = Chain(
 
 m = mxnet(unroll(model, nunroll))
 
-@time Flux.train!(m, train, η = 0.1, loss = Flux.logloss)
+@time Flux.train!(m, train, η = 0.1, loss = logloss)
 
 function sample(model, n, temp = 1)
   s = [rand(alphabet)]
