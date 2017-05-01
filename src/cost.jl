@@ -1,4 +1,4 @@
-export mse, mse!
+export mse, logloss
 
 mse(ŷ, y) = sumabs2(ŷ .- y)/2
 
