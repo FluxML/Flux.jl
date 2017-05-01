@@ -1,4 +1,4 @@
-export Batch, batchone
+export Batch, batchone, tobatch
 
 struct Batch{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
@@ -30,3 +30,6 @@ convertel(T::Type, xs::Batch) =
 
 batchone(x) = Batch((x,))
 batchone(x::Batch) = x
+
+tobatch(xs::Batch) = rawbatch(xs)
+tobatch(xs) = tobatch(batchone(xs))
