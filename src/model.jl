@@ -60,9 +60,9 @@ function runmodel end
 
 # TODO: should be AbstractArray?
 """
-A `Param` object stores a parameter array along with an accumulated delta to
-that array. When converting to backends like TensorFlow, identical `Param`s will
-result in identical variable objects, making model reuse trivial.
+A `Param` object stores a parameter array along with its gradient.
+When converting to backends like TensorFlow, identical `Param`s will
+result in identical variable objects.
 """
 struct Param{T}
   x::T
@@ -79,17 +79,6 @@ param(x) = Param(x, zero(x))
 state(p::Param) = p.x
 
 """
-    accumulate!(p::Param, Δ) => p
-
-Accumulates the update `Δ` on `p`. The value of `p` won't change until
-`update!`.
-"""
-function accumulate!(p::Param, Δ)
-  p.Δx += Δ
-  return p
-end
-
-"""
     update!(p::Param)
 
 Apply the accumulated updates to the value of the parameter.
@@ -101,7 +90,6 @@ function update!(p::Param, η)
 end
 
 state(x) = x
-accumulate!(x, Δ) = x
 
 Base.size(p::Param) = size(p.x)
 Base.size(p::Param, n) = size(p.x, n)
