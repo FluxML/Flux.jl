@@ -8,7 +8,6 @@ using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
   spliceinputs, bumpinputs, Line, Frame, applylines
 using DataFlow.Interpreter
-using MacroTools: @q
 using Juno: Tree, Row
 
 # Zero Flux Given
