@@ -29,11 +29,10 @@ include("compiler/shape.jl")
 
 include("layers/affine.jl")
 include("layers/activation.jl")
+include("layers/cost.jl")
 include("layers/recurrent.jl")
 include("layers/chain.jl")
 include("layers/shims.jl")
-
-include("cost.jl")
 
 include("backend/backend.jl")
 
