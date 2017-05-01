@@ -9,10 +9,6 @@ d = Affine(20, 10)
 dt = tf(d)
 @test d(xs) ≈ dt(xs)
 
-m = Multi(20, 15)
-mm = tf(m)
-@test all(isapprox.(mm(xs, ys), m(xs, ys)))
-
 @testset "Tuple I/O" begin
   @test tf(@net x -> (identity(x),))([1,2,3]) == ([1,2,3],)
   @test tf(@net x -> x[1].*x[2])(([1,2,3],[4,5,6])) == [4,10,18]

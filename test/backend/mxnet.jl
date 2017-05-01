@@ -9,10 +9,6 @@ d = Affine(20, 10)
 dm = mxnet(d)
 @test d(xs) ≈ dm(xs)
 
-m = Multi(20, 15)
-mm = mxnet(m)
-@test all(isapprox.(mm(xs, ys), m(xs, ys)))
-
 @testset "Tuple I/O" begin
   @test mxnet(@net x -> (x,))([1,2,3]) == ([1,2,3],)
   @test mxnet(@net x -> x[1].*x[2])(([1,2,3],[4,5,6])) == [4,10,18]

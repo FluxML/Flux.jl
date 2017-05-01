@@ -22,15 +22,6 @@ end
   end
 end
 
-@net type Multi
-  W
-  V
-  (x, y) -> (x*W, y*V)
-end
-
-Multi(in::Integer, out::Integer) =
-  Multi(randn(in, out), randn(in, out))
-
 include("batching.jl")
 include("basic.jl")
 include("recurrent.jl")

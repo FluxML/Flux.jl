@@ -32,10 +32,4 @@ let tlp = TLP(Affine(10, 21), Affine(20, 15))
   @test e.trace[end-1].func == Symbol("Flux.Affine")
 end
 
-let m = Multi(10, 15)
-  x, y = rand(1, 10), rand(1, 10)
-  @test all(isapprox.(m(x, y), (x * m.W.x, y * m.V.x)))
-  @test all(isapprox.(m(x, y), Flux.interpmodel(m, x, y)))
-end
-
 end
