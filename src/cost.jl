@@ -2,7 +2,7 @@ export mse, logloss
 
 mse(ŷ, y) = sumabs2(ŷ .- y)/2
 
-back!(::typeof(mse), Δ, ŷ, y) = Δ*(ŷ .- y)
+back!(::typeof(mse), Δ, ŷ, y) = Δ .* (ŷ .- y)
 
 logloss(ŷ, y) = -sum(y .* log.(ŷ))
 
