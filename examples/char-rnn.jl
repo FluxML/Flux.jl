@@ -14,6 +14,7 @@ alphabet = unique(input)
 N = length(alphabet)
 
 train = zip(getbatches(input, alphabet), getbatches(input[2:end], alphabet))
+eval = tobatch.(first(drop(train, 5)))
 
 model = Chain(
   Input(N),
@@ -24,7 +25,9 @@ model = Chain(
 
 m = mxnet(unroll(model, nunroll))
 
-@time Flux.train!(m, train, η = 0.1, loss = logloss)
+evalcb = () -> @show logloss(m(eval[1]), eval[2])
+
+@time Flux.train!(m, train, η = 0.1, loss = logloss, cb = [evalcb])
 
 function sample(model, n, temp = 1)
   s = [rand(alphabet)]

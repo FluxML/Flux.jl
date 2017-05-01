@@ -1,4 +1,5 @@
 using Flux, MNIST
+using Flux: accuracy
 
 data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
 train = data[1:50_000]
@@ -14,9 +15,10 @@ m = @Chain(
 model = mxnet(m)
 
 # An example prediction pre-training
-model(unsqueeze(data[1][1]))
+model(tobatch(data[1][1]))
 
-Flux.train!(model, train, test, η = 1e-4)
+Flux.train!(model, train, η = 1e-3,
+            cb = [()->@show accuracy(m, test)])
 
 # An example prediction post-training
-model(unsqueeze(data[1][1]))
+model(tobatch(data[1][1]))
