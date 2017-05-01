@@ -13,7 +13,7 @@ end
 function train!(m, train, test = [];
                 epoch = 1, η = 0.1, loss = mse)
     i = 0
-    for e in 1:epoch
+    @progress for e in 1:epoch
       info("Epoch $e")
       @progress for (x, y) in train
         x, y = tobatch.((x, y))
