@@ -6,6 +6,8 @@ Flux aims to be an intuitive and powerful notation, close to the mathematics, th
 
 So what's the catch? Flux is at an early "working prototype" stage; many things work but the API is still in a state of... well, it might change. If you're interested to find out what works, read on!
 
+**Note:** If you're using Julia v0.5 please see [this version](http://mikeinnes.github.io/Flux.jl/v0.1.1/) of the docs instead.
+
 ## Where do I start?
 
 The [examples](examples/logreg.html) are the best way to get a feel for how Flux looks. This a great way to start if you're a relative newbie to machine learning or neural networks; you should be able to get the examples running fairly easily.
@@ -29,3 +31,5 @@ You'll also need a backend to run real training, if you don't have one already. 
 Pkg.add("MXNet") # or "TensorFlow"
 Pkg.test("Flux") # Make sure everything installed properly
 ```
+
+**Note:** TensorFlow integration may not work properly on Julia v0.6 yet.
