@@ -139,7 +139,7 @@ Char RNN
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/d27161616200a4289587088075f7305673abb49b/docs/src/examples/char-rnn.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/124bcf5e470c62aa17351d51be3ebe2667b6f1c1/docs/src/examples/char-rnn.md">
             <span class="fa">
 
             </span>
@@ -174,16 +174,21 @@ Firstly, we define up front how many steps we want to unroll the RNN, and the nu
 <pre><code class="language-julia">nunroll = 50
 nbatch = 50
 
-getseqs(chars, alphabet) = sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)
-getbatches(chars, alphabet) = batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)</code></pre>
+getseqs(chars, alphabet) =
+  sequences((onehot(Float32, char, alphabet) for char in chars), nunroll)
+getbatches(chars, alphabet) =
+  batches((getseqs(part, alphabet) for part in chunk(chars, nbatch))...)</code></pre>
       <p>
 Because we want the RNN to predict the next letter at each iteration, our target data is simply our input data offset by one. For example, if the input is &quot;The quick brown fox&quot;, the target will be &quot;he quick brown fox &quot;. Each letter is one-hot encoded and sequences are batched together to create the training data.
       </p>
-<pre><code class="language-julia">input = readstring(&quot;shakespeare_input.txt&quot;)
+<pre><code class="language-julia">input = readstring(&quot;shakespeare_input.txt&quot;);
 alphabet = unique(input)
 N = length(alphabet)
 
-Xs, Ys = getbatches(input, alphabet), getbatches(input[2:end], alphabet)</code></pre>
+# An iterator of (input, output) pairs
+train = zip(getbatches(input, alphabet), getbatches(input[2:end], alphabet))
+# We will evaluate the loss on a particular batch to monitor the training.
+eval = tobatch.(first(drop(train, 5)))</code></pre>
       <p>
 Creating the model and training it is straightforward:
       </p>
@@ -196,7 +201,11 @@ Creating the model and training it is straightforward:
 
 m = tf(unroll(model, nunroll))
 
-@time Flux.train!(m, Xs, Ys, η = 0.1, epoch = 1)</code></pre>
+# Call this to see how the model is doing
+evalcb = () -&gt; @show logloss(m(eval[1]), eval[2])
+
+@time Flux.train!(m, train, η = 0.1, loss = logloss, cb = [evalcb])
+</code></pre>
       <p>
 Finally, we can sample the model. For sampling we remove the 
 <code>softmax</code>
@@ -204,9 +213,9 @@ Finally, we can sample the model. For sampling we remove the
       </p>
 <pre><code class="language-julia">function sample(model, n, temp = 1)
   s = [rand(alphabet)]
-  m = tf(unroll(model, 1))
-  for i = 1:n
-    push!(s, wsample(alphabet, softmax(m(Seq((onehot(Float32, s[end], alphabet),)))[1]./temp)))
+  m = unroll1(model)
+  for i = 1:n-1
+    push!(s, wsample(alphabet, softmax(m(unsqueeze(onehot(s[end], alphabet)))./temp)[1,:]))
   end
   return string(s...)
 end

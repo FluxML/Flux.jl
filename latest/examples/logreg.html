@@ -139,7 +139,7 @@ Simple MNIST
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/d27161616200a4289587088075f7305673abb49b/docs/src/examples/logreg.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/124bcf5e470c62aa17351d51be3ebe2667b6f1c1/docs/src/examples/logreg.md">
             <span class="fa">
 
             </span>
@@ -160,6 +160,7 @@ This walkthrough example will take you through writing a multi-layer perceptron 
 First, we load the data using the MNIST package:
       </p>
 <pre><code class="language-julia">using Flux, MNIST
+using Flux: accuracy
 
 data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
 train = data[1:50_000]
@@ -190,7 +191,7 @@ Otherwise, the format of the data is simple enough, it&#39;s just a list of tupl
       <p>
 Now we define our model, which will simply be a function from one to the other.
       </p>
-<pre><code class="language-julia">m = Chain(
+<pre><code class="language-julia">m = @Chain(
   Input(784),
   Affine(128), relu,
   Affine( 64), relu,
@@ -200,7 +201,7 @@ model = mxnet(m) # Convert to MXNet</code></pre>
       <p>
 We can try this out on our data already:
       </p>
-<pre><code class="language-julia">julia&gt; model(data[1][1])
+<pre><code class="language-julia">julia&gt; model(tobatch(data[1][1]))
 10-element Array{Float64,1}:
  0.10614  
  0.0850447
@@ -209,7 +210,8 @@ We can try this out on our data already:
       <p>
 The model gives a probability of about 0.1 to each class – which is a way of saying, &quot;I have no idea&quot;. This isn&#39;t too surprising as we haven&#39;t shown it any data yet. This is easy to fix:
       </p>
-<pre><code class="language-julia">Flux.train!(model, train, test, η = 1e-4)</code></pre>
+<pre><code class="language-julia">Flux.train!(model, train, η = 1e-3,
+            cb = [()-&gt;@show accuracy(m, test)])</code></pre>
       <p>
 The training step takes about 5 minutes (to make it faster we can do smarter things like batching). If you run this code in Juno, you&#39;ll see a progress meter, which you can hover over to see the remaining computation time.
       </p>
@@ -231,7 +233,7 @@ Notice the class at 93%, suggesting our model is very confident about this image
 <pre><code class="language-julia">julia&gt; onecold(data[1][2], 0:9)
 5
 
-julia&gt; onecold(model(data[1][1]), 0:9)
+julia&gt; onecold(model(tobatch(data[1][1])), 0:9)
 5</code></pre>
       <p>
 Success!
