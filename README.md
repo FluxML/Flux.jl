@@ -6,7 +6,7 @@ Flux is a high-level library for machine learning, implemented in Julia.
 
 Flux is designed to get the best performance (by running on TensorFlow or MXNet) while still being intuitive to work with – you get good error messages, can step through models with the debugger, and the notation is very close to what you'd find in a paper.
 
-Check out the [docs](https://mikeinnes.github.io/Flux.jl/latest/) to get started. Flux is in alpha so **please open issues liberally**; if something is broken for you it can most likely be fixed easily, or if you're not sure how to do something we can help.
+Check out the [docs](https://mikeinnes.github.io/Flux.jl/stable/) to get started. Flux is in alpha so **please open issues liberally**; if something is broken for you it can most likely be fixed easily, or if you're not sure how to do something we can help.
 
 ## Brief Examples
 
