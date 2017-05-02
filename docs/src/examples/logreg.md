@@ -6,6 +6,7 @@ First, we load the data using the MNIST package:
 
 ```julia
 using Flux, MNIST
+using Flux: accuracy
 
 data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
 train = data[1:50_000]
@@ -34,7 +35,7 @@ julia> data[1]
 Now we define our model, which will simply be a function from one to the other.
 
 ```julia
-m = Chain(
+m = @Chain(
   Input(784),
   Affine(128), relu,
   Affine( 64), relu,
@@ -46,7 +47,7 @@ model = mxnet(m) # Convert to MXNet
 We can try this out on our data already:
 
 ```julia
-julia> model(data[1][1])
+julia> model(tobatch(data[1][1]))
 10-element Array{Float64,1}:
  0.10614  
  0.0850447
@@ -57,7 +58,8 @@ julia> model(data[1][1])
 The model gives a probability of about 0.1 to each class – which is a way of saying, "I have no idea". This isn't too surprising as we haven't shown it any data yet. This is easy to fix:
 
 ```julia
-Flux.train!(model, train, test, η = 1e-4)
+Flux.train!(model, train, η = 1e-3,
+            cb = [()->@show accuracy(m, test)])
 ```
 
 The training step takes about 5 minutes (to make it faster we can do smarter things like batching). If you run this code in Juno, you'll see a progress meter, which you can hover over to see the remaining computation time.
@@ -80,7 +82,7 @@ Notice the class at 93%, suggesting our model is very confident about this image
 julia> onecold(data[1][2], 0:9)
 5
 
-julia> onecold(model(data[1][1]), 0:9)
+julia> onecold(model(tobatch(data[1][1])), 0:9)
 5
 ```
 
