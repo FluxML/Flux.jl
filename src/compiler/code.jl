@@ -86,7 +86,7 @@ end
 function process_def(ex)
   # TODO: make a singleton net type
   @capture(ex, f_(xs__) = body_)
-  :($(esc(f)) = @net $(esc(:(($(xs...),) -> $body))))
+  :($(esc(f)) = @net $(esc(:(($(xs...),) -> $body))); nothing)
 end
 
 macro net(ex)
