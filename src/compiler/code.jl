@@ -3,7 +3,7 @@ using MacroTools: @q
 
 export @net
 
-function process_func(ex, params = [])
+function graphdef(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
   body = @> body MacroTools.flatten liftloops graphm DataFlow.il
   body = mapconst(x -> x in params ? :(self.$x) : x, body)
@@ -67,7 +67,7 @@ function process_type(ex)
              funcs  = true || []] = groupby(x->isexpr(x, :->, :function), fs)
   @assert length(funcs) == 1
   pnames = namify.(params)
-  args, body = process_func(funcs[1], pnames)
+  args, body = graphdef(funcs[1], pnames)
   self = esc(:self)
   quote
     $(build_type(T, params))
@@ -79,7 +79,7 @@ function process_type(ex)
 end
 
 function process_anon(ex)
-  args, body = process_func(ex)
+  args, body = graphdef(ex)
   :(Capacitor($(DataFlow.constructor(mapconst(esc, makegraph(body, args)[1])))))
 end
 
