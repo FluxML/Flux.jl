@@ -58,13 +58,18 @@ Model Building Basics
               </a>
               <ul class="internal">
                 <li>
-                  <a class="toctext" href="#Functions-1">
-Functions
+                  <a class="toctext" href="#Net-Functions-1">
+Net Functions
                   </a>
                 </li>
                 <li>
                   <a class="toctext" href="#The-Model-1">
 The Model
+                  </a>
+                </li>
+                <li>
+                  <a class="toctext" href="#Parameters-1">
+Parameters
                   </a>
                 </li>
                 <li>
@@ -78,8 +83,8 @@ Combining Layers
                   </a>
                 </li>
                 <li>
-                  <a class="toctext" href="#A-Function-in-Model's-Clothing-1">
-A Function in Model&#39;s Clothing
+                  <a class="toctext" href="#Dressed-like-a-model-1">
+Dressed like a model
                   </a>
                 </li>
               </ul>
@@ -165,7 +170,7 @@ Model Building Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/9b76b307b6e59e4102b12de769122471af208582/docs/src/models/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/1bba9631a2b912e69a305fc33446f9a0e29aeb7a/docs/src/models/basics.md">
             <span class="fa">
 
             </span>
@@ -180,8 +185,8 @@ Model Building Basics
         </a>
       </h1>
       <h2>
-        <a class="nav-anchor" id="Functions-1" href="#Functions-1">
-Functions
+        <a class="nav-anchor" id="Net-Functions-1" href="#Net-Functions-1">
+Net Functions
         </a>
       </h2>
       <p>
@@ -214,7 +219,15 @@ Using MXNet, we can get the gradient of the function, too:
       </p>
 <pre><code class="language-julia">back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])</code></pre>
       <p>
-At first glance, this may seem broadly similar to building a graph in TensorFlow. The difference is that the Julia code still behaves like Julia code. Error messages continue to give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code only runs once when it&#39;s called, as usual, rather than once to build the graph and once to execute it.
+<code>f</code>
+ is effectively 
+<code>x^2</code>
+, so the gradient is 
+<code>2x</code>
+ as expected.
+      </p>
+      <p>
+For TensorFlow users this may seem similar to building a graph as usual. The difference is that Julia code still behaves like Julia code. Error messages give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code runs when it&#39;s called, as usual, rather than running once to build the graph and then again to execute it.
       </p>
       <h2>
         <a class="nav-anchor" id="The-Model-1" href="#The-Model-1">
@@ -222,44 +235,46 @@ The Model
         </a>
       </h2>
       <p>
-        <em>
-... Initialising Photon Beams ...
-        </em>
-      </p>
-      <p>
 The core concept in Flux is the 
         <em>
 model
         </em>
-. A model (or &quot;layer&quot;) is simply a function with parameters. For example, in plain Julia code, we could define the following function to represent a logistic regression (or simple neural network):
+. This corresponds to what might be called a &quot;layer&quot; or &quot;module&quot; in other frameworks. A model is simply a differentiable function with parameters. Given a model 
+<code>m</code>
+ we can do things like:
+      </p>
+<pre><code class="language-julia">m(x)           # See what the model does to an input vector `x`
+back!(m, Δ, x) # backpropogate the gradient `Δ` through `m`
+update!(m, η)  # update the parameters of `m` using the gradient</code></pre>
+      <p>
+We can implement a model however we like as long as it fits this interface. But as hinted above, 
+<code>@net</code>
+ is a particularly easy way to do it, as 
+<code>@net</code>
+ functions are models already.
+      </p>
+      <h2>
+        <a class="nav-anchor" id="Parameters-1" href="#Parameters-1">
+Parameters
+        </a>
+      </h2>
+      <p>
+Consider how we&#39;d write a logistic regression. We just take the Julia code and add 
+<code>@net</code>
+.
       </p>
 <pre><code class="language-julia">W = randn(3,5)
 b = randn(3)
-affine(x) = W * x + b
+@net logistic(x) = softmax(W * x + b)
 
 x1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]
-y1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]</code></pre>
+y1 = logistic(x1) # [0.32676,0.0974173,0.575823]</code></pre>
       <p>
-<code>affine</code>
- is simply a function which takes some vector 
-<code>x1</code>
- and outputs a new one 
-<code>y1</code>
-. For example, 
-<code>x1</code>
- could be data from an image and 
-<code>y1</code>
- could be predictions about the content of that image. However, 
-<code>affine</code>
- isn&#39;t static. It has 
-        <em>
-parameters
-        </em>
- 
-<code>W</code>
- and 
-<code>b</code>
-, and if we tweak those parameters we&#39;ll tweak the result – hopefully to make the predictions more accurate.
+&lt;!
+–
+ TODO 
+–
+&gt;
       </p>
       <h2>
         <a class="nav-anchor" id="Layers-1" href="#Layers-1">
@@ -267,44 +282,35 @@ Layers
         </a>
       </h2>
       <p>
-This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a 
-        <em>
-template
-        </em>
- which creates these functions for us:
+Bigger networks contain many affine transformations like 
+<code>W * x + b</code>
+. We don&#39;t want to write out the definition every time we use it. Instead, we can factor this out by making a function that produces models:
+      </p>
+<pre><code class="language-julia">function create_affine(in, out)
+  W = randn(out,in)
+  b = randn(out)
+  @net x -&gt; W * x + b
+end
+
+affine1 = create_affine(3,2)
+affine1([1,2,3])</code></pre>
+      <p>
+Flux has a 
+        <a href="templates.html">
+more powerful syntax
+        </a>
+ for this pattern, but also provides a bunch of layers out of the box. So we can instead write:
       </p>
 <pre><code class="language-julia">affine1 = Affine(5, 5)
 affine2 = Affine(5, 5)
 
 softmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]
 softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]</code></pre>
-      <p>
-We just created two separate 
-<code>Affine</code>
- layers, and each contains its own (randomly initialised) version of 
-<code>W</code>
- and 
-<code>b</code>
-, leading to a different result when called with our data. It&#39;s easy to define templates like 
-<code>Affine</code>
- ourselves (see 
-        <a href="templates.html">
-templates
-        </a>
-), but Flux provides 
-<code>Affine</code>
- out of the box, so we&#39;ll use that for now.
-      </p>
       <h2>
         <a class="nav-anchor" id="Combining-Layers-1" href="#Combining-Layers-1">
 Combining Layers
         </a>
       </h2>
-      <p>
-        <em>
-... Inflating Graviton Zeppelins ...
-        </em>
-      </p>
       <p>
 A more complex model usually involves many basic layers like 
 <code>affine</code>
@@ -334,19 +340,14 @@ logistic regression
  example, if you haven&#39;t already.
       </p>
       <h2>
-        <a class="nav-anchor" id="A-Function-in-Model's-Clothing-1" href="#A-Function-in-Model's-Clothing-1">
-A Function in Model&#39;s Clothing
+        <a class="nav-anchor" id="Dressed-like-a-model-1" href="#Dressed-like-a-model-1">
+Dressed like a model
         </a>
       </h2>
       <p>
-        <em>
-... Booting Dark Matter Transmogrifiers ...
-        </em>
-      </p>
-      <p>
-We noted above that a &quot;model&quot; is a function with some number of trainable parameters. This goes both ways; a normal Julia function like 
+We noted above that a model is a function with trainable parameters. Normal functions like 
 <code>exp</code>
- is effectively a model with 0 parameters. Flux doesn&#39;t care, and anywhere that you use one, you can use the other. For example, 
+ are actually models too, that happen to have 0 parameters. Flux doesn&#39;t care, and anywhere that you use one, you can use the other. For example, 
 <code>Chain</code>
  will happily work with regular functions:
       </p>

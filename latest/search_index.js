@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Flux",
     "category": "section",
-    "text": "Flux is a machine learning library, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning in particular.This gives you great flexibility. You can use a convenient Keras-like API if you want something simple, but you can also drop down to straight mathematics, or build your own abstractions. You can even use Flux's utilities (like optimisers) with a completely different backend (like Knet) or mix and match approaches.Note that Flux is in alpha. Many things work but the API is still in a state of... well, it might change.Note: If you're using Julia v0.5 please see this version of the docs instead."
+    "text": "... Initialising Photon Beams ...Flux is a machine learning library, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning.This gives you great flexibility. You can use a convenient Keras-like API if you want something simple, but you can also drop down to straight mathematics, or build your own abstractions. You can even use Flux's utilities (like optimisers) with a completely different backend (like Knet) or mix and match approaches.Note that Flux is in alpha. Many things work but the API is still in a state of... well, it might change.Note: If you're using Julia v0.5 please see this version of the docs instead."
 },
 
 {
@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Where do I start?",
     "category": "section",
-    "text": "The examples give a feel for high-level usage. This a great way to start if you're a relative newbie to machine learning or neural networks; you can get up and running running easily.If you have more experience with ML, or you just don't want to see those digits again, check out the model building guide instead. The guide attempts to show how Flux's abstractions are built up and why it's powerful, but it's not all necessary to get started."
+    "text": "... Charging Ion Capacitors ...The examples give a feel for high-level usage. This a great way to start if you're a relative newbie to machine learning or neural networks; you can get up and running running easily.If you have more experience with ML, or you just don't want to see those digits again, check out the model building guide instead. The guide attempts to show how Flux's abstractions are built up and why it's powerful, but it's not all necessary to get started."
 },
 
 {
@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "... Charging Ion Capacitors ...Pkg.update()\nPkg.add(\"Flux.jl\")You'll also need a backend to run real training, if you don't have one already. Choose from MXNet or TensorFlow (MXNet is the recommended option if you're not sure):Pkg.add(\"MXNet\") # or \"TensorFlow\"\nPkg.test(\"Flux\") # Make sure everything installed properlyNote: TensorFlow integration may not work properly on Julia v0.6 yet."
+    "text": "... Inflating Graviton Zeppelins ...Pkg.update()\nPkg.add(\"Flux.jl\")You'll also need a backend to run real training, if you don't have one already. Choose from MXNet or TensorFlow (MXNet is the recommended option if you're not sure):Pkg.add(\"MXNet\") # or \"TensorFlow\"\nPkg.test(\"Flux\") # Make sure everything installed properlyNote: TensorFlow integration may not work properly on Julia v0.6 yet."
 },
 
 {
@@ -49,11 +49,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/basics.html#Functions-1",
+    "location": "models/basics.html#Net-Functions-1",
     "page": "Model Building Basics",
-    "title": "Functions",
+    "title": "Net Functions",
     "category": "section",
-    "text": "Flux's core feature is the @net macro, which adds some superpowers to regular ol' Julia functions. Consider this simple function with the @net annotation applied:@net f(x) = x .* x\nf([1,2,3]) == [1,4,9]This behaves as expected, but we have some extra features. For example, we can convert the function to run on TensorFlow or  MXNet:f_mxnet = mxnet(f)\nf_mxnet([1,2,3]) == [1.0, 4.0, 9.0]Simples! Flux took care of a lot of boilerplate for us and just ran the multiplication on MXNet. MXNet can optimise this code for us, taking advantage of parallelism or running the code on a GPU.Using MXNet, we can get the gradient of the function, too:back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])At first glance, this may seem broadly similar to building a graph in TensorFlow. The difference is that the Julia code still behaves like Julia code. Error messages continue to give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code only runs once when it's called, as usual, rather than once to build the graph and once to execute it."
+    "text": "Flux's core feature is the @net macro, which adds some superpowers to regular ol' Julia functions. Consider this simple function with the @net annotation applied:@net f(x) = x .* x\nf([1,2,3]) == [1,4,9]This behaves as expected, but we have some extra features. For example, we can convert the function to run on TensorFlow or  MXNet:f_mxnet = mxnet(f)\nf_mxnet([1,2,3]) == [1.0, 4.0, 9.0]Simples! Flux took care of a lot of boilerplate for us and just ran the multiplication on MXNet. MXNet can optimise this code for us, taking advantage of parallelism or running the code on a GPU.Using MXNet, we can get the gradient of the function, too:back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])f is effectively x^2, so the gradient is 2x as expected.For TensorFlow users this may seem similar to building a graph as usual. The difference is that Julia code still behaves like Julia code. Error messages give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code runs when it's called, as usual, rather than running once to build the graph and then again to execute it."
 },
 
 {
@@ -61,7 +61,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Building Basics",
     "title": "The Model",
     "category": "section",
-    "text": "... Initialising Photon Beams ...The core concept in Flux is the model. A model (or \"layer\") is simply a function with parameters. For example, in plain Julia code, we could define the following function to represent a logistic regression (or simple neural network):W = randn(3,5)\nb = randn(3)\naffine(x) = W * x + b\n\nx1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]\ny1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]affine is simply a function which takes some vector x1 and outputs a new one y1. For example, x1 could be data from an image and y1 could be predictions about the content of that image. However, affine isn't static. It has parameters W and b, and if we tweak those parameters we'll tweak the result – hopefully to make the predictions more accurate."
+    "text": "The core concept in Flux is the model. This corresponds to what might be called a \"layer\" or \"module\" in other frameworks. A model is simply a differentiable function with parameters. Given a model m we can do things like:m(x)           # See what the model does to an input vector `x`\nback!(m, Δ, x) # backpropogate the gradient `Δ` through `m`\nupdate!(m, η)  # update the parameters of `m` using the gradientWe can implement a model however we like as long as it fits this interface. But as hinted above, @net is a particularly easy way to do it, as @net functions are models already."
+},
+
+{
+    "location": "models/basics.html#Parameters-1",
+    "page": "Model Building Basics",
+    "title": "Parameters",
+    "category": "section",
+    "text": "Consider how we'd write a logistic regression. We just take the Julia code and add @net.W = randn(3,5)\nb = randn(3)\n@net logistic(x) = softmax(W * x + b)\n\nx1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]\ny1 = logistic(x1) # [0.32676,0.0974173,0.575823]<!– TODO –>"
 },
 
 {
@@ -69,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Building Basics",
     "title": "Layers",
     "category": "section",
-    "text": "This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a template which creates these functions for us:affine1 = Affine(5, 5)\naffine2 = Affine(5, 5)\n\nsoftmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]\nsoftmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]We just created two separate Affine layers, and each contains its own (randomly initialised) version of W and b, leading to a different result when called with our data. It's easy to define templates like Affine ourselves (see templates), but Flux provides Affine out of the box, so we'll use that for now."
+    "text": "Bigger networks contain many affine transformations like W * x + b. We don't want to write out the definition every time we use it. Instead, we can factor this out by making a function that produces models:function create_affine(in, out)\n  W = randn(out,in)\n  b = randn(out)\n  @net x -> W * x + b\nend\n\naffine1 = create_affine(3,2)\naffine1([1,2,3])Flux has a more powerful syntax for this pattern, but also provides a bunch of layers out of the box. So we can instead write:affine1 = Affine(5, 5)\naffine2 = Affine(5, 5)\n\nsoftmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]\nsoftmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]"
 },
 
 {
@@ -77,15 +85,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Building Basics",
     "title": "Combining Layers",
     "category": "section",
-    "text": "... Inflating Graviton Zeppelins ...A more complex model usually involves many basic layers like affine, where we use the output of one layer as the input to the next:mymodel1(x) = softmax(affine2(σ(affine1(x))))\nmymodel1(x1) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]This syntax is again a little unwieldy for larger networks, so Flux provides another template of sorts to create the function for us:mymodel2 = Chain(affine1, σ, affine2, softmax)\nmymodel2(x2) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]mymodel2 is exactly equivalent to mymodel1 because it simply calls the provided functions in sequence. We don't have to predefine the affine layers and can also write this as:mymodel3 = Chain(\n  Affine(5, 5), σ,\n  Affine(5, 5), softmax)You now know enough to take a look at the logistic regression example, if you haven't already."
+    "text": "A more complex model usually involves many basic layers like affine, where we use the output of one layer as the input to the next:mymodel1(x) = softmax(affine2(σ(affine1(x))))\nmymodel1(x1) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]This syntax is again a little unwieldy for larger networks, so Flux provides another template of sorts to create the function for us:mymodel2 = Chain(affine1, σ, affine2, softmax)\nmymodel2(x2) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]mymodel2 is exactly equivalent to mymodel1 because it simply calls the provided functions in sequence. We don't have to predefine the affine layers and can also write this as:mymodel3 = Chain(\n  Affine(5, 5), σ,\n  Affine(5, 5), softmax)You now know enough to take a look at the logistic regression example, if you haven't already."
 },
 
 {
-    "location": "models/basics.html#A-Function-in-Model's-Clothing-1",
+    "location": "models/basics.html#Dressed-like-a-model-1",
     "page": "Model Building Basics",
-    "title": "A Function in Model's Clothing",
+    "title": "Dressed like a model",
     "category": "section",
-    "text": "... Booting Dark Matter Transmogrifiers ...We noted above that a \"model\" is a function with some number of trainable parameters. This goes both ways; a normal Julia function like exp is effectively a model with 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, Chain will happily work with regular functions:foo = Chain(exp, sum, log)\nfoo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))"
+    "text": "We noted above that a model is a function with trainable parameters. Normal functions like exp are actually models too, that happen to have 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, Chain will happily work with regular functions:foo = Chain(exp, sum, log)\nfoo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))"
 },
 
 {
