@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Flux",
     "category": "section",
-    "text": "... Initialising Photon Beams ...Flux is a machine learning library, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning.This gives you great flexibility. You can use a convenient Keras-like API if you want something simple, but you can also drop down to straight mathematics, or build your own abstractions. You can even use Flux's utilities (like optimisers) with a completely different backend (like Knet) or mix and match approaches.Note that Flux is in alpha. Many things work but the API is still in a state of... well, it might change.Note: If you're using Julia v0.5 please see this version of the docs instead."
+    "text": "... Initialising Photon Beams ...Flux is a library for machine learning, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning.Flux is very flexible. You can use a convenient Keras-like API if you want something simple, but you can also drop down to straight mathematics, or build your own abstractions. You can even use Flux's utilities (like optimisers) with a completely different backend (like Knet) or mix and match approaches.Note that Flux is in alpha. Many things work but the API is still in a state of... well, it might change.Note: If you're using Julia v0.5 please see this version of the docs instead."
 },
 
 {
@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Building Basics",
     "title": "Dressed like a model",
     "category": "section",
-    "text": "We noted above that a model is a function with trainable parameters. Normal functions like exp are actually models too, that happen to have 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, Chain will happily work with regular functions:foo = Chain(exp, sum, log)\nfoo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))"
+    "text": "We noted above that a model is a function with trainable parameters. Normal functions like exp are actually models too – they just happen to have 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, Chain will happily work with regular functions:foo = Chain(exp, sum, log)\nfoo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))"
 },
 
 {
