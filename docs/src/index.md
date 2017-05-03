@@ -1,6 +1,8 @@
 # Flux
 
-Flux is a machine learning library, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning in particular.
+*... Initialising Photon Beams ...*
+
+Flux is a machine learning library, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning.
 
 This gives you great flexibility. You can use a convenient Keras-like API if you want something simple, but you can also drop down to straight mathematics, or build your own abstractions. You can even use Flux's utilities (like optimisers) with a completely different backend (like [Knet](https://github.com/denizyuret/Knet.jl)) or mix and match approaches.
 
@@ -10,13 +12,15 @@ Note that Flux is in alpha. Many things work but the API is still in a state of.
 
 ## Where do I start?
 
+*... Charging Ion Capacitors ...*
+
 The [examples](examples/logreg.html) give a feel for high-level usage. This a great way to start if you're a relative newbie to machine learning or neural networks; you can get up and running running easily.
 
 If you have more experience with ML, or you just don't want to see *those digits* again, check out the [model building guide](models/basics.html) instead. The guide attempts to show how Flux's abstractions are built up and why it's powerful, but it's not all necessary to get started.
 
 ## Installation
 
-*... Charging Ion Capacitors ...*
+*... Inflating Graviton Zeppelins ...*
 
 ```julia
 Pkg.update()
