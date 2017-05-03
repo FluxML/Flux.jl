@@ -108,7 +108,7 @@ You now know enough to take a look at the [logistic regression](../examples/logr
 
 ## Dressed like a model
 
-We noted above that a model is a function with trainable parameters. Normal functions like `exp` are actually models too, that happen to have 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, `Chain` will happily work with regular functions:
+We noted above that a model is a function with trainable parameters. Normal functions like `exp` are actually models too – they just happen to have 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, `Chain` will happily work with regular functions:
 
 ```julia
 foo = Chain(exp, sum, log)
