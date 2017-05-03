@@ -1,20 +1,18 @@
 # Flux
 
-Flux is a high-level interface for machine learning, implemented in Julia.
+Flux is a machine learning library, implemented in Julia. In a nutshell, it simply lets you run normal Julia code on a backend like TensorFlow. It also provides many conveniences for doing deep learning in particular.
 
-Flux aims to be an intuitive and powerful notation, close to the mathematics, that provides advanced features like auto-unrolling and closures. Simple models are trivial, while the most complex architectures are tractable, taking orders of magnitude less code than in other frameworks. Meanwhile, the Flux compiler provides excellent error messages and tools for debugging when things go wrong.
+This gives you great flexibility. You can use a convenient Keras-like API if you want something simple, but you can also drop down to straight mathematics, or build your own abstractions. You can even use Flux's utilities (like optimisers) with a completely different backend (like [Knet](https://github.com/denizyuret/Knet.jl)) or mix and match approaches.
 
-So what's the catch? Flux is at an early "working prototype" stage; many things work but the API is still in a state of... well, it might change. If you're interested to find out what works, read on!
+Note that Flux is in alpha. Many things work but the API is still in a state of... well, it might change.
 
 **Note:** If you're using Julia v0.5 please see [this version](http://mikeinnes.github.io/Flux.jl/v0.1.1/) of the docs instead.
 
 ## Where do I start?
 
-The [examples](examples/logreg.html) are the best way to get a feel for how Flux looks. This a great way to start if you're a relative newbie to machine learning or neural networks; you should be able to get the examples running fairly easily.
+The [examples](examples/logreg.html) give a feel for high-level usage. This a great way to start if you're a relative newbie to machine learning or neural networks; you can get up and running running easily.
 
-If you have more experience with ML, or you just don't want to see *those digits* again, check out the [model building guide](models/basics.html) instead. The Guide attempts to motivate Flux's programming model and approach with examples. However, it also gets into advanced usage very quickly; it's not necessary to memorise all the details to use Flux effectively.
-
-The sections on [Recurrence](models/recurrent.html), [Debugging](models/debugging.html) and [Batching](apis/batching.html) best illustrate what makes Flux unique.
+If you have more experience with ML, or you just don't want to see *those digits* again, check out the [model building guide](models/basics.html) instead. The guide attempts to show how Flux's abstractions are built up and why it's powerful, but it's not all necessary to get started.
 
 ## Installation
 
