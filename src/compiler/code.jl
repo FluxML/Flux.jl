@@ -83,10 +83,16 @@ function process_anon(ex)
   :(Capacitor($(DataFlow.constructor(mapconst(esc, makegraph(body, args)[1])))))
 end
 
+function process_def(ex)
+  # TODO: make a singleton net type
+  @capture(ex, f_(xs__) = body_)
+  :($(esc(f)) = @net $(esc(:(($(xs...),) -> $body))))
+end
+
 macro net(ex)
   ex = shortdef(ex)
   isexpr(ex, :type) ? process_type(ex) :
   @capture(ex, (__,) -> _) ? process_anon(ex) :
-  @capture(ex, _(__) = _) ? error("@net functions not implemented") :
+  @capture(ex, _(__) = _) ? process_def(ex) :
   error("Unsupported model expression $ex")
 end
