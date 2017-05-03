@@ -13,7 +13,7 @@ Currently, Flux's pure-Julia backend has no optimisations. This means that calli
 model(rand(10)) #> [0.0650, 0.0655, ...]
 ```
 
-directly won't have great performance. In order to run a computationally intensive training process, we rely on a backend like MXNet or TensorFlow.
+directly won't have great performance. In order to run a computationally intensive training process, we need to use a backend like MXNet or TensorFlow.
 
 This is easy to do. Just call either `mxnet` or `tf` on a model to convert it to a model of that kind:
 
