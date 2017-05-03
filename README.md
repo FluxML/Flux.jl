@@ -2,15 +2,26 @@
 
 [![Build Status](https://travis-ci.org/MikeInnes/Flux.jl.svg?branch=master)](https://travis-ci.org/MikeInnes/Flux.jl) [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://mikeinnes.github.io/Flux.jl/stable) [![Join the chat at https://gitter.im/MikeInnes/Flux.jl](https://badges.gitter.im/MikeInnes/Flux.jl.svg)](https://gitter.im/MikeInnes/Flux.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Flux is a high-level library for machine learning, implemented in Julia.
+Flux is a library for machine learning, implemented in Julia.
 
-Flux is designed to get the best performance (by running on TensorFlow or MXNet) while still being intuitive to work with – you get good error messages, can step through models with the debugger, and the notation is very close to what you'd find in a paper.
+At the core of it, Flux simply lets you run your normal Julia code on a dataflow backend like TensorFlow.
 
-Check out the [docs](https://mikeinnes.github.io/Flux.jl/stable/) to get started. Flux is in alpha so **please open issues liberally**; if something is broken for you it can most likely be fixed easily, or if you're not sure how to do something we can help.
+```julia
+@net f(x) = x .* x
+f([1,2,3]) == [1,4,9]
+f_tensorflow = tf(f)
+f_tensorflow([1,2,3]) == [1.0, 4.0, 9.0]
+```
+
+After adding the `@net` annotation we can take advantage of various optimisations, parallelism, and access to GPUs that TensorFlow provides. Unlike a TensorFlow graph, `f` continues to behave like Julia code; you still get good stack traces, can step through in the debugger, etc.
+
+On top of this foundation we build a set of flexible machine learning abstractions and utilities that interoperate well with other approaches like [Knet](https://github.com/denizyuret/Knet.jl). This gives you great flexibility; you can go high level or stay mathematical, write custom GPU kernels, build your own abstractions, and mix and match approaches.
+
+Check out the [docs](https://mikeinnes.github.io/Flux.jl/stable/) to get started. Flux is in alpha so **please open issues liberally**; we would love to help you get started.
 
 ## Brief Examples
 
-Simple multi-layer-perceptron for MNIST:
+Simple multi-layer-perceptron for MNIST, using the high-level API:
 
 ```julia
 Chain(
@@ -20,31 +31,14 @@ Chain(
   Affine( 10), softmax)
 ```
 
-LSTM example:
+Define a custom recurrent layer:
 
 ```julia
-@net type LSTM
-  Wxf; Wyf; bf
-  Wxi; Wyi; bi
-  Wxo; Wyo; bo
-  Wxc; Wyc; bc
-  y; state
+@net type Recurrent
+  Wxy; Wyy; by
+  y
   function (x)
-    # Gates
-    forget = σ( x * Wxf + y{-1} * Wyf + bf )
-    input  = σ( x * Wxi + y{-1} * Wyi + bi )
-    output = σ( x * Wxo + y{-1} * Wyo + bo )
-    # State update and output
-    state′ = tanh( x * Wxc + y{-1} * Wyc + bc )
-    state  = forget .* state{-1} + input .* state′
-    y = output .* tanh(state)
+    y = tanh( x * Wxy .+ y{-1} * Wyy .+ by )
   end
 end
-
-Chain(
-  Input(N),
-  LSTM(N, 256),
-  LSTM(256, 256),
-  Affine(256, N),
-  softmax)
 ```
