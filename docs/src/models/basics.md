@@ -1,5 +1,31 @@
 # Model Building Basics
 
+## Functions
+
+Flux's core feature is the `@net` macro, which adds some superpowers to regular ol' Julia functions. Consider this simple function with the `@net` annotation applied:
+
+```julia
+@net f(x) = x .* x
+f([1,2,3]) == [1,4,9]
+```
+
+This behaves as expected, but we have some extra features. For example, we can convert the function to run on [TensorFlow](https://www.tensorflow.org/) or  [MXNet](https://github.com/dmlc/MXNet.jl):
+
+```julia
+f_mxnet = mxnet(f)
+f_mxnet([1,2,3]) == [1.0, 4.0, 9.0]
+```
+
+Simples! Flux took care of a lot of boilerplate for us and just ran the multiplication on MXNet. MXNet can optimise this code for us, taking advantage of parallelism or running the code on a GPU.
+
+Using MXNet, we can get the gradient of the function, too:
+
+```julia
+back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])
+```
+
+At first glance, this may seem broadly similar to building a graph in TensorFlow. The difference is that the Julia code still behaves like Julia code. Error messages continue to give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code only runs once when it's called, as usual, rather than once to build the graph and once to execute it.
+
 ## The Model
 
 *... Initialising Photon Beams ...*
@@ -17,6 +43,8 @@ y1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]
 
 `affine` is simply a function which takes some vector `x1` and outputs a new one `y1`. For example, `x1` could be data from an image and `y1` could be predictions about the content of that image. However, `affine` isn't static. It has *parameters* `W` and `b`, and if we tweak those parameters we'll tweak the result – hopefully to make the predictions more accurate.
 
+## Layers
+
 This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a *template* which creates these functions for us:
 
 ```julia
@@ -29,7 +57,7 @@ softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]
 
 We just created two separate `Affine` layers, and each contains its own (randomly initialised) version of `W` and `b`, leading to a different result when called with our data. It's easy to define templates like `Affine` ourselves (see [templates](templates.html)), but Flux provides `Affine` out of the box, so we'll use that for now.
 
-## Combining Models
+## Combining Layers
 
 *... Inflating Graviton Zeppelins ...*
 
