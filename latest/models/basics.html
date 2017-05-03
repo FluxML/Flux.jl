@@ -58,13 +58,23 @@ Model Building Basics
               </a>
               <ul class="internal">
                 <li>
+                  <a class="toctext" href="#Functions-1">
+Functions
+                  </a>
+                </li>
+                <li>
                   <a class="toctext" href="#The-Model-1">
 The Model
                   </a>
                 </li>
                 <li>
-                  <a class="toctext" href="#Combining-Models-1">
-Combining Models
+                  <a class="toctext" href="#Layers-1">
+Layers
+                  </a>
+                </li>
+                <li>
+                  <a class="toctext" href="#Combining-Layers-1">
+Combining Layers
                   </a>
                 </li>
                 <li>
@@ -155,7 +165,7 @@ Model Building Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/c9dcc815dc9ddce0981bf004453214e3d5aab929/docs/src/models/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/9b76b307b6e59e4102b12de769122471af208582/docs/src/models/basics.md">
             <span class="fa">
 
             </span>
@@ -169,6 +179,43 @@ Model Building Basics
 Model Building Basics
         </a>
       </h1>
+      <h2>
+        <a class="nav-anchor" id="Functions-1" href="#Functions-1">
+Functions
+        </a>
+      </h2>
+      <p>
+Flux&#39;s core feature is the 
+<code>@net</code>
+ macro, which adds some superpowers to regular ol&#39; Julia functions. Consider this simple function with the 
+<code>@net</code>
+ annotation applied:
+      </p>
+<pre><code class="language-julia">@net f(x) = x .* x
+f([1,2,3]) == [1,4,9]</code></pre>
+      <p>
+This behaves as expected, but we have some extra features. For example, we can convert the function to run on 
+        <a href="https://www.tensorflow.org/">
+TensorFlow
+        </a>
+ or  
+        <a href="https://github.com/dmlc/MXNet.jl">
+MXNet
+        </a>
+:
+      </p>
+<pre><code class="language-julia">f_mxnet = mxnet(f)
+f_mxnet([1,2,3]) == [1.0, 4.0, 9.0]</code></pre>
+      <p>
+Simples! Flux took care of a lot of boilerplate for us and just ran the multiplication on MXNet. MXNet can optimise this code for us, taking advantage of parallelism or running the code on a GPU.
+      </p>
+      <p>
+Using MXNet, we can get the gradient of the function, too:
+      </p>
+<pre><code class="language-julia">back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])</code></pre>
+      <p>
+At first glance, this may seem broadly similar to building a graph in TensorFlow. The difference is that the Julia code still behaves like Julia code. Error messages continue to give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code only runs once when it&#39;s called, as usual, rather than once to build the graph and once to execute it.
+      </p>
       <h2>
         <a class="nav-anchor" id="The-Model-1" href="#The-Model-1">
 The Model
@@ -214,6 +261,11 @@ parameters
 <code>b</code>
 , and if we tweak those parameters we&#39;ll tweak the result – hopefully to make the predictions more accurate.
       </p>
+      <h2>
+        <a class="nav-anchor" id="Layers-1" href="#Layers-1">
+Layers
+        </a>
+      </h2>
       <p>
 This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a 
         <em>
@@ -244,8 +296,8 @@ templates
  out of the box, so we&#39;ll use that for now.
       </p>
       <h2>
-        <a class="nav-anchor" id="Combining-Models-1" href="#Combining-Models-1">
-Combining Models
+        <a class="nav-anchor" id="Combining-Layers-1" href="#Combining-Layers-1">
+Combining Layers
         </a>
       </h2>
       <p>
