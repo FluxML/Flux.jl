@@ -2,9 +2,6 @@ using Flux, DataFlow, MacroTools, Base.Test
 using Flux: graph, Param, unsqueeze
 using DataFlow: Line, Frame
 
-syntax(v::Vertex) = prettify(DataFlow.syntax(v))
-syntax(x) = syntax(graph(x))
-
 macro mxonly(ex)
   :(Base.find_in_path("MXNet") ≠ nothing && $(esc(ex)))
 end
@@ -13,16 +10,9 @@ macro tfonly(ex)
   :(Base.find_in_path("TensorFlow") ≠ nothing && $(esc(ex)))
 end
 
-@net type TLP
-  first
-  second
-  function (x)
-    l1 = σ(first(x))
-    l2 = softmax(second(l1))
-  end
-end
-
 include("batching.jl")
+include("backend/common.jl")
+
 include("basic.jl")
 include("recurrent.jl")
 @tfonly include("backend/tensorflow.jl")

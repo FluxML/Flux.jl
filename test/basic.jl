@@ -1,3 +1,6 @@
+syntax(v::Vertex) = prettify(DataFlow.syntax(v))
+syntax(x) = syntax(graph(x))
+
 @testset "Basics" begin
 
 xs = randn(1, 10)

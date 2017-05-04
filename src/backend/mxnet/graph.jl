@@ -18,6 +18,7 @@ node(x::Tuple) = map(node, x)
 node(x::mx.SymbolicNode) = x
 
 graph(::typeof(tuple), args...) = (args...,)
+graph(::typeof(identity), x) = x
 graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
 graph(::typeof(.+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(.*), args...) = mx.broadcast_mul(args...)
