@@ -139,7 +139,7 @@ Recurrence
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/efcb9650da31c183b94b839f66aa3467d007c33f/docs/src/models/recurrent.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/7a85eff370b7c68d587b49699fa3f71e44993397/docs/src/models/recurrent.md">
             <span class="fa">
 
             </span>
@@ -244,61 +244,6 @@ equations
 end</code></pre>
       <p>
 The only unfamiliar part is that we have to define all of the parameters of the LSTM upfront, which adds a few lines at the beginning.
-      </p>
-      <p>
-Flux&#39;s very mathematical notation generalises well to handling more complex models. For example, 
-        <a href="https://arxiv.org/abs/1409.0473">
-this neural translation model with alignment
-        </a>
- can be fairly straightforwardly, and recognisably, translated from the paper into Flux code:
-      </p>
-<pre><code class="language-julia"># A recurrent model which takes a token and returns a context-dependent
-# annotation.
-
-@net type Encoder
-  forward
-  backward
-  token -&gt; hcat(forward(token), backward(token))
-end
-
-Encoder(in::Integer, out::Integer) =
-  Encoder(LSTM(in, out÷2), flip(LSTM(in, out÷2)))
-
-# A recurrent model which takes a sequence of annotations, attends, and returns
-# a predicted output token.
-
-@net type Decoder
-  attend
-  recur
-  state; y; N
-  function (anns)
-    energies = map(ann -&gt; exp(attend(hcat(state{-1}, ann))[1]), seq(anns, N))
-    weights = energies./sum(energies)
-    ctx = sum(map((α, ann) -&gt; α .* ann, weights, anns))
-    (_, state), y = recur((state{-1},y{-1}), ctx)
-    y
-  end
-end
-
-Decoder(in::Integer, out::Integer; N = 1) =
-  Decoder(Affine(in+out, 1),
-          unroll1(LSTM(in, out)),
-          param(zeros(1, out)), param(zeros(1, out)), N)
-
-# The model
-
-Nalpha  =  5 # The size of the input token vector
-Nphrase =  7 # The length of (padded) phrases
-Nhidden = 12 # The size of the hidden state
-
-encode = Encoder(Nalpha, Nhidden)
-decode = Chain(Decoder(Nhidden, Nhidden, N = Nphrase), Affine(Nhidden, Nalpha), softmax)
-
-model = Chain(
-  unroll(encode, Nphrase, stateful = false),
-  unroll(decode, Nphrase, stateful = false, seq = false))</code></pre>
-      <p>
-Note that this model excercises some of the more advanced parts of the compiler and isn&#39;t stable for general use yet.
       </p>
       <footer>
         <hr/>
