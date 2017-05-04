@@ -39,14 +39,9 @@ function build_type(T, params)
   ex
 end
 
-runmodel(f, xs...) = f(xs...)
-
 function deref_params(v)
-  v = map(v) do x
+  map(v) do x
     x isa Constant && @capture(x.value, self.p_) ? Constant(:(Flux.state(self.$p))) : x
-  end
-  prewalk(v) do v
-    @capture(value(v), self.p_) ? vertex(:(Flux.runmodel), constant(:(self.$p)), inputs(v)...) : v
   end
 end
 

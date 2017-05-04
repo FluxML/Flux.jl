@@ -46,16 +46,6 @@ methods as necessary.
 """
 graph(m) = nothing
 
-"""
-`runmodel(m, ...)` is like `m(...)`, i.e. it runs the forward pass. However,
-unlike direct calling, it does not try to apply batching and simply uses the
-inputs directly.
-
-This function should be considered an implementation detail; it will be
-eventually be replaced by a non-hacky way of doing batching.
-"""
-function runmodel end
-
 # Model parameters
 
 # TODO: should be AbstractArray?
@@ -125,7 +115,7 @@ Stateful(model, state) = Stateful(model, state, state)
 
 function (m::Stateful)(x)
   m.istate = m.ostate
-  state, y = runmodel(m.model, (m.istate...,), x)
+  state, y = m.model((m.istate...,), x)
   m.ostate = collect(state)
   return y
 end

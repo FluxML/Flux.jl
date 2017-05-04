@@ -1,5 +1,7 @@
 export AArray, unsqueeze
 
+call(f, xs...) = f(xs...)
+
 # Arrays
 
 const AArray = AbstractArray
