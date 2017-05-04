@@ -170,7 +170,7 @@ Model Building Basics
               </a>
             </li>
           </ul>
-          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/5be9ce45d8cba21cdcb96fa1eed0371508d9f44c/docs/src/models/basics.md">
+          <a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/70615ff7f22e88cae79c8d8f88033f589434c39f/docs/src/models/basics.md">
             <span class="fa">
 
             </span>
@@ -203,7 +203,7 @@ This behaves as expected, but we have some extra features. For example, we can c
         <a href="https://www.tensorflow.org/">
 TensorFlow
         </a>
- or  
+ or 
         <a href="https://github.com/dmlc/MXNet.jl">
 MXNet
         </a>
@@ -217,7 +217,7 @@ Simples! Flux took care of a lot of boilerplate for us and just ran the multipli
       <p>
 Using MXNet, we can get the gradient of the function, too:
       </p>
-<pre><code class="language-julia">back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])</code></pre>
+<pre><code class="language-julia">back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0],)</code></pre>
       <p>
 <code>f</code>
  is effectively 
@@ -225,9 +225,6 @@ Using MXNet, we can get the gradient of the function, too:
 , so the gradient is 
 <code>2x</code>
  as expected.
-      </p>
-      <p>
-For TensorFlow users this may seem similar to building a graph as usual. The difference is that Julia code still behaves like Julia code. Error messages give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code runs when it&#39;s called, as usual, rather than running once to build the graph and then again to execute it.
       </p>
       <h2>
         <a class="nav-anchor" id="The-Model-1" href="#The-Model-1">
@@ -249,9 +246,7 @@ update!(m, η)  # update the parameters of `m` using the gradient</code></pre>
       <p>
 We can implement a model however we like as long as it fits this interface. But as hinted above, 
 <code>@net</code>
- is a particularly easy way to do it, as 
-<code>@net</code>
- functions are models already.
+ is a particularly easy way to do it, because it gives you these functions for free.
       </p>
       <h2>
         <a class="nav-anchor" id="Parameters-1" href="#Parameters-1">
@@ -263,19 +258,109 @@ Consider how we&#39;d write a logistic regression. We just take the Julia code a
 <code>@net</code>
 .
       </p>
-<pre><code class="language-julia">W = randn(3,5)
-b = randn(3)
-@net logistic(x) = softmax(W * x + b)
+<pre><code class="language-julia">@net logistic(W, b, x) = softmax(x * W .+ b)
 
-x1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]
-y1 = logistic(x1) # [0.32676,0.0974173,0.575823]</code></pre>
+W = randn(10, 2)
+b = randn(1, 2)
+x = rand(1, 10) # [0.563 0.346 0.780  …] – fake data
+y = [1 0] # our desired classification of `x`
+
+ŷ = logistic(W, b, x) # [0.46 0.54]</code></pre>
       <p>
-&lt;!
-–
- TODO 
-–
-&gt;
+The network takes a set of 10 features (
+<code>x</code>
+, a row vector) and produces a classification 
+<code>ŷ</code>
+, equivalent to a probability of true vs false. 
+<code>softmax</code>
+ scales the output to sum to one, so that we can interpret it as a probability distribution.
       </p>
+      <p>
+We can use MXNet and get gradients:
+      </p>
+<pre><code class="language-julia">logisticm = mxnet(logistic)
+logisticm(W, b, x) # [0.46 0.54]
+back!(logisticm, [0.1 -0.1], W, b, x) # (dW, db, dx)</code></pre>
+      <p>
+The gradient 
+<code>[0.1 -0.1]</code>
+ says that we want to increase 
+<code>ŷ[1]</code>
+ and decrease 
+<code>ŷ[2]</code>
+ to get closer to 
+<code>y</code>
+. 
+<code>back!</code>
+ gives us the tweaks we need to make to each input (
+<code>W</code>
+, 
+<code>b</code>
+, 
+<code>x</code>
+) in order to do this. If we add these tweaks to 
+<code>W</code>
+ and 
+<code>b</code>
+ it will predict 
+<code>ŷ</code>
+ more accurately.
+      </p>
+      <p>
+Treating parameters like 
+<code>W</code>
+ and 
+<code>b</code>
+ as inputs can get unwieldy in larger networks. Since they are both global we can use them directly:
+      </p>
+<pre><code class="language-julia">@net logistic(x) = softmax(x * W .+ b)</code></pre>
+      <p>
+However, this gives us a problem: how do we get their gradients?
+      </p>
+      <p>
+Flux solves this with the 
+<code>Param</code>
+ wrapper:
+      </p>
+<pre><code class="language-julia">W = param(randn(10, 2))
+b = param(randn(1, 2))
+@net logistic(x) = softmax(x * W .+ b)</code></pre>
+      <p>
+This works as before, but now 
+<code>W.x</code>
+ stores the real value and 
+<code>W.Δx</code>
+ stores its gradient, so we don&#39;t have to manage it by hand. We can even use 
+<code>update!</code>
+ to apply the gradients automatically.
+      </p>
+<pre><code class="language-julia">logisticm(x) # [0.46, 0.54]
+
+back!(logisticm, [-1 1], x)
+update!(logisticm, 0.1)
+
+logisticm(x) # [0.51, 0.49]</code></pre>
+      <p>
+Our network got a little closer to the target 
+<code>y</code>
+. Now we just need to repeat this millions of times.
+      </p>
+      <p>
+        <em>
+Side note:
+        </em>
+ We obviously need a way to calculate the &quot;tweak&quot; 
+<code>[0.1, -0.1]</code>
+ automatically. We can use a loss function like 
+        <em>
+mean squared error
+        </em>
+ for this:
+      </p>
+<pre><code class="language-julia"># How wrong is ŷ?
+mse([0.46, 0.54], [1, 0]) == 0.292
+# What change to `ŷ` will reduce the wrongness?
+back!(mse, -1, [0.46, 0.54], [1, 0]) == [0.54 -0.54]</code></pre>
       <h2>
         <a class="nav-anchor" id="Layers-1" href="#Layers-1">
 Layers
@@ -287,8 +372,8 @@ Bigger networks contain many affine transformations like
 . We don&#39;t want to write out the definition every time we use it. Instead, we can factor this out by making a function that produces models:
       </p>
 <pre><code class="language-julia">function create_affine(in, out)
-  W = randn(out,in)
-  b = randn(out)
+  W = param(randn(out,in))
+  b = param(randn(out))
   @net x -&gt; W * x + b
 end
 
@@ -304,8 +389,8 @@ more powerful syntax
 <pre><code class="language-julia">affine1 = Affine(5, 5)
 affine2 = Affine(5, 5)
 
-softmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]
-softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]</code></pre>
+softmax(affine1(x)) # [0.167952 0.186325 0.176683 0.238571 0.23047]
+softmax(affine2(x)) # [0.125361 0.246448 0.21966 0.124596 0.283935]</code></pre>
       <h2>
         <a class="nav-anchor" id="Combining-Layers-1" href="#Combining-Layers-1">
 Combining Layers
@@ -332,13 +417,6 @@ mymodel2(x2) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]</code></pre>
 <pre><code class="language-julia">mymodel3 = Chain(
   Affine(5, 5), σ,
   Affine(5, 5), softmax)</code></pre>
-      <p>
-You now know enough to take a look at the 
-        <a href="../examples/logreg.html">
-logistic regression
-        </a>
- example, if you haven&#39;t already.
-      </p>
       <h2>
         <a class="nav-anchor" id="Dressed-like-a-model-1" href="#Dressed-like-a-model-1">
 Dressed like a model
