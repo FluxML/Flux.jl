@@ -2,4 +2,4 @@ julia 0.6-
 Iterators
 DataFlow
 Juno
-MacroTools
+MacroTools 0.3.3
