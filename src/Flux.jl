@@ -14,26 +14,27 @@ using Juno: Tree, Row
 
 include("utils.jl")
 
+include("model.jl")
+
 include("dims/catmat.jl")
 include("dims/batching.jl")
 include("dims/seq.jl")
-
-include("model.jl")
-include("data.jl")
-include("training.jl")
 
 include("compiler/code.jl")
 include("compiler/loops.jl")
 include("compiler/interp.jl")
 include("compiler/shape.jl")
 
+include("layers/control.jl")
 include("layers/affine.jl")
 include("layers/activation.jl")
 include("layers/cost.jl")
 include("layers/recurrent.jl")
-include("layers/chain.jl")
 include("layers/shims.jl")
 
 include("backend/backend.jl")
+
+include("data.jl")
+include("training.jl")
 
 end # module
