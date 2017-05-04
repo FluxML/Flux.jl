@@ -30,7 +30,10 @@ function interp(ctx, f, xs...)
     f(xs...))
 end
 
+interp(ctx::Context, c::Constant{<:Param}) = c.value.x
+interp(ctx::Context, c::Constant) = c.value
+
 function interpmodel(m, args...)
-  ctx = Context(mux(iline, ilambda, iconst, iargs, ituple, interp))
+  ctx = Context(mux(iline, ilambda, iargs, ituple, interp))
   @ithrow interp(ctx, m, args...)
 end
