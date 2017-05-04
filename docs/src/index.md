@@ -14,9 +14,11 @@ Note that Flux is in alpha. Many things work but the API is still in a state of.
 
 *... Charging Ion Capacitors ...*
 
-The [examples](examples/logreg.html) give a feel for high-level usage. This a great way to start if you're a relative newbie to machine learning or neural networks; you can get up and running running easily.
+The [examples](examples/logreg.html) give a feel for high-level usage.
 
-If you have more experience with ML, or you just don't want to see *those digits* again, check out the [model building guide](models/basics.html) instead. The guide attempts to show how Flux's abstractions are built up and why it's powerful, but it's not all necessary to get started.
+If you want to know why Flux is unique, or just don't want to see *those digits* again, check out the [model building guide](models/basics.html) instead.
+
+Flux is meant to be played with. These docs have lots of code snippets; try them out in  [Juno](http://junolab.org)!
 
 ## Installation
 
