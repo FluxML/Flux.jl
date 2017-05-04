@@ -9,7 +9,7 @@ Flux's core feature is the `@net` macro, which adds some superpowers to regular 
 f([1,2,3]) == [1,4,9]
 ```
 
-This behaves as expected, but we have some extra features. For example, we can convert the function to run on [TensorFlow](https://www.tensorflow.org/) or  [MXNet](https://github.com/dmlc/MXNet.jl):
+This behaves as expected, but we have some extra features. For example, we can convert the function to run on [TensorFlow](https://www.tensorflow.org/) or [MXNet](https://github.com/dmlc/MXNet.jl):
 
 ```julia
 f_mxnet = mxnet(f)
@@ -21,12 +21,10 @@ Simples! Flux took care of a lot of boilerplate for us and just ran the multipli
 Using MXNet, we can get the gradient of the function, too:
 
 ```julia
-back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0])
+back!(f_mxnet, [1,1,1], [1,2,3]) == ([2.0, 4.0, 6.0],)
 ```
 
 `f` is effectively `x^2`, so the gradient is `2x` as expected.
-
-For TensorFlow users this may seem similar to building a graph as usual. The difference is that Julia code still behaves like Julia code. Error messages give you helpful stacktraces that pinpoint mistakes. You can step through the code in the debugger. The code runs when it's called, as usual, rather than running once to build the graph and then again to execute it.
 
 ## The Model
 
@@ -38,22 +36,72 @@ back!(m, Δ, x) # backpropogate the gradient `Δ` through `m`
 update!(m, η)  # update the parameters of `m` using the gradient
 ```
 
-We can implement a model however we like as long as it fits this interface. But as hinted above, `@net` is a particularly easy way to do it, as `@net` functions are models already.
+We can implement a model however we like as long as it fits this interface. But as hinted above, `@net` is a particularly easy way to do it, because it gives you these functions for free.
 
 ## Parameters
 
 Consider how we'd write a logistic regression. We just take the Julia code and add `@net`.
 
 ```julia
-W = randn(3,5)
-b = randn(3)
-@net logistic(x) = softmax(W * x + b)
+@net logistic(W, b, x) = softmax(x * W .+ b)
 
-x1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]
-y1 = logistic(x1) # [0.32676,0.0974173,0.575823]
+W = randn(10, 2)
+b = randn(1, 2)
+x = rand(1, 10) # [0.563 0.346 0.780  …] – fake data
+y = [1 0] # our desired classification of `x`
+
+ŷ = logistic(W, b, x) # [0.46 0.54]
 ```
 
-<!-- TODO -->
+The network takes a set of 10 features (`x`, a row vector) and produces a classification `ŷ`, equivalent to a probability of true vs false. `softmax` scales the output to sum to one, so that we can interpret it as a probability distribution.
+
+We can use MXNet and get gradients:
+
+```julia
+logisticm = mxnet(logistic)
+logisticm(W, b, x) # [0.46 0.54]
+back!(logisticm, [0.1 -0.1], W, b, x) # (dW, db, dx)
+```
+
+The gradient `[0.1 -0.1]` says that we want to increase `ŷ[1]` and decrease `ŷ[2]` to get closer to `y`. `back!` gives us the tweaks we need to make to each input (`W`, `b`, `x`) in order to do this. If we add these tweaks to `W` and `b` it will predict `ŷ` more accurately.
+
+Treating parameters like `W` and `b` as inputs can get unwieldy in larger networks. Since they are both global we can use them directly:
+
+```julia
+@net logistic(x) = softmax(x * W .+ b)
+```
+
+However, this gives us a problem: how do we get their gradients?
+
+Flux solves this with the `Param` wrapper:
+
+```julia
+W = param(randn(10, 2))
+b = param(randn(1, 2))
+@net logistic(x) = softmax(x * W .+ b)
+```
+
+This works as before, but now `W.x` stores the real value and `W.Δx` stores its gradient, so we don't have to manage it by hand. We can even use `update!` to apply the gradients automatically.
+
+```julia
+logisticm(x) # [0.46, 0.54]
+
+back!(logisticm, [-1 1], x)
+update!(logisticm, 0.1)
+
+logisticm(x) # [0.51, 0.49]
+```
+
+Our network got a little closer to the target `y`. Now we just need to repeat this millions of times.
+
+*Side note:* We obviously need a way to calculate the "tweak" `[0.1, -0.1]` automatically. We can use a loss function like *mean squared error* for this:
+
+```julia
+# How wrong is ŷ?
+mse([0.46, 0.54], [1, 0]) == 0.292
+# What change to `ŷ` will reduce the wrongness?
+back!(mse, -1, [0.46, 0.54], [1, 0]) == [0.54 -0.54]
+```
 
 ## Layers
 
@@ -61,8 +109,8 @@ Bigger networks contain many affine transformations like `W * x + b`. We don't w
 
 ```julia
 function create_affine(in, out)
-  W = randn(out,in)
-  b = randn(out)
+  W = param(randn(out,in))
+  b = param(randn(out))
   @net x -> W * x + b
 end
 
@@ -76,8 +124,8 @@ Flux has a [more powerful syntax](templates.html) for this pattern, but also pro
 affine1 = Affine(5, 5)
 affine2 = Affine(5, 5)
 
-softmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]
-softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]
+softmax(affine1(x)) # [0.167952 0.186325 0.176683 0.238571 0.23047]
+softmax(affine2(x)) # [0.125361 0.246448 0.21966 0.124596 0.283935]
 ```
 
 ## Combining Layers
@@ -103,8 +151,6 @@ mymodel3 = Chain(
   Affine(5, 5), σ,
   Affine(5, 5), softmax)
 ```
-
-You now know enough to take a look at the [logistic regression](../examples/logreg.md) example, if you haven't already.
 
 ## Dressed like a model
 
