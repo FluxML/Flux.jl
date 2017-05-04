@@ -73,6 +73,8 @@ end
 
 graph{T<:AArray}(ctx::Context, p::Constant{Flux.Param{T}}) = var(ctx, p.value)
 
+graph{T<:AArray}(ctx::Context, p::Constant{T}) = var(ctx, p.value)
+
 graph(ctx::Context, p::Constant) = p.value
 
 function graph(ctx::Context, model, args...)
