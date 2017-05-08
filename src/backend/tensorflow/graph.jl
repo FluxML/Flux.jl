@@ -21,8 +21,16 @@ graph(::typeof(relu), x) = nn.relu(x)
 graph(::typeof(σ), x) = nn.sigmoid(x)
 graph(::typeof(hcat), xs...) = concat(1, xs)
 graph(::typeof(seq), xs, n) = TensorFlow.unpack(xs, num = n, axis = 1)
+graph(::typeof(sum), x, dim) = TensorFlow.reduce_sum(x;axis=dim)
+graph(::typeof(prod), x, dim) = TensorFlow.reduce_prod(x;axis=dim)
+graph(::typeof(min), x, dim) = TensorFlow.reduce_min(x;axis=dim)
+graph(::typeof(max), x, dim) = TensorFlow.reduce_max(x;axis=dim)
+graph(::typeof(all), x, dim) = TensorFlow.reduce_all(x;axis=dim)
+graph(::typeof(any), x, dim) = TensorFlow.reduce_any(x;axis=dim)
+graph(::typeof(mean), x, dim) = TensorFlow.reduce_mean(x;axis=dim)
 
-for op in (tanh, *, .*, .+)
+
+for op in (tanh, *, .*, .+, .^)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
