@@ -29,8 +29,8 @@ graph(::typeof(all), x, dim) = TensorFlow.reduce_all(x;axis=dim)
 graph(::typeof(any), x, dim) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim) = TensorFlow.reduce_mean(x;axis=dim)
 
-
-for op in (tanh, *, .*, .+, .^)
+for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos, 
+           sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
