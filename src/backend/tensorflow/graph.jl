@@ -30,10 +30,11 @@ graph(::typeof(any), x, dim=nothing) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
 graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,TensorFlow.cast(dims,Int32))
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
+graph(::typeof(tile), args...) = TensorFlow.tile(args...)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           transpose, permutedims, size, tile)
+           transpose, permutedims, size)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
