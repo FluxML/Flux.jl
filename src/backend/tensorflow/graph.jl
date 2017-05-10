@@ -34,7 +34,7 @@ graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args..
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           transpose, permutedims)
+           transpose, permutedims, size)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
