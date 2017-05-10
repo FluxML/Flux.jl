@@ -20,7 +20,7 @@ graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
 graph(::typeof(σ), x) = nn.sigmoid(x)
 graph(::typeof(hcat), xs...) = concat(1, xs)
-graph(::typeof(seq), xs, n) = TensorFlow.unpack(xs, num = n, axis = 1)
+graph(::typeof(seq), xs, n) = TensorFlow.unpack(xs, numj = n, axis = 1)
 graph(::typeof(sum), x, dim=nothing) = TensorFlow.reduce_sum(x;axis=dim)
 graph(::typeof(prod), x, dim=nothing) = TensorFlow.reduce_prod(x;axis=dim)
 graph(::typeof(min), x, dim=nothing) = TensorFlow.reduce_min(x;axis=dim)
@@ -29,6 +29,7 @@ graph(::typeof(all), x, dim=nothing) = TensorFlow.reduce_all(x;axis=dim)
 graph(::typeof(any), x, dim=nothing) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
 graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,TensorFlow.cast(dims,Int32))
+graph(::typeof(repeat), x, outer) = TensorFlow.tile(x,outer) # TODO: make this behave in Base, i.e. outer is keyword and tuple and support inner as well
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
