@@ -29,12 +29,11 @@ graph(::typeof(all), x, dim=nothing) = TensorFlow.reduce_all(x;axis=dim)
 graph(::typeof(any), x, dim=nothing) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
 graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,TensorFlow.cast(dims,Int32))
-graph(::typeof(repeat), x, outer) = TensorFlow.tile(x,outer) # TODO: make this behave in Base, i.e. outer is keyword and tuple and support inner as well
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           transpose, permutedims, size)
+           transpose, permutedims, size, tile)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 

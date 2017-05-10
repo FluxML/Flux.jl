@@ -13,7 +13,7 @@ using Juno: Tree, Row
 # Zero Flux Given
 
 include("utils.jl")
-
+include("ops.jl")
 include("model.jl")
 
 include("dims/catmat.jl")
