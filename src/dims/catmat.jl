@@ -15,7 +15,7 @@ size(b::CatMat) = (size(b.data, 1),)
 
 getindex(b::CatMat, i)::eltype(b) = slicedim(b.data, 1, i)
 
-setindex!(b::CatMat, v, i) = b[i, :] = v
+setindex!(b::CatMat, v, i) = b.data[i, :] = v
 
 allequal(xs) = all(x -> x == first(xs), xs)
 
