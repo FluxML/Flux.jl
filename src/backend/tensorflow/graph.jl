@@ -32,6 +32,7 @@ graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,TensorFlow.cast(dims,In
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
 graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
 graph(::typeof(Flux.slice), args...) = TensorFlow.slice(args...)
+graph(::typeof(Flux.pad), args...) = TensorFlow.pad(args...)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,

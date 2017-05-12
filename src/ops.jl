@@ -1,4 +1,4 @@
-export tile, fill, slice
+export tile, fill, slice, pad
 
 import Base: fill
 
@@ -15,4 +15,20 @@ function slice(x::AbstractArray, be::AbstractArray, si::AbstractArray)
         inds[i] = si[i] == -1 ? range(be[i],s[i]-be[i]) : range(be[i],si[i])
     end
     x[inds...]
+end
+
+function pad(x::AbstractArray, paddings::AbstractArray)
+    s = size(x)
+    ndims = length(s)
+    @assert size(paddings) == (ndims,2)
+    z = typeof(x[1,1])(0)
+    ret = x
+    for i in 1:ndims
+        tmp = [size(ret)...]
+        tmp[i] = paddings[i,1]
+        ret = cat(i,fill(z,tmp),ret)
+        tmp[i] = paddings[i,2]
+        ret = cat(i,ret,fill(z,tmp))
+    end
+    ret
 end
