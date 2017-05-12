@@ -31,6 +31,7 @@ graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
 graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,TensorFlow.cast(dims,Int32))
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
 graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
+graph(::typeof(Flux.slice), args...) = TensorFlow.slice(args...)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
