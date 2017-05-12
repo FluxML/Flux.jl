@@ -35,7 +35,7 @@ graph(::typeof(Flux.slice), args...) = TensorFlow.slice(args...)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           transpose, permutedims, size, cat, fill)
+           transpose, permutedims, size, cat, fill, length)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
