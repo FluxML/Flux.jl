@@ -33,7 +33,7 @@ graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args..
 graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
 graph(::typeof(Flux.slice), args...) = TensorFlow.slice(args...)
 graph(::typeof(Flux.pad), args...) = TensorFlow.pad(args...)
-graph(::typeof(size), x, dim) = TensorFlow.size(x,TensorFlow.convert(Tensor{Int32}, dim))
+graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
 graph(::typeof(size), x) = TensorFlow.size(x)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
