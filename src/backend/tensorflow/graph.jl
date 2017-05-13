@@ -35,10 +35,11 @@ graph(::typeof(Flux.slice), args...) = TensorFlow.slice(args...)
 graph(::typeof(Flux.pad), args...) = TensorFlow.pad(args...)
 graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
 graph(::typeof(size), x) = TensorFlow.size(x)
+graph(::typeof(fill), x, dims) = TensorFlow.fill(Tensor(x),convert(Tensor{Int32}, dims))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           transpose, permutedims, cat, fill, length)
+           transpose, permutedims, cat, length)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
