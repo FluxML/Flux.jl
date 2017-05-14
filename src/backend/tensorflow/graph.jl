@@ -44,7 +44,7 @@ graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, 
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           transpose, permutedims, cat, length)
+           transpose, permutedims, cat, length, inv, det, diag, diagm)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
