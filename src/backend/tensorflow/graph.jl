@@ -37,7 +37,7 @@ graph(::typeof(Flux.cast), args...) = TensorFlow.cast(args...)
 graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
 graph(::typeof(size), x) = TensorFlow.size(x)
 graph(::typeof(fill), x, dims) = TensorFlow.fill(Tensor(x),convert(Tensor{Int32}, dims))
-graph(::typeof(rand), x) = TensorFlow.random_uniform(convert(Tensor{Int32},x), 0.0, 1.0)
+graph(::typeof(randu), x) = TensorFlow.random_uniform(convert(Tensor{Int32},x), 0.0, 1.0)
 graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
