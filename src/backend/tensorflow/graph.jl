@@ -39,6 +39,8 @@ graph(::typeof(size), x) = TensorFlow.size(x)
 graph(::typeof(fill), x, dims) = TensorFlow.fill(Tensor(x),convert(Tensor{Int32}, dims))
 graph(::typeof(randu), x) = TensorFlow.random_uniform(convert(Tensor{Int32},x), 0.0, 1.0)
 graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x))
+graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
+graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,

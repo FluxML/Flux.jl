@@ -1,4 +1,4 @@
-export tile, fill, slice, pad, cast, randu, randn
+export tile, fill, slice, pad, cast, randu, randn, solve, triangular_solve
 
 import Base: fill, randn
 
@@ -7,6 +7,8 @@ fill{T}(x::T, dims::AbstractArray) = fill(x,tuple(dims...))
 cast{T}(x::AbstractArray, ::Type{T}) = convert(Array{T},x)
 randu(x::AbstractArray) = rand(tuple(x...))
 randn(x::AbstractArray) = randn(tuple(x...))
+solve(A::AbstractArray, b::AbstractArray) = A\b
+triangular_solve(A::AbstractArray, b::AbstractArray) = A\b
 
 function slice(x::AbstractArray, be::AbstractArray, si::AbstractArray)
     s = size(x)
