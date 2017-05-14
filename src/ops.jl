@@ -1,10 +1,12 @@
-export tile, fill, slice, pad, cast
+export tile, fill, slice, pad, cast, rand, randn
 
-import Base: fill
+import Base: fill, rand, randn
 
 tile(x::AbstractArray, mult::AbstractArray) = repeat(x,outer=tuple(mult...))
 fill{T}(x::T, dims::AbstractArray) = fill(x,tuple(dims...))
 cast{T}(x::AbstractArray, ::Type{T}) = convert(Array{T},x)
+rand(x::AbstractArray) = rand(tuple(x...))
+randn(x::AbstractArray) = randn(tuple(x...))
 
 function slice(x::AbstractArray, be::AbstractArray, si::AbstractArray)
     s = size(x)
