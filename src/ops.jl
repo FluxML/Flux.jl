@@ -4,7 +4,7 @@ import Base: fill
 
 tile(x::AbstractArray, mult::AbstractArray) = repeat(x,outer=tuple(mult...))
 fill{T}(x::T, dims::AbstractArray) = fill(x,tuple(dims...))
-cast{T}(x::AbstractArray, tp::Type{T}) = convert(Array{T},x)
+cast{T}(x::AbstractArray, ::Type{T}) = convert(Array{T},x)
 
 function slice(x::AbstractArray, be::AbstractArray, si::AbstractArray)
     s = size(x)
