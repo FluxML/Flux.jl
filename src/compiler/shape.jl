@@ -8,6 +8,10 @@ end
 
 DataFlow.tocall(h::Hint, x) = :($x::$(h.typ))
 
+arghint(p::Param) = arghint(state(p))
+arghint(xs::AbstractArray) = vertex(Hint(size(xs)), constant(:_))
+arghint(x) = constant(x)
+
 function gethint(v::IVertex)
   while value(v) isa Union{Line,Frame} v = v[1] end
   value(v) isa Hint && return value(v).typ
@@ -17,18 +21,15 @@ end
 ihint(f, ctx::Context, h::Hint, x) = vertex(h, x)
 ihint(f, args...) = f(args...)
 
-hintify(ctx, c::Constant{<:Union{Param,AbstractArray}}) = hintify(ctx, state(c.value))
-hintify(ctx, xs::AbstractArray) = vertex(Hint(size(xs)), constant(:_))
-hintify(ctx, c::Constant) = vertex(c)
-
-interpshape = mux(ilinev, ihint, iargs, hintify)
-
 function hintify(ctx, f, xs...)
-  sh = infer(f, gethint.(xs)...)
+  xs = arghint.(xs)
+  sh = infer(f, map(gethint, xs)...)
   sh ≠ nothing ? vertex(Hint(sh), vertex(f, xs...)) :
   !any(x->x==nothing, xs) && graph(f) ≠ nothing ? interpret(Context(interpshape), graph(f), xs...) :
     vertex(f, xs...)
 end
+
+interpshape = mux(ilinev, iconst, ihint, iargs, hintify)
 
 function shapesv(f, args...)
   (g = graph(f)) == nothing && return
