@@ -1,5 +1,5 @@
 using Flux, DataFlow, MacroTools, Base.Test
-using Flux: graph, Param, unsqueeze
+using Flux: graph, Param, squeeze, unsqueeze
 using DataFlow: Line, Frame
 
 macro mxonly(ex)
