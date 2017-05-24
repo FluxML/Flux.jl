@@ -19,6 +19,7 @@ include("model.jl")
 include("dims/catmat.jl")
 include("dims/batching.jl")
 include("dims/seq.jl")
+include("dims/iter.jl")
 
 include("compiler/code.jl")
 include("compiler/loops.jl")

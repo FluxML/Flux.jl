@@ -17,13 +17,14 @@ end
 ihint(f, ctx::Context, h::Hint, x) = vertex(h, x)
 ihint(f, args...) = f(args...)
 
-hintify(ctx, c::Constant) = hintify(ctx, state(c.value))
+hintify(ctx, c::Constant{<:Union{Param,AbstractArray}}) = hintify(ctx, state(c.value))
 hintify(ctx, xs::AbstractArray) = vertex(Hint(size(xs)), constant(:_))
+hintify(ctx, c::Constant) = vertex(c)
 
 interpshape = mux(ilinev, ihint, iargs, hintify)
 
 function hintify(ctx, f, xs...)
-  sh = infer(f, map(gethint, xs)...)
+  sh = infer(f, gethint.(xs)...)
   sh ≠ nothing ? vertex(Hint(sh), vertex(f, xs...)) :
   !any(x->x==nothing, xs) && graph(f) ≠ nothing ? interpret(Context(interpshape), graph(f), xs...) :
     vertex(f, xs...)
@@ -50,6 +51,8 @@ function infer(::typeof(*), a::Dims{2}, b::Dims{2})
   (a[1], b[2])
 end
 
+infer(::typeof(broadcast), f, xs::Dims...) = Base.Broadcast.broadcast_shape(xs...)
+# Old broadcast versions
 infer(::typeof(.+), xs::Dims...) = Base.Broadcast.broadcast_shape(xs...)
 
 # Shapes macro
