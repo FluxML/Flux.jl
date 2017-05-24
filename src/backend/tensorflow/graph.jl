@@ -34,6 +34,10 @@ for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
+for op in (+, -, *, /)
+  @eval graph(::typeof(broadcast), ::typeof($op), args...) = broadcast($op, args...)
+end
+
 graph(::typeof(.-), args...) = -(args...)
 
 # reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79

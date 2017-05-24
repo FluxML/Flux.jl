@@ -20,14 +20,19 @@ node(x::mx.SymbolicNode) = x
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(identity), x) = x
 graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
-graph(::typeof(.+), args...) = mx.broadcast_plus(args...)
-graph(::typeof(.*), args...) = mx.broadcast_mul(args...)
-graph(::typeof(.-), args...) = mx.broadcast_sub(args...)
 graph(::typeof(*), xs...) = mx.dot(reverse(xs)...) # Work around MXNet shape hack
 graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)
 graph(::typeof(tanh), x) = mx.Activation(x, act_type = :tanh)
 graph(::typeof(flatten), x) = mx.Flatten(x)
+
+graph(::typeof(broadcast), ::typeof(+), args...) = mx.broadcast_plus(args...)
+graph(::typeof(broadcast), ::typeof(*), args...) = mx.broadcast_mul(args...)
+graph(::typeof(broadcast), ::typeof(-), args...) = mx.broadcast_sub(args...)
+# Old broadcasters
+graph(::typeof(.+), args...) = mx.broadcast_plus(args...)
+graph(::typeof(.*), args...) = mx.broadcast_mul(args...)
+graph(::typeof(.-), args...) = mx.broadcast_sub(args...)
 
 graph(::typeof(softmax), xs) =
   mx.broadcast_div(exp(xs), mx.sum(exp(xs), axis = 1, keepdims=true))
