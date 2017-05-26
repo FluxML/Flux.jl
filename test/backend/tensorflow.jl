@@ -114,8 +114,15 @@ z = zeros(4,3)
 @net f(x) = randu(x)
 m = tf(f)
 y = m([2,3])
-@test all(y .> 0)
-@test all(y .< 1)
+@test all(y .>= 0)
+@test all(y .<= 1)
+@test size(y) == (2,3)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# randn
+@net f(x) = randn(x)
+m = tf(f)
+y = m([2,3])
 @test size(y) == (2,3)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
