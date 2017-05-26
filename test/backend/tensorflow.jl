@@ -126,6 +126,21 @@ y = m([2,3])
 @test size(y) == (2,3)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# solve
+A = convert(Array{Float32},randn(5,5))
+b = convert(Array{Float32},randn(5,1))
+@net f(x,y) = solve(x,y)
+m = tf(f)
+@test maximum(abs.(m(A,b)-A\b)) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# triangular_solve
+_,A,_ = lu(A)
+@net f(x,y) = triangular_solve(x,y)
+m = tf(f)
+@test maximum(abs.(m(A,b)-A\b)) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
 
