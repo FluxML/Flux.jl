@@ -50,7 +50,7 @@ m = tf(f)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # tile
 xs = convert(Array{Float32},randn(4,3,1))
-@net f(x,y) = tile(x,y)
+@net f(x,y) = Flux.tile(x,y)
 m = tf(f)
 @test maximum(abs.(m(xs,[1,1,3])-repeat(xs,outer=(1,1,3)))) < error_margin
 
@@ -85,10 +85,10 @@ m = tf(f)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # slice
-@net f(a,b,c) = slice(a,b,c)
+@net f(a,b,c) = Flux.slice(a,b,c)
 m = tf(f)
 z = convert(Array{Float32},randn(6,8))
-@test maximum(abs.(m(z,[3,4],[3,-1])-convert(Array{Float32},slice(z,[3,4],[3,-1])))) < error_margin
+@test maximum(abs.(m(z,[3,4],[3,-1])-convert(Array{Float32},Flux.slice(z,[3,4],[3,-1])))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # length
@@ -98,13 +98,13 @@ m = tf(f)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # pad
-@net f(x,y) = pad(x,y)
+@net f(x,y) = Flux.pad(x,y)
 m = tf(f)
-@test maximum(abs.(m(z,[3 4;1 2])-pad(z,[3 4;1 2]))) < error_margin
+@test maximum(abs.(m(z,[3 4;1 2])-Flux.pad(z,[3 4;1 2]))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # cast
-@net f(x) = cast(x,Int32)
+@net f(x) = Flux.cast(x,Int32)
 m = tf(f)
 z = zeros(4,3)
 @test typeof(m(z)) == Matrix{Int32}
