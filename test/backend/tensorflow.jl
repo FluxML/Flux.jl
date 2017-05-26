@@ -154,6 +154,19 @@ m = tf(f)
 @test maximum(abs.(m(A)-det(A))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# diag
+@net f(x) = diag(x)
+m = tf(f)
+@test maximum(abs.(m(A)-diag(A))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# diagm
+z = convert(Array{Float32},randn(5))
+@net f(x) = diagm(x)
+m = tf(f)
+@test maximum(abs.(m(z)-diagm(z))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
 
