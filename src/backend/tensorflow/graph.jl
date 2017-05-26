@@ -38,7 +38,7 @@ graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
 graph(::typeof(size), x) = TensorFlow.size(x)
 graph(::typeof(fill), x, dims) = Ops.fill(convert(Tensor{Int32}, dims),Tensor(x))
 graph(::typeof(randu), x) = Ops.random_uniform(convert(Tensor{Int32},x);dtype=Float32)
-graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x))
+graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x);dtype=Float32)
 graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
 graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
 
