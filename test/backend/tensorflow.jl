@@ -91,6 +91,12 @@ z = randn(6,8)
 @test maximum(abs.(m(z,[3,4],[3,-1])-convert(Array{Float32},slice(z,[3,4],[3,-1])))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# length
+@net f(x) = length(x)
+m = tf(f)
+@test m(z) == length(z)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
 
