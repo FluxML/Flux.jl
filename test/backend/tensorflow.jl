@@ -87,7 +87,7 @@ m = tf(f)
 # slice
 @net f(a,b,c) = slice(a,b,c)
 m = tf(f)
-z = randn(6,8)
+z = convert(Array{Float32},randn(6,8))
 @test maximum(abs.(m(z,[3,4],[3,-1])-convert(Array{Float32},slice(z,[3,4],[3,-1])))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,6 +95,12 @@ z = randn(6,8)
 @net f(x) = length(x)
 m = tf(f)
 @test m(z) == length(z)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# pad
+@net f(x,y) = pad(x,y)
+m = tf(f)
+@test maximum(abs.(m(z,[3 4;1 2])-pad(z,[3 4;1 2]))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
