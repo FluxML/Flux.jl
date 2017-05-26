@@ -103,6 +103,13 @@ m = tf(f)
 @test maximum(abs.(m(z,[3 4;1 2])-pad(z,[3 4;1 2]))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# cast
+@net f(x) = cast(x,Int32)
+m = tf(f)
+z = zeros(4,3)
+@test typeof(m(z)) == Matrix{Int32}
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
 
