@@ -70,6 +70,14 @@ m = tf(f)
 @test maximum(abs(m(z)-[size(z)...])) == 0
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# cat
+z1 = convert(Array{Float32},randn(4,1))
+z2 = convert(Array{Float32},randn(4,1))
+@net f(x,y) = cat(2,x,y)
+m = tf(f)
+@test maximum(abs(m(z1,z2)-cat(2,z1,z2))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
 
