@@ -18,7 +18,7 @@ function slice(x::AbstractArray, be::AbstractArray, si::AbstractArray)
     @assert length(si) == ndims
     inds = Vector{UnitRange{Int}}(ndims)
     for i in 1:ndims
-        inds[i] = si[i] == -1 ? range(be[i],s[i]-be[i]) : range(be[i],si[i])
+        inds[i] = si[i] == -1 ? range(be[i],s[i]-be[i]+1) : range(be[i],si[i])
     end
     x[inds...]
 end
