@@ -24,7 +24,7 @@ end
 
 @testset "Ops" begin
 
-error_margin = 1e-6
+error_margin = 1e-4
 #using Flux,Base.Test
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,6 +165,15 @@ z = convert(Array{Float32},randn(5))
 @net f(x) = diagm(x)
 m = tf(f)
 @test maximum(abs.(m(z)-diagm(z))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# svd
+@net f(x) = svd(x)
+m = tf(f)
+s,u,v = m(A)
+u2,s2,v2 = svd(A)
+maximum(abs.(s-s2)) < error_margin
+maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
