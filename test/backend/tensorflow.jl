@@ -84,6 +84,13 @@ m = tf(f)
 @test maximum(abs.(m(3.2,[3,2])-convert(Array{Float32},3.2*ones(3,2)))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# slice
+@net f(a,b,c) = slice(a,b,c)
+m = tf(f)
+z = randn(6,8)
+@test maximum(abs.(m(z,[3,4],[3,-1])-convert(Array{Float32},slice(z,[3,4],[3,-1])))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
 
