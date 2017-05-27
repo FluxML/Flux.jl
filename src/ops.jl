@@ -1,4 +1,5 @@
-export reshape, tile, fill, slice, pad, cast, randu, randn, solve, triangular_solve
+export reshape, tile, fill, slice, pad, cast, randu, randn, solve, triangular_solve,
+       expand_dims
 
 import Base: reshape, fill, randn
 
@@ -37,4 +38,9 @@ function pad(x::AbstractArray, paddings::AbstractArray)
         ret = cat(i,ret,fill(z,tmp))
     end
     ret
+end
+
+function expand_dims(x,dim)
+    s = [size(x)...]
+    reshape(x,tuple(vcat(s[1:dim-1],1,s[dim:end])...))
 end
