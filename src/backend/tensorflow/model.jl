@@ -66,7 +66,7 @@ tf(model) = Model(model)
 
 function (m::Model)(args...)
   args = mapt(x->Float32.(x), args)
-  isdefined(m, :graph) || (m.exec = makesession(m.model, args))
+  isdefined(m, :exec) || (m.exec = makesession(m.model, args))
   @tferr m.exec.stacks m.exec(args...)
 end
 
