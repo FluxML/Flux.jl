@@ -1,4 +1,4 @@
-export seq, Seq, BatchSeq
+export Seq, BatchSeq
 
 struct Seq{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
