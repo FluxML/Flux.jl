@@ -10,7 +10,7 @@ d = Affine(10, 20)
 
 d1 = @net x -> x * d.W + d.b
 
-Flux.infer(d, (1, 10))
+@test Flux.infer(d, (1, 10)) == (1,20)
 
 # Skip this before new DataFlow is released.
 # let
