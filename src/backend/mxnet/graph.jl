@@ -40,6 +40,8 @@ graph(::typeof(softmax), xs) =
 graph(::typeof(cat), dim::Integer, a...) = mx.Concat(a..., dim = dim)
 graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 
+graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
+
 graph(::Input, x) = x
 
 graph(ctx::Context, d::Affine, x) =

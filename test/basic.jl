@@ -18,6 +18,8 @@ Flux.infer(d, (1, 10))
 #   @test isa(x, DataFlow.Input) && isa(W, Param) && isa(b, Param)
 # end
 
+test_anon(identity)
+
 let a1 = Affine(10, 20), a2 = Affine(20, 15)
   tlp = TLP(a1, a2)
   @test tlp(xs) ≈ softmax(a2(σ(a1(xs))))

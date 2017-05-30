@@ -39,6 +39,8 @@ end
 
 graph(::typeof(.-), args...) = -(args...)
 
+graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
+
 # reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79
 batchsize(x::Tensor) = reduce_sum(slice(TensorFlow.shape(x), [0], [1]))
 graph(::typeof(flatten), x) = reshape(x, pack([batchsize(x), Int32(-1)]))
