@@ -10,7 +10,7 @@ using Base: @get!
 using DataFlow: Constant, constant
 using DataFlow.Interpreter
 using DataFlow.Interpreter: Exception, totrace
-using Flux: imap, mapt
+using Flux: mapt
 
 # TODO: implement Julia's type promotion rules
 
@@ -92,7 +92,7 @@ end
 graph′(ctx::Context, args...) = @icatch ctx graph(ctx, args...)
 
 function tograph(model, args...; feedforward = false)
-  ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph′),
+  ctx = Context(mux(iline, ilambda, iargs, ituple, graph′),
                 params = Dict(), stacks = Dict(),
                 feedforward = feedforward)
   out = @ithrow graph(ctx, model, mapt(mx.Variable, args)...)

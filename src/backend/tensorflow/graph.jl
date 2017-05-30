@@ -2,7 +2,6 @@ using Base: @get!
 using DataFlow: Constant, constant, Split
 using DataFlow.Interpreter
 using DataFlow.Interpreter: stack
-using Flux: imap
 using TensorFlow: RawTensor, TFException
 
 # TODO: implement Julia's type promotion rules
@@ -79,7 +78,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...; variables = false)
-  ctx = Context(mux(iline, ilambda, imap, interp),
+  ctx = Context(mux(iline, ilambda, interp),
                 params = ObjectIdDict(), stacks = Dict(), variables = variables)
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out

@@ -13,16 +13,6 @@ function astuples(xs)
   all(x->!(x==nothing), xs) ? xs : nothing
 end
 
-function imap(cb, ctx, ::typeof(map), f, xs...)
-  f, xs = interpv(ctx, (f, xs))
-  xs′ = astuples(xs)
-  xs′ ≠ nothing ?
-    group(map(f, xs′...)...) :
-    cb(ctx, map, constant(f), xs...)
-end
-
-imap(f, args...) = f(args...)
-
 function interp(ctx, f, xs...)
   g = graph(f)
   @icatch(ctx, g ≠ nothing ?
