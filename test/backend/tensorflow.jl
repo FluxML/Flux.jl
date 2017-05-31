@@ -177,12 +177,12 @@ maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # expand_dims
-@net f(x,y) = expand_dims(x,y)
+@net f(x,y) = Flux.expand_dims(x,y)
 m = tf(f)
 x = convert(Array{Float32},randn(3,2))
-@test maximum(abs.(m(x,1)-expand_dims(x,1))) < error_margin
-@test maximum(abs.(m(x,2)-expand_dims(x,2))) < error_margin
-@test maximum(abs.(m(x,3)-expand_dims(x,3))) < error_margin
+@test maximum(abs.(m(x,1)-Flux.expand_dims(x,1))) < error_margin
+@test maximum(abs.(m(x,2)-Flux.expand_dims(x,2))) < error_margin
+@test maximum(abs.(m(x,3)-Flux.expand_dims(x,3))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # gather
