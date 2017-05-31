@@ -186,14 +186,14 @@ x = convert(Array{Float32},randn(3,2))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # gather
-@net f(x,y) = gather(x,y)
+@net f(x,y) = Flux.gather(x,y)
 m = tf(f)
 x = convert(Array{Float32},randn(6,5))
 
-@test maximum(abs.(m(x,2)-gather(x,2))) < error_margin
-@test maximum(abs.(m(x,[2,1])-gather(x,[2,1]))) < error_margin
-@test maximum(abs.(m(x,[3 1;1 2])-gather(x,[3 1;1 2]))) < error_margin
-@test maximum(abs.(m(x,[3 1 4;1 2 5])-gather(x,[3 1 4;1 2 5]))) < error_margin
+@test maximum(abs.(m(x,2)-Flux.gather(x,2))) < error_margin
+@test maximum(abs.(m(x,[2,1])-Flux.gather(x,[2,1]))) < error_margin
+@test maximum(abs.(m(x,[3 1;1 2])-Flux.gather(x,[3 1;1 2]))) < error_margin
+@test maximum(abs.(m(x,[3 1 4;1 2 5])-Flux.gather(x,[3 1 4;1 2 5]))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
