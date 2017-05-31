@@ -42,7 +42,7 @@ graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x);dt
 graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
 graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
 graph(::typeof(svd), x) = Ops.svd(x)
-graph(::typeof(Flux.expand_dims), x, dim) = Ops.expand_dims(x,convert(Tensor{Int32},dim))
+graph(::typeof(Flux.expand_dims), x, dim) = TensorFlow.expand_dims(x,convert(Tensor{Int32},dim))
 graph(::typeof(Flux.gather), x, inds; validate_indices=nothing) = Ops.gather(x,convert(Tensor{Int32},inds);validate_indices=validate_indices)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
