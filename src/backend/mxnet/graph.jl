@@ -25,6 +25,7 @@ graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)
 graph(::typeof(tanh), x) = mx.Activation(x, act_type = :tanh)
 graph(::typeof(flatten), x) = mx.Flatten(x)
+graph(::typeof(hcat), xs...) = mx.concat(xs..., dim = 2-1)
 
 graph(::typeof(broadcast), ::typeof(+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(broadcast), ::typeof(*), args...) = mx.broadcast_mul(args...)
