@@ -1,5 +1,5 @@
 export reshape, tile, fill, slice, pad, cast, randu, randn, solve, triangular_solve,
-       expand_dims
+       expand_dims, gather
 
 import Base: reshape, fill, randn
 
@@ -43,4 +43,24 @@ end
 function expand_dims(x,dim)
     s = [size(x)...]
     reshape(x,tuple(vcat(s[1:dim-1],1,s[dim:end])...))
+end
+
+gather(x::AbstractArray,ind::Int) = gather(x,[ind])[:]
+function gather(x::AbstractArray,inds::AbstractArray)
+    s = convert(Array{Any},[size(x)...])
+    si = convert(Array{Any},[size(inds)...])
+    ret_dims = [si;s[2:end]]
+    ret = reshape(resize!(copy(x[1:1])[:],prod(ret_dims)),ret_dims)
+    nd = length(s)
+    for i in 2:nd
+        s[i] = Colon()
+    end
+    ndi = length(si)
+    ret_dims[ndi+1:end] = Colon()
+    for i in 1:length(inds)
+        ret_dims[1:ndi] = [ind2sub(inds,i)...]
+        s[1] = inds[i]
+        ret[ret_dims...] = x[s...]
+    end
+    ret
 end
