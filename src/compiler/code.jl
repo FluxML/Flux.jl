@@ -1,4 +1,4 @@
-import DataFlow: mapconst, cse
+import DataFlow: cse
 using MacroTools: @q
 
 export @net
@@ -6,13 +6,13 @@ export @net
 function graphdef(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
   body = @> body MacroTools.flatten liftloops graphm DataFlow.il
-  body = mapconst(x -> x in params ? :(self.$x) : x, body)
+  body = map(x -> x in params ? :(self.$x) : x, body)
   return args, body
 end
 
 function makegraph(graph, args, params = [])
   graph = prewalk(graph) do v
-    value(v) isa Constant && (i = findfirst(args, value(v).value)) ≠ 0 ?
+    isconstant(v) && (i = findfirst(args, value(v[1]))) ≠ 0 ?
       inputnode(i) :
       v
   end
@@ -42,7 +42,7 @@ end
 
 function deref_params(v)
   map(v) do x
-    x isa Constant && @capture(x.value, self.p_) ? Constant(:(Flux.state(self.$p))) : x
+    @capture(x, self.p_) ? :(Flux.state(self.$p)) : x
   end
 end
 
@@ -53,7 +53,7 @@ end
 
 import Lazy: groupby
 
-reifyparams(v::IVertex) = mapconst(x -> x isa Param ? x.x : x, v)
+reifyparams(v::IVertex) = map(x -> x isa Param ? x.x : x, v)
 
 # TODO: type hints for parameters
 
@@ -69,14 +69,14 @@ function process_type(ex)
     $(build_type(T, params))
     $(esc(:((self::$T)($(args...)) = $(build_forward(body, args)))))
     $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!($self.$p, η)), pnames)...);)
-    $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(mapconst(esc, makegraph(body, args, params))))
+    $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(map(esc, makegraph(body, args, params))))
     nothing
   end
 end
 
 function process_anon(ex)
   args, body = graphdef(ex)
-  :(Capacitor($(DataFlow.constructor(mapconst(esc, makegraph(body, args)[1])))))
+  :(Capacitor($(DataFlow.constructor(map(esc, makegraph(body, args)[1])))))
 end
 
 function process_def(ex)
