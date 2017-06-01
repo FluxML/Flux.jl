@@ -13,7 +13,7 @@ test_tupleio(mxnet)
 test_recurrence(mxnet)
 test_stacktrace(mxnet)
 test_back(mxnet)
-test_anon(mxnet)
+#test_anon(mxnet)
 
 @testset "Native interface" begin
   f = mx.FeedForward(Chain(d, softmax))

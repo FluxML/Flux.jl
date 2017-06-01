@@ -18,7 +18,7 @@ d1 = @net x -> x * d.W + d.b
 #   @test isa(x, DataFlow.Input) && isa(W, Param) && isa(b, Param)
 # end
 
-test_anon(identity)
+#test_anon(identity)
 
 let a1 = Affine(10, 20), a2 = Affine(20, 15)
   tlp = TLP(a1, a2)

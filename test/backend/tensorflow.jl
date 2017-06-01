@@ -12,7 +12,7 @@ dt = tf(d)
 test_tupleio(tf)
 test_recurrence(tf)
 test_stacktrace(tf)
-test_anon(tf)
+#test_anon(tf)
 
 @testset "Tensor interface" begin
   sess = TensorFlow.Session()
