@@ -41,7 +41,7 @@ graph(::typeof(randu), x) = Ops.random_uniform(convert(Tensor{Int32},x);dtype=Fl
 graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x);dtype=Float32)
 graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
 graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
-graph(::typeof(svd), x) = Ops.svd(x)
+graph(::typeof(svd), x) = svd(x)
 graph(::typeof(Flux.expand_dims), x, dim) = TensorFlow.expand_dims(x,convert(Tensor{Int32},dim))
 graph(::typeof(Flux.gather), x, inds; validate_indices=nothing) = Ops.gather(x,convert(Tensor{Int32},inds);validate_indices=validate_indices)
 

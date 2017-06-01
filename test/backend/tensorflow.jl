@@ -170,7 +170,7 @@ m = tf(f)
 # svd
 @net f(x) = svd(x)
 m = tf(f)
-s,u,v = m(A)
+u,s,v = m(A)
 u2,s2,v2 = svd(A)
 maximum(abs.(s-s2)) < error_margin
 maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
