@@ -84,6 +84,7 @@ end
 
 # Input:  (hidden1, hidden2, ...), (x1, x2, ...)
 # Output: (hidden1, hidden2, ...), (y1, y2, ...)
+# TODO: make sure there's a reasonable order for hidden states
 
 function unrollgraph(v::IVertex, n)
   state, offset, default = collect_state(v)
