@@ -55,3 +55,11 @@ function test_stacktrace(bk)
     @test e.trace[2].func == :TLP
   end
 end
+
+function test_anon(bk)
+  @testset "Closures" begin
+    x, y = rand(3), rand(5)
+    model = bk(@net xs -> map(x -> x .* x, xs))
+    @test all(model((x, y)) .≈ (x.*x, y.*y))
+  end
+end

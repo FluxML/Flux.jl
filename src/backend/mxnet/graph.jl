@@ -10,7 +10,7 @@ using Base: @get!
 using DataFlow: Constant, constant
 using DataFlow.Interpreter
 using DataFlow.Interpreter: Exception, totrace
-using Flux: imap, mapt
+using Flux: mapt
 
 # TODO: implement Julia's type promotion rules
 
@@ -25,6 +25,8 @@ graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)
 graph(::typeof(tanh), x) = mx.Activation(x, act_type = :tanh)
 graph(::typeof(flatten), x) = mx.Flatten(x)
+graph(::typeof(hcat), xs...) = mx.concat(xs..., dim = 2-1)
+graph(::typeof(vec), xs) = reshape(xs, shape = (-1,))
 
 graph(::typeof(broadcast), ::typeof(+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(broadcast), ::typeof(*), args...) = mx.broadcast_mul(args...)
@@ -39,6 +41,8 @@ graph(::typeof(softmax), xs) =
 
 graph(::typeof(cat), dim::Integer, a...) = mx.Concat(a..., dim = dim)
 graph(::typeof(vcat), a...) = graph(cat, 1, a...)
+
+graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
 
 graph(::Input, x) = x
 
@@ -92,7 +96,7 @@ end
 graph′(ctx::Context, args...) = @icatch ctx graph(ctx, args...)
 
 function tograph(model, args...; feedforward = false)
-  ctx = Context(mux(iline, ilambda, imap, iargs, ituple, graph′),
+  ctx = Context(mux(iline, ilambda, iargs, ituple, graph′),
                 params = Dict(), stacks = Dict(),
                 feedforward = feedforward)
   out = @ithrow graph(ctx, model, mapt(mx.Variable, args)...)

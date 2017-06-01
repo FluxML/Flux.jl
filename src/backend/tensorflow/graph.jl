@@ -2,7 +2,6 @@ using Base: @get!
 using DataFlow: Constant, constant, Split
 using DataFlow.Interpreter
 using DataFlow.Interpreter: stack
-using Flux: imap
 using TensorFlow: RawTensor, TFException
 
 # TODO: implement Julia's type promotion rules
@@ -20,7 +19,6 @@ graph(::typeof(softmax), x) = nn.softmax(x)
 graph(::typeof(relu), x) = nn.relu(x)
 graph(::typeof(σ), x) = nn.sigmoid(x)
 graph(::typeof(hcat), xs...) = concat(1, xs)
-graph(::typeof(seq), xs, n) = TensorFlow.unstack(xs, num = n, axis = 1)
 graph(::typeof(sum), x, dim=nothing) = TensorFlow.reduce_sum(x;axis=dim)
 graph(::typeof(prod), x, dim=nothing) = TensorFlow.reduce_prod(x;axis=dim)
 graph(::typeof(min), x, dim=nothing) = TensorFlow.reduce_min(x;axis=dim)
@@ -56,6 +54,8 @@ for op in (+, -, *, /)
 end
 
 graph(::typeof(.-), args...) = -(args...)
+
+graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
 
 # reshape hack due to https://github.com/malmaud/TensorFlow.jl/issues/79
 batchsize(x::Tensor) = reduce_sum(slice(TensorFlow.shape(x), [0], [1]))
@@ -96,7 +96,7 @@ function interp(ctx, model, args...)
 end
 
 function tograph(model, args...; variables = false)
-  ctx = Context(mux(iline, ilambda, imap, interp),
+  ctx = Context(mux(iline, ilambda, interp),
                 params = ObjectIdDict(), stacks = Dict(), variables = variables)
   out = interp(ctx, model, map(constant, args)...)
   return ctx[:params], ctx[:stacks], out

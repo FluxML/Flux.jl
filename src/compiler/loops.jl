@@ -3,7 +3,7 @@ export unroll, unroll1
 struct Offset
   name::Symbol
   n::Int
-  default::Nullable{Param}
+  default::Nullable{Any}
 end
 
 Offset(name, n) = Offset(name, n, nothing)
