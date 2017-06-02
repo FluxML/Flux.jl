@@ -43,6 +43,7 @@ graph(::typeof(cat), dim::Integer, a...) = mx.Concat(a..., dim = dim)
 graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 
 graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
+graph(::typeof(sum), xs::Tuple) = reduce((a, b) -> graph(broadcast, +, a, b), xs)
 
 graph(::Input, x) = x
 
