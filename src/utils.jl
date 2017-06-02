@@ -19,6 +19,8 @@ convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
 
 a ∘ b = a .* b
 
+broadcastto(xs::AbstractArray, shape) = xs .* ones(shape)
+
 # Tuples
 
 mapt(f, x) = f(x)
