@@ -140,7 +140,7 @@ function stateless(s::Stateful)
   v = graph(s.model)
   v = spliceinputs(v, group(constant.(s.states)...),
                    [inputnode(i) for i = 1:graphinputs(v)-1]...)
-  Capacitor(v)
+  Capacitor(v[2])
 end
 
 stateless(s::SeqModel) = SeqModel(stateless(s.model), s.steps)
