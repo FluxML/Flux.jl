@@ -37,6 +37,7 @@ end
 runseq(f, xs::Tuple...) = f(xs...)
 runseq(f, xs::AbstractArray...) = stack(f(map(x -> (unstack(x,2)...,), xs)...), 2)
 runseq(f, xs::BatchSeq...) = rebatchseq(runseq(f, rawbatch.(xs)...))
+runseq(f, xs) = runseq(f, (xs...,))
 
 function (m::SeqModel)(x)
   runseq(x) do x
