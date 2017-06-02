@@ -152,7 +152,7 @@ function unseqin(v::IVertex)
   end
 end
 
-unseqout(v::IVertex) = group(v[1], map(x->x[1], inputs(v)[2:end])...)
+unseqout(v::IVertex) = group(v[1], v[2][1])
 
 unseq(graph) = unseqout(unseqin(graph))
 
