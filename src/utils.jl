@@ -17,6 +17,8 @@ unstack(xs, dim = 1) = [slicedim(xs, dim, i) for i = 1:size(xs, dim)]
 convertel(T::Type, xs::AbstractArray) = convert.(T, xs)
 convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
 
+a ∘ b = a .* b
+
 # Tuples
 
 mapt(f, x) = f(x)
