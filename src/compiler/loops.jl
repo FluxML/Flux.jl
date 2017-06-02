@@ -100,7 +100,7 @@ function unrollgraph(v::IVertex, n)
   end
   out = group(map(x->x[2], steps)...)
   state, defaults = stateout(steps, offset, default)
-  group(state,out), map(Flux.state, defaults)
+  group(state,out), defaults
 end
 
 unrollgraph(m, n; kws...) = unrollgraph(atomise(m), n; kws...)

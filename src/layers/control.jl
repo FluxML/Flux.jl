@@ -42,11 +42,12 @@ end
 
 mutable struct Stateful <: Model
   model
+  states::Vector{Any}
   istate::Vector{Any}
   ostate::Vector{Any}
 end
 
-Stateful(model, state) = Stateful(model, state, state)
+Stateful(model, ss) = Stateful(model, ss, state.(ss), state.(ss))
 
 function (m::Stateful)(x)
   m.istate = m.ostate
