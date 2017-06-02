@@ -32,6 +32,7 @@ graph(::typeof(broadcast), ::typeof(+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(broadcast), ::typeof(*), args...) = mx.broadcast_mul(args...)
 graph(::typeof(broadcast), ::typeof(-), args...) = mx.broadcast_sub(args...)
 # Old broadcasters
+graph(::typeof(broadcast), ::typeof(exp), xs) = exp(xs)
 graph(::typeof(.+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(.*), args...) = mx.broadcast_mul(args...)
 graph(::typeof(.-), args...) = mx.broadcast_sub(args...)
