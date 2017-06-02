@@ -77,5 +77,5 @@ Flux.update!(m::Model, η) = (update!(m.exec, η); m)
 
 using Flux: Stateful, SeqModel
 
-tf(m::Stateful) = Stateful(tf(m.model), m.istate, m.ostate)
+tf(m::Stateful) = Stateful(tf(m.model), m.states, m.istate, m.ostate)
 tf(m::SeqModel) = SeqModel(tf(m.model), m.steps)
