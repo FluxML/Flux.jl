@@ -19,7 +19,6 @@ node(x::mx.SymbolicNode) = x
 
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(identity), x) = x
-graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
 graph(::typeof(*), xs...) = mx.dot(reverse(xs)...) # Work around MXNet shape hack
 graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)
@@ -44,6 +43,7 @@ graph(::typeof(cat), dim::Integer, a...) = mx.Concat(a..., dim = dim)
 graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 
 graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
+graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
 graph(::typeof(sum), xs::Tuple) = reduce((a, b) -> graph(broadcast, +, a, b), xs)
 
 graph(::Input, x) = x
