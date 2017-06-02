@@ -136,6 +136,15 @@ function unroll(model, n)
   SeqModel(Stateful(Capacitor(graph), state), n)
 end
 
+function stateless(s::Stateful)
+  v = graph(s.model)
+  v = spliceinputs(v, group(constant.(s.states)...),
+                   [inputnode(i) for i = 1:graphinputs(v)-1]...)
+  Capacitor(v)
+end
+
+stateless(s::SeqModel) = SeqModel(stateless(s.model), s.steps)
+
 function unseqin(v::IVertex)
   prewalk(v) do v
     # TODO: inputidx function
