@@ -49,3 +49,5 @@ end
 back!(m::SeqModel, Δ, x) = (runseq((Δ, x) -> back!(m.model, Δ, x)[1], Δ, x),)
 
 update!(m::SeqModel, η) = update!(m.model, η)
+
+graph(m::SeqModel) = graph(m.model)
