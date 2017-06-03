@@ -6,7 +6,7 @@ using MacroTools, Lazy, DataFlow, Juno
 using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   iscyclic, Constant, constant, isconstant, group, Split, splitnode,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
-  spliceinputs, bumpinputs, Line, Frame, applylines
+  spliceinputs, bumpinputs, Line, Frame, applylines, graphinputs
 using DataFlow.Interpreter
 using Juno: Tree, Row
 

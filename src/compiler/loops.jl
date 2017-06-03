@@ -1,5 +1,31 @@
 export unroll, unroll1
 
+# Stateful Models
+
+mutable struct Stateful <: Model
+  model
+  states::Vector{Any}
+  istate::Vector{Any}
+  ostate::Vector{Any}
+end
+
+Stateful(model, ss) = Stateful(model, ss, state.(ss), state.(ss))
+
+function (m::Stateful)(x)
+  m.istate = m.ostate
+  state, y = m.model((m.istate...,), x)
+  m.ostate = collect(state)
+  return y
+end
+
+function back!(m::Stateful, Δ, x)
+  back!(m.model, ((zeros.(m.ostate)...,), Δ), (m.istate...,), x)[2:end]
+end
+
+update!(m::Stateful, η) = update!(m.model, η)
+
+# Recurrent Graphs
+
 struct Offset
   name::Symbol
   n::Int
@@ -100,7 +126,7 @@ function unrollgraph(v::IVertex, n)
   end
   out = group(map(x->x[2], steps)...)
   state, defaults = stateout(steps, offset, default)
-  group(state,out), map(Flux.state, defaults)
+  group(state,out), defaults
 end
 
 unrollgraph(m, n; kws...) = unrollgraph(atomise(m), n; kws...)
@@ -110,6 +136,15 @@ function unroll(model, n)
   SeqModel(Stateful(Capacitor(graph), state), n)
 end
 
+function stateless(s::Stateful)
+  v = graph(s.model)
+  v = spliceinputs(v, group(constant.(s.states)...),
+                   [inputnode(i) for i = 1:graphinputs(v)-1]...)
+  Capacitor(v[2])
+end
+
+stateless(s::SeqModel) = SeqModel(stateless(s.model), s.steps)
+
 function unseqin(v::IVertex)
   prewalk(v) do v
     # TODO: inputidx function
@@ -117,7 +152,7 @@ function unseqin(v::IVertex)
   end
 end
 
-unseqout(v::IVertex) = group(v[1], map(x->x[1], inputs(v)[2:end])...)
+unseqout(v::IVertex) = group(v[1], v[2][1])
 
 unseq(graph) = unseqout(unseqin(graph))
 

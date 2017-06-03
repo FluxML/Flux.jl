@@ -37,26 +37,3 @@ macro Chain(x, xs...)
     c
   end
 end
-
-# Stateful Models
-
-mutable struct Stateful <: Model
-  model
-  istate::Vector{Any}
-  ostate::Vector{Any}
-end
-
-Stateful(model, state) = Stateful(model, state, state)
-
-function (m::Stateful)(x)
-  m.istate = m.ostate
-  state, y = m.model((m.istate...,), x)
-  m.ostate = collect(state)
-  return y
-end
-
-function back!(m::Stateful, Δ, x)
-  back!(m.model, ((zeros.(m.ostate)...,), Δ), (m.istate...,), x)[2:end]
-end
-
-update!(m::Stateful, η) = update!(m.model, η)

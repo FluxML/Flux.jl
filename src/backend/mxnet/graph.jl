@@ -10,7 +10,7 @@ using Base: @get!
 using DataFlow: Constant, constant
 using DataFlow.Interpreter
 using DataFlow.Interpreter: Exception, totrace
-using Flux: mapt
+import Flux: mapt, broadcastto, ∘
 
 # TODO: implement Julia's type promotion rules
 
@@ -19,7 +19,6 @@ node(x::mx.SymbolicNode) = x
 
 graph(::typeof(tuple), args...) = (args...,)
 graph(::typeof(identity), x) = x
-graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
 graph(::typeof(*), xs...) = mx.dot(reverse(xs)...) # Work around MXNet shape hack
 graph(::typeof(σ), x) = mx.Activation(x, act_type = :sigmoid)
 graph(::typeof(relu), x) = mx.Activation(x, act_type = :relu)
@@ -29,9 +28,12 @@ graph(::typeof(hcat), xs...) = mx.concat(xs..., dim = 2-1)
 graph(::typeof(vec), xs) = reshape(xs, shape = (-1,))
 
 graph(::typeof(broadcast), ::typeof(+), args...) = mx.broadcast_plus(args...)
-graph(::typeof(broadcast), ::typeof(*), args...) = mx.broadcast_mul(args...)
 graph(::typeof(broadcast), ::typeof(-), args...) = mx.broadcast_sub(args...)
+graph(::typeof(broadcast), ::typeof(*), args...) = mx.broadcast_mul(args...)
+graph(::typeof(broadcast), ::typeof(/), args...) = mx.broadcast_div(args...)
+graph(::typeof(broadcastto), xs, shape) = mx.broadcast_to(xs, shape = map(i -> i≤1?0:i, reverse(shape)))
 # Old broadcasters
+graph(::typeof(broadcast), ::typeof(exp), xs) = exp(xs)
 graph(::typeof(.+), args...) = mx.broadcast_plus(args...)
 graph(::typeof(.*), args...) = mx.broadcast_mul(args...)
 graph(::typeof(.-), args...) = mx.broadcast_sub(args...)
@@ -43,6 +45,11 @@ graph(::typeof(cat), dim::Integer, a...) = mx.Concat(a..., dim = dim)
 graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 
 graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
+graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
+graph(::typeof(sum), xs::Tuple) = reduce((a, b) -> graph(broadcast, +, a, b), xs)
+graph(::typeof(repeated), x, n) = ntuple(_ -> x, n)
+
+a::mx.SymbolicNode ∘ b::mx.SymbolicNode = mx.broadcast_mul(a, b)
 
 graph(::Input, x) = x
 
