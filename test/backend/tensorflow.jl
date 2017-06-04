@@ -26,7 +26,7 @@ end
 @testset "Ops" begin
 
 error_margin = 1e-4
-#using Flux,Base.Test
+using Flux,Base.Test
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # reshape
@@ -172,8 +172,6 @@ m = tf(f)
 @net f(x) = svd(x)
 m = tf(f)
 u,s,v = m(A)
-u2,s2,v2 = svd(A)
-maximum(abs.(s-s2)) < error_margin
 maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
