@@ -26,9 +26,26 @@ graph(::typeof(max), x, dim=nothing) = TensorFlow.reduce_max(x;axis=dim)
 graph(::typeof(all), x, dim=nothing) = TensorFlow.reduce_all(x;axis=dim)
 graph(::typeof(any), x, dim=nothing) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
+graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,convert(Tensor{Int32},dims))
+graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
+graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
+graph(::typeof(Flux.slice), x,be,si) = Ops.slice(x,convert(Tensor{Int32},be),convert(Tensor{Int32},si))
+graph(::typeof(Flux.pad), args...) = TensorFlow.pad(args...)
+graph(::typeof(Flux.cast), args...) = TensorFlow.cast(args...)
+graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
+graph(::typeof(size), x) = TensorFlow.size(x)
+graph(::typeof(fill), x, dims) = Ops.fill(convert(Tensor{Int32}, dims),Tensor(x))
+graph(::typeof(randu), x) = Ops.random_uniform(convert(Tensor{Int32},x);dtype=Float32)
+graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x);dtype=Float32)
+graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
+graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
+graph(::typeof(svd), x) = svd(x)
+graph(::typeof(Flux.expand_dims), x, dim) = TensorFlow.expand_dims(x,convert(Tensor{Int32},dim))
+graph(::typeof(Flux.gather), x, inds; validate_indices=nothing) = Ops.gather(x,convert(Tensor{Int32},inds);validate_indices=validate_indices)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
-           sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj)
+           sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
+           transpose, permutedims, cat, length, inv, det, diag, diagm)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
