@@ -56,7 +56,6 @@ function test_stacktrace(bk)
   end
 end
 
-#=
 function test_anon(bk)
   @testset "Closures" begin
     x, y = rand(3), rand(5)
@@ -64,4 +63,3 @@ function test_anon(bk)
     @test all(model((x, y)) .≈ (x.*x, y.*y))
   end
 end
-=#
