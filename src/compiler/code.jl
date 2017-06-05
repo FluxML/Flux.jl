@@ -28,7 +28,7 @@ end
 function build_type(T, params)
   @esc T
   ex = quote
-    type $T <: Model
+    type $T
       $(params...)
     end
   end

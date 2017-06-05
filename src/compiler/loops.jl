@@ -2,7 +2,7 @@ export unroll, unroll1
 
 # Stateful Models
 
-mutable struct Stateful <: Model
+mutable struct Stateful
   model
   states::Vector{Any}
   istate::Vector{Any}

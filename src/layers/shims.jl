@@ -1,6 +1,6 @@
 export Conv2D
 
-struct Conv2D <: Model
+struct Conv2D
   filter::Param{Array{Float64,4}} # [height, width, inchans, outchans]
   stride::Dims{2}
 end
@@ -15,7 +15,7 @@ infer(c::Conv2D, in::Dims{4}) =
 
 for Pool in :[MaxPool, AvgPool].args
   @eval begin
-    struct $Pool <: Model
+    struct $Pool
       size::Dims{2}
       stride::Dims{2}
     end

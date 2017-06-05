@@ -81,7 +81,7 @@ end
 
 # TODO: if `last` changes, update params appropriately
 
-mutable struct Model <: Flux.Model
+mutable struct Model
   model::Any
   execs::Dict{Tuple,Exec}
   graph::Graph

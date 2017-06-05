@@ -1,31 +1,14 @@
-# Basic model API
-
 """
-    (m::Model)(X...) => Y
-
-A "model" is a function with state. For example, a logistic regression is the
-function
-
-    x -> σ(x * W + b)
-
-where `W` and `b` are a trainable matrix and vector of weights repectively. The
-`Model` abstract type is used loosely; in general the concept of a model is
-closer to a protocol, and models don't need to inherit from this type. Normal
-Julia functions are models with 0 parameters, for example.
-"""
-abstract type Model end
-
-"""
-    back!(m::Model, ΔY, X...) => ΔX
+    back!(model, ΔY, X...) => ΔX
 
 Backpropagate the gradient `ΔY` through the model `m`, accumulating the
 gradients of any parameters. Returns the gradient of the input `X`. Gradients
 may be arrays or tuples of arrays (for multiple inputs/outputs).
 """
-back!(m::Model, Δ, xs...) = error("Backprop not implemented for $(typeof(m))")
+back!(model, Δ, xs...) = error("Backprop not implemented for $(typeof(m))")
 
 """
-    update!(m::Model, η) => m
+    update!(model, η) => m
 
 Update the parameters of the model `m` using the accumulated gradients from
 `back!`, using the learning rate `η`.
@@ -33,7 +16,7 @@ Update the parameters of the model `m` using the accumulated gradients from
 update!(m, η) = m
 
 """
-    graph(m::Model) => ::IVertex{Any} | nothing
+    graph(model) => ::IVertex{Any} | nothing
 
 Returns the graph representation of the model, if any. Most models are built
 from lower-level components and can simply implement this method to get most of
@@ -91,7 +74,7 @@ Base.copy!(p::Param, xs) = copy!(p.x, xs)
 
 # Anonymous models
 
-struct Capacitor <: Model
+struct Capacitor
   graph::IVertex{Any}
 end
 

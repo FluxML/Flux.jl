@@ -1,6 +1,6 @@
 export Chain, @Chain
 
-type Chain <: Model
+type Chain
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
 end

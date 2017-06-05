@@ -67,7 +67,7 @@ end
 
 export Input
 
-struct Input{N} <: Model
+struct Input{N}
   dims::Dims{N}
 end
 

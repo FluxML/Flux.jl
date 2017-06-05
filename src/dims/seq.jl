@@ -29,7 +29,7 @@ end
 
 # SeqModel wrapper layer for convenience
 
-struct SeqModel <: Model
+struct SeqModel
   model
   steps::Int
 end

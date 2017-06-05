@@ -1,4 +1,5 @@
 using Base: @get!
+using Flux: Reshape, MaxPool, flatten
 using DataFlow: constant, Split
 using DataFlow.Interpreter
 using DataFlow.Interpreter: stack
@@ -86,8 +87,9 @@ function tograph(model, args...; variables = false)
   return ctx[:params], ctx[:stacks], out
 end
 
-TensorFlow.Tensor(m::Flux.Model, args...) =
-  tograph(m, args...; variables = true)[3]
+# TODO: replace this
+# TensorFlow.Tensor(m::Flux.Model, args...) =
+#   tograph(m, args...; variables = true)[3]
 
 RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))
 
