@@ -1,4 +1,4 @@
-using Flux: collectt, shapecheckt
+using Flux: collectt, shapecheckt, back!, update!
 
 function copyargs!(as, bs)
   for id in intersect(keys(as), keys(bs))
@@ -134,7 +134,7 @@ function rewrite_softmax(model, name)
   return Flux.Capacitor(vertex(SoftmaxOutput(name), g[1]))
 end
 
-function mx.FeedForward(model::Flux.Model; input = :data, label = :softmax, context = mx.cpu())
+function FeedForward(model; input = :data, label = :softmax, context = mx.cpu())
   model = rewrite_softmax(model, label)
   graph = tograph(model, input, feedforward=true)
   ff = mx.FeedForward(graph.output, context = context)

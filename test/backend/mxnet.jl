@@ -15,13 +15,15 @@ test_stacktrace(mxnet)
 test_back(mxnet)
 test_anon(mxnet)
 
+using Flux: MaxPool
+
 @testset "Native interface" begin
-  f = mx.FeedForward(Chain(d, softmax))
+  f = Flux.MX.FeedForward(Chain(d, softmax))
   @test mx.infer_shape(f.arch, data = (20, 1))[2] == [(10, 1)]
 
   m = Chain(Input(28,28), Conv2D((5,5), out = 3), MaxPool((2,2)),
             flatten, Affine(1587, 10), softmax)
-  f = mx.FeedForward(m)
+  f = Flux.MX.FeedForward(m)
   # TODO: test run
   @test mx.infer_shape(f.arch, data = (20, 20, 5, 1))[2] == [(10, 1)]
 end

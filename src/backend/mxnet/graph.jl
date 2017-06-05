@@ -10,7 +10,7 @@ using Base: @get!
 using DataFlow: Constant, constant
 using DataFlow.Interpreter
 using DataFlow.Interpreter: Exception, totrace
-import Flux: mapt, broadcastto, ∘
+import Flux: Reshape, MaxPool, flatten, mapt, broadcastto, ∘
 
 # TODO: implement Julia's type promotion rules
 

@@ -17,7 +17,7 @@ test_anon(tf)
 @testset "Tensor interface" begin
   sess = TensorFlow.Session()
   X = placeholder(Float32)
-  Y = Tensor(d, X)
+  Y = Flux.TF.astensor(d, X)
   run(sess, global_variables_initializer())
 
   @test run(sess, Y, Dict(X=>xs)) ≈ d(xs)
