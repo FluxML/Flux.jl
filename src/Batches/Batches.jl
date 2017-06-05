@@ -1,6 +1,7 @@
 module Batches
 
 using Juno, Lazy
+using Juno: Tree, Row
 
 export CatMat, rawbatch,
   Batch, Batched, batchone, tobatch, rebatch,

@@ -8,7 +8,6 @@ using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
   detuple, value, inputs, thread!, value, inputs, Split, splitnode, inputnode,
   spliceinputs, bumpinputs, Line, Frame, applylines, graphinputs
 using DataFlow.Interpreter
-using Juno: Tree, Row
 
 export @net, unroll, unroll1, @shapes,
   @Chain, Chain, Input, Affine, Conv2D, Recurrent, GatedRecurrent, LSTM,
