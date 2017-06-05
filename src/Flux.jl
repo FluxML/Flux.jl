@@ -20,9 +20,12 @@ export @net, unroll, unroll1, @shapes,
 include("Batches/Batches.jl")
 using .Batches
 
+include("core.jl")
+import .FluxCore: back!, update!, graph
+
 include("utils.jl")
 
-include("model.jl")
+include("params.jl")
 
 include("compiler/code.jl")
 include("compiler/loops.jl")

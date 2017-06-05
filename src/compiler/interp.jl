@@ -25,3 +25,13 @@ function interpmodel(m, args...)
   ctx = Context(mux(iconst, iline, ilambda, iargs, ituple, interp))
   @ithrow interp(ctx, m, args...)
 end
+
+# Anonymous models
+
+struct Capacitor
+  graph::IVertex{Any}
+end
+
+(m::Capacitor)(xs...) = interpmodel(m, xs...)
+
+graph(cap::Capacitor) = cap.graph
