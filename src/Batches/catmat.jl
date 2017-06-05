@@ -1,6 +1,34 @@
 import Base: eltype, size, getindex, setindex!, convert
 
+rawbatch(xs) = xs
+
 abstract type BatchLike{T,S} <: AbstractVector{T}
+end
+
+eltype{T}(::BatchLike{T}) = T
+
+rawbatch(xs::BatchLike) = rawbatch(xs.data)
+
+size(b::BatchLike) = (size(rawbatch(b), 1),)
+
+getindex(b::BatchLike, i)::eltype(b) = slicedim(rawbatch(b), 1, i)
+
+setindex!(b::BatchLike, v, i::Integer) = rawbatch(b)[i, :] = v
+
+function setindex!(b::BatchLike, xs, ::Colon)
+  for (i, x) in enumerate(xs)
+    b[i] = x
+  end
+end
+
+typename(b::Type) = b
+typename(b::Type{<:BatchLike}) =
+  Row(Juno.typ("$(b.name.name)"), text"{", typename(eltype(b)), text"}")
+
+@render Juno.Inline b::BatchLike begin
+  Tree(Row(typename(typeof(b)),
+           Juno.fade("[$(length(b))]")),
+       Juno.trim(collect(b)))
 end
 
 struct Storage{T,S} <: BatchLike{T,S}
@@ -9,20 +37,6 @@ end
 
 convert{T,S}(::Type{Storage{T,S}},storage::S) =
   Storage{T,S}(storage)
-
-eltype{T}(::Storage{T}) = T
-
-size(b::Storage) = (size(b.data, 1),)
-
-getindex(b::Storage, i)::eltype(b) = slicedim(b.data, 1, i)
-
-setindex!(b::Storage, v, i::Integer) = b.data[i, :] = v
-
-function setindex!(b::Storage, xs, ::Colon)
-  for (i, x) in enumerate(xs)
-    b[i] = x
-  end
-end
 
 allequal(xs) = all(x -> x == first(xs), xs)
 
@@ -45,17 +59,3 @@ function Storage(xs)
   xs = promote(xs...)
   Storage{eltype(xs)}(xs)
 end
-
-typename(b::Type) = b
-typename(b::Type{<:BatchLike}) =
-  Row(Juno.typ("$(b.name.name)"), text"{", typename(eltype(b)), text"}")
-
-@render Juno.Inline b::BatchLike begin
-  Tree(Row(typename(typeof(b)),
-           Juno.fade("[$(length(b))]")),
-       Juno.trim(collect(b)))
-end
-
-rawbatch(xs) = xs
-
-rawbatch(xs::Storage) = xs.data

@@ -4,8 +4,6 @@ struct Batch{T,S} <: BatchLike{T,S}
   data::Storage{T,S}
 end
 
-@forward Batch.data size, eltype, getindex, setindex!, rawbatch
-
 Batch(xs) = Batch(Storage(xs))
 
 convert{T,S}(::Type{Batch{T,S}},storage::S) =
@@ -34,8 +32,6 @@ tobatch(xs) = tobatch(batchone(xs))
 struct Seq{T,S} <: BatchLike{T,S}
   data::Storage{T,S}
 end
-
-@forward Seq.data size, eltype, getindex, setindex!, rawbatch
 
 Seq(xs) = Seq(Storage(xs))
 
