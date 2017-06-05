@@ -62,7 +62,7 @@ end
 interp(ctx, c::Conv2D, x) =
   nn.conv2d(x, interp(ctx, constant(c.filter)), [1,c.stride...,1], "VALID")
 
-param(ctx, p::Flux.Param{<:AArray}) =
+param(ctx, p::Flux.Param{<:AbstractArray}) =
   haskey(ctx[:params], p) ?
      ctx[:params][p] :
     (ctx[:params][p] =

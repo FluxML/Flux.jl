@@ -34,7 +34,7 @@ function build_type(T, params)
   end
   if any(x->isexpr(x, Symbol), params)
     push!(ex.args,
-      :($T($(map(x->isexpr(x, Symbol) ? :($x::AArray) : x, params)...)) =
+      :($T($(map(x->isexpr(x, Symbol) ? :($x::AbstractArray) : x, params)...)) =
           $T($(map(x->isexpr(x, Symbol) ? :(param($x)) : namify(x), params)...))))
   end
   ex

@@ -90,7 +90,7 @@ end
 
 register(ctx::Context, node) = node
 
-function var(ctx::Context, p::Union{Flux.Param{<:AArray},AArray,AlterParam})
+function var(ctx::Context, p::Union{Flux.Param{<:AbstractArray},AbstractArray,AlterParam})
   id = gensym()
   ctx[:params][id] = p
   return mx.Variable(id)

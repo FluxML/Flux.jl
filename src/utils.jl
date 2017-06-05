@@ -2,8 +2,6 @@ call(f, xs...) = f(xs...)
 
 # Arrays
 
-const AArray = AbstractArray
-
 initn(dims...) = randn(dims...)/100
 
 unsqueeze(xs, dim = 1) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
