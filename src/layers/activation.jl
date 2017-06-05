@@ -1,4 +1,4 @@
-export σ, relu, softmax, flatten
+export σ, relu, softmax
 
 # Sigmoid
 σ(x) = 1 ./ (1 + exp.(-x))

@@ -1,5 +1,3 @@
-export Model, back!, update!, param
-
 # Basic model API
 
 """
@@ -92,8 +90,6 @@ Base.copy!(xs, p::Param) = copy!(xs, p.x)
 Base.copy!(p::Param, xs) = copy!(p.x, xs)
 
 # Anonymous models
-
-export Capacitor
 
 struct Capacitor <: Model
   graph::IVertex{Any}

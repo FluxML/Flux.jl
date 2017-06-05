@@ -1,4 +1,4 @@
-export Conv2D, MaxPool, AvgPool, Reshape
+export Conv2D
 
 struct Conv2D <: Model
   filter::Param{Array{Float64,4}} # [height, width, inchans, outchans]

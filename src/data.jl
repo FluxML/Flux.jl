@@ -1,5 +1,3 @@
-export onehot, onecold, chunk, partition, batches, sequences
-
 """
     onehot('b', ['a', 'b', 'c', 'd']) => [false, true, false, false]
 
@@ -26,8 +24,6 @@ onecold(y::AbstractMatrix, l...) =
 
 using Iterators
 import Iterators: Partition, partition
-
-export partition
 
 Base.length(l::Partition) = length(l.xs) ÷ l.step
 
