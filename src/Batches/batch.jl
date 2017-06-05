@@ -6,9 +6,6 @@ end
 
 Batch(xs) = Batch(Storage(xs))
 
-convert{T,S}(::Type{Batch{T,S}},storage::S) =
-  Batch{T,S}(storage)
-
 # TODO: figure out how to express this as a generic convert
 function rebatch(xs)
   dims = ndims(xs)-1
@@ -34,9 +31,6 @@ struct Seq{T,S} <: BatchLike{T,S}
 end
 
 Seq(xs) = Seq(Storage(xs))
-
-convert{T,S}(::Type{Seq{T,S}},storage::S) =
-  Seq{T,S}(storage)
 
 BatchSeq{T<:Seq} = Batch{T}
 

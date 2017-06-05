@@ -31,12 +31,11 @@ typename(b::Type{<:BatchLike}) =
        Juno.trim(collect(b)))
 end
 
+convert{T,S}(B::Type{<:BatchLike{T,S}},storage::S) = B(storage)
+
 struct Storage{T,S} <: BatchLike{T,S}
   data::S
 end
-
-convert{T,S}(::Type{Storage{T,S}},storage::S) =
-  Storage{T,S}(storage)
 
 allequal(xs) = all(x -> x == first(xs), xs)
 
