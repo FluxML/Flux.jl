@@ -1,6 +1,8 @@
 import Base: eltype, size, getindex, setindex!, convert
 
-struct CatMat{T,S} <: AbstractVector{T}
+ABatch{T} = AbstractVector{T}
+
+struct CatMat{T,S} <: ABatch{T}
   data::S
 end
 

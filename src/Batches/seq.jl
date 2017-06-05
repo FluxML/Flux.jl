@@ -1,4 +1,4 @@
-struct Seq{T,S} <: AbstractVector{T}
+struct Seq{T,S} <: ABatch{T}
   data::CatMat{T,S}
 end
 
