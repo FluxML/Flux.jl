@@ -3,9 +3,7 @@ module Batches
 using Juno, Lazy
 using Juno: Tree, Row
 
-export Storage, rawbatch,
-  Batch, Batched, batchone, tobatch, rebatch,
-  Seq, BatchSeq, rebatchseq
+export Batch, Batched, Seq, rawbatch, batchone
 
 include("catmat.jl")
 include("batch.jl")

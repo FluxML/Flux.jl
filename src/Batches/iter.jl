@@ -48,7 +48,7 @@ end
 function Batched(itr, n::Integer)
   n >= 1 || throw(ArgumentError("batch size must be >= 1"))
   itr = StatefulIter(itr)
-  buf = rebatch(similar(eltype(itr)(), n, size(peek(itr))...))
+  buf = convert(Batch, similar(eltype(itr)(), n, size(peek(itr))...))
   Batched(itr, buf)
 end
 

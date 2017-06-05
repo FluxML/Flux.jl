@@ -1,6 +1,8 @@
-import Base: eltype, size, getindex, setindex!, convert
+import Base: eltype, size, getindex, setindex!, convert, typename
 
 rawbatch(xs) = xs
+
+# Generic methods
 
 abstract type BatchLike{T,S} <: AbstractVector{T}
 end
@@ -21,17 +23,17 @@ function setindex!(b::BatchLike, xs, ::Colon)
   end
 end
 
-typename(b::Type) = b
-typename(b::Type{<:BatchLike}) =
-  Row(Juno.typ("$(b.name.name)"), text"{", typename(eltype(b)), text"}")
+typerender(B::Type) = B
+typerender(B::Type{<:BatchLike}) =
+  Row(Juno.typ("$(typename(B).name)"), text"{", typerender(eltype(B)), text"}")
 
 @render Juno.Inline b::BatchLike begin
-  Tree(Row(typename(typeof(b)),
+  Tree(Row(typerender(typeof(b)),
            Juno.fade("[$(length(b))]")),
        Juno.trim(collect(b)))
 end
 
-convert{T,S}(B::Type{<:BatchLike{T,S}},storage::S) = B(storage)
+# Concrete storage
 
 struct Storage{T,S} <: BatchLike{T,S}
   data::S
@@ -39,7 +41,7 @@ end
 
 allequal(xs) = all(x -> x == first(xs), xs)
 
-function (::Type{Storage{T,S}}){T,S}(xs, storage::S)
+function Storage{T,S}(xs, storage::S) where {T, S}
   @assert allequal(map(size, xs))
   @assert size(storage) == (length(xs), size(first(xs))...)
   for i = 1:length(xs)
@@ -48,13 +50,28 @@ function (::Type{Storage{T,S}}){T,S}(xs, storage::S)
   return Storage{T,S}(storage)
 end
 
-function (::Type{Storage{T}}){T}(xs)
+function Storage{T}(xs) where T
   xs′ = map(rawbatch, xs)
   storage = similar(first(xs′), (length(xs′), size(first(xs′))...))
   Storage{T,typeof(storage)}(xs′, storage)
 end
 
-function Storage(xs)
-  xs = promote(xs...)
-  Storage{eltype(xs)}(xs)
-end
+Storage(xs) = Storage{eltype(xs)}(xs)
+
+convert{T,S}(B::Type{<:BatchLike{T,S}}, data::S) = B(data)
+
+# Horrible type hacks follow this point
+
+deparam(T::Type) = typename(T).wrapper
+
+dimless(T::Type{<:AbstractArray}) = ndims(T) == 1 ? eltype(T) : deparam(T){eltype(T),ndims(T)-1}
+
+btype(B::Type{<:BatchLike}, S::Type{<:AbstractArray}) = B{dimless(S),S}
+btype(B::Type{<:BatchLike{T}} where T, S::Type{<:AbstractArray}) = B{S}
+btype(B::Type{<:BatchLike{<:BatchLike}}, S::Type{<:AbstractArray}) =
+  deparam(B){btype(eltype(B), dimless(S)),S}
+
+convert{T<:BatchLike}(::Type{T}, xs::AbstractArray) =
+  convert(btype(T, typeof(xs)), xs)
+
+convert{T<:BatchLike}(::Type{T}, x::T) = x
