@@ -1,5 +1,3 @@
-export tf, mxnet
-
 # We use a lazy-loading trick to load the backend code as needed; this avoids
 # the need for a hard dependency on both backends.
 

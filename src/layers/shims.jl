@@ -1,5 +1,3 @@
-export Conv2D
-
 struct Conv2D
   filter::Param{Array{Float64,4}} # [height, width, inchans, outchans]
   stride::Dims{2}

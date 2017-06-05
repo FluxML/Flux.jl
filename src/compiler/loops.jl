@@ -1,5 +1,3 @@
-export unroll, unroll1
-
 # Stateful Models
 
 mutable struct Stateful

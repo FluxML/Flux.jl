@@ -1,5 +1,3 @@
-export @shapes
-
 Dims{N} = NTuple{N,Int}
 
 struct Hint
@@ -64,8 +62,6 @@ macro shapes(ex)
 end
 
 # Shim for kicking off shape inference
-
-export Input
 
 struct Input{N}
   dims::Dims{N}

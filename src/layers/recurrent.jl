@@ -1,5 +1,3 @@
-export Recurrent, GatedRecurrent, LSTM
-
 @net type Recurrent
   Wxy; Wyy; by
   y

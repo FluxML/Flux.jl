@@ -1,5 +1,3 @@
-export Affine
-
 @net type Affine
   W
   b

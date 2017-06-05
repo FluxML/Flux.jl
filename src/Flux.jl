@@ -10,6 +10,11 @@ using DataFlow: graphm, syntax, prewalk!, postwalk!, prewalk, postwalk,
 using DataFlow.Interpreter
 using Juno: Tree, Row
 
+export @net, unroll, unroll1, @shapes,
+  Chain, @Chain, Input, Affine, Conv2D, Recurrent, GatedRecurrent, LSTM,
+  σ, relu, softmax,
+  tf, mxnet
+
 # Zero Flux Given
 
 include("utils.jl")

@@ -1,5 +1,3 @@
-export Chain, @Chain
-
 type Chain
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
