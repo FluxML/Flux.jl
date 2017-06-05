@@ -46,8 +46,12 @@ function Storage(xs)
   Storage{eltype(xs)}(xs)
 end
 
-@render Juno.Inline b::Storage begin
-  Tree(Row(Text("Storage of "), eltype(b),
+typename(b::Type) = b
+typename(b::Type{<:BatchLike}) =
+  Row(Juno.typ("$(b.name.name)"), text"{", typename(eltype(b)), text"}")
+
+@render Juno.Inline b::BatchLike begin
+  Tree(Row(typename(typeof(b)),
            Juno.fade("[$(length(b))]")),
        Juno.trim(collect(b)))
 end

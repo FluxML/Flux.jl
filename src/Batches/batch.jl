@@ -11,12 +11,6 @@ Batch(xs) = Batch(Storage(xs))
 convert{T,S}(::Type{Batch{T,S}},storage::S) =
   Batch{T,S}(storage)
 
-@render Juno.Inline b::Batch begin
-  Tree(Row(Text("Batch of "), eltype(b),
-           Juno.fade("[$(length(b))]")),
-       Juno.trim(collect(b)))
-end
-
 # TODO: figure out how to express this as a generic convert
 function rebatch(xs)
   dims = ndims(xs)-1
@@ -47,12 +41,6 @@ Seq(xs) = Seq(Storage(xs))
 
 convert{T,S}(::Type{Seq{T,S}},storage::S) =
   Seq{T,S}(storage)
-
-@render Juno.Inline b::Seq begin
-  Tree(Row(Text("Seq of "), eltype(b),
-           Juno.fade("[$(length(b))]")),
-       Juno.trim(collect(b)))
-end
 
 BatchSeq{T<:Seq} = Batch{T}
 
