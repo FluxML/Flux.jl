@@ -1,4 +1,4 @@
-using Flux, Flux.Batches, DataFlow, MacroTools, Base.Test
+using Flux, DataFlow, MacroTools, Base.Test
 using Flux: graph, Param, squeeze, unsqueeze, back!, update!, flatten
 using DataFlow: Line, Frame
 
