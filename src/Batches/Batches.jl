@@ -9,7 +9,6 @@ export CatMat, rawbatch,
 
 include("catmat.jl")
 include("batch.jl")
-include("seq.jl")
 include("iter.jl")
 
 end
