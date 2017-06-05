@@ -1,12 +1,12 @@
 # Batches
 
-struct Batch{T,S} <: ABatch{T}
-  data::CatMat{T,S}
+struct Batch{T,S} <: BatchLike{T,S}
+  data::Storage{T,S}
 end
 
 @forward Batch.data size, eltype, getindex, setindex!, rawbatch
 
-Batch(xs) = Batch(CatMat(xs))
+Batch(xs) = Batch(Storage(xs))
 
 convert{T,S}(::Type{Batch{T,S}},storage::S) =
   Batch{T,S}(storage)
@@ -37,13 +37,13 @@ tobatch(xs) = tobatch(batchone(xs))
 
 # Sequences
 
-struct Seq{T,S} <: ABatch{T}
-  data::CatMat{T,S}
+struct Seq{T,S} <: BatchLike{T,S}
+  data::Storage{T,S}
 end
 
 @forward Seq.data size, eltype, getindex, setindex!, rawbatch
 
-Seq(xs) = Seq(CatMat(xs))
+Seq(xs) = Seq(Storage(xs))
 
 convert{T,S}(::Type{Seq{T,S}},storage::S) =
   Seq{T,S}(storage)
