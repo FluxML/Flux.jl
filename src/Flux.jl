@@ -11,7 +11,7 @@ using DataFlow.Interpreter
 using Juno: Tree, Row
 
 export @net, unroll, unroll1, @shapes,
-  Chain, @Chain, Input, Affine, Conv2D, Recurrent, GatedRecurrent, LSTM,
+  @Chain, Chain, Input, Affine, Conv2D, Recurrent, GatedRecurrent, LSTM,
   σ, relu, softmax,
   tf, mxnet
 
