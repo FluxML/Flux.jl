@@ -1,7 +1,5 @@
 import Base: eltype, size, getindex, setindex!, convert
 
-export CatMat, rawbatch
-
 struct CatMat{T,S} <: AbstractVector{T}
   data::S
 end
@@ -26,7 +24,7 @@ end
 allequal(xs) = all(x -> x == first(xs), xs)
 
 function (::Type{CatMat{T,S}}){T,S}(xs, storage::S)
-  @assert @>> xs map(size) allequal
+  @assert allequal(map(size, xs))
   @assert size(storage) == (length(xs), size(first(xs))...)
   for i = 1:length(xs)
     storage[i, :] = xs[i]

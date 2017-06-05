@@ -1,5 +1,3 @@
-export Batch, batchone, tobatch
-
 struct Batch{T,S} <: AbstractVector{T}
   data::CatMat{T,S}
 end
@@ -17,6 +15,7 @@ convert{T,S}(::Type{Batch{T,S}},storage::S) =
        Juno.trim(collect(b)))
 end
 
+# TODO: figure out how to express this as a generic convert
 function rebatch(xs)
   dims = ndims(xs)-1
   T = Array{eltype(xs),dims}

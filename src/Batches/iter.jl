@@ -1,5 +1,3 @@
-export Batched
-
 import Base: start, next, done, iteratorsize, iteratoreltype, eltype, length
 
 # Stateful iteration

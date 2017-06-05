@@ -90,7 +90,7 @@ end
 astensor(model, args...) =
   tograph(model, args...; variables = true)[3]
 
-RawTensor(data::Union{Batch,Seq}) = RawTensor(rawbatch(data))
+RawTensor(data::Union{Flux.Batch,Flux.Seq}) = RawTensor(Flux.rawbatch(data))
 
 # Error Handling
 

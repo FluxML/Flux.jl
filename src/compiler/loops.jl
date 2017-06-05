@@ -22,6 +22,31 @@ end
 
 update!(m::Stateful, η) = update!(m.model, η)
 
+# Seq Models
+
+struct SeqModel
+  model
+  steps::Int
+end
+
+runseq(f, xs::Tuple...) = f(xs...)
+runseq(f, xs::AbstractArray...) = stack(f(map(x -> (unstack(x,2)...,), xs)...), 2)
+runseq(f, xs::BatchSeq...) = rebatchseq(runseq(f, rawbatch.(xs)...))
+runseq(f, xs) = runseq(f, (xs...,))
+
+function (m::SeqModel)(x)
+  runseq(x) do x
+    @assert length(x) == m.steps "Expected seq length $(m.steps), got $(size(x, 2))"
+    m.model(x)
+  end
+end
+
+back!(m::SeqModel, Δ, x) = (runseq((Δ, x) -> back!(m.model, Δ, x)[1], Δ, x),)
+
+update!(m::SeqModel, η) = update!(m.model, η)
+
+graph(m::SeqModel) = graph(m.model)
+
 # Recurrent Graphs
 
 struct Offset

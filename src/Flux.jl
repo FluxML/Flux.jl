@@ -17,14 +17,12 @@ export @net, unroll, unroll1, @shapes,
 
 # Zero Flux Given
 
+include("Batches/Batches.jl")
+using .Batches
+
 include("utils.jl")
 
 include("model.jl")
-
-include("dims/catmat.jl")
-include("dims/batching.jl")
-include("dims/seq.jl")
-include("dims/iter.jl")
 
 include("compiler/code.jl")
 include("compiler/loops.jl")

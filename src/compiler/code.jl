@@ -1,5 +1,5 @@
 import DataFlow: cse
-using MacroTools: @q
+using MacroTools: @q, @>
 
 function graphdef(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
