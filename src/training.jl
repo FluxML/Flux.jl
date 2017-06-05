@@ -1,4 +1,5 @@
 using Juno: info
+using .Batches: tobatch
 
 """
   @cb for ... end t expr
