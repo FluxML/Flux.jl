@@ -23,6 +23,3 @@ onecold(y::AbstractMatrix, l...) =
   squeeze(mapslices(y -> onecold(y, l...), y, 2), 2)
 
 chunk(xs, n) = Base.Iterators.partition(xs, length(xs)÷n)
-
-batches(xs...) = (Batch(x) for x in zip(xs...))
-sequences(xs, len) = (Seq(x) for x in partition(xs, len))
