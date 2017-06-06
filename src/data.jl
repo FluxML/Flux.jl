@@ -22,15 +22,7 @@ onecold(y::AbstractVector, labels = 1:length(y)) =
 onecold(y::AbstractMatrix, l...) =
   squeeze(mapslices(y -> onecold(y, l...), y, 2), 2)
 
-using Iterators
-import Iterators: Partition, partition
-
-Base.length(l::Partition) = length(l.xs) ÷ l.step
-
-_partition(r::UnitRange, step::Integer) = (step*(i-1)+1:step*i for i in 1:(r.stop÷step))
-_partition(xs, step) = (xs[i] for i in _partition(1:length(xs), step))
-
-chunk(xs, n) = _partition(xs, length(xs)÷n)
+chunk(xs, n) = Base.Iterators.partition(xs, length(xs)÷n)
 
 batches(xs...) = (Batch(x) for x in zip(xs...))
 sequences(xs, len) = (Seq(x) for x in partition(xs, len))
