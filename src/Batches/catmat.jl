@@ -60,6 +60,8 @@ rawbatch(xs::Batchable) = rawbatch(storage(xs))
 size(xs::Batchable) = size(storage(xs))
 getindex(xs::Batchable, i) = getindex(storage(xs), i)
 
+Base.vcat{T<:Batchable}(xs::T, ys::T)::T = vcat(rawbatch(xs), rawbatch(ys))
+
 typerender(B::Type) = B
 typerender(B::Type{<:Batchable}) =
   Row(Juno.typ("$(typename(B).name)"), text"{", typerender(eltype(B)), text"}")
