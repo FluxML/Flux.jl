@@ -1,8 +1,10 @@
 # Batches
 
-struct Batch{T,S} <: BatchLike{T,S}
+struct Batch{T,S} <: Batchable{T,S}
   data::Storage{T,S}
 end
+
+storage(b::Batch) = b.data
 
 Batch(xs) = Batch(Storage(xs))
 
@@ -18,8 +20,10 @@ tobatch(xs) = tobatch(batchone(xs))
 
 # Sequences
 
-struct Seq{T,S} <: BatchLike{T,S}
+struct Seq{T,S} <: Batchable{T,S}
   data::Storage{T,S}
 end
+
+storage(s::Seq) = s.data
 
 Seq(xs) = Seq(Storage(xs))
