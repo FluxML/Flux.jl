@@ -35,3 +35,6 @@ Seq(xs) = Seq(Storage(xs))
 Seq{T,S}(xs) where {T,S} = Seq{T,S}(Storage{T,S}(xs))
 
 storage(s::Seq) = s.data
+
+Base.rpad{T}(xs::Seq{T}, n::Integer, x::T) =
+  n-length(xs) ≤ 0 ? xs : vcat(xs, typeof(xs)(repeated(x, n-length(xs))))
