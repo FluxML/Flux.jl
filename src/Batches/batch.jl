@@ -2,11 +2,15 @@
 
 struct Batch{T,S} <: Batchable{T,S}
   data::Storage{T,S}
+  Batch{T,S}(data::Storage{T,S}) = new{T,S}(data)
 end
 
-storage(b::Batch) = b.data
+Batch(data::Storage{T,S}) where {T,S} = Batch{T,S}(data)
 
 Batch(xs) = Batch(Storage(xs))
+Batch{T,S}(xs) where {T,S} = Batch{T,S}(Storage{T,S}(xs))
+
+storage(b::Batch) = b.data
 
 convertel(T::Type, xs::Batch) =
   eltype(eltype(xs)) isa T ? xs :
@@ -22,8 +26,12 @@ tobatch(xs) = tobatch(batchone(xs))
 
 struct Seq{T,S} <: Batchable{T,S}
   data::Storage{T,S}
+  Seq{T,S}(data::Storage{T,S}) = new{T,S}(data)
 end
 
-storage(s::Seq) = s.data
+Seq(data::Storage{T,S}) where {T,S} = Seq{T,S}(data)
 
 Seq(xs) = Seq(Storage(xs))
+Seq{T,S}(xs) where {T,S} = Seq{T,S}(Storage{T,S}(xs))
+
+storage(s::Seq) = s.data
