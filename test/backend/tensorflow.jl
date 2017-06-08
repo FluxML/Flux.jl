@@ -36,5 +36,11 @@ u,s,v = m(A)
 @test maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# inv
+@net f(x) = inv(x)
+m = tf(f)
+@test maximum(abs.(m(A)-inv(A))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
