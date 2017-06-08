@@ -39,7 +39,7 @@ function test_back(bk)
     update!(dm, 0.1)
 
     @test dm(xs) ≈ d(xs)
-    @test dm(xs) ≉ d′(xs)
+    @test !(dm(xs) ≈ d′(xs))
   end
 end
 

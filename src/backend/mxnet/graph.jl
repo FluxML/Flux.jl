@@ -91,9 +91,8 @@ end
 register(ctx::Context, node) = node
 
 function var(ctx::Context, p::Union{Flux.Param{<:AbstractArray},AbstractArray,AlterParam})
-  id = gensym()
-  ctx[:params][id] = p
-  return mx.Variable(id)
+  haskey(ctx[:params], p) && return ctx[:params][p]
+  ctx[:params][p] = mx.Variable(gensym())
 end
 
 var(ctx::Context, x) = x
@@ -110,10 +109,11 @@ graph′(ctx::Context, args...) = @icatch ctx graph(ctx, args...)
 
 function tograph(model, args...; feedforward = false)
   ctx = Context(mux(iline, iconst, ilambda, iargs, ituple, graph′),
-                params = Dict(), stacks = Dict(),
+                params = ObjectIdDict(), stacks = Dict(),
                 feedforward = feedforward)
   out = @ithrow graph(ctx, model, mapt(mx.Variable, args)...)
-  return Graph(args, out, ctx[:params], ctx[:stacks])
+  params = Dict(nodename(v) => p for (p, v) in ctx[:params])
+  return Graph(args, out, params, ctx[:stacks])
 end
 
 # Error Handling
