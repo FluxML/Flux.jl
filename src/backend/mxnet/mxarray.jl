@@ -12,7 +12,8 @@ end
 
 MXArray(data::mx.NDArray) = MXArray(data, Array{Float32}(size(data)))
 
-MXArray(dims::Dims) = MXArray(mx.zeros(reverse(dims)))
+# TODO: split cpu/gpu mxarrays
+MXArray(dims::Dims, ctx = mx.cpu()) = MXArray(mx.zeros(reverse(dims), ctx))
 
 Base.size(xs::MXArray) = reverse(size(xs.data))
 
