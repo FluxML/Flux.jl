@@ -14,7 +14,7 @@ end
 
 function tf(args...)
   loadtf()
-  eval(:(TF.tf($(args...))))
+  eval(:(TF.tf($(QuoteNode.(args)...))))
 end
 
 function loadmx()
@@ -22,7 +22,7 @@ function loadmx()
   @eval include(joinpath(dirname($@__FILE__), "mxnet/mxnet.jl"))
 end
 
-function mxnet(m)
+function mxnet(args...)
   loadmx()
-  eval(:(MX.mxnet($m)))
+  eval(:(MX.mxnet($(QuoteNode.(args)...))))
 end
