@@ -42,5 +42,11 @@ m = tf(f)
 @test maximum(abs.(m(A)-inv(A))) < error_margin
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# det
+@net f(x) = det(x)
+m = tf(f)
+@test maximum(abs.(m(A)-det(A))) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
