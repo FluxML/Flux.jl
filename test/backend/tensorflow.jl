@@ -25,28 +25,26 @@ end
 
 @testset "Ops" begin
 
-error_margin = 1e-4
+  @testset "svd" begin
+    A = convert(Array{Float32},randn(5,5))
+    @net f(x) = svd(x)
+    m = tf(f)
+    u,s,v = m(A)
+    @test A ≈ u*diagm(s)*transpose(v)
+  end
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# svd
-A = convert(Array{Float32},randn(5,5))
-@net f(x) = svd(x)
-m = tf(f)
-u,s,v = m(A)
-@test maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
+  @testset "inv" begin
+    @net f(x) = inv(x)
+    m = tf(f)
+    @test m(A) ≈ inv(A)
+  end
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# inv
-@net f(x) = inv(x)
-m = tf(f)
-@test maximum(abs.(m(A)-inv(A))) < error_margin
+  @testset "det" begin
+    @net f(x) = det(x)
+    m = tf(f)
+    @test m(A) ≈ det(A)
+  end
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# det
-@net f(x) = det(x)
-m = tf(f)
-@test maximum(abs.(m(A)-det(A))) < error_margin
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+end
 
 end
