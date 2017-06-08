@@ -23,4 +23,18 @@ test_anon(tf)
   @test run(sess, Y, Dict(X=>xs)) ≈ d(xs)
 end
 
+@testset "Ops" begin
+
+error_margin = 1e-4
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# svd
+A = convert(Array{Float32},randn(5,5))
+@net f(x) = svd(x)
+m = tf(f)
+u,s,v = m(A)
+@test maximum(abs.(u*diagm(s)*transpose(v) - A)) < error_margin
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 end
