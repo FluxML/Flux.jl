@@ -28,4 +28,12 @@ using Flux: MaxPool
   @test mx.infer_shape(f.arch, data = (20, 20, 5, 1))[2] == [(10, 1)]
 end
 
+@testset "Duplicate parameters" begin
+  a = Affine(10, 10)
+  d = Chain(a, a)
+  m = mxnet(d)
+  m(randn(1, 10))
+  @test length(m.graph.params) == 2
+end
+
 end
