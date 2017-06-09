@@ -33,6 +33,7 @@ graph(::typeof(size), x) = TensorFlow.size(x)
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
 graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,convert(Tensor{Int32},dims))
 graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
+graph(::typeof(fill), x, dims) = Ops.fill(convert(Tensor{Int32}, dims), Tensor(x))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
