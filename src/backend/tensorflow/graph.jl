@@ -31,7 +31,7 @@ graph(::typeof(svd), x) = svd(x)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           inv, det, transpose, permutedims, cat, length, diag)
+           inv, det, transpose, permutedims, cat, length, diag, diagm)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 

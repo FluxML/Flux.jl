@@ -39,6 +39,8 @@ end
   @test tf(@net x -> length(x))(A1) == length(A1)
   A = randn(Float32,(5,5))
   @test tf(@net x -> diag(x))(A) ≈ diag(A)
+  A = randn(Float32,(5,))
+  @test tf(@net x -> diagm(x))(A) ≈ diagm(A)
 end
 
 end
