@@ -145,7 +145,7 @@ end
 function FeedForward(model; input = :data, label = :softmax, ctx = mx.cpu())
   model = rewrite_softmax(model, label)
   graph = tograph(model, input, feedforward=true)
-  ff = mx.FeedForward(graph.output, context = context)
+  ff = mx.FeedForward(graph.output, context = ctx)
   isempty(graph.params) || (ff.arg_params = ndparams(mxparams(graph.params, ctx)))
   return ff
 end
