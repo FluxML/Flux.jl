@@ -36,6 +36,7 @@ graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
 graph(::typeof(fill), x, dims) = Ops.fill(convert(Tensor{Int32}, dims), Tensor(x))
 graph(::typeof(Flux.cast), args...) = TensorFlow.cast(args...)
 graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
+graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,

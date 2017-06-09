@@ -56,6 +56,8 @@ end
   A = randn(Float32,(5,5))
   b = randn(Float32,(5,1))
   @test tf(@net (x,y) -> solve(x,y))(A,b) ≈ A\b
+  _,A,_ = lu(A)
+  @test tf(@net (x,y) -> triangular_solve(x,y))(A,b) ≈ A\b
 end
 
 end
