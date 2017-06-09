@@ -32,8 +32,8 @@ end
 
 Base.copy(mx::MXArray) = copy!(Array{Float32}(size(mx)), mx)
 
-function MXArray(xs::AbstractArray)
-  mx = MXArray(size(xs))
+function MXArray(xs::AbstractArray, ctx = mx.cpu())
+  mx = MXArray(size(xs), ctx)
   copy!(mx, xs)
 end
 
