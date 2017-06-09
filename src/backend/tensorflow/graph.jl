@@ -31,6 +31,7 @@ graph(::typeof(svd), x) = svd(x)
 graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
 graph(::typeof(size), x) = TensorFlow.size(x)
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
+graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,convert(Tensor{Int32},dims))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
