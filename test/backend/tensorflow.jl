@@ -53,6 +53,9 @@ end
   @test tf(@net (x,y) -> Flux.tile(x,y))(A,[1,1,3]) ≈ repeat(A,outer=(1,1,3))
   @test tf(@net (x,y) -> fill(x,y))(3.2,[3,2]) ≈ convert(Array{Float32},3.2*ones(3,2))
   @test typeof(tf(@net x -> Flux.cast(x,Int32))(A)) == Array{Int32,3}
+  A = randn(Float32,(5,5))
+  b = randn(Float32,(5,1))
+  @test tf(@net (x,y) -> solve(x,y))(A,b) ≈ A\b
 end
 
 end
