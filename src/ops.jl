@@ -1,6 +1,6 @@
-export reshape, tile, fill, cast, solve, triangular_solve, randu
+export reshape, tile, fill, cast, solve, triangular_solve, randu, randn
 
-import Base: reshape, fill
+import Base: reshape, fill, randn
 
 reshape(x::AbstractArray, dims::AbstractArray) = reshape(x,tuple(dims...))
 tile(x::AbstractArray, mult::AbstractArray) = repeat(x,outer=tuple(mult...))
@@ -9,3 +9,4 @@ cast{T}(x::AbstractArray, ::Type{T}) = convert(Array{T},x)
 solve(A::AbstractArray, b::AbstractArray) = A\b
 triangular_solve(A::AbstractArray, b::AbstractArray) = A\b
 randu(x::AbstractArray) = rand(tuple(x...))
+randn(x::AbstractArray) = randn(tuple(x...))

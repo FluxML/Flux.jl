@@ -38,6 +38,7 @@ graph(::typeof(Flux.cast), args...) = TensorFlow.cast(args...)
 graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
 graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
 graph(::typeof(randu), x) = Ops.random_uniform(convert(Tensor{Int32},x);dtype=Float32)
+graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x);dtype=Float32)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,

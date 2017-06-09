@@ -59,6 +59,7 @@ end
   _,A,_ = lu(A)
   @test tf(@net (x,y) -> triangular_solve(x,y))(A,b) ≈ A\b
   @test size(tf(@net x -> randu(x))([2,3])) == (2,3)
+  @test size(tf(@net x -> randn(x))([2,3])) == (2,3)
 end
 
 end
