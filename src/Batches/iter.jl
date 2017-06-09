@@ -1,4 +1,10 @@
-import Base: start, next, done, iteratorsize, iteratoreltype, eltype, length
+# Simple version
+
+using Base.Iterators: partition
+
+partitionr(xs, n) = take(partition(xs, n), length(xs)÷n)
+
+batches(xs, n) = (Batch([xs...]) for xs in partitionr(xs, n))
 
 # Stateful iteration
 
@@ -39,6 +45,8 @@ function taken!(s::StatefulIter, n::Integer)
 end
 
 # Batched
+
+import Base: start, next, done, iteratorsize, iteratoreltype, eltype, length
 
 struct Batched{I<:StatefulIter,S}
   itr::I
