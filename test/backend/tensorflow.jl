@@ -49,6 +49,8 @@ end
   @test tf(@net x -> chol(x))(A) ≈ chol(A)
   A = randn(Float32,(6,3))
   @test transpose(tf(@net (x,y) -> reshape(x,y))(transpose(A),[2,9])) ≈ reshape(A,(9,2)) # Note: TF is row major and julia is not
+  A = randn(Float32,(4,3,1))
+  @test tf(@net (x,y) -> Flux.tile(x,y))(A,[1,1,3]) ≈ repeat(A,outer=(1,1,3))
 end
 
 end
