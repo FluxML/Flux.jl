@@ -37,6 +37,8 @@ end
   A2 = randn(Float32,(4,1))
   @test tf(@net (x,y) -> cat(2,x,y))(A1,A2) ≈ cat(2,A1,A2)
   @test tf(@net x -> length(x))(A1) == length(A1)
+  A = randn(Float32,(5,5))
+  @test tf(@net x -> diag(x))(A) ≈ diag(A)
 end
 
 end
