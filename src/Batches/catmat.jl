@@ -59,6 +59,7 @@ end
 rawbatch(xs::Batchable) = rawbatch(storage(xs))
 size(xs::Batchable) = size(storage(xs))
 getindex(xs::Batchable, i) = getindex(storage(xs), i)
+setindex!(xs::Batchable, v, i...) = setindex!(storage(xs), v, i...)
 
 Base.vcat{T<:Batchable}(xs::T, ys::T)::T = vcat(rawbatch(xs), rawbatch(ys))
 
@@ -84,7 +85,8 @@ dimdec(T::Type{<:AbstractArray}) = deparam(T){eltype(T),ndims(T)-1}
 
 btype(B::Type, S::Type{<:AbstractArray}) = B
 btype(B::Type{<:Batchable}, S::Type{<:AbstractArray}) = B{dimdec(S),S}
-btype(B::Type{<:Batchable{T}} where T, S::Type{<:AbstractArray}) = B{S}
+btype{T}(B::Type{<:Batchable{T}}, S::Type{<:AbstractArray}) = B{S}
+btype{T,S<:AbstractArray}(B::Type{<:Batchable{T,S}}, ::Type{S}) = B
 btype(B::Type{<:Batchable{<:Batchable}}, S::Type{<:AbstractArray}) =
   deparam(B){btype(eltype(B), dimdec(S)),S}
 

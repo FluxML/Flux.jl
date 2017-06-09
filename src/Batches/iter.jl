@@ -48,7 +48,9 @@ end
 function Batched(itr, n::Integer)
   n >= 1 || throw(ArgumentError("batch size must be >= 1"))
   itr = StatefulIter(itr)
-  buf = convert(Batch, similar(eltype(itr)(), n, size(peek(itr))...))
+  x = peek(itr)
+  buf = convert(Batch{typeof(peek(itr))},
+                similar(rawbatch(x), n, size(rawbatch(x))...))
   Batched(itr, buf)
 end
 
@@ -65,6 +67,8 @@ next(x::Batched, _) = x.buf, ()
 function done(x::Batched, _)
   next = taken!(x.itr, length(x.buf))
   length(next) < length(x.buf) && return true
-  x.buf[:] = next
+  for (i, n) in enumerate(next)
+    x.buf[i] = rawbatch(n)
+  end
   return false
 end
