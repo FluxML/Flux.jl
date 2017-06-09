@@ -60,6 +60,11 @@ end
   @test tf(@net (x,y) -> triangular_solve(x,y))(A,b) ≈ A\b
   @test size(tf(@net x -> randu(x))([2,3])) == (2,3)
   @test size(tf(@net x -> randn(x))([2,3])) == (2,3)
+  m = tf(@net (x,y) -> Flux.expand_dims(x,y))
+  A = randn(Float32,(3,2))
+  @test m(A,1) ≈ Flux.expand_dims(A,1)
+  @test m(A,2) ≈ Flux.expand_dims(A,2)
+  @test m(A,3) ≈ Flux.expand_dims(A,3)
 end
 
 end
