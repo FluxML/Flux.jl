@@ -44,6 +44,9 @@ end
   A = randn(4,5)
   @test tf(@net x -> size(x))(A) == [4,5]
   @test tf(@net (x,y) -> size(x,y))(A,1) == 4
+  A = randn(6,5)
+  A = A'*A
+  @test tf(@net x -> chol(x))(A) ≈ chol(A)
 end
 
 end
