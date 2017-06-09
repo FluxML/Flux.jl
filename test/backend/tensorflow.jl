@@ -29,6 +29,8 @@ end
   @test A ≈ u*diagm(s)*transpose(v)
   @test tf(@net x -> inv(x))(A) ≈ inv(A)
   @test tf(@net x -> det(x))(A) ≈ det(A)
+  A = randn(Float32,(6,3))
+  @test tf(@net x -> transpose(x))(A) ≈ transpose(A)
 end
 
 end
