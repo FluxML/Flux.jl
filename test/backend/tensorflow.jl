@@ -41,6 +41,9 @@ end
   @test tf(@net x -> diag(x))(A) ≈ diag(A)
   A = randn(Float32,(5,))
   @test tf(@net x -> diagm(x))(A) ≈ diagm(A)
+  A = randn(4,5)
+  @test tf(@net x -> size(x))(A) == [4,5]
+  @test tf(@net (x,y) -> size(x,y))(A,1) == 4
 end
 
 end
