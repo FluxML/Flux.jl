@@ -27,9 +27,11 @@ graph(::typeof(max), x, dim=nothing) = TensorFlow.reduce_max(x;axis=dim)
 graph(::typeof(all), x, dim=nothing) = TensorFlow.reduce_all(x;axis=dim)
 graph(::typeof(any), x, dim=nothing) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
+graph(::typeof(svd), x) = svd(x)
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
-           sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj)
+           sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
+           inv, det)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 

@@ -23,4 +23,12 @@ test_anon(tf)
   @test run(sess, Y, Dict(X=>xs)) ≈ d(xs)
 end
 
+@testset "Ops" begin
+  A = randn(Float32,(5,5))
+  u,s,v = tf(@net x -> svd(x))(A)
+  @test A ≈ u*diagm(s)*transpose(v)
+  @test tf(@net x -> inv(x))(A) ≈ inv(A)
+  @test tf(@net x -> det(x))(A) ≈ det(A)
+end
+
 end
