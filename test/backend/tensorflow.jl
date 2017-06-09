@@ -24,27 +24,11 @@ test_anon(tf)
 end
 
 @testset "Ops" begin
-
-  @testset "svd" begin
-    A = convert(Array{Float32},randn(5,5))
-    @net f(x) = svd(x)
-    m = tf(f)
-    u,s,v = m(A)
-    @test A ≈ u*diagm(s)*transpose(v)
-  end
-
-  @testset "inv" begin
-    @net f(x) = inv(x)
-    m = tf(f)
-    @test m(A) ≈ inv(A)
-  end
-
-  @testset "det" begin
-    @net f(x) = det(x)
-    m = tf(f)
-    @test m(A) ≈ det(A)
-  end
-
+  A = convert(Array{Float32},randn(5,5))
+  u,s,v = tf(@net x -> svd(x))(A)
+  @test A ≈ u*diagm(s)*transpose(v)
+  @test tf(@net x -> inv(x))(A) ≈ inv(A)
+  @test tf(@net x -> det(x))(A) ≈ det(A)
 end
 
 end
