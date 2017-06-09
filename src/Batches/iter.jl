@@ -1,4 +1,10 @@
-import Base: start, next, done, iteratorsize, iteratoreltype, eltype, length
+# Simple version
+
+using Base.Iterators: partition
+
+partitionr(xs, n) = take(partition(xs, n), length(xs)÷n)
+
+batches(xs, n) = (Batch([xs...]) for xs in partitionr(xs, n))
 
 # Stateful iteration
 
@@ -40,6 +46,8 @@ end
 
 # Batched
 
+import Base: start, next, done, iteratorsize, iteratoreltype, eltype, length
+
 struct Batched{I<:StatefulIter,S}
   itr::I
   buf::S
@@ -48,7 +56,9 @@ end
 function Batched(itr, n::Integer)
   n >= 1 || throw(ArgumentError("batch size must be >= 1"))
   itr = StatefulIter(itr)
-  buf = convert(Batch, similar(eltype(itr)(), n, size(peek(itr))...))
+  x = peek(itr)
+  buf = convert(Batch{typeof(peek(itr))},
+                similar(rawbatch(x), n, size(rawbatch(x))...))
   Batched(itr, buf)
 end
 
@@ -65,6 +75,8 @@ next(x::Batched, _) = x.buf, ()
 function done(x::Batched, _)
   next = taken!(x.itr, length(x.buf))
   length(next) < length(x.buf) && return true
-  x.buf[:] = next
+  for (i, n) in enumerate(next)
+    x.buf[i] = rawbatch(n)
+  end
   return false
 end
