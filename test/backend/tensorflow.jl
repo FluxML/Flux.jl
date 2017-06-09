@@ -31,6 +31,8 @@ end
   @test tf(@net x -> det(x))(A) ≈ det(A)
   A = randn(Float32,(6,3))
   @test tf(@net x -> transpose(x))(A) ≈ transpose(A)
+  A = randn(Float32,(6,3,2))
+  @test tf(@net (x,y) -> permutedims(x,y))(A,[3,2,1]) ≈ permutedims(A,[3,2,1])
 end
 
 end
