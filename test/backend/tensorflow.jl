@@ -33,6 +33,9 @@ end
   @test tf(@net x -> transpose(x))(A) ≈ transpose(A)
   A = randn(Float32,(6,3,2))
   @test tf(@net (x,y) -> permutedims(x,y))(A,[3,2,1]) ≈ permutedims(A,[3,2,1])
+  A1 = randn(Float32,(4,1))
+  A2 = randn(Float32,(4,1))
+  @test tf(@net (x,y) -> cat(2,x,y))(A1,A2) ≈ cat(2,A1,A2)
 end
 
 end
