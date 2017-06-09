@@ -24,7 +24,7 @@ test_anon(tf)
 end
 
 @testset "Ops" begin
-  A = convert(Array{Float32},randn(5,5))
+  A = randn(Float32,(5,5))
   u,s,v = tf(@net x -> svd(x))(A)
   @test A ≈ u*diagm(s)*transpose(v)
   @test tf(@net x -> inv(x))(A) ≈ inv(A)
