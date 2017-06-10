@@ -30,7 +30,7 @@ function train!(m, train; cb = [],
     @progress for e in 1:epoch
       info("Epoch $e")
       @cb for (x, y) in train
-        x, y = tobatch.((x, y))
+        x, y = mapt(tobatch, (x, y))
         ŷ = m(x)
         any(isnan, ŷ) && error("NaN")
         Δ = back!(loss, 1, ŷ, y)
