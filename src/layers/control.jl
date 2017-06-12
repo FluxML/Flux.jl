@@ -7,8 +7,24 @@ end
 @forward Chain.layers Base.start, Base.next, Base.done
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
-back!(s::Chain, Δ) = foldr((m, Δ) -> back!(m, Δ), Δ, s.layers)
 update!(s::Chain, η) = foreach(l -> update!(l, η), s.layers)
+
+function back!(s::Chain, Δ, xs...)
+  crumbs = Tuple[xs]
+  N = length(s.layers)
+
+  for i in 1:N-1
+    xs = s.layers[i](xs...)
+    xs isa Tuple || (xs = (xs, ))
+    push!(crumbs, xs)
+  end
+
+  for i in N:-1:1
+    Δ = back!(s.layers[i], Δ, crumbs[i]...)
+  end
+
+  Δ
+end
 
 graph(s::Chain) =
   foldl((v, m) -> vertex(m, v), constant(inputnode(1)), s.layers)
