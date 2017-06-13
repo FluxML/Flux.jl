@@ -25,8 +25,8 @@ macro cb(ex, t, f)
   end)
 end
 
-function train!(m, train; cb = [],
-                epoch = 1, η = 0.1, loss = mse)
+function train!(m, train; cb = [], opt = SGD(),
+                epoch = 1, loss = mse)
     @progress for e in 1:epoch
       info("Epoch $e")
       @cb for (x, y) in train
@@ -35,7 +35,7 @@ function train!(m, train; cb = [],
         any(isnan, ŷ) && error("NaN")
         Δ = back!(loss, 1, ŷ, y)
         back!(m, Δ, x)
-        update!(m, η)
+        update!(m, opt)
       end 5 foreach(f -> f(), cb)
     end
     return m
