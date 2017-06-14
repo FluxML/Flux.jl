@@ -9,21 +9,15 @@ end
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 update!(s::Chain, η) = foreach(l -> update!(l, η), s.layers)
 
-function back!(s::Chain, Δ, xs...)
-  crumbs = Tuple[xs]
-  N = length(s.layers)
-
-  for i in 1:N-1
-    xs = s.layers[i](xs...)
-    xs isa Tuple || (xs = (xs, ))
-    push!(crumbs, xs)
+function back!(s::Chain, Δ, x)
+  crumbs = foldl([x], s.layers[1:end-1]) do crumbs, layer
+    push!(crumbs, layer(crumbs[end]))
   end
 
-  for i in N:-1:1
-    Δ = back!(s.layers[i], Δ, crumbs[i]...)
+  foldr(Δ, collect(zip(crumbs, s.layers))) do pack, Δ
+    x, layer = pack
+    back!(layer, Δ, x)
   end
-
-  Δ
 end
 
 graph(s::Chain) =
