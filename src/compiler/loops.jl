@@ -103,7 +103,7 @@ end
 function collect_state(v::IVertex)
   state = typeof(v)[]
   offset = Int[]
-  default = Param[]
+  default = []
   prewalk!(v) do v
     value(v) isa Offset || return v
     if (i = findfirst(state, v[1])) == 0
