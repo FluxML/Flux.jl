@@ -2,7 +2,7 @@
 
 struct Batch{T,S} <: Batchable{T,S}
   data::Storage{T,S}
-  Batch{T,S}(data::Storage{T,S}) = new{T,S}(data)
+  Batch{T,S}(data::Storage{T,S}) where {T,S} = new{T,S}(data)
 end
 
 Batch(data::Storage{T,S}) where {T,S} = Batch{T,S}(data)
@@ -26,7 +26,7 @@ tobatch(xs) = tobatch(batchone(xs))
 
 struct Seq{T,S} <: Batchable{T,S}
   data::Storage{T,S}
-  Seq{T,S}(data::Storage{T,S}) = new{T,S}(data)
+  Seq{T,S}(data::Storage{T,S}) where {T,S} = new{T,S}(data)
 end
 
 Seq(data::Storage{T,S}) where {T,S} = Seq{T,S}(data)
