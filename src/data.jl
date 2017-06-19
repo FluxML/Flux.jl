@@ -21,5 +21,3 @@ onecold(y::AbstractVector, labels = 1:length(y)) =
 
 onecold(y::AbstractMatrix, l...) =
   squeeze(mapslices(y -> onecold(y, l...), y, 2), 2)
-
-chunk(xs, n) = Base.Iterators.partition(xs, length(xs)÷n)
