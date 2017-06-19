@@ -35,3 +35,5 @@ end
 (m::Capacitor)(xs...) = interpmodel(m, xs...)
 
 graph(cap::Capacitor) = cap.graph
+
+Base.show(io::IO, ::Capacitor) = print(io, "Capacitor(...)")

@@ -97,6 +97,14 @@ end
 
 mxnet(model, ctx = :cpu) = Model(model, toctx(ctx))
 
+function Base.show(io::IO, m::Model)
+  print(io, "MX.Model(")
+  show(io, m.model)
+  print(io, ", ")
+  show(io, m.ctx)
+  print(io, ")")
+end
+
 import Base: @get!
 
 # TODO: dims having its own type would be useful

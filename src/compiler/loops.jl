@@ -9,6 +9,12 @@ end
 
 Stateful(model, ss) = Stateful(model, ss, state.(ss), state.(ss))
 
+function Base.show(io::IO, m::Stateful)
+  print(io, "Stateful(")
+  show(io, m.model)
+  print(io, ")")
+end
+
 function (m::Stateful)(xs...)
   m.istate = m.ostate
   state, y = m.model((m.istate...,), xs...)
