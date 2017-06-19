@@ -47,7 +47,7 @@ graph(::typeof(vcat), a...) = graph(cat, 1, a...)
 graph(::typeof(map), f, xss::Tuple...) = map(f, xss...)
 graph(::typeof(getindex), t::Tuple, n::Integer) = t[n]
 graph(::typeof(sum), xs::Tuple) = reduce((a, b) -> graph(broadcast, +, a, b), xs)
-graph(::typeof(repeated), x, n) = ntuple(_ -> x, n)
+graph(::typeof(Base.Iterators.repeated), x, n) = ntuple(_ -> x, n)
 
 a::mx.SymbolicNode ∘ b::mx.SymbolicNode = mx.broadcast_mul(a, b)
 
