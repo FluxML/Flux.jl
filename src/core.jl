@@ -6,11 +6,11 @@ module FluxCore
 """
     back!(model, ΔY, X...) => ΔX
 
-Backpropagate the gradient `ΔY` through the model `m`, accumulating the
+Backpropagate the gradient `ΔY` through the model `model`, accumulating the
 gradients of any parameters. Returns the gradient of the input `X`. Gradients
 may be arrays or tuples of arrays (for multiple inputs/outputs).
 """
-back!(model, Δ, xs...) = error("Backprop not implemented for $(typeof(m))")
+back!(model, Δ, xs...) = error("Backprop not implemented for $(typeof(model))")
 
 """
     update!(model, η) => m
