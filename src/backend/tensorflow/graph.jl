@@ -28,10 +28,13 @@ graph(::typeof(all), x, dim=nothing) = TensorFlow.reduce_all(x;axis=dim)
 graph(::typeof(any), x, dim=nothing) = TensorFlow.reduce_any(x;axis=dim)
 graph(::typeof(mean), x, dim=nothing) = TensorFlow.reduce_mean(x;axis=dim)
 graph(::typeof(svd), x) = svd(x)
+graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
+graph(::typeof(size), x) = TensorFlow.size(x)
+graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
-           inv, det)
+           inv, det, transpose, permutedims, cat, length, diag, diagm)
   @eval graph(::typeof($op), args...) = $op(args...)
 end
 
