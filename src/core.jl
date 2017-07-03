@@ -23,12 +23,8 @@ update!(m, η) = m
 """
     graph(model) => ::IVertex{Any} | nothing
 
-Returns the graph representation of the model, if any. Most models are built
-from lower-level components and can simply implement this method to get most of
-Flux's functionality. If this method isn't available, functionality like
-backpropagation or conversion for backend must be implemented on a case-by-case
-basis. Alternatively, one can implement this method and override individual
-methods as necessary.
+Returns the graph representation of the model, if any. May be used for
+compilation, generating symbolic gradients, etc.
 """
 graph(m) = nothing
 
