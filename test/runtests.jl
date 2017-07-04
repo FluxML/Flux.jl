@@ -10,6 +10,8 @@ macro tfonly(ex)
   :(Base.find_in_path("TensorFlow") ≠ nothing && $(esc(ex)))
 end
 
+@testset "Flux" begin
+
 include("batching.jl")
 include("backend/common.jl")
 
@@ -19,3 +21,5 @@ include("optimizer.jl")
 
 @tfonly include("backend/tensorflow.jl")
 @mxonly include("backend/mxnet.jl")
+
+end
