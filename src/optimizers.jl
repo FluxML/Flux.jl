@@ -1,15 +1,18 @@
 export SGD, AdaGrad, RMSProp, AdaDelta, Adam
 
 struct Optimizer
-  cache::Dict{Param, Vector{Function}}
   steps
-  Optimizer(steps) = new(Dict{Param, Function}(), steps)
 end
 
-function update!(p::Param, o::Optimizer)
-  steps = Base.@get!(o.cache, p, map(x->x(p), o.steps))
-  foreach(f->f(p), steps)
-  @. p.x -= p.Δx
+function (o::Optimizer)(ps::Vector{Param})
+  states = map(ps) do p
+    p, map(x->x(p), o.steps)
+  end
+
+  () -> for (p, steps) in states
+    foreach(f->f(p), steps)
+    @. p.x -= p.Δx
+  end
 end
 
 function Momentum(η)

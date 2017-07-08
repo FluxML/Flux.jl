@@ -29,13 +29,14 @@ function train!(m, train; cb = [], opt = SGD(),
                 epoch = 1, loss = mse)
     @progress for e in 1:epoch
       info("Epoch $e")
+      opt! = opt(params(m))
       @cb for (x, y) in train
         x, y = mapt(tobatch, (x, y))
         ŷ = m(x)
         any(isnan, ŷ) && error("NaN")
         Δ = back!(loss, 1, ŷ, y)
         back!(m, Δ, x)
-        update!(m, opt)
+        opt!()
       end 5 foreach(f -> f(), cb)
     end
     return m
