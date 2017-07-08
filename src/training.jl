@@ -29,10 +29,11 @@ function train!(m, train; cb = [], opt = SGD(),
                 epoch = 1, loss = mse)
     @progress for e in 1:epoch
       info("Epoch $e")
-      opt! = opt(params(m))
+      opt! = nothing # `params(m)` is not valid before calling m(x) in mxnet backend
       @cb for (x, y) in train
         x, y = mapt(tobatch, (x, y))
         ŷ = m(x)
+        opt! = opt! == nothing ? opt(params(m)) : opt!
         any(isnan, ŷ) && error("NaN")
         Δ = back!(loss, 1, ŷ, y)
         back!(m, Δ, x)
