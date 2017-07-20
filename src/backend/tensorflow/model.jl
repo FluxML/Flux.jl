@@ -11,9 +11,11 @@ end
 function makesession(model, inputs; session = Session(Graph()))
   inputs = mapt(_ -> placeholder(Float32), inputs)
   params, stacks, output = tograph(model, inputs...)
-  params = Dict(x=>Param{Tensor}(y, gradients(output, y)) for (x, y) in params)
-  inputs = mapt(x->Param{Tensor}(x, gradients(output, x)), inputs)
   output = mapt(x->Param{Tensor}(x, placeholder(Float32)), output)
+  params = Dict(x=>Param{Tensor}(y, gradients(mapt(x->x.x, output),
+                                 y, mapt(x->x.Δx, output))) for (x, y) in params)
+  inputs = mapt(x->Param{Tensor}(x, gradients(mapt(x->x.x, output),
+                                 x, mapt(x->x.Δx, output))), inputs)
   run(session, global_variables_initializer())
   Exec(session, inputs, output, params, stacks)
 end

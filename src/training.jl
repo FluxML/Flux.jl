@@ -27,9 +27,9 @@ end
 
 function train!(m, train; cb = [], opt = SGD(),
                 epoch = 1, loss = mse)
+    opt! = nothing # `params(m)` is not valid before calling m(x) in both backends
     @progress for e in 1:epoch
       info("Epoch $e")
-      opt! = nothing # `params(m)` is not valid before calling m(x) in mxnet backend
       @cb for (x, y) in train
         x, y = mapt(tobatch, (x, y))
         ŷ = m(x)
