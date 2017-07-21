@@ -4,18 +4,20 @@ struct Exec
   session ::Session
   input   ::Any
   output  ::Any
-  grads   ::Any
-  params  ::Dict{Flux.Param,Tensor}
+  params  ::Dict{Param,Param{Tensor}}
   stacks  ::Dict{Any,Any}
 end
 
 function makesession(model, inputs; session = Session(Graph()))
   inputs = mapt(_ -> placeholder(Float32), inputs)
   params, stacks, output = tograph(model, inputs...)
-  # grads = gradients(output, [collectt(inputs)..., values(params)...])
-  grads = placeholder(Float32)
+  output = mapt(x->Param{Tensor}(x, placeholder(Float32)), output)
+  params = Dict(x=>Param{Tensor}(y, gradients(mapt(x->x.x, output),
+                                 y, mapt(x->x.Δx, output))) for (x, y) in params)
+  inputs = mapt(x->Param{Tensor}(x, gradients(mapt(x->x.x, output),
+                                 x, mapt(x->x.Δx, output))), inputs)
   run(session, global_variables_initializer())
-  Exec(session, inputs, output, grads, params, stacks)
+  Exec(session, inputs, output, params, stacks)
 end
 
 retuple(xs) = xs
@@ -23,35 +25,33 @@ retuple(xs::AbstractArray{<:AbstractArray}) = (retuple.(xs)...,)
 
 dictt(xs, ys) = Dict(zip(collectt(xs), collectt(ys)))
 
-function params(m::Exec, args...)
-  shapecheckt(m.input, args)
-  idict = dictt(m.input, args)
-  pdict = Dict(t => p.x for (p, t) in m.params)
-  merge(idict, pdict)
-end
-
 function (m::Exec)(args...)
-  retuple(run(m.session, m.output, params(m, args...)))
+  dict = merge(
+    Dict(y.x=>x.x for (x, y) in m.params),
+    Dict(x.x=>y for (x, y) in zip(m.input, args))
+  )
+  retuple(run(m.session, mapt(x->x.x, m.output), dict))
 end
-
-pullt!(_, xs) = shift!(xs)
-pullt!(x::Tuple, xs) = map(x -> pullt!(x, xs), x)
-
-# TODO: gradients don't work yet
-# `gradients` lacks support for `grad_y`s and multiple `y`s
 
 function Flux.back!(m::Exec, Δ, args...)
-  Δps = run(m.session, m.grads, params(m, args...))
-  Δin = pullt!(m.input, Δps)
+  dict = merge(
+    Dict(y.x=>x.x for (x, y) in m.params),
+    Dict(x.x=>y for (x, y) in zip(m.input, args)),
+    Dict(x.Δx=>y for (x, y) in zip(collectt(m.output), collectt(Δ)))
+  )
+
+  Δin, Δps = run(m.session, (mapt(x->x.Δx, m.input), map(x->x.Δx, values(m.params))), dict)
+
   for (p, Δ) in zip(keys(m.params), Δps)
     p.Δx .+= Δ
   end
+
   Δin
 end
 
 function Flux.update!(m::Exec, η)
   for p in keys(m.params)
-    update!(p, η)
+    Flux.update!(p, η)
   end
   return m
 end
@@ -70,8 +70,8 @@ function (m::Model)(args...)
   @tferr m.exec.stacks m.exec(args...)
 end
 
-Flux.back!(m::Model, Δ, args...) = back!(m.exec, Δ, args...)
-Flux.update!(m::Model, η) = (update!(m.exec, η); m)
+Flux.back!(m::Model, Δ, args...) = Flux.back!(m.exec, Δ, args...)
+Flux.update!(m::Model, η) = (Flux.update!(m.exec, η); m)
 
 # Recurrent Models
 
