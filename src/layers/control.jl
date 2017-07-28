@@ -9,6 +9,8 @@ end
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 update!(s::Chain, η) = foreach(l -> update!(l, η), s.layers)
 
+params(s::Chain) = mapreduce(params, append!, s.layers)
+
 function back!(s::Chain, Δ, x)
   crumbs = foldl([x], s.layers[1:end-1]) do crumbs, layer
     push!(crumbs, layer(crumbs[end]))

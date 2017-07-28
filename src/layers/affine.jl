@@ -22,3 +22,7 @@ function update!(m::Affine, η)
   update!(m.b, η)
   m
 end
+
+function params(m::Affine)
+  Param[m.W, m.b]
+end

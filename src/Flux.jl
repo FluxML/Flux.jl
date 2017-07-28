@@ -41,6 +41,7 @@ include("layers/shims.jl")
 include("backend/backend.jl")
 
 include("data.jl")
+include("optimizers.jl")
 include("training.jl")
 
 end # module

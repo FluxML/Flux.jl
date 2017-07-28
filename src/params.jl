@@ -39,3 +39,5 @@ end
 
 Base.copy!(xs, p::Param) = copy!(xs, p.x)
 Base.copy!(p::Param, xs) = copy!(p.x, xs)
+
+params(m) = Param[]

@@ -34,6 +34,13 @@ end
 
 loadparams!(exec::Exec) = copyargs!(exec.args, exec.graph.params)
 storeparams!(exec::Exec) = copyargs!(exec.graph.params, exec.args)
+storegrads!(exec::Exec) = begin
+  params, grads = exec.graph.params, exec.grads
+  for id in intersect(keys(params), keys(grads))
+    copy!(params[id].Δx, grads[id])
+    grads[id].data[:] = 0
+  end
+end
 
 mxgroup(x) = x
 mxgroup(x::Tuple) = mx.Group(mxgroup.(x)...)
@@ -58,6 +65,7 @@ function executor(graph::Graph, input...; ctx = mx.cpu())
 end
 
 function (exec::Exec)(input...)
+  loadparams!(exec)
   foreach(kv -> copy!(exec.args[kv[1]], kv[2]), dictt(exec.graph.input, input))
   mx.forward(exec.exec, is_train = true)
   mxungroup(exec.graph.output, copy(exec.outs))
@@ -66,6 +74,7 @@ end
 function Flux.back!(exec::Exec, Δ)
   mapt(k -> exec.grads[k][:] = 0, exec.graph.input)
   mx.backward(exec.exec, map(x -> MXArray(x, exec.ctx).data, collectt(Δ)))
+  storegrads!(exec)
   mapt(k -> copy(exec.grads[k]), exec.graph.input)
 end
 
@@ -127,6 +136,8 @@ function Flux.back!(m::Model, Δ, xs...)
 end
 
 Flux.update!(m::Model, η) = (update!(m.last, η); m)
+
+Flux.params(m::Model) = collect(Flux.Param, values(m.graph.params))
 
 # Recurrent Models
 
