@@ -18,6 +18,7 @@ include("backend/common.jl")
 include("basic.jl")
 include("recurrent.jl")
 include("optimizer.jl")
+include("throttle.jl")
 
 @tfonly include("backend/tensorflow.jl")
 @mxonly include("backend/mxnet.jl")
