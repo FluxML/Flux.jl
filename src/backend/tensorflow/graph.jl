@@ -31,6 +31,15 @@ graph(::typeof(svd), x) = svd(x)
 graph(::typeof(size), x, dim) = TensorFlow.size(x,convert(Tensor{Int32}, dim))
 graph(::typeof(size), x) = TensorFlow.size(x)
 graph(::typeof(chol), args...) = TensorFlow.transpose(TensorFlow.cholesky(args...))
+graph(::typeof(reshape), x, dims) = TensorFlow.reshape(x,convert(Tensor{Int32},dims))
+graph(::typeof(Flux.tile), args...) = TensorFlow.tile(args...)
+graph(::typeof(fill), x, dims) = Ops.fill(convert(Tensor{Int32}, dims), Tensor(x))
+graph(::typeof(Flux.cast), args...) = TensorFlow.cast(args...)
+graph(::typeof(solve), A, b) = TensorFlow.matrix_solve(A, b)
+graph(::typeof(triangular_solve), A, b) = TensorFlow.matrix_triangular_solve(A, b; lower=false)
+graph(::typeof(randu), x) = Ops.random_uniform(convert(Tensor{Int32},x);dtype=Float32)
+graph(::typeof(randn), x) = TensorFlow.random_normal(convert(Tensor{Int32},x);dtype=Float32)
+graph(::typeof(Flux.expand_dims), x, dim) = TensorFlow.expand_dims(x,convert(Tensor{Int32},dim))
 
 for op in (*, .*, .+, .^, log, exp, ceil, floor, sqrt, abs, cos,
            sin, tan, atan, asin, acos, tanh, lgamma, erf, erfc, real, imag, conj,
