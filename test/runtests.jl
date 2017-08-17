@@ -2,14 +2,6 @@ using Flux, DataFlow, MacroTools, Base.Test
 using Flux: graph, Param, squeeze, unsqueeze, back!, update!, flatten
 using DataFlow: Line, Frame
 
-macro mxonly(ex)
-  :(Base.find_in_path("MXNet") ≠ nothing && $(esc(ex)))
-end
-
-macro tfonly(ex)
-  :(Base.find_in_path("TensorFlow") ≠ nothing && $(esc(ex)))
-end
-
 @testset "Flux" begin
 
 include("batching.jl")
@@ -19,8 +11,5 @@ include("basic.jl")
 include("recurrent.jl")
 include("optimizer.jl")
 include("throttle.jl")
-
-@tfonly include("backend/tensorflow.jl")
-@mxonly include("backend/mxnet.jl")
 
 end

@@ -38,8 +38,6 @@ include("layers/cost.jl")
 include("layers/recurrent.jl")
 include("layers/shims.jl")
 
-include("backend/backend.jl")
-
 include("data.jl")
 include("training.jl")
 
