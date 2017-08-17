@@ -1,4 +1,4 @@
-using Flux: mapt, collectt, shapecheckt
+using Flux: Param, mapt, collectt, shapecheckt
 
 struct Exec
   session ::Session
