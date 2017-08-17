@@ -36,7 +36,6 @@ include("layers/affine.jl")
 include("layers/activation.jl")
 include("layers/cost.jl")
 include("layers/recurrent.jl")
-include("layers/shims.jl")
 
 include("data.jl")
 include("training.jl")
