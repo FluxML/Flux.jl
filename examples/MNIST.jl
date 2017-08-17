@@ -1,5 +1,5 @@
 using Flux, MNIST
-using Flux: accuracy, onehot
+using Flux: accuracy, onehot, tobatch
 
 data = [(trainfeatures(i), onehot(trainlabel(i), 0:9)) for i = 1:60_000]
 train = data[1:50_000]
