@@ -1,7 +1,7 @@
 # Based on https://arxiv.org/abs/1409.0473
 
 using Flux
-using Flux: flip, stateless, broadcastto, ∘
+using Flux: Batch, Seq, param, flip, stateless, broadcastto, ∘
 
 Nbatch  =  3 # Number of phrases to batch together
 Nphrase =  5 # The length of (padded) phrases
@@ -45,6 +45,6 @@ model = @Chain(
 
 model = mxnet(Flux.SeqModel(model, Nphrase))
 
-xs = Batch(Seq(rand(Nalpha) for i = 1:Nphrase) for i = 1:Nbatch)
+xs = Batch([Seq(rand(Nalpha) for i = 1:Nphrase) for i = 1:Nbatch])
 
 model(xs)
