@@ -23,7 +23,6 @@ include("core.jl")
 import .FluxCore: back!, update!, graph
 
 include("utils.jl")
-include("ops.jl")
 include("params.jl")
 
 include("compiler/code.jl")
