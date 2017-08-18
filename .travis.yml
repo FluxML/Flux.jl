@@ -6,9 +6,9 @@ os:
 julia:
   - 0.6
 # uncomment the following lines to override the default test script
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.checkout("DataFlow"); Pkg.build("Flux"); Pkg.test("Flux"; coverage=true)'
+# script:
+#   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#   - julia -e 'Pkg.clone(pwd()); Pkg.checkout("DataFlow"); Pkg.build("Flux"); Pkg.test("Flux"; coverage=true)'
 after_success:
   # - julia -e 'Pkg.add("Documenter")'
   - julia -e 'Pkg.clone("https://github.com/MikeInnes/Documenter.jl")'
