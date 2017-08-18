@@ -66,7 +66,6 @@ function process_type(ex)
   quote
     $(build_type(T, params))
     $(esc(:((self::$T)($(args...)) = $(build_forward(body, args)))))
-    $(esc(:(Flux.update!(self::$T, η)))) = ($(map(p -> :(update!($self.$p, η)), pnames)...);)
     $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(map(esc, makegraph(body, args, params))))
     nothing
   end

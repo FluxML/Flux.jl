@@ -17,7 +17,7 @@ export @net, unroll, unroll1, @shapes,
 # Zero Flux Given
 
 include("core.jl")
-import .FluxCore: back!, update!, graph
+import .FluxCore: graph
 
 include("utils.jl")
 include("params.jl")

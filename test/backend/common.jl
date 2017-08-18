@@ -25,24 +25,6 @@ function test_recurrence(bk)
   end
 end
 
-function test_back(bk)
-  @testset "Backward Pass" begin
-    xs, ys = rand(1, 20), rand(1, 20)
-    d = Affine(20, 10)
-    dm = bk(d)
-    d′ = deepcopy(d)
-    @test dm(xs) ≈ d(xs)
-    @test dm(xs) ≈ d′(xs)
-
-    Δ = back!(dm, randn(1, 10), xs)
-    @test length(Δ[1]) == 20
-    update!(dm, 0.1)
-
-    @test dm(xs) ≈ d(xs)
-    @test !(dm(xs) ≈ d′(xs))
-  end
-end
-
 function test_stacktrace(bk)
   @testset "Stack Traces" begin
     model = TLP(Affine(10, 20), Affine(21, 15))

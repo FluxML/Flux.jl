@@ -22,12 +22,6 @@ function (m::Stateful)(xs...)
   return y
 end
 
-function back!(m::Stateful, Δ, x)
-  back!(m.model, ((zeros.(m.ostate)...,), Δ), (m.istate...,), x)[2:end]
-end
-
-update!(m::Stateful, η) = update!(m.model, η)
-
 # Seq Models
 
 struct SeqModel
@@ -51,14 +45,6 @@ function (m::SeqModel)(xs...)
   xs = seqtuple(xs, m.steps)
   reseq(m.model(xs...))
 end
-
-function back!(m::SeqModel, args...)
-  args = seqtuple(args, 0)
-  # TODO: reseq
-  back!(m.model, args...)
-end
-
-update!(m::SeqModel, η) = update!(m.model, η)
 
 graph(m::SeqModel) = graph(m.model)
 
