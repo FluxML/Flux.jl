@@ -20,6 +20,7 @@ include("core.jl")
 import .FluxCore: graph
 
 include("utils.jl")
+include("grad/track.jl")
 include("params.jl")
 
 include("compiler/code.jl")
