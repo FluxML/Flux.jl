@@ -43,8 +43,6 @@ seqtuple(xs::AbstractArray, n) =
   n ≠ 0 && size(xs, 2) ≠ n ? error("Expecting sequence length $n, got $(size(xs, 2))") :
   (unstack(xs, 2)...)
 
-seqtuple(xs::Batch{<:Seq}, n) = seqtuple(rawbatch(xs), n)
-
 reseq(x) = x
 reseq(x::Tuple{}) = ()
 reseq(xs::Tuple) = all(isa.(xs, AbstractArray) .& (ndims.(xs) .≥ 2)) ? stack(xs, 2) : reseq.(xs)

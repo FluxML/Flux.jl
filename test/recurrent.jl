@@ -13,5 +13,5 @@ end
   _, ys = apply(unroll1(r).model, xs, (r.y.x,))
   @test ys[1] == tanh(xs[1] * r.Wxy.x .+ r.y.x * r.Wyy.x .+ r.by.x)
   ru = unroll(r, 3)
-  ru(batchone(Seq(squeeze.(xs))))[1] == squeeze.(ys)
+  ru(unsqueeze(stack(squeeze.(xs))))[1] == squeeze.(ys)
 end

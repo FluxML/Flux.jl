@@ -16,9 +16,6 @@ export @net, unroll, unroll1, @shapes,
 
 # Zero Flux Given
 
-include("Batches/Batches.jl")
-using .Batches
-
 include("core.jl")
 import .FluxCore: back!, update!, graph
 
@@ -37,6 +34,5 @@ include("layers/cost.jl")
 include("layers/recurrent.jl")
 
 include("data.jl")
-include("training.jl")
 
 end # module
