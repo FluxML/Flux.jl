@@ -9,10 +9,3 @@ back!(::typeof(relu), Δ, x) = Δ .* (x .> 0)
 softmax(xs) = exp.(xs) ./ sum(exp.(xs), 2)
 
 flatten(xs) = reshape(xs, size(xs, 1), :)
-
-infer(::typeof(softmax), x) = x
-infer(::typeof(tanh), x) = x
-infer(::typeof(relu), x) = x
-infer(::typeof(σ), x) = x
-
-infer(::typeof(flatten), x::Dims) = (x[1], prod(x[2:end])...)

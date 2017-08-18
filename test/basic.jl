@@ -10,8 +10,6 @@ d = Affine(10, 20)
 
 d1 = @net x -> x * d.W + d.b
 
-@test Flux.infer(d, (1, 10)) == (1,20)
-
 # Skip this before new DataFlow is released.
 # let
 #   @test @capture(syntax(d), _Frame(_Line((+).(x_[1] * W_, b_))))
@@ -24,7 +22,6 @@ let a1 = Affine(10, 20), a2 = Affine(20, 15)
   tlp = TLP(a1, a2)
   @test tlp(xs) ≈ softmax(a2(σ(a1(xs))))
   @test Flux.interpmodel(tlp, xs) ≈ softmax(a2(σ(a1(xs))))
-  @test Flux.infer(tlp, (1, 10)) == (1,15)
 end
 
 let tlp = TLP(Affine(10, 21), Affine(20, 15))

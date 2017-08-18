@@ -25,7 +25,6 @@ include("params.jl")
 include("compiler/code.jl")
 include("compiler/loops.jl")
 include("compiler/interp.jl")
-include("compiler/shape.jl")
 
 include("layers/control.jl")
 include("layers/affine.jl")
