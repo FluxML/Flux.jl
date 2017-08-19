@@ -1,6 +1,8 @@
 import DataFlow: cse
 using MacroTools: @q, @>
 
+graph(m) = nothing
+
 function graphdef(ex, params = [])
   @capture(shortdef(ex), (args__,) -> body_)
   body = @> body MacroTools.flatten liftloops graphm DataFlow.il

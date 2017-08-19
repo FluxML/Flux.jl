@@ -16,9 +16,6 @@ export @net, unroll, unroll1, @shapes,
 
 # Zero Flux Given
 
-include("core.jl")
-import .FluxCore: graph
-
 include("Tracker/Tracker.jl")
 using .Tracker
 
