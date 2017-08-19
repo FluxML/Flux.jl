@@ -1,10 +1,52 @@
 import Base: *
 
-a::TrackedMatrix * b::Union{TrackedMatrix,AbstractMatrix} = Var(Call(*, a, b))
-a::Union{TrackedMatrix,AbstractMatrix} * b::TrackedMatrix = Var(Call(*, a, b))
+Base.getindex(xs::TrackedArray, i...) = TrackedArray(Call(getindex, xs, i...))
 
-function back!(::typeof(*), Δ, a::AbstractArray, b::AbstractArray)
+function back!(::typeof(getindex), Δ, xs::TrackedArray, i...)
+  Δ′ = zeros(xs)
+  Δ′[i...] = Δ
+  back!(xs, Δ′)
+end
+
+Base.:-(xs::TrackedArray) = TrackedArray(Call(-, xs))
+
+a::TrackedMatrix * b::TrackedMatrix  = TrackedArray(Call(*, a, b))
+a::TrackedMatrix * b::AbstractMatrix = TrackedArray(Call(*, a, b))
+a::AbstractMatrix * b::TrackedMatrix = TrackedArray(Call(*, a, b))
+
+function back!(::typeof(*), Δ, a::AbstractMatrix, b::AbstractMatrix)
   back!(a, A_mul_Bt(Δ, data(b)))
   back!(b, At_mul_B(data(a), Δ))
+end
+
+# Broadcasting
+
+using ForwardDiff: Dual, partials
+
+struct Broadcasted{T}
+  data::T
+end
+
+(b::Broadcasted)(xs...) = map(x -> x.value, b.data)
+
+dualify(xs, n) = xs
+dualify(xs::TrackedArray, ps) = Dual.(data(xs), Ref(ps))
+
+function tracked_broadcast(f, args::Vararg{Any,N}) where N
+  dargs = ntuple(i -> dualify(args[i], ntuple(j -> i==j, Val{N})), Val{N})
+  TrackedArray(Call(Broadcasted(broadcast(f, dargs...)), args...))
+end
+
+function back!(b::Broadcasted, Δ, args...)
+  Δargs = ntuple(i -> Δ .* getindex.(partials.(b.data), i), length(args))
+  back!.(args, Δargs)
   return
 end
+
+Base.Broadcast._containertype(::Type{<:TrackedArray}) = TrackedArray
+Base.Broadcast.promote_containertype(::Type{Array}, ::Type{TrackedArray}) = TrackedArray
+Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{Array}) = TrackedArray
+Base.Broadcast.broadcast_indices(::Type{TrackedArray}, A::Ref) = ()
+Base.Broadcast.broadcast_indices(::Type{TrackedArray}, A) = indices(A)
+
+Base.Broadcast.broadcast_c(f, ::Type{TrackedArray}, A, Bs...) = tracked_broadcast(f, A, Bs...)

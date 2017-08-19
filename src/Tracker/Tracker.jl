@@ -43,9 +43,16 @@ function back!(x::TrackedArray, Δ)
   back!(x.f, Δ)
 end
 
-for f in :[Base.size, Base.ndims, Base.similar].args
+# Fallthrough methods
+
+for f in :[Base.size, Base.ndims].args
   @eval @inline $f(x::TrackedArray, a...) = $f(data(x), a...)
 end
+
+Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
+  similar(data(x), dims...)
+
+Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
 function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
   if repr
@@ -57,5 +64,7 @@ function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = tru
     Base.showarray(io, data(X), false, header = false)
   end
 end
+
+include("lib.jl")
 
 end
