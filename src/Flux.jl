@@ -19,7 +19,7 @@ include("params.jl")
 include("compiler/Compiler.jl")
 using .Compiler: @net
 
-include("layers/control.jl")
+include("layers/chain.jl")
 include("layers/affine.jl")
 include("layers/activation.jl")
 include("layers/cost.jl")
