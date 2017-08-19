@@ -1,5 +1,5 @@
 using DataFlow, MacroTools
-using Flux: Param, Recurrent, squeeze, unsqueeze, stack
+using Flux: squeeze, unsqueeze, stack
 using Flux.Compiler: @net, graph
 using DataFlow: Line, Frame
 
@@ -20,6 +20,17 @@ Affine(in::Integer, out::Integer; init = Flux.initn) =
     l2 = softmax(second(l1))
   end
 end
+
+@net type Recurrent
+  Wxy; Wyy; by
+  y
+  function (x)
+    y = tanh( x * Wxy .+ y{-1} * Wyy .+ by )
+  end
+end
+
+Recurrent(in, out; init = Flux.initn) =
+  Recurrent(init((in, out)), init((out, out)), init(1, out), init(1, out))
 
 syntax(v::Vertex) = prettify(DataFlow.syntax(v))
 syntax(x) = syntax(graph(x))

@@ -23,7 +23,6 @@ include("layers/chain.jl")
 include("layers/affine.jl")
 include("layers/activation.jl")
 include("layers/cost.jl")
-include("layers/recurrent.jl")
 
 include("data.jl")
 
