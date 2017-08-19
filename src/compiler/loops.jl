@@ -9,7 +9,7 @@ mutable struct Stateful
   ostate::Vector{Any}
 end
 
-Stateful(model, ss) = Stateful(model, ss, state.(ss), state.(ss))
+Stateful(model, ss) = Stateful(model, ss, ss, ss)
 
 function Base.show(io::IO, m::Stateful)
   print(io, "Stateful(")

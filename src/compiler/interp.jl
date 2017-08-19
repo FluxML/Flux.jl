@@ -17,7 +17,7 @@ function interp(ctx, f, xs...)
   g = graph(f)
   g ≠ nothing && iscyclic(g) && error("Can't interpret cyclic graph")
   @icatch(ctx, g ≠ nothing ?
-    interpret(ctx, reifyparams(g), xs...) :
+    interpret(ctx, g, xs...) :
     f(xs...))
 end
 

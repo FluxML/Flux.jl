@@ -29,13 +29,13 @@ syntax(x) = syntax(graph(x))
 xs = randn(1, 10)
 d = Affine(10, 20)
 
-@test d(xs) ≈ (xs*d.W.x + d.b.x)
+@test d(xs) ≈ (xs*d.W + d.b)
 
 d1 = @net x -> x * d.W + d.b
 
 let
   @capture(syntax(d), _Frame(_Line((+).(x_[1] * W_, b_))))
-  @test isa(x, DataFlow.Input) && isa(W, Param) && isa(b, Param)
+  @test isa(x, DataFlow.Input) && W isa Array && b isa Array
 end
 
 let a1 = Affine(10, 20), a2 = Affine(20, 15)
@@ -66,8 +66,8 @@ end
 @testset "RNN unrolling" begin
   r = Recurrent(10, 5)
   xs = [rand(1, 10) for _ = 1:3]
-  _, ys = apply(Flux.Compiler.unroll1(r).model, xs, (r.y.x,))
-  @test ys[1] == tanh(xs[1] * r.Wxy.x .+ r.y.x * r.Wyy.x .+ r.by.x)
+  _, ys = apply(Flux.Compiler.unroll1(r).model, xs, (r.y,))
+  @test ys[1] == tanh(xs[1] * r.Wxy .+ r.y * r.Wyy .+ r.by)
   ru = Flux.Compiler.unroll(r, 3)
   ru(unsqueeze(stack(squeeze.(xs))))[1] == squeeze.(ys)
 end

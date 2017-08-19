@@ -1,6 +1,5 @@
 import DataFlow: cse
 using MacroTools: @q, @>
-import ..Flux: Param, param, state
 
 graph(m) = nothing
 
@@ -28,33 +27,17 @@ end
 
 function build_type(T, params)
   @esc T
-  ex = quote
-    type $T
+  :(type $T
       $(params...)
-    end
-  end
-  if any(x->isexpr(x, Symbol), params)
-    push!(ex.args,
-      :($T($(map(x->isexpr(x, Symbol) ? :($x::AbstractArray) : x, params)...)) =
-          $T($(map(x->isexpr(x, Symbol) ? :(param($x)) : namify(x), params)...))))
-  end
-  ex
-end
-
-function deref_params(v)
-  map(v) do x
-    @capture(x, self.p_) ? :(Flux.state(self.$p)) : x
-  end
+    end)
 end
 
 function build_forward(body, args)
   iscyclic(body) && return :(error("Can't run forward pass on a cyclic graph"))
-  applylines(syntax(cse(deref_params(body))))
+  applylines(syntax(cse(body)))
 end
 
 import Lazy: groupby
-
-reifyparams(v::IVertex) = map(x -> x isa Param ? x.x : x, v)
 
 # TODO: type hints for parameters
 
