@@ -15,27 +15,6 @@ convertel{T}(::Type{T}, xs::AbstractArray{T}) = xs
 
 a ∘ b = a .* b
 
-broadcastto(xs::AbstractArray, shape) = xs .* ones(shape)
-
-# Tuples
-
-mapt(f, x) = f(x)
-mapt(f, xs::Tuple) = map(x -> mapt(f, x), xs)
-
-function collectt(xs)
-  ys = []
-  mapt(x -> push!(ys, x), xs)
-  return ys
-end
-
-function shapecheckt(xs::Tuple, ys::Tuple)
-  length(xs) == length(ys) || error("Expected tuple length $(length(xs)), got $ys")
-  shapecheckt.(xs, ys)
-end
-
-shapecheckt(xs::Tuple, ys) = error("Expected tuple, got $ys")
-shapecheckt(xs, ys) = nothing
-
 # Other
 
 function accuracy(m, data)

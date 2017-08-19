@@ -1,5 +1,6 @@
 using Flux, DataFlow, MacroTools, Base.Test
-using Flux: graph, Param, squeeze, unsqueeze, stack, update!, flatten
+using Flux: Param, param, squeeze, unsqueeze, stack, update!, flatten
+using Flux.Compiler: @net
 using DataFlow: Line, Frame
 
 @testset "Flux" begin

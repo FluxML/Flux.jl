@@ -1,3 +1,5 @@
+using Flux: Affine
+
 syntax(v::Vertex) = prettify(DataFlow.syntax(v))
 syntax(x) = syntax(graph(x))
 
@@ -21,12 +23,12 @@ test_anon(identity)
 let a1 = Affine(10, 20), a2 = Affine(20, 15)
   tlp = TLP(a1, a2)
   @test tlp(xs) ≈ softmax(a2(σ(a1(xs))))
-  @test Flux.interpmodel(tlp, xs) ≈ softmax(a2(σ(a1(xs))))
+  @test Flux.Compiler.interpmodel(tlp, xs) ≈ softmax(a2(σ(a1(xs))))
 end
 
 let tlp = TLP(Affine(10, 21), Affine(20, 15))
   e = try
-    Flux.interpmodel(tlp, rand(1, 10))
+    Flux.Compiler.interpmodel(tlp, rand(1, 10))
   catch e
     e
   end

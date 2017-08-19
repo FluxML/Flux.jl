@@ -8,7 +8,7 @@ end
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 
-graph(s::Chain) =
+Compiler.graph(s::Chain) =
   foldl((v, m) -> vertex(m, v), constant(inputnode(1)), s.layers)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)

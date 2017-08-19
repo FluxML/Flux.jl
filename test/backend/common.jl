@@ -19,7 +19,7 @@ end
 function test_recurrence(bk)
   @testset "Recurrence" begin
     seq = unsqueeze(stack(rand(10) for i = 1:3))
-    r = unroll(Recurrent(10, 5), 3)
+    r = Flux.Compiler.unroll(Recurrent(10, 5), 3)
     rm = bk(r)
     @test r(seq) ≈ rm(seq)
   end

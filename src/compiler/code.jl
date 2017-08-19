@@ -1,5 +1,6 @@
 import DataFlow: cse
 using MacroTools: @q, @>
+import ..Flux: Param, param, state
 
 graph(m) = nothing
 
@@ -18,11 +19,11 @@ function makegraph(graph, args, params = [])
   end
   graph = map(graph) do x
     x isa Offset ?
-      :(Flux.Offset($(Expr(:quote, x.name)), $(x.n),
+      :(Flux.Compiler.Offset($(Expr(:quote, x.name)), $(x.n),
                     $(x.name in params ? :(self.$(x.name)) : x.name))) :
       x
   end
-  vertex(:(Flux.Frame(self)), graph)
+  vertex(:($DataFlow.Frame(self)), graph)
 end
 
 function build_type(T, params)
@@ -68,7 +69,7 @@ function process_type(ex)
   quote
     $(build_type(T, params))
     $(esc(:((self::$T)($(args...)) = $(build_forward(body, args)))))
-    $(esc(:(Flux.graph(self::$T)))) = $(DataFlow.constructor(map(esc, makegraph(body, args, params))))
+    $(esc(:(Flux.Compiler.graph(self::$T)))) = $(DataFlow.constructor(map(esc, makegraph(body, args, params))))
     nothing
   end
 end

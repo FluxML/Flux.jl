@@ -1,3 +1,5 @@
+using ..Flux: stack, unstack
+
 # Stateful Models
 
 mutable struct Stateful
