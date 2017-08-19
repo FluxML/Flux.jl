@@ -58,12 +58,12 @@ Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
 function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
   if repr
-    print(io, "TrackedArray(")
+    print(io, "track(")
     Base.showarray(io, data(X), true)
     print(io, ")")
   else
-    println(io, summary(X), ":")
-    Base.showarray(io, data(X), false, header = false)
+    header && print(io, "Tracked ")
+    Base.showarray(io, data(X), false, header = header)
   end
 end
 
