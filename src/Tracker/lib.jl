@@ -1,7 +1,7 @@
 import Base: *
 
-a::MatrixVar * b::Union{MatrixVar,AbstractMatrix} = Var(Call(*, a, b))
-a::Union{MatrixVar,AbstractMatrix} * b::MatrixVar = Var(Call(*, a, b))
+a::TrackedMatrix * b::Union{TrackedMatrix,AbstractMatrix} = Var(Call(*, a, b))
+a::Union{TrackedMatrix,AbstractMatrix} * b::TrackedMatrix = Var(Call(*, a, b))
 
 function back!(::typeof(*), Δ, a::AbstractArray, b::AbstractArray)
   back!(a, A_mul_Bt(Δ, data(b)))
