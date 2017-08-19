@@ -1,14 +1,8 @@
-using Flux, DataFlow, MacroTools, Base.Test
-using Flux: Param, param, squeeze, unsqueeze, stack, update!, flatten
-using Flux.Compiler: @net
-using DataFlow: Line, Frame
+using Flux, Base.Test
 
 @testset "Flux" begin
 
-include("backend/common.jl")
-
-include("basic.jl")
-include("recurrent.jl")
-include("throttle.jl")
+include("compiler.jl")
+include("utils.jl")
 
 end

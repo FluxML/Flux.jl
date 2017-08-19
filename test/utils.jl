@@ -1,6 +1,6 @@
-using Flux.throttle
+using Flux: throttle
 
-@testset "throttle" begin
+@testset "Throttle" begin
   @testset "default behaviour" begin
     a = []
     f = throttle(()->push!(a, now()), 1, leading=true, trailing=false)
