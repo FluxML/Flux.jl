@@ -1,7 +1,16 @@
 using DataFlow, MacroTools
-using Flux: Affine, Param, Recurrent, squeeze, unsqueeze, stack
+using Flux: Param, Recurrent, squeeze, unsqueeze, stack
 using Flux.Compiler: @net, graph
 using DataFlow: Line, Frame
+
+@net type Affine
+  W
+  b
+  x -> x*W .+ b
+end
+
+Affine(in::Integer, out::Integer; init = Flux.initn) =
+  Affine(init(in, out), init(1, out))
 
 @net type TLP
   first
@@ -42,7 +51,7 @@ let tlp = TLP(Affine(10, 21), Affine(20, 15))
     e
   end
   @test e.trace[end].func == :TLP
-  @test e.trace[end-1].func == Symbol("Flux.Affine")
+  @test e.trace[end-1].func == Symbol("Affine")
 end
 
 function apply(model, xs, state)
