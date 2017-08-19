@@ -1,5 +1,7 @@
 module Tracker
 
+export track, back!
+
 data(x) = x
 
 struct Call{F,As<:Tuple}
