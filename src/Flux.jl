@@ -18,6 +18,7 @@ export @net, unroll, unroll1, @shapes,
 
 include("Tracker/Tracker.jl")
 using .Tracker
+export track, back!
 
 include("utils.jl")
 include("params.jl")
