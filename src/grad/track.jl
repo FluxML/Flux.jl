@@ -40,6 +40,17 @@ function back!(x::Var, Δ)
   back!(x.f, Δ)
 end
 
-for f in :[Base.size, Base.getindex].args
+for f in :[Base.size, Base.ndims, Base.similar].args
   @eval @inline $f(x::Var, a...) = $f(data(x), a...)
+end
+
+function Base.showarray(io::IO, X::Var, repr::Bool = true; header = true)
+  if repr
+    print(io, "Var(")
+    Base.showarray(io, data(X), true)
+    print(io, ")")
+  else
+    println(io, summary(X), ":")
+    Base.showarray(io, data(X), false, header = false)
+  end
 end
