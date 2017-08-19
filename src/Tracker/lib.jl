@@ -5,7 +5,7 @@ Base.getindex(xs::TrackedArray, i...) = TrackedArray(Call(getindex, xs, i...))
 function back!(::typeof(getindex), Δ, xs::TrackedArray, i...)
   Δ′ = zeros(xs)
   Δ′[i...] = Δ
-  back!(xs, Δ′)
+  @back!(xs, Δ′)
 end
 
 Base.:-(xs::TrackedArray) = TrackedArray(Call(-, xs))
@@ -15,8 +15,8 @@ a::TrackedMatrix * b::AbstractMatrix = TrackedArray(Call(*, a, b))
 a::AbstractMatrix * b::TrackedMatrix = TrackedArray(Call(*, a, b))
 
 function back!(::typeof(*), Δ, a::AbstractMatrix, b::AbstractMatrix)
-  back!(a, A_mul_Bt(Δ, data(b)))
-  back!(b, At_mul_B(data(a), Δ))
+  @back!(a, A_mul_Bt(Δ, data(b)))
+  @back!(b, At_mul_B(data(a), Δ))
 end
 
 # Broadcasting
@@ -39,7 +39,7 @@ end
 
 function back!(b::Broadcasted, Δ, args...)
   Δargs = ntuple(i -> Δ .* getindex.(partials.(b.data), i), length(args))
-  back!.(args, Δargs)
+  map((x, Δ) -> @back!(x, Δ), args, Δargs)
   return
 end
 

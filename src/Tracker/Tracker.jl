@@ -3,6 +3,7 @@ module Tracker
 export track, back!
 
 data(x) = x
+istracked(x) = false
 
 struct Call{F,As<:Tuple}
   func::F
@@ -14,8 +15,7 @@ Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
 (c::Call)() = c.func(data.(c.args)...)
 
 back!(c::Call, Δ) = back!(c.func, Δ, c.args...)
-
-back!(f, Δ) = nothing
+back!(::Call{Void}, Δ) = nothing
 
 struct TrackedArray{T,N,A} <: AbstractArray{T,N}
   f::Call
@@ -37,12 +37,20 @@ TrackedArray(c::Call) = TrackedArray(c, c())
 TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x)
 
 track(xs) = TrackedArray(xs)
+istracked(x::TrackedArray) = true
 data(x::TrackedArray) = x.x
 grad(x::TrackedArray) = x.Δ
 
 function back!(x::TrackedArray, Δ)
   x.Δ .+= Δ
   back!(x.f, Δ)
+end
+
+macro back!(x, Δ)
+  quote
+    x = $(esc(x))
+    istracked(x) && back!(x, $(esc(Δ)))
+  end
 end
 
 # Fallthrough methods
