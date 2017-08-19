@@ -1,3 +1,5 @@
+module Tracker
+
 data(x) = x
 
 struct Call{F,As<:Tuple}
@@ -53,4 +55,6 @@ function Base.showarray(io::IO, X::Var, repr::Bool = true; header = true)
     println(io, summary(X), ":")
     Base.showarray(io, data(X), false, header = false)
   end
+end
+
 end

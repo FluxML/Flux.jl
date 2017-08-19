@@ -19,8 +19,10 @@ export @net, unroll, unroll1, @shapes,
 include("core.jl")
 import .FluxCore: graph
 
+include("Tracker/Tracker.jl")
+using .Tracker
+
 include("utils.jl")
-include("grad/track.jl")
 include("params.jl")
 
 include("compiler/code.jl")
