@@ -1,6 +1,6 @@
 # Activation Functions
 
-σ(x) = 1 ./ (1 + exp.(-x))
+σ(x) = 1 / (1 + exp(-x))
 # back!(::typeof(σ), Δ, x) = Δ .* σ(x).*(1.-σ(x))
 
 relu(x) = max(0, x)
