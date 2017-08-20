@@ -5,7 +5,7 @@ module Flux
 using Juno
 using Lazy: @forward
 
-export Chain, Affine, σ, softmax
+export Chain, Linear, σ, softmax
 
 # Zero Flux Given
 

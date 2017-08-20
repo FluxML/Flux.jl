@@ -15,15 +15,15 @@ Compiler.graph(s::Chain) =
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
-# Affine
+# Linear
 
-struct Affine{S,T}
+struct Linear{F,S,T}
+  σ::F
   W::S
   b::T
 end
 
-Affine(in::Integer, out::Integer; init = initn) =
-  Affine(track(init(out, in)),
-         track(init(out)))
+Linear(in::Integer, out::Integer, σ = identity; init = initn) =
+  Linear(σ, track(init(out, in)), track(init(out)))
 
-(a::Affine)(x) = a.W*x .+ a.b
+(a::Linear)(x) = a.σ.(a.W*x .+ a.b)
