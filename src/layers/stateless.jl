@@ -1,11 +1,3 @@
-# Activation Functions
-
-σ(x) = 1 / (1 + exp(-x))
-
-relu(x) = max(0, x)
-
-softmax(xs) = exp.(xs) ./ sum(exp.(xs), 2)
-
 # Cost functions
 
 mse(ŷ, y) = sumabs2(ŷ .- y)/2

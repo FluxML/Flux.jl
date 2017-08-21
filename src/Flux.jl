@@ -5,9 +5,12 @@ module Flux
 using Juno
 using Lazy: @forward
 
-export Chain, Linear, σ, softmax
+export Chain, Linear
 
 # Zero Flux Given
+
+using NNlib
+export σ, relu, softmax
 
 include("Tracker/Tracker.jl")
 using .Tracker
