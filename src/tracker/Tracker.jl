@@ -42,7 +42,8 @@ data(x::TrackedArray) = x.x
 grad(x::TrackedArray) = x.Δ
 
 function back!(x::TrackedArray, Δ)
-  x.Δ .+= Δ
+  Δ′ = vec(x.Δ)
+  Δ′ .+= vec(Δ)
   back!(x.f, Δ)
 end
 

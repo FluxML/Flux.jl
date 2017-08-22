@@ -57,9 +57,13 @@ function tracked_broadcast(f, args::Vararg{Any,N}) where N
   TrackedArray(Call(b, args...), b())
 end
 
+unbroadcast(x, Δ) =
+  size(x) == size(Δ) ? Δ :
+    sum(Δ, filter(n -> size(x, n) == 1, 1:ndims(Δ)))
+
 function back!(b::Broadcasted, Δ, args...)
   Δargs = ntuple(i -> Δ .* getindex.(partials.(b.data), i), length(args))
-  map((x, Δ) -> @back!(x, Δ), args, Δargs)
+  foreach((x, Δ) -> @back!(x, unbroadcast(x, Δ)), args, Δargs)
   return
 end
 
