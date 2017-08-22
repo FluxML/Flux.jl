@@ -16,7 +16,7 @@ Affine(in::Integer, out::Integer; init = Flux.initn) =
   first
   second
   function (x)
-    l1 = σ(first(x))
+    l1 = σ.(first(x))
     l2 = softmax(second(l1))
   end
 end
@@ -25,7 +25,7 @@ end
   Wxy; Wyy; by
   y
   function (x)
-    y = tanh( x * Wxy .+ y{-1} * Wyy .+ by )
+    y = tanh.( x * Wxy .+ y{-1} * Wyy .+ by )
   end
 end
 
@@ -51,8 +51,8 @@ end
 
 let a1 = Affine(10, 20), a2 = Affine(20, 15)
   tlp = TLP(a1, a2)
-  @test tlp(xs) ≈ softmax(a2(σ(a1(xs))))
-  @test Flux.Compiler.interpmodel(tlp, xs) ≈ softmax(a2(σ(a1(xs))))
+  @test tlp(xs) ≈ softmax(a2(σ.(a1(xs))))
+  @test Flux.Compiler.interpmodel(tlp, xs) ≈ softmax(a2(σ.(a1(xs))))
 end
 
 let tlp = TLP(Affine(10, 21), Affine(20, 15))
@@ -78,7 +78,7 @@ end
   r = Recurrent(10, 5)
   xs = [rand(1, 10) for _ = 1:3]
   _, ys = apply(Flux.Compiler.unroll1(r).model, xs, (r.y,))
-  @test ys[1] == tanh(xs[1] * r.Wxy .+ r.y * r.Wyy .+ r.by)
+  @test ys[1] == tanh.(xs[1] * r.Wxy .+ r.y * r.Wyy .+ r.by)
   ru = Flux.Compiler.unroll(r, 3)
   ru(unsqueeze(stack(squeeze.(xs))))[1] == squeeze.(ys)
 end
