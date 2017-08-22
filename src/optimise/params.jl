@@ -1,7 +1,6 @@
-children(x) = ()
-
-using ..Tracker.TrackedArray
 using DataFlow: OSet
+
+children(x) = ()
 
 params(ps, p::TrackedArray) = push!(ps, p)
 
