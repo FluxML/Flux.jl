@@ -12,7 +12,7 @@ export Chain, Linear
 using NNlib
 export σ, relu, softmax
 
-include("Tracker/Tracker.jl")
+include("tracker/Tracker.jl")
 using .Tracker
 export track, back!
 
