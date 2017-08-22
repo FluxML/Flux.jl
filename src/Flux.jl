@@ -16,6 +16,9 @@ include("Tracker/Tracker.jl")
 using .Tracker
 export track, back!
 
+include("optimise/Optimise.jl")
+using .Optimise
+
 include("utils.jl")
 
 include("compiler/Compiler.jl")

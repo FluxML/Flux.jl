@@ -8,6 +8,8 @@ end
 @forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof, Base.push!
 @forward Chain.layers Base.start, Base.next, Base.done
 
+Optimise.children(c::Chain) = c.layers
+
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 
 Compiler.graph(s::Chain) =
@@ -31,6 +33,8 @@ end
 
 Linear(in::Integer, out::Integer, σ = identity; init = initn) =
   Linear(σ, track(init(out, in)), track(init(out)))
+
+Optimise.children(d::Linear) = (d.W, d.b)
 
 (a::Linear)(x) = a.σ.(a.W*x .+ a.b)
 
