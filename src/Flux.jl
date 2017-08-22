@@ -17,7 +17,6 @@ using .Tracker
 export track, back!
 
 include("utils.jl")
-include("params.jl")
 
 include("compiler/Compiler.jl")
 using .Compiler: @net
