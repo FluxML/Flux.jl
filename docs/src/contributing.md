@@ -1,6 +1,6 @@
 # Contributing
 
-If you need help, please ask on the [Julia forum](https://discourse.julialang.org/) or on Flux's [Gitter](https://gitter.im/MikeInnes/Flux.jl).
+If you need help, please ask on the [Julia forum](https://discourse.julialang.org/) or on Flux's [Gitter](https://gitter.im/FluxML/Lobby).
 
 Right now, the best way to help out is to try out the examples and report any issues or missing features as you find them. The second best way is to help us spread the word, perhaps by [starring the repo](https://github.com/MikeInnes/Flux.jl).
 
