@@ -36,6 +36,14 @@ function back!(::typeof(*), Δ, a::AbstractMatrix, b::AbstractVecOrMat)
   @back!(b, At_mul_B(data(a), Δ))
 end
 
+# NNlib
+
+import NNlib: softmax, ∇softmax
+
+softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
+
+back!(::typeof(softmax), Δ, xs) = @back!(xs, ∇softmax(Δ, data(xs)))
+
 # Broadcasting
 
 using ForwardDiff: Dual, partials

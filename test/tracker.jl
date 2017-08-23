@@ -1,5 +1,5 @@
+using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: gradcheck
-using Base.Test, NNlib
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(f(xs...)), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(dims)...)
@@ -10,5 +10,8 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest((x, W, b) -> σ.(W*x .+ b), (5,3), (2,5), 2)
 
 @test gradtest(x -> sin.(sum(x, (2, 3))), (3,4,5))
+
+gradtest(x -> softmax(x).*(1:3), 3)
+gradtest(x -> softmax(x).*(1:3), (3,5))
 
 end
