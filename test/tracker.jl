@@ -14,4 +14,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 gradtest(x -> softmax(x).*(1:3), 3)
 gradtest(x -> softmax(x).*(1:3), (3,5))
 
+gradtest(Flux.mse, rand(5,5), rand(5, 5))
+gradtest(Flux.logloss, rand(5,5), rand(5, 5))
+
 end

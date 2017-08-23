@@ -14,10 +14,13 @@ end
 
 Base.:-(xs::TrackedArray) = TrackedArray(Call(-, xs))
 
+back!(::typeof(-), Δ, xs::TrackedArray) = back!(xs, -Δ)
+
 # Reductions
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
 Base.sum(xs::TrackedArray) = TrackedArray(Call(sum, xs), toarray(xs.x, sum(xs.x)))
+Base.sum(xs::TrackedScalar, dim...) = xs
 
 back!(::typeof(sum), Δ, xs::TrackedArray, dim...) = back!(xs, similar(xs.x) .= Δ)
 
@@ -76,6 +79,7 @@ function back!(b::Broadcasted, Δ, args...)
 end
 
 Base.Broadcast._containertype(::Type{<:TrackedArray}) = TrackedArray
+Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{TrackedArray}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{Array}, ::Type{TrackedArray}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{Array}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{TrackedArray}, ct) = TrackedArray

@@ -41,9 +41,12 @@ istracked(x::TrackedArray) = true
 data(x::TrackedArray) = x.x
 grad(x::TrackedArray) = x.Δ
 
+tovec(xs::AbstractArray) = vec(xs)
+tovec(xs) = xs
+
 function back!(x::TrackedArray, Δ)
   Δ′ = vec(x.Δ)
-  Δ′ .+= vec(Δ)
+  Δ′ .+= tovec(Δ)
   back!(x.f, Δ)
 end
 
