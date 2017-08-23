@@ -77,5 +77,6 @@ function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = tru
 end
 
 include("lib.jl")
+include("numeric.jl")
 
 end

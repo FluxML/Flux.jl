@@ -4,5 +4,6 @@ using Flux, Base.Test
 
 include("compiler.jl")
 include("utils.jl")
+include("tracker.jl")
 
 end
