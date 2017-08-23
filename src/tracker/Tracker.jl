@@ -50,6 +50,8 @@ function back!(x::TrackedArray, Δ)
   back!(x.f, Δ)
 end
 
+back!(x::TrackedScalar) = back!(x, 1)
+
 macro back!(x, Δ)
   quote
     x = $(esc(x))
