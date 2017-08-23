@@ -78,6 +78,8 @@ end
 Base.Broadcast._containertype(::Type{<:TrackedArray}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{Array}, ::Type{TrackedArray}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{Array}) = TrackedArray
+Base.Broadcast.promote_containertype(::Type{TrackedArray}, ct) = TrackedArray
+Base.Broadcast.promote_containertype(ct, ::Type{TrackedArray}) = TrackedArray
 Base.Broadcast.broadcast_indices(::Type{TrackedArray}, A::Ref) = ()
 Base.Broadcast.broadcast_indices(::Type{TrackedArray}, A) = indices(A)
 
