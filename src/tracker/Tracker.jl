@@ -84,4 +84,11 @@ end
 include("lib.jl")
 include("numeric.jl")
 
+using Requires
+
+@require CuArrays begin
+  import CuArrays: cu
+  cu(xs::TrackedArray) = TrackedArray(xs.f, cu(xs.x), cu(xs.Δ))
+end
+
 end
