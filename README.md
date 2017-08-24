@@ -17,7 +17,7 @@ After adding the `@net` annotation we can take advantage of various optimisation
 
 On top of this foundation we build a set of flexible machine learning abstractions and utilities that interoperate well with other approaches like [Knet](https://github.com/denizyuret/Knet.jl). This gives you great flexibility; you can go high level or stay mathematical, write custom GPU kernels, build your own abstractions, and mix and match approaches.
 
-Check out the [docs](https://mikeinnes.github.io/Flux.jl/stable/) to get started. Flux is in alpha so **please open issues liberally**; we would love to help you get started.
+Check out the [docs](https://fluxml.github.io/Flux.jl/stable/) to get started. Flux is in alpha so **please open issues liberally**; we would love to help you get started.
 
 ## Brief Examples
 
