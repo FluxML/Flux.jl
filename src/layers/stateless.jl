@@ -1,6 +1,6 @@
 # Cost functions
 
-mse(ŷ, y) = sum((ŷ .- y).^2)/2
+mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
 # back!(::typeof(mse), Δ, ŷ, y) = Δ .* (ŷ .- y)
 
 logloss(ŷ, y) = -sum(y .* log.(ŷ))
