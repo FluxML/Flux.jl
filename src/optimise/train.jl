@@ -8,5 +8,4 @@ function train!(m, data, opt; epoch = 1)
       update!(opt)
     end
   end
-  return m
 end

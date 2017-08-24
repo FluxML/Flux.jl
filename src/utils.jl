@@ -30,7 +30,7 @@ onecold(y::AbstractVector, labels = 1:length(y)) =
   labels[findfirst(y, maximum(y))]
 
 onecold(y::AbstractMatrix, l...) =
-  squeeze(mapslices(y -> onecold(y, l...), y, 2), 2)
+  squeeze(mapslices(y -> onecold(y, l...), y, 1), 1)
 
 flatten(xs) = reshape(xs, size(xs, 1), :)
 
