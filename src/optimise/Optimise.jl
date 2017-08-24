@@ -1,6 +1,6 @@
 module Optimise
 
-using ..Tracker: TrackedArray, grad, back!
+using ..Tracker: TrackedArray, data, grad, back!
 
 export sgd, update!, params, train!
 
