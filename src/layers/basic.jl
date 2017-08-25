@@ -43,3 +43,19 @@ function Base.show(io::IO, l::Linear)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
+
+# Embedding
+
+struct Embedding
+    mat
+end
+
+Embedding(a::Integer, b::Integer; init=initn) =
+    Embedding(track(init(a, b)))
+
+Optimise.children(m::Embedding) = m.mat,
+
+(m::Embedding)(x) = m.mat[x, :]
+
+Base.show(io::IO, m::LSTM) =
+  print(io, "Embedding(", size(m.W, 1), ", ", size(m.W, 2), ')')

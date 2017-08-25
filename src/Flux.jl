@@ -5,7 +5,7 @@ module Flux
 using Juno
 using Lazy: @forward
 
-export Chain, Linear
+export init_state, Chain, Linear, Embedding, RNN, GRU, LSTM
 
 # Zero Flux Given
 
@@ -25,5 +25,6 @@ using .Compiler: @net
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
+include("layers/recurrent.jl")
 
 end # module
