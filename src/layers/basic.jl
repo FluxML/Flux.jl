@@ -1,6 +1,6 @@
 # Chain
 
-type Chain
+mutable struct Chain
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
 end

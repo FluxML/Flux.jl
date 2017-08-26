@@ -34,7 +34,7 @@ Chain(
 Define a custom recurrent layer:
 
 ```julia
-@net type Recurrent
+@net mutable struct Recurrent
   Wxy; Wyy; by
   y
   function (x)
