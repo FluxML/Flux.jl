@@ -39,6 +39,19 @@ function back!(::typeof(*), Δ, a::AbstractMatrix, b::AbstractVecOrMat)
   @back!(b, At_mul_B(data(a), Δ))
 end
 
+# concat
+
+tryfind(e, c, ft, ff) = (i = findfirst(c, e); i != 0 ? ft(i) : ff(i); i)
+
+function back!(::typeof(cat), Δ, dims, xs...)
+  acc = map(zero, dims)
+  for (i, x) in enumerate(xs)
+    slice = map(d->size(x, d), dims)
+    @back!(x, view(Δ, [tryfind(d, dims, i->1+acc[i]:slice[i], i->:) for d in 1:ndims(x)]...))
+    acc = acc .+ slice
+  end
+end
+
 # NNlib
 
 import NNlib: softmax, ∇softmax

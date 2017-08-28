@@ -57,5 +57,5 @@ Optimise.children(m::Embedding) = m.mat,
 
 (m::Embedding)(x) = m.mat[x, :]
 
-Base.show(io::IO, m::LSTM) =
+Base.show(io::IO, m::Embedding) =
   print(io, "Embedding(", size(m.W, 1), ", ", size(m.W, 2), ')')
