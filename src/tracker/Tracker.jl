@@ -45,8 +45,7 @@ tovec(xs::AbstractArray) = vec(xs)
 tovec(xs) = xs
 
 function back!(x::TrackedArray, Δ)
-  Δ′ = vec(x.Δ)
-  Δ′ .+= tovec(Δ)
+  x.Δ .+= Δ
   back!(x.f, Δ)
 end
 

@@ -1,6 +1,6 @@
 function gradient(f, xs::AbstractArray...)
   xs = track.(xs)
-  back!(f(xs...), [1])
+  back!(f(xs...))
   grad.(xs)
 end
 

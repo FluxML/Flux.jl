@@ -68,9 +68,11 @@ function tracked_broadcast(f, args::Vararg{Any,N}) where N
   TrackedArray(Call(b, args...), b())
 end
 
+trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val{ndims(x)}))
+
 unbroadcast(x, Δ) =
   size(x) == size(Δ) ? Δ :
-    sum(Δ, filter(n -> size(x, n) == 1, 1:ndims(Δ)))
+    trim(x, sum(Δ, filter(n -> size(x, n) == 1, 1:ndims(Δ))))
 
 function getpartial(Δ, x, i)
   @inbounds p = getindex(partials(x), i)
