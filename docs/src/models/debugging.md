@@ -3,7 +3,7 @@
 Let's take our two-layer perceptron as an example again, running on MXNet:
 
 ```julia
-@net type TLP
+@net mutable struct TLP
   first
   second
   function (x)

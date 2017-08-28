@@ -27,7 +27,7 @@ end
 
 function build_type(T, params)
   @esc T
-  :(type $T
+  :(mutable struct $T
       $(params...)
     end)
 end
@@ -42,7 +42,7 @@ import Lazy: groupby
 # TODO: type hints for parameters
 
 function process_type(ex)
-  @capture(ex, type T_ fs__ end)
+  @capture(ex, mutable struct T_ fs__ end)
   @destruct [params = false || [],
              funcs  = true || []] = groupby(x->isexpr(x, :->, :function), fs)
   @assert length(funcs) == 1

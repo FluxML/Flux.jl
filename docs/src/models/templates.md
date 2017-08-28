@@ -13,7 +13,7 @@ end
 `@net type` syntax provides a shortcut for this:
 
 ```julia
-@net type MyAffine
+@net mutable struct MyAffine
   W
   b
   x -> x * W + b
@@ -40,7 +40,7 @@ This is almost exactly how `Affine` is defined in Flux itself. Using `@net type`
 `@net` models can contain sub-models as well as just array parameters:
 
 ```julia
-@net type TLP
+@net mutable struct TLP
   first
   second
   function (x)

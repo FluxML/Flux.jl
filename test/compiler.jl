@@ -3,7 +3,7 @@ using Flux: squeeze, unsqueeze, stack
 using Flux.Compiler: @net, graph
 using DataFlow: Line, Frame
 
-@net type Affine
+@net mutable struct Affine
   W
   b
   x -> x*W .+ b
@@ -12,7 +12,7 @@ end
 Affine(in::Integer, out::Integer; init = Flux.initn) =
   Affine(init(in, out), init(1, out))
 
-@net type TLP
+@net mutable struct TLP
   first
   second
   function (x)
@@ -21,7 +21,7 @@ Affine(in::Integer, out::Integer; init = Flux.initn) =
   end
 end
 
-@net type Recurrent
+@net mutable struct Recurrent
   Wxy; Wyy; by
   y
   function (x)

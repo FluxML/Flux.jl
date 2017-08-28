@@ -23,7 +23,7 @@ The state `s` allows the prediction to depend not only on the current input `x` 
 The simplest recurrent network looks as follows in Flux, and it should be familiar if you've seen the equations defining an RNN before:
 
 ```julia
-@net type Recurrent
+@net mutable struct Recurrent
   Wxy; Wyy; by
   y
   function (x)
@@ -54,7 +54,7 @@ This call creates an unrolled, feed-forward version of the model which accepts N
 Here's a more complex recurrent layer, an LSTM, and again it should be familiar if you've seen the [equations](https://colah.github.io/posts/2015-08-Understanding-LSTMs/):
 
 ```julia
-@net type LSTM
+@net mutable struct LSTM
   Wxf; Wyf; bf
   Wxi; Wyi; bi
   Wxo; Wyo; bo
