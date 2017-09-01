@@ -2,12 +2,12 @@ __precompile__()
 
 module Flux
 
+# Zero Flux Given
+
 using Juno
 using Lazy: @forward
 
 export Chain, Linear
-
-# Zero Flux Given
 
 using NNlib
 export σ, relu, softmax

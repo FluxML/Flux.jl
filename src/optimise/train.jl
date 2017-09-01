@@ -7,7 +7,7 @@ function train!(m, data, opt; epoch = 1)
       loss = m(x, y)
       @show loss
       back!(loss)
-      update!(opt)
+      opt()
     end
   end
 end

@@ -1,9 +1,11 @@
 module Optimise
 
-export sgd, update!, params, train!
+export update!, params, train!,
+  SGD
 
 include("params.jl")
 include("optimisers.jl")
+include("interface.jl")
 include("train.jl")
 
 using Flux.Tracker: TrackedArray
