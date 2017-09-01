@@ -16,6 +16,9 @@ Base.:-(xs::TrackedArray) = TrackedArray(Call(-, xs))
 
 back!(::typeof(-), Δ, xs::TrackedArray) = back!(xs, -Δ)
 
+Base.transpose(xs::TrackedArray) = TrackedArray(Call(transpose, xs))
+Base.ctranspose(xs::TrackedArray) = TrackedArray(Call(ctranspose, xs))
+
 # Reductions
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
