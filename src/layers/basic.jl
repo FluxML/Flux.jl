@@ -23,23 +23,23 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-# Linear
+# Dense
 
-struct Linear{F,S,T}
+struct Dense{F,S,T}
   σ::F
   W::S
   b::T
 end
 
-Linear(in::Integer, out::Integer, σ = identity; init = initn) =
-  Linear(σ, track(init(out, in)), track(init(out)))
+Dense(in::Integer, out::Integer, σ = identity; init = initn) =
+  Dense(σ, track(init(out, in)), track(init(out)))
 
-Optimise.children(d::Linear) = (d.W, d.b)
+Optimise.children(d::Dense) = (d.W, d.b)
 
-(a::Linear)(x) = a.σ.(a.W*x .+ a.b)
+(a::Dense)(x) = a.σ.(a.W*x .+ a.b)
 
-function Base.show(io::IO, l::Linear)
-  print(io, "Linear(", size(l.W, 2), ", ", size(l.W, 1))
+function Base.show(io::IO, l::Dense)
+  print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
