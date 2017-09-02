@@ -9,4 +9,4 @@ function optimiser(m, fs...)
   () -> foreach(call, fs)
 end
 
-SGD(m, η = 1) = optimiser(m, p -> descent(p, 0.1))
+SGD(m, η = 1) = optimiser(m, p -> descent(p, η))
