@@ -1,7 +1,7 @@
 call(f, xs...) = f(xs...)
 
-function optimiser(m, fs...)
-  ps = Param.(params(m))
+function optimiser(ps, fs...)
+  ps = [Param(p) for p in ps]
   fs = map(ps) do p
     os = map(f -> f(p), fs)
     () -> foreach(call, os)
@@ -9,4 +9,4 @@ function optimiser(m, fs...)
   () -> foreach(call, fs)
 end
 
-SGD(m, η = 1) = optimiser(m, p -> descent(p, η))
+SGD(ps, η = 1) = optimiser(ps, p -> descent(p, η))
