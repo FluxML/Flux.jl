@@ -1,9 +1,10 @@
+using Juno
 using Flux.Tracker: back!
 
 function train!(m, data, opt; epoch = 1, cb = () -> ())
-  for e in 1:epoch
+  @progress for e in 1:epoch
     epoch > 1 && info("Epoch $e")
-    for (x, y) in data
+    @progress for (x, y) in data
       back!(m(x, y))
       opt()
       cb()
