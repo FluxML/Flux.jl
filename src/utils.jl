@@ -34,8 +34,6 @@ onecold(y::AbstractMatrix, l...) =
 
 flatten(xs) = reshape(xs, size(xs, 1), :)
 
-a ∘ b = a .* b
-
 # Other
 
 function accuracy(m, data)
