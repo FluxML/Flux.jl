@@ -19,6 +19,10 @@ back!(::typeof(-), Δ, xs::TrackedArray) = back!(xs, -Δ)
 Base.transpose(xs::TrackedArray) = TrackedArray(Call(transpose, xs))
 Base.ctranspose(xs::TrackedArray) = TrackedArray(Call(ctranspose, xs))
 
+Base.vcat(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedVector, b::AbstractVector) = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::AbstractVector, b::TrackedVector) = TrackedArray(Call(vcat, a, b))
+
 # Reductions
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))

@@ -25,5 +25,6 @@ using .Compiler: @net
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
+include("layers/recurrent.jl")
 
 end # module
