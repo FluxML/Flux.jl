@@ -69,6 +69,9 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
+Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
+  print(io, "TrackedArray{…,$A}")
+
 function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
   if repr
     print(io, "track(")
