@@ -5,15 +5,17 @@ function gradient(f, xs::AbstractArray...)
 end
 
 function ngradient(f, xs::AbstractArray...)
-  y = f(xs...)
   grads = zeros.(xs)
   for (x, Δ) in zip(xs, grads)
     for i in 1:length(x)
       δ = sqrt(eps())
-      tmp, x[i] = x[i], x[i]+δ
-      y′ = f(xs...)
+      tmp = x[i]
+      x[i] = tmp - δ/2
+      y1 = f(xs...)
+      x[i] = tmp + δ/2
+      y2 = f(xs...)
       x[i] = tmp
-      Δ[i] = (y′-y)/δ
+      Δ[i] = (y2-y1)/δ
     end
   end
   return grads
