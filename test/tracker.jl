@@ -19,4 +19,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest(x -> x', rand(5))
 
+@test gradtest(vcat, rand(5), rand(3))
+@test gradtest(vcat, rand(2,3), rand(3,3))
+
 end
