@@ -16,6 +16,8 @@ function (m::Recur)(xs...)
   return y
 end
 
+Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
+
 # Vanilla RNN
 
 struct RNNCell{D,V}
@@ -23,7 +25,7 @@ struct RNNCell{D,V}
   h::V
 end
 
-RNNCell(in::Integer, out::Integer, init = initn) =
+RNNCell(in::Integer, out::Integer; init = initn) =
   RNNCell(Dense(in+out, out, init = initn), track(initn(out)))
 
 function (m::RNNCell)(h, x)
@@ -36,6 +38,8 @@ hidden(m::RNNCell) = m.h
 function Base.show(io::IO, m::RNNCell)
   print(io, "RNNCell(", m.d, ")")
 end
+
+RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
 # LSTM
 
@@ -66,3 +70,10 @@ function (m::LSTMCell)(h_, x)
 end
 
 hidden(m::LSTMCell) = (m.h, m.c)
+
+Base.show(io::IO, m::LSTMCell) =
+  print(io, "LSTMCell(",
+        size(m.forget.W, 2) - size(m.forget.W, 1), ", ",
+        size(m.forget.W, 1), ')')
+
+LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
