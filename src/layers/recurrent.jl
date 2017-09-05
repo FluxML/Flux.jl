@@ -50,7 +50,7 @@ end
 LSTMCell(in, out; init = initn) =
   LSTMCell([Dense(in+out, out, σ, init = initn) for _ = 1:3]...,
            Dense(in+out, out, tanh, init = initn),
-           track(zeros(out)), track(zeros(out)))
+           track(initn(out)), track(initn(out)))
 
 function (m::LSTMCell)(h_, x)
   h, c = h_
