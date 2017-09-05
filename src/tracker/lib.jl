@@ -25,6 +25,9 @@ Base.ctranspose(xs::TrackedArray) = TrackedArray(Call(ctranspose, xs))
 back!(::typeof(transpose), Δ, xs) = @back!(xs, trim(xs, Δ.'))
 back!(::typeof(ctranspose), Δ, xs) = @back!(xs, trim(xs, Δ'))
 
+Base.repmat(x::TrackedVecOrMat, a::Integer...) = TrackedArray(Call(repmat, x, a...))
+Base.repmat(x::TrackedVecOrMat, a::Int64...) = TrackedArray(Call(repmat, x, a...))
+
 Base.vcat(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::TrackedVector, b::AbstractVector) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractVector, b::TrackedVector) = TrackedArray(Call(vcat, a, b))

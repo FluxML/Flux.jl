@@ -26,6 +26,7 @@ end
 TrackedScalar{T,A} = TrackedArray{T,0,A}
 TrackedVector{T,A} = TrackedArray{T,1,A}
 TrackedMatrix{T,A} = TrackedArray{T,2,A}
+TrackedVecOrMat{T,A} = Union{TrackedVector{T,A},TrackedMatrix{T,A}}
 
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
   TrackedArray{eltype(A),ndims(A),A}(c, x, Δ)
