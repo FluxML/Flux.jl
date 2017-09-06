@@ -3,8 +3,30 @@ combine(x, h) = vcat(x, h .* trues(1, size(x, 2)))
 
 # Sequences
 
-struct Seq{T}
-  data::Vector{T}
+struct Seq{T,A<:AbstractVector{T}}
+  data::A
+end
+
+Seq(xs::AbstractVector{T}) where T = Seq{T,typeof(xs)}(xs)
+
+Seq(xs) = Seq(collect(xs))
+
+Base.getindex(s::Seq, i) = s.data[i]
+
+type ChainSeq
+  layers::Vector{Any}
+  ChainSeq(xs...) = new([xs...])
+end
+
+Optimise.children(c::ChainSeq) = c.layers
+
+(c::ChainSeq)(x) = foldl((x, m) -> m(x), x, c.layers)
+(c::ChainSeq)(s::Seq) = Seq([c(x) for x in s.data])
+
+function Base.show(io::IO, c::ChainSeq)
+  print(io, "ChainSeq(")
+  join(io, c.layers, ", ")
+  print(io, ")")
 end
 
 # Stateful recurrence
@@ -78,6 +100,9 @@ function (m::LSTMCell)(h_, x)
 end
 
 hidden(m::LSTMCell) = (m.h, m.c)
+
+Optimise.children(m::LSTMCell) =
+  (m.forget, m.input, m.output, m.cell, m.h, m.c)
 
 Base.show(io::IO, m::LSTMCell) =
   print(io, "LSTMCell(",

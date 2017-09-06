@@ -7,8 +7,8 @@ module Flux
 using Juno
 using Lazy: @forward
 
-export Chain, Dense, RNN, LSTM,
-  SGD
+export Chain, Dense, Seq, ChainSeq, RNN, LSTM,
+  SGD, params
 
 using NNlib
 export σ, relu, softmax
