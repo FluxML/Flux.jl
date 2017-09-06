@@ -1,6 +1,12 @@
 # TODO: broadcasting cat
 combine(x, h) = vcat(x, h .* trues(1, size(x, 2)))
 
+# Sequences
+
+struct Seq{T}
+  data::Vector{T}
+end
+
 # Stateful recurrence
 
 mutable struct Recur{T}
@@ -17,6 +23,8 @@ function (m::Recur)(xs...)
 end
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
+
+(m::Recur)(s::Seq) = Seq([m(x) for x in s.data])
 
 # Vanilla RNN
 
