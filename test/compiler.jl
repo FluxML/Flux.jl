@@ -1,5 +1,6 @@
 using DataFlow, MacroTools
-using Flux.Compiler: @net, graph, stack, squeeze, unsqueeze
+using Flux: stack, unsqueeze
+using Flux.Compiler: @net, graph
 using DataFlow: Line, Frame
 
 @net type Affine
@@ -79,7 +80,7 @@ end
   _, ys = apply(Flux.Compiler.unroll1(r).model, xs, (r.y,))
   @test ys[1] == tanh.(xs[1] * r.Wxy .+ r.y * r.Wyy .+ r.by)
   ru = Flux.Compiler.unroll(r, 3)
-  ru(unsqueeze(stack(squeeze.(xs))))[1] == squeeze.(ys)
+  ru(unsqueeze(stack(squeeze.(xs, 1), 1), 1))[1] == squeeze.(ys, 1)
 end
 
 end

@@ -20,9 +20,9 @@ include("optimise/Optimise.jl")
 using .Optimise
 
 include("utils.jl")
+include("onehot.jl")
 
 include("compiler/Compiler.jl")
-using .Compiler: @net
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
