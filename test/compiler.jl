@@ -1,6 +1,5 @@
 using DataFlow, MacroTools
-using Flux: squeeze, unsqueeze, stack
-using Flux.Compiler: @net, graph
+using Flux.Compiler: @net, graph, stack, squeeze, unsqueeze
 using DataFlow: Line, Frame
 
 @net type Affine
