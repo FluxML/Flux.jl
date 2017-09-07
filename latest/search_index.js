@@ -9,11 +9,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Flux-1",
+    "location": "index.html#Flux:-The-Julia-Machine-Learning-Library-1",
     "page": "Home",
-    "title": "Flux",
+    "title": "Flux: The Julia Machine Learning Library",
     "category": "section",
-    "text": "Flux is a library for machine learning, implemented in Julia. Flux lets you use the full power of the Julia language while providing a set of useful helper functionality, like common mathematical functions and optimisers."
+    "text": "Flux is a library for machine learning. Flux comes \"batteries-included\" with many useful tools built in, but also lets you use the full power of the Julia language where you need it. The whole stack is implemented in clean Julia code (right down to the GPU kernels) and any part can be tweaked to your liking."
 },
 
 {
