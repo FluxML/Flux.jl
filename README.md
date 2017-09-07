@@ -2,43 +2,41 @@
 
 [![Build Status](https://travis-ci.org/FluxML/Flux.jl.svg?branch=master)](https://travis-ci.org/FluxML/Flux.jl) [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) [![Join the chat at https://gitter.im/FluxML](https://badges.gitter.im/FluxML/Lobby.svg)](https://gitter.im/FluxML/Lobby) [Slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866)
 
-Flux is a library for machine learning, implemented in Julia.
+Flux is a library for machine learning, implemented in Julia. Flux is high-level yet extremely lightweight, providing only simple abstractions on top of Julia's native GPU support and automatic differentiation.
 
-At the core of it, Flux simply lets you run your normal Julia code on a dataflow backend like TensorFlow.
-
-```julia
-@net f(x) = x .* x
-f([1,2,3]) == [1,4,9]
-f_tensorflow = tf(f)
-f_tensorflow([1,2,3]) == [1.0, 4.0, 9.0]
-```
-
-After adding the `@net` annotation we can take advantage of various optimisations, parallelism, and access to GPUs that TensorFlow provides. Unlike a TensorFlow graph, `f` continues to behave like Julia code; you still get good stack traces, can step through in the debugger, etc.
-
-On top of this foundation we build a set of flexible machine learning abstractions and utilities that interoperate well with other approaches like [Knet](https://github.com/denizyuret/Knet.jl). This gives you great flexibility; you can go high level or stay mathematical, write custom GPU kernels, build your own abstractions, and mix and match approaches.
-
-Check out the [docs](https://fluxml.github.io/Flux.jl/stable/) to get started. Flux is in alpha so **please open issues liberally**; we would love to help you get started.
-
-## Brief Examples
-
-Simple multi-layer-perceptron for MNIST, using the high-level API:
+Define a simple model using any Julia code:
 
 ```julia
-Chain(
-  Input(784),
-  Affine(128), relu,
-  Affine( 64), relu,
-  Affine( 10), softmax)
+using Flux.Tracker
+x, y = rand(10), rand(5) # Dummy input / output
+# `track` defines parameters that we can train
+W, b = track(randn(5,10)), track(randn(5))
+# Transform `x` and calculate the mean squared error
+loss = Flux.mse(W*x .+ b, y)
+# Calculate and store gradients of `track`ed parameters
+back!(loss)
+Tracker.grad(W) # Get the gradient of `W` wrt the loss
 ```
 
-Define a custom recurrent layer:
+Define a larger model using high-level abstractions:
 
 ```julia
-@net type Recurrent
-  Wxy; Wyy; by
-  y
-  function (x)
-    y = tanh( x * Wxy .+ y{-1} * Wyy .+ by )
-  end
-end
+using Flux
+
+m = Chain(
+  Dense(10, 32, relu),
+  Dense(32, 10), softmax)
+
+m(rand(10))
 ```
+
+Mix and match the two:
+
+```julia
+using Flux.Tracker
+x, y = rand(10), rand(5)
+d = Dense(10, 5)
+loss = Flux.mse(d(x), y)
+```
+
+See the [documentation](http://fluxml.github.io/Flux.jl/stable/) or the [model zoo](https://github.com/FluxML/model-zoo/) for more examples.
