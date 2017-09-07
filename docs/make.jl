@@ -7,7 +7,9 @@ makedocs(modules=[Flux],
          sitename = "Flux",
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
-                  "Contributing & Help"   => "contributing.md"])
+                  "Basics" => "basics.md",
+                  "Recurrence" => "recurrence.md",
+                  "Contributing & Help" => "contributing.md"])
 
 deploydocs(
    repo = "github.com/FluxML/Flux.jl.git",
