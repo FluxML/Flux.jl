@@ -11,6 +11,5 @@ script:
   - julia -e 'Pkg.clone("https://github.com/FluxML/NNlib.jl")'
   - julia -e 'Pkg.clone(pwd()); Pkg.build("Flux"); Pkg.test("Flux"; coverage=true)'
 after_success:
-  # - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'Pkg.clone("https://github.com/MikeInnes/Documenter.jl")'
+  - julia -e 'Pkg.add("Documenter")'
   - julia -e 'cd(Pkg.dir("Flux")); include(joinpath("docs", "make.jl"))'
