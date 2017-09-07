@@ -1,7 +1,6 @@
 nav.toc {
   padding-top: 0;
-  background: rgb(40, 40, 40);
-  box-shadow: inset -14px 0px 5px -12px rgb(0,0,0);
+  background: rgb(240, 240, 240);
   line-height: 2em;
   cursor: default;
   user-select: none;
@@ -11,19 +10,13 @@ nav.toc {
 nav.toc > h1 {
   margin-top: 0;
   padding-top: 1em;
-  padding-bottom: 0.5em;
-  background: rgb(0, 100, 0);
+  padding-bottom: 1em;
+  background: rgb(60, 150, 60);
   border-bottom: 5px solid white;
   color: white;
-  box-shadow: inset -14px 0px 5px -12px rgb(60,60,60);
+  box-shadow: 0px -2px 5px rgb(60,60,60);
   letter-spacing: 0.05em;
   margin-bottom: 0.5em;
-}
-
-#version-selector, #search-query {
-  color: white;
-  background: rgb(20, 20, 20);
-  border: 1px solid black;
 }
 
 /* Reduce ToC font size */
@@ -33,31 +26,44 @@ nav.toc > h1 {
 
 /* Fade out non-clickable ToC headers */
 nav.toc ul span.toctext {
-  color: rgb(100, 100, 100);
+  color: rgb(180, 180, 180);
 }
 
 nav.toc ul .toctext {
-  color: rgb(179, 179, 179);;
+  color: rgb(100, 100, 100);
 }
 
-.current {
-  box-shadow: 0 2px 5px -12px rgb(0,0,0);
+nav.toc ul a.toctext:hover {
+  color: inherit;
+  background: rgb(220, 220, 220);
+  cursor: default;
 }
 
 nav.toc li.current > .toctext {
-  background: linear-gradient(90deg, rgb(240,240,240) 0%, white 90%);;
+  background: linear-gradient(90deg, rgb(240,240,240) 0%, white 90%);
+  font-weight: normal;
 }
 
-nav.toc ul.internal {
-  color: rgb(80, 80, 80);
+nav.toc ul.internal li.toplevel {
+  font-weight: normal;
 }
 
 /* Content */
 
-a {
-  color: rgb(0, 150, 0);
+a, a:visited { color: rgb(0, 120, 0); }
+article p a { border-bottom: 1px solid rgb(200, 230, 200); }
+a:hover, a:visited:hover { color: rgb(0, 80, 0); }
+
+article p a { border-bottom: 1px solid rgb(200, 230, 200); }
+article p a:hover, article a:visited:hover { color: rgb(0, 120, 0); }
+article p a:hover { border-bottom: 1px solid rgb(150, 200, 150); }
+
+article pre {
+  background: rgb(245, 250, 245);
+  border-radius: 5px;
+  padding: 12px;
 }
 
-a:visited {
-  color: rgb(0, 100, 0);
+.hljs-comment {
+  font-style: italic;
 }
