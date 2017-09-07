@@ -7,8 +7,9 @@ makedocs(modules=[Flux],
          sitename = "Flux",
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
-                  "Basics" => "basics.md",
-                  "Recurrence" => "recurrence.md",
+                  "Models" =>
+                    ["Basics" => "models/basics.md",
+                     "Recurrence" => "models/recurrence.md"],
                   "Contributing & Help" => "contributing.md"])
 
 deploydocs(
