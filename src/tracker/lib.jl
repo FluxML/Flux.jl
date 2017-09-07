@@ -7,10 +7,10 @@ unarray(xs) = xs
 unarray(xs::AbstractArray{T,0} where T) = xs[]
 
 Base.getindex(xs::TrackedArray, i...) =
-  TrackedArray(Call(getindex, xs, i...), toarray(xs.x, xs.x[i...]))
+  TrackedArray(Call(getindex, xs, i...), toarray(xs.data, xs.data[i...]))
 
 function back!(::typeof(getindex), Δ, xs::TrackedArray, i...)
-  Δ′ = zeros(xs.x)
+  Δ′ = zeros(xs.data)
   Δ′[i...] = unarray(Δ)
   @back!(xs, Δ′)
 end
@@ -49,13 +49,13 @@ end
 # Reductions
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
-Base.sum(xs::TrackedArray) = TrackedArray(Call(sum, xs), toarray(xs.x, sum(xs.x)))
+Base.sum(xs::TrackedArray) = TrackedArray(Call(sum, xs), toarray(xs.data, sum(xs.data)))
 Base.sum(xs::TrackedScalar, dim...) = xs
 
-back!(::typeof(sum), Δ, xs::TrackedArray, dim...) = back!(xs, similar(xs.x) .= Δ)
+back!(::typeof(sum), Δ, xs::TrackedArray, dim...) = back!(xs, similar(xs.data) .= Δ)
 
-Base.maximum(xs::TrackedArray, args...) = maximum(xs.x, args...)
-Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.x, args...)
+Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
+Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
 # BLAS
 
