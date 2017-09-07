@@ -21,11 +21,11 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "Install Julia 0.6.0 or later, if you haven't already.Pkg.add(\"Flux\")\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The [model zoo] is also a good starting point for many common kinds of models."
+    "text": "Install Julia 0.6.0 or later, if you haven't already.Pkg.add(\"Flux\")\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The model zoo is also a good starting point for many common kinds of models."
 },
 
 {
-    "location": "basics.html#",
+    "location": "models/basics.html#",
     "page": "Basics",
     "title": "Basics",
     "category": "page",
@@ -33,7 +33,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "recurrence.html#",
+    "location": "models/recurrence.html#",
     "page": "Recurrence",
     "title": "Recurrence",
     "category": "page",
