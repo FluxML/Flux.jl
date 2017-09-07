@@ -32,7 +32,7 @@ struct Dense{F,S,T}
 end
 
 Dense(in::Integer, out::Integer, σ = identity; init = initn) =
-  Dense(σ, track(init(out, in)), track(init(out)))
+  Dense(σ, param(init(out, in)), param(init(out)))
 
 Optimise.children(d::Dense) = (d.W, d.b)
 

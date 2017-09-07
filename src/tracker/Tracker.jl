@@ -2,7 +2,7 @@ module Tracker
 
 using Base: RefValue
 
-export TrackedArray, track, back!
+export TrackedArray, param, back!
 
 data(x) = x
 istracked(x) = false
@@ -37,7 +37,7 @@ TrackedArray(c::Call) = TrackedArray(c, c())
 
 TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, RefValue(zeros(x)))
 
-track(xs) = TrackedArray(AbstractFloat.(xs))
+param(xs) = TrackedArray(AbstractFloat.(xs))
 istracked(x::TrackedArray) = true
 data(x::TrackedArray) = x.data
 grad(x::TrackedArray) = x.grad[]
@@ -58,7 +58,7 @@ Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}}
 
 function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
   if repr
-    print(io, "track(")
+    print(io, "param(")
     Base.showarray(io, data(X), true)
     print(io, ")")
   else

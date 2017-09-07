@@ -70,7 +70,7 @@ struct RNNCell{D,V}
 end
 
 RNNCell(in::Integer, out::Integer; init = initn) =
-  RNNCell(Dense(in+out, out, init = initn), track(initn(out)))
+  RNNCell(Dense(in+out, out, init = initn), param(initn(out)))
 
 function (m::RNNCell)(h, x)
   h = m.d(combine(x, h))
@@ -100,7 +100,7 @@ end
 function LSTMCell(in, out; init = initn)
   cell = LSTMCell([Dense(in+out, out, σ, init = initn) for _ = 1:3]...,
                   Dense(in+out, out, tanh, init = initn),
-                  track(initn(out)), track(initn(out)))
+                  param(initn(out)), param(initn(out)))
   cell.forget.b.data .= 1
   return cell
 end

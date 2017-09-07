@@ -1,5 +1,5 @@
 function gradient(f, xs::AbstractArray...)
-  xs = track.(xs)
+  xs = param.(xs)
   back!(f(xs...))
   grad.(xs)
 end
