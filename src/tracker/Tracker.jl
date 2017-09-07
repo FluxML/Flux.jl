@@ -2,7 +2,7 @@ module Tracker
 
 using Base: RefValue
 
-export track, back!
+export TrackedArray, track, back!
 
 data(x) = x
 istracked(x) = false
