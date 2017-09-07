@@ -85,7 +85,7 @@ function LSTMCell(in, out; init = initn)
   cell = LSTMCell([Dense(in+out, out, σ, init = initn) for _ = 1:3]...,
                   Dense(in+out, out, tanh, init = initn),
                   track(initn(out)), track(initn(out)))
-  cell.forget.b.x .= 1
+  cell.forget.b.data .= 1
   return cell
 end
 

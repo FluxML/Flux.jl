@@ -22,4 +22,9 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(vcat, rand(5), rand(3))
 @test gradtest(vcat, rand(2,3), rand(3,3))
 
+@test gradtest(rand(5)) do x
+  y = x.^2
+  2y + x
+end
+
 end

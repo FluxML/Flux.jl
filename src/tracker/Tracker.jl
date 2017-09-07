@@ -17,6 +17,7 @@ Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
 (c::Call)() = c.func(data.(c.args)...)
 
 struct TrackedArray{T,N,A} <: AbstractArray{T,N}
+  ref::RefValue{UInt32}
   f::Call
   data::A
   grad::RefValue{A}
@@ -28,7 +29,7 @@ TrackedMatrix{T,A} = TrackedArray{T,2,A}
 TrackedVecOrMat{T,A} = Union{TrackedVector{T,A},TrackedMatrix{T,A}}
 
 TrackedArray(c::Call, x::A, Δ::Ref{A}) where A <: AbstractArray =
-  TrackedArray{eltype(A),ndims(A),A}(c, x, Δ)
+  TrackedArray{eltype(A),ndims(A),A}(Ref(UInt32(0)), c, x, Δ)
 
 TrackedArray(c::Call, x::AbstractArray) = TrackedArray(c, x, RefValue{typeof(x)}())
 
