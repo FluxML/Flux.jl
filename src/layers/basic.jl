@@ -1,5 +1,18 @@
-# Chain
+"""
+    Chain(layers...)
 
+Chain multiple layers / functions together, so that they are called in sequence
+on a given input.
+
+    m = Chain(x -> x^2, x -> x+1)
+    m(5) == 26
+
+    m = Chain(Dense(10, 5), Dense(5, 2))
+    x = rand(10)
+    m(x) = m[2](m[1](x))
+
+`Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
+"""
 type Chain
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
@@ -23,8 +36,13 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-# Dense
+"""
+    Dense(in::Integer, out::Integer, σ = identity)
 
+Creates a traditional `Dense` layer with parameters `W` and `b`.
+
+    y = σ.(W * x .+ b)
+"""
 struct Dense{F,S,T}
   σ::F
   W::S
