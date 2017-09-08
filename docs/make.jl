@@ -15,7 +15,7 @@ makedocs(modules=[Flux],
 
 deploydocs(
    repo = "github.com/FluxML/Flux.jl.git",
-   modules = [Flux],
+  #  modules = [Flux],
    target = "build",
    osname = "linux",
    julia = "0.6",
