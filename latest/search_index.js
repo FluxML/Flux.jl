@@ -65,6 +65,38 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#",
+    "page": "Layers",
+    "title": "Layers",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "models/layers.html#Flux.Chain",
+    "page": "Layers",
+    "title": "Flux.Chain",
+    "category": "Type",
+    "text": "Chain(layers...)\n\nChain multiple layers / functions together, so that they are called in sequence on a given input.\n\nm = Chain(x -> x^2, x -> x+1)\nm(5) == 26\n\nm = Chain(Dense(10, 5), Dense(5, 2))\nx = rand(10)\nm(x) = m[2](m[1](x))\n\nChain also supports indexing and slicing, e.g. m[2] or m[1:end-1].\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.Dense",
+    "page": "Layers",
+    "title": "Flux.Dense",
+    "category": "Type",
+    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Model-Layers-1",
+    "page": "Layers",
+    "title": "Model Layers",
+    "category": "section",
+    "text": "Chain\nDense"
+},
+
+{
     "location": "contributing.html#",
     "page": "Contributing & Help",
     "title": "Contributing & Help",
