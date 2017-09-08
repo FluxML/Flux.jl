@@ -42,7 +42,7 @@ All deep learning in Flux, however complex, is a simple generalisation of this e
 
 ## Building Layers
 
-It's common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like [sigmoid]() (`σ`) in between them. In the above style we could write this as:
+It's common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like [sigmoid](https://en.wikipedia.org/wiki/Sigmoid_function) (`σ`) in between them. In the above style we could write this as:
 
 ```julia
 W1 = param(rand(3, 5))
