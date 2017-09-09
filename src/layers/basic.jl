@@ -9,7 +9,7 @@ on a given input.
 
     m = Chain(Dense(10, 5), Dense(5, 2))
     x = rand(10)
-    m(x) = m[2](m[1](x))
+    m(x) == m[2](m[1](x))
 
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 """
@@ -42,6 +42,9 @@ end
 Creates a traditional `Dense` layer with parameters `W` and `b`.
 
     y = σ.(W * x .+ b)
+
+The input `x` must be a vector of length `in`, or a batch of vectors represented
+as an `in × N` matrix. The out `y` will be a vector or batch of length `in`.
 """
 struct Dense{F,S,T}
   σ::F

@@ -1,3 +1,5 @@
+# Model-Building Basics
+
 ## Taking Gradients
 
 Consider a simple linear regression, which tries to predict an output array `y` from an input `x`. (It's a good idea to follow this example in the Julia repl.)
@@ -31,14 +33,14 @@ back!(l)
 ```julia
 grad(W)
 
-W.data .-= grad(W)
+W.data .-= 0.1grad(W)
 
 loss(x, y) # ~ 2.5
 ```
 
 The loss has decreased a little, meaning that our prediction `x` is closer to the target `y`. If we have some data we can already try [training the model](../training/training.html).
 
-All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, not all models look like this – they might have millions of parameters or complex control flow, and Flux provides ways to manage this complexity. Let's see what that looks like.
+All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can *look* very different – they might have millions of parameters or complex control flow, and there are ways to manage this complexity. Let's see what that looks like.
 
 ## Building Layers
 

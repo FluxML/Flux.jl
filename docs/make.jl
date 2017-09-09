@@ -10,12 +10,11 @@ makedocs(modules=[Flux],
                   "Models" =>
                     ["Basics" => "models/basics.md",
                      "Recurrence" => "models/recurrence.md",
-                     "Layers" => "models/layers.md"],
+                     "Layer Reference" => "models/layers.md"],
                   "Contributing & Help" => "contributing.md"])
 
 deploydocs(
    repo = "github.com/FluxML/Flux.jl.git",
-  #  modules = [Flux],
    target = "build",
    osname = "linux",
    julia = "0.6",

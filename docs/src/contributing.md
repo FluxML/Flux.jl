@@ -1,4 +1,4 @@
-# Contributing
+# Contributing & Help
 
 If you need help, please ask on the [Julia forum](https://discourse.julialang.org/), the [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866) (channel #machine-learning), or Flux's [Gitter](https://gitter.im/FluxML/Lobby).
 
