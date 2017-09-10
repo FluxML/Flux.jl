@@ -7,10 +7,13 @@ makedocs(modules=[Flux],
          sitename = "Flux",
          assets = ["../flux.css"],
          pages = ["Home" => "index.md",
-                  "Models" =>
+                  "Building Models" =>
                     ["Basics" => "models/basics.md",
                      "Recurrence" => "models/recurrence.md",
                      "Layer Reference" => "models/layers.md"],
+                  "Training Models" =>
+                    ["Optimisers" => "training/optimisers.md",
+                     "Training" => "training/training.md"],
                   "Contributing & Help" => "contributing.md"])
 
 deploydocs(
