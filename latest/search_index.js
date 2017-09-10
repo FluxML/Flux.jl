@@ -137,6 +137,30 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "training/optimisers.html#",
+    "page": "Optimisers",
+    "title": "Optimisers",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "training/optimisers.html#Optimisers-1",
+    "page": "Optimisers",
+    "title": "Optimisers",
+    "category": "section",
+    "text": "Consider a simple linear regression. We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters W and b.W = param(rand(2, 5))\nb = param(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = rand(5), rand(2) # Dummy data\nl = loss(x, y) # ~ 3\nback!(l)We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:using Flux.Tracker: data, grad\n\nfunction update()\n  η = 0.1 # Learning Rate\n  for p in (W, b)\n    x, Δ = data(p), grad(p)\n    x .-= η .* Δ # Apply the update\n    Δ .= 0       # Clear the gradient\n  end\nendIf we call update, the parameters W and b will change and our loss should go down.There are two pieces here: one is that we need a list of trainable parameters for the model ([W, b] in this case), and the other is the update step. In this case the update is simply gradient descent (x .-= η .* Δ), but we might choose to do something more advanced, like adding momentum.In this case, getting the variables is trivial, but you can imagine it'd be more of a pain with some complex stack of layers.m = Chain(\n  Dense(10, 5, σ),\n  Dense(5, 2), softmax)Instead of having to write [m[1].W, m[1].b, ...], Flux provides a params function params(m) that returns a list of all parameters in the model for you.For the update step, there's nothing whatsoever wrong with writing the loop above – it'll work just fine – but Flux provides various optimisers that make it more convenient.opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1\n\nopt()An optimiser takes a parameter list and returns a function that does the same thing as update above. We can pass either opt or update to our training loop, which will then run the optimiser after every mini-batch of data."
+},
+
+{
+    "location": "training/training.html#",
+    "page": "Training",
+    "title": "Training",
+    "category": "page",
+    "text": "Flux.train!(loss, repeated((x,y), 1000), SGD(params(m), 0.1),\n            cb = throttle(() -> @show(loss(x, y)), 5))"
+},
+
+{
     "location": "contributing.html#",
     "page": "Contributing & Help",
     "title": "Contributing & Help",
