@@ -51,4 +51,4 @@ opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1
 opt()
 ```
 
-An optimiser takes a parameter list and returns a function that does the same thing as `update` above. We can pass either `opt` or `update` to our [training loop](training.html), which will then run the optimiser after every mini-batch of data.
+An optimiser takes a parameter list and returns a function that does the same thing as `update` above. We can pass either `opt` or `update` to our [training loop](./training.html), which will then run the optimiser after every mini-batch of data.
