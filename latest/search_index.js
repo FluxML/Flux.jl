@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Recurrence",
     "title": "Sequences",
     "category": "section",
-    "text": "Often we want to work with sequences of inputs, rather than individual xs.seq = [rand(10) for i = 1:10]With Recur, applying our model to each element of a sequence is trivial:map(m, seq) # returns a list of 5-element vectorsTo make this a bit more convenient, Flux has the Seq type. This is just a list, but tagged so that we know it's meant to be used as a sequence of data points.seq = Seq([rand(10) for i = 1:10])\nm(seq) # returns a new Seq of length 10When we apply the model m to a seq, it gets mapped over every item in the sequence in order. This is just like the code above, but often more convenient."
+    "text": "Often we want to work with sequences of inputs, rather than individual xs.seq = [rand(10) for i = 1:10]With Recur, applying our model to each element of a sequence is trivial:map(m, seq) # returns a list of 5-element vectorsTo make this a bit more convenient, Flux has the Seq type. This is just a list, but tagged so that we know it's meant to be used as a sequence of data points.seq = Seq([rand(10) for i = 1:10])\nm(seq) # returns a new Seq of length 10When we apply the model m to a seq, it gets mapped over every item in the sequence in order. This is just like the code above, but often more convenient.You can get this behaviour more generally with the Over wrapper.m = Over(Dense(10,5))\nm(seq) # returns a new Seq of length 10"
 },
 
 {
