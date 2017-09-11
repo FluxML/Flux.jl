@@ -73,6 +73,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/recurrence.html#Recurrent-Models-1",
+    "page": "Recurrence",
+    "title": "Recurrent Models",
+    "category": "section",
+    "text": ""
+},
+
+{
     "location": "models/recurrence.html#Recurrent-Cells-1",
     "page": "Recurrence",
     "title": "Recurrent Cells",
@@ -157,6 +165,14 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Training",
     "category": "page",
+    "text": ""
+},
+
+{
+    "location": "training/training.html#Training-1",
+    "page": "Training",
+    "title": "Training",
+    "category": "section",
     "text": "To actually train a model we need three things:A loss function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(loss, data, opt)There are plenty of examples in the model zoo."
 },
 
@@ -174,6 +190,30 @@ var documenterSearchIndex = {"docs": [
     "title": "Callbacks",
     "category": "section",
     "text": "train! takes an additional argument, cb, that's used for callbacks so that you can observe the training process. For example:train!(loss, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(loss, data, opt,\n            cb = throttle(evalcb, 5))"
+},
+
+{
+    "location": "data/onehot.html#",
+    "page": "One-Hot Encoding",
+    "title": "One-Hot Encoding",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "data/onehot.html#One-Hot-Encoding-1",
+    "page": "One-Hot Encoding",
+    "title": "One-Hot Encoding",
+    "category": "section",
+    "text": "It's common to encode categorical variables (like true, false or cat, dog) in \"one-of-k\" or \"one-hot\" form. Flux provides the onehot function to make this easy.julia> using Flux: onehot\n\njulia> onehot(:b, [:a, :b, :c])\n3-element Flux.OneHotVector:\n false\n  true\n false\n\njulia> onehot(:c, [:a, :b, :c])\n3-element Flux.OneHotVector:\n false\n false\n  trueThe inverse is argmax (which can take a general probability distribution, as well as just booleans).julia> argmax(ans, [:a, :b, :c])\n:c\n\njulia> argmax([true, false, false], [:a, :b, :c])\n:a\n\njulia> argmax([0.3, 0.2, 0.5], [:a, :b, :c])\n:c"
+},
+
+{
+    "location": "data/onehot.html#Batches-1",
+    "page": "One-Hot Encoding",
+    "title": "Batches",
+    "category": "section",
+    "text": "onehotbatch creates a batch (matrix) of one-hot vectors, and argmax treats matrices as batches.julia> using Flux: onehotbatch\n\njulia> onehotbatch([:b, :a, :b], [:a, :b, :c])\n3×3 Flux.OneHotMatrix:\n false   true  false\n  true  false   true\n false  false  false\n\njulia> onecold(ans, [:a, :b, :c])\n3-element Array{Symbol,1}:\n  :b\n  :a\n  :bNote that these operations returned OneHotVector and OneHotMatrix rather than Arrays. OneHotVectors behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly.. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood."
 },
 
 {
