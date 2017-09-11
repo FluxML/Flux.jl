@@ -5,3 +5,7 @@
 Flux is a refreshing approach to machine learning. It provides lightweight abstractions on top of Julia's native GPU and AD support, while remaining fully hackable (right down to the [GPU kernels](https://github.com/FluxML/CuArrays.jl)).
 
 See the [documentation](http://fluxml.github.io/Flux.jl/stable/) or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
+
+```julia
+julia> Pkg.add("Flux")
+```
