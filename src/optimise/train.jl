@@ -6,8 +6,8 @@ tocb(fs::AbstractVector) = () -> foreach(call, fs)
 
 function train!(m, data, opt; cb = () -> ())
   cb = tocb(cb)
-  @progress for (x, y) in data
-    back!(m(x, y))
+  @progress for x in data
+    back!(m(x...))
     opt()
     cb()
   end
