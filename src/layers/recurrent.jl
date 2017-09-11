@@ -13,26 +13,14 @@ Seq(xs) = Seq(collect(xs))
 
 Base.getindex(s::Seq, i) = s.data[i]
 
-type ChainSeq
-  layers::Vector{Any}
-  ChainSeq(xs...) = new([xs...])
+struct Over{T}
+  m::T
 end
 
-@forward ChainSeq.layers Base.getindex, Base.first, Base.last, Base.endof, Base.push!
-@forward ChainSeq.layers Base.start, Base.next, Base.done
+(m::Over)(xs...) = m.m(xs...)
+(m::Over)(xs::Seq) = Seq(map(m, xs.data))
 
-Optimise.children(c::ChainSeq) = c.layers
-
-(c::ChainSeq)(x) = foldl((x, m) -> m(x), x, c.layers)
-(c::ChainSeq)(s::Seq) = Seq([c(x) for x in s.data])
-
-Base.getindex(c::ChainSeq, i::AbstractArray) = Chain(c.layers[i]...)
-
-function Base.show(io::IO, c::ChainSeq)
-  print(io, "ChainSeq(")
-  join(io, c.layers, ", ")
-  print(io, ")")
-end
+Base.show(io::IO, m::Over) = print(io, "Over(", m.m, ")")
 
 # Stateful recurrence
 
@@ -49,7 +37,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-(m::Recur)(s::Seq) = Seq([m(x) for x in s.data])
+(m::Recur)(s::Seq) = Seq(map(m, x.data))
 
 Optimise.children(m::Recur) = (m.cell,)
 

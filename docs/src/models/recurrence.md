@@ -103,6 +103,13 @@ m(seq) # returns a new Seq of length 10
 
 When we apply the model `m` to a seq, it gets mapped over every item in the sequence in order. This is just like the code above, but often more convenient.
 
+You can get this behaviour more generally with the `Over` wrapper.
+
+```julia
+m = Over(Dense(10,5))
+m(seq) # returns a new Seq of length 10
+```
+
 ## Truncating Gradients
 
 By default, calculating the gradients in a recurrent layer involves the entire history. For example, if we call the model on 100 inputs, calling `back!` will calculate the gradient for those 100 calls. If we then calculate another 10 inputs we have to calculate 110 gradients – this accumulates and quickly becomes expensive.
