@@ -1,3 +1,5 @@
+# Training
+
 To actually train a model we need three things:
 
 * A *loss function*, that evaluates how well a model is doing given some input data.

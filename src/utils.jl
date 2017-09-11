@@ -17,7 +17,7 @@ function accuracy(m, data)
   for (x, y) in data
     x, y = tobatch.((x, y))
     n += size(x, 1)
-    correct += sum(onecold(m(x)) .== onecold(y))
+    correct += sum(argmax(m(x)) .== argmax(y))
   end
   return correct/n
 end

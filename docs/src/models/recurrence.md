@@ -1,3 +1,5 @@
+# Recurrent Models
+
 ## Recurrent Cells
 
 In the simple feedforward case, our model `m` is a simple function from various inputs `xᵢ` to predictions `yᵢ`. (For example, each `x` might be an MNIST digit and each `y` a digit label.) Each prediction is completely independent of any others, and using the same `x` will always produce the same `y`.

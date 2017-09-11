@@ -14,6 +14,8 @@ makedocs(modules=[Flux],
                   "Training Models" =>
                     ["Optimisers" => "training/optimisers.md",
                      "Training" => "training/training.md"],
+                  "Data Munging" =>
+                    ["One-Hot Encoding" => "data/onehot.md"],
                   "Contributing & Help" => "contributing.md"])
 
 deploydocs(

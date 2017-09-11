@@ -24,8 +24,8 @@ Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix([x, xs...])
 onehot(l, labels) = OneHotVector(findfirst(labels, l), length(labels))
 onehotbatch(ls, labels) = OneHotMatrix([onehot(l, labels) for l in ls])
 
-onecold(y::AbstractVector, labels = 1:length(y)) =
+argmax(y::AbstractVector, labels = 1:length(y)) =
   labels[findfirst(y, maximum(y))]
 
-onecold(y::AbstractMatrix, l...) =
-  squeeze(mapslices(y -> onecold(y, l...), y, 1), 1)
+argmax(y::AbstractMatrix, l...) =
+  squeeze(mapslices(y -> argmax(y, l...), y, 1), 1)
