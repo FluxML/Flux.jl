@@ -22,6 +22,8 @@ end
 
 Base.show(io::IO, m::Over) = print(io, "Over(", m.m, ")")
 
+Optimise.children(m::Over) = (m.m,)
+
 # Stateful recurrence
 
 mutable struct Recur{T}
