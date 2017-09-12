@@ -4,7 +4,7 @@ To actually train a model we need three things:
 
 * A *loss function*, that evaluates how well a model is doing given some input data.
 * A collection of data points that will be provided to the loss function.
-* An [optimiser](./optimisers.html) that will update the model parameters appropriately.
+* An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
 With these we can call `Flux.train!`:
 
@@ -16,7 +16,7 @@ There are plenty of examples in the [model zoo](https://github.com/FluxML/model-
 
 ## Loss Functions
 
-The `loss` that we defined in [basics](../models/basics.html) is completely valid for training. We can also define a loss in terms of some model:
+The `loss` that we defined in [basics](../models/basics.md) is completely valid for training. We can also define a loss in terms of some model:
 
 ```julia
 m = Chain(

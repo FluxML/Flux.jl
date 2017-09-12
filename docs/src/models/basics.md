@@ -38,7 +38,7 @@ W.data .-= 0.1grad(W)
 loss(x, y) # ~ 2.5
 ```
 
-The loss has decreased a little, meaning that our prediction `x` is closer to the target `y`. If we have some data we can already try [training the model](../training/training.html).
+The loss has decreased a little, meaning that our prediction `x` is closer to the target `y`. If we have some data we can already try [training the model](../training/training.md).
 
 All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can *look* very different – they might have millions of parameters or complex control flow, and there are ways to manage this complexity. Let's see what that looks like.
 

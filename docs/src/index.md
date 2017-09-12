@@ -11,4 +11,4 @@ Pkg.add("Flux")
 Pkg.test("Flux") # Check things installed correctly
 ```
 
-Start with the [basics](./models/basics.html). The [model zoo](https://github.com/FluxML/model-zoo/) is also a good starting point for many common kinds of models.
+Start with the [basics](models/basics.md). The [model zoo](https://github.com/FluxML/model-zoo/) is also a good starting point for many common kinds of models.

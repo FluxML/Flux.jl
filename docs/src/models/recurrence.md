@@ -45,7 +45,7 @@ h, y = rnn(h, x)
 
 If you run the last line a few times, you'll notice the output `y` changing slightly even though the input `x` is the same.
 
-We sometimes refer to functions like `rnn` above, which explicitly manage state, as recurrent *cells*. There are various recurrent cells available, which are documented in the [layer reference](layers.html). The hand-written example above can be replaced with:
+We sometimes refer to functions like `rnn` above, which explicitly manage state, as recurrent *cells*. There are various recurrent cells available, which are documented in the [layer reference](layers.md). The hand-written example above can be replaced with:
 
 ```julia
 using Flux

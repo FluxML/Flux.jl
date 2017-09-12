@@ -1,6 +1,6 @@
 # Optimisers
 
-Consider a [simple linear regression](../models/basics.html). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
+Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
 
 ```julia
 W = param(rand(2, 5))
@@ -51,4 +51,4 @@ opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1
 opt()
 ```
 
-An optimiser takes a parameter list and returns a function that does the same thing as `update` above. We can pass either `opt` or `update` to our [training loop](./training.html), which will then run the optimiser after every mini-batch of data.
+An optimiser takes a parameter list and returns a function that does the same thing as `update` above. We can pass either `opt` or `update` to our [training loop](training.md), which will then run the optimiser after every mini-batch of data.
