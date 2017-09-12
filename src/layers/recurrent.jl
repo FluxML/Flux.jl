@@ -16,8 +16,6 @@ function (m::Recur)(xs...)
   return y
 end
 
-(m::Recur)(s::Seq) = Seq(map(m, s.data))
-
 Optimise.children(m::Recur) = (m.cell,)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
