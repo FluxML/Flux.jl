@@ -1,5 +1,8 @@
 function descent(p::Param, η::Real)
-  () -> p.x .-= p.Δ .* η
+  function ()
+    p.x .-= p.Δ .* η
+    p.Δ .= 0
+  end
 end
 
 function momentum(p::Param, ρ::Real)

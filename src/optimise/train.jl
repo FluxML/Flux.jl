@@ -7,7 +7,10 @@ tocb(fs::AbstractVector) = () -> foreach(call, fs)
 function train!(m, data, opt; cb = () -> ())
   cb = tocb(cb)
   @progress for x in data
-    back!(m(x...))
+    l = m(x...)
+    isinf(l.data[]) && error("Inf")
+    isnan(l.data[]) && error("NaN")
+    back!(l)
     opt()
     cb()
   end
