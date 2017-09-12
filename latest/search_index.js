@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Recurrence",
     "title": "Sequences",
     "category": "section",
-    "text": "Often we want to work with sequences of inputs, rather than individual xs.seq = [rand(10) for i = 1:10]With Recur, applying our model to each element of a sequence is trivial:map(m, seq) # returns a list of 5-element vectorsTo make this a bit more convenient, Flux has the Seq type. This is just a list, but tagged so that we know it's meant to be used as a sequence of data points.seq = Seq([rand(10) for i = 1:10])\nm(seq) # returns a new Seq of length 10When we apply the model m to a seq, it gets mapped over every item in the sequence in order. This is just like the code above, but often more convenient.You can get this behaviour more generally with the Over wrapper.m = Over(Dense(10,5))\nm(seq) # returns a new Seq of length 10"
+    "text": "Often we want to work with sequences of inputs, rather than individual xs.seq = [rand(10) for i = 1:10]With Recur, applying our model to each element of a sequence is trivial:m.(seq) # returns a list of 5-element vectorsThis works even when we've chain recurrent layers into a larger model.m = Chain(LSTM(10, 15), Dense(15, 5))\nm.(seq)"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "One-Hot Encoding",
     "title": "Batches",
     "category": "section",
-    "text": "onehotbatch creates a batch (matrix) of one-hot vectors, and argmax treats matrices as batches.julia> using Flux: onehotbatch\n\njulia> onehotbatch([:b, :a, :b], [:a, :b, :c])\n3×3 Flux.OneHotMatrix:\n false   true  false\n  true  false   true\n false  false  false\n\njulia> onecold(ans, [:a, :b, :c])\n3-element Array{Symbol,1}:\n  :b\n  :a\n  :bNote that these operations returned OneHotVector and OneHotMatrix rather than Arrays. OneHotVectors behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly.. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood."
+    "text": "onehotbatch creates a batch (matrix) of one-hot vectors, and argmax treats matrices as batches.julia> using Flux: onehotbatch\n\njulia> onehotbatch([:b, :a, :b], [:a, :b, :c])\n3×3 Flux.OneHotMatrix:\n false   true  false\n  true  false   true\n false  false  false\n\njulia> onecold(ans, [:a, :b, :c])\n3-element Array{Symbol,1}:\n  :b\n  :a\n  :bNote that these operations returned OneHotVector and OneHotMatrix rather than Arrays. OneHotVectors behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood."
 },
 
 {
