@@ -18,7 +18,7 @@ struct Over{T}
 end
 
 (m::Over)(xs...) = m.m(xs...)
-(m::Over)(xs::Seq) = Seq(map(m, xs.data))
+(m::Over)(s::Seq) = Seq(map(m, s.data))
 
 Base.show(io::IO, m::Over) = print(io, "Over(", m.m, ")")
 
@@ -39,7 +39,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-(m::Recur)(s::Seq) = Seq(map(m, x.data))
+(m::Recur)(s::Seq) = Seq(map(m, s.data))
 
 Optimise.children(m::Recur) = (m.cell,)
 
