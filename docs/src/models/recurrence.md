@@ -91,23 +91,14 @@ seq = [rand(10) for i = 1:10]
 With `Recur`, applying our model to each element of a sequence is trivial:
 
 ```julia
-map(m, seq) # returns a list of 5-element vectors
+m.(seq) # returns a list of 5-element vectors
 ```
 
-To make this a bit more convenient, Flux has the `Seq` type. This is just a list, but tagged so that we know it's meant to be used as a sequence of data points.
+This works even when we've chain recurrent layers into a larger model.
 
 ```julia
-seq = Seq([rand(10) for i = 1:10])
-m(seq) # returns a new Seq of length 10
-```
-
-When we apply the model `m` to a seq, it gets mapped over every item in the sequence in order. This is just like the code above, but often more convenient.
-
-You can get this behaviour more generally with the `Over` wrapper.
-
-```julia
-m = Over(Dense(10,5))
-m(seq) # returns a new Seq of length 10
+m = Chain(LSTM(10, 15), Dense(15, 5))
+m.(seq)
 ```
 
 ## Truncating Gradients

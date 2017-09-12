@@ -1,29 +1,6 @@
 # TODO: broadcasting cat
 combine(x, h) = vcat(x, h .* trues(1, size(x, 2)))
 
-# Sequences
-
-struct Seq{T,A<:AbstractVector{T}}
-  data::A
-end
-
-Seq(xs::AbstractVector{T}) where T = Seq{T,typeof(xs)}(xs)
-
-Seq(xs) = Seq(collect(xs))
-
-Base.getindex(s::Seq, i) = s.data[i]
-
-struct Over{T}
-  m::T
-end
-
-(m::Over)(xs...) = m.m(xs...)
-(m::Over)(s::Seq) = Seq(map(m, s.data))
-
-Base.show(io::IO, m::Over) = print(io, "Over(", m.m, ")")
-
-Optimise.children(m::Over) = (m.m,)
-
 # Stateful recurrence
 
 mutable struct Recur{T}
