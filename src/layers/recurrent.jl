@@ -34,7 +34,7 @@ struct RNNCell{D,V}
   h::V
 end
 
-RNNCell(in::Integer, out::Integer, σ=identity; init = initn) =
+RNNCell(in::Integer, out::Integer, σ = tanh; init = initn) =
   RNNCell(Dense(in+out, out, σ, init = init), param(init(out)))
 
 function (m::RNNCell)(h, x)
