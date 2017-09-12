@@ -50,7 +50,7 @@ We sometimes refer to functions like `rnn` above, which explicitly manage state,
 ```julia
 using Flux
 
-m = Flux.RNNCell(10, 5)
+rnn = Flux.RNNCell(10, 5)
 
 x = rand(10) # dummy data
 h = rand(5)  # initial hidden state
