@@ -7,7 +7,7 @@ module Flux
 using Juno
 using Lazy: @forward
 
-export Chain, Dense, RNN, LSTM,
+export AbstractLayer, Chain, Dense, RNN, LSTM,
   SGD, params
 
 using NNlib
@@ -23,6 +23,8 @@ include("utils.jl")
 include("onehot.jl")
 
 include("compiler/Compiler.jl")
+
+include("layers/AbstractLayer.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")

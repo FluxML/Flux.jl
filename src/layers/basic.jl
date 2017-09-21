@@ -14,7 +14,7 @@ on a given input.
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 """
-type Chain
+type Chain <: AbstractLayer
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
 end
@@ -47,7 +47,7 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `in`.
 """
-struct Dense{F,S,T}
+struct Dense{F,S,T} <: AbstractLayer
   σ::F
   W::S
   b::T

@@ -3,7 +3,7 @@ combine(x, h) = vcat(x, h .* trues(1, size(x, 2)))
 
 # Stateful recurrence
 
-mutable struct Recur{T}
+mutable struct Recur{T} <: AbstractLayer
   cell::T
   state
 end
