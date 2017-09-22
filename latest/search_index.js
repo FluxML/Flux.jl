@@ -173,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Training",
     "category": "section",
-    "text": "To actually train a model we need three things:A loss function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(loss, data, opt)There are plenty of examples in the model zoo."
+    "text": "To actually train a model we need three things:A model loss function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(model, data, opt)There are plenty of examples in the model zoo."
 },
 
 {
@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Loss Functions",
     "category": "section",
-    "text": "The loss that we defined in basics is completely valid for training. We can also define a loss in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\nloss(x, y) = Flux.mse(m(x), y)The loss will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or logloss for cross entropy loss, but you can calculate it however you want."
+    "text": "The loss that we defined in basics is completely valid for training. We can also define a loss in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\n# Model loss function\nloss(x, y) = Flux.mse(m(x), y)The loss will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or logloss for cross entropy loss, but you can calculate it however you want."
 },
 
 {
