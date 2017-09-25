@@ -69,6 +69,7 @@ end
 
 include("back.jl")
 include("lib.jl")
+include("sparse.jl")
 include("numeric.jl")
 
 import NNlib.adapt
