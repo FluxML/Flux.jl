@@ -72,10 +72,6 @@ function back(::typeof(*), Δ, a::AbstractMatrix, b::AbstractVecOrMat)
   @back(b, At_mul_B(data(a), Δ))
 end
 
-function back(::typeof(*), Δ, a::AbstractMatrix, b::SparseMatrixCSC)
-  @back(a, Δ*transpose(b))
-end
-
 # NNlib
 
 import NNlib: softmax, ∇softmax
