@@ -173,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Training",
     "category": "section",
-    "text": "To actually train a model we need three things:A model loss function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(model, data, opt)There are plenty of examples in the model zoo."
+    "text": "To actually train a model we need three things:A model loss function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(modelLoss, data, opt)There are plenty of examples in the model zoo."
 },
 
 {
