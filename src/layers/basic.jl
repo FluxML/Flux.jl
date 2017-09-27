@@ -22,7 +22,8 @@ end
 @forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof, Base.push!
 @forward Chain.layers Base.start, Base.next, Base.done
 
-Optimise.children(c::Chain) = c.layers
+children(c::Chain) = c.layers
+mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 
@@ -53,7 +54,7 @@ end
 Dense(in::Integer, out::Integer, σ = identity; init = initn) =
   Dense(σ, param(init(out, in)), param(init(out)))
 
-Optimise.children(d::Dense) = (d.W, d.b)
+treelike(Dense)
 
 (a::Dense)(x) = a.σ.(a.W*x .+ a.b)
 
