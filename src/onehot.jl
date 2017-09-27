@@ -9,8 +9,8 @@ Base.getindex(xs::OneHotVector, i::Integer) = i == xs.ix
 
 Base.:*(A::AbstractMatrix, b::OneHotVector) = A[:, b.ix]
 
-struct OneHotMatrix <: AbstractMatrix{Bool}
-  data::Vector{OneHotVector}
+struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
+  data::A
 end
 
 Base.size(xs::OneHotMatrix) = (Int64(length(xs.data[1])),length(xs.data))
@@ -20,6 +20,10 @@ Base.getindex(xs::OneHotMatrix, i::Int, j::Int) = xs.data[j][i]
 Base.:*(A::AbstractMatrix, B::OneHotMatrix) = A[:, map(x->x.ix, B.data)]
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix([x, xs...])
+
+@require CuArrays begin
+  CuArrays.cu(xs::OneHotMatrix) = OneHotMatrix(CuArrays.cu(xs.data))
+end
 
 onehot(l, labels) = OneHotVector(findfirst(labels, l), length(labels))
 onehotbatch(ls, labels) = OneHotMatrix([onehot(l, labels) for l in ls])

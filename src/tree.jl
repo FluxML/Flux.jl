@@ -8,13 +8,18 @@ function treelike(T, fs = fieldnames(T))
   end
 end
 
-using DataFlow: OSet
+# TODO: prewalk/postwalk with correct caching
+# This is only correct in general for idempotent functions
 
-params(ps, p::AbstractArray) = push!(ps, p)
-params(ps, m) = foreach(m -> params(ps, m), children(m))
+mapparams(f, x::AbstractArray) = f(x)
+mapparams(f, x) = mapchildren(x -> mapparams(f, x), x)
+
+forparams(f, x) = (mapparams(x -> (f(x); x), x); return)
+
+using DataFlow: OSet
 
 function params(m)
   ps = OSet()
-  params(ps, m)
+  forparams(p -> push!(ps, p), m)
   return collect(ps)
 end

@@ -56,7 +56,10 @@ Dense(in::Integer, out::Integer, σ = identity; init = initn) =
 
 treelike(Dense)
 
-(a::Dense)(x) = a.σ.(a.W*x .+ a.b)
+function (a::Dense)(x)
+  W, b, σ = a.W, a.b, a.σ
+  σ.(W*x .+ b)
+end
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
