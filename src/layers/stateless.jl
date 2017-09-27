@@ -12,8 +12,10 @@ logloss(ŷ, y) = -sum(y .* log.(ŷ)) / size(y, 2)
 
     implement the cross-entropy loss function taking the logits (output before the softmax)
 """
-crossentropy(logŷ, y) = crossentropy(logŷ, y, 1/size(y,2))
-function crossentropy(logŷ, y, w) 
+crossentropy(logŷ, y::AbstractVector) = crossentropy(logŷ, onehotbatch(y,1:size(logŷ,1)), 1/length(y))
+crossentropy(logŷ, y::AbstractMatrix) = crossentropy(logŷ, y, 1/size(y,2))
+crossentropy(logŷ, y::AbstractVector, w) = crossentropy(logŷ, onehotbatch(y,1:size(logŷ,1)), w)
+function crossentropy(logŷ, y::AbstractMatrix, w) 
   logŷ = logŷ .-maximum(logŷ,1)
   ypred = logŷ .- log.( sum( exp.( logŷ),1))
   -sum(y .* w .* ypred)
