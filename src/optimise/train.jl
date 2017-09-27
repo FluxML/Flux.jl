@@ -13,5 +13,6 @@ function train!(m, data, opt; cb = () -> ())
     back!(l)
     opt()
     cb()
+    gc()
   end
 end
