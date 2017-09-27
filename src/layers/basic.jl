@@ -26,9 +26,6 @@ Optimise.children(c::Chain) = c.layers
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
 
-Compiler.graph(s::Chain) =
-  foldl((v, m) -> vertex(m, v), constant(inputnode(1)), s.layers)
-
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
 function Base.show(io::IO, c::Chain)

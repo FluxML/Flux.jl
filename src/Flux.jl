@@ -22,8 +22,6 @@ using .Optimise
 include("utils.jl")
 include("onehot.jl")
 
-include("compiler/Compiler.jl")
-
 include("layers/stateless.jl")
 include("layers/basic.jl")
 include("layers/recurrent.jl")
