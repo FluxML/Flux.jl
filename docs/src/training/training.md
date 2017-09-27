@@ -9,7 +9,7 @@ To actually train a model we need three things:
 With these we can call `Flux.train!`:
 
 ```julia
-Flux.train!(model, data, opt)
+Flux.train!(modelLoss, data, opt)
 ```
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
