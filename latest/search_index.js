@@ -217,6 +217,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "gpu.html#",
+    "page": "GPU Support",
+    "title": "GPU Support",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "gpu.html#GPU-Support-1",
+    "page": "GPU Support",
+    "title": "GPU Support",
+    "category": "section",
+    "text": "Support for array operations on other hardware backends, like GPUs, is provided by external packages like CuArrays and CLArrays. Flux doesn't care what array type you use, so we can just plug these in without any other changes.For example, we can use CuArrays (with the cu array converter) to run our basic example on an NVIDIA GPU.using CuArrays\n\nW = cu(rand(2, 5))\nb = cu(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = cu(rand(5)), cu(rand(2)) # Dummy data\nloss(x, y) # ~ 3Note that we convert both the parameters (W, b) and the data set (x, y) to cuda arrays. Taking derivatives and training works exactly as before.If you define a structured model, like a Dense layer or Chain, you just need to convert the internal parameters. Flux provides mapparams, which allows you to alter all parameters of a model at once.d = Dense(10, 5, σ)\nd = mapparams(cu, d)\nd.W # Tracked CuArray\nd(cu(rand(10))) # CuArray output\n\nm = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)\nm = mapparams(cu, m)\nd(cu(rand(10)))"
+},
+
+{
     "location": "contributing.html#",
     "page": "Contributing & Help",
     "title": "Contributing & Help",
