@@ -2,12 +2,12 @@
 
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CuArrays](https://github.com/JuliaGPU/CuArrays.jl) and [CLArrays](https://github.com/JuliaGPU/CLArrays.jl). Flux doesn't care what array type you use, so we can just plug these in without any other changes.
 
-For example, we can use `CuArrays` (with the `cu` array converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
+For example, we can use `CuArrays` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
 
 ```julia
 using CuArrays
 
-W = cu(rand(2, 5))
+W = cu(rand(2, 5)) # a 2×5 CuArray
 b = cu(rand(2))
 
 predict(x) = W*x .+ b
@@ -31,3 +31,5 @@ m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
 m = mapparams(cu, m)
 d(cu(rand(10)))
 ```
+
+The [mnist example](https://github.com/FluxML/model-zoo/blob/master/mnist/mnist.jl) contains the code needed to run the model on the GPU; just uncomment the lines after `using CuArrays`.
