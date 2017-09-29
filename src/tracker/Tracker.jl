@@ -78,4 +78,10 @@ using Requires
   cu(xs::TrackedArray) = TrackedArray(xs.f, cu(xs.data), RefValue(cu(grad(xs))))
 end
 
+@require CLArrays begin
+    import CLArrays.Shorthands: cl
+    cl(xs::TrackedArray) = TrackedArray(xs.f, cl(xs.data), Base.RefValue(cl(grad(xs))))
+end
+
+
 end
