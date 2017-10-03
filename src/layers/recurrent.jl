@@ -63,9 +63,9 @@ struct LSTMCell{D1,D2,V}
 end
 
 function LSTMCell(in, out; init = initn)
-  cell = LSTMCell([Dense(in+out, out, σ, init = initn) for _ = 1:3]...,
-                  Dense(in+out, out, tanh, init = initn),
-                  param(initn(out)), param(initn(out)))
+  cell = LSTMCell([Dense(in+out, out, σ, init = init) for _ = 1:3]...,
+                  Dense(in+out, out, tanh, init = init),
+                  param(init(out)), param(init(out)))
   cell.forget.b.data .= 1
   return cell
 end
