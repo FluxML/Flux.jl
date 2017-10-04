@@ -22,9 +22,12 @@ Base.:*(A::AbstractMatrix, B::OneHotMatrix) = A[:, map(x->x.ix, B.data)]
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix([x, xs...])
 
+import NNlib.adapt
+
+adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
+
 @require CuArrays begin
   import CuArrays: CuArray, cudaconvert
-  CuArrays.cu(xs::OneHotMatrix) = OneHotMatrix(xs.height, CuArrays.cu(xs.data))
   Base.Broadcast._containertype(::Type{<:OneHotMatrix{<:CuArray}}) = CuArray
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
