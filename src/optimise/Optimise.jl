@@ -1,7 +1,7 @@
 module Optimise
 
 export update!, params, train!,
-  SGD
+  SGD, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, ADADelta
 
 struct Param{T}
   x::T
