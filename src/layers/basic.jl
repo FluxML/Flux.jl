@@ -22,12 +22,10 @@ end
 @forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof, Base.push!
 @forward Chain.layers Base.start, Base.next, Base.done
 
-Optimise.children(c::Chain) = c.layers
+children(c::Chain) = c.layers
+mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
 
 (s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
-
-Compiler.graph(s::Chain) =
-  foldl((v, m) -> vertex(m, v), constant(inputnode(1)), s.layers)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
@@ -56,9 +54,12 @@ end
 Dense(in::Integer, out::Integer, σ = identity; init = initn) =
   Dense(σ, param(init(out, in)), param(init(out)))
 
-Optimise.children(d::Dense) = (d.W, d.b)
+treelike(Dense)
 
-(a::Dense)(x) = a.σ.(a.W*x .+ a.b)
+function (a::Dense)(x)
+  W, b, σ = a.W, a.b, a.σ
+  σ.(W*x .+ b)
+end
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))

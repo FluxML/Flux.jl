@@ -71,11 +71,10 @@ include("back.jl")
 include("lib.jl")
 include("numeric.jl")
 
-using Requires
+import NNlib.adapt
 
-@require CuArrays begin
-  import CuArrays: cu
-  cu(xs::TrackedArray) = TrackedArray(xs.f, cu(xs.data), RefValue(cu(grad(xs))))
-end
+adapt(T, xs::TrackedArray) =
+  TrackedArray(xs.f, adapt(T, xs.data),
+               RefValue(adapt(T, grad(xs))))
 
 end

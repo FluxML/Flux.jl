@@ -2,14 +2,14 @@
 
 To actually train a model we need three things:
 
-* A *loss function*, that evaluates how well a model is doing given some input data.
+* A *model loss function*, that evaluates how well a model is doing given some input data.
 * A collection of data points that will be provided to the loss function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
 With these we can call `Flux.train!`:
 
 ```julia
-Flux.train!(loss, data, opt)
+Flux.train!(modelLoss, data, opt)
 ```
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
@@ -23,7 +23,11 @@ m = Chain(
   Dense(784, 32, σ),
   Dense(32, 10), softmax)
 
+# Model loss function
 loss(x, y) = Flux.mse(m(x), y)
+
+# later
+Flux.train!(loss, data, opt)
 ```
 
 The loss will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `logloss` for cross entropy loss, but you can calculate it however you want.
