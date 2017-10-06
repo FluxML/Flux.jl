@@ -9,11 +9,12 @@ Base.getindex(xs::OneHotVector, i::Integer) = i == xs.ix
 
 Base.:*(A::AbstractMatrix, b::OneHotVector) = A[:, b.ix]
 
-struct OneHotMatrix <: AbstractMatrix{Bool}
-  data::Vector{OneHotVector}
+struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
+  height::Int
+  data::A
 end
 
-Base.size(xs::OneHotMatrix) = (Int64(length(xs.data[1])),length(xs.data))
+Base.size(xs::OneHotMatrix) = (Int64(xs.height),length(xs.data))
 
 Base.getindex(xs::OneHotMatrix, i::Int, j::Int) = xs.data[j][i]
 
@@ -21,8 +22,18 @@ Base.:*(A::AbstractMatrix, B::OneHotMatrix) = A[:, map(x->x.ix, B.data)]
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix([x, xs...])
 
+import NNlib.adapt
+
+adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
+
+@require CuArrays begin
+  import CuArrays: CuArray, cudaconvert
+  Base.Broadcast._containertype(::Type{<:OneHotMatrix{<:CuArray}}) = CuArray
+  cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
+end
+
 onehot(l, labels) = OneHotVector(findfirst(labels, l), length(labels))
-onehotbatch(ls, labels) = OneHotMatrix([onehot(l, labels) for l in ls])
+onehotbatch(ls, labels) = OneHotMatrix(length(labels), [onehot(l, labels) for l in ls])
 
 argmax(y::AbstractVector, labels = 1:length(y)) =
   labels[findfirst(y, maximum(y))]

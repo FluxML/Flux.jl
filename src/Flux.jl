@@ -4,11 +4,11 @@ module Flux
 
 # Zero Flux Given
 
-using Juno
+using Juno, Requires
 using Lazy: @forward
 
 export Chain, Dense, RNN, LSTM,
-  SGD, params
+  SGD, params, mapparams
 
 using NNlib
 export σ, relu, softmax
@@ -21,8 +21,7 @@ using .Optimise
 
 include("utils.jl")
 include("onehot.jl")
-
-include("compiler/Compiler.jl")
+include("tree.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")

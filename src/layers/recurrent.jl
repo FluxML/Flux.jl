@@ -16,7 +16,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-Optimise.children(m::Recur) = (m.cell,)
+treelike(Recur)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -24,7 +24,7 @@ _truncate(x::AbstractArray) = x
 _truncate(x::TrackedArray) = x.data
 _truncate(x::Tuple) = _truncate.(x)
 
-truncate!(m) = foreach(truncate!, Optimise.children(m))
+truncate!(m) = foreach(truncate!, children(m))
 truncate!(m::Recur) = (m.state = _truncate(m.state))
 
 # Vanilla RNN
@@ -44,7 +44,7 @@ end
 
 hidden(m::RNNCell) = m.h
 
-Optimise.children(m::RNNCell) = (m.d, m.h)
+treelike(RNNCell)
 
 function Base.show(io::IO, m::RNNCell)
   print(io, "RNNCell(", m.d, ")")
@@ -63,9 +63,9 @@ struct LSTMCell{D1,D2,V}
 end
 
 function LSTMCell(in, out; init = initn)
-  cell = LSTMCell([Dense(in+out, out, σ, init = initn) for _ = 1:3]...,
-                  Dense(in+out, out, tanh, init = initn),
-                  param(initn(out)), param(initn(out)))
+  cell = LSTMCell([Dense(in+out, out, σ, init = init) for _ = 1:3]...,
+                  Dense(in+out, out, tanh, init = init),
+                  param(init(out)), param(init(out)))
   cell.forget.b.data .= 1
   return cell
 end
@@ -82,8 +82,7 @@ end
 
 hidden(m::LSTMCell) = (m.h, m.c)
 
-Optimise.children(m::LSTMCell) =
-  (m.forget, m.input, m.output, m.cell, m.h, m.c)
+treelike(LSTMCell)
 
 Base.show(io::IO, m::LSTMCell) =
   print(io, "LSTMCell(",

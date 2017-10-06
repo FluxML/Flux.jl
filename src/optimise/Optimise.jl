@@ -3,14 +3,18 @@ module Optimise
 export update!, params, train!,
   SGD
 
-include("params.jl")
+struct Param{T}
+  x::T
+  Δ::T
+end
+
+Base.convert(::Type{Param}, x::AbstractArray) = Param(x, zeros(x))
+
 include("optimisers.jl")
 include("interface.jl")
 include("train.jl")
 
 using Flux.Tracker: TrackedArray
-
-params(ps, p::TrackedArray) = push!(ps, p)
 
 Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad[])
 
