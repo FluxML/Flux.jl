@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Basics",
     "title": "Taking Gradients",
     "category": "section",
-    "text": "Consider a simple linear regression, which tries to predict an output array y from an input x. (It's a good idea to follow this example in the Julia repl.)W = rand(2, 5)\nb = rand(2)\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = rand(5), rand(2) # Dummy data\nloss(x, y) # ~ 3To improve the prediction we can take the gradients of W and b with respect to the loss function and perform gradient descent. We could calculate gradients by hand, but Flux will do it for us if we tell it that W and b are trainable parameters.using Flux.Tracker: param, back!, data, grad\n\nW = param(W)\nb = param(b)\n\nl = loss(x, y)\n\nback!(l)loss(x, y) returns the same number, but it's now a tracked value that records gradients as it goes along. Calling back! then calculates the gradient of W and b. We can see what this gradient is, and modify W to train the model.grad(W)\n\nW.data .-= 0.1grad(W)\n\nloss(x, y) # ~ 2.5The loss has decreased a little, meaning that our prediction x is closer to the target y. If we have some data we can already try training the model.All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can look very different – they might have millions of parameters or complex control flow, and there are ways to manage this complexity. Let's see what that looks like."
+    "text": "Consider a simple linear regression, which tries to predict an output array y from an input x. (It's a good idea to follow this example in the Julia repl.)W = rand(2, 5)\nb = rand(2)\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = rand(5), rand(2) # Dummy data\nloss(x, y) # ~ 3To improve the prediction we can take the gradients of W and b with respect to the loss function and perform gradient descent. We could calculate gradients by hand, but Flux will do it for us if we tell it that W and b are trainable parameters.using Flux.Tracker: param, back!, data, grad\n\nW = param(W)\nb = param(b)\n\nl = loss(x, y)\n\nback!(l)loss(x, y) returns the same number, but it's now a tracked value that records gradients as it goes along. Calling back! then calculates the gradient of W and b. We can see what this gradient is, and modify W to train the model.grad(W)\n\n# Update the parameter\nW.data .-= 0.1grad(W)\n\nloss(x, y) # ~ 2.5The loss has decreased a little, meaning that our prediction x is closer to the target y. If we have some data we can already try training the model.All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can look very different – they might have millions of parameters or complex control flow, and there are ways to manage this complexity. Let's see what that looks like."
 },
 
 {
@@ -182,6 +182,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Loss Functions",
     "category": "section",
     "text": "The loss that we defined in basics is completely valid for training. We can also define a loss in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\n# Model loss function\nloss(x, y) = Flux.mse(m(x), y)\n\n# later\nFlux.train!(loss, data, opt)The loss will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or logloss for cross entropy loss, but you can calculate it however you want."
+},
+
+{
+    "location": "training/training.html#Datasets-1",
+    "page": "Training",
+    "title": "Datasets",
+    "category": "section",
+    "text": "The data argument provides a collection of data to train with (usually a set of inputs x and a target outputs y). For example, here's a dummy data set with only one data point:x = rand(784)\ny = rand(10)\ndata = [(x, y)]Flux.train! will call loss(x, y), calculate gradients, update the weights and then move on to the next data point if there is one. We can train the model on the same data three times:data = [(x, y), (x, y), (x, y)]\n# Or equivalently\ndata = Iterators.repeated((x, y), 3)It's common to load the xs and ys separately. In this case you can use zip:xs = [rand(784), rand(784), rand(784)]\nys = [rand( 10), rand( 10), rand( 10)]\ndata = zip(xs, ys)"
 },
 
 {
