@@ -34,7 +34,7 @@ The loss will almost always be defined in terms of some *cost function* that mea
 
 ## Datasets
 
-The `data` argument provides a collection of data to train with (usually a set of inputs `x` and a target outputs `y`). For example, here's a dummy data set with only one data point:
+The `data` argument provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy data set with only one data point:
 
 ```julia
 x = rand(784)
