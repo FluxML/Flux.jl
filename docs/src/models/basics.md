@@ -33,6 +33,7 @@ back!(l)
 ```julia
 grad(W)
 
+# Update the parameter
 W.data .-= 0.1grad(W)
 
 loss(x, y) # ~ 2.5
