@@ -78,3 +78,33 @@ function Base.show(io::IO, l::Dense)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
+
+"""
+    ElementwiseLinear(in::Integer)
+
+Creates an element-wise linear transformation layer with learnable
+vectors α and β:
+
+    y = α .* x .+ b
+
+The input `x` must be a vector of length `in`, or a batch of vectors represented
+as an `in × N` matrix. The out `y` will be a vector or batch of length `in`.
+"""
+struct ElementwiseLinear{T}
+  α::T
+  β::T
+end
+
+ElementwiseLinear(in::Integer; initα = ones, initβ = zeros) =
+  ElementwiseLinear(param(initα(in)), param(initβ(in)))
+
+treelike(ElementwiseLinear)
+
+function (a::ElementwiseLinear)(x)
+  α, β = a.α, a.β
+  α.*x .+ β
+end
+
+function Base.show(io::IO, l::ElementwiseLinear)
+  print(io, "ElementwiseLinear(", length(l.α), ")")
+end
