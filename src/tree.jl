@@ -19,7 +19,7 @@ forparams(f, x) = (mapparams(x -> (f(x); x), x); return)
 using DataFlow: OSet
 
 function params(m)
-  ps = OSet()
-  forparams(p -> push!(ps, p), m)
-  return collect(ps)
+  ps, seen = [], OSet()
+  forparams(p -> p ∉ seen && (push!(ps, p); push!(seen, p)), m)
+  return ps
 end
