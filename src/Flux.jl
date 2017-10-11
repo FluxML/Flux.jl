@@ -31,4 +31,6 @@ include("layers/normalisation.jl")
 
 include("data/Data.jl")
 
+include("batches/Batches.jl")
+
 end # module
