@@ -39,6 +39,8 @@ TrackedArray(c::Call) = TrackedArray(c, c())
 TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
 
 param(xs) = TrackedArray(AbstractFloat.(xs))
+param(xs::Real) = param(fill(xs))
+
 istracked(x::TrackedArray) = true
 data(x::TrackedArray) = x.data
 grad(x::TrackedArray) = x.grad
