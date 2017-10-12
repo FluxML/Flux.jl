@@ -33,7 +33,8 @@ function rawdict()
        filter(!isempty, split.(split(readstring(deps("CMUDict", "cmudict")), "\n"))))
 end
 
-validword(s) = ismatch(r"^[\w-\.]+$", s)
+# validword(s) = ismatch(r"^[\w-\.]+$", s)
+validword(s) = ismatch(r"^\[\w-\.\]+$", s)
 
 cmudict() = filter((s, ps) -> validword(s), rawdict())
 
