@@ -34,6 +34,19 @@ adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
 
+@require CLArrays begin
+    import CLArrays.Shorthands: cl
+    using CLArrays: CLArray, GlobalArray, GlobalPointer, PreDeviceArray
+    cl(xs::OneHotMatrix) = OneHotMatrix(cl(xs.data))
+    # the on device conversions are still a bit complicated...
+    CLArrays.kernel_convert(x::OneHotMatrix{T}) where T <: CLArray = OneHotMatrix(CLArrays.kernel_convert(x.data))
+    CLArrays.predevice_type(::Type{OneHotMatrix{T}}) where T <: GlobalArray = OneHotMatrix{CLArrays.predevice_type(T)}
+    CLArrays.device_type(x::OneHotMatrix{T}) where T <: CLArray = OneHotMatrix{CLArrays.device_type(x.data)}
+    CLArrays.reconstruct(x::OneHotMatrix{T}, ptr::GlobalPointer) where T <: PreDeviceArray = OneHotMatrix(CLArrays.reconstruct(x.data, ptr))
+
+    CLArrays.GPUArrays.arg_length(x::OneHotMatrix{T}) where T <: CLArrays.GPUArrays.GPUArray = UInt32.(size(x))
+end
+
 onehot(l, labels) = OneHotVector(findfirst(labels, l), length(labels))
 onehotbatch(ls, labels) = OneHotMatrix(length(labels), [onehot(l, labels) for l in ls])
 

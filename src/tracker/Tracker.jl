@@ -77,4 +77,10 @@ adapt(T, xs::TrackedArray) =
   TrackedArray(xs.f, adapt(T, xs.data),
                RefValue(adapt(T, grad(xs))))
 
+@require CLArrays begin
+    import CLArrays.Shorthands: cl
+    cl(xs::TrackedArray) = TrackedArray(xs.f, cl(xs.data), Base.RefValue(cl(grad(xs))))
+end
+
+
 end
