@@ -15,9 +15,9 @@ Recurrent networks introduce a *hidden state* that gets carried over each time w
 
 ```julia
 h = # ... initial state ...
-y₁, h = f(x₁, h)
-y₂, h = f(x₂, h)
-y₃, h = f(x₃, h)
+h, y₁ = f(h, x₁)
+h, y₂ = f(h, x₂)
+h, y₃ = f(h, x₃)
 # ...
 ```
 
