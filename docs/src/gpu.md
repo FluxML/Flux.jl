@@ -19,16 +19,16 @@ loss(x, y) # ~ 3
 
 Note that we convert both the parameters (`W`, `b`) and the data set (`x`, `y`) to cuda arrays. Taking derivatives and training works exactly as before.
 
-If you define a structured model, like a `Dense` layer or `Chain`, you just need to convert the internal parameters. Flux provides `mapparams`, which allows you to alter all parameters of a model at once.
+If you define a structured model, like a `Dense` layer or `Chain`, you just need to convert the internal parameters. Flux provides `fmap`, which allows you to alter all parameters of a model at once.
 
 ```julia
 d = Dense(10, 5, σ)
-d = mapparams(cu, d)
+d = fmap(cu, d)
 d.W # Tracked CuArray
 d(cu(rand(10))) # CuArray output
 
 m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-m = mapparams(cu, m)
+m = fmap(cu, m)
 d(cu(rand(10)))
 ```
 
