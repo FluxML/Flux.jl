@@ -13,7 +13,7 @@ y₃ = f(x₃)
 h, y₁ = f(h, x₁)
 h, y₂ = f(h, x₂)
 h, y₃ = f(h, x₃)
-# ...</code></pre><p>Information stored in <code>h</code> is preserved for the next prediction, allowing it to function as a kind of memory. This also means that the prediction made for a given <code>x</code> depends on all the inputs previously fed into the model.</p><p>(This might be important if, for example, each <code>x</code> represents one word of a sentence; the model&#39;s interpretation of the word &quot;bank&quot; should change if the previous input was &quot;river&quot; rather than &quot;investment&quot;.)</p><p>Flux&#39;s RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard <code>Dense</code> layer, and the output and hidden state are the same. By convention, the hidden state is the first input and output.</p><pre><code class="language-julia">Wxh = randn(5, 10)
+# ...</code></pre><p>Information stored in <code>h</code> is preserved for the next prediction, allowing it to function as a kind of memory. This also means that the prediction made for a given <code>x</code> depends on all the inputs previously fed into the model.</p><p>(This might be important if, for example, each <code>x</code> represents one word of a sentence; the model&#39;s interpretation of the word &quot;bank&quot; should change if the previous input was &quot;river&quot; rather than &quot;investment&quot;.)</p><p>Flux&#39;s RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard <code>Dense</code> layer, and the output is also the hidden state.</p><pre><code class="language-julia">Wxh = randn(5, 10)
 Whh = randn(5, 5)
 b   = randn(5)
 
