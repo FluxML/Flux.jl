@@ -27,6 +27,8 @@ _truncate(x::Tuple) = _truncate.(x)
 truncate!(m) = foreach(truncate!, children(m))
 truncate!(m::Recur) = (m.state = _truncate(m.state))
 
+flip(f, xs) = reverse(f.(reverse(xs)))
+
 # Vanilla RNN
 
 struct RNNCell{D,V}
