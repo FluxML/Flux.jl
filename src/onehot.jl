@@ -34,7 +34,12 @@ adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
 
-onehot(l, labels) = OneHotVector(findfirst(labels, l), length(labels))
+function onehot(l, labels)
+  i = findfirst(labels, l)
+  i > 0 || error("Value $l is not in labels")
+  OneHotVector(i, length(labels))
+end
+
 onehotbatch(ls, labels) = OneHotMatrix(length(labels), [onehot(l, labels) for l in ls])
 
 argmax(y::AbstractVector, labels = 1:length(y)) =
