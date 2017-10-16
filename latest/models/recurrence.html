@@ -10,9 +10,9 @@ ga('send', 'pageview');
 y₂ = f(x₂)
 y₃ = f(x₃)
 # ...</code></pre><p>Recurrent networks introduce a <em>hidden state</em> that gets carried over each time we run the model. The model now takes the old <code>h</code> as an input, and produces a new <code>h</code> as output, each time we run it.</p><pre><code class="language-julia">h = # ... initial state ...
-y₁, h = f(x₁, h)
-y₂, h = f(x₂, h)
-y₃, h = f(x₃, h)
+h, y₁ = f(h, x₁)
+h, y₂ = f(h, x₂)
+h, y₃ = f(h, x₃)
 # ...</code></pre><p>Information stored in <code>h</code> is preserved for the next prediction, allowing it to function as a kind of memory. This also means that the prediction made for a given <code>x</code> depends on all the inputs previously fed into the model.</p><p>(This might be important if, for example, each <code>x</code> represents one word of a sentence; the model&#39;s interpretation of the word &quot;bank&quot; should change if the previous input was &quot;river&quot; rather than &quot;investment&quot;.)</p><p>Flux&#39;s RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard <code>Dense</code> layer, and the output and hidden state are the same. By convention, the hidden state is the first input and output.</p><pre><code class="language-julia">Wxh = randn(5, 10)
 Whh = randn(5, 5)
 b   = randn(5)
