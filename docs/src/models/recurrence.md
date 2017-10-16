@@ -25,7 +25,7 @@ Information stored in `h` is preserved for the next prediction, allowing it to f
 
 (This might be important if, for example, each `x` represents one word of a sentence; the model's interpretation of the word "bank" should change if the previous input was "river" rather than "investment".)
 
-Flux's RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard `Dense` layer, and the output and hidden state are the same. By convention, the hidden state is the first input and output.
+Flux's RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard `Dense` layer, and the output is also the hidden state.
 
 ```julia
 Wxh = randn(5, 10)
