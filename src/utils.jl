@@ -28,15 +28,31 @@ end
 
 # Other
 
-function accuracy(m, data)
-  n = 0
-  correct = 0
-  for (x, y) in data
-    x, y = tobatch.((x, y))
-    n += size(x, 1)
-    correct += sum(argmax(m(x)) .== argmax(y))
-  end
-  return correct/n
+"""
+    accuracy(m, x, y, outclass)
+
+classification accuracy
+
+- `m`: model
+- `x`: input
+- `y`: label
+- `outclass`: the output classes of model
+
+# Example
+```julia
+julia> A
+3×5 Array{Float64,2}:
+ 0.533278  0.176326  0.883837  0.306942  0.744581
+ 0.193528  0.91559   0.474799  0.437339  0.00711155
+ 0.973447  0.492269  0.586265  0.371859  0.313075
+
+julia> Flux.accuracy(softmax, A, [:c1, :c2, :c2, :c1, :c3], [:c1, :c2, :c3])
+0.2
+```
+"""
+function accuracy(m, x, y, outclass = [])
+  pred = isempty(outclass) ?  argmax(m(x)) : argmax(m(x), outclass)
+  sum(pred .== y) / length(y)
 end
 
 """
