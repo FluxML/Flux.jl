@@ -8,7 +8,7 @@ using Juno, Requires
 using Lazy: @forward
 
 export Chain, Dense, RNN, LSTM,
-  SGD, param, params, fmap
+  SGD, param, params, mapleaves
 
 using NNlib
 export σ, relu, softmax
