@@ -15,11 +15,11 @@ predict(x) = W*x .+ b
 loss(x, y) = sum((predict(x) .- y).^2)
 
 x, y = cu(rand(5)), cu(rand(2)) # Dummy data
-loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>fmap</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia">d = Dense(10, 5, σ)
-d = fmap(cu, d)
+loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>mapleaves</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia">d = Dense(10, 5, σ)
+d = mapleaves(cu, d)
 d.W # Tracked CuArray
 d(cu(rand(10))) # CuArray output
 
 m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-m = fmap(cu, m)
+m = mapleaves(cu, m)
 d(cu(rand(10)))</code></pre><p>The <a href="https://github.com/FluxML/model-zoo/blob/master/mnist/mnist.jl">mnist example</a> contains the code needed to run the model on the GPU; just uncomment the lines after <code>using CuArrays</code>.</p><footer><hr/><a class="previous" href="data/onehot.html"><span class="direction">Previous</span><span class="title">One-Hot Encoding</span></a><a class="next" href="contributing.html"><span class="direction">Next</span><span class="title">Contributing &amp; Help</span></a></footer></article></body></html>
