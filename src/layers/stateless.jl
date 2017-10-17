@@ -12,3 +12,6 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
   ypred = logŷ .- log.(sum(exp.(logŷ), 1))
   -sum(y .* ypred) / size(y, 2)
 end
+
+crossentropy(ŷ::Union{Softmax,TrackedArray{<:Softmax}}, y::AbstractVecOrMat) =
+  logitcrossentropy(Tracker.data(ŷ).logits, y)

@@ -23,6 +23,7 @@ include("utils.jl")
 include("onehot.jl")
 include("tree.jl")
 
+include("layers/softmax.jl")
 include("layers/stateless.jl")
 include("layers/basic.jl")
 include("layers/recurrent.jl")
