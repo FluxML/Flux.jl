@@ -2,5 +2,7 @@
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
 
-logloss(ŷ::AbstractVecOrMat, y::AbstractVecOrMat) =
+crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat) =
   -sum(y .* log.(ŷ)) / size(y, 2)
+
+@deprecate logloss(x, y) crossentropy(x, y)

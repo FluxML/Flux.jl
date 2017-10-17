@@ -15,7 +15,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(x -> softmax(x).*(1:3), (3,5))
 
 @test gradtest(Flux.mse, rand(5,5), rand(5, 5))
-@test gradtest(Flux.logloss, rand(5,5), rand(5, 5))
+@test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
 
