@@ -7,8 +7,8 @@ crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat) =
 
 @deprecate logloss(x, y) crossentropy(x, y)
 
-function logitcrossentropy(logŷ, y::AbstractMatrix, w)
-  logŷ = logŷ .-maximum(logŷ,1)
-  ypred = logŷ .- log.( sum( exp.( logŷ),1))
-  -sum(y .* w .* ypred)
+function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
+  logŷ = logŷ .- maximum(logŷ, 1)
+  ypred = logŷ .- log.(sum(exp.(logŷ), 1))
+  -sum(y .* ypred) / size(y, 2)
 end
