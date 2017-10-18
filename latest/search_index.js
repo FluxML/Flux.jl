@@ -133,7 +133,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Layer Reference",
     "title": "Flux.Dense",
     "category": "Type",
-    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n0.00257447\n-0.00449443\n\n\n\n"
+    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n  0.00257447\n  -0.00449443\n\n\n\n"
 },
 
 {
@@ -142,6 +142,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Model Layers",
     "category": "section",
     "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
+},
+
+{
+    "location": "models/layers.html#Activation-Functions-1",
+    "page": "Layer Reference",
+    "title": "Activation Functions",
+    "category": "section",
+    "text": "Non-linearities that go between layers of your model. Most of these functions are defined in NNlib but are available by default in Flux.Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call σ.(xs), relu.(xs) and so on.σ\nrelu\nleakyrelu\nelu\nswish\nsoftmax"
 },
 
 {
