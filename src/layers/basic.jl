@@ -44,6 +44,14 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
 
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `in`.
+
+    julia> d = Dense(5, 2)
+    Dense(5, 2)
+
+    julia> d(rand(5))
+    Tracked 2-element Array{Float64,1}:
+    0.00257447
+    -0.00449443
 """
 struct Dense{F,S,T}
   σ::F
