@@ -145,11 +145,51 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#NNlib.σ",
+    "page": "Layer Reference",
+    "title": "NNlib.σ",
+    "category": "Function",
+    "text": "σ(x) = 1 / (1 + exp(-x))\n\nClassic sigmoid activation function.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#NNlib.relu",
+    "page": "Layer Reference",
+    "title": "NNlib.relu",
+    "category": "Function",
+    "text": "relu(x) = max(0, x)\n\nRectified Linear Unit activation function.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#NNlib.leakyrelu",
+    "page": "Layer Reference",
+    "title": "NNlib.leakyrelu",
+    "category": "Function",
+    "text": "leakyrelu(x) = max(0.01x, x)\n\nLeaky Rectified Linear Unit activation function.\n\nYou can also specify the coefficient explicitly, e.g. leakyrelu(x, 0.01).\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#NNlib.elu",
+    "page": "Layer Reference",
+    "title": "NNlib.elu",
+    "category": "Function",
+    "text": "elu(x; α = 1) = x > 0 ? x : α * (exp(x) - one(x)\n\nExponential Linear Unit activation function. See Fast and Accurate Deep Network Learning by Exponential Linear Units\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#NNlib.swish",
+    "page": "Layer Reference",
+    "title": "NNlib.swish",
+    "category": "Function",
+    "text": "swish(x) = x * σ(x)\n\nSelf-gated actvation function.\n\nSee Swish: a Self-Gated Activation Function.\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Activation-Functions-1",
     "page": "Layer Reference",
     "title": "Activation Functions",
     "category": "section",
-    "text": "Non-linearities that go between layers of your model. Most of these functions are defined in NNlib but are available by default in Flux.Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call σ.(xs), relu.(xs) and so on.σ\nrelu\nleakyrelu\nelu\nswish\nsoftmax"
+    "text": "Non-linearities that go between layers of your model. Most of these functions are defined in NNlib but are available by default in Flux.Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call σ.(xs), relu.(xs) and so on.σ\nrelu\nleakyrelu\nelu\nswish"
 },
 
 {
