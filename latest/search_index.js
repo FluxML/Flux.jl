@@ -305,19 +305,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "contributing.html#",
-    "page": "Contributing & Help",
-    "title": "Contributing & Help",
+    "location": "community.html#",
+    "page": "Community",
+    "title": "Community",
     "category": "page",
     "text": ""
 },
 
 {
-    "location": "contributing.html#Contributing-and-Help-1",
-    "page": "Contributing & Help",
-    "title": "Contributing & Help",
+    "location": "community.html#Community-1",
+    "page": "Community",
+    "title": "Community",
     "category": "section",
-    "text": "If you need help, please ask on the Julia forum, the slack (channel #machine-learning), or Flux's Gitter.Right now, the best way to help out is to try out the examples and report any issues or missing features as you find them. The second best way is to help us spread the word, perhaps by starring the repo.If you're interested in hacking on Flux, most of the code is pretty straightforward. Adding new layer definitions or cost functions is simple using the Flux DSL itself, and things like data utilities and training processes are all plain Julia code.If you get stuck or need anything, let us know!"
+    "text": "All Flux users are welcome to join our community on the Julia forum, the slack (channel #machine-learning), or Flux's Gitter. If you have questions or issues we'll try to help you out.If you're interested in hacking on Flux, the source code is open and easy to understand – it's all just the same Julia code you work with normally. You might be interested in our intro issues to get started."
 },
 
 ]}
