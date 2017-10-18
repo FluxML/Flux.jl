@@ -1,10 +1,20 @@
-## Model Layers
+## Layers
 
 These core layers form the foundation of almost all neural networks.
 
 ```@docs
 Chain
 Dense
+```
+
+## Recurrent Cells
+
+Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).
+
+```@docs
+RNN
+LSTM
+Recur
 ```
 
 ## Activation Functions
