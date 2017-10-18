@@ -1,6 +1,6 @@
-using Documenter, Flux
+using Documenter, Flux, NNlib
 
-makedocs(modules=[Flux],
+makedocs(modules=[Flux, NNlib],
          doctest = false,
          format = :html,
          analytics = "UA-36890222-9",

@@ -50,8 +50,8 @@ as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 
     julia> d(rand(5))
     Tracked 2-element Array{Float64,1}:
-    0.00257447
-    -0.00449443
+      0.00257447
+      -0.00449443
 """
 struct Dense{F,S,T}
   σ::F
