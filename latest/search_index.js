@@ -133,7 +133,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Layer Reference",
     "title": "Flux.Dense",
     "category": "Type",
-    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length in.\n\n\n\n"
+    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length in.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n0.00257447\n-0.00449443\n\n\n\n"
 },
 
 {
