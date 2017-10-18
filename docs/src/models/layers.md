@@ -19,5 +19,4 @@ relu
 leakyrelu
 elu
 swish
-softmax
 ```
