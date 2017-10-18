@@ -52,3 +52,15 @@ opt()
 ```
 
 An optimiser takes a parameter list and returns a function that does the same thing as `update` above. We can pass either `opt` or `update` to our [training loop](training.md), which will then run the optimiser after every mini-batch of data.
+
+## Optimiser Reference
+
+```@docs
+SGD
+Momentum
+Nesterov
+RMSProp
+ADAM
+ADAGrad
+ADADelta
+```
