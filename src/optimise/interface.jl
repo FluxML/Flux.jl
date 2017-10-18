@@ -43,7 +43,7 @@ Nesterov(ps, ρ; decay = 0) =
 optimiser. Parameters other than learning rate don't need tuning. Often a good
 choice for recurrent networks.
 """
-RMSProp(ps; η = 0.001, ρ = 0.9, ϵ = 1e-8, decay = 0) =
+RMSProp(ps, η = 0.001; ρ = 0.9, ϵ = 1e-8, decay = 0) =
   optimiser(ps, p -> rmsprop(p; η = η, ρ = ρ, ϵ = ϵ), p -> invdecay(p, decay), p -> descent(p, 1))
 
 """
