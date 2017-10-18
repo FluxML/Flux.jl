@@ -13,13 +13,15 @@ in the background. `cell` should be a model of the form:
 
 For example, here's a recurrent network that keeps a running total of its inputs.
 
-    accum(h, x) = (h+x, x)
-    rnn = Flux.Recur(accum, 0)
-    rnn(2) # 2
-    rnn(3) # 3
-    rnn.state # 5
-    rnn.(1:10) # apply to a sequence
-    rnn.state # 60
+```julia
+accum(h, x) = (h+x, x)
+rnn = Flux.Recur(accum, 0)
+rnn(2) # 2
+rnn(3) # 3
+rnn.state # 5
+rnn.(1:10) # apply to a sequence
+rnn.state # 60
+```
 """
 mutable struct Recur{T}
   cell::T
