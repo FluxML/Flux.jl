@@ -145,11 +145,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.RNN",
+    "page": "Model Reference",
+    "title": "Flux.RNN",
+    "category": "Function",
+    "text": "RNN(in::Integer, out::Integer, σ = tanh)\n\nThe most basic recurrent layer; essentially acts as a Dense layer, but with the output fed back into the input each time step.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.LSTM",
+    "page": "Model Reference",
+    "title": "Flux.LSTM",
+    "category": "Function",
+    "text": "LSTM(in::Integer, out::Integer, σ = tanh)\n\nLong Short Term Memory recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.Recur",
+    "page": "Model Reference",
+    "title": "Flux.Recur",
+    "category": "Type",
+    "text": "Recur(cell)\n\nRecur takes a recurrent cell and makes it stateful, managing the hidden state in the background. cell should be a model of the form:\n\nh, y = cell(h, x...)\n\nFor example, here's a recurrent network that keeps a running total of its inputs.\n\naccum(h, x) = (h+x, x)\nrnn = Flux.Recur(accum, 0)\nrnn(2) # 2\nrnn(3) # 3\nrnn.state # 5\nrnn.(1:10) # apply to a sequence\nrnn.state # 60\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Recurrent-Cells-1",
     "page": "Model Reference",
     "title": "Recurrent Cells",
     "category": "section",
-    "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nRecur"
+    "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nFlux.Recur"
 },
 
 {
