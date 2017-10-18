@@ -145,14 +145,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers.html#Activation-Functions-1",
-    "page": "Layer Reference",
-    "title": "Activation Functions",
-    "category": "section",
-    "text": "σ\nrelu\nleakyrelu\nelu\nswish\nsoftmax"
-},
-
-{
     "location": "training/optimisers.html#",
     "page": "Optimisers",
     "title": "Optimisers",
