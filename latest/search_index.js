@@ -141,7 +141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Layer Reference",
     "title": "Model Layers",
     "category": "section",
-    "text": "Chain\nDense"
+    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
 },
 
 {
