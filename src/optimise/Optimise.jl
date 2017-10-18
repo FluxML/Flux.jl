@@ -16,6 +16,6 @@ include("train.jl")
 
 using Flux.Tracker: TrackedArray
 
-Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad[])
+Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad)
 
 end
