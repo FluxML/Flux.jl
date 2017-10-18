@@ -161,6 +161,70 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "training/optimisers.html#Flux.Optimise.SGD",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.SGD",
+    "category": "Function",
+    "text": "SGD(params, η = 1; decay = 0)\n\nClassic gradient descent optimiser. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports decayed learning rate decay if the decay argument is provided.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.Momentum",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.Momentum",
+    "category": "Function",
+    "text": "Momentum(params, ρ, decay = 0)\n\nSGD with momentum ρ and optional learning rate decay.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.Nesterov",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.Nesterov",
+    "category": "Function",
+    "text": "Nesterov(params, ρ, decay = 0)\n\nSGD with Nesterov momentum ρ and optional learning rate decay.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.RMSProp",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.RMSProp",
+    "category": "Function",
+    "text": "RMSProp(params; η = 0.001, ρ = 0.9, ϵ = 1e-8, decay = 0)\n\nRMSProp optimiser. Parameters other than learning rate don't need tuning. Often a good choice for recurrent networks.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.ADAM",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADAM",
+    "category": "Function",
+    "text": "ADAM(params; η = 0.001, β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.ADAGrad",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADAGrad",
+    "category": "Function",
+    "text": "ADAGrad(params; η = 0.01, ϵ = 1e-8, decay = 0)\n\nADAGrad optimiser. Parameters don't need tuning.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.ADADelta",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADADelta",
+    "category": "Function",
+    "text": "ADADelta(params; η = 0.01, ρ = 0.95, ϵ = 1e-8, decay = 0)\n\nADADelta optimiser. Parameters don't need tuning.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Optimiser-Reference-1",
+    "page": "Optimisers",
+    "title": "Optimiser Reference",
+    "category": "section",
+    "text": "SGD\nMomentum\nNesterov\nRMSProp\nADAM\nADAGrad\nADADelta"
+},
+
+{
     "location": "training/training.html#",
     "page": "Training",
     "title": "Training",
