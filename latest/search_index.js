@@ -114,15 +114,15 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#",
-    "page": "Layer Reference",
-    "title": "Layer Reference",
+    "page": "Model Reference",
+    "title": "Model Reference",
     "category": "page",
     "text": ""
 },
 
 {
     "location": "models/layers.html#Flux.Chain",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "Flux.Chain",
     "category": "Type",
     "text": "Chain(layers...)\n\nChain multiple layers / functions together, so that they are called in sequence on a given input.\n\nm = Chain(x -> x^2, x -> x+1)\nm(5) == 26\n\nm = Chain(Dense(10, 5), Dense(5, 2))\nx = rand(10)\nm(x) == m[2](m[1](x))\n\nChain also supports indexing and slicing, e.g. m[2] or m[1:end-1]. m[1:3](x) will calculate the output of the first three layers.\n\n\n\n"
@@ -130,23 +130,31 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#Flux.Dense",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "Flux.Dense",
     "category": "Type",
     "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n  0.00257447\n  -0.00449443\n\n\n\n"
 },
 
 {
-    "location": "models/layers.html#Model-Layers-1",
-    "page": "Layer Reference",
-    "title": "Model Layers",
+    "location": "models/layers.html#Layers-1",
+    "page": "Model Reference",
+    "title": "Layers",
     "category": "section",
     "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
 },
 
 {
+    "location": "models/layers.html#Recurrent-Cells-1",
+    "page": "Model Reference",
+    "title": "Recurrent Cells",
+    "category": "section",
+    "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nRecur"
+},
+
+{
     "location": "models/layers.html#NNlib.σ",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "NNlib.σ",
     "category": "Function",
     "text": "σ(x) = 1 / (1 + exp(-x))\n\nClassic sigmoid activation function.\n\n\n\n"
@@ -154,7 +162,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#NNlib.relu",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "NNlib.relu",
     "category": "Function",
     "text": "relu(x) = max(0, x)\n\nRectified Linear Unit activation function.\n\n\n\n"
@@ -162,7 +170,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#NNlib.leakyrelu",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "NNlib.leakyrelu",
     "category": "Function",
     "text": "leakyrelu(x) = max(0.01x, x)\n\nLeaky Rectified Linear Unit activation function.\n\nYou can also specify the coefficient explicitly, e.g. leakyrelu(x, 0.01).\n\n\n\n"
@@ -170,7 +178,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#NNlib.elu",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "NNlib.elu",
     "category": "Function",
     "text": "elu(x; α = 1) = x > 0 ? x : α * (exp(x) - one(x)\n\nExponential Linear Unit activation function. See Fast and Accurate Deep Network Learning by Exponential Linear Units\n\n\n\n"
@@ -178,7 +186,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#NNlib.swish",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "NNlib.swish",
     "category": "Function",
     "text": "swish(x) = x * σ(x)\n\nSelf-gated actvation function.\n\nSee Swish: a Self-Gated Activation Function.\n\n\n\n"
@@ -186,7 +194,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "models/layers.html#Activation-Functions-1",
-    "page": "Layer Reference",
+    "page": "Model Reference",
     "title": "Activation Functions",
     "category": "section",
     "text": "Non-linearities that go between layers of your model. Most of these functions are defined in NNlib but are available by default in Flux.Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call σ.(xs), relu.(xs) and so on.σ\nrelu\nleakyrelu\nelu\nswish"
