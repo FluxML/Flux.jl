@@ -16,7 +16,7 @@ makedocs(modules=[Flux],
                      "Training" => "training/training.md"],
                   "One-Hot Encoding" => "data/onehot.md",
                   "GPU Support" => "gpu.md",
-                  "Contributing & Help" => "contributing.md"])
+                  "Community" => "community.md"])
 
 deploydocs(
    repo = "github.com/FluxML/Flux.jl.git",
