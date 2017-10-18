@@ -12,7 +12,7 @@ export Chain, Dense, RNN, LSTM,
   param, params, mapleaves
 
 using NNlib
-export σ, relu, softmax
+export σ, relu, leakyrelu, elu, swish, softmax
 
 include("tracker/Tracker.jl")
 using .Tracker
