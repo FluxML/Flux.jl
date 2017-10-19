@@ -20,15 +20,15 @@ export mapparams
 
 using DataFlow: OSet
 
-function forleaves(f, x; seen = OSet())
+function prefor(f, x; seen = OSet())
   x ∈ seen && return
-  push!(seen, x)
-  isleaf(x) ? f(x) : foreach(x -> forleaves(f, x, seen = seen), children(x))
+  f(x)
+  foreach(x -> prefor(f, x, seen = seen), children(x))
   return
 end
 
 function params(m)
   ps = []
-  forleaves(p -> p isa TrackedArray && push!(ps, p), m)
+  prefor(p -> p isa TrackedArray && push!(ps, p), m)
   return ps
 end

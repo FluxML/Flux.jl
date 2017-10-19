@@ -112,3 +112,5 @@ truncate!(m)
 ```
 
 Calling `truncate!` wipes the slate clean, so we can call the model with more inputs without building up an expensive gradient computation.
+
+`truncate!` makes sense when you are working with multiple chunks of a large sequence, but we may also want to work with a set of independent sequences. In this case the hidden state should be completely reset to its original value, throwing away any accumulated information. `reset!` does this for you.
