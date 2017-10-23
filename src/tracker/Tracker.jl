@@ -1,5 +1,5 @@
 module Tracker
-
+import Base: <, ==
 export TrackedArray, param, back!
 
 data(x) = x
@@ -53,6 +53,13 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
   similar(data(x), dims...)
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
+
+==(x::TrackedArray, y) = data(x) == y
+==(y, x::TrackedArray) = y == data(x)
+==(x::TrackedScalar, y) = data(x)[] == y
+==(y, x::TrackedScalar) = y == data(x)[]
+<(x::TrackedScalar, y) = data(x)[] < y
+<(x, y::TrackedScalar) = x <  data(y)[]
 
 Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   print(io, "TrackedArray{…,$A}")

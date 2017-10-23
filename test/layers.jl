@@ -16,8 +16,8 @@
   m = Chain(Dense(100,100),
             Dropout(0.9))
   y = m(x)
-  @test count(a->a.data[] == 0, y) > 50
+  @test count(a->a == 0, y) > 50
   setmode!(m, :eval)
   y = m(x)
-  @test count(a->a.data[] == 0, y) == 0
+  @test count(a->a == 0, y) == 0
 end

@@ -115,6 +115,13 @@ function (a::Dropout)(x)
   end
 end
 
+"""
+    setmode!(m, mode::Symbol)
+
+Change the mode of model `m` to `mode`. Possible values for `mode` are
+`:train` and `:eval`.
+This has an affect only if `m` contains [`Dropout`](@ref) of `BatchNorm` layers.
+"""
 setmode!(a, mode::Symbol) = nothing
 setmode!(c::Chain, mode::Symbol) = mapchildren(x->setmode!(x, mode), c)
 setmode!(a::Dropout, mode::Symbol) = a.mode = mode
