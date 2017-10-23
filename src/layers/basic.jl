@@ -27,7 +27,7 @@ end
 children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
 
-(s::Chain)(x) = foldl((x, m) -> m(x), x, s.layers)
+(c::Chain)(x) = foldl((x, m) -> m(x), x, c.layers)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
@@ -78,3 +78,43 @@ function Base.show(io::IO, l::Dense)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
+
+
+"""
+  Dropout(p; mode=:train)
+
+A Dropout layer. In `:train` mode sets input components `x[i]` to zero with
+probability `p` and to `x[i]/(1-p)` with probability `(1-p)`.
+
+In `:eval` mode it doesn't alter the input: `x == Dropout(p; mode=:eval)(x)`.
+Change the mode with [`setmode!`](@ref).
+"""
+mutable struct Dropout{F}
+  p::F
+  mode::Symbol
+end
+Dropout(p::F; mode=:train) where {F} = Dropout{F}(p, mode)
+
+function (a::Dropout)(x)
+  if a.mode == :eval
+    return x
+  else
+    if 0 < a.p < 1
+      y = similar(x)
+      rand!(y)
+      q = 1 - a.p
+      @inbounds for i=1:length(y)
+        y[i] = y[i] > a.p ? 1 / q : 0
+      end
+      return y .* x
+    elseif a.p == 0
+      return x
+    elseif a.p == 1
+      return zeros(x)
+    end
+  end
+end
+
+setmode!(a, mode::Symbol) = nothing
+setmode!(c::Chain, mode::Symbol) = mapchildren(x->setmode!(x, mode), c)
+setmode!(a::Dropout, mode::Symbol) = a.mode = mode
