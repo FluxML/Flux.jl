@@ -14,24 +14,12 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
 end
 
 """
-    layernormalization(α=1.0, β=0.0)
+    normalise(x::AbstractVecOrMat)
 
-Creates a normalization layer based on https://arxiv.org/pdf/1607.06450.pdf
-
-The differences are:
-
-1) std here divides by N-1 (as does std in Julia) vs the paper N
-2) this layer α and β are constant numbers (i.e. not learnable vectors)
-
-To achieve the same effect of learnable vectors α and β oe can use
-the ElementwiseLinear layer
+Normalise each column of `x` to mean 0 and standard deviation 1.
 """
-function layernormalization(α=1.0, β=0.0)
-  function layer(y)
-    _mean = mean(y)
-    _std = sqrt.(sum((y.-_mean).^2) ./ (length(y)-1))
-    _std /= α
-    _mean -= β*_std
-    return (y .- _mean) ./ _std
-  end
+function normalise(x::AbstractVecOrMat)
+  μ′ = mean(x, 1)
+  σ′ = std(x, 1, mean = μ′)
+  return (x .- μ′) ./ σ′
 end
