@@ -1,4 +1,4 @@
-## Layers
+## Basic Layers
 
 These core layers form the foundation of almost all neural networks.
 
@@ -7,7 +7,7 @@ Chain
 Dense
 ```
 
-## Recurrent Cells
+## Recurrent Layers
 
 Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).
 
