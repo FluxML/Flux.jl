@@ -81,22 +81,22 @@ end
 
 
 """
-  Dropout(p; mode=:train)
+  Dropout(p; testmode=false)
 
-A Dropout layer. In `:train` mode sets input components `x[i]` to zero with
+A Dropout layer. If `testmode=false` mode sets input components `x[i]` to zero with
 probability `p` and to `x[i]/(1-p)` with probability `(1-p)`.
 
-In `:eval` mode it doesn't alter the input: `x == Dropout(p; mode=:eval)(x)`.
-Change the mode with [`setmode!`](@ref).
+In `testmode=true`it doesn't alter the input: `x == Dropout(p; mode=:eval)(x)`.
+Change the mode with [`testmode!`](@ref).
 """
 mutable struct Dropout{F}
   p::F
-  mode::Symbol
+  testmode::Bool
 end
-Dropout(p::F; mode=:train) where {F} = Dropout{F}(p, mode)
+Dropout(p::F; testmode::Bool=false) where {F} = Dropout{F}(p, testmode)
 
 function (a::Dropout)(x)
-  if a.mode == :eval
+  if a.testmode
     return x
   else
     if 0 < a.p < 1
@@ -116,12 +116,9 @@ function (a::Dropout)(x)
 end
 
 """
-    setmode!(m, mode::Symbol)
+    testmode!(m, val=true)
 
-Change the mode of model `m` to `mode`. Possible values for `mode` are
-`:train` and `:eval`.
-This has an affect only if `m` contains [`Dropout`](@ref) of `BatchNorm` layers.
+Set model `m` in test mode if `val=true`, and in training mode otherwise.
+This has an affect only if `m` contains [`Dropout`](@ref) or `BatchNorm` layers.
 """
-setmode!(a, mode::Symbol) = nothing
-setmode!(c::Chain, mode::Symbol) = mapchildren(x->setmode!(x, mode), c)
-setmode!(a::Dropout, mode::Symbol) = a.mode = mode
+testmode!(m, val::Bool=true) = prefor(x -> x isa Dropout && (x.testmode = val), m)

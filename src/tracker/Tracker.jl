@@ -41,6 +41,7 @@ TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
 param(xs) = TrackedArray(AbstractFloat.(xs))
 istracked(x::TrackedArray) = true
 data(x::TrackedArray) = x.data
+# data(x::TrackedScalar) = x.data[]
 grad(x::TrackedArray) = x.grad
 
 # Fallthrough methods

@@ -9,7 +9,7 @@ using Lazy: @forward
 
 export Chain, Dense, RNN, LSTM, Dropout,
   SGD, ADAM, Momentum, Nesterov,
-  param, params, mapleaves, setmode!
+  param, params, mapleaves, testmode!
 
 using NNlib
 export σ, relu, leakyrelu, elu, swish, softmax
