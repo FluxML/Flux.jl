@@ -137,9 +137,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers.html#Layers-1",
+    "location": "models/layers.html#Basic-Layers-1",
     "page": "Model Reference",
-    "title": "Layers",
+    "title": "Basic Layers",
     "category": "section",
     "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
 },
@@ -169,9 +169,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers.html#Recurrent-Cells-1",
+    "location": "models/layers.html#Recurrent-Layers-1",
     "page": "Model Reference",
-    "title": "Recurrent Cells",
+    "title": "Recurrent Layers",
     "category": "section",
     "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nFlux.Recur"
 },
