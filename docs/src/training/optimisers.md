@@ -17,14 +17,11 @@ back!(l)
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-using Flux.Tracker: data, grad
-
 function update()
   η = 0.1 # Learning Rate
   for p in (W, b)
-    x, Δ = data(p), grad(p)
-    x .-= η .* Δ # Apply the update
-    Δ .= 0       # Clear the gradient
+    p.data .-= η .* p.grad # Apply the update
+    p.grad .= 0            # Clear the gradient
   end
 end
 ```
@@ -48,7 +45,21 @@ For the update step, there's nothing whatsoever wrong with writing the loop abov
 ```julia
 opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1
 
-opt()
+opt() # Carry out the update, modifying `W` and `b`.
 ```
 
 An optimiser takes a parameter list and returns a function that does the same thing as `update` above. We can pass either `opt` or `update` to our [training loop](training.md), which will then run the optimiser after every mini-batch of data.
+
+## Optimiser Reference
+
+All optimisers return a function that, when called, will update the parameters passed to it.
+
+```@docs
+SGD
+Momentum
+Nesterov
+RMSProp
+ADAM
+ADAGrad
+ADADelta
+```

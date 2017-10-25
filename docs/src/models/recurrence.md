@@ -15,9 +15,9 @@ Recurrent networks introduce a *hidden state* that gets carried over each time w
 
 ```julia
 h = # ... initial state ...
-y₁, h = f(x₁, h)
-y₂, h = f(x₂, h)
-y₃, h = f(x₃, h)
+h, y₁ = f(h, x₁)
+h, y₂ = f(h, x₂)
+h, y₃ = f(h, x₃)
 # ...
 ```
 
@@ -25,7 +25,7 @@ Information stored in `h` is preserved for the next prediction, allowing it to f
 
 (This might be important if, for example, each `x` represents one word of a sentence; the model's interpretation of the word "bank" should change if the previous input was "river" rather than "investment".)
 
-Flux's RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard `Dense` layer, and the output and hidden state are the same. By convention, the hidden state is the first input and output.
+Flux's RNN support closely follows this mathematical perspective. The most basic RNN is as close as possible to a standard `Dense` layer, and the output is also the hidden state.
 
 ```julia
 Wxh = randn(5, 10)
@@ -112,3 +112,5 @@ truncate!(m)
 ```
 
 Calling `truncate!` wipes the slate clean, so we can call the model with more inputs without building up an expensive gradient computation.
+
+`truncate!` makes sense when you are working with multiple chunks of a large sequence, but we may also want to work with a set of independent sequences. In this case the hidden state should be completely reset to its original value, throwing away any accumulated information. `reset!` does this for you.

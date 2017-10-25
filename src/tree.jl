@@ -8,18 +8,27 @@ function treelike(T, fs = fieldnames(T))
   end
 end
 
-# TODO: prewalk/postwalk with correct caching
-# This is only correct in general for idempotent functions
+isleaf(x) = isempty(children(x))
 
-mapparams(f, x::AbstractArray) = f(x)
-mapparams(f, x) = mapchildren(x -> mapparams(f, x), x)
+function mapleaves(f, x; cache = ObjectIdDict())
+  haskey(cache, x) && return cache[x]
+  cache[x] = isleaf(x) ? f(x) : mapchildren(x -> mapleaves(f, x, cache = cache), x)
+end
 
-forparams(f, x) = (mapparams(x -> (f(x); x), x); return)
+export mapparams
+@deprecate mapparams(f, x) mapleaves(f, x)
 
 using DataFlow: OSet
 
+function prefor(f, x; seen = OSet())
+  x ∈ seen && return
+  f(x)
+  foreach(x -> prefor(f, x, seen = seen), children(x))
+  return
+end
+
 function params(m)
-  ps = OSet()
-  forparams(p -> push!(ps, p), m)
-  return collect(ps)
+  ps = []
+  prefor(p -> p isa TrackedArray && push!(ps, p), m)
+  return ps
 end

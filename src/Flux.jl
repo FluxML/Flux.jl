@@ -8,10 +8,11 @@ using Juno, Requires
 using Lazy: @forward
 
 export Chain, Dense, RNN, LSTM,
-  SGD, params, mapparams
+  SGD, ADAM, Momentum, Nesterov,
+  param, params, mapleaves
 
 using NNlib
-export σ, relu, softmax
+export σ, relu, leakyrelu, elu, swish, softmax
 
 include("tracker/Tracker.jl")
 using .Tracker

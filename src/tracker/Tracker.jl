@@ -1,7 +1,5 @@
 module Tracker
 
-using Base: RefValue
-
 export TrackedArray, param, back!
 
 data(x) = x
@@ -16,11 +14,13 @@ Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
 
 (c::Call)() = c.func(data.(c.args)...)
 
-struct TrackedArray{T,N,A} <: AbstractArray{T,N}
-  ref::RefValue{UInt32}
+mutable struct TrackedArray{T,N,A} <: AbstractArray{T,N}
+  ref::UInt32
   f::Call
   data::A
-  grad::RefValue{A}
+  grad::A
+  TrackedArray{T,N,A}(f::Call, data::A) where {T,N,A} = new(0, f, data)
+  TrackedArray{T,N,A}(f::Call, data::A, grad::A) where {T,N,A} = new(0, f, data, grad)
 end
 
 TrackedScalar{T,A} = TrackedArray{T,0,A}
@@ -28,19 +28,22 @@ TrackedVector{T,A} = TrackedArray{T,1,A}
 TrackedMatrix{T,A} = TrackedArray{T,2,A}
 TrackedVecOrMat{T,A} = Union{TrackedVector{T,A},TrackedMatrix{T,A}}
 
-TrackedArray(c::Call, x::A, Δ::Ref{A}) where A <: AbstractArray =
-  TrackedArray{eltype(A),ndims(A),A}(Ref(UInt32(0)), c, x, Δ)
+TrackedArray(c::Call, x::A) where A <: AbstractArray =
+  TrackedArray{eltype(A),ndims(A),A}(c, x)
 
-TrackedArray(c::Call, x::AbstractArray) = TrackedArray(c, x, RefValue{typeof(x)}())
+TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
+  TrackedArray{eltype(A),ndims(A),A}(c, x, Δ)
 
 TrackedArray(c::Call) = TrackedArray(c, c())
 
-TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, RefValue(zeros(x)))
+TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
 
 param(xs) = TrackedArray(AbstractFloat.(xs))
+param(xs::Real) = param(fill(xs))
+
 istracked(x::TrackedArray) = true
 data(x::TrackedArray) = x.data
-grad(x::TrackedArray) = x.grad[]
+grad(x::TrackedArray) = x.grad
 
 # Fallthrough methods
 
@@ -73,8 +76,6 @@ include("numeric.jl")
 
 import NNlib.adapt
 
-adapt(T, xs::TrackedArray) =
-  TrackedArray(xs.f, adapt(T, xs.data),
-               RefValue(adapt(T, grad(xs))))
+adapt(T, xs::TrackedArray) = TrackedArray(xs.f, adapt(T, xs.data), adapt(T, xs.grad))
 
 end

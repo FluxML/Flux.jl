@@ -4,12 +4,14 @@
 Chain multiple layers / functions together, so that they are called in sequence
 on a given input.
 
-    m = Chain(x -> x^2, x -> x+1)
-    m(5) == 26
+```julia
+m = Chain(x -> x^2, x -> x+1)
+m(5) == 26
 
-    m = Chain(Dense(10, 5), Dense(5, 2))
-    x = rand(10)
-    m(x) == m[2](m[1](x))
+m = Chain(Dense(10, 5), Dense(5, 2))
+x = rand(10)
+m(x) == m[2](m[1](x))
+```
 
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
@@ -43,7 +45,17 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
     y = σ.(W * x .+ b)
 
 The input `x` must be a vector of length `in`, or a batch of vectors represented
-as an `in × N` matrix. The out `y` will be a vector or batch of length `in`.
+as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+
+```julia
+julia> d = Dense(5, 2)
+Dense(5, 2)
+
+julia> d(rand(5))
+Tracked 2-element Array{Float64,1}:
+  0.00257447
+  -0.00449443
+```
 """
 struct Dense{F,S,T}
   σ::F
