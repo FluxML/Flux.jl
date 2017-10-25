@@ -121,4 +121,4 @@ end
 Set model `m` in test mode if `val=true`, and in training mode otherwise.
 This has an affect only if `m` contains [`Dropout`](@ref) or `BatchNorm` layers.
 """
-testmode!(m, val::Bool=true) = prefor(x -> x isa Dropout && (x.testmode = val), m)
+testmode!(m, val::Bool=true) = prefor(x -> :testmode ∈ fieldnames(x) && (x.testmode = val), m)
