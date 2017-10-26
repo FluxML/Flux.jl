@@ -70,6 +70,9 @@ function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = tru
   end
 end
 
+Base.setindex!(xs::TrackedArray, v, i...) =
+  error("Can't differentiate `setindex!`")
+
 include("back.jl")
 include("lib.jl")
 include("numeric.jl")
