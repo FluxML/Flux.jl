@@ -23,7 +23,7 @@ rnn.(1:10) # apply to a sequence
 rnn.state # 60
 ```
 """
-mutable struct Recur{T}
+mutable struct Recur{T} <: AbstractLayer
   cell::T
   init
   state

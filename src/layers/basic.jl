@@ -16,7 +16,7 @@ m(x) == m[2](m[1](x))
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 """
-type Chain
+type Chain <: AbstractLayer
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
 end
@@ -57,7 +57,7 @@ Tracked 2-element Array{Float64,1}:
   -0.00449443
 ```
 """
-struct Dense{F,S,T}
+struct Dense{F,S,T} <: AbstractLayer
   σ::F
   W::S
   b::T
