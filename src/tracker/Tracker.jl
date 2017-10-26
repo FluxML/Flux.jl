@@ -56,6 +56,18 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
+value(x) = x
+value(x::TrackedArray) = data(x)
+value(x::TrackedScalar) = data(x)[]
+
+Base.:(==)(x::TrackedArray, y) = value(x) == y
+Base.:(==)(y, x::TrackedArray) = y == value(x)
+Base.:(==)(x::TrackedArray, y::TrackedArray) = value(x) == value(x)
+
+Base.isless(x::TrackedScalar, y) = isless(value(x), y)
+Base.isless(x, y::TrackedScalar) = isless(x, value(y))
+Base.isless(x::TrackedScalar, y::TrackedScalar) = isless(value(x), value(y))
+
 Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   print(io, "TrackedArray{…,$A}")
 

@@ -7,7 +7,7 @@ module Flux
 using Juno, Requires
 using Lazy: @forward
 
-export Chain, Dense, RNN, LSTM,
+export Chain, Dense, RNN, LSTM, Dropout,
   SGD, ADAM, Momentum, Nesterov,
   param, params, mapleaves
 
@@ -27,5 +27,6 @@ include("tree.jl")
 include("layers/stateless.jl")
 include("layers/basic.jl")
 include("layers/recurrent.jl")
+include("layers/normalisation.jl")
 
 end # module
