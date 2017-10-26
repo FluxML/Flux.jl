@@ -225,6 +225,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.Dropout",
+    "page": "Model Reference",
+    "title": "Flux.Dropout",
+    "category": "Type",
+    "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Normalisation-and-Regularisation-1",
+    "page": "Model Reference",
+    "title": "Normalisation & Regularisation",
+    "category": "section",
+    "text": "These layers don't affect the structure of the network but may improve training times or reduce overfitting.Dropout"
+},
+
+{
     "location": "training/optimisers.html#",
     "page": "Optimisers",
     "title": "Optimisers",
