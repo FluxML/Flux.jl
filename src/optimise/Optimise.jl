@@ -1,7 +1,7 @@
 module Optimise
 
 export update!, params, train!,
-  SGD
+  SGD, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, ADADelta
 
 struct Param{T}
   x::T
@@ -16,6 +16,6 @@ include("train.jl")
 
 using Flux.Tracker: TrackedArray
 
-Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad[])
+Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad)
 
 end

@@ -15,7 +15,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(x -> softmax(x).*(1:3), (3,5))
 
 @test gradtest(Flux.mse, rand(5,5), rand(5, 5))
-@test gradtest(Flux.logloss, rand(5,5), rand(5, 5))
+@test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
 
@@ -27,4 +27,18 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
   2y + x
 end
 
+for T in [Float32, Float64]
+    @test isa(param(T(1)), TrackedArray{T, 0})
+    @test isa(param(rand(T, 2)), TrackedArray{T, 1})
+    @test isa(param(rand(T, 2,2)), TrackedArray{T, 2})
 end
+
+# TODO: do we wand this behaviour ??
+F = typeof(AbstractFloat(1))
+for T in [Int32, Int64]
+    @test isa(param(T(1)), TrackedArray{F, 0})
+    @test isa(param(rand(T, 2)), TrackedArray{F, 1})
+    @test isa(param(rand(T, 2,2)), TrackedArray{F, 2})
+end
+
+end #testset

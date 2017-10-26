@@ -18,7 +18,7 @@ loss(x, y) # ~ 3
 To improve the prediction we can take the gradients of `W` and `b` with respect to the loss function and perform gradient descent. We could calculate gradients by hand, but Flux will do it for us if we tell it that `W` and `b` are trainable *parameters*.
 
 ```julia
-using Flux.Tracker: param, back!, data, grad
+using Flux.Tracker
 
 W = param(W)
 b = param(b)
@@ -31,9 +31,10 @@ back!(l)
 `loss(x, y)` returns the same number, but it's now a *tracked* value that records gradients as it goes along. Calling `back!` then calculates the gradient of `W` and `b`. We can see what this gradient is, and modify `W` to train the model.
 
 ```julia
-grad(W)
+W.grad
 
-W.data .-= 0.1grad(W)
+# Update the parameter
+W.data .-= 0.1(W.grad)
 
 loss(x, y) # ~ 2.5
 ```

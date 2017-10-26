@@ -20,7 +20,9 @@ Base.getindex(xs::OneHotMatrix, i::Int, j::Int) = xs.data[j][i]
 
 Base.:*(A::AbstractMatrix, B::OneHotMatrix) = A[:, map(x->x.ix, B.data)]
 
-Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix([x, xs...])
+Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs...])
+
+batch(xs::AbstractArray{<:OneHotVector}) = OneHotMatrix(length(first(xs)), xs)
 
 import NNlib.adapt
 
@@ -32,7 +34,12 @@ adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
 
-onehot(l, labels) = OneHotVector(findfirst(labels, l), length(labels))
+function onehot(l, labels)
+  i = findfirst(labels, l)
+  i > 0 || error("Value $l is not in labels")
+  OneHotVector(i, length(labels))
+end
+
 onehotbatch(ls, labels) = OneHotMatrix(length(labels), [onehot(l, labels) for l in ls])
 
 argmax(y::AbstractVector, labels = 1:length(y)) =

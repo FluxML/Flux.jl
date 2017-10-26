@@ -8,7 +8,6 @@ julia:
 # uncomment the following lines to override the default test script
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone("https://github.com/FluxML/NNlib.jl")'
   - julia -e 'Pkg.clone(pwd()); Pkg.build("Flux"); Pkg.test("Flux"; coverage=true)'
 after_success:
   - julia -e 'Pkg.add("Documenter")'
