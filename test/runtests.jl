@@ -4,6 +4,6 @@ using Flux, Base.Test
 
 include("utils.jl")
 include("tracker.jl")
-include("layers.jl")
+include("layers/normalisation.jl")
 
 end

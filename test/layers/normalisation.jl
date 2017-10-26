@@ -1,8 +1,10 @@
-@testset "dropout" begin
+using Flux: testmode!
+
+@testset "Dropout" begin
   x = [1.,2.,3.]
-  @test x === Dropout(0.1, testmode=true)(x)
-  @test x === Dropout(0, testmode=false)(x)
-  @test all(zeros(x) .== Dropout(1, testmode=false)(x))
+  @test x == testmode!(Dropout(0.1))(x)
+  @test x == Dropout(0)(x)
+  @test zeros(x) == Dropout(1)(x)
 
   x = rand(100)
   m = Dropout(0.9)
