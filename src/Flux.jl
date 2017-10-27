@@ -21,6 +21,7 @@ include("optimise/Optimise.jl")
 using .Optimise
 
 include("utils.jl")
+include("numeric.jl")
 include("onehot.jl")
 include("treelike.jl")
 
