@@ -65,4 +65,16 @@ end
     x′ = m(x).data
     @test x′[1] ≈ (1 - 0.3) / 1.1449489742783179
   end
+
+  # with activation function
+  let m = BatchNorm(2, λ = σ), x = param([1 2; 3 4; 5 6]')
+    @test m.active
+    m(x)
+
+    testmode!(m)
+    @test !m.active
+
+    x′ = m(x).data
+    @test x′[1] ≈ σ((1 - 0.3) / 1.1449489742783179)
+  end
 end
