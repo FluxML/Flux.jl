@@ -2,8 +2,8 @@
     testmode!(m)
     testmode!(m, false)
 
-Put layers like [`Dropout`](@ref) and `BatchNorm` into testing mode (or back to
-training mode with `false`).
+Put layers like [`Dropout`](@ref) and [`BatchNorm`](@ref) into testing mode
+(or back to training mode with `false`).
 """
 function testmode!(m, val::Bool=true)
   prefor(x -> _testmode!(x, val), m)
@@ -48,7 +48,7 @@ _testmode!(a::Dropout, test) = (a.active = !test)
     BatchNorm(dims...; λ = identity,
               initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)
 
-Batch Normalization Layer
+Batch Normalization Layer for [`Dense`](@ref) layer.
 
 See [Batch Normalization: Accelerating Deep Network Training by Reducing
      Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf)
@@ -65,6 +65,8 @@ julia> m = Chain(
   BatchNorm(10),
   softmax)
 Chain(Dense(784, 64), BatchNorm(64, λ = NNlib.relu), Dense(64, 10), BatchNorm(10), NNlib.softmax)
+
+julia> opt = SGD(params(m), 10)  # a crazy learning rate
 ```
 """
 mutable struct BatchNorm{F,V,N}
