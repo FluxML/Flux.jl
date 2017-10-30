@@ -109,7 +109,7 @@ children(BN::BatchNorm) =
   (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
 
 mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(λ, f(BN.β), f(BN.γ), BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+  BatchNorm(BN.λ, f(BN.β), f(BN.γ), BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
 
