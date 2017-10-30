@@ -67,32 +67,35 @@ julia> m = Chain(
 Chain(Dense(784, 64), BatchNorm(64, λ = NNlib.relu), Dense(64, 10), BatchNorm(10), NNlib.softmax)
 ```
 """
-mutable struct BatchNorm{F,V}
+mutable struct BatchNorm{F,V,N}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
   μ     # moving mean
   σ     # moving std
-  ϵ::Float64
-  momentum::Float64
+  ϵ::N
+  momentum::N
   active::Bool
 end
 
 BatchNorm(dims::Integer...; λ = identity,
           initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
-  BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), 0., 1., momentum, ϵ, true)
+  BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), 0., 1., ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
   if !BN.active
     μ = BN.μ
     σ = BN.σ
   else
+    T = eltype(x)
+
+    ϵ = T(BN.ϵ)
     m = size(x, 2)  # batch size
     μ = sum(x, 2) ./ m
-    σ = sqrt.(sum((x .- μ).^2, 2) ./ (m - 1) .+ BN.ϵ)
+    σ = sqrt.(sum((x .- μ).^2, 2) ./ (m - 1) .+ ϵ)
 
     # update moving mean/std
-    mtm = BN.momentum
+    mtm = T(BN.momentum)
     BN.μ = mtm .* μ.data .+ (1 - mtm) .* BN.μ
     BN.σ = mtm .* σ.data .+ (1 - mtm) .* BN.σ
   end
@@ -102,7 +105,8 @@ end
 
 children(BN::BatchNorm) =
   (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
-mapchildren(f, BN::BatchNorm) =
+
+mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
   BatchNorm(λ, f(BN.β), f(BN.γ), BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
