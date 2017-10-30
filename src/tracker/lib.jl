@@ -57,6 +57,11 @@ back(::typeof(sum), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .=
 Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
+Base.mean(xs::TrackedArray, region) = TrackedArray(Call(mean, xs, region))
+
+back(::typeof(mean), Δ, xs::TrackedArray, region) =
+  back(xs, similar(xs.data) .= Δ ./ prod(size(xs.data, region...)))
+
 # BLAS
 
 a::TrackedMatrix * b::TrackedMatrix  = TrackedArray(Call(*, a, b))

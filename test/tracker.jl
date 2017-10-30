@@ -22,6 +22,16 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(vcat, rand(5), rand(3))
 @test gradtest(vcat, rand(2,3), rand(3,3))
 
+@testset "mean" begin
+  @test gradtest(mean, rand(2, 3))
+
+  @test gradtest(x -> mean(x, 1), rand(2, 3))
+  @test gradtest(x -> mean(x, 2), rand(2, 3))
+  @test gradtest(x -> mean(x, 3), rand(2, 3, 4))
+
+  @test gradtest(x -> mean(x, [1, 2]), rand(2, 3, 4))
+end
+
 @test gradtest(rand(5)) do x
   y = x.^2
   2y + x
