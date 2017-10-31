@@ -1,6 +1,9 @@
 children(x) = ()
 mapchildren(f, x) = x
 
+children(x::Tuple) = x
+mapchildren(f, x::Tuple) = map(f, x)
+
 function treelike(T, fs = fieldnames(T))
   @eval begin
     children(x::$T) = ($([:(x.$f) for f in fs]...),)
