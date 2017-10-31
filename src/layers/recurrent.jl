@@ -1,5 +1,7 @@
 # TODO: broadcasting cat
-combine(x, h) = vcat(x, h .* trues(1, size(x, 2)))
+combine(x::AbstractMatrix, h::AbstractVector) = vcat(x, h .* trues(1, size(x, 2)))
+combine(x::AbstractVector, h::AbstractVector) = vcat(x, h)
+combine(x::AbstractMatrix, h::AbstractMatrix) = vcat(x, h)
 
 # Stateful recurrence
 
