@@ -137,9 +137,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers.html#Layers-1",
+    "location": "models/layers.html#Basic-Layers-1",
     "page": "Model Reference",
-    "title": "Layers",
+    "title": "Basic Layers",
     "category": "section",
     "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
 },
@@ -169,9 +169,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers.html#Recurrent-Cells-1",
+    "location": "models/layers.html#Recurrent-Layers-1",
     "page": "Model Reference",
-    "title": "Recurrent Cells",
+    "title": "Recurrent Layers",
     "category": "section",
     "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nFlux.Recur"
 },
@@ -222,6 +222,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Activation Functions",
     "category": "section",
     "text": "Non-linearities that go between layers of your model. Most of these functions are defined in NNlib but are available by default in Flux.Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call σ.(xs), relu.(xs) and so on.σ\nrelu\nleakyrelu\nelu\nswish"
+},
+
+{
+    "location": "models/layers.html#Flux.Dropout",
+    "page": "Model Reference",
+    "title": "Flux.Dropout",
+    "category": "Type",
+    "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Normalisation-and-Regularisation-1",
+    "page": "Model Reference",
+    "title": "Normalisation & Regularisation",
+    "category": "section",
+    "text": "These layers don't affect the structure of the network but may improve training times or reduce overfitting.Dropout"
 },
 
 {
