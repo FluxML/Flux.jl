@@ -5,3 +5,4 @@ MacroTools 0.3.3
 NNlib
 ForwardDiff
 Requires
+ZipFile

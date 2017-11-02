@@ -11,4 +11,7 @@ end
 include("cmudict.jl")
 using .CMUDict
 
+include("sentiment.jl")
+using .Sentiment
+
 end
