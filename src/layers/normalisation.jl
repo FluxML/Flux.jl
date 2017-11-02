@@ -95,7 +95,7 @@ function (BN::BatchNorm)(x)
 
     ϵ = T(BN.ϵ)
     m = size(x, 2)  # batch size
-    μ = sum(x, 2) ./ m
+    μ = mean(x, 2)
     σ = sqrt.(sum((x .- μ).^2, 2) ./ m .+ ϵ)
 
     # update moving mean/std
