@@ -29,8 +29,7 @@ include("layers/basic.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 
-include("data/Data.jl")
-
 include("batches/Batches.jl")
+include("data/Data.jl")
 
 end # module
