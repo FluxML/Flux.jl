@@ -35,3 +35,5 @@ function params(m)
   prefor(p -> p isa TrackedArray && push!(ps, p), m)
   return ps
 end
+
+params(m...) = params(m)
