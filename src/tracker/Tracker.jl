@@ -38,6 +38,8 @@ TrackedArray(c::Call) = TrackedArray(c, c())
 
 TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
 
+isleaf(x::TrackedArray) = x.f == Call(nothing)
+
 param(xs) = TrackedArray(AbstractFloat.(xs))
 param(xs::Real) = param(fill(xs))
 

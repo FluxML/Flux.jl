@@ -79,6 +79,16 @@ function back(::typeof(*), Δ, a::AbstractMatrix, b::AbstractVecOrMat)
   @back(b, At_mul_B(data(a), Δ))
 end
 
+# Fast path for matrix-vector
+function back(::typeof(*), Δ::AbstractVector, W::TrackedMatrix, x::AbstractVector)
+  if isleaf(W)
+    W.grad .+= Δ .* data(x).'
+  else
+    back(W, A_mul_Bt(Δ, data(x)))
+  end
+  @back(x, At_mul_B(data(W), Δ))
+end
+
 # NNlib
 
 import NNlib: softmax, ∇softmax
