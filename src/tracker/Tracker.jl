@@ -1,6 +1,6 @@
 module Tracker
 
-export TrackedArray, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, param, back!
 
 data(x) = x
 istracked(x) = false
