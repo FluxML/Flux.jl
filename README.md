@@ -9,3 +9,4 @@ julia> Pkg.add("Flux")
 ```
 
 See the [documentation](http://fluxml.github.io/Flux.jl/stable/) or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
+
