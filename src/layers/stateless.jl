@@ -1,3 +1,5 @@
+using NNlib: log_fast
+
 # Cost functions
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
