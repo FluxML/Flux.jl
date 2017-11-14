@@ -38,7 +38,7 @@ function rmsprop(p::Param; η::Real = 0.001, ρ::Real = 0.9, ϵ::Real = 1e-8)
   acc  = zeros(p.x) .+ ϵ
   function ()
     @. acc = ρ * acc + (1 - ρ) * p.Δ ^ 2
-    @. p.Δ /= √acc * η
+    @. p.Δ = η * p.Δ / √acc
   end
 end
 
@@ -46,7 +46,7 @@ function adagrad(p::Param; η::Real = 0.01, ϵ::Real = 1e-8)
   acc = zeros(p.x) .+ ϵ
   function ()
     @. acc += p.Δ ^ 2
-    @. p.Δ /= √acc * η
+    @. p.Δ = η * p.Δ / √acc
   end
 end
 
