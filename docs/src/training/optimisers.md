@@ -58,8 +58,5 @@ All optimisers return a function that, when called, will update the parameters p
 SGD
 Momentum
 Nesterov
-RMSProp
 ADAM
-ADAGrad
-ADADelta
 ```
