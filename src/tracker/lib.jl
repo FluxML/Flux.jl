@@ -58,6 +58,12 @@ Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 Base.mean(xs::TrackedArray) = TrackedArray(Call(mean, xs), toarray(xs.data, mean(xs.data)))
 Base.mean(xs::TrackedArray, region) = TrackedArray(Call(mean, xs, region))
 
+# Hacks to get std working
+Base.std(x::TrackedArray; mean = Base.mean(x)) =
+  sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
+Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
+  sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
+
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =
   back(xs, similar(xs.data) .= Δ ./ prod(size(xs.data, region...)))

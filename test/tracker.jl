@@ -34,6 +34,9 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
   @test gradtest(x -> mean(x, [1, 2]), rand(2, 3, 4))
 end
 
+@test gradtest(x -> std(x), rand(5,5))
+@test gradtest(x -> std(x, 1), rand(5,5))
+
 @test gradtest(rand(5)) do x
   y = x.^2
   2y + x

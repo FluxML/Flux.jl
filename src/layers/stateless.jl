@@ -12,3 +12,14 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
   ypred = logŷ .- log.(sum(exp.(logŷ), 1))
   -sum(y .* ypred) / size(y, 2)
 end
+
+"""
+    normalise(x::AbstractVecOrMat)
+
+Normalise each column of `x` to mean 0 and standard deviation 1.
+"""
+function normalise(x::AbstractVecOrMat)
+  μ′ = mean(x, 1)
+  σ′ = std(x, 1, mean = μ′)
+  return (x .- μ′) ./ σ′
+end
