@@ -225,6 +225,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.testmode!",
+    "page": "Model Reference",
+    "title": "Flux.testmode!",
+    "category": "Function",
+    "text": "testmode!(m)\ntestmode!(m, false)\n\nPut layers like Dropout and BatchNorm into testing mode (or back to training mode with false).\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Flux.Dropout",
     "page": "Model Reference",
     "title": "Flux.Dropout",
@@ -237,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Normalisation & Regularisation",
     "category": "section",
-    "text": "These layers don't affect the structure of the network but may improve training times or reduce overfitting.Dropout"
+    "text": "These layers don't affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nDropout"
 },
 
 {
@@ -257,11 +265,43 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "training/optimisers.html#Flux.Optimise.SGD",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.SGD",
+    "category": "Function",
+    "text": "SGD(params, η = 1; decay = 0)\n\nClassic gradient descent optimiser. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports decayed learning rate decay if the decay argument is provided.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.Momentum",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.Momentum",
+    "category": "Function",
+    "text": "Momentum(params, ρ, decay = 0)\n\nSGD with momentum ρ and optional learning rate decay.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.Nesterov",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.Nesterov",
+    "category": "Function",
+    "text": "Nesterov(params, ρ, decay = 0)\n\nSGD with Nesterov momentum ρ and optional learning rate decay.\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers.html#Flux.Optimise.ADAM",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADAM",
+    "category": "Function",
+    "text": "ADAM(params; η = 0.001, β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n"
+},
+
+{
     "location": "training/optimisers.html#Optimiser-Reference-1",
     "page": "Optimisers",
     "title": "Optimiser Reference",
     "category": "section",
-    "text": "All optimisers return a function that, when called, will update the parameters passed to it.SGD\nMomentum\nNesterov\nRMSProp\nADAM\nADAGrad\nADADelta"
+    "text": "All optimisers return a function that, when called, will update the parameters passed to it.SGD\nMomentum\nNesterov\nADAM"
 },
 
 {
