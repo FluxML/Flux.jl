@@ -83,9 +83,9 @@ end
     Diagonal(in::Integer)
 
 Creates an element-wise linear transformation layer with learnable
-vectors α and β:
+vectors `α` and `β`:
 
-    y = α .* x .+ b
+    y = α .* x .+ β
 
 The input `x` must be a array where `size(x, 1) == in`.
 """
