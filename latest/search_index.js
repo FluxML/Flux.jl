@@ -65,6 +65,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/basics.html#Layer-helpers-1",
+    "page": "Basics",
+    "title": "Layer helpers",
+    "category": "section",
+    "text": "Flux provides a set of helpers for custom layers, which you can enable by callingFlux.treelike(Affine)This enables a useful extra set of functionality for our Affine layer, such as collecting its parameters or moving it to the GPU."
+},
+
+{
     "location": "models/recurrence.html#",
     "page": "Recurrence",
     "title": "Recurrence",
