@@ -249,11 +249,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.LayerNorm",
+    "page": "Model Reference",
+    "title": "Flux.LayerNorm",
+    "category": "Type",
+    "text": "LayerNorm(h::Integer)\n\nA normalisation layer designed to be used with recurrent hidden states of size h. Normalises the mean/stddev of each input before applying a per-neuron gain/bias.\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Normalisation-and-Regularisation-1",
     "page": "Model Reference",
     "title": "Normalisation & Regularisation",
     "category": "section",
-    "text": "These layers don't affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nDropout"
+    "text": "These layers don't affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nDropout\nLayerNorm"
 },
 
 {
