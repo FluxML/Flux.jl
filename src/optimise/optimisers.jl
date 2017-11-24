@@ -39,7 +39,7 @@ end
     Spectral Norm Regularization for Improving the Generalizability of Deep Learning, Yuichi Yoshida, Takeru Miyato, 2017
     https://arxiv.org/pdf/1705.10941.pdf
 """
-function spectral(p::Flux.Optimise.Param, λ::Real)
+function spectral(p::Param, λ::Real)
   n,m = size(p.x)
   u = similar(p.x,n)
   u .= randn(n)
