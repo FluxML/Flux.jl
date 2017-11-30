@@ -40,7 +40,7 @@ TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
 
 isleaf(x::TrackedArray) = x.f == Call(nothing)
 
-param(xs) = TrackedArray(AbstractFloat.(xs))
+param(xs) = TrackedArray(map(x -> AbstractFloat(x), xs))
 param(xs::Real) = param(fill(xs))
 
 istracked(x::TrackedArray) = true
