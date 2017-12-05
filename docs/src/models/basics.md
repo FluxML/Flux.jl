@@ -151,3 +151,13 @@ m = Chain(x -> x^2, x -> x+1)
 
 m(5) # => 26
 ```
+
+## Layer helpers
+
+Flux provides a set of helpers for custom layers, which you can enable by calling
+
+```julia
+Flux.treelike(Affine)
+```
+
+This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
