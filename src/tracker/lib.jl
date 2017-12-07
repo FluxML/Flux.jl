@@ -27,8 +27,7 @@ Base.repmat(x::TrackedVecOrMat, a::Integer...) = TrackedArray(Call(repmat, x, a.
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = TrackedArray(Call(repmat, x, a...))
 
 Base.vcat(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::TrackedVector, b::TrackedVector, c::TrackedVector)  = TrackedArray(Call(vcat, vcat(a, b), c))
-#Base.vcat(a::TrackedVector...)                 = TrackedArray(Call(vcat, a...))
+Base.vcat(a::TrackedVector, b::TrackedVector...)  = TrackedArray(Call(vcat, a, b...))
 Base.vcat(a::TrackedVector, b::AbstractVector) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractVector, b::TrackedVector) = TrackedArray(Call(vcat, a, b))
 
