@@ -81,13 +81,12 @@ in order to normalize the input of other layer,
 put the `BatchNorm` layer before activation function.
 
 ```julia
-julia> m = Chain(
+m = Chain(
   Dense(28^2, 64),
   BatchNorm(64, λ = relu),
   Dense(64, 10),
   BatchNorm(10),
   softmax)
-Chain(Dense(784, 64), BatchNorm(64, λ = NNlib.relu), Dense(64, 10), BatchNorm(10), NNlib.softmax)
 ```
 """
 mutable struct BatchNorm{F,V,N}
