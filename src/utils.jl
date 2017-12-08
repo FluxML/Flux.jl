@@ -120,3 +120,19 @@ function throttle(f, timeout; leading=true, trailing=false)
     nothing
   end
 end
+
+"""
+Extends dot operator of Base.
+Returns a zero dimensional TrackedArray by computing dot product of two
+TrackedArrays.
+
+```julia
+julia> param([1,2]) ⋅ param([2,2]) 
+Tracked 0-dimensional Array{Float64,0}:
+6.0
+```
+"""
+
+function Base.:⋅(a::TrackedArray, b::TrackedArray)
+  return param(a.data ⋅ b.data)
+end
