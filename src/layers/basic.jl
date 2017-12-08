@@ -78,3 +78,32 @@ function Base.show(io::IO, l::Dense)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
+
+"""
+    Diagonal(in::Integer)
+
+Creates an element-wise linear transformation layer with learnable
+vectors `α` and `β`:
+
+    y = α .* x .+ β
+
+The input `x` must be a array where `size(x, 1) == in`.
+"""
+struct Diagonal{T}
+  α::T
+  β::T
+end
+
+Diagonal(in::Integer; initα = ones, initβ = zeros) =
+  Diagonal(param(initα(in)), param(initβ(in)))
+
+treelike(Diagonal)
+
+function (a::Diagonal)(x)
+  α, β = a.α, a.β
+  α.*x .+ β
+end
+
+function Base.show(io::IO, l::Diagonal)
+  print(io, "Diagonal(", length(l.α), ")")
+end

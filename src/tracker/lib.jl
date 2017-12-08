@@ -1,5 +1,3 @@
-import Base: *
-
 toarray(xs::AbstractArray, ys::AbstractArray) = ys
 toarray(xs::AbstractArray, y) = similar(xs, typeof(y), ()) .= y
 
@@ -60,23 +58,53 @@ Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 Base.mean(xs::TrackedArray) = TrackedArray(Call(mean, xs), toarray(xs.data, mean(xs.data)))
 Base.mean(xs::TrackedArray, region) = TrackedArray(Call(mean, xs, region))
 
+# Hacks to get std working
+Base.std(x::TrackedArray; mean = Base.mean(x)) =
+  sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
+Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
+  sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
+
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =
   back(xs, similar(xs.data) .= Δ ./ prod(size(xs.data, region...)))
 
 # BLAS
 
-a::TrackedMatrix * b::TrackedMatrix  = TrackedArray(Call(*, a, b))
-a::TrackedMatrix * b::AbstractMatrix = TrackedArray(Call(*, a, b))
-a::AbstractMatrix * b::TrackedMatrix = TrackedArray(Call(*, a, b))
+for f in :[*, Ac_mul_B].args
+  @eval begin
+    import Base.$f
+    $f(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call($f, a, b))
+    $f(a::TrackedMatrix, b::AbstractMatrix) = TrackedArray(Call($f, a, b))
+    $f(a::AbstractMatrix, b::TrackedMatrix) = TrackedArray(Call($f, a, b))
 
-a::TrackedMatrix * b::TrackedVector  = TrackedArray(Call(*, a, b))
-a::TrackedMatrix * b::AbstractVector = TrackedArray(Call(*, a, b))
-a::AbstractMatrix * b::TrackedVector = TrackedArray(Call(*, a, b))
+    $f(a::TrackedMatrix, b::TrackedVector)  = TrackedArray(Call($f, a, b))
+    $f(a::TrackedMatrix, b::AbstractVector) = TrackedArray(Call($f, a, b))
+    $f(a::AbstractMatrix, b::TrackedVector) = TrackedArray(Call($f, a, b))
+
+    $f(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call($f, a, b))
+    $f(a::TrackedVector, b::AbstractVector) = TrackedArray(Call($f, a, b))
+    $f(a::AbstractVector, b::TrackedVector) = TrackedArray(Call($f, a, b))
+  end
+end
 
 function back(::typeof(*), Δ, a::AbstractMatrix, b::AbstractVecOrMat)
   @back(a, A_mul_Bt(Δ, data(b)))
   @back(b, At_mul_B(data(a), Δ))
+end
+
+function back(::typeof(Ac_mul_B), Δ, a::AbstractVecOrMat{<:Real}, b::AbstractVecOrMat{<:Real})
+  @back(a, A_mul_Bt(Δ, data(b))')
+  @back(b, *(data(a), Δ))
+end
+
+# Fast path for matrix-vector
+function back(::typeof(*), Δ::AbstractVector, W::TrackedMatrix, x::AbstractVector)
+  if isleaf(W)
+    W.grad .+= Δ .* data(x).'
+  else
+    back(W, A_mul_Bt(Δ, data(x)))
+  end
+  @back(x, At_mul_B(data(W), Δ))
 end
 
 # NNlib
