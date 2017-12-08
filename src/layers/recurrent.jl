@@ -151,9 +151,6 @@ for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
-
-
-
 # GRU
 
 struct GRUCell{D1,D2,V}
