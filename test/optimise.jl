@@ -2,18 +2,16 @@ using Flux.Optimise
 using Flux.Tracker
 
 @testset "Optimise" begin
-    loss(x) = sum(x.^2)
-    η = 0.1
-    # RMSProp gets stuck
-    for OPT in [SGD, Nesterov, Momentum, ADAM, ADAGrad, ADADelta]
-        x = param(randn(10))
-        opt = OPT == ADADelta ? OPT([x]) : OPT([x], η)
-        for t=1:10000
-            l = loss(x)
-            back!(l)
-            opt()
-            l.data[] < 1e-10 && break
-        end
-        @test loss(x) ≈ 0. atol=1e-7
+  w = randn(10, 10)
+  for Opt in [SGD, Nesterov, Momentum, ADAM, RMSProp, ps -> ADAGrad(ps, 0.1), ADADelta]
+    w′ = param(randn(10, 10))
+    loss(x) = Flux.mse(w*x, w′*x)
+    opt = Opt([w′])
+    for t=1:10^5
+      l = loss(rand(10))
+      back!(l)
+      opt()
     end
+    @test Flux.mse(w, w′) < 0.01
+  end
 end
