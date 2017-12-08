@@ -8,7 +8,7 @@ using Juno, Requires
 using Lazy: @forward
 
 export Chain, Dense, RNN, LSTM, Dropout, LayerNorm,
-  SGD, ADAM, Momentum, Nesterov,
+  SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 
 using NNlib
