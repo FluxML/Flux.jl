@@ -9,7 +9,7 @@ using Lazy: @forward
 
 export Chain, Dense, RNN, LSTM, Dropout, LayerNorm,
   SGD, ADAM, Momentum, Nesterov,
-  param, params, mapleaves
+  param, params, mapleaves, jacobian
 
 using NNlib
 export σ, relu, leakyrelu, elu, swish, softmax
