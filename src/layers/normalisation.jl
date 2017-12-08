@@ -2,8 +2,8 @@
     testmode!(m)
     testmode!(m, false)
 
-Put layers like [`Dropout`](@ref) and `BatchNorm` into testing mode (or back to
-training mode with `false`).
+Put layers like [`Dropout`](@ref) and [`BatchNorm`](@ref) into testing mode
+(or back to training mode with `false`).
 """
 function testmode!(m, val::Bool=true)
   prefor(x -> _testmode!(x, val), m)
@@ -45,6 +45,7 @@ end
 _testmode!(a::Dropout, test) = (a.active = !test)
 
 """
+
     LayerNorm(h::Integer)
 
 A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
@@ -64,4 +65,79 @@ treelike(LayerNorm)
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", length(l.diag.α), ")")
+end
+
+"""
+    BatchNorm(dims...; λ = identity,
+              initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)
+
+Batch Normalization Layer for [`Dense`](@ref) layer.
+
+See [Batch Normalization: Accelerating Deep Network Training by Reducing
+     Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf)
+
+In the example of MNIST,
+in order to normalize the input of other layer,
+put the `BatchNorm` layer before activation function.
+
+```julia
+julia> m = Chain(
+  Dense(28^2, 64),
+  BatchNorm(64, λ = relu),
+  Dense(64, 10),
+  BatchNorm(10),
+  softmax)
+Chain(Dense(784, 64), BatchNorm(64, λ = NNlib.relu), Dense(64, 10), BatchNorm(10), NNlib.softmax)
+```
+"""
+mutable struct BatchNorm{F,V,N}
+  λ::F  # activation function
+  β::V  # bias
+  γ::V  # scale
+  μ     # moving mean
+  σ     # moving std
+  ϵ::N
+  momentum::N
+  active::Bool
+end
+
+BatchNorm(dims::Integer...; λ = identity,
+          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
+  BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), 0., 1., ϵ, momentum, true)
+
+function (BN::BatchNorm)(x)
+  λ, γ, β = BN.λ, BN.γ, BN.β
+
+  if !BN.active
+    μ = BN.μ
+    σ = BN.σ
+  else
+    T = eltype(x)
+
+    ϵ = T(BN.ϵ)
+    m = size(x, 2)  # batch size
+    μ = mean(x, 2)
+    σ = sqrt.(sum((x .- μ).^2, 2) ./ m .+ ϵ)
+
+    # update moving mean/std
+    mtm = T(BN.momentum)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* μ.data
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* σ.data .* m ./ (m - 1)
+  end
+
+  λ.(γ .* ((x .- μ) ./ σ) .+ β)
+end
+
+children(BN::BatchNorm) =
+  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+
+mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
+  BatchNorm(BN.λ, f(BN.β), f(BN.γ), BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+
+_testmode!(BN::BatchNorm, test) = (BN.active = !test)
+
+function Base.show(io::IO, l::BatchNorm)
+  print(io, "BatchNorm($(join(size(l.β), ", "))")
+  (l.λ == identity) || print(io, ", λ = $(l.λ)")
+  print(io, ")")
 end
