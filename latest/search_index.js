@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.BatchNorm",
     "category": "Type",
-    "text": "BatchNorm(dims...; λ = identity,\n          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)\n\nBatch Normalization Layer for Dense layer.\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing      Internal Covariate Shift\n\nIn the example of MNIST, in order to normalize the input of other layer, put the BatchNorm layer before activation function.\n\njulia> m = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, λ = relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\nChain(Dense(784, 64), BatchNorm(64, λ = NNlib.relu), Dense(64, 10), BatchNorm(10), NNlib.softmax)\n\n\n\n"
+    "text": "BatchNorm(dims...; λ = identity,\n          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)\n\nBatch Normalization Layer for Dense layer.\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing      Internal Covariate Shift\n\nIn the example of MNIST, in order to normalize the input of other layer, put the BatchNorm layer before activation function.\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, λ = relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n"
 },
 
 {
