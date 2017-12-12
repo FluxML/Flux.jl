@@ -7,7 +7,8 @@ module Flux
 using Juno, Requires
 using Lazy: @forward
 
-export Chain, Dense, RNN, LSTM, GRU, Dropout, LayerNorm,
+export Chain, Dense, RNN, LSTM, GRU,
+  Dropout, LayerNorm, BatchNorm,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 
