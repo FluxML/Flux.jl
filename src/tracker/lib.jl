@@ -70,7 +70,7 @@ back(::typeof(mean), Δ, xs::TrackedArray, region) =
 
 # BLAS
 
-for f in :[*, Ac_mul_B].args
+for f in :[*, Ac_mul_B, A_mul_Bc].args
   @eval begin
     import Base.$f
     $f(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call($f, a, b))
@@ -94,7 +94,12 @@ end
 
 function back(::typeof(Ac_mul_B), Δ, a::AbstractVecOrMat{<:Real}, b::AbstractVecOrMat{<:Real})
   @back(a, A_mul_Bt(Δ, data(b))')
-  @back(b, *(data(a), Δ))
+  @back(b, data(a)*Δ)
+end
+
+function back(::typeof(A_mul_Bc), Δ, a::AbstractVecOrMat{<:Real}, b::AbstractVecOrMat{<:Real})
+  @back(a, Δ * data(b))
+  @back(b, At_mul_B(data(a), Δ)')
 end
 
 # Fast path for matrix-vector
