@@ -1,4 +1,4 @@
-using Flux: throttle, initn, glorot_uniform, glorot_normal
+using Flux: throttle, initn, glorot_uniform, glorot_normal, jacobian
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
