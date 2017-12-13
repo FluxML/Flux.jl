@@ -58,6 +58,7 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
+# TODO decide if keeping both data and value. The problem is TrackedScalar
 value(x) = x
 value(x::TrackedArray) = data(x)
 value(x::TrackedScalar) = data(x)[]
@@ -69,6 +70,7 @@ Base.:(==)(x::TrackedArray, y::TrackedArray) = value(x) == value(x)
 Base.isless(x::TrackedScalar, y) = isless(value(x), y)
 Base.isless(x, y::TrackedScalar) = isless(x, value(y))
 Base.isless(x::TrackedScalar, y::TrackedScalar) = isless(value(x), value(y))
+Base.isapprox(x::TrackedScalar, y; kws...) = isapprox(x.data[], y; kws...)
 
 Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   print(io, "TrackedArray{…,$A}")
