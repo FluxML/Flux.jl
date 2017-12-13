@@ -7,12 +7,13 @@ module Flux
 using Juno, Requires
 using Lazy: @forward
 
-export Chain, Dense, RNN, LSTM, Dropout, LayerNorm,
-  SGD, ADAM, Momentum, Nesterov,
-  param, params, mapleaves, jacobian
+export Chain, Dense, RNN, LSTM,
+  Dropout, LayerNorm, BatchNorm,
+  SGD, ADAM, Momentum, Nesterov, AMSGrad,
+  param, params, mapleaves
 
 using NNlib
-export σ, relu, leakyrelu, elu, swish, softmax
+export σ, sigmoid, relu, leakyrelu, elu, swish, softmax
 
 include("tracker/Tracker.jl")
 using .Tracker

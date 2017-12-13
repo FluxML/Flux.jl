@@ -1,6 +1,8 @@
 # Arrays
 
 initn(dims...) = randn(dims...)/100
+glorot_uniform(dims...) = (rand(dims...) - 0.5)*sqrt(24.0/(sum(dims)))
+glorot_normal(dims...) = (randn(dims...)*sqrt(2.0/sum(dims)))
 
 flatten(xs) = reshape(xs, size(xs, 1), :)
 
