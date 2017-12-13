@@ -1,4 +1,4 @@
-using Flux: onehotbatch, mse, crossentropy, weighted_crossentropy
+using Flux: onehotbatch, mse, crossentropy
 
 @testset "losses" begin
   # First, regression-style y's
@@ -19,8 +19,8 @@ using Flux: onehotbatch, mse, crossentropy, weighted_crossentropy
   end
 
   @testset "weighted_crossentropy" begin
-    @test weighted_crossentropy(y_hat, y, ones(2)) ≈ y_logloss
-    @test weighted_crossentropy(y_hat, y, [.5, .5]) ≈ y_logloss/2
-    @test weighted_crossentropy(y_hat, y, [2, .5]) ≈ 1.5049660054074199
+    @test crossentropy(y_hat, y, weight = ones(2)) ≈ y_logloss
+    @test crossentropy(y_hat, y, weight = [.5, .5]) ≈ y_logloss/2
+    @test crossentropy(y_hat, y, weight = [2, .5]) ≈ 1.5049660054074199
   end
 end

@@ -4,15 +4,9 @@ using NNlib: log_fast
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
 
-function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat)
-  return -sum(y .* log_fast.(ŷ)) / size(y, 2)
+function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
+  return -sum(y .* log_fast.(ŷ) .* weight) / size(y, 2)
 end
-
-function weighted_crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, w::AbstractVecOrMat)
-  return -sum(y .* log_fast.(ŷ) .* w) / size(y, 2)
-end
-
-
 
 @deprecate logloss(x, y) crossentropy(x, y)
 
