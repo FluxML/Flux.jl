@@ -48,6 +48,15 @@ using Flux: throttle, initn, glorot_uniform, glorot_normal
   end
 end
 
+@testset "Jacobian" begin
+  A = param(randn(2,2))
+  x = randn(2)
+  m(x) = A*x
+  y = m(x)
+  J = jacobian(m,x)
+  @test J ≈ A.data
+end
+
 @testset "Initialization" begin
   # Set random seed so that these tests don't fail randomly
   srand(0)
