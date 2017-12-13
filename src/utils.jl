@@ -95,13 +95,14 @@ but if you'd like to disable the execution on the leading edge, pass
 function throttle(f, timeout; leading=true, trailing=false)
   cooldown = true
   later = nothing
+  result = nothing
 
   function throttled(args...; kwargs...)
     yield()
 
     if cooldown
       if leading
-        f(args...; kwargs...)
+        result = f(args...; kwargs...)
       else
         later = () -> f(args...; kwargs...)
       end
@@ -116,10 +117,10 @@ function throttle(f, timeout; leading=true, trailing=false)
         cooldown = true
       end
     elseif trailing
-      later = () -> f(args...; kwargs...)
+      later = () -> (result = f(args...; kwargs...))
     end
 
-    nothing
+    return result
   end
 end
 
