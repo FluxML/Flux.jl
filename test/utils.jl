@@ -1,4 +1,4 @@
-using Flux: throttle
+using Flux: throttle, initn, glorot_uniform, glorot_normal
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
@@ -45,5 +45,28 @@ using Flux: throttle
     @test a == [1]
     sleep(1.01)
     @test a == [1, 3]
+  end
+end
+
+@testset "Initialization" begin
+  # Set random seed so that these tests don't fail randomly
+  srand(0)
+  # initn() should yield a kernel with stddev ~= 1e-2
+  v = initn(10, 10)
+  @test std(v) > 0.9*1e-2
+  @test std(v) < 1.1*1e-2
+
+  # glorot_uniform should yield a kernel with stddev ~= sqrt(6/(n_in + n_out)),
+  # and glorot_normal should yield a kernel with stddev != 2/(n_in _ n_out)
+  for (n_in, n_out) in [(100, 100), (100, 400)]
+    v = glorot_uniform(n_in, n_out)
+    @test minimum(v) > -1.1*sqrt(6/(n_in + n_out))
+    @test minimum(v) < -0.9*sqrt(6/(n_in + n_out))
+    @test maximum(v) >  0.9*sqrt(6/(n_in + n_out))
+    @test maximum(v) <  1.1*sqrt(6/(n_in + n_out))
+
+    v = glorot_normal(n_in, n_out)
+    @test std(v) > 0.9*sqrt(2/(n_in + n_out))
+    @test std(v) < 1.1*sqrt(2/(n_in + n_out))
   end
 end
