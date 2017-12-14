@@ -1,5 +1,6 @@
 using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: gradcheck
+using NNlib
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(f(xs...)), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(dims)...)
@@ -44,5 +45,7 @@ end
   y = x.^2
   2y + x
 end
+
+@test gradtest(conv2d, rand(10, 10, 3, 2), randn(2, 2, 3, 2))
 
 end #testset

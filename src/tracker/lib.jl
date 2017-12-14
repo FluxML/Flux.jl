@@ -123,11 +123,21 @@ end
 
 # NNlib
 
-import NNlib: softmax, ∇softmax
+using NNlib
+import NNlib: softmax, ∇softmax, conv2d
 
 softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
 
 back(::typeof(softmax), Δ, xs) = @back(xs, ∇softmax(Δ, data(xs)))
+
+conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}) = TrackedArray(Call(conv2d, x, w))
+conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}) = TrackedArray(Call(conv2d, x, w))
+conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}) = TrackedArray(Call(conv2d, x, w))
+
+function back(::typeof(conv2d), Δ, x, w)
+  @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ))
+  @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ))
+end
 
 # Broadcasting
 
