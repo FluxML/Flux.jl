@@ -36,6 +36,9 @@ end
 
 # Interface methods
 
+# TODO: if an error occurs in `back` the refcounts will be broken
+# and `back` will silently fail to update.
+
 function back!(x::TrackedArray, Δ)
   scan(x)
   back(x, Δ)
