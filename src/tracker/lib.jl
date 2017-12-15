@@ -124,7 +124,7 @@ end
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, conv2d
+import NNlib: softmax, ∇softmax, conv2d, pool
 
 softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
 
@@ -138,6 +138,14 @@ function back(::typeof(conv2d), Δ, x, w)
   @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ))
   @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ))
 end
+
+_pool(x, k, mode) = pool(x, window = k, mode = mode)
+
+pool(x::TrackedArray{<:Any,4}; window = 2, mode = 0) =
+  TrackedArray(Call(_pool, x, window, mode))
+
+back_(::typeof(_pool), y, Δ, x, k, mode) =
+  back(x, NNlib.pool_grad(data(x), y, Δ, window = k, mode = mode))
 
 # Broadcasting
 

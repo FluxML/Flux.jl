@@ -47,5 +47,7 @@ end
 end
 
 @test gradtest(conv2d, rand(10, 10, 3, 2), randn(2, 2, 3, 2))
+@test gradtest(x -> maxpool2d(x, 2), rand(10, 10, 3, 2))
+@test gradtest(x -> avgpool2d(x, 2), rand(10, 10, 3, 2))
 
 end #testset
