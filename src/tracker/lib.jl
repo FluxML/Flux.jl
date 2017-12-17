@@ -67,6 +67,16 @@ function back(::typeof(dot), Δ, xs, ys)
   @back(ys, Δ.*xs)
 end
 
+LinAlg.vecdot(xs::TrackedArray, ys::TrackedArray) = TrackedArray(Call(vecdot, xs, ys), toarray(xs.data, vecdot(data(xs), data(ys))))
+LinAlg.vecdot(xs::AbstractArray, ys::TrackedArray) = TrackedArray(Call(vecdot, xs, ys), toarray(xs.data, vecdot(data(xs), data(ys))))
+LinAlg.vecdot(xs::TrackedArray, ys::AbstractArray) = TrackedArray(Call(vecdot, xs, ys), toarray(xs.data, vecdot(data(xs), data(ys))))
+
+function back(::typeof(vecdot), Δ, xs, ys)
+  @back(xs, Δ.*ys)
+  @back(ys, Δ.*xs)
+end
+
+
 # Hacks to get std working
 Base.std(x::TrackedArray; mean = Base.mean(x)) =
   sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
