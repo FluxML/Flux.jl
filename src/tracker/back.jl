@@ -12,16 +12,17 @@ function scan(x::TrackedArray)
   return
 end
 
-back(c::Call, Δ) = back(c.func, Δ, c.args...)
-back(::Call{Void}, Δ) = nothing
+back_(f, y, args...) = back(f, args...)
+back_(c::Call, y, Δ) = back_(c.func, y, Δ, c.args...)
+back_(::Call{Void}, y, Δ) = nothing
 
 function back(x::TrackedArray, Δ)
   ref = x.ref -= 1
   if isdefined(x, :grad)
     x.grad .+= Δ
-    ref == 0 && back(x.f, x.grad)
+    ref == 0 && back_(x.f, x.data, x.grad)
   else
-    ref == 0 && back(x.f, Δ)
+    ref == 0 && back_(x.f, x.data, Δ)
   end
   return
 end
@@ -34,6 +35,9 @@ macro back(x, Δ)
 end
 
 # Interface methods
+
+# TODO: if an error occurs in `back` the refcounts will be broken
+# and `back` will silently fail to update.
 
 function back!(x::TrackedArray, Δ)
   scan(x)

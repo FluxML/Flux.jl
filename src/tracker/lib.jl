@@ -44,6 +44,12 @@ function back(::typeof(vcat), Δ, xs, ys)
   @back(ys, Δ[size(xs,1)+1:end, i...])
 end
 
+Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
+  TrackedArray(Call(reshape, xs, dims...))
+
+back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
+  back(xs, reshape(Δ, size(xs)))
+
 # Reductions
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
@@ -123,11 +129,35 @@ end
 
 # NNlib
 
-import NNlib: softmax, ∇softmax
+using NNlib
+import NNlib: softmax, ∇softmax, conv2d, pool
 
 softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
 
 back(::typeof(softmax), Δ, xs) = @back(xs, ∇softmax(Δ, data(xs)))
+
+# TODO: can store kwargs efficiently in namedtuples
+_conv2d(x, w, stride, pad) = conv2d(x, w, stride = stride, padding = pad)
+
+conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+
+function back(::typeof(_conv2d), Δ, x, w, stride, pad)
+  @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ; stride = stride, padding = pad))
+  @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ; stride = stride, padding = pad))
+end
+
+_pool(x, k, mode) = pool(x, window = k, mode = mode)
+
+pool(x::TrackedArray{<:Any,4}; window = 2, mode = 0) =
+  TrackedArray(Call(_pool, x, window, mode))
+
+back_(::typeof(_pool), y, Δ, x, k, mode) =
+  back(x, NNlib.pool_grad(data(x), y, Δ, window = k, mode = mode))
 
 # Broadcasting
 
