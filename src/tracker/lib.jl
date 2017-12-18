@@ -136,18 +136,19 @@ softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
 
 back(::typeof(softmax), Δ, xs) = @back(xs, ∇softmax(Δ, data(xs)))
 
-_conv2d(x, w, stride) = conv2d(x, w, stride = stride)
+# TODO: can store kwargs efficiently in namedtuples
+_conv2d(x, w, stride, pad) = conv2d(x, w, stride = stride, padding = pad)
 
-conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1) =
-  TrackedArray(Call(_conv2d, x, w, stride))
-conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1) =
-  TrackedArray(Call(_conv2d, x, w, stride))
-conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}; stride = 1) =
-  TrackedArray(Call(_conv2d, x, w, stride))
+conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
 
-function back(::typeof(_conv2d), Δ, x, w, stride)
-  @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ; stride = stride))
-  @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ; stride = stride))
+function back(::typeof(_conv2d), Δ, x, w, stride, pad)
+  @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ; stride = stride, padding = pad))
+  @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ; stride = stride, padding = pad))
 end
 
 _pool(x, k, mode) = pool(x, window = k, mode = mode)
