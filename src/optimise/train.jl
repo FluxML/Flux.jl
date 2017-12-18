@@ -5,7 +5,7 @@ runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
 runcheck(f) = () -> f() == :stop
-runcheck(f) = () -> any(call.(fs) .== :stop)
+runcheck(fs::AbstractVector) = () -> any(call.(fs) .== :stop)
 
 
 """
