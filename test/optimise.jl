@@ -24,11 +24,11 @@ end
   Flux.train!(() -> (sleep(0.1); loss_calls+=1; l),
               Iterators.repeated((), 100),
               ()->(opt_calls+=1; nothing),
-              log_cb = Flux.throttle((j,v) -> log_calls+=1, 1),
-              stopping_criteria = Flux.throttle((j,v) -> (j > 3), 1))
+              log_cb = (j,v) -> log_calls+=1,
+              stopping_criteria = (j,v) -> (j > 3))
 
-  @test 3 < loss_calls < 50
-  @test log_calls == 2
+  @test loss_calls == 4
+  @test log_calls == 4
   @test opt_calls == loss_calls - 1
 end
 
