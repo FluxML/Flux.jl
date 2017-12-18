@@ -4,6 +4,10 @@ using Flux.Tracker: back!, value
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
+runcheck(f) = :stop == f
+runcheck(f) = () -> any(:stop .== call.(fs))
+
+
 """
     train!(loss, data, opt)
 
@@ -21,9 +25,10 @@ Flux.train!(loss, data, opt,
 The callback can return `:stop` to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
+If any of the `cb` callbacks return `:stop` then training will end.
 """
 function train!(loss, data, opt; cb = () -> ())
-  cb = runall(cb)
+  cb_stop = runcheck(cb)
   opt = runall(opt)
   @progress for d in data
     l = loss(d...)
@@ -31,6 +36,6 @@ function train!(loss, data, opt; cb = () -> ())
     isnan(value(l)) && error("Loss is NaN")
     back!(l)
     opt()
-    cb() == :stop && break
+    cb_stop() && break
   end
 end
