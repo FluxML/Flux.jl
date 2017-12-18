@@ -17,13 +17,26 @@ using Flux.Tracker
 end
 
 @testset "Training Loop" begin
-  i = 0
   l = param(1)
-
-  Flux.train!(() -> (sleep(0.1); i += 1; l),
+  loss_calls = 0
+  log_calls = 0
+  opt_calls = 0
+  Flux.train!(() -> (sleep(0.1); loss_calls+=1; l),
               Iterators.repeated((), 100),
-              ()->(),
-              cb = Flux.throttle(() -> (i > 3 && :stop), 1))
+              ()->(opt_calls+=1; nothing),
+              log_cb = Flux.throttle((j,v) -> log_calls+=1, 1),
+              stopping_criteria = Flux.throttle((j,v) -> (j > 3), 1))
 
-  @test 3 < i < 50
+  @test 3 < loss_calls < 50
+  @test log_calls == 2
+  @test opt_calls == loss_calls - 1
+end
+
+
+@testset "Trivial Training Loop" begin
+  l = param(1)
+  Flux.train!(() -> l,
+              Iterators.repeated((), 100),
+              ()->())
+  # all it has to do is not error
 end
