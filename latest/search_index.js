@@ -145,11 +145,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.Conv2D",
+    "page": "Model Reference",
+    "title": "Flux.Conv2D",
+    "category": "Type",
+    "text": "Conv2D(size, in=>out)\nConv2d(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in HWCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad and stride.\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Basic-Layers-1",
     "page": "Model Reference",
     "title": "Basic Layers",
     "category": "section",
-    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
+    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense\nConv2D"
 },
 
 {
