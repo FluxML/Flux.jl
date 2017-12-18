@@ -4,8 +4,8 @@ using Flux.Tracker: back!, value
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
-runcheck(f) = :stop == f
-runcheck(f) = () -> any(:stop .== call.(fs))
+runcheck(f) = () -> f() == :stop
+runcheck(f) = () -> any(call.(fs) .== :stop)
 
 
 """
