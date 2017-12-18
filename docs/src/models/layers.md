@@ -5,6 +5,7 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
+Conv2D
 ```
 
 ## Recurrent Layers
