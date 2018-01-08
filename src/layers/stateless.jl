@@ -16,6 +16,15 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
   -sum(y .* ypred) / size(y, 2)
 end
 
+function binarycrossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat)
+               if (size(ŷ )==(1,) && size(y)==(1,))
+                       return -sum(y .* log_fast.(ŷ)+(1 .- y) .* log_fast.(1 - ŷ))
+               else
+                       error("Binary cross entropy supports binary classification only.")
+               end
+       end
+
+
 """
     normalise(x::AbstractVecOrMat)
 
