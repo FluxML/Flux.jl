@@ -37,9 +37,9 @@ function (a::Dropout)(x)
   rand!(y)
   q = 1 - a.p
   @inbounds for i=1:length(y)
-    y[i] = y[i] > a.p ? 1 / q : 0
+    y[i] = y[i] > a.p ? x[i] / q : 0
   end
-  return y .* x
+  return y
 end
 
 _testmode!(a::Dropout, test) = (a.active = !test)
