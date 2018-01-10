@@ -160,10 +160,11 @@ struct GRUCell{D1,D2,V}
   h::V
 end
 
-function GRUCell(in, out; init = initn)
-  cell = GRUCell([Dense(in+out, out, σ, init = init) for _ = 1:2]...,
-                  Dense(in+out, out, tanh, init = init),
-                  param(init(out)))
+function GRUCell(in, out)
+  cell = GRUCell(Dense(in+out, out, σ),
+                 Dense(in+out, out, σ),
+                 Dense(in+out, out, tanh),
+                 param(initn(out)))
   return cell
 end
 
