@@ -19,7 +19,7 @@ end
 
 Conv2D(k::NTuple{2,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
        init = initn, stride = 1, pad = 0) =
-  Conv2D(σ, param(initn(k..., ch...)), stride, pad)
+  Conv2D(σ, param(init(k..., ch...)), stride, pad)
 
 Flux.treelike(Conv2D)
 
