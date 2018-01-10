@@ -1,8 +1,8 @@
 # Arrays
 
 initn(dims...) = randn(dims...)/100
-
-flatten(xs) = reshape(xs, size(xs, 1), :)
+glorot_uniform(dims...) = (rand(dims...) - 0.5)*sqrt(24.0/(sum(dims)))
+glorot_normal(dims...) = (randn(dims...)*sqrt(2.0/sum(dims)))
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 
@@ -93,13 +93,14 @@ but if you'd like to disable the execution on the leading edge, pass
 function throttle(f, timeout; leading=true, trailing=false)
   cooldown = true
   later = nothing
+  result = nothing
 
   function throttled(args...; kwargs...)
     yield()
 
     if cooldown
       if leading
-        f(args...; kwargs...)
+        result = f(args...; kwargs...)
       else
         later = () -> f(args...; kwargs...)
       end
@@ -114,9 +115,28 @@ function throttle(f, timeout; leading=true, trailing=false)
         cooldown = true
       end
     elseif trailing
-      later = () -> f(args...; kwargs...)
+      later = () -> (result = f(args...; kwargs...))
     end
 
-    nothing
+    return result
   end
+end
+
+"""
+    J = jacobian(m,x)
+
+Calculate the output jacobian `J = d/dx m(x)` such that each row `i` of `J` corresponds to the gradient `J[i,:] = ∇ₓ(m(x)[i])`
+"""
+function jacobian(m,x)
+    xp = param(x)
+    y  = m(xp)
+    k  = length(y)
+    n  = length(x)
+    J  = Matrix{eltype(x)}(n,k)
+    for i = 1:k
+        Flux.back!(y[i]) # Populate gradient accumulator
+        J[:,i] = xp.grad
+        xp.grad .*= 0 # Reset gradient accumulator
+    end
+    J'
 end

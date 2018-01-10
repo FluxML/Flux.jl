@@ -63,8 +63,10 @@ struct Dense{F,S,T}
   b::T
 end
 
-Dense(in::Integer, out::Integer, σ = identity; init = initn) =
-  Dense(σ, param(init(out, in)), param(init(out)))
+function Dense(in::Integer, out::Integer, σ = identity;
+               initW = glorot_uniform, initb = zeros)
+  return Dense(σ, param(initW(out, in)), param(initb(out)))
+end
 
 treelike(Dense)
 

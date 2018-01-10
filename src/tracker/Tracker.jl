@@ -93,7 +93,7 @@ include("back.jl")
 include("lib.jl")
 include("numeric.jl")
 
-import NNlib.adapt
+import Adapt.adapt
 
 adapt(T, xs::TrackedArray) = TrackedArray(xs.f, adapt(T, xs.data), adapt(T, xs.grad))
 
