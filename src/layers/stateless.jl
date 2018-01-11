@@ -16,13 +16,15 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
   -sum(y .* ypred) / size(y, 2)
 end
 
-function binarycrossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat)
-               if (size(ŷ )==(1,) && size(y)==(1,))
-                       return -sum(y .* log_fast.(ŷ)+(1 .- y) .* log_fast.(1 - ŷ))
-               else
-                       error("Binary cross entropy supports binary classification only.")
-               end
-       end
+function binarycrossentropy(ŷ, y; average=true)
+  bce  = -sum(y .* log_fast.(ŷ) + (1 .- y) .* log_fast.(1 - ŷ))
+  if (average)
+    bce /= length(y)
+  elseif !(size(ŷ )==(1,) && size(y)==(1,))
+    warn("`crossentropy` may be a better choice than `binarycrossentropy` with apparently multiclass data.")
+  end
+  return bce
+end
 
 
 """
