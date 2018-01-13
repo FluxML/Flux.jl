@@ -1,5 +1,6 @@
 using NNlib: log_fast
 
+const EPS = 1e-7
 # Cost functions
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
@@ -16,8 +17,8 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
   -sum(y .* ypred) / size(y, 2)
 end
 
-function binarycrossentropy(ŷ, y; average=true)
-  bce  = -sum(y .* log_fast.(ŷ) + (1 .- y) .* log_fast.(1 - ŷ))
+function binarycrossentropy(ŷ, y; average=true, add=EPS)
+  bce  = -sum(y .* log_fast.(ŷ + add) + (1 .- y) .* log_fast.(1 - ŷ + add))
   if (average)
     bce /= length(y)
   elseif !(size(ŷ )==(1,) && size(y)==(1,))
