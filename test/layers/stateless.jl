@@ -1,4 +1,4 @@
-using Flux: onehotbatch, mse, crossentropy
+using Flux: onehotbatch, mse, crossentropy, binarycrossentropy
 
 @testset "losses" begin
   # First, regression-style y's
@@ -22,5 +22,11 @@ using Flux: onehotbatch, mse, crossentropy
     @test crossentropy(y_hat, y, weight = ones(2)) ≈ y_logloss
     @test crossentropy(y_hat, y, weight = [.5, .5]) ≈ y_logloss/2
     @test crossentropy(y_hat, y, weight = [2, .5]) ≈ 1.5049660054074199
+  end
+
+  @testset "binarycrossentropy" begin
+    @test binarycrossentropy(y_hat, y, add=0) ≈ y_logloss
+    @test mean(binarycrossentropy.(y_hat, y, add=0),2) ≈ [y_logloss; y_logloss]
+    @test binarycrossentropy(0,0) ≈ -log(1+1e-7)
   end
 end
