@@ -50,4 +50,6 @@ end
 @test gradtest(x -> maxpool2d(x, 2), rand(10, 10, 3, 2))
 @test gradtest(x -> avgpool2d(x, 2), rand(10, 10, 3, 2))
 
+@test (param([1,2,3]) .< 2) == [true, false, false]
+
 end #testset

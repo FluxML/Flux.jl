@@ -174,9 +174,11 @@ dualify(xs::TrackedArray, ps) = map(x -> Dual(x, ps), data(xs))
 
 function tracked_broadcast(f, args::Vararg{Any,N}) where N
   dargs = map((x,i) -> dualify(x, ntuple(j -> i==j, Val{N})), args, ntuple(identity, Val{N}))
+  out = broadcast(f, dargs...)
+  eltype(out) <: Dual || return out
   # TrackedArray(Call(Broadcasted(broadcast(f, dargs...)), args...))
   # Works around a 0.6 type inference issue
-  b = Broadcasted(broadcast(f, dargs...))
+  b = Broadcasted(out)
   TrackedArray(Call(b, args...), b())
 end
 
