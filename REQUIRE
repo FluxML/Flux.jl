@@ -3,5 +3,6 @@ DataFlow 0.2.1
 Juno
 MacroTools 0.3.3
 NNlib
-ForwardDiff
+ForwardDiff 0.5.0
 Requires
+Adapt

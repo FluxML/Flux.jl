@@ -5,6 +5,7 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
+Conv2D
 ```
 
 ## Recurrent Layers
@@ -37,6 +38,7 @@ These layers don't affect the structure of the network but may improve training 
 
 ```@docs
 Flux.testmode!
+BatchNorm
 Dropout
 LayerNorm
 ```

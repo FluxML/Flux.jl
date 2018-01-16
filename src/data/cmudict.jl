@@ -23,17 +23,17 @@ end
 
 function symbols()
   load()
-  Symbol.(split(readstring(deps("CMUDict", "cmudict.symbols")),
+  Symbol.(split(readstring(deps("cmudict", "cmudict.symbols")),
                 "\n", keep = false))
 end
 
 function rawdict()
   load()
   Dict(String(xs[1]) => Symbol.(xs[2:end]) for xs in
-       filter(!isempty, split.(split(readstring(deps("CMUDict", "cmudict")), "\n"))))
+       filter(!isempty, split.(split(readstring(deps("cmudict", "cmudict")), "\n"))))
 end
 
-validword(s) = ismatch(r"^[\w-\.]+$", s)
+validword(s) = ismatch(r"^[\w\-\.]+$", s)
 
 cmudict() = filter((s, ps) -> validword(s), rawdict())
 

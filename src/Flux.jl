@@ -7,12 +7,14 @@ module Flux
 using Juno, Requires
 using Lazy: @forward
 
-export Chain, Dense, RNN, LSTM, Dropout, LayerNorm,
-  SGD, ADAM, Momentum, Nesterov,
+export Chain, Dense, RNN, LSTM, GRU, Conv2D,
+  Dropout, LayerNorm, BatchNorm,
+  SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 
 using NNlib
-export σ, sigmoid, relu, leakyrelu, elu, swish, softmax
+export σ, sigmoid, relu, leakyrelu, elu, swish, softmax,
+  conv2d, maxpool2d, avgpool2d
 
 include("tracker/Tracker.jl")
 using .Tracker
@@ -26,6 +28,7 @@ include("treelike.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
+include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 

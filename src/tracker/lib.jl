@@ -48,6 +48,12 @@ function back(::typeof(vcat), Δ, xs...)
   end
 end
 
+Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
+  TrackedArray(Call(reshape, xs, dims...))
+
+back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
+  back(xs, reshape(Δ, size(xs)))
+
 # Reductions
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
@@ -62,6 +68,15 @@ Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 Base.mean(xs::TrackedArray) = TrackedArray(Call(mean, xs), toarray(xs.data, mean(xs.data)))
 Base.mean(xs::TrackedArray, region) = TrackedArray(Call(mean, xs, region))
 
+LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = TrackedArray(Call(dot, xs, ys), toarray(xs.data, dot(data(xs), data(ys))))
+LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = TrackedArray(Call(dot, xs, ys), toarray(xs.data, dot(data(xs), data(ys))))
+LinAlg.dot(xs::TrackedVector, ys::AbstractVector) = TrackedArray(Call(dot, xs, ys), toarray(xs.data, dot(data(xs), data(ys))))
+
+function back(::typeof(dot), Δ, xs, ys)
+  @back(xs, Δ.*ys)
+  @back(ys, Δ.*xs)
+end
+
 # Hacks to get std working
 Base.std(x::TrackedArray; mean = Base.mean(x)) =
   sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
@@ -74,7 +89,7 @@ back(::typeof(mean), Δ, xs::TrackedArray, region) =
 
 # BLAS
 
-for f in :[*, Ac_mul_B].args
+for f in :[*, Ac_mul_B, A_mul_Bc].args
   @eval begin
     import Base.$f
     $f(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call($f, a, b))
@@ -98,7 +113,12 @@ end
 
 function back(::typeof(Ac_mul_B), Δ, a::AbstractVecOrMat{<:Real}, b::AbstractVecOrMat{<:Real})
   @back(a, A_mul_Bt(Δ, data(b))')
-  @back(b, *(data(a), Δ))
+  @back(b, data(a)*Δ)
+end
+
+function back(::typeof(A_mul_Bc), Δ, a::AbstractVecOrMat{<:Real}, b::AbstractVecOrMat{<:Real})
+  @back(a, Δ * data(b))
+  @back(b, At_mul_B(data(a), Δ)')
 end
 
 # Fast path for matrix-vector
@@ -113,11 +133,35 @@ end
 
 # NNlib
 
-import NNlib: softmax, ∇softmax
+using NNlib
+import NNlib: softmax, ∇softmax, conv2d, pool
 
 softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
 
 back(::typeof(softmax), Δ, xs) = @back(xs, ∇softmax(Δ, data(xs)))
+
+# TODO: can store kwargs efficiently in namedtuples
+_conv2d(x, w, stride, pad) = conv2d(x, w, stride = stride, padding = pad)
+
+conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}; stride = 1, padding = 0) =
+  TrackedArray(Call(_conv2d, x, w, stride, padding))
+
+function back(::typeof(_conv2d), Δ, x, w, stride, pad)
+  @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ; stride = stride, padding = pad))
+  @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ; stride = stride, padding = pad))
+end
+
+_pool(x, k, pad, mode) = pool(x, window = k, mode = mode, padding = pad)
+
+pool(x::TrackedArray{<:Any,4}; window = 2, mode = 0, padding = 0) =
+  TrackedArray(Call(_pool, x, window, padding, mode))
+
+back_(::typeof(_pool), y, Δ, x, k, pad, mode) =
+  back(x, NNlib.pool_grad(data(x), y, Δ, window=k, mode=mode, padding=pad))
 
 # Broadcasting
 
@@ -134,9 +178,11 @@ dualify(xs::TrackedArray, ps) = map(x -> Dual(x, ps), data(xs))
 
 function tracked_broadcast(f, args::Vararg{Any,N}) where N
   dargs = map((x,i) -> dualify(x, ntuple(j -> i==j, Val{N})), args, ntuple(identity, Val{N}))
+  out = broadcast(f, dargs...)
+  eltype(out) <: Dual || return out
   # TrackedArray(Call(Broadcasted(broadcast(f, dargs...)), args...))
   # Works around a 0.6 type inference issue
-  b = Broadcasted(broadcast(f, dargs...))
+  b = Broadcasted(out)
   TrackedArray(Call(b, args...), b())
 end
 
