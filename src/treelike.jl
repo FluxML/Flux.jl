@@ -1,3 +1,5 @@
+import Adapt: adapt
+
 children(x) = ()
 mapchildren(f, x) = x
 
@@ -8,6 +10,7 @@ function treelike(T, fs = fieldnames(T))
   @eval begin
     children(x::$T) = ($([:(x.$f) for f in fs]...),)
     mapchildren(f, x::$T) = $T(f.(children(x))...)
+    adapt(T, x::$T) = mapchildren(x -> adapt(T, x), x)
   end
 end
 
