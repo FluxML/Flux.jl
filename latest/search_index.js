@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "Install Julia 0.6.0 or later, if you haven't already.Pkg.add(\"Flux\")\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The model zoo is also a good starting point for many common kinds of models."
+    "text": "Install Julia 0.6.0 or later, if you haven't already.Pkg.add(\"Flux\")\n# Optional but recommended\nPkg.update() # Keep your packages are up to date\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The model zoo is also a good starting point for many common kinds of models."
 },
 
 {
