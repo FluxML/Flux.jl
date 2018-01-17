@@ -81,6 +81,7 @@ Returns the 60,000 training images by default; pass `:test` to retreive the
 10,000 test images.
 """
 function images(set = :train)
+  load()
   io = IOBuffer(read(set == :train ? TRAINIMAGES : TESTIMAGES))
   _, N, nrows, ncols = imageheader(io)
   [rawimage(io) for _ in 1:N]
@@ -97,6 +98,7 @@ Returns the 60,000 training labels by default; pass `:test` to retreive the
 10,000 test labels.
 """
 function labels(set = :train)
+  load()
   io = IOBuffer(read(set == :train ? TRAINLABELS : TESTLABELS))
   _, N = labelheader(io)
   [rawlabel(io) for _ = 1:N]
