@@ -8,6 +8,7 @@ function __init__()
   mkpath(deps())
 end
 
+include("mnist.jl")
 include("cmudict.jl")
 using .CMUDict
 

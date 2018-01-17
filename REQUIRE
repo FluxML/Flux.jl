@@ -6,3 +6,5 @@ NNlib
 ForwardDiff 0.5.0
 Requires
 Adapt
+GZip
+Colors
