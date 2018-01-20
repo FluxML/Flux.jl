@@ -14,7 +14,7 @@ export Chain, Dense, RNN, LSTM, GRU, Conv2D,
 
 using NNlib
 export σ, sigmoid, relu, leakyrelu, elu, swish, softmax,
-  conv2d, maxpool2d, avgpool2d
+  logsoftmax, conv2d, maxpool2d, avgpool2d
 
 include("tracker/Tracker.jl")
 using .Tracker
