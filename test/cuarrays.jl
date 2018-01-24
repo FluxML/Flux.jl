@@ -1,5 +1,7 @@
 using Flux, Flux.Tracker, CuArrays, Base.Test
 
+info("Testing Flux/GPU")
+
 @testset "CuArrays" begin
 
 CuArrays.allowscalar(false)
