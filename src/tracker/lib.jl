@@ -44,6 +44,42 @@ function back(::typeof(vcat), Δ, xs, ys)
   @back(ys, Δ[size(xs,1)+1:end, i...])
 end
 
+Base.cat(dims, a::TrackedVector, b::TrackedVector)  = TrackedArray(Call(cat, dims, a, b))
+Base.cat(dims, a::TrackedVector, b::AbstractVector) = TrackedArray(Call(cat, dims, a, b))
+Base.cat(dims, a::AbstractVector, b::TrackedVector) = TrackedArray(Call(cat, dims, a, b))
+
+Base.cat(dims, a::TrackedVecOrMat, b::TrackedVecOrMat)  = TrackedArray(Call(cat, dims, a, b))
+Base.cat(dims, a::TrackedVecOrMat, b::AbstractVecOrMat) = TrackedArray(Call(cat, dims, a, b))
+Base.cat(dims, a::AbstractVecOrMat, b::TrackedVecOrMat) = TrackedArray(Call(cat, dims, a, b))
+
+Base.cat(dims, a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call(cat, dims, a, b))
+Base.cat(dims, a::TrackedMatrix, b::AbstractMatrix) = TrackedArray(Call(cat, dims, a, b))
+Base.cat(dims, a::AbstractMatrix, b::TrackedMatrix) = TrackedArray(Call(cat, dims, a, b))
+
+function back(::typeof(cat), Δ, dims, xs, ys)
+  dim_xs = 1:ndims(xs)
+  dim_ys = 1:ndims(ys)
+  till_xs = fill(0,ndims(Δ))
+  till_ys = fill(0,ndims(Δ))
+  for dim in dims
+    till_xs[dim] = dim in dim_xs ? size(xs,dim):1
+    till_ys[dim] = dim in dim_ys ? size(ys,dim):1
+  end
+  
+  xs_in_Δ = Array(Any,ndims(Δ))
+  for till in 1:length(till_xs)
+    xs_in_Δ[till] = till_xs[till]>0 ? (1:till_xs[till]):Colon()
+  end
+
+  ys_in_Δ = Array(Any,ndims(Δ))
+  for till in 1:length(till_ys)
+    ys_in_Δ[till] = till_ys[till]>0 ? (till_xs[till]+1:size(Δ,till)) : Colon()
+  end
+
+  @back(xs, Δ[xs_in_Δ...])
+  @back(ys, Δ[ys_in_Δ...])
+end
+
 Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
   TrackedArray(Call(reshape, xs, dims...))
 
