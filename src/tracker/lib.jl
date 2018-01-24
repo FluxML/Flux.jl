@@ -65,7 +65,7 @@ function back(::typeof(cat), Δ, dims, xs, ys)
     till_xs[dim] = dim in dim_xs ? size(xs,dim):1
     till_ys[dim] = dim in dim_ys ? size(ys,dim):1
   end
-  
+
   xs_in_Δ = Array(Any,ndims(Δ))
   for till in 1:length(till_xs)
     xs_in_Δ[till] = till_xs[till]>0 ? (1:till_xs[till]):Colon()
