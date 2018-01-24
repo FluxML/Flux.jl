@@ -34,7 +34,7 @@ b   = randn(5)
 
 function rnn(h, x)
   h = tanh.(Wxh * x .+ Whh * h .+ b)
-  return h, h
+  return h, y
 end
 
 x = rand(10) # dummy data
