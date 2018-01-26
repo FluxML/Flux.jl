@@ -1,5 +1,5 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, libcudnn_handle,
-  cudnnDataType, TensorDesc
+  cudnnDataType, TensorDesc, FilterDesc
 
 mutable struct DropoutDesc
   ptr::Ptr{Void}
@@ -80,5 +80,31 @@ function rnnParamSize(r::RNNDesc)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Ptr{Void},Ptr{Csize_t},Cint),
     libcudnn_handle[], r, TensorDesc(r.T, (1,r.input,1)), size, cudnnDataType(r.T))
-  return Int(size[])
+  return Int(size[])÷sizeof(r.T)
+end
+
+# param layout:
+# RNN: [weight, bias] × [input, hidden]
+# GRU: [weight, bias] × [input, hidden] × [reset, update, newmem]
+# LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
+
+function rnnMatrixOffset(r::RNNDesc, w::CuArray, param; layer = 1)
+  ptr = [C_NULL]
+  desc = FilterDesc(CuArrays.CUDNN.createFilterDesc())
+  @check ccall((:cudnnGetRNNLinLayerMatrixParams,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Ptr{Void}}),
+    libcudnn_handle[], r, layer-1, TensorDesc(r.T, (1,r.input,1)), FilterDesc(reshape(w, 1, 1, :)), w, param-1, desc, ptr)
+  offset = ptr[]-Base.cconvert(Ptr{Void},w).ptr
+  CuArrays.CUDNN.free(desc)
+  return Int(offset)÷sizeof(r.T)
+end
+
+function rnnBiasOffset(r::RNNDesc, w::CuArray, param; layer = 1)
+  ptr = [C_NULL]
+  desc = FilterDesc(CuArrays.CUDNN.createFilterDesc())
+  @check ccall((:cudnnGetRNNLinLayerBiasParams,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Ptr{Void}}),
+    libcudnn_handle[], r, layer-1, TensorDesc(r.T, (1,r.input,1)), FilterDesc(reshape(w, 1, 1, :)), w, param-1, desc, ptr)
+  offset = ptr[]-Base.cconvert(Ptr{Void},w).ptr
+  dims = size(desc)
+  CuArrays.CUDNN.free(desc)
+  return Int(offset)÷sizeof(r.T)
 end
