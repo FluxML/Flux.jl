@@ -69,6 +69,13 @@ function rnnWorkspaceSize(r::RNNDesc)
   return Int(size[])
 end
 
+function rnnTrainingReserveSize(r::RNNDesc)
+  size = Csize_t[0]
+  @check ccall((:cudnnGetRNNTrainingReserveSize,libcudnn), cudnnStatus_t, (Ptr{Void}, Ptr{Void}, Cint, Ptr{Ptr{Void}}, Ptr{Csize_t}),
+    libcudnn_handle[], r, 1, [TensorDesc(r.T, (1,r.input,1))], size)
+  return Int(size[])
+end
+
 function rnnParamSize(r::RNNDesc)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Ptr{Void},Ptr{Csize_t},Cint),
