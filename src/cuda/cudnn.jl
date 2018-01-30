@@ -37,74 +37,123 @@ const RNN_ALGO_STANDARD = 0
 const RNN_ALGO_PERSIST_STATIC = 1
 const RNN_ALGO_PERSIST_DYNAMIC = 2
 
-mutable struct RNNDesc
-  T::Type
+# param layout:
+# RNN: [weight, bias] × [input, hidden]
+# GRU: [weight, bias] × [input, hidden] × [reset, update, newmem]
+# LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
+
+weightsizes(input, hidden, n = 1) = [(in,hidden) for in in (input, hidden) for gate in 1:n]
+biassizes(input, hidden, n = 1) = [(hidden,) for gate in 1:n]
+
+function params(w::CuVector{T}, input, hidden, n = 1) where T
+  weights = CuMatrix{T}[]
+  biases = CuVector{T}[]
+  offset = 0
+  for p in weightsizes(input, hidden, n)
+    push!(weights, reshape(w[offset+(1:prod(p))], p))
+    offset += prod(p)
+  end
+  for p in biassizes(input, hidden, n)
+    push!(biases, w[offset+(1:prod(p))])
+    offset += prod(p)
+  end
+  return weights, biases
+end
+
+mutable struct RNNDesc{T}
+  mode::Int
   input::Int
   hidden::Int
+  params::CuVector{T}
+  weights::Vector{CuMatrix{T}}
+  biases::Vector{CuVector{T}}
   ptr::Ptr{Void}
 end
 
 Base.unsafe_convert(::Type{Ptr{Void}}, d::RNNDesc) = d.ptr
 
-function RNNDesc(T::Type, mode::Int, input::Int, hidden::Int; layers = 1)
+function rnnParamSize(T, r, input)
+  size = Csize_t[0]
+  @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Ptr{Void},Ptr{Csize_t},Cint),
+    libcudnn_handle[], r, TensorDesc(T, (1,input,1)), size, cudnnDataType(T))
+  return Int(size[])÷sizeof(T)
+end
+
+function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   d = [C_NULL]
   @check ccall((:cudnnCreateRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Ptr{Void}},),d)
-  rd = RNNDesc(T, input, hidden, d[])
-  finalizer(rd, x ->
-    @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Void},),x))
 
   dropoutDesc = DropoutDesc(0)
   inputMode = LINEAR_INPUT
   direction = UNIDIRECTIONAL
   algo = RNN_ALGO_STANDARD
   @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Cint,Ptr{Void},Cint,Cint,Cint,Cint,Cint),
-    libcudnn_handle[],rd,hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(rd.T))
+    libcudnn_handle[],d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
+
+  w = cuzeros(T, rnnParamSize(T, d[], 10))
+  ngates = [1, 1, 4, 3][mode+1]
+  rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates)..., d[])
+  finalizer(rd, x ->
+    @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Void},),x))
   return rd
 end
 
-function rnnWorkspaceSize(r::RNNDesc)
+function rnnWorkspaceSize(r::RNNDesc, seqlen, xdesc)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNWorkspaceSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Ptr{Ptr{Void}},Ptr{Csize_t}),
-    libcudnn_handle[], r, 1, [TensorDesc(r.T, (1,r.input,1))], size)
+    libcudnn_handle[], r, seqlen, xdesc, size)
   return Int(size[])
 end
 
-function rnnTrainingReserveSize(r::RNNDesc)
+function rnnTrainingReserveSize(r::RNNDesc, seqlen, xdesc)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNTrainingReserveSize,libcudnn), cudnnStatus_t, (Ptr{Void}, Ptr{Void}, Cint, Ptr{Ptr{Void}}, Ptr{Csize_t}),
-    libcudnn_handle[], r, 1, [TensorDesc(r.T, (1,r.input,1))], size)
+    libcudnn_handle[], r, seqlen, xdesc, size)
   return Int(size[])
 end
 
-function rnnParamSize(r::RNNDesc)
-  size = Csize_t[0]
-  @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Ptr{Void},Ptr{Csize_t},Cint),
-    libcudnn_handle[], r, TensorDesc(r.T, (1,r.input,1)), size, cudnnDataType(r.T))
-  return Int(size[])÷sizeof(r.T)
-end
-
-# param layout:
-# RNN: [weight, bias] × [input, hidden]
-# GRU: [weight, bias] × [input, hidden] × [reset, update, newmem]
-# LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
-
-function rnnMatrixOffset(r::RNNDesc, w::CuArray, param; layer = 1)
-  ptr = [C_NULL]
-  desc = FilterDesc(CuArrays.CUDNN.createFilterDesc())
-  @check ccall((:cudnnGetRNNLinLayerMatrixParams,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Ptr{Void}}),
-    libcudnn_handle[], r, layer-1, TensorDesc(r.T, (1,r.input,1)), FilterDesc(reshape(w, 1, 1, :)), w, param-1, desc, ptr)
-  offset = ptr[]-Base.cconvert(Ptr{Void},w).ptr
-  CuArrays.CUDNN.free(desc)
-  return Int(offset)÷sizeof(r.T)
-end
-
-function rnnBiasOffset(r::RNNDesc, w::CuArray, param; layer = 1)
-  ptr = [C_NULL]
-  desc = FilterDesc(CuArrays.CUDNN.createFilterDesc())
-  @check ccall((:cudnnGetRNNLinLayerBiasParams,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Void},Ptr{Void},Cint,Ptr{Void},Ptr{Ptr{Void}}),
-    libcudnn_handle[], r, layer-1, TensorDesc(r.T, (1,r.input,1)), FilterDesc(reshape(w, 1, 1, :)), w, param-1, desc, ptr)
-  offset = ptr[]-Base.cconvert(Ptr{Void},w).ptr
-  dims = size(desc)
-  CuArrays.CUDNN.free(desc)
-  return Int(offset)÷sizeof(r.T)
+function forwardInference(rnn::RNNDesc{T}, x, h, c = nothing) where T
+  @assert size(x, 1) == rnn.input
+  @assert size(h, 1) == rnn.hidden
+  @assert size(x, 2) == size(h, 2)
+  seqLength = 1
+  xdesc = [TensorDesc(reshape(x, 1, size(x, 1), size(x, 2)))]
+  y = x isa AbstractVector ? similar(x, rnn.hidden) : similar(x, rnn.hidden, size(x, 2))
+  ydesc = [TensorDesc(reshape(y, 1, size(y, 1), size(y, 2)))]
+  hout = similar(h)
+  workspace = CuVector{UInt8}(rnnWorkspaceSize(rnn, seqLength, xdesc)) # TODO: reuse this
+  if c ≠ nothing
+    @assert size(c, 1) == rnn.hidden
+    @assert size(c, 2) == size(h, 2)
+    cptr = c
+    cdesc = TensorDesc(reshape(c, size(c, 1), size(c, 2), 1))
+    cout = similar(c)
+    coutdesc = TensorDesc(reshape(cout, size(cout, 1), size(cout, 2), 1))
+  else
+    cptr = cdesc = cout = coutdesc = C_NULL
+  end
+  @check ccall((:cudnnRNNForwardInference, libcudnn), cudnnStatus_t,
+               (Ptr{Void}, Ptr{Void}, Cint,
+                Ptr{Ptr{Void}}, Ptr{T},
+                Ptr{Void}, Ptr{T},
+                Ptr{Void}, Ptr{T},
+                Ptr{Void}, Ptr{T},
+                Ptr{Ptr{Void}}, Ptr{T},
+                Ptr{Void}, Ptr{T},
+                Ptr{Void}, Ptr{T},
+                Ptr{Void}, Csize_t),
+               libcudnn_handle[], rnn, seqLength,
+               xdesc, x,
+               TensorDesc(reshape(h, size(h, 1), size(h, 2), 1)), h,
+               cdesc, cptr,
+               TensorDesc(reshape(rnn.params, 1, 1, :)), rnn.params,
+               ydesc, y,
+               TensorDesc(reshape(hout, size(hout, 1), size(hout, 2), 1)), hout,
+               coutdesc, cout,
+               workspace, length(workspace))
+  if c == nothing
+    return y, hout
+  else
+    return y, hout, cout
+  end
 end

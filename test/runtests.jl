@@ -10,7 +10,7 @@ include("optimise.jl")
 include("data.jl")
 
 if Base.find_in_path("CuArrays") ≠ nothing
-  include("cuarrays.jl")
+  include("cuda/cuda.jl")
 end
 
 end
