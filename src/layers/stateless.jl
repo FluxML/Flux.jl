@@ -4,28 +4,6 @@ using NNlib: log_fast, logsoftmax
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
 
-"""
-`crossentropy` takes the output probability distribution `ŷ` and the target probability
-distribution `y` as the inputs to compute the cross entropy loss. It is numerically unstable
-due to the independent treatment of the log-softmax operation, and it is recommended
-to use `logitcrossentropy`.
-
-    julia> srand(123);
-
-    julia> x = randn(5, 4);
-
-    julia> y = rand(10, 4);
-
-    julia> y = y ./ sum(y, 1);
-
-    julia> m = Dense(5, 10);
-
-    julia> ŷ = softmax(m(x));
-
-    julia> Flux.crossentropy(ŷ, y)
-    Tracked 0-dimensional Array{Float64,0}:
-    2.44887
-"""
 function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
   return -sum(y .* log_fast.(ŷ) .* weight) / size(y, 2)
 end
@@ -33,23 +11,19 @@ end
 @deprecate logloss(x, y) crossentropy(x, y)
 
 """
+    logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
+
 `logitcrossentropy` takes the logits of the output probability distribution `logŷ` and
 the target probability distribution `y` as the inputs to compute the cross entropy loss.
 It is mathematically equivalent to the combination of `softmax(logŷ)` and `crossentropy`,
 i.e., `crossentropy(softmax(logŷ), y)`, but it is more numerically stable than the former.
 
     julia> srand(123);
-
     julia> x = randn(5, 4);
-
     julia> y = rand(10, 4);
-
     julia> y = y ./ sum(y, 1);
-
     julia> m = Dense(5, 10);
-
     julia> logŷ = m(x);
-
     julia> Flux.logitcrossentropy(logŷ, y)
     Tracked 0-dimensional Array{Float64,0}:
     2.44887
