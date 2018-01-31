@@ -173,8 +173,8 @@ function (m::GRUCell)(h, x)
   z    = m.update(x′)
   r    = m.reset(x′)
   h̃    = m.candidate(combine(r.*h, x))
-  h = (1.-z).*h .+ z.*h̃
-  return h, h
+  h′ = (1.-z).*h̃ .+ z.*h
+  return h′, h′
 end
 
 hidden(m::GRUCell) = m.h
