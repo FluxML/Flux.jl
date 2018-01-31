@@ -65,7 +65,7 @@ value(x::TrackedScalar) = data(x)[]
 
 Base.:(==)(x::TrackedArray, y) = value(x) == y
 Base.:(==)(y, x::TrackedArray) = y == value(x)
-Base.:(==)(x::TrackedArray, y::TrackedArray) = value(x) == value(x)
+Base.:(==)(x::TrackedArray, y::TrackedArray) = value(x) == value(y)
 
 Base.isless(x::TrackedScalar, y) = isless(value(x), y)
 Base.isless(x, y::TrackedScalar) = isless(x, value(y))
