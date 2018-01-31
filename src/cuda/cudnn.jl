@@ -42,22 +42,12 @@ const RNN_ALGO_PERSIST_DYNAMIC = 2
 # GRU: [weight, bias] × [input, hidden] × [reset, update, newmem]
 # LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
 
-weightsizes(input, hidden, n = 1) = [(in,hidden) for in in (input, hidden) for gate in 1:n]
-biassizes(input, hidden, n = 1) = [(hidden,) for gate in 1:n]
-
-function params(w::CuVector{T}, input, hidden, n = 1) where T
-  weights = CuMatrix{T}[]
-  biases = CuVector{T}[]
-  offset = 0
-  for p in weightsizes(input, hidden, n)
-    push!(weights, reshape(w[offset+(1:prod(p))], p))
-    offset += prod(p)
-  end
-  for p in biassizes(input, hidden, n)
-    push!(biases, w[offset+(1:prod(p))])
-    offset += prod(p)
-  end
-  return weights, biases
+function params(w::CuVector, input, hidden, n = 1)
+  slice(offset, shape) = reshape(w[offset+(1:prod(shape))], shape)
+  wx = slice(0, (input, hidden*n))
+  wh = slice(length(wx), (hidden, hidden*n))
+  bias = w[length(wx)+length(wh) + (1:hidden*n)]
+  (wx, wh), bias
 end
 
 mutable struct RNNDesc{T}
@@ -65,8 +55,8 @@ mutable struct RNNDesc{T}
   input::Int
   hidden::Int
   params::CuVector{T}
-  weights::Vector{CuMatrix{T}}
-  biases::Vector{CuVector{T}}
+  weights::NTuple{2,CuMatrix{T}}
+  bias::CuVector{T}
   ptr::Ptr{Void}
 end
 
