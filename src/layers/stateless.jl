@@ -25,11 +25,11 @@ batch. EPS has been added to maintain stability, preventing Inf or Nan.
 This may also be used as a scalar function.
 """
 
-function binarycrossentropy(ŷ, y; average=true, add=EPS)
-  bce  = -sum(y .* log_fast.(ŷ + add) + (1 .- y) .* log_fast.(1 - ŷ + add))
+function binarycrossentropy(ŷ, y; average=true, eps=EPS)
+  bce  = -sum(y .* log_fast.(ŷ + eps) + (1 .- y) .* log_fast.(1 - ŷ + eps))
   if (average)
     bce /= length(y)
-  elseif !(size(ŷ )==(1,) && size(y)==(1,))
+  elseif !(size(ŷ)==(1,) && size(y)==(1,))
     warn("`crossentropy` may be a better choice than `binarycrossentropy`",
       " with apparently multiclass data.")
   end
