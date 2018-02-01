@@ -29,7 +29,8 @@ function binarycrossentropy(ŷ, y; average=true, eps=EPS)
   bce  = -sum(y .* log_fast.(ŷ + eps) + (1 .- y) .* log_fast.(1 - ŷ + eps))
   if (average)
     bce /= length(y)
-  elseif !(size(ŷ)==(1,) && size(y)==(1,))
+  elseif (!(size(ŷ)==(1,) && size(y)==(1,)) && (typeof(ŷ)<:AbstractVecOrMat
+     && typeof(y)<:AbstractVecOrMat))
     warn("`crossentropy` may be a better choice than `binarycrossentropy`",
       " with apparently multiclass data.")
   end
