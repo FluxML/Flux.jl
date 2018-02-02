@@ -27,6 +27,6 @@ using Flux: onehotbatch, mse, crossentropy, binarycrossentropy
   @testset "binarycrossentropy" begin
     @test binarycrossentropy(y_hat, y, eps=0) ≈ y_logloss
     @test mean(binarycrossentropy.(y_hat, y, eps=0),2) ≈ [y_logloss; y_logloss]
-    @test binarycrossentropy(0,0) ≈ -log(1+1e-7)
+    @test binarycrossentropy(0,0) ≈ -log(1+1f-7)
   end
 end

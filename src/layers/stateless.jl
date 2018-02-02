@@ -1,6 +1,6 @@
 using NNlib: log_fast
 
-const EPS = 1e-7
+const EPS = 1f-7
 # Cost functions
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
@@ -30,7 +30,7 @@ function binarycrossentropy(ŷ, y; average=true, eps=EPS)
   if (average)
     bce /= length(y)
   elseif (!(size(ŷ)==(1,) && size(y)==(1,)) && (typeof(ŷ)<:AbstractVecOrMat
-     && typeof(y)<:AbstractVecOrMat))
+    && typeof(y)<:AbstractVecOrMat))
     warn("`crossentropy` may be a better choice than `binarycrossentropy`",
       " with apparently multiclass data.")
   end
