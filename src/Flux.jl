@@ -18,6 +18,7 @@ export σ, sigmoid, relu, leakyrelu, elu, swish, softmax, logsoftmax,
 
 include("tracker/Tracker.jl")
 using .Tracker
+import .Tracker: data, value
 
 include("optimise/Optimise.jl")
 using .Optimise
