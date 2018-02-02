@@ -73,7 +73,7 @@ flip(f, xs) = reverse(f.(reverse(xs)))
 
 # Vanilla RNN
 
-struct RNNCell{F,A,V}
+mutable struct RNNCell{F,A,V}
   σ::F
   Wi::A
   Wh::A
@@ -112,7 +112,7 @@ RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
 # LSTM
 
-struct LSTMCell{A,V}
+mutable struct LSTMCell{A,V}
   Wi::A
   Wh::A
   b::V
@@ -161,7 +161,7 @@ LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # GRU
 
-struct GRUCell{A,V}
+mutable struct GRUCell{A,V}
   Wi::A
   Wh::A
   b::V
