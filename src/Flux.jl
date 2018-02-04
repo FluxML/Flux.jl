@@ -7,14 +7,14 @@ module Flux
 using Juno, Requires
 using MacroTools: @forward
 
-export Chain, Dense, RNN, LSTM, GRU, Conv2D,
+export Chain, Dense, RNN, LSTM, GRU, Conv2D, Conv3D,
   Dropout, LayerNorm, BatchNorm,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 
 using NNlib
 export σ, sigmoid, relu, leakyrelu, elu, swish, softmax, logsoftmax,
-  conv2d, maxpool2d, avgpool2d
+  conv2d, maxpool2d, avgpool2d, conv3d, maxpool3d, avgpool3d
 
 include("tracker/Tracker.jl")
 using .Tracker
