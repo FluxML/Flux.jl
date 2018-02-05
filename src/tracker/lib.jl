@@ -167,7 +167,8 @@ back_(::typeof(_pool), y, Δ, x, k, pad, mode) =
 
 using ForwardDiff: Dual, partials
 
-struct Broadcasted{T}
+struct Broadcasted{F,T}
+  f::F
   data::T
 end
 
@@ -180,9 +181,9 @@ function tracked_broadcast(f, args::Vararg{Any,N}) where N
   dargs = map((x,i) -> dualify(x, ntuple(j -> i==j, Val{N})), args, ntuple(identity, Val{N}))
   out = broadcast(f, dargs...)
   eltype(out) <: Dual || return out
-  # TrackedArray(Call(Broadcasted(broadcast(f, dargs...)), args...))
+  # TrackedArray(Call(Broadcasted(f, broadcast(f, dargs...)), args...))
   # Works around a 0.6 type inference issue
-  b = Broadcasted(out)
+  b = Broadcasted(f, out)
   TrackedArray(Call(b, args...), b())
 end
 
