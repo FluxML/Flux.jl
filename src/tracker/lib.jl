@@ -27,21 +27,27 @@ Base.repmat(x::TrackedVecOrMat, a::Integer...) = TrackedArray(Call(repmat, x, a.
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = TrackedArray(Call(repmat, x, a...))
 
 Base.vcat(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedVector, b::TrackedVector...)  = TrackedArray(Call(vcat, a, b...))
 Base.vcat(a::TrackedVector, b::AbstractVector) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractVector, b::TrackedVector) = TrackedArray(Call(vcat, a, b))
 
 Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat...)  = TrackedArray(Call(vcat, a, b...))
 Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = TrackedArray(Call(vcat, a, b))
 
 Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = TrackedArray(Call(vcat, a, b...))
 Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = TrackedArray(Call(vcat, a, b))
 
-function back(::typeof(vcat), Δ, xs, ys)
+function back(::typeof(vcat), Δ, xs...)
   i = Base.tail(map(_ -> :, size(Δ)))
-  @back(xs, Δ[1:size(xs,1), i...])
-  @back(ys, Δ[size(xs,1)+1:end, i...])
+  start = 0
+  for xsi in xs
+    @back(xsi, Δ[start+1:start+size(xsi,1), i...])
+    start += size(xsi, 1)
+  end
 end
 
 Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
