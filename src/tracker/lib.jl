@@ -91,6 +91,9 @@ back(::typeof(mean), Δ, xs::TrackedArray, region) =
 
 # BLAS
 
+Base.diagm(x::TrackedVector) = TrackedArray(Call(diagm, x))
+back(::typeof(diagm), Δ, x) = @back(x, diag(Δ))
+
 for f in :[*, Ac_mul_B, A_mul_Bc].args
   @eval begin
     import Base.$f
