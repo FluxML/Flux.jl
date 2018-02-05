@@ -2,7 +2,7 @@ using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: gradcheck
 using NNlib
 
-gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(f(xs...)), xs...)
+gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @testset "Tracker" begin
