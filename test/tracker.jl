@@ -25,9 +25,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest(vcat, rand(5), rand(3))
 @test gradtest(vcat, rand(5), rand(3), rand(8))
-@test gradtest(vcat, rand(5), rand(3), rand(8), rand(2))
-@test gradtest(vcat, rand(5), rand(3), rand(8), rand(2), rand(4))
-@test gradtest(vcat, rand(2,3), rand(3,3))
+@test gradtest(vcat, rand(5,2), rand(3,2), rand(8,2))
 
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))

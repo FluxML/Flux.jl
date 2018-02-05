@@ -32,10 +32,12 @@ Base.vcat(a::TrackedVector, b::AbstractVector) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractVector, b::TrackedVector) = TrackedArray(Call(vcat, a, b))
 
 Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat...)  = TrackedArray(Call(vcat, a, b...))
 Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = TrackedArray(Call(vcat, a, b))
 
 Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = TrackedArray(Call(vcat, a, b...))
 Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = TrackedArray(Call(vcat, a, b))
 Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = TrackedArray(Call(vcat, a, b))
 
