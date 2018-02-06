@@ -9,6 +9,8 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest((x, W, b) -> σ.(W*x .+ b), 5, (2,5), 2)
 @test gradtest((x, W, b) -> σ.(W*x .+ b), (5,3), (2,5), 2)
+@test gradtest((x, W, b) -> logσ.(W*x .+ b), 5, (2,5), 2)
+@test gradtest((x, W, b) -> logσ.(W*x .+ b), (5,3), (2,5), 2)
 
 @test gradtest((w, x) -> w'*x, randn(10, 2), randn(10))
 @test gradtest((w, x) -> w*x', randn(5,5), randn(5,5))
