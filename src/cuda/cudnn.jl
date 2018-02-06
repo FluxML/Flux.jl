@@ -109,8 +109,9 @@ function getreserve(r::RNNDesc, seqlen, xdesc)
   sz ≤ length(r.reserve) ? r.reserve : (r.reserve = CuVector{UInt8}(sz))
 end
 
-function cudnnRNNForward(::Type{T}, rnn, seqlen, xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co, workspace, reserve=nothing) where T
-  if reserve == nothing
+function cudnnRNNForward(::Type{T}, rnn, seqlen, xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
+                         workspace, reserve=nothing; train = (reserve ≠ nothing)) where T
+  if !train
     @check ccall((:cudnnRNNForwardInference, libcudnn), cudnnStatus_t,
                  (Ptr{Void}, Ptr{Void}, Cint,
                   Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T},
@@ -129,7 +130,7 @@ function cudnnRNNForward(::Type{T}, rnn, seqlen, xd, x, hd, h, cd, c, wd, w, yd,
   end
 end
 
-function forward(rnn::RNNDesc{T}, x::CuArray{T}, h::CuArray{T}, c = nothing; train = Val{false}) where T
+function forward(rnn::RNNDesc{T}, x::CuArray{T}, h::CuArray{T}, c = nothing; train = false) where T
   @assert size(x, 1) == rnn.input
   @assert size(h, 1) == rnn.hidden
   @assert size(x, 2) == size(h, 2)
@@ -138,7 +139,7 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h::CuArray{T}, c = nothing; tra
   y = x isa AbstractVector ? similar(x, rnn.hidden) : similar(x, rnn.hidden, size(x, 2))
   ydesc = [TensorDesc(T, (1, size(y, 1), size(y, 2)))]
   workspace = CuVector{UInt8}(rnnWorkspaceSize(rnn, seqLength, xdesc)) # TODO: reuse this
-  reserve = train == Val{true} ? getreserve(rnn, seqLength, xdesc) : nothing
+  reserve = train ? getreserve(rnn, seqLength, xdesc) : rnn.reserve
   if c ≠ nothing
     @assert size(c, 1) == rnn.hidden
     @assert size(c, 2) == size(h, 2)
@@ -157,7 +158,7 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h::CuArray{T}, c = nothing; tra
                   ydesc, y,
                   C_NULL, C_NULL, # hout
                   coutdesc, cout,
-                  workspace, reserve)
+                  workspace, reserve, train = train)
   if c == nothing
     return y, y
   else
@@ -217,16 +218,16 @@ end
 istrain(m::CuRNNs, args...) = any(x -> x isa TrackedArray, (m.Wi, m.Wh, m.b, args...))
 
 function (m::CuRNN{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  y, h = forward(desc(m), Flux.data(x), Flux.data(h), train = Val{istrain(m, h, x)})
+  y, h = forward(desc(m), Flux.data(x), Flux.data(h), train = istrain(m, h, x))
   return h, y
 end
 
 function (m::CuGRU{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  y, h = forward(desc(m), Flux.data(x), Flux.data(h), train = Val{istrain(m, h, x)})
+  y, h = forward(desc(m), Flux.data(x), Flux.data(h), train = istrain(m, h, x))
   return h, y
 end
 
 function (m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  y, h, c = forward(desc(m), Flux.data(x), Flux.data.(h)..., train = Val{istrain(m, h, x)})
+  y, h, c = forward(desc(m), Flux.data(x), Flux.data.(h)..., train = istrain(m, h, x))
   return (h, c), y
 end
