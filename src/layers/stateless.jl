@@ -1,4 +1,4 @@
-using NNlib: log_fast
+using NNlib: log_fast, logsoftmax
 
 # Cost functions
 
@@ -10,10 +10,26 @@ end
 
 @deprecate logloss(x, y) crossentropy(x, y)
 
-function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
-  logŷ = logŷ .- maximum(logŷ, 1)
-  ypred = logŷ .- log_fast.(sum(exp.(logŷ), 1))
-  -sum(y .* ypred) / size(y, 2)
+"""
+    logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
+
+`logitcrossentropy` takes the logits of the output probability distribution `logŷ` and
+the target probability distribution `y` as the inputs to compute the cross entropy loss.
+It is mathematically equivalent to the combination of `softmax(logŷ)` and `crossentropy`,
+i.e., `crossentropy(softmax(logŷ), y)`, but it is more numerically stable than the former.
+
+    julia> srand(123);
+    julia> x = randn(5, 4);
+    julia> y = rand(10, 4);
+    julia> y = y ./ sum(y, 1);
+    julia> m = Dense(5, 10);
+    julia> logŷ = m(x);
+    julia> Flux.logitcrossentropy(logŷ, y)
+    Tracked 0-dimensional Array{Float64,0}:
+    2.44887
+"""
+function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
+  return -sum(y .* logsoftmax(logŷ) .* weight) / size(y, 2)
 end
 
 """
