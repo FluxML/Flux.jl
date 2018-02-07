@@ -2,7 +2,7 @@ using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: gradcheck
 using NNlib
 
-gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(f(xs...)), xs...)
+gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @testset "Tracker" begin
@@ -13,14 +13,12 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest((w, x) -> w'*x, randn(10, 2), randn(10))
 @test gradtest((w, x) -> w*x', randn(5,5), randn(5,5))
 
-@test gradtest(x -> sin.(sum(x, (2, 3))), (3,4,5))
+@test gradtest(x -> sum(x, (2, 3)), (3,4,5))
 
 @test gradtest(x -> softmax(x).*(1:3), 3)
 @test gradtest(x -> softmax(x).*(1:3), (3,5))
-
-## uncomment the following test when logsoftmax has been added into NNlib.jl
-#@test gradtest(x -> logsoftmax(x).*(1:3), 3)
-#@test gradtest(x -> logsoftmax(x).*(1:3), (3,5))
+@test gradtest(x -> logsoftmax(x).*(1:3), 3)
+@test gradtest(x -> logsoftmax(x).*(1:3), (3,5))
 
 @test gradtest(Flux.mse, rand(5,5), rand(5, 5))
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
@@ -28,7 +26,10 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(x -> x', rand(5))
 
 @test gradtest(vcat, rand(5), rand(3))
-@test gradtest(vcat, rand(2,3), rand(3,3))
+@test gradtest(vcat, rand(5), rand(3), rand(8))
+@test gradtest(vcat, rand(5,2), rand(3,2), rand(8,2))
+
+@test gradtest(diagm, rand(3))
 
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))

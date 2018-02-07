@@ -1,72 +1,130 @@
-toarray(xs::AbstractArray, ys::AbstractArray) = ys
-toarray(xs::AbstractArray, y) = similar(xs, typeof(y), ()) .= y
+struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
+  tracker::Tracked{A}
+  data::A
+  grad::A
+  TrackedArray{T,N,A}(t::Tracked{A}, data::A) where {T,N,A} = new(t, data)
+  TrackedArray{T,N,A}(t::Tracked{A}, data::A, grad::A) where {T,N,A} = new(t, data, grad)
+end
 
-unarray(xs) = xs
-unarray(xs::AbstractArray{T,0} where T) = xs[]
+tracker(x::TrackedArray) = x.tracker
 
-Base.getindex(xs::TrackedArray, i...) =
-  TrackedArray(Call(getindex, xs, i...), toarray(xs.data, xs.data[i...]))
+TrackedVector{T,A} = TrackedArray{T,1,A}
+TrackedMatrix{T,A} = TrackedArray{T,2,A}
+TrackedVecOrMat{T,A} = Union{TrackedVector{T,A},TrackedMatrix{T,A}}
+
+track(c::Call, x::AbstractArray) = TrackedArray(c, x)
+
+TrackedArray(c::Call, x::A) where A <: AbstractArray =
+  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x), x)
+
+TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
+  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x, Δ), x, Δ)
+
+TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
+
+Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
+  print(io, "TrackedArray{…,$A}")
+
+function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
+  if repr
+    print(io, "param(")
+    Base.showarray(io, data(X), true)
+    print(io, ")")
+  else
+    header && print(io, "Tracked ")
+    Base.showarray(io, data(X), false, header = header)
+  end
+end
+
+Base.setindex!(xs::TrackedArray, v, i...) =
+  error("Can't differentiate `setindex!`")
+
+back!(::TrackedArray) = error("Use back!(x, Δ)")
+
+# Fallthrough methods
+
+for f in :[Base.size, Base.ndims].args
+  @eval @inline $f(x::TrackedArray, a...) = $f(data(x), a...)
+end
+
+Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
+  similar(data(x), dims...)
+
+Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
+
+Base.:(==)(x::TrackedArray, y) = data(x) == y
+Base.:(==)(y, x::TrackedArray) = y == data(x)
+Base.:(==)(x::TrackedArray, y::TrackedArray) = data(x) == data(y)
+
+# Array Stdlib
+
+Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
 
 function back(::typeof(getindex), Δ, xs::TrackedArray, i...)
   Δ′ = zeros(xs.data)
-  Δ′[i...] = unarray(Δ)
+  Δ′[i...] = Δ
   @back(xs, Δ′)
 end
 
-Base.:-(xs::TrackedArray) = TrackedArray(Call(-, xs))
+Base.:-(xs::TrackedArray) = track(-, xs)
 
 back(::typeof(-), Δ, xs::TrackedArray) = back(xs, -Δ)
 
-Base.transpose(xs::TrackedArray) = TrackedArray(Call(transpose, xs))
-Base.ctranspose(xs::TrackedArray) = TrackedArray(Call(ctranspose, xs))
+Base.transpose(xs::TrackedArray) = track(transpose, xs)
+Base.ctranspose(xs::TrackedArray) = track(ctranspose, xs)
 
 back(::typeof(transpose), Δ, xs) = @back(xs, trim(xs, Δ.'))
 back(::typeof(ctranspose), Δ, xs) = @back(xs, trim(xs, Δ'))
 
-Base.repmat(x::TrackedVecOrMat, a::Integer...) = TrackedArray(Call(repmat, x, a...))
-Base.repmat(x::TrackedVecOrMat, a::Int64...) = TrackedArray(Call(repmat, x, a...))
+Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
+Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
 
-Base.vcat(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::TrackedVector, b::AbstractVector) = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::AbstractVector, b::TrackedVector) = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedVector, b::TrackedVector)  = track(vcat, a, b)
+Base.vcat(a::TrackedVector, b::TrackedVector...)  = track(vcat, a, b...)
+Base.vcat(a::TrackedVector, b::AbstractVector) = track(vcat, a, b)
+Base.vcat(a::AbstractVector, b::TrackedVector) = track(vcat, a, b)
 
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = track(vcat, a, b)
+Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat...)  = track(vcat, a, b...)
+Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = track(vcat, a, b)
+Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = track(vcat, a, b)
 
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = TrackedArray(Call(vcat, a, b))
-Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = TrackedArray(Call(vcat, a, b))
+Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = track(vcat, a, b)
+Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
+Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
+Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
 
-function back(::typeof(vcat), Δ, xs, ys)
+function back(::typeof(vcat), Δ, xs...)
   i = Base.tail(map(_ -> :, size(Δ)))
-  @back(xs, Δ[1:size(xs,1), i...])
-  @back(ys, Δ[size(xs,1)+1:end, i...])
+  start = 0
+  for xsi in xs
+    @back(xsi, Δ[start+1:start+size(xsi,1), i...])
+    start += size(xsi, 1)
+  end
 end
 
 Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
-  TrackedArray(Call(reshape, xs, dims...))
+  track(reshape, xs, dims...)
 
 back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
   back(xs, reshape(Δ, size(xs)))
 
 # Reductions
 
-Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
-Base.sum(xs::TrackedArray) = TrackedArray(Call(sum, xs), toarray(xs.data, sum(xs.data)))
-Base.sum(xs::TrackedScalar, dim...) = xs
+Base.sum(xs::TrackedArray, dim) = track(sum, xs, dim)
+Base.sum(xs::TrackedArray) = track(sum, xs)
 
 back(::typeof(sum), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= Δ)
 
 Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
-Base.mean(xs::TrackedArray) = TrackedArray(Call(mean, xs), toarray(xs.data, mean(xs.data)))
-Base.mean(xs::TrackedArray, region) = TrackedArray(Call(mean, xs, region))
+Base.mean(xs::TrackedArray) = track(mean, xs)
+Base.mean(xs::TrackedArray, region) = track(mean, xs, region)
 
-LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = TrackedArray(Call(dot, xs, ys), toarray(xs.data, dot(data(xs), data(ys))))
-LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = TrackedArray(Call(dot, xs, ys), toarray(xs.data, dot(data(xs), data(ys))))
-LinAlg.dot(xs::TrackedVector, ys::AbstractVector) = TrackedArray(Call(dot, xs, ys), toarray(xs.data, dot(data(xs), data(ys))))
+LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
+LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
+LinAlg.dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 function back(::typeof(dot), Δ, xs, ys)
   @back(xs, Δ.*ys)
@@ -85,20 +143,23 @@ back(::typeof(mean), Δ, xs::TrackedArray, region) =
 
 # BLAS
 
+Base.diagm(x::TrackedVector) = track(diagm, x)
+back(::typeof(diagm), Δ, x) = @back(x, diag(Δ))
+
 for f in :[*, Ac_mul_B, A_mul_Bc].args
   @eval begin
     import Base.$f
-    $f(a::TrackedMatrix, b::TrackedMatrix)  = TrackedArray(Call($f, a, b))
-    $f(a::TrackedMatrix, b::AbstractMatrix) = TrackedArray(Call($f, a, b))
-    $f(a::AbstractMatrix, b::TrackedMatrix) = TrackedArray(Call($f, a, b))
+    $f(a::TrackedMatrix, b::TrackedMatrix)  = track($f, a, b)
+    $f(a::TrackedMatrix, b::AbstractMatrix) = track($f, a, b)
+    $f(a::AbstractMatrix, b::TrackedMatrix) = track($f, a, b)
 
-    $f(a::TrackedMatrix, b::TrackedVector)  = TrackedArray(Call($f, a, b))
-    $f(a::TrackedMatrix, b::AbstractVector) = TrackedArray(Call($f, a, b))
-    $f(a::AbstractMatrix, b::TrackedVector) = TrackedArray(Call($f, a, b))
+    $f(a::TrackedMatrix, b::TrackedVector)  = track($f, a, b)
+    $f(a::TrackedMatrix, b::AbstractVector) = track($f, a, b)
+    $f(a::AbstractMatrix, b::TrackedVector) = track($f, a, b)
 
-    $f(a::TrackedVector, b::TrackedVector)  = TrackedArray(Call($f, a, b))
-    $f(a::TrackedVector, b::AbstractVector) = TrackedArray(Call($f, a, b))
-    $f(a::AbstractVector, b::TrackedVector) = TrackedArray(Call($f, a, b))
+    $f(a::TrackedVector, b::TrackedVector)  = track($f, a, b)
+    $f(a::TrackedVector, b::AbstractVector) = track($f, a, b)
+    $f(a::AbstractVector, b::TrackedVector) = track($f, a, b)
   end
 end
 
@@ -132,11 +193,11 @@ end
 using NNlib
 import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv2d, pool
 
-softmax(xs::TrackedArray) = TrackedArray(Call(softmax, xs))
+softmax(xs::TrackedArray) = track(softmax, xs)
 
 back(::typeof(softmax), Δ, xs) = @back(xs, ∇softmax(Δ, data(xs)))
 
-logsoftmax(xs::TrackedArray) = TrackedArray(Call(logsoftmax, xs))
+logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 back(::typeof(logsoftmax), Δ, xs) = @back(xs, ∇logsoftmax(Δ, data(xs)))
 
@@ -144,11 +205,11 @@ back(::typeof(logsoftmax), Δ, xs) = @back(xs, ∇logsoftmax(Δ, data(xs)))
 _conv2d(x, w, stride, pad) = conv2d(x, w, stride = stride, padding = pad)
 
 conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
-  TrackedArray(Call(_conv2d, x, w, stride, padding))
+  track(_conv2d, x, w, stride, padding)
 conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
-  TrackedArray(Call(_conv2d, x, w, stride, padding))
+  track(_conv2d, x, w, stride, padding)
 conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}; stride = 1, padding = 0) =
-  TrackedArray(Call(_conv2d, x, w, stride, padding))
+  track(_conv2d, x, w, stride, padding)
 
 function back(::typeof(_conv2d), Δ, x, w, stride, pad)
   @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ; stride = stride, padding = pad))
@@ -158,7 +219,7 @@ end
 _pool(x, k, pad, mode) = pool(x, window = k, mode = mode, padding = pad)
 
 pool(x::TrackedArray{<:Any,4}; window = 2, mode = 0, padding = 0) =
-  TrackedArray(Call(_pool, x, window, padding, mode))
+  track(_pool, x, window, padding, mode)
 
 back_(::typeof(_pool), y, Δ, x, k, pad, mode) =
   back(x, NNlib.pool_grad(data(x), y, Δ, window=k, mode=mode, padding=pad))
@@ -167,7 +228,8 @@ back_(::typeof(_pool), y, Δ, x, k, pad, mode) =
 
 using ForwardDiff: Dual, partials
 
-struct Broadcasted{T}
+struct Broadcasted{F,T}
+  f::F
   data::T
 end
 
@@ -175,22 +237,23 @@ end
 
 dualify(xs, n) = xs
 dualify(xs::TrackedArray, ps) = map(x -> Dual(x, ps), data(xs))
+dualify(xs::TrackedNumber, ps) = Dual(data(xs), ps)
 
 function tracked_broadcast(f, args::Vararg{Any,N}) where N
   dargs = map((x,i) -> dualify(x, ntuple(j -> i==j, Val{N})), args, ntuple(identity, Val{N}))
   out = broadcast(f, dargs...)
   eltype(out) <: Dual || return out
-  # TrackedArray(Call(Broadcasted(broadcast(f, dargs...)), args...))
-  # Works around a 0.6 type inference issue
-  b = Broadcasted(out)
-  TrackedArray(Call(b, args...), b())
+  b = Broadcasted(f, out)
+  track(Call(b, args...), b())
 end
 
 trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val{ndims(x)}))
 
-unbroadcast(x, Δ) =
+unbroadcast(x::AbstractArray, Δ) =
   size(x) == size(Δ) ? Δ :
     trim(x, sum(Δ, filter(n -> size(x, n) == 1, 1:ndims(Δ))))
+
+unbroadcast(x::Number, Δ) = sum(Δ)
 
 function getpartial(Δ, x, i)
   @inbounds p = getindex(partials(x), i)
