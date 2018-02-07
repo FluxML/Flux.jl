@@ -1,10 +1,9 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: gradcheck, gradcheck_cat
+using Flux.Tracker: gradcheck
 using NNlib
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(f(xs...)), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(dims)...)
-gradtest_cat(f, dim, xs::AbstractArray...) = gradcheck_cat((dim, xs...) -> sum(f(dim, xs...)), dim, xs...)
 
 @testset "Tracker" begin
 
@@ -31,9 +30,8 @@ gradtest_cat(f, dim, xs::AbstractArray...) = gradcheck_cat((dim, xs...) -> sum(f
 @test gradtest(vcat, rand(5), rand(3))
 @test gradtest(vcat, rand(2,3), rand(3,3))
 
-@test gradtest_cat(cat, (1), rand(3), rand(3))
-@test gradtest_cat(cat, (1,2), rand(2,3), rand(3,3))
-
+@test gradtest((a, b) -> cat((1), a, b), rand(3), rand(3))
+@test gradtest((a, b) -> cat((1,2), a, b), rand(2,3), rand(3,3))
 
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))
