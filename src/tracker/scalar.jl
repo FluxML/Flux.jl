@@ -30,9 +30,11 @@ Base.:(==)(x::TrackedNumber, y::Number) = data(x) == y
 Base.:(==)(x::Number, y::TrackedNumber) = x == data(y)
 Base.:(==)(x::TrackedNumber, y::TrackedNumber) = data(x) == data(y)
 
-for f in :[isinf, isnan].args
-  @eval Base.$f(x::TrackedNumber) = isinf(data(x))
+for f in :[isinf, isnan, isfinite].args
+  @eval Base.$f(x::TrackedNumber) = Base.$f(data(x))
 end
+
+Base.Printf.fix_dec(x::TrackedNumber, n::Int) = Base.Printf.fix_dec(data(x), n)
 
 Base.promote_rule(::Type{TrackedNumber{S}},::Type{T}) where {S,T} =
   TrackedNumber{promote_type(S,T)}
