@@ -1,5 +1,5 @@
 using Juno
-using Flux.Tracker: back!, value
+using Flux.Tracker: back!
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -27,8 +27,8 @@ function train!(loss, data, opt; cb = () -> ())
   opt = runall(opt)
   @progress for d in data
     l = loss(d...)
-    isinf(value(l)) && error("Loss is Inf")
-    isnan(value(l)) && error("Loss is NaN")
+    isinf(l.data[]) && error("Loss is Inf")
+    isnan(l.data[]) && error("Loss is NaN")
     back!(l)
     opt()
     cb() == :stop && break

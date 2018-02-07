@@ -1,3 +1,65 @@
+struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
+  tracker::Tracked{A}
+  data::A
+  grad::A
+  TrackedArray{T,N,A}(t::Tracked{A}, data::A) where {T,N,A} = new(t, data)
+  TrackedArray{T,N,A}(t::Tracked{A}, data::A, grad::A) where {T,N,A} = new(t, data, grad)
+end
+
+tracker(x::TrackedArray) = x.tracker
+
+TrackedScalar{T,A} = TrackedArray{T,0,A}
+TrackedVector{T,A} = TrackedArray{T,1,A}
+TrackedMatrix{T,A} = TrackedArray{T,2,A}
+TrackedVecOrMat{T,A} = Union{TrackedVector{T,A},TrackedMatrix{T,A}}
+
+TrackedArray(c::Call, x::A) where A <: AbstractArray =
+  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x), x)
+
+TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
+  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x, Δ), x, Δ)
+
+TrackedArray(c::Call) = TrackedArray(c, c())
+
+TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
+
+Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
+  print(io, "TrackedArray{…,$A}")
+
+function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
+  if repr
+    print(io, "param(")
+    Base.showarray(io, data(X), true)
+    print(io, ")")
+  else
+    header && print(io, "Tracked ")
+    Base.showarray(io, data(X), false, header = header)
+  end
+end
+
+Base.setindex!(xs::TrackedArray, v, i...) =
+  error("Can't differentiate `setindex!`")
+
+# Fallthrough methods
+
+for f in :[Base.size, Base.ndims].args
+  @eval @inline $f(x::TrackedArray, a...) = $f(data(x), a...)
+end
+
+Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
+  similar(data(x), dims...)
+
+Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
+
+value(x) = data(x)
+value(x::TrackedScalar) = data(x)[]
+
+Base.:(==)(x::TrackedArray, y) = value(x) == y
+Base.:(==)(y, x::TrackedArray) = y == value(x)
+Base.:(==)(x::TrackedArray, y::TrackedArray) = value(x) == value(y)
+
+# Array Stdlib
+
 toarray(xs::AbstractArray, ys::AbstractArray) = ys
 toarray(xs::AbstractArray, y) = similar(xs, typeof(y), ()) .= y
 
@@ -60,7 +122,6 @@ back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
 
 Base.sum(xs::TrackedArray, dim) = TrackedArray(Call(sum, xs, dim))
 Base.sum(xs::TrackedArray) = TrackedArray(Call(sum, xs), toarray(xs.data, sum(xs.data)))
-Base.sum(xs::TrackedScalar, dim...) = xs
 
 back(::typeof(sum), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= Δ)
 
