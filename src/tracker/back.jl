@@ -1,3 +1,5 @@
+init_grad(x) = zero(x)
+
 scan(c::Call) = foreach(scan, c.args)
 
 function scan(x::Tracked)
@@ -5,7 +7,7 @@ function scan(x::Tracked)
   if ref == 1
     scan(x.f)
   else
-    isdefined(x, :grad) || (x.grad = zeros(x.data))
+    isdefined(x, :grad) || (x.grad = init_grad(x.data))
   end
   return
 end
@@ -19,13 +21,13 @@ back_(f, y, args...) = back(f, args...)
 back_(c::Call, y, Δ) = back_(c.func, y, Δ, c.args...)
 back_(::Call{Void}, y, Δ) = nothing
 
-accum!(x::Tracked, Δ) = (x.grad += Δ)
-accum!(x::Tracked{<:AbstractArray}, Δ) = (x.grad .+= Δ)
+accum!(x, Δ) = x .+ Δ
+accum!(x::AbstractArray, Δ) = (x .+= Δ)
 
 function back(x::Tracked, Δ)
   ref = x.ref -= 1
   if isdefined(x, :grad)
-    accum!(x, Δ)
+    x.grad = accum!(x.grad, Δ)
     ref == 0 && back_(x.f, x.data, x.grad)
   else
     ref == 0 && back_(x.f, x.data, Δ)
