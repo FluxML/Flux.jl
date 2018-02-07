@@ -27,22 +27,24 @@ mutable struct Tracked{T}
   Tracked{T}(f::Call, data::T, grad::T) where T = new(0, f, data, grad)
 end
 
+Tracked(f::Call, x) = Tracked{typeof(x)}(f, x)
+
+track(f::Call, x) = Tracked(f, x)
+track(f::Call) = track(f, f())
+track(f, xs...) = track(Call(f, xs...))
+
 istracked(x::Tracked) = true
 isleaf(x::Tracked) = x.f == Call(nothing)
 data(x::Tracked) = x.data
 grad(x::Tracked) = x.grad
 
 include("back.jl")
+include("scalar.jl")
 include("array.jl")
 include("numeric.jl")
 
-param(x::Number) = TrackedArray(fill(0))
-Base.isless(x::TrackedScalar, y) = isless(x.data[], y)
-Base.isless(x, y::TrackedScalar) = isless(x, y.data[])
-Base.isless(x::TrackedScalar, y::TrackedScalar) = isless(x.data[], y.data[])
-back!(x::TrackedScalar) = back!(x, 1)
-
-param(xs::AbstractArray) = TrackedArray(map(x -> AbstractFloat(x), xs))
+param(x::Number) = TrackedNumber(float(x))
+param(xs::AbstractArray) = TrackedArray(float.(xs))
 
 using DataFlow
 using DataFlow: inputnode, constant

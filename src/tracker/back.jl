@@ -19,10 +19,13 @@ back_(f, y, args...) = back(f, args...)
 back_(c::Call, y, Δ) = back_(c.func, y, Δ, c.args...)
 back_(::Call{Void}, y, Δ) = nothing
 
+accum!(x::Tracked, Δ) = (x.grad += Δ)
+accum!(x::Tracked{<:AbstractArray}, Δ) = (x.grad .+= Δ)
+
 function back(x::Tracked, Δ)
   ref = x.ref -= 1
   if isdefined(x, :grad)
-    x.grad .+= Δ
+    accum!(x, Δ)
     ref == 0 && back_(x.f, x.data, x.grad)
   else
     ref == 0 && back_(x.f, x.data, Δ)
@@ -31,6 +34,7 @@ function back(x::Tracked, Δ)
 end
 
 back(x, Δ) = back(tracker(x), Δ)
+back(x::Void, Δ) = error("Can't backpropagate through `nothing`")
 
 macro back(x, Δ)
   quote
