@@ -36,4 +36,6 @@ include("layers/normalisation.jl")
 
 include("data/Data.jl")
 
+@require CuArrays include("cuda/cuda.jl")
+
 end # module
