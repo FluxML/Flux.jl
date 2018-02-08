@@ -34,6 +34,8 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 
+include("jit/JIT.jl")
+
 include("data/Data.jl")
 
 @require CuArrays include("cuda/cuda.jl")

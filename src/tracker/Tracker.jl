@@ -47,29 +47,6 @@ include("numeric.jl")
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
 
-using DataFlow
-using DataFlow: inputnode, constant
-
-vcall(f, args...) = vertex(DataFlow.Call(), constant(f), args...)
-vcall(f::Broadcasted, args...) = vcall(broadcast, constant(f.f), args...)
-
-_graph(x::Tracked, inputs...; cache = ObjectIdDict()) =
-  vcall(x.f.func, map(x -> _graph(x, inputs...; cache = cache), x.f.args)...)
-
-function _graph(x, inputs...; cache = ObjectIdDict())
-  haskey(cache, x) && return cache[x]
-  i = findfirst(inputs, x)
-  cache[x] =
-    i > 0 ? inputnode(i) :
-    istracked(x) ? _graph(tracker(x), inputs...; cache = cache) :
-    constant(x)
-end
-
-function graph(f, args...)
-  inputs = param.(args)
-  _graph(f(inputs...), inputs...)
-end
-
 import Adapt.adapt
 
 adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
