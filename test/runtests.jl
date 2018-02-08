@@ -1,5 +1,7 @@
 using Flux, Base.Test
 
+srand(0)
+
 @testset "Flux" begin
 
 include("utils.jl")
