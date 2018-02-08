@@ -2,11 +2,11 @@ struct TrackedNumber{T<:Number} <: Number
   tracker::Tracked{T}
 end
 
-TrackedNumber(x::Number) = TrackedNumber(Tracked(Call(nothing), x))
+TrackedNumber(x::Number) = TrackedNumber(Tracked(Call(nothing), x, zero(x)))
 
 tracker(x::TrackedNumber) = x.tracker
 
-track(f::Call, x::Number) = TrackedNumber(Tracked(f, x))
+track(f::Call, x::Number) = TrackedNumber(Tracked(f, x, zero(x)))
 
 back!(x::TrackedNumber) = back!(x, 1)
 

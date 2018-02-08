@@ -28,6 +28,7 @@ mutable struct Tracked{T}
 end
 
 Tracked(f::Call, x) = Tracked{typeof(x)}(f, x)
+Tracked(f::Call, x, Δ) = Tracked{typeof(x)}(f, x, Δ)
 
 track(f::Call, x) = Tracked(f, x)
 track(f::Call) = track(f, f())
