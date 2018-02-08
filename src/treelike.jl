@@ -33,9 +33,11 @@ function prefor(f, x; seen = OSet())
   return
 end
 
+using Flux.Tracker: istracked
+
 function params(m)
   ps = []
-  prefor(p -> p isa TrackedArray && push!(ps, p), m)
+  prefor(p -> istracked(p) && push!(ps, p), m)
   return ps
 end
 
