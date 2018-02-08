@@ -130,7 +130,7 @@ end
 
 function (m::LSTMCell)(h_, x)
   h, c = h_ # TODO: nicer syntax on 0.7
-  b, o = m.b, length(h)
+  b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
   forget = σ.(gate(g, o, 2))
@@ -173,7 +173,7 @@ GRUCell(in, out; init = glorot_uniform) =
           param(zeros(out*3)), param(initn(out)))
 
 function (m::GRUCell)(h, x)
-  b, o = m.b, length(h)
+  b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))

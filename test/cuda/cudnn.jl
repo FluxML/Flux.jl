@@ -1,7 +1,4 @@
 using Flux, CuArrays, Base.Test
-using Flux.CUDA
-using Flux.CUDA: RNNDesc
-using CUDAnative
 
 info("Testing Flux/CUDNN")
 
@@ -11,8 +8,8 @@ info("Testing Flux/CUDNN")
     cux = cu(x)
     rnn = R(10, 5)
     curnn = mapleaves(cu, rnn)
-    y = rnn(x)
-    cuy = curnn(cux)
+    y = (rnn(x); rnn(x))
+    cuy = (curnn(cux); curnn(cux))
 
     @test y.data ≈ collect(cuy.data)
     @test haskey(Flux.CUDA.descs, curnn.cell)
