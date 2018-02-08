@@ -44,7 +44,7 @@ include("scalar.jl")
 include("array.jl")
 include("numeric.jl")
 
-param(x::Number) = TrackedNumber(float(x))
+param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
 
 using DataFlow
