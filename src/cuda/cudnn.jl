@@ -70,6 +70,9 @@ function rnnParamSize(T, r, input)
   return Int(size[])÷sizeof(T)
 end
 
+ngates(mode) = [1, 1, 4, 3][mode+1]
+ngates(r::RNNDesc) = ngates(r.mode)
+
 function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   d = [C_NULL]
   @check ccall((:cudnnCreateRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Ptr{Void}},),d)
@@ -81,10 +84,9 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Cint,Ptr{Void},Cint,Cint,Cint,Cint,Cint),
     libcudnn_handle[],d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
 
-  w = cuzeros(T, rnnParamSize(T, d[], 10))
-  ngates = [1, 1, 4, 3][mode+1]
+  w = cuzeros(T, rnnParamSize(T, d[], input))
   # TODO: avoid reserve allocation here
-  rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates)..., CuVector{UInt8}(1), d[])
+  rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., CuVector{UInt8}(1), d[])
   finalizer(rd, x ->
     @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Void},),x))
   return rd
@@ -165,6 +167,7 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h_::CuArray{T}, c_ = nothing; t
   seqLength = 1
   xdesc = xDesc(x)
   y = x isa AbstractVector ? similar(x, rnn.hidden) : similar(x, rnn.hidden, size(x, 2))
+  ho = similar(h)
   ydesc = xDesc(y)
   workspace = getworkspace(rnn, seqLength, xdesc)
   reserve = train ? getreserve(rnn, seqLength, xdesc) : rnn.reserve
@@ -175,10 +178,10 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h_::CuArray{T}, c_ = nothing; t
                   hDesc(c)...,
                   FilterDesc(T, (1, 1, length(rnn.params))), rnn.params,
                   ydesc, y,
-                  C_NULL, C_NULL, # hout
+                  hDesc(ho)...,
                   hDesc(co)...,
                   workspace, reserve, train = train)
-  return c == nothing ? (y, y) : (y, y, co)
+  return c == nothing ? (y, ho) : (y, ho, co)
 end
 
 function cudnnRNNBackwardData(rnn::RNNDesc{T}, seqlen, yd, y, dyd, dy, dhod, dho, dcod, dco,
@@ -229,7 +232,7 @@ function backwardWeights(rnn::RNNDesc{T}, x, h, y) where T
     xDesc(x), x, hDesc(h)..., xDesc(y), y,
     FilterDesc(T, (1, 1, length(dw))), dw,
     workspace[], rnn.reserve)
-  return params(dw, rnn.input, rnn.hidden)
+  return params(dw, rnn.input, rnn.hidden, ngates(rnn))
 end
 
 # Interface
@@ -283,6 +286,7 @@ end
 
 import Flux.Tracker: data, isleaf, istracked, track, back_, @back, unbroadcast
 
+# TODO: fix reserve space usage
 struct RNNCall{R}
   rnn::R
 end
