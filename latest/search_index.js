@@ -121,6 +121,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/regularisation.html#",
+    "page": "Regularisation",
+    "title": "Regularisation",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "models/regularisation.html#Regularisation-1",
+    "page": "Regularisation",
+    "title": "Regularisation",
+    "category": "section",
+    "text": "Applying regularisation to model parameters is straightforward. We just need to apply an appropriate regulariser, such as norm, to each model parameter and add the result to the overall loss.For example, say we have a simple regression.m = Dense(10, 5)\nloss(x, y) = crossentropy(softmax(m(x)), y)We can regularise this by taking the (L2) norm of the parameters, m.W and m.b.penalty() = norm(m.W) + norm(m.b)\nloss(x, y) = crossentropy(softmax(m(x)), y) + penalty()When working with layers, Flux provides the params function to grab all parameters at once. We can easily penalise everything with sum(norm, params).julia> params(m)\n2-element Array{Any,1}:\n param([0.355408 0.533092; … 0.430459 0.171498])\n param([0.0, 0.0, 0.0, 0.0, 0.0])\n\njulia> sum(norm, params(m))\n26.01749952921026 (tracked)Here's a larger example with a multi-layer perceptron.m = Chain(\n  Dense(28^2, 128, relu),\n  Dense(128, 32, relu),\n  Dense(32, 10), softmax)\n\nps = params(m)\n\nloss(x, y) = crossentropy(m(x), y) + sum(norm, ps)\n\nloss(rand(28^2), rand(10))"
+},
+
+{
     "location": "models/layers.html#",
     "page": "Model Reference",
     "title": "Model Reference",
