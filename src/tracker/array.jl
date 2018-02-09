@@ -113,6 +113,7 @@ back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
 
 Base.sum(xs::TrackedArray, dim) = track(sum, xs, dim)
 Base.sum(xs::TrackedArray) = track(sum, xs)
+Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
 back(::typeof(sum), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= Δ)
 
@@ -136,6 +137,11 @@ Base.std(x::TrackedArray; mean = Base.mean(x)) =
   sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
 Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
+
+Base.norm(x::TrackedArray, p::Real = 2) =
+  p == 1 ? sum(abs.(x)) :
+  p == 2 ? sqrt(sum(abs2.(x))) :
+  error("$p-norm not supported")
 
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =
