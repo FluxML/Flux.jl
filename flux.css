@@ -6,6 +6,10 @@ nav.toc {
   user-select: none;
 }
 
+h1+h2 {
+  margin-top: 0;
+}
+
 /* Green banner in ToC */
 nav.toc > h1 {
   margin-top: 0;
