@@ -1,11 +1,15 @@
 init_grad(x) = zero(x)
+zero_grad!(x) = zero(x)
+zero_grad!(x::AbstractArray) = (x .= 0)
 
 scan(c::Call) = foreach(scan, c.args)
 
 function scan(x::Tracked)
+  x.isleaf && return
   ref = x.ref += 1
   if ref == 1
     scan(x.f)
+    isdefined(x, :grad) && (x.grad = zero_grad!(x.grad))
   else
     isdefined(x, :grad) || (x.grad = init_grad(x.data))
   end
@@ -25,6 +29,7 @@ accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
 
 function back(x::Tracked, Δ)
+  x.isleaf && (accum!(x.grad, Δ); return)
   ref = x.ref -= 1
   if isdefined(x, :grad)
     x.grad = accum!(x.grad, Δ)

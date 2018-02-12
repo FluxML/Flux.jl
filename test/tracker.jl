@@ -57,4 +57,14 @@ end
 
 @test (param([1,2,3]) .< 2) == [true, false, false]
 
+@testset "Intermediates" begin
+  x = param([1])
+  l = sum((x .+ x).^2)
+  Flux.back!(l)
+  @test x.grad == [8]
+  x.grad .= 0
+  Flux.back!(l)
+  @test x.grad == [8]
+end
+
 end #testset

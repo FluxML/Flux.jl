@@ -21,10 +21,12 @@ Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
 mutable struct Tracked{T}
   ref::UInt32
   f::Call
+  isleaf::Bool
   data::T
   grad::T
-  Tracked{T}(f::Call, data::T) where T = new(0, f, data)
-  Tracked{T}(f::Call, data::T, grad::T) where T = new(0, f, data, grad)
+  Tracked{T}(f::Call, data::T) where T = new(0, f, false, data)
+  Tracked{T}(f::Call, data::T, grad::T) where T = new(0, f, false, data, grad)
+  Tracked{T}(f::Call{Void}, data::T, grad::T) where T = new(0, f, true, data, grad)
 end
 
 Tracked(f::Call, x) = Tracked{typeof(x)}(f, x)

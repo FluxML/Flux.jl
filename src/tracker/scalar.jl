@@ -69,6 +69,7 @@ tracker(xs::TrackedTuple) = xs.tracker
 
 accum!(x::Tuple, Δ::Tuple) = accum!.(x, Δ)
 init_grad(x::Tuple) = init_grad.(x)
+zero_grad!(x::Tuple) = zero_grad!.(x)
 
 track(f::Call, xs::Tuple) = TrackedTuple(Tracked(f, xs))
 
