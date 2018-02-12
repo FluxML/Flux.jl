@@ -67,4 +67,6 @@ end
   @test x.grad == [8]
 end
 
+@test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
+
 end #testset
