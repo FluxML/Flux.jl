@@ -199,7 +199,7 @@ end
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, logσ, ∇logσ, conv2d, pool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv2d, pool
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -208,10 +208,6 @@ back(::typeof(softmax), Δ, xs) = @back(xs, ∇softmax(Δ, data(xs)))
 logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 back(::typeof(logsoftmax), Δ, xs) = @back(xs, ∇logsoftmax(Δ, data(xs)))
-
-logσ(xs::TrackedArray) = TrackedArray(Call(logσ, xs))
-
-back(::typeof(logσ), Δ, xs) = @back(xs, ∇logσ(Δ, data(xs)))
 
 # TODO: can store kwargs efficiently in namedtuples
 _conv2d(x, w, stride, pad) = conv2d(x, w, stride = stride, padding = pad)
