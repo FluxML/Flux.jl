@@ -130,8 +130,8 @@ LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
 LinAlg.dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 function back(::typeof(dot), Δ, xs, ys)
-  @back(xs, Δ.*ys)
-  @back(ys, Δ.*xs)
+  @back(xs, Δ.*data(ys))
+  @back(ys, Δ.*data(xs))
 end
 
 # Hacks to get std working

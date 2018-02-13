@@ -45,6 +45,7 @@ end
 @test gradtest(x -> std(x, 1), rand(5,5))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
+@test gradtest(dot, rand(5), rand(5))
 
 @test gradtest(rand(5)) do x
   y = x.^2
