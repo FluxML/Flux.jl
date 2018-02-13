@@ -1,5 +1,5 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: gradcheck
+using Flux.Tracker: TrackedReal, gradcheck
 using NNlib
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -65,6 +65,14 @@ end
   x.grad .= 0
   Flux.back!(l)
   @test x.grad == [8]
+end
+
+@testset "Fallbacks" begin
+  xs = param([1 2; 3 4])
+  @test similar(xs) isa Matrix{Float64}
+  # Remove this test if we do LowerTriangular properly
+  L = LowerTriangular(xs)
+  @test L*L' isa Matrix{TrackedReal{Float64}}
 end
 
 @test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"

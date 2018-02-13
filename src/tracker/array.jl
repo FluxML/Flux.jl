@@ -22,6 +22,8 @@ TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
 
 TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
 
+Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
+
 Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   print(io, "TrackedArray{…,$A}")
 
