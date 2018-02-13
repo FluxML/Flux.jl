@@ -365,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Training",
     "category": "section",
-    "text": "To actually train a model we need three things:A model loss function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(modelLoss, data, opt)There are plenty of examples in the model zoo."
+    "text": "To actually train a model we need three things:A objective function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the loss function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(objective, data, opt)There are plenty of examples in the model zoo."
 },
 
 {
@@ -373,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Loss Functions",
     "category": "section",
-    "text": "The loss that we defined in basics is completely valid for training. We can also define a loss in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\n# Model loss function\nloss(x, y) = Flux.mse(m(x), y)\n\n# later\nFlux.train!(loss, data, opt)The loss will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or crossentropy for cross entropy loss, but you can calculate it however you want."
+    "text": "The objective function must return a number representing how far the model is from its target – the loss of the model. The loss function that we defined in basics will work as an objective. We can also define an objective in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\nloss(x, y) = Flux.mse(m(x), y)\n\n# later\nFlux.train!(loss, data, opt)The objective will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or crossentropy for cross entropy loss, but you can calculate it however you want."
 },
 
 {
@@ -389,7 +389,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Callbacks",
     "category": "section",
-    "text": "train! takes an additional argument, cb, that's used for callbacks so that you can observe the training process. For example:train!(loss, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(loss, data, opt,\n            cb = throttle(evalcb, 5))"
+    "text": "train! takes an additional argument, cb, that's used for callbacks so that you can observe the training process. For example:train!(objective, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(objective, data, opt,\n            cb = throttle(evalcb, 5))"
 },
 
 {
