@@ -13,11 +13,13 @@ export Chain, Dense, RNN, LSTM, GRU, Conv2D,
   param, params, mapleaves
 
 using NNlib
-export σ, sigmoid, relu, leakyrelu, elu, swish, softmax, logsoftmax
+export σ, sigmoid, relu, leakyrelu, elu, swish, softmax, logsoftmax,
   conv2d, maxpool2d, avgpool2d
 
 include("tracker/Tracker.jl")
 using .Tracker
+export Tracker
+import .Tracker: data
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -32,6 +34,10 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 
+include("jit/JIT.jl")
+
 include("data/Data.jl")
+
+@require CuArrays include("cuda/cuda.jl")
 
 end # module

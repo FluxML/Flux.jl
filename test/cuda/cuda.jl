@@ -21,3 +21,5 @@ cm = cu(m)
 @test cm(cu(rand(10, 10))) isa TrackedArray{Float32,2,CuArray{Float32,2}}
 
 end
+
+CuArrays.cudnn_available() && include("cudnn.jl")

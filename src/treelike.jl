@@ -35,7 +35,10 @@ end
 
 function params(m)
   ps = []
-  prefor(p -> p isa TrackedArray && push!(ps, p), m)
+  prefor(p ->
+    Tracker.istracked(p) && Tracker.isleaf(p) &&
+      !(p in ps) && push!(ps, p),
+    m)
   return ps
 end
 
