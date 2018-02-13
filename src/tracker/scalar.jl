@@ -66,6 +66,7 @@ struct TrackedTuple{T<:Tuple}
 end
 
 tracker(xs::TrackedTuple) = xs.tracker
+isleaf(xs::TrackedTuple) = true
 
 accum!(x::Tuple, Δ::Tuple) = accum!.(x, Δ)
 init_grad(x::Tuple) = init_grad.(x)

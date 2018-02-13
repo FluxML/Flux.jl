@@ -1,5 +1,6 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck
+using Flux.Tracker: TrackedArray, TrackedReal, TrackedTuple,
+                    @back, back!, track, gradcheck
 using NNlib
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -80,4 +81,21 @@ end
 
 @test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
 
-end #testset
+@testset "TrackedTuple" begin
+  twice(x) = (x, x)  # original definition
+  twice(x::TrackedArray) = track(twice, x)  # return TrackedTuple
+
+  # no idea why `import` statement doesn't work
+  Flux.Tracker.back(::typeof(twice), Δ, x::TrackedArray) = @back(x, Δ[1] + Δ[2])
+
+  x = param(rand(3))
+  xs = twice(x)
+
+  @test xs isa TrackedTuple
+  @test length.(params(xs)) == [2]
+
+  back!(xs, (.6, .4))
+  @test x.grad == [1, 1, 1]
+end
+
+end  # @testset "Tracker"
