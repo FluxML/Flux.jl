@@ -34,7 +34,6 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 
-include("batches/Batches.jl")
 include("data/Data.jl")
 
 include("jit/JIT.jl")

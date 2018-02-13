@@ -14,6 +14,7 @@ include("mnist.jl")
 include("cmudict.jl")
 using .CMUDict
 
+include("tree.jl")
 include("sentiment.jl")
 using .Sentiment
 

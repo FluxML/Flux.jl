@@ -19,7 +19,7 @@ function getfile(name)
   return text
 end
 
-using ..Flux.Batches
+using ..Data: Tree
 
 totree_(n, w) = Tree{Any}((parse(Int, n), w))
 totree_(n, a, b) = Tree{Any}((parse(Int, n), nothing), totree(a), totree(b))
