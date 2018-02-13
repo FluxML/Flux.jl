@@ -72,17 +72,6 @@ end
 
 # Other
 
-function accuracy(m, data)
-  n = 0
-  correct = 0
-  for (x, y) in data
-    x, y = tobatch.((x, y))
-    n += size(x, 1)
-    correct += sum(argmax(m(x)) .== argmax(y))
-  end
-  return correct/n
-end
-
 """
 Returns a function that when invoked, will only be triggered at most once
 during `timeout` seconds. Normally, the throttled function will run
