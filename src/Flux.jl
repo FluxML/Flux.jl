@@ -19,7 +19,7 @@ export σ, sigmoid, logσ, logsigmoid, relu, leakyrelu, elu, swish, softmax, log
 include("tracker/Tracker.jl")
 using .Tracker
 export Tracker
-import .Tracker: data, value
+import .Tracker: data
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -34,6 +34,10 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 
+include("jit/JIT.jl")
+
 include("data/Data.jl")
+
+@require CuArrays include("cuda/cuda.jl")
 
 end # module

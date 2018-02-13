@@ -1,5 +1,5 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: gradcheck
+using Flux.Tracker: TrackedReal, gradcheck
 using NNlib
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -15,7 +15,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest((w, x) -> w'*x, randn(10, 2), randn(10))
 @test gradtest((w, x) -> w*x', randn(5,5), randn(5,5))
 
-@test gradtest(x -> sin.(sum(x, (2, 3))), (3,4,5))
+@test gradtest(x -> sum(x, (2, 3)), (3,4,5))
 
 @test gradtest(x -> softmax(x).*(1:3), 3)
 @test gradtest(x -> softmax(x).*(1:3), (3,5))
@@ -47,6 +47,7 @@ end
 @test gradtest(x -> std(x, 1), rand(5,5))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
+@test gradtest(dot, rand(5), rand(5))
 
 @test gradtest(rand(5)) do x
   y = x.^2
@@ -58,5 +59,25 @@ end
 @test gradtest(x -> avgpool2d(x, 2), rand(10, 10, 3, 2))
 
 @test (param([1,2,3]) .< 2) == [true, false, false]
+
+@testset "Intermediates" begin
+  x = param([1])
+  l = sum((x .+ x).^2)
+  Flux.back!(l)
+  @test x.grad == [8]
+  x.grad .= 0
+  Flux.back!(l)
+  @test x.grad == [8]
+end
+
+@testset "Fallbacks" begin
+  xs = param([1 2; 3 4])
+  @test similar(xs) isa Matrix{Float64}
+  # Remove this test if we do LowerTriangular properly
+  L = LowerTriangular(xs)
+  @test L*L' isa Matrix{TrackedReal{Float64}}
+end
+
+@test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
 
 end #testset
