@@ -61,5 +61,5 @@ argmax(y::AbstractMatrix, l...) =
 
 # Ambiguity hack
 
-a::TrackedMatrix * b::OneHotVector = Tracker.track(*, a, b)
-a::TrackedMatrix * b::OneHotMatrix = Tracker.track(*, a, b)
+a::TrackedMatrix * b::OneHotVector = invoke(*, Tuple{AbstractMatrix,OneHotVector}, a, b)
+a::TrackedMatrix * b::OneHotMatrix = invoke(*, Tuple{AbstractMatrix,OneHotMatrix}, a, b)
