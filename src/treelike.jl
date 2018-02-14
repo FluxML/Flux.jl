@@ -37,7 +37,7 @@ function params(m)
   ps = []
   prefor(p ->
     Tracker.istracked(p) && Tracker.isleaf(p) &&
-      !(p in ps) && push!(ps, p),
+      !any(p′ -> p′ === p, ps) && push!(ps, p),
     m)
   return ps
 end
