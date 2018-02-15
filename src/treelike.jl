@@ -7,7 +7,7 @@ children(x::Tuple) = x
 mapchildren(f, x::Tuple) = map(f, x)
 
 function treelike(T, fs = fieldnames(T))
-  @eval begin
+  @eval current_module() begin
     children(x::$T) = ($([:(x.$f) for f in fs]...),)
     mapchildren(f, x::$T) = $T(f.(children(x))...)
     adapt(T, x::$T) = mapchildren(x -> adapt(T, x), x)
