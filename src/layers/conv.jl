@@ -10,20 +10,24 @@ be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct Conv2D{F,A}
+struct Conv2D{F,A,V}
   σ::F
   weight::A
+  bias::V
   stride::Int
   pad::Int
 end
 
 Conv2D(k::NTuple{2,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
        init = initn, stride = 1, pad = 0) =
-  Conv2D(σ, param(init(k..., ch...)), stride, pad)
+  Conv2D(σ, param(init(k..., ch...)), param(zeros(ch[2])), stride, pad)
 
 Flux.treelike(Conv2D)
 
-(c::Conv2D)(x) = c.σ.(conv2d(x, c.weight, stride = c.stride, padding = c.pad))
+function (c::Conv2D)(x)
+  σ, b = c.σ, reshape(c.bias, 1, 1, :)
+  σ.(conv2d(x, c.weight, stride = c.stride, padding = c.pad) .+ b)
+end
 
 function Base.show(io::IO, l::Conv2D)
   print(io, "Conv2D((", size(l.weight, 1), ", ", size(l.weight, 2), ")")
