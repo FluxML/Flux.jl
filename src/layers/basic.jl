@@ -59,14 +59,16 @@ Tracked 2-element Array{Float64,1}:
 ```
 """
 struct Dense{F,S,T}
-  σ::F
   W::S
   b::T
+  σ::F
 end
+
+Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
                initW = glorot_uniform, initb = zeros)
-  return Dense(σ, param(initW(out, in)), param(initb(out)))
+  return Dense(param(initW(out, in)), param(initb(out)), σ)
 end
 
 treelike(Dense)

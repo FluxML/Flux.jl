@@ -18,9 +18,13 @@ struct Conv2D{F,A,V}
   pad::Int
 end
 
+Conv2D(w::AbstractArray{T,4}, b::AbstractVector{T}, σ = identity;
+       stride = 1, pad = 0) where T =
+  Conv2D(σ, w, b, stride, pad)
+
 Conv2D(k::NTuple{2,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
        init = initn, stride = 1, pad = 0) =
-  Conv2D(σ, param(init(k..., ch...)), param(zeros(ch[2])), stride, pad)
+  Conv2D(param(init(k..., ch...)), param(zeros(ch[2])), σ, stride = stride, pad = pad)
 
 Flux.treelike(Conv2D)
 
