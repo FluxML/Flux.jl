@@ -113,7 +113,7 @@ back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
   back(xs, reshape(Δ, size(xs)))
 
 
-function Base.kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
+function _kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
     m1, n1 = size(mat1)
     mat1_rsh = reshape(mat1,(1,m1,1,n1))
 
@@ -122,6 +122,10 @@ function Base.kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
 
     return reshape(mat1_rsh.*mat2_rsh, (m1*m2,n1*n2))
 end
+
+Base.kron(a::TrackedMatrix, b::TrackedMatrix)  = _kron(a, b)
+Base.kron(a::TrackedMatrix, b::AbstractMatrix) = _kron(a, b)
+Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
 # Reductions
 
