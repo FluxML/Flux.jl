@@ -23,4 +23,13 @@ data = zip(xs, ys)</code></pre><h2><a class="nav-anchor" id="Callbacks-1" href="
 evalcb() = @show(loss(test_x, test_y))
 
 Flux.train!(objective, data, opt,
-            cb = throttle(evalcb, 5))</code></pre><footer><hr/><a class="previous" href="optimisers.html"><span class="direction">Previous</span><span class="title">Optimisers</span></a><a class="next" href="../data/onehot.html"><span class="direction">Next</span><span class="title">One-Hot Encoding</span></a></footer></article></body></html>
+            cb = throttle(evalcb, 5))</code></pre><p>Note that, by default, <code>train!</code> only loops over the data once (a single &quot;epoch&quot;). A convenient way to run multiple epochs from the REPL is provided by <code>@epochs</code>.</p><pre><code class="language-julia">julia&gt; using Flux: @epochs
+
+julia&gt; @epochs 2 println(&quot;hello&quot;)
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+
+julia&gt; @epochs 2 Flux.train!(...)
+# Train for two epochs</code></pre><footer><hr/><a class="previous" href="optimisers.html"><span class="direction">Previous</span><span class="title">Optimisers</span></a><a class="next" href="../data/onehot.html"><span class="direction">Next</span><span class="title">One-Hot Encoding</span></a></footer></article></body></html>
