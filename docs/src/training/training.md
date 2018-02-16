@@ -57,6 +57,22 @@ ys = [rand( 10), rand( 10), rand( 10)]
 data = zip(xs, ys)
 ```
 
+Note that, by default, `train!` only loops over the data once (a single "epoch").
+A convenient way to run multiple epochs from the REPL is provided by `@epochs`.
+
+```julia
+julia> using Flux: @epochs
+
+julia> @epochs 2 println("hello")
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+
+julia> @epochs 2 Flux.train!(...)
+# Train for two epochs
+```
+
 ## Callbacks
 
 `train!` takes an additional argument, `cb`, that's used for callbacks so that you can observe the training process. For example:
@@ -75,20 +91,4 @@ evalcb() = @show(loss(test_x, test_y))
 
 Flux.train!(objective, data, opt,
             cb = throttle(evalcb, 5))
-```
-
-Note that, by default, `train!` only loops over the data once (a single "epoch").
-A convenient way to run multiple epochs from the REPL is provided by `@epochs`.
-
-```julia
-julia> using Flux: @epochs
-
-julia> @epochs 2 println("hello")
-INFO: Epoch 1
-hello
-INFO: Epoch 2
-hello
-
-julia> @epochs 2 Flux.train!(...)
-# Train for two epochs
 ```
