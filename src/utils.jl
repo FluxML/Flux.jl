@@ -27,6 +27,26 @@ chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs)/n)))
 batchindex(xs, i) = (reverse(Base.tail(reverse(indices(xs))))..., i)
 
 """
+    frequencies(xs)
+
+Count the number of times that each element of `xs` appears.
+
+```julia
+julia> frequencies(['a','b','b'])
+Dict{Char,Int64} with 2 entries:
+  'b' => 2
+  'a' => 1
+```
+"""
+function frequencies(xs)
+  fs = Dict{eltype(xs),Int}()
+  for x in xs
+    fs[x] = get(fs, x, 0) + 1
+  end
+  return fs
+end
+
+"""
   batch(xs)
 
 Batch the arrays in `xs` into a single array.
