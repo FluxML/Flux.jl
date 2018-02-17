@@ -19,8 +19,6 @@ julia&gt; sum(norm, params(m))
   Dense(128, 32, relu),
   Dense(32, 10), softmax)
 
-ps = params(m)
-
-loss(x, y) = crossentropy(m(x), y) + sum(norm, ps)
+loss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))
 
 loss(rand(28^2), rand(10))</code></pre><footer><hr/><a class="previous" href="recurrence.html"><span class="direction">Previous</span><span class="title">Recurrence</span></a><a class="next" href="layers.html"><span class="direction">Next</span><span class="title">Model Reference</span></a></footer></article></body></html>
