@@ -160,7 +160,7 @@ Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
 
 Base.norm(x::TrackedArray, p::Real = 2) =
   p == 1 ? sum(abs.(x)) :
-  p == 2 ? sqrt(sum(abs2.(x))) :
+  p == 2 ? sqrt(sum(abs2.(x) .+ 1e-6)) :
   error("$p-norm not supported")
 
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
