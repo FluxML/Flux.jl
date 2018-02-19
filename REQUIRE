@@ -3,8 +3,15 @@ DataFlow 0.2.1
 Juno
 MacroTools 0.3.3
 NNlib
-ForwardDiff 0.5.0
 Requires
 Adapt
 GZip
 Colors
+ZipFile
+AbstractTrees
+
+# AD
+ForwardDiff 0.5.0
+DiffRules
+SpecialFunctions
+NaNMath

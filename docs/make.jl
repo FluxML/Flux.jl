@@ -10,6 +10,7 @@ makedocs(modules=[Flux, NNlib],
                   "Building Models" =>
                     ["Basics" => "models/basics.md",
                      "Recurrence" => "models/recurrence.md",
+                     "Regularisation" => "models/regularisation.md",
                      "Model Reference" => "models/layers.md"],
                   "Training Models" =>
                     ["Optimisers" => "training/optimisers.md",

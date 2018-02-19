@@ -1,4 +1,4 @@
-using NNlib: log_fast
+using NNlib: log_fast, logsoftmax, logσ
 
 # Cost functions
 
@@ -10,11 +10,36 @@ end
 
 @deprecate logloss(x, y) crossentropy(x, y)
 
-function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat)
-  logŷ = logŷ .- maximum(logŷ, 1)
-  ypred = logŷ .- log_fast.(sum(exp.(logŷ), 1))
-  -sum(y .* ypred) / size(y, 2)
+function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
+  return -sum(y .* logsoftmax(logŷ) .* weight) / size(y, 2)
 end
+
+"""
+    binarycrossentropy(ŷ, y)
+
+Return `-y*log(ŷ) - (1-y)*log(1-ŷ)`.
+
+    julia> binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0.])
+    3-element Array{Float64,1}:
+    1.4244
+    0.352317
+    0.86167
+"""
+binarycrossentropy(ŷ, y) = -y*log_fast(ŷ) - (1 - y)*log_fast(1 - ŷ)
+
+"""
+    logitbinarycrossentropy(logŷ, y)
+
+`logitbinarycrossentropy(logŷ, y)` is mathematically equivalent to `binarycrossentropy(σ(logŷ), y)`
+but it is more numerically stable.
+
+    julia> logitbinarycrossentropy.([-1.1491, 0.8619, 0.3127], [1, 1, 0.])
+    3-element Array{Float64,1}:
+     1.4244
+     0.352317
+     0.86167
+"""
+logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 
 """
     normalise(x::AbstractVecOrMat)
