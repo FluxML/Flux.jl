@@ -8,7 +8,7 @@ using Juno, Requires
 using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv2D,
-  Dropout, LayerNorm, BatchNorm,
+  Dropout, LRN, LayerNorm, BatchNorm,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 

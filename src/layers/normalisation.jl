@@ -45,6 +45,44 @@ end
 _testmode!(a::Dropout, test) = (a.active = !test)
 
 """
+    LRN()
+
+A layer for [Local Response Normalisation](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf).
+This is to be used only for four dimensional arrays. Meant to be used for normalisation
+after the application of ReLU post convolution.
+
+"""
+struct LRNormalisation
+  α
+  β
+  n
+  k
+end
+
+function LRN(α = 10.0^(-4), β = 0.75, n = 5, k = 2)
+  LRNormalisation(α, β, n, k)
+end
+
+function (a::LRNormalisation)(x)
+  y = ones(size(x))
+  for i in CartesianRange(size(x))
+    a_i = x[i][1]
+    j_min = max(1, i[3] + 1 - div(a.n,  2))
+    j_max = min(size(x,3), i[3]+1+div(a.n,2))
+    a_j = 0
+    for j in j_min:j_max
+      a_j += ((x[i[1], i[2], j, i[4]])[1])^2.0
+    end
+    a_j *= a.α
+    a_j += a.k
+    a_j ^= a.β
+    y[i] = a_i.tracker.data/a_j.tracker.data
+  end
+  z = y./(x .+ 1f-7)
+  return z .* x
+end
+
+"""
 
     LayerNorm(h::Integer)
 
