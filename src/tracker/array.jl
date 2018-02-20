@@ -217,7 +217,7 @@ end
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv2d, pool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv2d, pool2d, conv3d, pool3d
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -242,13 +242,35 @@ function back(::typeof(_conv2d), Δ, x, w, stride, pad)
   @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ; stride = stride, padding = pad))
 end
 
-_pool(x, k, pad, mode) = pool(x, window = k, mode = mode, padding = pad)
+_conv3d(x, w, stride, pad) = conv3d(x, w, stride = stride, padding = pad)
 
-pool(x::TrackedArray{<:Any,4}; window = 2, mode = 0, padding = 0) =
-  track(_pool, x, window, padding, mode)
+conv3d(x::TrackedArray{<:Any,5}, w::TrackedArray{<:Any,5}; stride = 1, padding = 0) =
+  track(_conv3d, x, w, stride, padding)
+conv3d(x::AbstractArray{<:Any,5}, w::TrackedArray{<:Any,5}; stride = 1, padding = 0) =
+  track(_conv3d, x, w, stride, padding)
+conv3d(x::TrackedArray{<:Any,5}, w::AbstractArray{<:Any,5}; stride = 1, padding = 0) =
+  track(_conv3d, x, w, stride, padding)
 
-back_(::typeof(_pool), y, Δ, x, k, pad, mode) =
-  back(x, NNlib.pool_grad(data(x), y, Δ, window=k, mode=mode, padding=pad))
+function back(::typeof(_conv3d), Δ, x, w, stride, pad)
+  @back(x, NNlib.conv3d_grad_x(data(x), data(w), Δ; stride = stride, padding = pad))
+  @back(w, NNlib.conv3d_grad_w(data(x), data(w), Δ; stride = stride, padding = pad))
+end
+
+_pool2d(x, k, pad, mode) = pool2d(x, window = k, mode = mode, padding = pad)
+
+pool2d(x::TrackedArray{<:Any,4}; window = 2, mode = 0, padding = 0) =
+  track(_pool2d, x, window, padding, mode)
+
+back_(::typeof(_pool2d), y, Δ, x, k, pad, mode) =
+  back(x, NNlib.pool2d_grad(data(x), y, Δ, window=k, mode=mode, padding=pad))
+
+_pool3d(x, k, pad, mode) = pool3d(x, window = k, mode = mode, padding = pad)
+
+pool3d(x::TrackedArray{<:Any,5}; window = 2, mode = 0, padding = 0) =
+  track(_pool3d, x, window, padding, mode)
+
+back_(::typeof(_pool3d), y, Δ, x, k, pad, mode) =
+  back(x, NNlib.pool3d_grad(data(x), y, Δ, window=k, mode=mode, padding=pad))
 
 # Broadcasting
 
