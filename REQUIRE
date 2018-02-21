@@ -9,6 +9,7 @@ GZip
 Colors
 ZipFile
 AbstractTrees
+Reexport
 
 # AD
 ForwardDiff 0.5.0
