@@ -36,7 +36,6 @@ adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
   import CuArrays: CuArray, cudaconvert
   Base.Broadcast._containertype(::Type{<:OneHotMatrix{<:CuArray}}) = CuArray
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
-  (::Type{<:CuArray{T}})(x::OneHotMatrix{<:CuArray}) where {T} = broadcast(y -> T(y), x)
 end
 
 function onehot(l, labels)
