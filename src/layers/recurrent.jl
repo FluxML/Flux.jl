@@ -38,7 +38,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-treelike(Recur)
+treelike(Recur, (:cell, :init))
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
