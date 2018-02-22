@@ -146,7 +146,7 @@ hidden(m::LSTMCell) = (m.h, m.c)
 treelike(LSTMCell)
 
 Base.show(io::IO, l::LSTMCell) =
-  print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1), ")")
+  print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
 
 """
     LSTM(in::Integer, out::Integer, σ = tanh)
@@ -187,7 +187,7 @@ hidden(m::GRUCell) = m.h
 treelike(GRUCell)
 
 Base.show(io::IO, l::GRUCell) =
-  print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1), ")")
+  print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
 
 """
     GRU(in::Integer, out::Integer, σ = tanh)
