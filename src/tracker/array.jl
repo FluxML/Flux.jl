@@ -120,22 +120,12 @@ Base.cat(dims, a::AbstractMatrix, b::TrackedMatrix) = track(cat, dims, a, b)
 function back(::typeof(cat), Δ, dims, xs, ys)
   dim_xs = 1:ndims(xs)
   dim_ys = 1:ndims(ys)
-  till_xs = fill(0,ndims(Δ))
-  till_ys = fill(0,ndims(Δ))
-  for dim in dims
-    till_xs[dim] = dim in dim_xs ? size(xs,dim):1
-    till_ys[dim] = dim in dim_ys ? size(ys,dim):1
-  end
 
-  xs_in_Δ = Array(Any,ndims(Δ))
-  for till in 1:length(till_xs)
-    xs_in_Δ[till] = till_xs[till]>0 ? (1:till_xs[till]):Colon()
-  end
+  till_xs = ntuple((i -> i in dims ? (i in dim_xs ? size(xs,i) : 1) : 0), Val{ndims(Δ)})
+  till_ys = ntuple((i -> i in dims ? (i in dim_ys ? size(ys,i) : 1) : 0), Val{ndims(Δ)})
 
-  ys_in_Δ = Array(Any,ndims(Δ))
-  for till in 1:length(till_ys)
-    ys_in_Δ[till] = till_ys[till]>0 ? (till_xs[till]+1:size(Δ,till)) : Colon()
-  end
+  xs_in_Δ = ntuple(i -> till_xs[i] > 0 ? (1:till_xs[i]):Colon(), Val{ndims(Δ)})
+  ys_in_Δ = ntuple(i -> till_ys[i] > 0 ? (till_xs[i]+1:size(Δ,i)) : Colon(), Val{ndims(Δ)})
 
   @back(xs, reshape(Δ[xs_in_Δ...],size(xs)))
   @back(ys, reshape(Δ[ys_in_Δ...],size(ys)))
