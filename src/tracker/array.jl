@@ -137,8 +137,8 @@ function back(::typeof(cat), Δ, dims, xs, ys)
     ys_in_Δ[till] = till_ys[till]>0 ? (till_xs[till]+1:size(Δ,till)) : Colon()
   end
 
-  @back(xs, Δ[xs_in_Δ...])
-  @back(ys, Δ[ys_in_Δ...])
+  @back(xs, reshape(Δ[xs_in_Δ...],size(xs)))
+  @back(ys, reshape(Δ[ys_in_Δ...],size(ys)))
 end
 
 Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =

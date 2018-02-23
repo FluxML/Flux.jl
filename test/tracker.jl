@@ -33,6 +33,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest((a, b) -> cat((1), a, b), rand(3), rand(3))
 @test gradtest((a, b) -> cat((1,2), a, b), rand(2,3), rand(3,3))
+@test gradtest((a, b) -> cat((2), a, b), rand(3), rand(3))
 
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))
