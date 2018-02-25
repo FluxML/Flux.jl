@@ -105,6 +105,21 @@ function back(::typeof(vcat), Δ, xs...)
   end
 end
 
+Base.cat(catdim::Int,a::T, b::T)  where {T<: TrackedArray} = track(cat,catdim, a, b)
+Base.cat(catdim::Int,a::T, b::T...)  where {T<: TrackedArray} = track(cat,catdim, a, b...)
+Base.cat(catdim::Int,a::T, b::S) where {T<: TrackedArray,S<:AbstractArray} = track(cat,catdim, a, b)
+Base.cat(catdim::Int,a::S, b::T) where {T<: TrackedArray,S<:AbstractArray} = track(cat,catdim, a, b)
+
+function back(::typeof(cat), Δ, catdim, xs...)
+  i = Array{Any}(fill(:,ndims(Δ)))
+  start = 0
+  for xsi in xs
+    i[catdim] = start+1:start+size(xsi,catdim)
+    @back(xsi, Δ[i...])
+    start += size(xsi, catdim)
+  end
+end
+
 Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
   track(reshape, xs, dims...)
 
