@@ -1,6 +1,8 @@
+using NNlib: conv
+
 """
-    Conv2D(size, in=>out)
-    Conv2d(size, in=>out, relu)
+    Conv(size, in=>out)
+    Conv(size, in=>out, relu)
 
 Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
@@ -10,32 +12,37 @@ be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct Conv2D{F,A,V}
+struct Conv{N,F,A,V}
   σ::F
   weight::A
   bias::V
-  stride::Int
-  pad::Int
+  stride::NTuple{N,Int}
+  pad::NTuple{N,Int}
 end
 
-Conv2D(w::AbstractArray{T,4}, b::AbstractVector{T}, σ = identity;
+Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
        stride = 1, pad = 0) where T =
-  Conv2D(σ, w, b, stride, pad)
+  Conv(σ, w, b, stride, pad)
 
-Conv2D(k::NTuple{2,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-       init = initn, stride = 1, pad = 0) =
-  Conv2D(param(init(k..., ch...)), param(zeros(ch[2])), σ, stride = stride, pad = pad)
+Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
+     stride::NTuple{N,Integer} = map(_->1,k),
+     pad::NTuple{N,Integer} = map(_->0,k)) where N =
+  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+       stride = stride, pad = pad)
 
-Flux.treelike(Conv2D)
+Flux.treelike(Conv)
 
-function (c::Conv2D)(x)
-  σ, b = c.σ, reshape(c.bias, 1, 1, :, 1)
-  σ.(conv2d(x, c.weight, stride = c.stride, padding = c.pad) .+ b)
+function (c::Conv)(x)
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad) .+ b)
 end
 
-function Base.show(io::IO, l::Conv2D)
-  print(io, "Conv2D((", size(l.weight, 1), ", ", size(l.weight, 2), ")")
-  print(io, ", ", size(l.weight, 3), "=>", size(l.weight, 4))
+function Base.show(io::IO, l::Conv)
+  print(io, "Conv(", size(l.weight)[1:ndims(l.weight)-2])
+  print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
+
+# v0.5
+@deprecate Conv2D(args...; kw...) Conv(args...; kw...)
