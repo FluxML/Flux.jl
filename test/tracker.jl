@@ -64,6 +64,10 @@ end
 @test gradtest(x -> maxpool2d(x, 2), rand(10, 10, 3, 2))
 @test gradtest(x -> avgpool2d(x, 2), rand(10, 10, 3, 2))
 
+@test gradtest(conv3d, rand(10, 10, 10, 3, 2), randn(2, 2, 2, 3, 2))
+@test gradtest(x -> maxpool3d(x, 2), rand(10, 10, 10, 3, 2))
+@test gradtest(x -> avgpool3d(x, 2), rand(10, 10, 10, 3, 2))
+
 @test (param([1,2,3]) .< 2) == [true, false, false]
 
 @testset "Intermediates" begin
