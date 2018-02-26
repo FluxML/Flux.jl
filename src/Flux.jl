@@ -12,7 +12,9 @@ export Chain, Dense, RNN, LSTM, GRU, Conv2D, Conv3D,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 
-@reexport using NNlib
+using NNlib
+export σ, sigmoid, logσ, logsigmoid, relu, leakyrelu, elu, swish, softmax, logsoftmax,
+  conv2d, conv3d, maxpool2d, maxpool3d, avgpool2d, avgpool3d
 
 include("tracker/Tracker.jl")
 using .Tracker
