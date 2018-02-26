@@ -40,3 +40,15 @@ function params(m)
 end
 
 params(m...) = params(m)
+
+# CPU/GPU movement conveniences
+
+cpu(x) = adapt(Array, x)
+
+default_adaptor = Array
+
+@require CuArrays begin
+  global default_adaptor = CuArray
+end
+
+gpu(x) = adapt(default_adaptor, x)
