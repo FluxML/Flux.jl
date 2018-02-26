@@ -4,7 +4,7 @@ module Flux
 
 # Zero Flux Given
 
-using Juno, Requires
+using Juno, Requires, Reexport
 using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv2D, Conv3D,
@@ -12,10 +12,7 @@ export Chain, Dense, RNN, LSTM, GRU, Conv2D, Conv3D,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
   param, params, mapleaves
 
-using NNlib
-export σ, sigmoid, logσ, logsigmoid, relu, leakyrelu, elu, swish, softmax, logsoftmax,
-  conv2d, conv3d, maxpool2d, maxpool3d, avgpool2d, avgpool3d
-
+@reexport using NNlib
 
 include("tracker/Tracker.jl")
 using .Tracker
