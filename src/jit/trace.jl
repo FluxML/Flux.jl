@@ -1,7 +1,7 @@
 # This is hacky; we'll eventually reuse Cassette for better tracing.
 
+using ..Flux.Tracker, DataFlow
 using ..Flux.Tracker: Tracked, Broadcasted, param, tracker, istracked, isleaf
-using DataFlow
 using DataFlow: Call, Lambda, iscall, isconstant, prewalk, vertex, syntax,
   inputnode, constant
 
@@ -27,6 +27,16 @@ end
 
 # Graph manipulation
 
+function liftparams(v)
+  ps = []
+  v = prewalk(DataFlow.bumpinputs(v)) do v
+    isconstant(v) && istracked(v.value.value) || return v
+    push!(ps, v.value.value)
+    DataFlow.vcall(getindex, inputnode(1), length(ps))
+  end
+  return v, ps
+end
+
 function cacheall(v, buf = () -> UInt8[])
   prewalk(v) do v
     iscall(v) && isconstant(v[1]) || return v
@@ -40,7 +50,17 @@ function eval_func(v, n)
   v |> syntax |> eval
 end
 
+struct Compiled{F,T<:Tuple}
+  func::F
+  params::T
+end
+
+(c::Compiled)(args...) =
+  Tracker.track(Tracker.Call(c, args...),
+                c.func(Tracker.data.(c.params), args...))
+
 function compile(f, args...)
   v = trace(f, args...)
-  eval_func(cacheall(v), length(args))
+  v, ps = liftparams(cacheall(v))
+  Compiled(eval_func(v, length(args)+1), (ps...,))
 end

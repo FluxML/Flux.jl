@@ -1,3 +1,5 @@
+using ..Tracker: TrackedArray
+
 struct Shape{T,N}
   dims::NTuple{N,Int}
 end
@@ -24,6 +26,7 @@ shape(x) = typeof(x)
 shape(x::Shape) = x
 shape(x::Tuple) = shape.(x)
 shape(x::AbstractArray) = Shape{eltype(x)}(size(x)...)
+shape(x::TrackedArray) = shape(x.data)
 
 bytes(s::Shape) = sizeof(s)
 bytes(x::Tuple) = sum(bytes.(x))
