@@ -1,5 +1,8 @@
 # Primitive definitions
 
+shape(::typeof(*), A::MatShape{T}, B::VecShape{T}) where T =
+  Shape{T}(size(A,1))
+
 inplace!(::typeof(*), C::AbstractArray, A::AbstractMatrix, B::AbstractArray) =
   A_mul_B!(C, A, B)
 
