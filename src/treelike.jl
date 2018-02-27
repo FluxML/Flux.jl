@@ -45,10 +45,10 @@ params(m...) = params(m)
 
 cpu(x) = adapt(Array, x)
 
-default_adaptor = Array
+default_adaptor = identity
 
 @require CuArrays begin
-  global default_adaptor = CuArray
+  global default_adaptor = CuArrays.cu
 end
 
 gpu(x) = adapt(default_adaptor, x)
