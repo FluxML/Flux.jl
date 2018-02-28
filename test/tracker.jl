@@ -63,8 +63,12 @@ end
 @test gradtest(conv, rand(10, 3, 2), randn(2, 3, 2))
 @test gradtest(conv, rand(10, 10, 3, 2), randn(2, 2, 3, 2))
 @test gradtest(conv, rand(10, 10, 10, 3, 2), randn(2, 2, 2, 3, 2))
+
 @test gradtest(x -> maxpool(x, (2,2)), rand(10, 10, 3, 2))
+@test gradtest(x -> maxpool(x, (2,2,2)), rand(10, 10, 10, 3, 2))
+
 @test gradtest(x -> meanpool(x, (2,2)), rand(10, 10, 3, 2))
+@test gradtest(x -> meanpool(x, (2,2,2)), rand(5, 5, 5, 3, 2))
 
 @test (param([1,2,3]) .< 2) == [true, false, false]
 
