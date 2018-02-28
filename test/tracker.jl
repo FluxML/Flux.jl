@@ -92,4 +92,6 @@ end
 
 @test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
 
+@inferred NNlib.conv(param(rand(10,10,3,2)),randn(2,2,3,4))
+
 end #testset

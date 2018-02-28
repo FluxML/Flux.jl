@@ -46,6 +46,10 @@ function frequencies(xs)
   return fs
 end
 
+head(x::Tuple) = reverse(Base.tail(reverse(x)))
+
+squeezebatch(x) = reshape(x, head(size(x)))
+
 """
   batch(xs)
 
