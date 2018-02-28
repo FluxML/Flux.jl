@@ -1,7 +1,7 @@
 # This is hacky; we'll eventually reuse Cassette for better tracing.
 
-using ..Flux.Tracker, DataFlow
-using ..Flux.Tracker: Tracked, Broadcasted, param, tracker, istracked, isleaf
+using ..Tracker, DataFlow
+using ..Tracker: Tracked, Broadcasted, param, tracker, istracked, isleaf
 using DataFlow: Call, Lambda, iscall, isconstant, prewalk, vertex, syntax,
   inputnode, constant
 
@@ -45,12 +45,10 @@ function cacheall(v, buf = () -> UInt8[])
   end
 end
 
-function eval_func(v, n)
-  v = vertex(Lambda(n, v))
-  v |> syntax |> eval
-end
+code(v, n) = syntax(vertex(Lambda(n, v)))
 
 struct Compiled{F,T<:Tuple}
+  model
   func::F
   params::T
 end
@@ -59,8 +57,16 @@ end
   Tracker.track(Tracker.Call(c, args...),
                 c.func(Tracker.data.(c.params), args...))
 
+Base.show(io::IO, c::Compiled) = print(io, "Compiled(", c.model, ")")
+
 function compile(f, args...)
   v = trace(f, args...)
   v, ps = liftparams(cacheall(v))
-  Compiled(eval_func(v, length(args)+1), (ps...,))
+  Compiled(f, eval(code(v, length(args)+1)), (ps...,))
+end
+
+function source(f, args...)
+  v = trace(f, args...)
+  v, ps = liftparams(v)
+  code(v, length(args)+1) |> prettify
 end

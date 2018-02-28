@@ -240,7 +240,7 @@ end
 # Interface
 
 import ..Flux: Flux, relu
-import ..Flux.Tracker: TrackedArray
+import ..Tracker: TrackedArray
 using CUDAnative
 using CuArrays: @cuindex, cudims
 
