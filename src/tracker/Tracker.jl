@@ -16,7 +16,7 @@ end
 
 Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
 
-(c::Call)() = c.func(data.(c.args)...)
+@inline (c::Call)() = c.func(data.(c.args)...)
 
 mutable struct Tracked{T}
   ref::UInt32
