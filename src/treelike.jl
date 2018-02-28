@@ -10,7 +10,6 @@ function treelike(T, fs = fieldnames(T))
   @eval current_module() begin
     children(x::$T) = ($([:(x.$f) for f in fs]...),)
     mapchildren(f, x::$T) = $T(f.(children(x))...)
-    adapt(T, x::$T) = mapleaves(x -> adapt(T, x), x)
   end
 end
 
@@ -43,12 +42,12 @@ params(m...) = params(m)
 
 # CPU/GPU movement conveniences
 
-cpu(x) = adapt(Array, x)
+cpu(m) = mapleaves(x -> adapt(Array, x), m)
 
-default_adaptor = identity
+gpu_adaptor = identity
 
 @require CuArrays begin
-  global default_adaptor = CuArrays.cu
+  global gpu_adaptor = CuArrays.cu
 end
 
-gpu(x) = adapt(default_adaptor, x)
+gpu(x) = mapleaves(gpu_adaptor, x)

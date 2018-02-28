@@ -5,14 +5,14 @@ info("Testing Flux/CUDNN")
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM]
     rnn = R(10, 5)
-    curnn = mapleaves(cu, rnn)
+    curnn = mapleaves(gpu, rnn)
     @testset for batch_size in (1, 5)
       Flux.reset!(rnn)
       Flux.reset!(curnn)
       x = batch_size == 1 ?
         param(rand(10)) :
         param(rand(10,batch_size))
-      cux = cu(x)
+      cux = gpu(x)
       y = (rnn(x); rnn(x))
       cuy = (curnn(cux); curnn(cux))
 
@@ -22,7 +22,7 @@ info("Testing Flux/CUDNN")
       Δ = randn(size(y))
 
       Flux.back!(y, Δ)
-      Flux.back!(cuy, cu(Δ))
+      Flux.back!(cuy, gpu(Δ))
 
       @test x.grad ≈ collect(cux.grad)
       @test rnn.cell.Wi.grad ≈ collect(curnn.cell.Wi.grad)
@@ -38,7 +38,7 @@ info("Testing Flux/CUDNN")
       ohx = batch_size == 1 ?
         Flux.onehot(rand(1:10), 1:10) :
         Flux.onehotbatch(rand(1:10, batch_size), 1:10)
-      cuohx = cu(ohx)
+      cuohx = gpu(ohx)
       y = (rnn(ohx); rnn(ohx))
       cuy = (curnn(cuohx); curnn(cuohx))
 
