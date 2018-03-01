@@ -49,8 +49,10 @@ include("numeric.jl")
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
 
+import NNlib.cudata
 import Adapt.adapt
 
+cudata(x::TrackedArray) = data(x)
 adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end
