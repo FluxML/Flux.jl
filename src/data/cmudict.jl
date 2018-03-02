@@ -10,7 +10,7 @@ function load()
   isdir(deps("cmudict")) && return
   mkpath(deps("cmudict"))
   for x in ["", ".phones", ".symbols"]
-    download("http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
+    download("https://cache.julialang.org/http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
              deps("cmudict", "cmudict$x"))
   end
 end
