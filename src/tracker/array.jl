@@ -114,6 +114,8 @@ Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64,N}} where N) =
 back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
   back(xs, reshape(Δ, size(xs)))
 
+Base.permutedims(xs::TrackedArray, dims) = track(permutedims, xs, dims)
+back(::typeof(permutedims), Δ, xs::TrackedArray, dims) = back(xs, permutedims(Δ, invperm(dims)))
 
 function _kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
     m1, n1 = size(mat1)
