@@ -1,4 +1,4 @@
-using NNlib: logsoftmax, logσ
+using NNlib: logsoftmax, logσ, log_fast
 
 const EPS = 1f-7
 # Cost functions
@@ -24,7 +24,7 @@ batch. EPS has been added to maintain stability, preventing Inf or Nan.
 This may also be used as a scalar function.
 """
 
-function binarycrossentropy(ŷ, y; average=true, eps=EPS)
+function binarycrossentropy(ŷ, y; average = true, eps = EPS)
   bce  = -sum(y .* log_fast.(ŷ + eps) + (1 .- y) .* log_fast.(1 - ŷ + eps))
   if (average)
     bce /= length(y)
