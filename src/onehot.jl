@@ -28,7 +28,7 @@ Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs
 
 batch(xs::AbstractArray{<:OneHotVector}) = OneHotMatrix(length(first(xs)), xs)
 
-import NNlib.adapt
+import Adapt.adapt
 
 adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
@@ -61,5 +61,5 @@ argmax(y::AbstractMatrix, l...) =
 
 # Ambiguity hack
 
-a::TrackedMatrix * b::OneHotVector = TrackedArray(Tracker.Call(*, a, b))
-a::TrackedMatrix * b::OneHotMatrix = TrackedArray(Tracker.Call(*, a, b))
+a::TrackedMatrix * b::OneHotVector = invoke(*, Tuple{AbstractMatrix,OneHotVector}, a, b)
+a::TrackedMatrix * b::OneHotMatrix = invoke(*, Tuple{AbstractMatrix,OneHotMatrix}, a, b)

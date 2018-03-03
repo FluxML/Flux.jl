@@ -32,4 +32,4 @@ m = mapleaves(cu, m)
 d(cu(rand(10)))
 ```
 
-The [mnist example](https://github.com/FluxML/model-zoo/blob/master/mnist/mnist.jl) contains the code needed to run the model on the GPU; just uncomment the lines after `using CuArrays`.
+The [mnist example](https://github.com/FluxML/model-zoo/blob/master/mnist/mlp.jl) contains the code needed to run the model on the GPU; just uncomment the lines after `using CuArrays`.

@@ -4,20 +4,21 @@ module Flux
 
 # Zero Flux Given
 
-using Juno, Requires
-using Lazy: @forward
+using Juno, Requires, Reexport
+using MacroTools: @forward
 
-export Chain, Dense, RNN, LSTM, Conv2D,
+export Chain, Dense, RNN, LSTM, GRU, Conv, Conv2D,
   Dropout, LayerNorm, BatchNorm,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
-  param, params, mapleaves
+  param, params, mapleaves, cpu, gpu
 
-using NNlib
-export σ, sigmoid, relu, leakyrelu, elu, swish, softmax,
-  conv2d, maxpool2d, avgpool2d
+@reexport using NNlib
+using NNlib: @fix
 
 include("tracker/Tracker.jl")
 using .Tracker
+export Tracker
+import .Tracker: data
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -34,6 +35,8 @@ include("layers/normalisation.jl")
 
 include("data/Data.jl")
 
-include("batches/Batches.jl")
+include("jit/JIT.jl")
+
+@require CuArrays include("cuda/cuda.jl")
 
 end # module

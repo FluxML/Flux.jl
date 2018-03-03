@@ -79,3 +79,10 @@ end
     @test std(v) < 1.1*sqrt(2/(n_in + n_out))
   end
 end
+
+@testset "Params" begin
+  m = Dense(10, 5)
+  @test size.(params(m)) == [(5, 10), (5,)]
+  m = RNN(10, 5)
+  @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
+end

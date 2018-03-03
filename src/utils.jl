@@ -27,6 +27,30 @@ chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs)/n)))
 batchindex(xs, i) = (reverse(Base.tail(reverse(indices(xs))))..., i)
 
 """
+    frequencies(xs)
+
+Count the number of times that each element of `xs` appears.
+
+```julia
+julia> frequencies(['a','b','b'])
+Dict{Char,Int64} with 2 entries:
+  'b' => 2
+  'a' => 1
+```
+"""
+function frequencies(xs)
+  fs = Dict{eltype(xs),Int}()
+  for x in xs
+    fs[x] = get(fs, x, 0) + 1
+  end
+  return fs
+end
+
+head(x::Tuple) = reverse(Base.tail(reverse(x)))
+
+squeezebatch(x) = reshape(x, head(size(x)))
+
+"""
   batch(xs)
 
 Batch the arrays in `xs` into a single array.
@@ -71,17 +95,6 @@ function batchseq(xs, pad = nothing, n = maximum(length(x) for x in xs))
 end
 
 # Other
-
-function accuracy(m, data)
-  n = 0
-  correct = 0
-  for (x, y) in data
-    x, y = tobatch.((x, y))
-    n += size(x, 1)
-    correct += sum(argmax(m(x)) .== argmax(y))
-  end
-  return correct/n
-end
 
 """
 Returns a function that when invoked, will only be triggered at most once
@@ -139,4 +152,25 @@ function jacobian(m,x)
         xp.grad .*= 0 # Reset gradient accumulator
     end
     J'
+end
+
+"""
+    @epochs N body
+
+Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
+training in a REPL.
+
+```julia
+julia> @epochs 2 println("hello")
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+```
+"""
+macro epochs(n, ex)
+  :(@progress for i = 1:$(esc(n))
+      info("Epoch $i")
+      $(esc(ex))
+    end)
 end
