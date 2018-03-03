@@ -1,11 +1,11 @@
-using NNlib: log_fast, logsoftmax, logσ
+using NNlib: logsoftmax, logσ
 
 # Cost functions
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
 
 function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  return -sum(y .* log_fast.(ŷ) .* weight) / size(y, 2)
+  return @fix -sum(y .* log.(ŷ) .* weight) / size(y, 2)
 end
 
 @deprecate logloss(x, y) crossentropy(x, y)
@@ -25,7 +25,7 @@ Return `-y*log(ŷ) - (1-y)*log(1-ŷ)`.
     0.352317
     0.86167
 """
-binarycrossentropy(ŷ, y) = -y*log_fast(ŷ) - (1 - y)*log_fast(1 - ŷ)
+binarycrossentropy(ŷ, y) = -y*log(ŷ) - (1 - y)*log(1 - ŷ)
 
 """
     logitbinarycrossentropy(logŷ, y)

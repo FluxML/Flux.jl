@@ -10,7 +10,6 @@ function treelike(T, fs = fieldnames(T))
   @eval current_module() begin
     children(x::$T) = ($([:(x.$f) for f in fs]...),)
     mapchildren(f, x::$T) = $T(f.(children(x))...)
-    adapt(T, x::$T) = mapchildren(x -> adapt(T, x), x)
   end
 end
 
@@ -20,9 +19,6 @@ function mapleaves(f, x; cache = ObjectIdDict())
   haskey(cache, x) && return cache[x]
   cache[x] = isleaf(x) ? f(x) : mapchildren(x -> mapleaves(f, x, cache = cache), x)
 end
-
-export mapparams
-@deprecate mapparams(f, x) mapleaves(f, x)
 
 using DataFlow: OSet
 
@@ -43,3 +39,15 @@ function params(m)
 end
 
 params(m...) = params(m)
+
+# CPU/GPU movement conveniences
+
+cpu(m) = mapleaves(x -> adapt(Array, x), m)
+
+gpu_adaptor = identity
+
+@require CuArrays begin
+  global gpu_adaptor = CuArrays.cu
+end
+
+gpu(x) = mapleaves(gpu_adaptor, x)

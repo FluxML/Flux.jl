@@ -16,7 +16,7 @@ end
 
 Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
 
-(c::Call)() = c.func(data.(c.args)...)
+@inline (c::Call)() = c.func(data.(c.args)...)
 
 mutable struct Tracked{T}
   ref::UInt32
@@ -49,8 +49,10 @@ include("numeric.jl")
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
 
+import NNlib.cudata
 import Adapt.adapt
 
+cudata(x::TrackedArray) = data(x)
 adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end

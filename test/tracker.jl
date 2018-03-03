@@ -1,6 +1,6 @@
 using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck
-using NNlib
+using NNlib: conv
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(dims)...)
@@ -30,6 +30,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(vcat, rand(5), rand(3))
 @test gradtest(vcat, rand(5), rand(3), rand(8))
 @test gradtest(vcat, rand(5,2), rand(3,2), rand(8,2))
+@test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
 @test gradtest(kron,rand(5), rand(3))
 @test gradtest(kron, rand(5), rand(3), rand(8))
@@ -60,9 +61,15 @@ end
   2y + x
 end
 
-@test gradtest(conv2d, rand(10, 10, 3, 2), randn(2, 2, 3, 2))
-@test gradtest(x -> maxpool2d(x, 2), rand(10, 10, 3, 2))
-@test gradtest(x -> avgpool2d(x, 2), rand(10, 10, 3, 2))
+@test gradtest(conv, rand(10, 3, 2), randn(2, 3, 2))
+@test gradtest(conv, rand(10, 10, 3, 2), randn(2, 2, 3, 2))
+@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(2, 2, 2, 3, 2))
+
+@test gradtest(x -> maxpool(x, (2,2)), rand(10, 10, 3, 2))
+@test gradtest(x -> maxpool(x, (2,2,2)), rand(10, 10, 10, 3, 2))
+
+@test gradtest(x -> meanpool(x, (2,2)), rand(10, 10, 3, 2))
+@test gradtest(x -> meanpool(x, (2,2,2)), rand(5, 5, 5, 3, 2))
 
 @test (param([1,2,3]) .< 2) == [true, false, false]
 
@@ -85,5 +92,7 @@ end
 end
 
 @test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
+
+@inferred NNlib.conv(param(rand(10,10,3,2)),randn(2,2,3,4))
 
 end #testset

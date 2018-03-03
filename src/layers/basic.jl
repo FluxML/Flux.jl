@@ -75,7 +75,7 @@ treelike(Dense)
 
 function (a::Dense)(x)
   W, b, σ = a.W, a.b, a.σ
-  σ.(W*x .+ b)
+  @fix σ.(W*x .+ b)
 end
 
 function Base.show(io::IO, l::Dense)

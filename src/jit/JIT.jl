@@ -1,7 +1,8 @@
 module JIT
 
+using MacroTools
+
 include("shapes.jl")
-include("inplace.jl")
 include("trace.jl")
 include("lib.jl")
 

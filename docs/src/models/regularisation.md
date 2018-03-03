@@ -39,9 +39,7 @@ m = Chain(
   Dense(128, 32, relu),
   Dense(32, 10), softmax)
 
-ps = params(m)
-
-loss(x, y) = crossentropy(m(x), y) + sum(norm, ps)
+loss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))
 
 loss(rand(28^2), rand(10))
 ```

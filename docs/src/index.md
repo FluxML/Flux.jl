@@ -9,7 +9,7 @@ Install [Julia 0.6.0 or later](https://julialang.org/downloads/), if you haven't
 ```julia
 Pkg.add("Flux")
 # Optional but recommended
-Pkg.update() # Keep your packages are up to date
+Pkg.update() # Keep your packages up to date
 Pkg.test("Flux") # Check things installed correctly
 ```
 

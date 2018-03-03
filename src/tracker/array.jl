@@ -114,6 +114,8 @@ Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64,N}} where N) =
 back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
   back(xs, reshape(Δ, size(xs)))
 
+Base.permutedims(xs::TrackedArray, dims) = track(permutedims, xs, dims)
+back(::typeof(permutedims), Δ, xs::TrackedArray, dims) = back(xs, permutedims(Δ, invperm(dims)))
 
 function _kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
     m1, n1 = size(mat1)
@@ -160,7 +162,7 @@ Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
 
 Base.norm(x::TrackedArray, p::Real = 2) =
   p == 1 ? sum(abs.(x)) :
-  p == 2 ? sqrt(sum(abs2.(x))) :
+  p == 2 ? sqrt(sum(abs2.(x) .+ 1e-6)) :
   error("$p-norm not supported")
 
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
@@ -217,7 +219,7 @@ end
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv2d, pool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, maxpool, meanpool
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -228,27 +230,35 @@ logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 back(::typeof(logsoftmax), Δ, xs) = @back(xs, ∇logsoftmax(Δ, data(xs)))
 
 # TODO: can store kwargs efficiently in namedtuples
-_conv2d(x, w, stride, pad) = conv2d(x, w, stride = stride, padding = pad)
+_conv(x, w, stride, pad) = conv(x, w, stride = stride, pad = pad)
 
-conv2d(x::TrackedArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
-  track(_conv2d, x, w, stride, padding)
-conv2d(x::AbstractArray{<:Any,4}, w::TrackedArray{<:Any,4}; stride = 1, padding = 0) =
-  track(_conv2d, x, w, stride, padding)
-conv2d(x::TrackedArray{<:Any,4}, w::AbstractArray{<:Any,4}; stride = 1, padding = 0) =
-  track(_conv2d, x, w, stride, padding)
+conv(x::TrackedArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
+  track(_conv, x, w, stride, pad)
+conv(x::AbstractArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
+  track(_conv, x, w, stride, pad)
+conv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0) where N =
+  track(_conv, x, w, stride, pad)
 
-function back(::typeof(_conv2d), Δ, x, w, stride, pad)
-  @back(x, NNlib.conv2d_grad_x(data(x), data(w), Δ; stride = stride, padding = pad))
-  @back(w, NNlib.conv2d_grad_w(data(x), data(w), Δ; stride = stride, padding = pad))
+function back(::typeof(_conv), Δ, x, w, stride, pad)
+  @back(x, NNlib.∇conv_data(Δ, data(x), data(w); stride = stride, pad = pad))
+  @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad))
 end
 
-_pool(x, k, pad, mode) = pool(x, window = k, mode = mode, padding = pad)
+_maxpool(x, k, pad) = maxpool(x, k; pad = pad)
 
-pool(x::TrackedArray{<:Any,4}; window = 2, mode = 0, padding = 0) =
-  track(_pool, x, window, padding, mode)
+maxpool(x::TrackedArray, k; pad = map(_->0,k)) =
+  track(_maxpool, x, k, pad)
 
-back_(::typeof(_pool), y, Δ, x, k, pad, mode) =
-  back(x, NNlib.pool_grad(data(x), y, Δ, window=k, mode=mode, padding=pad))
+back_(::typeof(_maxpool), y, Δ, x, k, pad) =
+  back(x, NNlib.∇maxpool(Δ, y, data(x), k, pad=pad))
+
+_meanpool(x, k, pad) = meanpool(x, k; pad = pad)
+
+meanpool(x::TrackedArray, k; pad = map(_->0,k)) =
+  track(_meanpool, x, k, pad)
+
+back_(::typeof(_meanpool), y, Δ, x, k, pad) =
+  back(x, NNlib.∇meanpool(Δ, y, data(x), k, pad=pad))
 
 # Broadcasting
 
@@ -291,6 +301,7 @@ function back(b::Broadcasted, Δ, args::Vararg{Any,N}) where N
   foreach((x, Δ) -> @back(x, unbroadcast(x, Δ)), args, Δargs)
 end
 
+Base.Broadcast._containertype(::Type{<:TrackedReal}) = TrackedArray
 Base.Broadcast._containertype(::Type{<:TrackedArray}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{TrackedArray}) = TrackedArray
 Base.Broadcast.promote_containertype(::Type{Array}, ::Type{TrackedArray}) = TrackedArray

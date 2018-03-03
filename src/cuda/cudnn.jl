@@ -240,7 +240,7 @@ end
 # Interface
 
 import ..Flux: Flux, relu
-import ..Flux.Tracker: TrackedArray
+import ..Tracker: TrackedArray
 using CUDAnative
 using CuArrays: @cuindex, cudims
 
@@ -324,6 +324,10 @@ function (m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x::CuParam{T}) where T <: Union
     forward(desc(m), x, h[1], h[2])
   return (result[2], result[3]), result[1]
 end
+
+(m::CuRNN{T})(h::CuParam{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuGRU{T})(h::CuParam{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 
 function accum_transpose!(dst::CuArray, src::CuArray)
   function kernel(dst, src)
