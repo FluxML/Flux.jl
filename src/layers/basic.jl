@@ -1,3 +1,4 @@
+using Flux:vcat, maximum
 """
     Chain(layers...)
 
@@ -43,6 +44,7 @@ end
 
 Creates a traditional `Dense` layer with parameters `W` and `b`.
 
+
     y = σ.(W * x .+ b)
 
 The input `x` must be a vector of length `in`, or a batch of vectors represented
@@ -58,24 +60,32 @@ Tracked 2-element Array{Float64,1}:
   -0.00449443
 ```
 """
-struct Dense{F,S,T}
+struct Dense{F,S,T,UInt64}
   W::S
   b::T
   σ::F
+  m::UInt64
 end
 
-Dense(W, b) = Dense(W, b, identity)
+Dense(W, b) = Dense(W, b, identity, 1)
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  return Dense(param(initW(out, in)), param(initb(out)), σ)
+               initW = glorot_uniform, initb = zeros, maxout = 1)
+  return Dense((param(cat(3, [initW(out, in) for i in 1:maxout]...))), (param(cat(2, [initb(out) for i in 1:maxout]...))), σ, maxout)
 end
 
 treelike(Dense)
 
 function (a::Dense)(x)
   W, b, σ = a.W, a.b, a.σ
-  @fix σ.(W*x .+ b)
+  temp_1 = (ntuple(i -> σ.(W[:, :, i] * x .+ b[:, i]), size(W, 3)))
+  intermediate = reshape(vcat(temp_1...), size(W, 1), size(W, 3))
+  temp_2 = []
+  for i in 1:size(intermediate, 1)
+    row_here = intermediate[i, :]
+    push!(temp_2, row_here[indmax(row_here) : indmax(row_here)])
+  end
+  @fix vcat(temp_2...)
 end
 
 function Base.show(io::IO, l::Dense)

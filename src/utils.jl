@@ -4,6 +4,7 @@ initn(dims...) = randn(dims...)/100
 glorot_uniform(dims...) = (rand(dims...) - 0.5)*sqrt(24.0/(sum(dims)))
 glorot_normal(dims...) = (randn(dims...)*sqrt(2.0/sum(dims)))
 
+
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 
 stack(xs, dim) = cat(dim, unsqueeze.(xs, dim)...)
