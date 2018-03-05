@@ -160,10 +160,8 @@ Base.std(x::TrackedArray; mean = Base.mean(x)) =
 Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
 
-Base.norm(x::TrackedArray, p::Real = 2) =
-  p == 1 ? sum(abs.(x)) :
-  p == 2 ? sqrt(sum(abs2.(x) .+ 1e-6)) :
-  error("$p-norm not supported")
+Base.vecnorm(x::TrackedArray, p::Real = 2) =
+  sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =

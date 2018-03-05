@@ -56,6 +56,8 @@ end
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
 
+@test gradtest(vecnorm, rand(5))
+
 @test gradtest(rand(5)) do x
   y = x.^2
   2y + x
