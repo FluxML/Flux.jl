@@ -1,5 +1,7 @@
 module Tracker
 
+import Base: ==
+
 export TrackedArray, TrackedVector, TrackedMatrix, param, back!
 
 tracker(x) = nothing
@@ -15,6 +17,9 @@ struct Call{F,As<:Tuple}
 end
 
 Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
+
+# When deserialising, the object_id changes
+a::Call == b::Call = a.func == b.func && a.args == b.args
 
 @inline (c::Call)() = c.func(data.(c.args)...)
 
