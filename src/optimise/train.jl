@@ -34,3 +34,24 @@ function train!(loss, data, opt; cb = () -> ())
     cb() == :stop && break
   end
 end
+
+"""
+    @epochs N body
+
+Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
+training in a REPL.
+
+```julia
+julia> @epochs 2 println("hello")
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+```
+"""
+macro epochs(n, ex)
+  :(@progress for i = 1:$(esc(n))
+      info("Epoch $i")
+      $(esc(ex))
+    end)
+end
