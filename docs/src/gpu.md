@@ -52,3 +52,19 @@ Tracked 5-element CuArray{Float32,1}:
  ⋮
  -0.618002
 ```
+
+The analogue `cpu` is also available for moving models and data back off of the GPU.
+
+```
+julia> x = rand(10) |> gpu
+10-element CuArray{Float32,1}:
+ 0.235164
+ ⋮
+ 0.192538
+
+julia> x |> cpu
+10-element Array{Float32,1}:
+ 0.235164
+ ⋮
+ 0.192538
+ ```
