@@ -53,9 +53,12 @@ struct Compiled{F,T<:Tuple}
   params::T
 end
 
-(c::Compiled)(args...) =
-  Tracker.track(Tracker.Call(c, args...),
-                c.func(Tracker.data.(c.params), args...))
+# TODO when we support derivatives
+# (c::Compiled)(args...) =
+#   Tracker.track(Tracker.Call(c, args...),
+#                 c.func(Tracker.data.(c.params), args...))
+
+(c::Compiled)(args...) = c.func(Tracker.data.(c.params), Tracker.data.(args)...)
 
 Base.show(io::IO, c::Compiled) = print(io, "Compiled(", c.model, ")")
 
