@@ -106,5 +106,5 @@ could also store the current test set loss, so that it's easy to (for example)
 revert to an older copy of the model if it starts to overfit.
 
 ```julia
-bson("model-$(now()).bson", model = model, loss = testloss())
+@save "model-$(now()).bson" model loss = testloss()
 ```
