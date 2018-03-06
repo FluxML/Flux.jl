@@ -108,3 +108,11 @@ revert to an older copy of the model if it starts to overfit.
 ```julia
 @save "model-$(now()).bson" model loss = testloss()
 ```
+
+You can even store optimiser state alongside the model, to resume training
+exactly where you left off.
+
+```julia
+opt = ADAM(params(model))
+@save "model-$(now()).bson" model opt
+```
