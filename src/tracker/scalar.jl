@@ -15,6 +15,8 @@ function Base.show(io::IO, x::TrackedReal)
   print(io, " (tracked)")
 end
 
+Base.decompose(x::TrackedReal) = Base.decompose(data(x))
+
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal) where T =
