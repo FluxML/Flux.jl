@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "Install Julia 0.6.0 or later, if you haven\'t already.Pkg.add(\"Flux\")\n# Optional but recommended\nPkg.update() # Keep your packages are up to date\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The model zoo is also a good starting point for many common kinds of models."
+    "text": "Install Julia 0.6.0 or later, if you haven\'t already.Pkg.add(\"Flux\")\n# Optional but recommended\nPkg.update() # Keep your packages up to date\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The model zoo is also a good starting point for many common kinds of models."
 },
 
 {
@@ -133,7 +133,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Regularisation",
     "title": "Regularisation",
     "category": "section",
-    "text": "Applying regularisation to model parameters is straightforward. We just need to apply an appropriate regulariser, such as norm, to each model parameter and add the result to the overall loss.For example, say we have a simple regression.m = Dense(10, 5)\nloss(x, y) = crossentropy(softmax(m(x)), y)We can regularise this by taking the (L2) norm of the parameters, m.W and m.b.penalty() = norm(m.W) + norm(m.b)\nloss(x, y) = crossentropy(softmax(m(x)), y) + penalty()When working with layers, Flux provides the params function to grab all parameters at once. We can easily penalise everything with sum(norm, params).julia> params(m)\n2-element Array{Any,1}:\n param([0.355408 0.533092; … 0.430459 0.171498])\n param([0.0, 0.0, 0.0, 0.0, 0.0])\n\njulia> sum(norm, params(m))\n26.01749952921026 (tracked)Here\'s a larger example with a multi-layer perceptron.m = Chain(\n  Dense(28^2, 128, relu),\n  Dense(128, 32, relu),\n  Dense(32, 10), softmax)\n\nloss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))\n\nloss(rand(28^2), rand(10))"
+    "text": "Applying regularisation to model parameters is straightforward. We just need to apply an appropriate regulariser, such as vecnorm, to each model parameter and add the result to the overall loss.For example, say we have a simple regression.m = Dense(10, 5)\nloss(x, y) = crossentropy(softmax(m(x)), y)We can regularise this by taking the (L2) norm of the parameters, m.W and m.b.penalty() = vecnorm(m.W) + vecnorm(m.b)\nloss(x, y) = crossentropy(softmax(m(x)), y) + penalty()When working with layers, Flux provides the params function to grab all parameters at once. We can easily penalise everything with sum(vecnorm, params).julia> params(m)\n2-element Array{Any,1}:\n param([0.355408 0.533092; … 0.430459 0.171498])\n param([0.0, 0.0, 0.0, 0.0, 0.0])\n\njulia> sum(vecnorm, params(m))\n26.01749952921026 (tracked)Here\'s a larger example with a multi-layer perceptron.m = Chain(\n  Dense(28^2, 128, relu),\n  Dense(128, 32, relu),\n  Dense(32, 10), softmax)\n\nloss(x, y) = crossentropy(m(x), y) + sum(vecnorm, params(m))\n\nloss(rand(28^2), rand(10))"
 },
 
 {
@@ -142,30 +142,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Model Reference",
     "category": "page",
     "text": ""
-},
-
-{
-    "location": "models/layers.html#Flux.Chain",
-    "page": "Model Reference",
-    "title": "Flux.Chain",
-    "category": "Type",
-    "text": "Chain(layers...)\n\nChain multiple layers / functions together, so that they are called in sequence on a given input.\n\nm = Chain(x -> x^2, x -> x+1)\nm(5) == 26\n\nm = Chain(Dense(10, 5), Dense(5, 2))\nx = rand(10)\nm(x) == m[2](m[1](x))\n\nChain also supports indexing and slicing, e.g. m[2] or m[1:end-1]. m[1:3](x) will calculate the output of the first three layers.\n\n\n\n"
-},
-
-{
-    "location": "models/layers.html#Flux.Dense",
-    "page": "Model Reference",
-    "title": "Flux.Dense",
-    "category": "Type",
-    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n  0.00257447\n  -0.00449443\n\n\n\n"
-},
-
-{
-    "location": "models/layers.html#Flux.Conv2D",
-    "page": "Model Reference",
-    "title": "Flux.Conv2D",
-    "category": "Type",
-    "text": "Conv2D(size, in=>out)\nConv2d(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad and stride.\n\n\n\n"
 },
 
 {
@@ -180,7 +156,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.RNN",
     "page": "Model Reference",
     "title": "Flux.RNN",
-    "category": "Function",
+    "category": "function",
     "text": "RNN(in::Integer, out::Integer, σ = tanh)\n\nThe most basic recurrent layer; essentially acts as a Dense layer, but with the output fed back into the input each time step.\n\n\n\n"
 },
 
@@ -188,7 +164,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.LSTM",
     "page": "Model Reference",
     "title": "Flux.LSTM",
-    "category": "Function",
+    "category": "function",
     "text": "LSTM(in::Integer, out::Integer, σ = tanh)\n\nLong Short Term Memory recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n"
 },
 
@@ -196,7 +172,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.Recur",
     "page": "Model Reference",
     "title": "Flux.Recur",
-    "category": "Type",
+    "category": "type",
     "text": "Recur(cell)\n\nRecur takes a recurrent cell and makes it stateful, managing the hidden state in the background. cell should be a model of the form:\n\nh, y = cell(h, x...)\n\nFor example, here\'s a recurrent network that keeps a running total of its inputs.\n\naccum(h, x) = (h+x, x)\nrnn = Flux.Recur(accum, 0)\nrnn(2) # 2\nrnn(3) # 3\nrnn.state # 5\nrnn.(1:10) # apply to a sequence\nrnn.state # 60\n\n\n\n"
 },
 
@@ -212,40 +188,40 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#NNlib.σ",
     "page": "Model Reference",
     "title": "NNlib.σ",
-    "category": "Function",
-    "text": "σ(x) = 1 / (1 + exp(-x))\n\nClassic sigmoid activation function.\n\n1 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡠⠔⠒⠉⠉⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⣀⠤⠚⠁⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⡤⠊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⢀⡔⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⡔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⡔⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠜⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠜⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠜⠁⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡠⠚⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⢀⡤⠒⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⣀⣀⠤⠔⠊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n0 │⠋⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  -3                      0                      3\n\n\n\n"
+    "category": "function",
+    "text": "σ(x) = 1 / (1 + exp(-x))\n\nClassic sigmoid activation function.\n\n\n\n"
 },
 
 {
     "location": "models/layers.html#NNlib.relu",
     "page": "Model Reference",
     "title": "NNlib.relu",
-    "category": "Function",
-    "text": "relu(x) = max(0, x)\n\nRectified Linear Unit activation function.\n\n3 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠜│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠃⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡔⠁⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠞⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠃⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠞⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⡰⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⡎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⡠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⡰⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⢀⠎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⡠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n0 │⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⡷⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n  -3                      0                      3\n\n\n\n"
+    "category": "function",
+    "text": "relu(x) = max(0, x)\n\nRectified Linear Unit activation function.\n\n\n\n"
 },
 
 {
     "location": "models/layers.html#NNlib.leakyrelu",
     "page": "Model Reference",
     "title": "NNlib.leakyrelu",
-    "category": "Function",
-    "text": "leakyrelu(x) = max(0.01x, x)\n\nLeaky Rectified Linear Unit activation function. You can also specify the coefficient explicitly, e.g. leakyrelu(x, 0.01).\n\n 3 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠜⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠴⠁⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠊⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⢀⠤⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⡠⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⢀⠎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣇⠎⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⡗⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠂│\n-1 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   -3                      0                      3\n\n\n\n"
+    "category": "function",
+    "text": "leakyrelu(x) = max(0.01x, x)\n\nLeaky Rectified Linear Unit activation function. You can also specify the coefficient explicitly, e.g. leakyrelu(x, 0.01).\n\n\n\n"
 },
 
 {
     "location": "models/layers.html#NNlib.elu",
     "page": "Model Reference",
     "title": "NNlib.elu",
-    "category": "Function",
-    "text": "elu(x, α = 1) =\n  x > 0 ? x : α * (exp(x) - 1)\n\nExponential Linear Unit activation function. See Fast and Accurate Deep Network Learning by Exponential Linear Units. You can also specify the coefficient explicitly, e.g. elu(x, 1).\n\n 3 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠜⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠴⠁⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠊⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⢀⠤⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⡠⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⢀⠎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣇⠎⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⢒⠖⡗⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠂│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠒⠁⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⠤⠚⠉⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n-1 │⣀⣀⠤⠤⠤⠤⠔⠒⠒⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   -3                      0                      3\n\n\n\n"
+    "category": "function",
+    "text": "elu(x, α = 1) =\n  x > 0 ? x : α * (exp(x) - 1)\n\nExponential Linear Unit activation function. See Fast and Accurate Deep Network Learning by Exponential Linear Units. You can also specify the coefficient explicitly, e.g. elu(x, 1).\n\n\n\n"
 },
 
 {
     "location": "models/layers.html#NNlib.swish",
     "page": "Model Reference",
     "title": "NNlib.swish",
-    "category": "Function",
-    "text": "swish(x) = x * σ(x)\n\nSelf-gated actvation function. See Swish: a Self-Gated Activation Function.\n\n 3 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠁│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠜⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠊⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⡠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⢀⠤⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⢀⠤⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⡠⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⣒⣒⣒⣒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⢒⣒⠶⠒⡟⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠂│\n   │⠀⠀⠀⠀⠉⠉⠉⠉⠉⠒⠒⠒⠒⠊⠉⠉⠁⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n-1 │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│\n   -3                      0                      3\n\n\n\n"
+    "category": "function",
+    "text": "swish(x) = x * σ(x)\n\nSelf-gated actvation function. See Swish: a Self-Gated Activation Function.\n\n\n\n"
 },
 
 {
@@ -260,7 +236,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.testmode!",
     "page": "Model Reference",
     "title": "Flux.testmode!",
-    "category": "Function",
+    "category": "function",
     "text": "testmode!(m)\ntestmode!(m, false)\n\nPut layers like Dropout and BatchNorm into testing mode (or back to training mode with false).\n\n\n\n"
 },
 
@@ -268,7 +244,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.BatchNorm",
     "page": "Model Reference",
     "title": "Flux.BatchNorm",
-    "category": "Type",
+    "category": "type",
     "text": "BatchNorm(dims...; λ = identity,\n          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)\n\nBatch Normalization Layer for Dense layer.\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing      Internal Covariate Shift\n\nIn the example of MNIST, in order to normalize the input of other layer, put the BatchNorm layer before activation function.\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, λ = relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n"
 },
 
@@ -276,7 +252,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.Dropout",
     "page": "Model Reference",
     "title": "Flux.Dropout",
-    "category": "Type",
+    "category": "type",
     "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n"
 },
 
@@ -284,7 +260,7 @@ var documenterSearchIndex = {"docs": [
     "location": "models/layers.html#Flux.LayerNorm",
     "page": "Model Reference",
     "title": "Flux.LayerNorm",
-    "category": "Type",
+    "category": "type",
     "text": "LayerNorm(h::Integer)\n\nA normalisation layer designed to be used with recurrent hidden states of size h. Normalises the mean/stddev of each input before applying a per-neuron gain/bias.\n\n\n\n"
 },
 
@@ -316,7 +292,7 @@ var documenterSearchIndex = {"docs": [
     "location": "training/optimisers.html#Flux.Optimise.SGD",
     "page": "Optimisers",
     "title": "Flux.Optimise.SGD",
-    "category": "Function",
+    "category": "function",
     "text": "SGD(params, η = 0.1; decay = 0)\n\nClassic gradient descent optimiser with learning rate η. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports inverse decaying learning rate if the decay argument is provided.\n\n\n\n"
 },
 
@@ -324,7 +300,7 @@ var documenterSearchIndex = {"docs": [
     "location": "training/optimisers.html#Flux.Optimise.Momentum",
     "page": "Optimisers",
     "title": "Flux.Optimise.Momentum",
-    "category": "Function",
+    "category": "function",
     "text": "Momentum(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, momentum ρ and optional learning rate inverse decay.\n\n\n\n"
 },
 
@@ -332,7 +308,7 @@ var documenterSearchIndex = {"docs": [
     "location": "training/optimisers.html#Flux.Optimise.Nesterov",
     "page": "Optimisers",
     "title": "Flux.Optimise.Nesterov",
-    "category": "Function",
+    "category": "function",
     "text": "Nesterov(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, Nesterov momentum ρ and optional learning rate inverse decay.\n\n\n\n"
 },
 
@@ -340,7 +316,7 @@ var documenterSearchIndex = {"docs": [
     "location": "training/optimisers.html#Flux.Optimise.ADAM",
     "page": "Optimisers",
     "title": "Flux.Optimise.ADAM",
-    "category": "Function",
+    "category": "function",
     "text": "ADAM(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n"
 },
 
@@ -429,7 +405,39 @@ var documenterSearchIndex = {"docs": [
     "page": "GPU Support",
     "title": "GPU Support",
     "category": "section",
-    "text": "Support for array operations on other hardware backends, like GPUs, is provided by external packages like CuArrays and CLArrays. Flux doesn\'t care what array type you use, so we can just plug these in without any other changes.For example, we can use CuArrays (with the cu converter) to run our basic example on an NVIDIA GPU.using CuArrays\n\nW = cu(rand(2, 5)) # a 2×5 CuArray\nb = cu(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = cu(rand(5)), cu(rand(2)) # Dummy data\nloss(x, y) # ~ 3Note that we convert both the parameters (W, b) and the data set (x, y) to cuda arrays. Taking derivatives and training works exactly as before.If you define a structured model, like a Dense layer or Chain, you just need to convert the internal parameters. Flux provides mapleaves, which allows you to alter all parameters of a model at once.d = Dense(10, 5, σ)\nd = mapleaves(cu, d)\nd.W # Tracked CuArray\nd(cu(rand(10))) # CuArray output\n\nm = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)\nm = mapleaves(cu, m)\nd(cu(rand(10)))The mnist example contains the code needed to run the model on the GPU; just uncomment the lines after using CuArrays."
+    "text": "Support for array operations on other hardware backends, like GPUs, is provided by external packages like CuArrays. Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.For example, we can use CuArrays (with the cu converter) to run our basic example on an NVIDIA GPU.using CuArrays\n\nW = cu(rand(2, 5)) # a 2×5 CuArray\nb = cu(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = cu(rand(5)), cu(rand(2)) # Dummy data\nloss(x, y) # ~ 3Note that we convert both the parameters (W, b) and the data set (x, y) to cuda arrays. Taking derivatives and training works exactly as before.If you define a structured model, like a Dense layer or Chain, you just need to convert the internal parameters. Flux provides mapleaves, which allows you to alter all parameters of a model at once.d = Dense(10, 5, σ)\nd = mapleaves(cu, d)\nd.W # Tracked CuArray\nd(cu(rand(10))) # CuArray output\n\nm = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)\nm = mapleaves(cu, m)\nd(cu(rand(10)))As a convenience, Flux provides the gpu function to convert models and data to the GPU if one is available. By default, it\'ll do nothing, but loading CuArrays will cause it to move data to the GPU instead.julia> using Flux, CuArrays\n\njulia> m = Dense(10,5) |> gpu\nDense(10, 5)\n\njulia> x = rand(10) |> gpu\n10-element CuArray{Float32,1}:\n 0.800225\n ⋮\n 0.511655\n\njulia> m(x)\nTracked 5-element CuArray{Float32,1}:\n -0.30535\n ⋮\n -0.618002The analogue cpu is also available for moving models and data back off of the GPU.``` julia> x = rand(10) |> gpu 10-element CuArray{Float32,1}:  0.235164  ⋮  0.192538julia> x |> cpu 10-element Array{Float32,1}:  0.235164  ⋮  0.192538  ```"
+},
+
+{
+    "location": "saving.html#",
+    "page": "Saving & Loading",
+    "title": "Saving & Loading",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "saving.html#Saving-and-Loading-Models-1",
+    "page": "Saving & Loading",
+    "title": "Saving and Loading Models",
+    "category": "section",
+    "text": "You may wish to save models so that they can be loaded and run in a later session. The easiest way to do this is via BSON.jl.Save a model:julia> using Flux\n\njulia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)\nChain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)\n\njulia> using BSON: @save\n\njulia> @save \"mymodel.bson\" modelLoad it again:julia> using Flux\n\njulia> using BSON: @load\n\njulia> @load \"mymodel.bson\" model\n\njulia> model\nChain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)Models are just normal Julia structs, so it\'s fine to use any Julia storage format for this purpose. BSON.jl is particularly well supported and most likely to be forwards compatible (that is, models saved now will load in future versions of Flux).note: Note\nIf a saved model\'s weights are stored on the GPU, the model will not load later on if there is no GPU support available. It\'s best to move your model to the CPU with cpu(model) before saving it."
+},
+
+{
+    "location": "saving.html#Saving-Model-Weights-1",
+    "page": "Saving & Loading",
+    "title": "Saving Model Weights",
+    "category": "section",
+    "text": "In some cases it may be useful to save only the model parameters themselves, and rebuild the model architecture in your code. You can use params(model) to get model parameters. You can also use data.(params) to remove tracking.julia> using Flux\n\njulia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)\nChain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)\n\njulia> weights = Tracker.data.(params(model));\n\njulia> using BSON: @save\n\njulia> @save \"mymodel.bson\" weightsYou can easily load parameters back into a model with Flux.loadparams!.julia> using Flux\n\njulia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)\nChain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)\n\njulia> using BSON: @load\n\njulia> @load \"mymodel.bson\" weights\n\njulia> Flux.loadparams!(model, weights)The new model we created will now be identical to the one we saved parameters for."
+},
+
+{
+    "location": "saving.html#Checkpointing-1",
+    "page": "Saving & Loading",
+    "title": "Checkpointing",
+    "category": "section",
+    "text": "In longer training runs it\'s a good idea to periodically save your model, so that you can resume if training is interrupted (for example, if there\'s a power cut). You can do this by saving the model in the callback provided to train!.using Flux: throttle\nusing BSON: @save\n\nm = Chain(Dense(10,5,relu),Dense(5,2),softmax)\n\nevalcb = throttle(30) do\n  # Show loss\n  @save \"model-checkpoint.bson\" model\nendThis will update the \"model-checkpoint.bson\" file every thirty seconds.You can get more advanced by saving a series of models throughout training, for example@save \"model-$(now()).bson\" modelwill produce a series of models like \"model-2018-03-06T02:57:10.41.bson\". You could also store the current test set loss, so that it\'s easy to (for example) revert to an older copy of the model if it starts to overfit.@save \"model-$(now()).bson\" model loss = testloss()You can even store optimiser state alongside the model, to resume training exactly where you left off.opt = ADAM(params(model))\n@save \"model-$(now()).bson\" model opt"
 },
 
 {
