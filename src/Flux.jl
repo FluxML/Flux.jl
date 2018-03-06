@@ -22,6 +22,7 @@ import .Tracker: data
 
 include("optimise/Optimise.jl")
 using .Optimise
+using .Optimise: @epochs
 
 include("utils.jl")
 include("onehot.jl")
