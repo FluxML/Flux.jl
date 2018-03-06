@@ -5,13 +5,18 @@ export cmudict
 using ..Data: deps
 
 const version = "0.7b"
+const cache_prefix = "https://cache.julialang.org"
 
 function load()
-  isdir(deps("cmudict")) && return
+  suffixes = ["", ".phones", ".symbols"]
+  if isdir(deps("cmudict"))
+    if all(isfile.(["cmudict$x" for x in suffixes]))
+      return
+    end
+  end
   mkpath(deps("cmudict"))
-  for x in ["", ".phones", ".symbols"]
-    download("http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
-             deps("cmudict", "cmudict$x"))
+  for x in suffixes
+    download("$cache_prefix/http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x", deps("cmudict", "cmudict$x"))
   end
 end
 
