@@ -96,6 +96,18 @@ Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
 Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
 Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
 
+function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
+    Δ′ = similar(xs.data)
+    S = size(xs.data)
+    for (i,v) in enumerate(Δ)
+        d1 = divrem(i-1, S[1]*m)
+        x = d1[2] % S[1]+1
+        y = d1[1] % S[2]+1
+        Δ′[x, y] += v
+    end
+    back(xs, Δ′)
+end
+
 function back(::typeof(vcat), Δ, xs...)
   i = Base.tail(map(_ -> :, size(Δ)))
   start = 0
