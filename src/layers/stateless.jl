@@ -1,6 +1,5 @@
 using NNlib: logsoftmax, logσ, log_fast
 
-const EPS = 1f-7
 # Cost functions
 
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
@@ -20,12 +19,12 @@ end
     binarycrossentropy(ŷ, y)
 
 Cross entropy loss for binary classification. `average` averages across the
-batch. EPS has been added to maintain stability, preventing Inf or Nan.
-This may also be used as a scalar function.
+batch. Machine epsilon (meps) has been added to maintain stability, preventing
+Inf or Nan. This may also be used as a scalar function.
 """
 
-function binarycrossentropy(ŷ, y; average = true, eps = EPS)
-  bce  = -sum(y .* log_fast.(ŷ + eps) + (1 .- y) .* log_fast.(1 - ŷ + eps))
+function binarycrossentropy(ŷ, y; average = true, meps = eltype(y) <: AbstractFloat ? eps(eltype(y)) : 1f-7)
+  bce  = -sum(y .* log_fast.(ŷ + meps) + (1 .- y) .* log_fast.(1 - ŷ + meps))
   if (average)
     bce /= length(y)
   elseif (!(size(ŷ)==(1,) && size(y)==(1,)) && (typeof(ŷ)<:AbstractVecOrMat

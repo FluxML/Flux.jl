@@ -39,15 +39,15 @@ using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
   end
 
   @testset "binarycrossentropy" begin
-    @test binarycrossentropy(ŷ, y, eps = 0) ≈ lossvalue
-    @test mean(binarycrossentropy.(ŷ, y, eps = 0),2) ≈ [lossvalue; lossvalue]
-    @test binarycrossentropy(0,0) ≈ -log(1+1f-7)
+    @test binarycrossentropy(ŷ, y, meps = 0) ≈ lossvalue
+    @test mean(binarycrossentropy.(ŷ, y, meps = 0),2) ≈ [lossvalue; lossvalue]
+    @test binarycrossentropy(0.0, 0.0) ≈ -log(eps(eltype(0.0)) + 1)
     logŷ, y = randn(3), rand(3)
-    @test binarycrossentropy.(σ.(logŷ), y, eps = 0) ≈ -y.*log.(σ.(logŷ)) - (1 - y).*log.(1 - σ.(logŷ))
+    @test binarycrossentropy.(σ.(logŷ), y, meps = 0) ≈ -y.*log.(σ.(logŷ)) - (1 - y).*log.(1 - σ.(logŷ))
   end
   
   @testset "logitbinarycrossentropy" begin
-    @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y, eps = 0)
+    @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y, meps = 0)
   end
 
 end
