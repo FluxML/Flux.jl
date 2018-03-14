@@ -61,6 +61,11 @@ for (M, f, arity) in DiffRules.diffrules()
   end
 end
 
+# Eliminating ambiguity
+import Base:^
+
+^(a::TrackedReal, b::Integer) = track(^, a, b)
+
 # Tuples
 
 struct TrackedTuple{T<:Tuple}

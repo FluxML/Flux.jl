@@ -75,6 +75,8 @@ end
 
 @test (param([1,2,3]) .< 2) == [true, false, false]
 
+@test param(2)^2 == 4.0
+
 @testset "Intermediates" begin
   x = param([1])
   l = sum((x .+ x).^2)
