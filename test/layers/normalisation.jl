@@ -77,4 +77,10 @@ end
     x′ = m(x).data
     @test x′[1] ≈ σ((1 - 0.3) / 1.1449489742783179)
   end
+
+  let m = BatchNorm(2), x = param(reshape(1:12, 2, 2, 3))
+    y = reshape(permutedims(x, [2, 1, 3]), 2, 6)
+    y = permutedims(reshape(m(y), 2, 2, 3), [2, 1, 3])
+    @test m(x) == y
+  end
 end

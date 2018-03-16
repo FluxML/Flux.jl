@@ -106,6 +106,11 @@ BatchNorm(dims::Integer...; λ = identity,
 
 function (BN::BatchNorm)(x)
   λ, γ, β = BN.λ, BN.γ, BN.β
+  dims = length(size(x))
+  channels = size(x, dims-1)
+  affine_shape = ones(Int, dims)
+  affine_shape[end-1] = channels
+  m = prod(size(x)[1:end-2]) * size(x)[end]
 
   if !BN.active
     μ = BN.μ
@@ -114,9 +119,9 @@ function (BN::BatchNorm)(x)
     T = eltype(x)
 
     ϵ = data(convert(T, BN.ϵ))
-    m = size(x, 2)  # batch size
-    μ = mean(x, 2)
-    σ = sqrt.(sum((x .- μ).^2, 2) ./ m .+ ϵ)
+    axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
+    μ = mean(x, axes)
+    σ = sqrt.(mean((x .- μ).^2, axes) .+ ϵ)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
@@ -124,7 +129,7 @@ function (BN::BatchNorm)(x)
     BN.σ = (1 - mtm) .* BN.σ .+ mtm .* data(σ) .* m ./ (m - 1)
   end
 
-  λ.(γ .* ((x .- μ) ./ σ) .+ β)
+  λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
 end
 
 children(BN::BatchNorm) =
