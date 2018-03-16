@@ -12,6 +12,7 @@ Shape{T}(dims::NTuple{N,Integer}) where {T,N} = Shape{T,N}(dims)
 
 Base.size(s::Shape) = s.dims
 Base.size(s::Shape, n) = s.dims[n]
+Base.ndims(s::Shape{T,N}) where {T,N} = N
 Base.length(s::Shape) = prod(s.dims)
 Base.eltype(s::Shape{T}) where T = T
 
