@@ -103,8 +103,8 @@ end
 """
     meta()
 
-Returns the names of the classes corresponding to each of the labels returned
-from `labels()`.
+Returns the names of the classes corresponding to the labels returned from
+`labels()`.
 """
 function meta()
   readlines(meta_batch)[1:end-1]
