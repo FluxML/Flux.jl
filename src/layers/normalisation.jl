@@ -71,7 +71,7 @@ end
     BatchNorm(dims...; λ = identity,
               initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)
 
-Batch Normalization Layer for [`Dense`](@ref) layer.
+Batch Normalization Layer for [`Dense`](@ref) or [`Conv`](@ref) layers.
 
 See [Batch Normalization: Accelerating Deep Network Training by Reducing
      Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf)
@@ -87,6 +87,18 @@ m = Chain(
   Dense(64, 10),
   BatchNorm(10),
   softmax)
+```
+Normalization with convolutional layers is handled similarly.
+```julia
+m = Chain(
+  Conv((2,2), 1=>16),
+  BatchNorm(16, λ=relu),
+  x -> maxpool(x, (2,2)),
+  Conv((2,2), 16=>8),
+  BatchNorm(8, λ=relu),
+  x -> maxpool(x, (2,2)),
+  x -> reshape(x, :, size(x, 4)),
+  Dense(288, 10), softmax) |> gpu
 ```
 """
 mutable struct BatchNorm{F,V,N}
