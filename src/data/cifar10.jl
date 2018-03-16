@@ -21,23 +21,23 @@ meta_batch = "batches.meta.txt"
 
 function load()
   mkpath(dir)
-  cd(dir)
-  
-  for file in [file_batches..., test_batch, meta_batch]
-    if !isfile(file)
-      download("https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz", "cifar-10-binary.tar.gz")
-      run(`tar -zxvf cifar-10-binary.tar.gz`)
-      
-      sub_dir = "cifar-10-batches-bin/"
+  cd(dir) do
+    for file in [file_batches..., test_batch, meta_batch]
+      if !isfile(file)
+        download("https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz", "cifar-10-binary.tar.gz")
+        run(`tar -zxvf cifar-10-binary.tar.gz`)
+        
+        sub_dir = "cifar-10-batches-bin/"
 
-      # move files and delete unnecessary folder
-      for file in [file_batches..., test_batch, meta_batch]
-        mv(string(sub_dir, file), file, remove_destination = true)
+        # move files and delete unnecessary folder
+        for file in [file_batches..., test_batch, meta_batch]
+          mv(string(sub_dir, file), file, remove_destination = true)
+        end
+        rm(sub_dir, recursive = true, force = true)
+
+        return
+
       end
-      rm(sub_dir, recursive = true, force = true)
-
-      return
-
     end
   end
 end
@@ -57,7 +57,7 @@ function get_label(io::IO)
   Int(read(io, LABELSIZE)[LABELSIZE])
 end
 
-get_io_buffers(files) = [IOBuffer(read(files[i])) for i=1:length(files)]
+get_io_buffers(files) = [IOBuffer(read(joinpath(dir, files[i]))) for i=1:length(files)]
 
 """
     images()
