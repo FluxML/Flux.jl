@@ -77,7 +77,7 @@ Load the MNIST images.
 
 Each image is a 28×28 array of `Gray` colour values (see Colors.jl).
 
-Returns the 60,000 training images by default; pass `:test` to retreive the
+Returns the 60,000 training images by default; pass `:test` to retrieve the
 10,000 test images.
 """
 function images(set = :train)
@@ -94,7 +94,7 @@ end
 Load the labels corresponding to each of the images returned from `images()`.
 Each label is a number from 0-9.
 
-Returns the 60,000 training labels by default; pass `:test` to retreive the
+Returns the 60,000 training labels by default; pass `:test` to retrieve the
 10,000 test labels.
 """
 function labels(set = :train)
