@@ -82,7 +82,7 @@ end
 
 @testset "Params" begin
   m = Dense(10, 5)
-  @test size.(params(m)) == [(5, 10), (5,)]
+  @test size.(params(m)) == [(5, 10, 1), (5, 1)]
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
 end

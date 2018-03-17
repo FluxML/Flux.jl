@@ -1,4 +1,3 @@
-using Flux:vcat, maximum
 """
     Chain(layers...)
 
@@ -44,11 +43,11 @@ end
 
 Creates a traditional `Dense` layer with parameters `W` and `b`.
 
-
     y = σ.(W * x .+ b)
 
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+Optional parameter `maxout` denotes number of maxout units to pass through.
 
 ```julia
 julia> d = Dense(5, 2)
@@ -91,6 +90,7 @@ end
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
   l.σ == identity || print(io, ", ", l.σ)
+  l.m == 1 || print(", maxout = ",l.m)
   print(io, ")")
 end
 
