@@ -140,3 +140,43 @@ function Base.show(io::IO, l::BatchNorm)
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
+
+"""
+    LCN()
+
+A layer for [Local Contrast Normalization](http://yann.lecun.com/exdb/publis/pdf/jarrett-iccv-09.pdf).
+
+"""
+struct LCNormalization
+  r # radius
+end
+
+function LCN(r = 1)
+  LCNormalization(r)
+end
+
+function (a::LCNormalization)(x)
+  y = similar(x)
+  z = similar(x)
+  r = a.r
+  for i in CartesianRange(size(x))
+    i_min = max(1, i[1] - r)
+    i_max = min(size(x,1), i[1] + r)
+    j_min = max(1, i[2] - r)
+    j_max = min(size(x,2), i[2] + r)
+    sum = var = 0
+    for p in i_min:i_max
+      for q in j_min:j_max
+        sum += x[p, q, i[3]]
+      end
+    end
+    y[i] = sum/((2*r + 1)^2)
+    for p in i_min:i_max
+      for q in j_min:j_max
+        var += (x[p, q, i[3]] - y[i])^2
+      end
+    end
+    z[i] = (var/((2*r + 1)^2))^0.5
+  end
+  return (x - y)./z
+end
