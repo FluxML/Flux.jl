@@ -37,4 +37,14 @@ julia&gt; m(x)
 Tracked 5-element CuArray{Float32,1}:
  -0.30535
  ⋮
- -0.618002</code></pre><p>The analogue <code>cpu</code> is also available for moving models and data back off of the GPU.</p><p>``` julia&gt; x = rand(10) |&gt; gpu 10-element CuArray{Float32,1}:  0.235164  ⋮  0.192538</p><p>julia&gt; x |&gt; cpu 10-element Array{Float32,1}:  0.235164  ⋮  0.192538  ```</p><footer><hr/><a class="previous" href="data/onehot.html"><span class="direction">Previous</span><span class="title">One-Hot Encoding</span></a><a class="next" href="saving.html"><span class="direction">Next</span><span class="title">Saving &amp; Loading</span></a></footer></article></body></html>
+ -0.618002</code></pre><p>The analogue <code>cpu</code> is also available for moving models and data back off of the GPU.</p><pre><code class="language-julia">julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32,1}:
+ 0.235164
+ ⋮
+ 0.192538
+
+julia&gt; x |&gt; cpu
+10-element Array{Float32,1}:
+ 0.235164
+ ⋮
+ 0.192538</code></pre><footer><hr/><a class="previous" href="data/onehot.html"><span class="direction">Previous</span><span class="title">One-Hot Encoding</span></a><a class="next" href="saving.html"><span class="direction">Next</span><span class="title">Saving &amp; Loading</span></a></footer></article></body></html>
