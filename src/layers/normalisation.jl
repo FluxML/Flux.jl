@@ -142,7 +142,7 @@ function Base.show(io::IO, l::BatchNorm)
 end
 
 """
-    LCN()
+    Local_Contrast_Norm()
 
 A layer for [Local Contrast Normalization](http://yann.lecun.com/exdb/publis/pdf/jarrett-iccv-09.pdf).
 
@@ -151,7 +151,7 @@ struct LCNormalization
   r # radius
 end
 
-function LCN(r = 1)
+function Local_Contrast_Norm(r = 1)
   LCNormalization(r)
 end
 
