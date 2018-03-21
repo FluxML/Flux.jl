@@ -117,6 +117,32 @@ function back(::typeof(vcat), Δ, xs...)
   end
 end
 
+Base.cat(dims, a::TrackedVector, b::TrackedVector)  = track(cat, dims, a, b)
+Base.cat(dims, a::TrackedVector, b::AbstractVector) = track(cat, dims, a, b)
+Base.cat(dims, a::AbstractVector, b::TrackedVector) = track(cat, dims, a, b)
+
+Base.cat(dims, a::TrackedVecOrMat, b::TrackedVecOrMat)  = track(cat, dims, a, b)
+Base.cat(dims, a::TrackedVecOrMat, b::AbstractVecOrMat) = track(cat, dims, a, b)
+Base.cat(dims, a::AbstractVecOrMat, b::TrackedVecOrMat) = track(cat, dims, a, b)
+
+Base.cat(dims, a::TrackedMatrix, b::TrackedMatrix)  = track(cat, dims, a, b)
+Base.cat(dims, a::TrackedMatrix, b::AbstractMatrix) = track(cat, dims, a, b)
+Base.cat(dims, a::AbstractMatrix, b::TrackedMatrix) = track(cat, dims, a, b)
+
+function back(::typeof(cat), Δ, dims, xs, ys)
+  dim_xs = 1:ndims(xs)
+  dim_ys = 1:ndims(ys)
+
+  till_xs = ntuple((i -> i in dims ? (i in dim_xs ? size(xs,i) : 1) : 0), Val{ndims(Δ)})
+  till_ys = ntuple((i -> i in dims ? (i in dim_ys ? size(ys,i) : 1) : 0), Val{ndims(Δ)})
+
+  xs_in_Δ = ntuple(i -> till_xs[i] > 0 ? (1:till_xs[i]):Colon(), Val{ndims(Δ)})
+  ys_in_Δ = ntuple(i -> till_ys[i] > 0 ? (till_xs[i]+1:size(Δ,i)) : Colon(), Val{ndims(Δ)})
+
+  @back(xs, reshape(Δ[xs_in_Δ...],size(xs)))
+  @back(ys, reshape(Δ[ys_in_Δ...],size(ys)))
+end
+
 Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
   track(reshape, xs, dims...)
 
