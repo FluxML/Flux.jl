@@ -104,4 +104,8 @@ end
 
 @inferred NNlib.conv(param(rand(10,10,3,2)),randn(2,2,3,4))
 
+b = param(rand())
+Tracker.back!(b)
+@test Tracker.grad(b) == 1
+
 end #testset

@@ -29,7 +29,7 @@ accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
 
 function back(x::Tracked, Δ)
-  x.isleaf && (accum!(x.grad, Δ); return)
+  x.isleaf && (x.grad = accum!(x.grad, Δ); return)
   ref = x.ref -= 1
   if isdefined(x, :grad)
     x.grad = accum!(x.grad, Δ)
