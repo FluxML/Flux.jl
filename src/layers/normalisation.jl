@@ -114,7 +114,7 @@ end
 
 BatchNorm(dims::Integer...; λ = identity,
           initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
-BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), zeros(dims), zeros(dims), ϵ, momentum, true)
+BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), zeros(dims), ones(dims), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
   λ, γ, β = BN.λ, BN.γ, BN.β
