@@ -101,12 +101,12 @@ m = Chain(
   Dense(288, 10), softmax) |> gpu
 ```
 """
-mutable struct BatchNorm{F,V,N}
+mutable struct BatchNorm{F,V, W,N}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ     # moving mean
-  σ     # moving std
+  μ::W  # moving mean
+  σ::W  # moving std
   ϵ::N
   momentum::N
   active::Bool
@@ -114,7 +114,7 @@ end
 
 BatchNorm(dims::Integer...; λ = identity,
           initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
-  BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), 0., 1., ϵ, momentum, true)
+BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), zeros(dims), zeros(dims), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
   λ, γ, β = BN.λ, BN.γ, BN.β
@@ -125,8 +125,8 @@ function (BN::BatchNorm)(x)
   m = prod(size(x)[1:end-2]) * size(x)[end]
 
   if !BN.active
-    μ = BN.μ
-    σ = BN.σ
+    μ = reshape(BN.μ, affine_shape...)
+    σ = reshape(BN.σ, affine_shape...)
   else
     T = eltype(x)
 
@@ -137,18 +137,18 @@ function (BN::BatchNorm)(x)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* data(μ)
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* data(σ) .* m ./ (m - 1)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...)) .* m ./ (m - 1)
   end
 
   λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
 end
 
 children(BN::BatchNorm) =
-  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.ϵ, BN.momentum, BN.active)
 
 mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(BN.λ, f(BN.β), f(BN.γ), BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ), BN.ϵ, BN.momentum, BN.active)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
 
