@@ -8,9 +8,11 @@ VecShape{T} = Shape{T,1}
 MatShape{T} = Shape{T,2}
 
 Shape{T}(dims::Vararg{Integer,N}) where {T,N} = Shape{T,N}(dims)
+Shape{T}(dims::NTuple{N,Integer}) where {T,N} = Shape{T,N}(dims)
 
 Base.size(s::Shape) = s.dims
 Base.size(s::Shape, n) = s.dims[n]
+Base.ndims(s::Shape{T,N}) where {T,N} = N
 Base.length(s::Shape) = prod(s.dims)
 Base.eltype(s::Shape{T}) where T = T
 
@@ -22,7 +24,7 @@ function Base.show(io::IO, s::Shape{T}) where T
   print(io, ")")
 end
 
-shape(x) = typeof(x)
+shape(x) = x
 shape(x::Shape) = x
 shape(x::Tuple) = shape.(x)
 shape(x::AbstractArray) = Shape{eltype(x)}(size(x)...)

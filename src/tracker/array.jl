@@ -96,6 +96,18 @@ Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
 Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
 Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
 
+function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
+    Δ′ = similar(xs.data)
+    S = size(xs.data)
+    for (i,v) in enumerate(Δ)
+        d1 = divrem(i-1, S[1]*m)
+        x = d1[2] % S[1]+1
+        y = d1[1] % S[2]+1
+        Δ′[x, y] += v
+    end
+    back(xs, Δ′)
+end
+
 function back(::typeof(vcat), Δ, xs...)
   i = Base.tail(map(_ -> :, size(Δ)))
   start = 0
@@ -114,6 +126,8 @@ Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64,N}} where N) =
 back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
   back(xs, reshape(Δ, size(xs)))
 
+Base.permutedims(xs::TrackedArray, dims) = track(permutedims, xs, dims)
+back(::typeof(permutedims), Δ, xs::TrackedArray, dims) = back(xs, permutedims(Δ, invperm(dims)))
 
 function _kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
     m1, n1 = size(mat1)
@@ -137,6 +151,13 @@ Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
 back(::typeof(sum), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= Δ)
 
+Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
+Base.prod(xs::TrackedArray) = track(prod, xs)
+Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
+
+back(::typeof(prod), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= (prod(xs.data, dim...) ./ xs.data) .* Δ)
+back(::typeof(prod), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= (reshape(.*(circshift.([reshape(xs.data, length(xs.data))], 1:length(xs.data)-1)...), size(xs.data))) .* Δ)
+
 Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
@@ -158,10 +179,8 @@ Base.std(x::TrackedArray; mean = Base.mean(x)) =
 Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
 
-Base.norm(x::TrackedArray, p::Real = 2) =
-  p == 1 ? sum(abs.(x)) :
-  p == 2 ? sqrt(sum(abs2.(x) .+ 1e-6)) :
-  error("$p-norm not supported")
+Base.vecnorm(x::TrackedArray, p::Real = 2) =
+  sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =

@@ -5,7 +5,7 @@ using ..Data: deps
 
 function load()
   isfile(deps("sentiment.zip")) ||
-    download("https://nlp.stanford.edu/sentiment/trainDevTestTrees_PTB.zip",
+    download("https://cache.julialang.org/https://nlp.stanford.edu/sentiment/trainDevTestTrees_PTB.zip",
              deps("sentiment.zip"))
   return
 end

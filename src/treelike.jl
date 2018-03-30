@@ -8,8 +8,8 @@ mapchildren(f, x::Tuple) = map(f, x)
 
 function treelike(T, fs = fieldnames(T))
   @eval current_module() begin
-    children(x::$T) = ($([:(x.$f) for f in fs]...),)
-    mapchildren(f, x::$T) = $T(f.(children(x))...)
+    Flux.children(x::$T) = ($([:(x.$f) for f in fs]...),)
+    Flux.mapchildren(f, x::$T) = $T(f.($children(x))...)
   end
 end
 
@@ -39,6 +39,14 @@ function params(m)
 end
 
 params(m...) = params(m)
+
+function loadparams!(m, xs)
+  for (p, x) in zip(params(m), xs)
+    size(p) == size(x) ||
+      error("Expected param size $(size(p)), got $(size(x))")
+    copy!(data(p), data(x))
+  end
+end
 
 # CPU/GPU movement conveniences
 

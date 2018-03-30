@@ -17,6 +17,7 @@ makedocs(modules=[Flux, NNlib],
                      "Training" => "training/training.md"],
                   "One-Hot Encoding" => "data/onehot.md",
                   "GPU Support" => "gpu.md",
+                  "Saving & Loading" => "saving.md",
                   "Community" => "community.md"])
 
 deploydocs(

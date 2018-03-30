@@ -4,6 +4,16 @@ using Flux.Tracker: back!
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
+# The AD generates fairly large backtraces that are unhelpful if you interrupt
+# while training; this just cleans that up.
+macro interrupts(ex)
+  :(try $(esc(ex))
+    catch e
+      e isa InterruptException || rethrow()
+      throw(e)
+    end)
+end
+
 """
     train!(loss, data, opt)
 
@@ -29,8 +39,29 @@ function train!(loss, data, opt; cb = () -> ())
     l = loss(d...)
     isinf(l) && error("Loss is Inf")
     isnan(l) && error("Loss is NaN")
-    back!(l)
+    @interrupts back!(l)
     opt()
     cb() == :stop && break
   end
+end
+
+"""
+    @epochs N body
+
+Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
+training in a REPL.
+
+```julia
+julia> @epochs 2 println("hello")
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+```
+"""
+macro epochs(n, ex)
+  :(@progress for i = 1:$(esc(n))
+      info("Epoch $i")
+      $(esc(ex))
+    end)
 end

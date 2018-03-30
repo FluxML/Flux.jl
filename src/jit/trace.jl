@@ -13,7 +13,7 @@ graph(x::Tracked, inputs...; cache = ObjectIdDict()) =
 
 function graph(x, inputs...; cache = ObjectIdDict())
   haskey(cache, x) && return cache[x]
-  i = findfirst(inputs, x)
+  i = findfirst(y -> x === y, inputs)
   cache[x] =
     i > 0 ? inputnode(i) :
     istracked(x) && !isleaf(x) ? graph(tracker(x), inputs...; cache = cache) :
@@ -53,15 +53,18 @@ struct Compiled{F,T<:Tuple}
   params::T
 end
 
-(c::Compiled)(args...) =
-  Tracker.track(Tracker.Call(c, args...),
-                c.func(Tracker.data.(c.params), args...))
+# TODO when we support derivatives
+# (c::Compiled)(args...) =
+#   Tracker.track(Tracker.Call(c, args...),
+#                 c.func(Tracker.data.(c.params), args...))
+
+(c::Compiled)(args...) = c.func(Tracker.data.(c.params), Tracker.data.(args)...)
 
 Base.show(io::IO, c::Compiled) = print(io, "Compiled(", c.model, ")")
 
 function compile(f, args...)
   v = trace(f, args...)
-  v, ps = liftparams(cacheall(v))
+  v, ps = liftparams(cacheall(v, () -> similar(args[1], UInt8, 1))) # no empty arrays on GPU
   Compiled(f, eval(code(v, length(args)+1)), (ps...,))
 end
 
