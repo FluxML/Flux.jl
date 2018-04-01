@@ -86,3 +86,39 @@ end
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
 end
+
+@testset "batches" begin
+  x = rand(10)
+  b = batches(x) |> collect
+  @test length(b) == 10
+  @test all(i -> b[i] == x[i:i],1:10)
+
+  b = batches(x, batchsize=3) |> collect
+  @test length(b) == 4
+  @test b[1] == x[1:3]
+  @test b[2] == x[4:6]
+  @test b[3] == x[7:9]
+  @test b[4] == x[10:10]
+
+  y = rand(8)
+  @test_throws AssertionError batches(x, y)
+
+  x = reshape(x, 2, 5)
+  y = rand(5)
+  b = batches(x,y, batchsize=2) |> collect
+  @test length(b) == 3
+  @test b[1] == (x[:,1:2], y[1:2])
+  @test b[2] == (x[:,3:4], y[3:4])
+  @test b[3] == (x[:,5:5], y[5:5])
+end
+
+@testset "mat" begin
+  x = rand(2)
+  @test mat(x) == reshape(x, 1, 2)
+  x = rand(2,2)
+  @test mat(x) == x
+  x = rand(2,2,2)
+  @test mat(x) == reshape(x,4,2)
+  x = rand(2,2,2,2)
+  @test mat(x) == reshape(x,8,2)
+end

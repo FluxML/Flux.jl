@@ -25,6 +25,8 @@ using .Optimise
 using .Optimise: @epochs
 
 include("utils.jl")
+export batches, mat
+
 include("onehot.jl")
 include("treelike.jl")
 

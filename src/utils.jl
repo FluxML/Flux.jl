@@ -94,6 +94,48 @@ function batchseq(xs, pad = nothing, n = maximum(length(x) for x in xs))
   [batch([xs_[j][i] for j = 1:length(xs_)]) for i = 1:n]
 end
 
+
+"""
+  batches(X, Y...; batchsize=1, shuffle=false)
+
+Returns an iterators partitioning the inputs
+along the last dimension in subsets of size `batchsize`.
+
+***Example Usage***
+```julia
+for (x, y) in batches(X, Y, batchsize=100, shuffle=true)
+  ...
+end
+"""
+function batches(x::AbstractArray, y::AbstractArray...; batchsize=1, shuffle=false)
+  m = size(x, ndims(x))
+  @assert all(y-> size(y, ndims(y)) == m , y)
+  all_indx = shuffle ? randperm(m) : [1:m;]  
+  part = [all_indx[i:min(end,i+batchsize-1)] for i=1:batchsize:m]
+
+  if length(y) > 0 
+    ((getbatch(x,is), [getbatch(y,is) for y in y]...) for is in part)
+  else
+    (getbatch(x,is) for is in part)
+  end
+end
+
+"""
+  mat(x::AbstractArray)
+
+Reshapes `x` into a matrix (i.e. a bi-dimensional array)
+preserving the size of the last dimension.
+"""
+mat(x::AbstractArray) = reshape(x, :, size(x, ndims(x)))
+
+function getbatch(x::AbstractArray, is)
+  sz = size(x)
+  x = mat(x)
+  b = x[:,is]
+  reshape(b, sz[1:end-1]..., :)
+end
+
+
 # Other
 
 """

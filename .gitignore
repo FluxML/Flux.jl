@@ -4,4 +4,5 @@
 docs/build/
 docs/site/
 docs/flux.css
+.vscode/
 deps
