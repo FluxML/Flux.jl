@@ -1,5 +1,6 @@
 using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck
+using Flux: onehotbatch
 using NNlib: conv
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -24,11 +25,16 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(x -> logsoftmax(x).*(1:3), 3)
 @test gradtest(x -> logsoftmax(x).*(1:3), (3,5))
 
-@test gradtest(Flux.mse, rand(5,6), rand(5, 6))
-# @test gradtest(Flux.cross_entropy, randn(5,6), rand(1:5, 6))
-# @test gradtest(Flux.nll, softmax(rand(5,6)), rand(1:5, 6))
-# @test gradtest(Flux.bce, randn(5,6), rand(5, 6))
-# @test gradtest(Flux.bce_logit, rand(5,6), rand(5, 6))
+@test gradtest(mse, rand(5,6), rand(5, 6))
+
+y = rand(1:5, 6)
+yonehot = onehotbatch(y, 1:5)
+@test gradtest(x->cross_entropy(x,y), randn(5,6))
+@test gradtest(x->nll(x,y), logsoftmax(randn(5,6)))
+@test gradtest(x->cross_entropy(x,yonehot), randn(5,6))
+@test gradtest(x->nll(x,yonehot), logsoftmax(randn(5,6)))
+@test gradtest(bce, rand(5,6), randn(5,6))
+@test gradtest(bce_logit, randn(5,6), rand(5, 6))
 
 @test gradtest(x -> x', rand(5))
 
