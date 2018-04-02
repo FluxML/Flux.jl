@@ -1,45 +1,52 @@
-using NNlib: logsoftmax, logσ
-
 # Cost functions
-
-mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
-
-function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  return @fix -sum(y .* log.(ŷ) .* weight) / size(y, 2)
+function mse(ŷ, y; average=true, reduce=true) 
+  l = (ŷ .- y).^2
+  reduce || return l
+  average ? sum(l) / size(ŷ, ndims(ŷ)) : sum(l)
 end
 
-@deprecate logloss(x, y) crossentropy(x, y)
-
-function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  return -sum(y .* logsoftmax(logŷ) .* weight) / size(y, 2)
+function cross_entropy(ŷ::AbstractMatrix, y::AbstractVector; 
+      weight=1, average=true, reduce=true)
+  nll(logsoftmax(ŷ), y; weight=weight, average=average, reduce=reduce)
+end
+  
+function nll(ŷ::AbstractMatrix, y::AbstractVector; 
+    weight=1, average=true, reduce=true)
+  indxs = _nll_indices(ŷ, y)
+  if weight isa Number
+    l = -weight .* ŷ[indxs]
+  else
+    l = -weight[indxs] .* ŷ[indxs]
+  end
+  reduce || return l
+  average ? sum(l) / size(ŷ, 2) : sum(l) 
 end
 
-"""
-    binarycrossentropy(ŷ, y)
+function _nll_indices(ŷ, y::AbstractVector{T}) where {T<:Integer} 
+  n = length(y)
+  indices = Vector{Int}(n)
+  d1, d2 = size(ŷ)
+  n != d2 && throw(DimensionMismatch())
+  @inbounds for i=1:n
+    indices[i] = (i-1)*d1 + y[i]
+  end
+  indices
+end
 
-Return `-y*log(ŷ) - (1-y)*log(1-ŷ)`.
+function bce(ŷ::AbstractMatrix, y::AbstractMatrix; 
+    average=true, reduce=true)
+  l = @. -y*log(ŷ) + (1 - y)*log(1 - ŷ)
+  reduce || return l
+  average ? sum(l) / size(ŷ, 2) : sum(l) 
+end
 
-    julia> binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0.])
-    3-element Array{Float64,1}:
-    1.4244
-    0.352317
-    0.86167
-"""
-binarycrossentropy(ŷ, y) = -y*log(ŷ) - (1 - y)*log(1 - ŷ)
-
-"""
-    logitbinarycrossentropy(logŷ, y)
-
-`logitbinarycrossentropy(logŷ, y)` is mathematically equivalent to `binarycrossentropy(σ(logŷ), y)`
-but it is more numerically stable.
-
-    julia> logitbinarycrossentropy.([-1.1491, 0.8619, 0.3127], [1, 1, 0.])
-    3-element Array{Float64,1}:
-     1.4244
-     0.352317
-     0.86167
-"""
-logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
+function bce_logits(ŷ::AbstractMatrix, y::AbstractMatrix; 
+    average=true, reduce=true)
+  max_val = max.(-ŷ, 0)
+  l = @. ŷ - ŷ * y + max_val + log(exp(-max_val) + exp(-ŷ - max_val))
+  reduce || return l
+  average ? sum(l) / size(ŷ, 2) : sum(l) 
+end
 
 """
     normalise(x::AbstractVecOrMat)
@@ -47,7 +54,7 @@ logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 Normalise each column of `x` to mean 0 and standard deviation 1.
 """
 function normalise(x::AbstractVecOrMat)
-  μ′ = mean(x, 1)
-  σ′ = std(x, 1, mean = μ′)
-  return (x .- μ′) ./ σ′
+  μ = mean(x, 1)
+  σ = std(x, 1, mean = μ)
+  return (x .- μ) ./ σ
 end
