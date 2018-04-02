@@ -31,24 +31,27 @@ julia> argmax([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 ```
 
-## Batches
-
-`onehotbatch` creates a batch (matrix) of one-hot vectors, and `argmax` treats matrices as batches.
+For vector first argument, `onehot` creates a batch (matrix) of one-hot vectors, and `argmax` treats matrices as batches.
 
 ```julia
-julia> using Flux: onehotbatch
-
-julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
+julia> onehot([:b, :a, :b], [:a, :b, :c])
 3×3 Flux.OneHotMatrix:
  false   true  false
   true  false   true
  false  false  false
 
-julia> onecold(ans, [:a, :b, :c])
-3-element Array{Symbol,1}:
-  :b
-  :a
-  :b
+julia> onehot([1, 2, 1, 2], 1:3)
+3×4 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+  true  false   true  false
+ false   true  false   true
+ false  false  false  false
+
+ julia> argmax(ans, 1:3)
+4-element Array{Int64,1}:
+ 1
+ 2
+ 1
+ 2
 ```
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.

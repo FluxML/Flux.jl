@@ -1,5 +1,5 @@
 using Base.Test
-using Flux: onehotbatch, mse, crossentropy, logitcrossentropy, 
+using Flux: mse, crossentropy, logitcrossentropy, 
             σ, binarycrossentropy, logitbinarycrossentropy
 
 @testset "losses" begin
@@ -12,7 +12,7 @@ using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
   end
 
   # Now onehot y's
-  y = onehotbatch([1, 1, 0, 0], 0:1)
+  y = onehot([1, 1, 0, 0], 0:1)
   ŷ = [.1 .9; .9 .1; .9 .1; .1 .9]'
   v = log(.1 / .9)
   logŷ = [v 0.0; 0.0 v; 0.0 v; v 0.0]'

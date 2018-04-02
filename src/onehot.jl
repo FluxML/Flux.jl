@@ -1,5 +1,7 @@
 import Base: *
 
+@deprecate onehotbatch onehot
+
 struct OneHotVector <: AbstractVector{Bool}
   ix::UInt32
   of::UInt32
@@ -38,6 +40,30 @@ adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
 
+"""
+  onehot(l, labels)
+
+Returns a onehot encoding of the `l`, where `l ∈ labels` or
+`l[i] ∈ labels`.
+
+**Usage**:
+```julia
+
+julia> onehot(:b, [:a, :b, :c])
+3-element Flux.OneHotVector:
+ false
+  true
+ false
+
+julia> onehot([1, 2, 1, 2], 1:3)
+3×4 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+  true  false   true  false
+ false   true  false   true
+ false  false  false  false
+```
+
+See also [`argmax`](@ref).
+"""
 function onehot(l, labels)
   i = findfirst(labels, l)
   i > 0 || error("Value $l is not in labels")
@@ -50,9 +76,19 @@ function onehot(l, labels, unk)
   OneHotVector(i, length(labels))
 end
 
-onehotbatch(ls, labels, unk...) =
+onehot(ls::AbstractVector, labels, unk...) =
   OneHotMatrix(length(labels), [onehot(l, labels, unk...) for l in ls])
 
+"""
+argmax(y)
+argmax(y, labels)
+
+For vector `y` and label set `labels`, returns the label of the maximum element
+in `y`. For matrix `y`, returns a vector containing
+the labels of the maximum elements in each column. 
+If the `labels` argument is omitted, the labels
+are assumed to be positions in columns.
+"""  
 argmax(y::AbstractVector, labels = 1:length(y)) =
   labels[findfirst(y, maximum(y))]
 

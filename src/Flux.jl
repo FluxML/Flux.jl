@@ -26,6 +26,8 @@ using .Optimise: @epochs
 
 include("utils.jl")
 include("onehot.jl")
+export onehot, argmax
+
 include("treelike.jl")
 
 include("layers/stateless.jl")

@@ -11,7 +11,7 @@ x = param(randn(5, 5))
 cx = gpu(x)
 @test cx isa TrackedArray && cx.data isa CuArray
 
-x = Flux.onehotbatch([1, 2, 3], 1:3)
+x = onehot([1, 2, 3], 1:3)
 cx = gpu(x)
 @test cx isa Flux.OneHotMatrix && cx.data isa CuArray
 

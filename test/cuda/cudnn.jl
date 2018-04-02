@@ -36,8 +36,8 @@ info("Testing Flux/CUDNN")
       Flux.reset!(rnn)
       Flux.reset!(curnn)
       ohx = batch_size == 1 ?
-        Flux.onehot(rand(1:10), 1:10) :
-        Flux.onehotbatch(rand(1:10, batch_size), 1:10)
+        onehot(rand(1:10), 1:10) :
+        onehot(rand(1:10, batch_size), 1:10)
       cuohx = gpu(ohx)
       y = (rnn(ohx); rnn(ohx))
       cuy = (curnn(cuohx); curnn(cuohx))
