@@ -11,13 +11,9 @@ function cross_entropy(ŷ::AbstractMatrix, y::AbstractVector;
 end
   
 function nll(ŷ::AbstractMatrix, y::AbstractVector; 
-    weight=1, average=true, reduce=true)
+      weight=1, average=true, reduce=true)
   indxs = _nll_indices(ŷ, y)
-  if weight isa Number
-    l = -weight .* ŷ[indxs]
-  else
-    l = -weight[indxs] .* ŷ[indxs]
-  end
+  l = (-weight .* ŷ)[indxs]
   reduce || return l
   average ? sum(l) / size(ŷ, 2) : sum(l) 
 end
@@ -33,19 +29,19 @@ function _nll_indices(ŷ, y::AbstractVector{T}) where {T<:Integer}
   indices
 end
 
-function bce(ŷ::AbstractMatrix, y::AbstractMatrix; 
+function bce(ŷ::AbstractArray, y::AbstractArray; 
     average=true, reduce=true)
-  l = @. -y*log(ŷ) + (1 - y)*log(1 - ŷ)
+  l = @. -y*log(ŷ) - (1 - y)*log(1 - ŷ)
   reduce || return l
-  average ? sum(l) / size(ŷ, 2) : sum(l) 
+  average ? sum(l) / size(ŷ, ndims(ŷ)) : sum(l) 
 end
 
-function bce_logits(ŷ::AbstractMatrix, y::AbstractMatrix; 
+function bce_logit(ŷ::AbstractArray, y::AbstractArray; 
     average=true, reduce=true)
   max_val = max.(-ŷ, 0)
   l = @. ŷ - ŷ * y + max_val + log(exp(-max_val) + exp(-ŷ - max_val))
   reduce || return l
-  average ? sum(l) / size(ŷ, 2) : sum(l) 
+  average ? sum(l) / size(ŷ, ndims(ŷ)) : sum(l) 
 end
 
 """

@@ -1,49 +1,49 @@
 using Base.Test
-using Flux: onehotbatch, mse, crossentropy, logitcrossentropy, 
-            σ, binarycrossentropy, logitbinarycrossentropy
 
 @testset "losses" begin
-  # First, regression-style y's
-  y = [1, 1, 0, 0]
-  ŷ = [.9, .1, .1, .9]
-
   @testset "mse" begin
-    @test mse(ŷ, y) ≈ (.1^2 + .9^2)/2
-  end
-
-  # Now onehot y's
-  y = onehotbatch([1, 1, 0, 0], 0:1)
-  ŷ = [.1 .9; .9 .1; .9 .1; .1 .9]'
-  v = log(.1 / .9)
-  logŷ = [v 0.0; 0.0 v; 0.0 v; v 0.0]'
-  lossvalue = 1.203972804325936
-
-  @testset "crossentropy" begin
-    @test crossentropy(ŷ, y) ≈ lossvalue
-  end
-
-  @testset "logitcrossentropy" begin
-    @test logitcrossentropy(logŷ, y) ≈ lossvalue
-  end
-
-  @testset "weighted_crossentropy" begin
-    @test crossentropy(ŷ, y, weight = ones(2)) ≈ lossvalue
-    @test crossentropy(ŷ, y, weight = [.5, .5]) ≈ lossvalue/2
-    @test crossentropy(ŷ, y, weight = [2, .5]) ≈ 1.5049660054074199
-  end
-
-  @testset "weighted_logitcrossentropy" begin
-    @test logitcrossentropy(logŷ, y, weight = ones(2)) ≈ lossvalue
-    @test logitcrossentropy(logŷ, y, weight = [.5, .5]) ≈ lossvalue/2
-    @test logitcrossentropy(logŷ, y, weight = [2, .5]) ≈ 1.5049660054074199
-  end
-
-  logŷ, y = randn(3), rand(3)
-  @testset "binarycrossentropy" begin
-    @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ)) - (1 - y).*log.(1 - σ.(logŷ))
+    ŷ, y = randn(3,3), randn(3,3)
+    @test mse(ŷ, y, average=false) ≈ sum((y.-ŷ).^2)
+    @test mse(ŷ, y) ≈ sum((y.-ŷ).^2) / 3
   end
   
-  @testset "logitbinarycrossentropy" begin
-    @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y)
+  @testset "cross entropy" begin
+    # todo: move to util.jl?
+    function onehot!(ŷ::AbstractMatrix, y::AbstractVector{T}) where T<:Integer
+      ŷ .= 0
+      for (j, i) in enumerate(y)
+        ŷ[i,j] = 1
+      end
+      ŷ
+    end
+
+    ŷ = randn(3,5)
+    ŷsoft = logsoftmax(ŷ)
+    y = rand(1:3, 5)
+    yonehot = onehot!(similar(ŷ), y) 
+    weight = rand(3)
+
+    @test nll(ŷsoft, y, reduce=false) ≈ sum(-yonehot .* ŷsoft, 1) |> vec
+    @test nll(ŷsoft, y, reduce=false, weight=weight) ≈ sum(-yonehot .* ŷsoft .* weight, 1) |> vec
+    @test nll(ŷsoft, y, average=false) ≈ sum(@. -yonehot * ŷsoft)
+    @test nll(ŷsoft, y) ≈ sum(@. -yonehot * ŷsoft) / size(ŷ, 2)
+    
+    @test cross_entropy(ŷ, y, reduce=false) ≈ nll(ŷsoft, y, reduce=false) 
+    @test cross_entropy(ŷ, y, average=false) ≈ nll(ŷsoft, y, average=false)
+    @test cross_entropy(ŷ, y) ≈ nll(ŷsoft, y)
   end
+
+  @testset "binary cross entropy" begin
+    for (ŷ, y) in [(randn(3), rand(3)), (randn(3,4), rand(3,4)), (randn(3,4,5), rand(3,4,5))]
+      @test bce(σ.(ŷ), y, reduce=false) ≈ @. -y*log(σ(ŷ)) - (1 - y)*log(1 - σ(ŷ))
+      @test bce(σ.(ŷ), y, average=false) ≈ sum(@. -y*log(σ(ŷ)) - (1 - y)*log(1 - σ(ŷ)))
+      @test bce(σ.(ŷ), y) ≈ sum(@. -y*log(σ(ŷ)) - (1 - y)*log(1 - σ(ŷ))) / size(ŷ, ndims(ŷ))
+      
+      @test bce_logit(ŷ, y, reduce=false) ≈ bce(σ.(ŷ), y, reduce=false)
+      @test bce_logit(ŷ, y, average=false) ≈ bce(σ.(ŷ), y, average=false)
+      @test bce_logit(ŷ, y) ≈ bce(σ.(ŷ), y)
+    end
+  end
+
 end
+  

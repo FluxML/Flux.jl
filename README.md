@@ -19,10 +19,9 @@ model = Chain(
   Dense(768, 128),
   LSTM(128, 256)
   LSTM(256, 128)
-  Dense(128, 10),
-  softmax)
+  Dense(128, 10))
 
-loss(x, y) = crossentropy(model(x), y)
+loss(x, y) = cross_entropy(model(x), y)
 
 Flux.train!(loss, data, ADAM(...))
 ```

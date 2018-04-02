@@ -29,7 +29,7 @@ include("onehot.jl")
 include("treelike.jl")
 
 include("layers/stateless.jl")
-export cross_entropy, bce, mse, bce_with_logits, nll
+export cross_entropy, bce, mse, bce_logit, nll
 
 include("layers/basic.jl")
 include("layers/conv.jl")
