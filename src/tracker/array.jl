@@ -117,11 +117,9 @@ function back(::typeof(vcat), Δ, xs...)
   end
 end
 
-Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) =
-  track(reshape, xs, dims...)
-
-Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64,N}} where N) =
-  track(reshape, xs, dims)
+Base.reshape(xs::TrackedArray, dims::Union{Colon,Int64}...) = reshape(xs, dims)
+Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Union{Int64,Colon}}}) = reshape(xs, Base._reshape_uncolon(xs, dims))
+Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64}}) = track(reshape, xs, dims)
 
 back(::typeof(reshape), Δ, xs::TrackedArray, _...) =
   back(xs, reshape(Δ, size(xs)))
