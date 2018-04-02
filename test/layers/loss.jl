@@ -1,15 +1,17 @@
 using Base.Test
 
-@testset "losses" begin
-  @testset "mse" begin
+@testset "Losses" begin
+  @testset "mean squared error" begin
     ŷ, y = randn(3,3), randn(3,3)
     @test mse(ŷ, y, average=false) ≈ sum((y.-ŷ).^2)
     @test mse(ŷ, y) ≈ sum((y.-ŷ).^2) / 3
   end
   
   @testset "cross entropy" begin
+    using Flux: onehotbatch
     # todo: move to util.jl?
     function onehot!(ŷ::AbstractMatrix, y::AbstractVector{T}) where T<:Integer
+      @assert size(ŷ, 2) == length(y)
       ŷ .= 0
       for (j, i) in enumerate(y)
         ŷ[i,j] = 1
@@ -20,7 +22,8 @@ using Base.Test
     ŷ = randn(3,5)
     ŷsoft = logsoftmax(ŷ)
     y = rand(1:3, 5)
-    yonehot = onehot!(similar(ŷ), y) 
+    yonehot = onehot!(similar(ŷ), y)       # matrix
+    yOneHot = Flux.onehotbatch(y, 1:size(ŷ,1))  # OneHotMatrix object
     weight = rand(3)
 
     @test nll(ŷsoft, y, reduce=false) ≈ sum(-yonehot .* ŷsoft, 1) |> vec
@@ -28,6 +31,9 @@ using Base.Test
     @test nll(ŷsoft, y, average=false) ≈ sum(@. -yonehot * ŷsoft)
     @test nll(ŷsoft, y) ≈ sum(@. -yonehot * ŷsoft) / size(ŷ, 2)
     
+    @test nll(ŷsoft, yonehot, reduce=false) ≈ nll(ŷsoft, y, reduce=false)
+    @test nll(ŷsoft, yOneHot, reduce=false) ≈ nll(ŷsoft, y, reduce=false)
+
     @test cross_entropy(ŷ, y, reduce=false) ≈ nll(ŷsoft, y, reduce=false) 
     @test cross_entropy(ŷ, y, average=false) ≈ nll(ŷsoft, y, average=false)
     @test cross_entropy(ŷ, y) ≈ nll(ŷsoft, y)
