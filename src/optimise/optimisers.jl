@@ -74,6 +74,19 @@ function amsgrad(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999,
   end
 end
 
+function nadam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
+  mt = zeros(p.x)
+  vt = zeros(p.x)
+  β1p, β2p = β1, β2
+  function ()
+    @. mt = β1 * mt + (1 - β1) * p.Δ
+    @. vt = β2 * vt + (1 - β2) * p.Δ^2
+    @. p.Δ =  (β1 * mt + (1 - β1) * p.Δ) / (1 - β1p) / (√(vt / (1 - β2p)) + ϵ) * η
+    β1p *= β1
+    β2p *= β2
+  end
+end
+
 clip(p::Param, thresh::Real) = () -> clamp!(p.Δ, -thresh, thresh)
 
 function expdecay(p::Param, γ::Real)

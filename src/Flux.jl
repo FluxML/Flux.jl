@@ -9,7 +9,7 @@ using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv, Conv2D,
   Dropout, LayerNorm, BatchNorm,
-  SGD, ADAM, Momentum, Nesterov, AMSGrad,
+  SGD, ADAM, Momentum, Nesterov, AMSGrad, NADAM,
   param, params, mapleaves, cpu, gpu
 
 @reexport using NNlib
