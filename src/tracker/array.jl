@@ -81,20 +81,22 @@ back(::typeof(ctranspose), Δ, xs) = @back(xs, trim(xs, Δ'))
 Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
 
-Base.vcat(a::TrackedVector, b::TrackedVector)  = track(vcat, a, b)
-Base.vcat(a::TrackedVector, b::TrackedVector...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedVector, b::AbstractVector) = track(vcat, a, b)
-Base.vcat(a::AbstractVector, b::TrackedVector) = track(vcat, a, b)
-
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = track(vcat, a, b)
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = track(vcat, a, b)
-Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = track(vcat, a, b)
-
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = track(vcat, a, b)
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
-Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
+# For vcat and hcat, we have quite a few methods that need to be defined for
+# all the different possible combinations of types.  We generate those here,
+# with a correspondence between tracked types and vanilla types:
+for f in [:vcat, :hcat]
+  for (tt, at) in [(TrackedVector, AbstractVector),
+                   (TrackedVecOrMat, AbstractVecOrMat),
+                   (TrackedMatrix, AbstractMatrix),
+                   (TrackedArray, AbstractArray)]
+    @eval begin
+      import Base.$f
+      Base.$f(a::$tt, b::$at...)  = track($f, a, b...)
+      Base.$f(a::$at, b::$tt...)  = track($f, a, b...)
+      Base.$f(a::$tt, b::$tt...)  = track($f, a, b...)
+    end
+  end
+end
 
 function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     Δ′ = similar(xs.data)
@@ -114,6 +116,20 @@ function back(::typeof(vcat), Δ, xs...)
   for xsi in xs
     @back(xsi, Δ[start+1:start+size(xsi,1), i...])
     start += size(xsi, 1)
+  end
+end
+
+function back(::typeof(hcat), Δ, xs...)
+  start = 0
+  for xsi in xs
+    slice_idxs = Any[Colon() for dim in 1:ndims(Δ)]
+    slice_idxs[2] = start+1:start+size(xsi,2)
+    Δ_slice = Δ[slice_idxs...]
+    if size(xsi,2) == 1 && ndims(Δ_slice) > 1
+      Δ_slice = squeeze(Δ_slice, 2)
+    end
+    @back(xsi, Δ_slice)
+    start += size(xsi, 2)
   end
 end
 
