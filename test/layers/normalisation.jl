@@ -67,7 +67,7 @@ end
   end
 
   # with activation function
-  let m = BatchNorm(2, λ = σ), x = param([1 2; 3 4; 5 6]')
+  let m = BatchNorm(2, σ), x = param([1 2; 3 4; 5 6]')
     @test m.active
     m(x)
 
@@ -76,5 +76,23 @@ end
 
     x′ = m(x).data
     @test x′[1] ≈ σ((1 - 0.3) / 1.1449489742783179)
+  end
+
+  let m = BatchNorm(2), x = param(reshape(1:6, 3, 2, 1))
+    y = reshape(permutedims(x, [2, 1, 3]), 2, :)
+    y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
+    @test m(x) == y
+  end
+
+  let m = BatchNorm(2), x = param(reshape(1:12, 2, 3, 2, 1))
+      y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
+    y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
+    @test m(x) == y
+  end
+
+  let m = BatchNorm(2), x = param(reshape(1:24, 2, 2, 3, 2, 1))
+    y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
+    y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
+    @test m(x) == y
   end
 end
