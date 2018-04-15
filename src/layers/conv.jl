@@ -26,12 +26,12 @@ end
 Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
      stride = 1, pad = 0) where T =
   Conv(σ, w, b, expand(Val{ndims(w) - 2}, stride),
-       pad = expand(Val{ndims(w) - 2}, pad))
+       expand(Val{ndims(w) - 2}, pad))
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride = 1, pad = 0) where N =
-  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
-       stride = expand(Val{N}, stride), pad = expand(Val{N}, pad))
+  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ;
+       stride = stride, pad = pad)
 
 Flux.treelike(Conv)
 
