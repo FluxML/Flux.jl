@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.BatchNorm",
     "category": "type",
-    "text": "BatchNorm(dims...; λ = identity,\n          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)\n\nBatch Normalization Layer for Dense layer.\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing      Internal Covariate Shift\n\nIn the example of MNIST, in order to normalize the input of other layer, put the BatchNorm layer before activation function.\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, λ = relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n"
+    "text": "BatchNorm(channels::Integer, σ = identity;\n          initβ = zeros, initγ = ones,\n          ϵ = 1e-8, momentum = .1)\n\nBatch Normalization layer. The channels input should be the size of the channel dimension in your data (see below).\n\nGiven an array with N dimensions, call the N-1th the channel dimension. (For a batch of feature vectors this is just the data dimension, for WHCN images it\'s the usual channel dimension.)\n\nBatchNorm computes the mean and variance for each each W×H×1×N slice and shifts them to have a new mean and variance (corresponding to the learnable, per-channel bias and scale parameters).\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.\n\nExample:\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n"
 },
 
 {
