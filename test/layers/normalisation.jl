@@ -67,7 +67,7 @@ end
   end
 
   # with activation function
-  let m = BatchNorm(2, λ = σ), x = param([1 2; 3 4; 5 6]')
+  let m = BatchNorm(2, σ), x = param([1 2; 3 4; 5 6]')
     @test m.active
     m(x)
 

@@ -68,40 +68,36 @@ function Base.show(io::IO, l::LayerNorm)
 end
 
 """
-    BatchNorm(dims...; λ = identity,
-              initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)
+    BatchNorm(channels::Integer, σ = identity;
+              initβ = zeros, initγ = ones,
+              ϵ = 1e-8, momentum = .1)
 
-Batch Normalization Layer for [`Dense`](@ref) or [`Conv`](@ref) layers.
+Batch Normalization layer. The `channels` input should be the size of the
+channel dimension in your data (see below).
+
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
+a batch of feature vectors this is just the data dimension, for `WHCN` images
+it's the usual channel dimension.)
+
+`BatchNorm` computes the mean and variance for each each `W×H×1×N` slice and
+shifts them to have a new mean and variance (corresponding to the learnable,
+per-channel `bias` and `scale` parameters).
 
 See [Batch Normalization: Accelerating Deep Network Training by Reducing
-     Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf)
+Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
 
-In the example of MNIST,
-in order to normalize the input of other layer,
-put the `BatchNorm` layer before activation function.
+Example:
 
 ```julia
 m = Chain(
   Dense(28^2, 64),
-  BatchNorm(64, λ = relu),
+  BatchNorm(64, relu),
   Dense(64, 10),
   BatchNorm(10),
   softmax)
 ```
-Normalization with convolutional layers is handled similarly.
-```julia
-m = Chain(
-  Conv((2,2), 1=>16),
-  BatchNorm(16, λ=relu),
-  x -> maxpool(x, (2,2)),
-  Conv((2,2), 16=>8),
-  BatchNorm(8, λ=relu),
-  x -> maxpool(x, (2,2)),
-  x -> reshape(x, :, size(x, 4)),
-  Dense(288, 10), softmax) |> gpu
-```
 """
-mutable struct BatchNorm{F,V, W,N}
+mutable struct BatchNorm{F,V,W,N}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -112,9 +108,10 @@ mutable struct BatchNorm{F,V, W,N}
   active::Bool
 end
 
-BatchNorm(dims::Integer...; λ = identity,
+BatchNorm(chs::Integer, λ = identity;
           initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
-BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), zeros(dims), ones(dims), ϵ, momentum, true)
+  BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
+            zeros(chs), ones(chs), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
   λ, γ, β = BN.λ, BN.γ, BN.β
