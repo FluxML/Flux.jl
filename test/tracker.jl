@@ -82,6 +82,21 @@ end
 
 @test param(2)^2 == 4.0
 
+@testset "reshape" begin
+  x = reshape(param(rand(2,2,2)), 4, 2)
+  @test x isa TrackedArray
+  @test size(x) == (4,2)
+  x = reshape(param([1]), (1,:))
+  @test x isa TrackedArray
+  @test size(x) == (1,1)
+  x = reshape(param(rand(2)), (2,:))
+  @test x isa TrackedArray
+  @test size(x) == (2,1)
+  x = reshape(param(rand(2,2)), (1,:,2))
+  @test x isa TrackedArray
+  @test size(x) == (1,2,2)
+end
+
 @testset "Intermediates" begin
   x = param([1])
   l = sum((x .+ x).^2)
