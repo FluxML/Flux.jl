@@ -32,11 +32,9 @@ include("layers/stateless.jl")
 include("layers/basic.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
-include("layers/normalisation.jl")
+include("layers/normalise.jl")
 
 include("data/Data.jl")
-
-include("jit/JIT.jl")
 
 @require CuArrays include("cuda/cuda.jl")
 

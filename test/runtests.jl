@@ -10,7 +10,6 @@ include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("optimise.jl")
 include("data.jl")
-include("jit.jl")
 
 if Base.find_in_path("CuArrays") ≠ nothing
   include("cuda/cuda.jl")

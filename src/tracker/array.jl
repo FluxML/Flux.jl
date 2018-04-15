@@ -96,6 +96,18 @@ Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
 Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
 Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
 
+function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
+    Δ′ = similar(xs.data)
+    S = size(xs.data)
+    for (i,v) in enumerate(Δ)
+        d1 = divrem(i-1, S[1]*m)
+        x = d1[2] % S[1]+1
+        y = d1[1] % S[2]+1
+        Δ′[x, y] += v
+    end
+    back(xs, Δ′)
+end
+
 function back(::typeof(vcat), Δ, xs...)
   i = Base.tail(map(_ -> :, size(Δ)))
   start = 0
@@ -138,6 +150,13 @@ Base.sum(xs::TrackedArray) = track(sum, xs)
 Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
 back(::typeof(sum), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= Δ)
+
+Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
+Base.prod(xs::TrackedArray) = track(prod, xs)
+Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
+
+back(::typeof(prod), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= (prod(xs.data, dim...) ./ xs.data) .* Δ)
+back(::typeof(prod), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= (reshape(.*(circshift.([reshape(xs.data, length(xs.data))], 1:length(xs.data)-1)...), size(xs.data))) .* Δ)
 
 Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
@@ -242,21 +261,21 @@ function back(::typeof(_conv), Δ, x, w, stride, pad)
   @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad))
 end
 
-_maxpool(x, k, pad) = maxpool(x, k; pad = pad)
+_maxpool(x, k, pad, stride) = maxpool(x, k; pad = pad, stride = stride)
 
-maxpool(x::TrackedArray, k; pad = map(_->0,k)) =
-  track(_maxpool, x, k, pad)
+maxpool(x::TrackedArray, k; pad = map(_->0,k), stride = k) =
+  track(_maxpool, x, k, pad, stride)
 
-back_(::typeof(_maxpool), y, Δ, x, k, pad) =
-  back(x, NNlib.∇maxpool(Δ, y, data(x), k, pad=pad))
+back_(::typeof(_maxpool), y, Δ, x, k, pad, stride) =
+  back(x, NNlib.∇maxpool(Δ, y, data(x), k, pad=pad, stride=stride))
 
-_meanpool(x, k, pad) = meanpool(x, k; pad = pad)
+_meanpool(x, k, pad, stride) = meanpool(x, k; pad = pad, stride = stride)
 
-meanpool(x::TrackedArray, k; pad = map(_->0,k)) =
-  track(_meanpool, x, k, pad)
+meanpool(x::TrackedArray, k; pad = map(_->0,k), stride = k) =
+  track(_meanpool, x, k, pad, stride)
 
-back_(::typeof(_meanpool), y, Δ, x, k, pad) =
-  back(x, NNlib.∇meanpool(Δ, y, data(x), k, pad=pad))
+back_(::typeof(_meanpool), y, Δ, x, k, pad, stride) =
+  back(x, NNlib.∇meanpool(Δ, y, data(x), k, pad=pad, stride=stride))
 
 # Broadcasting
 
