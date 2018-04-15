@@ -1,5 +1,8 @@
 using NNlib: conv
 
+expand(::Type{Val{N}}, i::Integer) where N = ntuple(_ -> i, Val{N})
+expand(::Type{Val{N}}, i::NTuple{N, Integer}) where N = i
+
 """
     Conv(size, in=>out)
     Conv(size, in=>out, relu)
@@ -24,16 +27,10 @@ Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
        stride = 1, pad = 0) where T =
   Conv(σ, w, b, stride, pad)
 
-#Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
-#     stride::NTuple{N,Integer} = map(_->1,k),
-#     pad::NTuple{N,Integer} = map(_->0,k)) where N =
-#  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
-#       stride = stride, pad = pad)
-
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
-     stride::Integer = 1, pad::Integer = 0) where N =
+     stride = 1, pad = 0) where N =
   Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
-       stride = map(_->stride,k), pad = map(_->pad,k))
+       stride = expand(Val{N}, stride), pad = expand(Val{N}, pad))
 
 Flux.treelike(Conv)
 
