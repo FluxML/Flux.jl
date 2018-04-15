@@ -24,8 +24,9 @@ struct Conv{N,F,A,V}
 end
 
 Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
-       stride = 1, pad = 0) where T =
-  Conv(σ, w, b, stride, pad)
+     stride = 1, pad = 0) where T =
+  Conv(σ, w, b, expand(Val{ndims(w) - 2}, stride),
+       pad = expand(Val{ndims(w) - 2}, pad))
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride = 1, pad = 0) where N =
