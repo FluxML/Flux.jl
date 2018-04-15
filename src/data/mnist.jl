@@ -14,6 +14,7 @@ function load()
                  "t10k-images-idx3-ubyte",
                  "t10k-labels-idx1-ubyte"]
       isfile(file) && continue
+      info("Downloading MNIST dataset")
       download("https://cache.julialang.org/http://yann.lecun.com/exdb/mnist/$file.gz", "$file.gz")
       open(file, "w") do io
         write(io, GZip.open(read, "$file.gz"))

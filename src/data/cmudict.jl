@@ -10,13 +10,15 @@ const cache_prefix = "https://cache.julialang.org"
 function load()
   suffixes = ["", ".phones", ".symbols"]
   if isdir(deps("cmudict"))
-    if all(isfile.(["cmudict$x" for x in suffixes]))
+    if all(isfile(deps("cmudict", "cmudict$x")) for x in suffixes)
       return
     end
   end
+  info("Downloading CMUDict dataset")
   mkpath(deps("cmudict"))
   for x in suffixes
-    download("$cache_prefix/http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x", deps("cmudict", "cmudict$x"))
+    download("$cache_prefix/http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
+             deps("cmudict", "cmudict$x"))
   end
 end
 
