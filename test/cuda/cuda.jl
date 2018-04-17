@@ -21,6 +21,10 @@ cm = gpu(m)
 @test all(p isa TrackedArray && p.data isa CuArray for p in params(cm))
 @test cm(gpu(rand(10, 10))) isa TrackedArray{Float32,2,CuArray{Float32,2}}
 
+x = [1,2,3]
+cx = gpu(x)
+@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
+
 # Fails in Pkg.test ffs
 # c = gpu(Conv((2,2),3=>4))
 # l = c(gpu(rand(10,10,3,2)))
