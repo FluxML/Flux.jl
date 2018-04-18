@@ -169,6 +169,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.GRU",
+    "page": "Model Reference",
+    "title": "Flux.GRU",
+    "category": "function",
+    "text": "GRU(in::Integer, out::Integer, σ = tanh)\n\nGated Recurrent Unit layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Flux.Recur",
     "page": "Model Reference",
     "title": "Flux.Recur",
@@ -181,7 +189,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Recurrent Layers",
     "category": "section",
-    "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nFlux.Recur"
+    "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nGRU\nFlux.Recur"
 },
 
 {
