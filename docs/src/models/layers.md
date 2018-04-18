@@ -15,6 +15,7 @@ Much like the core layers above, but can be used to process sequence data (as we
 ```@docs
 RNN
 LSTM
+GRU
 Flux.Recur
 ```
 
