@@ -14,3 +14,7 @@ Pkg.test("Flux") # Check things installed correctly
 ```
 
 Start with the [basics](models/basics.md). The [model zoo](https://github.com/FluxML/model-zoo/) is also a good starting point for many common kinds of models.
+
+## Installation with GPU Support
+
+See [`CUDAnative.jl` docs](https://juliagpu.github.io/CUDAnative.jl/stable/#Installation). 
