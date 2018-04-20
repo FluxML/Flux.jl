@@ -81,20 +81,9 @@ back(::typeof(ctranspose), Δ, xs) = @back(xs, trim(xs, Δ'))
 Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
 
-Base.vcat(a::TrackedVector, b::TrackedVector)  = track(vcat, a, b)
-Base.vcat(a::TrackedVector, b::TrackedVector...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedVector, b::AbstractVector) = track(vcat, a, b)
-Base.vcat(a::AbstractVector, b::TrackedVector) = track(vcat, a, b)
-
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = track(vcat, a, b)
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = track(vcat, a, b)
-Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = track(vcat, a, b)
-
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = track(vcat, a, b)
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
-Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
+Base.vcat(a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(vcat, a, b...)
+Base.vcat(a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(vcat, a, b)
+Base.vcat(a::A, b::B) where {A <: AbstractArray, B <: TrackedArray} = track(vcat, a, b)
 
 Base.hcat(a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(hcat, a, b...)
 Base.hcat(a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(hcat, a, b)
@@ -117,7 +106,7 @@ function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
 end
 
 function back(::typeof(vcat), Δ, xs...)
-  i = Base.tail(map(_ -> :, size(Δ)))
+  i = fill(:, ndims(Δ)-1)
   start = 0
   for xsi in xs
     @back(xsi, Δ[start+1:start+size(xsi,1), i...])
