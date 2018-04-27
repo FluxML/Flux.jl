@@ -55,6 +55,26 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
   @test gradtest(x -> mean(x, [1, 2]), rand(2, 3, 4))
 end
 
+@testset "maximum" begin
+  @test gradtest(maximum, rand(2, 3))
+
+  @test gradtest(x -> maximum(x, 1), rand(2, 3))
+  @test gradtest(x -> maximum(x, 2), rand(2, 3))
+  @test gradtest(x -> maximum(x, 3), rand(2, 3, 4))
+
+  @test gradtest(x -> maximum(x, [1, 2]), rand(2, 3, 4))
+end
+
+@testset "minimum" begin
+  @test gradtest(minimum, rand(2, 3))
+
+  @test gradtest(x -> minimum(x, 1), rand(2, 3))
+  @test gradtest(x -> minimum(x, 2), rand(2, 3))
+  @test gradtest(x -> minimum(x, 3), rand(2, 3, 4))
+
+  @test gradtest(x -> minimum(x, [1, 2]), rand(2, 3, 4))
+end
+
 @test gradtest(x -> std(x), rand(5,5))
 @test gradtest(x -> std(x, 1), rand(5,5))
 
