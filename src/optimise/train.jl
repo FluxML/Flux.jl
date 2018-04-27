@@ -1,5 +1,5 @@
 using Juno
-using Flux.Tracker: back!
+using Flux.Tracker: back!, data
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -65,7 +65,7 @@ stopif(cbs...) = () -> any(cb() ∈ (true,:stop) for cb in cbs) && :stop
 For `f` a function (e.g. a loss function, an accurasy function) taking zero arguments.
 `atol` returns a callback, that returns `:stop` if `f` returns `minval` or less.
 """
-atol(f, minval=0.0) = () -> f()<=minval && :stop
+atol(f, minval=0.0) = () -> data(f())<=minval && :stop
 
 """
     rtol(f, mindecrease=0.0)
@@ -77,7 +77,7 @@ if between successive calls to the callback `f()` has not decreased by at least 
 function rtol(f, mindecrease=0.0)
     prev_score = f() # Initial score at declaration time
     function ()
-        score = f()
+        score = data(f())
         should_stop = prev_score - score < mindecrease
         prev_score = score
         should_stop && :stop
