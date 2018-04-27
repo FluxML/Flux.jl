@@ -97,6 +97,25 @@ end
 # Other
 
 """
+    iter_throttle(f, period; default_return=false)
+Returns a function wraps `f` such that it will
+only run `f` every `period` times that it is called.
+In rounds which it does not run, returns `default_return`
+"""
+function iter_throttle(f, period; default_return=false)
+    round = 0
+    function(args...)
+        if round==period
+            round=0
+            f(args...)
+        else
+            round+=1
+            default_return
+        end
+    end
+end
+
+"""
 Returns a function that when invoked, will only be triggered at most once
 during `timeout` seconds. Normally, the throttled function will run
 as much as it can, without ever going more than once per `wait` duration;
