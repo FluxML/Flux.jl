@@ -135,18 +135,10 @@ Returns a Dictionary where every label number has been mapped to the category ti
 
 function labelnames()
   labelmap = Dict{Int,String}()
-  label = 0
-  str = ""
   cd(dir_files) do
-    file = Char.(read(LABELS))
-    for i in file
-      if(i=='\n')
-        str!="" && (labelmap[label] = str)
-        label += 1
-        str = ""
-        continue
-      end
-      str = "$(str)$(i)"
+    file = readlines(LABELS)[1:end-1]
+    for i in 0:length(file)-1
+      labelmap[i] = file[i]
     end
   end
   labelmap
