@@ -156,11 +156,15 @@ Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 back(::typeof(prod), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= (prod(xs.data, dim...) ./ xs.data) .* Δ)
 back(::typeof(prod), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= (reshape(.*(circshift.([reshape(xs.data, length(xs.data))], 1:length(xs.data)-1)...), size(xs.data))) .* Δ)
 
-Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
 Base.mean(xs::TrackedArray) = track(mean, xs)
 Base.mean(xs::TrackedArray, region) = track(mean, xs, region)
+
+Base.maximum(xs::TrackedArray) = track(maximum, xs)
+Base.maximum(xs::TrackedArray, region) = track(maximum, xs, region)
+Base.minimum(xs::TrackedArray) = track(minimum, xs)
+Base.minimum(xs::TrackedArray, region) = track(minimum, xs, region)
 
 LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
 LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
@@ -183,6 +187,31 @@ Base.vecnorm(x::TrackedArray, p::Real = 2) =
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =
   back(xs, similar(xs.data) .= Δ ./ prod(size(xs.data, region...)))
+
+function back(::typeof(maximum), Δ, xs::TrackedArray)
+    Δ′    = zeros(xs.data)
+    _, i  = findmax(xs.data)
+    Δ′[i] = Δ
+    @back(xs, Δ′)
+end
+function back(::typeof(maximum), Δ, xs::TrackedArray, region)
+    Δ′     = zeros(xs.data)
+    _, is  = findmax(xs.data, region)
+    Δ′[is] = Δ
+    @back(xs, Δ′)
+end
+function back(::typeof(minimum), Δ, xs::TrackedArray)
+    Δ′    = zeros(xs.data)
+    _, i  = findmin(xs.data)
+    Δ′[i] = Δ
+    @back(xs, Δ′)
+end
+function back(::typeof(minimum), Δ, xs::TrackedArray, region)
+    Δ′     = zeros(xs.data)
+    _, is  = findmin(xs.data, region)
+    Δ′[is] = Δ
+    @back(xs, Δ′)
+end
 
 # BLAS
 
