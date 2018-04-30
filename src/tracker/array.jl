@@ -41,7 +41,7 @@ end
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
 
-back!(::TrackedArray) = error("Use back!(x, Δ)")
+back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back!(x, Δ)`")
 
 # Fallthrough methods
 
