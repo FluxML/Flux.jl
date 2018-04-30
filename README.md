@@ -79,3 +79,9 @@ For general questions and help, check out Julia's [community forum](https://disc
 Flux development is carried out via our [GitHub issues](https://github.com/FluxML/Flux.jl/issues), so feel free to open feature requests or PRs here.
 
 For more informal discussions we'd love to have you on the [Julia slack](https://slackinvite.julialang.org/), where we hang out on the #machine-learning channel.
+
+## Related Packages
+
+Check out [Metalhead.jl](https://github.com/FluxML/Metalhead.jl) for common computer vision datasets and trained models.
+
+[MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl) provides further common datasets.
