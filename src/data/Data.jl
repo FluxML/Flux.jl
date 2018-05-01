@@ -11,6 +11,7 @@ function __init__()
 end
 
 include("mnist.jl")
+include("cifar10.jl")
 include("cmudict.jl")
 using .CMUDict
 
