@@ -18,4 +18,6 @@ include("tree.jl")
 include("sentiment.jl")
 using .Sentiment
 
+include("cifar10.jl")
+
 end
