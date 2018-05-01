@@ -45,6 +45,3 @@ function Base.show(io::IO, l::Conv)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
-
-# v0.5
-@deprecate Conv2D(args...; kw...) Conv(args...; kw...)
