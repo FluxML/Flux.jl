@@ -72,6 +72,11 @@ end
   end
 
   @test gradtest((a,b)->cat((2,3,5), a, b), rand(2,3), rand(2,4,2,1))
+
+  @testset "issue #213" begin
+    A, B, C = rand(2,2), rand(2,2), rand(2,2)
+    @test vcat(A, B, C |> param) == vcat(param.((A,B,C))...)
+  end
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
