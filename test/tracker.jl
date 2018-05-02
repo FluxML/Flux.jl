@@ -70,6 +70,8 @@ end
     @test gradtest(catdim, rand(5), rand(5))
     @test gradtest(catdim, rand(2,5), rand(2,5), rand(2,5))
   end
+
+  @test gradtest((a,b)->cat((2,3,5), a, b), rand(2,3), rand(2,4,2,1))
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
