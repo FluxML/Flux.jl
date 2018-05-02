@@ -81,17 +81,18 @@ back(::typeof(ctranspose), Δ, xs) = @back(xs, trim(xs, Δ'))
 Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
 
-Base.vcat(a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(vcat, a, b...)
-Base.vcat(a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(vcat, a, b)
-Base.vcat(a::A, b::B) where {A <: AbstractArray, B <: TrackedArray} = track(vcat, a, b)
+for f in [:vcat, :hcat]
+  @eval begin
+    Base.$f(a::TrackedArray...) = track($f, a...)
+    Base.$f(a::TrackedArray, b::Array...) = track($f, a, b...)
 
-Base.hcat(a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(hcat, a, b...)
-Base.hcat(a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(hcat, a, b)
-Base.hcat(a::A, b::B) where {A <: AbstractArray, B <: TrackedArray} = track(hcat, a, b)
+    # assumes there is another function to capture Union{Matrix,Vector}... without any TrackedMatrix or TrackedVector
+    Base.$f(a::Union{TrackedMatrix,TrackedVector,Matrix,Vector}...) = track($f, a...)
+  end
+end
 
-Base.cat(dim::Int, a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(cat, dim, a, b...)
-Base.cat(dim::Int, a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(cat, dim, a, b)
-Base.cat(dim::Int, a::A, b::B) where {A <: AbstractArray, B <: TrackedArray} = track(cat, dim, a, b)
+Base.cat(dim::Int, a::TrackedArray...) = track(Base.cat, dim, a...)
+Base.cat(dim::Int, a::TrackedArray, b::Array...) = track(Base.cat, dim, a, b...)
 
 function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     Δ′ = similar(xs.data)
@@ -106,21 +107,21 @@ function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
 end
 
 function back(::typeof(vcat), Δ, xs...)
-  i = fill(:, ndims(Δ)-1)
   start = 0
   for xsi in xs
+    i = map(_ -> :, size(xsi)) |> Base.tail
     @back(xsi, Δ[start+1:start+size(xsi,1), i...])
     start += size(xsi, 1)
   end
 end
 
 function back(::typeof(hcat), Δ, xs...)
-  i = fill(:, ndims(Δ)-2)
   start = 0
   for xsi in xs
     if ndims(xsi) == 1
       @back(xsi, Δ[:, start+1])
     else
+      i = map(_ -> :, size(xsi)) |> Base.tail |> Base.tail
       @back(xsi, Δ[:, start+1:start+size(xsi,2), i...])
     end
     start += size(xsi, 2)
@@ -128,14 +129,15 @@ function back(::typeof(hcat), Δ, xs...)
 end
 
 function back(::typeof(cat), Δ, dim, xs...)
-  i = fill(:, dim-1)
-  j = fill(:, ndims(Δ)-dim)
   start = 0
   for xsi in xs
     if ndims(xsi) < dim
-      a = [fill(:, ndims(xsi)); ones(Int, dim-ndims(xsi)-1)]
-      @back(xsi, Δ[a..., start+1])
+      i = map(_ -> :, size(xsi))
+      j = ones(Int, dim-ndims(xsi)-1)
+      @back(xsi, Δ[i..., j..., start+1])
     else
+      i = fill(:, dim-1)
+      j = fill(:, ndims(xsi)-dim)
       @back(xsi, Δ[i..., start+1:start+size(xsi,dim), j...])
     end
     start += size(xsi, dim)

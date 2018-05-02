@@ -29,19 +29,42 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest(x -> x', rand(5))
 
+function simplepromotioncheck(f, A, B)
+  r0 = f(A, B)
+  r1 = f(param(A), B)
+  r2 = f(A, param(B))
+  r3 = f(param(A), param(B))
+
+  r1 == r2 == r3 && r0 == Flux.data(r1)
+end
+
 @testset "concat" begin
-  @testset "vcat $i" for (i,vcatf) in enumerate((vcat, (x...) -> cat(1, x...)))
+  cat1(x...) = cat(1, x...)
+  cat2(x...) = cat(2, x...)
+
+  @testset for vcatf in [vcat, cat1]
     @test gradtest(vcatf, rand(5), rand(3))
     @test gradtest(vcatf, rand(5), rand(3), rand(8))
     @test gradtest(vcatf, rand(5,2), rand(3,2), rand(8,2))
     @test gradtest(vcatf, rand(5,2,3), rand(3,2,3), rand(8,2,3))
+    @test gradtest(vcatf, rand(5), rand(3,1))
+    @test gradtest(vcatf, rand(5)', rand(2,5))
   end
-  @testset "hcat $i" for (i,hcatf) in enumerate((hcat, (x...) -> cat(2, x...)))
+
+  @test simplepromotioncheck(vcat, rand(5), rand(5))
+
+  @testset for hcatf in [hcat, cat2]
     @test gradtest(hcatf, rand(5), rand(5))
     @test gradtest(hcatf, rand(2,5), rand(2,3), rand(2,8))
     @test gradtest(hcatf, rand(2,5,3), rand(2,3,3), rand(2,8,3))
+    @test gradtest(hcatf, rand(5)', rand(1,3))
+    @test gradtest(hcatf, rand(5), rand(5,2))
   end
+
+  @test simplepromotioncheck(hcat, rand(5), rand(5))
+
   @test gradtest((x...) -> cat(3, x...), rand(2,5,2), rand(2,5,3), rand(2,5,4))
+
   @testset "cat($dim, ...)" for dim in 1:5
     catdim = (x...) -> cat(dim, x...)
     @test gradtest(catdim, rand(5), rand(5))
