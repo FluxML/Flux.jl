@@ -81,19 +81,6 @@ back(::typeof(ctranspose), Δ, xs) = @back(xs, trim(xs, Δ'))
 Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
 
-for f in [:vcat, :hcat]
-  @eval begin
-    Base.$f(a::TrackedArray...) = track($f, a...)
-    Base.$f(a::TrackedArray, b::Array...) = track($f, a, b...)
-
-    # assumes there is another function to capture Union{Matrix,Vector}... without any TrackedMatrix or TrackedVector
-    Base.$f(a::Union{TrackedMatrix,TrackedVector,Matrix,Vector}...) = track($f, a...)
-  end
-end
-
-Base.cat(dim::Int, a::TrackedArray...) = track(Base.cat, dim, a...)
-Base.cat(dim::Int, a::TrackedArray, b::Array...) = track(Base.cat, dim, a, b...)
-
 function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     Δ′ = similar(xs.data)
     S = size(xs.data)
@@ -104,6 +91,16 @@ function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
         Δ′[x, y] += v
     end
     back(xs, Δ′)
+end
+
+for f in [:vcat, :hcat]
+  @eval begin
+    Base.$f(a::TrackedArray...) = track($f, a...)
+    Base.$f(a::TrackedArray, b::Array...) = track($f, a, b...)
+
+    # assumes there is another function to capture Union{Matrix,Vector}... without any TrackedMatrix or TrackedVector
+    Base.$f(a::Union{TrackedMatrix,TrackedVector,Matrix,Vector}...) = track($f, a...)
+  end
 end
 
 function back(::typeof(vcat), Δ, xs...)
@@ -127,6 +124,9 @@ function back(::typeof(hcat), Δ, xs...)
     start += size(xsi, 2)
   end
 end
+
+Base.cat(dim::Int, a::TrackedArray...) = track(Base.cat, dim, a...)
+Base.cat(dim::Int, a::TrackedArray, b::Array...) = track(Base.cat, dim, a, b...)
 
 function back(::typeof(cat), Δ, dim, xs...)
   start = 0
