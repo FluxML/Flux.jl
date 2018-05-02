@@ -96,10 +96,9 @@ end
 for f in [:vcat, :hcat]
   @eval begin
     Base.$f(a::TrackedArray...) = track($f, a...)
-    Base.$f(a::TrackedArray, b::Array...) = track($f, a, b...)
 
-    # assumes there is another function to match Union{Matrix,Vector}... without any TrackedMatrix or TrackedVector
-    Base.$f(a::Union{TrackedMatrix,TrackedVector,Matrix,Vector}...) = track($f, a...)
+    # assumes there are other functions to match the more conservative signature without TrackedArray; ie `Base.$f(::Union{Matrix,Vector,RowVector}...)`
+    Base.$f(a::Union{TrackedArray,Matrix,Vector,RowVector}...) = track($f, a...)
   end
 end
 
