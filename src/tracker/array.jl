@@ -95,10 +95,19 @@ end
 
 for f in [:vcat, :hcat]
   @eval begin
-    Base.$f(a::TrackedArray...) = track($f, a...)
+    # This section is a bit of a hack since julia doesn't have a standardised promotion mechanism for concatenation yet https://github.com/JuliaLang/julia/pull/20815
 
-    # assumes there are other functions to match the more conservative signature without TrackedArray; ie `Base.$f(::Union{Matrix,Vector,RowVector}...)`
-    Base.$f(a::Union{TrackedArray,Matrix,Vector,RowVector}...) = track($f, a...)
+    # It should support tracked concatenation with rank ∈ (1,2) with a TrackedArray anywhere among the arguments
+    # This works as long as base has other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
+    Base.$f(a::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a...)
+
+    # It should support tracked concatenation with rank>2 if the TrackedArray is first
+    Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
+    Base.$f(a::TrackedArray, b::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b...) # resolves ambiguity introduced by previous row
+
+    # It should support tracked concatenation with rank>2 if the TrackedArray is second
+    Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
+    Base.$f(a::Union{Vector,RowVector,Matrix}, b::TrackedArray, c::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b, c...) # resolves ambiguity introduced by previous row
   end
 end
 
@@ -124,9 +133,8 @@ function back(::typeof(hcat), Δ, xs...)
   end
 end
 
-Base.cat(dims, a::TrackedArray...) = track(Base.cat, dims, a...)
-Base.cat(dims, a::TrackedArray, b::Array...) = track(Base.cat, dims, a, b...)
-Base.cat(dims, a::Array, b::TrackedArray...) = track(Base.cat, dims, a, b...)
+Base.cat(dims, a::TrackedArray, b::AbstractArray...) = track(cat, dims, a, b...)
+Base.cat(dims, a::Union{RowVector,Array}, b::TrackedArray, c::AbstractArray...) = track(cat, dims, a, b, c...)
 
 function back(::typeof(cat), Δ, dims, Xs...)
   start = ntuple(i -> 0, Val{ndims(Δ)})
