@@ -96,6 +96,14 @@ Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
 Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
 Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
 
+Base.hcat(a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(hcat, a, b...)
+Base.hcat(a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(hcat, a, b)
+Base.hcat(a::A, b::B) where {A <: AbstractArray, B <: TrackedArray} = track(hcat, a, b)
+
+Base.cat(dim::Int, a::A, b::B...) where {A <: TrackedArray, B <: TrackedArray} = track(cat, dim, a, b...)
+Base.cat(dim::Int, a::A, b::B) where {A <: TrackedArray, B <: AbstractArray} = track(cat, dim, a, b)
+Base.cat(dim::Int, a::A, b::B) where {A <: AbstractArray, B <: TrackedArray} = track(cat, dim, a, b)
+
 function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     Δ′ = similar(xs.data)
     S = size(xs.data)
@@ -114,6 +122,34 @@ function back(::typeof(vcat), Δ, xs...)
   for xsi in xs
     @back(xsi, Δ[start+1:start+size(xsi,1), i...])
     start += size(xsi, 1)
+  end
+end
+
+function back(::typeof(hcat), Δ, xs...)
+  i = fill(:, ndims(Δ)-2)
+  start = 0
+  for xsi in xs
+    if ndims(xsi) == 1
+      @back(xsi, Δ[:, start+1])
+    else
+      @back(xsi, Δ[:, start+1:start+size(xsi,2), i...])
+    end
+    start += size(xsi, 2)
+  end
+end
+
+function back(::typeof(cat), Δ, dim, xs...)
+  i = fill(:, dim-1)
+  j = fill(:, ndims(Δ)-dim)
+  start = 0
+  for xsi in xs
+    if ndims(xsi) < dim
+      a = [fill(:, ndims(xsi)); ones(Int, dim-ndims(xsi)-1)]
+      @back(xsi, Δ[a..., start+1])
+    else
+      @back(xsi, Δ[i..., start+1:start+size(xsi,dim), j...])
+    end
+    start += size(xsi, dim)
   end
 end
 
