@@ -29,20 +29,25 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest(x -> x', rand(5))
 
-@test gradtest(vcat, rand(5), rand(3))
-@test gradtest(vcat, rand(5), rand(3), rand(8))
-@test gradtest(vcat, rand(5,2), rand(3,2), rand(8,2))
-
-@test gradtest(vcat, rand(5,2,3), rand(3,2,3), rand(8,2,3))
-@test gradtest(hcat, rand(5), rand(5), rand(5,2))
-@test gradtest(hcat, rand(5,2), rand(5,3), rand(5,5))
-@test gradtest(hcat, rand(5,2,3), rand(5,3,3), rand(5,5,3))
-@test gradtest((i...) -> cat(1,i...), rand(5), rand(3))
-@test gradtest((i...) -> cat(1,i...), rand(5), rand(8))
-@test gradtest((i...) -> cat(1,i...), rand(5,2),rand(3,2), rand(8,2))
-@test gradtest((i...) -> cat(2,i...), rand(5,1), rand(5,1))
-@test gradtest((i...) -> cat(2,i...), rand(5,1), rand(5,4))
-@test gradtest((i...) -> cat(2,i...), rand(5,2),rand(5,4), rand(5,8))
+@testset "concat" begin
+  @testset "vcat $i" for (i,vcatf) in enumerate((vcat, (x...) -> cat(1, x...)))
+    @test gradtest(vcatf, rand(5), rand(3))
+    @test gradtest(vcatf, rand(5), rand(3), rand(8))
+    @test gradtest(vcatf, rand(5,2), rand(3,2), rand(8,2))
+    @test gradtest(vcatf, rand(5,2,3), rand(3,2,3), rand(8,2,3))
+  end
+  @testset "hcat $i" for (i,hcatf) in enumerate((hcat, (x...) -> cat(2, x...)))
+    @test gradtest(hcatf, rand(5), rand(5))
+    @test gradtest(hcatf, rand(2,5), rand(2,3), rand(2,8))
+    @test gradtest(hcatf, rand(2,5,3), rand(2,3,3), rand(2,8,3))
+  end
+  @test gradtest((x...) -> cat(3, x...), rand(2,5,2), rand(2,5,3), rand(2,5,4))
+  @testset "cat($dim, ...)" for dim in 1:5
+    catdim = (x...) -> cat(dim, x...)
+    @test gradtest(catdim, rand(5), rand(5))
+    @test gradtest(catdim, rand(2,5), rand(2,5), rand(2,5))
+  end
+end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
