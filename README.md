@@ -12,6 +12,18 @@ julia> Pkg.add("Flux")
 
 See the [documentation](http://fluxml.github.io/Flux.jl/) or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
 
+If you use Flux in research, please cite the following paper:
+
+```
+@article{innes:2018,
+  author    = {Mike Innes},
+  title     = {Flux: Elegant Machine Learning with Julia},
+  journal   = {Journal of Open Source Software},
+  year      = {2018},
+  doi       = {10.21105/joss.00602},
+}
+```
+
 ## Features
 
 Flux has powerful high-level features, and common architectures can be defined in a few lines.
