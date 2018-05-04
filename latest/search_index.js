@@ -145,11 +145,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.Chain",
+    "page": "Model Reference",
+    "title": "Flux.Chain",
+    "category": "type",
+    "text": "Chain(layers...)\n\nChain multiple layers / functions together, so that they are called in sequence on a given input.\n\nm = Chain(x -> x^2, x -> x+1)\nm(5) == 26\n\nm = Chain(Dense(10, 5), Dense(5, 2))\nx = rand(10)\nm(x) == m[2](m[1](x))\n\nChain also supports indexing and slicing, e.g. m[2] or m[1:end-1]. m[1:3](x) will calculate the output of the first three layers.\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.Dense",
+    "page": "Model Reference",
+    "title": "Flux.Dense",
+    "category": "type",
+    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n  0.00257447\n  -0.00449443\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.Conv",
+    "page": "Model Reference",
+    "title": "Flux.Conv",
+    "category": "type",
+    "text": "Conv(size, in=>out)\nConv(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad and stride.\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Basic-Layers-1",
     "page": "Model Reference",
     "title": "Basic Layers",
     "category": "section",
-    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense\nConv2D"
+    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense\nConv"
 },
 
 {
