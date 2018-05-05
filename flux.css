@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Lato:400,400i');
+
+body {
+  font-family: Lato, "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+
 nav.toc {
   padding-top: 0;
   background: rgb(240, 240, 240);
@@ -13,17 +19,19 @@ h1+h2 {
 /* Green banner in ToC */
 nav.toc > h1 {
   margin-top: 0;
-  padding-top: 1em;
-  padding-bottom: 1em;
+  padding-top: 0.4em;
+  padding-bottom: 0.5em;
   border-bottom: 5px solid white;
   box-shadow: 0px -2px 5px rgb(60,60,60);
   margin-bottom: 0.5em;
-  text-indent: 100%;
-  
-  background: url(//fluxml.ai/flux-white.png) rgb(60, 150, 60);
-  background-size: 80px;
-  background-repeat: no-repeat;
-  background-position: center;
+  background: rgb(60, 150, 60);
+
+  font-style: italic;
+  font-weight: normal;
+  font-size: 50pt;
+  text-transform: lowercase;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  color: white;
 }
 
 /* Reduce ToC font size */
