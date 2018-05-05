@@ -17,7 +17,7 @@ using NNlib: @fix
 include("tracker/Tracker.jl")
 using .Tracker
 using .Tracker: data
-export TrackedArray, TrackedVector, TrackedMatrix, param
+export Tracker, TrackedArray, TrackedVector, TrackedMatrix, param
 
 include("optimise/Optimise.jl")
 using .Optimise
