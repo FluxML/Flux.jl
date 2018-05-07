@@ -8,7 +8,15 @@ tracker(x::TrackedReal) = x.tracker
 
 track(f::Call, x::Real) = TrackedReal(Tracked(f, x, zero(x)))
 
-back!(x::TrackedReal) = back!(x, 1)
+function back!(x::TrackedReal)
+    if isinf(x)
+        error("Loss is Inf")
+    end
+    if isnan(x)
+        error("Loss is NaN")
+    end
+    return back!(x, 1)
+end
 
 function Base.show(io::IO, x::TrackedReal)
   show(io, data(x))
