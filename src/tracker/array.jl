@@ -95,19 +95,26 @@ end
 
 for f in [:vcat, :hcat]
   @eval begin
-    # This section is a bit of a hack since julia doesn't have a standardised promotion mechanism for concatenation yet https://github.com/JuliaLang/julia/pull/20815
+    # This section is a bit of a hack since julia doesn't have a standardised
+    # promotion mechanism for concatenation yet
+    # https://github.com/JuliaLang/julia/pull/20815
 
-    # It should support tracked concatenation with rank ∈ (1,2) with a TrackedArray anywhere among the arguments
-    # This works as long as base has other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
+    # It should support tracked concatenation with rank ∈ (1,2) with a
+    # TrackedArray anywhere among the arguments This works as long as base has
+    # other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
     Base.$f(a::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a...)
 
-    # It should support tracked concatenation with rank>2 if the TrackedArray is first
+    # It should support tracked concatenation with rank>2 if the TrackedArray is
+    # first
     Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
     Base.$f(a::TrackedArray, b::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b...) # resolves ambiguity introduced by previous row
 
-    # It should support tracked concatenation with rank>2 if the TrackedArray is second
+    # It should support tracked concatenation with rank>2 if the TrackedArray is
+    # second
     Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
-    Base.$f(a::Union{Vector,RowVector,Matrix}, b::TrackedArray, c::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b, c...) # resolves ambiguity introduced by previous row
+    Base.$f(a::Union{Vector,RowVector,Matrix}, b::TrackedArray,
+            c::Union{TrackedArray,Vector,RowVector,Matrix}...) =
+      track($f, a, b, c...) # resolves ambiguity introduced by previous row
   end
 end
 
