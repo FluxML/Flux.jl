@@ -141,7 +141,12 @@ function (BN::BatchNorm)(x)
   end
 
   let λ = BN.λ
-    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
+    if :data in fieldnames(x)
+      return Tracker.TrackedArray(convert(typeof(x.data), λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ)
+                                   .+ reshape(β, affine_shape...)).data))
+    else
+      return λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
+    end
   end
 end
 
