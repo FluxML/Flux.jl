@@ -314,18 +314,18 @@ logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 back(::typeof(logsoftmax), Δ, xs) = @back(xs, ∇logsoftmax(Δ, data(xs)))
 
 # TODO: can store kwargs efficiently in namedtuples
-_conv(x, w, stride, pad) = conv(x, w, stride = stride, pad = pad)
+_conv(x, w, stride, pad, dilation) = conv(x, w, stride = stride, pad = pad, dilation = dilation)
 
-conv(x::TrackedArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
-  track(_conv, x, w, stride, pad)
-conv(x::AbstractArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
-  track(_conv, x, w, stride, pad)
-conv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0) where N =
-  track(_conv, x, w, stride, pad)
+conv(x::TrackedArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0, dilation = 1) where N =
+  track(_conv, x, w, stride, pad, dilation)
+conv(x::AbstractArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0, dilation = 1) where N =
+  track(_conv, x, w, stride, pad, dilation)
+conv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0, dilation = 1) where N =
+  track(_conv, x, w, stride, pad, dilation)
 
-function back(::typeof(_conv), Δ, x, w, stride, pad)
-  @back(x, NNlib.∇conv_data(Δ, data(x), data(w); stride = stride, pad = pad))
-  @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad))
+function back(::typeof(_conv), Δ, x, w, stride, pad, dilation)
+  @back(x, NNlib.∇conv_data(Δ, data(x), data(w); stride = stride, pad = pad, dilation = dilation))
+  @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad, dilation = dilation))
 end
 
 _maxpool(x, k, pad, stride) = maxpool(x, k; pad = pad, stride = stride)
