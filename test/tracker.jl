@@ -114,6 +114,9 @@ end
 @test gradtest(x -> repmat(x, 5,5), rand(4,5))
 @test gradtest(x -> repmat(x, 5), rand(4,5))
 
+@test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
+@test gradtest(x -> repeat(x; inner=(2,2,1), outer=(1,1,3)), rand(5,4,3))
+
 @test gradtest(kron, rand(5), rand(3))
 @test gradtest(kron, rand(5), rand(3), rand(8))
 @test gradtest(kron, rand(5,1), rand(3,1))
