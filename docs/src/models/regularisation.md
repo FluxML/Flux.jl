@@ -8,14 +8,14 @@ For example, say we have a simple regression.
 
 ```julia
 m = Dense(10, 5)
-loss(x, y) = crossentropy(softmax(m(x)), y)
+loss(x, y) = Flux.crossentropy(softmax(m(x)), y)
 ```
 
 We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
 
 ```julia
 penalty() = vecnorm(m.W) + vecnorm(m.b)
-loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()
+loss(x, y) = Flux.crossentropy(softmax(m(x)), y) + penalty()
 ```
 
 When working with layers, Flux provides the `params` function to grab all
@@ -39,7 +39,7 @@ m = Chain(
   Dense(128, 32, relu),
   Dense(32, 10), softmax)
 
-loss(x, y) = crossentropy(m(x), y) + sum(vecnorm, params(m))
+loss(x, y) = Flux.crossentropy(m(x), y) + sum(vecnorm, params(m))
 
 loss(rand(28^2), rand(10))
 ```
