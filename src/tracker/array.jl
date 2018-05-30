@@ -234,7 +234,7 @@ end
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, maxpool, meanpool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, depthwiseconv, maxpool, meanpool
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -257,6 +257,20 @@ conv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0)
 function back(::typeof(_conv), Δ, x, w, stride, pad)
   @back(x, NNlib.∇conv_data(Δ, data(x), data(w); stride = stride, pad = pad))
   @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad))
+end
+
+_depthwiseconv(x, w, stride, pad) = depthwiseconv(x, w, stride = stride, pad = pad)
+
+depthwiseconv(x::TrackedArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
+  track(_depthwiseconv, x, w, stride, pad)
+depthwiseconv(x::AbstractArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
+  track(_depthwiseconv, x, w, stride, pad)
+depthwiseconv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0) where N =
+  track(_depthwiseconv, x, w, stride, pad)
+
+function back(::typeof(_depthwiseconv), Δ, x, w, stride, pad)
+  @back(x, NNlib.∇depthwiseconv_data(Δ, data(x), data(w), stride = stride, pad = pad))
+  @back(x, NNlib.∇depthwiseconv_filter(Δ, data(x), data(w), stride = stride, pad = pad))
 end
 
 _maxpool(x, k, pad, stride) = maxpool(x, k; pad = pad, stride = stride)
