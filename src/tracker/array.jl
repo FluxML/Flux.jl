@@ -41,7 +41,7 @@ end
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
 
-back!(::TrackedArray) = error("Use back!(x, Δ)")
+back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back!(x, Δ)`")
 
 # Fallthrough methods
 
@@ -81,21 +81,6 @@ back(::typeof(ctranspose), Δ, xs) = @back(xs, trim(xs, Δ'))
 Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
 Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
 
-Base.vcat(a::TrackedVector, b::TrackedVector)  = track(vcat, a, b)
-Base.vcat(a::TrackedVector, b::TrackedVector...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedVector, b::AbstractVector) = track(vcat, a, b)
-Base.vcat(a::AbstractVector, b::TrackedVector) = track(vcat, a, b)
-
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat)  = track(vcat, a, b)
-Base.vcat(a::TrackedVecOrMat, b::TrackedVecOrMat...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedVecOrMat, b::AbstractVecOrMat) = track(vcat, a, b)
-Base.vcat(a::AbstractVecOrMat, b::TrackedVecOrMat) = track(vcat, a, b)
-
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix)  = track(vcat, a, b)
-Base.vcat(a::TrackedMatrix, b::TrackedMatrix...)  = track(vcat, a, b...)
-Base.vcat(a::TrackedMatrix, b::AbstractMatrix) = track(vcat, a, b)
-Base.vcat(a::AbstractMatrix, b::TrackedMatrix) = track(vcat, a, b)
-
 function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     Δ′ = similar(xs.data)
     S = size(xs.data)
@@ -108,12 +93,67 @@ function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     back(xs, Δ′)
 end
 
+for f in [:vcat, :hcat]
+  @eval begin
+    # This section is a bit of a hack since julia doesn't have a standardised
+    # promotion mechanism for concatenation yet
+    # https://github.com/JuliaLang/julia/pull/20815
+
+    # It should support tracked concatenation with rank ∈ (1,2) with a
+    # TrackedArray anywhere among the arguments This works as long as base has
+    # other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
+    Base.$f(a::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a...)
+
+    # It should support tracked concatenation with rank>2 if the TrackedArray is
+    # first
+    Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
+    Base.$f(a::TrackedArray, b::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b...) # resolves ambiguity introduced by previous row
+
+    # It should support tracked concatenation with rank>2 if the TrackedArray is
+    # second
+    Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
+    Base.$f(a::Union{Vector,RowVector,Matrix}, b::TrackedArray,
+            c::Union{TrackedArray,Vector,RowVector,Matrix}...) =
+      track($f, a, b, c...) # resolves ambiguity introduced by previous row
+  end
+end
+
 function back(::typeof(vcat), Δ, xs...)
-  i = Base.tail(map(_ -> :, size(Δ)))
   start = 0
   for xsi in xs
+    i = map(_ -> :, size(xsi)) |> Base.tail
     @back(xsi, Δ[start+1:start+size(xsi,1), i...])
     start += size(xsi, 1)
+  end
+end
+
+function back(::typeof(hcat), Δ, xs...)
+  start = 0
+  for xsi in xs
+    if ndims(xsi) == 1
+      @back(xsi, Δ[:, start+1])
+    else
+      i = map(_ -> :, size(xsi)) |> Base.tail |> Base.tail
+      @back(xsi, Δ[:, start+1:start+size(xsi,2), i...])
+    end
+    start += size(xsi, 2)
+  end
+end
+
+Base.cat(dims, a::TrackedArray, b::AbstractArray...) = track(cat, dims, a, b...)
+Base.cat(dims, a::Union{RowVector,Array}, b::TrackedArray, c::AbstractArray...) = track(cat, dims, a, b, c...)
+
+function back(::typeof(cat), Δ, dims, Xs...)
+  start = ntuple(i -> 0, Val{ndims(Δ)})
+  for xs in Xs
+    dim_xs = 1:ndims(xs)
+    till_xs = ntuple((i -> i in dims ? (i in dim_xs ? size(xs,i) : 1) : 0), Val{ndims(Δ)})
+
+    xs_in_Δ = ntuple(i -> till_xs[i] > 0 ? (start[i]+1:start[i]+till_xs[i]) : Colon(), Val{ndims(Δ)})
+
+    @back(xs, reshape(Δ[xs_in_Δ...],size(xs)))
+
+    start = start .+ till_xs
   end
 end
 
@@ -156,11 +196,15 @@ Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 back(::typeof(prod), Δ, xs::TrackedArray, dim...) = back(xs, similar(xs.data) .= (prod(xs.data, dim...) ./ xs.data) .* Δ)
 back(::typeof(prod), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= (reshape(.*(circshift.([reshape(xs.data, length(xs.data))], 1:length(xs.data)-1)...), size(xs.data))) .* Δ)
 
-Base.maximum(xs::TrackedArray, args...) = maximum(xs.data, args...)
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
 Base.mean(xs::TrackedArray) = track(mean, xs)
 Base.mean(xs::TrackedArray, region) = track(mean, xs, region)
+
+Base.maximum(xs::TrackedArray) = track(maximum, xs)
+Base.maximum(xs::TrackedArray, region) = track(maximum, xs, region)
+Base.minimum(xs::TrackedArray) = track(minimum, xs)
+Base.minimum(xs::TrackedArray, region) = track(minimum, xs, region)
 
 LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
 LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
@@ -183,6 +227,31 @@ Base.vecnorm(x::TrackedArray, p::Real = 2) =
 back(::typeof(mean), Δ, xs::TrackedArray) = back(xs, similar(xs.data) .= Δ ./ length(xs.data))
 back(::typeof(mean), Δ, xs::TrackedArray, region) =
   back(xs, similar(xs.data) .= Δ ./ prod(size(xs.data, region...)))
+
+function back(::typeof(maximum), Δ, xs::TrackedArray)
+    Δ′    = zeros(xs.data)
+    _, i  = findmax(xs.data)
+    Δ′[i] = Δ
+    @back(xs, Δ′)
+end
+function back(::typeof(maximum), Δ, xs::TrackedArray, region)
+    Δ′     = zeros(xs.data)
+    _, is  = findmax(xs.data, region)
+    Δ′[is] = Δ
+    @back(xs, Δ′)
+end
+function back(::typeof(minimum), Δ, xs::TrackedArray)
+    Δ′    = zeros(xs.data)
+    _, i  = findmin(xs.data)
+    Δ′[i] = Δ
+    @back(xs, Δ′)
+end
+function back(::typeof(minimum), Δ, xs::TrackedArray, region)
+    Δ′     = zeros(xs.data)
+    _, is  = findmin(xs.data, region)
+    Δ′[is] = Δ
+    @back(xs, Δ′)
+end
 
 # BLAS
 
