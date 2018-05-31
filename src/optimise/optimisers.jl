@@ -1,130 +1,139 @@
-function descent(p::Param, η::Real)
-  function ()
-    @. p.x -= η * p.Δ
-    @. p.Δ = 0
-  end
+using Flux
+using Base: @get!
+
+const ϵ = 1e-8
+
+# TODO: should use weak refs
+
+"""
+    Descent(η)
+
+Classic gradient descent optimiser with learning rate `η`.
+For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`.
+"""
+mutable struct Descent
+  eta::Float64
 end
 
-# Ref: https://arxiv.org/abs/1711.05101.pdf
-function descentweightdecay(p::Param, η::Real,  γ::Real)
-  function ()
-    @. p.x = p.x - η * (p.Δ + γ * p.x) 
-    @. p.Δ = 0
-  end
+function update!(o::Descent, x, Δ)
+  Δ .*= o.eta
 end
 
-function momentum(p::Param, ρ, η)
-  v = zero(p.x)
-  function ()
-    @. v = ρ * v - η * p.Δ
-    @. p.Δ = -v
-  end
+"""
+    Momentum(params, η = 0.01; ρ = 0.9, decay = 0)
+
+Gradient descent with learning rate `η` and momentum `ρ`.
+"""
+mutable struct Momentum
+  eta::Float64
+  rho::Float64
+  velocity::ObjectIdDict
 end
 
-# Ref. https://arxiv.org/pdf/1212.0901.pdf
-function nesterov(p::Param, ρ, η)
-  v = zero(p.x)
-  function ()
-    d = @. ρ^2 * v - (1+ρ) * η * p.Δ
-    @. v = ρ*v - η*p.Δ
-    @. p.Δ = -d
-  end
+Momentum(η, ρ = 0.9) = Momentum(η, ρ, ObjectIdDict())
+
+function update!(o::Momentum, x, Δ)
+  η, ρ = o.eta, o.rho
+  v = @get!(o.velocity, x, zero(x))::typeof(x)
+  @. v = ρ * v - η * Δ
+  @. Δ = -v
 end
 
-function rmsprop(p::Param; η::Real = 0.001, ρ::Real = 0.9, ϵ::Real = 1e-8)
-  acc  = zero(p.x)
-  function ()
-    @. acc = ρ * acc + (1 - ρ) * p.Δ^2
-    @. p.Δ *= η / √(acc + ϵ)
-  end
+"""
+    Nesterov(eta, ρ = 0.9)
+
+Gradient descent with learning rate  `η` and Nesterov momentum `ρ`.
+"""
+mutable struct Nesterov
+  eta::Float64
+  rho::Float64
+  velocity::ObjectIdDict
 end
 
-function adagrad(p::Param; η::Real = 0.01, ϵ::Real = 1e-8)
-  acc = zero(p.x) .+ ϵ
-  function ()
-    @. acc += p.Δ^2
-    @. p.Δ *= η / √(acc + ϵ)
-  end
+Nesterov(η, ρ = 0.9) = Nesterov(η, ρ, ObjectIdDict())
+
+function update!(o::Nesterov, x, Δ)
+  η, ρ = o.eta, o.rho
+  v = @get!(o.velocity, x, zero(x))::typeof(x)
+  d = @. ρ^2 * v - (1+ρ) * η * Δ
+  @. v = ρ*v - η*Δ
+  @. Δ = -d
 end
 
-function adadelta(p::Param; ρ::Real = 0.9, ϵ::Real = 1e-8)
-  acc = zero(p.x)
-  Δacc = zero(p.x)
-  function ()
-    @. acc = ρ * acc + (1 - ρ) * p.Δ^2
-    @. p.Δ *= √(Δacc + ϵ) / √(acc + ϵ)
-    @. Δacc = ρ * Δacc + (1 - ρ) * p.Δ^2
-   end
+"""
+    RMSProp(η = 0.001, ρ = 0.9)
+
+[RMSProp](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+optimiser. Parameters other than learning rate don't need tuning. Often a good
+choice for recurrent networks.
+"""
+mutable struct RMSProp
+  eta::Float64
+  rho::Float64
+  acc::ObjectIdDict
 end
 
-function adam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zero(p.x)
-  vt = zero(p.x)
-  β1p, β2p = β1, β2
-  function ()
-    @. mt = β1 * mt + (1 - β1) * p.Δ
-    @. vt = β2 * vt + (1 - β2) * p.Δ^2
-    @. p.Δ =  mt / (1 - β1p) / √(vt / (1 - β2p) + ϵ) * η
-    β1p *= β1
-    β2p *= β2
-  end
+RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, ObjectIdDict())
+
+function update!(o::RMSProp, x, Δ)
+  η, ρ = o.eta, o.rho
+  acc = @get!(o.acc, x, zero(x))::typeof(x)
+  @. acc = ρ * acc + (1 - ρ) * Δ^2
+  @. Δ *= η / (√acc + ϵ)
 end
 
-function adamax(p::Param; η::Real = 0.002, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zero(p.x)
-  ut = zero(p.x)
-  β1p = β1
-  function ()
-    @. mt = β1 * mt + (1 - β1) * p.Δ
-    @. ut = max(β2 * ut, abs(p.Δ))
-    @. p.Δ = (η/(1 - β1p)) * mt/(ut + ϵ)
-    β1p *= β1
-  end
+"""
+    ADAM(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
+
+[ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
+"""
+mutable struct ADAM
+  eta::Float64
+  beta::Tuple{Float64,Float64}
+  state::ObjectIdDict
 end
 
-function amsgrad(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zero(p.x)
-  vt = zero(p.x) .+ ϵ
-  v̂t = zero(p.x) .+ ϵ
-  function ()
-    @. mt = β1 * mt + (1 - β1) * p.Δ
-    @. vt = β2 * vt + (1 - β2) * p.Δ ^ 2
-    @. v̂t = max.(v̂t, vt)
-    @. p.Δ = η * mt / √v̂t
-  end
+ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, ObjectIdDict())
+
+function update!(o::ADAM, x, Δ)
+  η, β = o.eta, o.beta
+  mt, vt, βp = @get!(o.state, x, (zero(x), zero(x), β))
+  @. mt = β[1] * mt + (1 - β[1]) * Δ
+  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
+  o.state[x] = (mt, vt, βp .* β)
 end
 
-function nadam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zero(p.x)
-  vt = zero(p.x)
-  β1p, β2p = β1, β2
-  function ()
-    @. mt = β1 * mt + (1 - β1) * p.Δ
-    @. vt = β2 * vt + (1 - β2) * p.Δ^2
-    @. p.Δ = (β1 * mt / (1 - β1 * β1p) + (1 - β1) * p.Δ / (1 - β1p)) / √(vt * β2 / (1 - β2p) + ϵ) * η
-    β1p *= β1
-    β2p *= β2
-  end
-end
+# """
+#     AdaMax(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
+#
+# [AdaMax](https://arxiv.org/abs/1412.6980v9) optimiser. Variant of ADAM based on
+# the ∞-norm.
+# """
 
-clip(p::Param, thresh::Real) = () -> clamp!(p.Δ, -thresh, thresh)
+# """
+#     ADAGrad(params, η = 0.01; ϵ = 1e-8, decay = 0)
+#
+# [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimiser.
+# Parameters don't need tuning.
+# """
 
-function expdecay(p::Param, γ::Real)
-  if γ != 0
-    return () -> p.Δ .+= γ .* p.x
-  else
-    return () -> nothing
-  end
-end
+# """
+#     ADADelta(params; ρ = 0.9, ϵ = 1e-8, decay = 0)
+#
+# [ADADelta](http://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
+# tuning.
+# """
 
-function invdecay(p::Param, γ::Real)
-  if γ != 0
-    n = 0
-    return () -> begin
-      p.Δ .*= 1 / (1 + γ * n)
-      n += 1
-    end
-  else
-    return () -> nothing
-  end
-end
+# """
+#     AMSGrad(params; η = 0.001, β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
+#
+# [AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ) optimiser. Parameters don't need
+# tuning.
+# """
+
+# struct Optimiser
+#   os::Vector{Any}
+# end
+
+# TODO: decay
