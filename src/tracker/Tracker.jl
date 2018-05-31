@@ -10,6 +10,7 @@ istracked(x) = tracker(x) ≠ nothing
 isleaf(x) = !istracked(x) || isleaf(tracker(x))
 data(x) = istracked(x) ? data(tracker(x)) : x
 grad(x) = grad(tracker(x))
+grad(::Void) = nothing
 
 struct Call{F,As<:Tuple}
   func::F

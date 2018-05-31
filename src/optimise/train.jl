@@ -1,6 +1,16 @@
 using Juno
-using Flux.Tracker: back!
+using Flux.Tracker: data, grad, back!
 
+function update!(opt, xs)
+  for x in xs
+    x, Δ = data(x), grad(x)
+    update!(opt, x, Δ)
+    x .-= Δ
+    Δ .= 0
+  end
+end
+
+# Callback niceties
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
