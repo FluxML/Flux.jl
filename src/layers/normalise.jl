@@ -31,15 +31,14 @@ function Dropout(p)
   Dropout{typeof(p)}(p, true)
 end
 
+_dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
+
 function (a::Dropout)(x)
   a.active || return x
   y = similar(x)
   rand!(y)
-  q = 1 - a.p
-  @inbounds for i=1:length(y)
-    y[i] = y[i] > a.p ? 1 / q : 0
-  end
-  return y .* x
+  y .= _dropout_kernel.(y, a.p, 1 - a.p)
+  return x .* y
 end
 
 _testmode!(a::Dropout, test) = (a.active = !test)
@@ -68,70 +67,88 @@ function Base.show(io::IO, l::LayerNorm)
 end
 
 """
-    BatchNorm(dims...; λ = identity,
-              initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1)
+    BatchNorm(channels::Integer, σ = identity;
+              initβ = zeros, initγ = ones,
+              ϵ = 1e-8, momentum = .1)
 
-Batch Normalization Layer for [`Dense`](@ref) layer.
+Batch Normalization layer. The `channels` input should be the size of the
+channel dimension in your data (see below).
+
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
+a batch of feature vectors this is just the data dimension, for `WHCN` images
+it's the usual channel dimension.)
+
+`BatchNorm` computes the mean and variance for each each `W×H×1×N` slice and
+shifts them to have a new mean and variance (corresponding to the learnable,
+per-channel `bias` and `scale` parameters).
 
 See [Batch Normalization: Accelerating Deep Network Training by Reducing
-     Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf)
+Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
 
-In the example of MNIST,
-in order to normalize the input of other layer,
-put the `BatchNorm` layer before activation function.
+Example:
 
 ```julia
 m = Chain(
   Dense(28^2, 64),
-  BatchNorm(64, λ = relu),
+  BatchNorm(64, relu),
   Dense(64, 10),
   BatchNorm(10),
   softmax)
 ```
 """
-mutable struct BatchNorm{F,V,N}
+mutable struct BatchNorm{F,V,W,N}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ     # moving mean
-  σ     # moving std
+  μ::W  # moving mean
+  σ::W  # moving std
   ϵ::N
   momentum::N
   active::Bool
 end
 
-BatchNorm(dims::Integer...; λ = identity,
+BatchNorm(chs::Integer, λ = identity;
           initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
-  BatchNorm(λ, param(initβ(dims)), param(initγ(dims)), 0., 1., ϵ, momentum, true)
+  BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
+            zeros(chs), ones(chs), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
-  λ, γ, β = BN.λ, BN.γ, BN.β
+  size(x, ndims(x)-1) == length(BN.β) ||
+    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
+  γ, β = BN.γ, BN.β
+  dims = length(size(x))
+  channels = size(x, dims-1)
+  affine_shape = ones(Int, dims)
+  affine_shape[end-1] = channels
+  m = prod(size(x)[1:end-2]) * size(x)[end]
 
   if !BN.active
-    μ = BN.μ
-    σ = BN.σ
+    μ = reshape(BN.μ, affine_shape...)
+    σ = reshape(BN.σ, affine_shape...)
   else
     T = eltype(x)
 
     ϵ = data(convert(T, BN.ϵ))
-    m = size(x, 2)  # batch size
-    μ = mean(x, 2)
-    σ = sqrt.(sum((x .- μ).^2, 2) ./ m .+ ϵ)
+    axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
+    μ = mean(x, axes)
+    σ = sqrt.(mean((x .- μ).^2, axes) .+ ϵ)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* data(μ)
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* data(σ) .* m ./ (m - 1)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...)) .* m ./ (m - 1)
   end
 
-  λ.(γ .* ((x .- μ) ./ σ) .+ β)
+  let λ = BN.λ
+    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
+  end
 end
 
 children(BN::BatchNorm) =
-  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.ϵ, BN.momentum, BN.active)
 
 mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(BN.λ, f(BN.β), f(BN.γ), BN.μ, BN.σ, BN.momentum, BN.ϵ, BN.active)
+  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ), BN.ϵ, BN.momentum, BN.active)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
 

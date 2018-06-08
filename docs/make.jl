@@ -18,6 +18,8 @@ makedocs(modules=[Flux, NNlib],
                   "One-Hot Encoding" => "data/onehot.md",
                   "GPU Support" => "gpu.md",
                   "Saving & Loading" => "saving.md",
+                  "Internals" =>
+                    ["Backpropagation" => "internals/tracker.md"],
                   "Community" => "community.md"])
 
 deploydocs(

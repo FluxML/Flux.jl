@@ -5,7 +5,7 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
-Conv2D
+Conv
 ```
 
 ## Recurrent Layers
@@ -15,6 +15,7 @@ Much like the core layers above, but can be used to process sequence data (as we
 ```@docs
 RNN
 LSTM
+GRU
 Flux.Recur
 ```
 

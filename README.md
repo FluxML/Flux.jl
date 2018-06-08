@@ -1,6 +1,8 @@
-# Флукс
+<p align="center">
+<img width="400px" src="https://raw.githubusercontent.com/FluxML/fluxml.github.io/master/logo.png"/>
+</p>
 
-[![Build Status](https://travis-ci.org/FluxML/Flux.jl.svg?branch=master)](https://travis-ci.org/FluxML/Flux.jl) [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) [![](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://slackinvite.julialang.org/)
+[![Build Status](https://travis-ci.org/FluxML/Flux.jl.svg?branch=master)](https://travis-ci.org/FluxML/Flux.jl) [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) [![](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://slackinvite.julialang.org/) [![DOI](http://joss.theoj.org/papers/10.21105/joss.00602/status.svg)](https://doi.org/10.21105/joss.00602)
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
@@ -9,6 +11,18 @@ julia> Pkg.add("Flux")
 ```
 
 See the [documentation](http://fluxml.github.io/Flux.jl/) or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
+
+If you use Flux in research, please cite the following paper:
+
+```
+@article{innes:2018,
+  author    = {Mike Innes},
+  title     = {Flux: Elegant Machine Learning with Julia},
+  journal   = {Journal of Open Source Software},
+  year      = {2018},
+  doi       = {10.21105/joss.00602},
+}
+```
 
 ## Features
 
@@ -36,7 +50,7 @@ b = param(randn(2))
 y(x) = σ.(W * x .+ b)
 ```
 
-If that's *still* not enough, you can go as deep as you want, even writing your own CUDA kernels! All this can be freely mixed-and-matched in a single model or script, and it all runs interactively via Jupyter or Juno.
+If that's *still* not enough, you can go as deep as you want, even writing your own CUDA kernels with [CUDAnative](https://github.com/JuliaGPU/CUDAnative.jl)! All this can be freely mixed-and-matched in a single model or script, and it all runs interactively via Jupyter or Juno.
 
 ```julia
 function gpu_add(a, b, c)
@@ -77,3 +91,9 @@ For general questions and help, check out Julia's [community forum](https://disc
 Flux development is carried out via our [GitHub issues](https://github.com/FluxML/Flux.jl/issues), so feel free to open feature requests or PRs here.
 
 For more informal discussions we'd love to have you on the [Julia slack](https://slackinvite.julialang.org/), where we hang out on the #machine-learning channel.
+
+## Related Packages
+
+Check out [Metalhead.jl](https://github.com/FluxML/Metalhead.jl) for common computer vision datasets and trained models.
+
+[MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl) provides further common datasets.

@@ -62,6 +62,18 @@ function adam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ
   end
 end
 
+function adamax(p::Param; η::Real = 0.002, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
+  mt = zeros(p.x)
+  ut = zeros(p.x)
+  β1p = β1
+  function ()
+    @. mt = β1 * mt + (1 - β1) * p.Δ
+    @. ut = max(β2 * ut, abs(p.Δ))
+    @. p.Δ = (η/(1 - β1p)) * mt/(ut + ϵ)
+    β1p *= β1
+  end
+end
+
 function amsgrad(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
   mt = zeros(p.x)
   vt = zeros(p.x) .+ ϵ
