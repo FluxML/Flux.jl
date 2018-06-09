@@ -19,8 +19,9 @@ Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
-Base.convert(::Type{TrackedReal{T}}, x::TrackedReal) where T =
-  TrackedReal(Tracked(x.tracker.f, convert(T, x.tracker.data)))
+# This cuts derivatives, fix if needed.
+# Base.convert(::Type{TrackedReal{T}}, x::TrackedReal) where T =
+#   TrackedReal(Tracked(x.tracker.f, convert(T, x.tracker.data)))
 
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
 
@@ -91,3 +92,18 @@ Base.getindex(xs::TrackedTuple, i::Integer) = track(getindex, xs, i)
 
 back(::typeof(getindex), Δ, t, i) =
   back(t, ntuple(j -> i == j ? Δ : 0, length(t)))
+
+# Array collection
+
+function collect(xs)
+  xs = Base.collect(xs)
+  track(Call(collect, xs), data.(xs))
+end
+
+function scan(c::Call{typeof(collect)})
+  foreach(scan, c.args[1])
+end
+
+function back(::typeof(collect), Δ, xs)
+  foreach((x, Δ) -> @back(x, Δ), xs, Δ)
+end
