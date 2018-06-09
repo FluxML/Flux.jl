@@ -8,7 +8,7 @@ Dense
 Conv
 ```
 
-## Additional Convolution Layer
+## Additional Convolution Layers
 
 ```@docs
 DepthwiseConv
