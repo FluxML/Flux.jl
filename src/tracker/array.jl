@@ -339,7 +339,7 @@ depthwiseconv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1,
 
 function back(::typeof(_depthwiseconv), Δ, x, w, stride, pad)
   @back(x, NNlib.∇depthwiseconv_data(Δ, data(x), data(w), stride = stride, pad = pad))
-  @back(x, NNlib.∇depthwiseconv_filter(Δ, data(x), data(w), stride = stride, pad = pad))
+  @back(w, NNlib.∇depthwiseconv_filter(Δ, data(x), data(w), stride = stride, pad = pad))
 end
 
 _maxpool(x, k, pad, stride) = maxpool(x, k; pad = pad, stride = stride)
