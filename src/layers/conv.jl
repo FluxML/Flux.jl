@@ -28,7 +28,7 @@ Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride::NTuple{N,Integer} = map(_->1,k),
      pad::NTuple{N,Integer} = map(_->0,k),
-     dilation::NTuple{N,Integer} = map(_->0,k)) where N =
+     dilation::NTuple{N,Integer} = map(_->1,k)) where N =
   Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
