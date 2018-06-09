@@ -7,6 +7,7 @@ add the result to the overall loss.
 For example, say we have a simple regression.
 
 ```julia
+using Flux: crossentropy
 m = Dense(10, 5)
 loss(x, y) = crossentropy(softmax(m(x)), y)
 ```

@@ -1,7 +1,8 @@
 module Optimise
 
 export train!,
-  SGD, ADAM, AdaMax, Momentum, Nesterov, RMSProp, ADAGrad, ADADelta, AMSGrad
+  SGD, ADAM, AdaMax, Momentum, Nesterov,
+  RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
 
 struct Param{T}
   x::T
