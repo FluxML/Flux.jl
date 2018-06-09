@@ -47,11 +47,13 @@ function Base.show(io::IO, l::Conv)
 end
 
 """
+    DepthwiseConv(size, in)
     DepthwiseConv(size, in=>mul)
     DepthwiseConv(size, in=>mul, relu)
 
 Depthwise convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `mul` specify the number of input channels and channel multiplier respectively.
+In case the `mul` is not specified it is taken as 1.
 
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
@@ -70,6 +72,12 @@ DepthwiseConv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
        stride = 1, pad = 0) where T =
   DepthwiseConv(σ, w, b, stride, pad)
 
+DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = initn,
+     stride::NTuple{N,Integer} = map(_->1,k),
+     pad::NTuple{N,Integer} = map(_->0,k)) where N =
+  DepthwiseConv(param(init(k..., 1, ch)), param(zeros(ch)), σ,
+       stride = stride, pad = pad)
+
 DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride::NTuple{N,Integer} = map(_->1,k),
      pad::NTuple{N,Integer} = map(_->0,k)) where N =
@@ -83,7 +91,7 @@ function (c::DepthwiseConv)(x)
   σ.(depthwiseconv(x, c.weight, stride = c.stride, pad = c.pad) .+ b)
 end
 
-function Base.show(io::IO, l::Conv)
+function Base.show(io::IO, l::DepthwiseConv)
   print(io, "DepthwiseConv(", size(l.weight)[1:ndims(l.weight)-2])
   print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
   l.σ == identity || print(io, ", ", l.σ)
