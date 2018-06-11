@@ -7,22 +7,23 @@ module Flux
 using Juno, Requires, Reexport
 using MacroTools: @forward
 
-export Chain, Dense, RNN, LSTM, GRU, Conv, Conv2D,
-  Dropout, LayerNorm, BatchNorm,
-  SGD, ADAM, Momentum, Nesterov, AMSGrad,
-  param, params, mapleaves, cpu, gpu
+export Chain, Dense, RNN, LSTM, GRU, Conv,
+       Dropout, LayerNorm, BatchNorm,
+       params, mapleaves, cpu, gpu
 
 @reexport using NNlib
 using NNlib: @fix
 
 include("tracker/Tracker.jl")
 using .Tracker
-export Tracker
-import .Tracker: data
+using .Tracker: data
+export Tracker, TrackedArray, TrackedVector, TrackedMatrix, param
 
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
+export SGD, ADAM, AdaMax, Momentum, Nesterov,
+       RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
 
 include("utils.jl")
 include("onehot.jl")
