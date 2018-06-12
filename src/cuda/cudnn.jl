@@ -89,7 +89,7 @@ function cudnnBatchNormalizationForward(g::CuArray{T}, b::CuArray{T}, x::CuArray
 
     if(cache !== nothing)
       cache.mean = mean
-      cache.invvar = ivar
+      cache.ivar = ivar
     end
   else
 
