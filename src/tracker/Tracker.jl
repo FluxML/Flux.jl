@@ -12,7 +12,7 @@ tracker(x) = nothing
 istracked(x) = tracker(x) ≠ nothing
 isleaf(x) = !istracked(x) || isleaf(tracker(x))
 grad(x) = grad(tracker(x))
-grad(::Void) = nothing
+grad(::Nothing) = nothing
 data(x) = x
 
 struct Call{F,As<:Tuple}
@@ -35,7 +35,7 @@ mutable struct Tracked{T}
   grad::T
   Tracked{T}(f::Call) where T = new(0, f, false)
   Tracked{T}(f::Call, grad::T) where T = new(0, f, false, grad)
-  Tracked{T}(f::Call{Void}, grad::T) where T = new(0, f, true, grad)
+  Tracked{T}(f::Call{Nothing}, grad::T) where T = new(0, f, true, grad)
 end
 
 istracked(x::Tracked) = true

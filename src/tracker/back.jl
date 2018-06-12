@@ -26,7 +26,7 @@ function back_(c::Call, Δ)
   foreach(back, c.args, data.(Δs))
 end
 
-back_(::Call{Void}, Δ) = nothing
+back_(::Call{Nothing}, Δ) = nothing
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
@@ -47,7 +47,7 @@ function back(x::Tracked, Δ)
   return
 end
 
-back(::Void, _) = return
+back(::Nothing, _) = return
 
 # Interface methods
 
@@ -105,7 +105,7 @@ function back_(g::Grads, c::Call, Δ)
   foreach((x, Δ) -> back(g, x, Δ), c.args, Δs)
 end
 
-back_(g::Grads, ::Call{Void}, Δ) = nothing
+back_(g::Grads, ::Call{Nothing}, Δ) = nothing
 
 function back(g::Grads, x::Tracked, Δ)
   x.isleaf && (accum!(g, x, Δ); return)
@@ -119,7 +119,7 @@ function back(g::Grads, x::Tracked, Δ)
   return
 end
 
-back(::Grads, ::Void, _) = return
+back(::Grads, ::Nothing, _) = return
 
 function forward(f, ps::Params)
   y = f()
