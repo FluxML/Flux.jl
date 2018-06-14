@@ -60,6 +60,12 @@ julia> using BSON: @save
 julia> @save "mymodel.bson" weights
 ```
 
+Note that if you are using GPU for training the model, you need to convert the 
+model/weights using `cpu` before saving them.
+
+` julia> weights = cpu.(Tracker.data.(params(model))); `
+
+
 You can easily load parameters back into a model with `Flux.loadparams!`.
 
 ```julia
