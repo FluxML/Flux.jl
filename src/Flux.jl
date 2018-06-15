@@ -26,6 +26,7 @@ export SGD, ADAM, AdaMax, Momentum, Nesterov,
        RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
 
 include("utils.jl")
+include("einsum.jl")
 include("onehot.jl")
 include("treelike.jl")
 
