@@ -1,7 +1,5 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, libcudnn_handle, cudnnDataType, TensorDesc, FilterDesc
-using CuArrays
-using Flux
 
 mutable struct DropoutDesc
   ptr::Ptr{Void}
