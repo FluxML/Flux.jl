@@ -108,7 +108,7 @@ mutable struct BatchNorm{F,V,W,N}
 end
 
 BatchNorm(chs::Integer, λ = identity;
-          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
+          initβ = zeros, initγ = ones, ϵ = 1e-5, momentum = .1) =
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(chs), ones(chs), ϵ, momentum, true)
 
