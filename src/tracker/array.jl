@@ -233,10 +233,12 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
+using StatsBase
+
 # Hacks to get std working
-Base.std(x::TrackedArray; mean = Base.mean(x)) =
+StatsBase.std(x::TrackedArray; mean = Base.mean(x)) =
   sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
-Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
+StatsBase.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
 
 LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
