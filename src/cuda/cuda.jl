@@ -2,6 +2,9 @@ module CUDA
 
 using CuArrays
 
-CuArrays.cudnn_available() && include("cudnn.jl")
+if CuArrays.cudnn_available()
+    include("cudnn.jl")
+    include("curnn.jl")
+end
 
 end
