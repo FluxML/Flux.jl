@@ -28,16 +28,12 @@ Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   print(io, "TrackedArray{…,$A}")
 
-function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
-  if repr
-    print(io, "param(")
-    Base.showarray(io, data(X), true)
-    print(io, ")")
-  else
-    header && print(io, "Tracked ")
-    Base.showarray(io, data(X), false, header = header)
-  end
+function Base.summary(io::IO, x::TrackedArray)
+  print(io, "Tracked ")
+  summary(io, data(x))
 end
+
+Base.print_array(io::IO, x::TrackedArray) = Base.print_array(io, data(x))
 
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
