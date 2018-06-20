@@ -37,7 +37,10 @@ end
 
 bncache() = bncache(nothing, nothing)
 
-function batchnorm(g::CuArray{T}, b::CuArray{T}, x::CuArray{T},
+# CuDNN supports only 4D and 5D Tensors for BatchNorm Operations
+# so use the native julia code when doing batchnorm on a 2D Array
+
+function batchnorm(g::CuArray{T}, b::CuArray{T}, x::CuArray{T, 4},
                    running_mean::CuArray{T}, running_var::CuArray{T}, momentum;
                    cache = nothing, alpha = T(1), beta = T(0),
                    eps = T(1e-5), training = true) where T<:Union{Float32, Float64}
