@@ -1,5 +1,6 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, libcudnn_handle, cudnnDataType, TensorDesc, FilterDesc
+import Flux.data
 
 mutable struct DropoutDesc
   ptr::Ptr{Void}
@@ -27,6 +28,7 @@ const BATCHNORM_ACTIVATION = 0
 const BATCHNORM_MIN_EPS = 1e-5
 
 @inline _wsize(y) = ((1 for _=1:ndims(y)-2)..., size(y)[end-1], 1)
+@inline _reddims(y) = ((i for i=1:ndims(y)-2)..., ndims(y))
 
 mutable struct bncache
   mean
@@ -35,15 +37,12 @@ end
 
 bncache() = bncache(nothing, nothing)
 
-(BN::BatchNorm)(x::CuArray{T}; cache = nothing) where T<:Union{Float32, Float64} =
-  BN.λ.(cudnnBNForward(BN.γ, BN.β, x, BN.μ, BN.σ, BN.momentum, cache = cache, eps = BN.ϵ, training = BN.active))
-
-function cudnnBNForward(g, b, x, running_mean::CuArray{T},
-                        running_var::CuArray{T}, momentum;
-                        cache = nothing, alpha = T(1), beta = T(0),
-                        eps = T(1e-5), training = true) where T<:Union{Float32, Float64}
+function batchnorm(g::CuArray{T}, b::CuArray{T}, x::CuArray{T},
+                   running_mean::CuArray{T}, running_var::CuArray{T}, momentum;
+                   cache = nothing, alpha = T(1), beta = T(0),
+                   eps = T(1e-5), training = true) where T<:Union{Float32, Float64}
   y = similar(x)
-  cudnnBNForward!(y, data(g), data(b), data(x), running_mean, running_var, momentum, cache = cache,
+  cudnnBNForward!(y, g, b, x, running_mean, running_var, momentum, cache = cache,
       alpha = alpha, beta = beta, eps = eps, training = training)
   y
 end
@@ -111,23 +110,24 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
   end
 end
 
-function cudnnBNBackward(g, b, x::CuArray{T}, dy::CuArray{T}, running_mean::CuArray{T},
-                         running_var::CuArray{T}, momentum;
-                         training = true, cache = nothing, eps = T(1e-5),
-                         alpha = T(1), beta = T(0)) where T<:Union{Float32, Float64}
+function ∇batchnorm(g::CuArray{T}, b::CuArray{T}, x::CuArray{T}, dy::CuArray{T},
+                    running_mean::CuArray{T}, running_var::CuArray{T}, momentum;
+                    cache = nothing, eps = T(1e-5), alpha = T(1),
+                    beta = T(0), training = true) where T<:Union{Float32, Float64}
+  dg = similar(g)
+  db = similar(b)
   dx = similar(x)
-  cudnnBNBackward!(g.grad, data(g), b.grad, dx, x, dy, running_mean, running_var, T(momentum),
+  cudnnBNBackward!(dg, g, db, dx, x, dy, running_mean, running_var, T(momentum),
     training = training, cache = cache, eps = eps, alpha = alpha, beta = beta)
-  dx
+  (dx, db, dx)
 end
 
 function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
                           dx::CuArray{T}, x::CuArray{T}, dy::CuArray{T},
                           running_mean::CuArray{T}, running_var::CuArray{T},
-                          momentum; training = true,
-                          cache = nothing, eps = T(1e-5),
+                          momentum; cache = nothing, eps = T(1e-5),
                           alpha = T(1), beta = T(0),
-                          dalpha = T(1), dbeta = T(0)) where T<:Union{Float32, Float64}
+                          dalpha = T(1), dbeta = T(0), training = true) where T<:Union{Float32, Float64}
   if(training)
     xd = TensorDesc(x)
     dyd = TensorDesc(dy)
@@ -168,4 +168,31 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
     dg .= squeeze(sum(dy .* (x .- reshape(running_mean, (1, 1, length(running_mean), 1))) .* ivar, _reddims(dy)), (1,2,4))
     db .= squeeze(sum(dy, _reddims(dy)), (1,2,4))
   end
+end
+
+# Flux Interface
+
+import Flux.Tracker: track, back, @back, istracked
+
+_batchnorm(g, b, x, running_mean, running_var, momentum,
+           cache, alpha, beta, eps, training) =
+  batchnorm(g, b, x, running_mean, running_var, momentum, cache = cache, alpha = alpha, beta = beta, eps = eps, training = training)
+
+batchnorm(g::TrackedArray, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum;
+          cache = nothing, alpha = T(1), beta = T(0),
+          eps = T(1e-5), training = true) where T<:Union{Float32, Float64} =
+  track(_batchnorm, g, b, x, running_mean, running_var, momentum, cache, alpha, beta, eps, training)
+
+batchnorm(g::TrackedArray, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum; cache = nothing, alpha = T(1), beta = T(0),
+          eps = T(1e-5), training = true) where T<:Union{Float32, Float64} =
+  track(_batchnorm, g, b, x, running_mean, running_var, momentum, cache, alpha, beta, eps, training)
+
+function back(::typeof(_batchnorm), Δ, g, b, x, running_mean, running_var, momentum, cache, alpha, beta, eps, training)
+  deriv_tup = ∇batchnorm(data(g), data(b), data(x), Δ, running_mean, running_var, momentum,
+                         cache = cache, alpha = alpha, beta = beta, eps = eps, training = training)
+  istracked(x) && @back(x, deriv_tup[1])
+  @back(b, deriv_tup[2])
+  @back(g, deriv_tup[3])
 end
