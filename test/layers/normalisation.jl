@@ -57,13 +57,13 @@ end
     # 2×1 Array{Float64,2}:
     #  1.14495
     #  1.14495
-    @test m.σ ≈ .1 .* std(x.data, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    @test isapprox(m.σ, .1 .* std(x.data, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.], atol = 1.0e-6)
 
     testmode!(m)
     @test !m.active
 
     x′ = m(x).data
-    @test x′[1] ≈ (1 - 0.3) / 1.1449489742783179
+    @test isapprox(x′[1], (1 - 0.3) / 1.1449489742783179, atol = 1.0e-6)
   end
 
   # with activation function
@@ -75,7 +75,7 @@ end
     @test !m.active
 
     x′ = m(x).data
-    @test x′[1] ≈ σ((1 - 0.3) / 1.1449489742783179)
+    @test isapprox(x′[1], σ((1 - 0.3) / 1.1449489742783179), atol = 1.0e-7)
   end
 
   let m = BatchNorm(2), x = param(reshape(1:6, 3, 2, 1))
