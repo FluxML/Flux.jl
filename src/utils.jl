@@ -119,7 +119,7 @@ function throttle(f, timeout; leading=true, trailing=false)
       end
 
       cooldown = false
-      @schedule try
+      @async try
         while (sleep(timeout); later != nothing)
           later()
           later = nothing

@@ -111,10 +111,6 @@ end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
-# TODO unreliable
-@test gradtest(x -> repmat(x, 5,5), rand(4,5))
-@test gradtest(x -> repmat(x, 5), rand(4,5))
-
 @test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
 @test gradtest(x -> repeat(x; inner=(2,2,1), outer=(1,1,3)), rand(5,4,3))
 

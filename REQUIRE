@@ -1,4 +1,4 @@
-julia 0.6.0
+julia 0.7-
 Juno
 MacroTools 0.3.3
 NNlib

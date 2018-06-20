@@ -135,8 +135,8 @@ function (BN::BatchNorm)(x)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...)) .* m ./ (m - 1)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...,))
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...,)) .* m ./ (m - 1)
   end
 
   let λ = BN.λ

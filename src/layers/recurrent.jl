@@ -178,7 +178,7 @@ function (m::GRUCell)(h, x)
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1.-z).*h̃ .+ z.*h
+  h′ = (1 .- z).*h̃ .+ z.*h
   return h′, h′
 end
 

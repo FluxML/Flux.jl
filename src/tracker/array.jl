@@ -1,3 +1,5 @@
+using LinearAlgebra
+
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
   data::A
@@ -77,25 +79,8 @@ Base.:-(xs::TrackedArray) = track(-, xs)
 Base.transpose(xs::TrackedArray) = track(transpose, xs)
 Base.ctranspose(xs::TrackedArray) = track(ctranspose, xs)
 
-@grad transpose(xs) = data(xs).', Δ -> (reshape(Δ.', size(xs)),)
+@grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
 @grad ctranspose(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
-
-Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
-Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
-
-@grad function repmat(xs, m, n = 1)
-  repmat(data(xs), m, n), function (Δ)
-    Δ′ = similar(xs)
-    S = size(xs)
-    for (i,v) in enumerate(data(Δ))
-        d1 = divrem(i-1, S[1]*m)
-        x = d1[2] % S[1]+1
-        y = d1[1] % S[2]+1
-        Δ′[x, y] += v
-    end
-    return (nobacksies(:repmat, Δ′), nothing, nothing)
-  end
-end
 
 Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
 
@@ -114,7 +99,6 @@ Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
     (nobacksies(:repeat, Δ′),)
   end
 end
-
 
 for f in [:vcat, :hcat]
   @eval begin
@@ -241,9 +225,11 @@ Base.maximum(xs::TrackedArray, region) = track(maximum, xs, region)
 Base.minimum(xs::TrackedArray) = track(minimum, xs)
 Base.minimum(xs::TrackedArray, region) = track(minimum, xs, region)
 
-LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
-LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
-LinAlg.dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
+import LinearAlgebra: dot
+
+dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
+dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
+dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
@@ -253,7 +239,7 @@ Base.std(x::TrackedArray; mean = Base.mean(x)) =
 Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
 
-Base.vecnorm(x::TrackedArray, p::Real = 2) =
+LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
   sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
 @grad mean(xs) = mean(data(xs)), Δ -> (Δ / length(xs),)
@@ -278,7 +264,7 @@ end
 
 # BLAS
 
-Base.diagm(x::TrackedVector) = track(diagm, x)
+LinearAlgebra.diagm(x::TrackedVector) = track(diagm, x)
 @grad diagm(x) = diagm(data(x)), Δ -> (diag(Δ),)
 
 for f in :[*, Ac_mul_B, A_mul_Bc, A_mul_Bt, At_mul_B].args
