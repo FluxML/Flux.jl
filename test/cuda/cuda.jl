@@ -32,4 +32,8 @@ cx = gpu(x)
 
 end
 
-CuArrays.cudnn_available() && include("cudnn.jl")
+if CuArrays.cudnn_available()
+    info("Testing Flux/CUDNN RNN")
+    include("cudnn.jl")
+    include("curnn.jl")
+end
