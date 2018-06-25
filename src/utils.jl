@@ -153,3 +153,32 @@ function jacobian(m,x)
     end
     J'
 end
+
+"""
+Parameterizes only at specified indices. There's probably a better way...
+"""
+paramerize(t::NTuple{N}, idx) where {N} = ntuple(i -> i in idx ? Flux.Tracker.param(t[i]) : t[i], Val(N))
+
+"""
+  vjp, evaluation = make_vjp(f)(x)
+
+vjp(v) computes Vector Jacobian Product `v'*J = v'*d/dx f(x)`
+"""
+function make_vjp(f;argnum=nothing)
+    function _make_vjp(w...;kwargs...)
+        if argnum==nothing
+            wp = broadcast(Flux.Tracker.param,w)
+        else
+            wp = paramerize(w,argnum)
+        end
+        evaluation = f(wp...;kwargs...)
+        function vjp(v)
+            for el in v'*evaluation
+                Flux.back!(el)
+            end
+            return  Flux.Tracker.grad.(wp)
+        end
+        return v->vjp(v), Flux.Tracker.data.(evaluation)
+    end
+    return _make_vjp
+end
