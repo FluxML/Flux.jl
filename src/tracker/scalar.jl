@@ -19,11 +19,10 @@ Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
-# This cuts derivatives, fix if needed.
-# Base.convert(::Type{TrackedReal{T}}, x::TrackedReal) where T =
-#   TrackedReal(Tracked(x.tracker.f, convert(T, x.tracker.data)))
-
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
+
+Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
+  error("Not implemented: convert tracked $S to tracked $T")
 
 Base.:(<)(x::TrackedReal, y::TrackedReal) = data(x) < data(y)
 Base.:(==)(x::TrackedReal, y::TrackedReal) = data(x) == data(y)
