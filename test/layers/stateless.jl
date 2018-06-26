@@ -1,6 +1,8 @@
 using Base.Test
-using Flux: onehotbatch, mse, crossentropy, logitcrossentropy, 
+using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
             σ, binarycrossentropy, logitbinarycrossentropy
+
+const ϵ = 1e-7
 
 @testset "losses" begin
   # First, regression-style y's
@@ -40,10 +42,11 @@ using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
 
   logŷ, y = randn(3), rand(3)
   @testset "binarycrossentropy" begin
-    @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ)) - (1 - y).*log.(1 - σ.(logŷ))
+    @test binarycrossentropy.(σ.(logŷ), y; ϵ=0) ≈ -y.*log.(σ.(logŷ)) - (1 - y).*log.(1 - σ.(logŷ))
+    @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ) + 1e-7) - (1 - y).*log.(1 - σ.(logŷ) + 1e-7)
   end
-  
+
   @testset "logitbinarycrossentropy" begin
-    @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y)
+    @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0)
   end
 end
