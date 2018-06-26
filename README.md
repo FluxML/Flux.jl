@@ -6,8 +6,6 @@
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
-You need to build Julia 0.6 from source and have CUDA available to use Flux with GPUs – please see the [CUDAnative.jl](https://github.com/JuliaGPU/CUDAnative.jl) instructions for more details.
-
 ```julia
 julia> Pkg.add("Flux")
 ```
