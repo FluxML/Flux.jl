@@ -9,12 +9,8 @@ tracker(x::TrackedReal) = x.tracker
 track(f::Call, x::Real) = TrackedReal(Tracked(f, x, zero(x)))
 
 function back!(x::TrackedReal)
-    if isinf(x)
-        error("Loss is Inf")
-    end
-    if isnan(x)
-        error("Loss is NaN")
-    end
+    isinf(x) && error("Loss is Inf")
+    isnan(x) && error("Loss is NaN")
     return back!(x, 1)
 end
 
