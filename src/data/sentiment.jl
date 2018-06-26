@@ -4,10 +4,10 @@ using ZipFile
 using ..Data: deps
 
 function load()
-  isfile(deps("sentiment.zip")) ||
-    download("https://cache.julialang.org/https://nlp.stanford.edu/sentiment/trainDevTestTrees_PTB.zip",
-             deps("sentiment.zip"))
-  return
+  isfile(deps("sentiment.zip")) || return
+  info("Downloading sentiment treebank dataset")
+  download("https://cache.julialang.org/https://nlp.stanford.edu/sentiment/trainDevTestTrees_PTB.zip",
+           deps("sentiment.zip"))
 end
 
 getfile(r, name) = r.files[findfirst(x -> x.name == name, r.files)]

@@ -1,4 +1,4 @@
-function gradient(f, xs::AbstractArray...)
+function gradient(f, xs...)
   xs = param.(xs)
   back!(f(xs...))
   grad.(xs)

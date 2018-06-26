@@ -13,7 +13,7 @@ Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad` and `stride`.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct Conv{N,F,A,V}
   σ::F
@@ -21,17 +21,17 @@ struct Conv{N,F,A,V}
   bias::V
   stride::NTuple{N,Int}
   pad::NTuple{N,Int}
+  dilation::NTuple{N,Int}
 end
 
 Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
-     stride = 1, pad = 0) where T =
-  Conv(σ, w, b, expand(Val{ndims(w) - 2}, stride),
-       expand(Val{ndims(w) - 2}, pad))
+     stride = 1, pad = 0, dilation = 1) where T =
+  Conv(σ, w, b, expand.(Val{ndims(w)-2}, (stride, pad, dilation))...)
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
-     stride = 1, pad = 0) where N =
-  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ;
-       stride = stride, pad = pad)
+     stride = 1, pad = 0, dilation = 1) where N =
+  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+       stride = stride, pad = pad, dilation = dilation)
 
 Flux.treelike(Conv)
 
@@ -39,7 +39,7 @@ function (c::Conv)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad) .+ b)
+  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
 
 function Base.show(io::IO, l::Conv)
@@ -48,6 +48,3 @@ function Base.show(io::IO, l::Conv)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
-
-# v0.5
-@deprecate Conv2D(args...; kw...) Conv(args...; kw...)
