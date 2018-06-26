@@ -31,6 +31,7 @@ include("treelike.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
+include("layers/regularisedchain.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
