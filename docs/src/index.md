@@ -14,3 +14,5 @@ Pkg.test("Flux") # Check things installed correctly
 ```
 
 Start with the [basics](models/basics.md). The [model zoo](https://github.com/FluxML/model-zoo/) is also a good starting point for many common kinds of models.
+
+See [GPU support](gpu.md) for more details on installing and using Flux with GPUs.

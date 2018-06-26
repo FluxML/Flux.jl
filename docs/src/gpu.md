@@ -4,6 +4,8 @@ Support for array operations on other hardware backends, like GPUs, is provided 
 
 For example, we can use `CuArrays` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
 
+(Note that you need to build Julia 0.6 from source and have CUDA available to use CuArrays – please see the [CUDAnative.jl](https://github.com/JuliaGPU/CUDAnative.jl) instructions for more details.)
+
 ```julia
 using CuArrays
 
