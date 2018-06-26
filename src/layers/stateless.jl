@@ -25,7 +25,8 @@ Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerica
     0.352317
     0.86167
 """
-binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+# binarycrossentropy(ŷ, y; ϵ=eps(Flux.Tracker.data(ŷ))) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+binarycrossentropy(ŷ, y; ϵ=eps(Flux.Tracker.data(ŷ))) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
     logitbinarycrossentropy(logŷ, y)
