@@ -28,13 +28,15 @@ l = loss(x, y)
 back!(l)
 ```
 
-`loss(x, y)` returns the same number, but it's now a *tracked* value that records gradients as it goes along. Calling `back!` then calculates the gradient of `W` and `b`. We can see what this gradient is, and modify `W` to train the model.
+`loss(x, y)` returns the same number, but it's now a *tracked* value that records gradients as it goes along. Calling `back!` then accumulates the gradient of `W` and `b`. We can see what this gradient is, and modify `W` to train the model.
 
 ```julia
 W.grad
 
 # Update the parameter
 W.data .-= 0.1(W.grad)
+# Reset the gradient
+W.grad .= 0
 
 loss(x, y) # ~ 2.5
 ```
