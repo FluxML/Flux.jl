@@ -43,7 +43,7 @@ const ϵ = 1e-7
   logŷ, y = randn(3), rand(3)
   @testset "binarycrossentropy" begin
     @test binarycrossentropy.(σ.(logŷ), y; ϵ=0) ≈ -y.*log.(σ.(logŷ)) - (1 - y).*log.(1 - σ.(logŷ))
-    @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ) + 1e-7) - (1 - y).*log.(1 - σ.(logŷ) + 1e-7)
+    @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ) .+ eps.(ŷ)) - (1 - y).*log.(1 - σ.(logŷ) .+ eps.(ŷ))
   end
 
   @testset "logitbinarycrossentropy" begin

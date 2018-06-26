@@ -15,7 +15,7 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight
 end
 
 """
-    binarycrossentropy(ŷ, y; ϵ)
+    binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
 
 Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerical stability.
 
@@ -25,7 +25,7 @@ Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerica
     0.352317
     0.86167
 """
-binarycrossentropy(ŷ, y; ϵ=1e-7) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
     logitbinarycrossentropy(logŷ, y)
