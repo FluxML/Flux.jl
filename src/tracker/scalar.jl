@@ -31,6 +31,8 @@ Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
 Base.:(<)(x::TrackedReal, y::TrackedReal) = data(x) < data(y)
 Base.:(==)(x::TrackedReal, y::TrackedReal) = data(x) == data(y)
 
+Base.eps(x::TrackedReal) = eps(data(x))
+
 for f in :[isinf, isnan, isfinite].args
   @eval Base.$f(x::TrackedReal) = Base.$f(data(x))
 end
