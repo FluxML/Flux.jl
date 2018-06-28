@@ -179,7 +179,7 @@ end
 import ..Flux: Flux
 import ..Tracker: track, back, @back, istracked, TrackedArray
 
-(BN::BatchNorm)(x::Union{CuParam{T,4},CuParam{T,5}}) where T<:Union{Float32, Float64} =
+(BN::Flux.BatchNorm)(x::Union{CuParam{T,4},CuParam{T,5}}) where T<:Union{Float32, Float64} =
   batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ, BN.momentum; cache = nothing, alpha = 1, beta = 0, eps = BN.ϵ, training = BN.active)
 
 _batchnorm(g, b, x, running_mean, running_var, momentum,
