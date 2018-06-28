@@ -234,7 +234,6 @@ function copy_transpose!(dst::CuArray, src::CuArray)
   return dst
 end
 
-CuParam{T,N} = Union{CuArray{T,N},TrackedArray{T,N,CuArray{T,N}}}
 CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuParam{T,2},<:CuParam{T,1}}
 CuGRU{T} = Flux.GRUCell{<:CuParam{T,2},<:CuParam{T,1}}
 CuLSTM{T} = Flux.LSTMCell{<:CuParam{T,2},<:CuParam{T,1}}
