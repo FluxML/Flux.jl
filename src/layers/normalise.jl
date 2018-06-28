@@ -110,7 +110,7 @@ end
 BatchNorm(chs::Integer, λ = identity;
           initβ = zeros, initγ = ones, ϵ = 1e-5, momentum = .1) =
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
-            zeros(chs), ones(chs), ϵ, momentum, nothing, true)
+            zeros(chs), ones(chs), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.β) ||
