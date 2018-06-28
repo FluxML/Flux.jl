@@ -104,7 +104,6 @@ mutable struct BatchNorm{F,V,W,N}
   σ::W  # moving std
   ϵ::N
   momentum::N
-  cache
   active::Bool
 end
 
@@ -113,44 +112,39 @@ BatchNorm(chs::Integer, λ = identity;
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(chs), ones(chs), ϵ, momentum, nothing, true)
 
-
-function batchnorm(γ, β, x, μ, σ, momentum; cache = nothing, alpha = 1, beta = 0, eps = 1.0e-5, training = true)
-  size(x, ndims(x)-1) == length(β) ||
+function (BN::BatchNorm)(x)
+  size(x, ndims(x)-1) == length(BN.β) ||
     error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
+  γ, β = BN.γ, BN.β
   dims = length(size(x))
   channels = size(x, dims-1)
   affine_shape = ones(Int, dims)
   affine_shape[end-1] = channels
   m = prod(size(x)[1:end-2]) * size(x)[end]
 
-  if !training
-    μ_curr = reshape(μ, affine_shape...)
-    σ_curr = reshape(σ, affine_shape...)
+  if !BN.active
+    μ = reshape(BN.μ, affine_shape...)
+    σ = reshape(BN.σ, affine_shape...)
   else
     T = eltype(x)
 
-    eps = Flux.data(convert(T, eps))
+    ϵ = data(convert(T, BN.ϵ))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
-    μ_curr = mean(x, axes)
-    σ_curr = sqrt.(mean((x .- μ_curr).^2, axes) .+ eps)
+    μ = mean(x, axes)
+    σ = sqrt.(mean((x .- μ).^2, axes) .+ ϵ)
 
     # update moving mean/std
-    mtm = Flux.data(convert(T, momentum))
-    μ .= (1 - mtm) .* μ .+ mtm .* squeeze(Flux.data(μ_curr), (axes...))
-    σ .= (1 - mtm) .* σ .+ mtm .* squeeze(Flux.data(σ_curr), (axes...)) .* m ./ (m - 1)
+    mtm = data(convert(T, BN.momentum))
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...)) .* m ./ (m - 1)
   end
-  reshape(γ, affine_shape...) .* ((x .- μ_curr) ./ σ_curr) .+ reshape(β, affine_shape...)
+
+  let λ = BN.λ
+    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
+  end
 end
 
-(BN::BatchNorm)(x) = BN.λ.(batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ, BN.momentum; cache = BN.cache, alpha = 1, beta = 0, eps = BN.ϵ, training = BN.active))
-
-Flux.treelike(BatchNorm)
-
-# children(BN::BatchNorm) =
-#   (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.ϵ, BN.momentum, BN.active)
-#
-# mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-#   BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ), BN.ϵ, BN.momentum, BN.active)
+treelike(BatchNorm)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
 

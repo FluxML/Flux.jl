@@ -1,6 +1,6 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, libcudnn_handle, cudnnDataType, TensorDesc, FilterDesc
-import Flux.data
+import ..Flux: data
 
 mutable struct DropoutDesc
   ptr::Ptr{Void}
@@ -63,7 +63,7 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
   end
   xd = TensorDesc(x)
   yd = TensorDesc(y)
-  gd = TensorDesc(T, (1,1,length(g),1))
+  gd = TensorDesc(T, dims)
 
   if training
 
@@ -136,7 +136,7 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
     xd = TensorDesc(x)
     dyd = TensorDesc(dy)
     dxd = TensorDesc(dx)
-    gd = TensorDesc(T, (1,1,length(g),1))
+    gd = TensorDesc(T, _wsize(x))
     if cache !== nothing
       mean, ivar = cache.mean, cache.ivar
       info("mean and ivar are fetched from the cache")
@@ -167,9 +167,9 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
                   gd, g, dg, db,
                   eps, mean, ivar)
   else
-    ivar = 1 ./ sqrt.(reshape(running_var, (1, 1, length(running_var), 1)) .+ eps)
-    dx .= dy .* reshape(g, (1, 1, length(g), 1)) .* ivar
-    dg .= squeeze(sum(dy .* (x .- reshape(running_mean, (1, 1, length(running_mean), 1))) .* ivar, _reddims(dy)), (1,2,4))
+    ivar = 1 ./ sqrt.(reshape(running_var, _wsize(x)) .+ eps)
+    dx .= dy .* reshape(g, _wsize(x)) .* ivar
+    dg .= squeeze(sum(dy .* (x .- reshape(running_mean, _wsize(x))) .* ivar, _reddims(dy)), (1,2,4))
     db .= squeeze(sum(dy, _reddims(dy)), (1,2,4))
   end
 end
@@ -178,6 +178,13 @@ end
 
 import ..Flux: Flux
 import ..Tracker: track, back, @back, istracked, TrackedArray
+
+CuParam{T,N} = Union{CuArray{T,N},TrackedArray{T,N,CuArray{T,N}}}
+CuParam45{T} = Union{CuParam{T,4},CuParam{T,5}}
+CuBatchNorm{T} = Flux.BatchNorm{<:Union{typeof(identity),typeof(relu)},<:CuParam{T,1},<:CuParam{T,1},<:T}
+
+(BN::BatchNorm)(x::CuParam45{T}) =
+  batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ, BN.momentum; cache = nothing, alpha = 1, beta = 0, eps = BN.ϵ, training = BN.active)
 
 _batchnorm(g, b, x, running_mean, running_var, momentum,
            cache, alpha, beta, eps, training) =
