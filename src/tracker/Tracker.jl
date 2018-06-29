@@ -47,6 +47,12 @@ isleaf(x::Tracked) = x.f == Call(nothing)
 data(x::Tracked) = x.data
 grad(x::Tracked) = x.grad
 
+function update!(x, Δ)
+  tracker(x).data += Δ
+  tracker(x).grad .= 0
+  return x
+end
+
 include("back.jl")
 include("scalar.jl")
 include("array.jl")

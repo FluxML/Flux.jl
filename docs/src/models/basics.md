@@ -31,12 +31,12 @@ back!(l)
 `loss(x, y)` returns the same number, but it's now a *tracked* value that records gradients as it goes along. Calling `back!` then accumulates the gradient of `W` and `b`. We can see what this gradient is, and modify `W` to train the model.
 
 ```julia
-W.grad
+using Flux.Tracker: grad, update!
 
-# Update the parameter
-W.data .-= 0.1(W.grad)
-# Reset the gradient
-W.grad .= 0
+Δ = grad(W)
+
+# Update the parameter and reset the gradient
+update!(W, -0.1Δ)
 
 loss(x, y) # ~ 2.5
 ```
