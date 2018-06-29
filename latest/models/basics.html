@@ -20,12 +20,12 @@ b = param(b)
 
 l = loss(x, y)
 
-back!(l)</code></pre><p><code>loss(x, y)</code> returns the same number, but it&#39;s now a <em>tracked</em> value that records gradients as it goes along. Calling <code>back!</code> then accumulates the gradient of <code>W</code> and <code>b</code>. We can see what this gradient is, and modify <code>W</code> to train the model.</p><pre><code class="language-julia">W.grad
+back!(l)</code></pre><p><code>loss(x, y)</code> returns the same number, but it&#39;s now a <em>tracked</em> value that records gradients as it goes along. Calling <code>back!</code> then accumulates the gradient of <code>W</code> and <code>b</code>. We can see what this gradient is, and modify <code>W</code> to train the model.</p><pre><code class="language-julia">using Flux.Tracker: grad, update!
 
-# Update the parameter
-W.data .-= 0.1(W.grad)
-# Reset the gradient
-W.grad .= 0
+Δ = grad(W)
+
+# Update the parameter and reset the gradient
+update!(W, -0.1Δ)
 
 loss(x, y) # ~ 2.5</code></pre><p>The loss has decreased a little, meaning that our prediction <code>x</code> is closer to the target <code>y</code>. If we have some data we can already try <a href="../training/training.html">training the model</a>.</p><p>All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can <em>look</em> very different – they might have millions of parameters or complex control flow, and there are ways to manage this complexity. Let&#39;s see what that looks like.</p><h2><a class="nav-anchor" id="Building-Layers-1" href="#Building-Layers-1">Building Layers</a></h2><p>It&#39;s common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid</a> (<code>σ</code>) in between them. In the above style we could write this as:</p><pre><code class="language-julia">W1 = param(rand(3, 5))
 b1 = param(rand(3))
