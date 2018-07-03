@@ -1,7 +1,7 @@
 call(f, xs...) = f(xs...)
 
 # note for optimisers: set to zero
-# p.Δ at the end of the weigths update
+# p.Δ at the end of the weights update
 function optimiser(ps, fs...)
   ps = [Param(p) for p in ps]
   fs = map(ps) do p
@@ -55,6 +55,14 @@ RMSProp(ps, η = 0.001; ρ = 0.9, ϵ = 1e-8, decay = 0) =
 """
 ADAM(ps, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0) =
   optimiser(ps, p->adam(p; η=η, β1=β1, β2=β2, ϵ=ϵ), p->invdecay(p,decay), p->descent(p,1))
+
+"""
+   ADAMW((params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
+
+[ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
+"""
+ADAMW(ps, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0) =
+  optimiser(ps, p->adam(p; η=η, β1=β1, β2=β2, ϵ=ϵ), p->descentweightdecay(p,1,decay))
 
 """
     AdaMax(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
