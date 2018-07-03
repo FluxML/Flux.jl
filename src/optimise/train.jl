@@ -37,8 +37,6 @@ function train!(loss, data, opt; cb = () -> ())
   opt = runall(opt)
   @progress for d in data
     l = loss(d...)
-    isinf(l) && error("Loss is Inf")
-    isnan(l) && error("Loss is NaN")
     @interrupts back!(l)
     opt()
     cb() == :stop && break

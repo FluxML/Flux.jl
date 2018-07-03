@@ -7,6 +7,7 @@ add the result to the overall loss.
 For example, say we have a simple regression.
 
 ```julia
+using Flux: crossentropy
 m = Dense(10, 5)
 loss(x, y) = crossentropy(softmax(m(x)), y)
 ```
@@ -42,4 +43,20 @@ m = Chain(
 loss(x, y) = crossentropy(m(x), y) + sum(vecnorm, params(m))
 
 loss(rand(28^2), rand(10))
+```
+
+One can also easily add per-layer regularisation via the `activations` function:
+
+```julia
+julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)
+Chain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)
+
+julia> activations(c, rand(10))
+3-element Array{Any,1}:
+ param([0.71068, 0.831145, 0.751219, 0.227116, 0.553074])
+ param([0.0330606, -0.456104])
+ param([0.61991, 0.38009])
+
+julia> sum(vecnorm, ans)
+2.639678767773633 (tracked)
 ```

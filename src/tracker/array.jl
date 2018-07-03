@@ -93,6 +93,26 @@ function back(::typeof(repmat), Δ, xs::TrackedVecOrMat, m, n=1)
     back(xs, Δ′)
 end
 
+
+_repeat(A, inner, outer) = Base.repeat(A; inner=inner, outer=outer)
+Base.repeat(A::TrackedArray; inner=ntuple(x->1, ndims(A)), outer=ntuple(x->1, ndims(A))) = track(_repeat, A, inner, outer)
+
+function back(::typeof(_repeat), Δ, xs::TrackedArray, inner, outer)
+    Δ′ = similar(xs.data)
+    Δ′ .= 0
+    S = size(xs.data)
+    
+    # Loop through each element of Δ, calculate source dimensions, accumulate into Δ′
+    for (dest_idx, val) in enumerate(IndexCartesian(), Δ)
+        # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
+        # wrap around based on original size S.
+        src_idx = [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim in 1:length(S)]
+        Δ′[src_idx...] += val
+    end
+    back(xs, Δ′)
+end
+
+
 for f in [:vcat, :hcat]
   @eval begin
     # This section is a bit of a hack since julia doesn't have a standardised
@@ -314,18 +334,18 @@ logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 back(::typeof(logsoftmax), Δ, xs) = @back(xs, ∇logsoftmax(Δ, data(xs)))
 
 # TODO: can store kwargs efficiently in namedtuples
-_conv(x, w, stride, pad) = conv(x, w, stride = stride, pad = pad)
+_conv(x, w, stride, pad, dilation) = conv(x, w, stride = stride, pad = pad, dilation = dilation)
 
-conv(x::TrackedArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
-  track(_conv, x, w, stride, pad)
-conv(x::AbstractArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0) where N =
-  track(_conv, x, w, stride, pad)
-conv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0) where N =
-  track(_conv, x, w, stride, pad)
+conv(x::TrackedArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0, dilation = 1) where N =
+  track(_conv, x, w, stride, pad, dilation)
+conv(x::AbstractArray{<:Real,N}, w::TrackedArray{<:Real,N}; stride = 1, pad = 0, dilation = 1) where N =
+  track(_conv, x, w, stride, pad, dilation)
+conv(x::TrackedArray{<:Real,N}, w::AbstractArray{<:Real,N}; stride = 1, pad = 0, dilation = 1) where N =
+  track(_conv, x, w, stride, pad, dilation)
 
-function back(::typeof(_conv), Δ, x, w, stride, pad)
-  @back(x, NNlib.∇conv_data(Δ, data(x), data(w); stride = stride, pad = pad))
-  @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad))
+function back(::typeof(_conv), Δ, x, w, stride, pad, dilation)
+  @back(x, NNlib.∇conv_data(Δ, data(x), data(w); stride = stride, pad = pad, dilation = dilation))
+  @back(w, NNlib.∇conv_filter(Δ, data(x), data(w); stride = stride, pad = pad, dilation = dilation))
 end
 
 _maxpool(x, k, pad, stride) = maxpool(x, k; pad = pad, stride = stride)

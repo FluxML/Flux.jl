@@ -1,5 +1,5 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck
+using Flux.Tracker: TrackedReal, gradcheck, grad
 using NNlib: conv
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -114,6 +114,9 @@ end
 @test gradtest(x -> repmat(x, 5,5), rand(4,5))
 @test gradtest(x -> repmat(x, 5), rand(4,5))
 
+@test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
+@test gradtest(x -> repeat(x; inner=(2,2,1), outer=(1,1,3)), rand(5,4,3))
+
 @test gradtest(kron, rand(5), rand(3))
 @test gradtest(kron, rand(5), rand(3), rand(8))
 @test gradtest(kron, rand(5,1), rand(3,1))
@@ -219,5 +222,14 @@ end
 b = param(rand())
 Tracker.back!(b)
 @test Tracker.grad(b) == 1
+
+@testset "collect" begin
+  x, y = param(2), param(3)
+  xy = Tracker.collect([x, y])
+  @test xy isa TrackedArray{Float64}
+  z = xy[1]*xy[2]
+  back!(z)
+  @test grad.((x,y)) == (3, 2)
+end
 
 end #testset

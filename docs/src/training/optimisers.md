@@ -17,16 +17,17 @@ back!(l)
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-function update()
+using Flux.Tracker: grad, update!
+
+function sgd()
   η = 0.1 # Learning Rate
   for p in (W, b)
-    p.data .-= η .* p.grad # Apply the update
-    p.grad .= 0            # Clear the gradient
+    update!(p, -η * grad(p))
   end
 end
 ```
 
-If we call `update`, the parameters `W` and `b` will change and our loss should go down.
+If we call `sgd`, the parameters `W` and `b` will change and our loss should go down.
 
 There are two pieces here: one is that we need a list of trainable parameters for the model (`[W, b]` in this case), and the other is the update step. In this case the update is simply gradient descent (`x .-= η .* Δ`), but we might choose to do something more advanced, like adding momentum.
 
