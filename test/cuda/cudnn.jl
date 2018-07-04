@@ -1,6 +1,5 @@
 using Flux, Flux.Tracker, CuArrays, Base.Test
-using Flux.Tracker: TrackedArray
-using Flux: gpu
+using Flux.Tracker: TrackedArray, data
 
 @testset "CUDNN BatchNorm" begin
     x = TrackedArray(rand(10, 10, 3, 1))
@@ -13,12 +12,13 @@ using Flux: gpu
 
     @test cy isa TrackedArray{Float32,4,CuArray{Float32,4}}
 
-    @test cpu(cy) ≈ y
+    @test cpu(data(cy)) ≈ data(y)
 
-    Flux.back!(y, ones(y))
-    Flux.back!(cy, ones(cy))
+    g = ones(size(y)...)
+    Flux.back!(y, g)
+    Flux.back!(cy, gpu(g)))
 
     @test m.γ.grad ≈ cpu(cm.γ.grad)
     @test m.β.grad ≈ cpu(cm.β.grad)
-    @test m.x.grad ≈ cpu(cm.x.grad)
+    @test x.grad ≈ cpu(x.grad)
 end
