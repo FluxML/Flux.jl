@@ -10,6 +10,7 @@ istracked(x) = tracker(x) ≠ nothing
 isleaf(x) = !istracked(x) || isleaf(tracker(x))
 data(x) = istracked(x) ? data(tracker(x)) : x
 grad(x) = grad(tracker(x))
+grad(::Void) = nothing
 
 struct Call{F,As<:Tuple}
   func::F
@@ -46,10 +47,26 @@ isleaf(x::Tracked) = x.f == Call(nothing)
 data(x::Tracked) = x.data
 grad(x::Tracked) = x.grad
 
+function update!(x, Δ)
+  tracker(x).data += Δ
+  tracker(x).grad .= 0
+  return x
+end
+
 include("back.jl")
 include("scalar.jl")
 include("array.jl")
 include("numeric.jl")
+
+"""
+    hook(f, x) -> x′
+
+Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
+`f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
+the sign of the gradient applied to `x`.
+"""
+hook(f, x) = istracked(x) ? track(hook, f, x) : x
+back(::typeof(hook), Δ, f, x) = @back(x, f(Δ))
 
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))

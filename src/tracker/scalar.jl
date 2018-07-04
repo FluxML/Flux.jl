@@ -8,7 +8,11 @@ tracker(x::TrackedReal) = x.tracker
 
 track(f::Call, x::Real) = TrackedReal(Tracked(f, x, zero(x)))
 
-back!(x::TrackedReal) = back!(x, 1)
+function back!(x::TrackedReal)
+    isinf(x) && error("Loss is Inf")
+    isnan(x) && error("Loss is NaN")
+    return back!(x, 1)
+end
 
 function Base.show(io::IO, x::TrackedReal)
   show(io, data(x))
@@ -19,14 +23,15 @@ Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
-# This cuts derivatives, fix if needed.
-# Base.convert(::Type{TrackedReal{T}}, x::TrackedReal) where T =
-#   TrackedReal(Tracked(x.tracker.f, convert(T, x.tracker.data)))
-
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
+
+Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
+  error("Not implemented: convert tracked $S to tracked $T")
 
 Base.:(<)(x::TrackedReal, y::TrackedReal) = data(x) < data(y)
 Base.:(==)(x::TrackedReal, y::TrackedReal) = data(x) == data(y)
+
+Base.eps(x::TrackedReal) = eps(data(x))
 
 for f in :[isinf, isnan, isfinite].args
   @eval Base.$f(x::TrackedReal) = Base.$f(data(x))
