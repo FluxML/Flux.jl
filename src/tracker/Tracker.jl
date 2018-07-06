@@ -1,5 +1,7 @@
 module Tracker
 
+using MacroTools
+
 import Base: ==
 
 export TrackedArray, TrackedVector, TrackedMatrix, param, back!
@@ -17,7 +19,8 @@ struct Call{F,As<:Tuple}
   args::As
 end
 
-Call(f, args...) = Call{typeof(f),typeof(args)}(f, args)
+Call(f, args) = Call{typeof(f),typeof(args)}(f, args)
+Call() = Call(nothing, ())
 
 # When deserialising, the object_id changes
 a::Call == b::Call = a.func == b.func && a.args == b.args
@@ -38,14 +41,28 @@ end
 Tracked(f::Call, x) = Tracked{typeof(x)}(f, x)
 Tracked(f::Call, x, Δ) = Tracked{typeof(x)}(f, x, Δ)
 
-track(f::Call, x) = Tracked(f, x)
-track(f::Call) = track(f, f())
-track(f, xs...) = track(Call(f, xs...))
-
 istracked(x::Tracked) = true
-isleaf(x::Tracked) = x.f == Call(nothing)
+isleaf(x::Tracked) = x.f == Call()
 data(x::Tracked) = x.data
 grad(x::Tracked) = x.grad
+
+track(f::Call, x) = Tracked(f, x)
+track(f::Call) = track(f, f())
+
+function _forward end
+
+function track(f, xs...)
+  y, back = _forward(f, data.(xs)...)
+  track(Call(back, xs), y)
+end
+
+macro grad(ex)
+  @capture(shortdef(ex), (name_(args__) = body_) |
+                         (name_(args__) where {T__} = body_)) || error("Need a function definition")
+  T == nothing && (T = [])
+  unshift!(args, :(::typeof($name)))
+  :(Tracker._forward($(args...)) where $(T...) = $body) |> esc
+end
 
 function update!(x, Δ)
   tracker(x).data += Δ

@@ -2,7 +2,7 @@ struct TrackedReal{T<:Real} <: Real
   tracker::Tracked{T}
 end
 
-TrackedReal(x::Real) = TrackedReal(Tracked(Call(nothing), x, zero(x)))
+TrackedReal(x::Real) = TrackedReal(Tracked(Call(), x, zero(x)))
 
 tracker(x::TrackedReal) = x.tracker
 
@@ -47,23 +47,21 @@ using DiffRules, SpecialFunctions, NaNMath
 for (M, f, arity) in DiffRules.diffrules()
   arity == 1 || continue
   @eval begin
+    @grad $M.$f(a::Real) =
+      $M.$f(a), Δ -> (Δ * $(DiffRules.diffrule(M, f, :(data(a)))),)
     $M.$f(a::TrackedReal) = track($M.$f, a)
-    back(::typeof($M.$f), Δ::Real, a::TrackedReal) =
-      back(a, Δ * $(DiffRules.diffrule(M, f, :(data(a)))))
   end
 end
 
 for (M, f, arity) in DiffRules.diffrules()
   arity == 2 || continue
   da, db = DiffRules.diffrule(M, f, :(data(a)), :(data(b)))
+  f = :($M.$f)
   @eval begin
-    $M.$f(a::TrackedReal, b::TrackedReal)  = track($M.$f, a, b)
-    $M.$f(a::TrackedReal, b::Real) = track($M.$f, a, b)
-    $M.$f(a::Real, b::TrackedReal) = track($M.$f, a, b)
-    function back(::typeof($M.$f), Δ::Real, a::Real, b::Real)
-      @back(a, Δ * $da)
-      @back(b, Δ * $db)
-    end
+    @grad $f(a::Real, b::Real) = $f(a, b), Δ -> (Δ * $da, Δ * $db)
+    $f(a::TrackedReal, b::TrackedReal)  = track($f, a, b)
+    $f(a::TrackedReal, b::Real) = track($f, a, b)
+    $f(a::Real, b::TrackedReal) = track($f, a, b)
   end
 end
 

@@ -21,9 +21,14 @@ function scan(x)
   return
 end
 
-back_(f, y, args...) = back(f, args...)
-back_(c::Call, y, Δ) = back_(c.func, y, Δ, c.args...)
-back_(::Call{Void}, y, Δ) = nothing
+function back_(c::Call, Δ)
+  Δs = c.func(Δ)
+  (Δs isa Tuple && length(Δs) == length(c.args)) ||
+    error("Gradient is not a tuple of length $(length(c.args))")
+  foreach((x, Δ) -> istracked(x) && back(x, Δ), c.args, Δs)
+end
+
+back_(::Call{Void}, Δ) = nothing
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
@@ -33,9 +38,9 @@ function back(x::Tracked, Δ)
   ref = x.ref -= 1
   if isdefined(x, :grad)
     x.grad = accum!(x.grad, Δ)
-    ref == 0 && back_(x.f, x.data, x.grad)
+    ref == 0 && back_(x.f, x.grad)
   else
-    ref == 0 && back_(x.f, x.data, Δ)
+    ref == 0 && back_(x.f, Δ)
   end
   return
 end

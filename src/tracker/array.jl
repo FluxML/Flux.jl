@@ -20,7 +20,7 @@ TrackedArray(c::Call, x::A) where A <: AbstractArray =
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
   TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x, Δ), x, Δ)
 
-TrackedArray(x::AbstractArray) = TrackedArray(Call(nothing), x, zeros(x))
+TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zeros(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
@@ -101,7 +101,7 @@ function back(::typeof(_repeat), Δ, xs::TrackedArray, inner, outer)
     Δ′ = similar(xs.data)
     Δ′ .= 0
     S = size(xs.data)
-    
+
     # Loop through each element of Δ, calculate source dimensions, accumulate into Δ′
     for (dest_idx, val) in enumerate(IndexCartesian(), Δ)
         # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
