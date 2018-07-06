@@ -15,7 +15,7 @@ Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `pad`, `stride`,`dilation` and `flipkernel`.
 """
 struct Conv{N,F,A,V}
   σ::F
@@ -24,16 +24,17 @@ struct Conv{N,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{N,Int}
   dilation::NTuple{N,Int}
+  flipkernel::Bool
 end
 
 Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-     stride = 1, pad = 0, dilation = 1) where {T,N} =
-  Conv(σ, w, b, expand.(sub2(Val{N}), (stride, pad, dilation))...)
+     stride = 1, pad = 0, dilation = 1, flipkernel = true) where {T,N} =
+  Conv(σ, w, b, expand.(sub2(Val{N}), (stride, pad, dilation))... , flipkernel)
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
-     stride = 1, pad = 0, dilation = 1) where N =
+     stride = 1, pad = 0, dilation = 1, flipkernel = true) where N =
   Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
-       stride = stride, pad = pad, dilation = dilation)
+       stride = stride, pad = pad, dilation = dilation, flipkernel = flipkernel)
 
 Flux.treelike(Conv)
 
@@ -41,7 +42,7 @@ function (c::Conv)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation, flipkernel = c.flipkernel) .+ b)
 end
 
 function Base.show(io::IO, l::Conv)
