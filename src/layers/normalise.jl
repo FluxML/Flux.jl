@@ -157,3 +157,51 @@ function Base.show(io::IO, l::BatchNorm)
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
+
+"""
+    LRNorm(k, n::Integer, α, β)
+
+Local Response Normalization layer. The `n` input should be the number of 
+adjacent kernel maps to sum over.
+
+See [ImageNet Classification with Deep Convolutional
+Neural Networks](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf).
+
+Example:
+
+```julia
+m = LRNorm(0.2, 5, 0.5, 2)
+m(ip) #ip is the 4-D input
+"""
+mutable struct LRNorm{F,I}
+  k
+  n::I
+  α::F
+  β
+end
+
+function (LRN::LRNorm)(x)
+  w,h,C,N = size(x)
+  temp = zeros(size(x))
+  for z_=1:N
+    for x_=1:w
+      for y_=1:h
+        for i=1:C
+          constant = LRN.k
+          for j=max(1,i-div(LRN.n,2)): min(C, i+div(LRN.n,2))
+            constant += LRN.α * (x[x_,y_,j,z_]^2)
+          end
+          constant = constant^LRN.β
+          temp[x_,y_,i,z_] = x[x_,y_,i,z_] / constant
+        end
+      end
+    end
+  end
+  return temp
+end 
+       
+children(LRN::LRNorm) =
+  (LRN.k, LRN,n, LRN.α, LRN.β)
+
+mapchildren(f, LRN::LRNorm) =  
+  LRNorm(f(LRN.k), LRN.n, f(LRN.α), f(LRN.β))
