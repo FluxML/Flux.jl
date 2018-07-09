@@ -1,7 +1,7 @@
 module Tracker
 
 using MacroTools
-using MacroTools: @q
+using MacroTools: @q, @forward
 
 import Base: ==
 
@@ -71,6 +71,7 @@ function update!(x, Δ)
   return x
 end
 
+include("idset.jl")
 include("back.jl")
 include("scalar.jl")
 include("array.jl")

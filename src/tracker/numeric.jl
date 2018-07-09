@@ -1,9 +1,3 @@
-function gradient(f, xs...)
-  xs = param.(xs)
-  back!(f(xs...))
-  grad.(xs)
-end
-
 function ngradient(f, xs::AbstractArray...)
   grads = zeros.(xs)
   for (x, Δ) in zip(xs, grads), i in 1:length(x)
