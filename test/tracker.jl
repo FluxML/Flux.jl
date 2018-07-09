@@ -1,5 +1,5 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck, grad
+using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -239,6 +239,18 @@ end
   y = Tracker.hook(-, x)
   back!(y)
   @test grad(x) == -1
+end
+
+@testset "Checkpointing" begin
+  count = 0
+  function mul(a, b)
+    count += 1
+    a * b
+  end
+  @test derivative(x -> mul(5, x), 3) == 5
+  @test count == 1
+  @test derivative(x -> checkpoint(mul, 5, x), 3) == 5
+  @test count == 3
 end
 
 end #testset

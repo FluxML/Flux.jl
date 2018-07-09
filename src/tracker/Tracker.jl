@@ -87,6 +87,22 @@ the sign of the gradient applied to `x`.
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
 @grad hook(f, x) = x, Δ -> (nothing, f(Δ))
 
+"""
+    checkpoint(f, args...)
+
+Behaves like `f(args...)`, but avoids storing the intermediate values needed for
+calculating gradients. Instead, `f(args...)` will be called again during the
+backward pass. This can be used to save memory in larger models.
+"""
+checkpoint(f, args...) = track(checkpoint, f, args...)
+
+@grad function checkpoint(f, args...)
+  data(f(args...)), function (Δ)
+    y, back = forward(f, args...)
+    (nothing, back(Δ)...)
+  end
+end
+
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
 
