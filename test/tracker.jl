@@ -111,6 +111,7 @@ end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
+# TODO unreliable
 @test gradtest(x -> repmat(x, 5,5), rand(4,5))
 @test gradtest(x -> repmat(x, 5), rand(4,5))
 
@@ -230,6 +231,14 @@ Tracker.back!(b)
   z = xy[1]*xy[2]
   back!(z)
   @test grad.((x,y)) == (3, 2)
+end
+
+# Gradient Hooks
+@testset "Hooks" begin
+  x = param(2)
+  y = Tracker.hook(-, x)
+  back!(y)
+  @test grad(x) == -1
 end
 
 end #testset

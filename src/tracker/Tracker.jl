@@ -1,6 +1,7 @@
 module Tracker
 
 using MacroTools
+using MacroTools: @q
 
 import Base: ==
 
@@ -51,8 +52,8 @@ track(f::Call) = track(f, f())
 
 function _forward end
 
-function track(f, xs...)
-  y, back = _forward(f, data.(xs)...)
+function track(f, xs...; kw...)
+  y, back = _forward(f, data.(xs)...; kw...)
   track(Call(back, xs), y)
 end
 
@@ -60,8 +61,8 @@ macro grad(ex)
   @capture(shortdef(ex), (name_(args__) = body_) |
                          (name_(args__) where {T__} = body_)) || error("Need a function definition")
   T == nothing && (T = [])
-  unshift!(args, :(::typeof($name)))
-  :(Tracker._forward($(args...)) where $(T...) = $body) |> esc
+  insert!(args, 1+isexpr(args[1], :parameters) , :(::typeof($name)))
+  @q(Tracker._forward($(args...)) where $(T...) = $body) |> esc
 end
 
 function update!(x, Δ)
@@ -83,7 +84,7 @@ Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 the sign of the gradient applied to `x`.
 """
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
-back(::typeof(hook), Δ, f, x) = @back(x, f(Δ))
+@grad hook(f, x) = x, Δ -> (nothing, f(Δ))
 
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))

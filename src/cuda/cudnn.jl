@@ -340,33 +340,33 @@ function accum_transpose!(dst::CuArray, src::CuArray)
   return dst
 end
 
-function back_(m::RNNCall{<:Union{CuRNN,CuGRU}}, y_, Δ, x, h)
-  y, ho = y_
-  dy, dho = Δ
-  h_ = hBatch(x, data(h))
-  dx, dh = backwardData(descs[m.rnn], y, dy, dho, h_, m.reserve)
-  @back(x, dx)
-  @back(h, unbroadcast(h, dh))
-  (dWi, dWh), db = backwardWeights(descs[m.rnn], data(x), h_, y, m.reserve)
-  # We don't have to make this assumption, it's just slightly more complex.
-  @assert all(isleaf.((m.rnn.Wi, m.rnn.Wh, m.rnn.b)))
-  istracked(m.rnn.Wi) && accum_transpose!(m.rnn.Wi.grad, dWi)
-  istracked(m.rnn.Wh) && accum_transpose!(m.rnn.Wh.grad, dWh)
-  istracked(m.rnn.b) && accum_transpose!(m.rnn.b.grad, db)
-end
+# function back_(m::RNNCall{<:Union{CuRNN,CuGRU}}, y_, Δ, x, h)
+#   y, ho = y_
+#   dy, dho = Δ
+#   h_ = hBatch(x, data(h))
+#   dx, dh = backwardData(descs[m.rnn], y, dy, dho, h_, m.reserve)
+#   @back(x, dx)
+#   @back(h, unbroadcast(h, dh))
+#   (dWi, dWh), db = backwardWeights(descs[m.rnn], data(x), h_, y, m.reserve)
+#   # We don't have to make this assumption, it's just slightly more complex.
+#   @assert all(isleaf.((m.rnn.Wi, m.rnn.Wh, m.rnn.b)))
+#   istracked(m.rnn.Wi) && accum_transpose!(m.rnn.Wi.grad, dWi)
+#   istracked(m.rnn.Wh) && accum_transpose!(m.rnn.Wh.grad, dWh)
+#   istracked(m.rnn.b) && accum_transpose!(m.rnn.b.grad, db)
+# end
 
-function back_(m::RNNCall{<:CuLSTM}, y_, Δ, x, h, c)
-  y, ho, co = y_
-  dy, dho, dco = Δ
-  h_ = hBatch(x, data(h))
-  c_ = hBatch(x, data(c))
-  dx, dh, dc = backwardData(descs[m.rnn], y, dy, dho, dco, h_, c_, m.reserve)
-  @back(x, dx)
-  @back(h, unbroadcast(h, dh))
-  @back(c, unbroadcast(h, dc))
-  (dWi, dWh), db = backwardWeights(descs[m.rnn], data(x), h_, y, m.reserve)
-  @assert all(isleaf.((m.rnn.Wi, m.rnn.Wh, m.rnn.b)))
-  istracked(m.rnn.Wi) && accum_transpose!(m.rnn.Wi.grad, dWi)
-  istracked(m.rnn.Wh) && accum_transpose!(m.rnn.Wh.grad, dWh)
-  istracked(m.rnn.b) && accum_transpose!(m.rnn.b.grad, db)
-end
+# function back_(m::RNNCall{<:CuLSTM}, y_, Δ, x, h, c)
+#   y, ho, co = y_
+#   dy, dho, dco = Δ
+#   h_ = hBatch(x, data(h))
+#   c_ = hBatch(x, data(c))
+#   dx, dh, dc = backwardData(descs[m.rnn], y, dy, dho, dco, h_, c_, m.reserve)
+#   @back(x, dx)
+#   @back(h, unbroadcast(h, dh))
+#   @back(c, unbroadcast(h, dc))
+#   (dWi, dWh), db = backwardWeights(descs[m.rnn], data(x), h_, y, m.reserve)
+#   @assert all(isleaf.((m.rnn.Wi, m.rnn.Wh, m.rnn.b)))
+#   istracked(m.rnn.Wi) && accum_transpose!(m.rnn.Wi.grad, dWi)
+#   istracked(m.rnn.Wh) && accum_transpose!(m.rnn.Wh.grad, dWh)
+#   istracked(m.rnn.b) && accum_transpose!(m.rnn.b.grad, db)
+# end

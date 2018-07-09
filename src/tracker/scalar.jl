@@ -100,13 +100,13 @@ back(::typeof(getindex), Δ, t, i) =
 
 function collect(xs)
   xs = Base.collect(xs)
-  track(Call(collect, xs), data.(xs))
+  track(Call(collect, (xs,)), data.(xs))
 end
 
 function scan(c::Call{typeof(collect)})
   foreach(scan, c.args[1])
 end
 
-function back(::typeof(collect), Δ, xs)
-  foreach((x, Δ) -> @back(x, Δ), xs, Δ)
+function back_(c::Call{typeof(collect)}, Δ)
+  foreach((x, Δ) -> istracked(x) && back(x, Δ), c.args[1], Δ)
 end

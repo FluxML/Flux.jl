@@ -23,7 +23,7 @@ end
 
 function back_(c::Call, Δ)
   Δs = c.func(Δ)
-  (Δs isa Tuple && length(Δs) == length(c.args)) ||
+  (Δs isa Tuple && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
   foreach((x, Δ) -> istracked(x) && back(x, Δ), c.args, Δs)
 end
@@ -47,13 +47,6 @@ end
 
 back(x, Δ) = back(tracker(x), Δ)
 back(x::Void, Δ) = error("Can't backpropagate through `nothing`")
-
-macro back(x, Δ)
-  quote
-    x = $(esc(x))
-    istracked(x) && back(x, $(esc(Δ)))
-  end
-end
 
 # Interface methods
 
