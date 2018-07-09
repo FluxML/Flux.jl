@@ -6,6 +6,7 @@ struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   TrackedArray{T,N,A}(t::Tracked{A}, data::A, grad::A) where {T,N,A} = new(t, data, grad)
 end
 
+data(x::TrackedArray) = x.data
 tracker(x::TrackedArray) = x.tracker
 
 TrackedVector{T,A} = TrackedArray{T,1,A}
@@ -15,10 +16,10 @@ TrackedVecOrMat{T,A} = Union{TrackedVector{T,A},TrackedMatrix{T,A}}
 track(c::Call, x::AbstractArray) = TrackedArray(c, x)
 
 TrackedArray(c::Call, x::A) where A <: AbstractArray =
-  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x), x)
+  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c), x)
 
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
-  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, x, Δ), x, Δ)
+  TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, Δ), x, Δ)
 
 TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zeros(x))
 
@@ -369,7 +370,7 @@ function ∇broadcast(f, args::Vararg{Any,N}) where N
     map((x, Δ) -> unbroadcast(x, Δ), args, Δargs)
   end
   # So we can return non-tracked arrays
-  track(Call(back, args), y)
+  track(Call(back, tracker.(args)), y)
 end
 
 Base.Broadcast._containertype(::Type{<:TrackedReal}) = TrackedArray

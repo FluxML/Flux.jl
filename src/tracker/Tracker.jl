@@ -11,9 +11,9 @@ tracker(x) = nothing
 
 istracked(x) = tracker(x) ≠ nothing
 isleaf(x) = !istracked(x) || isleaf(tracker(x))
-data(x) = istracked(x) ? data(tracker(x)) : x
 grad(x) = grad(tracker(x))
 grad(::Void) = nothing
+data(x) = x
 
 struct Call{F,As<:Tuple}
   func::F
@@ -32,29 +32,23 @@ mutable struct Tracked{T}
   ref::UInt32
   f::Call
   isleaf::Bool
-  data::T
   grad::T
-  Tracked{T}(f::Call, data::T) where T = new(0, f, false, data)
-  Tracked{T}(f::Call, data::T, grad::T) where T = new(0, f, false, data, grad)
-  Tracked{T}(f::Call{Void}, data::T, grad::T) where T = new(0, f, true, data, grad)
+  Tracked{T}(f::Call) where T = new(0, f, false)
+  Tracked{T}(f::Call, grad::T) where T = new(0, f, false, grad)
+  Tracked{T}(f::Call{Void}, grad::T) where T = new(0, f, true, grad)
 end
-
-Tracked(f::Call, x) = Tracked{typeof(x)}(f, x)
-Tracked(f::Call, x, Δ) = Tracked{typeof(x)}(f, x, Δ)
 
 istracked(x::Tracked) = true
 isleaf(x::Tracked) = x.f == Call()
-data(x::Tracked) = x.data
 grad(x::Tracked) = x.grad
 
-track(f::Call, x) = Tracked(f, x)
-track(f::Call) = track(f, f())
+track(f::Call, x) = Tracked{typeof(x)}(f)
 
 function _forward end
 
 function track(f, xs...; kw...)
   y, back = _forward(f, data.(xs)...; kw...)
-  track(Call(back, xs), y)
+  track(Call(back, tracker.(xs)), y)
 end
 
 macro grad(ex)

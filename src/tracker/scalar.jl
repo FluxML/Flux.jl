@@ -1,12 +1,14 @@
 struct TrackedReal{T<:Real} <: Real
+  data::T
   tracker::Tracked{T}
 end
 
-TrackedReal(x::Real) = TrackedReal(Tracked(Call(), x, zero(x)))
+TrackedReal(x::Real) = TrackedReal(x, Tracked{typeof(x)}(Call(), zero(x)))
 
+data(x::TrackedReal) = x.data
 tracker(x::TrackedReal) = x.tracker
 
-track(f::Call, x::Real) = TrackedReal(Tracked(f, x, zero(x)))
+track(f::Call, x::Real) = TrackedReal(x, Tracked{typeof(x)}(f, zero(x)))
 
 function back!(x::TrackedReal)
     isinf(x) && error("Loss is Inf")
@@ -73,6 +75,7 @@ import Base:^
 # Tuples
 
 struct TrackedTuple{T<:Tuple}
+  data::T
   tracker::Tracked{T}
 end
 
@@ -82,7 +85,7 @@ accum!(x::Tuple, Δ::Tuple) = accum!.(x, Δ)
 init_grad(x::Tuple) = init_grad.(x)
 zero_grad!(x::Tuple) = zero_grad!.(x)
 
-track(f::Call, xs::Tuple) = TrackedTuple(Tracked(f, xs))
+track(f::Call, xs::Tuple) = TrackedTuple(xs, Tracked{typeof(xs)}(f))
 
 function Base.show(io::IO, xs::TrackedTuple)
   show(io, data(xs))
@@ -100,7 +103,7 @@ back(::typeof(getindex), Δ, t, i) =
 
 function collect(xs)
   xs = Base.collect(xs)
-  track(Call(collect, (xs,)), data.(xs))
+  track(Call(collect, (tracker.(xs),)), data.(xs))
 end
 
 function scan(c::Call{typeof(collect)})
@@ -108,5 +111,5 @@ function scan(c::Call{typeof(collect)})
 end
 
 function back_(c::Call{typeof(collect)}, Δ)
-  foreach((x, Δ) -> istracked(x) && back(x, Δ), c.args[1], Δ)
+  foreach(back, c.args[1], Δ)
 end

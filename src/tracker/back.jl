@@ -10,8 +10,6 @@ function scan(x::Tracked)
   if ref == 1
     scan(x.f)
     isdefined(x, :grad) && (x.grad = zero_grad!(x.grad))
-  else
-    isdefined(x, :grad) || (x.grad = init_grad(x.data))
   end
   return
 end
@@ -25,7 +23,7 @@ function back_(c::Call, Δ)
   Δs = c.func(Δ)
   (Δs isa Tuple && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
-  foreach((x, Δ) -> istracked(x) && back(x, Δ), c.args, Δs)
+  foreach(back, c.args, Δs)
 end
 
 back_(::Call{Void}, Δ) = nothing
@@ -36,8 +34,12 @@ accum!(x::AbstractArray, Δ) = (x .+= Δ)
 function back(x::Tracked, Δ)
   x.isleaf && (x.grad = accum!(x.grad, Δ); return)
   ref = x.ref -= 1
-  if isdefined(x, :grad)
-    x.grad = accum!(x.grad, Δ)
+  if ref > 0 || isdefined(x, :grad)
+    if isdefined(x, :grad)
+      x.grad = accum!(x.grad, Δ)
+    else
+      x.grad = Δ
+    end
     ref == 0 && back_(x.f, x.grad)
   else
     ref == 0 && back_(x.f, Δ)
@@ -45,8 +47,7 @@ function back(x::Tracked, Δ)
   return
 end
 
-back(x, Δ) = back(tracker(x), Δ)
-back(x::Void, Δ) = error("Can't backpropagate through `nothing`")
+back(::Void, _) = return
 
 # Interface methods
 
@@ -55,12 +56,12 @@ back(x::Void, Δ) = error("Can't backpropagate through `nothing`")
 # Refcounts are also probably not safe in some situations (e.g. back called
 # from within a backpropagator)
 
-function back!(x::Tracked, Δ)
+function back!(x, Δ)
+  istracked(x) || return
   scan(x)
-  back(x, Δ)
+  back(tracker(x), Δ)
+  return
 end
-
-back!(x, Δ) = back!(tracker(x), Δ)
 
 # Out-of-place gradients
 
@@ -91,7 +92,7 @@ function back_(g::Grads, c::Call, Δ)
   Δs = c.func(Δ)
   (Δs isa Tuple && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
-  foreach((x, Δ) -> istracked(x) && back(g, x, Δ), c.args, Δs)
+  foreach((x, Δ) -> back(g, x, Δ), c.args, Δs)
 end
 
 back_(g::Grads, ::Call{Void}, Δ) = nothing
@@ -108,8 +109,7 @@ function back(g::Grads, x::Tracked, Δ)
   return
 end
 
-back(g::Grads, x, Δ) = back(g, tracker(x), Δ)
-back(g::Grads, x::Void, Δ) = error("Can't backpropagate through `nothing`")
+back(::Grads, ::Void, _) = return
 
 function forward(f, ps::Params)
   y = f()
@@ -117,7 +117,7 @@ function forward(f, ps::Params)
     g = Grads()
     if istracked(y)
       scan(y)
-      back(g, y, Δ)
+      back(g, tracker(y), Δ)
     end
     for p in ps
       haskey(g, tracker(p)) ||
