@@ -47,7 +47,7 @@ track(f::Call, x) = Tracked{typeof(x)}(f)
 function _forward end
 
 function track(f, xs...; kw...)
-  y, back = _forward(f, data.(xs)...; kw...)
+  y, back = _forward(f, xs...; kw...)
   track(Call(back, tracker.(xs)), y)
 end
 
@@ -97,8 +97,16 @@ checkpoint(f, args...) = track(checkpoint, f, args...)
   end
 end
 
+nobacksies(f, x) = track(nobacksies, f, x)
+nobacksies(f, xs::Tuple) = map(x -> nobacksies(f, x), xs)
+@grad nobacksies(f, x) = data(x), Δ -> error("Nested AD not defined for $f")
+
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
+
+@grad identity(x) = data(x), Δ -> (Δ,)
+param(x::TrackedReal) = track(identity, x)
+param(x::TrackedArray) = track(identity, x)
 
 import NNlib.cudata
 import Adapt.adapt

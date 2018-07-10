@@ -23,7 +23,7 @@ function back_(c::Call, Δ)
   Δs = c.func(Δ)
   (Δs isa Tuple && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
-  foreach(back, c.args, Δs)
+  foreach(back, c.args, data.(Δs))
 end
 
 back_(::Call{Void}, Δ) = nothing
@@ -78,6 +78,8 @@ end
 
 Grads() = Grads(ObjectIdDict())
 
+Grads(ps::Params) = Grads(ObjectIdDict(tracker(p) => init_grad(data(p)) for p in ps))
+
 Base.getindex(g::Grads, x::Tracked) = g.grads[x]
 function Base.getindex(g::Grads, x)
   istracked(x) || error("Object not tracked: $x")
@@ -114,14 +116,10 @@ back(::Grads, ::Void, _) = return
 function forward(f, ps::Params)
   y = f()
   y, function (Δ)
-    g = Grads()
+    g = Grads(ps)
     if istracked(y)
       scan(y)
       back(g, tracker(y), Δ)
-    end
-    for p in ps
-      haskey(g, tracker(p)) ||
-        (g[tracker(p)] = init_grad(data(p)))
     end
     return g
   end

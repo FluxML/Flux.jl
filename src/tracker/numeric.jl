@@ -15,4 +15,4 @@ end
 
 gradcheck(f, xs...) =
   all(isapprox.(ngradient(f, xs...),
-                gradient(f, xs...), rtol = 1e-5, atol = 1e-5))
+                data.(gradient(f, xs...)), rtol = 1e-5, atol = 1e-5))

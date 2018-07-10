@@ -50,17 +50,17 @@ for (M, f, arity) in DiffRules.diffrules()
   arity == 1 || continue
   @eval begin
     @grad $M.$f(a::Real) =
-      $M.$f(a), Δ -> (Δ * $(DiffRules.diffrule(M, f, :(data(a)))),)
+      $M.$f(data(a)), Δ -> (Δ * $(DiffRules.diffrule(M, f, :a)),)
     $M.$f(a::TrackedReal) = track($M.$f, a)
   end
 end
 
 for (M, f, arity) in DiffRules.diffrules()
   arity == 2 || continue
-  da, db = DiffRules.diffrule(M, f, :(data(a)), :(data(b)))
+  da, db = DiffRules.diffrule(M, f, :a, :b)
   f = :($M.$f)
   @eval begin
-    @grad $f(a::Real, b::Real) = $f(a, b), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::Real, b::Real) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
     $f(a::TrackedReal, b::TrackedReal)  = track($f, a, b)
     $f(a::TrackedReal, b::Real) = track($f, a, b)
     $f(a::Real, b::TrackedReal) = track($f, a, b)
@@ -111,5 +111,5 @@ function scan(c::Call{typeof(collect)})
 end
 
 function back_(c::Call{typeof(collect)}, Δ)
-  foreach(back, c.args[1], Δ)
+  foreach(back, c.args[1], data(Δ))
 end
