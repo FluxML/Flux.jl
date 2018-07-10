@@ -79,13 +79,14 @@ struct TrackedTuple{T<:Tuple}
   tracker::Tracked{T}
 end
 
+data(xs::TrackedTuple) = xs.data
 tracker(xs::TrackedTuple) = xs.tracker
 
 accum!(x::Tuple, Δ::Tuple) = accum!.(x, Δ)
 init_grad(x::Tuple) = init_grad.(x)
 zero_grad!(x::Tuple) = zero_grad!.(x)
 
-track(f::Call, xs::Tuple) = TrackedTuple(xs, Tracked{typeof(xs)}(f))
+track(f::Call, xs::Tuple) = TrackedTuple(xs, Tracked{typeof(xs)}(f, zero.(xs)))
 
 function Base.show(io::IO, xs::TrackedTuple)
   show(io, data(xs))
@@ -96,8 +97,9 @@ Base.length(x::TrackedTuple) = length(data(x))
 
 Base.getindex(xs::TrackedTuple, i::Integer) = track(getindex, xs, i)
 
-back(::typeof(getindex), Δ, t, i) =
-  back(t, ntuple(j -> i == j ? Δ : 0, length(t)))
+@grad function getindex(xs::TrackedTuple, i)
+  data(xs)[i], Δ -> (ntuple(j -> i == j ? Δ : 0, length(xs)), nothing)
+end
 
 # Array collection
 

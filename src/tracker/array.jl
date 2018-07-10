@@ -66,7 +66,7 @@ Base.:(==)(x::TrackedArray, y::TrackedArray) = data(x) == data(y)
 
 Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
 
-@grad function getindex(xs, i...)
+@grad function getindex(xs::AbstractArray, i...)
   data(xs)[i...], function (Δ)
     Δ′ = zero(xs)
     Δ′[i...] = data(Δ)

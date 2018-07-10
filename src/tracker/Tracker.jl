@@ -55,7 +55,8 @@ macro grad(ex)
   @capture(shortdef(ex), (name_(args__) = body_) |
                          (name_(args__) where {T__} = body_)) || error("Need a function definition")
   T == nothing && (T = [])
-  insert!(args, 1+isexpr(args[1], :parameters) , :(::typeof($name)))
+  isexpr(name, :(::)) || (name = :(::typeof($name)))
+  insert!(args, 1+isexpr(args[1], :parameters) , name)
   @q(Tracker._forward($(args...)) where $(T...) = $body) |> esc
 end
 
