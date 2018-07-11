@@ -3,6 +3,8 @@
 Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
 
 ```julia
+using Flux.Tracker
+
 W = param(rand(2, 5))
 b = param(rand(2))
 
@@ -11,7 +13,9 @@ loss(x, y) = sum((predict(x) .- y).^2)
 
 x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
-back!(l)
+
+params = Params([W, b])
+grads = Tracker.gradient(() -> loss(x, y), params)
 ```
 
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
@@ -22,7 +26,7 @@ using Flux.Tracker: grad, update!
 function sgd()
   η = 0.1 # Learning Rate
   for p in (W, b)
-    update!(p, -η * grad(p))
+    update!(p, -η * grads[p])
   end
 end
 ```

@@ -5,7 +5,7 @@ using MacroTools: @q, @forward
 
 import Base: ==
 
-export TrackedArray, TrackedVector, TrackedMatrix, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, Params, param, back!
 
 tracker(x) = nothing
 
@@ -61,7 +61,7 @@ macro grad(ex)
 end
 
 function update!(x, Δ)
-  tracker(x).data += Δ
+  x.data .+= data(Δ)
   tracker(x).grad .= 0
   return x
 end

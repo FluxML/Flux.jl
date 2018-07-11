@@ -72,9 +72,17 @@ end
 
 @forward Params.params Base.start, Base.next, Base.done
 
+function Base.show(io::IO, ps::Params)
+  print(io, "Params([")
+  join(io, ps.params, ", ")
+  print(io, "])")
+end
+
 struct Grads
   grads::ObjectIdDict
 end
+
+Base.show(io::IO, ps::Grads) = println(io, "Grads(...)")
 
 Grads() = Grads(ObjectIdDict())
 
