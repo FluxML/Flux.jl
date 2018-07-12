@@ -1,6 +1,7 @@
 import Base: *, ==
 
-using LinearAlgebra
+import LinearAlgebra
+using LinearAlgebra: Transpose, Adjoint, diagm
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
