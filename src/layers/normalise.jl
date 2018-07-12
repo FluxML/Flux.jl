@@ -58,7 +58,7 @@ end
 LayerNorm(h::Integer) =
   LayerNorm(Diagonal(h))
 
-treelike(LayerNorm)
+@treelike LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x))
 

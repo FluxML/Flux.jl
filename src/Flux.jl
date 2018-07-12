@@ -4,7 +4,7 @@ module Flux
 
 # Zero Flux Given
 
-using Juno, Requires, Reexport, StatsBase
+using MacroTools, Juno, Requires, Reexport, StatsBase
 using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv,

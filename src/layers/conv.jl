@@ -35,7 +35,7 @@ Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = 
   Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
-Flux.treelike(Conv)
+@treelike Conv
 
 function (c::Conv)(x)
   # TODO: breaks gpu broadcast :(

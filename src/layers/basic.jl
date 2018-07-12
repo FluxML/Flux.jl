@@ -73,7 +73,7 @@ function Dense(in::Integer, out::Integer, σ = identity;
   return Dense(param(initW(out, in)), param(initb(out)), σ)
 end
 
-treelike(Dense)
+@treelike Dense
 
 function (a::Dense)(x)
   W, b, σ = a.W, a.b, a.σ
@@ -104,7 +104,7 @@ end
 Diagonal(in::Integer; initα = ones, initβ = zeros) =
   Diagonal(param(initα(in)), param(initβ(in)))
 
-treelike(Diagonal)
+@treelike Diagonal
 
 function (a::Diagonal)(x)
   α, β = a.α, a.β
