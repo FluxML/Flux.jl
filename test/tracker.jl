@@ -1,3 +1,4 @@
+using Flux
 using Flux.Tracker, Base.Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv
@@ -49,8 +50,8 @@ function promotiontest(f, A, B, C)
 end
 
 @testset "concat" begin
-  cat1(x...) = cat(1, x...)
-  cat2(x...) = cat(2, x...)
+  cat1(x...) = cat(x..., dims = 1)
+  cat2(x...) = cat(x..., dims = 2)
 
   @testset for vcatf in [vcat, cat1]
     @test gradtest(vcatf, rand(5), rand(3))
@@ -72,17 +73,17 @@ end
     @test gradtest(hcatf, rand(5), rand(5,2))
 end
 
-  @testset for catf in [vcat, cat1, hcat, cat2, (x...) -> cat(3, x...), (x...) -> cat((1,2), x...)]
+  @testset for catf in [vcat, cat1, hcat, cat2, (x...) -> cat(x..., dims = 3), (x...) -> cat(x..., dims = (1,2))]
     @test gradtest(catf, rand(5))
     @test gradtest(catf, rand(5)')
     @test gradtest(catf, rand(2,5))
     @test gradtest(catf, rand(2,5,3))
   end
 
-  @test gradtest((x...) -> cat(3, x...), rand(2,5,2), rand(2,5,3), rand(2,5,4))
+  @test gradtest((x...) -> cat(x..., dims = 3), rand(2,5,2), rand(2,5,3), rand(2,5,4))
 
   @testset "cat($dim, ...)" for dim in 3:5
-    catdim = (x...) -> cat(dim, x...)
+    catdim = (x...) -> cat(x..., dims = dim)
     @test gradtest(catdim, rand(5), rand(5), rand(5))
     @test gradtest(catdim, rand(2,5), rand(2,5), rand(2,5))
     @test gradtest(catdim, rand(2,5,3), rand(2,5,3), rand(2,5,3))
@@ -92,7 +93,7 @@ end
   @test !isa(hcat(rand(2)), TrackedArray)
   @test !isa(cat(1,rand(2)), TrackedArray)
 
-  @test gradtest((a,b)->cat((2,3,5), a, b), rand(2,3), rand(2,4,2,1))
+  @test gradtest((a,b)->cat(a, b, dims = (2,3,5)), rand(2,3), rand(2,4,2,1))
 
   @testset "promotiontest" begin
     @testset for fcat in [hcat, vcat, (x...) -> cat(3, x...), (x...) -> cat((1,2), x...)]

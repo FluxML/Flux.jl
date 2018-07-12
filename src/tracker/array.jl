@@ -103,6 +103,7 @@ Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
 end
 
 for f in [:vcat, :hcat]
+  UArray = :(Union{TrackedArray,Vector,Matrix,Adjoint,Transpose})
   @eval begin
     # This section is a bit of a hack since julia doesn't have a standardised
     # promotion mechanism for concatenation yet
@@ -111,18 +112,18 @@ for f in [:vcat, :hcat]
     # It should support tracked concatenation with rank ∈ (1,2) with a
     # TrackedArray anywhere among the arguments This works as long as base has
     # other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
-    Base.$f(a::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a...)
+    Base.$f(a::$UArray...) = track($f, a...)
 
     # It should support tracked concatenation with rank>2 if the TrackedArray is
     # first
     Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
-    Base.$f(a::TrackedArray, b::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b...) # resolves ambiguity introduced by previous row
+    Base.$f(a::TrackedArray, b::$UArray...) = track($f, a, b...) # resolves ambiguity introduced by previous row
 
     # It should support tracked concatenation with rank>2 if the TrackedArray is
     # second
     Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
-    Base.$f(a::Union{Vector,RowVector,Matrix}, b::TrackedArray,
-            c::Union{TrackedArray,Vector,RowVector,Matrix}...) =
+    Base.$f(a::Union{Vector,Matrix,Adjoint,Transpose}, b::TrackedArray,
+            c::$UArray...) =
       track($f, a, b, c...) # resolves ambiguity introduced by previous row
   end
 end
@@ -157,11 +158,13 @@ end
   end
 end
 
-Base.cat(dims, a::TrackedArray, b::AbstractArray...) = track(cat, dims, a, b...)
-Base.cat(dims, a::Union{RowVector,Array}, b::TrackedArray, c::AbstractArray...) = track(cat, dims, a, b, c...)
+Base.cat(a::TrackedArray; dims) = track_kw(cat, a, dims = dims)
+Base.cat(a::TrackedArray, b::TrackedArray, c::AbstractArray...; dims) = track_kw(cat, a, b, c..., dims = dims)
+Base.cat(a::TrackedArray, b::AbstractArray, c::AbstractArray...; dims) = track_kw(cat, a, b, c..., dims = dims)
+Base.cat(a::AbstractArray, b::TrackedArray, c::AbstractArray...; dims) = track_kw(cat, a, b, c..., dims = dims)
 
-@grad function cat(dims, Xs...)
-  cat(dims, data.(Xs)...), function (Δ)
+@grad function cat(Xs...; dims)
+  cat(data.(Xs)..., dims = dims), function (Δ)
     start = ntuple(i -> 0, Val{ndims(Δ)})
     Δs = [begin
       dim_xs = 1:ndims(xs)
@@ -171,7 +174,7 @@ Base.cat(dims, a::Union{RowVector,Array}, b::TrackedArray, c::AbstractArray...) 
       start = start .+ till_xs
       d
     end for xs in Xs]
-    return (nothing, Δs...,)
+    return (Δs...,)
   end
 end
 
