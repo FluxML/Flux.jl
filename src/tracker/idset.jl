@@ -1,6 +1,6 @@
 struct IdSet{T} <: AbstractSet{T}
-  dict::ObjectIdDict
-  IdSet{T}() where T = new(ObjectIdDict())
+  dict::IdDict{T,Nothing}
+  IdSet{T}() where T = new(IdDict{T,Nothing}())
 end
 
 Base.eltype{T}(::IdSet{T}) = T
