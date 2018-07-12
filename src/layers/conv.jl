@@ -41,6 +41,10 @@ function (c::Conv)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  @show typeof(x)
+  @show typeof(c.weight)
+  @show typeof(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  @show typeof(σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b))
   σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
 
