@@ -14,9 +14,9 @@ function (c::Conv)(x)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   wt = copy(c.weight.data)
-  @show σ
+  # @show σ
   if σ == NNlib.relu
-  	println("Here")
+  	# println("Here")
   	NNlib.NNPACK.convo(x, wt, c.bias, stride = c.stride, pad = c.pad, dilation = c.dilation, activation = 1)
   else
   	println("There")
