@@ -2,7 +2,7 @@ module Tracker
 
 import Base: ==
 
-export TrackedArray, TrackedVector, TrackedMatrix, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, param, back!, @back
 
 tracker(x) = nothing
 
@@ -52,8 +52,8 @@ include("scalar.jl")
 include("array.jl")
 include("numeric.jl")
 
-param(x::Number) = TrackedReal(float(x))
-param(xs::AbstractArray) = TrackedArray(float.(xs))
+param(x::Number) = TrackedReal(Cfloat(x))
+param(xs::AbstractArray) = TrackedArray(Cfloat.(xs))
 
 import NNlib.cudata
 import Adapt.adapt

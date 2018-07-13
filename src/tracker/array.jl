@@ -63,7 +63,7 @@ Base.:(==)(x::TrackedArray, y::TrackedArray) = data(x) == data(y)
 Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
 
 function back(::typeof(getindex), Δ, xs::TrackedArray, i...)
-  Δ′ = zeros(xs.data)
+  Δ′ = zeros(Float32, xs.data)
   Δ′[i...] = Δ
   @back(xs, Δ′)
 end

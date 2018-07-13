@@ -1,3 +1,10 @@
+using NNlib
+
+if NNlib.nnpack_available()
+  println("NNPACK found.")
+  include("../NNPACK.jl")
+end
+
 init_grad(x) = zero(x)
 zero_grad!(x) = zero(x)
 zero_grad!(x::AbstractArray) = (x .= 0)
@@ -21,7 +28,19 @@ function scan(x)
   return
 end
 
-back_(f, y, args...) = back(f, args...)
+function back_(f, y, args...)
+  # @show silentlyze(args)
+  println("\n")
+  @show f
+  @show length(args)
+  for i in args
+    @show typeof(i)
+    # @show i
+    # println()
+  end
+  println("\n")
+  back(f, args...)
+end
 back_(c::Call, y, Δ) = back_(c.func, y, Δ, c.args...)
 back_(::Call{Void}, y, Δ) = nothing
 

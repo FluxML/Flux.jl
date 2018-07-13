@@ -40,7 +40,7 @@ include("data/Data.jl")
 @require CuArrays include("cuda/cuda.jl")
 
 if NNlib.nnpack_available()
-	info("NNPACK found.")
+	println("NNPACK found.")
 	include("NNPACK.jl")
 end
 
