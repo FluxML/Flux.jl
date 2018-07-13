@@ -1,5 +1,5 @@
 using Flux.Tracker, Base.Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck, grad
+using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv, depthwiseconv
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -111,6 +111,7 @@ end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
+# TODO unreliable
 @test gradtest(x -> repmat(x, 5,5), rand(4,5))
 @test gradtest(x -> repmat(x, 5), rand(4,5))
 
@@ -232,6 +233,26 @@ Tracker.back!(b)
   z = xy[1]*xy[2]
   back!(z)
   @test grad.((x,y)) == (3, 2)
+end
+
+# Gradient Hooks
+@testset "Hooks" begin
+  x = param(2)
+  y = Tracker.hook(-, x)
+  back!(y)
+  @test grad(x) == -1
+end
+
+@testset "Checkpointing" begin
+  count = 0
+  function mul(a, b)
+    count += 1
+    a * b
+  end
+  @test derivative(x -> mul(5, x), 3) == 5
+  @test count == 1
+  @test derivative(x -> checkpoint(mul, 5, x), 3) == 5
+  @test count == 3
 end
 
 end #testset
