@@ -30,15 +30,15 @@ end
 
 function back_(f, y, args...)
   # @show silentlyze(args)
-  println("\n")
-  @show f
-  @show length(args)
-  for i in args
-    @show typeof(i)
-    # @show i
-    # println()
-  end
-  println("\n")
+  # println("\n")
+  # @show f
+  # @show length(args)
+  # for i in args
+  #   @show typeof(i)
+  #   # @show i
+  #   # println() 
+  # end
+  # println("\n")
   back(f, args...)
 end
 back_(c::Call, y, Δ) = back_(c.func, y, Δ, c.args...)

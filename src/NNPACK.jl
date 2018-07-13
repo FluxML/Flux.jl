@@ -23,12 +23,12 @@ macro back(x, Δ)
 end
 
 function _conv(x, w, stride, pad, dilation, activation, bias) 
-	println("here 2")
+	# println("here 2")
 	NNlib.NNPACK.convo(x, w, bias, stride = stride, pad = pad, dilation = dilation, activation = activation)
 end
 
 function conv(x, w, bias; stride = 1, pad = 0, dilation = 1, activation = 0)
-  println("here 1")
+  # println("here 1")
   Tracker.track(_conv, x, w, stride, pad, dilation, activation, bias)
 end
 # conv(x::AbstractArray{<:Real,N}, w::Tracker.TrackedArray{<:Real,N}, bias; stride = 1, pad = 0, dilation = 1, activation = 0) where N =
@@ -45,20 +45,20 @@ function (c::Conv)(x)
   	# println("Here")
   	conv(x, c.weight, c.bias, stride = c.stride, pad = c.pad, dilation = c.dilation, activation = 1)
   else
-  	println("There")
+  	# println("There")
   	σ.(conv(x, c.weight, c.bias, stride = c.stride, pad = c.pad, dilation = c.dilation, activation = 0))
   end
 end
 
 function back(::typeof(_conv), Δ, x, w, stride, pad, dilation, extras...)
-  println("here 3")
-  @show stride
-  @show pad
-  @show dilation
-  @show extras[2]
+  # println("here 3")
+  # @show stride
+  # @show pad
+  # @show dilation
+  # @show extras[2]
   # a = ∇conv_data(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1])
-  println("here 4")
+  # println("here 4")
   # @show a
   @back(x, NNlib.NNPACK.∇conv_data(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1], activation = extras[1]))
-  @back(w, NNlib.NNPACK.∇conv_filter(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1]))
+  @back(w, NNlib.NNPACK.∇conv_filter(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1], activation = extras[1]))
 end
