@@ -32,7 +32,7 @@ Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride = 1, pad = 0, dilation = 1) where N =
-  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+  Conv(param(init(k..., ch...)), param(zeros(Float32, ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 Flux.treelike(Conv)
@@ -41,6 +41,10 @@ function (c::Conv)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  # @show typeof(x)
+  # @show typeof(c.weight)
+  # @show typeof(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  # @show typeof(σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b))
   σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
 
