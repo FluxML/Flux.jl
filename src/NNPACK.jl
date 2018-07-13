@@ -59,6 +59,6 @@ function back(::typeof(_conv), Δ, x, w, stride, pad, dilation, extras...)
   # a = ∇conv_data(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1])
   println("here 4")
   # @show a
-  @back(x, NNlib.NNPACK.∇conv_data(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1]))
+  @back(x, NNlib.NNPACK.∇conv_data(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1], activation = extras[1]))
   @back(w, NNlib.NNPACK.∇conv_filter(Δ, data(x), data(w); stride = stride[1], pad = pad[1], dilation = dilation[1]))
 end
