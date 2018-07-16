@@ -1,6 +1,5 @@
 """
-    testmode!(m)
-    testmode!(m, false)
+    testmode!(m, val=true)
 
 Put layers like [`Dropout`](@ref) and [`BatchNorm`](@ref) into testing mode
 (or back to training mode with `false`).
@@ -94,7 +93,11 @@ m = Chain(
   Dense(64, 10),
   BatchNorm(10),
   softmax)
+
+y = m(rand(28^2, 10))
 ```
+
+To use the layer at test time set [`testmode!(m, true)`](@ref).
 """
 mutable struct BatchNorm
   λ  # activation function
