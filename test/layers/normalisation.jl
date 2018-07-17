@@ -59,7 +59,7 @@ end
     # 2×1 Array{Float64,2}:
     #  1.14495
     #  1.14495
-    @test isapprox(m.σ², .1 .* std(x.data, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.], atol = 1.0e-6)
+    @test m.σ² ≈ 0.1 .* var(x.data, 2, corrected=false)*3/2  + 0.9 .* [1., 1.]
 
     testmode!(m)
     @test !m.active
