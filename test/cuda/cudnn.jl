@@ -16,7 +16,7 @@ using Flux.Tracker: TrackedArray, data
 
     g = ones(size(y)...)
     Flux.back!(y, g)
-    Flux.back!(cy, gpu(g)))
+    Flux.back!(cy, gpu(g))
 
     @test m.γ.grad ≈ cpu(cm.γ.grad)
     @test m.β.grad ≈ cpu(cm.β.grad)
