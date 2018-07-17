@@ -187,7 +187,5 @@ batchnorm(g::TrackedArray, b::TrackedArray, x::CuArray{T}, running_mean::CuArray
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
   track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
-@grad function batchnorm(g, b, x, running_mean, running_var, momentum; kw...)
-  y = batchnorm(data(g), data(b), data(x), running_mean, running_var, momentum; kw...)
-  y, Δ -> (nobacksies(:batchnorm, ∇batchnorm(data.(g, b, x, Δ), running_mean, running_var, momentum; kw...)), nothing, nothing, nothing)
-end
+@grad batchnorm(g, b, x, running_mean, running_var, momentum; kw...) =
+  batchnorm(data.((g, b, x))..., running_mean, running_var, momentum; kw...), Δ -> (nobacksies(:batchnorm, ∇batchnorm(data.((g, b, x, Δ))..., running_mean, running_var, momentum; kw...))..., nothing, nothing, nothing)

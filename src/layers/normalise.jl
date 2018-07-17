@@ -110,10 +110,11 @@ mutable struct BatchNorm
   active::Bool
 end
 
+# NOTE: Keeping the ϵ smaller than 1e-5 is not supported by CUDNN
 function BatchNorm(chs::Integer, λ = identity;
           initβ = x->zeros(Float32,x),
           initγ = x->ones(Float32,x),
-          ϵ = 1f-8,
+          ϵ = 1f-5,
           momentum = 0.1f0)
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(Float32, chs), ones(Float32, chs), ϵ, momentum, true)
