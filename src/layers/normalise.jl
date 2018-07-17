@@ -183,25 +183,16 @@ end
 function (LRN::LRNorm)(x)
   w,h,C,N = size(x)
   temp = zeros(size(x))
-  for z_=1:N
-    for x_=1:w
-      for y_=1:h
-        for i=1:C
-          constant = LRN.k
-          for j=max(1,i-div(LRN.n,2)): min(C, i+div(LRN.n,2))
-            constant += LRN.α * (x[x_,y_,j,z_]^2)
-          end
-          constant = constant^LRN.β
-          temp[x_,y_,i,z_] = x[x_,y_,i,z_] / constant
-        end
-      end
+  for z_=1:N, x_=1:w ,y_=1:h, i=1:C
+    constant = LRN.k
+    for j=max(1,i-div(LRN.n,2)): min(C, i+div(LRN.n,2))
+      constant += LRN.α * (x[x_,y_,j,z_]^2)
     end
+    constant = constant^LRN.β
+    temp[x_,y_,i,z_] = x[x_,y_,i,z_] / constant
   end
   return temp
 end 
-       
-children(LRN::LRNorm) =
-  (LRN.k, LRN,n, LRN.α, LRN.β)
 
-mapchildren(f, LRN::LRNorm) =  
-  LRNorm(f(LRN.k), LRN.n, f(LRN.α), f(LRN.β))
+treelike(LRNorm)
+  
