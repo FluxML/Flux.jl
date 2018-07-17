@@ -38,6 +38,11 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
+# Seem to need this for `accumulate`; try removing on 0.7
+Base.rcum_promote_type(op, ::Type, ::Type{Any}) = Any
+
+activations(c::Chain, x) = accumulate((x, m) -> m(x), x, c.layers)
+
 """
     Dense(in::Integer, out::Integer, σ = identity)
 

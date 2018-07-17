@@ -5,6 +5,14 @@ function descent(p::Param, η::Real)
   end
 end
 
+# Ref: https://arxiv.org/abs/1711.05101.pdf
+function descentweightdecay(p::Param, η::Real,  γ::Real)
+  function ()
+    @. p.x = p.x - η * (p.Δ + γ * p.x) 
+    @. p.Δ = 0
+  end
+end
+
 function momentum(p::Param, ρ, η)
   v = zeros(p.x)
   function ()

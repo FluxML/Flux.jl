@@ -1,5 +1,10 @@
 using NNlib: conv
 
+@generated sub2(::Type{Val{N}}) where N = :(Val{$(N-2)})
+
+expand(N, i::Tuple) = i
+expand(N, i::Integer) = ntuple(_ -> i, N)
+
 """
     Conv(size, in=>out)
     Conv(size, in=>out, relu)
@@ -21,14 +26,12 @@ struct Conv{N,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-Conv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
-       stride = 1, pad = 0, dilation=1) where T =
-  Conv(σ, w, b, stride, pad, dilation)
+Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+     stride = 1, pad = 0, dilation = 1) where {T,N} =
+  Conv(σ, w, b, expand.(sub2(Val{N}), (stride, pad, dilation))...)
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
-     stride::NTuple{N,Integer} = map(_->1,k),
-     pad::NTuple{N,Integer} = map(_->0,k),
-     dilation::NTuple{N,Integer} = map(_->1,k)) where N =
+     stride = 1, pad = 0, dilation = 1) where N =
   Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 

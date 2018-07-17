@@ -1,6 +1,5 @@
 """
-    testmode!(m)
-    testmode!(m, false)
+    testmode!(m, val=true)
 
 Put layers like [`Dropout`](@ref) and [`BatchNorm`](@ref) into testing mode
 (or back to training mode with `false`).
@@ -94,54 +93,60 @@ m = Chain(
   Dense(64, 10),
   BatchNorm(10),
   softmax)
+
+y = m(rand(28^2, 10))
 ```
+
+To use the layer at test time set [`testmode!(m, true)`](@ref).
 """
-mutable struct BatchNorm{F,V,W,N}
-  λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
-  μ::W  # moving mean
-  σ::W  # moving std
-  ϵ::N
-  momentum::N
+mutable struct BatchNorm
+  λ  # activation function
+  β  # bias
+  γ  # scale
+  μ  # moving mean
+  σ²  # moving var
+  ϵ
+  momentum
   active::Bool
 end
 
-BatchNorm(chs::Integer, λ = identity;
-          initβ = zeros, initγ = ones, ϵ = 1e-5, momentum = .1) =
+function BatchNorm(chs::Integer, λ = identity;
+          initβ = x->zeros(Float32,x),
+          initγ = x->ones(Float32,x),
+          ϵ = 1f-8,
+          momentum = 0.1f0)
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
-            zeros(chs), ones(chs), ϵ, momentum, true)
+            zeros(Float32, chs), ones(Float32, chs), ϵ, momentum, true)
+end
 
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.β) ||
     error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
   γ, β = BN.γ, BN.β
-  dims = length(size(x))
-  channels = size(x, dims-1)
+  dims = ndims(x)
   affine_shape = ones(Int, dims)
-  affine_shape[end-1] = channels
-  m = prod(size(x)[1:end-2]) * size(x)[end]
+  affine_shape[end-1] = size(x, dims-1)
+  T = eltype(x)
 
   if !BN.active
     μ = reshape(BN.μ, affine_shape...)
-    σ = reshape(BN.σ, affine_shape...)
+    σ² = reshape(BN.σ², affine_shape...)
   else
-    T = eltype(x)
 
-    ϵ = data(convert(T, BN.ϵ))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
+    m = prod(size(x, axes...))
     μ = mean(x, axes)
-    σ = sqrt.(mean((x .- μ).^2, axes) .+ ϵ)
+    σ² = sum((x.-μ).^2, axes) ./ m
 
     # update moving mean/std
-    mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...)) .* m ./ (m - 1)
+    mtm = convert(T, BN.momentum)
+
+    BN.μ = ((1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))) |> data
+    BN.σ² = ((1 - mtm) .* BN.σ² .+ mtm .* squeeze(data(σ²), (axes...))*m/(m-1)) |> data
   end
 
-  let λ = BN.λ
-    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
-  end
+  ϵ = convert(T, BN.ϵ)
+  BN.λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ ϵ)) .+ reshape(β, affine_shape...))
 end
 
 treelike(BatchNorm)

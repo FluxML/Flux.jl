@@ -176,17 +176,52 @@ end
 
 # Flux Interface
 
+<<<<<<< HEAD
 import ..Flux: Flux
 import ..Tracker: track, back, @back, istracked, TrackedArray
 
 (BN::Flux.BatchNorm)(x::Union{CuParam{T,4},CuParam{T,5}}, cache = nothing) where T<:Union{Float32, Float64} =
   batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ, BN.momentum; cache = cache, alpha = 1, beta = 0, eps = BN.ϵ, training = BN.active)
+=======
+function desc(rnn)
+  d = haskey(descs, rnn) ? descs[rnn] : (descs[rnn] = RNNDesc(rnn))
+  copyparams!(rnn, d)
+  return d
+end
+
+import Flux.Tracker
+import Flux.Tracker: data, istracked, track, unbroadcast, @grad, nobacksies
+
+istrain(m::CuRNNs, args...) = any(x -> x isa TrackedArray, (m.Wi, m.Wh, m.b, args...))
+
+function (m::CuRNN{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
+  result = istrain(m, h, x) ?
+    track(m, x, h, m.Wi, m.Wh, m.b) :
+    forward(desc(m), x, h)
+  return result[2], result[1]
+end
+
+function (m::CuGRU{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
+  result = istrain(m, h, x) ?
+    track(m, x, h, m.Wi, m.Wh, m.b) :
+    forward(desc(m), x, h)
+  return result[2], result[1]
+end
+
+function (m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x::CuParam{T}) where T <: Union{Float32,Float64}
+  result = istrain(m, h, x) ?
+    track(m, x, h[1], h[2], m.Wi, m.Wh, m.b) :
+    forward(desc(m), x, h[1], h[2])
+  return (result[2], result[3]), result[1]
+end
+>>>>>>> 071dcdda879a74cfd3c1115ac2c92087b38d4ae9
 
 _batchnorm(g, b, x, running_mean, running_var, momentum,
            cache, alpha, beta, eps, training) =
   batchnorm(g, b, x, running_mean, running_var, momentum, cache = cache,
             alpha = alpha, beta = beta, eps = eps, training = training)
 
+<<<<<<< HEAD
 batchnorm(g::TrackedArray, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum;
           cache = nothing, alpha = T(1), beta = T(0),
@@ -204,4 +239,31 @@ function back(::typeof(_batchnorm), Δ, g, b, x, running_mean, running_var, mome
   @back(x, deriv_tup[1])
   @back(b, deriv_tup[2])
   @back(g, deriv_tup[3])
+=======
+@grad function (m::Union{CuRNN,CuGRU})(x, h, Wi, Wh, b)
+  reserve, result = forwardTrain(desc(m), data(x), data(h))
+  result, function (Δ)
+    y, ho = result
+    dy, dho = Δ
+    h_ = hBatch(x, data(h))
+    dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
+    (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
+    nobacksies(:RNN, (dx, unbroadcast(size(h), dh), dWi.', dWh.', db))
+  end
+end
+
+@grad function (m::CuLSTM)(x, h, c, Wi, Wh, b)
+  reserve, result = forwardTrain(desc(m), data.((x, h, c))...)
+  result, function (Δ)
+    y, ho = result
+    dy, dho, dco = Δ
+    h_ = hBatch(x, data(h))
+    c_ = hBatch(x, data(c))
+    dx, dh, dc = backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
+    (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
+    nobacksies(:RNN,
+      (dx, unbroadcast(size(h), dh), unbroadcast(size(c), dc),
+       dWi.', dWh.', db))
+  end
+>>>>>>> 071dcdda879a74cfd3c1115ac2c92087b38d4ae9
 end

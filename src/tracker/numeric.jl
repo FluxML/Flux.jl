@@ -1,9 +1,3 @@
-function gradient(f, xs::AbstractArray...)
-  xs = param.(xs)
-  back!(f(xs...))
-  grad.(xs)
-end
-
 function ngradient(f, xs::AbstractArray...)
   grads = zeros.(xs)
   for (x, Δ) in zip(xs, grads), i in 1:length(x)
@@ -21,4 +15,4 @@ end
 
 gradcheck(f, xs...) =
   all(isapprox.(ngradient(f, xs...),
-                gradient(f, xs...), rtol = 1e-5, atol = 1e-5))
+                data.(gradient(f, xs...)), rtol = 1e-5, atol = 1e-5))

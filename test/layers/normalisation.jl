@@ -1,4 +1,5 @@
 using Flux: testmode!
+using Flux.Tracker: data
 
 @testset "Dropout" begin
   x = [1.,2.,3.]
@@ -28,7 +29,8 @@ using Flux: testmode!
 end
 
 @testset "BatchNorm" begin
-  let m = BatchNorm(2), x = param([1 2; 3 4; 5 6]')
+  let m = BatchNorm(2), x = param([1 3 5;
+                                   2 4 6])
 
     @test m.β.data == [0, 0]  # initβ(2)
     @test m.γ.data == [1, 1]  # initγ(2)
@@ -57,25 +59,26 @@ end
     # 2×1 Array{Float64,2}:
     #  1.14495
     #  1.14495
-    @test isapprox(m.σ, .1 .* std(x.data, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.], atol = 1.0e-6)
+    @test isapprox(m.σ², .1 .* std(x.data, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.], atol = 1.0e-6)
 
     testmode!(m)
     @test !m.active
 
-    x′ = m(x).data
-    @test isapprox(x′[1], (1 - 0.3) / 1.1449489742783179, atol = 1.0e-6)
+    y = m(x).data
+    @test isapprox(y, data((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-6)
   end
 
   # with activation function
-  let m = BatchNorm(2, σ), x = param([1 2; 3 4; 5 6]')
+  let m = BatchNorm(2, sigmoid), x = param([1 3 5;
+                                            2 4 6])
     @test m.active
     m(x)
 
     testmode!(m)
     @test !m.active
 
-    x′ = m(x).data
-    @test isapprox(x′[1], σ((1 - 0.3) / 1.1449489742783179), atol = 1.0e-7)
+    y = m(x).data
+    @test isapprox(y, data(sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ))), atol = 1.0e-7)
   end
 
   let m = BatchNorm(2), x = param(reshape(1:6, 3, 2, 1))
@@ -85,7 +88,7 @@ end
   end
 
   let m = BatchNorm(2), x = param(reshape(1:12, 2, 3, 2, 1))
-      y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
+    y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
     @test m(x) == y
   end
