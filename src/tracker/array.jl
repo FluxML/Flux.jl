@@ -1,6 +1,7 @@
 import Base: *, ==
 
 import LinearAlgebra
+using Statistics
 using LinearAlgebra: Transpose, Adjoint, diagm
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
@@ -26,7 +27,7 @@ TrackedArray(c::Call, x::A) where A <: AbstractArray =
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
   TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, Δ), x, Δ)
 
-TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zeros(x))
+TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, similar(x) .= 0)
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
@@ -204,12 +205,16 @@ Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
 # Reductions
 
-Base.sum(xs::TrackedArray, dim) = track(sum, xs, dim)
+Base.sum(xs::TrackedArray; dims) = track(sum, xs, dims)
 Base.sum(xs::TrackedArray) = track(sum, xs)
 Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
-@grad sum(xs, dim...) = sum(data(xs), dim...),
-  Δ -> (zero(xs) .+ Δ, map(_->nothing,dim)...)
+@grad sum(xs, dims::Int) = sum(data(xs), dims = dims),
+  Δ -> (zero(xs) .+ Δ, nothing)
+@grad sum(xs, dims) = sum(data(xs), dims = dims),
+  Δ -> (zero(xs) .+ Δ, map(_->nothing,dims)...)
+@grad sum(xs) = sum(data(xs)),
+  Δ -> (zero(xs) .+ Δ,)
 
 Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
 Base.prod(xs::TrackedArray) = track(prod, xs)
@@ -223,8 +228,8 @@ Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
-Base.mean(xs::TrackedArray) = track(mean, xs)
-Base.mean(xs::TrackedArray, region) = track(mean, xs, region)
+Statistics.mean(xs::TrackedArray) = track(mean, xs)
+Statistics.mean(xs::TrackedArray, region) = track(mean, xs, region)
 
 Base.maximum(xs::TrackedArray) = track(maximum, xs)
 Base.maximum(xs::TrackedArray, region) = track(maximum, xs, region)
@@ -242,9 +247,9 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 using StatsBase
 
 # Hacks to get std working
-StatsBase.std(x::TrackedArray; mean = Base.mean(x)) =
+StatsBase.std(x::TrackedArray; mean = Statistics.mean(x)) =
   sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
-StatsBase.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
+StatsBase.std(x::TrackedArray, dim; mean = Statistics.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
 
 LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
@@ -349,7 +354,7 @@ dualify(xs::Real, ps) = Dual(xs, ps)
 
 unbroadcast(x::Tuple, Δ) =
   x == size(Δ) ? Δ :
-    reshape(sum(Δ, filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
+    reshape(sum(Δ, dims = filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
 
 unbroadcast(x::Tuple{}, Δ) = sum(Δ)
 
