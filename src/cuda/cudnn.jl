@@ -189,7 +189,5 @@ batchnorm(g::TrackedArray, b::TrackedArray, x::CuArray{T}, running_mean::CuArray
 
 @grad function batchnorm(g, b, x, running_mean, running_var, momentum; kw...)
   y = batchnorm(data(g), data(b), data(x), running_mean, running_var, momentum; kw...)
-  deriv_tup = ∇batchnorm(data(g), data(b), data(x), Δ, running_mean, running_var, momentum,
-                         cache = cache, alpha = alpha, beta = beta, eps = eps, training = training)
   y, Δ -> (nobacksies(:batchnorm, ∇batchnorm(data.(g, b, x, Δ), running_mean, running_var, momentum; kw...)), nothing, nothing, nothing)
 end
