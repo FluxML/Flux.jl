@@ -252,11 +252,11 @@ StatsBase.std(x::TrackedArray; mean = Statistics.mean(x)) =
 StatsBase.std(x::TrackedArray, dim; mean = Statistics.mean(x, dim)) =
   sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
 
-LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
+LinearAlgebra.norm(x::TrackedArray, p::Real = 2) =
   sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
 @grad mean(xs) = mean(data(xs)), Δ -> (Δ / length(xs),)
-@grad mean(xs, region) = mean(data(xs), dims = region), Δ -> (zero(xs) .+ Δ ./ prod(size(xs, region...)),nothing)
+@grad mean(xs, region) = mean(data(xs), dims=region), Δ -> (zero(xs) .+ Δ ./ prod(size(xs, region...)),nothing)
 
 @grad function maximum(xs, r...)
   maximum(data(xs), r...), function (Δ)
@@ -266,6 +266,7 @@ LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
     return (nobacksies(:maximum, Δ′),map(_->nothing,r)...)
   end
 end
+
 @grad function minimum(xs, r...)
   minimum(data(xs), r...), function (Δ)
     Δ′ = zero(xs)

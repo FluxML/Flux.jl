@@ -24,7 +24,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(x -> sum(x, dims = 1), randn(Float64,2,3))
 @test gradtest(x -> sum(x, dims = [1,2]), randn(Float64,2,3))
 @test gradtest(x -> sum(x), randn(Float64,2,3))
-@test gradtest(x -> prod(x, (2, 3)), (3,4,5))
+@test gradtest(x -> prod(x, dims=(2, 3)), (3,4,5))
 @test gradtest(x -> prod(x), (3,4,5))
 
 @test gradtest(x -> softmax(x).*(1:3), 3)
@@ -133,31 +133,31 @@ end
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))
 
-  @test gradtest(x -> mean(x, 1), rand(2, 3))
-  @test gradtest(x -> mean(x, 2), rand(2, 3))
-  @test gradtest(x -> mean(x, 3), rand(2, 3, 4))
+  @test gradtest(x -> mean(x, dims=1), rand(2, 3))
+  @test gradtest(x -> mean(x, dims=2), rand(2, 3))
+  @test gradtest(x -> mean(x, dims=3), rand(2, 3, 4))
 
-  @test gradtest(x -> mean(x, [1, 2]), rand(2, 3, 4))
+  @test gradtest(x -> mean(x, dims=[1, 2]), rand(2, 3, 4))
 end
 
 @testset "maximum" begin
   @test gradtest(maximum, rand(2, 3))
 
-  @test gradtest(x -> maximum(x, 1), rand(2, 3))
-  @test gradtest(x -> maximum(x, 2), rand(2, 3))
-  @test gradtest(x -> maximum(x, 3), rand(2, 3, 4))
+  @test gradtest(x -> maximum(x, dims=1), rand(2, 3))
+  @test gradtest(x -> maximum(x, dims=2), rand(2, 3))
+  @test gradtest(x -> maximum(x, dims=3), rand(2, 3, 4))
 
-  @test gradtest(x -> maximum(x, [1, 2]), rand(2, 3, 4))
+  @test gradtest(x -> maximum(x, dims=[1, 2]), rand(2, 3, 4))
 end
 
 @testset "minimum" begin
   @test gradtest(minimum, rand(2, 3))
 
-  @test gradtest(x -> minimum(x, 1), rand(2, 3))
-  @test gradtest(x -> minimum(x, 2), rand(2, 3))
-  @test gradtest(x -> minimum(x, 3), rand(2, 3, 4))
+  @test gradtest(x -> minimum(x, dims=1), rand(2, 3))
+  @test gradtest(x -> minimum(x, dims=2), rand(2, 3))
+  @test gradtest(x -> minimum(x, dims=3), rand(2, 3, 4))
 
-  @test gradtest(x -> minimum(x, [1, 2]), rand(2, 3, 4))
+  @test gradtest(x -> minimum(x, dims=[1, 2]), rand(2, 3, 4))
 end
 
 @test gradtest(x -> std(x), rand(5,5))
