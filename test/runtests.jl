@@ -1,4 +1,4 @@
-using Flux, Base.Test
+using Flux, Test, Random
 
 srand(0)
 

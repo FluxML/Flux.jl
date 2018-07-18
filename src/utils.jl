@@ -145,7 +145,7 @@ function jacobian(m,x)
     y  = m(xp)
     k  = length(y)
     n  = length(x)
-    J  = Matrix{eltype(x)}(n,k)
+    J  = Matrix{eltype(x)}(undef,n,k)
     for i = 1:k
         Flux.back!(y[i]) # Populate gradient accumulator
         J[:,i] = xp.grad

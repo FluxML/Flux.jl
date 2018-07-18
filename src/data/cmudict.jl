@@ -24,23 +24,23 @@ end
 
 function phones()
   load()
-  Symbol.(first.(split.(split(readstring(deps("cmudict", "cmudict.phones")),
+  Symbol.(first.(split.(split(read(deps("cmudict", "cmudict.phones"),String),
                         "\n", keep = false), "\t")))
 end
 
 function symbols()
   load()
-  Symbol.(split(readstring(deps("cmudict", "cmudict.symbols")),
+  Symbol.(split(read(deps("cmudict", "cmudict.symbols"),String),
                 "\n", keep = false))
 end
 
 function rawdict()
   load()
   Dict(String(xs[1]) => Symbol.(xs[2:end]) for xs in
-       filter(!isempty, split.(split(readstring(deps("cmudict", "cmudict")), "\n"))))
+       filter(!isempty, split.(split(read(deps("cmudict", "cmudict"),String), "\n"))))
 end
 
-validword(s) = isascii(s) && ismatch(r"^[\w\-\.]+$", s)
+validword(s) = isascii(s) && occursin(r"^[\w\-\.]+$", s)
 
 cmudict() = filter((s, ps) -> validword(s), rawdict())
 

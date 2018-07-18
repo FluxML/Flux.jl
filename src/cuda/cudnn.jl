@@ -83,7 +83,7 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Cint,Cint,Ptr{Nothing},Cint,Cint,Cint,Cint,Cint),
     libcudnn_handle[],d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
 
-  w = cuzeros(T, rnnParamSize(T, d[], input))
+  w = cuzero(T, rnnParamSize(T, d[], input))
   # TODO: avoid reserve allocation here
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
   finalizer(rd, x ->
@@ -198,7 +198,7 @@ end
 
 function backwardData(rnn::RNNDesc{T}, y, dy_, dho, dco, h, c, reserve) where T
   # Same as above, any more efficient way?
-  dy = dy_ isa Integer ? zeros(y) : dy_
+  dy = dy_ isa Integer ? zero(y) : dy_
   yd = xDesc(y)
   dx = y isa AbstractVector ? similar(dy, rnn.input) : similar(dy, rnn.input, size(dy, 2))
   dh = similar(h)
@@ -229,7 +229,7 @@ function cudnnRNNBackwardWeights(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, yd, y, d
 end
 
 function backwardWeights(rnn::RNNDesc{T}, x, h, y, reserve) where T
-  dw = zeros(rnn.params)
+  dw = zero(rnn.params)
   cudnnRNNBackwardWeights(rnn, 1,
     xDesc(x), x, hDesc(h)..., xDesc(y), y,
     FilterDesc(T, (1, 1, length(dw))), dw,

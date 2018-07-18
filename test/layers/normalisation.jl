@@ -4,7 +4,7 @@ using Flux: testmode!
   x = [1.,2.,3.]
   @test x == testmode!(Dropout(0.1))(x)
   @test x == Dropout(0)(x)
-  @test zeros(x) == Dropout(1)(x)
+  @test zero(x) == Dropout(1)(x)
 
   x = rand(100)
   m = Dropout(0.9)

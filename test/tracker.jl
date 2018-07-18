@@ -99,7 +99,7 @@ end
   @test gradtest((a,b)->cat(a, b, dims = (2,3,5)), rand(2,3), rand(2,4,2,1))
 
   @testset "promotiontest" begin
-    @testset for fcat in [hcat, vcat, (x...) -> cat(3, x...), (x...) -> cat((1,2), x...)]
+    @testset for fcat in [hcat, vcat, (x...) -> cat(x..., dims = 3), (x...) -> cat(x..., dims = (1,2))]
       promotiontest(fcat, rand(2), rand(2), rand(2))
       promotiontest(fcat, rand(2)', rand(2)', rand(2)')
       promotiontest(fcat, rand(2,2), rand(2,2), rand(2,2))
