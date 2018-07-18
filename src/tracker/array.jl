@@ -27,7 +27,7 @@ TrackedArray(c::Call, x::A) where A <: AbstractArray =
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
   TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, Δ), x, Δ)
 
-TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, similar(x) .= 0)
+TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
