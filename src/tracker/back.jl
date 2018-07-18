@@ -96,7 +96,7 @@ end
 
 @forward Grads.grads Base.setindex!, Base.haskey
 
-accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] + Δ : Δ
+accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] .+ Δ : Δ
 
 function back_(g::Grads, c::Call, Δ)
   Δs = c.func(Δ)

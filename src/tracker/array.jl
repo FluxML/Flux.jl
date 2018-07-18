@@ -2,7 +2,7 @@ import Base: *, ==
 
 import LinearAlgebra
 using Statistics
-using LinearAlgebra: Transpose, Adjoint, diagm
+using LinearAlgebra: Transpose, Adjoint, diagm, diag
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
@@ -94,7 +94,7 @@ Base.repeat(A::TrackedArray; kw...) = track(repeat, A; kw...)
     S = size(xs)
 
     # Loop through each element of Δ, calculate source dimensions, accumulate into Δ′
-    for (dest_idx, val) in enumerate(IndexCartesian(), data(Δ))
+    for (dest_idx, val) in pairs(IndexCartesian(), data(Δ))
         # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
         # wrap around based on original size S.
         src_idx = [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim in 1:length(S)]
@@ -256,7 +256,7 @@ LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
   sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
 @grad mean(xs) = mean(data(xs)), Δ -> (Δ / length(xs),)
-@grad mean(xs, region) = mean(data(xs), region), Δ -> (zero(xs) .+ Δ ./ prod(size(xs, region...)),nothing)
+@grad mean(xs, region) = mean(data(xs), dims = region), Δ -> (zero(xs) .+ Δ ./ prod(size(xs, region...)),nothing)
 
 @grad function maximum(xs, r...)
   maximum(data(xs), r...), function (Δ)

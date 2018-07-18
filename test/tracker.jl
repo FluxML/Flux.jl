@@ -1,7 +1,10 @@
 using Flux
-using Flux.Tracker, Base.Test, NNlib
+using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv
+using Printf: @sprintf
+using LinearAlgebra: diagm, dot, LowerTriangular, norm
+using Statistics: mean
 # using StatsBase
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -110,7 +113,7 @@ end
     promotiontest(hcat, rand(2,1), rand(2), rand(2,2))
     promotiontest(vcat, rand(3,4,5), rand(1,4,5), rand(2,4,5))
     promotiontest(hcat, rand(4,3,5), rand(4,1,5), rand(4,2,5))
-    promotiontest((x...) -> cat(3, x...), rand(4,5,3), rand(4,5,1), rand(4,5,2))
+    promotiontest((x...) -> cat(x..., dims = 3), rand(4,5,3), rand(4,5,1), rand(4,5,2))
   end
 end
 
@@ -163,7 +166,7 @@ end
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
 
-@test gradtest(vecnorm, rand(5))
+@test gradtest(norm, rand(5))
 
 @test gradtest(rand(5)) do x
   y = x.^2

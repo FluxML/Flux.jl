@@ -25,13 +25,13 @@ end
 function phones()
   load()
   Symbol.(first.(split.(split(read(deps("cmudict", "cmudict.phones"),String),
-                        "\n", keep = false), "\t")))
+                        "\n", keepempty = false), "\t")))
 end
 
 function symbols()
   load()
   Symbol.(split(read(deps("cmudict", "cmudict.symbols"),String),
-                "\n", keep = false))
+                "\n", keepempty = false))
 end
 
 function rawdict()
@@ -42,7 +42,7 @@ end
 
 validword(s) = isascii(s) && occursin(r"^[\w\-\.]+$", s)
 
-cmudict() = filter((s, ps) -> validword(s), rawdict())
+cmudict() = filter(p -> validword(p.first), rawdict())
 
 alphabet() = ['A':'Z'..., '0':'9'..., '_', '-', '.']
 
