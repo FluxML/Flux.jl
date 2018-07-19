@@ -108,9 +108,9 @@ mutable struct BatchNorm{F,V,W,N}
 end
 
 BatchNorm(chs::Integer, λ = identity;
-          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
+          initβ = (i) -> fill(0.0,i), initγ = (i) -> fill(1.0,i), ϵ = 1e-8, momentum = .1) =
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
-            zero(chs), ones(chs), ϵ, momentum, true)
+            fill(0.0,chs), fill(1.0,chs), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.β) ||

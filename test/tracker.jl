@@ -4,7 +4,7 @@ using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
-using Statistics: mean
+using Statistics: mean, std
 # using StatsBase
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
@@ -161,7 +161,7 @@ end
 end
 
 @test gradtest(x -> std(x), rand(5,5))
-@test gradtest(x -> std(x, 1), rand(5,5))
+@test gradtest(x -> std(x, dims = 1), rand(5,5))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
