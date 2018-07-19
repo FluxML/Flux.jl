@@ -205,16 +205,16 @@ Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
 # Reductions
 
-Base.sum(xs::TrackedArray; dims) = track(sum, xs, dims)
-Base.sum(xs::TrackedArray) = track(sum, xs)
+Base.sum(xs::TrackedArray; dims = :) = track(sum, xs, dims = dims)
+# Base.sum(xs::TrackedArray) = track(sum, xs)
 Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
-@grad sum(xs, dims::Int) = sum(data(xs), dims = dims),
-  Δ -> (zero(xs) .+ Δ, nothing)
-@grad sum(xs, dims) = sum(data(xs), dims = dims),
-  Δ -> (zero(xs) .+ Δ, map(_->nothing,dims)...)
-@grad sum(xs) = sum(data(xs)),
-  Δ -> (zero(xs) .+ Δ,)
+# @grad sum(xs, dims::Int) = sum(data(xs), dims = dims),
+  # Δ -> (zero(xs) .+ Δ, nothing)
+@grad sum(xs; dims = :) = sum(data(xs), dims = dims),
+  Δ -> (zero(xs) .+ Δ, )
+# @grad sum(xs) = sum(data(xs)),
+  # Δ -> (zero(xs) .+ Δ,)
 
 Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
 Base.prod(xs::TrackedArray) = track(prod, xs)
