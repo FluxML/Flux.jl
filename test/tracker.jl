@@ -17,6 +17,7 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 
 @test gradtest(x -> sum(x, (2, 3)), (3,4,5))
 @test gradtest(x -> prod(x, (2, 3)), (3,4,5))
+@test gradtest(x -> prod(x, 2), (3,4,5))
 @test gradtest(x -> prod(x), (3,4,5))
 
 @test gradtest(x -> softmax(x).*(1:3), 3)

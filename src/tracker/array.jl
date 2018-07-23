@@ -229,11 +229,16 @@ Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
 Base.prod(xs::TrackedArray) = track(prod, xs)
 Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 
-@grad prod(xs) = prod(data(xs)), Δ -> (prod(xs) ./ xs .* Δ,)
-@grad prod(xs, dim) = prod(data(xs), dim),
+# @grad prod(xs) = prod(data(xs)), Δ -> (prod(xs) ./ xs .* Δ,)
+@grad prod(xs) = prod(data(xs)),
   Δ -> (nobacksies(:sum,
           reshape(.*(circshift.([reshape(data(xs), length(xs))], 1:length(xs)-1)...), size(xs)) .* Δ),
         nothing)
+@grad prod(xs, dim::Int) = prod(data(xs), dim),
+  Δ -> (nobacksies(:sum,
+          .*(circshift.([data(xs)], tuple.(Iterators.repeated(0,dim-1)...,1:size(xs,dim)-1))...) .* Δ),
+        nothing)
+@grad prod(xs, dims) = prod(data(xs), dims), Δ -> (prod(xs, dims) ./ xs .* Δ, nothing)
 
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
