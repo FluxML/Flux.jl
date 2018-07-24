@@ -357,57 +357,44 @@ end
 function convbias(x::CuArray{T}, w::CuArray{T}, b::CuArray{T}, λ;
                   pad = 0, stride = 1, mode = 0,
                   alpha = 1, dilation = 1) where T<:Union{Float32,Float64}
-  activationMode = λ == relu ? 1 :
-                   λ == identity ? 5 : error("CUDNN Convolution with Activation for this function is not defined")
   pad_, stride_ = padtuple(x, pad), padtuple(x, stride)
   convbias!(similar(x, cdims(size(x), dilation_dims(w, dilation), pad_, stride_)),
             x, w, b, pad = pad_, stride = stride_, dilation = dilation, activationMode = activationMode)
-end
-
-# This function is buggy and needs to be fixed
-# 1 soln is to simply make the activation `identity` and broadcast over the activation function
-# as in this current scenario its difficult and slow to define the backward pass
-
-function ∇convbias_data(Δ::CuArray{T}, x::CuArray{T}, w::CuArray{T},
-                        y::CuArray{T}, λ; pad = 0, beta = 0,
-                        stride = 1, mode = 0, alpha = 1, dilation = 1) where T<:Union{Float32,Float64}
-  activationMode = λ == relu ? 1 :
-                   λ == identity ? 5 : error("CUDNN Convolution with Activation for this function is not defined")
-  all(x -> x == 1, dilation) || error("Only dilation = 1 is supported in CuArrays")
-  dx = cudnnConvolutionBackwardData(similar(x), x, w, Δ, padding=pad, stride=stride, mode=mode, alpha=alpha)
-  λ == identity ? dx : cudnnActivationBackward(dx, x, y, Δ, mode = activationMode)
 end
 
 ∇conv_bias(Δ::CuArray{T}, b::CuArray{T}; pad = 0, beta = 0,
            stride = 1, mode = 0, alpha = 1, dilation = 1) where T<:Union{Float32,Float64} =
   reshape(cudnnConvolutionBackwardBias(similar(b), Δ, alpha=alpha, beta=beta), :)
 
-(m::Flux.Conv)(x::Union{CuParam{T,4},CuParam{T,5}})  where T<:Union{Float32,Float64} = convbias(x, m.weight, m.bias, m.σ, pad = m.pad, stride = m.stride, dilation = m.dilation)
+function (m::Flux.Conv)(x::Union{CuParam{T,4},CuParam{T,5}})  where T<:Union{Float32,Float64}
+  result = convbias(x, m.weight, m.bias, pad = m.pad, stride = m.stride, dilation = m.dilation)
+  m.σ == identity ? result : m.σ.(result) # Replace with cudnn function calls
+end
 
-convbias(x::TrackedArray, w::TrackedArray, b::TrackedArray, λ; kw...) = track(convbias, x, w, b, λ; kw...)
+convbias(x::TrackedArray, w::TrackedArray, b::TrackedArray; kw...) = track(convbias, x, w, b, λ; kw...)
 
-convbias(x::CuArray{T}, w::TrackedArray, b::TrackedArray, λ; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, λ, kw...)
+convbias(x::CuArray{T}, w::TrackedArray, b::TrackedArray; kw...) where T<:Union{Float32,Float64} =
+  track(convbias, x, w, b, kw...)
 
-convbias(x::CuArray{T}, w::CuArray{T}, b::TrackedArray, λ; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, λ, kw...)
+convbias(x::CuArray{T}, w::CuArray{T}, b::TrackedArray; kw...) where T<:Union{Float32,Float64} =
+  track(convbias, x, w, b, kw...)
 
-convbias(x::TrackedArray, w::CuArray{T}, b::TrackedArray, λ; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, λ, kw...)
+convbias(x::TrackedArray, w::CuArray{T}, b::TrackedArray; kw...) where T<:Union{Float32,Float64} =
+  track(convbias, x, w, b, kw...)
 
-convbias(x::TrackedArray, w::TrackedArray, b::CuArray{T}, λ; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, λ, kw...)
+convbias(x::TrackedArray, w::TrackedArray, b::CuArray{T}; kw...) where T<:Union{Float32,Float64} =
+  track(convbias, x, w, b, kw...)
 
-convbias(x::CuArray{T}, w::TrackedArray, b::CuArray{T}, λ; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, λ, kw...)
+convbias(x::CuArray{T}, w::TrackedArray, b::CuArray{T}; kw...) where T<:Union{Float32,Float64} =
+  track(convbias, x, w, b, kw...)
 
-convbias(x::TrackedArray, w::CuArray{T}, b::CuArray{T}, λ; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, λ, kw...)
+convbias(x::TrackedArray, w::CuArray{T}, b::CuArray{T}; kw...) where T<:Union{Float32,Float64} =
+  track(convbias, x, w, b, kw...)
 
-@grad function convbias(x, w, b, λ; kw...)
+@grad function convbias(x, w, b; kw...)
   bias = reshape(b, map(_->1, kw[2][2])..., :, 1)
   y = convbias(data.((x, w, bias))..., λ; kw...)
-  y, Δ -> (istracked(x) ? ∇convbias_data(data.((Δ, x, w, y))..., λ; kw...) : nothing,
+  y, Δ -> (istracked(x) ? NNlib.∇conv_data(data.((Δ, x, w))...; kw...) : nothing,
            istracked(w) ? NNlib.∇conv_filter(data.((Δ, x, w))...; kw...) : nothing,
-           istracked(b) ? ∇conv_bias(data.((Δ, bias)); kw...) : nothing, nothing)
+           istracked(b) ? ∇conv_bias(data.((Δ, bias)); kw...) : nothing)
 end
