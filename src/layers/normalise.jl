@@ -181,18 +181,28 @@ mutable struct LRNorm{F,I}
 end
 
 function (LRN::LRNorm)(x)
-  w,h,C,N = size(x)
-  temp = zeros(size(x))
-  for z_=1:N, x_=1:w ,y_=1:h, i=1:C
-    constant = LRN.k
-    for j=max(1,i-div(LRN.n,2)): min(C, i+div(LRN.n,2))
-      constant += LRN.α * (x[x_,y_,j,z_]^2)
-    end
-    constant = constant^LRN.β
-    temp[x_,y_,i,z_] = x[x_,y_,i,z_] / constant
-  end
-  return temp
-end 
+  l1 = length(x)/size(x, 3) |> Int
+  res = []
+  [push!(res, compute_inner(getindex(x, i, j, :, k), LRN.k, LRN.n, LRN.α, LRN.β)) 
+            for i=1:size(x, 1),j=1:size(x, 2),k=1:size(x, 4)]
+  ans = []
+  [push!(ans, res[i][j]) for i=1:l1, j=1:size(x, 3)]
+  return reshape(ans , size(x))
+end
+
+function compute_inner(x, k, n, alpha, beta)  # x is the vector along the channel depth
+  start_ = [max(1,i-div(n,2)) for i=1:length(x)]
+  end_ = [min(length(x), i+div(n,2)) for i=1:length(x)]
+  c = [sum((getindex(x, getindex(start_, i) : getindex(end_, i))).^2) for i=1:length(x)]
+  constant = c.*alpha .+ k
+  constant = constant .^ beta
+  return x./constant
+end
+
+function convrt_to_4d(ip)
+  
+end
+
 
 treelike(LRNorm)
-  
+ 

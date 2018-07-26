@@ -96,3 +96,8 @@ end
     @test m(x) == y
   end
 end
+
+@testset "LRNorm" begin
+  x = rand(2,3,4,5)
+  @test size(x) == LRNorm(0.2, 5, 0.5, 2)(x) |> size
+end
