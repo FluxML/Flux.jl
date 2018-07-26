@@ -374,22 +374,22 @@ end
 convbias(x::TrackedArray, w::TrackedArray, b::TrackedArray; kw...) = track(convbias, x, w, b; kw...)
 
 convbias(x::CuArray{T}, w::TrackedArray, b::TrackedArray; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, kw...)
+  track(convbias, x, w, b; kw...)
 
 convbias(x::CuArray{T}, w::CuArray{T}, b::TrackedArray; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, kw...)
+  track(convbias, x, w, b; kw...)
 
 convbias(x::TrackedArray, w::CuArray{T}, b::TrackedArray; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, kw...)
+  track(convbias, x, w, b; kw...)
 
 convbias(x::TrackedArray, w::TrackedArray, b::CuArray{T}; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, kw...)
+  track(convbias, x, w, b; kw...)
 
 convbias(x::CuArray{T}, w::TrackedArray, b::CuArray{T}; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, kw...)
+  track(convbias, x, w, b; kw...)
 
 convbias(x::TrackedArray, w::CuArray{T}, b::CuArray{T}; kw...) where T<:Union{Float32,Float64} =
-  track(convbias, x, w, b, kw...)
+  track(convbias, x, w, b; kw...)
 
 @grad function convbias(x, w, b; kw...)
   bias = reshape(b, map(_->1, kw[2][2])..., :, 1)
