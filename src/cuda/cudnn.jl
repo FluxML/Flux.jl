@@ -58,7 +58,7 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
                         eps = T(1e-5), training = true) where T<:Union{Float32, Float64}
   dims = _wsize(x)
   if eps < BATCHNORM_MIN_EPS
-    warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", BATCHNORM_MIN_EPS)
+    # warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", BATCHNORM_MIN_EPS)
     eps = BATCHNORM_MIN_EPS
   end
   xd = TensorDesc(x)
@@ -145,7 +145,7 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
     end
 
     if eps < BATCHNORM_MIN_EPS
-      warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", BATCHNORM_MIN_EPS)
+      # warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", BATCHNORM_MIN_EPS)
       eps = BATCHNORM_MIN_EPS
     end
 
@@ -184,6 +184,26 @@ batchnorm(g::TrackedArray, b::TrackedArray, x::TrackedArray, running_mean::CuArr
   track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::TrackedArray, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+
+batchnorm(g::TrackedArray, b::CuArray{T}, x::TrackedArray, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+
+batchnorm(g::CuArray{T}, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+
+batchnorm(g::CuArray{T}, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+
+batchnorm(g::TrackedArray, b::CuArray{T}, x::CuArray{T}, running_mean::CuArray{T},
+          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+
+batchnorm(g::CuArray{T}, b::CuArray{T}, x::TrackedArray, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
   track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
