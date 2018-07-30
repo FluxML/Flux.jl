@@ -209,9 +209,6 @@ end
 @testset "Fallbacks" begin
   xs = param([1 2; 3 4])
   @test similar(xs) isa Matrix{Float64}
-  # Remove this test if we do LowerTriangular properly
-  L = LowerTriangular(xs)
-  @test L*L' isa Matrix{TrackedReal{Float64}}
 end
 
 @test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
