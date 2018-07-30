@@ -20,7 +20,7 @@ struct Call{F,As<:Tuple}
   args::As
 end
 
-Call(f, args) = Call{typeof(f),typeof(args)}(f, args)
+Call(f::F, args::T) where {F,T} = Call{F,T}(f, args)
 Call() = Call(nothing, ())
 
 # When deserialising, the object_id changes
@@ -46,7 +46,14 @@ track(f::Call, x) = Tracked{typeof(x)}(f)
 
 function _forward end
 
-function track(f, xs...; kw...)
+function track(f::F, xs...) where F
+  y, back = _forward(f, xs...)
+  ts = map(tracker, xs)
+  c = Call(back, ts)
+  track(c, y)
+end
+
+function track_kw(f::F, xs...; kw...) where F
   y, back = _forward(f, xs...; kw...)
   track(Call(back, tracker.(xs)), y)
 end
