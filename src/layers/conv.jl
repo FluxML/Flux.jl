@@ -50,3 +50,45 @@ function Base.show(io::IO, l::Conv)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
+
+
+"""
+    Maxpool(k)
+
+Maxpooling layer. `k` stands for the size of the window for each dimension of the input.
+
+Takes the keyword arguments `pad` and `stride`.
+"""
+struct Maxpool{N}
+    k::NTuple{N,Int}
+    pad::NTuple{N,Int}
+    stride::NTuple{N,Int}
+    Maxpool(k::NTuple{N,Int}; pad = map(_->0,k), stride = k) where N = new{N}(k, pad, stride)
+end
+
+(m::Maxpool)(x) = maxpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::Maxpool)
+  print(io, "Maxpool(", m.k, ", ", m.pad, ", ", m.stride, ")")
+end
+
+
+"""
+    Meanpool(k)
+
+Meanpooling layer. `k` stands for the size of the window for each dimension of the input.
+
+Takes the keyword arguments `pad` and `stride`.
+"""
+struct Meanpool{N}
+    k::NTuple{N,Int}
+    pad::NTuple{N,Int}
+    stride::NTuple{N,Int}
+    Meanpool(k::NTuple{N,Int}; pad = map(_->0,k), stride = k) where N = new{N}(k, pad, stride)
+end
+
+(m::Meanpool)(x) = meanpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::Meanpool)
+  print(io, "Meanpool(", m.k, ", ", m.pad, ", ", m.stride, ")")
+end
