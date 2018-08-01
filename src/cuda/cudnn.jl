@@ -1,5 +1,5 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, libcudnn_handle,
-  cudnnDataType, TensorDesc, FilterDesc
+  cudnnDataType, TensorDesc, FilterDesc, CUDNN_VERSION
 
 mutable struct DropoutDesc
   ptr::Ptr{Void}
@@ -367,6 +367,7 @@ end
   reshape(cudnnConvolutionBackwardBias(similar(b), Δ, alpha=alpha, beta=beta), :)
 
 function (m::Flux.Conv)(x::Union{CuParam{T,4},CuParam{T,5}})  where T<:Union{Float32,Float64}
+  # Will cause a problem in cudnn version < 7.1 if none of x, weight and bias are tracked
   result = convbias(x, m.weight, m.bias, pad = m.pad, stride = m.stride, dilation = m.dilation)
   m.σ == identity ? result : m.σ.(result) # Replace with cudnn function calls
 end
@@ -393,7 +394,7 @@ convbias(x::TrackedArray, w::CuArray{T}, b::CuArray{T}; kw...) where T<:Union{Fl
 
 @grad function convbias(x, w, b; kw...)
   bias = reshape(b, map(_->1, kw[2][2])..., :, 1)
-  y = convbias(data.((x, w, bias))...; kw...)
+  y = CUDNN_VERSION >= 7100 ? convbias(data.((x, w, bias))...; kw...) : conv(data.((x, w))...; kw...) .+ bias
   y, Δ -> (istracked(x) ? NNlib.∇conv_data(data.((Δ, x, w))...; kw...) : nothing,
            istracked(w) ? NNlib.∇conv_filter(data.((Δ, x, w))...; kw...) : nothing,
            istracked(b) ? ∇conv_bias(data.((Δ, bias)); kw...) : nothing)
