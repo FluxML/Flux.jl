@@ -394,7 +394,7 @@ convbias(x::TrackedArray, w::CuArray{T}, b::CuArray{T}; kw...) where T<:Union{Fl
 
 @grad function convbias(x, w, b; kw...)
   bias = reshape(b, map(_->1, kw[2][2])..., :, 1)
-  data(CUDNN_VERSION >= 7100 ? convbias(data.((x, w, bias))...; kw...) : cudnnAddTensor(bias, conv(data.((x, w))...; kw...))),
+  CUDNN_VERSION >= 7100 ? convbias(data.((x, w, bias))...; kw...) : cudnnAddTensor(data(bias), conv(data.((x, w))...; kw...)),
     Δ -> (istracked(x) ? ∇conv_data(data.((Δ, x, w))...; kw...) : nothing,
           istracked(w) ? ∇conv_filter(data.((Δ, x, w))...; kw...) : nothing,
           istracked(b) ? ∇conv_bias(data.((Δ, bias))...; kw...) : nothing)
