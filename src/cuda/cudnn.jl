@@ -343,7 +343,7 @@ end
   end
 end
 
-using NNlib: padtuple, cdims, dilation_dims
+using NNlib: padtuple, cdims, dilation_dims, conv, ∇conv_data, ∇conv_filter
 using CuArrays.CUDNN: cudnnConvolutionBackwardBias, cudnnConvolutionBackwardData, cudnnConvolutionBackwardFilter,
   cudnnActivationBackward,  cudnnConvolutionBiasActivationForward
 
@@ -394,8 +394,8 @@ convbias(x::TrackedArray, w::CuArray{T}, b::CuArray{T}; kw...) where T<:Union{Fl
 
 @grad function convbias(x, w, b; kw...)
   bias = reshape(b, map(_->1, kw[2][2])..., :, 1)
-  y = CUDNN_VERSION >= 7100 ? convbias(data.((x, w, bias))...; kw...) : conv(data.((x, w))...; kw...) .+ bias
-  y, Δ -> (istracked(x) ? NNlib.∇conv_data(data.((Δ, x, w))...; kw...) : nothing,
-           istracked(w) ? NNlib.∇conv_filter(data.((Δ, x, w))...; kw...) : nothing,
-           istracked(b) ? ∇conv_bias(data.((Δ, bias)); kw...) : nothing)
+  data(CUDNN_VERSION >= 7100 ? convbias(data.((x, w, bias))...; kw...) : conv(data.((x, w))...; kw...) .+ bias),
+    Δ -> (istracked(x) ? ∇conv_data(data.((Δ, x, w))...; kw...) : nothing,
+          istracked(w) ? ∇conv_filter(data.((Δ, x, w))...; kw...) : nothing,
+          istracked(b) ? ∇conv_bias(data.((Δ, bias))...; kw...) : nothing)
 end
