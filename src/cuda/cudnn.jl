@@ -2,23 +2,23 @@ using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, libcudnn_handle,
   cudnnDataType, TensorDesc, FilterDesc
 
 mutable struct DropoutDesc
-  ptr::Ptr{Void}
+  ptr::Ptr{Nothing}
   states::CuVector{UInt8}
 end
 
-Base.unsafe_convert(::Type{Ptr{Void}}, dd::DropoutDesc) = dd.ptr
+Base.unsafe_convert(::Type{Ptr{Nothing}}, dd::DropoutDesc) = dd.ptr
 
 function DropoutDesc(ρ::Real; seed::Integer=0)
   d = [C_NULL]
   s = Csize_t[0]
-  @check ccall((:cudnnCreateDropoutDescriptor,libcudnn), cudnnStatus_t, (Ptr{Ptr{Void}},), d)
-  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Void},Ptr{Csize_t}),libcudnn_handle[],s)
+  @check ccall((:cudnnCreateDropoutDescriptor,libcudnn), cudnnStatus_t, (Ptr{Ptr{Nothing}},), d)
+  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),libcudnn_handle[],s)
   states = CuArray{UInt8}(s[]) # TODO: can we drop this when ρ=0?
   desc = DropoutDesc(d[], states)
-  @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Void},Ptr{Void},Cfloat,Ptr{Void},Csize_t,Culonglong),
+  @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
     desc,libcudnn_handle[],ρ,states,length(states),seed)
   finalizer(desc, x ->
-    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Void},),x))
+    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x))
   return desc
 end
 
@@ -57,14 +57,14 @@ mutable struct RNNDesc{T}
   params::CuVector{T}
   weights::NTuple{2,CuMatrix{T}}
   bias::CuVector{T}
-  ptr::Ptr{Void}
+  ptr::Ptr{Nothing}
 end
 
-Base.unsafe_convert(::Type{Ptr{Void}}, d::RNNDesc) = d.ptr
+Base.unsafe_convert(::Type{Ptr{Nothing}}, d::RNNDesc) = d.ptr
 
 function rnnParamSize(T, r, input)
   size = Csize_t[0]
-  @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Ptr{Void},Ptr{Csize_t},Cint),
+  @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Ptr{Nothing},Ptr{Csize_t},Cint),
     libcudnn_handle[], r, TensorDesc(T, (1,input,1)), size, cudnnDataType(T))
   return Int(size[])÷sizeof(T)
 end
@@ -74,26 +74,26 @@ ngates(r::RNNDesc) = ngates(r.mode)
 
 function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   d = [C_NULL]
-  @check ccall((:cudnnCreateRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Ptr{Void}},),d)
+  @check ccall((:cudnnCreateRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Ptr{Nothing}},),d)
 
   dropoutDesc = DropoutDesc(0)
   inputMode = LINEAR_INPUT
   direction = UNIDIRECTIONAL
   algo = RNN_ALGO_STANDARD
-  @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Cint,Ptr{Void},Cint,Cint,Cint,Cint,Cint),
+  @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Cint,Cint,Ptr{Nothing},Cint,Cint,Cint,Cint,Cint),
     libcudnn_handle[],d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
 
   w = cuzeros(T, rnnParamSize(T, d[], input))
   # TODO: avoid reserve allocation here
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
   finalizer(rd, x ->
-    @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Void},),x))
+    @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x))
   return rd
 end
 
 function rnnWorkspaceSize(r::RNNDesc, seqlen, xdesc)
   size = Csize_t[0]
-  @check ccall((:cudnnGetRNNWorkspaceSize, libcudnn), cudnnStatus_t, (Ptr{Void},Ptr{Void},Cint,Ptr{Ptr{Void}},Ptr{Csize_t}),
+  @check ccall((:cudnnGetRNNWorkspaceSize, libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Cint,Ptr{Ptr{Nothing}},Ptr{Csize_t}),
     libcudnn_handle[], r, seqlen, xdesc, size)
   return Int(size[])
 end
@@ -110,7 +110,7 @@ getworkspace(r::RNNDesc, seqlen, xdesc) =
 
 function rnnTrainingReserveSize(r::RNNDesc, seqlen, xdesc)
   size = Csize_t[0]
-  @check ccall((:cudnnGetRNNTrainingReserveSize,libcudnn), cudnnStatus_t, (Ptr{Void}, Ptr{Void}, Cint, Ptr{Ptr{Void}}, Ptr{Csize_t}),
+  @check ccall((:cudnnGetRNNTrainingReserveSize,libcudnn), cudnnStatus_t, (Ptr{Nothing}, Ptr{Nothing}, Cint, Ptr{Ptr{Nothing}}, Ptr{Csize_t}),
     libcudnn_handle[], r, seqlen, xdesc, size)
   return Int(size[])
 end
@@ -119,19 +119,19 @@ function cudnnRNNForward(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, cd, c, wd, w, yd
                          workspace, reserve=nothing) where T
   if reserve == nothing
     @check ccall((:cudnnRNNForwardInference, libcudnn), cudnnStatus_t,
-                 (Ptr{Void}, Ptr{Void}, Cint,
-                  Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T}, Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Csize_t),
+                 (Ptr{Nothing}, Ptr{Nothing}, Cint,
+                  Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Csize_t),
                  libcudnn_handle[], rnn, seqlen,
                  xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
                  workspace, length(workspace))
   else
     @check ccall((:cudnnRNNForwardTraining, libcudnn), cudnnStatus_t,
-                 (Ptr{Void}, Ptr{Void}, Cint,
-                  Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Csize_t, Ptr{Void}, Csize_t),
+                 (Ptr{Nothing}, Ptr{Nothing}, Cint,
+                  Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Csize_t, Ptr{Nothing}, Csize_t),
                  libcudnn_handle[], rnn, seqlen,
                  xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
                  workspace, length(workspace), reserve, length(reserve))
@@ -140,7 +140,7 @@ end
 
 xDesc(x) = [TensorDesc(eltype(x), (1, size(x, 1), size(x, 2)))]
 
-hDesc(h::Void) = C_NULL, C_NULL
+hDesc(h::Nothing) = C_NULL, C_NULL
 hDesc(x::Integer) = (@assert x == 0; hDesc(nothing))
 function hDesc(h::CuArray)
   TensorDesc(eltype(h), (size(h, 1), size(h, 2), 1)), h
@@ -187,18 +187,18 @@ forwardTrain(rnn::RNNDesc{T}, x::CuArray{T}, h::CuArray{T}, c = nothing) where T
 function cudnnRNNBackwardData(rnn::RNNDesc{T}, seqlen, yd, y, dyd, dy, dhod, dho, dcod, dco,
                               wd, w, hd, h, cd, c, dxd, dx, dhd, dh, dcd, dc, ws, rs) where T
   @check ccall((:cudnnRNNBackwardData,libcudnn),cudnnStatus_t,
-               (Ptr{Void}, Ptr{Void}, Cint,
-                Ptr{Ptr{Void}}, Ptr{T}, Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T},
-                Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void},
-                Ptr{T}, Ptr{Ptr{Void}}, Ptr{T}, Ptr{Void}, Ptr{T}, Ptr{Void}, Ptr{T},
-                Ptr{Void}, Csize_t, Ptr{Void}, Csize_t),
+               (Ptr{Nothing}, Ptr{Nothing}, Cint,
+                Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T},
+                Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing},
+                Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
+                Ptr{Nothing}, Csize_t, Ptr{Nothing}, Csize_t),
                libcudnn_handle[], rnn, seqlen, yd, y, dyd, dy, dhod, dho, dcod, dco,
                wd, w, hd, h, cd, c, dxd, dx, dhd, dh, dcd, dc, ws, length(ws), rs, length(rs))
 end
 
 function backwardData(rnn::RNNDesc{T}, y, dy_, dho, dco, h, c, reserve) where T
   # Same as above, any more efficient way?
-  dy = dy_ isa Integer ? zeros(y) : dy_
+  dy = dy_ isa Integer ? zero(y) : dy_
   yd = xDesc(y)
   dx = y isa AbstractVector ? similar(dy, rnn.input) : similar(dy, rnn.input, size(dy, 2))
   dh = similar(h)
@@ -217,19 +217,19 @@ backwardData(rnn, y, dy, dho, hx, reserve) =
 function cudnnRNNBackwardWeights(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, yd, y, dwd, dw,
                                  workspace, reserve) where T
   @check ccall((:cudnnRNNBackwardWeights,libcudnn), cudnnStatus_t,
-               (Ptr{Void}, Ptr{Void}, Cint,  # handle, rnnDesc, seqLength
-                Ptr{Ptr{Void}}, Ptr{T}, #x
-                Ptr{Void}, Ptr{T}, #hx
-                Ptr{Ptr{Void}}, Ptr{T}, #y
-                Ptr{Void}, Csize_t, #ws
-                Ptr{Void}, Ptr{T}, #dw
-                Ptr{Void}, Csize_t), #rs
+               (Ptr{Nothing}, Ptr{Nothing}, Cint,  # handle, rnnDesc, seqLength
+                Ptr{Ptr{Nothing}}, Ptr{T}, #x
+                Ptr{Nothing}, Ptr{T}, #hx
+                Ptr{Ptr{Nothing}}, Ptr{T}, #y
+                Ptr{Nothing}, Csize_t, #ws
+                Ptr{Nothing}, Ptr{T}, #dw
+                Ptr{Nothing}, Csize_t), #rs
                libcudnn_handle[], rnn, seqlen, xd, x, hd, h, yd, y,
                workspace, length(workspace), dwd, dw, reserve, length(reserve))
 end
 
 function backwardWeights(rnn::RNNDesc{T}, x, h, y, reserve) where T
-  dw = zeros(rnn.params)
+  dw = zero(rnn.params)
   cudnnRNNBackwardWeights(rnn, 1,
     xDesc(x), x, hDesc(h)..., xDesc(y), y,
     FilterDesc(T, (1, 1, length(dw))), dw,

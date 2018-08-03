@@ -1,4 +1,4 @@
-using Flux, CuArrays, Base.Test
+using Flux, CuArrays, Test
 
 info("Testing Flux/CUDNN")
 

@@ -1,8 +1,8 @@
 # Arrays
 
 initn(dims...) = randn(dims...)/100
-glorot_uniform(dims...) = (rand(dims...) - 0.5)*sqrt(24.0/(sum(dims)))
-glorot_normal(dims...) = (randn(dims...)*sqrt(2.0/sum(dims)))
+glorot_uniform(dims...) = (rand(dims...) .- 0.5) .* sqrt(24.0/(sum(dims)))
+glorot_normal(dims...) = randn(dims...) .* sqrt(2.0/sum(dims))
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 
@@ -119,7 +119,7 @@ function throttle(f, timeout; leading=true, trailing=false)
       end
 
       cooldown = false
-      @schedule try
+      @async try
         while (sleep(timeout); later != nothing)
           later()
           later = nothing
@@ -145,7 +145,7 @@ function jacobian(m,x)
     y  = m(xp)
     k  = length(y)
     n  = length(x)
-    J  = Matrix{eltype(x)}(n,k)
+    J  = Matrix{eltype(x)}(undef,n,k)
     for i = 1:k
         Flux.back!(y[i]) # Populate gradient accumulator
         J[:,i] = xp.grad

@@ -1,4 +1,4 @@
-using Flux, Base.Test
+using Flux, Test, Random
 
 srand(0)
 
@@ -11,8 +11,8 @@ include("layers/stateless.jl")
 include("optimise.jl")
 include("data.jl")
 
-if Base.find_in_path("CuArrays") ≠ nothing
-  include("cuda/cuda.jl")
-end
+# if Base.find_in_path("CuArrays") ≠ nothing
+#   include("cuda/cuda.jl")
+# end
 
 end

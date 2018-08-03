@@ -1,4 +1,6 @@
 using Flux: throttle, initn, glorot_uniform, glorot_normal, jacobian
+using StatsBase: std
+using Dates
 
 @testset "Throttle" begin
   @testset "default behaviour" begin

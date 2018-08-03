@@ -9,7 +9,7 @@ struct Param{T}
   Δ::T
 end
 
-Base.convert(::Type{Param}, x::AbstractArray) = Param(x, zeros(x))
+Base.convert(::Type{Param}, x::AbstractArray) = Param(x, zero(x))
 
 include("optimisers.jl")
 include("interface.jl")
