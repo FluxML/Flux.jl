@@ -83,7 +83,7 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Cint,Cint,Ptr{Nothing},Cint,Cint,Cint,Cint,Cint),
     libcudnn_handle[],d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
 
-  w = cuzero(T, rnnParamSize(T, d[], input))
+  w = cuzeros(T, rnnParamSize(T, d[], input))
   # TODO: avoid reserve allocation here
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
   finalizer(rd, x ->

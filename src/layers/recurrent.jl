@@ -84,7 +84,7 @@ end
 RNNCell(in::Integer, out::Integer, σ = tanh;
         init = glorot_uniform) =
   RNNCell(σ, param(init(out, in)), param(init(out, out)),
-          param(fill(0.0,out)), param(initn(out)))
+          param(zeros(out)), param(initn(out)))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
