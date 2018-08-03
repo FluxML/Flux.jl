@@ -53,7 +53,7 @@ cpu(m) = mapleaves(x -> adapt(Array, x), m)
 
 gpu_adaptor = identity
 
-@require CuArrays begin
+@init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
   global gpu_adaptor = CuArrays.cu
 end
 

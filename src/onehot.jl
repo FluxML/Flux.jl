@@ -32,7 +32,7 @@ import Adapt.adapt
 
 adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-@require CuArrays begin
+@init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
   import CuArrays: CuArray, cudaconvert
   Base.Broadcast._containertype(::Type{<:OneHotMatrix{<:CuArray}}) = CuArray
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
