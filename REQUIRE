@@ -9,6 +9,7 @@ Colors
 ZipFile
 AbstractTrees
 Reexport
+StatsBase
 
 # AD
 ForwardDiff 0.5.0
