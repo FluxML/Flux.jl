@@ -287,7 +287,7 @@ function desc(rnn)
 end
 
 import Flux.Tracker
-import Flux.Tracker: data, istracked, track, unbroadcast, @grad, nobacksies
+import Flux.Tracker: data, istracked, track, unbroadcast, @grad, nobacksies, track_kw
 
 istrain(m::CuRNNs, args...) = any(x -> x isa TrackedArray, (m.Wi, m.Wh, m.b, args...))
 

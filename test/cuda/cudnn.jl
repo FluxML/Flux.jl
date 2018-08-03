@@ -27,7 +27,7 @@ info("Testing Flux/CUDNN")
       @test x.grad ≈ collect(cux.grad)
       @test rnn.cell.Wi.grad ≈ collect(curnn.cell.Wi.grad)
       @test rnn.cell.Wh.grad ≈ collect(curnn.cell.Wh.grad)
-      @test rnn.cell.b.grad ≈ collect(curnn.cell.b.grad)
+      @test rnn.cell.b.grad ≈ coltracklect(curnn.cell.b.grad)
       @test rnn.cell.h.grad ≈ collect(curnn.cell.h.grad)
       if isdefined(rnn.cell, :c)
         @test rnn.cell.c.grad ≈ collect(curnn.cell.c.grad)
@@ -45,4 +45,22 @@ info("Testing Flux/CUDNN")
       @test y.data ≈ collect(cuy.data)
     end
   end
+end
+
+@testset "CNN" begin
+  cnn = Conv((3, 3), 1=>10, pad = 1)
+  cucnn = cnn |> gpu
+  x = rand(10, 10, 1, 1)
+  cux = x |> gpu
+  y = cnn(x)
+  cuy = cucnn(cux)
+  Δ = similar(y)
+
+  @test y.data ≈ collect(cuy.data)
+
+  Flux.back!(y, Δ)
+  Flux.back!(cuy, gpu(Δ))
+
+  @test cnn.weight.data ≈ collect(cucnn.weight.data)
+  @test cnn.bias.data ≈ collect(cucnn.bias.data)
 end
