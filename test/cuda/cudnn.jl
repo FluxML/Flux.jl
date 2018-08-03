@@ -14,7 +14,7 @@ using Flux.Tracker: TrackedArray, data
 
     @test cpu(data(cy)) ≈ data(y)
 
-    g = ones(size(y)...)
+    g = rand(size(y))
     Flux.back!(y, g)
     Flux.back!(cy, gpu(g))
 
