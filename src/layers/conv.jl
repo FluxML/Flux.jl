@@ -32,7 +32,7 @@ Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride = 1, pad = 0, dilation = 1) where N =
-  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+  Conv(param(init(k..., ch...)), param(zero(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 @treelike Conv

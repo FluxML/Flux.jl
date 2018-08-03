@@ -1,7 +1,8 @@
 import Base: *, ==
 
 import LinearAlgebra
-using LinearAlgebra: Transpose, Adjoint, diagm
+using Statistics
+using LinearAlgebra: Transpose, Adjoint, diagm, diag
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
@@ -26,7 +27,7 @@ TrackedArray(c::Call, x::A) where A <: AbstractArray =
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
   TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, Δ), x, Δ)
 
-TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zeros(x))
+TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
@@ -85,7 +86,7 @@ Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 @grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
 @grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
 
-Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
+Base.repeat(A::TrackedArray; kw...) = track(repeat, A; kw...)
 
 @grad function repeat(xs; inner=ntuple(x->1, ndims(A)), outer=ntuple(x->1, ndims(A)))
   repeat(data(xs), inner = inner, outer = outer), function (Δ)
@@ -93,7 +94,7 @@ Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
     S = size(xs)
 
     # Loop through each element of Δ, calculate source dimensions, accumulate into Δ′
-    for (dest_idx, val) in enumerate(IndexCartesian(), data(Δ))
+    for (dest_idx, val) in pairs(IndexCartesian(), data(Δ))
         # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
         # wrap around based on original size S.
         src_idx = [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim in 1:length(S)]
@@ -159,10 +160,10 @@ end
   end
 end
 
-Base.cat(a::TrackedArray; dims) = track_kw(cat, a, dims = dims)
-Base.cat(a::TrackedArray, b::TrackedArray, c::AbstractArray...; dims) = track_kw(cat, a, b, c..., dims = dims)
-Base.cat(a::TrackedArray, b::AbstractArray, c::AbstractArray...; dims) = track_kw(cat, a, b, c..., dims = dims)
-Base.cat(a::AbstractArray, b::TrackedArray, c::AbstractArray...; dims) = track_kw(cat, a, b, c..., dims = dims)
+Base.cat(a::TrackedArray; dims) = track(cat, a, dims = dims)
+Base.cat(a::TrackedArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
+Base.cat(a::TrackedArray, b::AbstractArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
+Base.cat(a::AbstractArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
 
 @grad function cat(Xs...; dims)
   cat(data.(Xs)..., dims = dims), function (Δ)
@@ -204,32 +205,28 @@ Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
 # Reductions
 
-Base.sum(xs::TrackedArray, dim) = track(sum, xs, dim)
-Base.sum(xs::TrackedArray) = track(sum, xs)
+Base.sum(xs::TrackedArray; dims = :) = track(sum, xs, dims = dims)
 Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
-@grad sum(xs, dim...) = sum(data(xs), dim...),
-  Δ -> (zero(xs) .+ Δ, map(_->nothing,dim)...)
+@grad sum(xs; dims = :) = sum(data(xs), dims = dims),
+  Δ -> (zero(xs) .+ Δ, )
 
 Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
 Base.prod(xs::TrackedArray) = track(prod, xs)
 Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 
 @grad prod(xs) = prod(data(xs)), Δ -> (prod(xs) ./ xs .* Δ,)
-@grad prod(xs, dim) = prod(data(xs), dim),
+@grad prod(xs, dim) = prod(data(xs), dims = dim),
   Δ -> (nobacksies(:sum,
           reshape(.*(circshift.([reshape(data(xs), length(xs))], 1:length(xs)-1)...), size(xs)) .* Δ),
         nothing)
 
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
-Base.mean(xs::TrackedArray) = track(mean, xs)
-Base.mean(xs::TrackedArray, region) = track(mean, xs, region)
+Statistics.mean(xs::TrackedArray; dims = :) = track(mean, xs, dims = dims)
 
-Base.maximum(xs::TrackedArray) = track(maximum, xs)
-Base.maximum(xs::TrackedArray, region) = track(maximum, xs, region)
-Base.minimum(xs::TrackedArray) = track(minimum, xs)
-Base.minimum(xs::TrackedArray, region) = track(minimum, xs, region)
+Base.maximum(xs::TrackedArray; dims = :) = track(maximum, xs, dims = dims)
+Base.minimum(xs::TrackedArray; dims = :) = track(minimum, xs, dims = dims)
 
 import LinearAlgebra: dot
 
@@ -239,34 +236,33 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
-using StatsBase
-
 # Hacks to get std working
-StatsBase.std(x::TrackedArray; mean = Base.mean(x)) =
-  sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
-StatsBase.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
-  sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
+Statistics.std(x::TrackedArray; dims = :, mean = Statistics.mean(x, dims = dims)) = _std(x,mean,dims)
+_std(x::TrackedArray, mean, dims) = sqrt.(sum((x .- mean).^2, dims = dims) ./ (mapreduce(i -> size(x,i),*, dims) - 1))
+_std(x::TrackedArray, mean, ::Colon) = sqrt.(sum((x .- mean).^2) ./ (length(x) - 1))
 
-LinearAlgebra.vecnorm(x::TrackedArray, p::Real = 2) =
+LinearAlgebra.norm(x::TrackedArray, p::Real = 2) =
   sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
-@grad mean(xs) = mean(data(xs)), Δ -> (Δ / length(xs),)
-@grad mean(xs, region) = mean(data(xs), region), Δ -> (zero(xs) .+ Δ ./ prod(size(xs, region...)),nothing)
+@grad mean(xs; dims = :) = mean(data(xs), dims=dims), Δ -> (_backmean(xs,Δ,dims),)
+_backmean(xs, Δ, ::Colon) = zero(xs) .+ Δ ./ length(xs)
+_backmean(xs, Δ, dims) = zero(xs) .+ Δ ./ mapreduce(i -> size(data(xs),i),*,dims)
 
-@grad function maximum(xs, r...)
-  maximum(data(xs), r...), function (Δ)
+@grad function maximum(xs; dims = dims)
+  maximum(data(xs), dims = dims), function (Δ)
     Δ′ = zero(xs)
-    _, i = findmax(data(xs), r...)
+    _, i = findmax(data(xs), dims = dims)
     Δ′[i] = data(Δ)
-    return (nobacksies(:maximum, Δ′),map(_->nothing,r)...)
+    return (nobacksies(:maximum, Δ′),)
   end
 end
-@grad function minimum(xs, r...)
-  minimum(data(xs), r...), function (Δ)
+
+@grad function minimum(xs;  dims = dims)
+  minimum(data(xs),  dims = dims), function (Δ)
     Δ′ = zero(xs)
-    _, i = findmin(data(xs), r...)
+    _, i = findmin(data(xs),  dims = dims)
     Δ′[i] = data(Δ)
-    return (nobacksies(:minimum, Δ′),map(_->nothing,r)...)
+    return (nobacksies(:minimum, Δ′),)
   end
 end
 
@@ -312,9 +308,9 @@ logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 @grad logsoftmax(xs) = logsoftmax(data(xs)), Δ -> (nobacksies(:logsoftmax, ∇logsoftmax(data(Δ), data(xs))),)
 
-conv(x::TrackedArray,  w::TrackedArray;  kw...) = track_kw(conv, x, w; kw...)
-conv(x::AbstractArray, w::TrackedArray;  kw...) = track_kw(conv, x, w; kw...)
-conv(x::TrackedArray,  w::AbstractArray; kw...) = track_kw(conv, x, w; kw...)
+conv(x::TrackedArray,  w::TrackedArray;  kw...) = track(conv, x, w; kw...)
+conv(x::AbstractArray, w::TrackedArray;  kw...) = track(conv, x, w; kw...)
+conv(x::TrackedArray,  w::AbstractArray; kw...) = track(conv, x, w; kw...)
 
 @grad conv(x, w; kw...) =
   conv(data(x), data(w); kw...),
@@ -322,14 +318,14 @@ conv(x::TrackedArray,  w::AbstractArray; kw...) = track_kw(conv, x, w; kw...)
       (NNlib.∇conv_data(data.((Δ, x, w))...; kw...),
        NNlib.∇conv_filter(data.((Δ, x, w))...; kw...)))
 
-maxpool(x::TrackedArray, k; kw...) = track_kw(maxpool, x, k; kw...)
+maxpool(x::TrackedArray, k; kw...) = track(maxpool, x, k; kw...)
 
 @grad function maxpool(x, k; kw...)
   y = maxpool(data(x), k; kw...)
   y, Δ -> (nobacksies(:maxpool, NNlib.∇maxpool(data.((Δ, y, x))..., k; kw...)), nothing)
 end
 
-meanpool(x::TrackedArray, k; kw...) = track_kw(meanpool, x, k; kw...)
+meanpool(x::TrackedArray, k; kw...) = track(meanpool, x, k; kw...)
 
 @grad function meanpool(x, k; kw...)
   y = meanpool(data(x), k; kw...)
@@ -349,7 +345,7 @@ dualify(xs::Real, ps) = Dual(xs, ps)
 
 unbroadcast(x::Tuple, Δ) =
   x == size(Δ) ? Δ :
-    reshape(sum(Δ, filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
+    reshape(sum(Δ, dims = filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
 
 unbroadcast(x::Tuple{}, Δ) = sum(Δ)
 

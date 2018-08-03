@@ -39,13 +39,13 @@ adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 end
 
 function onehot(l, labels)
-  i = findfirst(labels, l)
+  i = something(findfirst(isequal(l), labels), 0)
   i > 0 || error("Value $l is not in labels")
   OneHotVector(i, length(labels))
 end
 
 function onehot(l, labels, unk)
-  i = findfirst(labels, l)
+  i = something(findfirst(isequal(l), labels), 0)
   i > 0 || return onehot(unk, labels)
   OneHotVector(i, length(labels))
 end

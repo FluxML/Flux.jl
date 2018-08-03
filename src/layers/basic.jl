@@ -28,7 +28,7 @@ children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
 adapt(T, c::Chain) = Chain(map(x -> adapt(T, x), c.layers)...)
 
-(c::Chain)(x) = foldl((x, m) -> m(x), x, c.layers)
+(c::Chain)(x) = foldl((x, m) -> m(x), c.layers; init = x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
