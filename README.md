@@ -31,8 +31,8 @@ Flux has powerful high-level features, and common architectures can be defined i
 ```julia
 model = Chain(
   Dense(768, 128, σ),
-  LSTM(128, 256)
-  LSTM(256, 128)
+  LSTM(128, 256),
+  LSTM(256, 128),
   Dense(128, 10),
   softmax)
 

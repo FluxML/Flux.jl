@@ -101,7 +101,7 @@ Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
   end
 end
 
-Base.repeat(A::TrackedArray; kw...) = track(repeat, A; kw...)
+Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
 
 @grad function repeat(xs; inner=ntuple(x->1, ndims(A)), outer=ntuple(x->1, ndims(A)))
   repeat(data(xs), inner = inner, outer = outer), function (Δ)
@@ -324,9 +324,9 @@ logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 @grad logsoftmax(xs) = logsoftmax(data(xs)), Δ -> (nobacksies(:logsoftmax, ∇logsoftmax(data(Δ), data(xs))),)
 
-depthwiseconv(x::TrackedArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
-depthwiseconv(x::AbstractArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
-depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::TrackedArray, w::TrackedArray; kw...) = track_kw(depthwiseconv, x, w; kw...)
+depthwiseconv(x::AbstractArray, w::TrackedArray; kw...) = track_kw(depthwiseconv, x, w; kw...)
+depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track_kw(depthwiseconv, x, w; kw...)
 
 @grad depthwiseconv(x, w; kw...) =
   depthwiseconv(data(x), data(w); kw...),
@@ -334,9 +334,9 @@ depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track(depthwiseconv, x
       (NNlib.∇depthwiseconv_data(data.((Δ, x, w))...; kw...),
        NNlib.∇depthwiseconv_filter(data.((Δ, x, w))...; kw...)))
 
-conv(x::TrackedArray,  w::TrackedArray;  kw...) = track(conv, x, w; kw...)
-conv(x::AbstractArray, w::TrackedArray;  kw...) = track(conv, x, w; kw...)
-conv(x::TrackedArray,  w::AbstractArray; kw...) = track(conv, x, w; kw...)
+conv(x::TrackedArray,  w::TrackedArray;  kw...) = track_kw(conv, x, w; kw...)
+conv(x::AbstractArray, w::TrackedArray;  kw...) = track_kw(conv, x, w; kw...)
+conv(x::TrackedArray,  w::AbstractArray; kw...) = track_kw(conv, x, w; kw...)
 
 @grad conv(x, w; kw...) =
   conv(data(x), data(w); kw...),
@@ -344,14 +344,14 @@ conv(x::TrackedArray,  w::AbstractArray; kw...) = track(conv, x, w; kw...)
       (NNlib.∇conv_data(data.((Δ, x, w))...; kw...),
        NNlib.∇conv_filter(data.((Δ, x, w))...; kw...)))
 
-maxpool(x::TrackedArray, k; kw...) = track(maxpool, x, k; kw...)
+maxpool(x::TrackedArray, k; kw...) = track_kw(maxpool, x, k; kw...)
 
 @grad function maxpool(x, k; kw...)
   y = maxpool(data(x), k; kw...)
   y, Δ -> (nobacksies(:maxpool, NNlib.∇maxpool(data.((Δ, y, x))..., k; kw...)), nothing)
 end
 
-meanpool(x::TrackedArray, k; kw...) = track(meanpool, x, k; kw...)
+meanpool(x::TrackedArray, k; kw...) = track_kw(meanpool, x, k; kw...)
 
 @grad function meanpool(x, k; kw...)
   y = meanpool(data(x), k; kw...)
