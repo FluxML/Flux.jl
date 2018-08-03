@@ -152,3 +152,13 @@ function gradient(f, args...)
 end
 
 derivative(f, x) = gradient(f, x)[1]
+
+# Non-nesting versions
+
+function gradient_(f, xs...)
+  xs = param.(xs)
+  l = f(xs...)
+  losscheck(l)
+  back!(l)
+  grad.(xs)
+end

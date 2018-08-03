@@ -129,7 +129,7 @@ linear2 = linear(3, 2)
 
 model(x) = linear2(σ.(linear1(x)))
 
-model(x) # => 2-element vector
+model(rand(5)) # => 2-element vector
 ```
 
 Another (equivalent) way is to create a struct that explicitly represents the affine layer.
