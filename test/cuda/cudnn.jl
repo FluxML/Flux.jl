@@ -54,7 +54,7 @@ end
   cux = x |> gpu
   y = cnn(x)
   cuy = cucnn(cux)
-  Δ = similar(y)
+  Δ = rand(size(y))
 
   @test y.data ≈ collect(cuy.data)
 
