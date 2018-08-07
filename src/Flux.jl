@@ -46,6 +46,7 @@ include("layers/basic.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
+include("layers/ctc.jl")
 
 include("data/Data.jl")
 
