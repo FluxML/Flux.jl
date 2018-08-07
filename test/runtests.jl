@@ -14,6 +14,7 @@ include("utils.jl")
 include("onehot.jl")
 include("optimise.jl")
 include("data.jl")
+include("layers/ctc.jl")
 
 @info "Testing Layers"
 
