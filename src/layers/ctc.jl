@@ -193,6 +193,8 @@ function countRepeats(A)
 end
 
 @require CUDAnative begin
+@require CuArrays begin
+using CUDAnative, CuArrays
 function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutBlanks, labelsWithBlanks, alpha, blankLabel)
 
   tid = threadIdx().x
@@ -466,7 +468,8 @@ function ctc(ŷ::CuArrays.CuArray, y)
   
   return mean(ls), gs
 end
-end # end of requries
+end # end of `@require CuArrays`
+end # end of `@require CUDAnative`
 
 ctc(ŷ::TrackedArray, y::AbstractArray) = Flux.Tracker.track(ctc, ŷ, y)
 
