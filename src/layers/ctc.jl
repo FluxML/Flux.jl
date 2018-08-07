@@ -447,16 +447,16 @@ function ctc(ŷ::CuArrays.CuArray, y)
   
   nRepeats = countRepeats(labels)
 
-#   @cuda (1, U′) computeAlphaKernel(ŷ, length(z), size(ŷ,2), nRepeats, gpu(z), CUDAdrv.CuArray(z′), alphas, blank)
+  @cuda (1, U′) computeAlphaKernel(ŷ, length(z), size(ŷ,2), nRepeats, gpu(z), CUDAdrv.CuArray(z′), alphas, blank)
   # Julia 0.7 and updated CUDAnative function call
-  @cuda threads=U′ computeAlphaKernel(ŷ, length(z), size(ŷ,2), nRepeats, gpu(z), CUDAdrv.CuArray(z′), alphas, blank)
+#   @cuda threads=U′ computeAlphaKernel(ŷ, length(z), size(ŷ,2), nRepeats, gpu(z), CUDAdrv.CuArray(z′), alphas, blank)
   grads = gpu([-Inf32 for x in 1:length(ŷ)])
   output = gpu([-Inf32 for x in 1:(size(ŷ,2) * U′)])
   accum = gpu([-Inf32 for x in 1:length(ŷ)])
   
-#   @cuda (1, U′) computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CUDAdrv.CuArray(z′), alphas, betas, output, accum, grads, blank)
+  @cuda (1, U′) computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CUDAdrv.CuArray(z′), alphas, betas, output, accum, grads, blank)
   # Julia 0.7 and updated CUDAnative function call
-  @cuda threads=U′ computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CUDAdrv.CuArray(z′), alphas, betas, output, accum, grads, blank)
+#   @cuda threads=U′ computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CUDAdrv.CuArray(z′), alphas, betas, output, accum, grads, blank)
   
   ls = Array(reshape(Array(output), U′, T)')
   ls = -1 .* mapslices(logsum, ls, 2)
