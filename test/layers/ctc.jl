@@ -3,7 +3,7 @@ using Flux
 using Flux: ctc
 using Requires
 
-@testset ctc begin
+@testset "ctc" begin
 
   x = [1. 2. 3.; 2. 1. 1.; 3. 3. 2.]
   y = [1 0 0; 1 0 0; 0 1 0]
