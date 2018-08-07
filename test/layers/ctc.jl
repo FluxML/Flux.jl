@@ -14,9 +14,11 @@ using Requires
   @test l ≈ lossvalue
   @test any(x -> !x, gs ≈ gradvalues)
   @require CUDAnative begin
-    lossvalue = 3.6990738
-    l, gs = ctc(Flux.gpu(x), Flux.gpu(y))
-    @test l ≈ lossvalue
-    @test gs ≈ gradvalues 
+    @require CuArrays begin
+      lossvalue = 3.6990738
+      l, gs = ctc(Flux.gpu(x), Flux.gpu(y))
+      @test l ≈ lossvalue
+      @test gs ≈ gradvalues 
+    end
   end
 end
