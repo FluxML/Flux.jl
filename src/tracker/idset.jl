@@ -1,17 +1,17 @@
 struct IdSet{T} <: AbstractSet{T}
-  dict::ObjectIdDict
-  IdSet{T}() where T = new(ObjectIdDict())
+  dict::IdDict{T,Nothing}
+  IdSet{T}() where T = new(IdDict{T,Nothing}())
 end
 
-Base.eltype{T}(::IdSet{T}) = T
+Base.eltype(::IdSet{T}) where T = T
 
 IdSet() = IdSet{Any}()
 
-Base.push!{T}(s::IdSet{T}, x::T) = (s.dict[x] = nothing; s)
-Base.delete!{T}(s::IdSet{T}, x::T) = (delete!(s.dict, x); s)
+Base.push!(s::IdSet{T}, x::T) where T = (s.dict[x] = nothing; s)
+Base.delete!(s::IdSet{T}, x::T) where T = (delete!(s.dict, x); s)
 Base.in(x, s::IdSet) = haskey(s.dict, x)
 
-(::Type{IdSet{T}}){T}(xs) = push!(IdSet{T}(), xs...)
+(::Type{IdSet{T}})(xs) where T = push!(IdSet{T}(), xs...)
 
 IdSet(xs) = IdSet{eltype(xs)}(xs)
 

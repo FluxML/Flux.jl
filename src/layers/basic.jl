@@ -16,7 +16,7 @@ m(x) == m[2](m[1](x))
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 """
-type Chain
+struct Chain
   layers::Vector{Any}
   Chain(xs...) = new([xs...])
 end
@@ -28,7 +28,7 @@ children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
 adapt(T, c::Chain) = Chain(map(x -> adapt(T, x), c.layers)...)
 
-(c::Chain)(x) = foldl((x, m) -> m(x), x, c.layers)
+(c::Chain)(x) = foldl((x, m) -> m(x), c.layers; init = x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
@@ -37,9 +37,6 @@ function Base.show(io::IO, c::Chain)
   join(io, c.layers, ", ")
   print(io, ")")
 end
-
-# Seem to need this for `accumulate`; try removing on 0.7
-Base.rcum_promote_type(op, ::Type, ::Type{Any}) = Any
 
 activations(c::Chain, x) = accumulate((x, m) -> m(x), x, c.layers)
 
@@ -76,7 +73,7 @@ function Dense(in::Integer, out::Integer, σ = identity;
   return Dense(param(initW(out, in)), param(initb(out)), σ)
 end
 
-treelike(Dense)
+@treelike Dense
 
 function (a::Dense)(x)
   W, b, σ = a.W, a.b, a.σ
@@ -107,7 +104,7 @@ end
 Diagonal(in::Integer; initα = ones, initβ = zeros) =
   Diagonal(param(initα(in)), param(initβ(in)))
 
-treelike(Diagonal)
+@treelike Diagonal
 
 function (a::Diagonal)(x)
   α, β = a.α, a.β

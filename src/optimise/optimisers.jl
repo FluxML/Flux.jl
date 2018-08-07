@@ -14,7 +14,7 @@ function descentweightdecay(p::Param, η::Real,  γ::Real)
 end
 
 function momentum(p::Param, ρ, η)
-  v = zeros(p.x)
+  v = zero(p.x)
   function ()
     @. v = ρ * v - η * p.Δ
     @. p.Δ = -v
@@ -23,7 +23,7 @@ end
 
 # Ref. https://arxiv.org/pdf/1212.0901.pdf
 function nesterov(p::Param, ρ, η)
-  v = zeros(p.x)
+  v = zero(p.x)
   function ()
     d = @. ρ^2 * v - (1+ρ) * η * p.Δ
     @. v = ρ*v - η*p.Δ
@@ -32,7 +32,7 @@ function nesterov(p::Param, ρ, η)
 end
 
 function rmsprop(p::Param; η::Real = 0.001, ρ::Real = 0.9, ϵ::Real = 1e-8)
-  acc  = zeros(p.x)
+  acc  = zero(p.x)
   function ()
     @. acc = ρ * acc + (1 - ρ) * p.Δ^2
     @. p.Δ *= η / √(acc + ϵ)
@@ -40,7 +40,7 @@ function rmsprop(p::Param; η::Real = 0.001, ρ::Real = 0.9, ϵ::Real = 1e-8)
 end
 
 function adagrad(p::Param; η::Real = 0.01, ϵ::Real = 1e-8)
-  acc = zeros(p.x) .+ ϵ
+  acc = zero(p.x) .+ ϵ
   function ()
     @. acc += p.Δ^2
     @. p.Δ *= η / √(acc + ϵ)
@@ -48,8 +48,8 @@ function adagrad(p::Param; η::Real = 0.01, ϵ::Real = 1e-8)
 end
 
 function adadelta(p::Param; ρ::Real = 0.9, ϵ::Real = 1e-8)
-  acc = zeros(p.x)
-  Δacc = zeros(p.x)
+  acc = zero(p.x)
+  Δacc = zero(p.x)
   function ()
     @. acc = ρ * acc + (1 - ρ) * p.Δ^2
     @. p.Δ *= √(Δacc + ϵ) / √(acc + ϵ)
@@ -58,8 +58,8 @@ function adadelta(p::Param; ρ::Real = 0.9, ϵ::Real = 1e-8)
 end
 
 function adam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zeros(p.x)
-  vt = zeros(p.x)
+  mt = zero(p.x)
+  vt = zero(p.x)
   β1p, β2p = β1, β2
   function ()
     @. mt = β1 * mt + (1 - β1) * p.Δ
@@ -71,8 +71,8 @@ function adam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ
 end
 
 function adamax(p::Param; η::Real = 0.002, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zeros(p.x)
-  ut = zeros(p.x)
+  mt = zero(p.x)
+  ut = zero(p.x)
   β1p = β1
   function ()
     @. mt = β1 * mt + (1 - β1) * p.Δ
@@ -83,9 +83,9 @@ function adamax(p::Param; η::Real = 0.002, β1::Real = 0.9, β2::Real = 0.999, 
 end
 
 function amsgrad(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zeros(p.x)
-  vt = zeros(p.x) .+ ϵ
-  v̂t = zeros(p.x) .+ ϵ
+  mt = zero(p.x)
+  vt = zero(p.x) .+ ϵ
+  v̂t = zero(p.x) .+ ϵ
   function ()
     @. mt = β1 * mt + (1 - β1) * p.Δ
     @. vt = β2 * vt + (1 - β2) * p.Δ ^ 2
@@ -95,8 +95,8 @@ function amsgrad(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999,
 end
 
 function nadam(p::Param; η::Real = 0.001, β1::Real = 0.9, β2::Real = 0.999, ϵ::Real = 1e-8)
-  mt = zeros(p.x)
-  vt = zeros(p.x)
+  mt = zero(p.x)
+  vt = zero(p.x)
   β1p, β2p = β1, β2
   function ()
     @. mt = β1 * mt + (1 - β1) * p.Δ

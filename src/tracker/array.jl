@@ -1,3 +1,9 @@
+import Base: *, ==
+
+import LinearAlgebra
+using Statistics
+using LinearAlgebra: Transpose, Adjoint, diagm, diag
+
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
   data::A
@@ -21,23 +27,19 @@ TrackedArray(c::Call, x::A) where A <: AbstractArray =
 TrackedArray(c::Call, x::A, Δ::A) where A <: AbstractArray =
   TrackedArray{eltype(A),ndims(A),A}(Tracked{A}(c, Δ), x, Δ)
 
-TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zeros(x))
+TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
 Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   print(io, "TrackedArray{…,$A}")
 
-function Base.showarray(io::IO, X::TrackedArray, repr::Bool = true; header = true)
-  if repr
-    print(io, "param(")
-    Base.showarray(io, data(X), true)
-    print(io, ")")
-  else
-    header && print(io, "Tracked ")
-    Base.showarray(io, data(X), false, header = header)
-  end
+function Base.summary(io::IO, x::TrackedArray)
+  print(io, "Tracked ")
+  summary(io, data(x))
 end
+
+Base.print_array(io::IO, x::TrackedArray) = Base.print_array(io, data(x))
 
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
@@ -58,9 +60,9 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
-Base.:(==)(x::TrackedArray, y) = data(x) == y
-Base.:(==)(y, x::TrackedArray) = y == data(x)
-Base.:(==)(x::TrackedArray, y::TrackedArray) = data(x) == data(y)
+x::TrackedArray == y = data(x) == y
+y == x::TrackedArray = y == data(x)
+x::TrackedArray == y::TrackedArray = data(x) == data(y)
 
 # Array Stdlib
 
@@ -79,29 +81,12 @@ Base.:-(xs::TrackedArray) = track(-, xs)
 @grad -(xs) = -data(xs), Δ -> (-Δ,)
 
 Base.transpose(xs::TrackedArray) = track(transpose, xs)
-Base.ctranspose(xs::TrackedArray) = track(ctranspose, xs)
+Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 
-@grad transpose(xs) = data(xs).', Δ -> (reshape(Δ.', size(xs)),)
-@grad ctranspose(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
+@grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
+@grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
 
-Base.repmat(x::TrackedVecOrMat, a::Integer...) = track(repmat, x, a...)
-Base.repmat(x::TrackedVecOrMat, a::Int64...) = track(repmat, x, a...)
-
-@grad function repmat(xs, m, n = 1)
-  repmat(data(xs), m, n), function (Δ)
-    Δ′ = similar(xs)
-    S = size(xs)
-    for (i,v) in enumerate(data(Δ))
-        d1 = divrem(i-1, S[1]*m)
-        x = d1[2] % S[1]+1
-        y = d1[1] % S[2]+1
-        Δ′[x, y] += v
-    end
-    return (nobacksies(:repmat, Δ′), nothing, nothing)
-  end
-end
-
-Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
+Base.repeat(A::TrackedArray; kw...) = track(repeat, A; kw...)
 
 @grad function repeat(xs; inner=ntuple(x->1, ndims(A)), outer=ntuple(x->1, ndims(A)))
   repeat(data(xs), inner = inner, outer = outer), function (Δ)
@@ -109,7 +94,7 @@ Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
     S = size(xs)
 
     # Loop through each element of Δ, calculate source dimensions, accumulate into Δ′
-    for (dest_idx, val) in enumerate(IndexCartesian(), data(Δ))
+    for (dest_idx, val) in pairs(IndexCartesian(), data(Δ))
         # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
         # wrap around based on original size S.
         src_idx = [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim in 1:length(S)]
@@ -119,8 +104,8 @@ Base.repeat(A::TrackedArray; kw...) = track_kw(repeat, A; kw...)
   end
 end
 
-
 for f in [:vcat, :hcat]
+  UArray = :(Union{TrackedArray,Vector,Matrix,Adjoint,Transpose})
   @eval begin
     # This section is a bit of a hack since julia doesn't have a standardised
     # promotion mechanism for concatenation yet
@@ -129,18 +114,18 @@ for f in [:vcat, :hcat]
     # It should support tracked concatenation with rank ∈ (1,2) with a
     # TrackedArray anywhere among the arguments This works as long as base has
     # other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
-    Base.$f(a::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a...)
+    Base.$f(a::$UArray...) = track($f, a...)
 
     # It should support tracked concatenation with rank>2 if the TrackedArray is
     # first
     Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
-    Base.$f(a::TrackedArray, b::Union{TrackedArray,Vector,RowVector,Matrix}...) = track($f, a, b...) # resolves ambiguity introduced by previous row
+    Base.$f(a::TrackedArray, b::$UArray...) = track($f, a, b...) # resolves ambiguity introduced by previous row
 
     # It should support tracked concatenation with rank>2 if the TrackedArray is
     # second
     Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
-    Base.$f(a::Union{Vector,RowVector,Matrix}, b::TrackedArray,
-            c::Union{TrackedArray,Vector,RowVector,Matrix}...) =
+    Base.$f(a::Union{Vector,Matrix,Adjoint,Transpose}, b::TrackedArray,
+            c::$UArray...) =
       track($f, a, b, c...) # resolves ambiguity introduced by previous row
   end
 end
@@ -175,21 +160,23 @@ end
   end
 end
 
-Base.cat(dims, a::TrackedArray, b::AbstractArray...) = track(cat, dims, a, b...)
-Base.cat(dims, a::Union{RowVector,Array}, b::TrackedArray, c::AbstractArray...) = track(cat, dims, a, b, c...)
+Base.cat(a::TrackedArray; dims) = track(cat, a, dims = dims)
+Base.cat(a::TrackedArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
+Base.cat(a::TrackedArray, b::AbstractArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
+Base.cat(a::AbstractArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
 
-@grad function cat(dims, Xs...)
-  cat(dims, data.(Xs)...), function (Δ)
-    start = ntuple(i -> 0, Val{ndims(Δ)})
+@grad function cat(Xs...; dims)
+  cat(data.(Xs)..., dims = dims), function (Δ)
+    start = ntuple(i -> 0, Val(ndims(Δ)))
     Δs = [begin
       dim_xs = 1:ndims(xs)
-      till_xs = ntuple((i -> i in dims ? (i in dim_xs ? size(xs,i) : 1) : 0), Val{ndims(Δ)})
-      xs_in_Δ = ntuple(i -> till_xs[i] > 0 ? (start[i]+1:start[i]+till_xs[i]) : Colon(), Val{ndims(Δ)})
+      till_xs = ntuple((i -> i in dims ? (i in dim_xs ? size(xs,i) : 1) : 0), Val(ndims(Δ)))
+      xs_in_Δ = ntuple(i -> till_xs[i] > 0 ? (start[i]+1:start[i]+till_xs[i]) : Colon(), Val(ndims(Δ)))
       d = reshape(Δ[xs_in_Δ...],size(xs))
       start = start .+ till_xs
       d
     end for xs in Xs]
-    return (nothing, Δs...,)
+    return (Δs...,)
   end
 end
 
@@ -218,98 +205,95 @@ Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
 # Reductions
 
-Base.sum(xs::TrackedArray, dim) = track(sum, xs, dim)
-Base.sum(xs::TrackedArray) = track(sum, xs)
+Base.sum(xs::TrackedArray; dims = :) = track(sum, xs, dims = dims)
 Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 
-@grad sum(xs, dim...) = sum(data(xs), dim...),
-  Δ -> (zero(xs) .+ Δ, map(_->nothing,dim)...)
+@grad sum(xs; dims = :) = sum(data(xs), dims = dims),
+  Δ -> (zero(xs) .+ Δ, )
 
 Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
 Base.prod(xs::TrackedArray) = track(prod, xs)
 Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 
 @grad prod(xs) = prod(data(xs)), Δ -> (prod(xs) ./ xs .* Δ,)
-@grad prod(xs, dim) = prod(data(xs), dim),
+@grad prod(xs, dim) = prod(data(xs), dims = dim),
   Δ -> (nobacksies(:sum,
           reshape(.*(circshift.([reshape(data(xs), length(xs))], 1:length(xs)-1)...), size(xs)) .* Δ),
         nothing)
 
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
-Base.mean(xs::TrackedArray) = track(mean, xs)
-Base.mean(xs::TrackedArray, region) = track(mean, xs, region)
+Statistics.mean(xs::TrackedArray; dims = :) = track(mean, xs, dims = dims)
 
-Base.maximum(xs::TrackedArray) = track(maximum, xs)
-Base.maximum(xs::TrackedArray, region) = track(maximum, xs, region)
-Base.minimum(xs::TrackedArray) = track(minimum, xs)
-Base.minimum(xs::TrackedArray, region) = track(minimum, xs, region)
+Base.maximum(xs::TrackedArray; dims = :) = track(maximum, xs, dims = dims)
+Base.minimum(xs::TrackedArray; dims = :) = track(minimum, xs, dims = dims)
 
-LinAlg.dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
-LinAlg.dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
-LinAlg.dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
+import LinearAlgebra: dot
+
+dot(xs::TrackedVector, ys::TrackedVector) = track(dot, xs, ys)
+dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
+dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
 # Hacks to get std working
-Base.std(x::TrackedArray; mean = Base.mean(x)) =
-  sqrt.(sum((x .- mean).^2) ./ (length(x)-1))
-Base.std(x::TrackedArray, dim; mean = Base.mean(x, dim)) =
-  sqrt.(sum((x .- mean).^2, dim) ./ (size(x, dim)-1))
+Statistics.std(x::TrackedArray; dims = :, mean = Statistics.mean(x, dims = dims)) = _std(x,mean,dims)
+_std(x::TrackedArray, mean, dims) = sqrt.(sum((x .- mean).^2, dims = dims) ./ (mapreduce(i -> size(x,i),*, dims) - 1))
+_std(x::TrackedArray, mean, ::Colon) = sqrt.(sum((x .- mean).^2) ./ (length(x) - 1))
 
-Base.vecnorm(x::TrackedArray, p::Real = 2) =
+LinearAlgebra.norm(x::TrackedArray, p::Real = 2) =
   sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
 
-@grad mean(xs) = mean(data(xs)), Δ -> (Δ / length(xs),)
-@grad mean(xs, region) = mean(data(xs), region), Δ -> (zero(xs) .+ Δ ./ prod(size(xs, region...)),nothing)
+@grad mean(xs; dims = :) = mean(data(xs), dims=dims), Δ -> (_backmean(xs,Δ,dims),)
+_backmean(xs, Δ, ::Colon) = zero(xs) .+ Δ ./ length(xs)
+_backmean(xs, Δ, dims) = zero(xs) .+ Δ ./ mapreduce(i -> size(data(xs),i),*,dims)
 
-@grad function maximum(xs, r...)
-  maximum(data(xs), r...), function (Δ)
+@grad function maximum(xs; dims = dims)
+  maximum(data(xs), dims = dims), function (Δ)
     Δ′ = zero(xs)
-    _, i = findmax(data(xs), r...)
+    _, i = findmax(data(xs), dims = dims)
     Δ′[i] = data(Δ)
-    return (nobacksies(:maximum, Δ′),map(_->nothing,r)...)
+    return (nobacksies(:maximum, Δ′),)
   end
 end
-@grad function minimum(xs, r...)
-  minimum(data(xs), r...), function (Δ)
+
+@grad function minimum(xs;  dims = dims)
+  minimum(data(xs),  dims = dims), function (Δ)
     Δ′ = zero(xs)
-    _, i = findmin(data(xs), r...)
+    _, i = findmin(data(xs),  dims = dims)
     Δ′[i] = data(Δ)
-    return (nobacksies(:minimum, Δ′),map(_->nothing,r)...)
+    return (nobacksies(:minimum, Δ′),)
   end
 end
 
 # BLAS
 
-Base.diagm(x::TrackedVector) = track(diagm, x)
+LinearAlgebra.diagm(x::TrackedVector) = track(diagm, x)
 @grad diagm(x) = diagm(data(x)), Δ -> (diag(Δ),)
 
-for f in :[*, Ac_mul_B, A_mul_Bc, A_mul_Bt, At_mul_B].args
-  @eval begin
-    import Base.$f
-    $f(a::TrackedMatrix, b::TrackedMatrix)  = track($f, a, b)
-    $f(a::TrackedMatrix, b::AbstractMatrix) = track($f, a, b)
-    $f(a::AbstractMatrix, b::TrackedMatrix) = track($f, a, b)
+x::TrackedMatrix  * y::AbstractMatrix = track(*, x, y)
+x::AbstractMatrix * y::TrackedMatrix  = track(*, x, y)
+x::TrackedMatrix  * y::TrackedMatrix  = track(*, x, y)
 
-    $f(a::TrackedMatrix, b::TrackedVector)  = track($f, a, b)
-    $f(a::TrackedMatrix, b::AbstractVector) = track($f, a, b)
-    $f(a::AbstractMatrix, b::TrackedVector) = track($f, a, b)
+x::TrackedMatrix  * y::AbstractVector = track(*, x, y)
+x::AbstractMatrix * y::TrackedVector  = track(*, x, y)
+x::TrackedMatrix  * y::TrackedVector  = track(*, x, y)
 
-    $f(a::TrackedVector, b::TrackedVector)  = track($f, a, b)
-    $f(a::TrackedVector, b::AbstractVector) = track($f, a, b)
-    $f(a::AbstractVector, b::TrackedVector) = track($f, a, b)
-  end
-end
+x::TrackedVector  * y::AbstractVector = track(*, x, y)
+x::AbstractVector * y::TrackedVector  = track(*, x, y)
+x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 
 @grad a::AbstractMatrix * b::AbstractVecOrMat =
-  data(a)*data(b), Δ -> (A_mul_Bt(Δ, b), At_mul_B(a, Δ))
+  data(a)*data(b), Δ -> (Δ * transpose(b), transpose(a) * Δ)
 
-@grad Ac_mul_B(a, b) = Ac_mul_B(data(a), data(b)), Δ -> (A_mul_Bt(Δ, b)', a*Δ)
-@grad A_mul_Bc(a, b) = A_mul_Bc(data(a), data(b)), Δ -> (Δ * b, At_mul_B(a, Δ)')
-
-@grad At_mul_B(a, b) = At_mul_B(data(a), data(b)), Δ -> (A_mul_Bt(Δ, b)', a*Δ)
-@grad A_mul_Bt(a, b) = A_mul_Bt(data(a), data(b)), Δ -> (Δ * b, At_mul_B(a, Δ)')
+# @grad function (a::AbstractMatrix * b::AbstractVecOrMat)
+#   # @show size(a) size(b)
+#   data(a)*data(b), function (Δ)
+#     @show size(Δ) size(b) size(Δ*transpose(b)) size(Δ*transpose(data(b)))
+#     @show typeof(Δ) typeof(b)
+#     (Δ * transpose(b), transpose(a) * Δ)
+#   end
+# end
 
 # NNlib
 
@@ -324,9 +308,9 @@ logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 @grad logsoftmax(xs) = logsoftmax(data(xs)), Δ -> (nobacksies(:logsoftmax, ∇logsoftmax(data(Δ), data(xs))),)
 
-depthwiseconv(x::TrackedArray, w::TrackedArray; kw...) = track_kw(depthwiseconv, x, w; kw...)
-depthwiseconv(x::AbstractArray, w::TrackedArray; kw...) = track_kw(depthwiseconv, x, w; kw...)
-depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track_kw(depthwiseconv, x, w; kw...)
+depthwiseconv(x::TrackedArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::AbstractArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track(depthwiseconv, x, w; kw...)
 
 @grad depthwiseconv(x, w; kw...) =
   depthwiseconv(data(x), data(w); kw...),
@@ -334,9 +318,9 @@ depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track_kw(depthwiseconv
       (NNlib.∇depthwiseconv_data(data.((Δ, x, w))...; kw...),
        NNlib.∇depthwiseconv_filter(data.((Δ, x, w))...; kw...)))
 
-conv(x::TrackedArray,  w::TrackedArray;  kw...) = track_kw(conv, x, w; kw...)
-conv(x::AbstractArray, w::TrackedArray;  kw...) = track_kw(conv, x, w; kw...)
-conv(x::TrackedArray,  w::AbstractArray; kw...) = track_kw(conv, x, w; kw...)
+conv(x::TrackedArray,  w::TrackedArray;  kw...) = track(conv, x, w; kw...)
+conv(x::AbstractArray, w::TrackedArray;  kw...) = track(conv, x, w; kw...)
+conv(x::TrackedArray,  w::AbstractArray; kw...) = track(conv, x, w; kw...)
 
 @grad conv(x, w; kw...) =
   conv(data(x), data(w); kw...),
@@ -344,14 +328,14 @@ conv(x::TrackedArray,  w::AbstractArray; kw...) = track_kw(conv, x, w; kw...)
       (NNlib.∇conv_data(data.((Δ, x, w))...; kw...),
        NNlib.∇conv_filter(data.((Δ, x, w))...; kw...)))
 
-maxpool(x::TrackedArray, k; kw...) = track_kw(maxpool, x, k; kw...)
+maxpool(x::TrackedArray, k; kw...) = track(maxpool, x, k; kw...)
 
 @grad function maxpool(x, k; kw...)
   y = maxpool(data(x), k; kw...)
   y, Δ -> (nobacksies(:maxpool, NNlib.∇maxpool(data.((Δ, y, x))..., k; kw...)), nothing)
 end
 
-meanpool(x::TrackedArray, k; kw...) = track_kw(meanpool, x, k; kw...)
+meanpool(x::TrackedArray, k; kw...) = track(meanpool, x, k; kw...)
 
 @grad function meanpool(x, k; kw...)
   y = meanpool(data(x), k; kw...)
@@ -362,13 +346,16 @@ end
 
 using ForwardDiff: Dual, partials, value
 
+_size(x::AbstractArray) = size(x)
+_size(x) = ()
+
 dualify(xs, n) = xs
 dualify(xs::AbstractArray, ps) = map(x -> Dual(x, ps), xs)
 dualify(xs::Real, ps) = Dual(xs, ps)
 
 unbroadcast(x::Tuple, Δ) =
   x == size(Δ) ? Δ :
-    reshape(sum(Δ, filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
+    reshape(sum(Δ, dims = filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
 
 unbroadcast(x::Tuple{}, Δ) = sum(Δ)
 
@@ -378,14 +365,14 @@ function getpartial(Δ, x, i)
 end
 
 function ∇broadcast(f, args::Vararg{Any,N}) where N
-  sizes = size.(args)
-  dargs = map((x,i) -> dualify(data(x), ntuple(j -> i==j, Val{N})), args, ntuple(identity, Val{N}))
+  sizes = _size.(args)
+  dargs = map((x,i) -> dualify(data(x), ntuple(j -> i==j, Val(N))), args, ntuple(identity, Val(N)))
   out = broadcast(f, dargs...)
   eltype(out) <: Dual || return out
   y = value.(out)
   back = function (Δ_)
     Δ = data(Δ_)
-    Δargs = ntuple(i -> getpartial.(Δ, out, i), Val{N})
+    Δargs = ntuple(i -> getpartial.(Δ, out, i), Val(N))
     dxs = map((x, Δ) -> unbroadcast(x, Δ), sizes, Δargs)
     nobacksies(:broadcast, dxs)
   end
@@ -393,14 +380,14 @@ function ∇broadcast(f, args::Vararg{Any,N}) where N
   track(Call(back, tracker.(args)), y)
 end
 
-Base.Broadcast._containertype(::Type{<:TrackedReal}) = TrackedArray
-Base.Broadcast._containertype(::Type{<:TrackedArray}) = TrackedArray
-Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{TrackedArray}) = TrackedArray
-Base.Broadcast.promote_containertype(::Type{Array}, ::Type{TrackedArray}) = TrackedArray
-Base.Broadcast.promote_containertype(::Type{TrackedArray}, ::Type{Array}) = TrackedArray
-Base.Broadcast.promote_containertype(::Type{TrackedArray}, ct) = TrackedArray
-Base.Broadcast.promote_containertype(ct, ::Type{TrackedArray}) = TrackedArray
-Base.Broadcast.broadcast_indices(::Type{TrackedArray}, A::Ref) = ()
-Base.Broadcast.broadcast_indices(::Type{TrackedArray}, A) = indices(A)
+using Base.Broadcast: BroadcastStyle
 
-Base.Broadcast.broadcast_c(f, ::Type{TrackedArray}, A, Bs...) = ∇broadcast(f, A, Bs...)
+struct TrackedStyle <: BroadcastStyle end
+
+Broadcast.BroadcastStyle(::Type{<:Union{TrackedArray,TrackedReal}}) = TrackedStyle()
+Broadcast.BroadcastStyle(::TrackedStyle, ::BroadcastStyle) = TrackedStyle()
+
+function Base.copy(bc::Broadcast.Broadcasted{TrackedStyle})
+  bc = Broadcast.flatten(bc)
+  ∇broadcast(bc.f, bc.args...)
+end

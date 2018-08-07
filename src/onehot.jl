@@ -32,20 +32,20 @@ import Adapt.adapt
 
 adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-@require CuArrays begin
+@init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
   import CuArrays: CuArray, cudaconvert
   Base.Broadcast._containertype(::Type{<:OneHotMatrix{<:CuArray}}) = CuArray
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
 
 function onehot(l, labels)
-  i = findfirst(labels, l)
+  i = something(findfirst(isequal(l), labels), 0)
   i > 0 || error("Value $l is not in labels")
   OneHotVector(i, length(labels))
 end
 
 function onehot(l, labels, unk)
-  i = findfirst(labels, l)
+  i = something(findfirst(isequal(l), labels), 0)
   i > 0 || return onehot(unk, labels)
   OneHotVector(i, length(labels))
 end

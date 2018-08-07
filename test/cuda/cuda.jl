@@ -1,4 +1,4 @@
-using Flux, Flux.Tracker, CuArrays, Base.Test
+using Flux, Flux.Tracker, CuArrays, Test
 using Flux: gpu
 
 info("Testing Flux/GPU")
