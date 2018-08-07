@@ -232,6 +232,11 @@ Tracker.back!(b)
   z = xy[1]*xy[2]
   back!(z)
   @test grad.((x,y)) == (3, 2)
+
+  @test Tracker.gradient(2, 3) do x, y
+    xy = Tracker.collect([x, y])
+    xy[1]*xy[2]
+  end == (3, 2)
 end
 
 # Gradient Hooks
