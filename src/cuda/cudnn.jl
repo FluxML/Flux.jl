@@ -181,31 +181,31 @@ end
 
 batchnorm(g::TrackedArray, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::TrackedArray, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::TrackedArray, b::CuArray{T}, x::TrackedArray, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::CuArray{T}, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::CuArray{T}, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::TrackedArray, b::CuArray{T}, x::CuArray{T}, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 batchnorm(g::CuArray{T}, b::CuArray{T}, x::TrackedArray, running_mean::CuArray{T},
           running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track_kw(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
+  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
 
 @grad batchnorm(g, b, x, running_mean, running_var, momentum; kw...) =
   batchnorm(data.((g, b, x))..., running_mean, running_var, momentum; kw...), Δ -> (nobacksies(:batchnorm, ∇batchnorm(data.((g, b, x, Δ))..., running_mean, running_var, momentum; kw...))..., nothing, nothing, nothing)
