@@ -1,6 +1,7 @@
 using Flux, Test, Random
+using Random
 
-srand(0)
+Random.seed!(0)
 
 @testset "Flux" begin
 
