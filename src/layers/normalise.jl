@@ -130,13 +130,13 @@ function (BN::BatchNorm)(x)
 
     ϵ = data(convert(T, BN.ϵ))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
-    μ = mean(x, axes)
-    σ = sqrt.(mean((x .- μ).^2, axes) .+ ϵ)
+    μ = mean(x, dims = axes)
+    σ = sqrt.(mean((x .- μ).^2, dims = axes) .+ ϵ)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...,))
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...,)) .* m ./ (m - 1)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* dropdims(data(μ), dims = (axes...,))
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* dropdims(data(σ), dims = (axes...,)) .* m ./ (m - 1)
   end
 
   let λ = BN.λ
