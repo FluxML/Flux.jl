@@ -11,6 +11,9 @@ julia:
 # script:
 #   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #   - julia -e 'Pkg.clone(pwd()); Pkg.build("Flux"); Pkg.test("Flux"; coverage=true)'
+matrix:
+  allow_failures:
+    - julia: nightly
 after_success:
   - julia -e 'Pkg.add("Documenter")'
   - julia -e 'cd(Pkg.dir("Flux")); include(joinpath("docs", "make.jl"))'
