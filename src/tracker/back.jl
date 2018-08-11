@@ -70,7 +70,7 @@ struct Params
   Params(xs) = new(IdSet(xs))
 end
 
-@forward Params.params Base.iterate
+@forward Params.params Base.iterate, Base.length
 
 function Base.show(io::IO, ps::Params)
   print(io, "Params([")

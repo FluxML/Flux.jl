@@ -20,8 +20,13 @@ Base.similar(s::IdSet, T::Type) = IdSet{T}()
 
 @forward IdSet.dict Base.length
 
+<<<<<<< HEAD
 function iterate(v::IdSet, state...)
   y = iterate(keys(v.dict), state...)
+=======
+function Base.iterate(v::IdSet, state...)
+  y = Base.iterate(keys(v.dict), state...)
+>>>>>>> 837e03613f98ff9b949815018cba02a3682dab3c
   y === nothing && return nothing
   return (y[1], y[2])
 end
