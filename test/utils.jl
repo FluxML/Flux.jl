@@ -1,7 +1,10 @@
-using Flux: throttle, initn, glorot_uniform, glorot_normal, jacobian
+using Flux
+using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal
 using StatsBase: std
 using Dates
 using Random
+using Test
+using Dates: now
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
