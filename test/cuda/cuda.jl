@@ -1,7 +1,7 @@
 using Flux, Flux.Tracker, CuArrays, Test
 using Flux: gpu
 
-info("Testing Flux/GPU")
+@info "Testing Flux/GPU"
 
 @testset "CuArrays" begin
 

@@ -5,7 +5,7 @@ using ..Data: deps
 
 function load()
   isfile(deps("sentiment.zip")) || return
-  info("Downloading sentiment treebank dataset")
+  @info "Downloading sentiment treebank dataset"
   download("https://cache.julialang.org/https://nlp.stanford.edu/sentiment/trainDevTestTrees_PTB.zip",
            deps("sentiment.zip"))
 end
