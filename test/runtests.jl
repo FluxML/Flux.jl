@@ -12,7 +12,7 @@ include("layers/stateless.jl")
 include("optimise.jl")
 include("data.jl")
 
-if Base.find_in_path("CuArrays") ≠ nothing
+if Base.find_package("CuArrays") ≠ nothing
   include("cuda/cuda.jl")
 end
 

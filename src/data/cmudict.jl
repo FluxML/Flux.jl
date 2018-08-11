@@ -14,7 +14,7 @@ function load()
       return
     end
   end
-  info("Downloading CMUDict dataset")
+  @info "Downloading CMUDict dataset"
   mkpath(deps("cmudict"))
   for x in suffixes
     download("$cache_prefix/http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
