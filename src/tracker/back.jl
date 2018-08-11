@@ -137,7 +137,7 @@ end
 function forward(f, args...)
   args = param.(args)
   y, back = forward(() -> f(args...), Params(args))
-  y, Δ -> getindex.(back(Δ), args)
+  y, Δ -> getindex.(Ref(back(Δ)), args)
 end
 
 function losscheck(x)
