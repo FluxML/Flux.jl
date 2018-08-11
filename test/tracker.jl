@@ -5,13 +5,13 @@ using NNlib: conv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
 using Statistics: mean, std
+using Random
 # using StatsBase
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
-gradtest(f, dims...) = gradtest(f, rand.(dims)...)
+gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 
 @testset "Tracker" begin
-
 @test gradtest((x, W, b) -> σ.(W*x .+ b), 5, (2,5), 2)
 @test gradtest((x, W, b) -> σ.(W*x .+ b), (5,3), (2,5), 2)
 @test gradtest((x, W, b) -> logσ.(W*x .+ b), 5, (2,5), 2)

@@ -21,8 +21,8 @@ struct Chain
   Chain(xs...) = new([xs...])
 end
 
-@forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof, Base.push!
-@forward Chain.layers Base.start, Base.next, Base.done
+@forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!
+@forward Chain.layers Base.iterate
 
 children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
