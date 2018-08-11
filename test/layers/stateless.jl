@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
             σ, binarycrossentropy, logitbinarycrossentropy
 

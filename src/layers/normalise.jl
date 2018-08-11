@@ -57,7 +57,7 @@ end
 LayerNorm(h::Integer) =
   LayerNorm(Diagonal(h))
 
-treelike(LayerNorm)
+@treelike LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x))
 
@@ -112,10 +112,10 @@ end
 
 # NOTE: Keeping the ϵ smaller than 1e-5 is not supported by CUDNN
 function BatchNorm(chs::Integer, λ = identity;
-          initβ = x->zeros(Float32,x),
-          initγ = x->ones(Float32,x),
+          initβ = (i) -> zeros(i),
+          initγ = (i) -> ones(i),
           ϵ = 1f-5,
-          momentum = 0.1f0)
+          momentum = 0.1)
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(Float32, chs), ones(Float32, chs), ϵ, momentum, true)
 end
@@ -140,10 +140,9 @@ function (BN::BatchNorm)(x)
     σ² = sum((x.-μ).^2, axes) ./ m
 
     # update moving mean/std
-    mtm = convert(T, BN.momentum)
-
-    BN.μ = ((1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))) |> data
-    BN.σ² = ((1 - mtm) .* BN.σ² .+ mtm .* squeeze(data(σ²), (axes...))*m/(m-1)) |> data
+    mtm = data(convert(T, BN.momentum))
+    BN.μ = ((1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...)))
+    BN.σ² = ((1 - mtm) .* BN.σ² .+ mtm .* squeeze(data(σ²), (axes...)) .* m ./ (m - 1))
   end
 
   ϵ = convert(T, BN.ϵ)
