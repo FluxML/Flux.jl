@@ -78,9 +78,9 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
     @check ccall((:cudnnBatchNormalizationForwardTraining, libcudnn), cudnnStatus_t,
                  (cudnnHandle_t,cudnnBatchNormMode_t,
                   Ptr{T}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T}, Ptr{T},
                   Cdouble, Ptr{T}, Ptr{T},
                   Cdouble, Ptr{T}, Ptr{T}),
                   libcudnn_handle[], BATCHNORM_SPATIAL,
@@ -99,9 +99,9 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
     @check ccall((:cudnnBatchNormalizationForwardInference, libcudnn), cudnnStatus_t,
                  (Ptr{cudnnHandle_t},cudnnBatchNormMode_t,
                   Ptr{T}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T}, Ptr{T},
                   Ptr{T}, Ptr{T},
                   Cdouble),
                   libcudnn_handle[], BATCHNORM_SPATIAL,
@@ -153,10 +153,10 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
                  (cudnnHandle_t,cudnnBatchNormMode_t,
                   Ptr{T}, Ptr{T},
                   Ptr{T}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T},
-                  Ptr{Void}, Ptr{T}, Ptr{T}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T},
+                  Ptr{Nothing}, Ptr{T}, Ptr{T}, Ptr{T},
                   Cdouble, Ptr{T}, Ptr{T}),
                   libcudnn_handle[], BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
@@ -169,8 +169,8 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
   else
     ivar = 1 ./ sqrt.(reshape(running_var, _wsize(x)) .+ eps)
     dx .= dy .* reshape(g, _wsize(x)) .* ivar
-    dg .= squeeze(sum(dy .* (x .- reshape(running_mean, _wsize(x))) .* ivar, _reddims(dy)), (1,2,4))
-    db .= squeeze(sum(dy, _reddims(dy)), (1,2,4))
+    dg .= squeeze(sum(dy .* (x .- reshape(running_mean, _wsize(x))) .* ivar, _reddims(dy)), dims = (1,2,4))
+    db .= squeeze(sum(dy, _reddims(dy)), dims = (1,2,4))
   end
 end
 
