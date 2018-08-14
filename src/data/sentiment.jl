@@ -14,7 +14,7 @@ getfile(r, name) = r.files[findfirst(x -> x.name == name, r.files)]
 
 function getfile(name)
   r = ZipFile.Reader(deps("sentiment.zip"))
-  text = readstring(getfile(r, "trees/$name"))
+  text = read(getfile(r, "trees/$name"), String)
   close(r)
   return text
 end
@@ -29,12 +29,12 @@ function parsetree(s)
   s = replace(s, r"\$", s -> "\\\$")
   s = replace(s, r"[^\s\(\)]+", s -> "\"$s\"")
   s = replace(s, " ", ", ")
-  return totree(parse(s))
+  return totree(Meta.parse(s))
 end
 
 function gettrees(name)
   load()
-  ss = split(getfile("$name.txt"), '\n', keep = false)
+  ss = split(getfile("$name.txt"), '\n', keepempty = false)
   return parsetree.(ss)
 end
 
