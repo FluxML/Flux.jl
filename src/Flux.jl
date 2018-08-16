@@ -1,5 +1,3 @@
-__precompile__()
-
 module Flux
 
 # Zero Flux Given
