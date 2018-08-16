@@ -1,6 +1,6 @@
 using Flux.Optimise
 using Flux.Tracker
-
+using Test
 @testset "Optimise" begin
   w = randn(10, 10)
   @testset for Opt in [SGD, Nesterov, Momentum, ADAM, AdaMax, RMSProp, ps -> ADAGrad(ps, 0.1), ADADelta, AMSGrad, NADAM]
