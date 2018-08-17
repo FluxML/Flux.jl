@@ -1,5 +1,6 @@
 using Juno
 using Flux.Tracker: back!
+include("../utls.jl")
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -33,7 +34,12 @@ The callback can return `:stop` to interrupt the training loop.
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, data, opt; cb = () -> ())
-  cb = runall(cb)
+  cb = try:
+        runall(cb)
+      catch e
+        if e isa StopException || rethrow()
+          @info "Stop Condition Met"
+          break
   opt = runall(opt)
   @progress for d in data
     l = loss(d...)
