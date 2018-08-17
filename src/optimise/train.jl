@@ -1,6 +1,6 @@
 using Juno
 using Flux.Tracker: back!
-include("../utls.jl")
+include("../utils.jl")
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
