@@ -34,7 +34,7 @@ The callback can return `:stop` to interrupt the training loop.
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, data, opt; cb = () -> ())
-  cb = try:
+  cb = try
         runall(cb)
       catch e
         if e isa StopException || rethrow()
