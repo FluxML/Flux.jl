@@ -1,15 +1,13 @@
 using Flux
 using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal
 using StatsBase: std
-using Dates
 using Random
 using Test
-using Dates: now
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
     a = []
-    f = throttle(()->push!(a, now()), 1, leading=true, trailing=false)
+    f = throttle(()->push!(a, time()), 1, leading=true, trailing=false)
     f()
     f()
     f()
@@ -19,7 +17,7 @@ using Dates: now
 
   @testset "leading behaviour" begin
     a = []
-    f = throttle(()->push!(a, now()), 1, leading=true, trailing=false)
+    f = throttle(()->push!(a, time()), 1, leading=true, trailing=false)
     f()
     @test length(a) == 1
     f()
@@ -31,7 +29,7 @@ using Dates: now
 
   @testset "trailing behaviour" begin
     a = []
-    f = throttle(()->push!(a, now()), 1, leading=false, trailing=true)
+    f = throttle(()->push!(a, time()), 1, leading=false, trailing=true)
     f()
     @test length(a) == 0
     f()
