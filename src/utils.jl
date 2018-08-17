@@ -153,3 +153,9 @@ function jacobian(m,x)
     end
     J'
 end
+
+struct StopException <: Exception end
+
+function stop()
+  throw(StopException)
+end
