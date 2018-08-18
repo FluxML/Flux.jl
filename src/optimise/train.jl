@@ -37,9 +37,9 @@ function train!(loss, data, opt; cb = () -> ())
   cb = try
         runall(cb)
       catch e
-        if e isa StopException || rethrow()
+        if e isa StopException || rethrow(e)
           @info "Stop Condition Met"
-          break
+          :stop
   opt = runall(opt)
   @progress for d in data
     l = loss(d...)
