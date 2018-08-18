@@ -23,6 +23,7 @@ end
 
 @forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!
 @forward Chain.layers Base.iterate
+@forward Chain.layers Base.length
 
 children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
@@ -38,7 +39,32 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-activations(c::Chain, x) = accumulate((x, m) -> m(x), x, c.layers)
+"""
+    activations(c::Union{Chain,Any}, x)
+
+The input `c` must be a Chain or any layer that supports operation `c(x)`.
+
+Creates an Array that stores activation of each layers 
+
+# Examples
+```julia-repl
+julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)
+Chain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)
+julia> activations(c,ones(10))
+3-element Array{Any,1}:
+ Flux.Tracker.TrackedReal{Float64}[0.520429 (tracked), 0.706467 (tracked), 0.276672 (tracked), 0.563502 (tracked), 0.371877 (tracked)]
+ Flux.Tracker.TrackedReal{Float64}[-0.119249 (tracked), 0.461743 (tracked)]
+ Flux.Tracker.TrackedReal{Float64}[0.358704 (tracked), 0.641296 (tracked)]
+```
+"""
+activations(m::Any, x, rst=[]) = push!(rst,m(x))
+activations(c::Chain, x, rst=[]) = begin
+    rst = activations(c[1], x, rst)
+    if length(c) >= 2
+        rst = activations(c[2:end], rst[end], rst)
+    end
+    return rst
+end
 
 """
     Dense(in::Integer, out::Integer, σ = identity)
