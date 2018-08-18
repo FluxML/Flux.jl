@@ -6,3 +6,5 @@ docs/site/
 docs/flux.css
 deps
 Manifest.toml
+Project.toml
+.DS_Store
