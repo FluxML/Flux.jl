@@ -21,7 +21,7 @@ struct Chain
   Chain(xs...) = new([xs...])
 end
 
-@forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!
+@forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.length
 @forward Chain.layers Base.iterate
 
 children(c::Chain) = c.layers
@@ -38,7 +38,40 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-activations(c::Chain, x) = accumulate((x, m) -> m(x), x, c.layers)
+"""
+    activations(c::Union{Chain,Any}, x)
+
+The input `c` must be a Chain or any layer that supports operation `c(x)`.
+
+Creates an Array that stores activation of each layers
+
+# Examples
+```julia
+julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)
+Chain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)
+julia> activations(c,ones(10))
+3-element Array{Any,1}:
+ Flux.Tracker.TrackedReal{Float64}[0.520429 (tracked), 0.706467 (tracked), 0.276672 (tracked), 0.563502 (tracked), 0.371877 (tracked)]
+ Flux.Tracker.TrackedReal{Float64}[-0.119249 (tracked), 0.461743 (tracked)]
+ Flux.Tracker.TrackedReal{Float64}[0.358704 (tracked), 0.641296 (tracked)]
+```
+# Examples
+```julia
+julia> m = Dense(5,2)
+Dense(5, 2)
+julia> activations(m,randn(5))
+1-element Array{Any,1}:
+ Flux.Tracker.TrackedReal{Float64}[-0.942021 (tracked), 1.07021 (tracked)]
+```
+"""
+activations(m::Any, x, rst=[]) = push!(rst,m(x))
+activations(c::Chain, x, rst=[]) = begin
+    rst = activations(c[1], x, rst)
+    if length(c) >= 2
+        rst = activations(c[2:end], rst[end], rst)
+    end
+    return rst
+end
 
 """
     Dense(in::Integer, out::Integer, σ = identity)
@@ -60,7 +93,7 @@ Tracked 2-element Array{Float64,1}:
   -0.00449443
 ```
 """
-struct Dense{F,S,T}
+struct Dense{F, S <: AbstractArray,T <: AbstractArray}
   W::S
   b::T
   σ::F
@@ -75,10 +108,11 @@ end
 
 @treelike Dense
 
-function (a::Dense)(x)
+function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
   @fix σ.(W*x .+ b)
 end
+(a::Dense)(x::Number) = a([x]) # prevent broadcasting of scalar
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
