@@ -157,5 +157,5 @@ end
 struct StopException <: Exception end
 
 function stop()
-  throw(StopException)
+  throw(StopException())
 end

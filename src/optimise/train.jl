@@ -36,8 +36,8 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, data, opt; cb = () -> ())
   cb = try
         runall(cb)
-      catch e
-        if e isa StopException || rethrow(e)
+      catch ex
+        if ex isa StopException || rethrow(ex)
           @info "Stop Condition Met"
           return :stop
   opt = runall(opt)
