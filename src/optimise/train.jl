@@ -47,6 +47,7 @@ function train!(loss, data, opt; cb = () -> ())
         @info "Stop condition met"
         break
       else
+        println(ex)
         rethrow(ex)
       end
     end
