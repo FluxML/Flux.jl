@@ -43,7 +43,7 @@ function train!(loss, data, opt; cb = () -> ())
     try
       cb()
     catch ex
-      if ex isa StopException()
+      if ex isa StopException
         @info "Stop condition met"
         break
       else
