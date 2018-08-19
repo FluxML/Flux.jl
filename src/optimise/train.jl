@@ -49,7 +49,7 @@ function train!(loss, data, opt; cb = () -> ())
       else
         rethrow(ex)
       end
-
+    end
   end
 end
 
