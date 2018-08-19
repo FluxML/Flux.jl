@@ -1,4 +1,4 @@
-gate(h, n) = (1:h) + h*(n-1)
+gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
 
@@ -122,9 +122,9 @@ end
 
 function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform)
-  cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(zero(out*4)),
+  cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(zeros(out*4)),
                   param(initn(out)), param(initn(out)))
-  cell.b.data[gate(out, 2)] = 1
+  cell.b.data[gate(out, 2)] = ones(length(gate(out, 2)))
   return cell
 end
 
