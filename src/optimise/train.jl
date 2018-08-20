@@ -14,9 +14,7 @@ macro interrupts(ex)
     end)
 end
 
-struct StopException <: Exception 
-  x::Symbol
-end
+struct StopException <: Exception end
 
 function stop()
   throw(StopException())
