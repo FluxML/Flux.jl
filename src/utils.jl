@@ -153,11 +153,3 @@ function jacobian(m,x)
     end
     J'
 end
-
-# struct StopException <: Exception 
-#   x::Symbol
-# end
-
-# function stop(x)
-#   throw(StopException(x))
-# end
