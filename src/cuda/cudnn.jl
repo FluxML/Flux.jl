@@ -19,8 +19,9 @@ function DropoutDesc(ρ::Real; seed::Integer=0)
   desc = DropoutDesc(d[], states)
   @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
     desc,libcudnn_handle[],ρ,states,length(states),seed)
-  finalizer(desc, x ->
-    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x))
+  finalizer(desc) do x
+    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
+  end
   return desc
 end
 
@@ -45,10 +46,10 @@ const RNN_ALGO_PERSIST_DYNAMIC = 2
 # LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
 
 function params(w::CuVector, input, hidden, n = 1)
-  slice(offset, shape) = reshape(w[offset+(1:prod(shape))], shape)
+  slice(offset, shape) = reshape(w[offset.+(1:prod(shape))], shape)
   wx = slice(0, (input, hidden*n))
   wh = slice(length(wx), (hidden, hidden*n))
-  bias = w[length(wx)+length(wh) + (1:hidden*n)]
+  bias = w[length(wx)+length(wh) .+ (1:hidden*n)]
   (wx, wh), bias
 end
 
@@ -88,8 +89,9 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   w = cuzeros(T, rnnParamSize(T, d[], input))
   # TODO: avoid reserve allocation here
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
-  finalizer(rd, x ->
-    @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x))
+  finalizer(rd) do x
+    @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
+  end
   return rd
 end
 
