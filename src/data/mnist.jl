@@ -49,7 +49,7 @@ function labelheader(io::IO)
 end
 
 function rawimage(io::IO)
-  img = Array{Gray}(NCOLS, NROWS)
+  img = Array{Gray}(undef, NCOLS, NROWS)
   for i in 1:NCOLS, j in 1:NROWS
     img[i, j] = reinterpret(Colors.N0f8, read(io, UInt8))
   end
