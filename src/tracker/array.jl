@@ -370,14 +370,53 @@ function ∇broadcast(f, args::Vararg{Any,N}) where N
   track(Call(back, tracker.(args)), y)
 end
 
-using Base.Broadcast: BroadcastStyle
+using Base.Broadcast: BroadcastStyle, ArrayStyle, Broadcasted, broadcasted
 
 struct TrackedStyle <: BroadcastStyle end
 
 Broadcast.BroadcastStyle(::Type{<:Union{TrackedArray,TrackedReal}}) = TrackedStyle()
 Broadcast.BroadcastStyle(::TrackedStyle, ::BroadcastStyle) = TrackedStyle()
 
-function Base.copy(bc::Broadcast.Broadcasted{TrackedStyle})
-  bc = Broadcast.flatten(bc)
-  ∇broadcast(bc.f, bc.args...)
+# We have to re-build the original broadcast struct to get the appropriate array
+# style. We need this primarily to support CuArrays' broadcasting fixes.
+broadcast_rebuild(xs) = data(xs)
+
+broadcast_rebuild(bc::Broadcasted) =
+  broadcasted(bc.f, broadcast_rebuild.(bc.args)...)
+
+preprocess(x) = x
+
+function Base.Broadcast.materialize(bc::Broadcasted{TrackedStyle})
+  bc1 = Broadcast.flatten(bc)
+  bc2 = Broadcast.flatten(broadcast_rebuild(bc))
+  ∇broadcast(bc2.f, bc1.args...)
+end
+
+using Requires
+
+# https://github.com/FluxML/Flux.jl/issues/353
+@init @eval Base.Broadcast begin
+  function flatten(bc::Broadcasted{Style}) where {Style}
+    isflat(bc) && return bc
+    args = cat_nested(bc)
+    let makeargs = make_makeargs(bc), f = bc.f
+      newf = @inline function(args::Vararg{Any,N}) where N
+        f(makeargs(args...)...)
+      end
+      return Broadcasted{Style}(newf, args, bc.axes)
+    end
+  end
+  @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
+    bc = t[1]
+    let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
+      let makeargs = make_makeargs(makeargs, bc.args)
+        headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
+        return @inline function(args::Vararg{Any,N}) where N
+          args1 = makeargs(args...)
+          a, b = headargs(args1...), tailargs(args1...)
+          (f(a...), b...)
+        end
+      end
+    end
+  end
 end
