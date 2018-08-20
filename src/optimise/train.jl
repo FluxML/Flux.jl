@@ -18,7 +18,7 @@ struct StopException <: Exception
   x::Symbol
 end
 
-function stop(x)
+function stop()
   throw(StopException())
 end
 
