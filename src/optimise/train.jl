@@ -1,6 +1,6 @@
 using Juno
 using Flux.Tracker: back!
-import Flux: stop, StopException
+using Flux: stop, StopException
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
