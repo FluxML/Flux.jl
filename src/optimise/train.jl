@@ -15,7 +15,20 @@ macro interrupts(ex)
 end
 
 struct StopException <: Exception end
+"""
+    stop()
 
+Call `stop()` in a callback to indicate when a callback condition is met.
+This would trigger the train loop to stop and exit.
+
+```julia
+# Example callback:
+
+cb = function ()
+  accuracy() > 0.9 && stop()
+end
+```
+"""
 function stop()
   throw(StopException())
 end
@@ -52,7 +65,6 @@ function train!(loss, data, opt; cb = () -> ())
         @info "Stop condition met"
         break
       else
-        println(ex)
         rethrow(ex)
       end
     end
