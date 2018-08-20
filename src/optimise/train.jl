@@ -19,7 +19,8 @@ struct StopException <: Exception
 end
 
 function stop(x)
-  throw(StopException(
+  throw(StopException())
+end
 
 """
     train!(loss, data, opt)
