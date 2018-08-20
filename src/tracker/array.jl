@@ -381,3 +381,32 @@ function Base.copy(bc::Broadcast.Broadcasted{TrackedStyle})
   bc = Broadcast.flatten(bc)
   ∇broadcast(bc.f, bc.args...)
 end
+
+using Requires
+
+# https://github.com/FluxML/Flux.jl/issues/353
+@init @eval Base.Broadcast begin
+  function flatten(bc::Broadcasted{Style}) where {Style}
+    isflat(bc) && return bc
+    args = cat_nested(bc)
+    let makeargs = make_makeargs(bc), f = bc.f
+      newf = @inline function(args::Vararg{Any,N}) where N
+        f(makeargs(args...)...)
+      end
+      return Broadcasted{Style}(newf, args, bc.axes)
+    end
+  end
+  @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
+    bc = t[1]
+    let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
+      let makeargs = make_makeargs(makeargs, bc.args)
+        headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
+        return @inline function(args::Vararg{Any,N}) where N
+          args1 = makeargs(args...)
+          a, b = headargs(args1...), tailargs(args1...)
+          (f(a...), b...)
+        end
+      end
+    end
+  end
+end

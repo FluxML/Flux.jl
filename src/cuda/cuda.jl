@@ -1,6 +1,6 @@
 module CUDA
 
-using CuArrays
+using ..CuArrays
 
 CuArrays.cudnn_available() && include("cudnn.jl")
 

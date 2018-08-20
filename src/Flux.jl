@@ -10,7 +10,6 @@ export Chain, Dense, RNN, LSTM, GRU, Conv,
        params, mapleaves, cpu, gpu
 
 @reexport using NNlib
-using NNlib: @fix
 
 include("tracker/Tracker.jl")
 using .Tracker

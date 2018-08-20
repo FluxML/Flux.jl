@@ -1,7 +1,7 @@
-using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, libcudnn_handle,
+using .CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, libcudnn_handle,
   cudnnDataType, TensorDesc, FilterDesc
 
-using LinearAlgebra 
+using LinearAlgebra
 
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}
@@ -243,8 +243,8 @@ end
 
 import ..Flux: Flux, relu
 import ..Tracker: TrackedArray
-using CUDAnative
-using CuArrays: @cuindex, cudims
+using .CuArrays.CUDAnative
+using .CuArrays: @cuindex, cudims
 
 function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
   function kernel(dst, src)
@@ -326,7 +326,7 @@ end
     h_ = hBatch(x, data(h))
     dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
     (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
-    nobacksies(:RNN, (dx, unbroadcast(size(h), dh), dWi.', dWh.', db))
+    nobacksies(:RNN, (dx, unbroadcast(size(h), dh), transpose(dWi), transpose(dWh), db))
   end
 end
 
@@ -341,6 +341,6 @@ end
     (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
     nobacksies(:RNN,
       (dx, unbroadcast(size(h), dh), unbroadcast(size(c), dc),
-       dWi.', dWh.', db))
+       transpose(dWi), transpose(dWh), db))
   end
 end

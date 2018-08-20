@@ -5,7 +5,7 @@ using NNlib: logsoftmax, logσ
 mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
 
 function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  @fix -sum(y .* log.(ŷ) .* weight) / size(y, 2)
+  -sum(y .* log.(ŷ) .* weight) / size(y, 2)
 end
 
 @deprecate logloss(x, y) crossentropy(x, y)
