@@ -1,6 +1,5 @@
 using Juno
 using Flux.Tracker: back!
-using Flux: stop, StopException
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -14,6 +13,13 @@ macro interrupts(ex)
       throw(e)
     end)
 end
+
+struct StopException <: Exception 
+  x::Symbol
+end
+
+function stop(x)
+  throw(StopException(
 
 """
     train!(loss, data, opt)

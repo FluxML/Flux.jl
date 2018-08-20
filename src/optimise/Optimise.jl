@@ -2,7 +2,7 @@ module Optimise
 
 export train!,
   SGD, ADAM, ADAMW, AdaMax, Momentum, Nesterov,
-  RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
+  RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM, stop, StopException
 
 struct Param{T}
   x::T

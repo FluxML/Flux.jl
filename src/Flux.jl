@@ -7,7 +7,7 @@ using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv,
        Dropout, LayerNorm, BatchNorm,
-       params, mapleaves, cpu, gpu, stop, StopException
+       params, mapleaves, cpu, gpu
 
 @reexport using NNlib
 using NNlib: @fix
@@ -21,7 +21,7 @@ include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
 export SGD, ADAM, ADAMW, AdaMax, Momentum, Nesterov,
-       RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
+       RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM, stop, StopException
 
 include("utils.jl")
 include("onehot.jl")
