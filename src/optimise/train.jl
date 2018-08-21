@@ -55,14 +55,13 @@ function train!(loss, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
   @progress for d in data
-    l = loss(d...)
-    @interrupts back!(l)
-    opt()
     try
-      cb()
+      l = loss(d...)
+      @interrupts back!(l)
+      opt()
+      cb() == :stop && break
     catch ex
       if ex isa StopException
-        @info "Stop condition met"
         break
       else
         rethrow(ex)
