@@ -18,7 +18,7 @@ struct StopException <: Exception end
 """
     stop()
 
-Call `stop()` in a callback to indicate when a callback condition is met.
+Call `Flux.stop()` in a callback to indicate when a callback condition is met.
 This would trigger the train loop to stop and exit.
 
 ```julia

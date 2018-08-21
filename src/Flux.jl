@@ -21,7 +21,8 @@ include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
 export SGD, ADAM, ADAMW, AdaMax, Momentum, Nesterov,
-       RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM, stop
+       RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
+
 
 include("utils.jl")
 include("onehot.jl")
