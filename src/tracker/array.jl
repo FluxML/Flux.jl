@@ -1,4 +1,4 @@
-import Base: *, ==
+import Base: *, ==, ≈
 
 import LinearAlgebra
 using Statistics
@@ -63,6 +63,10 @@ Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 x::TrackedArray == y = data(x) == y
 y == x::TrackedArray = y == data(x)
 x::TrackedArray == y::TrackedArray = data(x) == data(y)
+
+x::TrackedArray ≈ y = data(x) ≈ y
+y ≈ x::TrackedArray = y ≈ data(x)
+x::TrackedArray ≈ y::TrackedArray = data(x) ≈ data(y)
 
 # Array Stdlib
 
