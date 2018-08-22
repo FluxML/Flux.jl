@@ -60,6 +60,7 @@ function train!(loss, data, opt; cb = () -> ())
       @interrupts back!(l)
       opt()
       cb() == :stop && break
+      @deprecate :stop Flux.stop()
     catch ex
       if ex isa StopException
         break

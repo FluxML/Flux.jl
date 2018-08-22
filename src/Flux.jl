@@ -23,7 +23,6 @@ using .Optimise: @epochs
 export SGD, ADAM, ADAMW, AdaMax, Momentum, Nesterov,
        RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
 
-
 include("utils.jl")
 include("onehot.jl")
 include("treelike.jl")
@@ -39,4 +38,3 @@ include("data/Data.jl")
 @init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" include("cuda/cuda.jl")
 
 end # module
-
