@@ -79,7 +79,6 @@ function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
   σ.(W*x .+ b)
 end
-(a::Dense)(x::Number) = a([x]) # prevent broadcasting of scalar
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
