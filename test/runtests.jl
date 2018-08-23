@@ -25,6 +25,7 @@ insert!(LOAD_PATH, 2, "@v#.#")
 
 include("utils.jl")
 include("tracker.jl")
+include("layers/basic.jl")
 include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("optimise.jl")
