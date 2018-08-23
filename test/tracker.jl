@@ -65,7 +65,7 @@ end
     @test gradtest(vcatf, rand(5)', rand(2,5))
   end
 
-  
+
   @testset for hcatf in [hcat, cat2]
     @test gradtest(hcatf, rand(5), rand(5))
     @test gradtest(hcatf, rand(5)', rand(5)')
@@ -117,6 +117,7 @@ end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
+@test gradtest(x -> repeat(x; inner=2), rand(5))
 @test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
 @test gradtest(x -> repeat(x; inner=(2,2,1), outer=(1,1,3)), rand(5,4,3))
 
