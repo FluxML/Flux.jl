@@ -11,8 +11,8 @@ using Test, Random
     @testset "Dense" begin
         @test  length(Dense(10, 5)(randn(10))) == 5
         @test_throws DimensionMismatch Dense(10, 5)(randn(1))
-        @test_throws DimensionMismatch Dense(10, 5)(1) # avoid broadcasting
-        @test_throws DimensionMismatch Dense(10, 5).(randn(10)) # avoid broadcasting
+        @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
+        @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
 
         Random.seed!(0)
         @test all(Dense(10, 1)(randn(10)).data .≈ 1.1774348382231168)
