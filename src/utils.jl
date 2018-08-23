@@ -24,7 +24,7 @@ julia> chunk(1:10, 3)
 """
 chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs)/n)))
 
-batchindex(xs, i) = (reverse(Base.tail(reverse(axes(xs))))..., i)
+batchindex(xs, i) = (reverse(Base.tail(reverse(indices(xs))))..., i)
 
 """
     frequencies(xs)
