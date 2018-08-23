@@ -24,6 +24,7 @@ insert!(LOAD_PATH, 2, "@v#.#")
 @testset "Flux" begin
 
 include("utils.jl")
+include("onehot.jl")
 include("tracker.jl")
 include("layers/normalisation.jl")
 include("layers/stateless.jl")

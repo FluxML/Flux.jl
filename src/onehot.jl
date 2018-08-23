@@ -54,11 +54,15 @@ end
 onehotbatch(ls, labels, unk...) =
   OneHotMatrix(length(labels), [onehot(l, labels, unk...) for l in ls])
 
-argmax(y::AbstractVector, labels = 1:length(y)) =
-  labels[findfirst(y, maximum(y))]
+onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
 
-argmax(y::AbstractMatrix, l...) =
-  squeeze(mapslices(y -> argmax(y, l...), y, 1), 1)
+onecold(y::AbstractMatrix, labels...) =
+  dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
+
+function argmax(xs...)
+  Base.depwarn("`argmax(...) is deprecated, use `onecold(...)` instead.", :argmax)
+  return onecold(xs...)
+end
 
 # Ambiguity hack
 
