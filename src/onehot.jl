@@ -56,11 +56,14 @@ onehotbatch(ls, labels, unk...) =
 
 import Base:argmax
 
-argmax(y::AbstractVector, labels) =
+onecold(y::AbstractVector, labels = 1:length(y)) =
   labels[something(findfirst(isequal(maximum(y)), y), 0)]
 
-argmax(y::AbstractMatrix, labels) =
-  dropdims(mapslices(y -> argmax(y, labels), y, dims=1), dims=1)
+onecold(y::AbstractMatrix, labels...) =
+  dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
+
+@deprecate argmax(y::AbstractVector, labels::AbstractVector) onecold(y, labels)
+@deprecate argmax(y::AbstractMatrix, labels::AbstractVector) onecold(y, labels)
 
 # Ambiguity hack
 
