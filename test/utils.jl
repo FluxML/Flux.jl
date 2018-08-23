@@ -90,3 +90,9 @@ end
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
 end
+
+@testset "batch" begin
+  xs = [[1,2,3],[4,5,6]]
+  X =  [1 4; 2 5; 3 6]
+  @test batch(xs) == X
+end
