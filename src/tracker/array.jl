@@ -86,9 +86,9 @@ Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 @grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
 @grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
 
-Base.repeat(A::TrackedArray; kw...) = track(repeat, A; kw...)
+Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
 
-@grad function repeat(xs; inner=ntuple(x->1, ndims(A)), outer=ntuple(x->1, ndims(A)))
+@grad function repeat(xs; inner=ntuple(x->1, ndims(xs)), outer=ntuple(x->1, ndims(xs)))
   repeat(data(xs), inner = inner, outer = outer), function (Δ)
     Δ′ = zero(xs)
     S = size(xs)
