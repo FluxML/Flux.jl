@@ -38,7 +38,7 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-activations(c::Chain, x) = accumulate((x, m) -> m(x), x, c.layers)
+activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
 
 """
     Dense(in::Integer, out::Integer, σ = identity)
