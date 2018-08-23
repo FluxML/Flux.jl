@@ -13,8 +13,10 @@ x = rand(10)
 m(x) == m[2](m[1](x))
 ```
 
-`Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
+!!! info
+* `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
+* use `m(x)` if you only want the output of the last layer, use `activations(m,x)` if you want outputs of each layer.
 """
 struct Chain
   layers::Vector{Any}
@@ -38,6 +40,24 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
+"""
+    activations(c::Chain, x)
+
+The input `c` must be a `Chain`.
+
+Creates an `Array` that stores activation of each layer
+
+# Examples
+```julia
+julia> c = Chain(Dense(10,2,σ),Dense(2,1),softmax)
+Chain(Dense(10, 2, NNlib.σ), Dense(2, 1), NNlib.softmax)
+julia> activations(c,randn(10))
+3-element Array{Any,1}:
+ Flux.Tracker.TrackedReal{Float64}[0.923631 (tracked), 0.0163568 (tracked)]
+ Flux.Tracker.TrackedReal{Float64}[-0.709397 (tracked)]
+ Flux.Tracker.TrackedReal{Float64}[1.0 (tracked)]
+```
+"""
 activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
 
 """
