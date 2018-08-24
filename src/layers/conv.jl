@@ -53,42 +53,52 @@ end
 
 
 """
-    Maxpool(k)
+    MaxPool(k)
 
 Maxpooling layer. `k` stands for the size of the window for each dimension of the input.
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct Maxpool{N}
+struct MaxPool{N}
     k::NTuple{N,Int}
     pad::NTuple{N,Int}
     stride::NTuple{N,Int}
-    Maxpool(k::NTuple{N,Int}; pad = map(_->0,k), stride = k) where N = new{N}(k, pad, stride)
+    MaxPool(k::NTuple{N,Int}; pad = map(_->0,k), stride = k) where N = new{N}(k, pad, stride)
 end
 
-(m::Maxpool)(x) = maxpool(x, m.k; pad = m.pad, stride = m.stride)
+function MaxPool{N}(k::Int; pad = 0, stride = k) where N
+    k_ = Tuple(repeat([k, ], N))
+    MaxPool(k_; pad = map(_->pad,k_), stride=map(_->stride,k_))
+end
 
-function Base.show(io::IO, m::Maxpool)
-  print(io, "Maxpool(", m.k, ", ", m.pad, ", ", m.stride, ")")
+(m::MaxPool)(x) = maxpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::MaxPool)
+  print(io, "MaxPool(", m.k, ", ", m.pad, ", ", m.stride, ")")
 end
 
 
 """
-    Meanpool(k)
+    MeanPool(k)
 
 Meanpooling layer. `k` stands for the size of the window for each dimension of the input.
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct Meanpool{N}
+struct MeanPool{N}
     k::NTuple{N,Int}
     pad::NTuple{N,Int}
     stride::NTuple{N,Int}
-    Meanpool(k::NTuple{N,Int}; pad = map(_->0,k), stride = k) where N = new{N}(k, pad, stride)
+    MeanPool(k::NTuple{N,Int}; pad = map(_->0,k), stride = k) where N = new{N}(k, pad, stride)
 end
 
-(m::Meanpool)(x) = meanpool(x, m.k; pad = m.pad, stride = m.stride)
+function MeanPool{N}(k::Int; pad = 0, stride = k) where N
+    k_ = Tuple(repeat([k, ], N))
+    MeanPool(k_; pad = map(_->pad,k_), stride=map(_->stride,k_))
+end
 
-function Base.show(io::IO, m::Meanpool)
-  print(io, "Meanpool(", m.k, ", ", m.pad, ", ", m.stride, ")")
+(m::MeanPool)(x) = meanpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::MeanPool)
+  print(io, "MeanPool(", m.k, ", ", m.pad, ", ", m.stride, ")")
 end

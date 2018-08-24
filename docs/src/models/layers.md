@@ -6,8 +6,8 @@ These core layers form the foundation of almost all neural networks.
 Chain
 Dense
 Conv
-Maxpool
-Meanpool
+MaxPool
+MeanPool
 ```
 
 ## Recurrent Layers
