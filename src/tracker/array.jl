@@ -286,15 +286,6 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 @grad a::AbstractMatrix * b::AbstractVecOrMat =
   data(a)*data(b), Δ -> (Δ * transpose(b), transpose(a) * Δ)
 
-# @grad function (a::AbstractMatrix * b::AbstractVecOrMat)
-#   # @show size(a) size(b)
-#   data(a)*data(b), function (Δ)
-#     @show size(Δ) size(b) size(Δ*transpose(b)) size(Δ*transpose(data(b)))
-#     @show typeof(Δ) typeof(b)
-#     (Δ * transpose(b), transpose(a) * Δ)
-#   end
-# end
-
 # NNlib
 
 using NNlib
