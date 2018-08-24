@@ -48,7 +48,7 @@ back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back
 
 # Fallthrough methods
 
-for f in :[Base.size, Base.ndims].args
+for f in :[Base.size, Base.ndims, Base.collect].args
   @eval @inline $f(x::TrackedArray, a...) = $f(data(x), a...)
 end
 
