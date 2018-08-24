@@ -1,5 +1,6 @@
 using Juno
 using Flux.Tracker: back!
+import Base.depwarn
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -59,7 +60,10 @@ function train!(loss, data, opt; cb = () -> ())
       l = loss(d...)
       @interrupts back!(l)
       opt()
-      cb() == :stop && break
+      if cb() == :stop
+        depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
+        break
+      end
     catch ex
       if ex isa StopException
         break
