@@ -76,6 +76,7 @@ Instance of `Dense` layer can be used as a function.
 ```julia
 julia> d = Dense(5, 2)
 Dense(5, 2)
+
 julia> d(rand(5))
 Tracked 2-element Array{Float64,1}:
   0.00257447
