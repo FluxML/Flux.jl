@@ -6,18 +6,23 @@ const Gray = Colors.Gray{Colors.N0f8}
 
 const dir = joinpath(@__DIR__, "../../deps/mnist")
 
+const fileinfo = [
+    (name = "train-images-idx3-ubyte", size = 47040016),
+    (name = "train-labels-idx1-ubyte", size = 60008),
+    (name = "t10k-images-idx3-ubyte", size = 7840016),
+    (name = "t10k-labels-idx1-ubyte", size = 10008)]
+const TRAINIMAGES, TRAINLABELS, TESTIMAGES, TESTLABELS =
+    [joinpath(dir, file.name) for file in fileinfo]
+
 function load()
   mkpath(dir)
   cd(dir) do
-    for file in ["train-images-idx3-ubyte",
-                 "train-labels-idx1-ubyte",
-                 "t10k-images-idx3-ubyte",
-                 "t10k-labels-idx1-ubyte"]
-      isfile(file) && continue
-      @info "Downloading MNIST dataset"
-      download("https://cache.julialang.org/http://yann.lecun.com/exdb/mnist/$file.gz", "$file.gz")
-      open(file, "w") do io
-        write(io, GZip.open(read, "$file.gz"))
+    for file in fileinfo
+      filesize(file.name) == file.size && continue
+      @info "Downloading MNIST dataset: $(file.name)"
+      download("https://cache.julialang.org/http://yann.lecun.com/exdb/mnist/$(file.name).gz", "$(file.name).gz")
+      open(file.name, "w") do io
+        write(io, GZip.open(read, "$(file.name).gz"))
       end
     end
   end
@@ -29,10 +34,6 @@ const LABELOFFSET = 8
 const NROWS = 28
 const NCOLS = 28
 
-const TRAINIMAGES = joinpath(dir, "train-images-idx3-ubyte")
-const TRAINLABELS = joinpath(dir, "train-labels-idx1-ubyte")
-const TESTIMAGES = joinpath(dir, "t10k-images-idx3-ubyte")
-const TESTLABELS = joinpath(dir, "t10k-labels-idx1-ubyte")
 
 function imageheader(io::IO)
   magic_number = bswap(read(io, UInt32))
