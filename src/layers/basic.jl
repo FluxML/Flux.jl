@@ -159,6 +159,11 @@ Tracked 2-element Array{Float64,1}:
  1.0
  2.0
 
+julia> m([1 2]) # broadcasting
+Tracked 2×2 Array{Float64,2}:
+1.0  2.0
+1.0  2.0
+
 julia> m([1 2;3 4])
 Tracked 2×2 Array{Float64,2}:
  1.0  2.0
