@@ -104,7 +104,7 @@ julia> d(randn(5,2))
 -1.90254   -0.392393
 ```
 
-See also: [`Flux.glorot_uniform`](@ref), [`Flux.Chain`](@ref)
+See also: [`Flux.Chain`](@ref), [`Flux.glorot_uniform`](@ref), [`Flux.glorot_normal`](@ref),
 """
 struct Dense{F,S,T}
   W::S
