@@ -16,7 +16,7 @@ m(x) == m[2](m[1](x))
 !!! info
 * `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
-* use `m(x)` if you only want the output of the last layer, use `activations(m,x)` if you want outputs of each layer.
+* use `m(x)` if you only want the output of the last layer, use `Flux.activations(m,x)` if you want outputs of each layer.
 """
 struct Chain
   layers::Vector{Any}
