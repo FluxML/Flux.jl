@@ -1,4 +1,4 @@
-import Base: *, ==, ≈
+import Base: *
 
 import LinearAlgebra
 using Statistics
@@ -60,13 +60,11 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
-x::TrackedArray == y = data(x) == y
-y == x::TrackedArray = y == data(x)
-x::TrackedArray == y::TrackedArray = data(x) == data(y)
-
-x::TrackedArray ≈ y = data(x) ≈ y
-y ≈ x::TrackedArray = y ≈ data(x)
-x::TrackedArray ≈ y::TrackedArray = data(x) ≈ data(y)
+for op in [:(==), :≈]
+    @eval Base.$op(x::TrackedArray, y::AbstractArray) = Base.$op(data(x), y)
+    @eval Base.$op(x::AbstractArray, y::TrackedArray) = Base.$op(x, data(y))
+    @eval Base.$op(x::TrackedArray, y::TrackedArray) = Base.$op(data(x), data(y))
+end
 
 # Array Stdlib
 

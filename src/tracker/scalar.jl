@@ -30,9 +30,11 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
 
-Base.:(<)(x::TrackedReal, y::TrackedReal) = data(x) < data(y)
-Base.:(==)(x::TrackedReal, y::TrackedReal) = data(x) == data(y)
-Base.:(≈)(x::TrackedReal, y::TrackedReal) = data(x) ≈ data(y)
+for op in [:(==), :≈, :<]
+  @eval Base.$op(x::TrackedReal, y::Number) = Base.$op(data(x), y)
+  @eval Base.$op(x::Number, y::TrackedReal) = Base.$op(x, data(y))
+  @eval Base.$op(x::TrackedReal, y::TrackedReal) = Base.$op(data(x), data(y))
+end
 
 Base.eps(x::TrackedReal) = eps(data(x))
 
