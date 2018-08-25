@@ -2,7 +2,7 @@
     Chain(layers...)
 
 Chain multiple layers / functions together, so that they are called in sequence
-on a given input. Instance of `Chain` can be used as a function.
+on a given input.
 
 ```julia
 m = Chain(x -> x^2, x -> x+1)
@@ -14,6 +14,7 @@ m(x) == m[2](m[1](x))
 ```
 
 !!! info
+* Instance of `Chain` can be used as a function.
 * `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 * use `m(x)` if you only want the output of the last layer, use `Flux.activations(m,x)` if you want outputs of each layer.
@@ -61,16 +62,22 @@ julia> Flux.activations(c,randn(10))
 activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
 
 """
-    Dense(in::Integer, out::Integer, σ = identity)
+    Dense(in::Integer, out::Integer, σ = identity; initW = glorot_uniform, initb = zeros)
 
 Creates a traditional `Dense` layer with parameters `W` and `b`.
 
     y = σ.(W * x .+ b)
 
 The input `x` must be a vector of length `in`, or a batch of vectors represented
-as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+as an `in × N` matrix. The out `y` will be a vector or batch of length `out`. Instance of `Dense` layer can be used as a function.
 
-Instance of `Dense` layer can be used as a function.
+# Arguments
+- `in::Integer`: the length of input vector `x`.
+- `out::Integer`: the length of output vector `y`.
+- `σ`: activation function. Default: `identity`.
+- `initW`: method used for initialization of parameters `W`
+- `initb`: method used for initialization of parameters `b`
+
 
 # Examples
 ```julia
