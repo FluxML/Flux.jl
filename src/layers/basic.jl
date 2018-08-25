@@ -19,7 +19,7 @@ m(x) == m[2](m[1](x))
 `m[1:3](x)` will calculate the output of the first three layers.
 * use `m(x)` if you only want the output of the last layer, use `Flux.activations(m,x)` if you want outputs of each layer.
 
-See also [`Flux.activation`](@ref)
+See also [`Flux.activations`](@ref)
 """
 struct Chain
   layers::Vector{Any}
@@ -60,6 +60,8 @@ julia> Flux.activations(c,randn(10))
  Flux.Tracker.TrackedReal{Float64}[-0.709397 (tracked)]
  Flux.Tracker.TrackedReal{Float64}[1.0 (tracked)]
 ```
+
+See also [`Flux.Chain`](@ref)
 """
 activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
 
@@ -71,7 +73,9 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
     y = σ.(W * x .+ b)
 
 The input `x` must be a vector of length `in`, or a batch of vectors represented
-as an `in × N` matrix. The out `y` will be a vector or batch of length `out`. Instance of `Dense` layer can be used as a function.
+as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+
+Instance of `Dense` layer can be used as a function.
 
 # Arguments
 - `in::Integer`: the length of input vector `x`.
@@ -100,7 +104,7 @@ julia> d(randn(5,2))
 -1.90254   -0.392393
 ```
 
-See also: [`Flux.glorot_uniform`](@ref)
+See also: [`Flux.glorot_uniform`](@ref), [`Flux.Chain`](@ref)
 """
 struct Dense{F,S,T}
   W::S
@@ -136,7 +140,9 @@ vectors `α` and `β`:
 
     y = α .* x .+ β
 
-The input `x` must be a scalar or an array where `size(x, 1) == in`. If `x` is a scalar, it will be broadcasted if necessary. Instance of `Dense` layer can be used as a function.
+The input `x` must be a scalar or an array where `size(x, 1) == in`. If `x` is a scalar, it will be broadcasted if necessary.
+
+Instance of `Dense` layer can be used as a function.
 
 # Arguments
 - `len::Integer`: the length of input and output vector `x`.
@@ -158,6 +164,8 @@ Tracked 2×2 Array{Float64,2}:
  1.0  2.0
  3.0  4.0
 ```
+
+See also: [`Flux.Chain`](@ref)
 """
 struct Diagonal{T}
   α::T
