@@ -18,6 +18,8 @@ m(x) == m[2](m[1](x))
 * `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 * use `m(x)` if you only want the output of the last layer, use `Flux.activations(m,x)` if you want outputs of each layer.
+
+See also [`Flux.activation`](@ref)
 """
 struct Chain
   layers::Vector{Any}
@@ -74,9 +76,9 @@ as an `in × N` matrix. The out `y` will be a vector or batch of length `out`. I
 # Arguments
 - `in::Integer`: the length of input vector `x`.
 - `out::Integer`: the length of output vector `y`.
-- `σ`: activation function. Default: `identity`.
-- `initW`: method used for initialization of parameters `W`
-- `initb`: method used for initialization of parameters `b`
+- `σ`: activation function. (Default: `identity`)
+- `initW`: method used for initialization of parameters `W`. (Default: `Flux.glorot_uniform`)
+- `initb`: method used for initialization of parameters `b`. (Default: `zeros`)
 
 
 # Examples
@@ -88,7 +90,17 @@ julia> d(rand(5))
 Tracked 2-element Array{Float64,1}:
   0.00257447
   -0.00449443
+
+julia> d(randn(5,2))
+5×2 Array{Float64,2}:
+4.59414    1.31019
+-3.61826    0.0775891
+2.4191    -2.59552
+0.449825   7.59122
+-1.90254   -0.392393
 ```
+
+See also: [`Flux.glorot_uniform`](@ref)
 """
 struct Dense{F,S,T}
   W::S
@@ -117,22 +129,43 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(in::Integer)
+    Diagonal(len::Integer; initα = ones, initβ = zeros)
 
 Creates an element-wise linear transformation layer with learnable
 vectors `α` and `β`:
 
     y = α .* x .+ β
 
-The input `x` must be a array where `size(x, 1) == in`.
+The input `x` must be a scalar or an array where `size(x, 1) == in`. If `x` is a scalar, it will be broadcasted if necessary. Instance of `Dense` layer can be used as a function.
+
+# Arguments
+- `len::Integer`: the length of input and output vector `x`.
+- `initα`: method used for initialization of parameters `α`. (Default: `ones`)
+- `initβ`: method used for initialization of parameters `β`. (Default: `zeros`)
+
+# Examples
+```julia
+julia> m = Flux.Diagonal(2)
+Diagonal(2)
+
+julia> m([1,2])
+Tracked 2-element Array{Float64,1}:
+ 1.0
+ 2.0
+
+julia> m([1 2;3 4])
+Tracked 2×2 Array{Float64,2}:
+ 1.0  2.0
+ 3.0  4.0
+```
 """
 struct Diagonal{T}
   α::T
   β::T
 end
 
-Diagonal(in::Integer; initα = ones, initβ = zeros) =
-  Diagonal(param(initα(in)), param(initβ(in)))
+Diagonal(len::Integer; initα = ones, initβ = zeros) =
+  Diagonal(param(initα(len)), param(initβ(len)))
 
 @treelike Diagonal
 
