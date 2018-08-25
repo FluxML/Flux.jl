@@ -2,7 +2,7 @@
     Chain(layers...)
 
 Chain multiple layers / functions together, so that they are called in sequence
-on a given input.
+on a given input. Instance of `Chain` can be used as a function.
 
 ```julia
 m = Chain(x -> x^2, x -> x+1)
@@ -45,13 +45,13 @@ end
 
 The input `c` must be a `Chain`.
 
-Creates an `Array` that stores activation of each layer
+Creates an `Array` that stores activation of each layer.
 
 # Examples
 ```julia
 julia> c = Chain(Dense(10,2,σ),Dense(2,1),softmax)
 Chain(Dense(10, 2, NNlib.σ), Dense(2, 1), NNlib.softmax)
-julia> activations(c,randn(10))
+julia> Flux.activations(c,randn(10))
 3-element Array{Any,1}:
  Flux.Tracker.TrackedReal{Float64}[0.923631 (tracked), 0.0163568 (tracked)]
  Flux.Tracker.TrackedReal{Float64}[-0.709397 (tracked)]
@@ -70,10 +70,12 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 
+Instance of `Dense` layer can be used as a function.
+
+# Examples
 ```julia
 julia> d = Dense(5, 2)
 Dense(5, 2)
-
 julia> d(rand(5))
 Tracked 2-element Array{Float64,1}:
   0.00257447
