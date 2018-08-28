@@ -384,7 +384,7 @@ end
 using Requires
 
 # https://github.com/FluxML/Flux.jl/issues/353
-@init @eval Base.Broadcast begin
+@init Requires.isprecompiling() || @eval Base.Broadcast begin
   function flatten(bc::Broadcasted{Style}) where {Style}
     isflat(bc) && return bc
     args = cat_nested(bc)
