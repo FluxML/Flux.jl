@@ -25,7 +25,7 @@ This would trigger the train loop to stop and exit.
 # Example callback:
 
 cb = function ()
-  accuracy() > 0.9 && stop()
+  accuracy() > 0.9 && Flux.stop()
 end
 ```
 """
