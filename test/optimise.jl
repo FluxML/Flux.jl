@@ -23,7 +23,7 @@ end
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               Iterators.repeated((), 100),
               ()->(),
-              cb = Flux.throttle(() -> (i > 3 && :stop), 1))
+              cb = Flux.throttle(() -> (i > 3 && stop()), 1))
 
   @test 3 < i < 50
 end
