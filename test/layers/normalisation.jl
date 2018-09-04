@@ -4,7 +4,7 @@ using Flux: testmode!
   x = [1.,2.,3.]
   @test x == testmode!(Dropout(0.1))(x)
   @test x == Dropout(0)(x)
-  @test zeros(x) == Dropout(1)(x)
+  @test zero(x) == Dropout(1)(x)
 
   x = rand(100)
   m = Dropout(0.9)
@@ -53,17 +53,17 @@ end
     #  .1 * 4 + 0 = .4
     @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
 
-    # julia> .1 .* std(x, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    # julia> .1 .* std(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
     # 2×1 Array{Float64,2}:
     #  1.14495
     #  1.14495
-    @test m.σ ≈ .1 .* std(x.data, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    @test m.σ ≈ .1 .* std(x.data, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
 
     testmode!(m)
     @test !m.active
 
     x′ = m(x).data
-    @test x′[1] ≈ (1 - 0.3) / 1.1449489742783179
+    @test x′[1] ≈ (1 .- 0.3) / 1.1449489742783179
   end
 
   # with activation function

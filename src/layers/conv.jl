@@ -1,6 +1,6 @@
 using NNlib: conv
 
-@generated sub2(::Type{Val{N}}) where N = :(Val{$(N-2)})
+@generated sub2(::Type{Val{N}}) where N = :(Val($(N-2)))
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -35,7 +35,7 @@ Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = 
   Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
-Flux.treelike(Conv)
+@treelike Conv
 
 function (c::Conv)(x)
   # TODO: breaks gpu broadcast :(

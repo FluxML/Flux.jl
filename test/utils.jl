@@ -1,9 +1,13 @@
-using Flux: throttle, initn, glorot_uniform, glorot_normal, jacobian
+using Flux
+using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal
+using StatsBase: std
+using Random
+using Test
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
     a = []
-    f = throttle(()->push!(a, now()), 1, leading=true, trailing=false)
+    f = throttle(()->push!(a, time()), 1, leading=true, trailing=false)
     f()
     f()
     f()
@@ -13,7 +17,7 @@ using Flux: throttle, initn, glorot_uniform, glorot_normal, jacobian
 
   @testset "leading behaviour" begin
     a = []
-    f = throttle(()->push!(a, now()), 1, leading=true, trailing=false)
+    f = throttle(()->push!(a, time()), 1, leading=true, trailing=false)
     f()
     @test length(a) == 1
     f()
@@ -25,7 +29,7 @@ using Flux: throttle, initn, glorot_uniform, glorot_normal, jacobian
 
   @testset "trailing behaviour" begin
     a = []
-    f = throttle(()->push!(a, now()), 1, leading=false, trailing=true)
+    f = throttle(()->push!(a, time()), 1, leading=false, trailing=true)
     f()
     @test length(a) == 0
     f()
@@ -59,7 +63,7 @@ end
 
 @testset "Initialization" begin
   # Set random seed so that these tests don't fail randomly
-  srand(0)
+  Random.seed!(0)
   # initn() should yield a kernel with stddev ~= 1e-2
   v = initn(10, 10)
   @test std(v) > 0.9*1e-2

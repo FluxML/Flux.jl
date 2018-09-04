@@ -115,3 +115,7 @@ end
 function back_(c::Call{typeof(collect)}, Δ)
   foreach(back, c.args[1], data(Δ))
 end
+
+function back_(g::Grads, c::Call{typeof(collect)}, Δ)
+  foreach((x, Δ) -> back(g, x, Δ), c.args[1], Δ)
+end

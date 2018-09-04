@@ -26,7 +26,7 @@ function back_(c::Call, Δ)
   foreach(back, c.args, data.(Δs))
 end
 
-back_(::Call{Void}, Δ) = nothing
+back_(::Call{Nothing}, Δ) = nothing
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
@@ -47,7 +47,7 @@ function back(x::Tracked, Δ)
   return
 end
 
-back(::Void, _) = return
+back(::Nothing, _) = return
 
 # Interface methods
 
@@ -70,7 +70,7 @@ struct Params
   Params(xs) = new(IdSet(xs))
 end
 
-@forward Params.params Base.start, Base.next, Base.done
+@forward Params.params Base.iterate, Base.length
 
 function Base.show(io::IO, ps::Params)
   print(io, "Params([")
@@ -79,14 +79,16 @@ function Base.show(io::IO, ps::Params)
 end
 
 struct Grads
-  grads::ObjectIdDict
+  grads::IdDict{Any,Any}
 end
 
 Base.show(io::IO, ps::Grads) = println(io, "Grads(...)")
 
-Grads() = Grads(ObjectIdDict())
+Grads() = Grads(IdDict())
 
-Grads(ps::Params) = Grads(ObjectIdDict(tracker(p) => init_grad(data(p)) for p in ps))
+@forward Grads.grads Base.setindex!, Base.haskey, Base.length, Base.iterate
+
+Grads(ps::Params) = Grads(IdDict(tracker(p) => init_grad(data(p)) for p in ps))
 
 Base.getindex(g::Grads, x::Tracked) = g.grads[x]
 function Base.getindex(g::Grads, x)
@@ -94,9 +96,8 @@ function Base.getindex(g::Grads, x)
   g[tracker(x)]
 end
 
-@forward Grads.grads Base.setindex!, Base.haskey
 
-accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] + Δ : Δ
+accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] .+ Δ : Δ
 
 function back_(g::Grads, c::Call, Δ)
   Δs = c.func(Δ)
@@ -105,7 +106,7 @@ function back_(g::Grads, c::Call, Δ)
   foreach((x, Δ) -> back(g, x, Δ), c.args, Δs)
 end
 
-back_(g::Grads, ::Call{Void}, Δ) = nothing
+back_(g::Grads, ::Call{Nothing}, Δ) = nothing
 
 function back(g::Grads, x::Tracked, Δ)
   x.isleaf && (accum!(g, x, Δ); return)
@@ -119,7 +120,7 @@ function back(g::Grads, x::Tracked, Δ)
   return
 end
 
-back(::Grads, ::Void, _) = return
+back(::Grads, ::Nothing, _) = return
 
 function forward(f, ps::Params)
   y = f()
@@ -136,7 +137,7 @@ end
 function forward(f, args...)
   args = param.(args)
   y, back = forward(() -> f(args...), Params(args))
-  y, Δ -> getindex.(back(Δ), args)
+  y, Δ -> getindex.(Ref(back(Δ)), args)
 end
 
 function losscheck(x)

@@ -58,7 +58,7 @@ end
 LayerNorm(h::Integer) =
   LayerNorm(Diagonal(h))
 
-treelike(LayerNorm)
+@treelike LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x))
 
@@ -108,7 +108,7 @@ mutable struct BatchNorm{F,V,W,N}
 end
 
 BatchNorm(chs::Integer, λ = identity;
-          initβ = zeros, initγ = ones, ϵ = 1e-8, momentum = .1) =
+          initβ = (i) -> zeros(i), initγ = (i) -> ones(i), ϵ = 1e-8, momentum = .1) =
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(chs), ones(chs), ϵ, momentum, true)
 
@@ -130,13 +130,13 @@ function (BN::BatchNorm)(x)
 
     ϵ = data(convert(T, BN.ϵ))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
-    μ = mean(x, axes)
-    σ = sqrt.(mean((x .- μ).^2, axes) .+ ϵ)
+    μ = mean(x, dims = axes)
+    σ = sqrt.(mean((x .- μ).^2, dims = axes) .+ ϵ)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* squeeze(data(μ), (axes...))
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* squeeze(data(σ), (axes...)) .* m ./ (m - 1)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* dropdims(data(μ), dims = (axes...,))
+    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* dropdims(data(σ), dims = (axes...,)) .* m ./ (m - 1)
   end
 
   let λ = BN.λ

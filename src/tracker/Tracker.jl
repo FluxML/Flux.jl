@@ -12,7 +12,7 @@ tracker(x) = nothing
 istracked(x) = tracker(x) ≠ nothing
 isleaf(x) = !istracked(x) || isleaf(tracker(x))
 grad(x) = grad(tracker(x))
-grad(::Void) = nothing
+grad(::Nothing) = nothing
 data(x) = x
 
 struct Call{F,As<:Tuple}
@@ -35,7 +35,7 @@ mutable struct Tracked{T}
   grad::T
   Tracked{T}(f::Call) where T = new(0, f, false)
   Tracked{T}(f::Call, grad::T) where T = new(0, f, false, grad)
-  Tracked{T}(f::Call{Void}, grad::T) where T = new(0, f, true, grad)
+  Tracked{T}(f::Call{Nothing}, grad::T) where T = new(0, f, true, grad)
 end
 
 istracked(x::Tracked) = true
@@ -46,14 +46,7 @@ track(f::Call, x) = Tracked{typeof(x)}(f)
 
 function _forward end
 
-function track(f::F, xs...) where F
-  y, back = _forward(f, xs...)
-  ts = map(tracker, xs)
-  c = Call(back, ts)
-  track(c, y)
-end
-
-function track_kw(f::F, xs...; kw...) where F
+function track(f::F, xs...; kw...) where F
   y, back = _forward(f, xs...; kw...)
   track(Call(back, tracker.(xs)), y)
 end
@@ -84,10 +77,9 @@ include("numeric.jl")
 
 Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 `f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
-the sign of the gradient applied to `x`.
-"""
+the sign of the gradient applied to `x`."""
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
-@grad hook(f, x) = x, Δ -> (nothing, f(Δ))
+@grad hook(f, x) = data(x), Δ -> (nothing, f(Δ))
 
 """
     checkpoint(f, args...)
