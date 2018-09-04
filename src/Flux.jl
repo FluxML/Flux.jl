@@ -5,7 +5,7 @@ module Flux
 using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
-export Chain, Dense, RNN, LSTM, GRU, Conv,
+export Chain, Dense, RNN, LSTM, GRU, Conv, MaxPool, MeanPool,
        Dropout, LayerNorm, BatchNorm,
        params, mapleaves, cpu, gpu
 
