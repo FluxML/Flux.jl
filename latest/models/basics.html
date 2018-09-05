@@ -93,7 +93,7 @@ model(x) = layer3(layer2(layer1(x)))</code></pre><p>For long chains, it might be
 
 layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
 
-model(x) = foldl((x, m) -&gt; m(x), x, layers)
+model(x) = foldl((x, m) -&gt; m(x), layers, init = x)
 
 model(rand(10)) # =&gt; 2-element vector</code></pre><p>Handily, this is also provided for in Flux:</p><pre><code class="language-julia">model2 = Chain(
   Dense(10, 5, σ),
@@ -104,4 +104,4 @@ model2(rand(10)) # =&gt; 2-element vector</code></pre><p>This quickly starts to 
 
 m(rand(10))</code></pre><p>Likewise, <code>Chain</code> will happily work with any Julia function.</p><pre><code class="language-julia">m = Chain(x -&gt; x^2, x -&gt; x+1)
 
-m(5) # =&gt; 26</code></pre><h2><a class="nav-anchor" id="Layer-helpers-1" href="#Layer-helpers-1">Layer helpers</a></h2><p>Flux provides a set of helpers for custom layers, which you can enable by calling</p><pre><code class="language-julia">Flux.treelike(Affine)</code></pre><p>This enables a useful extra set of functionality for our <code>Affine</code> layer, such as <a href="../training/optimisers.html">collecting its parameters</a> or <a href="../gpu.html">moving it to the GPU</a>.</p><footer><hr/><a class="previous" href="../index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="recurrence.html"><span class="direction">Next</span><span class="title">Recurrence</span></a></footer></article></body></html>
+m(5) # =&gt; 26</code></pre><h2><a class="nav-anchor" id="Layer-helpers-1" href="#Layer-helpers-1">Layer helpers</a></h2><p>Flux provides a set of helpers for custom layers, which you can enable by calling</p><pre><code class="language-julia">Flux.@treelike Affine</code></pre><p>This enables a useful extra set of functionality for our <code>Affine</code> layer, such as <a href="../training/optimisers.html">collecting its parameters</a> or <a href="../gpu.html">moving it to the GPU</a>.</p><footer><hr/><a class="previous" href="../index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="recurrence.html"><span class="direction">Next</span><span class="title">Recurrence</span></a></footer></article></body></html>

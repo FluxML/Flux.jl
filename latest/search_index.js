@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Flux: The Julia Machine Learning Library",
     "category": "section",
-    "text": "Flux is a library for machine learning. It comes \"batteries-included\" with many useful tools built in, but also lets you use the full power of the Julia language where you need it. The whole stack is implemented in clean Julia code (right down to the GPU kernels) and any part can be tweaked to your liking."
+    "text": "Flux is a library for machine learning. It comes \"batteries-included\" with many useful tools built in, but also lets you use the full power of the Julia language where you need it. We follow a few key principles:Doing the obvious thing. Flux has relatively few explicit APIs for features like regularisation or embeddings. Instead, writing down the mathematical form will work – and be fast.\nYou could have written Flux. All of it, from LSTMs to GPU kernels, is straightforward Julia code. When it doubt, it’s well worth looking at the source. If you need something different, you can easily roll your own.\nPlay nicely with others. Flux works well with Julia libraries from data frames and images to differential equation solvers, so you can easily build complex data processing pipelines that integrate Flux models."
 },
 
 {
@@ -21,7 +21,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "Install Julia 0.6.0 or later, if you haven\'t already.Pkg.add(\"Flux\")\n# Optional but recommended\nPkg.update() # Keep your packages up to date\nPkg.test(\"Flux\") # Check things installed correctlyStart with the basics. The model zoo is also a good starting point for many common kinds of models.See GPU support for more details on installing and using Flux with GPUs."
+    "text": "Download Julia 1.0 or later, if you haven\'t already. You can add Flux from using Julia\'s package manager, by typing ] add Flux in the Julia prompt.If you have CUDA you can also run ] add CuArrays to get GPU support; see here for more details."
+},
+
+{
+    "location": "index.html#Learning-Flux-1",
+    "page": "Home",
+    "title": "Learning Flux",
+    "category": "section",
+    "text": "There are several different ways to learn Flux. If you just want to get started writing models, the model zoo gives good starting points for many common ones. This documentation provides a reference to all of Flux\'s APIs, as well as a from-scratch introduction to Flux\'s take on models and how they work. Once you understand these docs, congratulations, you also understand Flux\'s source code, which is intended to be concise, legible and a good reference for more advanced concepts."
 },
 
 {
@@ -69,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Basics",
     "title": "Stacking It Up",
     "category": "section",
-    "text": "It\'s pretty common to write models that look something like:layer1 = Dense(10, 5, σ)\n# ...\nmodel(x) = layer3(layer2(layer1(x)))For long chains, it might be a bit more intuitive to have a list of layers, like this:using Flux\n\nlayers = [Dense(10, 5, σ), Dense(5, 2), softmax]\n\nmodel(x) = foldl((x, m) -> m(x), x, layers)\n\nmodel(rand(10)) # => 2-element vectorHandily, this is also provided for in Flux:model2 = Chain(\n  Dense(10, 5, σ),\n  Dense(5, 2),\n  softmax)\n\nmodel2(rand(10)) # => 2-element vectorThis quickly starts to look like a high-level deep learning library; yet you can see how it falls out of simple abstractions, and we lose none of the power of Julia code.A nice property of this approach is that because \"models\" are just functions (possibly with trainable parameters), you can also see this as simple function composition.m = Dense(5, 2) ∘ Dense(10, 5, σ)\n\nm(rand(10))Likewise, Chain will happily work with any Julia function.m = Chain(x -> x^2, x -> x+1)\n\nm(5) # => 26"
+    "text": "It\'s pretty common to write models that look something like:layer1 = Dense(10, 5, σ)\n# ...\nmodel(x) = layer3(layer2(layer1(x)))For long chains, it might be a bit more intuitive to have a list of layers, like this:using Flux\n\nlayers = [Dense(10, 5, σ), Dense(5, 2), softmax]\n\nmodel(x) = foldl((x, m) -> m(x), layers, init = x)\n\nmodel(rand(10)) # => 2-element vectorHandily, this is also provided for in Flux:model2 = Chain(\n  Dense(10, 5, σ),\n  Dense(5, 2),\n  softmax)\n\nmodel2(rand(10)) # => 2-element vectorThis quickly starts to look like a high-level deep learning library; yet you can see how it falls out of simple abstractions, and we lose none of the power of Julia code.A nice property of this approach is that because \"models\" are just functions (possibly with trainable parameters), you can also see this as simple function composition.m = Dense(5, 2) ∘ Dense(10, 5, σ)\n\nm(rand(10))Likewise, Chain will happily work with any Julia function.m = Chain(x -> x^2, x -> x+1)\n\nm(5) # => 26"
 },
 
 {
@@ -77,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Basics",
     "title": "Layer helpers",
     "category": "section",
-    "text": "Flux provides a set of helpers for custom layers, which you can enable by callingFlux.treelike(Affine)This enables a useful extra set of functionality for our Affine layer, such as collecting its parameters or moving it to the GPU."
+    "text": "Flux provides a set of helpers for custom layers, which you can enable by callingFlux.@treelike AffineThis enables a useful extra set of functionality for our Affine layer, such as collecting its parameters or moving it to the GPU."
 },
 
 {
@@ -141,7 +149,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Regularisation",
     "title": "Regularisation",
     "category": "section",
-    "text": "Applying regularisation to model parameters is straightforward. We just need to apply an appropriate regulariser, such as vecnorm, to each model parameter and add the result to the overall loss.For example, say we have a simple regression.using Flux: crossentropy\nm = Dense(10, 5)\nloss(x, y) = crossentropy(softmax(m(x)), y)We can regularise this by taking the (L2) norm of the parameters, m.W and m.b.penalty() = vecnorm(m.W) + vecnorm(m.b)\nloss(x, y) = crossentropy(softmax(m(x)), y) + penalty()When working with layers, Flux provides the params function to grab all parameters at once. We can easily penalise everything with sum(vecnorm, params).julia> params(m)\n2-element Array{Any,1}:\n param([0.355408 0.533092; … 0.430459 0.171498])\n param([0.0, 0.0, 0.0, 0.0, 0.0])\n\njulia> sum(vecnorm, params(m))\n26.01749952921026 (tracked)Here\'s a larger example with a multi-layer perceptron.m = Chain(\n  Dense(28^2, 128, relu),\n  Dense(128, 32, relu),\n  Dense(32, 10), softmax)\n\nloss(x, y) = crossentropy(m(x), y) + sum(vecnorm, params(m))\n\nloss(rand(28^2), rand(10))One can also easily add per-layer regularisation via the activations function:julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)\nChain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)\n\njulia> activations(c, rand(10))\n3-element Array{Any,1}:\n param([0.71068, 0.831145, 0.751219, 0.227116, 0.553074])\n param([0.0330606, -0.456104])\n param([0.61991, 0.38009])\n\njulia> sum(vecnorm, ans)\n2.639678767773633 (tracked)"
+    "text": "Applying regularisation to model parameters is straightforward. We just need to apply an appropriate regulariser, such as norm, to each model parameter and add the result to the overall loss.For example, say we have a simple regression.using Flux: crossentropy\nm = Dense(10, 5)\nloss(x, y) = crossentropy(softmax(m(x)), y)We can regularise this by taking the (L2) norm of the parameters, m.W and m.b.penalty() = norm(m.W) + norm(m.b)\nloss(x, y) = crossentropy(softmax(m(x)), y) + penalty()When working with layers, Flux provides the params function to grab all parameters at once. We can easily penalise everything with sum(norm, params).julia> params(m)\n2-element Array{Any,1}:\n param([0.355408 0.533092; … 0.430459 0.171498])\n param([0.0, 0.0, 0.0, 0.0, 0.0])\n\njulia> sum(norm, params(m))\n26.01749952921026 (tracked)Here\'s a larger example with a multi-layer perceptron.m = Chain(\n  Dense(28^2, 128, relu),\n  Dense(128, 32, relu),\n  Dense(32, 10), softmax)\n\nloss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))\n\nloss(rand(28^2), rand(10))One can also easily add per-layer regularisation via the activations function:julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)\nChain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)\n\njulia> activations(c, rand(10))\n3-element Array{Any,1}:\n param([0.71068, 0.831145, 0.751219, 0.227116, 0.553074])\n param([0.0330606, -0.456104])\n param([0.61991, 0.38009])\n\njulia> sum(norm, ans)\n2.639678767773633 (tracked)"
 },
 
 {
@@ -157,7 +165,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.Chain",
     "category": "type",
-    "text": "Chain(layers...)\n\nChain multiple layers / functions together, so that they are called in sequence on a given input.\n\nm = Chain(x -> x^2, x -> x+1)\nm(5) == 26\n\nm = Chain(Dense(10, 5), Dense(5, 2))\nx = rand(10)\nm(x) == m[2](m[1](x))\n\nChain also supports indexing and slicing, e.g. m[2] or m[1:end-1]. m[1:3](x) will calculate the output of the first three layers.\n\n\n\n"
+    "text": "Chain(layers...)\n\nChain multiple layers / functions together, so that they are called in sequence on a given input.\n\nm = Chain(x -> x^2, x -> x+1)\nm(5) == 26\n\nm = Chain(Dense(10, 5), Dense(5, 2))\nx = rand(10)\nm(x) == m[2](m[1](x))\n\nChain also supports indexing and slicing, e.g. m[2] or m[1:end-1]. m[1:3](x) will calculate the output of the first three layers.\n\n\n\n\n\n"
 },
 
 {
@@ -165,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.Dense",
     "category": "type",
-    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n  0.00257447\n  -0.00449443\n\n\n\n"
+    "text": "Dense(in::Integer, out::Integer, σ = identity)\n\nCreates a traditional Dense layer with parameters W and b.\n\ny = σ.(W * x .+ b)\n\nThe input x must be a vector of length in, or a batch of vectors represented as an in × N matrix. The out y will be a vector or batch of length out.\n\njulia> d = Dense(5, 2)\nDense(5, 2)\n\njulia> d(rand(5))\nTracked 2-element Array{Float64,1}:\n  0.00257447\n  -0.00449443\n\n\n\n\n\n"
 },
 
 {
@@ -173,7 +181,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.Conv",
     "category": "type",
-    "text": "Conv(size, in=>out)\nConv(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad, stride and dilation.\n\n\n\n"
+    "text": "Conv(size, in=>out)\nConv(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad, stride and dilation.\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.MaxPool",
+    "page": "Model Reference",
+    "title": "Flux.MaxPool",
+    "category": "type",
+    "text": "MaxPool(k)\n\nMax pooling layer. k stands for the size of the window for each dimension of the input.\n\nTakes the keyword arguments pad and stride.\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Flux.MeanPool",
+    "page": "Model Reference",
+    "title": "Flux.MeanPool",
+    "category": "type",
+    "text": "MeanPool(k)\n\nMean pooling layer. k stands for the size of the window for each dimension of the input.\n\nTakes the keyword arguments pad and stride.\n\n\n\n\n\n"
 },
 
 {
@@ -181,7 +205,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Basic Layers",
     "category": "section",
-    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense\nConv"
+    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense\nConv\nMaxPool\nMeanPool"
 },
 
 {
@@ -189,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.RNN",
     "category": "function",
-    "text": "RNN(in::Integer, out::Integer, σ = tanh)\n\nThe most basic recurrent layer; essentially acts as a Dense layer, but with the output fed back into the input each time step.\n\n\n\n"
+    "text": "RNN(in::Integer, out::Integer, σ = tanh)\n\nThe most basic recurrent layer; essentially acts as a Dense layer, but with the output fed back into the input each time step.\n\n\n\n\n\n"
 },
 
 {
@@ -197,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.LSTM",
     "category": "function",
-    "text": "LSTM(in::Integer, out::Integer, σ = tanh)\n\nLong Short Term Memory recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n"
+    "text": "LSTM(in::Integer, out::Integer, σ = tanh)\n\nLong Short Term Memory recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n\n\n"
 },
 
 {
@@ -205,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.GRU",
     "category": "function",
-    "text": "GRU(in::Integer, out::Integer, σ = tanh)\n\nGated Recurrent Unit layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n"
+    "text": "GRU(in::Integer, out::Integer, σ = tanh)\n\nGated Recurrent Unit layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n\n\n"
 },
 
 {
@@ -213,7 +237,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.Recur",
     "category": "type",
-    "text": "Recur(cell)\n\nRecur takes a recurrent cell and makes it stateful, managing the hidden state in the background. cell should be a model of the form:\n\nh, y = cell(h, x...)\n\nFor example, here\'s a recurrent network that keeps a running total of its inputs.\n\naccum(h, x) = (h+x, x)\nrnn = Flux.Recur(accum, 0)\nrnn(2) # 2\nrnn(3) # 3\nrnn.state # 5\nrnn.(1:10) # apply to a sequence\nrnn.state # 60\n\n\n\n"
+    "text": "Recur(cell)\n\nRecur takes a recurrent cell and makes it stateful, managing the hidden state in the background. cell should be a model of the form:\n\nh, y = cell(h, x...)\n\nFor example, here\'s a recurrent network that keeps a running total of its inputs.\n\naccum(h, x) = (h+x, x)\nrnn = Flux.Recur(accum, 0)\nrnn(2) # 2\nrnn(3) # 3\nrnn.state # 5\nrnn.(1:10) # apply to a sequence\nrnn.state # 60\n\n\n\n\n\n"
 },
 
 {
@@ -229,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "NNlib.σ",
     "category": "function",
-    "text": "σ(x) = 1 / (1 + exp(-x))\n\nClassic sigmoid activation function.\n\n\n\n"
+    "text": "σ(x) = 1 / (1 + exp(-x))\n\nClassic sigmoid activation function.\n\n\n\n\n\n"
 },
 
 {
@@ -237,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "NNlib.relu",
     "category": "function",
-    "text": "relu(x) = max(0, x)\n\nRectified Linear Unit activation function.\n\n\n\n"
+    "text": "relu(x) = max(0, x)\n\nRectified Linear Unit activation function.\n\n\n\n\n\n"
 },
 
 {
@@ -245,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "NNlib.leakyrelu",
     "category": "function",
-    "text": "leakyrelu(x) = max(0.01x, x)\n\nLeaky Rectified Linear Unit activation function. You can also specify the coefficient explicitly, e.g. leakyrelu(x, 0.01).\n\n\n\n"
+    "text": "leakyrelu(x) = max(0.01x, x)\n\nLeaky Rectified Linear Unit activation function. You can also specify the coefficient explicitly, e.g. leakyrelu(x, 0.01).\n\n\n\n\n\n"
 },
 
 {
@@ -253,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "NNlib.elu",
     "category": "function",
-    "text": "elu(x, α = 1) =\n  x > 0 ? x : α * (exp(x) - 1)\n\nExponential Linear Unit activation function. See Fast and Accurate Deep Network Learning by Exponential Linear Units. You can also specify the coefficient explicitly, e.g. elu(x, 1).\n\n\n\n"
+    "text": "elu(x, α = 1) =\n  x > 0 ? x : α * (exp(x) - 1)\n\nExponential Linear Unit activation function. See Fast and Accurate Deep Network Learning by Exponential Linear Units. You can also specify the coefficient explicitly, e.g. elu(x, 1).\n\n\n\n\n\n"
 },
 
 {
@@ -261,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "NNlib.swish",
     "category": "function",
-    "text": "swish(x) = x * σ(x)\n\nSelf-gated actvation function. See Swish: a Self-Gated Activation Function.\n\n\n\n"
+    "text": "swish(x) = x * σ(x)\n\nSelf-gated actvation function. See Swish: a Self-Gated Activation Function.\n\n\n\n\n\n"
 },
 
 {
@@ -277,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.testmode!",
     "category": "function",
-    "text": "testmode!(m)\ntestmode!(m, false)\n\nPut layers like Dropout and BatchNorm into testing mode (or back to training mode with false).\n\n\n\n"
+    "text": "testmode!(m)\ntestmode!(m, false)\n\nPut layers like Dropout and BatchNorm into testing mode (or back to training mode with false).\n\n\n\n\n\n"
 },
 
 {
@@ -285,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.BatchNorm",
     "category": "type",
-    "text": "BatchNorm(channels::Integer, σ = identity;\n          initβ = zeros, initγ = ones,\n          ϵ = 1e-8, momentum = .1)\n\nBatch Normalization layer. The channels input should be the size of the channel dimension in your data (see below).\n\nGiven an array with N dimensions, call the N-1th the channel dimension. (For a batch of feature vectors this is just the data dimension, for WHCN images it\'s the usual channel dimension.)\n\nBatchNorm computes the mean and variance for each each W×H×1×N slice and shifts them to have a new mean and variance (corresponding to the learnable, per-channel bias and scale parameters).\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.\n\nExample:\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n"
+    "text": "BatchNorm(channels::Integer, σ = identity;\n          initβ = zeros, initγ = ones,\n          ϵ = 1e-8, momentum = .1)\n\nBatch Normalization layer. The channels input should be the size of the channel dimension in your data (see below).\n\nGiven an array with N dimensions, call the N-1th the channel dimension. (For a batch of feature vectors this is just the data dimension, for WHCN images it\'s the usual channel dimension.)\n\nBatchNorm computes the mean and variance for each each W×H×1×N slice and shifts them to have a new mean and variance (corresponding to the learnable, per-channel bias and scale parameters).\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.\n\nExample:\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n\n\n"
 },
 
 {
@@ -293,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.Dropout",
     "category": "type",
-    "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n"
+    "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n\n\n"
 },
 
 {
@@ -301,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.LayerNorm",
     "category": "type",
-    "text": "LayerNorm(h::Integer)\n\nA normalisation layer designed to be used with recurrent hidden states of size h. Normalises the mean/stddev of each input before applying a per-neuron gain/bias.\n\n\n\n"
+    "text": "LayerNorm(h::Integer)\n\nA normalisation layer designed to be used with recurrent hidden states of size h. Normalises the mean/stddev of each input before applying a per-neuron gain/bias.\n\n\n\n\n\n"
 },
 
 {
@@ -333,7 +357,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Optimisers",
     "title": "Flux.Optimise.SGD",
     "category": "function",
-    "text": "SGD(params, η = 0.1; decay = 0)\n\nClassic gradient descent optimiser with learning rate η. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports inverse decaying learning rate if the decay argument is provided.\n\n\n\n"
+    "text": "SGD(params, η = 0.1; decay = 0)\n\nClassic gradient descent optimiser with learning rate η. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports inverse decaying learning rate if the decay argument is provided.\n\n\n\n\n\n"
 },
 
 {
@@ -341,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Optimisers",
     "title": "Flux.Optimise.Momentum",
     "category": "function",
-    "text": "Momentum(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, momentum ρ and optional learning rate inverse decay.\n\n\n\n"
+    "text": "Momentum(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, momentum ρ and optional learning rate inverse decay.\n\n\n\n\n\n"
 },
 
 {
@@ -349,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Optimisers",
     "title": "Flux.Optimise.Nesterov",
     "category": "function",
-    "text": "Nesterov(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, Nesterov momentum ρ and optional learning rate inverse decay.\n\n\n\n"
+    "text": "Nesterov(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, Nesterov momentum ρ and optional learning rate inverse decay.\n\n\n\n\n\n"
 },
 
 {
@@ -357,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Optimisers",
     "title": "Flux.Optimise.ADAM",
     "category": "function",
-    "text": "ADAM(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n"
+    "text": "ADAM(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n\n\n"
 },
 
 {
@@ -421,7 +445,7 @@ var documenterSearchIndex = {"docs": [
     "page": "One-Hot Encoding",
     "title": "One-Hot Encoding",
     "category": "section",
-    "text": "It\'s common to encode categorical variables (like true, false or cat, dog) in \"one-of-k\" or \"one-hot\" form. Flux provides the onehot function to make this easy.julia> using Flux: onehot\n\njulia> onehot(:b, [:a, :b, :c])\n3-element Flux.OneHotVector:\n false\n  true\n false\n\njulia> onehot(:c, [:a, :b, :c])\n3-element Flux.OneHotVector:\n false\n false\n  trueThe inverse is argmax (which can take a general probability distribution, as well as just booleans).julia> argmax(ans, [:a, :b, :c])\n:c\n\njulia> argmax([true, false, false], [:a, :b, :c])\n:a\n\njulia> argmax([0.3, 0.2, 0.5], [:a, :b, :c])\n:c"
+    "text": "It\'s common to encode categorical variables (like true, false or cat, dog) in \"one-of-k\" or \"one-hot\" form. Flux provides the onehot function to make this easy.julia> using Flux: onehot, onecold\n\njulia> onehot(:b, [:a, :b, :c])\n3-element Flux.OneHotVector:\n false\n  true\n false\n\njulia> onehot(:c, [:a, :b, :c])\n3-element Flux.OneHotVector:\n false\n false\n  trueThe inverse is onecold (which can take a general probability distribution, as well as just booleans).julia> onecold(ans, [:a, :b, :c])\n:c\n\njulia> onecold([true, false, false], [:a, :b, :c])\n:a\n\njulia> onecold([0.3, 0.2, 0.5], [:a, :b, :c])\n:c"
 },
 
 {
@@ -429,7 +453,7 @@ var documenterSearchIndex = {"docs": [
     "page": "One-Hot Encoding",
     "title": "Batches",
     "category": "section",
-    "text": "onehotbatch creates a batch (matrix) of one-hot vectors, and argmax treats matrices as batches.julia> using Flux: onehotbatch\n\njulia> onehotbatch([:b, :a, :b], [:a, :b, :c])\n3×3 Flux.OneHotMatrix:\n false   true  false\n  true  false   true\n false  false  false\n\njulia> onecold(ans, [:a, :b, :c])\n3-element Array{Symbol,1}:\n  :b\n  :a\n  :bNote that these operations returned OneHotVector and OneHotMatrix rather than Arrays. OneHotVectors behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood."
+    "text": "onehotbatch creates a batch (matrix) of one-hot vectors, and onecold treats matrices as batches.julia> using Flux: onehotbatch\n\njulia> onehotbatch([:b, :a, :b], [:a, :b, :c])\n3×3 Flux.OneHotMatrix:\n false   true  false\n  true  false   true\n false  false  false\n\njulia> onecold(ans, [:a, :b, :c])\n3-element Array{Symbol,1}:\n  :b\n  :a\n  :bNote that these operations returned OneHotVector and OneHotMatrix rather than Arrays. OneHotVectors behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood."
 },
 
 {
@@ -525,7 +549,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Backpropagation",
     "title": "Tracked Internals",
     "category": "section",
-    "text": "All Tracked* objects (TrackedArray, TrackedReal) are light wrappers around the Tracked type, which you can access via the .tracker field.julia> x.tracker\nFlux.Tracker.Tracked{Array{Float64,1}}(0x00000000, Flux.Tracker.Call{Void,Tuple{}}(nothing, ()), true, [5.0, 6.0], [-2.0, -2.0])The Tracker stores the gradient of a given object, which we\'ve seen before.julia> x.tracker.grad\n2-element Array{Float64,1}:\n -2.0\n -2.0The tracker also contains a Call object, which simply represents a function call that was made at some point during the forward pass. For example, the + call would look like this:julia> Tracker.Call(+, 1, 2)\nFlux.Tracker.Call{Base.#+,Tuple{Int64,Int64}}(+, (1, 2))In the case of the y we produced above, we can see that it stores the call that produced it – that is, W*x.julia> y.tracker.f\nFlux.Tracker.Call{...}(*, (param([1.0 2.0; 3.0 4.0]), param([5.0, 6.0])))Notice that because the arguments to the call may also be tracked arrays, storing their own calls, this means that Tracker ends up forming a data structure that records everything that happened during the forward pass (often known as a tape).When we call back!(y, [1, -1]), the sensitivities [1, -1] simply get forwarded to y\'s call (*), effectively callingTracker.back(*, [1, -1], W, x)which in turn calculates the sensitivities of the arguments (W and x) and back-propagates through their calls. This is recursive, so it will walk the entire program graph and propagate gradients to the original model parameters."
+    "text": "All Tracked* objects (TrackedArray, TrackedReal) are light wrappers around the Tracked type, which you can access via the .tracker field.julia> x.tracker\nFlux.Tracker.Tracked{Array{Float64,1}}(0x00000000, Flux.Tracker.Call{Nothing,Tuple{}}(nothing, ()), true, [5.0, 6.0], [-2.0, -2.0])The Tracker stores the gradient of a given object, which we\'ve seen before.julia> x.tracker.grad\n2-element Array{Float64,1}:\n -2.0\n -2.0The tracker also contains a Call object, which simply represents a function call that was made at some point during the forward pass. For example, the + call would look like this:julia> Tracker.Call(+, 1, 2)\nFlux.Tracker.Call{Base.#+,Tuple{Int64,Int64}}(+, (1, 2))In the case of the y we produced above, we can see that it stores the call that produced it – that is, W*x.julia> y.tracker.f\nFlux.Tracker.Call{...}(*, (param([1.0 2.0; 3.0 4.0]), param([5.0, 6.0])))Notice that because the arguments to the call may also be tracked arrays, storing their own calls, this means that Tracker ends up forming a data structure that records everything that happened during the forward pass (often known as a tape).When we call back!(y, [1, -1]), the sensitivities [1, -1] simply get forwarded to y\'s call (*), effectively callingTracker.back(*, [1, -1], W, x)which in turn calculates the sensitivities of the arguments (W and x) and back-propagates through their calls. This is recursive, so it will walk the entire program graph and propagate gradients to the original model parameters."
 },
 
 {
