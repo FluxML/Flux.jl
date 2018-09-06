@@ -3,7 +3,7 @@ using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv
 using Printf: @sprintf
-using LinearAlgebra: Diagonal, dot, LowerTriangular, norm
+using LinearAlgebra: Diagonal, dot, UpperTriangular, LowerTriangular, norm
 using Statistics: mean, std
 using Random
 # using StatsBase
