@@ -127,6 +127,9 @@ end
 @test gradtest(kron, rand(5,1), rand(3,1), rand(8,1))
 @test gradtest(kron, rand(5,2), rand(3,2), rand(8,2))
 
+@test gradtest(UpperTriangular, rand(4,4))
+@test gradtest(LowerTriangular, rand(4,4))
+
 @test gradtest(f-> Matrix(Diagonal(f)), rand(3))
 
 @testset "mean" begin
@@ -164,6 +167,9 @@ end
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
+
+@test gradtest(x->cumsum(x; dims = 2), rand(3, 5))
+@test gradtest(cumsum, rand(5))
 
 @test gradtest(norm, rand(5))
 

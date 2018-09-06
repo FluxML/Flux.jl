@@ -248,6 +248,10 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
+cumsum(a::TrackedArray) = Tracker.track(cumsum, a)
+
+@grad cumsum(a) = cumsum(data(a)), Δ -> (reverse(cumsum(Δ)),)
+
 cumsum(a::TrackedArray; dims) = Tracker.track(cumsum, a, dims = dims)
 
 @grad function cumsum(a; dims)
