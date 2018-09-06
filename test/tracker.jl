@@ -182,9 +182,30 @@ end
 @test gradtest(x -> meanpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> meanpool(x, (2,2,2)), rand(5, 5, 5, 3, 2))
 
-@test (param([1,2,3]) .< 2) == [true, false, false]
+@testset "equality & order" begin
+    # TrackedReal
+    @test param(2)^2 == param(4)
+    @test param(2)^2 == 4
+    @test 4 == param(2)^2
 
-@test param(2)^2 == 4.0
+    @test param(2)^2 ≈ param(4)
+    @test param(2)^2 ≈ 4
+    @test 4 ≈ param(2)^2
+
+    @test (param([1,2,3]) .< 2) == [true, false, false]
+    @test (param([1,2,3]) .<= 2) == [true, true, false]
+    @test (2 .> param([1,2,3])) == [true, false, false]
+    @test (2 .>= param([1,2,3])) == [true, true, false]
+
+    # TrackedArray
+    @test param([1,2,3]).^2 == param([1,4,9])
+    @test [1,2,3].^2 == param([1,4,9])
+    @test param([1,2,3]).^2 == [1,4,9]
+
+    @test param([1,2,3]).^2 ≈ param([1,4,9])
+    @test [1,2,3].^2 ≈ param([1,4,9])
+    @test param([1,2,3]).^2 ≈ [1,4,9]
+end
 
 @testset "reshape" begin
   x = reshape(param(rand(2,2,2)), 4, 2)

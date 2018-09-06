@@ -1,7 +1,7 @@
 using Flux, Flux.Tracker, CuArrays, Test
 using Flux: gpu
 
-@info "Testing Flux/GPU"
+@info "Testing GPU Support"
 
 @testset "CuArrays" begin
 
@@ -25,6 +25,10 @@ cm = gpu(m)
 x = [1,2,3]
 cx = gpu(x)
 @test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
+
+xs = param(rand(5,5))
+ys = Flux.onehotbatch(1:5,1:5)
+@test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
 
 c = gpu(Conv((2,2),3=>4))
 l = c(gpu(rand(10,10,3,2)))
