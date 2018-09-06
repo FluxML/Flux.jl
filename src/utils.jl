@@ -66,7 +66,7 @@ julia> batch([[1,2,3],[4,5,6]])
 function batch(xs)
   data = first(xs) isa AbstractArray ?
     similar(first(xs), size(first(xs))..., length(xs)) :
-    Vector{eltype(xs)}(length(xs))
+    Vector{eltype(xs)}(undef, length(xs))
   for (i, x) in enumerate(xs)
     data[batchindex(data, i)...] = x
   end
