@@ -2,7 +2,7 @@ import Base: *, ==
 
 import LinearAlgebra
 using Statistics
-using LinearAlgebra: Transpose, Adjoint, diagm, diag
+using LinearAlgebra: Transpose, Adjoint, diagm, diag, UpperTriangular, LowerTriangular
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
@@ -203,6 +203,18 @@ Base.kron(a::TrackedMatrix, b::TrackedMatrix)  = _kron(a, b)
 Base.kron(a::TrackedMatrix, b::AbstractMatrix) = _kron(a, b)
 Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
+UpperTriangular(a::TrackedArray) = Tracker.track(UpperTriangular, a)
+
+@grad function UpperTriangular(a)
+  return collect(UpperTriangular(data(a))), Δ -> (collect(UpperTriangular(Δ)),)
+end
+
+LowerTriangular(a::TrackedArray) = Tracker.track(LowerTriangular, a)
+
+@grad function LowerTriangular(a)
+  return collect(LowerTriangular(data(a))), Δ -> (collect(LowerTriangular(Δ)),)
+end
+
 # Reductions
 
 Base.sum(xs::TrackedArray; dims = :) = track(sum, xs, dims = dims)
@@ -235,6 +247,12 @@ dot(xs::AbstractVector, ys::TrackedVector) = track(dot, xs, ys)
 dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
+
+cumsum(a::TrackedArray; dims) = Tracker.track(cumsum, a, dims = dims)
+
+@grad function cumsum(a; dims)
+  return cumsum(data(a); dims = dims), Δ -> (reverse(cumsum(Δ; dims = dims), dims = dims), nothing)
+end
 
 # Hacks to get std working
 Statistics.std(x::TrackedArray; dims = :, mean = Statistics.mean(x, dims = dims)) = _std(x,mean,dims)
