@@ -1,10 +1,16 @@
 module MNIST
 
-using GZip, Colors
+using CodecZlib, Colors
 
 const Gray = Colors.Gray{Colors.N0f8}
 
 const dir = joinpath(@__DIR__, "../../deps/mnist")
+
+function gzopen(f, file)
+  open(file) do io
+    f(GzipDecompressorStream(io))
+  end
+end
 
 function load()
   mkpath(dir)
@@ -17,7 +23,7 @@ function load()
       @info "Downloading MNIST dataset"
       download("https://cache.julialang.org/http://yann.lecun.com/exdb/mnist/$file.gz", "$file.gz")
       open(file, "w") do io
-        write(io, GZip.open(read, "$file.gz"))
+        write(io, gzopen(read, "$file.gz"))
       end
     end
   end

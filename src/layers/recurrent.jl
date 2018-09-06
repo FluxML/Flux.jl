@@ -128,8 +128,7 @@ function LSTMCell(in::Integer, out::Integer;
   return cell
 end
 
-function (m::LSTMCell)(h_, x)
-  h, c = h_ # TODO: nicer syntax on 0.7
+function (m::LSTMCell)((h, c), x)
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
