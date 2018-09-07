@@ -190,7 +190,7 @@ Base.permutedims(xs::TrackedArray, dims) = track(permutedims, xs, dims)
 @grad permutedims(xs, dims) = permutedims(data(xs), dims), Δ -> (permutedims(Δ, invperm(dims)),nothing)
 
 Base.reverse(xs::TrackedArray, dims) = track(reverse, xs, dims)
-@grad reverse(xs, dims) = reverse(data(xs), dims), Δ -> (reverse(Δ, dims),nothing)
+@grad reverse(xs, dims) = reverse(data(xs), dims = dims), Δ -> (reverse(Δ, dims = dims),nothing)
 
 Base.reverse(xs::TrackedVector) = track(reverse, xs)
 @grad reverse(xs) = reverse(data(xs)), Δ -> (reverse(Δ),)
@@ -254,15 +254,13 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
-Base.cumsum(a::TrackedVector) = track(cumsum, a)
-
-@grad cumsum(a) = cumsum(data(a)), Δ -> (reverse(cumsum(Δ)),)
-
-Base.cumsum(a::TrackedArray; dims) = track(cumsum, a, dims = dims)
+Base.cumsum(a::TrackedArray; dims) = track(cumsum, a; dims = dims)
 
 @grad function cumsum(a; dims)
   return cumsum(data(a), dims = dims), Δ -> (reverse(cumsum(Δ, dims = dims), dims = dims), nothing)
 end
+
+Base.cumsum(a::TrackedArray) = cumsum(a::TrackedArray, dims = 1)
 
 # Hacks to get std working
 Statistics.std(x::TrackedArray; dims = :, mean = Statistics.mean(x, dims = dims)) = _std(x,mean,dims)
