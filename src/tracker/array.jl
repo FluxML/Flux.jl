@@ -2,7 +2,7 @@ import Base: *, ==
 
 import LinearAlgebra
 using Statistics
-using LinearAlgebra: Transpose, Adjoint, diagm, diag
+using LinearAlgebra: Transpose, Adjoint, diagm, diag, UpperTriangular, LowerTriangular
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
