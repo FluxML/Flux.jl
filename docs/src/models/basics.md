@@ -110,6 +110,7 @@ W2 = param(rand(2, 3))
 b2 = param(rand(2))
 layer2(x) = W2 * x .+ b2
 
+σ(z) = @. 1 / (1 + exp(-z))
 model(x) = layer2(σ.(layer1(x)))
 
 model(rand(5)) # => 2-element vector
