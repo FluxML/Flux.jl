@@ -258,9 +258,9 @@ Base.cumsum(a::TrackedVector) = track(cumsum, a)
 
 @grad cumsum(a) = cumsum(data(a)), Δ -> (reverse(cumsum(Δ)),)
 
-Base.cumsum(a::TrackedArray, dims) = track(cumsum, a, dims = dims)
+Base.cumsum(a::TrackedArray; dims) = track(cumsum, a, dims = dims)
 
-@grad function cumsum(a, dims)
+@grad function cumsum(a; dims)
   return cumsum(data(a), dims = dims), Δ -> (reverse(cumsum(Δ, dims = dims), dims = dims), nothing)
 end
 
