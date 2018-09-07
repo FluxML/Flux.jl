@@ -209,13 +209,13 @@ Base.kron(a::TrackedMatrix, b::TrackedMatrix)  = _kron(a, b)
 Base.kron(a::TrackedMatrix, b::AbstractMatrix) = _kron(a, b)
 Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
-LinearAlgebra.UpperTriangular(a::TrackedMatrix) = Tracker.track(UpperTriangular, a)
+LinearAlgebra.UpperTriangular(a::TrackedMatrix) = track(UpperTriangular, a)
 
 @grad function UpperTriangular(a)
   return collect(UpperTriangular(data(a))), Δ -> (collect(UpperTriangular(Δ)),)
 end
 
-LinearAlgebra.LowerTriangular(a::TrackedMatrix) = Tracker.track(LowerTriangular, a)
+LinearAlgebra.LowerTriangular(a::TrackedMatrix) = track(LowerTriangular, a)
 
 @grad function LowerTriangular(a)
   return collect(LowerTriangular(data(a))), Δ -> (collect(LowerTriangular(Δ)),)
@@ -254,11 +254,11 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
-Base.cumsum(a::TrackedVector) = Tracker.track(cumsum, a)
+Base.cumsum(a::TrackedVector) = track(cumsum, a)
 
 @grad cumsum(a) = cumsum(data(a)), Δ -> (reverse(cumsum(Δ)),)
 
-Base.cumsum(a::TrackedArray, dims) = Tracker.track(cumsum, a, dims = dims)
+Base.cumsum(a::TrackedArray, dims) = track(cumsum, a, dims = dims)
 
 @grad function cumsum(a, dims)
   return cumsum(data(a), dims = dims), Δ -> (reverse(cumsum(Δ, dims = dims), dims = dims), nothing)
