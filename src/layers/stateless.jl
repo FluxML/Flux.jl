@@ -47,7 +47,7 @@ logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 Normalise each column of `x` to mean 0 and standard deviation 1.
 """
 function normalise(x::AbstractVecOrMat)
-  μ′ = mean(x, 1)
-  σ′ = std(x, 1, mean = μ′)
+  μ′ = mean(x, dims = 1)
+  σ′ = std(x, dims = 1, mean = μ′)
   return (x .- μ′) ./ σ′
 end
