@@ -351,9 +351,9 @@ end
   eltype(y) <: Real || return y
   eltype(y) == Bool && return y
   function back(Δ)
-    Δargs = ntuple(i -> partial.(f, data(Δ), i, args...), Val(N))
-    dxs = unbroadcast.(args, Δargs)
-    return nobacksies(:broadcast, dxs)
+    Δargs = ntuple(i -> partial.(f, Δ, i, args...), Val(N))
+    dxs = map(unbroadcast, args, Δargs)
+    return dxs
   end
   # So we can return non-tracked arrays
   track(Call(back, tracker.(args)), y)
