@@ -117,6 +117,9 @@ end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
+@test gradtest(reverse, rand(5))
+@test gradtest(x -> reverse(x, dims=2), rand(4,5,6))
+
 @test gradtest(x -> repeat(x; inner=2), rand(5))
 @test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
 @test gradtest(x -> repeat(x; inner=(2,2,1), outer=(1,1,3)), rand(5,4,3))
@@ -168,7 +171,7 @@ end
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
 
-@test gradtest(x->cumsum(x; dims = 2), rand(3, 5))
+@test gradtest(x->cumsum(x, dims = 2), rand(3, 5))
 @test gradtest(cumsum, rand(5))
 
 @test gradtest(norm, rand(5))

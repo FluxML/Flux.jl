@@ -2,7 +2,7 @@ import Base: *, ==
 
 import LinearAlgebra
 using Statistics
-using LinearAlgebra: Transpose, Adjoint, diagm, diag, UpperTriangular, LowerTriangular
+using LinearAlgebra: Transpose, Adjoint, diagm, diag
 
 struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   tracker::Tracked{A}
@@ -189,6 +189,12 @@ Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64}}) = track(reshape, xs, 
 Base.permutedims(xs::TrackedArray, dims) = track(permutedims, xs, dims)
 @grad permutedims(xs, dims) = permutedims(data(xs), dims), Δ -> (permutedims(Δ, invperm(dims)),nothing)
 
+Base.reverse(xs::TrackedArray, dims) = track(reverse, xs, dims)
+@grad reverse(xs, dims) = reverse(data(xs), dims), Δ -> (reverse(Δ, dims),nothing)
+
+Base.reverse(xs::TrackedVector) = track(reverse, xs)
+@grad reverse(xs) = reverse(data(xs)), Δ -> (reverse(Δ),)
+
 function _kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
     m1, n1 = size(mat1)
     mat1_rsh = reshape(mat1,(1,m1,1,n1))
@@ -203,13 +209,13 @@ Base.kron(a::TrackedMatrix, b::TrackedMatrix)  = _kron(a, b)
 Base.kron(a::TrackedMatrix, b::AbstractMatrix) = _kron(a, b)
 Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
 
-UpperTriangular(a::TrackedArray) = Tracker.track(UpperTriangular, a)
+LinearAlgebra.UpperTriangular(a::TrackedMatrix) = Tracker.track(UpperTriangular, a)
 
 @grad function UpperTriangular(a)
   return collect(UpperTriangular(data(a))), Δ -> (collect(UpperTriangular(Δ)),)
 end
 
-LowerTriangular(a::TrackedArray) = Tracker.track(LowerTriangular, a)
+LinearAlgebra.LowerTriangular(a::TrackedMatrix) = Tracker.track(LowerTriangular, a)
 
 @grad function LowerTriangular(a)
   return collect(LowerTriangular(data(a))), Δ -> (collect(LowerTriangular(Δ)),)
@@ -248,14 +254,14 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
-cumsum(a::TrackedArray) = Tracker.track(cumsum, a)
+Base.cumsum(a::TrackedVector) = Tracker.track(cumsum, a)
 
 @grad cumsum(a) = cumsum(data(a)), Δ -> (reverse(cumsum(Δ)),)
 
-cumsum(a::TrackedArray; dims) = Tracker.track(cumsum, a, dims = dims)
+Base.cumsum(a::TrackedArray; dims) = Tracker.track(cumsum, a, dims = dims)
 
 @grad function cumsum(a; dims)
-  return cumsum(data(a); dims = dims), Δ -> (reverse(cumsum(Δ; dims = dims), dims = dims), nothing)
+  return cumsum(data(a), dims = dims), Δ -> (reverse(cumsum(Δ, dims = dims), dims = dims), nothing)
 end
 
 # Hacks to get std working
