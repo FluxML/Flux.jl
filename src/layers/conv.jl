@@ -1,4 +1,4 @@
-using NNlib: conv
+using NNlib: conv, ∇conv_data
 
 @generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
@@ -51,6 +51,48 @@ function Base.show(io::IO, l::Conv)
   print(io, ")")
 end
 
+"""
+    ConvTranspose(size, in=>out)
+    ConvTranspose(size, in=>out, relu)
+
+Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
+`in` and `out` specify the number of input and output channels respectively.
+Data should be stored in WHCN order. In other words, a 100×100 RGB image would
+be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
+"""
+struct ConvTranspose{N,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{N,Int}
+  dilation::NTuple{N,Int}
+end
+
+ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N} =
+  ConvTranspose(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
+
+ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
+              stride = 1, pad = 0, dilation = 1) where N =
+ConvTranspose(param(init(k..., reverse(ch)...)), param(zeros(ch[2])), σ,
+              stride = stride, pad = pad, dilation = dilation)
+
+@treelike ConvTranspose
+
+function (c::ConvTranspose)(x)
+  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ.(∇conv_data(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+end
+
+function Base.show(io::IO, l::ConvTranspose)
+  print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
+  print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
+  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ")")
+end
 
 """
     MaxPool(k)
