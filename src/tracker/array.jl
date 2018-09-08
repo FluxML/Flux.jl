@@ -225,20 +225,73 @@ Base.sum(f::Union{Function,Type},xs::TrackedArray) = sum(f.(xs))
 @grad sum(xs, dim...) = sum(data(xs), dim...),
   Δ -> (zero(xs) .+ Δ, map(_->nothing,dim)...)
 
-Base.prod(xs::TrackedArray, dim) = track(prod, xs, dim)
-Base.prod(xs::TrackedArray) = track(prod, xs)
+Base.prod(xs::TrackedArray; dims=:) = track(prod, xs; dims=dims)
 Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
 
-# @grad prod(xs) = prod(data(xs)), Δ -> (prod(xs) ./ xs .* Δ,)
-@grad prod(xs) = prod(data(xs)),
-  Δ -> (nobacksies(:sum,
-          reshape(.*(circshift.([reshape(data(xs), length(xs))], 1:length(xs)-1)...), size(xs)) .* Δ),
-        nothing)
-@grad prod(xs, dim::Int) = prod(data(xs), dim),
-  Δ -> (nobacksies(:sum,
-          .*(circshift.([data(xs)], tuple.(Iterators.repeated(0,dim-1)...,1:size(xs,dim)-1))...) .* Δ),
-        nothing)
-@grad prod(xs, dims) = prod(data(xs), dims), Δ -> (prod(xs, dims) ./ xs .* Δ, nothing)
+@grad function prod(xs; dims=:) 
+  p = prod(xs.data, dims=dims)
+  length(p)==1 ? _prod(xs.data, first(p), :) : _prod(xs.data, p, dims) # avoid mapslices() if not necc.
+end
+_prod(xs::Array, p, ::Colon) = p, Δ -> (nobacksies(:prod, ∇prod(xs, p, data(Δ)) ),) 
+_prod(xs::Array, p, dims) = p, Δ -> (nobacksies(:prod, mapslices(∇prod, xs; dims=dims) .* Δ), )
+_prod(xs, p, ::Colon) =  p, Δ -> ( ∇prod_all(x) .* Δ ,) # more generic fall-back
+_prod(xs, p, dim) =      p, Δ -> ( ∇prod_dim(x, p, dim) .* Δ ,)
+
+function ∇prod(x::AbstractArray, p=prod(x), Δ=1, f=identity)
+  !iszero(p) && return p ./ x .* Δ
+  ∇ = fill!(similar(x), 0)
+  z = findall(iszero, x)
+  length(z)>1 && return ∇
+  ∇[first(z)] = prod(f(xi) for (i, xi) in pairs(x) if i!=first(z)) * Δ
+  return ∇ 
+end
+
+∇prod_all(x) = reshape( .*(circshift.([reshape(x, length(x))], 1:length(x)-1)...), size(x))
+∇prod_dim(x, p, dim::Int) = .*(circshift.([x], tuple.(Iterators.repeated(0,dim-1)..., 1:size(x,dim)-1))...)
+∇prod_dim(x, p, dim) = p ./ x # error if x contains zero
+
+Base.cumprod(xs::TrackedArray; dims::Union{Nothing, Integer}=nothing) = track(cumprod, xs; dims=dims)
+
+@grad function cumprod(xs; dims=nothing) 
+  ndims(xs)==1 && (dims==1 || dims==(1,)) && return _cumprod(xs, nothing) # avoid mapslices() if not necc.
+  _cumprod(xs, dims)
+end
+_cumprod(xs, ::Nothing) = begin p = cumprod(xs.data); p, Δ -> (nobacksies(:cumprod, ∇cumprod(xs.data, p, data(Δ)) ),) end
+_cumprod(xs, d) = begin p = cumprod(xs.data, dims=d); p, Δ -> (nobacksies(:cumprod, ∇cumprod(xs.data, d, p, data(Δ)) ),) end
+
+function ∇cumprod(x::AbstractVector, p=cumprod(x), Δ=fill(1, length(x)))
+  len = length(x)
+  z = something(findfirst(iszero, x), len+1)
+
+  ∇ = fill!(similar(x), 0)
+  @inbounds for i=1:z-1
+    ixi = 1/x[i]
+    for k=i:z-1
+      ∇[i] += p[k] * Δ[k] * ixi
+    end
+  end
+
+  @inbounds if z != len+1
+    pk = z==1 ? one(p[1]) : p[z-1] # will be prod(x[j] for j=1:k if j!=z)
+    ∇[z] += pk * Δ[z]
+    for k=(z+1):len
+      pk *= x[k]
+      ∇[z] += pk * Δ[k]
+    end
+  end
+  ∇
+end
+      
+colon_at_d(tup::NTuple{N}, d::Int) where N = NTuple{N}( ifelse(i==d, Colon(), tup[i]) for i=1:N )
+
+function ∇cumprod(x::AbstractArray, d::Int, p=cumprod(x; dims=d), Δ=fill(1, size(x))) # mapslices(∇cumprod, x,p,Δ; dims=d) if only that existed
+  ∇ = similar(x)
+  for ii in Iterators.product([ifelse(i==d, Base.OneTo(1), r) for (i,r) in enumerate(axes(x))]...)
+    iid = colon_at_d(ii, d)
+    ∇[iid...] .= ∇cumprod(x[iid...], p[iid...], Δ[iid...])
+  end
+  ∇
+end
 
 Base.findfirst(xs::TrackedArray, args...) = findfirst(xs.data, args...)
 
