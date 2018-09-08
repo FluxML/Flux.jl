@@ -16,10 +16,35 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest((w, x) -> w*x', randn(5,5), randn(5,5))
 
 @test gradtest(x -> sum(x, (2, 3)), (3,4,5))
-@test gradtest(x -> prod(x, (2, 3)), (3,4,5))
-@test gradtest(x -> prod(x, 2), (3,4,5))
+  
+@test gradtest(x -> prod(x, dims=(2, 3)), (3,4,5))
+@test gradtest(x -> prod(x, dims=1), (3,4,5))
+@test gradtest(x -> prod(x, dims=1), (3,))
 @test gradtest(x -> prod(x), (3,4,5))
+@test gradtest(x -> prod(x), (3,))
 
+rz(dims...) = begin x = rand(dims...); x[2]=0; x end
+@test gradtest(x -> prod(x, dims=(2, 3)), rz(3,4,5))
+@test gradtest(x -> prod(x, dims=1), rz(3,4,5))
+@test gradtest(x -> prod(x, dims=1), rz(3,))
+@test gradtest(x -> prod(x), rz(3,4,5))
+@test gradtest(x -> prod(x), rz(3,))
+
+@test gradtest(x -> prod(x, dims=2), rz(3,4)') ## Adjoint tests fall-back methods
+@test gradtest(x -> prod(x, dims=2), rz(3,)')
+@test gradtest(x -> prod(x), rz(3,4)')
+@test gradtest(x -> prod(x), rz(3,)')
+
+@test gradtest(x -> cumprod(x, dims=2), (3,4,5))
+@test gradtest(x -> cumprod(x, dims=1), (3,)) 
+@test gradtest(x -> cumprod(x), (3,))
+
+@test gradtest(x -> cumprod(x, dims=2), rz(3,4,5))
+@test gradtest(x -> cumprod(x, dims=1), rz(3,)) 
+@test gradtest(x -> cumprod(x), rz(3,))
+
+  
+  
 @test gradtest(x -> softmax(x).*(1:3), 3)
 @test gradtest(x -> softmax(x).*(1:3), (3,5))
 @test gradtest(x -> logsoftmax(x).*(1:3), 3)
