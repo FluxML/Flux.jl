@@ -2,14 +2,14 @@ module Optimise
 
 export train!,
   SGD, ADAM, ADAMW, AdaMax, Momentum, Nesterov,
-  RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
+  RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM, stop, StopException
 
 struct Param{T}
   x::T
   Δ::T
 end
 
-Base.convert(::Type{Param}, x::AbstractArray) = Param(x, zeros(x))
+Param(x::AbstractArray) = Param(x, zero(x))
 
 include("optimisers.jl")
 include("interface.jl")
@@ -17,6 +17,7 @@ include("train.jl")
 
 using Flux.Tracker: TrackedArray
 
-Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad)
+Param(x::TrackedArray) = Param(x.data, x.grad)
+# Base.convert(::Type{Param}, x::TrackedArray) = Param(x.data, x.grad)
 
 end

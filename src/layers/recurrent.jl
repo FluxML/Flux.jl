@@ -1,4 +1,4 @@
-gate(h, n) = (1:h) + h*(n-1)
+gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
 
@@ -38,7 +38,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-treelike(Recur, (:cell, :init))
+@treelike Recur cell, init
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -84,7 +84,7 @@ end
 RNNCell(in::Integer, out::Integer, σ = tanh;
         init = glorot_uniform) =
   RNNCell(σ, param(init(out, in)), param(init(out, out)),
-          param(zeros(out)), param(initn(out)))
+          param(zeros(out)), param(init(out)))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -94,7 +94,7 @@ end
 
 hidden(m::RNNCell) = m.h
 
-treelike(RNNCell)
+@treelike RNNCell
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
@@ -123,13 +123,12 @@ end
 function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform)
   cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(zeros(out*4)),
-                  param(initn(out)), param(initn(out)))
-  cell.b.data[gate(out, 2)] = 1
+                  param(init(out)), param(init(out)))
+  cell.b.data[gate(out, 2)] .= 1
   return cell
 end
 
-function (m::LSTMCell)(h_, x)
-  h, c = h_ # TODO: nicer syntax on 0.7
+function (m::LSTMCell)((h, c), x)
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
@@ -143,7 +142,7 @@ end
 
 hidden(m::LSTMCell) = (m.h, m.c)
 
-treelike(LSTMCell)
+@treelike LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
@@ -170,7 +169,7 @@ end
 
 GRUCell(in, out; init = glorot_uniform) =
   GRUCell(param(init(out*3, in)), param(init(out*3, out)),
-          param(zeros(out*3)), param(initn(out)))
+          param(zeros(out*3)), param(init(out)))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
@@ -178,13 +177,13 @@ function (m::GRUCell)(h, x)
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1.-z).*h̃ .+ z.*h
+  h′ = (1 .- z).*h̃ .+ z.*h
   return h′, h′
 end
 
 hidden(m::GRUCell) = m.h
 
-treelike(GRUCell)
+@treelike GRUCell
 
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")

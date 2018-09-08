@@ -1,6 +1,6 @@
 using Flux.Optimise
 using Flux.Tracker
-
+using Test
 @testset "Optimise" begin
   w = randn(10, 10)
   @testset for Opt in [SGD, Nesterov, Momentum, ADAM, AdaMax, RMSProp, ps -> ADAGrad(ps, 0.1), ADADelta, AMSGrad, NADAM]
@@ -23,7 +23,7 @@ end
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               Iterators.repeated((), 100),
               ()->(),
-              cb = Flux.throttle(() -> (i > 3 && :stop), 1))
+              cb = Flux.throttle(() -> (i > 3 && stop()), 1))
 
   @test 3 < i < 50
 end
