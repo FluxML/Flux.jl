@@ -221,6 +221,7 @@ Base.prod(f::Union{Function, Type}, xs::TrackedArray) = prod(f.(xs))
   length(p)==1 ? _prod(xs.data, first(p), :) : _prod(xs.data, p, dims) # avoid mapslices() if not necc.
 end
 _prod(xs::Array, p, ::Colon) = p, Δ -> (nobacksies(:prod, ∇prod(xs, p, data(Δ)) ),) 
+_prod(xs::Array, p, d::Int) = p, Δ -> (nobacksies(:prod, ∇prod(xs, Val(d), p, data(Δ)) ), )
 _prod(xs::Array, p, dims) = p, Δ -> (nobacksies(:prod, mapslices(∇prod, xs; dims=dims) .* Δ), )
 _prod(xs, p, ::Colon) =  p, Δ -> ( ∇prod_all(x) .* Δ ,) # more generic fall-back
 _prod(xs, p, dim) =      p, Δ -> ( ∇prod_dim(x, p, dim) .* Δ ,)
@@ -238,14 +239,26 @@ end
 ∇prod_dim(x, p, dim::Int) = .*(circshift.([x], tuple.(Iterators.repeated(0,dim-1)..., 1:size(x,dim)-1))...)
 ∇prod_dim(x, p, dim) = p ./ x # error if x contains zero
 
+function ∇prod(x::AbstractArray, vald::Val{d}, p=prod(x, dims=d), Δ=fill!(similar(p),1)) where d
+  ∇ = similar(x)
+  for ii in Iterators.product(tup_insert(axes(x), Base.OneTo(1), vald)...)
+    iic = tup_insert(ii, Colon(), vald)
+    iio = tup_insert(ii, 1, vald)
+    ∇[iic...] .= ∇prod(x[iic...], p[iio...], Δ[iio...]) # like mapslices(∇prod, x,p,Δ; dims=d) if that existed
+  end
+  ∇
+end
+
+tup_insert(tup::NTuple{N}, what, ::Val{d}) where {N,d} = ntuple(i -> ifelse(i==d, what, tup[i]), Val(N))
+
 Base.cumprod(xs::TrackedArray; dims::Union{Nothing, Integer}=nothing) = track(cumprod, xs; dims=dims)
 
 @grad function cumprod(xs; dims=nothing) 
-  ndims(xs)==1 && (dims==1 || dims==(1,)) && return _cumprod(xs, nothing) # avoid mapslices() if not necc.
+  ndims(xs)==1 && (dims==1 || dims==(1,)) && return _cumprod(xs, nothing)
   _cumprod(xs, dims)
 end
 _cumprod(xs, ::Nothing) = begin p = cumprod(xs.data); p, Δ -> (nobacksies(:cumprod, ∇cumprod(xs.data, p, data(Δ)) ),) end
-_cumprod(xs, d) = begin p = cumprod(xs.data, dims=d); p, Δ -> (nobacksies(:cumprod, ∇cumprod(xs.data, d, p, data(Δ)) ),) end
+_cumprod(xs, d) = begin p = cumprod(xs.data, dims=d); p, Δ -> (nobacksies(:cumprod, ∇cumprod(xs.data, Val(d), p, data(Δ)) ),) end
 
 function ∇cumprod(x::AbstractVector, p=cumprod(x), Δ=fill(1, length(x)))
   len = length(x)
@@ -270,12 +283,10 @@ function ∇cumprod(x::AbstractVector, p=cumprod(x), Δ=fill(1, length(x)))
   ∇
 end
       
-colon_at_d(tup::NTuple{N}, d::Int) where N = NTuple{N}( ifelse(i==d, Colon(), tup[i]) for i=1:N )
-
-function ∇cumprod(x::AbstractArray, d::Int, p=cumprod(x; dims=d), Δ=fill(1, size(x))) # mapslices(∇cumprod, x,p,Δ; dims=d) if only that existed
+function ∇cumprod(x::AbstractArray, vald::Val{d}, p=cumprod(x; dims=d), Δ=fill(1, size(x))) where d
   ∇ = similar(x)
-  for ii in Iterators.product([ifelse(i==d, Base.OneTo(1), r) for (i,r) in enumerate(axes(x))]...)
-    iid = colon_at_d(ii, d)
+  for ii in Iterators.product(tup_insert(axes(x), Base.OneTo(1), vald)...)
+    iid = tup_insert(ii, Colon(), vald)
     ∇[iid...] .= ∇cumprod(x[iid...], p[iid...], Δ[iid...])
   end
   ∇
