@@ -1,5 +1,3 @@
-__precompile__()
-
 module Flux
 
 # Zero Flux Given
@@ -7,12 +5,11 @@ module Flux
 using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
-export Chain, Dense, RNN, LSTM, GRU, Conv,
+export Chain, Dense, RNN, LSTM, GRU, Conv, MaxPool, MeanPool,
        Dropout, LayerNorm, BatchNorm,
        params, mapleaves, cpu, gpu
 
 @reexport using NNlib
-using NNlib: @fix
 
 include("tracker/Tracker.jl")
 using .Tracker

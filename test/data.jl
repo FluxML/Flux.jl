@@ -6,3 +6,6 @@ using Test
 @test length(CMUDict.phones()) == 39
 
 @test length(CMUDict.symbols()) == 84
+
+@test MNIST.images()[1] isa Matrix
+@test MNIST.labels() isa Vector{Int64}

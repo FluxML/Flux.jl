@@ -1,4 +1,4 @@
-import Base: *, ==
+import Base: *
 
 import LinearAlgebra
 using Statistics
@@ -48,7 +48,7 @@ back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back
 
 # Fallthrough methods
 
-for f in :[Base.size, Base.ndims].args
+for f in :[Base.size, Base.ndims, Base.collect].args
   @eval @inline $f(x::TrackedArray, a...) = $f(data(x), a...)
 end
 
@@ -60,9 +60,11 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
-x::TrackedArray == y = data(x) == y
-y == x::TrackedArray = y == data(x)
-x::TrackedArray == y::TrackedArray = data(x) == data(y)
+for op in [:(==), :≈]
+    @eval Base.$op(x::TrackedArray, y::AbstractArray) = Base.$op(data(x), y)
+    @eval Base.$op(x::AbstractArray, y::TrackedArray) = Base.$op(x, data(y))
+    @eval Base.$op(x::TrackedArray, y::TrackedArray) = Base.$op(data(x), data(y))
+end
 
 # Array Stdlib
 
@@ -86,9 +88,9 @@ Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 @grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
 @grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
 
-Base.repeat(A::TrackedArray; kw...) = track(repeat, A; kw...)
+Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
 
-@grad function repeat(xs; inner=ntuple(x->1, ndims(A)), outer=ntuple(x->1, ndims(A)))
+@grad function repeat(xs; inner=ntuple(x->1, ndims(xs)), outer=ntuple(x->1, ndims(xs)))
   repeat(data(xs), inner = inner, outer = outer), function (Δ)
     Δ′ = zero(xs)
     S = size(xs)
@@ -286,15 +288,6 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 @grad a::AbstractMatrix * b::AbstractVecOrMat =
   data(a)*data(b), Δ -> (Δ * transpose(b), transpose(a) * Δ)
 
-# @grad function (a::AbstractMatrix * b::AbstractVecOrMat)
-#   # @show size(a) size(b)
-#   data(a)*data(b), function (Δ)
-#     @show size(Δ) size(b) size(Δ*transpose(b)) size(Δ*transpose(data(b)))
-#     @show typeof(Δ) typeof(b)
-#     (Δ * transpose(b), transpose(a) * Δ)
-#   end
-# end
-
 # NNlib
 
 using NNlib
@@ -336,48 +329,85 @@ end
 
 using ForwardDiff: Dual, partials, value
 
-_size(x::AbstractArray) = size(x)
-_size(x) = ()
+trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val(ndims(x))))
 
-dualify(xs, n) = xs
-dualify(xs::AbstractArray, ps) = map(x -> Dual(x, ps), xs)
-dualify(xs::Real, ps) = Dual(xs, ps)
+unbroadcast(x::AbstractArray, Δ) =
+  size(x) == size(Δ) ? Δ :
+  length(x) == length(Δ) ? trim(x, Δ) :
+    trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
 
-unbroadcast(x::Tuple, Δ) =
-  x == size(Δ) ? Δ :
-    reshape(sum(Δ, dims = filter(n -> n > length(x) || x[n] == 1, 1:ndims(Δ))), x)
+unbroadcast(x::Number, Δ) = sum(Δ)
+unbroadcast(x::Base.RefValue{<:Function}, _) = nothing
+unbroadcast(x::Base.RefValue{<:Val}, _) = nothing
 
-unbroadcast(x::Tuple{}, Δ) = sum(Δ)
+dual(x, p) = x
+dual(x::Real, p) = Dual(x, p)
 
-function getpartial(Δ, x, i)
-  @inbounds p = getindex(partials(x), i)
-  return Δ * p
+function partial(f::F, Δ, i, args::Vararg{Any,N}) where {F,N}
+  dargs = ntuple(j -> dual(args[j], i==j), Val(N))
+  return Δ * f(dargs...).partials[1]
 end
 
-function ∇broadcast(f, args::Vararg{Any,N}) where N
-  sizes = _size.(args)
-  dargs = map((x,i) -> dualify(data(x), ntuple(j -> i==j, Val(N))), args, ntuple(identity, Val(N)))
-  out = broadcast(f, dargs...)
-  eltype(out) <: Dual || return out
-  y = value.(out)
-  back = function (Δ_)
-    Δ = data(Δ_)
-    Δargs = ntuple(i -> getpartial.(Δ, out, i), Val(N))
-    dxs = map((x, Δ) -> unbroadcast(x, Δ), sizes, Δargs)
-    nobacksies(:broadcast, dxs)
+@inline function ∇broadcast(f::F, args::Vararg{Any,N}) where {F,N}
+  y = broadcast(f, data.(args)...)
+  eltype(y) <: Real || return y
+  eltype(y) == Bool && return y
+  function back(Δ)
+    Δargs = ntuple(i -> partial.(f, data(Δ), i, args...), Val(N))
+    dxs = unbroadcast.(args, Δargs)
+    return nobacksies(:broadcast, dxs)
   end
   # So we can return non-tracked arrays
   track(Call(back, tracker.(args)), y)
 end
 
-using Base.Broadcast: BroadcastStyle
+using Base.Broadcast: BroadcastStyle, ArrayStyle, Broadcasted, broadcasted
 
 struct TrackedStyle <: BroadcastStyle end
 
 Broadcast.BroadcastStyle(::Type{<:Union{TrackedArray,TrackedReal}}) = TrackedStyle()
 Broadcast.BroadcastStyle(::TrackedStyle, ::BroadcastStyle) = TrackedStyle()
 
-function Base.copy(bc::Broadcast.Broadcasted{TrackedStyle})
-  bc = Broadcast.flatten(bc)
-  ∇broadcast(bc.f, bc.args...)
+# We have to re-build the original broadcast struct to get the appropriate array
+# style. We need this primarily to support CuArrays' broadcasting fixes.
+broadcast_rebuild(xs) = data(xs)
+
+broadcast_rebuild(bc::Broadcasted) =
+  broadcasted(bc.f, broadcast_rebuild.(bc.args)...)
+
+preprocess(x) = x
+
+function Base.Broadcast.materialize(bc::Broadcasted{TrackedStyle})
+  bc1 = Broadcast.flatten(bc)
+  bc2 = Broadcast.flatten(broadcast_rebuild(bc))
+  ∇broadcast(bc2.f, bc1.args...)
+end
+
+using Requires
+
+# https://github.com/FluxML/Flux.jl/issues/353
+@init Requires.isprecompiling() || @eval Base.Broadcast begin
+  function flatten(bc::Broadcasted{Style}) where {Style}
+    isflat(bc) && return bc
+    args = cat_nested(bc)
+    let makeargs = make_makeargs(bc), f = bc.f
+      newf = @inline function(args::Vararg{Any,N}) where N
+        f(makeargs(args...)...)
+      end
+      return Broadcasted{Style}(newf, args, bc.axes)
+    end
+  end
+  @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
+    bc = t[1]
+    let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
+      let makeargs = make_makeargs(makeargs, bc.args)
+        headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
+        return @inline function(args::Vararg{Any,N}) where N
+          args1 = makeargs(args...)
+          a, b = headargs(args1...), tailargs(args1...)
+          (f(a...), b...)
+        end
+      end
+    end
+  end
 end

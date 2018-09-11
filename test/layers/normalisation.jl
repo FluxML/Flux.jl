@@ -55,17 +55,17 @@ end
     #  .1 * 4 + 0 = .4
     @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
 
-    # julia> .1 .* std(x, 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    # julia> .1 .* std(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
     # 2×1 Array{Float64,2}:
     #  1.14495
     #  1.14495
-    @test m.σ² ≈ 0.1 .* var(x.data, 2, corrected=false)*3/2  + 0.9 .* [1., 1.]
+    @test m.σ² ≈ .1 .* std(x.data, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
 
     testmode!(m)
     @test !m.active
 
-    y = m(x).data
-    @test isapprox(y, data((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-6)
+    x′ = m(x).data
+    @test x′[1] ≈ (1 .- 0.3) / 1.1449489742783179
   end
 
   # with activation function

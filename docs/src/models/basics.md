@@ -172,7 +172,7 @@ using Flux
 
 layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
 
-model(x) = foldl((x, m) -> m(x), x, layers)
+model(x) = foldl((x, m) -> m(x), layers, init = x)
 
 model(rand(10)) # => 2-element vector
 ```

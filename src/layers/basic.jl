@@ -21,8 +21,8 @@ struct Chain
   Chain(xs...) = new([xs...])
 end
 
-@forward Chain.layers Base.getindex, Base.first, Base.last, Base.endof, Base.push!
-@forward Chain.layers Base.start, Base.next, Base.done
+@forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!
+@forward Chain.layers Base.iterate
 
 children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
@@ -38,7 +38,7 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-activations(c::Chain, x) = accumulate((x, m) -> m(x), x, c.layers)
+activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
 
 """
     Dense(in::Integer, out::Integer, σ = identity)
@@ -77,7 +77,7 @@ end
 
 function (a::Dense)(x)
   W, b, σ = a.W, a.b, a.σ
-  @fix σ.(W*x .+ b)
+  σ.(W*x .+ b)
 end
 
 function Base.show(io::IO, l::Dense)

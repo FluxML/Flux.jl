@@ -1,6 +1,8 @@
 using Flux, Flux.Tracker, CuArrays, Test
 using Flux.Tracker: TrackedArray, data
 
+@info "Testing Flux CUDNN"
+
 @testset "CUDNN BatchNorm" begin
     x = TrackedArray(rand(10, 10, 3, 1))
     m = BatchNorm(3)

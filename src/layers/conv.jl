@@ -1,6 +1,6 @@
 using NNlib: conv
 
-@generated sub2(::Type{Val{N}}) where N = :(Val{$(N-2)})
+@generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -28,11 +28,11 @@ end
 
 Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
      stride = 1, pad = 0, dilation = 1) where {T,N} =
-  Conv(σ, w, b, expand.(sub2(Val{N}), (stride, pad, dilation))...)
+  Conv(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride = 1, pad = 0, dilation = 1) where N =
-  Conv(param(init(k..., ch...)), param(zero(ch[2])), σ,
+  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 @treelike Conv
@@ -49,4 +49,49 @@ function Base.show(io::IO, l::Conv)
   print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
+end
+
+
+"""
+    MaxPool(k)
+
+Max pooling layer. `k` stands for the size of the window for each dimension of the input.
+
+Takes the keyword arguments `pad` and `stride`.
+"""
+struct MaxPool{N}
+    k::NTuple{N,Int}
+    pad::NTuple{N,Int}
+    stride::NTuple{N,Int}
+end
+
+MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
+  MaxPool(k, expand(Val(N), pad), expand(Val(N), stride))
+
+(m::MaxPool)(x) = maxpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::MaxPool)
+  print(io, "MaxPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
+end
+
+"""
+    MeanPool(k)
+
+Mean pooling layer. `k` stands for the size of the window for each dimension of the input.
+
+Takes the keyword arguments `pad` and `stride`.
+"""
+struct MeanPool{N}
+    k::NTuple{N,Int}
+    pad::NTuple{N,Int}
+    stride::NTuple{N,Int}
+end
+
+MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
+  MeanPool(k, expand(Val(N), pad), expand(Val(N), stride))
+
+(m::MeanPool)(x) = meanpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::MeanPool)
+  print(io, "MeanPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
 end

@@ -2,6 +2,8 @@ using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, libcudnn_handle, cudnnDataType, TensorDesc, FilterDesc
 import ..Flux: data
 
+using LinearAlgebra
+
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}
   states::CuVector{UInt8}
@@ -18,8 +20,9 @@ function DropoutDesc(ρ::Real; seed::Integer=0)
   desc = DropoutDesc(d[], states)
   @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
     desc,libcudnn_handle[],ρ,states,length(states),seed)
-  finalizer(desc, x ->
-    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x))
+  finalizer(desc) do x
+    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
+  end
   return desc
 end
 

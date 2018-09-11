@@ -77,8 +77,7 @@ include("numeric.jl")
 
 Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 `f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
-the sign of the gradient applied to `x`.
-"""
+the sign of the gradient applied to `x`."""
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
 @grad hook(f, x) = data(x), Δ -> (nothing, f(Δ))
 
