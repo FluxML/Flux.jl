@@ -65,7 +65,7 @@ end
     @test !m.active
 
     x′ = m(x).data
-    @test x′[1] ≈ (1 .- 0.3) / sqrt(1.3)
+    @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
   end
 
   # with activation function
