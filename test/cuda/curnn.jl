@@ -1,4 +1,4 @@
-using Flux, CuArrays, Base.Test
+using Flux, CuArrays, Test
 
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM]

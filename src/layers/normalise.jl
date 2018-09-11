@@ -124,20 +124,20 @@ function (BN::BatchNorm)(x)
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* dropdims(data(μ), dims = axes)
-    BN.σ² = ((1 - mtm) .* BN.σ² .+ mtm .* dropdims(data(σ²), dims = axes) .* m ./ (m - 1))
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* reshape(data(μ), :)
+    BN.σ² = ((1 - mtm) .* BN.σ² .+ mtm .* reshape(data(σ²), :) .* m ./ (m - 1))
   end
 
   let λ = BN.λ
-    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ ϵ)) .+ reshape(β, affine_shape...))
+    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ BN.ϵ)) .+ reshape(β, affine_shape...))
   end
 end
 
 children(BN::BatchNorm) =
-  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.ϵ, BN.momentum, BN.active)
+  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ², BN.ϵ, BN.momentum, BN.active)
 
 mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ), BN.ϵ, BN.momentum, BN.active)
+  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ²), BN.ϵ, BN.momentum, BN.active)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
 
