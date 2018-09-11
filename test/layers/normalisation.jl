@@ -55,11 +55,11 @@ end
     #  .1 * 4 + 0 = .4
     @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
 
-    # julia> .1 .* std(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    # julia> .1 .* var(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
     # 2×1 Array{Float64,2}:
-    #  1.14495
-    #  1.14495
-    @test m.σ² ≈ .1 .* std(x.data, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    #  1.3
+    #  1.3
+    @test m.σ² ≈ .1 .* var(x.data, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
 
     testmode!(m)
     @test !m.active

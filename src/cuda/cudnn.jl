@@ -2,8 +2,6 @@ using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, libcudnn_handle, cudnnDataType, TensorDesc, FilterDesc
 import ..Flux: data
 
-using LinearAlgebra
-
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}
   states::CuVector{UInt8}
