@@ -65,7 +65,7 @@ end
     @test !m.active
 
     x′ = m(x).data
-    @test x′[1] ≈ (1 .- 0.3) / 1.1449489742783179
+    @test x′[1] ≈ (1 .- 0.3) / sqrt(1.3)
   end
 
   # with activation function
