@@ -87,14 +87,11 @@ Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 
 @grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
 @grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
-
 Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
-
 @grad function repeat(xs; inner=ntuple(x->1, ndims(xs)), outer=ntuple(x->1, ndims(xs)))
   repeat(data(xs), inner = inner, outer = outer), function (Δ)
     Δ′ = zero(xs)
     S = size(xs)
-
     # Loop through each element of Δ, calculate source dimensions, accumulate into Δ′
     for (dest_idx, val) in pairs(IndexCartesian(), data(Δ))
         # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
@@ -105,7 +102,6 @@ Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
     (nobacksies(:repeat, Δ′),)
   end
 end
-
 for f in [:vcat, :hcat]
   UArray = :(Union{TrackedArray,Vector,Matrix,Adjoint,Transpose})
   @eval begin
@@ -361,7 +357,7 @@ end
   track(Call(back, tracker.(args)), y)
 end
 
-using Base.Broadcast: BroadcastStyle, ArrayStyle, Broadcasted, broadcasted
+using Base.Broadcast: BroadcastStyle, ArrayStyle, Broadcasted, broadcasted, cat_nested
 
 struct TrackedStyle <: BroadcastStyle end
 
@@ -384,6 +380,10 @@ function Base.Broadcast.materialize(bc::Broadcasted{TrackedStyle})
 end
 
 using Requires
+
+Base.Broadcast.cat_nested(t::Base.Broadcast.Broadcasted, rest...) = (cat_nested(t.args...)..., cat_nested(rest...)...)
+Base.Broadcast.cat_nested(t::Any, rest...) = (t, cat_nested(rest...)...)
+Base.Broadcast.cat_nested() = ()
 
 # https://github.com/FluxML/Flux.jl/issues/353
 @init Requires.isprecompiling() || @eval Base.Broadcast begin

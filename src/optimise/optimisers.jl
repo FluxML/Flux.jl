@@ -27,14 +27,14 @@ Gradient descent with learning rate `η` and momentum `ρ`.
 mutable struct Momentum
   eta::Float64
   rho::Float64
-  velocity::ObjectIdDict
+  velocity::IdDict
 end
 
-Momentum(η, ρ = 0.9) = Momentum(η, ρ, ObjectIdDict())
+Momentum(η, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
 function update!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
-  v = @get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(o.velocity, x, zero(x))::typeof(x)
   @. v = ρ * v - η * Δ
   @. Δ = -v
 end
@@ -47,14 +47,14 @@ Gradient descent with learning rate  `η` and Nesterov momentum `ρ`.
 mutable struct Nesterov
   eta::Float64
   rho::Float64
-  velocity::ObjectIdDict
+  velocity::IdDict
 end
 
-Nesterov(η, ρ = 0.9) = Nesterov(η, ρ, ObjectIdDict())
+Nesterov(η, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
 function update!(o::Nesterov, x, Δ)
   η, ρ = o.eta, o.rho
-  v = @get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(o.velocity, x, zero(x))::typeof(x)
   d = @. ρ^2 * v - (1+ρ) * η * Δ
   @. v = ρ*v - η*Δ
   @. Δ = -d
@@ -70,14 +70,14 @@ choice for recurrent networks.
 mutable struct RMSProp
   eta::Float64
   rho::Float64
-  acc::ObjectIdDict
+  acc::IdDict
 end
 
-RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, ObjectIdDict())
+RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 
 function update!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
-  acc = @get!(o.acc, x, zero(x))::typeof(x)
+  acc = get!(o.acc, x, zero(x))::typeof(x)
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -90,14 +90,14 @@ end
 mutable struct ADAM
   eta::Float64
   beta::Tuple{Float64,Float64}
-  state::ObjectIdDict
+  state::IdDict
 end
 
-ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, ObjectIdDict())
+ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
 
 function update!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, βp = @get!(o.state, x, (zero(x), zero(x), β))
+  mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
