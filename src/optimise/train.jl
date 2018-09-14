@@ -1,5 +1,6 @@
 using Juno
 using Flux.Tracker: data, grad, back!
+import Base.depwarn
 
 function update!(opt, xs)
   for x in xs

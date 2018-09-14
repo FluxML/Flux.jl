@@ -102,6 +102,7 @@ function update!(o::ADAM, x, Δ)
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
   o.state[x] = (mt, vt, βp .* β)
+  return Δ
 end
 
 # """

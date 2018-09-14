@@ -74,6 +74,7 @@ include("numeric.jl")
 
 """
     hook(f, x) -> x′
+
 Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 `f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
 the sign of the gradient applied to `x`."""
@@ -82,6 +83,7 @@ hook(f, x) = istracked(x) ? track(hook, f, x) : x
 
 """
     checkpoint(f, args...)
+
 Behaves like `f(args...)`, but avoids storing the intermediate values needed for
 calculating gradients. Instead, `f(args...)` will be called again during the
 backward pass. This can be used to save memory in larger models.
