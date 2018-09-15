@@ -1,10 +1,10 @@
-julia 0.7-
+julia 0.7
 Juno
 MacroTools 0.3.3
 NNlib
 Requires
 Adapt
-GZip
+CodecZlib
 Colors
 ZipFile
 AbstractTrees

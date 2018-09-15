@@ -1,6 +1,6 @@
 using NNlib: conv, depthwiseconv
 
-@generated sub2(::Type{Val{N}}) where N = :(Val{$(N-2)})
+@generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -28,11 +28,11 @@ end
 
 Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
      stride = 1, pad = 0, dilation = 1) where {T,N} =
-  Conv(σ, w, b, expand.(sub2(Val{N}), (stride, pad, dilation))...)
+  Conv(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
      stride = 1, pad = 0, dilation = 1) where N =
-  Conv(param(init(k..., ch...)), param(zero(ch[2])), σ,
+  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 @treelike Conv
@@ -75,11 +75,10 @@ end
 
 DepthwiseConv(w::AbstractArray{T}, b::AbstractVector{T}, σ = identity;
        stride = 1, pad = 0) where T =
-  DepthwiseConv(σ, w, b, stride, pad)
+  DepthwiseConv(σ, w, b, expand.(sub2(Val(N)), (stride, pad))...)
 
 DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = initn,
-     stride::NTuple{N,Integer} = map(_->1,k),
-     pad::NTuple{N,Integer} = map(_->0,k)) where N =
+     stride = 1, pad = 0) where N =
   DepthwiseConv(param(init(k..., 1, ch)), param(zeros(ch)), σ,
        stride = stride, pad = pad)
 
@@ -89,7 +88,7 @@ DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity
   DepthwiseConv(param(init(k..., ch[2], ch[1])), param(zeros(ch[2]*ch[1])), σ,
        stride = stride, pad = pad)
 
-Flux.treelike(DepthwiseConv)
+@treelike DepthwiseConv
 
 function (c::DepthwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
@@ -103,5 +102,46 @@ function Base.show(io::IO, l::DepthwiseConv)
   print(io, ")")
 end
 
-# v0.5
-@deprecate Conv2D(args...; kw...) Conv(args...; kw...)
+"""
+    MaxPool(k)
+
+Max pooling layer. `k` stands for the size of the window for each dimension of the input.
+
+Takes the keyword arguments `pad` and `stride`.
+"""
+struct MaxPool{N}
+    k::NTuple{N,Int}
+    pad::NTuple{N,Int}
+    stride::NTuple{N,Int}
+end
+
+MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
+  MaxPool(k, expand(Val(N), pad), expand(Val(N), stride))
+
+(m::MaxPool)(x) = maxpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::MaxPool)
+  print(io, "MaxPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
+end
+
+"""
+    MeanPool(k)
+
+Mean pooling layer. `k` stands for the size of the window for each dimension of the input.
+
+Takes the keyword arguments `pad` and `stride`.
+"""
+struct MeanPool{N}
+    k::NTuple{N,Int}
+    pad::NTuple{N,Int}
+    stride::NTuple{N,Int}
+end
+
+MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
+  MeanPool(k, expand(Val(N), pad), expand(Val(N), stride))
+
+(m::MeanPool)(x) = meanpool(x, m.k; pad = m.pad, stride = m.stride)
+
+function Base.show(io::IO, m::MeanPool)
+  print(io, "MeanPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
+end

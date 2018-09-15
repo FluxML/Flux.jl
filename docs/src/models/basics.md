@@ -10,14 +10,14 @@ using Flux.Tracker
 f(x) = 3x^2 + 2x + 1
 
 # df/dx = 6x + 2
-f′(x) = Tracker.gradient(f, x)[1]
+df(x) = Tracker.gradient(f, x)[1]
 
-f′(2) # 14.0 (tracked)
+df(2) # 14.0 (tracked)
 
 # d²f/dx² = 6
-f′′(x) = Tracker.gradient(f′, x)[1]
+d2f(x) = Tracker.gradient(df, x)[1]
 
-f′′(2) # 6.0 (tracked)
+d2f(2) # 6.0 (tracked)
 ```
 
 (We'll learn more about why these numbers show up as `(tracked)` below.)
@@ -172,7 +172,7 @@ using Flux
 
 layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
 
-model(x) = foldl((x, m) -> m(x), x, layers)
+model(x) = foldl((x, m) -> m(x), layers, init = x)
 
 model(rand(10)) # => 2-element vector
 ```

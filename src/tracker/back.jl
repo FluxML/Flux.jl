@@ -70,7 +70,7 @@ struct Params
   Params(xs) = new(IdSet(xs))
 end
 
-@forward Params.params Base.start, Base.next, Base.done
+@forward Params.params Base.iterate, Base.length
 
 function Base.show(io::IO, ps::Params)
   print(io, "Params([")
@@ -86,6 +86,8 @@ Base.show(io::IO, ps::Grads) = println(io, "Grads(...)")
 
 Grads() = Grads(IdDict())
 
+@forward Grads.grads Base.setindex!, Base.haskey, Base.length, Base.iterate
+
 Grads(ps::Params) = Grads(IdDict(tracker(p) => init_grad(data(p)) for p in ps))
 
 Base.getindex(g::Grads, x::Tracked) = g.grads[x]
@@ -94,7 +96,6 @@ function Base.getindex(g::Grads, x)
   g[tracker(x)]
 end
 
-@forward Grads.grads Base.setindex!, Base.haskey
 
 accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] .+ Δ : Δ
 
@@ -136,7 +137,7 @@ end
 function forward(f, args...)
   args = param.(args)
   y, back = forward(() -> f(args...), Params(args))
-  y, Δ -> getindex.(back(Δ), args)
+  y, Δ -> getindex.(Ref(back(Δ)), args)
 end
 
 function losscheck(x)
