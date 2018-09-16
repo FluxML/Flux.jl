@@ -36,6 +36,7 @@ end
       w′.data .-= delta
     end
     @test Flux.mse(w, w′) < 0.01
+  end
 end
 
 @testset "Training Loop" begin
