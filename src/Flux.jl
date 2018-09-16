@@ -19,8 +19,9 @@ export Tracker, TrackedArray, TrackedVector, TrackedMatrix, param
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
-export Descent, ADAM, Momentum, Nesterov,
-       RMSProp, update!
+export Descent, ADAM, Momentum, Nesterov, RMSProp,
+	   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
+	   InvDecay, ExpDecay
 
 include("utils.jl")
 include("onehot.jl")

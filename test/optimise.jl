@@ -3,12 +3,15 @@ using Flux.Tracker
 using Test
 @testset "Optimise" begin
   w = randn(10, 10)
-  @testset for Opt in [Descent, ADAM, Nesterov, RMSProp, Momentum]
+  @testset for Opt in [ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, Descent, ADAM, Nesterov, RMSProp, Momentum]
     w′ = param(randn(10, 10))
     loss(x) = Flux.mse(w*x, w′*x)
     opt = Opt(0.001)
-    if opt isa Descent
+    if opt isa Descent || opt isa ADAGrad
       opt = Opt(0.1)
+    end
+    if opt isa ADADelta
+      opt = Opt(0.9)
     end
     for t = 1: 10^5
       l = loss(rand(10))
@@ -18,6 +21,21 @@ using Test
     end
     @test Flux.mse(w, w′) < 0.01
   end
+end
+
+@testset "Compose" begin
+  w = randn(10, 10)
+  @testset for Opt in [InvDecay, ExpDecay]
+    w′ = param(randn(10, 10))
+    loss(x) = Flux.mse(w*x, w′*x)
+    opt = Compose(vec([Opt(), ADAM(0.001)]))
+    for t = 1:10^5
+      l = loss(rand(10))
+      back!(l)
+      delta = Optimise.update!(opt, w′.data, w′.grad)
+      w′.data .-= delta
+    end
+    @test Flux.mse(w, w′) < 0.01
 end
 
 @testset "Training Loop" begin

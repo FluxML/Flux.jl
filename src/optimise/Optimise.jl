@@ -1,7 +1,9 @@
 module Optimise
 
 export train!,
-	Descent, ADAM, Momentum, Nesterov, RMSProp, stop, StopException
+	Descent, ADAM, Momentum, Nesterov, RMSProp,
+	ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
+	InvDecay, ExpDecay, stop, StopException, Compose
 
 include("optimisers.jl")
 include("train.jl")

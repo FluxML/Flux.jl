@@ -361,7 +361,7 @@ end
   track(Call(back, tracker.(args)), y)
 end
 
-using Base.Broadcast: BroadcastStyle, ArrayStyle, Broadcasted, broadcasted, cat_nested
+using Base.Broadcast: BroadcastStyle, ArrayStyle, Broadcasted, broadcasted
 
 struct TrackedStyle <: BroadcastStyle end
 
@@ -384,10 +384,6 @@ function Base.Broadcast.materialize(bc::Broadcasted{TrackedStyle})
 end
 
 using Requires
-
-Base.Broadcast.cat_nested(t::Base.Broadcast.Broadcasted, rest...) = (cat_nested(t.args...)..., cat_nested(rest...)...)
-Base.Broadcast.cat_nested(t::Any, rest...) = (t, cat_nested(rest...)...)
-Base.Broadcast.cat_nested() = ()
 
 # https://github.com/FluxML/Flux.jl/issues/353
 @init Requires.isprecompiling() || @eval Base.Broadcast begin
