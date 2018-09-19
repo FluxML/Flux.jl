@@ -1,6 +1,8 @@
 import Base: *
 
 import LinearAlgebra
+import LinearAlgebra: inv, \, /
+
 using Statistics
 using LinearAlgebra: Transpose, Adjoint, diagm, diag
 
@@ -204,6 +206,41 @@ end
 Base.kron(a::TrackedMatrix, b::TrackedMatrix)  = _kron(a, b)
 Base.kron(a::TrackedMatrix, b::AbstractMatrix) = _kron(a, b)
 Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
+
+
+inv(A::TrackedArray) = Tracker.track(inv, A)
+@grad function inv(A)
+    return inv(Tracker.data(A)), function (Δ)
+        Ainv = inv(A)
+        ∇A = - Ainv' * Δ * Ainv'
+        return (∇A, )
+    end
+end
+
+#       (/) rdivide
+A::TrackedArray     / B::TrackedArray     = Tracker.track(/, A, B)
+A::AbstractVecOrMat / B::TrackedArray     = Tracker.track(/, A, B)
+A::TrackedArray     / B::AbstractVecOrMat = Tracker.track(/, A, B)
+@grad function (A / B)
+    return Tracker.data(A) / Tracker.data(B), function (Δ)
+        Binv = inv(B)
+        ∇B = - Binv' * A' * Δ * Binv'
+        return (Δ * Binv',  ∇B)
+    end
+end
+
+#       (\) ldivide  (left vec divide needs more work to resolve dispatch ambiguity)
+A::TrackedArray     \ B::TrackedArray     = Tracker.track(\, A, B)
+A::AbstractArray    \ B::TrackedArray     = Tracker.track(\, A, B)
+A::TrackedArray     \ B::AbstractVecOrMat = Tracker.track(\, A, B)
+@grad function (A \ B)
+    return Tracker.data(A) \ Tracker.data(B), function (Δ)
+        Ainv = inv(A)
+        ∇A = - Ainv' * Δ * B' * Ainv'
+        return (∇A,  Ainv' * Δ)
+    end
+end
+
 
 # Reductions
 
