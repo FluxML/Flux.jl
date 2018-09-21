@@ -217,29 +217,30 @@ inv(A::TrackedArray) = Tracker.track(inv, A)
     end
 end
 
-#       (/) rdivide
-A::TrackedArray     / B::TrackedArray     = Tracker.track(/, A, B)
-A::AbstractVecOrMat / B::TrackedArray     = Tracker.track(/, A, B)
-A::TrackedArray     / B::AbstractVecOrMat = Tracker.track(/, A, B)
-@grad function (A / B)
-    return Tracker.data(A) / Tracker.data(B), function (Δ)
-        Binv = inv(B)
-        ∇B = - Binv' * A' * Δ * Binv'
-        return (Δ * Binv',  ∇B)
+# Y = A \ B
+\(A::TrackedMatrix, B::TrackedVecOrMat) = Tracker.track(\, A, B)
+\(A::AbstractMatrix, B::TrackedVecOrMat) = Tracker.track(\, A, B)
+\(A::TrackedMatrix, B::AbstractVecOrMat) = Tracker.track(\, A, B)
+@grad function \(A::AbstractMatrix, B::AbstractVecOrMat)
+    Y = Tracker.data(A) \ Tracker.data(B)
+    return Y, function(Ȳ)
+        B̄ = A' \ Ȳ
+        return (-B̄ * Y', B̄)
     end
 end
 
-#       (\) ldivide  (left vec divide needs more work to resolve dispatch ambiguity)
-A::TrackedArray     \ B::TrackedArray     = Tracker.track(\, A, B)
-A::AbstractArray    \ B::TrackedArray     = Tracker.track(\, A, B)
-A::TrackedArray     \ B::AbstractVecOrMat = Tracker.track(\, A, B)
-@grad function (A \ B)
-    return Tracker.data(A) \ Tracker.data(B), function (Δ)
-        Ainv = inv(A)
-        ∇A = - Ainv' * Δ * B' * Ainv'
-        return (∇A,  Ainv' * Δ)
+# Y = A / B
+/(A::TrackedVecOrMat, B::TrackedMatrix) = Tracker.track(/, A, B)
+/(A::AbstractVecOrMat, B::TrackedMatrix) = Tracker.track(/, A, B)
+/(A::TrackedVecOrMat, B::AbstractMatrix) = Tracker.track(/, A, B)
+@grad function /(A::AbstractVecOrMat, B::AbstractMatrix)
+    Y = Tracker.data(A) / Tracker.data(B)
+    return Y, function(Ȳ)
+        Ā = Ȳ / B'
+        return (Ā, -Y' * Ā)
     end
 end
+
 
 
 # Reductions
