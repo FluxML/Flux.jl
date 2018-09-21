@@ -102,14 +102,14 @@ Firstly, we must tell the tracker system to stop when it sees a call to `minus`,
 ```julia
 using Flux.Tracker: TrackedReal, track, @grad
 
-minus(a::TrackedArray, b::TrackedArray) = Tracker.track(minus, a, b)
+minus(a::TrackedReal, b::TrackedReal) = Tracker.track(minus, a, b)
 ```
 
 `track` takes care of building a new `Tracked` object and recording the operation on the tape. We just need to provide a gradient definition.
 
 ```julia
 @grad function minus(a, b)
-  return minus(data(a),data(b)), Δ -> (Δ, -Δ)
+  return minus(a.data, b.data), Δ -> (Δ, -Δ)
 end
 ```
 
