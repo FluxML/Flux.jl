@@ -1,6 +1,5 @@
 using Test, Random
 
-
 @testset "basic" begin
     @testset "Chain" begin
         @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn(10))
