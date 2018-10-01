@@ -1,5 +1,6 @@
 using Flux
 using Base: @get!
+using MacroTools: @forward
 
 const ϵ = 1e-8
 
@@ -15,6 +16,7 @@ mutable struct Descent
   eta::Float64
 end
 
+Descent(η = 0.1) = Descent(η)
 function update!(o::Descent, x, Δ)
   Δ .*= o.eta
 end
@@ -30,7 +32,7 @@ mutable struct Momentum
   velocity::IdDict
 end
 
-Momentum(η, ρ = 0.9) = Momentum(η, ρ, IdDict())
+Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
 function update!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
@@ -50,7 +52,7 @@ mutable struct Nesterov
   velocity::IdDict
 end
 
-Nesterov(η, ρ = 0.9) = Nesterov(η, ρ, IdDict())
+Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
 function update!(o::Nesterov, x, Δ)
   η, ρ = o.eta, o.rho
@@ -219,8 +221,44 @@ function update!(o::NADAM, x, Δ)
   return Δ
 end
 
+"""
+   ADAMW((η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
+
+[ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
+"""
+ADAMW(η = 0.001, β = (0.9, 0.999), η_decay = 1, γ_decay = 0) = Compose(ADAM(η, β, IdDict()), DescentWeightDecay(η_decay, γ_decay))
+
+# Compose optimizers
+
+"""
+  `Compose(Compose(...), ...)`
+
+Compose optimizers to support inbuilt or custom gradient updates while fitting the loss.
+
+Example:\n\n
+`Compose(ADAM(), Compose(RMSProp(0.001), ExpDecay(0.02)))`
+"""
 mutable struct Compose
   os::Vector{Any}
+end
+
+Compose(o...) = Compose(flattenCompose(o...))
+
+@forward Compose.os Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.setindex!
+@forward Compose.os Base.iterate
+
+Base.getindex(c::Compose, i::AbstractArray) = Compose(c.os[i]...)
+
+function flattenCompose(o...)
+  res = []
+  for opt in o
+    if opt isa Compose
+      push!(res, flattenCompose(opt.os...)...)
+    else
+      push!(res, opt)
+    end
+  end
+  return res
 end
 
 function update!(o::Compose, x, Δ)
@@ -255,4 +293,16 @@ ExpDecay(γ = 0.001) = ExpDecay(γ)
 function update!(o::ExpDecay, x, Δ)
   γ = o.gamma
   @. Δ += γ * x
+end
+
+mutable struct DescentWeightDecay
+  eta::Real
+  gamma::Real
+end
+
+DescentWeightDecay(η = 1, γ = 0) = DescentWeightDecay(η, γ)
+function update!(o::DescentWeightDecay, x,  Δ)
+  η, γ = o.eta, o.gamma
+  @. x = x - η * (Δ + γ * x)
+  Δ
 end
