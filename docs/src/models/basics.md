@@ -10,14 +10,14 @@ using Flux.Tracker
 f(x) = 3x^2 + 2x + 1
 
 # df/dx = 6x + 2
-f′(x) = Tracker.gradient(f, x)[1]
+df(x) = Tracker.gradient(f, x)[1]
 
-f′(2) # 14.0 (tracked)
+df(2) # 14.0 (tracked)
 
 # d²f/dx² = 6
-f′′(x) = Tracker.gradient(f′, x)[1]
+d2f(x) = Tracker.gradient(df, x)[1]
 
-f′′(2) # 6.0 (tracked)
+d2f(2) # 6.0 (tracked)
 ```
 
 (We'll learn more about why these numbers show up as `(tracked)` below.)
@@ -172,7 +172,7 @@ using Flux
 
 layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
 
-model(x) = foldl((x, m) -> m(x), x, layers)
+model(x) = foldl((x, m) -> m(x), layers, init = x)
 
 model(rand(10)) # => 2-element vector
 ```
@@ -211,7 +211,7 @@ m(5) # => 26
 Flux provides a set of helpers for custom layers, which you can enable by calling
 
 ```julia
-Flux.treelike(Affine)
+Flux.@treelike Affine
 ```
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).

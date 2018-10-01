@@ -32,20 +32,21 @@ import Adapt.adapt
 
 adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-@require CuArrays begin
-  import CuArrays: CuArray, cudaconvert
-  Base.Broadcast._containertype(::Type{<:OneHotMatrix{<:CuArray}}) = CuArray
+@init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
+  import .CuArrays: CuArray, cudaconvert
+  import Base.Broadcast: BroadcastStyle, ArrayStyle
+  BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = ArrayStyle{CuArray}()
   cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 end
 
 function onehot(l, labels)
-  i = findfirst(labels, l)
+  i = something(findfirst(isequal(l), labels), 0)
   i > 0 || error("Value $l is not in labels")
   OneHotVector(i, length(labels))
 end
 
 function onehot(l, labels, unk)
-  i = findfirst(labels, l)
+  i = something(findfirst(isequal(l), labels), 0)
   i > 0 || return onehot(unk, labels)
   OneHotVector(i, length(labels))
 end
@@ -53,11 +54,15 @@ end
 onehotbatch(ls, labels, unk...) =
   OneHotMatrix(length(labels), [onehot(l, labels, unk...) for l in ls])
 
-argmax(y::AbstractVector, labels = 1:length(y)) =
-  labels[findfirst(y, maximum(y))]
+onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
 
-argmax(y::AbstractMatrix, l...) =
-  squeeze(mapslices(y -> argmax(y, l...), y, 1), 1)
+onecold(y::AbstractMatrix, labels...) =
+  dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
+
+function argmax(xs...)
+  Base.depwarn("`argmax(...) is deprecated, use `onecold(...)` instead.", :argmax)
+  return onecold(xs...)
+end
 
 # Ambiguity hack
 

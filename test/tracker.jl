@@ -1,22 +1,27 @@
-using Flux.Tracker, Base.Test, NNlib
+using Flux
+using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv
+using Printf: @sprintf
+using LinearAlgebra: Diagonal, dot, LowerTriangular, norm
+using Statistics: mean, std
+using Random
+# using StatsBase
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
-gradtest(f, dims...) = gradtest(f, rand.(dims)...)
-
+gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 @testset "Tracker" begin
-
 @test gradtest((x, W, b) -> σ.(W*x .+ b), 5, (2,5), 2)
 @test gradtest((x, W, b) -> σ.(W*x .+ b), (5,3), (2,5), 2)
 @test gradtest((x, W, b) -> logσ.(W*x .+ b), 5, (2,5), 2)
 @test gradtest((x, W, b) -> logσ.(W*x .+ b), (5,3), (2,5), 2)
-
-@test gradtest((w, x) -> w'*x, randn(10, 2), randn(10))
-@test gradtest((w, x) -> w*x', randn(5,5), randn(5,5))
-
-@test gradtest(x -> sum(x, (2, 3)), (3,4,5))
-@test gradtest(x -> prod(x, (2, 3)), (3,4,5))
+@test gradtest((w, x) -> w'*x, randn(Float64,10, 2), randn(Float64,10))
+@test gradtest((w, x) -> w*x', randn(Float64,5,5), randn(Float64,5,5))
+@test gradtest(x -> sum(x, dims = (2, 3)), (3,4,5))
+@test gradtest(x -> sum(x, dims = 1), randn(Float64,2,3))
+@test gradtest(x -> sum(x, dims = [1,2]), randn(Float64,2,3))
+@test gradtest(x -> sum(x), randn(Float64,2,3))
+@test gradtest(x -> prod(x, dims=(2, 3)), (3,4,5))
 @test gradtest(x -> prod(x), (3,4,5))
 
 @test gradtest(x -> softmax(x).*(1:3), 3)
@@ -28,7 +33,6 @@ gradtest(f, dims...) = gradtest(f, rand.(dims)...)
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
-
 function promotiontest(f, A, B, C)
   r0 = f(A, B, C)
   r1 = f(param(A), B, C)
@@ -48,8 +52,8 @@ function promotiontest(f, A, B, C)
 end
 
 @testset "concat" begin
-  cat1(x...) = cat(1, x...)
-  cat2(x...) = cat(2, x...)
+  cat1(x...) = cat(x..., dims = 1)
+  cat2(x...) = cat(x..., dims = 2)
 
   @testset for vcatf in [vcat, cat1]
     @test gradtest(vcatf, rand(5), rand(3))
@@ -61,6 +65,7 @@ end
     @test gradtest(vcatf, rand(5)', rand(2,5))
   end
 
+
   @testset for hcatf in [hcat, cat2]
     @test gradtest(hcatf, rand(5), rand(5))
     @test gradtest(hcatf, rand(5)', rand(5)')
@@ -71,17 +76,17 @@ end
     @test gradtest(hcatf, rand(5), rand(5,2))
 end
 
-  @testset for catf in [vcat, cat1, hcat, cat2, (x...) -> cat(3, x...), (x...) -> cat((1,2), x...)]
+  @testset for catf in [vcat, cat1, hcat, cat2, (x...) -> cat(x..., dims = 3), (x...) -> cat(x..., dims = (1,2))]
     @test gradtest(catf, rand(5))
     @test gradtest(catf, rand(5)')
     @test gradtest(catf, rand(2,5))
     @test gradtest(catf, rand(2,5,3))
   end
 
-  @test gradtest((x...) -> cat(3, x...), rand(2,5,2), rand(2,5,3), rand(2,5,4))
+  @test gradtest((x...) -> cat(x..., dims = 3), rand(2,5,2), rand(2,5,3), rand(2,5,4))
 
   @testset "cat($dim, ...)" for dim in 3:5
-    catdim = (x...) -> cat(dim, x...)
+    catdim = (x...) -> cat(x..., dims = dim)
     @test gradtest(catdim, rand(5), rand(5), rand(5))
     @test gradtest(catdim, rand(2,5), rand(2,5), rand(2,5))
     @test gradtest(catdim, rand(2,5,3), rand(2,5,3), rand(2,5,3))
@@ -89,12 +94,12 @@ end
 
   @test !isa(vcat(rand(2)), TrackedArray)
   @test !isa(hcat(rand(2)), TrackedArray)
-  @test !isa(cat(1,rand(2)), TrackedArray)
+  @test !isa(cat(rand(2), dims=1), TrackedArray)
 
-  @test gradtest((a,b)->cat((2,3,5), a, b), rand(2,3), rand(2,4,2,1))
+  @test gradtest((a,b)->cat(a, b, dims = (2,3,5)), rand(2,3), rand(2,4,2,1))
 
   @testset "promotiontest" begin
-    @testset for fcat in [hcat, vcat, (x...) -> cat(3, x...), (x...) -> cat((1,2), x...)]
+    @testset for fcat in [hcat, vcat, (x...) -> cat(x..., dims = 3), (x...) -> cat(x..., dims = (1,2))]
       promotiontest(fcat, rand(2), rand(2), rand(2))
       promotiontest(fcat, rand(2)', rand(2)', rand(2)')
       promotiontest(fcat, rand(2,2), rand(2,2), rand(2,2))
@@ -105,16 +110,14 @@ end
     promotiontest(hcat, rand(2,1), rand(2), rand(2,2))
     promotiontest(vcat, rand(3,4,5), rand(1,4,5), rand(2,4,5))
     promotiontest(hcat, rand(4,3,5), rand(4,1,5), rand(4,2,5))
-    promotiontest((x...) -> cat(3, x...), rand(4,5,3), rand(4,5,1), rand(4,5,2))
+    promotiontest((x...) -> cat(x..., dims = 3), rand(4,5,3), rand(4,5,1), rand(4,5,2))
   end
+
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
 
-# TODO unreliable
-@test gradtest(x -> repmat(x, 5,5), rand(4,5))
-@test gradtest(x -> repmat(x, 5), rand(4,5))
-
+@test gradtest(x -> repeat(x; inner=2), rand(5))
 @test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
 @test gradtest(x -> repeat(x; inner=(2,2,1), outer=(1,1,3)), rand(5,4,3))
 
@@ -124,54 +127,59 @@ end
 @test gradtest(kron, rand(5,1), rand(3,1), rand(8,1))
 @test gradtest(kron, rand(5,2), rand(3,2), rand(8,2))
 
-@test gradtest(diagm, rand(3))
+@test gradtest(f-> Matrix(Diagonal(f)), rand(3))
+
+@test gradtest(W -> inv(log.(W * W)), (5,5))
+@test gradtest((A, B) -> A / B , (1,5), (5,5))
+@test gradtest((A, B) -> log.(A * A) / exp.(B * B), (5,5), (5,5))
+@test gradtest((A, B) -> log.(A * A) \ exp.(B * B), (5,5), (5,5))
 
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))
 
-  @test gradtest(x -> mean(x, 1), rand(2, 3))
-  @test gradtest(x -> mean(x, 2), rand(2, 3))
-  @test gradtest(x -> mean(x, 3), rand(2, 3, 4))
+  @test gradtest(x -> mean(x, dims=1), rand(2, 3))
+  @test gradtest(x -> mean(x, dims=2), rand(2, 3))
+  @test gradtest(x -> mean(x, dims=3), rand(2, 3, 4))
 
-  @test gradtest(x -> mean(x, [1, 2]), rand(2, 3, 4))
+  @test gradtest(x -> mean(x, dims=[1, 2]), rand(2, 3, 4))
 end
 
 @testset "maximum" begin
   @test gradtest(maximum, rand(2, 3))
 
-  @test gradtest(x -> maximum(x, 1), rand(2, 3))
-  @test gradtest(x -> maximum(x, 2), rand(2, 3))
-  @test gradtest(x -> maximum(x, 3), rand(2, 3, 4))
+  @test gradtest(x -> maximum(x, dims=1), rand(2, 3))
+  @test gradtest(x -> maximum(x, dims=2), rand(2, 3))
+  @test gradtest(x -> maximum(x, dims=3), rand(2, 3, 4))
 
-  @test gradtest(x -> maximum(x, [1, 2]), rand(2, 3, 4))
+  @test gradtest(x -> maximum(x, dims=[1, 2]), rand(2, 3, 4))
 end
 
 @testset "minimum" begin
   @test gradtest(minimum, rand(2, 3))
 
-  @test gradtest(x -> minimum(x, 1), rand(2, 3))
-  @test gradtest(x -> minimum(x, 2), rand(2, 3))
-  @test gradtest(x -> minimum(x, 3), rand(2, 3, 4))
+  @test gradtest(x -> minimum(x, dims=1), rand(2, 3))
+  @test gradtest(x -> minimum(x, dims=2), rand(2, 3))
+  @test gradtest(x -> minimum(x, dims=3), rand(2, 3, 4))
 
-  @test gradtest(x -> minimum(x, [1, 2]), rand(2, 3, 4))
+  @test gradtest(x -> minimum(x, dims=[1, 2]), rand(2, 3, 4))
 end
 
 @test gradtest(x -> std(x), rand(5,5))
-@test gradtest(x -> std(x, 1), rand(5,5))
+@test gradtest(x -> std(x, dims = 1), rand(5,5))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
 
-@test gradtest(vecnorm, rand(5))
+@test gradtest(norm, rand(5))
 
 @test gradtest(rand(5)) do x
   y = x.^2
   2y + x
 end
 
-@test gradtest(conv, rand(10, 3, 2), randn(2, 3, 2))
-@test gradtest(conv, rand(10, 10, 3, 2), randn(2, 2, 3, 2))
-@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(2, 2, 2, 3, 2))
+@test gradtest(conv, rand(10, 3, 2), randn(Float64,2, 3, 2))
+@test gradtest(conv, rand(10, 10, 3, 2), randn(Float64,2, 2, 3, 2))
+@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 3, 2))
 
 @test gradtest(x -> maxpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> maxpool(x, (2,2,2)), rand(10, 10, 10, 3, 2))
@@ -179,9 +187,30 @@ end
 @test gradtest(x -> meanpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> meanpool(x, (2,2,2)), rand(5, 5, 5, 3, 2))
 
-@test (param([1,2,3]) .< 2) == [true, false, false]
+@testset "equality & order" begin
+    # TrackedReal
+    @test param(2)^2 == param(4)
+    @test param(2)^2 == 4
+    @test 4 == param(2)^2
 
-@test param(2)^2 == 4.0
+    @test param(2)^2 ≈ param(4)
+    @test param(2)^2 ≈ 4
+    @test 4 ≈ param(2)^2
+
+    @test (param([1,2,3]) .< 2) == [true, false, false]
+    @test (param([1,2,3]) .<= 2) == [true, true, false]
+    @test (2 .> param([1,2,3])) == [true, false, false]
+    @test (2 .>= param([1,2,3])) == [true, true, false]
+
+    # TrackedArray
+    @test param([1,2,3]).^2 == param([1,4,9])
+    @test [1,2,3].^2 == param([1,4,9])
+    @test param([1,2,3]).^2 == [1,4,9]
+
+    @test param([1,2,3]).^2 ≈ param([1,4,9])
+    @test [1,2,3].^2 ≈ param([1,4,9])
+    @test param([1,2,3]).^2 ≈ [1,4,9]
+end
 
 @testset "reshape" begin
   x = reshape(param(rand(2,2,2)), 4, 2)
@@ -211,14 +240,11 @@ end
 @testset "Fallbacks" begin
   xs = param([1 2; 3 4])
   @test similar(xs) isa Matrix{Float64}
-  # Remove this test if we do LowerTriangular properly
-  L = LowerTriangular(xs)
-  @test L*L' isa Matrix{TrackedReal{Float64}}
 end
 
 @test @sprintf("%.2f", sum(param([1,2,3]))) == "6.00"
 
-@inferred NNlib.conv(param(rand(10,10,3,2)),randn(2,2,3,4))
+@inferred NNlib.conv(param(rand(10,10,3,2)),randn(Float64,2,2,3,4))
 
 b = param(rand())
 Tracker.back!(b)
@@ -231,6 +257,11 @@ Tracker.back!(b)
   z = xy[1]*xy[2]
   back!(z)
   @test grad.((x,y)) == (3, 2)
+
+  @test Tracker.gradient(2, 3) do x, y
+    xy = Tracker.collect([x, y])
+    xy[1]*xy[2]
+  end == (3, 2)
 end
 
 # Gradient Hooks

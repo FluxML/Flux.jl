@@ -1,5 +1,6 @@
 using Juno
 using Flux.Tracker: back!
+import Base.depwarn
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -12,6 +13,25 @@ macro interrupts(ex)
       e isa InterruptException || rethrow()
       throw(e)
     end)
+end
+
+struct StopException <: Exception end
+"""
+    stop()
+
+Call `Flux.stop()` in a callback to indicate when a callback condition is met.
+This would trigger the train loop to stop and exit.
+
+```julia
+# Example callback:
+
+cb = function ()
+  accuracy() > 0.9 && Flux.stop()
+end
+```
+"""
+function stop()
+  throw(StopException())
 end
 
 """
@@ -36,10 +56,21 @@ function train!(loss, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
   @progress for d in data
-    l = loss(d...)
-    @interrupts back!(l)
-    opt()
-    cb() == :stop && break
+    try
+      l = loss(d...)
+      @interrupts back!(l)
+      opt()
+      if cb() == :stop
+        depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
+        break
+      end
+    catch ex
+      if ex isa StopException
+        break
+      else
+        rethrow(ex)
+      end
+    end
   end
 end
 
@@ -59,7 +90,7 @@ hello
 """
 macro epochs(n, ex)
   :(@progress for i = 1:$(esc(n))
-      info("Epoch $i")
+      @info "Epoch $i"
       $(esc(ex))
     end)
 end

@@ -11,6 +11,8 @@ function __init__()
 end
 
 include("mnist.jl")
+export MNIST
+
 include("cmudict.jl")
 using .CMUDict
 
