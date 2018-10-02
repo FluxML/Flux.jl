@@ -24,7 +24,7 @@ julia> chunk(1:10, 3)
 """
 chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs)/n)))
 
-batchindex(xs, i) = (reverse(Base.tail(reverse(indices(xs))))..., i)
+batchindex(xs, i) = (reverse(Base.tail(reverse(axes(xs))))..., i)
 
 """
     frequencies(xs)
@@ -66,7 +66,7 @@ julia> batch([[1,2,3],[4,5,6]])
 function batch(xs)
   data = first(xs) isa AbstractArray ?
     similar(first(xs), size(first(xs))..., length(xs)) :
-    Vector{eltype(xs)}(length(xs))
+    Vector{eltype(xs)}(undef, length(xs))
   for (i, x) in enumerate(xs)
     data[batchindex(data, i)...] = x
   end
