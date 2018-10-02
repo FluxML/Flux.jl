@@ -80,7 +80,7 @@ getfeatures(io::IO, index::Integer) = vec(getimage(io, index))
     images()
     images(:test)
 
-Load the MNIST images.
+Load the Fashion-MNIST images.
 
 Each image is a 28×28 array of `Gray` colour values (see Colors.jl).
 
