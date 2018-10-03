@@ -1,16 +1,8 @@
 module FashionMNIST
 
-using CodecZlib, Colors
-
-const Gray = Colors.Gray{Colors.N0f8}
+using ..MNIST: gzopen, imageheader, rawimage, labelheader, rawlabel
 
 const dir = joinpath(@__DIR__, "../../deps/fashion-mnist")
-
-function gzopen(f, file)
-  open(file) do io
-    f(GzipDecompressorStream(io))
-  end
-end
 
 function load()
   mkpath(dir)
@@ -29,52 +21,10 @@ function load()
   end
 end
 
-const IMAGEOFFSET = 16
-const LABELOFFSET = 8
-
-const NROWS = 28
-const NCOLS = 28
-
 const TRAINIMAGES = joinpath(dir, "train-images-idx3-ubyte")
 const TRAINLABELS = joinpath(dir, "train-labels-idx1-ubyte")
 const TESTIMAGES = joinpath(dir, "t10k-images-idx3-ubyte")
 const TESTLABELS = joinpath(dir, "t10k-labels-idx1-ubyte")
-
-function imageheader(io::IO)
-  magic_number = bswap(read(io, UInt32))
-  total_items = bswap(read(io, UInt32))
-  nrows = bswap(read(io, UInt32))
-  ncols = bswap(read(io, UInt32))
-  return magic_number, Int(total_items), Int(nrows), Int(ncols)
-end
-
-function labelheader(io::IO)
-  magic_number = bswap(read(io, UInt32))
-  total_items = bswap(read(io, UInt32))
-  return magic_number, Int(total_items)
-end
-
-function rawimage(io::IO)
-  img = Array{Gray}(undef, NCOLS, NROWS)
-  for i in 1:NCOLS, j in 1:NROWS
-    img[i, j] = reinterpret(Colors.N0f8, read(io, UInt8))
-  end
-  return img
-end
-
-function rawimage(io::IO, index::Integer)
-  seek(io, IMAGEOFFSET + NROWS * NCOLS * (index - 1))
-  return rawimage(io)
-end
-
-rawlabel(io::IO) = Int(read(io, UInt8))
-
-function rawlabel(io::IO, index::Integer)
-  seek(io, LABELOFFSET + (index - 1))
-  return rawlabel(io)
-end
-
-getfeatures(io::IO, index::Integer) = vec(getimage(io, index))
 
 """
     images()
@@ -110,6 +60,5 @@ function labels(set = :train)
   _, N = labelheader(io)
   [rawlabel(io) for _ = 1:N]
 end
-
 
 end
