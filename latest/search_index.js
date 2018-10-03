@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.LSTM",
     "category": "function",
-    "text": "LSTM(in::Integer, out::Integer, σ = tanh)\n\nLong Short Term Memory recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n\n\n"
+    "text": "LSTM(in::Integer, out::Integer)\n\nLong Short Term Memory recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.GRU",
     "category": "function",
-    "text": "GRU(in::Integer, out::Integer, σ = tanh)\n\nGated Recurrent Unit layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n\n\n"
+    "text": "GRU(in::Integer, out::Integer)\n\nGated Recurrent Unit layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.\n\nSee this article for a good overview of the internals.\n\n\n\n\n\n"
 },
 
 {
