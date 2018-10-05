@@ -8,7 +8,7 @@ using MacroTools: @forward
 
 export Chain, Dense, Maxout,
        RNN, LSTM, GRU,
-       Conv, ConvTranspose, MaxPool, MeanPool, DepthwiseConv,
+       Conv, ConvTranspose, CrossCor, MaxPool, MeanPool, DepthwiseConv,
        Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm,
        params, mapleaves, cpu, gpu, f32, f64
 
