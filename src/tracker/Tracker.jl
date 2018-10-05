@@ -108,10 +108,8 @@ param(xs::AbstractArray) = TrackedArray(float.(xs))
 param(x::TrackedReal) = track(identity, x)
 param(x::TrackedArray) = track(identity, x)
 
-import NNlib.cudata
 import Adapt.adapt
 
-cudata(x::TrackedArray) = data(x)
 adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end
