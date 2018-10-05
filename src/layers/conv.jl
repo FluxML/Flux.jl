@@ -1,4 +1,4 @@
-using NNlib: conv, ∇conv_data, depthwiseconv
+using NNlib: conv, ∇conv_data, depthwiseconv, crossconv
 
 @generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
@@ -50,7 +50,7 @@ function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation, mode=0) .+ b)
+  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
 
 function Base.show(io::IO, l::Conv)
@@ -201,7 +201,7 @@ function (c::CrossCor)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation, mode=1) .+ b)
+  σ.(crossconv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
 
 function Base.show(io::IO, l::CrossCor)
