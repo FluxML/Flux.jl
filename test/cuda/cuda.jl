@@ -36,4 +36,4 @@ Flux.back!(sum(l))
 
 end
 
-CuArrays.cudnn_available() && include("cudnn.jl")
+CuArrays.libcudnn != nothing && include("cudnn.jl")

@@ -2,6 +2,6 @@ module CUDA
 
 using ..CuArrays
 
-CuArrays.cudnn_available() && include("cudnn.jl")
+CuArrays.libcudnn != nothing && include("cudnn.jl")
 
 end
