@@ -75,7 +75,7 @@ end
 
 @treelike Dense
 
-function (a::Dense)(x)
+function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
   σ.(W*x .+ b)
 end
