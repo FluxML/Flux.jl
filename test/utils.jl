@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal
+using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform
 using StatsBase: std
 using Random
 using Test
