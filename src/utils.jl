@@ -5,27 +5,15 @@ glorot_uniform(dims...) = (rand(dims...) .- 0.5) .* sqrt(24.0/(sum(dims)))
 glorot_normal(dims...) = randn(dims...) .* sqrt(2.0/sum(dims))
 
 function kaiming_uniform(dims...; gain=sqrt(2))
-        w = rand(dims...) .- 0.5
-        if ndims(w) == 1
-                fan_in = length(w)
-        elseif ndims(w) == 2
-                fan_in = size(w, 2)
-        else
-                fan_in = div(length(w), size(w, ndims(w)))
-        end
-        return w .* (sqrt(12.0 / fan_in) * gain) 
+  w = rand(dims...) .- 0.5
+  fan_in = ndims(w) <= 2 ? size(w)[end] : div(length(w), size(w)[end])
+  return w .* (sqrt(12.0 / fan_in) * gain) 
 end
 
 function kaiming_normal(dims...; gain=sqrt(2))
-        w = randn(dims...)
-        if ndims(w) == 1
-                fan_in = length(w)
-        elseif ndims(w) == 2
-                fan_in = size(w, 2)
-        else
-                fan_in = div(length(w), size(w, ndims(w)))
-        end
-        return w .* (gain / sqrt(fan_in)) 
+    w = randn(dims...)
+    fan_in = ndims(w) <= 2 ? size(w)[end] : div(length(w), size(w)[end])
+    return w .* (gain / sqrt(fan_in)) 
 end
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
