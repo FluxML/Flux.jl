@@ -82,7 +82,21 @@ end
     @test std(v) > 0.9*sqrt(2/(n_in + n_out))
     @test std(v) < 1.1*sqrt(2/(n_in + n_out))
   end
-end
+
+  # kaiming_uniform should yield a kernel with stddev ~= sqrt(6/n_out)
+  # and kaiming_normal should yield a kernel with stddev ~= sqrt(2/n_out)
+ for (n_in, n_out) in [(100, 100), (100, 400)]
+    v = kaiming_uniform(n_in, n_out)
+    @test minimum(v) > -1.1*sqrt(6/n_out)
+    @test minimum(v) < -0.9*sqrt(6/n_out)
+    @test maximum(v) >  0.9*sqrt(6/n_out)
+    @test maximum(v) <  1.1*sqrt(6/n_out)
+
+    v = kaiming_normal(n_in, n_out)
+    @test std(v) > 0.9*sqrt(2/n_out)
+    @test std(v) < 1.1*sqrt(2/n_out)
+  end
+ end
 
 @testset "Params" begin
   m = Dense(10, 5)
