@@ -69,6 +69,8 @@ end
 """
     ConvTranspose(size, in=>out)
     ConvTranspose(size, in=>out, relu)
+    CrossCor(size, in=>out)
+    CrossCor(size, in=>out, relu)
 
 Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
@@ -77,6 +79,7 @@ be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,F,A,V}
+struct CrossCor{N,F,A,V}
   σ::F
   weight::A
   bias::V
@@ -201,7 +204,7 @@ function (c::CrossCor)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(crossconv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  σ.(crosscor(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
 
 function Base.show(io::IO, l::CrossCor)
