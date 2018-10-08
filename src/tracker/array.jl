@@ -43,6 +43,8 @@ end
 
 Base.print_array(io::IO, x::TrackedArray) = Base.print_array(io, data(x))
 
+Base.copy(x::TrackedArray) = copy(data(x))
+
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
 
