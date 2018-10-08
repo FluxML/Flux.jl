@@ -23,6 +23,8 @@ end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
+Base.convert(::Type{T}, x::TrackedReal{S}) where {T<:Real,S} = convert(T, data(x))
+
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
