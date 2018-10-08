@@ -23,7 +23,7 @@ end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
-Base.copy(x::TrackedArray) = copy(data(x))
+Base.copy(x::TrackedReal) = copy(data(x))
 
 Base.convert(::Type{T}, x::TrackedReal{S}) where {T<:Real,S} = convert(T, data(x))
 

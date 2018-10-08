@@ -40,7 +40,7 @@ function promotiontest(f, A, B, C)
   if all(ndims.((A,B,C)) .≤ 2) && f ∈ [hcat, vcat]
     r3 = f(A, B, param(C))
   else
-    @test_broken f(A, B, param(C)) # until julia#20815 is resolved
+    @test_throws MethodError f(A, B, param(C)) # until julia#20815 is resolved
     r3 = r2
   end
   r4 = f(param(A), param(B), param(C))
