@@ -33,3 +33,16 @@ end
 
   @test size(m2(r), 3) == 3
 end
+
+@testset "CrossCor" begin
+  m = Chain(
+    CrossCor((2, 2), 1=>16, relu),
+    MaxPool((2,2)),
+    CrossCor((2, 2), 16=>8, relu),
+    MaxPool((2,2)),
+    x -> reshape(x, :, size(x, 4)),
+    Dense(288, 10), softmax)
+
+  @test size(m(r)) == (10, 5)
+
+  end
