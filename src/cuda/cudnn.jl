@@ -46,10 +46,10 @@ const RNN_ALGO_PERSIST_DYNAMIC = 2
 # LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
 
 function params(w::CuVector, input, hidden, n = 1)
-  slice(offset, shape) = reshape(w[offset.+(1:prod(shape))], shape)
+  slice(offset, shape) = reshape(view(w, offset.+(1:prod(shape))), shape)
   wx = slice(0, (input, hidden*n))
   wh = slice(length(wx), (hidden, hidden*n))
-  bias = w[length(wx)+length(wh) .+ (1:hidden*n)]
+  bias = view(w, length(wx)+length(wh) .+ (1:hidden*n))
   (wx, wh), bias
 end
 
@@ -273,9 +273,6 @@ function copyparams!(m::CuRNNs, d::RNNDesc)
   copy_transpose!(Wi, Flux.data(m.Wi))
   copy_transpose!(Wh, Flux.data(m.Wh))
   copy_transpose!(d.bias, Flux.data(m.b))
-  
-  w_ = vcat(Wi[:], Wh[:], d.bias[:])
-  d.params[1:length(w_)] .= w_
   return
 end
 
