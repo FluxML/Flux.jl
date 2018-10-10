@@ -279,9 +279,6 @@ function RNNDesc(m::CuRNNs{T}) where T
     (m.σ == tanh ? RNN_TANH : RNN_RELU) :
     m isa CuGRU ? GRU : LSTM
   r = RNNDesc{T}(mode, i, h)
-  #w_ = vcat(m.Wi[:], m.Wh[:], m.b)
-  #r.params[1:length(w_)] .= w_
-
   return r
 end
 
