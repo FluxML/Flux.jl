@@ -376,8 +376,7 @@ unbroadcast(x::AbstractArray, Δ) =
     trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
 
 unbroadcast(x::Number, Δ) = sum(Δ)
-unbroadcast(x::Base.RefValue{<:Function}, _) = nothing
-unbroadcast(x::Base.RefValue{<:Val}, _) = nothing
+unbroadcast(x::Base.RefValue, _) = nothing
 
 dual(x, p) = x
 dual(x::Real, p) = Dual(x, p)
