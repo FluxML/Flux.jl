@@ -355,8 +355,8 @@ crosscor(x::TrackedArray,  w::AbstractArray; kw...) = track(crosscor, x, w; kw..
 @grad crosscor(x, w; kw...) =
   crosscor(data(x), data(w); kw...),
     Δ -> nobacksies(:crosscor,
-      (NNlib.∇conv_data(data.((Δ, x, w))...; kw...),
-       NNlib.∇conv_filter(data.((Δ, x, w))...; kw...)))
+      (NNlib.∇conv_data(data.((Δ, x, w))...; flipkernel=1, kw...),
+       NNlib.∇conv_filter(data.((Δ, x, w))...; flipkernel=1, kw...)))
 
 maxpool(x::TrackedArray, k; kw...) = track(maxpool, x, k; kw...)
 
