@@ -21,7 +21,7 @@ using .Optimise
 using .Optimise: @epochs
 export Descent, ADAM, Momentum, Nesterov, RMSProp,
 	   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-	   InvDecay, ExpDecay
+	   ADAMW, InvDecay, ExpDecay, WeightDecay, DescentWeightDecay
 
 include("utils.jl")
 include("onehot.jl")

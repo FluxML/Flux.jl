@@ -23,12 +23,12 @@ using Test
   end
 end
 
-@testset "Compose" begin
+@testset "Optimiser" begin
   w = randn(10, 10)
   @testset for Opt in [InvDecay, ExpDecay]
     w′ = param(randn(10, 10))
     loss(x) = Flux.mse(w*x, w′*x)
-    opt = Compose(vec([Opt(), ADAM(0.001)]))
+    opt = Optimiser(Opt(), ADAM(0.001))
     for t = 1:10^5
       l = loss(rand(10))
       back!(l)

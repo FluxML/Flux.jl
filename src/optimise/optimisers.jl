@@ -85,7 +85,7 @@ function update!(o::RMSProp, x, Δ)
 end
 
 """
-    ADAM(η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08)
+    ADAM(η = 0.001, β = (0.9, 0.999))
 
 [ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
 """
@@ -226,28 +226,29 @@ end
 
 [ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
 """
-ADAMW(η = 0.001, β = (0.9, 0.999), η_decay = 1, γ_decay = 0) = Compose(ADAM(η, β, IdDict()), DescentWeightDecay(η_decay, γ_decay))
+ADAMW(η = 0.001, β = (0.9, 0.999), η_decay = 1, γ_decay = 0) = Optimiser(ADAM(η, β, IdDict()), DescentWeightDecay(η_decay, γ_decay))
 
 # Compose optimizers
 
 """
-    Compose(a, b, c...)
+    Optimiser(a, b, c...)
 
 Combine several optimisers into one; each optimiser produces a modified gradient
 that will be fed into the next, and this is finally applied to the parameter as
 usual.
 """
-mutable struct Compose
+mutable struct Optimiser
   os::Vector{Any}
-  Compose(o...) = Compose(Any[o...])
 end
 
-@forward Compose.os Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.setindex!
-@forward Compose.os Base.iterate
+Optimiser(o...) = Optimiser(Any[o...])
 
-Base.getindex(c::Compose, i::AbstractArray) = Compose(c.os[i]...)
+@forward Optimiser.os Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.setindex!
+@forward Optimiser.os Base.iterate
 
-function update!(o::Compose, x, Δ)
+Base.getindex(c::Optimiser, i::AbstractArray) = Optimiser(c.os[i]...)
+
+function update!(o::Optimiser, x, Δ)
   for opt in o.os
     Δ = update!(opt, x, Δ)
   end
@@ -281,14 +282,15 @@ function update!(o::ExpDecay, x, Δ)
   @. Δ += γ * x
 end
 
-mutable struct DescentWeightDecay
+mutable struct WeightDecay
   eta::Real
-  gamma::Real
+  wd::Real
 end
 
-DescentWeightDecay(η = 1) = DescentWeightDecay(η, 0)
-function update!(o::DescentWeightDecay, x,  Δ)
-  η, γ = o.eta, o.gamma
-  @. x = x - η * (Δ + γ * x)
-  Δ
+WeightDecay(η = 1) = WeightDecay(η, 0)
+function update!(o::WeightDecay, x,  Δ)
+  η, wd = o.eta, o.wd
+  @. Δ += wd * x
 end
+
+DescentWeightDecay(η = 0.1, γ = 0) = Optimiser(WeightDecay(), Descent(η))

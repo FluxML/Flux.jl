@@ -3,7 +3,7 @@ module Optimise
 export train!,
 	Descent, ADAM, Momentum, Nesterov, RMSProp,
 	ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW,
-	InvDecay, ExpDecay, stop, Compose
+	InvDecay, ExpDecay, WeightDecay, stop, Optimiser
 
 include("optimisers.jl")
 include("train.jl")
