@@ -232,7 +232,6 @@ ADAMW(η = 0.001, β = (0.9, 0.999), η_decay = 1, γ_decay = 0) = Optimiser(ADA
 
 """
     Optimiser(a, b, c...)
-
 Combine several optimisers into one; each optimiser produces a modified gradient
 that will be fed into the next, and this is finally applied to the parameter as
 usual.
