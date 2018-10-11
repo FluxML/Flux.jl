@@ -45,7 +45,7 @@ end
 
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               Iterators.repeated((), 100),
-              ()->(),
+              ADAM([l]),
               cb = Flux.throttle(() -> (i > 3 && Flux.stop()), 1))
 
   @test 3 < i < 50
