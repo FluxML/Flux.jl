@@ -14,7 +14,7 @@ end
 function kaiming_normal(dims...; gain=sqrt(2))
   fan_in = length(dims) <= 2 ? dims[end] : div(*(dims...), dims[end])
   std = gain / sqrt(fan_in)
-  return rand(Uniform(0.0, std), dims...)
+  return rand(Normal(0.0, std), dims...)
 end
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
