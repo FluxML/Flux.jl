@@ -22,6 +22,7 @@ const ϵ = 1e-7
 
   @testset "crossentropy" begin
     @test crossentropy(ŷ, y) ≈ lossvalue
+    @test !isinf(crossentropy([1.0, 0.0], [0.0, 1.0]))
   end
 
   @testset "logitcrossentropy" begin
