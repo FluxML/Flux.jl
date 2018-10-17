@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal
+using Flux: throttle, jacobian, glorot_uniform, glorot_normal
 using StatsBase: std
 using Random
 using Test
@@ -64,10 +64,6 @@ end
 @testset "Initialization" begin
   # Set random seed so that these tests don't fail randomly
   Random.seed!(0)
-  # initn() should yield a kernel with stddev ~= 1e-2
-  v = initn(10, 10)
-  @test std(v) > 0.9*1e-2
-  @test std(v) < 1.1*1e-2
 
   # glorot_uniform should yield a kernel with stddev ~= sqrt(6/(n_in + n_out)),
   # and glorot_normal should yield a kernel with stddev != 2/(n_in _ n_out)
