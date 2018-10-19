@@ -148,7 +148,7 @@ Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
 
 """
-    LSTM(in::Integer, out::Integer, σ = tanh)
+    LSTM(in::Integer, out::Integer)
 
 Long Short Term Memory recurrent layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.
@@ -189,7 +189,7 @@ Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
 
 """
-    GRU(in::Integer, out::Integer, σ = tanh)
+    GRU(in::Integer, out::Integer)
 
 Gated Recurrent Unit layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.

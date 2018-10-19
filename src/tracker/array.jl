@@ -1,6 +1,8 @@
-import Base: *, ==
+import Base: *
 
 import LinearAlgebra
+import LinearAlgebra: inv, \, /
+
 using Statistics
 using LinearAlgebra: Transpose, Adjoint, diagm, diag
 
@@ -41,6 +43,8 @@ end
 
 Base.print_array(io::IO, x::TrackedArray) = Base.print_array(io, data(x))
 
+Base.copy(x::TrackedArray) = x
+
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
 
@@ -60,9 +64,11 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
-x::TrackedArray == y = data(x) == y
-y == x::TrackedArray = y == data(x)
-x::TrackedArray == y::TrackedArray = data(x) == data(y)
+for op in [:(==), :≈]
+    @eval Base.$op(x::TrackedArray, y::AbstractArray) = Base.$op(data(x), y)
+    @eval Base.$op(x::AbstractArray, y::TrackedArray) = Base.$op(x, data(y))
+    @eval Base.$op(x::TrackedArray, y::TrackedArray) = Base.$op(data(x), data(y))
+end
 
 # Array Stdlib
 
@@ -202,6 +208,41 @@ end
 Base.kron(a::TrackedMatrix, b::TrackedMatrix)  = _kron(a, b)
 Base.kron(a::TrackedMatrix, b::AbstractMatrix) = _kron(a, b)
 Base.kron(a::AbstractMatrix, b::TrackedMatrix) = _kron(a, b)
+
+
+inv(A::TrackedArray) = Tracker.track(inv, A)
+@grad function inv(A)
+    return inv(Tracker.data(A)), function (Δ)
+        Ainv = inv(A)
+        ∇A = - Ainv' * Δ * Ainv'
+        return (∇A, )
+    end
+end
+
+#       (/) rdivide
+A::TrackedArray     / B::TrackedArray     = Tracker.track(/, A, B)
+A::AbstractVecOrMat / B::TrackedArray     = Tracker.track(/, A, B)
+A::TrackedArray     / B::AbstractVecOrMat = Tracker.track(/, A, B)
+@grad function (A / B)
+    return Tracker.data(A) / Tracker.data(B), function (Δ)
+        Binv = inv(B)
+        ∇B = - Binv' * A' * Δ * Binv'
+        return (Δ * Binv',  ∇B)
+    end
+end
+
+#       (\) ldivide  (left vec divide needs more work to resolve dispatch ambiguity)
+A::TrackedArray     \ B::TrackedArray     = Tracker.track(\, A, B)
+A::AbstractArray    \ B::TrackedArray     = Tracker.track(\, A, B)
+A::TrackedArray     \ B::AbstractVecOrMat = Tracker.track(\, A, B)
+@grad function (A \ B)
+    return Tracker.data(A) \ Tracker.data(B), function (Δ)
+        Ainv = inv(A)
+        ∇A = - Ainv' * Δ * B' * Ainv'
+        return (∇A,  Ainv' * Δ)
+    end
+end
+
 
 # Reductions
 
@@ -345,8 +386,7 @@ unbroadcast(x::AbstractArray, Δ) =
     trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
 
 unbroadcast(x::Number, Δ) = sum(Δ)
-unbroadcast(x::Base.RefValue{<:Function}, _) = nothing
-unbroadcast(x::Base.RefValue{<:Val}, _) = nothing
+unbroadcast(x::Base.RefValue, _) = nothing
 
 dual(x, p) = x
 dual(x::Real, p) = Dual(x, p)
@@ -361,9 +401,9 @@ end
   eltype(y) <: Real || return y
   eltype(y) == Bool && return y
   function back(Δ)
-    Δargs = ntuple(i -> partial.(f, data(Δ), i, args...), Val(N))
-    dxs = unbroadcast.(args, Δargs)
-    return nobacksies(:broadcast, dxs)
+    Δargs = ntuple(i -> partial.(f, Δ, i, args...), Val(N))
+    dxs = map(unbroadcast, args, Δargs)
+    return dxs
   end
   # So we can return non-tracked arrays
   track(Call(back, tracker.(args)), y)

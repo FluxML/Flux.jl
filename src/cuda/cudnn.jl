@@ -46,10 +46,10 @@ const RNN_ALGO_PERSIST_DYNAMIC = 2
 # LSTM: [weight, bias] × [input, hidden] × [input, forget, newmem, output]
 
 function params(w::CuVector, input, hidden, n = 1)
-  slice(offset, shape) = reshape(w[offset.+(1:prod(shape))], shape)
+  slice(offset, shape) = reshape(view(w, offset.+(1:prod(shape))), shape)
   wx = slice(0, (input, hidden*n))
   wh = slice(length(wx), (hidden, hidden*n))
-  bias = w[length(wx)+length(wh) .+ (1:hidden*n)]
+  bias = view(w, length(wx)+length(wh) .+ (1:hidden*n))
   (wx, wh), bias
 end
 
@@ -91,7 +91,7 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
   finalizer(rd) do x
     @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
-  end
+  end 
   return rd
 end
 
@@ -328,7 +328,7 @@ end
     h_ = hBatch(x, data(h))
     dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
     (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
-    nobacksies(:RNN, (dx, unbroadcast(size(h), dh), transpose(dWi), transpose(dWh), db))
+    nobacksies(:RNN, (dx, unbroadcast(h, dh), transpose(dWi), transpose(dWh), db))
   end
 end
 
@@ -342,7 +342,7 @@ end
     dx, dh, dc = backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
     (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
     nobacksies(:RNN,
-      (dx, unbroadcast(size(h), dh), unbroadcast(size(c), dc),
+      (dx, unbroadcast(h, dh), unbroadcast(c, dc),
        transpose(dWi), transpose(dWh), db))
   end
 end

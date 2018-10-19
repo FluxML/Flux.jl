@@ -23,6 +23,8 @@ end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
+Base.copy(x::TrackedReal) = x
+
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
@@ -30,8 +32,11 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
 
-Base.:(<)(x::TrackedReal, y::TrackedReal) = data(x) < data(y)
-Base.:(==)(x::TrackedReal, y::TrackedReal) = data(x) == data(y)
+for op in [:(==), :≈, :<]
+  @eval Base.$op(x::TrackedReal, y::Real) = Base.$op(data(x), y)
+  @eval Base.$op(x::Real, y::TrackedReal) = Base.$op(x, data(y))
+  @eval Base.$op(x::TrackedReal, y::TrackedReal) = Base.$op(data(x), data(y))
+end
 
 Base.eps(x::TrackedReal) = eps(data(x))
 
@@ -60,7 +65,9 @@ for (M, f, arity) in DiffRules.diffrules()
   da, db = DiffRules.diffrule(M, f, :a, :b)
   f = :($M.$f)
   @eval begin
-    @grad $f(a::Real, b::Real) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::TrackedReal, b::TrackedReal) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::TrackedReal, b::Real) = $f(data(a), b), Δ -> (Δ * $da, zero(b))
+    @grad $f(a::Real, b::TrackedReal) = $f(a, data(b)), Δ -> (zero(a), Δ * $db)
     $f(a::TrackedReal, b::TrackedReal)  = track($f, a, b)
     $f(a::TrackedReal, b::Real) = track($f, a, b)
     $f(a::Real, b::TrackedReal) = track($f, a, b)
