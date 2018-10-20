@@ -36,4 +36,4 @@ Flux.back!(sum(l))
 
 end
 
-CuArrays.libcudnn != nothing && include("cudnn.jl")
+isdefined(CuArrays, :CUDNN) && include("cudnn.jl")

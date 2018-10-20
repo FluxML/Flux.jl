@@ -2,6 +2,6 @@ module CUDA
 
 using ..CuArrays
 
-CuArrays.libcudnn != nothing && include("cudnn.jl")
+isdefined(CuArrays, :CUDNN) && include("cudnn.jl")
 
 end
