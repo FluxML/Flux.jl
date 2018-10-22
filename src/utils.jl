@@ -168,3 +168,6 @@ be used for aesthetic purposes, or by recovering Python users.
 macro jit(ex)
   esc(ex)
 end
+
+include("dataloader.jl")
+export DataLoader
