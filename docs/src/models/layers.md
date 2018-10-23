@@ -10,6 +10,12 @@ MaxPool
 MeanPool
 ```
 
+## Additional Convolution Layers
+
+```@docs
+DepthwiseConv
+```
+
 ## Recurrent Layers
 
 Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).
