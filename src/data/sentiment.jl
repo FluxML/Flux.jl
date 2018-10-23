@@ -4,7 +4,7 @@ using ZipFile
 using ..Data: deps
 
 function load()
-  isfile(deps("sentiment.zip")) || return
+  isfile(deps("sentiment.zip")) && return
   @info "Downloading sentiment treebank dataset"
   download("https://cache.julialang.org/https://nlp.stanford.edu/sentiment/trainDevTestTrees_PTB.zip",
            deps("sentiment.zip"))
@@ -26,9 +26,10 @@ totree_(n, a, b) = Tree{Any}((parse(Int, n), nothing), totree(a), totree(b))
 totree(t::Expr) = totree_(t.args...)
 
 function parsetree(s)
-  s = replace(s, r"\$", s -> "\\\$")
-  s = replace(s, r"[^\s\(\)]+", s -> "\"$s\"")
-  s = replace(s, " ", ", ")
+  s = replace(s, "\\" => "")
+  s = replace(s, "\$" => "\\\$")
+  s = replace(s, r"[^ \n\(\)]+" => s -> "\"$s\"")
+  s = replace(s, " " => ", ")
   return totree(Meta.parse(s))
 end
 

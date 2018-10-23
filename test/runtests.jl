@@ -32,6 +32,7 @@ include("data.jl")
 
 @info "Testing Layers"
 
+include("layers/basic.jl")
 include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")

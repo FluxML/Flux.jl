@@ -129,6 +129,11 @@ end
 
 @test gradtest(f-> Matrix(Diagonal(f)), rand(3))
 
+@test gradtest(W -> inv(log.(W * W)), (5,5))
+@test gradtest((A, B) -> A / B , (1,5), (5,5))
+@test gradtest((A, B) -> log.(A * A) / exp.(B * B), (5,5), (5,5))
+@test gradtest((A, B) -> log.(A * A) \ exp.(B * B), (5,5), (5,5))
+
 @testset "mean" begin
   @test gradtest(mean, rand(2, 3))
 
