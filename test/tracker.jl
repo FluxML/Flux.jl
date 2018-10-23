@@ -284,4 +284,11 @@ end
   @test count == 3
 end
 
+@testset "promotion of irrationals" begin
+  @test Tracker.gradient(t -> π + t, 1.0f0) === (1.0f0,)
+  @test Tracker.gradient(t -> t + π, 1.0f0) === (1.0f0,)
+  @test Tracker.data.(Tracker.gradient(t -> π * t, 1.0f0)) === (Float32(π),)
+  @test Tracker.data.(Tracker.gradient(t -> t * π, 1.0f0)) === (Float32(π),)
+end
+
 end #testset

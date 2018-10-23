@@ -48,6 +48,8 @@ Base.Printf.fix_dec(x::TrackedReal, n::Int) = Base.Printf.fix_dec(data(x), n)
 
 Base.promote_rule(::Type{TrackedReal{S}},::Type{T}) where {S,T} =
   TrackedReal{promote_type(S,T)}
+Base.promote_rule(::Type{T},::Type{TrackedReal{S}}) where {T<:AbstractIrrational,S} =
+  TrackedReal{promote_type(T,S)}
 
 using DiffRules, SpecialFunctions, NaNMath
 
@@ -60,28 +62,24 @@ for (M, f, arity) in DiffRules.diffrules()
   end
 end
 
-# Work around zero(π) not working, for some reason
-_zero(::Irrational) = nothing
-_zero(x) = zero(x)
-
 for (M, f, arity) in DiffRules.diffrules()
   arity == 2 || continue
   da, db = DiffRules.diffrule(M, f, :a, :b)
   f = :($M.$f)
   @eval begin
-    @grad $f(a::TrackedReal, b::TrackedReal) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
-    @grad $f(a::TrackedReal, b::Real) = $f(data(a), b), Δ -> (Δ * $da, _zero(b))
-    @grad $f(a::Real, b::TrackedReal) = $f(a, data(b)), Δ -> (_zero(a), Δ * $db)
+    @grad $f(a::T, b::T) where T<:Real = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+
     $f(a::TrackedReal, b::TrackedReal)  = track($f, a, b)
     $f(a::TrackedReal, b::Real) = track($f, a, b)
     $f(a::Real, b::TrackedReal) = track($f, a, b)
   end
 end
 
-# Eliminating ambiguity
-import Base:^
+_forward(f::Any, a::Real, b::Real) = _forward(f, promote(a, b)...)
 
-^(a::TrackedReal, b::Integer) = track(^, a, b)
+# Handle ^2
+Base.literal_pow(::typeof(^), a::TrackedReal, ::Val{2}) = a*a
+_forward(::typeof(Base.literal_pow), ::typeof(^), a::TrackedReal, ::Val{2}) = data(a)*data(a), Δ -> 2*a*Δ
 
 # Tuples
 
