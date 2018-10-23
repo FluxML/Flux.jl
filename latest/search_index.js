@@ -209,6 +209,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Additional-Convolution-Layers-1",
+    "page": "Model Reference",
+    "title": "Additional Convolution Layers",
+    "category": "section",
+    "text": "DepthwiseConv"
+},
+
+{
     "location": "models/layers.html#Flux.RNN",
     "page": "Model Reference",
     "title": "Flux.RNN",
