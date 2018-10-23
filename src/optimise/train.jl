@@ -1,6 +1,6 @@
-using Juno
 using Flux.Tracker: back!
 import Base.depwarn
+using Base.CoreLogging: @logmsg
 
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
@@ -55,7 +55,9 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
-  @progress for d in data
+  len = length(data)
+  for (i, d) in enumerate(data)
+    @logmsg -1 "training" progress = (i/len)
     try
       l = loss(d...)
       @interrupts back!(l)
@@ -72,6 +74,7 @@ function train!(loss, data, opt; cb = () -> ())
       end
     end
   end
+  @logmsg -1 "training" progress = "done"
 end
 
 """

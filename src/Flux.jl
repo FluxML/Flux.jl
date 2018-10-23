@@ -2,7 +2,7 @@ module Flux
 
 # Zero Flux Given
 
-using MacroTools, Juno, Requires, Reexport, Statistics, Random
+using MacroTools, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv, MaxPool, MeanPool,
@@ -35,5 +35,7 @@ include("layers/normalise.jl")
 include("data/Data.jl")
 
 @init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" include("cuda/cuda.jl")
+
+@init @require Juno="e5e0dc1b-0480-54bc-9374-aad01c23163d" include("data/juno.jl")
 
 end # module
