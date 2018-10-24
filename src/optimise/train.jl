@@ -56,8 +56,9 @@ function train!(loss, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
   len = length(data)
+  progressid = "training"
   for (i, d) in enumerate(data)
-    @logmsg -1 "training" progress = (i/len)
+    @logmsg -1 "training" progress = (i/len) _id = progressid
     try
       l = loss(d...)
       @interrupts back!(l)
@@ -74,7 +75,7 @@ function train!(loss, data, opt; cb = () -> ())
       end
     end
   end
-  @logmsg -1 "training" progress = "done"
+  @logmsg -1 "training" progress = "done" _id = progressid
 end
 
 """
