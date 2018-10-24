@@ -1,7 +1,7 @@
 using Random:randperm!
 
 """
-    DataLoader(dataset...; batchsize::Int=100, shuffle=true)
+    DataLoader(dataset::AbstractArray...; batchsize::Int, shuffle::Bool)
 
 DataLoader provides iterators over the dataset.
 
@@ -26,7 +26,7 @@ struct DataLoader
   n::Int
 end
 
-function DataLoader(dataset::NTuple{N,AbstractArray}; batchsize::Int=100, shuffle=false) where N
+function DataLoader(dataset::Tuple{AbstractArray, Vararg{AbstractArray}}; batchsize::Int, shuffle::Bool)
   l = last.(size.(dataset))
   n = first(l)
   all(n .== l) || throw(DimensionMismatch("All data should have the same length."))
@@ -35,7 +35,7 @@ function DataLoader(dataset::NTuple{N,AbstractArray}; batchsize::Int=100, shuffl
   DataLoader(dataset, batchsize, shuffle, indices, n)
 end
 
-DataLoader(dataset...; batchsize::Int=100, shuffle=false) =
+DataLoader(dataset::AbstractArray...; batchsize::Int, shuffle::Bool) =
   DataLoader(dataset, batchsize=batchsize, shuffle=shuffle)
 
 function Base.iterate(it::DataLoader, start=1)
