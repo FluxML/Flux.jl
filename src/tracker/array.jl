@@ -86,9 +86,9 @@ Base.view(x::TrackedArray, inds...) = track(Base.view, x, inds...)
 
 @grad function view(x::AbstractArray, inds...)
     view(data(x), inds...), function (Δ)
-        grad_output = fill!(similar(data(x)), 0)
+        grad_output = zero(x)
         subgrad = view(grad_output, inds...)
-        setindex!(subgrad, Δ, :)
+        subgrad[:] = Δ
         (grad_output, map(_->nothing, inds)...)
     end
 end
