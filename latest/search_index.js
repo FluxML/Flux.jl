@@ -209,6 +209,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.DepthwiseConv",
+    "page": "Model Reference",
+    "title": "Flux.DepthwiseConv",
+    "category": "type",
+    "text": "DepthwiseConv(size, in)\nDepthwiseConv(size, in=>mul)\nDepthwiseConv(size, in=>mul, relu)\n\nDepthwise convolutional layer. size should be a tuple like (2, 2). in and mul specify the number of input channels and channel multiplier respectively. In case the mul is not specified it is taken as 1.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad and stride.\n\n\n\n\n\n"
+},
+
+{
     "location": "models/layers.html#Additional-Convolution-Layers-1",
     "page": "Model Reference",
     "title": "Additional Convolution Layers",
