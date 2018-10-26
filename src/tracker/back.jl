@@ -19,47 +19,50 @@ function scan(x)
   return
 end
 
-function back_(c::Call, Δ)
+function back_(c::Call, Δ, once)
   Δs = c.func(Δ)
   (Δs isa Tuple && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
-  foreach(back, c.args, data.(Δs))
+  foreach((x, d) -> back(x, d, once), c.args, data.(Δs))
 end
 
-back_(::Call{Nothing}, Δ) = nothing
+back_(::Call{Nothing}, _, _) = nothing
+back_(::Call{Missing}, _, _) = error("`back!` was already used")
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
 
-function back(x::Tracked, Δ)
+function back(x::Tracked, Δ, once)
   x.isleaf && (x.grad = accum!(x.grad, Δ); return)
   ref = x.ref -= 1
-  if ref > 0 || isdefined(x, :grad)
-    if isdefined(x, :grad)
-      x.grad = accum!(x.grad, Δ)
-    else
-      x.grad = Δ
-    end
-    ref == 0 && back_(x.f, x.grad)
+  grad = if isdefined(x, :grad)
+    x.grad = accum!(x.grad, Δ)
+  elseif ref > 0
+    x.grad = Δ
   else
-    ref == 0 && back_(x.f, Δ)
+    Δ
+  end
+  if ref == 0
+    back_(x.f, grad, once)
+    once && !x.isleaf && (x.f = Call(missing, ()))
   end
   return
 end
 
-back(::Nothing, _) = return
+back(::Nothing, _, _) = return
 
 # Interface methods
 
 # TODO: if an error occurs in `back` the refcounts will be broken
 # and `back` will silently fail to update.
+# (but only if you re-use intermediate values between passes)
 # Refcounts are also probably not safe in some situations (e.g. back called
 # from within a backpropagator)
 
-function back!(x, Δ)
+function back!(x, Δ; once = true)
   istracked(x) || return
   scan(x)
-  back(tracker(x), Δ)
+  back(tracker(x), Δ, once)
   return
 end
 

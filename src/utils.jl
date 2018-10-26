@@ -147,9 +147,9 @@ function jacobian(m,x)
     n  = length(x)
     J  = Matrix{eltype(x)}(undef,n,k)
     for i = 1:k
-        Flux.back!(y[i]) # Populate gradient accumulator
+        Flux.back!(y[i], once = false) # Populate gradient accumulator
         J[:,i] = xp.grad
-        xp.grad .*= 0 # Reset gradient accumulator
+        xp.grad .= 0 # Reset gradient accumulator
     end
     J'
 end
