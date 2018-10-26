@@ -88,8 +88,8 @@ Base.view(x::TrackedArray, inds...) = track(Base.view, x, inds...)
     view(data(x), inds...), function (Δ)
         grad_output = zero(x)
         subgrad = view(grad_output, inds...)
-        subgrad[:] = Δ
-        (grad_output, map(_->nothing, inds)...)
+        subgrad[:] = data(Δ)
+        (nobacksies(:view, grad_output), map(_->nothing, inds)...)
     end
 end
 
