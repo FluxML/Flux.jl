@@ -1,5 +1,5 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
-  cudnnBatchNormMode_t, cudnnHandle_t, libcudnn_handle, cudnnDataType, TensorDesc, FilterDesc
+  cudnnBatchNormMode_t, cudnnHandle_t, handle, cudnnDataType, TensorDesc, FilterDesc
 import ..Flux: data
 
 mutable struct DropoutDesc
@@ -13,11 +13,11 @@ function DropoutDesc(ρ::Real; seed::Integer=0)
   d = [C_NULL]
   s = Csize_t[0]
   @check ccall((:cudnnCreateDropoutDescriptor,libcudnn), cudnnStatus_t, (Ptr{Ptr{Nothing}},), d)
-  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),libcudnn_handle[],s)
+  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),handle(),s)
   states = CuArray{UInt8}(s[]) # TODO: can we drop this when ρ=0?
   desc = DropoutDesc(d[], states)
   @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
-    desc,libcudnn_handle[],ρ,states,length(states),seed)
+    desc,handle(),ρ,states,length(states),seed)
   finalizer(desc) do x
     @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
   end
@@ -84,7 +84,7 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
                   Ptr{Nothing}, Ptr{T}, Ptr{T},
                   Cdouble, Ptr{T}, Ptr{T},
                   Cdouble, Ptr{T}, Ptr{T}),
-                  libcudnn_handle[], BATCHNORM_SPATIAL,
+                  handle(), BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
                   xd, x,
                   yd, y,
@@ -105,7 +105,7 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
                   Ptr{Nothing}, Ptr{T}, Ptr{T},
                   Ptr{T}, Ptr{T},
                   Cdouble),
-                  libcudnn_handle[], BATCHNORM_SPATIAL,
+                  handle(), BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
                   xd, x,
                   yd, y,
@@ -146,7 +146,6 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
     end
 
     if eps < BATCHNORM_MIN_EPS
-      # warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", BATCHNORM_MIN_EPS)
       eps = BATCHNORM_MIN_EPS
     end
 
@@ -159,7 +158,7 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
                   Ptr{Nothing}, Ptr{T},
                   Ptr{Nothing}, Ptr{T}, Ptr{T}, Ptr{T},
                   Cdouble, Ptr{T}, Ptr{T}),
-                  libcudnn_handle[], BATCHNORM_SPATIAL,
+                  handle(), BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
                   Ref(T(dalpha)), Ref(T(dbeta)),
                   xd, x,
