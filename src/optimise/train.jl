@@ -4,9 +4,8 @@ import Base.depwarn
 
 function update!(opt, xs)
   for x in xs
-    x, Δ = data(x), grad(x)
-    Δ = update!(opt, x, Δ)
-    x .-= Δ
+    Δ = update!(opt, x.data, x.grad)
+    x.data .-= Δ
     Δ .= 0
   end
 end
@@ -62,14 +61,20 @@ The callback can return `:stop` to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(ps::Array, loss, data, opt; cb = () -> ())
+function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
+  opt = try
+      opt()
+      opt.opt
+    catch
+      opt
+    end
   @progress for d in data
     try
       l = loss(d...)
       @interrupts back!(l)
-      foreach(x -> x.data .-= update!(opt, x.data, x.grad), ps)
+      update!(opt, ps)
       if cb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break
@@ -83,7 +88,6 @@ function train!(ps::Array, loss, data, opt; cb = () -> ())
     end
   end
 end
-train!(model, loss, data, opt; cb = () -> ()) = train!(params(model), loss, data, opt; cb = cb)
 
 """
     @epochs N body

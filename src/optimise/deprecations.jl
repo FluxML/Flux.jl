@@ -5,7 +5,7 @@ function check_decay(opt, decay)
     opt = opt
   else
     if opt isa ADAMW
-      opt = Optimiser(opt, DescentWeightDecay(1, decay))
+      opt = Optimiser(opt, WeightDecay(decay))
     else
       opt = Optimiser(opt, InvDecay(decay))
     end
@@ -129,6 +129,10 @@ end
 
 # Train function
 function train!(loss::Function, data, opt; cb = () -> ())
-  depwarn("train!(loss, data, opt; cb) is deprecated; use train!(model, data, loss, opt; cb) instead", :train)
-  train!(opt.ps, loss, data, opt.opt; cb = cb)
+  depwarn("train!(loss, data, opt; cb) is deprecated; use train!(loss, params, data, opt; cb) instead", :train)
+  if fieldnames(typeof(opt)) !== ()
+    train!(loss, opt.ps, data, opt.opt; cb = cb)
+  else
+    train!(loss, (), data, opt; cb = cb)
+  end
 end

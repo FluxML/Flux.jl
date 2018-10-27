@@ -258,38 +258,52 @@ end
 
 mutable struct InvDecay
   gamma::Float64
-  n::Int64
+  state::IdDict
 end
 
-InvDecay(γ = 0.001) = InvDecay(γ, 0)
+InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
 
 function update!(o::InvDecay, x, Δ)
-  γ, n = o.gamma, o.n
+  γ = o.gamma
+  n = get!(o.state, x, 1)
   Δ .*= 1 / (1 + γ * n)
-  o.n += 1
+  o.state[x] = n + 1
   return Δ
 end
 
 mutable struct ExpDecay
-  gamma::Float64
+  opt
+  decay::Float64
+  step::Int64
+  clip::Float64
+  current::IdDict
 end
 
-ExpDecay() = ExpDecay(0.001)
+ExpDecay(opt, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
 
 function update!(o::ExpDecay, x, Δ)
-  γ = o.gamma
-  @. Δ += γ * x
+  s, decay = o.step, o.decay
+  η = try o.opt.eta; catch e; o.opt.rho; end
+  n = o.current[x] = get(o.current, x, 0) + 1
+  flag = false
+  count(x -> x%s == 0, values(o.current)) == 1 && (flag = true)
+  if o.current[x]%s == 0 && flag
+    η = max(η * decay^(s / n), o.clip)
+    o.opt isa ADADelta ? o.opt.rho = η : o.opt.eta = η
+  end
+  update!(o.opt, x, Δ)
 end
 
 mutable struct WeightDecay
-  eta::Real
   wd::Real
 end
 
-WeightDecay(η = 1) = WeightDecay(η, 0)
+WeightDecay() = WeightDecay(0)
 function update!(o::WeightDecay, x,  Δ)
-  η, wd = o.eta, o.wd
+  wd = o.wd
   @. Δ += wd * x
 end
 
-DescentWeightDecay(η = 1, wd = 0) = Optimiser(WeightDecay(1, wd), Descent(η))
+DescentWeightDecay(η = 1, wd = 0) = Optimiser(WeightDecay(wd), Descent(η))
+
+update!(opt::Function, ps) = opt()
