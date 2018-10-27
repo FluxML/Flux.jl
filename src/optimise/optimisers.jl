@@ -279,7 +279,7 @@ mutable struct ExpDecay
   current::IdDict
 end
 
-ExpDecay(opt, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = Descent(), decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
 
 function update!(o::ExpDecay, x, Δ)
   s, decay = o.step, o.decay

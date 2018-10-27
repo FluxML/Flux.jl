@@ -30,11 +30,12 @@ end
     loss(x) = Flux.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
     if Opt isa ExpDecay
-      opt = ExpDecay(ADAM(), 0.9)
+      opt = ExpDecay(ADAM(), 0.9, 1000)
+    end
     for t = 1:10^5
       l = loss(rand(10))
       back!(l)
-      delta = Optimise.update!(opt, w′)
+      delta = Optimise.update!(opt, w′.data, w′.grad)
       w′.data .-= delta
     end
     @test Flux.mse(w, w′) < 0.01
