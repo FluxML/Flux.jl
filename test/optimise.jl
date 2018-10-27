@@ -16,7 +16,7 @@ using Test
     for t = 1: 10^5
       l = loss(rand(10))
       back!(l)
-      delta = Optimise.update!(opt, w′)
+      delta = Optimise.update!(opt, w′.data, w′.grad)
       w′.data .-= delta
     end
     @test Flux.mse(w, w′) < 0.01
