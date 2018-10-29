@@ -29,9 +29,6 @@ end
     w′ = param(randn(10, 10))
     loss(x) = Flux.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
-    if Opt isa ExpDecay
-      opt = ExpDecay(ADAM(), 0.9, 1000)
-    end
     for t = 1:10^5
       l = loss(rand(10))
       back!(l)
