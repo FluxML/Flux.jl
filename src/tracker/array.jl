@@ -82,6 +82,17 @@ Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
   end
 end
 
+Base.view(x::TrackedArray, inds...) = track(Base.view, x, inds...)
+
+@grad function view(x::AbstractArray, inds...)
+    view(data(x), inds...), function (Δ)
+        grad_output = zero(x)
+        subgrad = view(grad_output, inds...)
+        subgrad[:] = data(Δ)
+        (nobacksies(:view, grad_output), map(_->nothing, inds)...)
+    end
+end
+
 Base.:-(xs::TrackedArray) = track(-, xs)
 
 @grad -(xs) = -data(xs), Δ -> (-Δ,)
