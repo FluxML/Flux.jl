@@ -3,7 +3,7 @@ using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
 using NNlib: conv, depthwiseconv
 using Printf: @sprintf
-using LinearAlgebra: Diagonal, dot, LowerTriangular, norm
+using LinearAlgebra: diagm, dot, LowerTriangular, norm
 using Statistics: mean, std
 using Random
 # using StatsBase
@@ -127,7 +127,7 @@ end
 @test gradtest(kron, rand(5,1), rand(3,1), rand(8,1))
 @test gradtest(kron, rand(5,2), rand(3,2), rand(8,2))
 
-@test gradtest(f-> Matrix(Diagonal(f)), rand(3))
+@test gradtest(x -> diagm(0 => x), rand(3))
 
 @test gradtest(W -> inv(log.(W * W)), (5,5))
 @test gradtest((A, B) -> A / B , (1,5), (5,5))

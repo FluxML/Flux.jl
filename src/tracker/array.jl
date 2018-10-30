@@ -312,9 +312,6 @@ end
 LinearAlgebra.diagm(x::Pair{<:Integer, <:TrackedVector}) = track(diagm, x)
 @grad diagm(x::Pair) = diagm(x[1] => data(x[2])), Δ -> (diag(Δ, x[1]),)
 
-LinearAlgebra.diagm(x::TrackedVector) = track(diagm, x)
-@grad diagm(x) = diagm(data(x)), Δ -> (diag(Δ),)
-
 x::TrackedMatrix  * y::AbstractMatrix = track(*, x, y)
 x::AbstractMatrix * y::TrackedMatrix  = track(*, x, y)
 x::TrackedMatrix  * y::TrackedMatrix  = track(*, x, y)
