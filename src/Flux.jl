@@ -9,6 +9,9 @@ export Chain, Dense, RNN, LSTM, GRU, Conv, MaxPool, MeanPool,
        DepthwiseConv, Dropout, LayerNorm, BatchNorm,
        params, mapleaves, cpu, gpu
 
+# linear algebras
+export svd
+
 @reexport using NNlib
 
 include("tracker/Tracker.jl")
@@ -31,6 +34,7 @@ include("layers/basic.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
+include("layers/svd.jl")
 
 include("data/Data.jl")
 

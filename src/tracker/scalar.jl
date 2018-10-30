@@ -107,6 +107,7 @@ end
 Base.length(x::TrackedTuple) = length(data(x))
 
 Base.getindex(xs::TrackedTuple, i::Integer) = track(getindex, xs, i)
+Base.iterate(xs::TrackedTuple, state=1) = state > length(xs) ? nothing : (xs[state], state+1)
 
 @grad function getindex(xs::TrackedTuple, i)
   data(xs)[i], Δ -> (ntuple(j -> i == j ? Δ : 0, length(xs)), nothing)
