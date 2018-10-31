@@ -44,8 +44,9 @@ end
   l = param(1)
 
   Flux.train!(() -> (sleep(0.1); i += 1; l),
+              (),
               Iterators.repeated((), 100),
-              () -> (),
+              Descent(),
               cb = Flux.throttle(() -> (i > 3 && Flux.stop()), 1))
 
   @test 3 < i < 50

@@ -64,12 +64,6 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
-  opt = try
-      opt()
-      opt.opt
-    catch
-      opt
-    end
   @progress for d in data
     try
       l = loss(d...)

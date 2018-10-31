@@ -1,17 +1,6 @@
 using Base: depwarn
 
-function check_decay(opt, decay)
-  if decay == 0.
-    opt = opt
-  else
-    if opt isa ADAMW
-      opt = Optimiser(opt, WeightDecay(decay))
-    else
-      opt = Optimiser(opt, InvDecay(decay))
-    end
-  end
-  opt
-end
+check_decay(opt, decay) = decay == 0 ? opt : Optimiser(opt, InvDecay(decay))
 
 # legacy update rule
 function updaterule(opt, ps)
@@ -24,7 +13,7 @@ function updaterule(opt, ps)
 end
 
 function Descent(params::AbstractArray, η = 0.1; decay = 0.)
-  depwarn("Descent(ps::Param) is deprecated; use Descent(η::Float64) instead", :Descent)
+  depwarn("Descent(params) is deprecated; use Descent(η::Float64) instead", :Descent)
 
   ps = params
   opt = Descent(η)
@@ -33,7 +22,7 @@ function Descent(params::AbstractArray, η = 0.1; decay = 0.)
 end
 
 function Momentum(params::AbstractArray, η = 0.01; ρ = 0.9, decay = 0.)
-  depwarn("Momentum(ps::Param) is deprecated; use Momentum(η::Float64) instead", :Momentum)
+  depwarn("Momentum(params) is deprecated; use Momentum(η::Float64) instead", :Momentum)
 
   ps = params
   opt = Momentum(η, ρ)
@@ -42,7 +31,7 @@ function Momentum(params::AbstractArray, η = 0.01; ρ = 0.9, decay = 0.)
 end
 
 function Nesterov(params::AbstractArray, η = 0.001; ρ = 0.9, decay = 0.)
-  depwarn("Nesterov(ps::Param) is deprecated; use Nesterov(η::Float64) instead", :Nesterov)
+  depwarn("Nesterov(params) is deprecated; use Nesterov(η::Float64) instead", :Nesterov)
 
   ps = params
   opt = Nesterov(η, ρ)
@@ -51,7 +40,7 @@ function Nesterov(params::AbstractArray, η = 0.001; ρ = 0.9, decay = 0.)
 end
 
 function RMSProp(params::AbstractArray, η = 0.001; ρ = 0.9, decay = 0.)
-  depwarn("RMSProp(ps::Param) is deprecated; use RMSProp(η::Float64) instead", :RMSProp)
+  depwarn("RMSProp(params) is deprecated; use RMSProp(η::Float64) instead", :RMSProp)
 
   ps = params
   opt = RMSProp(η, ρ)
@@ -60,7 +49,7 @@ function RMSProp(params::AbstractArray, η = 0.001; ρ = 0.9, decay = 0.)
 end
 
 function ADAM(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay = 0.)
-  depwarn("ADAM(ps::Param) is deprecated; use ADAM(η::Float64) instead", :ADAM)
+  depwarn("ADAM(params) is deprecated; use ADAM(η::Float64) instead", :ADAM)
 
   ps = params
   β = (β1, β2)
@@ -70,7 +59,7 @@ function ADAM(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay =
 end
 
 function ADAGrad(params::AbstractArray, η::Float64 = 0.1; decay = 0.)
-  depwarn("ADAGrad(ps::Param) is deprecated; use ADAGrad(η::Float64) instead", :ADAGrad)
+  depwarn("ADAGrad(params) is deprecated; use ADAGrad(η::Float64) instead", :ADAGrad)
 
   ps = params
   opt = ADAGrad(η)
@@ -79,7 +68,7 @@ function ADAGrad(params::AbstractArray, η::Float64 = 0.1; decay = 0.)
 end
 
 function ADADelta(params::AbstractArray, ρ::Float64 = 0.9; decay = 0.)
-  depwarn("ADADelta(ps::Param) is deprecated; use ADADelta(η::Float64) instead", :ADADelta)
+  depwarn("ADADelta(params) is deprecated; use ADADelta(η::Float64) instead", :ADADelta)
 
   ps = params
   opt = ADADelta(ρ)
@@ -88,7 +77,7 @@ function ADADelta(params::AbstractArray, ρ::Float64 = 0.9; decay = 0.)
 end
 
 function AdaMax(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay = 0.)
-  depwarn("AdaMax(ps::Param) is deprecated; use AdaMax(η::Float64) instead", :AdaMax)
+  depwarn("AdaMax(params) is deprecated; use AdaMax(η::Float64) instead", :AdaMax)
 
   ps = params
   β = (β1, β2)
@@ -98,7 +87,7 @@ function AdaMax(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay
 end
 
 function AMSGrad(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay = 0.)
-  depwarn("AMSGrad(ps::Param) is deprecated; use AMSGrad(η::Float64) instead", :AMSGrad)
+  depwarn("AMSGrad(params) is deprecated; use AMSGrad(η::Float64) instead", :AMSGrad)
 
   ps = params
   β = (β1, β2)
@@ -108,7 +97,7 @@ function AMSGrad(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, deca
 end
 
 function NADAM(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay = 0.)
-  depwarn("NADAM(ps::Param) is deprecated; use NADAM(η::Float64) instead", :NADAM)
+  depwarn("NADAM(params) is deprecated; use NADAM(η::Float64) instead", :NADAM)
 
   ps = params
   β = (β1, β2)
@@ -118,21 +107,26 @@ function NADAM(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay 
 end
 
 function ADAMW(params::AbstractArray, η = 0.001; β1 = 0.9, β2 = 0.999, decay = 0.)
-  depwarn("ADAMW(ps::Param) is deprecated; use ADAMW(η::Float64) instead", :ADAMW)
+  depwarn("ADAMW(params) is deprecated; use ADAMW(η::Float64) instead", :ADAMW)
 
   ps = params
   β = (β1, β2)
   opt = ADAMW(η, β)
   opt = check_decay(opt, decay)
+  decay != 0 && (opt = Optimiser(opt, WeightDecay(decay)))
   updaterule(opt, ps)
 end
 
+# Old training loop
+
+struct OldOptimiser
+  func
+end
+
+update!(opt::OldOptimiser, ps) = opt.func()
+
 # Train function
-function train!(loss::Function, data, opt; cb = () -> ())
-  depwarn("train!(loss, data, opt; cb) is deprecated; use train!(loss, params, data, opt; cb) instead", :train)
-  if fieldnames(typeof(opt)) !== ()
-    train!(loss, opt.ps, data, opt.opt; cb = cb)
-  else
-    train!(loss, (), data, opt; cb = cb)
-  end
+function train!(loss, data, opt; cb = () -> ())
+  depwarn("train!(loss, data, opt) is deprecated; use train!(loss, params, data, opt) instead", :train!)
+  train!(loss, (), data, OldOptimiser(opt); cb = cb)
 end

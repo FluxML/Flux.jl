@@ -17,6 +17,7 @@ mutable struct Descent
 end
 
 Descent() = Descent(0.1)
+
 function update!(o::Descent, x, Δ)
   Δ .*= o.eta
 end
@@ -152,7 +153,7 @@ function update!(o::ADAGrad, x, Δ)
 end
 
 """
-    ADADelta(params; ρ = 0.9, ϵ = 1e-8)
+    ADADelta(ρ = 0.9, ϵ = 1e-8)
 
 [ADADelta](http://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
 tuning.
@@ -222,16 +223,18 @@ function update!(o::NADAM, x, Δ)
 end
 
 """
-    ADAMW((η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)
+    ADAMW((η = 0.001, β = (0.9, 0.999), decay = 0)
 
 [ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
 """
-ADAMW(η = 0.001, β = (0.9, 0.999), η_decay = 1, wd = 0) = Optimiser(ADAM(η, β, IdDict()), DescentWeightDecay(η_decay, wd))
+ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
+  Optimiser(ADAM(η, β), WeightDecay(wd))
 
 # Compose optimizers
 
 """
     Optimiser(a, b, c...)
+
 Combine several optimisers into one; each optimiser produces a modified gradient
 that will be fed into the next, and this is finally applied to the parameter as
 usual.
@@ -253,8 +256,6 @@ function update!(o::Optimiser, x, Δ)
   end
   return Δ
 end
-
-# TODO: decay
 
 mutable struct InvDecay
   gamma::Float64
@@ -284,9 +285,7 @@ ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(op
 function update!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
   n = o.current[x] = get(o.current, x, 0) + 1
-  flag = false
-  count(x -> x%s == 0, values(o.current)) == 1 && (flag = true)
-  if o.current[x]%s == 0 && flag
+  if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
     η = max(η * decay^(s / n), o.clip)
     o.eta = η
   end
@@ -298,11 +297,8 @@ mutable struct WeightDecay
 end
 
 WeightDecay() = WeightDecay(0)
+
 function update!(o::WeightDecay, x,  Δ)
   wd = o.wd
   @. Δ += wd * x
 end
-
-DescentWeightDecay(η = 1, wd = 0) = Optimiser(WeightDecay(wd), Descent(η))
-
-update!(opt::Function, ps) = opt()
