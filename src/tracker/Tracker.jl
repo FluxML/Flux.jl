@@ -70,6 +70,7 @@ include("idset.jl")
 include("back.jl")
 include("numeric.jl")
 include("lib/real.jl")
+include("lib/complex.jl")
 include("lib/array.jl")
 
 """

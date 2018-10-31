@@ -11,9 +11,8 @@ tracker(x::TrackedReal) = x.tracker
 track(f::Call, x::Real) = TrackedReal(x, Tracked{typeof(x)}(f, zero(x)))
 
 function back!(x::TrackedReal; once = true)
-    isinf(x) && error("Loss is Inf")
-    isnan(x) && error("Loss is NaN")
-    return back!(x, 1, once = once)
+  losscheck(data(x))
+  return back!(x, 1, once = once)
 end
 
 function Base.show(io::IO, x::TrackedReal)
@@ -32,7 +31,7 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
 
-for op in [:(==), :≈, :<]
+for op in [:(==), :≈, :<, :<=]
   @eval Base.$op(x::TrackedReal, y::Real) = Base.$op(data(x), y)
   @eval Base.$op(x::Real, y::TrackedReal) = Base.$op(x, data(y))
   @eval Base.$op(x::TrackedReal, y::TrackedReal) = Base.$op(data(x), data(y))

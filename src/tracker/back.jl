@@ -14,10 +14,7 @@ function scan(x::Tracked)
   return
 end
 
-function scan(x)
-  istracked(x) && scan(tracker(x))
-  return
-end
+scan(::Nothing) = return
 
 function back_(c::Call, Δ, once)
   Δs = c.func(Δ)
@@ -61,7 +58,7 @@ back(::Nothing, Δ, once) = return
 
 function back!(x, Δ; once = true)
   istracked(x) || return
-  scan(x)
+  scan(tracker(x))
   back(tracker(x), Δ, once)
   return
 end
@@ -143,16 +140,19 @@ function forward(f, ps::Params)
   y, function (Δ)
     g = Grads(ps)
     if istracked(y)
-      scan(y)
+      scan(tracker(y))
       back(g, tracker(y), Δ)
     end
     return g
   end
 end
 
+# Essentially a hack for complex numbers
+unwrap(x) = x
+
 function forward(f, args...)
   args = param.(args)
-  y, back = forward(() -> f(args...), Params(args))
+  y, back = forward(() -> f(unwrap.(args)...), Params(args))
   y, Δ -> getindex.(Ref(back(Δ)), args)
 end
 

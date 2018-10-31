@@ -291,4 +291,6 @@ end
   @test count == 3
 end
 
+@test Tracker.gradient(x -> abs2(log(x)), 1+2im)[1] isa Complex
+
 end #testset
