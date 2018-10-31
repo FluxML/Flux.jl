@@ -237,10 +237,10 @@ end
 @testset "Intermediates" begin
   x = param([1])
   l = sum((x .+ x).^2)
-  Flux.back!(l)
+  Flux.back!(l, once = false)
   @test x.grad == [8]
   x.grad .= 0
-  Flux.back!(l)
+  Flux.back!(l, once = false)
   @test x.grad == [8]
 end
 
