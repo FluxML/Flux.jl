@@ -66,15 +66,28 @@ end
 # Out-of-place gradients
 
 struct Params
-  params::IdSet
-  Params(xs) = new(IdSet(xs))
+  order::Vector{Any}
+  params::IdSet{Any}
+  Params() = new([], IdSet())
 end
 
-@forward Params.params Base.iterate, Base.length
+@forward Params.order Base.iterate, Base.length
+
+function Base.push!(ps::Params, x)
+  if !(x in ps.params)
+    push!(ps.order, x)
+    push!(ps.params, x)
+  end
+  return ps
+end
+
+Base.push!(ps::Params, x...) = (foreach(x -> push!(ps, x), x); ps)
+
+Params(xs) = push!(Params(), xs...)
 
 function Base.show(io::IO, ps::Params)
   print(io, "Params([")
-  join(io, ps.params, ", ")
+  join(io, ps.order, ", ")
   print(io, "])")
 end
 

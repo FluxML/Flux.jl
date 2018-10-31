@@ -40,7 +40,7 @@ function prefor(f, x; seen = IdSet())
 end
 
 function params(m)
-  ps = []
+  ps = Params()
   prefor(p ->
     Tracker.istracked(p) && Tracker.isleaf(p) &&
       !any(p′ -> p′ === p, ps) && push!(ps, p),
