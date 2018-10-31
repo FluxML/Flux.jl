@@ -369,38 +369,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "training/optimisers.html#Flux.Optimise.SGD",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.SGD",
-    "category": "function",
-    "text": "SGD(params, η = 0.1; decay = 0)\n\nClassic gradient descent optimiser with learning rate η. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports inverse decaying learning rate if the decay argument is provided.\n\n\n\n\n\n"
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.Momentum",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.Momentum",
-    "category": "function",
-    "text": "Momentum(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, momentum ρ and optional learning rate inverse decay.\n\n\n\n\n\n"
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.Nesterov",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.Nesterov",
-    "category": "function",
-    "text": "Nesterov(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, Nesterov momentum ρ and optional learning rate inverse decay.\n\n\n\n\n\n"
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.ADAM",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.ADAM",
-    "category": "function",
-    "text": "ADAM(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n\n\n"
-},
-
-{
     "location": "training/optimisers.html#Optimiser-Reference-1",
     "page": "Optimisers",
     "title": "Optimiser Reference",
