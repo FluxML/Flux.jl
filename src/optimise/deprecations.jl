@@ -12,8 +12,8 @@ function updaterule(opt, ps)
   end
 end
 
-function Descent(params::AbstractArray, η = 0.1; decay = 0.)
-  depwarn("Descent(params) is deprecated; use Descent(η::Float64) instead", :Descent)
+function SGD(params::AbstractArray, η = 0.1; decay = 0.)
+  depwarn("SGD(params) is deprecated; use Descent(η::Float64) instead", :SGD)
 
   ps = params
   opt = Descent(η)
