@@ -3,14 +3,7 @@ using Base: depwarn
 check_decay(opt, decay) = decay == 0 ? opt : Optimiser(opt, InvDecay(decay))
 
 # legacy update rule
-function updaterule(opt, ps)
-  () -> begin
-    for p in ps
-      delta = update!(opt, p.data, p.grad)
-      p.data .-= delta
-    end
-  end
-end
+updaterule(opt, ps) = () -> update!(p, ps)
 
 function SGD(params::AbstractArray, η = 0.1; decay = 0.)
   depwarn("SGD(params) is deprecated; use Descent(η::Float64) instead", :SGD)
