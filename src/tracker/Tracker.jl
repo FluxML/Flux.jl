@@ -68,9 +68,9 @@ end
 
 include("idset.jl")
 include("back.jl")
-include("scalar.jl")
-include("array.jl")
 include("numeric.jl")
+include("lib/real.jl")
+include("lib/array.jl")
 
 """
     hook(f, x) -> x′
