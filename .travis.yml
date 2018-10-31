@@ -4,7 +4,6 @@ os:
   - linux
   # - osx
 julia:
-  - 0.7
   - 1.0
   - nightly
 # uncomment the following lines to override the default test script
