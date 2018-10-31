@@ -7,6 +7,7 @@ Base.eltype(::IdSet{T}) where T = T
 
 IdSet() = IdSet{Any}()
 
+Base.push!(s::IdSet) = s
 Base.push!(s::IdSet{T}, x::T) where T = (s.dict[x] = nothing; s)
 Base.delete!(s::IdSet{T}, x::T) where T = (delete!(s.dict, x); s)
 Base.in(x, s::IdSet) = haskey(s.dict, x)
