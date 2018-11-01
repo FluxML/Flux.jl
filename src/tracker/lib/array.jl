@@ -6,7 +6,7 @@ import LinearAlgebra: inv, \, /
 using Statistics
 using LinearAlgebra: Transpose, Adjoint, diagm, diag
 
-struct TrackedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
+struct TrackedArray{T,N,A<:AbstractArray{T,N}}
   tracker::Tracked{A}
   data::A
   grad::A

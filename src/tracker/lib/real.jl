@@ -1,4 +1,4 @@
-struct TrackedReal{T<:Real} <: Real
+struct TrackedReal{T<:Real}
   data::T
   tracker::Tracked{T}
 end
