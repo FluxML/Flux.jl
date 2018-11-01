@@ -107,7 +107,7 @@ function ADAMW(params::Params, η = 0.001; β1 = 0.9, β2 = 0.999, decay = 0.)
   β = (β1, β2)
   opt = ADAMW(η, β)
   opt = check_decay(opt, decay)
-  decay != 0 && (opt = Optimiser(opt, WeightDecay(η * decay)))
+  decay != 0 && (opt = Optimiser(opt, WeightDecay(decay)))
   updaterule(opt, ps)
 end
 
