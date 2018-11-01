@@ -1,4 +1,4 @@
-using .CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, handle,
+using .CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t,
   cudnnDataType, TensorDesc, FilterDesc
 
 using LinearAlgebra
