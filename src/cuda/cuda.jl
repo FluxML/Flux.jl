@@ -2,6 +2,10 @@ module CUDA
 
 using ..CuArrays
 
-CuArrays.libcudnn != nothing && include("cudnn.jl")
+if isdefined(CuArrays, :libcudnn_handle)
+  handle() = CuArrays.libcudnn_handle[]
+else
+  handle() = CuArrays.CUDNN.handle()
+end
 
 end
