@@ -320,8 +320,8 @@ end
 
 # BLAS
 
-LinearAlgebra.diagm(x::TrackedVector) = track(diagm, x)
-@grad diagm(x) = diagm(data(x)), Δ -> (diag(Δ),)
+LinearAlgebra.diagm(x::Pair{<:Integer, <:TrackedVector}) = track(diagm, x...)
+@grad diagm(i, x) = diagm(i => data(x)), Δ -> (nothing, diag(Δ, i))
 
 x::TrackedMatrix  * y::AbstractMatrix = track(*, x, y)
 x::AbstractMatrix * y::TrackedMatrix  = track(*, x, y)
