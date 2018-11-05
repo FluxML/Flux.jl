@@ -33,6 +33,11 @@ gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
+
+@testset "indexing & slicing" begin
+  gradtest(x->view(x, 1:2, 1:2), rand(4, 4))
+end
+
 function promotiontest(f, A, B, C)
   r0 = f(A, B, C)
   r1 = f(param(A), B, C)
@@ -232,10 +237,10 @@ end
 @testset "Intermediates" begin
   x = param([1])
   l = sum((x .+ x).^2)
-  Flux.back!(l)
+  Flux.back!(l, once = false)
   @test x.grad == [8]
   x.grad .= 0
-  Flux.back!(l)
+  Flux.back!(l, once = false)
   @test x.grad == [8]
 end
 
