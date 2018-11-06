@@ -33,6 +33,11 @@ TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
+Base.show(io::IO, t::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
+  @isdefined(A) ?
+    print(io, "TrackedArray{…,$A}") :
+    invoke(show, Tuple{IO,DataType}, io, t)
+
 function Base.summary(io::IO, x::TrackedArray)
   print(io, "Tracked ")
   summary(io, data(x))
