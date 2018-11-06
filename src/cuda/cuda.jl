@@ -2,10 +2,10 @@ module CUDA
 
 using ..CuArrays
 
-if isdefined(CuArrays, :libcudnn_handle)
-  handle() = CuArrays.libcudnn_handle[]
+if CuArrays.libcudnn != nothing
+  include("cudnn.jl")
 else
-  handle() = CuArrays.CUDNN.handle()
+  @warn("CUDNN is not installed, some functionality will not be available.")
 end
 
 end

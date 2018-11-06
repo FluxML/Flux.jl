@@ -1,7 +1,12 @@
 using .CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t,
   cudnnDataType, TensorDesc, FilterDesc
-
 using LinearAlgebra
+
+if isdefined(CuArrays, :libcudnn_handle)
+  handle() = CuArrays.libcudnn_handle[]
+else
+  handle() = CuArrays.CUDNN.handle()
+end
 
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}
@@ -91,7 +96,7 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
   finalizer(rd) do x
     @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
-  end 
+  end
   return rd
 end
 
