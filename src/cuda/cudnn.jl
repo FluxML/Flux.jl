@@ -20,7 +20,7 @@ function DropoutDesc(ρ::Real; seed::Integer=0)
   s = Csize_t[0]
   @check ccall((:cudnnCreateDropoutDescriptor,libcudnn), cudnnStatus_t, (Ptr{Ptr{Nothing}},), d)
   @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),handle(),s)
-  states = CuArray{UInt8}(s[]) # TODO: can we drop this when ρ=0?
+  states = CuArray{UInt8}(undef, s[]) # TODO: can we drop this when ρ=0?
   desc = DropoutDesc(d[], states)
   @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
     desc,handle(),ρ,states,length(states),seed)
@@ -107,12 +107,12 @@ function rnnWorkspaceSize(r::RNNDesc, seqlen, xdesc)
   return Int(size[])
 end
 
-const workspace = [CuVector{UInt8}(1)]
+const workspace = [CuVector{UInt8}(undef, 1)]
 
 getworkspace(bytes) =
   length(workspace[]) ≥ bytes ?
     workspace[] :
-    (workspace[] = CuVector{UInt8}(bytes))
+    (workspace[] = CuVector{UInt8}(undef, bytes))
 
 getworkspace(r::RNNDesc, seqlen, xdesc) =
   getworkspace(rnnWorkspaceSize(r, seqlen, xdesc))
@@ -174,7 +174,7 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h_::CuArray{T}, c_ = nothing, t
   ydesc = xDesc(y)
   workspace = getworkspace(rnn, seqLength, xdesc)
   reserve = train == Val{true} ?
-    CuVector{UInt8}(rnnTrainingReserveSize(rnn, seqLength, xdesc)) :
+    CuVector{UInt8}(undef, rnnTrainingReserveSize(rnn, seqLength, xdesc)) :
     nothing
   co = c == nothing ? c : similar(c)
   cudnnRNNForward(rnn, seqLength,
