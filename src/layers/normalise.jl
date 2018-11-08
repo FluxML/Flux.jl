@@ -1,6 +1,7 @@
 """
     testmode!(m)
     testmode!(m, false)
+
 Put layers like [`Dropout`](@ref) and [`BatchNorm`](@ref) into testing mode
 (or back to training mode with `false`).
 """
@@ -13,9 +14,11 @@ _testmode!(m, test) = nothing
 
 """
     Dropout(p)
+
 A Dropout layer. For each input, either sets that input to `0` (with probability
 `p`) or scales it by `1/(1-p)`. This is used as a regularisation, i.e. it
 reduces overfitting during training.
+
 Does nothing to the input once in [`testmode!`](@ref).
 """
 mutable struct Dropout{F}
@@ -42,6 +45,7 @@ _testmode!(a::Dropout, test) = (a.active = !test)
 
 """
     LayerNorm(h::Integer)
+
 A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
 used with recurrent hidden states of size `h`. Normalises the mean/stddev of
 each input before applying a per-neuron gain/bias.
@@ -65,16 +69,21 @@ end
     BatchNorm(channels::Integer, σ = identity;
               initβ = zeros, initγ = ones,
               ϵ = 1e-8, momentum = .1)
+
 Batch Normalization layer. The `channels` input should be the size of the
 channel dimension in your data (see below).
+
 Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
 a batch of feature vectors this is just the data dimension, for `WHCN` images
 it's the usual channel dimension.)
+
 `BatchNorm` computes the mean and variance for each each `W×H×1×N` slice and
 shifts them to have a new mean and variance (corresponding to the learnable,
 per-channel `bias` and `scale` parameters).
+
 See [Batch Normalization: Accelerating Deep Network Training by Reducing
 Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
+
 Example:
 ```julia
 m = Chain(
