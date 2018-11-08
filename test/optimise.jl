@@ -1,4 +1,5 @@
 using Flux.Optimise
+using Flux.Optimise: runall
 using Flux.Tracker
 using Test
 @testset "Optimise" begin
@@ -50,4 +51,11 @@ end
               cb = Flux.throttle(() -> (i > 3 && Flux.stop()), 1))
 
   @test 3 < i < 50
+
+  # Test multiple callbacks
+  x = 0
+  fs = [() -> (), () -> x = 1]
+  cbs = runall(fs)
+  cbs()
+  @test x == 1
 end
