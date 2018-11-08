@@ -11,6 +11,7 @@ function update!(opt, xs)
 end
 
 # Callback niceties
+call(f, xs...) = f(xs...)
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
