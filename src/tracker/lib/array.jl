@@ -33,8 +33,10 @@ TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
-Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
-  print(io, "TrackedArray{…,$A}")
+Base.show(io::IO, t::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
+  @isdefined(A) ?
+    print(io, "TrackedArray{…,$A}") :
+    invoke(show, Tuple{IO,DataType}, io, t)
 
 function Base.summary(io::IO, x::TrackedArray)
   print(io, "Tracked ")
@@ -80,6 +82,17 @@ Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
     Δ′[i...] = data(Δ)
     (nobacksies(:getindex, Δ′), map(_->nothing, i)...)
   end
+end
+
+Base.view(x::TrackedArray, inds...) = track(Base.view, x, inds...)
+
+@grad function view(x::AbstractArray, inds...)
+    view(data(x), inds...), function (Δ)
+        grad_output = zero(x)
+        subgrad = view(grad_output, inds...)
+        subgrad[:] = data(Δ)
+        (nobacksies(:view, grad_output), map(_->nothing, inds)...)
+    end
 end
 
 Base.:-(xs::TrackedArray) = track(-, xs)
@@ -309,8 +322,8 @@ end
 
 # BLAS
 
-LinearAlgebra.diagm(x::TrackedVector) = track(diagm, x)
-@grad diagm(x) = diagm(data(x)), Δ -> (diag(Δ),)
+LinearAlgebra.diagm(x::Pair{<:Integer, <:TrackedVector}) = track(diagm, x...)
+@grad diagm(i, x) = diagm(i => data(x)), Δ -> (nothing, diag(Δ, i))
 
 x::TrackedMatrix  * y::AbstractMatrix = track(*, x, y)
 x::AbstractMatrix * y::TrackedMatrix  = track(*, x, y)
@@ -330,7 +343,7 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, maxpool, meanpool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, depthwiseconv, maxpool, meanpool
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -339,6 +352,16 @@ softmax(xs::TrackedArray) = track(softmax, xs)
 logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 @grad logsoftmax(xs) = logsoftmax(data(xs)), Δ -> (nobacksies(:logsoftmax, ∇logsoftmax(data(Δ), data(xs))),)
+
+depthwiseconv(x::TrackedArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::AbstractArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track(depthwiseconv, x, w; kw...)
+
+@grad depthwiseconv(x, w; kw...) =
+  depthwiseconv(data(x), data(w); kw...),
+    Δ -> nobacksies(:depthwiseconv,
+      (NNlib.∇depthwiseconv_data(data.((Δ, x, w))...; kw...),
+       NNlib.∇depthwiseconv_filter(data.((Δ, x, w))...; kw...)))
 
 conv(x::TrackedArray,  w::TrackedArray;  kw...) = track(conv, x, w; kw...)
 conv(x::AbstractArray, w::TrackedArray;  kw...) = track(conv, x, w; kw...)
@@ -424,26 +447,28 @@ end
 using Requires
 
 # https://github.com/FluxML/Flux.jl/issues/353
-@init Requires.isprecompiling() || @eval Base.Broadcast begin
-  function flatten(bc::Broadcasted{Style}) where {Style}
-    isflat(bc) && return bc
-    args = cat_nested(bc)
-    let makeargs = make_makeargs(bc), f = bc.f
-      newf = @inline function(args::Vararg{Any,N}) where N
-        f(makeargs(args...)...)
+if VERSION < v"1.1.0-DEV.548"
+  @init Requires.isprecompiling() || @eval Base.Broadcast begin
+    function flatten(bc::Broadcasted{Style}) where {Style}
+      isflat(bc) && return bc
+      args = cat_nested(bc)
+      let makeargs = make_makeargs(bc), f = bc.f
+        newf = @inline function(args::Vararg{Any,N}) where N
+          f(makeargs(args...)...)
+        end
+        return Broadcasted{Style}(newf, args, bc.axes)
       end
-      return Broadcasted{Style}(newf, args, bc.axes)
     end
-  end
-  @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
-    bc = t[1]
-    let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
-      let makeargs = make_makeargs(makeargs, bc.args)
-        headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
-        return @inline function(args::Vararg{Any,N}) where N
-          args1 = makeargs(args...)
-          a, b = headargs(args1...), tailargs(args1...)
-          (f(a...), b...)
+    @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
+      bc = t[1]
+      let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
+        let makeargs = make_makeargs(makeargs, bc.args)
+          headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
+          return @inline function(args::Vararg{Any,N}) where N
+            args1 = makeargs(args...)
+            a, b = headargs(args1...), tailargs(args1...)
+            (f(a...), b...)
+          end
         end
       end
     end

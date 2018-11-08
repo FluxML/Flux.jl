@@ -1,9 +1,9 @@
 using Flux
 using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
-using NNlib: conv
+using NNlib: conv, depthwiseconv
 using Printf: @sprintf
-using LinearAlgebra: Diagonal, dot, LowerTriangular, norm
+using LinearAlgebra: diagm, dot, LowerTriangular, norm
 using Statistics: mean, std
 using Random
 # using StatsBase
@@ -33,6 +33,11 @@ gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
+
+@testset "indexing & slicing" begin
+  gradtest(x->view(x, 1:2, 1:2), rand(4, 4))
+end
+
 function promotiontest(f, A, B, C)
   r0 = f(A, B, C)
   r1 = f(param(A), B, C)
@@ -127,7 +132,7 @@ end
 @test gradtest(kron, rand(5,1), rand(3,1), rand(8,1))
 @test gradtest(kron, rand(5,2), rand(3,2), rand(8,2))
 
-@test gradtest(f-> Matrix(Diagonal(f)), rand(3))
+@test gradtest(x -> diagm(0 => x), rand(3))
 
 @test gradtest(W -> inv(log.(W * W)), (5,5))
 @test gradtest((A, B) -> A / B , (1,5), (5,5))
@@ -181,6 +186,8 @@ end
 @test gradtest(conv, rand(10, 10, 3, 2), randn(Float64,2, 2, 3, 2))
 @test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 3, 2))
 
+@test gradtest(depthwiseconv, rand(10,10,3,2), randn(2, 2, 2, 3))
+
 @test gradtest(x -> maxpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> maxpool(x, (2,2,2)), rand(10, 10, 10, 3, 2))
 
@@ -230,10 +237,10 @@ end
 @testset "Intermediates" begin
   x = param([1])
   l = sum((x .+ x).^2)
-  Flux.back!(l)
+  Flux.back!(l, once = false)
   @test x.grad == [8]
   x.grad .= 0
-  Flux.back!(l)
+  Flux.back!(l, once = false)
   @test x.grad == [8]
 end
 

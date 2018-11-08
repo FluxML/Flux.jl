@@ -10,10 +10,10 @@ tracker(x::TrackedReal) = x.tracker
 
 track(f::Call, x::Real) = TrackedReal(x, Tracked{typeof(x)}(f, zero(x)))
 
-function back!(x::TrackedReal)
+function back!(x::TrackedReal; once = true)
     isinf(x) && error("Loss is Inf")
     isnan(x) && error("Loss is NaN")
-    return back!(x, 1)
+    return back!(x, 1, once = once)
 end
 
 function Base.show(io::IO, x::TrackedReal)
@@ -123,8 +123,8 @@ function scan(c::Call{typeof(collect)})
   foreach(scan, c.args[1])
 end
 
-function back_(c::Call{typeof(collect)}, Δ)
-  foreach(back, c.args[1], data(Δ))
+function back_(c::Call{typeof(collect)}, Δ, once)
+  foreach((x, d) -> back(x, d, once), c.args[1], data(Δ))
 end
 
 function back_(g::Grads, c::Call{typeof(collect)}, Δ)

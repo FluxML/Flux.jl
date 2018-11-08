@@ -1,6 +1,4 @@
 # Arrays
-
-initn(dims...) = randn(dims...)/100
 glorot_uniform(dims...) = (rand(dims...) .- 0.5) .* sqrt(24.0/(sum(dims)))
 glorot_normal(dims...) = randn(dims...) .* sqrt(2.0/sum(dims))
 
@@ -147,9 +145,9 @@ function jacobian(m,x)
     n  = length(x)
     J  = Matrix{eltype(x)}(undef,n,k)
     for i = 1:k
-        Flux.back!(y[i]) # Populate gradient accumulator
+        Flux.back!(y[i], once = false) # Populate gradient accumulator
         J[:,i] = xp.grad
-        xp.grad .*= 0 # Reset gradient accumulator
+        xp.grad .= 0 # Reset gradient accumulator
     end
     J'
 end
