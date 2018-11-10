@@ -45,8 +45,8 @@ batchnorm(g::CuArray{T}, b::CuArray{T}, x::CuArray{T, 2},
           running_mean::CuArray{T}, running_var::CuArray{T}, momentum;
           cache = nothing, alpha = T(1), beta = T(0),
           eps = T(1e-5), training = true) where T<:Union{Float32, Float64} =
-  batchnorm(g, b, reshape(x, 1, 1, size(x, 1), size(x, 2)), running_mean, running_var, momentum,
-            cache = cache, alpha = alpha, beta = beta, eps = eps, training = training)
+  dropdims(batchnorm(g, b, reshape(x, 1, 1, size(x, 1), size(x, 2)), running_mean, running_var, momentum,
+            cache = cache, alpha = alpha, beta = beta, eps = eps, training = training), dims = (1, 2))
 
 function batchnorm(g::CuArray{T}, b::CuArray{T}, x::Union{CuArray{T, 4},CuArray{T,5}},
                    running_mean::CuArray{T}, running_var::CuArray{T}, momentum;
