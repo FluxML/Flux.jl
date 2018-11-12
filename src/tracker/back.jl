@@ -66,6 +66,15 @@ function back!(x, Δ; once = true)
   return
 end
 
+function gradient_(f, xs...)
+  xs = param.(xs)
+  l = f(xs...)
+  losscheck(l)
+  back!(l)
+  nobacksies("Use `gradient(...; nest = true)` for nested derivatives",
+             grad.(xs))
+end
+
 # Out-of-place gradients
 
 struct Params
@@ -162,20 +171,11 @@ function losscheck(x)
   isnan(x) && error("Loss is NaN")
 end
 
-function gradient(f, args...)
+function gradient_nested(f, args...)
   y, back = forward(f, args...)
   losscheck(y)
   return back(1)
 end
 
-derivative(f, x) = gradient(f, x)[1]
-
-# Non-nesting versions
-
-function gradient_(f, xs...)
-  xs = param.(xs)
-  l = f(xs...)
-  losscheck(l)
-  back!(l)
-  grad.(xs)
-end
+gradient(f, xs...; nest = false) =
+  nest ? gradient_nested(f, xs...) : gradient_(f, xs...)
