@@ -2,7 +2,7 @@ using Flux, Test
 using Flux: maxpool, meanpool
 
 @testset "Pooling" begin
-  x = randn(10, 10, 3, 2)
+  x = randn(Float32, 10, 10, 3, 2)
   mp = MaxPool((2, 2))
   @test mp(x) == maxpool(x, (2,2))
   mp = MeanPool((2, 2))
@@ -10,7 +10,7 @@ using Flux: maxpool, meanpool
 end
 
 @testset "CNN" begin
-  r = zeros(28, 28, 1, 5)
+  r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
     Conv((2, 2), 1=>16, relu),
     MaxPool((2,2)),
