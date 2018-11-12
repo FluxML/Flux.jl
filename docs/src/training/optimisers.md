@@ -59,18 +59,20 @@ An optimiser takes a parameter list and returns a function that does the same th
 
 All optimisers return a `struct` that, when called with their `update!`, will update the parameters passed to it.
 
-```@docs
-- [Descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent)
-- Momentum
-- Nesterov
-- RMSProp
-- ADAM
-- AdaMax
-- ADAGrad
-- ADADelta
-- AMSGrad
-- NADAM
-```
+* [Descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent)
+* [Momentum](https://arxiv.org/abs/1712.09677)
+* [Nesterov](https://arxiv.org/abs/1607.01981)
+* [RMSProp](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+* [ADAM](https://arxiv.org/abs/1412.6980v8)
+* [AdaMax](https://arxiv.org/abs/1412.6980v9)
+* [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf)
+* [ADADelta](http://arxiv.org/abs/1212.5701)
+* [AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ)
+* [NADAM](http://cs229.stanford.edu/proj2015/054_report.pdf)
+* [ADAMW](https://arxiv.org/abs/1711.05101)
+* InvDecay
+* ExpDecay
+* WeightDecay
 
 ## Optimiser API
 
@@ -100,13 +102,13 @@ opt.eta = 0.2 # valid statment, useful for annealing/ scaling
 The `ExpDecay` function defined within Flux, takes advantage of this flexibility. It can be used as a way of scheduling the learning rate. It makes it easy to scale the learning rate, every `n` epochs. Additionaly, it is easy to specify a `clip` or a bound to the learning rate, beyond which it will be maintained throughout the remainder of the training.
 
 ```julia
-mutable struct ExpDecay
-  eta::Float64
-  decay::Float64
-  step::Int64
-  clip::Float64
-  current::IdDict
-end
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4)
+```
+
+The above would take the initial learning rate `0.001`, and decay it by `0.1` every `1000` steps until it reaches a minimum of `1e-4`. It can be used such that it can be applied on to any optimiser like so:
+
+```julia
+Optimiser(ExpDecay(...), Descent(...))
 ```
 
 ## Optimiser
