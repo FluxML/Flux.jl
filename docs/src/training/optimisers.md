@@ -23,7 +23,7 @@ We want to update each parameter, using the gradient, in order to improve (reduc
 ```julia
 using Flux.Tracker: grad, update!
 
-function sgd()
+struct sgd()
   η = 0.1 # Learning Rate
   for p in (W, b)
     update!(p, -η * grads[p])
@@ -60,11 +60,16 @@ An optimiser takes a parameter list and returns a function that does the same th
 All optimisers return a `struct` that, when called with their `update!`, will update the parameters passed to it.
 
 ```@docs
-SGD
-Descent
-Momentum
-Nesterov
-ADAM
+- [Descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent)
+- Momentum
+- Nesterov
+- RMSProp
+- ADAM
+- AdaMax
+- ADAGrad
+- ADADelta
+- AMSGrad
+- NADAM
 ```
 
 ## Optimiser API
