@@ -5,14 +5,15 @@ using MacroTools: @q, @forward
 
 import Base: ==
 
-export TrackedArray, TrackedVector, TrackedMatrix, Params, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, Params, gradient,
+  param, back!
 
 tracker(x) = nothing
 
 istracked(x) = tracker(x) ≠ nothing
 isleaf(x) = !istracked(x) || isleaf(tracker(x))
 grad(x) = grad(tracker(x))
-grad(::Void) = nothing
+grad(::Nothing) = nothing
 data(x) = x
 
 struct Call{F,As<:Tuple}
@@ -35,7 +36,7 @@ mutable struct Tracked{T}
   grad::T
   Tracked{T}(f::Call) where T = new(0, f, false)
   Tracked{T}(f::Call, grad::T) where T = new(0, f, false, grad)
-  Tracked{T}(f::Call{Void}, grad::T) where T = new(0, f, true, grad)
+  Tracked{T}(f::Call{Nothing}, grad::T) where T = new(0, f, true, grad)
 end
 
 istracked(x::Tracked) = true
@@ -46,14 +47,7 @@ track(f::Call, x) = Tracked{typeof(x)}(f)
 
 function _forward end
 
-function track(f::F, xs...) where F
-  y, back = _forward(f, xs...)
-  ts = map(tracker, xs)
-  c = Call(back, ts)
-  track(c, y)
-end
-
-function track_kw(f::F, xs...; kw...) where F
+function track(f::F, xs...; kw...) where F
   y, back = _forward(f, xs...; kw...)
   track(Call(back, tracker.(xs)), y)
 end
@@ -75,19 +69,18 @@ end
 
 include("idset.jl")
 include("back.jl")
-include("scalar.jl")
-include("array.jl")
 include("numeric.jl")
+include("lib/real.jl")
+include("lib/array.jl")
 
 """
     hook(f, x) -> x′
 
 Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 `f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
-the sign of the gradient applied to `x`.
-"""
+the sign of the gradient applied to `x`."""
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
-@grad hook(f, x) = x, Δ -> (nothing, f(Δ))
+@grad hook(f, x) = data(x), Δ -> (nothing, f(Δ))
 
 """
     checkpoint(f, args...)
@@ -107,7 +100,8 @@ end
 
 nobacksies(f, x) = track(nobacksies, f, x)
 nobacksies(f, xs::Tuple) = map(x -> nobacksies(f, x), xs)
-@grad nobacksies(f, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::Symbol, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::String, x) = data(x), Δ -> error(f)
 
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
@@ -116,10 +110,8 @@ param(xs::AbstractArray) = TrackedArray(float.(xs))
 param(x::TrackedReal) = track(identity, x)
 param(x::TrackedArray) = track(identity, x)
 
-import NNlib.cudata
 import Adapt.adapt
 
-cudata(x::TrackedArray) = data(x)
 adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end

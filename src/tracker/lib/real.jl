@@ -10,10 +10,10 @@ tracker(x::TrackedReal) = x.tracker
 
 track(f::Call, x::Real) = TrackedReal(x, Tracked{typeof(x)}(f, zero(x)))
 
-function back!(x::TrackedReal)
+function back!(x::TrackedReal; once = true)
     isinf(x) && error("Loss is Inf")
     isnan(x) && error("Loss is NaN")
-    return back!(x, 1)
+    return back!(x, 1, once = once)
 end
 
 function Base.show(io::IO, x::TrackedReal)
@@ -23,6 +23,8 @@ end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))
 
+Base.copy(x::TrackedReal) = x
+
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
@@ -30,8 +32,11 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
 
-Base.:(<)(x::TrackedReal, y::TrackedReal) = data(x) < data(y)
-Base.:(==)(x::TrackedReal, y::TrackedReal) = data(x) == data(y)
+for op in [:(==), :≈, :<]
+  @eval Base.$op(x::TrackedReal, y::Real) = Base.$op(data(x), y)
+  @eval Base.$op(x::Real, y::TrackedReal) = Base.$op(x, data(y))
+  @eval Base.$op(x::TrackedReal, y::TrackedReal) = Base.$op(data(x), data(y))
+end
 
 Base.eps(x::TrackedReal) = eps(data(x))
 
@@ -55,12 +60,18 @@ for (M, f, arity) in DiffRules.diffrules()
   end
 end
 
+# Work around zero(π) not working, for some reason
+_zero(::Irrational) = nothing
+_zero(x) = zero(x)
+
 for (M, f, arity) in DiffRules.diffrules()
   arity == 2 || continue
   da, db = DiffRules.diffrule(M, f, :a, :b)
   f = :($M.$f)
   @eval begin
-    @grad $f(a::Real, b::Real) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::TrackedReal, b::TrackedReal) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::TrackedReal, b::Real) = $f(data(a), b), Δ -> (Δ * $da, _zero(b))
+    @grad $f(a::Real, b::TrackedReal) = $f(a, data(b)), Δ -> (_zero(a), Δ * $db)
     $f(a::TrackedReal, b::TrackedReal)  = track($f, a, b)
     $f(a::TrackedReal, b::Real) = track($f, a, b)
     $f(a::Real, b::TrackedReal) = track($f, a, b)
@@ -112,6 +123,10 @@ function scan(c::Call{typeof(collect)})
   foreach(scan, c.args[1])
 end
 
-function back_(c::Call{typeof(collect)}, Δ)
-  foreach(back, c.args[1], data(Δ))
+function back_(c::Call{typeof(collect)}, Δ, once)
+  foreach((x, d) -> back(x, d, once), c.args[1], data(Δ))
+end
+
+function back_(g::Grads, c::Call{typeof(collect)}, Δ)
+  foreach((x, Δ) -> back(g, x, Δ), c.args[1], Δ)
 end

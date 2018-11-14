@@ -1,6 +1,6 @@
-using Flux, CuArrays, Base.Test
+using Flux, CuArrays, Test
 
-info("Testing Flux/CUDNN")
+@info "Testing Flux/CUDNN"
 
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM]
