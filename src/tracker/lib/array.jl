@@ -33,6 +33,14 @@ TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
+Base.convert(::Type{T}, x::S) where {T<:TrackedArray,S<:T} = x
+
+Base.convert(::Type{<:TrackedArray}, x::TrackedArray) =
+  error("Not implemented: convert $(typeof(x)) to $T")
+
+Base.convert(::Type{<:TrackedArray{T,N,A}}, x::AbstractArray) where {T,N,A} =
+  TrackedArray(convert(A, x))
+
 Base.show(io::IO, t::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
   @isdefined(A) ?
     print(io, "TrackedArray{…,$A}") :
