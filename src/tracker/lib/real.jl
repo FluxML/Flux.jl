@@ -39,6 +39,7 @@ for op in [:(==), :≈, :<]
 end
 
 Base.eps(x::TrackedReal) = eps(data(x))
+Base.eps(::Type{TrackedReal{T}}) where T = eps(T)
 
 for f in :[isinf, isnan, isfinite].args
   @eval Base.$f(x::TrackedReal) = Base.$f(data(x))
