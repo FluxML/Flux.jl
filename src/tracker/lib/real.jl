@@ -17,8 +17,9 @@ function back!(x::TrackedReal; once = true)
 end
 
 function Base.show(io::IO, x::TrackedReal)
+  T = get(io, :typeinfo, Any)
   show(io, data(x))
-  print(io, " (tracked)")
+  T <: TrackedReal || print(io, " (tracked)")
 end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))

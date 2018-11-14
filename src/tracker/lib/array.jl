@@ -53,6 +53,11 @@ end
 
 Base.print_array(io::IO, x::TrackedArray) = Base.print_array(io, data(x))
 
+function Base.show(io::IO, x::TrackedArray)
+  show(io, data(x))
+  print(io, " (tracked)")
+end
+
 Base.copy(x::TrackedArray) = x
 
 Base.setindex!(xs::TrackedArray, v, i...) =
