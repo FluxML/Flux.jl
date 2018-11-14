@@ -79,6 +79,8 @@ Base.similar(x::TrackedArray, dims::Union{AbstractUnitRange,Integer}...) =
 
 Base.similar(x::TrackedArray, T::Type) = similar(data(x), T)
 
+Base.zero(x::Flux.Tracker.TrackedArray) = 0*x
+
 for op in [:(==), :≈]
     @eval Base.$op(x::TrackedArray, y::AbstractArray) = Base.$op(data(x), y)
     @eval Base.$op(x::AbstractArray, y::TrackedArray) = Base.$op(x, data(y))
