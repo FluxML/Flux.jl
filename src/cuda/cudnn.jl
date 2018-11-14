@@ -1,7 +1,12 @@
-using .CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, libcudnn_handle,
+using .CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t,
   cudnnDataType, TensorDesc, FilterDesc
-
 using LinearAlgebra
+
+if isdefined(CuArrays, :libcudnn_handle)
+  handle() = CuArrays.libcudnn_handle[]
+else
+  handle() = CuArrays.CUDNN.handle()
+end
 
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}
@@ -14,11 +19,11 @@ function DropoutDesc(ρ::Real; seed::Integer=0)
   d = [C_NULL]
   s = Csize_t[0]
   @check ccall((:cudnnCreateDropoutDescriptor,libcudnn), cudnnStatus_t, (Ptr{Ptr{Nothing}},), d)
-  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),libcudnn_handle[],s)
-  states = CuArray{UInt8}(s[]) # TODO: can we drop this when ρ=0?
+  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),handle(),s)
+  states = CuArray{UInt8}(undef, s[]) # TODO: can we drop this when ρ=0?
   desc = DropoutDesc(d[], states)
   @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
-    desc,libcudnn_handle[],ρ,states,length(states),seed)
+    desc,handle(),ρ,states,length(states),seed)
   finalizer(desc) do x
     @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
   end
@@ -68,7 +73,7 @@ Base.unsafe_convert(::Type{Ptr{Nothing}}, d::RNNDesc) = d.ptr
 function rnnParamSize(T, r, input)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNParamsSize, libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Ptr{Nothing},Ptr{Csize_t},Cint),
-    libcudnn_handle[], r, TensorDesc(T, (1,input,1)), size, cudnnDataType(T))
+    handle(), r, TensorDesc(T, (1,input,1)), size, cudnnDataType(T))
   return Int(size[])÷sizeof(T)
 end
 
@@ -84,30 +89,30 @@ function RNNDesc{T}(mode::Int, input::Int, hidden::Int; layers = 1) where T
   direction = UNIDIRECTIONAL
   algo = RNN_ALGO_STANDARD
   @check ccall((:cudnnSetRNNDescriptor_v6,libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Cint,Cint,Ptr{Nothing},Cint,Cint,Cint,Cint,Cint),
-    libcudnn_handle[],d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
+    handle(),d[],hidden,layers,dropoutDesc,inputMode,direction,mode,algo,cudnnDataType(T))
 
   w = cuzeros(T, rnnParamSize(T, d[], input))
   # TODO: avoid reserve allocation here
   rd = RNNDesc{T}(mode, input, hidden, w, params(w, input, hidden, ngates(mode))..., d[])
   finalizer(rd) do x
     @check ccall((:cudnnDestroyRNNDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
-  end 
+  end
   return rd
 end
 
 function rnnWorkspaceSize(r::RNNDesc, seqlen, xdesc)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNWorkspaceSize, libcudnn), cudnnStatus_t, (Ptr{Nothing},Ptr{Nothing},Cint,Ptr{Ptr{Nothing}},Ptr{Csize_t}),
-    libcudnn_handle[], r, seqlen, xdesc, size)
+    handle(), r, seqlen, xdesc, size)
   return Int(size[])
 end
 
-const workspace = [CuVector{UInt8}(1)]
+const workspace = [CuVector{UInt8}(undef, 1)]
 
 getworkspace(bytes) =
   length(workspace[]) ≥ bytes ?
     workspace[] :
-    (workspace[] = CuVector{UInt8}(bytes))
+    (workspace[] = CuVector{UInt8}(undef, bytes))
 
 getworkspace(r::RNNDesc, seqlen, xdesc) =
   getworkspace(rnnWorkspaceSize(r, seqlen, xdesc))
@@ -115,7 +120,7 @@ getworkspace(r::RNNDesc, seqlen, xdesc) =
 function rnnTrainingReserveSize(r::RNNDesc, seqlen, xdesc)
   size = Csize_t[0]
   @check ccall((:cudnnGetRNNTrainingReserveSize,libcudnn), cudnnStatus_t, (Ptr{Nothing}, Ptr{Nothing}, Cint, Ptr{Ptr{Nothing}}, Ptr{Csize_t}),
-    libcudnn_handle[], r, seqlen, xdesc, size)
+    handle(), r, seqlen, xdesc, size)
   return Int(size[])
 end
 
@@ -128,7 +133,7 @@ function cudnnRNNForward(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, cd, c, wd, w, yd
                   Ptr{Nothing}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T},
                   Ptr{Nothing}, Ptr{T},
                   Ptr{Nothing}, Csize_t),
-                 libcudnn_handle[], rnn, seqlen,
+                 handle(), rnn, seqlen,
                  xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
                  workspace, length(workspace))
   else
@@ -136,7 +141,7 @@ function cudnnRNNForward(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, cd, c, wd, w, yd
                  (Ptr{Nothing}, Ptr{Nothing}, Cint,
                   Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
                   Ptr{Nothing}, Csize_t, Ptr{Nothing}, Csize_t),
-                 libcudnn_handle[], rnn, seqlen,
+                 handle(), rnn, seqlen,
                  xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
                  workspace, length(workspace), reserve, length(reserve))
   end
@@ -169,7 +174,7 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h_::CuArray{T}, c_ = nothing, t
   ydesc = xDesc(y)
   workspace = getworkspace(rnn, seqLength, xdesc)
   reserve = train == Val{true} ?
-    CuVector{UInt8}(rnnTrainingReserveSize(rnn, seqLength, xdesc)) :
+    CuVector{UInt8}(undef, rnnTrainingReserveSize(rnn, seqLength, xdesc)) :
     nothing
   co = c == nothing ? c : similar(c)
   cudnnRNNForward(rnn, seqLength,
@@ -196,7 +201,7 @@ function cudnnRNNBackwardData(rnn::RNNDesc{T}, seqlen, yd, y, dyd, dy, dhod, dho
                 Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing},
                 Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
                 Ptr{Nothing}, Csize_t, Ptr{Nothing}, Csize_t),
-               libcudnn_handle[], rnn, seqlen, yd, y, dyd, dy, dhod, dho, dcod, dco,
+               handle(), rnn, seqlen, yd, y, dyd, dy, dhod, dho, dcod, dco,
                wd, w, hd, h, cd, c, dxd, dx, dhd, dh, dcd, dc, ws, length(ws), rs, length(rs))
 end
 
@@ -228,7 +233,7 @@ function cudnnRNNBackwardWeights(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, yd, y, d
                 Ptr{Nothing}, Csize_t, #ws
                 Ptr{Nothing}, Ptr{T}, #dw
                 Ptr{Nothing}, Csize_t), #rs
-               libcudnn_handle[], rnn, seqlen, xd, x, hd, h, yd, y,
+               handle(), rnn, seqlen, xd, x, hd, h, yd, y,
                workspace, length(workspace), dwd, dw, reserve, length(reserve))
 end
 
