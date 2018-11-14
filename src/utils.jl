@@ -1,6 +1,12 @@
 # Arrays
-glorot_uniform(dims...) = (rand(dims...) .- 0.5) .* sqrt(24.0/(sum(dims)))
-glorot_normal(dims...) = randn(dims...) .* sqrt(2.0/sum(dims))
+glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
+glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
+
+ones(T::Type, dims...) = Base.ones(T, dims...)
+zeros(T::Type, dims...) = Base.zeros(T, dims...)
+
+ones(dims...) = Base.ones(Float32, dims...)
+zeros(dims...) = Base.zeros(Float32, dims...)
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 

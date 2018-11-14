@@ -5,7 +5,8 @@ using MacroTools: @q, @forward
 
 import Base: ==
 
-export TrackedArray, TrackedVector, TrackedMatrix, Params, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, Params, gradient,
+  param, back!
 
 tracker(x) = nothing
 
@@ -99,7 +100,8 @@ end
 
 nobacksies(f, x) = track(nobacksies, f, x)
 nobacksies(f, xs::Tuple) = map(x -> nobacksies(f, x), xs)
-@grad nobacksies(f, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::Symbol, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::String, x) = data(x), Δ -> error(f)
 
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
@@ -108,8 +110,8 @@ param(xs::AbstractArray) = TrackedArray(float.(xs))
 param(x::TrackedReal) = track(identity, x)
 param(x::TrackedArray) = track(identity, x)
 
-import Adapt.adapt
+import Adapt: adapt, adapt_structure
 
-adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
+adapt_structure(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end

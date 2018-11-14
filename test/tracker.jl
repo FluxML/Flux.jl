@@ -1,6 +1,6 @@
 using Flux
 using Flux.Tracker, Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
+using Flux.Tracker: TrackedReal, gradcheck, grad, checkpoint
 using NNlib: conv, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
@@ -285,9 +285,9 @@ end
     count += 1
     a * b
   end
-  @test derivative(x -> mul(5, x), 3) == 5
+  @test gradient(x -> mul(5, x), 3)[1] == 5
   @test count == 1
-  @test derivative(x -> checkpoint(mul, 5, x), 3) == 5
+  @test gradient(x -> checkpoint(mul, 5, x), 3)[1] == 5
   @test count == 3
 end
 

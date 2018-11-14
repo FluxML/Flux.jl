@@ -1,6 +1,5 @@
 using CuArrays.CUDNN: @check, libcudnn, cudnnStatus_t, cudnnTensorDescriptor_t,
-  cudnnBatchNormMode_t, cudnnHandle_t, handle, cudnnDataType, TensorDesc, FilterDesc
-
+  cudnnBatchNormMode_t, cudnnHandle_t, cudnnDataType, TensorDesc, FilterDesc
 using LinearAlgebra
 
 const RNN_RELU = 0 # Stock RNN with ReLu activation
@@ -80,12 +79,12 @@ function rnnWorkspaceSize(r::RNNDesc, seqlen, xdesc)
   return Int(size[])
 end
 
-const workspace = [CuVector{UInt8}(1)]
+const workspace = [CuVector{UInt8}(undef, 1)]
 
 getworkspace(bytes) =
   length(workspace[]) ≥ bytes ?
     workspace[] :
-    (workspace[] = CuVector{UInt8}(bytes))
+    (workspace[] = CuVector{UInt8}(undef, bytes))
 
 getworkspace(r::RNNDesc, seqlen, xdesc) =
   getworkspace(rnnWorkspaceSize(r, seqlen, xdesc))
@@ -147,7 +146,7 @@ function forward(rnn::RNNDesc{T}, x::CuArray{T}, h_::CuArray{T}, c_ = nothing, t
   ydesc = xDesc(y)
   workspace = getworkspace(rnn, seqLength, xdesc)
   reserve = train == Val{true} ?
-    CuVector{UInt8}(rnnTrainingReserveSize(rnn, seqLength, xdesc)) :
+    CuVector{UInt8}(undef, rnnTrainingReserveSize(rnn, seqLength, xdesc)) :
     nothing
   co = c == nothing ? c : similar(c)
   cudnnRNNForward(rnn, seqLength,
@@ -232,9 +231,6 @@ function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
     dst[I...] = src[reverse(I)...]
     return
   end
-  blk, thr = cudims(dst)
-  @cuda blocks=blk threads=thr kernel(dst, src)
-  return dst
 end
 
 CuParam{T,N} = Union{CuArray{T,N},TrackedArray{T,N,CuArray{T,N}}}
