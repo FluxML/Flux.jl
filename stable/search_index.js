@@ -209,6 +209,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers.html#Flux.DepthwiseConv",
+    "page": "Model Reference",
+    "title": "Flux.DepthwiseConv",
+    "category": "type",
+    "text": "DepthwiseConv(size, in)\nDepthwiseConv(size, in=>mul)\nDepthwiseConv(size, in=>mul, relu)\n\nDepthwise convolutional layer. size should be a tuple like (2, 2). in and mul specify the number of input channels and channel multiplier respectively. In case the mul is not specified it is taken as 1.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad and stride.\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers.html#Additional-Convolution-Layers-1",
+    "page": "Model Reference",
+    "title": "Additional Convolution Layers",
+    "category": "section",
+    "text": "DepthwiseConv"
+},
+
+{
     "location": "models/layers.html#Flux.RNN",
     "page": "Model Reference",
     "title": "Flux.RNN",
@@ -350,38 +366,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Optimisers",
     "category": "section",
     "text": "Consider a simple linear regression. We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters W and b.using Flux.Tracker\n\nW = param(rand(2, 5))\nb = param(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = rand(5), rand(2) # Dummy data\nl = loss(x, y) # ~ 3\n\nparams = Params([W, b])\ngrads = Tracker.gradient(() -> loss(x, y), params)We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here\'s one way to do that:using Flux.Tracker: grad, update!\n\nfunction sgd()\n  η = 0.1 # Learning Rate\n  for p in (W, b)\n    update!(p, -η * grads[p])\n  end\nendIf we call sgd, the parameters W and b will change and our loss should go down.There are two pieces here: one is that we need a list of trainable parameters for the model ([W, b] in this case), and the other is the update step. In this case the update is simply gradient descent (x .-= η .* Δ), but we might choose to do something more advanced, like adding momentum.In this case, getting the variables is trivial, but you can imagine it\'d be more of a pain with some complex stack of layers.m = Chain(\n  Dense(10, 5, σ),\n  Dense(5, 2), softmax)Instead of having to write [m[1].W, m[1].b, ...], Flux provides a params function params(m) that returns a list of all parameters in the model for you.For the update step, there\'s nothing whatsoever wrong with writing the loop above – it\'ll work just fine – but Flux provides various optimisers that make it more convenient.opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1\n\nopt() # Carry out the update, modifying `W` and `b`.An optimiser takes a parameter list and returns a function that does the same thing as update above. We can pass either opt or update to our training loop, which will then run the optimiser after every mini-batch of data."
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.SGD",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.SGD",
-    "category": "function",
-    "text": "SGD(params, η = 0.1; decay = 0)\n\nClassic gradient descent optimiser with learning rate η. For each parameter p and its gradient δp, this runs p -= η*δp.\n\nSupports inverse decaying learning rate if the decay argument is provided.\n\n\n\n\n\n"
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.Momentum",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.Momentum",
-    "category": "function",
-    "text": "Momentum(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, momentum ρ and optional learning rate inverse decay.\n\n\n\n\n\n"
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.Nesterov",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.Nesterov",
-    "category": "function",
-    "text": "Nesterov(params, η = 0.01; ρ = 0.9, decay = 0)\n\nSGD with learning rate  η, Nesterov momentum ρ and optional learning rate inverse decay.\n\n\n\n\n\n"
-},
-
-{
-    "location": "training/optimisers.html#Flux.Optimise.ADAM",
-    "page": "Optimisers",
-    "title": "Flux.Optimise.ADAM",
-    "category": "function",
-    "text": "ADAM(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08, decay = 0)\n\nADAM optimiser.\n\n\n\n\n\n"
 },
 
 {
