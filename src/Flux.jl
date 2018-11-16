@@ -2,6 +2,7 @@ module Flux
 
 # Zero Flux Given
 
+using Base: tail
 using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
