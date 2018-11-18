@@ -48,7 +48,7 @@ end
               (),
               Iterators.repeated((), 100),
               Descent(),
-              cb = Flux.throttle(() -> (i > 3 && Flux.stop()), 1))
+              cb = Flux.throttle((_) -> (i > 3 && Flux.stop()), 1))
 
   @test 3 < i < 50
 

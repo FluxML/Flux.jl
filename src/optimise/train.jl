@@ -45,6 +45,31 @@ function stop()
 end
 
 """
+    CallbackInfo(
+        datapoint,
+        datapoins_count,
+        iteration_count,
+        loss
+    )
+
+Info about the previous training pass in Flux.train!
+
+`datapoint` - model input in the previous training pass.
+
+`datapoints_count` - number of datapoints in the dataset.
+
+`iteration_count` - counter that increases with each training pass.
+
+`loss` - value returned by the loss function in the previous training pass.
+"""
+struct CallbackInfo
+  datapoint
+  datapoint_count
+  iteration_count
+  loss
+end
+
+"""
     train!(loss, params, data, opt)
 
 For each datapoint `d` in `data` computes the gradient of `loss(d...)` through
@@ -55,22 +80,36 @@ every 10 seconds:
 
 ```julia
 Flux.train!(loss, params, data, opt,
-            cb = throttle(() -> println("training"), 10))
+            cb = throttle((_) -> println("training"), 10))
 ```
+
+The callback can take a CallbackInfo value as a single argument that provides info
+on the previous training pass. For example, this will print the training loss with
+its iteration count:
+
+```julia
+Flux.train!(loss, params, data, opt,
+            cb = (info) -> println("Iteration \$(info.iteration_count): Loss \$loss."))
+```
+See `?Flux.CallbackInfo` for more details.
 
 The callback can return `:stop` to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, ps, data, opt; cb = () -> ())
-  cb = runall(cb)
   opt = runall(opt)
-  @progress for d in data
+  @progress for (index, d) in enumerate(data)
     try
       l = loss(d...)
       @interrupts back!(l)
       update!(opt, ps)
-      if cb() == :stop
+      cbinfo = CallbackInfo(d, length(data), index, l)
+      add_cbinfo_if_wanted(cb) = methods(cb).ms[1].nargs == 1 ? cb : () -> cb(cbinfo)
+      runcb = !(typeof(cb) <: AbstractVector) ?
+        runall(add_cbinfo_if_wanted(cb)) :
+        runall(map(add_cbinfo_if_wanted, cb))
+      if runcb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break
       end
