@@ -68,11 +68,22 @@ struct Dense{F,S,T}
   σ::F
 end
 
+struct Dense{T, WeightT <: AbstractMatrix{T}, BiasT <: AbstractVector{T}, F}
+  W::WeightT
+  b::BiasT
+  σ::F
+end
+
 Dense(W, b) = Dense(W, b, identity)
 
-function Dense(in::Integer, out::Integer, σ = identity;
+function Dense(T::Type{<:Real}, in::Integer, out::Integer, σ = identity;
                initW = glorot_uniform, initb = zeros)
-  return Dense(param(initW(out, in)), param(initb(out)), σ)
+  return Dense(param(initW(T, out, in)), param(initb(T, out)), σ)
+end
+
+function Dense(in::Integer, out::Integer, σ = identity;
+       initW = glorot_uniform, initb = zeros)
+  return Dense(Float32, in, out, σ; initW = initW, initb = zeros)
 end
 
 @treelike Dense

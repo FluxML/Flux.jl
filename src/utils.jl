@@ -1,6 +1,8 @@
 # Arrays
-glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
-glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
+glorot_uniform(dims...) = glorot_uniform(Float32, dims...)
+glorot_normal(dims...) = glorot_normal(Float32, dims...)
+glorot_uniform(::Type{T}, dims...) where T = (rand(T, dims...) .- T(0.5f0)) .* sqrt(T(24.0f0)/sum(dims))
+glorot_normal(::Type{T}, dims...) where T = randn(T, dims...) .* sqrt(T(2.0f0)/sum(dims))
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
