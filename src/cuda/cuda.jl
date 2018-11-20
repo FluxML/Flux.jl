@@ -13,7 +13,7 @@ if CuArrays.libcudnn != nothing
     handle() = CuArrays.CUDNN.handle()
   end
   include("curnn.jl")
-  include("cudnn.jl"
+  include("cudnn.jl")
 else
   @warn("CUDNN is not installed, some functionality will not be available.")
 end
