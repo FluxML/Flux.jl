@@ -35,7 +35,7 @@ Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
 Base.convert(::Type{T}, x::S) where {T<:TrackedArray,S<:T} = x
 
-Base.convert(::Type{<:TrackedArray}, x::TrackedArray) =
+Base.convert(::Type{T}, x::TrackedArray) where T<:TrackedArray =
   error("Not implemented: convert $(typeof(x)) to $T")
 
 Base.convert(::Type{<:TrackedArray{T,N,A}}, x::AbstractArray) where {T,N,A} =
