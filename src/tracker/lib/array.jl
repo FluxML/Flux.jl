@@ -114,6 +114,16 @@ Base.:-(xs::TrackedArray) = track(-, xs)
 
 @grad -(xs) = -data(xs), Δ -> (-Δ,)
 
+function Base.:+(A::TrackedArray, J::LinearAlgebra.UniformScaling)
+  n = LinearAlgebra.checksquare(A)
+  A + J.λ * TrackedArray(Matrix(LinearAlgebra.I,n,n))
+end
+
+function Base.:-(J::LinearAlgebra.UniformScaling, A::TrackedArray)
+    n = LinearAlgebra.checksquare(A)
+    J.λ * TrackedArray(Matrix(LinearAlgebra.I,n,n)) - A
+end
+
 Base.transpose(xs::TrackedArray) = track(transpose, xs)
 Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 
