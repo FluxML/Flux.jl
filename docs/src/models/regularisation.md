@@ -15,6 +15,7 @@ loss(x, y) = crossentropy(softmax(m(x)), y)
 We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
 
 ```julia
+using LinearAlgebra
 penalty() = norm(m.W) + norm(m.b)
 loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()
 ```
