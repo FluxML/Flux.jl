@@ -12,11 +12,11 @@ m = Dense(10, 5)
 loss(x, y) = crossentropy(softmax(m(x)), y)
 ```
 
-We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
+We can regularise this by summing the squares of the (L2) norm of the parameters, `m.W` and `m.b`.
 
 ```julia
 using LinearAlgebra
-penalty() = norm(m.W) + norm(m.b)
+penalty() = norm(m.W)^2 + norm(m.b)^2
 loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()
 ```
 
@@ -29,7 +29,7 @@ julia> params(m)
  param([0.355408 0.533092; … 0.430459 0.171498])
  param([0.0, 0.0, 0.0, 0.0, 0.0])
 
-julia> sum(norm, params(m))
+julia> sum(x->norm(x, 2)^2, params(m))
 26.01749952921026 (tracked)
 ```
 
@@ -41,7 +41,7 @@ m = Chain(
   Dense(128, 32, relu),
   Dense(32, 10), softmax)
 
-loss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))
+loss(x, y) = crossentropy(m(x), y) + sum(x->norm(x, 2)^2, params(m))
 
 loss(rand(28^2), rand(10))
 ```
@@ -58,6 +58,6 @@ julia> activations(c, rand(10))
  param([0.0330606, -0.456104])
  param([0.61991, 0.38009])
 
-julia> sum(norm, ans)
-2.639678767773633 (tracked)
+julia> sum(x->norm(x, 2)^2, ans)
+2.8555512646063597 (tracked)
 ```
