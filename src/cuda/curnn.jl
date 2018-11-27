@@ -231,6 +231,9 @@ function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
     dst[I...] = src[reverse(I)...]
     return
   end
+  blk, thr = cudims(dst)
+  @cuda blocks=blk threads=thr kernel(dst, src)
+  return dst
 end
 
 CuParam{T,N} = Union{CuArray{T,N},TrackedArray{T,N,CuArray{T,N}}}
