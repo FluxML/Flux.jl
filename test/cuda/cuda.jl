@@ -36,4 +36,8 @@ Flux.back!(sum(l))
 
 end
 
-CuArrays.libcudnn != nothing && include("cudnn.jl")
+if CuArrays.libcudnn != nothing
+    @info "Testing Flux/CUDNN"
+    include("cudnn.jl")
+    include("curnn.jl")
+end
