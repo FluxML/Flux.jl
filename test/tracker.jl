@@ -1,6 +1,10 @@
 using Flux
 using Flux.Tracker, Test, NNlib
+<<<<<<< HEAD
 using Flux.Tracker: TrackedReal, gradcheck, grad, checkpoint
+=======
+using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
+>>>>>>> a657c287d0590fdd9e49bb68c35bf96febe45e6d
 using NNlib: conv, ∇conv_data, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
@@ -185,6 +189,10 @@ end
 @test gradtest(conv, rand(10, 3, 2), randn(Float64, 2, 3, 2))
 @test gradtest(conv, rand(10, 10, 3, 2), randn(Float64, 2, 2, 3, 2))
 @test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64, 2, 2, 2, 3, 2))
+
+@test gradtest(∇conv_data, rand(10, 3, 2), randn(Float64, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 3, 2), randn(Float64,2, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 2, 3))
 
 @test gradtest(depthwiseconv, rand(10,10,3,2), randn(2, 2, 2, 3))
 

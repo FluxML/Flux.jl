@@ -356,7 +356,12 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 # NNlib
 
 using NNlib
+<<<<<<< HEAD:src/tracker/lib/array.jl
 import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, ∇conv_data, depthwiseconv, maxpool, meanpool
+=======
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax,
+              conv, ∇conv_data, depthwiseconv, maxpool, meanpool
+>>>>>>> a657c287d0590fdd9e49bb68c35bf96febe45e6d:src/tracker/array.jl
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
