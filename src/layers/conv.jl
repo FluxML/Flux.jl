@@ -51,7 +51,6 @@ function Base.show(io::IO, l::Conv)
   print(io, ")")
 end
 
-<<<<<<< HEAD
 (a::Conv{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   invoke(a, Tuple{AbstractArray}, x)
 
