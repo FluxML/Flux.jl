@@ -44,7 +44,6 @@ end
 _testmode!(a::Dropout, test) = (a.active = !test)
 
 """
-
     LayerNorm(h::Integer)
 
 A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
@@ -86,7 +85,6 @@ See [Batch Normalization: Accelerating Deep Network Training by Reducing
 Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
 
 Example:
-
 ```julia
 m = Chain(
   Dense(28^2, 64),
@@ -101,14 +99,14 @@ mutable struct BatchNorm{F,V,W,N}
   β::V  # bias
   γ::V  # scale
   μ::W  # moving mean
-  σ::W  # moving std
+  σ²::W  # moving std
   ϵ::N
   momentum::N
   active::Bool
 end
 
 BatchNorm(chs::Integer, λ = identity;
-          initβ = (i) -> zeros(i), initγ = (i) -> ones(i), ϵ = 1e-8, momentum = .1) =
+          initβ = (i) -> zeros(i), initγ = (i) -> ones(i), ϵ = 1e-5, momentum = .1) =
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(chs), ones(chs), ϵ, momentum, true)
 
@@ -124,31 +122,31 @@ function (BN::BatchNorm)(x)
 
   if !BN.active
     μ = reshape(BN.μ, affine_shape...)
-    σ = reshape(BN.σ, affine_shape...)
+    σ² = reshape(BN.σ², affine_shape...)
   else
     T = eltype(x)
 
     ϵ = data(convert(T, BN.ϵ))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
     μ = mean(x, dims = axes)
-    σ = sqrt.(mean((x .- μ).^2, dims = axes) .+ ϵ)
+    σ² = sum((x .- μ) .^ 2, dims = axes) ./ m
 
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* dropdims(data(μ), dims = (axes...,))
-    BN.σ = (1 - mtm) .* BN.σ .+ mtm .* dropdims(data(σ), dims = (axes...,)) .* m ./ (m - 1)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* reshape(data(μ), :)
+    BN.σ² = ((1 - mtm) .* BN.σ² .+ mtm .* reshape(data(σ²), :) .* m ./ (m - 1))
   end
 
   let λ = BN.λ
-    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ σ) .+ reshape(β, affine_shape...))
+    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ BN.ϵ)) .+ reshape(β, affine_shape...))
   end
 end
 
 children(BN::BatchNorm) =
-  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ, BN.ϵ, BN.momentum, BN.active)
+  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ², BN.ϵ, BN.momentum, BN.active)
 
 mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ), BN.ϵ, BN.momentum, BN.active)
+  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ²), BN.ϵ, BN.momentum, BN.active)
 
 _testmode!(BN::BatchNorm, test) = (BN.active = !test)
 

@@ -10,4 +10,7 @@ using Test
 @test MNIST.images()[1] isa Matrix
 @test MNIST.labels() isa Vector{Int64}
 
+@test FashionMNIST.images()[1] isa Matrix
+@test FashionMNIST.labels() isa Vector{Int64}
+
 @test Data.Sentiment.train() isa Vector{Data.Tree{Any}}

@@ -13,7 +13,7 @@ if Base.JLOptions().check_bounds == 1
   exit()
 end
 
-using Flux, Test, Random
+using Flux, Test, Random, Statistics
 using Random
 
 Random.seed!(0)
@@ -32,6 +32,7 @@ include("data.jl")
 
 @info "Testing Layers"
 
+include("layers/basic.jl")
 include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")
