@@ -110,8 +110,8 @@ param(xs::AbstractArray) = TrackedArray(float.(xs))
 param(x::TrackedReal) = track(identity, x)
 param(x::TrackedArray) = track(identity, x)
 
-import Adapt.adapt
+import Adapt: adapt, adapt_structure
 
-adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
+adapt_structure(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end

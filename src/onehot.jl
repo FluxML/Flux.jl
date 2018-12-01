@@ -28,9 +28,9 @@ Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs
 
 batch(xs::AbstractArray{<:OneHotVector}) = OneHotMatrix(length(first(xs)), xs)
 
-import Adapt.adapt
+import Adapt: adapt, adapt_structure
 
-adapt(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
+adapt_structure(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
 @init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
   import .CuArrays: CuArray, cudaconvert

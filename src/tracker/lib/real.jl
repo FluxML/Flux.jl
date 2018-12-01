@@ -17,8 +17,9 @@ function back!(x::TrackedReal; once = true)
 end
 
 function Base.show(io::IO, x::TrackedReal)
+  T = get(io, :typeinfo, Any)
   show(io, data(x))
-  print(io, " (tracked)")
+  T <: TrackedReal || print(io, " (tracked)")
 end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))
@@ -32,13 +33,14 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
 
-for op in [:(==), :≈, :<]
+for op in [:(==), :≈, :<, :(<=)]
   @eval Base.$op(x::TrackedReal, y::Real) = Base.$op(data(x), y)
   @eval Base.$op(x::Real, y::TrackedReal) = Base.$op(x, data(y))
   @eval Base.$op(x::TrackedReal, y::TrackedReal) = Base.$op(data(x), data(y))
 end
 
 Base.eps(x::TrackedReal) = eps(data(x))
+Base.eps(::Type{TrackedReal{T}}) where T = eps(T)
 
 for f in :[isinf, isnan, isfinite].args
   @eval Base.$f(x::TrackedReal) = Base.$f(data(x))

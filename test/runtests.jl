@@ -13,7 +13,7 @@ if Base.JLOptions().check_bounds == 1
   exit()
 end
 
-using Flux, Test, Random
+using Flux, Test, Random, Statistics
 using Random
 
 Random.seed!(0)
