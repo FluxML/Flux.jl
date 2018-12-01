@@ -300,5 +300,5 @@ convbias(x::TrackedArray, w::TrackedArray, b::CuArray{T}; kw...) where T<:CUDNNF
   else
     y = cudnnAddTensor(data(bias), conv(data.((x, w))...; kw...))
   end
-  y, Δ -> (nobacksies(:convbias, ∇conv_data(data.((Δ, x, w))...; kw...), ∇conv_filter(data.((Δ, x, w))...; kw...), ∇conv_bias(data.((Δ, bias))...; kw...))
+  y, Δ -> nobacksies(:convbias, ∇conv_data(data.((Δ, x, w))...; kw...), ∇conv_filter(data.((Δ, x, w))...; kw...), ∇conv_bias(data.((Δ, bias))...; kw...))
 end
