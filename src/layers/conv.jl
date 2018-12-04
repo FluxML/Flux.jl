@@ -80,14 +80,14 @@ ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N} =
   ConvTranspose(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
 
-ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
-              stride = 1, pad = 0, dilation = 1) where N =
+ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+              init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
 ConvTranspose(param(init(k..., reverse(ch)...)), param(zeros(ch[2])), σ,
               stride = stride, pad = pad, dilation = dilation)
 
 @treelike ConvTranspose
 
-function (c::ConvTranspose)(x)
+function (c::ConvTranspose)(x::AbstractArray)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ.(∇conv_data(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
@@ -97,7 +97,11 @@ function Base.show(io::IO, l::ConvTranspose)
   print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
 end
 
+(a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  invoke(a, Tuple{AbstractArray}, x)
 
+(a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  a(T.(x))
 """
     DepthwiseConv(size, in)
     DepthwiseConv(size, in=>mul)

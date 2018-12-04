@@ -1,10 +1,6 @@
 using Flux
 using Flux.Tracker, Test, NNlib
-<<<<<<< HEAD
 using Flux.Tracker: TrackedReal, gradcheck, grad, checkpoint
-=======
-using Flux.Tracker: TrackedReal, gradcheck, grad, derivative, checkpoint
->>>>>>> a657c287d0590fdd9e49bb68c35bf96febe45e6d
 using NNlib: conv, ∇conv_data, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
