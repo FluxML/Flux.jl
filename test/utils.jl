@@ -78,6 +78,20 @@ end
     @test std(v) > 0.9*sqrt(2/(n_in + n_out))
     @test std(v) < 1.1*sqrt(2/(n_in + n_out))
   end
+
+  # dtype tests
+  @testset "dtype" begin
+    n_in, n_out = 100, 100
+    for init in [glorot_uniform, glorot_normal]
+      for T in [nothing, Float32, Float64]
+        if T == nothing
+          @test eltype(init(n_in, n_out)) == Flux.FloatX
+        else
+          @test eltype(init(T, n_in, n_out)) == T
+        end
+      end
+    end
+  end
 end
 
 @testset "Params" begin

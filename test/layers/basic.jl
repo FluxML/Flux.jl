@@ -13,11 +13,12 @@ using Test, Random
         @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
         @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
 
+        test_dtype_works(T -> (T == nothing) ? Dense(10, 1) : Dense(10, 1, dtype = T))
+
         @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
         @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
         @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
         @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
-
     end
 
     @testset "Diagonal" begin
@@ -25,6 +26,8 @@ using Test, Random
         @test length(Flux.Diagonal(10)(1)) == 10
         @test length(Flux.Diagonal(10)(randn(1))) == 10
         @test_throws DimensionMismatch Flux.Diagonal(10)(randn(2))
+
+        test_dtype_works(T -> (T == nothing) ? Flux.Diagonal(10) : Flux.Diagonal(10, dtype = T))
 
         @test Flux.Diagonal(2)([1 2]) == [1 2; 1 2]
         @test Flux.Diagonal(2)([1,2]) == [1,2]

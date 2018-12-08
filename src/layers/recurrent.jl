@@ -82,9 +82,9 @@ mutable struct RNNCell{F,A,V}
 end
 
 RNNCell(in::Integer, out::Integer, σ = tanh;
-        init = glorot_uniform) =
-  RNNCell(σ, param(init(out, in)), param(init(out, out)),
-          param(zeros(out)), param(init(out)))
+        init = glorot_uniform, dtype = FloatX) =
+  RNNCell(σ, param(init(dtype, out, in)), param(init(dtype, out, out)),
+          param(zeros(dtype, out)), param(init(dtype, out)))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -121,9 +121,10 @@ mutable struct LSTMCell{A,V}
 end
 
 function LSTMCell(in::Integer, out::Integer;
-                  init = glorot_uniform)
-  cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(zeros(out*4)),
-                  param(init(out)), param(init(out)))
+                  init = glorot_uniform, dtype = FloatX)
+  cell = LSTMCell(param(init(dtype, out*4, in)), param(init(dtype, out*4, out)),
+                  param(zeros(dtype, out*4)), param(init(dtype, out)),
+                  param(init(dtype, out)))
   cell.b.data[gate(out, 2)] .= 1
   return cell
 end
@@ -167,9 +168,9 @@ mutable struct GRUCell{A,V}
   h::V
 end
 
-GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(param(init(out*3, in)), param(init(out*3, out)),
-          param(zeros(out*3)), param(init(out)))
+GRUCell(in, out; init = glorot_uniform, dtype = FloatX) =
+  GRUCell(param(init(dtype, out*3, in)), param(init(dtype, out*3, out)),
+          param(zeros(dtype, out*3)), param(init(dtype, out)))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)

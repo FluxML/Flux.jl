@@ -7,6 +7,7 @@ TrackedReal(x::Real) = TrackedReal(x, Tracked{typeof(x)}(Call(), zero(x)))
 
 data(x::TrackedReal) = x.data
 tracker(x::TrackedReal) = x.tracker
+Base.eltype(::Type{TrackedReal{T}}) where T = T
 
 track(f::Call, x::Real) = TrackedReal(x, Tracked{typeof(x)}(f, zero(x)))
 

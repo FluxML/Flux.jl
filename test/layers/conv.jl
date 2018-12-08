@@ -10,7 +10,7 @@ using Flux: maxpool, meanpool
 end
 
 @testset "CNN" begin
-  r = zeros(Float32, 28, 28, 1, 5)
+  r = zeros(Flux.FloatX, 28, 28, 1, 5)
   m = Chain(
     Conv((2, 2), 1=>16, relu),
     MaxPool((2,2)),
@@ -20,4 +20,6 @@ end
     Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
+  @test all_dtype_equal(params(m), Flux.FloatX)
+  @test eltype(eltype(m(r))) == Flux.FloatX
 end

@@ -1,12 +1,19 @@
+# Float precision config
+# TODO: provide an option to configure at import time
+FloatX = Float32
+
 # Arrays
-glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
-glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
+glorot_uniform(dtype::DataType, dims...) = (rand(dtype, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
+glorot_normal(dtype::DataType, dims...) = randn(dtype, dims...) .* sqrt(2.0f0/sum(dims))
+
+glorot_uniform(dims...) = glorot_uniform(FloatX, dims...)
+glorot_normal(dims...) = glorot_normal(FloatX, dims...)
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
 
-ones(dims...) = Base.ones(Float32, dims...)
-zeros(dims...) = Base.zeros(Float32, dims...)
+ones(dims...) = Base.ones(FloatX, dims...)
+zeros(dims...) = Base.zeros(FloatX, dims...)
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 

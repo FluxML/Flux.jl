@@ -21,6 +21,8 @@ Random.seed!(0)
 # So we can use the system CuArrays
 insert!(LOAD_PATH, 2, "@v#.#")
 
+include("dtype_test_utils.jl")
+
 @testset "Flux" begin
 
 @info "Testing Basics"
