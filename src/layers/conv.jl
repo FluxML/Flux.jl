@@ -95,6 +95,9 @@ end
 
 function Base.show(io::IO, l::ConvTranspose)
   print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
+  print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
+  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ")")
 end
 
 (a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
