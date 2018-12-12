@@ -228,7 +228,7 @@ end
 [ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(η, β), WeightDecay(wd))
+  Optimiser(ADAM(η, β), WeightDecay(decay))
 
 # Compose optimizers
 

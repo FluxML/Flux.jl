@@ -4,7 +4,7 @@ using Flux.Tracker
 using Test
 @testset "Optimise" begin
   w = randn(10, 10)
-  @testset for Opt in [ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, Descent, ADAM, Nesterov, RMSProp, Momentum]
+  @testset for Opt in [ADAMW, ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, Descent, ADAM, Nesterov, RMSProp, Momentum]
     w′ = param(randn(10, 10))
     loss(x) = Flux.mse(w*x, w′*x)
     opt = Opt(0.001)
