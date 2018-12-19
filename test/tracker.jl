@@ -37,12 +37,7 @@ function promotiontest(f, A, B, C)
   r0 = f(A, B, C)
   r1 = f(param(A), B, C)
   r2 = f(A, param(B), C)
-  if all(ndims.((A,B,C)) .≤ 2) && f ∈ [hcat, vcat]
-    r3 = f(A, B, param(C))
-  else
-    @test_throws MethodError f(A, B, param(C)) # until julia#20815 is resolved
-    r3 = r2
-  end
+  r3 = f(A, B, param(C))
   r4 = f(param(A), param(B), param(C))
 
   @test !isa(r0, TrackedArray)
