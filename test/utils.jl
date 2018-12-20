@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, glorot_uniform, glorot_normal
+using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack
 using StatsBase: std
 using Random
 using Test
@@ -85,4 +85,10 @@ end
   @test size.(params(m)) == [(5, 10), (5,)]
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
+end
+
+@testset "Basic" begin
+  x = randn(3,3)
+  stacked = stack([x, x], 2)
+  @test size(stacked) == (3,2,3)
 end
