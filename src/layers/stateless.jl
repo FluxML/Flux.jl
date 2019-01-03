@@ -10,7 +10,7 @@ end
 
 @deprecate logloss(x, y) crossentropy(x, y)
 
-function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1, efftype = eltype(ŷ))
+function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1, efftype = eltype(logŷ))
   return -sum(y .* logsoftmax(logŷ) .* weight) / convert(efftype, size(y, 2))
 end
 
