@@ -17,12 +17,12 @@ be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-struct Conv{N,F,A,V}
+struct Conv{M,N,F,A,V}
   σ::F
   weight::A
   bias::V
   stride::NTuple{N,Int}
-  pad::NTuple{N,Int}
+  pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
 end
 
