@@ -45,7 +45,7 @@ function stop()
 end
 
 """
-    train!(model, loss, data, opt)
+    train!(loss, params, data, opt; cb = () -> ())
 
 For each datapoint `d` in `data` computes the gradient of `loss(d...)` through
 backpropagation and calls the optimizer `opt`.
@@ -54,7 +54,7 @@ Takes a callback as keyword argument `cb`. For example, this will print "trainin
 every 10 seconds:
 
 ```julia
-Flux.train!(model, loss, data, opt,
+Flux.train!(loss, params, data, opt,
             cb = throttle(() -> println("training"), 10))
 ```
 
