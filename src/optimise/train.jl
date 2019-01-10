@@ -45,7 +45,7 @@ function stop()
 end
 
 """
-    train!(loss, params, data, opt; cb = () -> ())
+    train!(loss, params, data, opt; cb)
 
 For each datapoint `d` in `data` computes the gradient of `loss(d...)` through
 backpropagation and calls the optimizer `opt`.
