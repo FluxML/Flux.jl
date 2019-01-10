@@ -23,37 +23,23 @@ We want to update each parameter, using the gradient, in order to improve (reduc
 ```julia
 using Flux.Tracker: grad, update!
 
-function sgd()
-  η = 0.1 # Learning Rate
-  for p in (W, b)
-    update!(p, -η * grads[p])
-  end
+η = 0.1 # Learning Rate
+for p in (W, b)
+  update!(p, -η * grads[p])
 end
 ```
 
-If we call `sgd`, the parameters `W` and `b` will change and our loss should go down.
-
-There are two pieces here: one is that we need a list of trainable parameters for the model (`[W, b]` in this case), and the other is the update step. In this case the update is simply gradient descent (`x .-= η .* Δ`), but we might choose to do something more advanced, like adding momentum.
-
-In this case, getting the variables is trivial, but you can imagine it'd be more of a pain with some complex stack of layers.
-
-```julia
-m = Chain(
-  Dense(10, 5, σ),
-  Dense(5, 2), softmax)
-```
-
-Instead of having to write `[m[1].W, m[1].b, ...]`, Flux provides a params function `params(m)` that returns a list of all parameters in the model for you.
-
-For the update step, there's nothing whatsoever wrong with writing the loop above – it'll work just fine – but Flux provides various *optimisers* that make it more convenient.
+Running this will alter the parameters `W` and `b` and our loss should go down. Flux provides a more general way to do optimiser updates like this.
 
 ```julia
 opt = Descent(0.1) # Gradient descent with learning rate 0.1
 
-Optimise.update!(opt, [W, b]) # Carry out the update, modifying `W` and `b`.
+for p in (W, b)
+  update!(opt, p, -η * grads[p])
+end
 ```
 
-An optimiser takes a parameter list and returns a object that holds the current values in the optimiser. We can pass `opt` to our [training loop](training.md), which will then run the `update!` step for the optimiser after every mini-batch of data.
+An optimiser `update!` accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass `opt` to our [training loop](training.md), which will update all parameters of the model in a loop. However, we can now easily replace `Descent` with a more advanced optimiser such as `ADAM`.
 
 ## Optimiser Reference
 
