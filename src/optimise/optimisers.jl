@@ -257,6 +257,14 @@ function update!(o::Optimiser, x, Δ)
   return Δ
 end
 
+"""
+`InvDecay(γ)`
+
+Apply inverse time decay to an optimiser
+```julia
+  Optimiser(InvDecay(..), Opt(..))
+```
+"""
 mutable struct InvDecay
   gamma::Float64
   state::IdDict
@@ -272,6 +280,16 @@ function update!(o::InvDecay, x, Δ)
   return Δ
 end
 
+"""
+`ExpDecay(eta, decay, decay_step, clip)`
+
+Schedule the learning rate `eta` by `decay` every `decay_step` till a minimum of `clip`.
+
+To apply exponential decay to an optimiser:
+```julia
+  Optimiser(ExpDecay(..), Opt(..))
+```
+"""
 mutable struct ExpDecay
   eta::Float64
   decay::Float64
@@ -292,6 +310,11 @@ function update!(o::ExpDecay, x, Δ)
   @. Δ *= decay
 end
 
+"""
+`WeightDecay(wd)`
+
+Decay the weight parameter by `wd`
+"""
 mutable struct WeightDecay
   wd::Real
 end

@@ -286,4 +286,13 @@ end
   @test count == 3
 end
 
+@testset "Updates" begin
+  xs = param([1, 2, 3])
+  Tracker.update!(xs, param([4, 5, 6]))
+  @test xs == [5, 7, 9]
+  x = param(3)
+  Tracker.update!(x, param(4))
+  @test x == 7
+end
+
 end #testset
