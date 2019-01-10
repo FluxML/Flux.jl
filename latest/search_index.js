@@ -365,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Optimisers",
     "title": "Optimisers",
     "category": "section",
-    "text": "Consider a simple linear regression. We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters W and b.using Flux.Tracker\n\nW = param(rand(2, 5))\nb = param(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = rand(5), rand(2) # Dummy data\nl = loss(x, y) # ~ 3\n\nparams = Params([W, b])\ngrads = Tracker.gradient(() -> loss(x, y), params)We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here\'s one way to do that:using Flux.Tracker: grad, update!\n\nfunction sgd()\n  η = 0.1 # Learning Rate\n  for p in (W, b)\n    update!(p, -η * grads[p])\n  end\nendIf we call sgd, the parameters W and b will change and our loss should go down.There are two pieces here: one is that we need a list of trainable parameters for the model ([W, b] in this case), and the other is the update step. In this case the update is simply gradient descent (x .-= η .* Δ), but we might choose to do something more advanced, like adding momentum.In this case, getting the variables is trivial, but you can imagine it\'d be more of a pain with some complex stack of layers.m = Chain(\n  Dense(10, 5, σ),\n  Dense(5, 2), softmax)Instead of having to write [m[1].W, m[1].b, ...], Flux provides a params function params(m) that returns a list of all parameters in the model for you.For the update step, there\'s nothing whatsoever wrong with writing the loop above – it\'ll work just fine – but Flux provides various optimisers that make it more convenient.opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1\n\nopt() # Carry out the update, modifying `W` and `b`.An optimiser takes a parameter list and returns a function that does the same thing as update above. We can pass either opt or update to our training loop, which will then run the optimiser after every mini-batch of data."
+    "text": "Consider a simple linear regression. We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters W and b.using Flux.Tracker\n\nW = param(rand(2, 5))\nb = param(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = rand(5), rand(2) # Dummy data\nl = loss(x, y) # ~ 3\n\nparams = Params([W, b])\ngrads = Tracker.gradient(() -> loss(x, y), params)We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here\'s one way to do that:using Flux.Tracker: grad, update!\n\nη = 0.1 # Learning Rate\nfor p in (W, b)\n  update!(p, -η * grads[p])\nendRunning this will alter the parameters W and b and our loss should go down. Flux provides a more general way to do optimiser updates like this.opt = Descent(0.1) # Gradient descent with learning rate 0.1\n\nfor p in (W, b)\n  update!(opt, p, -η * grads[p])\nendAn optimiser update! accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass opt to our training loop, which will update all parameters of the model in a loop. However, we can now easily replace Descent with a more advanced optimiser such as ADAM."
 },
 
 {
@@ -373,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Optimisers",
     "title": "Optimiser Reference",
     "category": "section",
-    "text": "All optimisers return a function that, when called, will update the parameters passed to it.SGD\nMomentum\nNesterov\nADAM"
+    "text": "All optimisers return an object that, when passed to train!, will update the parameters passed to it.SGD\nMomentum\nNesterov\nADAM"
 },
 
 {
@@ -389,7 +389,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Training",
     "category": "section",
-    "text": "To actually train a model we need three things:A objective function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the objective function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(objective, data, opt)There are plenty of examples in the model zoo."
+    "text": "To actually train a model we need three things:A objective function, that evaluates how well a model is doing given some input data.\nA collection of data points that will be provided to the objective function.\nAn optimiser that will update the model parameters appropriately.With these we can call Flux.train!:Flux.train!(objective, params, data, opt)There are plenty of examples in the model zoo."
 },
 
 {
@@ -397,7 +397,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Loss Functions",
     "category": "section",
-    "text": "The objective function must return a number representing how far the model is from its target – the loss of the model. The loss function that we defined in basics will work as an objective. We can also define an objective in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\nloss(x, y) = Flux.mse(m(x), y)\n\n# later\nFlux.train!(loss, data, opt)The objective will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or crossentropy for cross entropy loss, but you can calculate it however you want."
+    "text": "The objective function must return a number representing how far the model is from its target – the loss of the model. The loss function that we defined in basics will work as an objective. We can also define an objective in terms of some model:m = Chain(\n  Dense(784, 32, σ),\n  Dense(32, 10), softmax)\n\nloss(x, y) = Flux.mse(m(x), y)\nps = Flux.params(m)\n\n# later\nFlux.train!(loss, ps, data, opt)The objective will almost always be defined in terms of some cost function that measures the distance of the prediction m(x) from the target y. Flux has several of these built in, like mse for mean squared error or crossentropy for cross entropy loss, but you can calculate it however you want."
 },
 
 {
@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Callbacks",
     "category": "section",
-    "text": "train! takes an additional argument, cb, that\'s used for callbacks so that you can observe the training process. For example:train!(objective, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(objective, data, opt,\n            cb = throttle(evalcb, 5))"
+    "text": "train! takes an additional argument, cb, that\'s used for callbacks so that you can observe the training process. For example:train!(objective, ps, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(objective, ps, data, opt,\n            cb = throttle(evalcb, 5))"
 },
 
 {

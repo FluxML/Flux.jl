@@ -20,16 +20,14 @@ l = loss(x, y) # ~ 3
 params = Params([W, b])
 grads = Tracker.gradient(() -&gt; loss(x, y), params)</code></pre><p>We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here&#39;s one way to do that:</p><pre><code class="language-julia">using Flux.Tracker: grad, update!
 
-function sgd()
-  η = 0.1 # Learning Rate
-  for p in (W, b)
-    update!(p, -η * grads[p])
-  end
-end</code></pre><p>If we call <code>sgd</code>, the parameters <code>W</code> and <code>b</code> will change and our loss should go down.</p><p>There are two pieces here: one is that we need a list of trainable parameters for the model (<code>[W, b]</code> in this case), and the other is the update step. In this case the update is simply gradient descent (<code>x .-= η .* Δ</code>), but we might choose to do something more advanced, like adding momentum.</p><p>In this case, getting the variables is trivial, but you can imagine it&#39;d be more of a pain with some complex stack of layers.</p><pre><code class="language-julia">m = Chain(
-  Dense(10, 5, σ),
-  Dense(5, 2), softmax)</code></pre><p>Instead of having to write <code>[m[1].W, m[1].b, ...]</code>, Flux provides a params function <code>params(m)</code> that returns a list of all parameters in the model for you.</p><p>For the update step, there&#39;s nothing whatsoever wrong with writing the loop above – it&#39;ll work just fine – but Flux provides various <em>optimisers</em> that make it more convenient.</p><pre><code class="language-julia">opt = SGD([W, b], 0.1) # Gradient descent with learning rate 0.1
+η = 0.1 # Learning Rate
+for p in (W, b)
+  update!(p, -η * grads[p])
+end</code></pre><p>Running this will alter the parameters <code>W</code> and <code>b</code> and our loss should go down. Flux provides a more general way to do optimiser updates like this.</p><pre><code class="language-julia">opt = Descent(0.1) # Gradient descent with learning rate 0.1
 
-opt() # Carry out the update, modifying `W` and `b`.</code></pre><p>An optimiser takes a parameter list and returns a function that does the same thing as <code>update</code> above. We can pass either <code>opt</code> or <code>update</code> to our <a href="training.html">training loop</a>, which will then run the optimiser after every mini-batch of data.</p><h2><a class="nav-anchor" id="Optimiser-Reference-1" href="#Optimiser-Reference-1">Optimiser Reference</a></h2><p>All optimisers return a function that, when called, will update the parameters passed to it.</p><pre><code class="language-none">SGD
+for p in (W, b)
+  update!(opt, p, -η * grads[p])
+end</code></pre><p>An optimiser <code>update!</code> accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass <code>opt</code> to our <a href="training.html">training loop</a>, which will update all parameters of the model in a loop. However, we can now easily replace <code>Descent</code> with a more advanced optimiser such as <code>ADAM</code>.</p><h2><a class="nav-anchor" id="Optimiser-Reference-1" href="#Optimiser-Reference-1">Optimiser Reference</a></h2><p>All optimisers return an object that, when passed to <code>train!</code>, will update the parameters passed to it.</p><pre><code class="language-none">SGD
 Momentum
 Nesterov
 ADAM</code></pre><footer><hr/><a class="previous" href="../models/layers.html"><span class="direction">Previous</span><span class="title">Model Reference</span></a><a class="next" href="training.html"><span class="direction">Next</span><span class="title">Training</span></a></footer></article></body></html>
