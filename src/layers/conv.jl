@@ -15,6 +15,9 @@ Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
+The weights are stored in HWIO order where I is number of input channels and
+O is number of output channels.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct Conv{N,F,A,V}
@@ -30,10 +33,12 @@ Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
      stride = 1, pad = 0, dilation = 1) where {T,N} =
   Conv(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
 
-Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1) where N =
-  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+              init = glorot_uniform,  stride = 1, pad = 0, dilation = 1) where N
+  filt =init(k..., ch...)
+  Conv(param(filt), param(zeros(eltype(filt), ch[2])), σ,
        stride = stride, pad = pad, dilation = dilation)
+end
 
 @treelike Conv
 
