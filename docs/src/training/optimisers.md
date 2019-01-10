@@ -46,7 +46,7 @@ An optimiser `update!` accepts a parameter and a gradient, and updates the param
 All optimisers return an object that, when passed to `train!`, will update the parameters passed to it.
 
 ```@docs
-SGD
+Descent
 Momentum
 Nesterov
 ADAM
