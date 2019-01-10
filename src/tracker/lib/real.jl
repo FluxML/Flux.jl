@@ -53,6 +53,12 @@ Base.float(x::TrackedReal) = x
 Base.promote_rule(::Type{TrackedReal{S}},::Type{T}) where {S,T} =
   TrackedReal{promote_type(S,T)}
 
+using Random
+
+Random.rand(rng::AbstractRNG,::Type{Flux.Tracker.TrackedReal{T}}) where {T} = convert(Flux.Tracker.TrackedReal{T},rand(rng,T))
+Random.randn(rng::AbstractRNG,::Type{Flux.Tracker.TrackedReal{T}}) where {T} = convert(Flux.Tracker.TrackedReal{T},randn(rng,T))
+Random.randexp(rng::AbstractRNG,::Type{Flux.Tracker.TrackedReal{T}}) where {T} = convert(Flux.Tracker.TrackedReal{T},randexp(rng,T))
+
 using DiffRules, SpecialFunctions, NaNMath
 
 for (M, f, arity) in DiffRules.diffrules()
