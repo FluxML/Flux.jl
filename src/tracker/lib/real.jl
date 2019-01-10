@@ -1,4 +1,4 @@
-struct TrackedReal{T<:Real} <: Real
+mutable struct TrackedReal{T<:Real} <: Real
   data::T
   tracker::Tracked{T}
 end
@@ -14,6 +14,12 @@ function back!(x::TrackedReal; once = true)
     isinf(x) && error("Loss is Inf")
     isnan(x) && error("Loss is NaN")
     return back!(x, 1, once = once)
+end
+
+function update!(x::TrackedReal, Δ)
+  x.data += data(Δ)
+  tracker(x).grad = 0
+  return x
 end
 
 function Base.show(io::IO, x::TrackedReal)
