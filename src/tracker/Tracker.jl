@@ -61,12 +61,6 @@ macro grad(ex)
   @q(Tracker._forward($(args...)) where $(T...) = $body) |> esc
 end
 
-function update!(x, Δ)
-  x.data .+= data(Δ)
-  tracker(x).grad .= 0
-  return x
-end
-
 include("idset.jl")
 include("back.jl")
 include("numeric.jl")

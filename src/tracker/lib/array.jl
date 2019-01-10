@@ -65,6 +65,12 @@ Base.setindex!(xs::TrackedArray, v, i...) =
 
 back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back!(x, Δ)`")
 
+function update!(x::TrackedArray, Δ)
+  x.data .+= data(Δ)
+  tracker(x).grad .= 0
+  return x
+end
+
 # Fallthrough methods
 
 for f in :[Base.size, Base.ndims, Base.collect].args
