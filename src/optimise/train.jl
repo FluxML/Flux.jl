@@ -58,7 +58,7 @@ Flux.train!(loss, params, data, opt,
             cb = throttle(() -> println("training"), 10))
 ```
 
-The callback can return `:stop` to interrupt the training loop.
+The callback can call `Flux.stop()` to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
