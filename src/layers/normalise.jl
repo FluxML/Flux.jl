@@ -138,7 +138,10 @@ function (BN::BatchNorm)(x)
   end
 
   let λ = BN.λ
-    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ BN.ϵ)) .+ reshape(β, affine_shape...))
+    # Break this up with a temporary variable to fix GPU launch bug
+    # https://github.com/FluxML/Flux.jl/issues/385
+    temp = reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ BN.ϵ))
+    return λ.(temp .+ reshape(β, affine_shape...))
   end
 end
 
