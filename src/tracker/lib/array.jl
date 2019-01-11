@@ -494,3 +494,8 @@ if VERSION < v"1.1.0-DEV.548"
     end
   end
 end
+
+# Get the element type of an array or the element type of the inner array of a tracked array
+tracked_eltype(x) = eltype(x)
+tracked_eltype(x::TrackedArray) = eltype(data(x))
+tracked_eltype(x::TrackedReal{T}) where T = T

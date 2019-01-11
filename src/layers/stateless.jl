@@ -2,16 +2,21 @@ using NNlib: logsoftmax, logσ
 
 # Cost functions
 
-mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
+function mse(ŷ, y)
+  x = sum((ŷ .- y).^2)
+  return x/Tracker.tracked_eltype(x)(length(y))
+end
 
 function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  -sum(y .* log.(ŷ) .* weight) / size(y, 2)
+  x = -sum(y .* log.(ŷ) .* weight)
+  return x/Tracker.tracked_eltype(x)(size(y, 2))
 end
 
 @deprecate logloss(x, y) crossentropy(x, y)
 
 function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  return -sum(y .* logsoftmax(logŷ) .* weight) / size(y, 2)
+  x = -sum(y .* logsoftmax(logŷ) .* weight)
+  return x/Tracker.tracked_eltype(x)(size(y, 2))
 end
 
 """
