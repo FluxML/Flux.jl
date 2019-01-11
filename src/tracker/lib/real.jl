@@ -59,6 +59,12 @@ Base.float(x::TrackedReal) = x
 Base.promote_rule(::Type{TrackedReal{S}},::Type{T}) where {S,T} =
   TrackedReal{promote_type(S,T)}
 
+using Random
+
+for f in :[rand, randn, randexp].args
+  @eval Random.$f(rng::AbstractRNG,::Type{TrackedReal{T}}) where {T} = param(rand(rng,T))
+end
+
 using DiffRules, SpecialFunctions, NaNMath
 
 for (M, f, arity) in DiffRules.diffrules()
