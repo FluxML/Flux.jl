@@ -1,6 +1,6 @@
 using Flux
 using Flux.Tracker, Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck, grad, checkpoint
+using Flux.Tracker: TrackedReal, gradient, gradcheck, grad, checkpoint
 using NNlib: conv, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
@@ -260,7 +260,7 @@ Tracker.back!(b)
   back!(z)
   @test grad.((x,y)) == (3, 2)
 
-  @test Tracker.gradient(2, 3) do x, y
+  @test gradient(2, 3) do x, y
     xy = Tracker.collect([x, y])
     xy[1]*xy[2]
   end == (3, 2)
@@ -293,6 +293,14 @@ end
   x = param(3)
   Tracker.update!(x, param(4))
   @test x == 7
+end
+
+@testset "Params" begin
+  W = param(randn(5, 10))
+  x = rand(10)
+  dW = gradient(W -> sum(W*x), W)[1]
+  gs = gradient(() -> sum(W*x), Tracker.Params([W]))
+  @test gs[W] == dW
 end
 
 end #testset

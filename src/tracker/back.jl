@@ -67,7 +67,7 @@ function back!(x, Δ; once = true)
 end
 
 function gradient_(f, xs...)
-  xs = param.(xs)
+  xs = param.(data.(xs))
   l = f(xs...)
   losscheck(l)
   back!(l)
@@ -179,3 +179,5 @@ end
 
 gradient(f, xs...; nest = false) =
   nest ? gradient_nested(f, xs...) : gradient_(f, xs...)
+
+gradient(f, ps::Params) = gradient_nested(f, ps)
