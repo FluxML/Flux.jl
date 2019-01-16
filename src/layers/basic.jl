@@ -21,8 +21,8 @@ struct Chain{T<:Tuple}
   Chain(xs...) = new{typeof(xs)}(xs)
 end
 
-@forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex
-@forward Chain.layers Base.iterate
+@forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
+  Base.iterate, Base.lastindex
 
 children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
