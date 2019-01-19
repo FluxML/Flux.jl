@@ -267,7 +267,7 @@ end
            stride = 1, mode = 0, alpha = 1, dilation = 1) where T<:CUDNNFloat =
   reshape(cudnnConvolutionBackwardBias(similar(b), Δ, alpha=alpha, beta=beta), :)
 
-(m::Flux.Conv{N, F, Union{CuParam{T, 4}, CuParam{T, 5}}, CuParam{T, 1}})(x::Union{CuParam{T,4},CuParam{T,5}}) where{N, F, T<:CUDNNFloat} =
+(m::Flux.Conv)(x::Union{CuParam{T,4},CuParam{T,5}}) where T<:CUDNNFloat =
   m.σ.(convbias(x, m.weight, m.bias, pad = m.pad, stride = m.stride, dilation = m.dilation))
 
 convbias(x::TrackedArray, w::TrackedArray, b::TrackedArray; kw...) = track(convbias, x, w, b; kw...)
@@ -294,11 +294,11 @@ convbias(x::TrackedArray, w::TrackedArray, b::CuArray{T}; kw...) where T<:CUDNNF
   track(convbias, x, w, b; kw...)
 
 @grad function convbias(x, w, b; kw...)
-  bias = reshape(b, map(_->1, kw[2][2])..., :, 1)
+  bias = reshape(b, map(_->1, size(w)[1:end-2])..., :, 1)
   if version() >= v"7.1"
     y = convbias(data.((x, w, bias))...; kw...)
   else
     y = cudnnAddTensor(data(bias), conv(data.((x, w))...; kw...))
   end
-  y, Δ -> nobacksies(:convbias, ∇conv_data(data.((Δ, x, w))...; kw...), ∇conv_filter(data.((Δ, x, w))...; kw...), ∇conv_bias(data.((Δ, bias))...; kw...))
+  y, Δ -> nobacksies(:convbias, (∇conv_data(data.((Δ, x, w))...; kw...), ∇conv_filter(data.((Δ, x, w))...; kw...), ∇conv_bias(data.((Δ, bias))...; kw...)))
 end

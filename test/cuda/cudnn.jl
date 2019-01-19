@@ -52,11 +52,11 @@ end
 @testset "CNN" begin
   cnn = Conv((3, 3), 1=>10, pad = 1)
   cucnn = cnn |> gpu
-  x = rand(10, 10, 1, 1)
+  x = rand(Float32, 10, 10, 1, 1)
   cux = x |> gpu
   y = cnn(x)
   cuy = cucnn(cux)
-  Δ = rand(size(y))
+  Δ = rand(size(y)...)
 
   @test y.data ≈ collect(cuy.data)
 
