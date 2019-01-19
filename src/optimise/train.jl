@@ -4,9 +4,9 @@ import Base.depwarn
 
 function update!(opt, xs)
   for x in xs
-    Δ = update!(opt, x.data, x.grad)
-    x.data .-= Δ
-    Δ .= 0
+    Δ = update!(opt, data(x), grad(x))
+    data(x) .-= Δ
+    grad(x) .= 0
   end
 end
 
