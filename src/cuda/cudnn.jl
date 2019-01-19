@@ -195,7 +195,7 @@ end
 # Flux Interface
 
 import Flux.Tracker
-import Flux.Tracker: stracked, track, unbroadcast, @grad, nobacksies
+import Flux.Tracker: track, @grad, nobacksies
 using NNlib: padtuple, cdims, dilation_dims, conv, ∇conv_data, ∇conv_filter
 using CuArrays.CUDNN: conv_workspace, cudnnConvolutionBackwardBias, cudnnConvolutionBackwardData,
   cudnnConvolutionBackwardFilter, cudnnActivationBackward, cudnnAddTensor,
@@ -267,7 +267,7 @@ end
            stride = 1, mode = 0, alpha = 1, dilation = 1) where T<:CUDNNFloat =
   reshape(cudnnConvolutionBackwardBias(similar(b), Δ, alpha=alpha, beta=beta), :)
 
-(m::Flux.Conv)(x::Union{CuParam{T,4},CuParam{T,5}})  where T<:CUDNNFloat =
+(m::Flux.Conv{N, F, Union{CuParam{T, 4}, CuParam{T, 5}}, CuParam{T, 1}})(x::Union{CuParam{T,4},CuParam{T,5}}) where{N, F, T<:CUDNNFloat} =
   m.σ.(convbias(x, m.weight, m.bias, pad = m.pad, stride = m.stride, dilation = m.dilation))
 
 convbias(x::TrackedArray, w::TrackedArray, b::TrackedArray; kw...) = track(convbias, x, w, b; kw...)
