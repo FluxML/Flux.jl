@@ -56,7 +56,7 @@ end
   cux = x |> gpu
   y = cnn(x)
   cuy = cucnn(cux)
-  Δ = rand(size(y)...)
+  Δ = rand(Float32, size(y)...)
 
   @test y.data ≈ collect(cuy.data)
 
