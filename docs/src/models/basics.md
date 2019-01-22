@@ -28,7 +28,7 @@ When a function has many parameters, we can pass them all in explicitly:
 f(W, b, x) = W * x + b
 
 Tracker.gradient(f, 2, 3, 4)
-(4.0 (tracked), 1.0, 2.0 (tracked))
+(4.0 (tracked), 1.0 (tracked), 2.0 (tracked))
 ```
 
 But machine learning models can have *hundreds* of parameters! Flux offers a nice way to handle this. We can tell Flux to treat something as a parameter via `param`. Then we can collect these together and tell `gradient` to collect the gradients of all of them at once.
