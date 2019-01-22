@@ -33,9 +33,9 @@ end
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
-function (a::Dropout)(x)
+function (a::Dropout)(x, noise_shape=size(x))
   a.active || return x
-  y = similar(x)
+  y = similar(x, noise_shape)
   rand!(y)
   y .= _dropout_kernel.(y, a.p, 1 - a.p)
   return x .* y
