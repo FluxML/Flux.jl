@@ -189,6 +189,8 @@ end
 @test gradtest(x -> meanpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> meanpool(x, (2,2,2)), rand(5, 5, 5, 3, 2))
 
+@test gradtest(x -> Float64.(x), 5)
+
 @testset "equality & order" begin
     # TrackedReal
     @test param(2)^2 == param(4)
