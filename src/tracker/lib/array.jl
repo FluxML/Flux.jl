@@ -148,8 +148,6 @@ function combinations(xs, n)
   [[x, c...] for x in xs, c in cs]
 end
 
-combinations([AbstractArray, TrackedArray], 2)
-
 for i = 0:2, c = combinations([:AbstractArray, :TrackedArray], i), f = [:hcat, :vcat]
   cnames = map(_ -> gensym(), c)
   @eval Base.$f($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::TrackedArray, xs::AbstractArray...) =
