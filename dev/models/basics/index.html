@@ -21,7 +21,7 @@ d2f(x) = Tracker.gradient(df, x)[1]
 d2f(2) # 6.0 (tracked)</code></pre><p>(We&#39;ll learn more about why these numbers show up as <code>(tracked)</code> below.)</p><p>When a function has many parameters, we can pass them all in explicitly:</p><pre><code class="language-julia">f(W, b, x) = W * x + b
 
 Tracker.gradient(f, 2, 3, 4)
-(4.0 (tracked), 1.0, 2.0 (tracked))</code></pre><p>But machine learning models can have <em>hundreds</em> of parameters! Flux offers a nice way to handle this. We can tell Flux to treat something as a parameter via <code>param</code>. Then we can collect these together and tell <code>gradient</code> to collect the gradients of all of them at once.</p><pre><code class="language-julia">W = param(2) # 2.0 (tracked)
+(4.0 (tracked), 1.0 (tracked), 2.0 (tracked))</code></pre><p>But machine learning models can have <em>hundreds</em> of parameters! Flux offers a nice way to handle this. We can tell Flux to treat something as a parameter via <code>param</code>. Then we can collect these together and tell <code>gradient</code> to collect the gradients of all of them at once.</p><pre><code class="language-julia">W = param(2) # 2.0 (tracked)
 b = param(3) # 3.0 (tracked)
 
 f(x) = W * x + b
