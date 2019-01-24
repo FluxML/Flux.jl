@@ -106,7 +106,7 @@ mutable struct BatchNorm{F,V,W,N}
 end
 
 BatchNorm(chs::Integer, λ = identity;
-          initβ = (i) -> zeros(i), initγ = (i) -> ones(i), ϵ = 1e-5, momentum = .1) =
+          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
             zeros(chs), ones(chs), ϵ, momentum, true)
 
