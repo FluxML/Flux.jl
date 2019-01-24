@@ -28,7 +28,7 @@ When a function has many parameters, we can pass them all in explicitly:
 f(W, b, x) = W * x + b
 
 Tracker.gradient(f, 2, 3, 4)
-(4.0 (tracked), 1.0, 2.0 (tracked))
+(4.0 (tracked), 1.0 (tracked), 2.0 (tracked))
 ```
 
 But machine learning models can have *hundreds* of parameters! Flux offers a nice way to handle this. We can tell Flux to treat something as a parameter via `param`. Then we can collect these together and tell `gradient` to collect the gradients of all of them at once.
@@ -102,6 +102,8 @@ All deep learning in Flux, however complex, is a simple generalisation of this e
 It's common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like [sigmoid](https://en.wikipedia.org/wiki/Sigmoid_function) (`σ`) in between them. In the above style we could write this as:
 
 ```julia
+using Flux
+
 W1 = param(rand(3, 5))
 b1 = param(rand(3))
 layer1(x) = W1 * x .+ b1

@@ -5,7 +5,8 @@ using MacroTools: @q, @forward
 
 import Base: ==
 
-export TrackedArray, TrackedVector, TrackedMatrix, Params, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, Params, gradient,
+  param, back!
 
 tracker(x) = nothing
 
@@ -60,17 +61,11 @@ macro grad(ex)
   @q(Tracker._forward($(args...)) where $(T...) = $body) |> esc
 end
 
-function update!(x, Δ)
-  x.data .+= data(Δ)
-  tracker(x).grad .= 0
-  return x
-end
-
 include("idset.jl")
 include("back.jl")
-include("scalar.jl")
-include("array.jl")
 include("numeric.jl")
+include("lib/real.jl")
+include("lib/array.jl")
 
 """
     hook(f, x) -> x′
@@ -99,7 +94,8 @@ end
 
 nobacksies(f, x) = track(nobacksies, f, x)
 nobacksies(f, xs::Tuple) = map(x -> nobacksies(f, x), xs)
-@grad nobacksies(f, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::Symbol, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::String, x) = data(x), Δ -> error(f)
 
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
@@ -108,10 +104,8 @@ param(xs::AbstractArray) = TrackedArray(float.(xs))
 param(x::TrackedReal) = track(identity, x)
 param(x::TrackedArray) = track(identity, x)
 
-import NNlib.cudata
-import Adapt.adapt
+import Adapt: adapt, adapt_structure
 
-cudata(x::TrackedArray) = data(x)
-adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
+adapt_structure(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end

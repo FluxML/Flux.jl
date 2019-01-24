@@ -13,6 +13,9 @@ end
 include("mnist.jl")
 export MNIST
 
+include("fashion-mnist.jl")
+export FashionMNIST
+
 include("cmudict.jl")
 using .CMUDict
 

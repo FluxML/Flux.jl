@@ -33,8 +33,18 @@ TrackedArray(x::AbstractArray) = TrackedArray(Call(), x, zero(x))
 
 Base.eltype(x::Type{<:TrackedArray{T}}) where T <: Real = TrackedReal{T}
 
-Base.show(io::IO, ::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
-  print(io, "TrackedArray{…,$A}")
+Base.convert(::Type{T}, x::S) where {T<:TrackedArray,S<:T} = x
+
+Base.convert(::Type{<:TrackedArray}, x::TrackedArray) =
+  error("Not implemented: convert $(typeof(x)) to $T")
+
+Base.convert(::Type{<:TrackedArray{T,N,A}}, x::AbstractArray) where {T,N,A} =
+  TrackedArray(convert(A, x))
+
+Base.show(io::IO, t::Type{TrackedArray{T,N,A}}) where {T,N,A<:AbstractArray{T,N}} =
+  @isdefined(A) ?
+    print(io, "TrackedArray{…,$A}") :
+    invoke(show, Tuple{IO,DataType}, io, t)
 
 function Base.summary(io::IO, x::TrackedArray)
   print(io, "Tracked ")
@@ -43,10 +53,23 @@ end
 
 Base.print_array(io::IO, x::TrackedArray) = Base.print_array(io, data(x))
 
+function Base.show(io::IO, x::TrackedArray)
+  show(io, data(x))
+  print(io, " (tracked)")
+end
+
+Base.copy(x::TrackedArray) = x
+
 Base.setindex!(xs::TrackedArray, v, i...) =
   error("Can't differentiate `setindex!`")
 
 back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back!(x, Δ)`")
+
+function update!(x::TrackedArray, Δ)
+  x.data .+= data(Δ)
+  tracker(x).grad .= 0
+  return x
+end
 
 # Fallthrough methods
 
@@ -80,6 +103,17 @@ Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
   end
 end
 
+Base.view(x::TrackedArray, inds...) = track(Base.view, x, inds...)
+
+@grad function view(x::AbstractArray, inds...)
+    view(data(x), inds...), function (Δ)
+        grad_output = zero(x)
+        subgrad = view(grad_output, inds...)
+        subgrad[:] = data(Δ)
+        (nobacksies(:view, grad_output), map(_->nothing, inds)...)
+    end
+end
+
 Base.:-(xs::TrackedArray) = track(-, xs)
 
 @grad -(xs) = -data(xs), Δ -> (-Δ,)
@@ -87,8 +121,8 @@ Base.:-(xs::TrackedArray) = track(-, xs)
 Base.transpose(xs::TrackedArray) = track(transpose, xs)
 Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 
-@grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
-@grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
+@grad transpose(xs) = transpose(data(xs)), Δ -> (trim(xs, transpose(Δ)),)
+@grad adjoint(xs) = data(xs)', Δ -> (trim(xs, Δ'),)
 
 Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
 
@@ -108,30 +142,28 @@ Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
   end
 end
 
-for f in [:vcat, :hcat]
-  UArray = :(Union{TrackedArray,Vector,Matrix,Adjoint,Transpose})
-  @eval begin
-    # This section is a bit of a hack since julia doesn't have a standardised
-    # promotion mechanism for concatenation yet
-    # https://github.com/JuliaLang/julia/pull/20815
+function combinations(xs, n)
+  n < 1 && return [[]]
+  cs = combinations(xs, n-1)
+  [[x, c...] for x in xs, c in cs]
+end
 
-    # It should support tracked concatenation with rank ∈ (1,2) with a
-    # TrackedArray anywhere among the arguments This works as long as base has
-    # other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
-    Base.$f(a::$UArray...) = track($f, a...)
+for i = 0:2, c = combinations([:AbstractArray, :TrackedArray], i), f = [:hcat, :vcat]
+  cnames = map(_ -> gensym(), c)
+  @eval Base.$f($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::TrackedArray, xs::AbstractArray...) =
+    track($f, $(cnames...), x, xs...)
+end
 
-    # It should support tracked concatenation with rank>2 if the TrackedArray is
-    # first
-    Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
-    Base.$f(a::TrackedArray, b::$UArray...) = track($f, a, b...) # resolves ambiguity introduced by previous row
+for i = 0:2, c = combinations([:AbstractVecOrMat, :TrackedVecOrMat], i), f = [:hcat, :vcat]
+  cnames = map(_ -> gensym(), c)
+  @eval Base.$f($([:($x::$c{T}) for (x, c) in zip(cnames, c)]...), x::TrackedVecOrMat{T}, xs::AbstractVecOrMat{T}...) where T =
+    track($f, $(cnames...), x, xs...)
+end
 
-    # It should support tracked concatenation with rank>2 if the TrackedArray is
-    # second
-    Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
-    Base.$f(a::Union{Vector,Matrix,Adjoint,Transpose}, b::TrackedArray,
-            c::$UArray...) =
-      track($f, a, b, c...) # resolves ambiguity introduced by previous row
-  end
+for i = 0:2, c = combinations([:AbstractVector, :TrackedVector], i), f = [:hcat, :vcat]
+  cnames = map(_ -> gensym(), c)
+  @eval Base.$f($([:($x::$c{T}) for (x, c) in zip(cnames, c)]...), x::TrackedVector{T}, xs::AbstractVector{T}...) where T =
+    track($f, $(cnames...), x, xs...)
 end
 
 @grad function vcat(xs...)
@@ -164,10 +196,11 @@ end
   end
 end
 
-Base.cat(a::TrackedArray; dims) = track(cat, a, dims = dims)
-Base.cat(a::TrackedArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
-Base.cat(a::TrackedArray, b::AbstractArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
-Base.cat(a::AbstractArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
+for i = 0:2, c = combinations([:AbstractArray, :TrackedArray], i)
+  cnames = map(_ -> gensym(), c)
+  @eval Base.cat($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::TrackedArray, xs::AbstractArray...; dims) =
+    track(cat, $(cnames...), x, xs..., dims = dims)
+end
 
 @grad function cat(Xs...; dims)
   cat(data.(Xs)..., dims = dims), function (Δ)
@@ -307,8 +340,8 @@ end
 
 # BLAS
 
-LinearAlgebra.diagm(x::TrackedVector) = track(diagm, x)
-@grad diagm(x) = diagm(data(x)), Δ -> (diag(Δ),)
+LinearAlgebra.diagm(x::Pair{<:Integer, <:TrackedVector}) = track(diagm, x...)
+@grad diagm(i, x) = diagm(i => data(x)), Δ -> (nothing, diag(Δ, i))
 
 x::TrackedMatrix  * y::AbstractMatrix = track(*, x, y)
 x::AbstractMatrix * y::TrackedMatrix  = track(*, x, y)
@@ -328,7 +361,7 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, maxpool, meanpool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, depthwiseconv, maxpool, meanpool
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -337,6 +370,16 @@ softmax(xs::TrackedArray) = track(softmax, xs)
 logsoftmax(xs::TrackedArray) = track(logsoftmax, xs)
 
 @grad logsoftmax(xs) = logsoftmax(data(xs)), Δ -> (nobacksies(:logsoftmax, ∇logsoftmax(data(Δ), data(xs))),)
+
+depthwiseconv(x::TrackedArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::AbstractArray, w::TrackedArray; kw...) = track(depthwiseconv, x, w; kw...)
+depthwiseconv(x::TrackedArray, w::AbstractArray; kw...) = track(depthwiseconv, x, w; kw...)
+
+@grad depthwiseconv(x, w; kw...) =
+  depthwiseconv(data(x), data(w); kw...),
+    Δ -> nobacksies(:depthwiseconv,
+      (NNlib.∇depthwiseconv_data(data.((Δ, x, w))...; kw...),
+       NNlib.∇depthwiseconv_filter(data.((Δ, x, w))...; kw...)))
 
 conv(x::TrackedArray,  w::TrackedArray;  kw...) = track(conv, x, w; kw...)
 conv(x::AbstractArray, w::TrackedArray;  kw...) = track(conv, x, w; kw...)
@@ -374,8 +417,7 @@ unbroadcast(x::AbstractArray, Δ) =
     trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
 
 unbroadcast(x::Number, Δ) = sum(Δ)
-unbroadcast(x::Base.RefValue{<:Function}, _) = nothing
-unbroadcast(x::Base.RefValue{<:Val}, _) = nothing
+unbroadcast(x::Base.RefValue, _) = nothing
 
 dual(x, p) = x
 dual(x::Real, p) = Dual(x, p)
@@ -423,26 +465,28 @@ end
 using Requires
 
 # https://github.com/FluxML/Flux.jl/issues/353
-@init Requires.isprecompiling() || @eval Base.Broadcast begin
-  function flatten(bc::Broadcasted{Style}) where {Style}
-    isflat(bc) && return bc
-    args = cat_nested(bc)
-    let makeargs = make_makeargs(bc), f = bc.f
-      newf = @inline function(args::Vararg{Any,N}) where N
-        f(makeargs(args...)...)
+if VERSION < v"1.1.0-DEV.548"
+  @init Requires.isprecompiling() || @eval Base.Broadcast begin
+    function flatten(bc::Broadcasted{Style}) where {Style}
+      isflat(bc) && return bc
+      args = cat_nested(bc)
+      let makeargs = make_makeargs(bc), f = bc.f
+        newf = @inline function(args::Vararg{Any,N}) where N
+          f(makeargs(args...)...)
+        end
+        return Broadcasted{Style}(newf, args, bc.axes)
       end
-      return Broadcasted{Style}(newf, args, bc.axes)
     end
-  end
-  @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
-    bc = t[1]
-    let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
-      let makeargs = make_makeargs(makeargs, bc.args)
-        headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
-        return @inline function(args::Vararg{Any,N}) where N
-          args1 = makeargs(args...)
-          a, b = headargs(args1...), tailargs(args1...)
-          (f(a...), b...)
+    @inline function make_makeargs(makeargs, t::Tuple{<:Broadcasted,Vararg{Any}})
+      bc = t[1]
+      let makeargs = make_makeargs(makeargs, tail(t)), f = bc.f
+        let makeargs = make_makeargs(makeargs, bc.args)
+          headargs, tailargs = make_headargs(bc.args), make_tailargs(bc.args)
+          return @inline function(args::Vararg{Any,N}) where N
+            args1 = makeargs(args...)
+            a, b = headargs(args1...), tailargs(args1...)
+            (f(a...), b...)
+          end
         end
       end
     end

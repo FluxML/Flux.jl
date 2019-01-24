@@ -19,62 +19,87 @@ function scan(x)
   return
 end
 
-function back_(c::Call, Δ)
+function back_(c::Call, Δ, once)
   Δs = c.func(Δ)
   (Δs isa Tuple && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
-  foreach(back, c.args, data.(Δs))
+  foreach((x, d) -> back(x, d, once), c.args, data.(Δs))
 end
 
-back_(::Call{Nothing}, Δ) = nothing
+back_(::Call{Nothing}, Δ, once) = nothing
+back_(::Call{Missing}, Δ, once) = error("`back!` was already used")
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
 
-function back(x::Tracked, Δ)
+function back(x::Tracked, Δ, once)
   x.isleaf && (x.grad = accum!(x.grad, Δ); return)
   ref = x.ref -= 1
-  if ref > 0 || isdefined(x, :grad)
-    if isdefined(x, :grad)
-      x.grad = accum!(x.grad, Δ)
-    else
-      x.grad = Δ
-    end
-    ref == 0 && back_(x.f, x.grad)
+  grad = if isdefined(x, :grad)
+    x.grad = accum!(x.grad, Δ)
+  elseif ref > 0
+    x.grad = Δ
   else
-    ref == 0 && back_(x.f, Δ)
+    Δ
+  end
+  if ref == 0
+    back_(x.f, grad, once)
+    once && !x.isleaf && (x.f = Call(missing, ()))
   end
   return
 end
 
-back(::Nothing, _) = return
+back(::Nothing, Δ, once) = return
 
 # Interface methods
 
 # TODO: if an error occurs in `back` the refcounts will be broken
 # and `back` will silently fail to update.
+# (but only if you re-use intermediate values between passes)
 # Refcounts are also probably not safe in some situations (e.g. back called
 # from within a backpropagator)
 
-function back!(x, Δ)
+function back!(x, Δ; once = true)
   istracked(x) || return
   scan(x)
-  back(tracker(x), Δ)
+  back(tracker(x), Δ, once)
   return
+end
+
+function gradient_(f, xs...)
+  xs = param.(data.(xs))
+  l = f(xs...)
+  losscheck(l)
+  back!(l)
+  nobacksies("Use `gradient(...; nest = true)` for nested derivatives",
+             grad.(xs))
 end
 
 # Out-of-place gradients
 
 struct Params
-  params::IdSet
-  Params(xs) = new(IdSet(xs))
+  order::Vector{Any}
+  params::IdSet{Any}
+  Params() = new([], IdSet())
 end
 
-@forward Params.params Base.iterate, Base.length
+@forward Params.order Base.iterate, Base.length
+
+function Base.push!(ps::Params, x)
+  if !(x in ps.params)
+    push!(ps.order, x)
+    push!(ps.params, x)
+  end
+  return ps
+end
+
+Base.push!(ps::Params, x...) = (foreach(x -> push!(ps, x), x); ps)
+
+Params(xs) = push!(Params(), xs...)
 
 function Base.show(io::IO, ps::Params)
   print(io, "Params([")
-  join(io, ps.params, ", ")
+  join(io, ps.order, ", ")
   print(io, "])")
 end
 
@@ -91,11 +116,11 @@ Grads() = Grads(IdDict())
 Grads(ps::Params) = Grads(IdDict(tracker(p) => init_grad(data(p)) for p in ps))
 
 Base.getindex(g::Grads, x::Tracked) = g.grads[x]
+
 function Base.getindex(g::Grads, x)
   istracked(x) || error("Object not tracked: $x")
   g[tracker(x)]
 end
-
 
 accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] .+ Δ : Δ
 
@@ -146,20 +171,13 @@ function losscheck(x)
   isnan(x) && error("Loss is NaN")
 end
 
-function gradient(f, args...)
+function gradient_nested(f, args...)
   y, back = forward(f, args...)
   losscheck(y)
   return back(1)
 end
 
-derivative(f, x) = gradient(f, x)[1]
+gradient(f, xs...; nest = false) =
+  nest ? gradient_nested(f, xs...) : gradient_(f, xs...)
 
-# Non-nesting versions
-
-function gradient_(f, xs...)
-  xs = param.(xs)
-  l = f(xs...)
-  losscheck(l)
-  back!(l)
-  grad.(xs)
-end
+gradient(f, ps::Params) = gradient_nested(f, ps)

@@ -16,19 +16,21 @@ m(x) == m[2](m[1](x))
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 """
-struct Chain
-  layers::Vector{Any}
-  Chain(xs...) = new([xs...])
+struct Chain{T<:Tuple}
+  layers::T
+  Chain(xs...) = new{typeof(xs)}(xs)
 end
 
-@forward Chain.layers Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!
-@forward Chain.layers Base.iterate
+@forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
+  Base.iterate, Base.lastindex
 
 children(c::Chain) = c.layers
 mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
-adapt(T, c::Chain) = Chain(map(x -> adapt(T, x), c.layers)...)
 
-(c::Chain)(x) = foldl((x, m) -> m(x), c.layers; init = x)
+applychain(::Tuple{}, x) = x
+applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
+
+(c::Chain)(x) = applychain(c.layers, x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
@@ -75,7 +77,7 @@ end
 
 @treelike Dense
 
-function (a::Dense)(x)
+function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
   σ.(W*x .+ b)
 end
@@ -114,3 +116,11 @@ end
 function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
+
+# Try to avoid hitting generic matmul in some simple cases
+# Base's matmul is so slow that it's worth the extra conversion to hit BLAS
+(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  invoke(a, Tuple{AbstractArray}, x)
+
+(a::Dense{<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  a(T.(x))

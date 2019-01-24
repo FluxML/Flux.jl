@@ -2,11 +2,12 @@ module Flux
 
 # Zero Flux Given
 
+using Base: tail
 using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
 export Chain, Dense, RNN, LSTM, GRU, Conv, MaxPool, MeanPool,
-       Dropout, LayerNorm, BatchNorm,
+       DepthwiseConv, Dropout, LayerNorm, BatchNorm,
        params, mapleaves, cpu, gpu
 
 @reexport using NNlib
@@ -19,8 +20,9 @@ export Tracker, TrackedArray, TrackedVector, TrackedMatrix, param
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
-export SGD, ADAM, ADAMW, AdaMax, Momentum, Nesterov,
-       RMSProp, ADAGrad, ADADelta, AMSGrad, NADAM
+export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
+  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
+  ADAMW, InvDecay, ExpDecay, WeightDecay
 
 include("utils.jl")
 include("onehot.jl")

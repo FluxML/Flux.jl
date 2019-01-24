@@ -1,7 +1,17 @@
 using Juno
-using Flux.Tracker: back!
+using Flux.Tracker: data, grad, back!
 import Base.depwarn
 
+function update!(opt, xs)
+  for x in xs
+    Δ = update!(opt, x.data, x.grad)
+    x.data .-= Δ
+    Δ .= 0
+  end
+end
+
+# Callback niceties
+call(f, xs...) = f(xs...)
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
@@ -35,7 +45,7 @@ function stop()
 end
 
 """
-    train!(loss, data, opt)
+    train!(loss, params, data, opt; cb)
 
 For each datapoint `d` in `data` computes the gradient of `loss(d...)` through
 backpropagation and calls the optimizer `opt`.
@@ -44,22 +54,22 @@ Takes a callback as keyword argument `cb`. For example, this will print "trainin
 every 10 seconds:
 
 ```julia
-Flux.train!(loss, data, opt,
+Flux.train!(loss, params, data, opt,
             cb = throttle(() -> println("training"), 10))
 ```
 
-The callback can return `:stop` to interrupt the training loop.
+The callback can call `Flux.stop()` to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, data, opt; cb = () -> ())
+function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
   @progress for d in data
     try
       l = loss(d...)
       @interrupts back!(l)
-      opt()
+      update!(opt, ps)
       if cb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break

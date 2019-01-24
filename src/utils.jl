@@ -1,8 +1,12 @@
 # Arrays
+glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
+glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
 
-initn(dims...) = randn(dims...)/100
-glorot_uniform(dims...) = (rand(dims...) .- 0.5) .* sqrt(24.0/(sum(dims)))
-glorot_normal(dims...) = randn(dims...) .* sqrt(2.0/sum(dims))
+ones(T::Type, dims...) = Base.ones(T, dims...)
+zeros(T::Type, dims...) = Base.zeros(T, dims...)
+
+ones(dims...) = Base.ones(Float32, dims...)
+zeros(dims...) = Base.zeros(Float32, dims...)
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 
@@ -24,7 +28,7 @@ julia> chunk(1:10, 3)
 """
 chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs)/n)))
 
-batchindex(xs, i) = (reverse(Base.tail(reverse(indices(xs))))..., i)
+batchindex(xs, i) = (reverse(Base.tail(reverse(axes(xs))))..., i)
 
 """
     frequencies(xs)
@@ -66,7 +70,7 @@ julia> batch([[1,2,3],[4,5,6]])
 function batch(xs)
   data = first(xs) isa AbstractArray ?
     similar(first(xs), size(first(xs))..., length(xs)) :
-    Vector{eltype(xs)}(length(xs))
+    Vector{eltype(xs)}(undef, length(xs))
   for (i, x) in enumerate(xs)
     data[batchindex(data, i)...] = x
   end
@@ -147,9 +151,24 @@ function jacobian(m,x)
     n  = length(x)
     J  = Matrix{eltype(x)}(undef,n,k)
     for i = 1:k
-        Flux.back!(y[i]) # Populate gradient accumulator
+        Flux.back!(y[i], once = false) # Populate gradient accumulator
         J[:,i] = xp.grad
-        xp.grad .*= 0 # Reset gradient accumulator
+        xp.grad .= 0 # Reset gradient accumulator
     end
     J'
+end
+
+"""
+    @jit ...
+
+The `@jit` annotation can be applied to any code, and the code will be compiled
+for performance.
+
+    @jit f(x) = @jit(x) + @jit(x)
+
+Note that compilation happens regardless of the `@jit` macro, so it should only
+be used for aesthetic purposes, or by recovering Python users.
+"""
+macro jit(ex)
+  esc(ex)
 end

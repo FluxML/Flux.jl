@@ -1,4 +1,4 @@
-struct TrackedReal{T<:Real} <: Real
+mutable struct TrackedReal{T<:Real} <: Real
   data::T
   tracker::Tracked{T}
 end
@@ -10,18 +10,27 @@ tracker(x::TrackedReal) = x.tracker
 
 track(f::Call, x::Real) = TrackedReal(x, Tracked{typeof(x)}(f, zero(x)))
 
-function back!(x::TrackedReal)
+function back!(x::TrackedReal; once = true)
     isinf(x) && error("Loss is Inf")
     isnan(x) && error("Loss is NaN")
-    return back!(x, 1)
+    return back!(x, 1, once = once)
+end
+
+function update!(x::TrackedReal, Δ)
+  x.data += data(Δ)
+  tracker(x).grad = 0
+  return x
 end
 
 function Base.show(io::IO, x::TrackedReal)
+  T = get(io, :typeinfo, Any)
   show(io, data(x))
-  print(io, " (tracked)")
+  T <: TrackedReal || print(io, " (tracked)")
 end
 
 Base.decompose(x::TrackedReal) = Base.decompose(data(x))
+
+Base.copy(x::TrackedReal) = x
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 
@@ -30,22 +39,31 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
 
-for op in [:(==), :≈, :<]
+for op in [:(==), :≈, :<, :(<=)]
   @eval Base.$op(x::TrackedReal, y::Real) = Base.$op(data(x), y)
   @eval Base.$op(x::Real, y::TrackedReal) = Base.$op(x, data(y))
   @eval Base.$op(x::TrackedReal, y::TrackedReal) = Base.$op(data(x), data(y))
 end
 
 Base.eps(x::TrackedReal) = eps(data(x))
+Base.eps(::Type{TrackedReal{T}}) where T = eps(T)
 
 for f in :[isinf, isnan, isfinite].args
   @eval Base.$f(x::TrackedReal) = Base.$f(data(x))
 end
 
-Base.Printf.fix_dec(x::TrackedReal, n::Int) = Base.Printf.fix_dec(data(x), n)
+Base.Printf.fix_dec(x::TrackedReal, n::Int, a...) = Base.Printf.fix_dec(data(x), n, a...)
+
+Base.float(x::TrackedReal) = x
 
 Base.promote_rule(::Type{TrackedReal{S}},::Type{T}) where {S,T} =
   TrackedReal{promote_type(S,T)}
+
+using Random
+
+for f in :[rand, randn, randexp].args
+  @eval Random.$f(rng::AbstractRNG,::Type{TrackedReal{T}}) where {T} = param(rand(rng,T))
+end
 
 using DiffRules, SpecialFunctions, NaNMath
 
@@ -58,12 +76,18 @@ for (M, f, arity) in DiffRules.diffrules()
   end
 end
 
+# Work around zero(π) not working, for some reason
+_zero(::Irrational) = nothing
+_zero(x) = zero(x)
+
 for (M, f, arity) in DiffRules.diffrules()
   arity == 2 || continue
   da, db = DiffRules.diffrule(M, f, :a, :b)
   f = :($M.$f)
   @eval begin
-    @grad $f(a::Real, b::Real) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::TrackedReal, b::TrackedReal) = $f(data(a), data(b)), Δ -> (Δ * $da, Δ * $db)
+    @grad $f(a::TrackedReal, b::Real) = $f(data(a), b), Δ -> (Δ * $da, _zero(b))
+    @grad $f(a::Real, b::TrackedReal) = $f(a, data(b)), Δ -> (_zero(a), Δ * $db)
     $f(a::TrackedReal, b::TrackedReal)  = track($f, a, b)
     $f(a::TrackedReal, b::Real) = track($f, a, b)
     $f(a::Real, b::TrackedReal) = track($f, a, b)
@@ -74,6 +98,12 @@ end
 import Base:^
 
 ^(a::TrackedReal, b::Integer) = track(^, a, b)
+
+# Hack for conversions
+
+using ForwardDiff: Dual
+
+(T::Type{<:Real})(x::Dual) = Dual(T(x.value), map(T, x.partials.values))
 
 # Tuples
 
@@ -115,8 +145,8 @@ function scan(c::Call{typeof(collect)})
   foreach(scan, c.args[1])
 end
 
-function back_(c::Call{typeof(collect)}, Δ)
-  foreach(back, c.args[1], data(Δ))
+function back_(c::Call{typeof(collect)}, Δ, once)
+  foreach((x, d) -> back(x, d, once), c.args[1], data(Δ))
 end
 
 function back_(g::Grads, c::Call{typeof(collect)}, Δ)
