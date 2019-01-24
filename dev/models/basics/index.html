@@ -53,7 +53,9 @@ gs = Tracker.gradient(() -&gt; loss(x, y), Params([W, b]))</code></pre><p>Now th
 # Update the parameter and reset the gradient
 update!(W, -0.1Δ)
 
-loss(x, y) # ~ 2.5</code></pre><p>The loss has decreased a little, meaning that our prediction <code>x</code> is closer to the target <code>y</code>. If we have some data we can already try <a href="../../training/training/">training the model</a>.</p><p>All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can <em>look</em> very different – they might have millions of parameters or complex control flow. Let&#39;s see how Flux handles more complex models.</p><h2><a class="nav-anchor" id="Building-Layers-1" href="#Building-Layers-1">Building Layers</a></h2><p>It&#39;s common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid</a> (<code>σ</code>) in between them. In the above style we could write this as:</p><pre><code class="language-julia">W1 = param(rand(3, 5))
+loss(x, y) # ~ 2.5</code></pre><p>The loss has decreased a little, meaning that our prediction <code>x</code> is closer to the target <code>y</code>. If we have some data we can already try <a href="../../training/training/">training the model</a>.</p><p>All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can <em>look</em> very different – they might have millions of parameters or complex control flow. Let&#39;s see how Flux handles more complex models.</p><h2><a class="nav-anchor" id="Building-Layers-1" href="#Building-Layers-1">Building Layers</a></h2><p>It&#39;s common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid</a> (<code>σ</code>) in between them. In the above style we could write this as:</p><pre><code class="language-julia">using Flux
+
+W1 = param(rand(3, 5))
 b1 = param(rand(3))
 layer1(x) = W1 * x .+ b1
 
