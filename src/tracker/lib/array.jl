@@ -358,13 +358,6 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 @grad a::AbstractMatrix * b::AbstractVecOrMat =
   data(a)*data(b), Δ -> (Δ * transpose(b), transpose(a) * Δ)
 
-# Flux
-
-import ..Flux.onecold
-
-onecold(x::TrackedVector, l...) = onecold(data(x), l...)
-onecold(x::TrackedMatrix, l...) = onecold(data(x), l...)
-
 # NNlib
 
 using NNlib
