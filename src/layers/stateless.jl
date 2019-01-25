@@ -8,8 +8,6 @@ function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
   -sum(y .* log.(ŷ) .* weight) * 1 // size(y, 2)
 end
 
-@deprecate logloss(x, y) crossentropy(x, y)
-
 function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
   return -sum(y .* logsoftmax(logŷ) .* weight) * 1 // size(y, 2)
 end
