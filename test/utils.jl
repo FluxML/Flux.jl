@@ -86,3 +86,14 @@ end
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
 end
+
+@testset "Precision" begin
+  m = Chain(Dense(10, 5, relu), Dense(5, 2))
+  x = rand(10)
+  @test eltype(m[1].W.data) == Float32
+  @test eltype(m(x).data) == Float32
+  @test eltype(f64(m)(x).data) == Float64
+  @test eltype(f64(m)[1].W.data) == Float64
+  @test eltype(f32(f64(m))[1].W.data) == Float32
+  @test Tracker.isleaf(f32(f64(m))[1].W)
+end
