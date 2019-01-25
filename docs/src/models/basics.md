@@ -10,12 +10,12 @@ using Flux.Tracker
 f(x) = 3x^2 + 2x + 1
 
 # df/dx = 6x + 2
-df(x) = Tracker.gradient(f, x)[1]
+df(x) = Tracker.gradient(f, x; nest = true)[1]
 
 df(2) # 14.0 (tracked)
 
 # d²f/dx² = 6
-d2f(x) = Tracker.gradient(df, x)[1]
+d2f(x) = Tracker.gradient(df, x; nest = true)[1]
 
 d2f(2) # 6.0 (tracked)
 ```
