@@ -6,12 +6,9 @@ To get GPU support for NVIDIA graphics cards, you need to install `CuArrays.jl`
 
 **Steps needed**
 
-1. Install [NVIDIA Driver](http://www.nvidia.com/Download/index.aspx?lang=en-us)
-2. Install [NVIDIA toolkit](https://developer.nvidia.com/cuda-downloads)
-3. Install [NVIDIA cuDNN library](https://developer.nvidia.com/cudnn)
-4. In Julia's terminal run `]add CuArrays` 
-5. In Julia's terminal run `]build CuArrays`
-6. In Julia's terminal run `]build Flux`
+1. Install [NVIDIA toolkit](https://developer.nvidia.com/cuda-downloads)
+2. Install [NVIDIA cuDNN library](https://developer.nvidia.com/cudnn)
+3. In Julia's terminal run `]add CuArrays`
 
 ## GPU Usage
 
