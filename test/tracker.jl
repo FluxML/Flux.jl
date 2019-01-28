@@ -116,6 +116,7 @@ end
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
+@test gradtest(x -> PermutedDimsArray(x, [3,1,2]), rand(4,5,6))
 
 @test gradtest(x -> repeat(x; inner=2), rand(5))
 @test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
