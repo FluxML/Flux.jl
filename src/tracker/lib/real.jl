@@ -106,6 +106,7 @@ import Base:^
 using ForwardDiff: Dual
 
 (T::Type{<:Real})(x::Dual) = Dual(T(x.value), map(T, x.partials.values))
+(Dual{T,V,N})(x::Dual) where {T,V,N} = invoke(Dual{T,V,N}, Tuple{Number}, x)
 
 # Tuples
 
