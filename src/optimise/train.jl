@@ -1,10 +1,14 @@
 using Juno
-using Flux.Tracker: data, grad, back!
+import Flux.Tracker: data, grad, back!, update!
 import Base.depwarn
 
-function update!(opt, xs)
+function update!(opt, x, x̄)
+  update!(x, apply!(opt, x, copy(data(x̄))))
+end
+
+function _update_params!(opt, xs)
   for x in xs
-    Δ = update!(opt, x.data, x.grad)
+    Δ = apply!(opt, x.data, x.grad)
     x.data .-= Δ
     Δ .= 0
   end
@@ -69,7 +73,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
     try
       l = loss(d...)
       @interrupts back!(l)
-      update!(opt, ps)
+      _update_params!(opt, ps)
       if cb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break
