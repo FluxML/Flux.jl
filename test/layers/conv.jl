@@ -21,3 +21,15 @@ end
 
   @test size(m(r)) == (10, 5)
 end
+
+@testset "Depthwise Conv" begin
+  r = zeros(Float32, 28, 28, 3, 5)
+
+  m1 = DepthwiseConv((2, 2), 3=>5)
+
+  @test size(m1(r), 3) == 15
+
+  m2 = DepthwiseConv((2, 2), 3)
+
+  @test size(m2(r), 3) == 3
+end
