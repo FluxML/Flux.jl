@@ -1,6 +1,10 @@
 using Juno
-using Flux.Tracker: data, grad, back!
+import Flux.Tracker: data, grad, back!, update!
 import Base.depwarn
+
+function update!(opt, x, x̄)
+  update!(x, apply!(opt, x, copy(data(x̄))))
+end
 
 function _update_params!(opt, xs)
   for x in xs
