@@ -485,6 +485,22 @@ var documenterSearchIndex = {"docs": [
     "page": "GPU Support",
     "title": "GPU Support",
     "category": "section",
+    "text": ""
+},
+
+{
+    "location": "gpu/#Installation-1",
+    "page": "GPU Support",
+    "title": "Installation",
+    "category": "section",
+    "text": "To get GPU support for NVIDIA graphics cards, you need to install CuArrays.jlSteps neededInstall NVIDIA toolkit\nInstall NVIDIA cuDNN library\nIn Julia\'s terminal run ]add CuArrays"
+},
+
+{
+    "location": "gpu/#GPU-Usage-1",
+    "page": "GPU Support",
+    "title": "GPU Usage",
+    "category": "section",
     "text": "Support for array operations on other hardware backends, like GPUs, is provided by external packages like CuArrays. Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.For example, we can use CuArrays (with the cu converter) to run our basic example on an NVIDIA GPU.(Note that you need to have CUDA available to use CuArrays – please see the CuArrays.jl instructions for more details.)using CuArrays\n\nW = cu(rand(2, 5)) # a 2×5 CuArray\nb = cu(rand(2))\n\npredict(x) = W*x .+ b\nloss(x, y) = sum((predict(x) .- y).^2)\n\nx, y = cu(rand(5)), cu(rand(2)) # Dummy data\nloss(x, y) # ~ 3Note that we convert both the parameters (W, b) and the data set (x, y) to cuda arrays. Taking derivatives and training works exactly as before.If you define a structured model, like a Dense layer or Chain, you just need to convert the internal parameters. Flux provides mapleaves, which allows you to alter all parameters of a model at once.d = Dense(10, 5, σ)\nd = mapleaves(cu, d)\nd.W # Tracked CuArray\nd(cu(rand(10))) # CuArray output\n\nm = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)\nm = mapleaves(cu, m)\nd(cu(rand(10)))As a convenience, Flux provides the gpu function to convert models and data to the GPU if one is available. By default, it\'ll do nothing, but loading CuArrays will cause it to move data to the GPU instead.julia> using Flux, CuArrays\n\njulia> m = Dense(10,5) |> gpu\nDense(10, 5)\n\njulia> x = rand(10) |> gpu\n10-element CuArray{Float32,1}:\n 0.800225\n ⋮\n 0.511655\n\njulia> m(x)\nTracked 5-element CuArray{Float32,1}:\n -0.30535\n ⋮\n -0.618002The analogue cpu is also available for moving models and data back off of the GPU.julia> x = rand(10) |> gpu\n10-element CuArray{Float32,1}:\n 0.235164\n ⋮\n 0.192538\n\njulia> x |> cpu\n10-element Array{Float32,1}:\n 0.235164\n ⋮\n 0.192538"
 },
 
