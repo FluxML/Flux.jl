@@ -6,7 +6,7 @@ using MacroTools: @q, @forward
 import Base: ==
 
 export TrackedArray, TrackedVector, TrackedMatrix, Params, gradient,
-  param, back!
+  jacobian, hessian, param, back!
 
 tracker(x) = nothing
 

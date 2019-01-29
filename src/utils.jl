@@ -140,25 +140,6 @@ function throttle(f, timeout; leading=true, trailing=false)
 end
 
 """
-    J = jacobian(m,x)
-
-Calculate the output jacobian `J = d/dx m(x)` such that each row `i` of `J` corresponds to the gradient `J[i,:] = ∇ₓ(m(x)[i])`
-"""
-function jacobian(m,x)
-    xp = param(x)
-    y  = m(xp)
-    k  = length(y)
-    n  = length(x)
-    J  = Matrix{eltype(x)}(undef,n,k)
-    for i = 1:k
-        Flux.back!(y[i], once = false) # Populate gradient accumulator
-        J[:,i] = xp.grad
-        xp.grad .= 0 # Reset gradient accumulator
-    end
-    J'
-end
-
-"""
     @jit ...
 
 The `@jit` annotation can be applied to any code, and the code will be compiled
