@@ -79,9 +79,9 @@ version = "0.0.3"
 
 [[DiffRules]]
 deps = ["Random", "Test"]
-git-tree-sha1 = "c49ec69428ffea0c1d1bbdc63d1a70f5df5860ad"
+git-tree-sha1 = "09d69da75967ec48a8b1ad0897ec9144ee052bf9"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "0.0.7"
+version = "0.0.8"
 
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
