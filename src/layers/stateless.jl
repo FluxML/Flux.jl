@@ -46,6 +46,6 @@ Normalise each column of `x` to mean 0 and standard deviation 1.
 """
 function normalise(x::AbstractVecOrMat)
   μ′ = mean(x, dims = 1)
-  σ′ = std(x, dims = 1, mean = μ′)
+  σ′ = std(x, dims = 1, mean = μ′, corrected=false)
   return (x .- μ′) ./ σ′
 end
