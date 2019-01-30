@@ -1,6 +1,7 @@
 module MNIST
 
 using CodecZlib, Colors
+using ..Data: download_and_verify
 
 const Gray = Colors.Gray{Colors.N0f8}
 
@@ -15,13 +16,13 @@ end
 function load()
   mkpath(dir)
   cd(dir) do
-    for file in ["train-images-idx3-ubyte",
-                 "train-labels-idx1-ubyte",
-                 "t10k-images-idx3-ubyte",
-                 "t10k-labels-idx1-ubyte"]
+    for (file, hash) in [("train-images-idx3-ubyte", "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609"),
+                         ("train-labels-idx1-ubyte", "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c"),
+                         ("t10k-images-idx3-ubyte" , "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6"),
+                         ("t10k-labels-idx1-ubyte" , "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6")]
       isfile(file) && continue
       @info "Downloading MNIST dataset"
-      download("https://cache.julialang.org/http://yann.lecun.com/exdb/mnist/$file.gz", "$file.gz")
+      download_and_verify("https://cache.julialang.org/http://yann.lecun.com/exdb/mnist/$file.gz", "$file.gz", hash)
       open(file, "w") do io
         write(io, gzopen(read, "$file.gz"))
       end
