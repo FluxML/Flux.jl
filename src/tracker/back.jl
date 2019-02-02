@@ -31,6 +31,41 @@ back_(::Call{Missing}, Δ, once) = error("`back!` was already used")
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
+struct SparseGrad{T,N,S,P,O} <: AbstractArray{T,N} where P<:Union{T,AbstractArray{T,N}}
+    Δ::P
+    i::S
+    size::NTuple{N,Int}
+    function SparseGrad(Δ::P, i::S, size::NTuple{N,Int}, x::AbstractArray{T,N}) where {T,N,S,P<:Union{T,AbstractArray{T}}}
+        new{T,N,S,P,typeof(x)}(Δ, i, Base.size(x))
+    end
+end
+accum!(x::AbstractArray, Δ::SparseGrad) = (@inbounds(x[Δ.i...] += Δ.Δ); return x)
+Base.size(x::SparseGrad) = x.size
+Base.similar(x::SparseGrad{T,N,S,P,O}) where {T,N,S,P,O} = similar(O, size(x))
+
+#FIXME: Very slow getindex.
+function Base.getindex(x::SparseGrad, i...)
+    Base.checkbounds_indices(Bool, map(Base.OneTo, size(x)), i) || throw(BoundsError(x, i))
+
+    out = zero(x)
+    @inbounds out[x.i...] = x.Δ
+    @inbounds out[i...]
+end
+function Base.getindex(x::SparseGrad{T,N,S,P,O}, i::Int...)::T where {T,N,S,P,O}
+    Base.checkbounds_indices(Bool, map(Base.OneTo, size(x)), i) || throw(BoundsError(x, i))
+
+    li = LinearIndices(size(x))
+    @inbounds nonempty = li[x.i...]
+    @inbounds queryindices = li[i...]
+
+    outidx = indexin(queryindices, nonempty)[1]
+    isnothing(outidx) ? zero(T) : @inbounds x.Δ[outidx]::T
+end
+function Base.getindex(x::SparseGrad{T,N,S,P,O}, i::Int...)::T where {T,N,O,S<:NTuple{N,Int},P<:T}
+    Base.checkbounds_indices(Bool, map(Base.OneTo, size(x)), i) || throw(BoundsError(x, i))
+    x.i == i ? x.Δ : zero(T)
+end
+
 
 function back(x::Tracked, Δ, once)
   x.isleaf && (x.grad = accum!(x.grad, Δ); return)
@@ -38,7 +73,12 @@ function back(x::Tracked, Δ, once)
   grad = if isdefined(x, :grad)
     x.grad = accum!(x.grad, Δ)
   elseif ref > 0
-    x.grad = Δ
+      if Δ isa SparseGrad
+          x.grad = zero(Δ)
+          @inbounds x.grad[Δ.i...] = Δ.Δ
+      else
+          x.grad = Δ
+      end
   else
     Δ
   end
