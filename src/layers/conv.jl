@@ -125,7 +125,6 @@ struct DepthwiseConv{N,F,A,V}
   bias::V
   stride::NTuple{N,Int}
   pad::NTuple{N,Int}
-  dilation::NTuple{N,Int}
 end
 
 DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
