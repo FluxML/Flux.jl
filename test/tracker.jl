@@ -1,6 +1,6 @@
 using Flux
 using Flux.Tracker, Test, NNlib
-using Flux.Tracker: TrackedReal, gradcheck, grad, checkpoint
+using Flux.Tracker: TrackedReal, gradient, gradcheck, grad, checkpoint, forwarddiff
 using NNlib: conv, ∇conv_data, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
@@ -42,12 +42,7 @@ function promotiontest(f, A, B, C)
   r0 = f(A, B, C)
   r1 = f(param(A), B, C)
   r2 = f(A, param(B), C)
-  if all(ndims.((A,B,C)) .≤ 2) && f ∈ [hcat, vcat]
-    r3 = f(A, B, param(C))
-  else
-    @test_throws MethodError f(A, B, param(C)) # until julia#20815 is resolved
-    r3 = r2
-  end
+  r3 = f(A, B, param(C))
   r4 = f(param(A), param(B), param(C))
 
   @test !isa(r0, TrackedArray)
@@ -121,6 +116,7 @@ end
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
+@test gradtest(x -> PermutedDimsArray(x, [3,1,2]), rand(4,5,6))
 
 @test gradtest(x -> repeat(x; inner=2), rand(5))
 @test gradtest(x -> repeat(x; inner=2, outer=3), rand(5))
@@ -202,6 +198,8 @@ end
 @test gradtest(x -> meanpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> meanpool(x, (2,2,2)), rand(5, 5, 5, 3, 2))
 
+@test gradtest(x -> Float64.(x), 5)
+
 @testset "equality & order" begin
     # TrackedReal
     @test param(2)^2 == param(4)
@@ -273,7 +271,7 @@ Tracker.back!(b)
   back!(z)
   @test grad.((x,y)) == (3, 2)
 
-  @test Tracker.gradient(2, 3) do x, y
+  @test gradient(2, 3) do x, y
     xy = Tracker.collect([x, y])
     xy[1]*xy[2]
   end == (3, 2)
@@ -297,6 +295,33 @@ end
   @test count == 1
   @test gradient(x -> checkpoint(mul, 5, x), 3)[1] == 5
   @test count == 3
+end
+
+@testset "Updates" begin
+  xs = param([1, 2, 3])
+  Tracker.update!(xs, param([4, 5, 6]))
+  @test xs == [5, 7, 9]
+  x = param(3)
+  Tracker.update!(x, param(4))
+  @test x == 7
+end
+
+@testset "Params" begin
+  W = param(randn(5, 10))
+  x = rand(10)
+  dW = gradient(W -> sum(W*x), W)[1]
+  gs = gradient(() -> sum(W*x), Tracker.Params([W]))
+  @test gs[W] == dW
+end
+
+@testset "Forward" begin
+  @test @inferred(Tracker.forward_jacobian(x -> [sum(x)], rand(5,5), Val(12)))[2] ==
+    reshape(ones(25), :, 1)
+  @test gradient([2, 3]) do x
+    forwarddiff(x) do x
+      x[1]*x[2]
+    end
+  end == ([3, 2],)
 end
 
 end #testset

@@ -1,4 +1,4 @@
-import Adapt: adapt
+import Adapt: adapt, adapt_storage
 import .Tracker: IdSet
 
 children(x) = ()
@@ -12,11 +12,6 @@ function treelike(m::Module, T, fs = fieldnames(T))
     Flux.children(x::$T) = ($([:(x.$f) for f in fs]...),)
     Flux.mapchildren(f, x::$T) = $T(f.($children(x))...)
   end
-end
-
-function treelike(T, fs = fieldnames(T))
-  Base.depwarn("`treelike(T)` is deprecated, use `@treelike T`", :treelike)
-  treelike(Base._current_module(), T, fs)
 end
 
 macro treelike(T, fs = nothing)
@@ -69,3 +64,22 @@ gpu_adaptor = identity
 end
 
 gpu(x) = mapleaves(gpu_adaptor, x)
+
+# Precision
+
+adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs)
+
+paramtype(T::Type{<:Real}, m) = mapleaves(x -> adapt(T, x), m)
+
+f32(m) = paramtype(Float32, m)
+f64(m) = paramtype(Float64, m)
+
+# General parameter map
+
+function mapparams(f, m)
+  mapleaves(m) do x
+    Tracker.istracked(x) ? param(f(Tracker.data(x))) :
+    x isa Union{AbstractArray,Number} ? f(x) :
+    x
+  end
+end

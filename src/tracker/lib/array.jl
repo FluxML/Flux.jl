@@ -65,6 +65,12 @@ Base.setindex!(xs::TrackedArray, v, i...) =
 
 back!(::TrackedArray) = error("Value is not scalar; use `back!(sum(x))` or `back!(x, Δ)`")
 
+function update!(x::TrackedArray, Δ)
+  x.data .+= data(Δ)
+  tracker(x).grad .= 0
+  return x
+end
+
 # Fallthrough methods
 
 for f in :[Base.size, Base.ndims, Base.collect].args
@@ -115,8 +121,8 @@ Base.:-(xs::TrackedArray) = track(-, xs)
 Base.transpose(xs::TrackedArray) = track(transpose, xs)
 Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 
-@grad transpose(xs) = transpose(data(xs)), Δ -> (reshape(transpose(Δ), size(xs)),)
-@grad adjoint(xs) = data(xs)', Δ -> (reshape(Δ', size(xs)),)
+@grad transpose(xs) = transpose(data(xs)), Δ -> (trim(xs, transpose(Δ)),)
+@grad adjoint(xs) = data(xs)', Δ -> (trim(xs, Δ'),)
 
 Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
 
@@ -136,30 +142,28 @@ Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
   end
 end
 
-for f in [:vcat, :hcat]
-  UArray = :(Union{TrackedArray,Vector,Matrix,Adjoint,Transpose})
-  @eval begin
-    # This section is a bit of a hack since julia doesn't have a standardised
-    # promotion mechanism for concatenation yet
-    # https://github.com/JuliaLang/julia/pull/20815
+function combinations(xs, n)
+  n < 1 && return [[]]
+  cs = combinations(xs, n-1)
+  [[x, c...] for x in xs, c in cs]
+end
 
-    # It should support tracked concatenation with rank ∈ (1,2) with a
-    # TrackedArray anywhere among the arguments This works as long as base has
-    # other functions that captures `(::Union{Vector,RowVector,Matrix}...)`.
-    Base.$f(a::$UArray...) = track($f, a...)
+for i = 0:2, c = combinations([:AbstractArray, :TrackedArray], i), f = [:hcat, :vcat]
+  cnames = map(_ -> gensym(), c)
+  @eval Base.$f($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::TrackedArray, xs::AbstractArray...) =
+    track($f, $(cnames...), x, xs...)
+end
 
-    # It should support tracked concatenation with rank>2 if the TrackedArray is
-    # first
-    Base.$f(a::TrackedArray, b::AbstractArray...) = track($f, a, b...)
-    Base.$f(a::TrackedArray, b::$UArray...) = track($f, a, b...) # resolves ambiguity introduced by previous row
+for i = 0:2, c = combinations([:AbstractVecOrMat, :TrackedVecOrMat], i), f = [:hcat, :vcat]
+  cnames = map(_ -> gensym(), c)
+  @eval Base.$f($([:($x::$c{T}) for (x, c) in zip(cnames, c)]...), x::TrackedVecOrMat{T}, xs::AbstractVecOrMat{T}...) where T =
+    track($f, $(cnames...), x, xs...)
+end
 
-    # It should support tracked concatenation with rank>2 if the TrackedArray is
-    # second
-    Base.$f(a::Array, b::TrackedArray, c::AbstractArray...) = track($f, a, b, c...)
-    Base.$f(a::Union{Vector,Matrix,Adjoint,Transpose}, b::TrackedArray,
-            c::$UArray...) =
-      track($f, a, b, c...) # resolves ambiguity introduced by previous row
-  end
+for i = 0:2, c = combinations([:AbstractVector, :TrackedVector], i), f = [:hcat, :vcat]
+  cnames = map(_ -> gensym(), c)
+  @eval Base.$f($([:($x::$c{T}) for (x, c) in zip(cnames, c)]...), x::TrackedVector{T}, xs::AbstractVector{T}...) where T =
+    track($f, $(cnames...), x, xs...)
 end
 
 @grad function vcat(xs...)
@@ -192,10 +196,11 @@ end
   end
 end
 
-Base.cat(a::TrackedArray; dims) = track(cat, a, dims = dims)
-Base.cat(a::TrackedArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
-Base.cat(a::TrackedArray, b::AbstractArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
-Base.cat(a::AbstractArray, b::TrackedArray, c::AbstractArray...; dims) = track(cat, a, b, c..., dims = dims)
+for i = 0:2, c = combinations([:AbstractArray, :TrackedArray], i)
+  cnames = map(_ -> gensym(), c)
+  @eval Base.cat($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::TrackedArray, xs::AbstractArray...; dims) =
+    track(cat, $(cnames...), x, xs..., dims = dims)
+end
 
 @grad function cat(Xs...; dims)
   cat(data.(Xs)..., dims = dims), function (Δ)
@@ -218,8 +223,11 @@ Base.reshape(xs::TrackedArray, dims::Tuple{Vararg{Int64}}) = track(reshape, xs, 
 
 @grad reshape(xs, dims) = reshape(data(xs), dims), Δ -> (reshape(Δ, size(xs)),nothing)
 
-Base.permutedims(xs::TrackedArray, dims) = track(permutedims, xs, dims)
-@grad permutedims(xs, dims) = permutedims(data(xs), dims), Δ -> (permutedims(Δ, invperm(dims)),nothing)
+Base.permutedims(xs::TrackedArray, perm) = track(permutedims, xs, perm)
+@grad permutedims(xs, perm) = permutedims(data(xs), perm), Δ -> (permutedims(Δ, invperm(perm)),nothing)
+
+Base.PermutedDimsArray(xs::TrackedArray, perm) = track(PermutedDimsArray, xs, perm)
+@grad PermutedDimsArray(xs, perm) = PermutedDimsArray(data(xs), perm), Δ -> (PermutedDimsArray(Δ, invperm(perm)),nothing)
 
 function _kron(mat1::AbstractMatrix,mat2::AbstractMatrix)
     m1, n1 = size(mat1)

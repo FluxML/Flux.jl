@@ -18,7 +18,7 @@ end
 
 Descent() = Descent(0.1)
 
-function update!(o::Descent, x, Δ)
+function apply!(o::Descent, x, Δ)
   Δ .*= o.eta
 end
 
@@ -35,7 +35,7 @@ end
 
 Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
-function update!(o::Momentum, x, Δ)
+function apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
   v = get!(o.velocity, x, zero(x))::typeof(x)
   @. v = ρ * v - η * Δ
@@ -55,7 +55,7 @@ end
 
 Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
-function update!(o::Nesterov, x, Δ)
+function apply!(o::Nesterov, x, Δ)
   η, ρ = o.eta, o.rho
   v = get!(o.velocity, x, zero(x))::typeof(x)
   d = @. ρ^2 * v - (1+ρ) * η * Δ
@@ -78,7 +78,7 @@ end
 
 RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 
-function update!(o::RMSProp, x, Δ)
+function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
   acc = get!(o.acc, x, zero(x))::typeof(x)
   @. acc = ρ * acc + (1 - ρ) * Δ^2
@@ -98,7 +98,7 @@ end
 
 ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
 
-function update!(o::ADAM, x, Δ)
+function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
   mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
@@ -122,7 +122,7 @@ end
 
 AdaMax(η = 0.001, β = (0.9, 0.999)) = AdaMax(η, β, IdDict())
 
-function update!(o::AdaMax, x, Δ)
+function apply!(o::AdaMax, x, Δ)
   η, β = o.eta, o.beta
   mt, ut, βp = get!(o.state, x, (zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
@@ -145,7 +145,7 @@ end
 
 ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
-function update!(o::ADAGrad, x, Δ)
+function apply!(o::ADAGrad, x, Δ)
   η = o.eta
   acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(x)
   @. acc += Δ^2
@@ -165,7 +165,7 @@ end
 
 ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
 
-function update!(o::ADADelta, x, Δ)
+function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(o.state, x, (zero(x), zero(x)))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
@@ -188,7 +188,7 @@ end
 
 AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
 
-function update!(o::AMSGrad, x, Δ)
+function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
   mt, vt, v̂t = get!(o.state, x, (fill(ϵ, size(x)), fill(ϵ, size(x)), fill(ϵ, size(x))))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
@@ -211,7 +211,7 @@ end
 
 NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
 
-function update!(o::NADAM, x, Δ)
+function apply!(o::NADAM, x, Δ)
   η, β = o.eta, o.beta
   β1p, β2p = o.beta
   mt, vt = get!(o.state, x, (zero(x), zero(x)))
@@ -228,7 +228,7 @@ end
 [ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(η, β), WeightDecay(wd))
+  Optimiser(ADAM(η, β), WeightDecay(decay))
 
 # Compose optimizers
 
@@ -250,13 +250,21 @@ Optimiser(o...) = Optimiser(Any[o...])
 
 Base.getindex(c::Optimiser, i::AbstractArray) = Optimiser(c.os[i]...)
 
-function update!(o::Optimiser, x, Δ)
+function apply!(o::Optimiser, x, Δ)
   for opt in o.os
-    Δ = update!(opt, x, Δ)
+    Δ = apply!(opt, x, Δ)
   end
   return Δ
 end
 
+"""
+`InvDecay(γ)`
+
+Apply inverse time decay to an optimiser
+```julia
+  Optimiser(InvDecay(..), Opt(..))
+```
+"""
 mutable struct InvDecay
   gamma::Float64
   state::IdDict
@@ -264,7 +272,7 @@ end
 
 InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
 
-function update!(o::InvDecay, x, Δ)
+function apply!(o::InvDecay, x, Δ)
   γ = o.gamma
   n = get!(o.state, x, 1)
   Δ .*= 1 / (1 + γ * n)
@@ -272,6 +280,16 @@ function update!(o::InvDecay, x, Δ)
   return Δ
 end
 
+"""
+`ExpDecay(eta, decay, decay_step, clip)`
+
+Schedule the learning rate `eta` by `decay` every `decay_step` till a minimum of `clip`.
+
+To apply exponential decay to an optimiser:
+```julia
+  Optimiser(ExpDecay(..), Opt(..))
+```
+"""
 mutable struct ExpDecay
   eta::Float64
   decay::Float64
@@ -282,7 +300,7 @@ end
 
 ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
 
-function update!(o::ExpDecay, x, Δ)
+function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
   n = o.current[x] = get(o.current, x, 0) + 1
   if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
@@ -292,13 +310,18 @@ function update!(o::ExpDecay, x, Δ)
   @. Δ *= decay
 end
 
+"""
+`WeightDecay(wd)`
+
+Decay the weight parameter by `wd`
+"""
 mutable struct WeightDecay
   wd::Real
 end
 
 WeightDecay() = WeightDecay(0)
 
-function update!(o::WeightDecay, x,  Δ)
+function apply!(o::WeightDecay, x,  Δ)
   wd = o.wd
   @. Δ += wd * x
 end
