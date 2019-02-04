@@ -31,11 +31,11 @@ back_(::Call{Missing}, Δ, once) = error("`back!` was already used")
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
-struct SparseGrad{T,N,S,P,O} <: AbstractArray{T,N} where P<:Union{T,AbstractArray{T,N}}
+struct SparseGrad{T,N,S,P,O} <: AbstractArray{T,N} where O <: AbstractArray{T,N}
     Δ::P
     i::S
     size::NTuple{N,Int}
-    function SparseGrad(Δ::P, i::S, size::NTuple{N,Int}, x::AbstractArray{T,N}) where {T,N,S,P<:Union{T,AbstractArray{T}}}
+    function SparseGrad(Δ::P, i::S, size::NTuple{N,Int}, x::AbstractArray{T,N}) where {T,N,S,P}
         new{T,N,S,P,typeof(x)}(Δ, i, Base.size(x))
     end
 end
