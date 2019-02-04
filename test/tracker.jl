@@ -113,6 +113,13 @@ end
     promotiontest((x...) -> cat(x..., dims = 3), rand(4,5,3), rand(4,5,1), rand(4,5,2))
   end
 
+  @testset "scalars" begin
+    @test vcat(param([1, 2, 3]), 1) isa TrackedArray
+    @test vcat(1, param([1, 2, 3])) isa TrackedArray
+    @test hcat(1, param([1 2 3;])) isa TrackedArray
+    @test vcat(param(1), 2) isa TrackedArray
+  end
+
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
