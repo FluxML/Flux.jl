@@ -323,4 +323,9 @@ end
   end == ([3, 2],)
 end
 
+@testset "Custom Sensitivities" begin
+  y, back = Tracker.forward(x -> [3x^2, 2x], 5)
+  @test back([1, 1]) == (32,)
+end
+
 end #testset

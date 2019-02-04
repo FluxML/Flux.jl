@@ -155,3 +155,6 @@ end
 function back_(g::Grads, c::Call{typeof(collect)}, Δ)
   foreach((x, Δ) -> back(g, x, Δ), c.args[1], Δ)
 end
+
+collectmemaybe(xs::AbstractArray{>:TrackedReal}) = collect(xs)
+collectmemaybe(xs::AbstractArray{<:TrackedReal}) = collect(xs)
