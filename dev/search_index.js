@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Flux.Conv",
     "category": "type",
-    "text": "Conv(size, in=>out)\nConv(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad, stride and dilation.\n\n\n\n\n\n"
+    "text": "Conv(size, in=>out)\nConv(size, in=>out, relu)\n\nStandard convolutional layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively.\n\nData should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3×1 array, and a batch of 50 would be a 100×100×3×50 array.\n\nTakes the keyword arguments pad, stride and dilation.\n\n\n\n\n\n"
 },
 
 {
