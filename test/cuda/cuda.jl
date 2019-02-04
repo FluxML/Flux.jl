@@ -38,6 +38,13 @@ Flux.back!(sum(l))
 
 end
 
+@testset "onecold gpu" begin
+  x = zeros(Float32, 10, 3) |> gpu;
+  y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
+  res = Flux.onecold(x) .== Flux.onecold(y)
+  @test res isa CuArray
+end
+
 if CuArrays.libcudnn != nothing
     @info "Testing Flux/CUDNN"
     include("cudnn.jl")
