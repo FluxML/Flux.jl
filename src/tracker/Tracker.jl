@@ -67,6 +67,7 @@ include("numeric.jl")
 include("lib/real.jl")
 include("lib/array.jl")
 include("forward.jl")
+include("memory.jl")
 
 """
     hook(f, x) -> x′
