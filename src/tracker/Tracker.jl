@@ -5,7 +5,8 @@ using MacroTools: @q, @forward
 
 import Base: ==
 
-export TrackedArray, TrackedVector, TrackedMatrix, Params, param, back!
+export TrackedArray, TrackedVector, TrackedMatrix, Params, gradient,
+  jacobian, hessian, param, back!
 
 tracker(x) = nothing
 
@@ -60,24 +61,20 @@ macro grad(ex)
   @q(Tracker._forward($(args...)) where $(T...) = $body) |> esc
 end
 
-function update!(x, Δ)
-  x.data .+= data(Δ)
-  tracker(x).grad .= 0
-  return x
-end
-
 include("idset.jl")
 include("back.jl")
-include("scalar.jl")
-include("array.jl")
 include("numeric.jl")
+include("lib/real.jl")
+include("lib/array.jl")
+include("forward.jl")
 
 """
     hook(f, x) -> x′
 
 Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 `f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
-the sign of the gradient applied to `x`."""
+the sign of the gradient applied to `x`.
+"""
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
 @grad hook(f, x) = data(x), Δ -> (nothing, f(Δ))
 
@@ -99,7 +96,8 @@ end
 
 nobacksies(f, x) = track(nobacksies, f, x)
 nobacksies(f, xs::Tuple) = map(x -> nobacksies(f, x), xs)
-@grad nobacksies(f, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::Symbol, x) = data(x), Δ -> error("Nested AD not defined for $f")
+@grad nobacksies(f::String, x) = data(x), Δ -> error(f)
 
 param(x::Number) = TrackedReal(float(x))
 param(xs::AbstractArray) = TrackedArray(float.(xs))
@@ -108,8 +106,8 @@ param(xs::AbstractArray) = TrackedArray(float.(xs))
 param(x::TrackedReal) = track(identity, x)
 param(x::TrackedArray) = track(identity, x)
 
-import Adapt.adapt
+import Adapt: adapt, adapt_structure
 
-adapt(T, xs::TrackedArray) = param(adapt(T, data(xs)))
+adapt_structure(T, xs::TrackedArray) = param(adapt(T, data(xs)))
 
 end

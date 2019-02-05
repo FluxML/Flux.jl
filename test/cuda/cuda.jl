@@ -11,6 +11,8 @@ x = param(randn(5, 5))
 cx = gpu(x)
 @test cx isa TrackedArray && cx.data isa CuArray
 
+@test Flux.onecold(param(gpu([1.,2.,3.]))) == 3
+
 x = Flux.onehotbatch([1, 2, 3], 1:3)
 cx = gpu(x)
 @test cx isa Flux.OneHotMatrix && cx.data isa CuArray
@@ -36,4 +38,15 @@ Flux.back!(sum(l))
 
 end
 
-CuArrays.libcudnn != nothing && include("cudnn.jl")
+@testset "onecold gpu" begin
+  x = zeros(Float32, 10, 3) |> gpu;
+  y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
+  res = Flux.onecold(x) .== Flux.onecold(y)
+  @test res isa CuArray
+end
+
+if CuArrays.libcudnn != nothing
+    @info "Testing Flux/CUDNN"
+    include("cudnn.jl")
+    include("curnn.jl")
+end

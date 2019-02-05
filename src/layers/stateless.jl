@@ -2,16 +2,14 @@ using NNlib: logsoftmax, logσ
 
 # Cost functions
 
-mse(ŷ, y) = sum((ŷ .- y).^2)/length(y)
+mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
 function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  -sum(y .* log.(ŷ) .* weight) / size(y, 2)
+  -sum(y .* log.(ŷ) .* weight) * 1 // size(y, 2)
 end
 
-@deprecate logloss(x, y) crossentropy(x, y)
-
 function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  return -sum(y .* logsoftmax(logŷ) .* weight) / size(y, 2)
+  return -sum(y .* logsoftmax(logŷ) .* weight) * 1 // size(y, 2)
 end
 
 """
@@ -48,6 +46,6 @@ Normalise each column of `x` to mean 0 and standard deviation 1.
 """
 function normalise(x::AbstractVecOrMat)
   μ′ = mean(x, dims = 1)
-  σ′ = std(x, dims = 1, mean = μ′)
+  σ′ = std(x, dims = 1, mean = μ′, corrected=false)
   return (x .- μ′) ./ σ′
 end

@@ -1,9 +1,13 @@
 using Distributions: Uniform, Normal
 # Arrays
+glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
+glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
 
-initn(dims...) = randn(dims...)/100
-glorot_uniform(dims...) = (rand(dims...) .- 0.5) .* sqrt(24.0/(sum(dims)))
-glorot_normal(dims...) = randn(dims...) .* sqrt(2.0/sum(dims))
+ones(T::Type, dims...) = Base.ones(T, dims...)
+zeros(T::Type, dims...) = Base.zeros(T, dims...)
+
+ones(dims...) = Base.ones(Float32, dims...)
+zeros(dims...) = Base.zeros(Float32, dims...)
 
 function kaiming_uniform(dims...; gain=sqrt(2))
   fan_in = length(dims) <= 2 ? dims[end] : div(*(dims...), dims[end])
@@ -19,8 +23,8 @@ end
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 
-stack(xs, dim) = cat(dim, unsqueeze.(xs, dim)...)
-unstack(xs, dim) = [slicedim(xs, dim, i) for i = 1:size(xs, dim)]
+stack(xs, dim) = cat(unsqueeze.(xs, dim)..., dims=dim)
+unstack(xs, dim) = [copy(selectdim(xs, dim, i)) for i in 1:size(xs, dim)]
 
 """
     chunk(xs, n)
@@ -146,25 +150,6 @@ function throttle(f, timeout; leading=true, trailing=false)
 
     return result
   end
-end
-
-"""
-    J = jacobian(m,x)
-
-Calculate the output jacobian `J = d/dx m(x)` such that each row `i` of `J` corresponds to the gradient `J[i,:] = ∇ₓ(m(x)[i])`
-"""
-function jacobian(m,x)
-    xp = param(x)
-    y  = m(xp)
-    k  = length(y)
-    n  = length(x)
-    J  = Matrix{eltype(x)}(undef,n,k)
-    for i = 1:k
-        Flux.back!(y[i]) # Populate gradient accumulator
-        J[:,i] = xp.grad
-        xp.grad .*= 0 # Reset gradient accumulator
-    end
-    J'
 end
 
 """

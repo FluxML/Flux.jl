@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform
+using Flux: throttle, jacobian, initn, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, stack, unstack
 using StatsBase: std
 using Random
 using Test
@@ -64,10 +64,6 @@ end
 @testset "Initialization" begin
   # Set random seed so that these tests don't fail randomly
   Random.seed!(0)
-  # initn() should yield a kernel with stddev ~= 1e-2
-  v = initn(10, 10)
-  @test std(v) > 0.9*1e-2
-  @test std(v) < 1.1*1e-2
 
   # glorot_uniform should yield a kernel with stddev ~= sqrt(6/(n_in + n_out)),
   # and glorot_normal should yield a kernel with stddev != 2/(n_in _ n_out)
@@ -103,4 +99,23 @@ end
   @test size.(params(m)) == [(5, 10), (5,)]
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
+end
+
+@testset "Precision" begin
+  m = Chain(Dense(10, 5, relu), Dense(5, 2))
+  x = rand(10)
+  @test eltype(m[1].W.data) == Float32
+  @test eltype(m(x).data) == Float32
+  @test eltype(f64(m)(x).data) == Float64
+  @test eltype(f64(m)[1].W.data) == Float64
+  @test eltype(f32(f64(m))[1].W.data) == Float32
+  @test Tracker.isleaf(f32(f64(m))[1].W)
+end
+
+@testset "Stacking" begin
+  stacked_array=[ 8 9 3 5; 9 6 6 9; 9 1 7 2; 7 4 10 6 ]
+  unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
+  @test unstack(stacked_array, 2) == unstacked_array
+  @test stack(unstacked_array, 2) == stacked_array
+  @test stack(unstack(stacked_array, 1), 1) == stacked_array
 end

@@ -1,9 +1,9 @@
-julia 0.7
+julia 1.0
 Juno
 MacroTools 0.3.3
 NNlib
 Requires
-Adapt
+Adapt 0.4
 CodecZlib
 Colors
 ZipFile
