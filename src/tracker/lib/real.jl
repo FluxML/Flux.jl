@@ -122,7 +122,9 @@ accum!(x::Tuple, Δ::Tuple) = accum!.(x, Δ)
 init_grad(x::Tuple) = init_grad.(x)
 zero_grad!(x::Tuple) = zero_grad!.(x)
 
-track(f::Call, xs::Tuple) = TrackedTuple(xs, Tracked{typeof(xs)}(f, zero.(xs)))
+zero_or_nothing(x) = zero(x)
+zero_or_nothing(x::Nothing) = nothing
+track(f::Call, xs::Tuple) = TrackedTuple(xs, Tracked{typeof(xs)}(f, zero_or_nothing.(xs)))
 
 function Base.show(io::IO, xs::TrackedTuple)
   show(io, data(xs))
@@ -132,9 +134,16 @@ end
 Base.length(x::TrackedTuple) = length(data(x))
 
 Base.getindex(xs::TrackedTuple, i::Integer) = track(getindex, xs, i)
+Base.iterate(xs::TrackedTuple) = track(iterate, xs)
+Base.iterate(xs::TrackedTuple, i::Integer) = track(iterate, xs, i)
+Base.iterate(xs::TrackedTuple, i::TrackedReal) = iterate(xs, data(i))
 
 @grad function getindex(xs::TrackedTuple, i)
   data(xs)[i], Δ -> (ntuple(j -> i == j ? Δ : 0, length(xs)), nothing)
+end
+
+@grad function iterate(xs::TrackedTuple, i=1)
+  (data(xs)[i], i+1), Δ -> (ntuple(j -> i == j ? Δ[1] : 0, length(xs)), nothing)
 end
 
 # Array collection

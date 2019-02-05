@@ -5,6 +5,7 @@ using NNlib: conv, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
 using Statistics: mean, std
+using ForwardDiff
 using Random
 # using StatsBase
 
@@ -36,6 +37,25 @@ gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 
 @testset "indexing & slicing" begin
   gradtest(x->view(x, 1:2, 1:2), rand(4, 4))
+
+  # Nested AD for getindex
+  grad_tracker = gradient([1.0, 2.0, 3.0]; nest=true) do x
+    sum(gradient(x; nest=true) do x
+      sum(gradient(x; nest=true) do x
+        sum(x[1:2])^4
+      end[1])
+    end[1])
+  end[1]
+  # We compare to ForwardDiff, since the high order derivative is not
+  # numerically stable under finite differencing.
+  grad_forward = ForwardDiff.gradient([1.0, 2.0, 3.0]) do x
+    sum(ForwardDiff.gradient(x) do x
+      sum(ForwardDiff.gradient(x) do x
+        sum(x[1:2])^4
+      end)
+    end)
+  end
+  @test grad_tracker ≈ grad_forward ≈ [288.0, 288.0, 0.0]
 end
 
 function promotiontest(f, A, B, C)

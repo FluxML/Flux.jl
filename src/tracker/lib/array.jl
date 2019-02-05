@@ -95,12 +95,27 @@ end
 
 Base.getindex(xs::TrackedArray, i...) = track(getindex, xs, i...)
 
-@grad function getindex(xs::AbstractArray, i...)
-  data(xs)[i...], function (Δ)
-    Δ′ = zero(xs)
-    Δ′[i...] = data(Δ)
-    (nobacksies(:getindex, Δ′), map(_->nothing, i)...)
+struct ∇getindex{T,S}
+    xs::T
+    i::S
+end
+
+function (g::∇getindex)(Δ)
+  Δ′ = zero(g.xs)
+  Δ′[g.i...] = Δ
+  (Δ′, map(_->nothing, g.i)...)
+end
+(g::∇getindex)(Δ::TrackedArray) = track(g, Δ)
+
+@grad function (g::∇getindex)(Δ)
+  z, back = g(data(Δ)), function(Δ′′)
+    (Δ′′[1][g.i...],)
   end
+  z, back
+end
+
+@grad function getindex(xs::AbstractArray, i...)
+  data(xs)[i...], ∇getindex(xs, i)
 end
 
 Base.view(x::TrackedArray, inds...) = track(Base.view, x, inds...)
@@ -414,10 +429,15 @@ using ForwardDiff: Dual, partials, value
 
 trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val(ndims(x))))
 
-unbroadcast(x::AbstractArray, Δ) =
-  size(x) == size(Δ) ? Δ :
-  length(x) == length(Δ) ? trim(x, Δ) :
-    trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
+function unbroadcast(x::AbstractArray, Δ)
+  if size(x) == size(Δ)
+    return Δ
+  elseif length(x) == length(Δ)
+    return trim(x, Δ)
+  else
+    return trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
+  end
+end
 
 unbroadcast(x::Number, Δ) = sum(Δ)
 unbroadcast(x::Base.RefValue, _) = nothing

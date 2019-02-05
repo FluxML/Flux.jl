@@ -1,5 +1,5 @@
-init_grad(x) = zero(x)
-zero_grad!(x) = zero(x)
+init_grad(x) = zero_or_nothing(x)
+zero_grad!(x) = zero_or_nothing(x)
 zero_grad!(x::AbstractArray) = (x .= 0)
 
 scan(c::Call) = foreach(scan, c.args)
@@ -31,6 +31,13 @@ back_(::Call{Missing}, Δ, once) = error("`back!` was already used")
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
+
+# This is correct, because the `.grad` field of tracked is constrained
+# by a type parameter constructed from the (concrete) forward value and
+# thus for `nothing` to show up here, we're guaranteed that the value
+# was `nothing` during the forward pass (and thus we don't care about its
+# derivatives).
+accum!(x::Nothing, Δ) = x
 
 function back(x::Tracked, Δ, once)
   x.isleaf && (x.grad = accum!(x.grad, Δ); return)
@@ -126,7 +133,7 @@ accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] .+ Δ : Δ
 
 function back_(g::Grads, c::Call, Δ)
   Δs = c.func(Δ)
-  (Δs isa Tuple && length(Δs) >= length(c.args)) ||
+  ((Δs isa Tuple || Δs isa TrackedTuple) && length(Δs) >= length(c.args)) ||
     error("Gradient is not a tuple of length $(length(c.args))")
   foreach((x, Δ) -> back(g, x, Δ), c.args, Δs)
 end
