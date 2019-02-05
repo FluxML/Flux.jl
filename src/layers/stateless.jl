@@ -46,6 +46,6 @@ logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 """
 function normalise(x::AbstractArray, dims::Int=1)
   μ′ = mean(x, dims = dims)
-  σ′ = std(x, dims = dims, mean = μ′)
+  σ′ = std(x, dims = dims, mean = μ′, corrected=false)
   return (x .- μ′) ./ σ′
 end
