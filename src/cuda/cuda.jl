@@ -1,5 +1,6 @@
 module CUDA
 
+import CUDAdrv: CuPtr, CU_NULL
 using ..CuArrays
 using Pkg.TOML
 
