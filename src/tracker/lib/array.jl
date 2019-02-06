@@ -361,6 +361,9 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 @grad a::AbstractMatrix * b::AbstractVecOrMat =
   data(a)*data(b), Δ -> (Δ * transpose(b), transpose(a) * Δ)
 
+@grad a::TrackedMatrix{<:Any, <:Transpose} * b::AbstractVecOrMat =
+  data(a)*data(b), Δ -> (transpose(b * transpose(Δ)), transpose(a) * Δ)
+
 # NNlib
 
 using NNlib
@@ -412,7 +415,7 @@ end
 
 using ForwardDiff: Dual, partials, value
 
-trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val(ndims(x))))
+trim(x, Δ) = ndims(Δ) == ndims(x) ? Δ : reshape(Δ, ntuple(i -> size(Δ, i), Val(ndims(x))))
 
 unbroadcast(x::AbstractArray, Δ) =
   size(x) == size(Δ) ? Δ :

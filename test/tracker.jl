@@ -328,4 +328,14 @@ end
   @test back([1, 1]) == (32,)
 end
 
+@testset "transpose" begin
+  let f = (x,a,b)->(x = transpose(x); x * a + x * b),
+      g = x->(a = transpose(x); b = transpose(a); b * [1.0 1.0; 2.0 3.0] + a * [1.0 1.0; 2.0 3.0])
+      @test gradient(x->sum(f(x, [1.0; 1.0], [1.0; 1.0])), [1.0 1.0; 1.0 1.0])[1] ==
+        [2.0 2.0; 2.0 2.0]
+      @test gradient(x->sum(g(x)), [1.0 1.0; 1.0 1.0])[1] ==
+        [4.0 7.0; 7.0 10.0]
+  end
+end
+
 end #testset
