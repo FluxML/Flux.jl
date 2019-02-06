@@ -217,11 +217,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers/#Flux.ConvTranspose",
+    "page": "Model Reference",
+    "title": "Flux.ConvTranspose",
+    "category": "type",
+    "text": "ConvTranspose(size, in=>out)\nConvTranspose(size, in=>out, relu)\n\nStandard convolutional transpose layer. size should be a tuple like (2, 2). in and out specify the number of input and output channels respectively. Data should be stored in WHCN order. In other words, a 100×100 RGB image would be a 100×100×3 array, and a batch of 50 would be a 100×100×3×50 array. Takes the keyword arguments pad, stride and dilation.\n\n\n\n\n\n"
+},
+
+{
     "location": "models/layers/#Additional-Convolution-Layers-1",
     "page": "Model Reference",
     "title": "Additional Convolution Layers",
     "category": "section",
-    "text": "DepthwiseConv"
+    "text": "DepthwiseConv\nConvTranspose"
 },
 
 {
