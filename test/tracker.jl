@@ -1,7 +1,7 @@
 using Flux
 using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradient, gradcheck, grad, checkpoint, forwarddiff
-using NNlib: conv, depthwiseconv
+using NNlib: conv, ∇conv_data, depthwiseconv
 using Printf: @sprintf
 using LinearAlgebra: diagm, dot, LowerTriangular, norm
 using Statistics: mean, std
@@ -185,11 +185,19 @@ end
   2y + x
 end
 
-@test gradtest(conv, rand(10, 3, 2), randn(Float64,2, 3, 2))
-@test gradtest(conv, rand(10, 10, 3, 2), randn(Float64,2, 2, 3, 2))
-@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 3, 2))
+@test gradtest(conv, rand(10, 3, 2), randn(Float64, 2, 3, 2))
+@test gradtest(conv, rand(10, 10, 3, 2), randn(Float64, 2, 2, 3, 2))
+@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64, 2, 2, 2, 3, 2))
+
+@test gradtest(∇conv_data, rand(10, 3, 2), randn(Float64, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 3, 2), randn(Float64,2, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 2, 3))
 
 @test gradtest(depthwiseconv, rand(10,10,3,2), randn(2, 2, 2, 3))
+
+@test gradtest(∇conv_data, rand(10, 3, 2), randn(Float64, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 3, 2), randn(Float64, 2, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 10, 3, 2), randn(Float64, 2, 2, 2, 2, 3))
 
 @test gradtest(x -> maxpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> maxpool(x, (2,2,2)), rand(10, 10, 10, 3, 2))
