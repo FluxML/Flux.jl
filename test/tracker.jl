@@ -3,7 +3,7 @@ using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradient, gradcheck, grad, checkpoint, forwarddiff
 using NNlib: conv, ∇conv_data, depthwiseconv
 using Printf: @sprintf
-using LinearAlgebra: diagm, dot, LowerTriangular, norm
+using LinearAlgebra: diagm, dot, LowerTriangular, norm, det, logdet, logabsdet
 using Statistics: mean, std
 using Random
 # using StatsBase
@@ -33,6 +33,10 @@ gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
+
+@test gradtest(det, (4, 4))
+@test gradtest(logdet, map((x) -> x*x', (rand(4, 4),))[1])
+@test gradtest((x) -> logabsdet(x)[1], (4, 4))
 
 @testset "indexing & slicing" begin
   gradtest(x->view(x, 1:2, 1:2), rand(4, 4))
