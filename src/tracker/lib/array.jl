@@ -1,7 +1,7 @@
 import Base: *
 
 import LinearAlgebra
-import LinearAlgebra: inv, det, \, /
+import LinearAlgebra: inv, det, logdet, logabsdet, \, /
 
 using Statistics
 using LinearAlgebra: Transpose, Adjoint, diagm, diag
@@ -126,6 +126,12 @@ Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 
 det(xs::TrackedArray) = track(det, xs)
 @grad det(xs) = det(data(xs)), Δ -> (Δ * det(xs) * transpose(inv(xs)),)
+
+logdet(xs::TrackedArray) = track(logdet, xs)
+@grad logdet(xs) = logdet(data(xs)), Δ -> (Δ * transpose(inv(xs)),)
+
+logabsdet(xs::TrackedArray) = track(logabsdet, xs)
+@grad logabsdet(xs) = logabsdet(data(xs)), Δ -> (Δ[1] * transpose(inv(xs)),)
 
 Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
 
