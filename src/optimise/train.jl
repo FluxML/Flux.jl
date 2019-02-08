@@ -35,7 +35,7 @@ it is often cleaner to just write your own training loop, using `update!` as abo
 
 A more complicated example:
 ```julia
-# Inputs: model, train_data, dev_data, opt 
+# Inputs: model, xs, ys, opt 
 ps = params(model)
 num_obs = length(xs)
 
