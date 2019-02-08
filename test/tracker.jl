@@ -178,6 +178,7 @@ end
 
 @test gradtest(x -> std(x), rand(5,5))
 @test gradtest(x -> std(x, dims = 1), rand(5,5))
+@test gradtest(x -> std(x, dims = 1, corrected = false), rand(5,5))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
