@@ -40,7 +40,7 @@ but it is more numerically stable.
 logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 
 """
-    normalise(x::AbstractArray; dims::Int=1)
+    normalise(x::AbstractArray; dims=1)
 
     Normalises x to mean 0 and standard deviation 1, across the dimensions given by dims. Defaults to normalising over columns.
 """
