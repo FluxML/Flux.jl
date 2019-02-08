@@ -6,6 +6,38 @@ function update!(opt, x, x̄)
   update!(x, apply!(opt, x, copy(data(x̄))))
 end
 
+
+"""
+  update!(parameters, opt, losses)
+
+Update the model `parameters` , via the optimizer `opt`,  to minimize the loss given by `losses`
+When writing your own training loop, this function should be at the core.
+
+For example, a simple training loop:
+(So simply in practicve you would just use `train!`)
+
+```julia
+# Inputs: model, xs, ys, opt 
+ps = params(model)
+for (x,y_true) in zip(xs, ys)
+    y_pred = model(x)
+    losses = (y_pred - y_pred).^2
+    update!(ps, opt, losses)
+end
+```
+
+It is useful to construct your own training loop like this when you want more control than
+simply using the standard  [train!](@ref).
+For example if your loss function changes depending on the iteration, or some external condition,
+or you want to use a complicated early stopping rule.
+While all things can be done via surficiently complicated closures in the [train!](@ref) callbacks and loss functions,
+it is often cleaner to just write your own training loop, using `update!` as above.
+"""
+function update!(parameters::Params, opt, losses)
+    @interrupts back!(losses)
+    _update_params!(opt, parameters)
+end
+
 function _update_params!(opt, xs)
   for x in xs
     Δ = apply!(opt, x.data, x.grad)
@@ -72,8 +104,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
   @progress for d in data
     try
       l = loss(d...)
-      @interrupts back!(l)
-      _update_params!(opt, ps)
+      update!(ps, opt, l)
       if cb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break
