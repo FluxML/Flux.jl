@@ -21,8 +21,8 @@ For example, a simple training loop:
 ps = params(model)
 for (x,y_true) in zip(xs, ys)
     y_pred = model(x)
-    losses = (y_pred - y_pred).^2
-    update!(ps, opt, losses)
+    loss = (y_pred - y_true)^2
+    update!(ps, opt, loss)
 end
 ```
 
@@ -32,6 +32,23 @@ For example if your loss function changes depending on the iteration, or some ex
 or you want to use a complicated early stopping rule.
 While all things can be done via surficiently complicated closures in the [train!](@ref) callbacks and loss functions,
 it is often cleaner to just write your own training loop, using `update!` as above.
+
+A more complicated example:
+```julia
+# Inputs: model, train_data, dev_data, opt 
+ps = params(model)
+num_obs = length(xs)
+
+for (ii, (x, y_true)) in enumerate(zip(xs, ys))
+    y_pred = model(x)
+    loss = (y_pred - y_true)^2
+    loss *= exp10(10*ii/num_obs)  # Weight losses proportionate to how recently 
+    update!(ps, opt, loss)
+    
+    @info "traing step done" ii loss
+end
+```
+
 """
 function update!(parameters::Params, opt, losses)
     @interrupts back!(losses)
