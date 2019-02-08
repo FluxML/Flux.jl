@@ -35,7 +35,7 @@ gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 @test gradtest(x -> x', rand(5))
 
 @test gradtest(det, (4, 4))
-@test gradtest(logdet, (4, 4))
+@test gradtest(logdet, map((x) -> x*x', (rand(4, 4),))[1])
 @test gradtest((x) -> logabsdet(x)[1], (4, 4))
 
 @testset "indexing & slicing" begin
