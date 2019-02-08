@@ -1,7 +1,7 @@
 module CUDA
 
-import CUDAdrv: CuPtr, CU_NULL
 using ..CuArrays
+import CuArrays.CUDAdrv: CuPtr, CU_NULL
 using Pkg.TOML
 
 function version_check()
