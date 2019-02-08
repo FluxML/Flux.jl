@@ -178,6 +178,10 @@ end
 
 @test gradtest(x -> std(x), rand(5,5))
 @test gradtest(x -> std(x, dims = 1), rand(5,5))
+@test gradtest(x -> std(x, dims = 1, corrected = false), rand(5,5))
+
+@test gradtest(x -> Flux.normalise(x), rand(4,3))
+@test gradtest(x -> Flux.normalise(x, dims = 2), rand(3,4))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
