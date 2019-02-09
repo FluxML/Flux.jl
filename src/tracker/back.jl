@@ -1,5 +1,3 @@
-
-
 init_grad(x) = zero(x)
 zero_grad!(x) = zero(x)
 zero_grad!(x::AbstractArray) = (x .= 0)
