@@ -1,7 +1,7 @@
 import Base: *
 
 import LinearAlgebra
-import LinearAlgebra: inv, \, /
+import LinearAlgebra: inv, det, logdet, logabsdet, \, /
 
 using Statistics
 using LinearAlgebra: Transpose, Adjoint, diagm, diag
@@ -124,6 +124,15 @@ Base.adjoint(xs::TrackedArray) = track(adjoint, xs)
 @grad transpose(xs) = transpose(data(xs)), Δ -> (trim(xs, transpose(Δ)),)
 @grad adjoint(xs) = data(xs)', Δ -> (trim(xs, Δ'),)
 
+det(xs::TrackedArray) = track(det, xs)
+@grad det(xs) = det(data(xs)), Δ -> (Δ * det(xs) * transpose(inv(xs)),)
+
+logdet(xs::TrackedArray) = track(logdet, xs)
+@grad logdet(xs) = logdet(data(xs)), Δ -> (Δ * transpose(inv(xs)),)
+
+logabsdet(xs::TrackedArray) = track(logabsdet, xs)
+@grad logabsdet(xs) = logabsdet(data(xs)), Δ -> (Δ[1] * transpose(inv(xs)),)
+
 Base.repeat(xs::TrackedArray; kw...) = track(repeat, xs; kw...)
 
 @grad function repeat(xs; inner=ntuple(x->1, ndims(xs)), outer=ntuple(x->1, ndims(xs)))
@@ -148,9 +157,9 @@ function combinations(xs, n)
   [[x, c...] for x in xs, c in cs]
 end
 
-for i = 0:2, c = combinations([:AbstractArray, :TrackedArray], i), f = [:hcat, :vcat]
+for i = 0:2, c = combinations([:AbstractArray, :TrackedArray, :Number], i), f = [:hcat, :vcat]
   cnames = map(_ -> gensym(), c)
-  @eval Base.$f($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::TrackedArray, xs::AbstractArray...) =
+  @eval Base.$f($([:($x::$c) for (x, c) in zip(cnames, c)]...), x::Union{TrackedArray,TrackedReal}, xs::Union{AbstractArray,Number}...) =
     track($f, $(cnames...), x, xs...)
 end
 
@@ -312,9 +321,9 @@ dot(xs::TrackedVector, ys::AbstractVector) = track(dot, xs, ys)
 @grad dot(xs, ys) = dot(data(xs), data(ys)), Δ -> (Δ .* ys, Δ .* xs)
 
 # Hacks to get std working
-Statistics.std(x::TrackedArray; dims = :, mean = Statistics.mean(x, dims = dims)) = _std(x,mean,dims)
-_std(x::TrackedArray, mean, dims) = sqrt.(sum((x .- mean).^2, dims = dims) ./ (mapreduce(i -> size(x,i),*, dims) - 1))
-_std(x::TrackedArray, mean, ::Colon) = sqrt.(sum((x .- mean).^2) ./ (length(x) - 1))
+Statistics.std(x::TrackedArray; dims = :, mean = Statistics.mean(x, dims = dims), corrected::Bool = true) = _std(x,mean,dims,corrected)
+_std(x::TrackedArray, mean, dims, corrected) = sqrt.(sum((x .- mean).^2, dims = dims) ./ (mapreduce(i -> size(x,i),*, dims) - corrected))
+_std(x::TrackedArray, mean, ::Colon, corrected) = sqrt.(sum((x .- mean).^2) ./ (length(x) - corrected))
 
 LinearAlgebra.norm(x::TrackedArray, p::Real = 2) =
   sum(abs.(x).^p .+ eps(0f0))^(1/p) # avoid d(sqrt(x))/dx == Inf at 0
@@ -364,7 +373,7 @@ x::TrackedVector  * y::TrackedVector  = track(*, x, y)
 # NNlib
 
 using NNlib
-import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, depthwiseconv, maxpool, meanpool
+import NNlib: softmax, ∇softmax, logsoftmax, ∇logsoftmax, conv, ∇conv_data, depthwiseconv, maxpool, meanpool
 
 softmax(xs::TrackedArray) = track(softmax, xs)
 
@@ -391,8 +400,18 @@ conv(x::TrackedArray,  w::AbstractArray; kw...) = track(conv, x, w; kw...)
 @grad conv(x, w; kw...) =
   conv(data(x), data(w); kw...),
     Δ -> nobacksies(:conv,
-      (NNlib.∇conv_data(data.((Δ, x, w))...; kw...),
-       NNlib.∇conv_filter(data.((Δ, x, w))...; kw...)))
+      (NNlib.∇conv_data(data.((Δ, w))...; size=size(x), kw...),
+       NNlib.∇conv_filter(data.((Δ, x))...; size=size(w), kw...)))
+
+∇conv_data(x::TrackedArray,  w::TrackedArray;  kw...) = track(∇conv_data, x, w; kw...)
+∇conv_data(x::AbstractArray, w::TrackedArray;  kw...) = track(∇conv_data, x, w; kw...)
+∇conv_data(x::TrackedArray,  w::AbstractArray; kw...) = track(∇conv_data, x, w; kw...)
+
+@grad ∇conv_data(x, w; kw...) =
+  ∇conv_data(data(x), data(w); kw...),
+    Δ -> nobacksies(:conv,
+      (NNlib.conv(data.((Δ, w))...; size=size(x), kw...),
+       NNlib.∇conv_filter(data.((x, Δ))...; size=size(w), kw...)))
 
 maxpool(x::TrackedArray, k; kw...) = track(maxpool, x, k; kw...)
 

@@ -138,7 +138,9 @@ function (BN::BatchNorm)(x)
   end
 
   let λ = BN.λ
-    λ.(reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ BN.ϵ)) .+ reshape(β, affine_shape...))
+    temp = reshape(γ, affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ BN.ϵ)) 
+    # This is intentionally not fused because of an extreme slowdown doing so
+    λ.(temp .+ reshape(β, affine_shape...))
   end
 end
 

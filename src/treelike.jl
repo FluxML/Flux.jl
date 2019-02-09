@@ -5,7 +5,9 @@ children(x) = ()
 mapchildren(f, x) = x
 
 children(x::Tuple) = x
+children(x::NamedTuple) = x
 mapchildren(f, x::Tuple) = map(f, x)
+mapchildren(f, x::NamedTuple) = map(f, x)
 
 function treelike(m::Module, T, fs = fieldnames(T))
   @eval m begin

@@ -1,9 +1,9 @@
 using Flux
 using Flux.Tracker, Test, NNlib
 using Flux.Tracker: TrackedReal, gradient, gradcheck, grad, checkpoint, forwarddiff
-using NNlib: conv, depthwiseconv
+using NNlib: conv, ∇conv_data, depthwiseconv
 using Printf: @sprintf
-using LinearAlgebra: diagm, dot, LowerTriangular, norm
+using LinearAlgebra: diagm, dot, LowerTriangular, norm, det, logdet, logabsdet
 using Statistics: mean, std
 using Random
 # using StatsBase
@@ -33,6 +33,10 @@ gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))
 
 @test gradtest(x -> x', rand(5))
+
+@test gradtest(det, (4, 4))
+@test gradtest(logdet, map((x) -> x*x', (rand(4, 4),))[1])
+@test gradtest((x) -> logabsdet(x)[1], (4, 4))
 
 @testset "indexing & slicing" begin
   gradtest(x->view(x, 1:2, 1:2), rand(4, 4))
@@ -113,6 +117,13 @@ end
     promotiontest((x...) -> cat(x..., dims = 3), rand(4,5,3), rand(4,5,1), rand(4,5,2))
   end
 
+  @testset "scalars" begin
+    @test vcat(param([1, 2, 3]), 1) isa TrackedArray
+    @test vcat(1, param([1, 2, 3])) isa TrackedArray
+    @test hcat(1, param([1 2 3;])) isa TrackedArray
+    @test vcat(param(1), 2) isa TrackedArray
+  end
+
 end
 
 @test gradtest(x -> permutedims(x, [3,1,2]), rand(4,5,6))
@@ -167,6 +178,10 @@ end
 
 @test gradtest(x -> std(x), rand(5,5))
 @test gradtest(x -> std(x, dims = 1), rand(5,5))
+@test gradtest(x -> std(x, dims = 1, corrected = false), rand(5,5))
+
+@test gradtest(x -> Flux.normalise(x), rand(4,3))
+@test gradtest(x -> Flux.normalise(x, dims = 2), rand(3,4))
 
 @test gradtest((x, y) -> x .* y, rand(5), rand(5))
 @test gradtest(dot, rand(5), rand(5))
@@ -178,11 +193,19 @@ end
   2y + x
 end
 
-@test gradtest(conv, rand(10, 3, 2), randn(Float64,2, 3, 2))
-@test gradtest(conv, rand(10, 10, 3, 2), randn(Float64,2, 2, 3, 2))
-@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 3, 2))
+@test gradtest(conv, rand(10, 3, 2), randn(Float64, 2, 3, 2))
+@test gradtest(conv, rand(10, 10, 3, 2), randn(Float64, 2, 2, 3, 2))
+@test gradtest(conv, rand(10, 10, 10, 3, 2), randn(Float64, 2, 2, 2, 3, 2))
+
+@test gradtest(∇conv_data, rand(10, 3, 2), randn(Float64, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 3, 2), randn(Float64,2, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 10, 3, 2), randn(Float64,2, 2, 2, 2, 3))
 
 @test gradtest(depthwiseconv, rand(10,10,3,2), randn(2, 2, 2, 3))
+
+@test gradtest(∇conv_data, rand(10, 3, 2), randn(Float64, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 3, 2), randn(Float64, 2, 2, 2, 3))
+@test gradtest(∇conv_data, rand(10, 10, 10, 3, 2), randn(Float64, 2, 2, 2, 2, 3))
 
 @test gradtest(x -> maxpool(x, (2,2)), rand(10, 10, 3, 2))
 @test gradtest(x -> maxpool(x, (2,2,2)), rand(10, 10, 10, 3, 2))
@@ -314,6 +337,11 @@ end
       x[1]*x[2]
     end
   end == ([3, 2],)
+end
+
+@testset "Custom Sensitivities" begin
+  y, back = Tracker.forward(x -> [3x^2, 2x], 5)
+  @test back([1, 1]) == (32,)
 end
 
 end #testset

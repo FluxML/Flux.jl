@@ -40,12 +40,17 @@ but it is more numerically stable.
 logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 
 """
-    normalise(x::AbstractVecOrMat)
+    normalise(x::AbstractArray; dims=1)
 
-Normalise each column of `x` to mean 0 and standard deviation 1.
+    Normalises x to mean 0 and standard deviation 1, across the dimensions given by dims. Defaults to normalising over columns.
 """
-function normalise(x::AbstractVecOrMat)
-  μ′ = mean(x, dims = 1)
-  σ′ = std(x, dims = 1, mean = μ′)
+function normalise(x::AbstractArray; dims=1)
+  μ′ = mean(x, dims = dims)
+  σ′ = std(x, dims = dims, mean = μ′, corrected=false)
   return (x .- μ′) ./ σ′
+end
+
+function normalise(x::AbstractArray, dims=1)
+  Base.depwarn("`normalise(x::AbstractArray, dims)` is deprecated, use `normalise(a, dims=dims)` instead.", :normalise)
+  normalise(x, dims = dims)
 end

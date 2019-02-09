@@ -147,8 +147,10 @@ end
 
 back(::Grads, ::Nothing, _) = return
 
+collectmemaybe(xs) = xs
+
 function forward(f, ps::Params)
-  y = f()
+  y = collectmemaybe(f())
   y, function (Δ)
     g = Grads(ps)
     if istracked(y)
