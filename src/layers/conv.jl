@@ -37,16 +37,21 @@ Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
 
 @treelike Conv
 
-function (c::Conv)(x::AbstractArray)
+function (c::Conv)(x::AbstractArray{T, 4}) where T <: Float64
   # TODO: breaks gpu broadcast :(
   #ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
-  ## If it is a single channel input
-  if ndims(x) == ndims(c.weight)-1
-    x = reshape(x, size(x)..., 1)
-    x = permutedims(x, (1,2,4,3)) 
-  end
+  # if ndims(x) == ndims(c.weight)-1
+  #   x = reshape(x, size(x)..., 1)
+  #   x = permutedims(x, (1,2,4,3)) 
+  # end
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+end
+
+function (c::Conv)(x::AbstractArray{T, 3}) where T <: Float64
+  x = permutedims(reshape(x, size(x)..., 1), (1,2,4,3))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b) 
 end
 
 function Base.show(io::IO, l::Conv)
