@@ -11,3 +11,9 @@ using Test
   @test onecold(a, labels) == 'C'
   @test onecold(A, labels) == ['C', 'A', 'D']
 end
+
+@testset "onehotbatch indexing" begin
+  y = Flux.onehotbatch(ones(3), 1:10)
+  @test y[:,1] isa Flux.OneHotVector
+  @test y[:,:] isa Flux.OneHotMatrix
+end
