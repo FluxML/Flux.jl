@@ -39,7 +39,12 @@ Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
 
 function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
-  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  #ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  ## If it is a single channel input
+  if ndims(x) == ndims(c.weight)-1
+    x = reshape(x, size(x)..., 1)
+    x = permutedims(x, (1,2,4,3)) 
+  end
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
 end
