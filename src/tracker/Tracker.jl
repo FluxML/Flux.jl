@@ -16,13 +16,17 @@ grad(x) = grad(tracker(x))
 grad(::Nothing) = nothing
 data(x) = x
 
+abstract type ComputationSentinel end
+struct NoComputation <: ComputationSentinel end
+struct FreedComputation <: ComputationSentinel end
+
 struct Call{F,As<:Tuple}
   func::F
   args::As
 end
 
 Call(f::F, args::T) where {F,T} = Call{F,T}(f, args)
-Call() = Call(nothing, ())
+Call() = Call(NoComputation(), ())
 
 # When deserialising, the object_id changes
 a::Call == b::Call = a.func == b.func && a.args == b.args
@@ -40,7 +44,7 @@ mutable struct Tracked{T}
 end
 
 istracked(x::Tracked) = true
-isleaf(x::Tracked) = x.f == Call()
+isleaf(x::Tracked) = x.f isa Call{<:ComputationSentinel}
 grad(x::Tracked) = x.grad
 
 track(f::Call, x) = Tracked{typeof(x)}(f)

@@ -329,6 +329,15 @@ end
   @test gs[W] == dW
 end
 
+@testset "Params after back!" begin
+  w = param(1)
+  model(z) = w*z
+  params_before = params(model)
+  Flux.back!(model, 1.0; once=true)
+  @test params(model) == params_before()
+end
+
+
 @testset "Forward" begin
   @test @inferred(Tracker.forward_jacobian(x -> [sum(x)], rand(5,5), Val(12)))[2] ==
     reshape(ones(25), :, 1)

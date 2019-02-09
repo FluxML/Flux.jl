@@ -1,3 +1,5 @@
+
+
 init_grad(x) = zero(x)
 zero_grad!(x) = zero(x)
 zero_grad!(x::AbstractArray) = (x .= 0)
@@ -26,8 +28,8 @@ function back_(c::Call, Δ, once)
   foreach((x, d) -> back(x, d, once), c.args, data.(Δs))
 end
 
-back_(::Call{Nothing}, Δ, once) = nothing
-back_(::Call{Missing}, Δ, once) = error("`back!` was already used")
+back_(::Call{NoComputation}, Δ, once) = nothing
+back_(::Call{FreedComputation}, Δ, once) = error("`back!` was already used")
 
 accum!(x, Δ) = x .+ Δ
 accum!(x::AbstractArray, Δ) = (x .+= Δ)
