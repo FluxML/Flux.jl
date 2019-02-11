@@ -1,7 +1,7 @@
 using Documenter, Flux, NNlib
 
 makedocs(modules=[Flux, NNlib],
-         doctest = false,
+         doctest = true,
          analytics = "UA-36890222-9",
          sitename = "Flux",
          # Uncomment below for local build
