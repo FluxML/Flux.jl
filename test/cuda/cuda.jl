@@ -41,7 +41,6 @@ end
 @testset "onecold gpu" begin
   y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
   @test Flux.onecold(y) isa CuArray
-  @test y[:,:] isa Flux.OneHotMatrix{<:CuArray}
   @test y[3,:] isa CuArray
 end
 

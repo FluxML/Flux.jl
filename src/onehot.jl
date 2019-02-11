@@ -24,9 +24,6 @@ Base.getindex(xs::OneHotMatrix, i::Integer, j::Integer) = xs.data[j][i]
 Base.getindex(xs::OneHotMatrix, ::Colon, i::Integer) = xs.data[i]
 Base.getindex(xs::OneHotMatrix, ::Colon, i::AbstractArray) = OneHotMatrix(xs.height, xs.data[i])
 
-Base.getindex(xs::Flux.OneHotMatrix, j::Base.UnitRange, i::Int) = xs.data[i][j]
-
-Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = xs
 Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
 # handle special case when we want the whole column
