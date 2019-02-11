@@ -49,7 +49,7 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
 
     y = σ.(W * x .+ b)
 
-The input `x` must be a array where `size(x, 1) == in`.
+The input `x` must be an array where `size(x, 1) == in`.
 The out `y` is similar to `x` except for the `size(y, 1) == out`.
 
 ```julia
