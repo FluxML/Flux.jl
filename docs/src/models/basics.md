@@ -4,20 +4,22 @@
 
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
-```julia
-using Flux.Tracker
+```jldoctest
+julia> using Flux.Tracker
 
-f(x) = 3x^2 + 2x + 1
+julia> f(x) = 3x^2 + 2x + 1;
 
 # df/dx = 6x + 2
-df(x) = Tracker.gradient(f, x; nest = true)[1]
+julia> df(x) = Tracker.gradient(f, x; nest = true)[1];
 
-df(2) # 14.0 (tracked)
+julia> df(2)
+14.0 (tracked)
 
 # d²f/dx² = 6
-d2f(x) = Tracker.gradient(df, x; nest = true)[1]
+julia> d2f(x) = Tracker.gradient(df, x; nest = true)[1];
 
-d2f(2) # 6.0 (tracked)
+julia> d2f(2)
+6.0 (tracked)
 ```
 
 (We'll learn more about why these numbers show up as `(tracked)` below.)
