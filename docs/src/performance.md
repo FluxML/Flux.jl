@@ -14,7 +14,6 @@ Which means allocations occur much faster.
 And you use less memory.
 
 
-
 ## Make sure your custom activation functions preserve the type of their inputs
 Not only should your activation functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
 they should also preserve the type of their inputs.
@@ -43,7 +42,6 @@ the idiomatic (and safe way) is to use `oftype`.
 ```
     leaky_tanh(x) = oftype(x/1, 0.01) + tanh(x)
 ```
-
 
 
 ## Evaluate batches as Matrix's of features, rather than sequences of Vector features
@@ -75,4 +73,3 @@ end
 
 When doing this kind of concatenation use `reduce(hcat, xs)` rather than `hcat(xs...)`.
 This will avoid the splatting penality, and will hit the optimised `reduce` method.
-
