@@ -17,7 +17,7 @@ And you use less memory.
 
 ## Make sure your custom activation functions preserve the type of their inputs
 Not only should your activation functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
-they should also preserve the type of there inputs.
+they should also preserve the type of their inputs.
 For example:
 
 ```
