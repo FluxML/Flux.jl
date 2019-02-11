@@ -5,7 +5,7 @@
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
 ```julia
-using Flux.Tracker
+using Flux
 
 f(x) = 3x^2 + 2x + 1
 
@@ -57,11 +57,11 @@ Consider a simple linear regression, which tries to predict an output array `y` 
 W = rand(2, 5)
 b = rand(2)
 
-predict(x) = W*x .+ b
+predict(x) = W * x .+ b
 
 function loss(x, y)
-  ŷ = predict(x)
-  sum((y .- ŷ).^2)
+  ŷ = predict(x)
+  sum((y .- ŷ).^2)
 end
 
 x, y = rand(5), rand(2) # Dummy data
@@ -71,7 +71,7 @@ loss(x, y) # ~ 3
 To improve the prediction we can take the gradients of `W` and `b` with respect to the loss and perform gradient descent. Let's tell Flux that `W` and `b` are parameters, just like we did above.
 
 ```julia
-using Flux.Tracker
+using Flux
 
 W = param(W)
 b = param(b)
@@ -82,12 +82,12 @@ gs = Tracker.gradient(() -> loss(x, y), params(W, b))
 Now that we have gradients, we can pull them out and update `W` to train the model. The `update!(W, Δ)` function applies `W = W + Δ`, which we can use for gradient descent.
 
 ```julia
-using Flux.Tracker: update!
+using Flux
 
 Δ = gs[W]
 
 # Update the parameter and reset the gradient
-update!(W, -0.1Δ)
+Tracker.update!(W, -0.1Δ)
 
 loss(x, y) # ~ 2.5
 ```
@@ -113,7 +113,7 @@ layer2(x) = W2 * x .+ b2
 
 model(x) = layer2(σ.(layer1(x)))
 
-model(rand(5)) # => 2-element vector
+model(rand(5)) # 2-element vector
 ```
 
 This works but is fairly unwieldy, with a lot of repetition – especially as we add more layers. One way to factor this out is to create a function that returns linear layers.
@@ -130,7 +130,7 @@ linear2 = linear(3, 2)
 
 model(x) = linear2(σ.(linear1(x)))
 
-model(rand(5)) # => 2-element vector
+model(rand(5)) # 2-element vector
 ```
 
 Another (equivalent) way is to create a struct that explicitly represents the affine layer.
@@ -149,7 +149,7 @@ Affine(in::Integer, out::Integer) =
 
 a = Affine(10, 5)
 
-a(rand(10)) # => 5-element vector
+a(rand(10)) # 5-element vector
 ```
 
 Congratulations! You just built the `Dense` layer that comes with Flux. Flux has many interesting layers available, but they're all things you could have built yourself very easily.
@@ -175,7 +175,7 @@ layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
 
 model(x) = foldl((x, m) -> m(x), layers, init = x)
 
-model(rand(10)) # => 2-element vector
+model(rand(10)) # 2-element vector
 ```
 
 Handily, this is also provided for in Flux:
@@ -186,7 +186,7 @@ model2 = Chain(
   Dense(5, 2),
   softmax)
 
-model2(rand(10)) # => 2-element vector
+model2(rand(10)) # 2-element vector
 ```
 
 This quickly starts to look like a high-level deep learning library; yet you can see how it falls out of simple abstractions, and we lose none of the power of Julia code.
@@ -202,9 +202,9 @@ m(rand(10))
 Likewise, `Chain` will happily work with any Julia function.
 
 ```julia
-m = Chain(x -> x^2, x -> x+1)
+m = Chain(x -> x^2, x -> x + 1)
 
-m(5) # => 26
+m(5) # 26
 ```
 
 ## Layer helpers
