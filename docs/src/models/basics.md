@@ -9,14 +9,12 @@ julia> using Flux.Tracker
 
 julia> f(x) = 3x^2 + 2x + 1;
 
-# df/dx = 6x + 2
-julia> df(x) = Tracker.gradient(f, x; nest = true)[1];
+julia> df(x) = Tracker.gradient(f, x; nest = true)[1]; # df/dx = 6x + 2
 
 julia> df(2)
 14.0 (tracked)
 
-# d²f/dx² = 6
-julia> d2f(x) = Tracker.gradient(df, x; nest = true)[1];
+julia> d2f(x) = Tracker.gradient(df, x; nest = true)[1]; # d²f/dx² = 6
 
 julia> d2f(2)
 6.0 (tracked)
