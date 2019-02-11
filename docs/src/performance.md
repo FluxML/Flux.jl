@@ -44,9 +44,9 @@ the idiomatic (and safe way) is to use `oftype`.
 ```
 
 
-## Evaluate batches as Matrix's of features, rather than sequences of Vector features
+## Evaluate batches as Matrices of features, rather than sequences of Vector features
 
-While it can sometimes be tempting to express your observations one at a time
+While it can sometimes be tempting to process your observations (feature vectors) one at a time
 e.g.
 ```julia
 function loss_total(xs::AbstractVector{<:Vector}, ys::AbstractVector{<:Vector})
@@ -57,7 +57,7 @@ function loss_total(xs::AbstractVector{<:Vector}, ys::AbstractVector{<:Vector})
 end
 ```
 
-It is much faster, to concatenate them into a matrix,
+It is much faster to concatenate them into a matrix,
 as this will hit BLAS matrix-matrix multiplication, which is much faster than the equivelent sequence of matrix-vector multiplications.
 Even though this means allocating new memory to store them continously.
 
