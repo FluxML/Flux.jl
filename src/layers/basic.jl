@@ -49,8 +49,8 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
 
     y = σ.(W * x .+ b)
 
-The input `x` must be a vector of length `in`, or a batch of vectors represented
-as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+The input `x` must be a array where `size(x, 1) == in`.
+The out `y` is similar to `x` except for the `size(y, 1) == out`.
 
 ```julia
 julia> d = Dense(5, 2)
@@ -77,9 +77,16 @@ end
 
 @treelike Dense
 
-function (a::Dense)(x::AbstractArray)
+function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.W, a.b, a.σ
   σ.(W*x .+ b)
+end
+
+function (a::Dense)(x::AbstractArray)
+    W, b, σ = a.W, a.b, a.σ
+    x_matrix = reshape(x, size(x, 1), :)
+    linear = reshape(W * x_matrix, :, size(x)[2:end]...)
+    σ.(linear .+ b)
 end
 
 function Base.show(io::IO, l::Dense)
@@ -119,8 +126,13 @@ end
 
 # Try to avoid hitting generic matmul in some simple cases
 # Base's matmul is so slow that it's worth the extra conversion to hit BLAS
-(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
 
-(a::Dense{<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
+for t in [AbstractVecOrMat, AbstractArray]
+  @eval begin
+    (a::Dense{<:Any,W})(x::$t{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+      invoke(a, Tuple{$t}, x)
+
+    (a::Dense{<:Any,W})(x::$t{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+      a(convert.(T, x))
+  end
+end

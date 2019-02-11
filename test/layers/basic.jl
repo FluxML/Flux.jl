@@ -18,6 +18,9 @@ using Test, Random
         @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
         @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
 
+        a = Dense(10, 2)
+        x = rand(10,3,2)
+        @test a(x)[:,:,2] == a(x[:,:,2])
     end
 
     @testset "Diagonal" begin
