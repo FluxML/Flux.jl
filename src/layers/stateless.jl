@@ -50,7 +50,7 @@ function normalise(x::AbstractArray; dims=1)
   return (x .- μ′) ./ σ′
 end
 
-function normalise(x::AbstractArray, dims=1)
+function normalise(x::AbstractArray, dims)
   Base.depwarn("`normalise(x::AbstractArray, dims)` is deprecated, use `normalise(a, dims=dims)` instead.", :normalise)
   normalise(x, dims = dims)
 end
