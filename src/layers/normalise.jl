@@ -59,7 +59,7 @@ LayerNorm(h::Integer) =
 
 @treelike LayerNorm
 
-(a::LayerNorm)(x) = a.diag(normalise(x))
+(a::LayerNorm)(x) = a.diag(normalise(x, dims = 1))
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", length(l.diag.α), ")")
