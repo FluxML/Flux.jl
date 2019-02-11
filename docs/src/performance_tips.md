@@ -7,7 +7,7 @@ Below follow some Flux specific tips/reminders.
 ## Don't use more precision than you need.
 
 Flux works great with all kinds of number types.
-But often you do not need to be working with say `Float64` (let along `BigFloat`).
+But often you do not need to be working with say `Float64` (let alone `BigFloat`).
 Switching to `Float32` can give you a significant speed up,
 not because the operations are faster, but because the memory usage is halved.
 Which means allocations occur much faster.
