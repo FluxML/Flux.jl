@@ -30,14 +30,14 @@ because it results in having to use slow mixed type multiplication in the dense 
 Which means if you change your data say from `Float64` to `Float32` (which should give a speedup: see above),
 you will see a large slow-down
 
-This can occur sneakily, because numeric literals are type promoting.
-E.g. the following will have the same effect as the above.
+This can occur sneakily, because you can cause type-promotion by interacting with a numeric literals.
+E.g. the following will have run into the same problem as above:
 
 ```
     leaky_tanh(x) = 0.01x + tanh(x)
 ```
 
-While one could change your activation function (e.g. to use `0.01f0*x`) to avoid this when ever your inputs change,
+While one could change your activation function (e.g. to use `0.01f0x`) to avoid this when ever your inputs change,
 the idiomatic (and safe way) is to use `oftype`.
 
 ```
