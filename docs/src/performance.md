@@ -17,13 +17,14 @@ And you use less memory.
 ## Make sure your custom activation functions preserve the type of their inputs
 Not only should your activation functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
 they should also preserve the type of their inputs.
-For example:
+
+A very artificial example using an activatioon function like
 
 ```
     my_tanh(x) = Float64(tanh(x))
 ```
 
-will have performance on a `Float32` input orders of magnitude worse than the normal `tanh` would,
+will result in performance on `Float32` input orders of magnitude slower than the normal `tanh` would,
 because it results in having to use slow mixed type multiplication in the dense layers.
 
 Which means if you change your data say from `Float64` to `Float32` (which should give a speedup: see above),
