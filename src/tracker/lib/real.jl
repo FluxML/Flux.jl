@@ -37,7 +37,9 @@ Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{T}) where T = x
 Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x))
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
-  error("Not implemented: convert tracked $S to tracked $T")
+  track(convert, T, x)
+
+@grad convert(T, x) = convert(T, data(x)), ȳ -> (nothing, convert(typeof(x), ȳ))
 
 (T::Type{<:TrackedReal})(x::Real) = convert(T, x)
 
