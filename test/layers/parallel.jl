@@ -22,13 +22,15 @@ using Base.Iterators: partition
         # m = Chain(Parallel([LSTM(10,10)]))                # NOTE: compare to `Chain(LSTM(10,10))`
         # m = Chain(Parallel([LSTM(10,10)]), Dense(10,10))
         m = Chain(Parallel([LSTM(10,10),LSTM(10,10)]), Dense(20,10))
-        # TODO: I wonder if it would be better not to reduce the `out` size of the LSTM for `concat` automatically:
-        #      `Chain(Parallel([LSTM(10,10)]), Dense(20,10))`
         
         # bidirectional LSTM
         # FIXME: loss behaves oddly without a final Dense layer! Is tracking working?
         # m = Chain(BiLSTM(10,10))                          # NOTE: uses internally 2 * LSTM(10, 5)
         # m = Chain(BiLSTM(10,20))                          # NOTE: uses internally 2 * LSTM(10, 10)
+        # TODO: I wonder if it would be better not to reduce the `out` size of the LSTM for `concat` implicitly:
+        #       `Chain(BiLSTM(10,10), Dense(20,10))`
+        #       Then the dimensions won't match by `out`->`in`, but logically.
+
         # m = Chain(BiLSTM(10,10), Dense(10,10))            # default: reduce=Flux.concat
         # m = Chain(BiLSTM(10,10, reduce=sum), Dense(10,10))
         # m = Chain(BiLSTM(10,10, reduce=Flux.mul), Dense(10,10))
