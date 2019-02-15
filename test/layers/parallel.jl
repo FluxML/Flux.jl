@@ -10,22 +10,25 @@ using Base.Iterators: partition
         
         data = collect(partition(rand(10, 7), 10))
 
+        # non recurrent
         # m = Chain(Dense(10,10))
+
+        # LSTM
         # m = Chain(LSTM(10,10))
         # m = Chain(LSTM(10,10), Dense(10,10))
         
-        # map/reduce
+        # Parallel map/reduce
         # FIXME: loss behaves oddly without a final Dense layer! Is tracking working?
-        # m = Chain(Parallel([LSTM(10,10)]))
-        m = Chain(Parallel([LSTM(10,10)]), Dense(10,10))  # uses internally 2 * LSTM(10, 5)
-        # m = Chain(Parallel([LSTM(10,20)]), Dense(20,10))  # uses internally 2 * LSTM(10,10)
+        # m = Chain(Parallel([LSTM(10,10)]))                # NOTE: compare to `Chain(LSTM(10,10))`
+        # m = Chain(Parallel([LSTM(10,10)]), Dense(10,10))  # NOTE: uses internally 2 * LSTM(10, 5)
+        # m = Chain(Parallel([LSTM(10,20)]), Dense(20,10))  # NOTE: uses internally 2 * LSTM(10,10)
         # TODO: I wonder if it would be better not to reduce the `out` size of the LSTM for `concat` automatically:
         #      `Chain(Parallel([LSTM(10,10)]), Dense(20,10))`
         
         # bidirectional LSTM
         # FIXME: loss behaves oddly without a final Dense layer! Is tracking working?
-        # m = Chain(BiLSTM(10,10))
-        # m = Chain(BiLSTM(10,10), Dense(10,10)) # default: reduce=Flux.concat
+        # m = Chain(BiLSTM(10,10))                          # NOTE: compare to `Chain(LSTM(10,10))`
+        # m = Chain(BiLSTM(10,10), Dense(10,10))            # default: reduce=Flux.concat
         # m = Chain(BiLSTM(10,10, reduce=sum), Dense(10,10))
         # m = Chain(BiLSTM(10,10, reduce=Flux.mul), Dense(10,10))
         # m = Chain(BiLSTM(10,10, reduce=Flux.mean), Dense(10,10))
