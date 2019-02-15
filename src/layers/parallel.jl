@@ -138,7 +138,7 @@ end
 # see:
 #  "SPEECH RECOGNITION WITH DEEP RECURRENT NEURAL NETWORKS" https://arxiv.org/pdf/1303.5778.pdf
 #  "Bidirectional LSTM-CRF Models for Sequence Tagging" https://arxiv.org/pdf/1508.01991.pdf
-
+#  Bidirectional layer of Keras: https://github.com/keras-team/keras/blob/05d713504852b490afcf2607aea1ce923e93ecfe/keras/layers/wrappers.py#L333
 function Bi(layer::Recur, reduce::Function = concat)
     map = Dict{Int64,Function}(2 => reverse)
     Parallel([layer, deepcopy(layer)], map=map, reduce=reduce)
@@ -159,7 +159,7 @@ end
 function BiPLSTM(in::Int, out::Int; reduce::Function = concat)    
     if reduce == concat
         if out % 2 == 0
-            Bi(PLSTM(in,convert(Int64, out / 2)), reduce)
+            Bi(PLSTM(in, convert(Int64, out/2)), reduce)
         else
             throw(DimensionMismatch("`out` must be a multiple of two for `concat` as reduce function."))
         end
