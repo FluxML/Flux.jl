@@ -33,6 +33,11 @@ using Base.Iterators: partition
         # m = Chain(BiLSTM(10,10, reduce=Flux.mul), Dense(10,10))
         # m = Chain(BiLSTM(10,10, reduce=Flux.mean), Dense(10,10))
 
+        # peephole LSTM
+        # m = Chain(PLSTM(10,10))
+        # m = Chain(PLSTM(10,10), Dense(10,10))
+        # m = Chain(BiPLSTM(10,10), Dense(10,10))
+
         before = Flux.data(m(data[1]))
         @test length(before) == 10
 

@@ -210,7 +210,8 @@ mutable struct PeepholeLSTMCell{A,V}
   c::V
 end
 
-function PeepholeLSTMCell(in::Integer, out::Integer; init = glorot_uniform)
+function PeepholeLSTMCell(in::Integer, out::Integer;
+                          init = glorot_uniform)
   cell = PeepholeLSTMCell(
       param(init(out*4, in)),  # Wx
       param(init(out*4, out)), # Wh
@@ -218,7 +219,7 @@ function PeepholeLSTMCell(in::Integer, out::Integer; init = glorot_uniform)
       param(zeros(out*4)),     # b
       param(init(out)),        # h
       param(init(out)))        # c
-  cell.b.data[gate(out, 2)] = 1
+  cell.b.data[gate(out, 2)] .= 1
   return cell
 end
 
