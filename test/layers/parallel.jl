@@ -12,9 +12,10 @@ using Base.Iterators: partition
 
         # m = Chain(Dense(10,10))
         # m = Chain(LSTM(10,10))
-        # m = Chain(Parallel([LSTM(10,10)]))  # TODO: loss behaves oddly without final Dense layer?!
+        # m = Chain(LSTM(10,10), Dense(10,10))
+        # m = Chain(Parallel([LSTM(10,10)]))  # TODO: loss behaves oddly without final Dense layer! Is tracking working?
         m = Chain(Parallel([LSTM(10,10)]), Dense(10,10))
-        # m = Chain(BiLSTM(10,10))            # TODO: loss behaves oddly without final Dense layer?!
+        # m = Chain(BiLSTM(10,10))            # TODO: loss behaves oddly without final Dense layer! Is tracking working?
         # m = Chain(BiLSTM(10,10), Dense(10,10)) # default: reduce=Flux.concat
         # m = Chain(BiLSTM(10,10, reduce=sum), Dense(10,10))
         # m = Chain(BiLSTM(10,10, reduce=Flux.mul), Dense(10,10))
