@@ -51,6 +51,8 @@ function Parallel(
 end
 
 function (p::Parallel)(xs)
+    # NOTE: The implementation is acutally sequential and not parallel. How to parallelize for cpu() and gpu()?
+    #       `Base.pmap` does not exist anymore and `Threads.@threads` does not seem to be a good idea neither.
 
     # double reverse - see: recurrent.jl#flip(f, xs)
     # y = map^-1(f(map(x)))
@@ -59,7 +61,7 @@ function (p::Parallel)(xs)
     # implicit mapping
     # Z = map(l -> apply(l), eachindex(p.layers))
 
-    # explicit mapping - define type and size of Z
+    # explicit mapping - define type and size of Z    
     first = apply(1)
     Z = Vector{typeof(first)}(UndefInitializer(), length(p.layers))
     for l in eachindex(p.layers)
