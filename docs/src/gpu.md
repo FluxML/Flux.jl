@@ -1,10 +1,22 @@
 # GPU Support
 
+## Installation
+
+To get GPU support for NVIDIA graphics cards, you need to install `CuArrays.jl`
+
+**Steps needed**
+
+1. Install [NVIDIA toolkit](https://developer.nvidia.com/cuda-downloads)
+2. Install [NVIDIA cuDNN library](https://developer.nvidia.com/cudnn)
+3. In Julia's terminal run `]add CuArrays`
+
+## GPU Usage
+
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CuArrays](https://github.com/JuliaGPU/CuArrays.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
 For example, we can use `CuArrays` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
 
-(Note that you need to have CUDA available to use CuArrays – please see the [CuArrays.jl (https://github.com/JuliaGPU/CuArrays.jl) instructions for more details.)
+(Note that you need to have CUDA available to use CuArrays – please see the [CuArrays.jl](https://github.com/JuliaGPU/CuArrays.jl) instructions for more details.)
 
 ```julia
 using CuArrays

@@ -1,11 +1,12 @@
 using Documenter, Flux, NNlib
 
 makedocs(modules=[Flux, NNlib],
-         doctest = false,
-         format = :html,
+         doctest = true,
          analytics = "UA-36890222-9",
          sitename = "Flux",
-         assets = ["../flux.css"],
+         # Uncomment below for local build
+         #format = Documenter.HTML(prettyurls = false),
+         assets = ["assets/flux.css"],
          pages = ["Home" => "index.md",
                   "Building Models" =>
                     ["Basics" => "models/basics.md",
@@ -22,10 +23,4 @@ makedocs(modules=[Flux, NNlib],
                     ["Backpropagation" => "internals/tracker.md"],
                   "Community" => "community.md"])
 
-deploydocs(
-   repo = "github.com/FluxML/Flux.jl.git",
-   target = "build",
-   osname = "linux",
-   julia = "1.0",
-   deps = nothing,
-   make = nothing)
+deploydocs(repo = "github.com/FluxML/Flux.jl.git")

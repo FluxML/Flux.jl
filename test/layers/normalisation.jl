@@ -98,4 +98,9 @@ end
     y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
     @test m(x) == y
   end
+
+  let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
+    m(x)
+    @test (@allocated m(x)) <  100_000_000
+  end
 end

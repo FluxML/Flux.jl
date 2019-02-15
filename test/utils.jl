@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack
+using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack, unstack
 using StatsBase: std
 using Random
 using Test
@@ -87,8 +87,27 @@ end
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
 end
 
-@testset "Basic" begin
+@testset "Basic Stacking" begin
   x = randn(3,3)
   stacked = stack([x, x], 2)
   @test size(stacked) == (3,2,3)
+end
+
+@testset "Precision" begin
+  m = Chain(Dense(10, 5, relu), Dense(5, 2))
+  x = rand(10)
+  @test eltype(m[1].W.data) == Float32
+  @test eltype(m(x).data) == Float32
+  @test eltype(f64(m)(x).data) == Float64
+  @test eltype(f64(m)[1].W.data) == Float64
+  @test eltype(f32(f64(m))[1].W.data) == Float32
+  @test Tracker.isleaf(f32(f64(m))[1].W)
+end
+
+@testset "Stacking" begin
+  stacked_array=[ 8 9 3 5; 9 6 6 9; 9 1 7 2; 7 4 10 6 ]
+  unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
+  @test unstack(stacked_array, 2) == unstacked_array
+  @test stack(unstacked_array, 2) == stacked_array
+  @test stack(unstack(stacked_array, 1), 1) == stacked_array
 end

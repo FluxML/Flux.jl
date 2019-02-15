@@ -68,3 +68,6 @@ end
 
 a::TrackedMatrix * b::OneHotVector = invoke(*, Tuple{AbstractMatrix,OneHotVector}, a, b)
 a::TrackedMatrix * b::OneHotMatrix = invoke(*, Tuple{AbstractMatrix,OneHotMatrix}, a, b)
+
+onecold(x::TrackedVector, l...) = onecold(data(x), l...)
+onecold(x::TrackedMatrix, l...) = onecold(data(x), l...)

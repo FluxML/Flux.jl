@@ -4,49 +4,56 @@
 
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
-```julia
-using Flux.Tracker
+```jldoctest basics
+julia> using Flux.Tracker
 
-f(x) = 3x^2 + 2x + 1
+julia> f(x) = 3x^2 + 2x + 1;
 
-# df/dx = 6x + 2
-df(x) = Tracker.gradient(f, x)[1]
+julia> df(x) = Tracker.gradient(f, x; nest = true)[1]; # df/dx = 6x + 2
 
-df(2) # 14.0 (tracked)
+julia> df(2)
+14.0 (tracked)
 
-# d²f/dx² = 6
-d2f(x) = Tracker.gradient(df, x)[1]
+julia> d2f(x) = Tracker.gradient(df, x; nest = true)[1]; # d²f/dx² = 6
 
-d2f(2) # 6.0 (tracked)
+julia> d2f(2)
+6.0 (tracked)
 ```
 
 (We'll learn more about why these numbers show up as `(tracked)` below.)
 
 When a function has many parameters, we can pass them all in explicitly:
 
-```julia
-f(W, b, x) = W * x + b
+```jldoctest basics
+julia> f(W, b, x) = W * x + b;
 
-Tracker.gradient(f, 2, 3, 4)
-(4.0 (tracked), 1.0, 2.0 (tracked))
+julia> Tracker.gradient(f, 2, 3, 4)
+(4.0 (tracked), 1.0 (tracked), 2.0 (tracked))
 ```
 
-But machine learning models can have *hundreds* of parameters! Flux offers a nice way to handle this. We can tell Flux to treat something as a parameter via `param`. Then we can collect these together and tell `gradient` to collect the gradients of all of them at once.
+But machine learning models can have *hundreds* of parameters! Flux offers a nice way to handle this. We can tell Flux to treat something as a parameter via `param`. Then we can collect these together and tell `gradient` to collect the gradients of all `params` at once.
 
-```julia
-W = param(2) # 2.0 (tracked)
-b = param(3) # 3.0 (tracked)
+```jldoctest basics
+julia> using Flux
 
-f(x) = W * x + b
+julia> W = param(2) 
+2.0 (tracked)
 
-params = Params([W, b])
-grads = Tracker.gradient(() -> f(4), params)
+julia> b = param(3)
+3.0 (tracked)
 
-grads[W] # 4.0
-grads[b] # 1.0
+julia> f(x) = W * x + b;
+
+julia> grads = Tracker.gradient(() -> f(4), params(W, b));
+
+julia> grads[W]
+4.0
+
+julia> grads[b]
+1.0
 ```
 
-There are a few things to notice here. Firstly, `W` and `b` now show up as *tracked*. Tracked things behave like normal numbers or arrays, but keep records of everything you do with them, allowing Flux to calculate their gradients. `gradient` takes a zero-argument function; no arguments are necessary because the `Params` tell it what to differentiate.
+There are a few things to notice here. Firstly, `W` and `b` now show up as *tracked*. Tracked things behave like normal numbers or arrays, but keep records of everything you do with them, allowing Flux to calculate their gradients. `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.
 
 This will come in really handy when dealing with big, complicated models. For now, though, let's start with something simple.
 
@@ -77,7 +84,7 @@ using Flux.Tracker
 W = param(W)
 b = param(b)
 
-gs = Tracker.gradient(() -> loss(x, y), Params([W, b]))
+gs = Tracker.gradient(() -> loss(x, y), params(W, b))
 ```
 
 Now that we have gradients, we can pull them out and update `W` to train the model. The `update!(W, Δ)` function applies `W = W + Δ`, which we can use for gradient descent.
@@ -102,6 +109,8 @@ All deep learning in Flux, however complex, is a simple generalisation of this e
 It's common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like [sigmoid](https://en.wikipedia.org/wiki/Sigmoid_function) (`σ`) in between them. In the above style we could write this as:
 
 ```julia
+using Flux
+
 W1 = param(rand(3, 5))
 b1 = param(rand(3))
 layer1(x) = W1 * x .+ b1

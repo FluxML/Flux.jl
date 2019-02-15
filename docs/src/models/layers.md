@@ -14,6 +14,7 @@ MeanPool
 
 ```@docs
 DepthwiseConv
+ConvTranspose
 ```
 
 ## Recurrent Layers

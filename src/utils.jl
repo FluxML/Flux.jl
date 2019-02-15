@@ -10,8 +10,8 @@ zeros(dims...) = Base.zeros(Float32, dims...)
 
 unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
 
-stack(xs, dim) = cat(unsqueeze.(xs, dim)...; dims=dim)
-unstack(xs, dim) = [slicedim(xs, dim, i) for i = 1:size(xs, dim)]
+stack(xs, dim) = cat(unsqueeze.(xs, dim)..., dims=dim)
+unstack(xs, dim) = [copy(selectdim(xs, dim, i)) for i in 1:size(xs, dim)]
 
 """
     chunk(xs, n)
@@ -137,25 +137,6 @@ function throttle(f, timeout; leading=true, trailing=false)
 
     return result
   end
-end
-
-"""
-    J = jacobian(m,x)
-
-Calculate the output jacobian `J = d/dx m(x)` such that each row `i` of `J` corresponds to the gradient `J[i,:] = ∇ₓ(m(x)[i])`
-"""
-function jacobian(m,x)
-    xp = param(x)
-    y  = m(xp)
-    k  = length(y)
-    n  = length(x)
-    J  = Matrix{eltype(x)}(undef,n,k)
-    for i = 1:k
-        Flux.back!(y[i], once = false) # Populate gradient accumulator
-        J[:,i] = xp.grad
-        xp.grad .= 0 # Reset gradient accumulator
-    end
-    J'
 end
 
 """

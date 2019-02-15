@@ -1,4 +1,4 @@
-using NNlib: conv, depthwiseconv
+using NNlib: conv, ∇conv_data, depthwiseconv
 
 @generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
@@ -13,7 +13,7 @@ Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
-be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+be a `100×100×3×1` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
@@ -58,6 +58,54 @@ end
   a(T.(x))
 
 """
+    ConvTranspose(size, in=>out)
+    ConvTranspose(size, in=>out, relu)
+
+Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
+`in` and `out` specify the number of input and output channels respectively.
+Data should be stored in WHCN order. In other words, a 100×100 RGB image would
+be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
+"""
+struct ConvTranspose{N,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{N,Int}
+  dilation::NTuple{N,Int}
+end
+
+ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N} =
+  ConvTranspose(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
+
+ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+              init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
+ConvTranspose(param(init(k..., reverse(ch)...)), param(zeros(ch[2])), σ,
+              stride = stride, pad = pad, dilation = dilation)
+
+@treelike ConvTranspose
+
+function (c::ConvTranspose)(x::AbstractArray)
+  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ.(∇conv_data(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+end
+
+function Base.show(io::IO, l::ConvTranspose)
+  print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
+  print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
+  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ")")
+end
+
+(a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  invoke(a, Tuple{AbstractArray}, x)
+
+(a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  a(T.(x))
+"""
     DepthwiseConv(size, in)
     DepthwiseConv(size, in=>mul)
     DepthwiseConv(size, in=>mul, relu)
@@ -83,12 +131,12 @@ DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
        stride = 1, pad = 0) where {T,N} =
   DepthwiseConv(σ, w, b, expand.(sub2(Val(N)), (stride, pad))...)
 
-DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = initn,
+DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = glorot_uniform,
      stride = 1, pad = 0) where N =
   DepthwiseConv(param(init(k..., 1, ch)), param(zeros(ch)), σ,
        stride = stride, pad = pad)
 
-DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = initn,
+DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = glorot_uniform,
      stride::NTuple{N,Integer} = map(_->1,k),
      pad::NTuple{N,Integer} = map(_->0,k)) where N =
   DepthwiseConv(param(init(k..., ch[2], ch[1])), param(zeros(ch[2]*ch[1])), σ,

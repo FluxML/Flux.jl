@@ -6,7 +6,7 @@ using MacroTools: @q, @forward
 import Base: ==
 
 export TrackedArray, TrackedVector, TrackedMatrix, Params, gradient,
-  param, back!
+  jacobian, hessian, param, back!
 
 tracker(x) = nothing
 
@@ -61,24 +61,20 @@ macro grad(ex)
   @q(Tracker._forward($(args...)) where $(T...) = $body) |> esc
 end
 
-function update!(x, Δ)
-  x.data .+= data(Δ)
-  tracker(x).grad .= 0
-  return x
-end
-
 include("idset.jl")
 include("back.jl")
 include("numeric.jl")
 include("lib/real.jl")
 include("lib/array.jl")
+include("forward.jl")
 
 """
     hook(f, x) -> x′
 
 Hook into gradient backpropagation. `x` is unmodified, but when backpropagating
 `f` will be applied to the incoming gradient. For example, `hook(-, x)` will reverse
-the sign of the gradient applied to `x`."""
+the sign of the gradient applied to `x`.
+"""
 hook(f, x) = istracked(x) ? track(hook, f, x) : x
 @grad hook(f, x) = data(x), Δ -> (nothing, f(Δ))
 

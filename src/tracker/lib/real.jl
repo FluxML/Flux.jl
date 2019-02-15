@@ -1,4 +1,4 @@
-struct TrackedReal{T<:Real} <: Real
+mutable struct TrackedReal{T<:Real} <: Real
   data::T
   tracker::Tracked{T}
 end
@@ -14,6 +14,12 @@ function back!(x::TrackedReal; once = true)
     isinf(x) && error("Loss is Inf")
     isnan(x) && error("Loss is NaN")
     return back!(x, 1, once = once)
+end
+
+function update!(x::TrackedReal, Δ)
+  x.data += data(Δ)
+  tracker(x).grad = 0
+  return x
 end
 
 function Base.show(io::IO, x::TrackedReal)
@@ -32,6 +38,8 @@ Base.convert(::Type{TrackedReal{T}}, x::Real) where T = TrackedReal(convert(T, x
 
 Base.convert(::Type{TrackedReal{T}}, x::TrackedReal{S}) where {T,S} =
   error("Not implemented: convert tracked $S to tracked $T")
+
+(T::Type{<:TrackedReal})(x::Real) = convert(T, x)
 
 for op in [:(==), :≈, :<, :(<=)]
   @eval Base.$op(x::TrackedReal, y::Real) = Base.$op(data(x), y)
@@ -52,6 +60,12 @@ Base.float(x::TrackedReal) = x
 
 Base.promote_rule(::Type{TrackedReal{S}},::Type{T}) where {S,T} =
   TrackedReal{promote_type(S,T)}
+
+using Random
+
+for f in :[rand, randn, randexp].args
+  @eval Random.$f(rng::AbstractRNG,::Type{TrackedReal{T}}) where {T} = param(rand(rng,T))
+end
 
 using DiffRules, SpecialFunctions, NaNMath
 
@@ -86,6 +100,13 @@ end
 import Base:^
 
 ^(a::TrackedReal, b::Integer) = track(^, a, b)
+
+# Hack for conversions
+
+using ForwardDiff: Dual
+
+(T::Type{<:Real})(x::Dual) = Dual(T(x.value), map(T, x.partials.values))
+(Dual{T,V,N})(x::Dual) where {T,V,N} = invoke(Dual{T,V,N}, Tuple{Number}, x)
 
 # Tuples
 
@@ -134,3 +155,6 @@ end
 function back_(g::Grads, c::Call{typeof(collect)}, Δ)
   foreach((x, Δ) -> back(g, x, Δ), c.args[1], Δ)
 end
+
+collectmemaybe(xs::AbstractArray{>:TrackedReal}) = collect(xs)
+collectmemaybe(xs::AbstractArray{<:TrackedReal}) = collect(xs)
