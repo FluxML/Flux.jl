@@ -6,7 +6,7 @@ using Base.Iterators: partition
 
 @testset "Parallel" begin
 
-    @testset "one lonely parallel layer - should behave like one LSTM()" begin
+    @testset "one lonely `LSTM()` in a `Parallel` layer - should behave like a single `LSTM()`" begin
         
         data = collect(partition(rand(10, 7), 10))
 
