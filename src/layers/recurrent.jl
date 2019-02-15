@@ -198,3 +198,58 @@ See [this article](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+
+# peephole LSTM
+
+mutable struct PeepholeLSTMCell{A,V}
+  Wx::A
+  Wh::A
+  Wc::A
+  b::V
+  h::V
+  c::V
+end
+
+function PeepholeLSTMCell(in::Integer, out::Integer; init = glorot_uniform)
+  cell = PeepholeLSTMCell(
+      param(init(out*4, in)),  # Wx
+      param(init(out*4, out)), # Wh
+      param(init(out*4, out)), # Wc
+      param(zeros(out*4)),     # b
+      param(init(out)),        # h
+      param(init(out)))        # c
+  cell.b.data[gate(out, 2)] = 1
+  return cell
+end
+
+function (m::PeepholeLSTMCell)((h, c), x)
+  o = size(h, 1)
+  g = m.Wx*x .+ m.Wh*h .+ m.b
+  g_if = m.Wc*c
+  input = σ.(gate(g, o, 1) .+ gate(g_if, o, 1))
+  forget = σ.(gate(g, o, 2) .+ gate(g_if, o, 2))
+  cell = forget .* c .+ input .* tanh.(gate(g, o, 3))
+  g_c = m.Wc*cell
+  output = σ.(gate(g, o, 4) .+ gate(g_c, o, 4))
+  hidden = output .* tanh.(cell)
+  return (hidden, cell), hidden
+end
+
+hidden(m::PeepholeLSTMCell) = (m.h, m.c)
+
+@treelike PeepholeLSTMCell
+
+Base.show(io::IO, l::PeepholeLSTMCell) =
+  print(io, "PeepholeLSTMCell(", size(l.Wx, 2), ", ", size(l.Wx, 1) ÷ 4, ")")
+
+"""
+  PLSTM(in::Integer, out::Integer)
+
+  See the following articles for internals:
+  
+  * 2000 Felix A. Gers and Jürgen Schmidhuber. „Recurrent nets that time and count“. In Neural Networks, 2000. IJCNN 2000, Proceedings of the IEEE-INNS-ENNS International Joint  Conference  on,  volume  3,  pages  189–194.  IEEE, 2000.  ISBN 0769506194
+  * 2005 A. Graves, S. Fernández, and J. Schmidhuber, „Bidirectional LSTM Networks for Improved Phoneme Classification and Recognition“, in Artificial Neural Networks: Formal Models and Their Applications – ICANN 2005, 2005, S. 799–804.
+  * 2013 A. Graves, „Generating Sequences With Recurrent Neural Networks“, arXiv:1308.0850 [cs], Aug. 2013.
+  * 2015 J. Wieting, M. Bansal, K. Gimpel, and K. Livescu, „Towards Universal Paraphrastic Sentence Embeddings“, arXiv:1511.08198 [cs], Nov. 2015.
+"""
+PLSTM(a...; ka...) = Recur(PeepholeLSTMCell(a...; ka...))
