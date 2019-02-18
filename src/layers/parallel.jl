@@ -145,25 +145,9 @@ function Bi(layer::Recur, reduce::Function = concat)
 end
 
 function BiLSTM(in::Int, out::Int; reduce::Function = concat)
-    if reduce == concat
-        if out % 2 == 0
-            Bi(LSTM(in, convert(Int64, out/2)), reduce)
-        else
-            throw(DimensionMismatch("The reduce function `concat` requires `out` to be a multiple of two."))
-        end
-    else
-        Bi(LSTM(in, out), reduce)
-    end
+    Bi(LSTM(in, out), reduce)
 end
 
 function BiPLSTM(in::Int, out::Int; reduce::Function = concat)    
-    if reduce == concat
-        if out % 2 == 0
-            Bi(PLSTM(in, convert(Int64, out/2)), reduce)
-        else
-            throw(DimensionMismatch("`out` must be a multiple of two for `concat` as reduce function."))
-        end
-    else
-        Bi(PLSTM(in, out), reduce)
-    end
+    Bi(PLSTM(in, out), reduce)
 end
