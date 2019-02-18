@@ -75,6 +75,8 @@ function (p::Parallel)(xs)
     p.reduce(Z)
 end
 
+# FIXME: which choice is correct in that case?
+# @treelike Parallel
 @treelike Parallel layers, map, reduce
 
 Base.show(io::IO, m::Parallel) = print(io, "Parallel(", m.layers, ", ", m.map, ", ", m.reduce, ")")
@@ -108,9 +110,9 @@ function reset_parallel!(m)
 end
 
 function Base.reverse(M::Flux.OneHotMatrix{Array{Flux.OneHotVector,1}})
-    Flux.OneHotMatrix(M.height, reverse(M.data))
+    # Flux.OneHotMatrix(M.height, reverse(M.data))
     # M.data = reverse(M.data)
-    # M
+    reverse(M)
 end
 
 function Base.reverse(v::Flux.OneHotVector)
@@ -121,7 +123,8 @@ function Base.reverse(ta::TrackedArray)
     if length(size(ta.data)) == 2
         # TODO: does this need to be param() or params() or how to propagate the tracking?
         # reverse(ta.data, dims=2)
-        params(reverse(ta.data, dims=2))
+        # param(reverse(ta.data, dims=2))
+        reverse(ta)
     else
         ta
     end
