@@ -8,7 +8,6 @@ end
 # see https://github.com/keras-team/keras/blob/master/keras/layers/wrappers.py#L333
 
 function concat(xs)
-    # TODO: should this be always `vcat` or sometimes `hcat` or something more general with `cat` and `dims`?
     vcat(xs...)
 end
 
@@ -26,37 +25,42 @@ function mean(xs)
 end
 
 
-mutable struct Parallel{L<:Recur}
-    layers::Vector{L}
+mutable struct Parallel  #{M<:Recur}
+    layers::Vector
     map::Vector{Function}
-    # TODO: explicit inverse mappings?
+    inv::Vector{Function}
     reduce::Function
 end
 
-Parallel(layers::Vector{Recur}) = Parallel(layers, identities(length(layers)), concat)
+function Parallel(layers::Vector)
+    Parallel(layers, identities(length(layers)), identities(length(layers)), concat)
+end
 
 function Parallel(
-    layers::Vector{L};
+    layers::Vector;
     map::Dict{Int64,Function} = Dict{Int64,Function}(),
-    reduce::Function = concat) where L<:Recur
+    reduce::Function = concat) # where M<:Recur
 
     # TODO: throw error for min length for layers - 1 or 2?
 
     mappings::Vector{Function} = identities(length(layers))
+    inverses::Vector{Function} = copy(mappings)
     for (k,v) in map
         mappings[k] = v
+        inverses[k] = v
     end
 
-    return Parallel(layers, mappings, reduce)
+    return Parallel(layers, mappings, inverses, reduce)
 end
 
 function (p::Parallel)(xs)
-    # NOTE: The implementation is acutally sequential and not parallel. How to parallelize for cpu() and gpu()?
-    #       `Base.pmap` does not exist anymore and `Threads.@threads` does not seem to be a good idea neither.
+    # NOTE: The implementation of the mapping is acutally sequential and not parallel.
+    #       How to parallelize for cpu() and gpu() ia an open question to me, as `Base.pmap` does not exist anymore and 
+    #       `Threads.@threads` does not seem to be a good idea neither.
 
-    # double reverse - see: recurrent.jl#flip(f, xs)
-    # y = map^-1(f(map(x)))
-    apply(l) = p.map[l](p.layers[l](p.map[l](xs)))
+    # double reverse, analog to `Flux.flip` but without broadcast; see: recurrent.jl#flip(f, xs)
+    # y = map^-1(f(map(x))) or map(x) |> f |> map^-1
+    apply(l) = p.inv[l](p.layers[l](p.map[l](xs)))
     
     # implicit mapping
     # Z = map(l -> apply(l), eachindex(p.layers))
@@ -75,11 +79,12 @@ function (p::Parallel)(xs)
     p.reduce(Z)
 end
 
-# FIXME: which choice is correct in that case?
-# @treelike Parallel
-@treelike Parallel layers, map, reduce
+# NOTE: Instead of generating `Flux.children` and `Flux.mapchildren` with `@treelike` macro, they are defined 
+#       explicity, as `@treelike Parallel layers` is considerd not treelike: `error("@treelike T (a, b)")`
+Flux.children(p::Parallel) = p.layers
+Flux.mapchildren(f, p::Parallel) = Parallel(f.(p.layers), p.map, p.inv, p.reduce)
 
-Base.show(io::IO, m::Parallel) = print(io, "Parallel(", m.layers, ", ", m.map, ", ", m.reduce, ")")
+Base.show(io::IO, m::Parallel) = print(io, "Parallel(", m.layers, ", ", m.map, ", ", m.inv, ", ", m.reduce, ")")
 
 function _truncate_parallel(x)
     if x isa Recur

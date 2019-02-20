@@ -10,22 +10,25 @@ using Base.Iterators: partition
         
         data = collect(partition(rand(10, 7), 10))
 
-        # non recurrent
-        # m = Chain(Dense(10,10))
-
-        # LSTM
-        # m = Chain(LSTM(10,10))
-        # m = Chain(LSTM(10,10), Dense(10,10))
-        
         # Parallel map/reduce
-        # FIXME: loss behaves oddly without a final Dense layer! Is tracking working for `Parallel`?
-        # m = Chain(Parallel([LSTM(10,10)]))  # NOTE: compare to `Chain(LSTM(10,10))`
+
+        ## non recurrent
+        # m = Chain(Parallel([Dense(10,10), Dense(10,10)]), Dense(20,10))
+
+        ## recurrent
+        # m = Parallel([LSTM(10,10)])
         # m = Chain(Parallel([LSTM(10,10)]))
-        # m = Chain(Parallel([LSTM(10,10)]), Dense(10,10))
+
+        # FIXME: DimensionMismatch("arrays could not be broadcast to a common size")
+        # m = Parallel([LSTM(10,10), LSTM(10,10)])  
+        # m = Chain(Parallel([LSTM(10,10), LSTM(10,10)]))
+
+        m = Chain(Parallel([LSTM(10,10)]), Dense(10,10))
         # m = Chain(Parallel([LSTM(10,10),LSTM(10,10)]), Dense(20,10))
         
-        # bidirectional LSTM
-        # FIXME: loss behaves oddly without a final Dense layer! Is tracking working for `Parallel`?
+        ## bidirectional LSTM
+        # FIXME: DimensionMismatch("arrays could not be broadcast to a common size")
+        # m = Bi(LSTM(10, 10))
         # m = Chain(BiLSTM(10,10))
 
         # m = Chain(BiLSTM(10,10), Dense(20,10))  # default: reduce=Flux.concat
@@ -33,16 +36,17 @@ using Base.Iterators: partition
         # m = Chain(BiLSTM(10,10, reduce=Flux.mul), Dense(10,10))
         # m = Chain(BiLSTM(10,10, reduce=Flux.mean), Dense(10,10))
 
-        # peephole LSTM
+        ## peephole LSTM
         # m = Chain(PLSTM(10,10))
         # m = Chain(PLSTM(10,10), Dense(10,10))
         # m = Chain(BiPLSTM(10,10), Dense(20,10))
+        # m = Chain(BiPLSTM(10,10), BiPLSTM(20,10), Dense(20,10))
 
         # @show m
         # @show params(m)
 
         before = Flux.data(m(data[1]))
-        @test length(before) == 10
+        @test length(before) == 10 || length(before) == 20
 
         function loss(x, y)
             l = mse(m(x), y)
@@ -59,7 +63,7 @@ using Base.Iterators: partition
 
         Flux.reset_parallel!(m)
         after = Flux.data(m(data[1]))
-        @test length(before) == length(after[:,end])
+        @test length(before) == length(after[:,end]) || length(before) == 2 * length(after[:,end])
         @test before != after[:,end]
 
         Flux.reset_parallel!(m)
