@@ -155,3 +155,101 @@ function Base.show(io::IO, l::BatchNorm)
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
+
+
+"""
+    InstanceNorm(channels::Integer, σ = identity;
+                 initβ = zeros, initγ = ones,
+                 ϵ = 1e-8, momentum = .1)
+
+Instance Normalization layer. The `channels` input should be the size of the
+channel dimension in your data (see below).
+
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
+a batch of feature vectors this is just the data dimension, for `WHCN` images
+it's the usual channel dimension.)
+
+`InstanceNorm` computes the mean and variance for each each `W×H×1×1` slice and
+shifts them to have a new mean and variance (corresponding to the learnable,
+per-channel `bias` and `scale` parameters).
+
+See [Instance Normalization: The Missing Ingredient for Fast Stylization](https://arxiv.org/abs/1607.08022).
+
+Example:
+```julia
+m = Chain(
+  Dense(28^2, 64),
+  InstanceNorm(64, relu),
+  Dense(64, 10),
+  InstanceNorm(10),
+  softmax)
+```
+"""
+mutable struct InstanceNorm{F,V,W,N}
+  λ::F  # activation function
+  β::V  # bias
+  γ::V  # scale
+  μ::W  # moving mean
+  σ²::W  # moving std
+  ϵ::N
+  momentum::N
+  active::Bool
+end
+
+InstanceNorm(chs::Integer, λ = identity;
+          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
+  InstanceNorm(λ, param(initβ(chs)), param(initγ(chs)),
+            zeros(chs), ones(chs), ϵ, momentum, true)
+
+function (IN::InstanceNorm)(x)
+  size(x, ndims(x)-1) == length(IN.β) ||
+    error("InstanceNorm expected $(length(IN.β)) channels, got $(size(x, ndims(x)-1))")
+  ndims(x) > 2 ||
+    error("InstanceNorm requires at least 3 dimensions. With 2 dimensions an array of zeros would be returned")
+  # these are repeated later on depending on the batch size
+  γ, β = IN.γ, IN.β
+  dims = length(size(x))
+  c = size(x, dims-1)
+  bs = size(x, dims)
+  affine_shape = ones(Int, dims)
+  affine_shape[end-1] = c
+  affine_shape[end] = bs
+  m = prod(size(x)[1:end-2])
+
+  if !IN.active
+    μ = reshape(repeat(IN.μ, outer=[bs]), affine_shape...)
+    σ² = reshape(repeat(IN.σ², outer=[bs]), affine_shape...)
+  else
+    T = eltype(x)
+
+    ϵ = data(convert(T, IN.ϵ))
+    axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
+    μ = mean(x, dims = axes)
+    σ² = mean((x .- μ) .^ 2, dims = axes)
+
+    # update moving mean/std
+    mtm = data(convert(T, IN.momentum))
+    IN.μ = reshape(mean((1 - mtm) .* repeat(IN.μ, outer=[1, bs]) .+ mtm .* reshape(data(μ), (c, bs)), dims = 2), :)
+    IN.σ² = reshape(mean(((1 - mtm) .* repeat(IN.σ², outer=[1, bs]) .+ mtm .* reshape(data(σ²), (c, bs)) .* (m / (m - 1))), dims = 2), :)
+  end
+
+  let λ = IN.λ
+    temp = reshape(repeat(γ, outer=[bs]), affine_shape...) .* ((x .- μ) ./ sqrt.(σ² .+ IN.ϵ))
+    # This is intentionally not fused because of an extreme slowdown doing so
+    λ.(temp .+ reshape(repeat(β, outer=[bs]), affine_shape...))
+  end
+end
+
+children(IN::InstanceNorm) =
+  (IN.λ, IN.β, IN.γ, IN.μ, IN.σ², IN.ϵ, IN.momentum, IN.active)
+
+mapchildren(f, IN::InstanceNorm) =  # e.g. mapchildren(cu, IN)
+  InstanceNorm(IN.λ, f(IN.β), f(IN.γ), f(IN.μ), f(IN.σ²), IN.ϵ, IN.momentum, IN.active)
+
+_testmode!(IN::InstanceNorm, test) = (IN.active = !test)
+
+function Base.show(io::IO, l::InstanceNorm)
+  print(io, "InstanceNorm($(join(size(l.β), ", "))")
+  (l.λ == identity) || print(io, ", λ = $(l.λ)")
+  print(io, ")")
+end

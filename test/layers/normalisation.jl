@@ -104,3 +104,84 @@ end
     @test (@allocated m(x)) <  100_000_000
   end
 end
+
+
+@testset "InstanceNorm" begin
+  # helper functions
+  expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
+  # begin tests
+  let m = InstanceNorm(2), sizes = (3, 2, 2),
+      x = param(reshape(collect(1:prod(sizes)), sizes))
+
+      @test m.β.data == [0, 0]  # initβ(2)
+      @test m.γ.data == [1, 1]  # initγ(2)
+
+      @test m.active
+
+      m(x)
+
+      #julia> x
+      #[:, :, 1] =
+      # 1.0  4.0
+      # 2.0  5.0
+      # 3.0  6.0
+      #
+      #[:, :, 2] =
+      # 7.0  10.0
+      # 8.0  11.0
+      # 9.0  12.0
+      #
+      # μ will be
+      # (1. + 2. + 3.) / 3 = 2.
+      # (4. + 5. + 6.) / 3 = 5.
+      #
+      # (7. + 8. + 9.) / 3 = 8.
+      # (10. + 11. + 12.) / 3 = 11.
+      #
+      # ∴ update rule with momentum:
+      # (1. - .1) * 0 + .1 * (2. + 8.) / 2 = .5
+      # (1. - .1) * 0 + .1 * (5. + 11.) / 2 = .8
+      @test m.μ ≈ [0.5, 0.8]
+      # momentum * var * num_items / (num_items - 1) + (1 - momentum) * sigma_sq
+      # julia> reshape(mean(.1 .* var(x.data, dims = 1, corrected=false) .* (3 / 2), dims=3), :) .+ .9 .* 1.
+      # 2-element Array{Float64,1}:
+      #  1.
+      #  1.
+      @test m.σ² ≈ reshape(mean(.1 .* var(x.data, dims = 1, corrected=false) .* (3 / 2), dims=3), :) .+ .9 .* 1.
+
+      testmode!(m)
+      @test !m.active
+
+      x′ = m(x).data
+      @test isapprox(x′[1], (1 - 0.5) / sqrt(1. + 1f-5), atol = 1.0e-5)
+  end
+  # with activation function
+  let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
+      x = param(reshape(collect(1:prod(sizes)), sizes))
+
+    affine_shape = collect(sizes)
+    affine_shape[1] = 1
+
+    @test m.active
+    m(x)
+
+    testmode!(m)
+    @test !m.active
+
+    y = m(x).data
+    @test isapprox(y, data(sigmoid.((x .- expand_inst(m.μ, affine_shape)) ./ sqrt.(expand_inst(m.σ², affine_shape) .+ m.ϵ))), atol = 1.0e-7)
+  end
+
+  let m = InstanceNorm(2), sizes = (2, 4, 1, 2, 3),
+      x = param(reshape(collect(1:prod(sizes)), sizes))
+    y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
+    y = reshape(m(y), sizes...)
+    @test m(x) == y
+  end
+
+  let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
+    m(x)
+    @test (@allocated m(x)) <  100_000_000
+  end
+
+end
