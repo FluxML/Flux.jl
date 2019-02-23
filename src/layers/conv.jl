@@ -12,8 +12,17 @@ expand(N, i::Integer) = ntuple(_ -> i, N)
 Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 
-Data should be stored in WHCN order. In other words, a 100×100 RGB image would
-be a `100×100×3×1` array, and a batch of 50 would be a `100×100×3×50` array.
+Example: Applying Conv layer to a 1-channel input using a 2x2 window size,
+         giving us a 16-channel output. Output is activated with ReLU.
+
+    size = (2,2)
+    in = 1
+    out = 16 
+    Conv((2, 2), 1=>16, relu)
+
+Data should be stored in WHCN order (width, height, # channels, # batches). 
+In other words, a 100×100 RGB image would be a `100×100×3×1` array, 
+and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
