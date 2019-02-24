@@ -44,7 +44,7 @@ julia> b = param(3)
 
 julia> f(x) = W * x + b;
 
-julia> grads = Tracker.gradient(() -> f(4), params(W, b));
+julia> grads = Tracker.gradient(() -> f(4), Flux.params(W, b));
 
 julia> grads[W]
 4.0
