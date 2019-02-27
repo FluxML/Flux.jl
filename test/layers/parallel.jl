@@ -16,7 +16,8 @@ using Base.Iterators: partition
         Parallel([LSTM(10,10)]),
         Chain(Parallel([LSTM(10,10)])),
 
-        # for reduce see also: `sum`, `mean`, `Flux.mul`
+        # for reduce see: `sum`, `mean`, `Flux.mul`, `Flux.concat`
+        Parallel([LSTM(10,5), LSTM(10,5)]),
         Parallel([LSTM(10,10), LSTM(10,10)], reduce=sum),
         Chain(Parallel([LSTM(10,10), LSTM(10,10)], reduce=mean)),
 
@@ -31,7 +32,7 @@ using Base.Iterators: partition
             reduce = sum),
 
         # BiLSTM - a convenience layer, which makes use of `Parallel` and the MapReduce approach
-        # for reduce see also: `sum`, `mean`, `Flux.mul`
+        # for reduce see also: `sum`, `mean`, `Flux.mul`, `Flux.concat`
         Bi(LSTM(10, 10), sum),
         Chain(BiLSTM(10,10, sum)),
 
