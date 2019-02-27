@@ -30,8 +30,8 @@ GRU
 Flux.Recur
 ```
 
-## Hipster Layers
-These are marginally more obscure layers that you probably haven't heard of.
+## Esoteric Layers
+These are marginally more obscure layers.
 
 ```@docs
 MaxOut

@@ -152,8 +152,8 @@ end
 Constructs a MaxOut layer over `n_alts` instances of  the layer given  by `f`.
 All other arguements (`args` & `kwargs`) are passed to the constructor `f`.
 
-For example the followeExample usage
-will construct a MaxOut layer over 4 dense linear layers,
+For example the following example which
+will construct a `MaxOut` layer over 4 dense linear layers,
 each identical in structure (784 inputs, 128 outputs).
 ```julia
     insize = 784
