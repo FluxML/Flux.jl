@@ -129,7 +129,7 @@ end
 """
     MaxOut(over)
 
-MaxOut is a neural network layer, which has a number of internal layers,
+`MaxOut` is a neural network layer, which has a number of internal layers,
 which all have the same input, and the max out returns the elementwise maximium
 of the internal layers' outputs.
 
