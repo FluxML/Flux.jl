@@ -1,12 +1,13 @@
 using Test, Random
 using Flux
-using Flux: mse, crossentropy, throttle, @epochs, softmax
+using Flux: @epochs
 using Statistics: mean
 using Base.Iterators: partition
+# using CuArrays
 
 @testset "Parallel" begin
 
-    data = collect(partition(rand(10, 7), 10))
+    data = gpu.(collect(partition(rand(10, 7), 10)))
 
     models = [
         # non recurrent layers
@@ -38,7 +39,7 @@ using Base.Iterators: partition
 
         # peephole LSTM - an modified LSTM layer commonly used in image processing.
         Chain(PLSTM(10,10)),
-        Chain(PLSTM(10,10), Dense(10,10)),
+        Chain(Parallel([PLSTM(10,10), PLSTM(10,10)], reduce=sum)),
 
         # BiPLSTM - a convenience layer, which makes use of `Parallel` and the MapReduce approach
         Chain(BiPLSTM(10,10), Dense(20,10)),
@@ -50,11 +51,13 @@ using Base.Iterators: partition
         @show m
         sleep(0.1)
 
+        gpu(m)
+
         before = Flux.data(m(data[1]))
         @test length(before) == 10 || length(before) == 20
 
         function loss(x, y)
-            l = mse(m(x), y)
+            l = Flux.mse(m(x), y)
             Flux.truncate!(m)
             l
         end
