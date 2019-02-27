@@ -95,7 +95,7 @@ Flux.mapchildren(f, p::Parallel) = Parallel(f.(p.layers), p.map, p.inv, p.reduce
 
 function Base.show(io::IO, m::Parallel)
     print(io, "Parallel(\n")
-    print(io, "  layers = ", m.layers, ",\n")
+    print(io, "  ", m.layers, ",\n")
     print(io, "     map = ", m.map, ",\n")
     print(io, "     inv = ", m.inv, ",\n")
     print(io, "  reduce = ", m.reduce, "\n")
