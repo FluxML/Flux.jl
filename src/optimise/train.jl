@@ -8,8 +8,16 @@ end
 
 function _update_params!(opt, xs)
   for x in xs
-    Δ = apply!(opt, x.data, x.grad)
-    x.data .-= Δ
+    if ndims(x.data) == 0
+      x_data = fill(x.data,1)
+      gradient = fill(x.tracker.grad, size(x_data))
+      Δ = apply!(opt, x_data, gradient)
+      x_data .-= Δ
+      x.data = x_data[1]
+    else
+      Δ = apply!(opt, x.data, x.grad)
+      x.data .-= Δ
+    end
     Δ .= 0
   end
 end
