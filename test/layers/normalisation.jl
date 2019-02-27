@@ -179,7 +179,22 @@ end
     @test m(x) == y
   end
 
-  let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
+  # check that μ, σ², and the output are the correct size for higher rank tensors
+  let m = InstanceNorm(2), sizes = (5, 5, 3, 4, 2, 6),
+      x = param(reshape(collect(1:prod(sizes)), sizes))
+    y = m(x)
+    @test size(m.μ) == (sizes[end - 1], )
+    @test size(m.σ²) == (sizes[end - 1], )
+    @test size(y) == sizes
+  end
+
+  # show that instance norm is equal to batch norm when channel and batch dims are squashed
+  let m_inorm = InstanceNorm(2), m_bnorm = BatchNorm(12), sizes = (5, 5, 3, 4, 2, 6),
+      x = param(reshape(collect(1:prod(sizes)), sizes))
+    @test m_inorm(x) == reshape(m_bnorm(reshape(x, (sizes[1:end - 2]..., :, 1))), sizes)
+  end
+
+  let m = InstanceNorm(32), x = randn(Float32, 416, 416, 32, 1);
     m(x)
     @test (@allocated m(x)) <  100_000_000
   end

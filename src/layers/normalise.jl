@@ -186,6 +186,7 @@ m = Chain(
 ```
 """
 expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
+
 mutable struct InstanceNorm{F,V,W,N}
   λ::F  # activation function
   β::V  # bias
@@ -231,8 +232,8 @@ function (IN::InstanceNorm)(x)
 
     # update moving mean/std
     mtm = data(convert(T, IN.momentum))
-    IN.μ = reshape(mean(repeat((1 - mtm) .* IN.μ, outer=[1, bs]) .+ mtm .* reshape(data(μ), (c, bs)), dims = 2), :)
-    IN.σ² = reshape(mean((repeat((1 - mtm) .* IN.σ², outer=[1, bs]) .+ reshape(data(σ²), (c, bs)) .* (mtm * m / (m - 1))), dims = 2), :)
+    IN.μ = dropdims(mean(repeat((1 - mtm) .* IN.μ, outer=[1, bs]) .+ mtm .* reshape(data(μ), (c, bs)), dims = 2), dims=2)
+    IN.σ² = dropdims(mean((repeat((1 - mtm) .* IN.σ², outer=[1, bs]) .+ (mtm * m / (m - 1)) .* reshape(data(σ²), (c, bs))), dims = 2), dims=2)
   end
 
   let λ = IN.λ
