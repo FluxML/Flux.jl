@@ -22,7 +22,7 @@ using Base.Iterators: partition
         Parallel([LSTM(10,10), LSTM(10,10)], reduce=sum),
         Chain(Parallel([LSTM(10,10), LSTM(10,10)], reduce=mean)),
 
-        # reduce can be `Flux.concat` -> reduction is effectifly done by a Dense layer
+        # reduce can be `Flux.concat`. Here the reduction is effectifly done by a final Dense layer:
         Chain(Parallel([LSTM(10,10)]), Dense(10,10)),
         Chain(Parallel([LSTM(10,10), LSTM(10,10)]), Dense(20,10)),
 
