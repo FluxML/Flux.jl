@@ -33,7 +33,6 @@ using Base.Iterators: partition
             reduce = sum),
 
         # BiLSTM - a convenience layer, which makes use of `Parallel` and the MapReduce approach
-        # for reduce see also: `sum`, `mean`, `Flux.mul`, `Flux.concat`
         Bi(LSTM(10, 10), sum),
         Chain(BiLSTM(10,10, sum)),
 
