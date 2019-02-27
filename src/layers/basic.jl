@@ -125,3 +125,47 @@ function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
 
+
+"""
+    MaxOut(over)
+
+MaxOut is a neural network layer, which has a number of internal layers,
+which all have the same input, and the max out returns the elementwise maximium
+of the internal layers' outputs.
+
+Maxout over linear dense layers satisfies the univeral approximation theorem.
+
+Reference:
+Ian J. Goodfellow, David Warde-Farley, Mehdi Mirza, Aaron Courville, and Yoshua Bengio.
+2013. Maxout networks.
+In Proceedings of the 30th International Conference on International Conference on Machine Learning - Volume 28 (ICML'13),
+Sanjoy Dasgupta and David McAllester (Eds.), Vol. 28. JMLR.org III-1319-III-1327.
+https://arxiv.org/pdf/1302.4389.pdf
+"""
+struct MaxOut{FS<:Tuple}
+    over::FS
+end
+
+"""
+    MaxOut(f, n_alts, args...; kwargs...)
+
+Constructs a MaxOut layer over `n_alts` instances of  the layer given  by `f`.
+All other arguements (`args` & `kwargs`) are passed to the constructor `f`.
+
+For example the followeExample usage
+will construct a MaxOut layer over 4 dense linear layers,
+each identical in structure (784 inputs, 128 outputs).
+```julia
+    insize = 784
+    outsie = 128
+    MaxOut(Dense, 4, insize, outsize)
+```
+"""
+function MaxOut(f, n_alts, args...; kwargs...)
+  over = Tuple(f(args...; kwargs...) for _ in 1:n_alts)
+  return MaxOut(over)
+end
+
+function (mo::MaxOut)(input::AbstractArray)
+    mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+end
