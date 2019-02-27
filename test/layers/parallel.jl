@@ -3,21 +3,21 @@ using Flux
 using Flux: @epochs
 using Statistics: mean
 using Base.Iterators: partition
-# using CuArrays
+
 
 @testset "Parallel" begin
 
-    data = gpu.(collect(partition(rand(10, 7), 10)))
+    data = collect(partition(rand(10, 7), 10))
 
     models = [
-        # non recurrent layers
+        # non recurrent layers - the reduce function defaults to `Flux.concat`
         Chain(Parallel([Dense(10,10), Dense(10,10)]), Dense(20,10)),
 
-        # recurrent layers - reduce defaults to `Flux.concat: 10 -> 10
+        # recurrent layers
         Parallel([LSTM(10,10)]),
         Chain(Parallel([LSTM(10,10)])),
 
-        # for reduce see: `sum`, `mean`, `Flux.mul`, `Flux.concat`
+        # for reduce see: `Base.sum`, `Statistics.mean`, `Flux.mul`, `Flux.concat`
         Parallel([LSTM(10,5), LSTM(10,5)]),
         Parallel([LSTM(10,10), LSTM(10,10)], reduce=sum),
         Chain(Parallel([LSTM(10,10), LSTM(10,10)], reduce=mean)),
@@ -49,9 +49,6 @@ using Base.Iterators: partition
     @testset "models using a `Parallel` layer" for (i,m) in enumerate(models)
         println("\n\ntest ($i)\n")
         @show m
-        sleep(0.1)
-
-        gpu(m)
 
         before = Flux.data(m(data[1]))
         @test length(before) == 10 || length(before) == 20

@@ -11,7 +11,7 @@ function concat(xs)
     # implicit concatenation
     return vcat(xs...)
 
-    # explcit concatenation
+    # explcit concatenation - preallocated size
     # n = length(xs)
     # m = length(xs[1])
     # concated = Array{eltype(xs[1].data)}(UndefInitializer(), n * m)
@@ -74,7 +74,7 @@ function (p::Parallel)(xs)
     # implicit mapping
     Z = map(l -> apply(l), eachindex(p.layers))
 
-    # explicit mapping - define type and size of Z    
+    # explicit mapping - preallocated size
     # first = apply(1)
     # Z = Vector{typeof(first)}(UndefInitializer(), length(p.layers))
     # for l in eachindex(p.layers)
