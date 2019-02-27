@@ -5,14 +5,16 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
+```
+
+## Convolution and Pooling Layers
+
+These layers are used to build convolutional neural networks (CNNs).
+
+```@docs
 Conv
 MaxPool
 MeanPool
-```
-
-## Additional Convolution Layers
-
-```@docs
 DepthwiseConv
 ConvTranspose
 ```
@@ -26,6 +28,13 @@ RNN
 LSTM
 GRU
 Flux.Recur
+```
+
+## Hipster Layers
+These are marginally more obscure layers that you probably haven't heard of.
+
+```@docs
+MaxOut
 ```
 
 ## Activation Functions
