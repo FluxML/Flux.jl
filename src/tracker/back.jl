@@ -1,3 +1,13 @@
+# The AD generates fairly large backtraces that are unhelpful if you interrupt
+# while training; this just cleans that up.
+macro interrupts(ex)
+  :(try $(esc(ex))
+    catch e
+      e isa InterruptException || rethrow()
+      throw(e)
+    end)
+end
+
 # In-place gradients
 
 init_grad(x) = zero(x)
@@ -79,14 +89,14 @@ function gradient_(f, xs...)
   xs = param.(data.(xs))
   l = f(xs...)
   losscheck(l)
-  back!(l)
+  @interrupts back!(l)
   extract_grad!.(xs)
 end
 
 function gradient_(f, xs::Params)
   l = f()
   losscheck(l)
-  back!(l)
+  @interrupts back!(l)
   gs = Grads()
   for x in xs
     gs[tracker(x)] = extract_grad!(x)
