@@ -62,6 +62,7 @@ macro grad(ex)
 end
 
 include("idset.jl")
+include("params.jl")
 include("back.jl")
 include("numeric.jl")
 include("lib/real.jl")
