@@ -1,10 +1,7 @@
 using NNlib: conv, ∇conv_data, depthwiseconv
 
-@generated sub2(::Val{N}) where N = :(Val($(N-2)))
-
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
-
 """
     Conv(size, in=>out)
     Conv(size, in=>out, relu)
@@ -26,18 +23,22 @@ and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-struct Conv{N,F,A,V}
+struct Conv{N,M,F,A,V}
   σ::F
   weight::A
   bias::V
   stride::NTuple{N,Int}
-  pad::NTuple{N,Int}
+  pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
 end
 
-Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-     stride = 1, pad = 0, dilation = 1) where {T,N} =
-  Conv(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
+function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N}
+  stride = expand(Val(N-2), stride)
+  pad = expand(Val(2*(N-2)), pad)
+  dilation = expand(Val(N-2), dilation)
+  return Conv(σ, w, b, stride, pad, dilation)
+end
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
      init = glorot_uniform,  stride = 1, pad = 0, dilation = 1) where N =
@@ -77,18 +78,22 @@ Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-struct ConvTranspose{N,F,A,V}
+struct ConvTranspose{N,M,F,A,V}
   σ::F
   weight::A
   bias::V
   stride::NTuple{N,Int}
-  pad::NTuple{N,Int}
+  pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
 end
 
-ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-              stride = 1, pad = 0, dilation = 1) where {T,N} =
-  ConvTranspose(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
+function ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N}
+  stride = expand(Val(N-2), stride)
+  pad = expand(Val(2*(N-2)), pad)
+  dilation = expand(Val(N-2), dilation)
+  return ConvTranspose(σ, w, b, stride, pad, dilation)
+end
 
 ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
               init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
@@ -101,7 +106,8 @@ function (c::ConvTranspose)(x::AbstractArray)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   # Calculate size of "input", from ∇conv_data()'s perspective...
-  I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- 2 .* c.pad
+  combined_pad = (c.pad[1:2:end] .+ c.pad[2:2:end])
+  I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
   C_in = size(c.weight)[end-1]
   batch_size = size(x)[end]
   # Create DenseConvDims() that looks like the corresponding conv()
@@ -139,18 +145,22 @@ be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct DepthwiseConv{N,F,A,V}
+struct DepthwiseConv{N,M,F,A,V}
   σ::F
   weight::A
   bias::V
   stride::NTuple{N,Int}
-  pad::NTuple{N,Int}
+  pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
 end
 
-DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-       stride = 1, pad = 0, dilation = 1) where {T,N} =
-  DepthwiseConv(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
+function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+                       stride = 1, pad = 0, dilation = 1) where {T,N}
+  stride = expand(Val(N-2), stride)
+  pad = expand(Val(2*(N-2)), pad)
+  dilation = expand(Val(N-2), dilation)
+  return DepthwiseConv(σ, w, b, stride, pad, dilation)
+end
 
 DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = glorot_uniform,
      stride = 1, pad = 0, dilation = 1) where N =
@@ -159,7 +169,7 @@ DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = glorot_un
 
 DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = glorot_uniform,
      stride::NTuple{N,Integer} = map(_->1,k),
-     pad::NTuple{N,Integer} = map(_->0,k),
+     pad::NTuple{N,Integer} = map(_->0,2 .* k),
      dilation::NTuple{N,Integer} = map(_->1,k)) where N =
   DepthwiseConv(param(init(k..., ch[2], ch[1])), param(zeros(ch[2]*ch[1])), σ,
        stride = stride, pad = pad)
@@ -192,14 +202,18 @@ Max pooling layer. `k` stands for the size of the window for each dimension of t
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct MaxPool{N}
+struct MaxPool{N,M}
   k::NTuple{N,Int}
-  pad::NTuple{N,Int}
+  pad::NTuple{M,Int}
   stride::NTuple{N,Int}
 end
 
-MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
-  MaxPool(k, expand(Val(N), pad), expand(Val(N), stride))
+function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
+  stride = expand(Val(N), stride)
+  pad = expand(Val(2*N), pad)
+
+  return MaxPool(k, pad, stride)
+end
 
 function (m::MaxPool)(x)
     pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
@@ -217,14 +231,17 @@ Mean pooling layer. `k` stands for the size of the window for each dimension of 
 
 Takes the keyword arguments `pad` and `stride`.
 """
-struct MeanPool{N}
+struct MeanPool{N,M}
     k::NTuple{N,Int}
-    pad::NTuple{N,Int}
+    pad::NTuple{M,Int}
     stride::NTuple{N,Int}
 end
 
-MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
-  MeanPool(k, expand(Val(N), pad), expand(Val(N), stride))
+function MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
+  stride = expand(Val(N), stride)
+  pad = expand(Val(2*N), pad)
+  return MeanPool(k, pad, stride)
+end
 
 function (m::MeanPool)(x)
     pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
