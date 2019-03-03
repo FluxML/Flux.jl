@@ -50,5 +50,6 @@ These layers don't affect the structure of the network but may improve training 
 Flux.testmode!
 BatchNorm
 Dropout
+AlphaDropout
 LayerNorm
 ```
