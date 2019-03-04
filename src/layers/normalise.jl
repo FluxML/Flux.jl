@@ -63,13 +63,11 @@ function (a::AlphaDropout)(x)
   a.active || return x
   α = -1.75813631
   noise = randn(Float64, size(x.data))
-  y = collect(x)
-  y .= y .* (noise .> (1 - a.p)) + α .* (noise .<= (1 - a.p))
+  x.data .= x.data .* (noise .> (1 - a.p)) + α .* (noise .<= (1 - a.p))
   A = (a.p + a.p * (1 - a.p) * α ^ 2)^0.5
   B = -A * α * (1 - a.p)
-  y .= A .* y .+ B
-  x1 = param(y)
-  return x1
+  x.data .= A .* x.data .+ B
+  return x
 end
 
 _testmode!(a::AlphaDropout, test) = (a.active = !test)
