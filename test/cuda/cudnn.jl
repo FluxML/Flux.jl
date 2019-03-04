@@ -19,8 +19,8 @@ using Flux.Tracker: TrackedArray, data
         Flux.back!(y, g)
         Flux.back!(cy, gpu(g))
 
-        @test m.γ.grad ≈ cpu(cm.γ.grad)
-        @test m.β.grad ≈ cpu(cm.β.grad)
+        @test m.scale.grad ≈ cpu(cm.scale.grad)
+        @test m.bias.grad ≈ cpu(cm.bias.grad)
         @test x.grad ≈ cpu(x.grad)
     end
 
@@ -41,8 +41,8 @@ using Flux.Tracker: TrackedArray, data
         Flux.back!(y, g)
         Flux.back!(cy, gpu(g))
 
-        @test m.γ.grad ≈ cpu(cm.γ.grad)
-        @test m.β.grad ≈ cpu(cm.β.grad)
+        @test m.scale.grad ≈ cpu(cm.scale.grad)
+        @test m.bias.grad ≈ cpu(cm.bias.grad)
         @test x.grad ≈ cpu(x.grad)
     end
 end
