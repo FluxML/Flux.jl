@@ -32,10 +32,10 @@ end
   let m = BatchNorm(2), x = param([1 3 5;
                                    2 4 6])
 
-    @test m.β.data == [0, 0]  # initβ(2)
-    @test m.γ.data == [1, 1]  # initγ(2)
-    # initial m.σ is 1
-    # initial m.μ is 0
+    @test m.bias.data == [0, 0]  # initβ(2)
+    @test m.scale.data == [1, 1]  # initγ(2)
+    # initial (m.moving_std)^.5 is 1
+    # initial m.moving_mean is 0
     @test m.active
 
     # @test m(x).data ≈ [-1 -1; 0 0; 1 1]'
@@ -46,20 +46,20 @@ end
     #  1.0  3.0  5.0
     #  2.0  4.0  6.0
     #
-    # μ of batch will be
+    # moving_mean(μ) of batch will be
     #  (1. + 3. + 5.) / 3 = 3
     #  (2. + 4. + 6.) / 3 = 4
     #
     # ∴ update rule with momentum:
     #  .1 * 3 + 0 = .3
     #  .1 * 4 + 0 = .4
-    @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
+    @test m.moving_mean ≈ reshape([0.3, 0.4], 2, 1)
 
     # julia> .1 .* var(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
     # 2×1 Array{Float64,2}:
     #  1.3
     #  1.3
-    @test m.σ² ≈ .1 .* var(x.data, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    @test m.moving_std ≈ .1 .* var(x.data, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
 
     testmode!(m)
     @test !m.active
@@ -78,7 +78,7 @@ end
     @test !m.active
 
     y = m(x).data
-    @test isapprox(y, data(sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ))), atol = 1.0e-7)
+    @test isapprox(y, data(sigmoid.((x .- m.moving_mean) ./ sqrt.(m.moving_std .+ m.epsilon))), atol = 1.0e-7)
   end
 
   let m = BatchNorm(2), x = param(reshape(1:6, 3, 2, 1))
