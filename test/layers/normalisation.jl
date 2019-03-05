@@ -78,7 +78,7 @@ end
     @test !m.active
 
     y = m(x).data
-    @test isapprox(y, data(sigmoid.((x .- m.running_mean) ./ sqrt.(m.moving_var .+ m.eps))), atol = 1.0e-7)
+    @test isapprox(y, data(sigmoid.((x .- m.running_mean) ./ sqrt.(m.running_var .+ m.eps))), atol = 1.0e-7)
   end
 
   let m = BatchNorm(2), x = param(reshape(1:6, 3, 2, 1))
