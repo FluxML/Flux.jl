@@ -126,7 +126,7 @@ function (BN::BatchNorm)(x)
   else
     T = eltype(x)
 
-    epsilon = data(convert(T, BN.eps))
+    eps = data(convert(T, BN.eps))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
     running_mean = mean(x, dims = axes)
     running_var = sum((x .- running_mean) .^ 2, dims = axes) ./ m
