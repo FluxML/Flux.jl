@@ -61,12 +61,12 @@ end
 
 function (a::AlphaDropout)(x)
   a.active || return x
-  α = -1.75813631
-  noise = randn(Float64, size(x.data))
-  x.data .= x.data .* (noise .> (1 - a.p)) + α .* (noise .<= (1 - a.p))
+  α = eltype(x)(-1.75813631)
+  noise = randn(eltype(x), size(x))
+  x = @. x*(noise .> (1 - a.p)) + α .* (noise .<= (1 - a.p))
   A = (a.p + a.p * (1 - a.p) * α ^ 2)^0.5
   B = -A * α * (1 - a.p)
-  x.data .= A .* x.data .+ B
+  x = @. A .* x .+ B
   return x
 end
 
