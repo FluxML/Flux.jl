@@ -73,7 +73,7 @@ end
 
 # Fallthrough methods
 
-for f in :[Base.size, Base.ndims, Base.collect].args
+for f in :[Base.size, Base.ndims].args
   @eval @inline $f(x::TrackedArray, a...) = $f(data(x), a...)
 end
 
