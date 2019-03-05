@@ -50,7 +50,7 @@ A dropout layer. It is used in Self-Normalizing Neural Networks.
 The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
 """
 mutable struct AlphaDropout{F}
-	p::F
+  p::F
   active::Bool
 end
 
