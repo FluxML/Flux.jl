@@ -71,9 +71,9 @@ function update!(x::TrackedArray, Δ)
   return x
 end
 
-collect(x::TrackedArray) = x
-collect(x::TrackedVector) = x
-collect(x::TrackedMatrix) = x
+Base.collect(x::TrackedArray) = x
+Base.collect(x::TrackedVector) = x
+Base.collect(x::TrackedMatrix) = x
 # Fallthrough methods
 
 for f in :[Base.size, Base.ndims].args
