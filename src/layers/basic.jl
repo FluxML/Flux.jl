@@ -127,9 +127,9 @@ end
 
 
 """
-    MaxOut(over)
+    Maxout(over)
 
-`MaxOut` is a neural network layer, which has a number of internal layers,
+`Maxout` is a neural network layer, which has a number of internal layers,
 which all have the same input, and the max out returns the elementwise maximium
 of the internal layers' outputs.
 
@@ -142,30 +142,30 @@ In Proceedings of the 30th International Conference on International Conference 
 Sanjoy Dasgupta and David McAllester (Eds.), Vol. 28. JMLR.org III-1319-III-1327.
 https://arxiv.org/pdf/1302.4389.pdf
 """
-struct MaxOut{FS<:Tuple}
+struct Maxout{FS<:Tuple}
     over::FS
 end
 
 """
-    MaxOut(f, n_alts, args...; kwargs...)
+    Maxout(f, n_alts, args...; kwargs...)
 
-Constructs a MaxOut layer over `n_alts` instances of  the layer given  by `f`.
+Constructs a Maxout layer over `n_alts` instances of  the layer given  by `f`.
 All other arguements (`args` & `kwargs`) are passed to the constructor `f`.
 
 For example the following example which
-will construct a `MaxOut` layer over 4 dense linear layers,
+will construct a `Maxout` layer over 4 dense linear layers,
 each identical in structure (784 inputs, 128 outputs).
 ```julia
     insize = 784
     outsie = 128
-    MaxOut(Dense, 4, insize, outsize)
+    Maxout(Dense, 4, insize, outsize)
 ```
 """
-function MaxOut(f, n_alts, args...; kwargs...)
+function Maxout(f, n_alts, args...; kwargs...)
   over = Tuple(f(args...; kwargs...) for _ in 1:n_alts)
-  return MaxOut(over)
+  return Maxout(over)
 end
 
-function (mo::MaxOut)(input::AbstractArray)
+function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end

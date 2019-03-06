@@ -31,24 +31,24 @@ using Test, Random
         @test Flux.Diagonal(2)([1 2; 3 4]) == [1 2; 3 4]
     end
 
-    @testset "MaxOut" begin
-        # Note that the normal common usage of MaxOut is as per the docstring
+    @testset "Maxout" begin
+        # Note that the normal common usage of Maxout is as per the docstring
         # These are abnormal constructors used for testing purposes
 
         @testset "Constructor" begin
-            mo = MaxOut(() -> identity, 4)
+            mo = Maxout(() -> identity, 4)
             input = rand(40)
             @test mo(input) == input
         end
 
         @testset "simple alternatives" begin
-            mo = MaxOut((x -> x, x -> 2x, x -> 0.5x))
+            mo = Maxout((x -> x, x -> 2x, x -> 0.5x))
             input = rand(40)
             @test mo(input) == 2*input
         end
 
         @testset "complex alternatives" begin
-            mo = MaxOut((x -> [0.5; 0.1]*x, x -> [0.2; 0.7]*x))
+            mo = Maxout((x -> [0.5; 0.1]*x, x -> [0.2; 0.7]*x))
             input = [3.0 2.0]
             target = [0.5, 0.7].*input
             @test mo(input) == target
