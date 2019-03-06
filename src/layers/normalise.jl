@@ -113,34 +113,33 @@ BatchNorm(chs::Integer, activation_function = identity;
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.bias) ||
     error("BatchNorm expected $(length(BN.bias)) channels, got $(size(x, ndims(x)-1))")
-  scale, bias = BN.scale, BN.bias
   dims = length(size(x))
   channels = size(x, dims-1)
   affine_shape = ones(Int, dims)
   affine_shape[end-1] = channels
   m = prod(size(x)[1:end-2]) * size(x)[end]
+  scale = reshape(BN.scale, affine_shape...)
+  bias = reshape(BN.bias, affine_shape...)
 
   if !BN.active
     running_mean = reshape(BN.running_mean, affine_shape...)
     running_var = reshape(BN.running_var, affine_shape...)
+    eps = BN.eps
   else
     T = eltype(x)
-
-    eps = data(convert(T, BN.eps))
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
     running_mean = mean(x, dims = axes)
     running_var = sum((x .- running_mean) .^ 2, dims = axes) ./ m
-
+    eps = data(convert(T, BN.eps))
     # update moving mean/std
     mtm = data(convert(T, BN.momentum))
     BN.running_mean = (1 - mtm) .* BN.running_mean .+ mtm .* reshape(data(running_mean), :)
-    BN.running_var = ((1 - mtm) .* BN.running_var .+ mtm .* reshape(data(running_var), :) .* m ./ (m - 1))
+    BN.running_var = (1 - mtm) .* BN.running_var .+ (mtm * m/(m-1)) .* reshape(data(running_var), :) 
   end
 
   let activation_function = BN.activation_function
-    temp = reshape(scale, affine_shape...) .* ((x .- running_mean) ./ sqrt.(running_var .+ BN.eps)) 
-    # This is intentionally not fused because of an extreme slowdown doing so
-    activation_function.(temp .+ reshape(bias, affine_shape...))
+    x̂ = (x .- running_mean) ./ sqrt.(running_var .+ eps)
+    activation_function.(scale .* x̂ .+ bias)
   end
 end
 
