@@ -71,6 +71,11 @@ function update!(x::TrackedArray, Δ)
   return x
 end
 
+function update!(x::AbstractArray, Δ)
+  x .+= data(Δ)
+  return x
+end
+
 # Fallthrough methods
 
 for f in :[Base.size, Base.ndims, Base.collect].args
