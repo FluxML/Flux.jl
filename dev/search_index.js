@@ -345,6 +345,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers/#Flux.AlphaDropout",
+    "page": "Model Reference",
+    "title": "Flux.AlphaDropout",
+    "category": "type",
+    "text": "AlphaDropout(p)\n\nA dropout layer. It is used in Self-Normalizing Neural Networks.  (https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf) The AlphaDropout layer ensures that mean and variance of activations remains the same as before.\n\n\n\n\n\n"
+},
+
+{
     "location": "models/layers/#Flux.LayerNorm",
     "page": "Model Reference",
     "title": "Flux.LayerNorm",
@@ -357,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Normalisation & Regularisation",
     "category": "section",
-    "text": "These layers don\'t affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nBatchNorm\nDropout\nLayerNorm"
+    "text": "These layers don\'t affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nBatchNorm\nDropout\nAlphaDropout\nLayerNorm"
 },
 
 {
