@@ -32,7 +32,7 @@ Flux.Recur
 
 ## Other General Purpose Layers
 These are marginally more obscure than the Basic Layers.
-But incontrast to the layers described in the other sections are not readily grouped around a paparticular purpose (e.g. CNNs or RNNs).
+But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).
 
 ```@docs
 Maxout
