@@ -1,3 +1,15 @@
+# The AD generates fairly large backtraces that are unhelpful if you interrupt
+# while training; this just cleans that up.
+macro interrupts(ex)
+  :(try $(esc(ex))
+    catch e
+      e isa InterruptException || rethrow()
+      throw(e)
+    end)
+end
+
+# In-place gradients
+
 init_grad(x) = zero(x)
 zero_grad!(x) = zero(x)
 zero_grad!(x::AbstractArray) = (x .= 0)
@@ -66,63 +78,33 @@ function back!(x, Δ; once = true)
   return
 end
 
+function extract_grad!(x)
+  x̄ = copy(grad(x))
+  x̄ = nobacksies("Use `gradient(...; nest = true)` for nested derivatives", x̄)
+  tracker(x).grad = zero_grad!(grad(x))
+  return x̄
+end
+
 function gradient_(f, xs...)
   xs = param.(data.(xs))
   l = f(xs...)
   losscheck(l)
-  back!(l)
-  nobacksies("Use `gradient(...; nest = true)` for nested derivatives",
-             grad.(xs))
+  @interrupts back!(l)
+  extract_grad!.(xs)
+end
+
+function gradient_(f, xs::Params)
+  l = f()
+  losscheck(l)
+  @interrupts back!(l)
+  gs = Grads()
+  for x in xs
+    gs[tracker(x)] = extract_grad!(x)
+  end
+  return gs
 end
 
 # Out-of-place gradients
-
-struct Params
-  order::Vector{Any}
-  params::IdSet{Any}
-  Params() = new([], IdSet())
-end
-
-@forward Params.order Base.iterate, Base.length
-
-function Base.push!(ps::Params, x)
-  if !(x in ps.params)
-    push!(ps.order, x)
-    push!(ps.params, x)
-  end
-  return ps
-end
-
-Base.push!(ps::Params, x...) = (foreach(x -> push!(ps, x), x); ps)
-
-Params(xs) = push!(Params(), xs...)
-
-function Base.show(io::IO, ps::Params)
-  print(io, "Params([")
-  join(io, ps.order, ", ")
-  print(io, "])")
-end
-
-struct Grads
-  grads::IdDict{Any,Any}
-end
-
-Base.show(io::IO, ps::Grads) = println(io, "Grads(...)")
-
-Grads() = Grads(IdDict())
-
-@forward Grads.grads Base.setindex!, Base.haskey, Base.length, Base.iterate
-
-Grads(ps::Params) = Grads(IdDict(tracker(p) => init_grad(data(p)) for p in ps))
-
-Base.getindex(g::Grads, x::Tracked) = g.grads[x]
-
-function Base.getindex(g::Grads, x)
-  istracked(x) || error("Object not tracked: $x")
-  g[tracker(x)]
-end
-
-accum!(g::Grads, x, Δ) = g[x] = haskey(g, x) ? g[x] .+ Δ : Δ
 
 function back_(g::Grads, c::Call, Δ)
   Δs = c.func(Δ)
@@ -181,8 +163,6 @@ end
 
 gradient(f, xs...; nest = false) =
   nest ? gradient_nested(f, xs...) : gradient_(f, xs...)
-
-gradient(f, ps::Params) = gradient_nested(f, ps)
 
 # Jacobians and Hessians
 

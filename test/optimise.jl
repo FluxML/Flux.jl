@@ -4,21 +4,15 @@ using Flux.Tracker
 using Test
 @testset "Optimise" begin
   w = randn(10, 10)
-  @testset for Opt in [ADAMW, ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, Descent, ADAM, Nesterov, RMSProp, Momentum]
+  @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
+                       NADAM(), Descent(0.1), ADAM(), Nesterov(), RMSProp(),
+                       Momentum()]
     w′ = param(randn(10, 10))
     loss(x) = Flux.mse(w*x, w′*x)
-    opt = Opt(0.001)
-    if opt isa Descent || opt isa ADAGrad
-      opt = Opt(0.1)
-    end
-    if opt isa ADADelta
-      opt = Opt(0.9)
-    end
     for t = 1: 10^5
-      l = loss(rand(10))
-      back!(l)
-      delta = Optimise.apply!(opt, w′.data, w′.grad)
-      w′.data .-= delta
+      θ = Params([w′])
+      θ̄ = gradient(() -> loss(rand(10)), θ)
+      Optimise.update!(opt, θ, θ̄)
     end
     @test Flux.mse(w, w′) < 0.01
   end

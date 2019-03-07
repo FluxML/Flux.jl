@@ -1,16 +1,23 @@
 using Juno
-import Flux.Tracker: data, grad, back!, update!
+import Flux.Tracker: Params, gradient, data, update!
 import Base.depwarn
 
 function update!(opt, x, x̄)
-  update!(x, apply!(opt, x, copy(data(x̄))))
+  update!(x, -apply!(opt, x, data(x̄)))
 end
 
-function _update_params!(opt, xs)
+function update!(opt, xs::Params, gs)
   for x in xs
-    Δ = apply!(opt, x.data, x.grad)
-    x.data .-= Δ
-    Δ .= 0
+    update!(opt, x, gs[x])
+  end
+end
+
+# Added as an internal API but everyone started using it.
+function _update_params!(opt, xs)
+  depwarn("`_update_params!` is deprecated, use `update!` instead.", :stop)
+  for x in xs
+    update!(opt, x, Tracker.grad(x))
+    x.tracker.grad = Tracker.zero_grad!(x.tracker.grad)
   end
 end
 
@@ -18,16 +25,6 @@ end
 call(f, xs...) = f(xs...)
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
-
-# The AD generates fairly large backtraces that are unhelpful if you interrupt
-# while training; this just cleans that up.
-macro interrupts(ex)
-  :(try $(esc(ex))
-    catch e
-      e isa InterruptException || rethrow()
-      throw(e)
-    end)
-end
 
 struct StopException <: Exception end
 """
@@ -67,13 +64,14 @@ The callback can call `Flux.stop()` to interrupt the training loop.
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, ps, data, opt; cb = () -> ())
+  ps = Params(ps)
   cb = runall(cb)
-  opt = runall(opt)
   @progress for d in data
     try
-      l = loss(d...)
-      @interrupts back!(l)
-      _update_params!(opt, ps)
+      gs = gradient(ps) do
+        loss(d...)
+      end
+      update!(opt, ps, gs)
       if cb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break
