@@ -12,9 +12,8 @@ export Chain, Dense, RNN, LSTM, GRU, Conv, ConvTranspose, MaxPool, MeanPool,
 
 @reexport using NNlib
 
-include("tracker/Tracker.jl")
-using .Tracker
-using .Tracker: data
+using Tracker
+using Tracker: data
 export Tracker, TrackedArray, TrackedVector, TrackedMatrix, param
 
 include("optimise/Optimise.jl")
