@@ -56,7 +56,7 @@ end
 
 function AlphaDropout(p)
   @assert 0 ≤ p ≤ 1
-  AlphaDropout{typeof(p)}(p,true)
+  AlphaDropout(p,true)
 end
 
 function (a::AlphaDropout)(x)
