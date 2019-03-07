@@ -44,6 +44,37 @@ end
 _testmode!(a::Dropout, test) = (a.active = !test)
 
 """
+    AlphaDropout(p)
+A dropout layer. It is used in Self-Normalizing Neural Networks. 
+(https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
+The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
+"""
+mutable struct AlphaDropout{F}
+  p::F
+  active::Bool
+end
+
+function AlphaDropout(p)
+  @assert 0 ≤ p ≤ 1
+  AlphaDropout(p,true)
+end
+
+function (a::AlphaDropout)(x)
+  a.active || return x
+  λ = eltype(x)(1.0507009873554804934193349852946)
+  α = eltype(x)(1.6732632423543772848170429916717)
+  α1 = eltype(x)(-λ*α)
+  noise = randn(eltype(x), size(x))
+  x = @. x*(noise > (1 - a.p)) + α1 * (noise <= (1 - a.p))
+  A = (a.p + a.p * (1 - a.p) * α1 ^ 2)^0.5
+  B = -A * α1 * (1 - a.p)
+  x = @. A * x + B
+  return x
+end
+
+_testmode!(a::AlphaDropout, test) = (a.active = !test)
+
+"""
     LayerNorm(h::Integer)
 
 A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
