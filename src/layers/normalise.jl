@@ -61,8 +61,8 @@ end
 
 function (a::AlphaDropout)(x)
   a.active || return x
-  λ = 1.0507009873554804934193349852946
-  α = 1.6732632423543772848170429916717
+  λ = eltype(x)(1.0507009873554804934193349852946)
+  α = eltype(x)(1.6732632423543772848170429916717)
   α1 = eltype(x)(-λ*α)
   noise = randn(eltype(x), size(x))
   x = @. x*(noise > (1 - a.p)) + α1 * (noise <= (1 - a.p))
