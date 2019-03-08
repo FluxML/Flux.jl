@@ -5,14 +5,12 @@ module Flux
 using Base: tail
 using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
+@reexport using NNlib
+using Zygote: Params, @adjoint, gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm, 
        params, mapleaves, cpu, gpu, f32, f64
-
-@reexport using NNlib
-
-using Zygote
 
 include("optimise/Optimise.jl")
 using .Optimise

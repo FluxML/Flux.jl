@@ -1,5 +1,5 @@
 import Adapt: adapt, adapt_storage
-import .Zygote: IdSet
+import Zygote: IdSet
 
 children(x) = ()
 mapchildren(f, x) = x
