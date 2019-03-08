@@ -1,6 +1,7 @@
 using Test
 using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
             σ, binarycrossentropy, logitbinarycrossentropy
+using Zygote
 
 const ϵ = 1e-7
 
@@ -55,9 +56,9 @@ const ϵ = 1e-7
       y = rand(T, 2)
       ŷ = rand(T, 2)
       for f in (mse, crossentropy, logitcrossentropy)
-        fwd, back = Flux.Tracker.forward(mse, ŷ, y)
-        @test typeof(fwd) == Flux.Tracker.TrackedReal{T}
-        @test eltype(back(one(T))[1]) == Flux.Tracker.TrackedReal{T}
+        fwd, back = Zygote.forward(mse, ŷ, y)
+        @test fwd isa T
+        @test eltype(back(one(T))[1]) == T
       end
     end
   end

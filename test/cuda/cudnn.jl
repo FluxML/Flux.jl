@@ -1,5 +1,4 @@
-using Flux, Flux.Tracker, CuArrays, Test
-using Flux.Tracker: TrackedArray, data
+using Flux, CuArrays, Test
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input" begin

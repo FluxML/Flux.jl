@@ -1,5 +1,4 @@
 using Flux: testmode!
-using Flux.Tracker: data
 
 @testset "Dropout" begin
   x = [1.,2.,3.]
@@ -29,8 +28,8 @@ using Flux.Tracker: data
 end
 
 @testset "BatchNorm" begin
-  let m = BatchNorm(2), x = param([1 3 5;
-                                   2 4 6])
+  let m = BatchNorm(2), x = [1 3 5;
+                             2 4 6]
 
     @test m.β.data == [0, 0]  # initβ(2)
     @test m.γ.data == [1, 1]  # initγ(2)
@@ -111,7 +110,7 @@ end
   expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
   # begin tests
   let m = InstanceNorm(2), sizes = (3, 2, 2),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
 
       @test m.β.data == [0, 0]  # initβ(2)
       @test m.γ.data == [1, 1]  # initγ(2)
@@ -157,7 +156,7 @@ end
   end
   # with activation function
   let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
 
     affine_shape = collect(sizes)
     affine_shape[1] = 1
@@ -173,7 +172,7 @@ end
   end
 
   let m = InstanceNorm(2), sizes = (2, 4, 1, 2, 3),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
     @test m(x) == y
@@ -181,7 +180,7 @@ end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = InstanceNorm(2), sizes = (5, 5, 3, 4, 2, 6),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     y = m(x)
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
@@ -190,7 +189,7 @@ end
 
   # show that instance norm is equal to batch norm when channel and batch dims are squashed
   let m_inorm = InstanceNorm(2), m_bnorm = BatchNorm(12), sizes = (5, 5, 3, 4, 2, 6),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     @test m_inorm(x) == reshape(m_bnorm(reshape(x, (sizes[1:end - 2]..., :, 1))), sizes)
   end
 

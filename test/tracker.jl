@@ -1,5 +1,5 @@
 using Flux, Test
-using Tracker: gradcheck
+using Zygote: gradcheck
 
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
