@@ -1,5 +1,5 @@
 import Adapt: adapt, adapt_storage
-import .Tracker: IdSet
+import .Zygote: IdSet
 
 children(x) = ()
 mapchildren(f, x) = x
@@ -39,7 +39,7 @@ end
 function params(m)
   ps = Params()
   prefor(p ->
-    Tracker.istracked(p) && Tracker.isleaf(p) &&
+    p isa AbstractArray{<:Real} &&
       !any(p′ -> p′ === p, ps) && push!(ps, p),
     m)
   return ps
@@ -80,8 +80,6 @@ f64(m) = paramtype(Float64, m)
 
 function mapparams(f, m)
   mapleaves(m) do x
-    Tracker.istracked(x) ? param(f(Tracker.data(x))) :
-    x isa Union{AbstractArray,Number} ? f(x) :
-    x
+    x isa Union{AbstractArray,Number} ? f(x) : x
   end
 end

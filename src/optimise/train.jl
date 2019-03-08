@@ -1,23 +1,14 @@
 using Juno
-import Flux.Tracker: Params, gradient, data, update!
+import Zygote: Params, gradient
 import Base.depwarn
 
 function update!(opt, x, x̄)
-  update!(x, -apply!(opt, x, data(x̄)))
+  update!(x, -apply!(opt, x, x̄))
 end
 
 function update!(opt, xs::Params, gs)
   for x in xs
     update!(opt, x, gs[x])
-  end
-end
-
-# Added as an internal API but everyone started using it.
-function _update_params!(opt, xs)
-  depwarn("`_update_params!` is deprecated, use `update!` instead.", :stop)
-  for x in xs
-    update!(opt, x, Tracker.grad(x))
-    x.tracker.grad = Tracker.zero_grad!(x.tracker.grad)
   end
 end
 

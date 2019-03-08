@@ -111,6 +111,12 @@ git-tree-sha1 = "4c4d727f1b7e0092134fabfab6396b8945c1ea5b"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.3"
 
+[[IRTools]]
+deps = ["InteractiveUtils", "MacroTools", "Test"]
+git-tree-sha1 = "a5a47cba5f8d9a56ff683789cdd6d20ce1cb9d53"
+uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
+version = "0.1.2"
+
 [[InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -300,3 +306,11 @@ deps = ["BinaryProvider", "Libdl", "Printf", "Test"]
 git-tree-sha1 = "5f6f663890dfb9bad6af75a86a43f67904e5050e"
 uuid = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 version = "0.8.1"
+
+[[Zygote]]
+deps = ["DiffRules", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions"]
+git-tree-sha1 = "7fcb55117550e1c195a646947135cc9aac1e2afc"
+repo-rev = "master"
+repo-url = "https://github.com/FluxML/Zygote.jl.git"
+uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
+version = "0.1.0+"

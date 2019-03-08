@@ -42,21 +42,6 @@ end
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
-_truncate(x::AbstractArray) = Tracker.data(x)
-_truncate(x::Tuple) = _truncate.(x)
-
-"""
-    truncate!(rnn)
-
-Truncates the gradient of the hidden state in recurrent layers. The value of the
-state is preserved. See also `reset!`.
-
-Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
-
-    rnn.state = Tracker.data(rnn.state)
-"""
-truncate!(m) = prefor(x -> x isa Recur && (x.state = _truncate(x.state)), m)
-
 """
     reset!(rnn)
 

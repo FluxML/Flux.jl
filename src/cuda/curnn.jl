@@ -221,7 +221,6 @@ end
 # Interface
 
 import ..Flux: Flux, relu
-import ..Tracker: TrackedArray
 using .CuArrays.CUDAnative
 using .CuArrays: @cuindex, cudims
 
@@ -236,10 +235,9 @@ function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
   return dst
 end
 
-CuParam{T,N} = Union{CuArray{T,N},TrackedArray{T,N,CuArray{T,N}}}
-CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuParam{T,2},<:CuParam{T,1}}
-CuGRU{T} = Flux.GRUCell{<:CuParam{T,2},<:CuParam{T,1}}
-CuLSTM{T} = Flux.LSTMCell{<:CuParam{T,2},<:CuParam{T,1}}
+CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
+CuGRU{T} = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}
+CuLSTM{T} = Flux.LSTMCell{<:CuArray{T,2},<:CuArray{T,1}}
 CuRNNs{T} = Union{CuRNN{T},CuGRU{T},CuLSTM{T}}
 
 function copyparams!(m::CuRNNs, d::RNNDesc)
@@ -267,37 +265,28 @@ function desc(rnn)
   return d
 end
 
-import Flux.Tracker
-import Flux.Tracker: data, istracked, track, unbroadcast, @grad, nobacksies
+using Zygote: @adjoint
 
-istrain(m::CuRNNs, args...) = any(x -> x isa TrackedArray, (m.Wi, m.Wh, m.b, args...))
-
-function (m::CuRNN{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  result = istrain(m, h, x) ?
-    track(m, x, h, m.Wi, m.Wh, m.b) :
-    forward(desc(m), x, h)
+function (m::CuRNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  result = forward(desc(m), x, h)
   return result[2], result[1]
 end
 
-function (m::CuGRU{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  result = istrain(m, h, x) ?
-    track(m, x, h, m.Wi, m.Wh, m.b) :
-    forward(desc(m), x, h)
+function (m::CuGRU{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  result = forward(desc(m), x, h)
   return result[2], result[1]
 end
 
-function (m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  result = istrain(m, h, x) ?
-    track(m, x, h[1], h[2], m.Wi, m.Wh, m.b) :
-    forward(desc(m), x, h[1], h[2])
+function (m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  result = forward(desc(m), x, h[1], h[2])
   return (result[2], result[3]), result[1]
 end
 
-(m::CuRNN{T})(h::CuParam{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
-(m::CuGRU{T})(h::CuParam{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
-(m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuRNN{T})(h::CuArray{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuGRU{T})(h::CuArray{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 
-@grad function (m::Union{CuRNN,CuGRU})(x, h, Wi, Wh, b)
+@adjoint function (m::Union{CuRNN,CuGRU})(x, h, Wi, Wh, b)
   reserve, result = forwardTrain(desc(m), data(x), data(h))
   result, function (Δ)
     y, ho = result
@@ -309,7 +298,7 @@ end
   end
 end
 
-@grad function (m::CuLSTM)(x, h, c, Wi, Wh, b)
+@adjoint function (m::CuLSTM)(x, h, c, Wi, Wh, b)
   reserve, result = forwardTrain(desc(m), data.((x, h, c))...)
   result, function (Δ)
     y, ho = result
