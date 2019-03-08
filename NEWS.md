@@ -14,6 +14,7 @@ AD Changes:
 
 * `det`, `logdet` and `logabsdet` [now have adjoints](https://github.com/FluxML/Flux.jl/pull/596/files).
 * Support for [PermuteDimsArray](https://github.com/FluxML/Flux.jl/pull/576).
+* Flux.Tracker is now its [own package](https://github.com/FluxML/Tracker.jl), in preparation for replacing it with Zygote.
 
 # v0.7.0
 
