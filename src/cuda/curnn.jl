@@ -287,13 +287,13 @@ end
 (m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 
 @adjoint function (m::Union{CuRNN,CuGRU})(x, h, Wi, Wh, b)
-  reserve, result = forwardTrain(desc(m), data(x), data(h))
+  reserve, result = forwardTrain(desc(m), x, h)
   result, function (Δ)
     y, ho = result
     dy, dho = Δ
-    h_ = hBatch(x, data(h))
+    h_ = hBatch(x, h)
     dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
-    (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
+    (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
     nobacksies(:RNN, (dx, unbroadcast(h, dh), transpose(dWi), transpose(dWh), db))
   end
 end
@@ -303,10 +303,10 @@ end
   result, function (Δ)
     y, ho = result
     dy, dho, dco = Δ
-    h_ = hBatch(x, data(h))
-    c_ = hBatch(x, data(c))
+    h_ = hBatch(x, h)
+    c_ = hBatch(x, c)
     dx, dh, dc = backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
-    (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
+    (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
     nobacksies(:RNN,
       (dx, unbroadcast(h, dh), unbroadcast(c, dc),
        transpose(dWi), transpose(dWh), db))

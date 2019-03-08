@@ -138,7 +138,7 @@ end
 
 BatchNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
-  BatchNorm(λ, param(initβ(chs)), param(initγ(chs)),
+  BatchNorm(λ, initβ(chs), initγ(chs),
             zeros(chs), ones(chs), ϵ, momentum, true)
 
 function (BN::BatchNorm)(x)
@@ -160,11 +160,11 @@ function (BN::BatchNorm)(x)
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
     μ = mean(x, dims = axes)
     σ² = sum((x .- μ) .^ 2, dims = axes) ./ m
-    ϵ = data(convert(T, BN.ϵ))
+    ϵ = convert(T, BN.ϵ)
     # update moving mean/std
-    mtm = data(convert(T, BN.momentum))
-    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* reshape(data(μ), :)
-    BN.σ² = (1 - mtm) .* BN.σ² .+ (mtm * m / (m - 1)) .* reshape(data(σ²), :)
+    mtm = convert(T, BN.momentum)
+    BN.μ = (1 - mtm) .* BN.μ .+ mtm .* reshape(μ, :)
+    BN.σ² = (1 - mtm) .* BN.σ² .+ (mtm * m / (m - 1)) .* reshape(σ², :)
   end
 
   let λ = BN.λ
@@ -231,7 +231,7 @@ end
 
 InstanceNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
-  InstanceNorm(λ, param(initβ(chs)), param(initγ(chs)),
+  InstanceNorm(λ, initβ(chs), initγ(chs),
             zeros(chs), ones(chs), ϵ, momentum, true)
 
 function (in::InstanceNorm)(x)
@@ -256,15 +256,15 @@ function (in::InstanceNorm)(x)
   else
     T = eltype(x)
 
-    ϵ = data(convert(T, in.ϵ))
+    ϵ = convert(T, in.ϵ)
     axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
     μ = mean(x, dims = axes)
     σ² = mean((x .- μ) .^ 2, dims = axes)
 
     # update moving mean/std
-    mtm = data(convert(T, in.momentum))
-    in.μ = dropdims(mean(repeat((1 - mtm) .* in.μ, outer=[1, bs]) .+ mtm .* reshape(data(μ), (c, bs)), dims = 2), dims=2)
-    in.σ² = dropdims(mean((repeat((1 - mtm) .* in.σ², outer=[1, bs]) .+ (mtm * m / (m - 1)) .* reshape(data(σ²), (c, bs))), dims = 2), dims=2)
+    mtm = convert(T, in.momentum)
+    in.μ = dropdims(mean(repeat((1 - mtm) .* in.μ, outer=[1, bs]) .+ mtm .* reshape(μ, (c, bs)), dims = 2), dims=2)
+    in.σ² = dropdims(mean((repeat((1 - mtm) .* in.σ², outer=[1, bs]) .+ (mtm * m / (m - 1)) .* reshape(σ², (c, bs))), dims = 2), dims=2)
   end
 
   let λ = in.λ

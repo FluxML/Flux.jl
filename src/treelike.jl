@@ -51,7 +51,7 @@ function loadparams!(m, xs)
   for (p, x) in zip(params(m), xs)
     size(p) == size(x) ||
       error("Expected param size $(size(p)), got $(size(x))")
-    copyto!(data(p), data(x))
+    copyto!(p, x)
   end
 end
 
