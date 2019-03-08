@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack, unstack
+using Flux: throttle, glorot_uniform, glorot_normal, stack, unstack
 using StatsBase: std
 using Random
 using Test
@@ -50,15 +50,6 @@ using Test
     sleep(1.01)
     @test a == [1, 3]
   end
-end
-
-@testset "Jacobian" begin
-  A = param(randn(2,2))
-  x = randn(2)
-  m(x) = A*x
-  y = m(x)
-  J = jacobian(m,x)
-  @test J ≈ A.data
 end
 
 @testset "Initialization" begin
