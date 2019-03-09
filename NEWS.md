@@ -9,6 +9,7 @@
 * New "performance tips" [section of the docs](https://github.com/FluxML/Flux.jl/pull/615).
 * The training loop is [now more readable](https://github.com/FluxML/Flux.jl/pull/651) and better shows how to use the lower-level APIs.
 * New [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/656).
+* [Data.Iris](https://github.com/FluxML/Flux.jl/pull/652) makes Fisher's Iris dataset available with `Iris.labels` and `Iris.features`.
 
 AD Changes:
 
