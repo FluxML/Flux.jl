@@ -14,3 +14,9 @@ using Test
 @test FashionMNIST.labels() isa Vector{Int64}
 
 @test Data.Sentiment.train() isa Vector{Data.Tree{Any}}
+
+@test Iris.features() isa Matrix
+@test size(Iris.features()) == (4,150)
+
+@test Iris.labels() isa Vector{String}
+@test size(Iris.labels()) == (150,)
