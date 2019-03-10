@@ -7,6 +7,10 @@ using Flux: maxpool, meanpool
   @test mp(x) == maxpool(x, (2,2))
   mp = MeanPool((2, 2))
   @test mp(x) == meanpool(x, (2,2))
+  mp = AdaptiveMaxPool((3,4))
+  @test size(mp(x)) == (3, 4, 3, 2)
+  mp = AdaptiveMeanPool((2,2))
+  @test size(mp(x)) == (2, 2, 3, 2)
 end
 
 @testset "CNN" begin
