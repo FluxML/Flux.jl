@@ -208,3 +208,45 @@ MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
 function Base.show(io::IO, m::MeanPool)
   print(io, "MeanPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
 end
+
+"""
+    AdaptiveMaxPool(target_out) 
+
+Adaptive max pooling layer. 'target_out' stands for the size of one layer(channel) of output.
+
+Irrespective of Input size and pooling window size, it returns the target output dimensions.
+"""
+struct AdaptiveMaxPool{N}
+  target_out::NTuple{N, Int}
+end
+
+AdaptiveMaxPool(target_out::NTuple{N, Integer}) where N = 
+  AdaptiveMaxPool(target_out)
+
+function (m::AdaptiveMaxPool)(x)
+  w = size(x, 1) - m.target_out[1] + 1
+  h = size(x, 2) - m.target_out[2] + 1
+  return maxpool(x, (w, h); pad = (0, 0), stride = (1, 1))
+end
+
+"""
+    AdaptiveMeanPool(target_out) 
+
+Adaptive mean pooling layer. 'target_out' stands for the size of one layer(channel) of output.
+
+Irrespective of Input size and pooling window size, it returns the target output dimensions.
+"""
+struct AdaptiveMeanPool{N}
+  target_out::NTuple{N, Int}
+end
+
+AdaptiveMeanPool(target_out::NTuple{N, Integer}) where N = 
+  AdaptiveMeanPool(target_out)
+
+function (m::AdaptiveMeanPool)(x)
+  w = size(x, 1) - m.target_out[1] + 1
+  h = size(x, 2) - m.target_out[2] + 1
+  return meanpool(x, (w, h); pad = (0, 0), stride = (1, 1))
+end
+
+
