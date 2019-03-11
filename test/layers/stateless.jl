@@ -49,7 +49,31 @@ const ϵ = 1e-7
   @testset "logitbinarycrossentropy" begin
     @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0)
   end
+  
+  y = [1 2 3]
+  y1 = [4.0 5.0 6.0]
+  @testset "KLDivergence" begin
+    @test Flux.KLDivergence(y, y1) ≈ 4.761838062403337
+    @test Flux.KLDivergence(y, y) ≈ 0 
+  end
 
+  @testset "Hinge" begin
+    @test Flux.Hinge(y, y1) ≈ 0
+    @test Flux.Hinge(y, 0.2 .* y) ≈ 0.33333
+  end
+  
+  y = [0.1 0.2 0.3]
+  y1 = [0.4 0.5 0.6]
+  @testset "Poisson" begin
+    @test Flux.Poisson(y, y1) ≈ 1.0160455586700767
+    @test Flux.Poisson(y, y) ≈ 0.5044459776946685
+  end
+
+  @testset "logcosh" begin
+    @test Flux.logcosh(y, y1) ≈ 0.13302230977782092
+    @test Flux.logcosh(y, y) ≈ 0
+  end
+  
   @testset "no spurious promotions" begin
     for T in (Float16, Float32, Float64)
       y = rand(T, 2)
