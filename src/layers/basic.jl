@@ -130,7 +130,7 @@ end
     Maxout(over)
 
 `Maxout` is a neural network layer, which has a number of internal layers,
-which all have the same input, and the max out returns the elementwise maximium
+which all have the same input, and the maxout returns the elementwise maximium
 of the internal layers' outputs.
 
 Maxout over linear dense layers satisfies the univeral approximation theorem.
@@ -150,15 +150,16 @@ end
     Maxout(f, n_alts, args...; kwargs...)
 
 Constructs a Maxout layer over `n_alts` instances of  the layer given  by `f`.
-All other arguements (`args` & `kwargs`) are passed to the constructor `f`.
+The function takes no arguement and should return some callable layer.
+Conventionally this is a linear dense layer.
 
 For example the following example which
-will construct a `Maxout` layer over 4 dense linear layers,
+will construct a `Maxout` layer over 4 internal dense linear layers,
 each identical in structure (784 inputs, 128 outputs).
 ```julia
     insize = 784
     outsie = 128
-    Maxout(Dense, 4, insize, outsize)
+    Maxout(()->Dense(insize, outsize), 4)
 ```
 """
 function Maxout(f, n_alts, args...; kwargs...)
