@@ -1,6 +1,5 @@
 using Juno
 import Zygote: Params, gradient
-import Base.depwarn
 
 function update!(opt, x, x̄)
   update!(x, -apply!(opt, x, x̄))
@@ -63,10 +62,6 @@ function train!(loss, ps, data, opt; cb = () -> ())
         loss(d...)
       end
       update!(opt, ps, gs)
-      if cb() == :stop
-        depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
-        break
-      end
     catch ex
       if ex isa StopException
         break
