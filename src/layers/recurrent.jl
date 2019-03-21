@@ -71,6 +71,8 @@ reset!(m) = prefor(x -> x isa Recur && (x.state = x.init), m)
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
+flip(f, xs, dims) = reverse(f(reverse(xs; dims = dims)); dims = dims)
+
 # Vanilla RNN
 
 mutable struct RNNCell{F,A,V}
