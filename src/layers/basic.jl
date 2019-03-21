@@ -147,7 +147,7 @@ struct Maxout{FS<:Tuple}
 end
 
 """
-    Maxout(f, n_alts, args...; kwargs...)
+    Maxout(f, n_alts)
 
 Constructs a Maxout layer over `n_alts` instances of  the layer given  by `f`.
 The function takes no arguement and should return some callable layer.
@@ -162,8 +162,8 @@ each identical in structure (784 inputs, 128 outputs).
     Maxout(()->Dense(insize, outsize), 4)
 ```
 """
-function Maxout(f, n_alts, args...; kwargs...)
-  over = Tuple(f(args...; kwargs...) for _ in 1:n_alts)
+function Maxout(f, n_alts)
+  over = Tuple(f() for _ in 1:n_alts)
   return Maxout(over)
 end
 
