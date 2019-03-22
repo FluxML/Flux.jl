@@ -5,14 +5,16 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
+```
+
+## Convolution and Pooling Layers
+
+These layers are used to build convolutional neural networks (CNNs).
+
+```@docs
 Conv
 MaxPool
 MeanPool
-```
-
-## Additional Convolution Layers
-
-```@docs
 DepthwiseConv
 ConvTranspose
 ```
@@ -26,6 +28,25 @@ RNN
 LSTM
 GRU
 Flux.Recur
+```
+
+## Other General Purpose Layers
+These are marginally more obscure than the Basic Layers.
+But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).
+
+```@docs
+Maxout
+```
+
+# Normalisation & Regularisation
+
+These layers don't affect the structure of the network but may improve training times or reduce overfitting.
+
+```@docs
+Flux.testmode!
+BatchNorm
+Dropout
+LayerNorm
 ```
 
 ## Activation Functions
