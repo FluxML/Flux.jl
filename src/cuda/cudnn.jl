@@ -17,7 +17,7 @@ function DropoutDesc(ρ::Real; seed::Integer=0)
   @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),handle(),s)
   states = CuArray{UInt8}(undef, s[]) # TODO: can we drop this when ρ=0?
   desc = DropoutDesc(d[], states)
-  @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,Ptr{Nothing},Csize_t,Culonglong),
+  @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,CuPtr{Nothing},Csize_t,Culonglong),
     desc,handle(),ρ,states,length(states),seed)
   finalizer(desc) do x
     @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
@@ -79,18 +79,18 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
       mean = zeros(CuArray{T}, dims...)
       ivar = ones(CuArray{T}, dims...)
     else
-      mean = C_NULL
-      ivar = C_NULL
+      mean = CU_NULL
+      ivar = CU_NULL
     end
 
     @check ccall((:cudnnBatchNormalizationForwardTraining, libcudnn), cudnnStatus_t,
                  (cudnnHandle_t,cudnnBatchNormMode_t,
                   Ptr{T}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T}, Ptr{T},
-                  Cdouble, Ptr{T}, Ptr{T},
-                  Cdouble, Ptr{T}, Ptr{T}),
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T}, CuPtr{T},
+                  Cdouble, CuPtr{T}, CuPtr{T},
+                  Cdouble, CuPtr{T}, CuPtr{T}),
                   handle(), BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
                   xd, x,
@@ -107,10 +107,10 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
     @check ccall((:cudnnBatchNormalizationForwardInference, libcudnn), cudnnStatus_t,
                  (Ptr{cudnnHandle_t},cudnnBatchNormMode_t,
                   Ptr{T}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T}, Ptr{T},
-                  Ptr{T}, Ptr{T},
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T}, CuPtr{T},
+                  CuPtr{T}, CuPtr{T},
                   Cdouble),
                   handle(), BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
@@ -159,7 +159,7 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
       mean, ivar = cache.mean, cache.ivar
       info("mean and ivar are fetched from the cache")
     else
-      mean, ivar = C_NULL, C_NULL
+      mean, ivar = CU_NULL, CU_NULL
     end
 
     if eps < BATCHNORM_MIN_EPS
@@ -170,11 +170,11 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
                  (cudnnHandle_t,cudnnBatchNormMode_t,
                   Ptr{T}, Ptr{T},
                   Ptr{T}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T}, Ptr{T}, Ptr{T},
-                  Cdouble, Ptr{T}, Ptr{T}),
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T}, CuPtr{T}, CuPtr{T},
+                  Cdouble, CuPtr{T}, CuPtr{T}),
                   handle(), BATCHNORM_SPATIAL,
                   Ref(T(alpha)), Ref(T(beta)),
                   Ref(T(dalpha)), Ref(T(dbeta)),
