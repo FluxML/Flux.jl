@@ -5,14 +5,14 @@ import ..CuArrays.CUDAdrv: CuPtr, CU_NULL
 using Pkg.TOML
 
 function version_check()
-  minor_version = 9
+  major_version = 1
   project = joinpath(dirname(pathof(CuArrays)), "../Project.toml")
   project = TOML.parse(String(read(project)))
   version = VersionNumber(get(project, "version", "0.0.0"))
-  if !(version.major == 0 && version.minor == minor_version)
+  if version.major != major_version
     @warn """
-    Flux is only supported with CuArrays v0.$minor_version.
-    Try running `] pin CuArrays@0.$minor_version`.
+    Flux is only supported with CuArrays v$major_version.x.
+    Try running `] pin CuArrays@$major_version`.
     """
   end
 end
