@@ -177,6 +177,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "models/layers/#Basic-Layers-1",
+    "page": "Model Reference",
+    "title": "Basic Layers",
+    "category": "section",
+    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense"
+},
+
+{
     "location": "models/layers/#Flux.Conv",
     "page": "Model Reference",
     "title": "Flux.Conv",
@@ -201,14 +209,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers/#Basic-Layers-1",
-    "page": "Model Reference",
-    "title": "Basic Layers",
-    "category": "section",
-    "text": "These core layers form the foundation of almost all neural networks.Chain\nDense\nConv\nMaxPool\nMeanPool"
-},
-
-{
     "location": "models/layers/#Flux.DepthwiseConv",
     "page": "Model Reference",
     "title": "Flux.DepthwiseConv",
@@ -225,11 +225,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers/#Additional-Convolution-Layers-1",
+    "location": "models/layers/#Convolution-and-Pooling-Layers-1",
     "page": "Model Reference",
-    "title": "Additional Convolution Layers",
+    "title": "Convolution and Pooling Layers",
     "category": "section",
-    "text": "DepthwiseConv\nConvTranspose"
+    "text": "These layers are used to build convolutional neural networks (CNNs).Conv\nMaxPool\nMeanPool\nDepthwiseConv\nConvTranspose"
 },
 
 {
@@ -270,6 +270,62 @@ var documenterSearchIndex = {"docs": [
     "title": "Recurrent Layers",
     "category": "section",
     "text": "Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).RNN\nLSTM\nGRU\nFlux.Recur"
+},
+
+{
+    "location": "models/layers/#Flux.Maxout",
+    "page": "Model Reference",
+    "title": "Flux.Maxout",
+    "category": "type",
+    "text": "Maxout(over)\n\nMaxout is a neural network layer, which has a number of internal layers, which all have the same input, and the maxout returns the elementwise maximium of the internal layers\' outputs.\n\nMaxout over linear dense layers satisfies the univeral approximation theorem.\n\nReference: Ian J. Goodfellow, David Warde-Farley, Mehdi Mirza, Aaron Courville, and Yoshua Bengio.\n\nMaxout networks.\n\nIn Proceedings of the 30th International Conference on International Conference on Machine Learning - Volume 28 (ICML\'13), Sanjoy Dasgupta and David McAllester (Eds.), Vol. 28. JMLR.org III-1319-III-1327. https://arxiv.org/pdf/1302.4389.pdf\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers/#Other-General-Purpose-Layers-1",
+    "page": "Model Reference",
+    "title": "Other General Purpose Layers",
+    "category": "section",
+    "text": "These are marginally more obscure than the Basic Layers. But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).Maxout"
+},
+
+{
+    "location": "models/layers/#Flux.testmode!",
+    "page": "Model Reference",
+    "title": "Flux.testmode!",
+    "category": "function",
+    "text": "testmode!(m)\ntestmode!(m, false)\n\nPut layers like Dropout and BatchNorm into testing mode (or back to training mode with false).\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers/#Flux.BatchNorm",
+    "page": "Model Reference",
+    "title": "Flux.BatchNorm",
+    "category": "type",
+    "text": "BatchNorm(channels::Integer, σ = identity;\n          initβ = zeros, initγ = ones,\n          ϵ = 1e-8, momentum = .1)\n\nBatch Normalization layer. The channels input should be the size of the channel dimension in your data (see below).\n\nGiven an array with N dimensions, call the N-1th the channel dimension. (For a batch of feature vectors this is just the data dimension, for WHCN images it\'s the usual channel dimension.)\n\nBatchNorm computes the mean and variance for each each W×H×1×N slice and shifts them to have a new mean and variance (corresponding to the learnable, per-channel bias and scale parameters).\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.\n\nExample:\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers/#Flux.Dropout",
+    "page": "Model Reference",
+    "title": "Flux.Dropout",
+    "category": "type",
+    "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers/#Flux.LayerNorm",
+    "page": "Model Reference",
+    "title": "Flux.LayerNorm",
+    "category": "type",
+    "text": "LayerNorm(h::Integer)\n\nA normalisation layer designed to be used with recurrent hidden states of size h. Normalises the mean/stddev of each input before applying a per-neuron gain/bias.\n\n\n\n\n\n"
+},
+
+{
+    "location": "models/layers/#Normalisation-and-Regularisation-1",
+    "page": "Model Reference",
+    "title": "Normalisation & Regularisation",
+    "category": "section",
+    "text": "These layers don\'t affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nBatchNorm\nDropout\nLayerNorm"
 },
 
 {
@@ -321,47 +377,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "models/layers/#Flux.testmode!",
-    "page": "Model Reference",
-    "title": "Flux.testmode!",
-    "category": "function",
-    "text": "testmode!(m)\ntestmode!(m, false)\n\nPut layers like Dropout and BatchNorm into testing mode (or back to training mode with false).\n\n\n\n\n\n"
-},
-
-{
-    "location": "models/layers/#Flux.BatchNorm",
-    "page": "Model Reference",
-    "title": "Flux.BatchNorm",
-    "category": "type",
-    "text": "BatchNorm(channels::Integer, σ = identity;\n          initβ = zeros, initγ = ones,\n          ϵ = 1e-8, momentum = .1)\n\nBatch Normalization layer. The channels input should be the size of the channel dimension in your data (see below).\n\nGiven an array with N dimensions, call the N-1th the channel dimension. (For a batch of feature vectors this is just the data dimension, for WHCN images it\'s the usual channel dimension.)\n\nBatchNorm computes the mean and variance for each each W×H×1×N slice and shifts them to have a new mean and variance (corresponding to the learnable, per-channel bias and scale parameters).\n\nSee Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.\n\nExample:\n\nm = Chain(\n  Dense(28^2, 64),\n  BatchNorm(64, relu),\n  Dense(64, 10),\n  BatchNorm(10),\n  softmax)\n\n\n\n\n\n"
-},
-
-{
-    "location": "models/layers/#Flux.Dropout",
-    "page": "Model Reference",
-    "title": "Flux.Dropout",
-    "category": "type",
-    "text": "Dropout(p)\n\nA Dropout layer. For each input, either sets that input to 0 (with probability p) or scales it by 1/(1-p). This is used as a regularisation, i.e. it reduces overfitting during training.\n\nDoes nothing to the input once in testmode!.\n\n\n\n\n\n"
-},
-
-{
-    "location": "models/layers/#Flux.AlphaDropout",
-    "page": "Model Reference",
-    "title": "Flux.AlphaDropout",
-    "category": "type",
-    "text": "AlphaDropout(p)\n\nA dropout layer. It is used in Self-Normalizing Neural Networks.  (https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf) The AlphaDropout layer ensures that mean and variance of activations remains the same as before.\n\n\n\n\n\n"
-},
-
-{
-    "location": "models/layers/#Flux.LayerNorm",
-    "page": "Model Reference",
-    "title": "Flux.LayerNorm",
-    "category": "type",
-    "text": "LayerNorm(h::Integer)\n\nA normalisation layer designed to be used with recurrent hidden states of size h. Normalises the mean/stddev of each input before applying a per-neuron gain/bias.\n\n\n\n\n\n"
-},
-
-{
-    "location": "models/layers/#Normalisation-and-Regularisation-1",
+    "location": "models/layers/#Normalisation-and-Regularisation-2",
     "page": "Model Reference",
     "title": "Normalisation & Regularisation",
     "category": "section",
