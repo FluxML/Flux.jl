@@ -39,4 +39,7 @@ include("tree.jl")
 include("sentiment.jl")
 using .Sentiment
 
+include("iris.jl")
+export Iris
+
 end

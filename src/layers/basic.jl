@@ -88,6 +88,14 @@ function Base.show(io::IO, l::Dense)
   print(io, ")")
 end
 
+# Try to avoid hitting generic matmul in some simple cases
+# Base's matmul is so slow that it's worth the extra conversion to hit BLAS
+(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  invoke(a, Tuple{AbstractArray}, x)
+
+(a::Dense{<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  a(T.(x))
+
 """
     Diagonal(in::Integer)
 
@@ -117,10 +125,48 @@ function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
 
-# Try to avoid hitting generic matmul in some simple cases
-# Base's matmul is so slow that it's worth the extra conversion to hit BLAS
-(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
 
-(a::Dense{<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
+"""
+    Maxout(over)
+
+`Maxout` is a neural network layer, which has a number of internal layers,
+which all have the same input, and the maxout returns the elementwise maximium
+of the internal layers' outputs.
+
+Maxout over linear dense layers satisfies the univeral approximation theorem.
+
+Reference:
+Ian J. Goodfellow, David Warde-Farley, Mehdi Mirza, Aaron Courville, and Yoshua Bengio.
+2013. Maxout networks.
+In Proceedings of the 30th International Conference on International Conference on Machine Learning - Volume 28 (ICML'13),
+Sanjoy Dasgupta and David McAllester (Eds.), Vol. 28. JMLR.org III-1319-III-1327.
+https://arxiv.org/pdf/1302.4389.pdf
+"""
+struct Maxout{FS<:Tuple}
+    over::FS
+end
+
+"""
+    Maxout(f, n_alts)
+
+Constructs a Maxout layer over `n_alts` instances of  the layer given  by `f`.
+The function takes no arguement and should return some callable layer.
+Conventionally this is a linear dense layer.
+
+For example the following example which
+will construct a `Maxout` layer over 4 internal dense linear layers,
+each identical in structure (784 inputs, 128 outputs).
+```julia
+    insize = 784
+    outsie = 128
+    Maxout(()->Dense(insize, outsize), 4)
+```
+"""
+function Maxout(f, n_alts)
+  over = Tuple(f() for _ in 1:n_alts)
+  return Maxout(over)
+end
+
+function (mo::Maxout)(input::AbstractArray)
+    mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+end
