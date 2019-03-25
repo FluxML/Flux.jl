@@ -79,5 +79,5 @@ poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
 """
 logcosh(ŷ, y) = sum(log.(cosh.(ŷ .- y)))
 
-hinge(ŷ, y) = sum(max.(0.0, 1 .-  ŷ .* y)) *1 // size(y,2)
+hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
 
