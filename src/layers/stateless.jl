@@ -59,9 +59,8 @@ end
     Kullback Leibler Divergence(KL Divergence)
 KLDivergence is a measure of how much one probability distribution is different from the other.
 It is always non-negative and zero only when both the distributions are equal everywhere.
-
 """
-function KLDivergence(ŷ, y)
+function kldivergence(ŷ, y)
   entropy = sum(y .* log.(y)) *1 //size(y,2)
   cross_entropy = crossentropy(ŷ, y)
   return entropy + cross_entropy
@@ -70,15 +69,13 @@ end
 """
     Poisson Loss function
 Poisson loss function is a measure of how the predicted distribution diverges from the expected distribution.
-
 """
-Poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
+poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
 
 """
     Logcosh Loss function
 """
-
 logcosh(ŷ, y) = sum(log.(cosh.(ŷ .- y)))
 
-Hinge(ŷ, y) = sum(max.(0.0, 1 .-  ŷ .* y)) *1 // size(y,2)
+hinge(ŷ, y) = sum(max.(0.0, 1 .-  ŷ .* y)) *1 // size(y,2)
 

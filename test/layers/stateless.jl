@@ -52,23 +52,23 @@ const ϵ = 1e-7
   
   y = [1 2 3]
   y1 = [4.0 5.0 6.0]
-  @testset "KLDivergence" begin
-    @test Flux.KLDivergence(y, y1) ≈ 4.761838062403337
-    @test Flux.KLDivergence(y, y) ≈ 0 
+  @testset "kldivergence" begin
+    @test Flux.kldivergence(y, y1) ≈ 4.761838062403337
+    @test Flux.kldivergence(y, y) ≈ 0 
   end
   
   y = [1 2 3 4]
   y1 = [5.0 6.0 7.0 8.0]
-  @testset "Hinge" begin
-    @test Flux.Hinge(y, y1) ≈ 0
-    @test Flux.Hinge(y, 0.5 .* y) ≈ 0.125
+  @testset "hinge" begin
+    @test Flux.hinge(y, y1) ≈ 0
+    @test Flux.hinge(y, 0.5 .* y) ≈ 0.125
   end
   
   y = [0.1 0.2 0.3]
   y1 = [0.4 0.5 0.6]
-  @testset "Poisson" begin
-    @test Flux.Poisson(y, y1) ≈ 1.0160455586700767
-    @test Flux.Poisson(y, y) ≈ 0.5044459776946685
+  @testset "poisson" begin
+    @test Flux.poisson(y, y1) ≈ 1.0160455586700767
+    @test Flux.poisson(y, y) ≈ 0.5044459776946685
   end
 
   @testset "logcosh" begin
