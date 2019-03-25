@@ -53,5 +53,11 @@ using Test, Random
             target = [0.5, 0.7].*input
             @test mo(input) == target
         end
+
+        @testset "params" begin
+            mo = Maxout(()->Dense(32, 64), 4)
+            ps = params(mo)
+            @test length(ps) == 8  #4 alts, each with weight and bias
+        end
     end
 end
