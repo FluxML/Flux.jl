@@ -1,6 +1,7 @@
 # v0.8.0
 
 * New [ConvTranspose layer](https://github.com/FluxML/Flux.jl/pull/311).
+* New [Maxout layer](https://github.com/FluxML/Flux.jl/pull/647)
 * Datasets are now [hash verified on download](https://github.com/FluxML/Flux.jl/pull/585) to avoid corruption.
 * We now [zero the initial state for RNNs](https://github.com/FluxML/Flux.jl/pull/590/).
 * [Normalisation can now work on arbitrary `dims`.](https://github.com/FluxML/Flux.jl/pull/592)
