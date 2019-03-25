@@ -477,7 +477,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Training",
     "title": "Callbacks",
     "category": "section",
-    "text": "train! takes an additional argument, cb, that\'s used for callbacks so that you can observe the training process. For example:train!(objective, ps, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(objective, ps, data, opt,\n            cb = throttle(evalcb, 5))"
+    "text": "train! takes an additional argument, cb, that\'s used for callbacks so that you can observe the training process. For example:train!(objective, ps, data, opt, cb = () -> println(\"training\"))Callbacks are called for every batch of training data. You can slow this down using Flux.throttle(f, timeout) which prevents f from being called more than once every timeout seconds.A more typical callback might look like this:test_x, test_y = # ... create single batch of test data ...\nevalcb() = @show(loss(test_x, test_y))\n\nFlux.train!(objective, ps, data, opt,\n            cb = throttle(evalcb, 5))Calling Flux.stop() in a callback will exit the training loop early.cb = function ()\n  accuracy() > 0.9 && Flux.stop()\nend"
 },
 
 {

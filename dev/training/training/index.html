@@ -33,4 +33,6 @@ julia&gt; @epochs 2 Flux.train!(...)
 evalcb() = @show(loss(test_x, test_y))
 
 Flux.train!(objective, ps, data, opt,
-            cb = throttle(evalcb, 5))</code></pre><footer><hr/><a class="previous" href="../optimisers/"><span class="direction">Previous</span><span class="title">Optimisers</span></a><a class="next" href="../../data/onehot/"><span class="direction">Next</span><span class="title">One-Hot Encoding</span></a></footer></article></body></html>
+            cb = throttle(evalcb, 5))</code></pre><p>Calling <code>Flux.stop()</code> in a callback will exit the training loop early.</p><pre><code class="language-julia">cb = function ()
+  accuracy() &gt; 0.9 &amp;&amp; Flux.stop()
+end</code></pre><footer><hr/><a class="previous" href="../optimisers/"><span class="direction">Previous</span><span class="title">Optimisers</span></a><a class="next" href="../../data/onehot/"><span class="direction">Next</span><span class="title">One-Hot Encoding</span></a></footer></article></body></html>
