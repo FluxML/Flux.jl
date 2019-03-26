@@ -72,7 +72,7 @@ const ϵ = 1e-7
   end
 
   @testset "logcosh" begin
-    @test Flux.logcosh(y, y1) ≈ 0.13302230977782092
+    @test Flux.logcosh(y, y1) ≈ 0.044340769925940306
     @test Flux.logcosh(y, y) ≈ 0
   end
   
