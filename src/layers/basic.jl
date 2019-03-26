@@ -167,6 +167,8 @@ function Maxout(f, n_alts)
   return Maxout(over)
 end
 
+@treelike Maxout
+
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
