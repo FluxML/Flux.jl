@@ -77,7 +77,7 @@ If you use the `RNN(10, 5)` constructor – as opposed to `RNNCell` – you'll s
 
 ```julia
 julia> RNN(10, 5)
-Recur(RNNCell(Dense(15, 5)))
+Recur(RNNCell(Dense(10, 5)))
 ```
 
 ## Sequences
@@ -114,13 +114,3 @@ truncate!(m)
 Calling `truncate!` wipes the slate clean, so we can call the model with more inputs without building up an expensive gradient computation.
 
 `truncate!` makes sense when you are working with multiple chunks of a large sequence, but we may also want to work with a set of independent sequences. In this case the hidden state should be completely reset to its original value, throwing away any accumulated information. `reset!` does this for you.
-
-In general, when training with recurrent layers in your model, you'll want to call `reset!` or `truncate!` for each loss calculation:
-
-```julia
-function loss(x,y)
-  l = Flux.mse(m(x), y)
-  Flux.reset!(m)
-  return l
-end
-```
