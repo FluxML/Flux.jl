@@ -1,5 +1,5 @@
 using Flux: testmode!
-using Flux.Tracker: data 
+using Flux.Tracker: data
 
 @testset "Dropout" begin
   x = [1.,2.,3.]
@@ -302,6 +302,12 @@ end
   let IN = InstanceNorm(4), GN = GroupNorm(4,4), sizes = (2,2,3,4,5),
       x = param(reshape(collect(1:prod(sizes)), sizes))
     @test IN(x) ≈ GN(x)
+  end
+
+  # show that group norm is the same as batch norm for a group of size 1 and batch of size 1
+  let BN = BatchNorm(4), GN = GroupNorm(4,1), sizes = (2,2,3,4,1),
+      x = param(reshape(collect(1:prod(sizes)), sizes))
+    @test BN(x) ≈ GN(x)
   end
 
 end
