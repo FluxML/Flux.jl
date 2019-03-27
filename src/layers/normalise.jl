@@ -342,26 +342,33 @@ function(gn::GroupNorm)(x)
   # Output reshaped to (W,H...,C/G,G,N)
   affine_shape[end-1] = channels
 
+  μ_affine_shape = ones(Int,dims + 1)
+  μ_affine_shape[end-1] = groups
+
   m = prod(size(x)[1:end-2]) * channels_per_group
   γ = reshape(gn.γ, affine_shape...)
   β = reshape(gn.β, affine_shape...)
+  
   if !gn.active
-    μ = reshape(gn.μ, affine_shape...)
-    σ² = reshape(gn.σ², affine_shape...)
+    og_shape = size(x)
+    μ = reshape(gn.μ, μ_affine_shape...) # Shape : (1,1,...C/G,G,1)
+    σ² = reshape(gn.σ², μ_affine_shape...) # Shape : (1,1,...C/G,G,1)
     ϵ = gn.ϵ
+    y = reshape(x,((size(x))[1:end-2]...,channels_per_group,groups,batches))
   else
     T = eltype(x)
     og_shape = size(x)
     y = reshape(x,((size(x))[1:end-2]...,channels_per_group,groups,batches))
     axes = [(1:ndims(y)-2)...] # axes to reduce along (all but channels axis)
     μ = mean(y, dims = axes)
-    σ² = sum((y .- μ) .^ 2, dims = axes) ./ m
+    σ² = mean((y .- μ) .^ 2, dims = axes)
+    
     ϵ = data(convert(T, gn.ϵ))
     # update moving mean/std
     mtm = data(convert(T, gn.momentum))
 
-    gn.μ = (1 - mtm) .* gn.μ .+ mtm .* reshape(data(μ), (groups,batches))
-    gn.σ² = (1 - mtm) .* gn.σ² .+ (mtm * m / (m - 1)) .* reshape(data(σ²), (groups,batches))
+    gn.μ = mean((1 - mtm) .* gn.μ .+ mtm .* reshape(data(μ), (groups,batches)),dims=2)
+    gn.σ² = mean((1 - mtm) .* gn.σ² .+ (mtm * m / (m - 1)) .* reshape(data(σ²), (groups,batches)),dims=2)
   end
 
   let λ = gn.λ
