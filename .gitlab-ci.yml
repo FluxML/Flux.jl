@@ -6,5 +6,51 @@ include:
   - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v1/test_v1.0.yml'
   - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v1/test_dev.yml'
 
+test:v1.0:
+  stage: test
+  image: "juliagpu/julia:v1.0-${CI_IMAGE_TAG}"
+  script:
+    - julia -e 'using InteractiveUtils;
+                versioninfo()'
+    - mkdir $JULIA_DEPOT_PATH # Pkg3.jl#325
+    - julia -e 'using Pkg;
+                Pkg.add("CuArrays");'
+
+    - julia --project -e 'using Pkg;
+                          Pkg.instantiate();
+                          Pkg.build();
+                          Pkg.test(; coverage=true);'
+
+test:master:
+  stage: test
+  image: "juliagpu/julia:v1.0-${CI_IMAGE_TAG}"
+  script:
+    - julia -e 'using InteractiveUtils;
+                versioninfo()'
+    - mkdir $JULIA_DEPOT_PATH # Pkg3.jl#325
+    - julia -e 'using Pkg;
+                Pkg.add(PackageSpec(name = "CUDAapi", rev = "master"));
+                Pkg.add(PackageSpec(name = "CUDAdrv", rev = "master"));
+                Pkg.add(PackageSpec(name = "CUDAnative", rev = "master"));
+                Pkg.add(PackageSpec(name = "CuArrays", rev = "master"));'
+
+    - julia --project -r 'using Pkg
+                          Pkg.instantiate();
+                          Pkg.build();
+                          Pkg.test(; coverage=true);'
+  allow_failure: true
+
+  artifacts:
+    when: always
+    paths:
+      - Manifest.toml
+      - .julia/
+      - deps/ext.jl
+      - deps/build.log
+      # gitlab-runner#2620
+      - src/*.cov
+      - src/*/*.cov
+      - src/*/*/*.cov
+
 test:dev:
   allow_failure: true
