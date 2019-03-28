@@ -42,18 +42,14 @@ end
 
 
 """
-    activations(c::Union{Chain, Any}, x)
+    activations(c::Chain, x)
 Calculate the forward results of each layers in Chain `c`
 """
-activations(m, x) = activations(Chain(m), x)
 function activations(c::Chain, x)
-    if length(c) == 0
-        return []
+    if isempty(c)
+        return [x, ]
     end
-    rst = [c[1](x), ]
-    if length(c) == 1
-        return rst
-    end
+    rst = [x, c[1](x)]
     for l in c[2:end]
         push!(rst, l(rst[end]))
     end
