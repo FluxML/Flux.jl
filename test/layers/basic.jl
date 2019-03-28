@@ -1,21 +1,21 @@
 using Test, Random
 import Flux: activations
 
-@testset "helpers" begin
-    @testset "activations" begin
-        dummy_model = Chain(Dense(10,5,σ),Dense(5,2),softmax)
-        x = rand(10)
-        @test_nowarn activations(dummy_model[1], x)
-        @test_nowarn activations(dummy_model[1:end-1], x)
-        @test_nowarn activations(dummy_model, x)
-
-        @test activations(Chain(), x) == []
-        @test activations(dummy_model, x)[1] == dummy_model[1](x)
-        @test activations(dummy_model, x)[2] == x |> dummy_model[1] |> dummy_model[2]
-    end
-end
-
 @testset "basic" begin
+    @testset "helpers" begin
+        @testset "activations" begin
+            dummy_model = Chain(Dense(10,5,σ),Dense(5,2),softmax)
+            x = rand(10)
+            @test_nowarn activations(dummy_model[1], x)
+            @test_nowarn activations(dummy_model[1:end-1], x)
+            @test_nowarn activations(dummy_model, x)
+            
+            @test activations(Chain(), x) == []
+            @test activations(dummy_model, x)[1] == dummy_model[1](x)
+            @test activations(dummy_model, x)[2] == x |> dummy_model[1] |> dummy_model[2]
+        end
+    end
+    
     @testset "Chain" begin
         @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn(10))
         @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn(10))
