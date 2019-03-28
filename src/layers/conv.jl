@@ -50,7 +50,8 @@ function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(conv(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  σ.(conv(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::Conv)
@@ -99,7 +100,17 @@ ConvTranspose(param(init(k..., reverse(ch)...)), param(zeros(ch[2])), σ,
 function (c::ConvTranspose)(x::AbstractArray)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(∇conv_data(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  # Calculate size of "input", from ∇conv_data()'s perspective...
+  I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- 2 .* c.pad
+  C_in = size(c.weight)[end-1]
+  batch_size = size(x)[end]
+  # Create DenseConvDims() that looks like the corresponding conv()
+  cdims = DenseConvDims((I..., C_in, batch_size), size(c.weight);
+      stride=c.stride,
+      padding=c.pad,
+      dilation=c.dilation,
+  )
+  return σ.(∇conv_data(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::ConvTranspose)
@@ -134,20 +145,22 @@ struct DepthwiseConv{N,F,A,V}
   bias::V
   stride::NTuple{N,Int}
   pad::NTuple{N,Int}
+  dilation::NTuple{N,Int}
 end
 
 DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-       stride = 1, pad = 0) where {T,N} =
-  DepthwiseConv(σ, w, b, expand.(sub2(Val(N)), (stride, pad))...)
+       stride = 1, pad = 0, dilation = 1) where {T,N} =
+  DepthwiseConv(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
 
 DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = glorot_uniform,
-     stride = 1, pad = 0) where N =
+     stride = 1, pad = 0, dilation = 1) where N =
   DepthwiseConv(param(init(k..., 1, ch)), param(zeros(ch)), σ,
-       stride = stride, pad = pad)
+       stride = stride, pad = pad, dilation=dilation)
 
 DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = glorot_uniform,
      stride::NTuple{N,Integer} = map(_->1,k),
-     pad::NTuple{N,Integer} = map(_->0,k)) where N =
+     pad::NTuple{N,Integer} = map(_->0,k),
+     dilation::NTuple{N,Integer} = map(_->1,k)) where N =
   DepthwiseConv(param(init(k..., ch[2], ch[1])), param(zeros(ch[2]*ch[1])), σ,
        stride = stride, pad = pad)
 
@@ -155,7 +168,8 @@ DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity
 
 function (c::DepthwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(depthwiseconv(x, c.weight, stride = c.stride, pad = c.pad) .+ b)
+  cdims = DepthwiseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  σ.(depthwiseconv(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::DepthwiseConv)
@@ -187,7 +201,10 @@ end
 MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
   MaxPool(k, expand(Val(N), pad), expand(Val(N), stride))
 
-(m::MaxPool)(x) = maxpool(x, m.k; pad = m.pad, stride = m.stride)
+function (m::MaxPool)(x)
+    pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
+    return maxpool(x, pdims)
+end
 
 function Base.show(io::IO, m::MaxPool)
   print(io, "MaxPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
@@ -209,7 +226,10 @@ end
 MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
   MeanPool(k, expand(Val(N), pad), expand(Val(N), stride))
 
-(m::MeanPool)(x) = meanpool(x, m.k; pad = m.pad, stride = m.stride)
+function (m::MeanPool)(x)
+    pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
+    return meanpool(x, pdims)
+end
 
 function Base.show(io::IO, m::MeanPool)
   print(io, "MeanPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")

@@ -4,9 +4,9 @@ using Flux: maxpool, meanpool
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
   mp = MaxPool((2, 2))
-  @test mp(x) == maxpool(x, (2,2))
+  @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
-  @test mp(x) == meanpool(x, (2,2))
+  @test mp(x) == meanpool(x, PoolDims(x, 2))
 end
 
 @testset "CNN" begin
