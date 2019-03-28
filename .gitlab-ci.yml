@@ -34,7 +34,7 @@ test:master:
                 Pkg.add(PackageSpec(name = "CUDAnative", rev = "master"));
                 Pkg.add(PackageSpec(name = "CuArrays", rev = "master"));'
 
-    - julia --project -r 'using Pkg
+    - julia --project -e 'using Pkg
                           Pkg.instantiate();
                           Pkg.build();
                           Pkg.test(; coverage=true);'
