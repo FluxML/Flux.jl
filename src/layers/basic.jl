@@ -46,14 +46,14 @@ end
 Calculate the forward results of each layers in Chain `c`
 """
 function activations(c::Chain, x)
-    if isempty(c)
-        return [x, ]
-    end
-    rst = [x, c[1](x)]
-    for l in c[2:end]
-        push!(rst, l(rst[end]))
-    end
-    return rst
+  if isempty(c)
+    return [x, ]
+  end
+  rst = [x, c[1](x)]
+  for l in c[2:end]
+    push!(rst, l(rst[end]))
+  end
+  return rst
 end
 
 
