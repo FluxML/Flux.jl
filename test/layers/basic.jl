@@ -9,7 +9,7 @@ import Flux: activations
         @test_nowarn activations(dummy_model[1:end-1], x)
         @test_nowarn activations(dummy_model, x)
 
-        @test activations(Chain(), x)[1] == []
+        @test activations(Chain(), x) == []
         @test activations(dummy_model, x)[1] == dummy_model[1](x)
         @test activations(dummy_model, x)[2] == x |> dummy_model[1] |> dummy_model[2]
     end
