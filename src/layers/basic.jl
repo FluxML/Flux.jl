@@ -47,6 +47,9 @@ Calculate the forward results of each layers in Chain `c`
 """
 activations(m, x) = activations(Chain(m), x)
 function activations(c::Chain, x)
+    if length(c) == 0
+        return []
+    end
     rst = [c[1](x), ]
     if length(c) == 1
         return rst
