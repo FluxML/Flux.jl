@@ -40,7 +40,23 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
+
+"""
+    activations(c::Union{Chain, Any}, x)
+Calculate the forward results of each layers in Chain `c`
+"""
+activations(m, x) = activations(Chain(m), x)
+function activations(c::Chain, x)
+    rst = [c[1](x), ]
+    if length(c) == 1
+        return rst
+    end
+    for l in c[2:end]
+        push!(rst, l(rst[end]))
+    end
+    return rst
+end
+
 
 """
     Dense(in::Integer, out::Integer, σ = identity)
