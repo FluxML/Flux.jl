@@ -291,14 +291,14 @@ end
 Group Normalization. 
 This layer can outperform Batch-Normalization and Instance-Normalization.
 
-GroupNorm(chs::Integer, G::Integer, λ = identity;
-          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), 
-          ϵ = 1f-5, momentum = 0.1f0)
+	GroupNorm(chs::Integer, G::Integer, λ = identity;
+	          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), 
+	          ϵ = 1f-5, momentum = 0.1f0)
 
-chs is the number of channels, the channel dimension of your input.
+``chs`` is the number of channels, the channel dimension of your input.
 For an array of N dimensions, the (N-1)th index is the channel dimension.
 
-G is the number of groups along which the statistics would be computed.
+``G`` is the number of groups along which the statistics would be computed.
 The number of channels must be an integer multiple of the number of groups.
 
 Example:
