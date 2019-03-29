@@ -21,8 +21,14 @@ test:v1.0:
   extends: .flux
   variables:
     CI_VERSION_TAG: 'v1.0'
+  only:
+    - staging
+    - trying
 
 test:v1.1:
   extends: .flux
   variables:
     CI_VERSION_TAG: 'v1.1'
+  only:
+    - staging
+    - trying
