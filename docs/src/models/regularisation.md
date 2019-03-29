@@ -15,6 +15,7 @@ loss(x, y) = crossentropy(softmax(m(x)), y)
 We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
 
 ```julia
+using LinearAlgebra
 penalty() = norm(m.W) + norm(m.b)
 loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()
 ```
@@ -24,12 +25,10 @@ parameters at once. We can easily penalise everything with `sum(norm, params)`.
 
 ```julia
 julia> params(m)
-2-element Array{Any,1}:
- param([0.355408 0.533092; … 0.430459 0.171498])
- param([0.0, 0.0, 0.0, 0.0, 0.0])
+Params([Float32[-0.0123748 -0.310727 … 0.557616 -0.365492; 0.507911 0.333276 … -0.299706 -0.350524; … ; 0.399712 -0.0647629 … 0.0437486 0.443338; 0.526206 0.121937 … -0.627679 -0.481252] (tracked), Float32[0.0, 0.0, 0.0, 0.0, 0.0] (tracked)])
 
 julia> sum(norm, params(m))
-26.01749952921026 (tracked)
+2.626020868792272 (tracked)
 ```
 
 Here's a larger example with a multi-layer perceptron.
