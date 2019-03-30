@@ -15,7 +15,7 @@ using Flux, CuArrays, Test
       cuy = (curnn(cux); curnn(cux))
 
       @test y.data ≈ collect(cuy.data)
-      @test_skip haskey(Flux.CUDA.descs, curnn.cell)
+      @test haskey(Flux.CUDA.descs, curnn.cell)
 
       Δ = randn(size(y))
 
