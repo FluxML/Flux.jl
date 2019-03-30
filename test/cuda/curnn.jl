@@ -1,7 +1,7 @@
 using Flux, CuArrays, Test
 
 @testset "RNN" begin
-  @testset for R in [RNN, LSTM]
+  @testset for R in [RNN, GRU, LSTM]
     rnn = R(10, 5)
     curnn = mapleaves(gpu, rnn)
     @testset for batch_size in (1, 5)

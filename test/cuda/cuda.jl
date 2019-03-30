@@ -41,5 +41,5 @@ end
 if CuArrays.libcudnn != nothing
     @info "Testing Flux/CUDNN"
     include("cudnn.jl")
-    include("curnn.jl")
+    # include("curnn.jl")
 end
