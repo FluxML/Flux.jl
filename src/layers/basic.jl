@@ -1,3 +1,5 @@
+using Base: depwarn
+
 """
     Chain(layers...)
 
@@ -72,6 +74,7 @@ Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
                initW = glorot_uniform, initb = zeros)
+  depwarn("Dense(in,out,σ,initW,initb) is deprecated; use Dense(W,b) instead")
   return Dense(param(initW(out, in)), param(initb(out)), σ)
 end
 
