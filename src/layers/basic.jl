@@ -73,8 +73,18 @@ end
 Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  depwarn("Dense(in,out,σ,initW,initb) is deprecated; use Dense(W,b) instead",:Dense)
+               initW = nothing, initb = nothing)
+  if initW != nothing || initb != nothing
+    depwarn("Dense(in,out,σ,initW,initb) is deprecated; use Dense(W,b) instead",:Dense)
+  end 
+
+  if initW == nothing
+    initW = glorot_uniform
+  end 
+  if initb == nothing
+    initb = zeros
+  end 
+
   return Dense(param(initW(out, in)), param(initb(out)), σ)
 end
 
