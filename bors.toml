@@ -1,3 +1,4 @@
 status = [
   "ci/gitlab/%"
 ]
+timeout-sec = 14400
