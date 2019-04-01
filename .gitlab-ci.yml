@@ -1,3 +1,6 @@
+before_script:
+  - export CI_CURNN_TEST=true
+
 variables:
   CI_IMAGE_TAG: 'cuda'
 
