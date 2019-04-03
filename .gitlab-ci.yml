@@ -1,5 +1,5 @@
 before_script:
-  - export CI_CURNN_TEST=true
+  - export CI_DISABLE_CURNN_TEST=true
 
 variables:
   CI_IMAGE_TAG: 'cuda'
