@@ -31,13 +31,14 @@ function Dropout(p)
   Dropout{typeof(p)}(p, true)
 end
 
-_dropout_shape(s, dims...) = tuple((i ∈ dims ? 1 : si for (i, si) ∈ enumerate(s))...)
+_dropout_shape(s, ::Colon) = size(s)
+_dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
-function (a::Dropout)(x, dims=0)
+function (a::Dropout)(x; dims = :)
   a.active || return x
-  y = similar(x, _dropout_shape(size(x), dims...))
+  y = similar(x, _dropout_shape(x, dims))
   rand!(y)
   y .= _dropout_kernel.(y, a.p, 1 - a.p)
   return x .* y
