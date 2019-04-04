@@ -28,7 +28,7 @@ function load()
     isfile(deps("iris.data")) && return
 
     @info "Downloading iris dataset."
-    download_and_verify("$(cache_prefix)https://www.dropbox.com/s/3mb288dwukrlodv/iris.data?dl=0",
+    download_and_verify("$(cache_prefix)https://externalshare.blob.core.windows.net/flux/iris.data",
                         deps("iris.data"),
                         "6f608b71a7317216319b4d27b4d9bc84e6abd734eda7872b71a458569e2656c0")
 end
