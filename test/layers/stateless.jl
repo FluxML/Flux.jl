@@ -70,11 +70,6 @@ const ϵ = 1e-7
     @test Flux.poisson(y, y1) ≈ 1.0160455586700767
     @test Flux.poisson(y, y) ≈ 0.5044459776946685
   end
-
-  @testset "logcosh" begin
-    @test Flux.logcosh(y, y1) ≈ 0.044340769925940306
-    @test Flux.logcosh(y, y) ≈ 0
-  end
   
   @testset "no spurious promotions" begin
     for T in (Float16, Float32, Float64)
