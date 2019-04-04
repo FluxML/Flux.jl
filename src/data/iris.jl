@@ -22,13 +22,13 @@ using ..Data: deps, download_and_verify
 const cache_prefix = ""
 
 # Uncomment if the iris.data file is cached to cache.julialang.org.
-# const cache_prefix = "https://cache.julialang.org/"
+const cache_prefix = "https://cache.julialang.org/"
 
 function load()
     isfile(deps("iris.data")) && return
 
     @info "Downloading iris dataset."
-    download_and_verify("$(cache_prefix)https://externalshare.blob.core.windows.net/flux/iris.data",
+    download_and_verify("$(cache_prefix)http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
                         deps("iris.data"),
                         "6f608b71a7317216319b4d27b4d9bc84e6abd734eda7872b71a458569e2656c0")
 end
