@@ -19,8 +19,6 @@ module Iris
 using DelimitedFiles
 using ..Data: deps, download_and_verify
 
-const cache_prefix = ""
-
 # Uncomment if the iris.data file is cached to cache.julialang.org.
 const cache_prefix = "https://cache.julialang.org/"
 
