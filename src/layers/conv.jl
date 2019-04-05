@@ -1,4 +1,4 @@
-using NNlib: conv, ∇conv_data, depthwiseconv, crosscor
+using NNlib: conv, ∇conv_data, depthwiseconv, DenseConvDims
 
 @generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
@@ -207,7 +207,8 @@ function (c::CrossCor)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  σ.(crosscor(x, c.weight, stride = c.stride, pad = c.pad, dilation = c.dilation) .+ b)
+  dense_dims = DenseConvDims(size(x), size(c.weight), stride=c.stride, padding=c.pad, dilation=c.dilation, flipkernel=true)
+  σ.(conv(x, c.weight, dense_dims) .+ b)
 end
 
 function Base.show(io::IO, l::CrossCor)
