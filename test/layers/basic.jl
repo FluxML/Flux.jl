@@ -9,8 +9,7 @@ import Flux: activations
       @test activations(Chain(), x) == []
       @test activations(dummy_model, x)[1] == dummy_model[1](x)
       @test activations(dummy_model, x)[2] == x |> dummy_model[1] |> dummy_model[2]
-
-      @test_nowarn activations(Chain(identity, x->:foo), 1) # different types
+      @test activations(Chain(identity, x->:foo), x)[2] == :foo # results include `Any` type
     end
   end
 
