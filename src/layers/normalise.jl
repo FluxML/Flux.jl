@@ -1,3 +1,5 @@
+using NNlib
+
 """
     testmode!(m)
     testmode!(m, false)
@@ -390,5 +392,67 @@ _testmode!(gn::GroupNorm, test) = (gn.active = !test)
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(join(size(l.β), ", "))")
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
+  print(io, ")")
+end
+
+"""
+  LocalContrastNorm(3)(param(rand(10,10,3,5)))
+
+Local Contrast Normalization Layer can serve an importanat role in achieving better accuracies in object recognition datasets.
+
+The only parameter is the radius of the kernel across which normalization is done
+Local contrast normalization normalises every pixel by a weighted mean and standard deviation 
+of it's neighboring pixels.
+
+Reference Link : http://yann.lecun.com/exdb/publis/pdf/jarrett-iccv-09.pdf
+"""
+
+# Utility functions
+function gaussian(x,y,σ = 2.0)
+   z = √(2*π*(σ^2)) 
+   return (1. / z)*(exp((-(x^2 + y^2))/(2*σ^2)))
+end
+
+function gaussian_filter(filter_shape)
+    # filter_shape : [width,height,C_in,1]
+    out = zeros(filter_shape)
+
+    mid_w = div(filter_shape[1],2) + 1
+    mid_h = div(filter_shape[2],2) + 1
+    
+    for i in 1:filter_shape[1]
+        for j in 1:filter_shape[2]
+            out[i,j,:,:] .= gaussian(i - mid_w,j - mid_h)
+        end
+    end
+    
+    return out/sum(out)
+end
+
+struct LocalContrastNorm{N}
+    r::N # Radius of kernel
+end
+
+function(lcn::LocalContrastNorm)(x)
+    radius = lcn.r
+    
+    filter_shape = (radius,radius,size(x)[3],1)
+    filter = gaussian_filter(filter_shape)
+    
+    pad = div(filter_shape[1],2)
+    m = NNlib.conv(x,filter,pad=pad,stride=1) # mean of filtering at pixel (i,j)
+    
+    y = x .- m
+    
+    z = y.^2
+    σ = sqrt.(NNlib.conv(z,filter,pad=pad,stride=1))
+    c = mean(σ)
+    ϵ = 1.0f-4
+    
+    return (x .- m)./(max.(σ,c,ϵ))
+end
+
+function Base.show(io::IO, l::LocalContrastNorm)
+  print(io, "LocalContrastNorm($(join(l.r))")
   print(io, ")")
 end

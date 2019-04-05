@@ -311,3 +311,8 @@ end
   end
 
 end
+
+@testset "LocalContrastNorm" begin
+    x = rand(10,10,3,5)
+    @test size(x) == size(LocalContrastNorm(3)(x))
+end 
