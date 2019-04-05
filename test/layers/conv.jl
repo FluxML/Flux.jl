@@ -32,6 +32,16 @@ end
   m2 = DepthwiseConv((2, 2), 3)
 
   @test size(m2(r), 3) == 3
+  
+  x = zeros(Float64, 28, 28, 3, 5)
+  
+  m3 = DepthwiseConv((2, 2), 3 => 5)
+  
+  @test size(m3(r), 3) == 15
+  
+  m4 = DepthwiseConv((2, 2), 3)
+  
+  @test size(m4(r), 3) == 3
 end
 
 @testset "CrossCor" begin
