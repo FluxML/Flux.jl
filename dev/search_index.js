@@ -425,6 +425,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "training/optimisers/#Flux.Optimise.RMSProp",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.RMSProp",
+    "category": "type",
+    "text": "RMSProp(η = 0.001, ρ = 0.9)\n\nRMSProp optimiser. Parameters other than learning rate don\'t need tuning. Often a good choice for recurrent networks.\n\n\n\n\n\n"
+},
+
+{
     "location": "training/optimisers/#Flux.Optimise.ADAM",
     "page": "Optimisers",
     "title": "Flux.Optimise.ADAM",
@@ -433,11 +441,59 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "training/optimisers/#Flux.Optimise.AdaMax",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.AdaMax",
+    "category": "type",
+    "text": "AdaMax(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08)\n\nAdaMax optimiser. Variant of ADAM based on the ∞-norm.\n\n\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers/#Flux.Optimise.ADAGrad",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADAGrad",
+    "category": "type",
+    "text": "ADAGrad(η = 0.1; ϵ = 1e-8)\n\nADAGrad optimiser. Parameters don\'t need tuning.\n\n\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers/#Flux.Optimise.ADADelta",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADADelta",
+    "category": "type",
+    "text": "ADADelta(ρ = 0.9, ϵ = 1e-8)\n\nADADelta optimiser. Parameters don\'t need tuning.\n\n\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers/#Flux.Optimise.AMSGrad",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.AMSGrad",
+    "category": "type",
+    "text": "AMSGrad(η = 0.001, β = (0.9, 0.999))\n\nAMSGrad optimiser. Parameters don\'t need tuning.\n\n\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers/#Flux.Optimise.NADAM",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.NADAM",
+    "category": "type",
+    "text": "NADAM(η = 0.001, β = (0.9, 0.999))\n\nNADAM optimiser. Parameters don\'t need tuning.\n\n\n\n\n\n"
+},
+
+{
+    "location": "training/optimisers/#Flux.Optimise.ADAMW",
+    "page": "Optimisers",
+    "title": "Flux.Optimise.ADAMW",
+    "category": "function",
+    "text": "ADAMW((η = 0.001, β = (0.9, 0.999), decay = 0)\n\nADAMW fixing weight decay regularization in Adam.\n\n\n\n\n\n"
+},
+
+{
     "location": "training/optimisers/#Optimiser-Reference-1",
     "page": "Optimisers",
     "title": "Optimiser Reference",
     "category": "section",
-    "text": "All optimisers return an object that, when passed to train!, will update the parameters passed to it.Descent\nMomentum\nNesterov\nADAM"
+    "text": "All optimisers return an object that, when passed to train!, will update the parameters passed to it.Descent\nMomentum\nNesterov\nRMSProp\nADAM\nAdaMax\nADAGrad\nADADelta\nAMSGrad\nNADAM\nADAMW"
 },
 
 {
