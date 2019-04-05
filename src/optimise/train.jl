@@ -1,6 +1,11 @@
 using Juno
 import Zygote: Params, gradient
 
+function update!(x::AbstractArray, x̄)
+  x .+= x̄
+  return x
+end
+
 function update!(opt, x, x̄)
   update!(x, -apply!(opt, x, x̄))
 end
