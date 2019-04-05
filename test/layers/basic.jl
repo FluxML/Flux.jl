@@ -6,9 +6,11 @@ import Flux: activations
     @testset "activations" begin
       dummy_model = Chain(Dense(10,5,σ),Dense(5,2),softmax)
       x = rand(10)
-      @test activations(Chain(), x) == [x, ]
-      @test activations(dummy_model, x)[2] == dummy_model[1](x)
-      @test activations(dummy_model, x)[3] == x |> dummy_model[1] |> dummy_model[2]
+      @test activations(Chain(), x) == []
+      @test activations(dummy_model, x)[1] == dummy_model[1](x)
+      @test activations(dummy_model, x)[2] == x |> dummy_model[1] |> dummy_model[2]
+
+      @test_nowarn activations(Chain(identity, x->:foo), 1) # different types
     end
   end
 

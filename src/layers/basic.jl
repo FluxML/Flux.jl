@@ -41,15 +41,18 @@ function Base.show(io::IO, c::Chain)
 end
 
 
+# This is a temporary and naive inplementation
+# see issue https://github.com/FluxML/Flux.jl/issues/702
 """
     activations(c::Chain, x)
 Calculate the forward results of each layers in Chain `c`
 """
 function activations(c::Chain, x)
+  rst = Array{Any,1}()
   if isempty(c)
-    return [x, ]
+    return rst
   end
-  rst = [x, c[1](x)]
+  push!(rst, c[1](x))
   for l in c[2:end]
     push!(rst, l(rst[end]))
   end
