@@ -42,19 +42,18 @@ end
 
 
 # This is a temporary and naive inplementation
+# it might be replaced in the future to get better performance
 # see issue https://github.com/FluxML/Flux.jl/issues/702
+# Johnny Chen -- @johnnychen94
 """
-    activations(c::Chain, x)
-Calculate the forward results of each layers in Chain `c`
+    activations(c::Chain, input)
+Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
-function activations(c::Chain, x)
-  rst = Array{Any,1}()
-  if isempty(c)
-    return rst
-  end
-  push!(rst, c[1](x))
-  for l in c[2:end]
-    push!(rst, l(rst[end]))
+function activations(c::Chain, input)
+  rst = []
+  for l in c
+    x = get(rst, length(rst), input)
+    push!(rst, l(x))
   end
   return rst
 end
