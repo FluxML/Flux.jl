@@ -41,8 +41,8 @@ function Base.show(io::IO, c::Chain)
 end
 
 
-# This is a temporary and naive inplementation
-# it might be replaced in the future to get better performance
+# This is a temporary and naive implementation
+# it might be replaced in the future for better performance
 # see issue https://github.com/FluxML/Flux.jl/issues/702
 # Johnny Chen -- @johnnychen94
 """
