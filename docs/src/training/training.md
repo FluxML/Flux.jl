@@ -93,3 +93,11 @@ evalcb() = @show(loss(test_x, test_y))
 Flux.train!(objective, ps, data, opt,
             cb = throttle(evalcb, 5))
 ```
+
+Calling `Flux.stop()` in a callback will exit the training loop early.
+
+```julia
+cb = function ()
+  accuracy() > 0.9 && Flux.stop()
+end
+```

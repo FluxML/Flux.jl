@@ -41,5 +41,7 @@ end
 if CuArrays.libcudnn != nothing
     @info "Testing Flux/CUDNN"
     include("cudnn.jl")
-    include("curnn.jl")
+    if !haskey(ENV, "CI_DISABLE_CURNN_TEST")
+      include("curnn.jl")
+    end
 end

@@ -1,6 +1,7 @@
 # v0.8.0
 
 * New [ConvTranspose layer](https://github.com/FluxML/Flux.jl/pull/311).
+* New [Maxout layer](https://github.com/FluxML/Flux.jl/pull/647)
 * Datasets are now [hash verified on download](https://github.com/FluxML/Flux.jl/pull/585) to avoid corruption.
 * We now [zero the initial state for RNNs](https://github.com/FluxML/Flux.jl/pull/590/).
 * [Normalisation can now work on arbitrary `dims`.](https://github.com/FluxML/Flux.jl/pull/592)
@@ -9,6 +10,7 @@
 * New "performance tips" [section of the docs](https://github.com/FluxML/Flux.jl/pull/615).
 * The training loop is [now more readable](https://github.com/FluxML/Flux.jl/pull/651) and better shows how to use the lower-level APIs.
 * New [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/656).
+* [Data.Iris](https://github.com/FluxML/Flux.jl/pull/652) makes Fisher's Iris dataset available with `Iris.labels` and `Iris.features`.
 * New [InstanceNorm](https://github.com/FluxML/Flux.jl/pull/634), as popularized by [Instance Normalization: The Missing Ingredient for Fast Stylization](https://arxiv.org/abs/1607.08022).
 
 AD Changes:

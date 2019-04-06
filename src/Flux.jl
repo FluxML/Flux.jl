@@ -6,9 +6,9 @@ using Base: tail
 using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
-export Chain, Dense, RNN, LSTM, GRU, Conv, ConvTranspose, MaxPool, MeanPool, AdaptiveMaxPool,
-       AdaptiveMeanPool, DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm,
-       params, mapleaves, cpu, gpu, f32, f64
+export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, ConvTranspose, MaxPool, MeanPool, 
+       AdaptiveMaxPool, AdaptiveMeanPool, DepthwiseConv, Dropout, AlphaDropout, LayerNorm, 
+       BatchNorm, InstanceNorm, GroupNorm, params, mapleaves, cpu, gpu, f32, f64
 
 @reexport using NNlib
 
