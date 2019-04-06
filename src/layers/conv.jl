@@ -184,12 +184,17 @@ be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct CrossCor{N,F,A,V}
-σ::F
-weight::A
-bias::V
-stride::NTuple{N,Int}
-pad::NTuple{N,Int}
-dilation::NTuple{N,Int}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{N,Int}
+  dilation::NTuple{N,Int}
+end
+
+function crosscor(x, w, d)
+  
+  return conv(x, w, DenseConvDims(d))
 end
 
 CrossCor(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
@@ -203,12 +208,17 @@ CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
 
 @treelike CrossCor
 
+function crosscor(x, w, ddims::DenseConvDims)
+  ddims = DenseConvDims(ddims, F=true)
+  return conv(x, w, ddims)
+end
+
 function (c::CrossCor)(x)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  dense_dims = DenseConvDims(size(x), size(c.weight), stride=c.stride, padding=c.pad, dilation=c.dilation, flipkernel=true)
-  σ.(conv(x, c.weight, dense_dims) .+ b)
+  ddims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  σ.(crosscor(x, c.weight, ddims) .+ b)
 end
 
 function Base.show(io::IO, l::CrossCor)

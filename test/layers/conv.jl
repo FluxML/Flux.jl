@@ -46,7 +46,12 @@ end
 
 @testset "CrossCor" begin
   r = rand(28, 28, 1, 1)
-  m = Chain(CrossCor((2, 2), 1=>16, relu),MaxPool((2,2)),CrossCor((2, 2), 16=>8, relu),MaxPool((2,2)),x -> reshape(x, :, size(x, 4)),Dense(288, 10), softmax)
+  m = Chain(CrossCor((2, 2), 1=>16, relu),
+      MaxPool((2,2)),
+      CrossCor((2, 2), 16=>8, relu),
+      MaxPool((2,2)),
+      x -> reshape(x, :, size(x, 4)),
+      Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
 
