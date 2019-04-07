@@ -24,19 +24,27 @@ mutable struct BatchIter{T,N}
     ind::Any # indices
 end
 
-function _batch_iter(c::AbstractArray,n::Int,ind::Any)
+function _batch_iter(c::AbstractArray,n::Int,ind::Any,to_shuffle::Bool)
     b = BatchIter(c,n,ind)
-    indices = collect(1:size(c)[end])[shuffle(1:end)]
+    indices = collect(1:size(c)[end])
+    if to_shuffle == true
+        indices = indices[shuffle(1:end)]
+    end
     ind = collect(partition(indices,n))
     b.ind = ind
     return b
 end
 
-batch_iter(c::AbstractArray,n::Int) = _batch_iter(c,n,nothing)
+batch_iter(c::AbstractArray,n::Int;to_shuffle=true) = _batch_iter(c,n,nothing,to_shuffle)
 
 function Base.iterate(b::BatchIter,state = 1)
-    state <= length(ind) || return nothing
+    state <= length(b.ind) || return nothing
     return (b.c[[Colon() for _ in 1:ndims(b.c)-1]...,b.ind[state]],state+1)
+end
+
+function Base.length(b::BatchIter)
+    l = size(b.c)[end]
+    return div(l, b.n) + ((mod(l, b.n) > 0) ? 1 : 0)
 end
 
 """
