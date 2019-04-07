@@ -192,11 +192,6 @@ struct CrossCor{N,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-function crosscor(x, w, d)
-  
-  return conv(x, w, DenseConvDims(d))
-end
-
 CrossCor(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
      stride = 1, pad = 0, dilation = 1) where {T,N} =
   CrossCor(σ, w, b, expand.(sub2(Val(N)), (stride, pad, dilation))...)
