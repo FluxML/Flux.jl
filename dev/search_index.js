@@ -381,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Model Reference",
     "title": "Normalisation & Regularisation",
     "category": "section",
-    "text": "These layers don\'t affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nBatchNorm\nDropout\nAlphaDropout\nLayerNorm"
+    "text": "These layers don\'t affect the structure of the network but may improve training times or reduce overfitting.Flux.testmode!\nBatchNorm\nDropout\nAlphaDropout\nLayerNorm\nGroupNorm"
 },
 
 {
