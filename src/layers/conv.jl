@@ -1,4 +1,5 @@
 using NNlib: conv, ∇conv_data, depthwiseconv
+using Base.Iterators:partition
 
 @generated sub2(::Val{N}) where N = :(Val($(N-2)))
 
@@ -213,4 +214,56 @@ MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N =
 
 function Base.show(io::IO, m::MeanPool)
   print(io, "MeanPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
+end
+
+"""
+	PixelShuffle(r)
+
+Pixel shuffling layer. `r` is the scale factor for shuffling.
+
+The layer converts an input of size [W,H,r²C,N] to [rW,rH,C,N]
+Used extensively in super-resolution networks to upsample towrads high reolution feature maps.
+
+Reference : https://arxiv.org/pdf/1609.05158.pdf
+"""
+function split_channels(x::AbstractArray,val::Int) # Split chaannels into `val` partitions
+    indices = collect(1:size(x)[end-1])
+    channels_par = partition(indices,div(size(x)[end-1],val))
+    out = []
+    for c in channels_par
+       push!(out,x[:,:,c,:])
+    end
+    return out
+end
+
+struct PixelShuffle{N}
+  r::N # scale 
+end
+
+"""
+phaseShift cyclically reshapes and permutes the channels
+"""
+function phaseShift(x,scale,shape_1,shape_2)
+    x_ = reshape(x,shape_1...)
+    x_ = permutedims(x_,[1,2,4,3,5])
+    return reshape(x_,shape_2...)
+end
+
+function(ps::PixelShuffle)(x)
+	ndims(x) == 4 || error("PixelShuffle defined only for arrays of dimension 4")
+	(size(x)[end-1])%(ps.r*ps.r) == 0 || error("Number of channels($(size(x)[end-1])) must be divisible by $(ps.r*ps.r)")
+    scale = ps.r
+    W,H,C,N = size(x)
+    
+    C_out = div(C,scale*scale)
+    shape_1 = (W,H,scale,scale,N)
+    shape_2 = (W*scale,H*scale,1,N)
+    
+    C_split = split_channels(x,C_out)
+    output = [phaseShift(x_c,scale,shape_1,shape_2) for x_c in C_split]
+    return cat(output...,dims=3)
+end
+
+function Base.show(io::IO, ps::PixelShuffle)
+  print(io, "PixelShuffle(", ps.r, ")")
 end

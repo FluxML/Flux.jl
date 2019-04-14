@@ -43,3 +43,11 @@ end
   
   @test size(m4(r), 3) == 3
 end
+
+@testset "PixelShuffle" begin
+    ps = PixelShuffle(3)
+
+    x = ones(2,4,18,5)
+
+    @test size(ps(x)) == (6,12,2,5)
+end
