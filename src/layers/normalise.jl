@@ -413,7 +413,7 @@ function gaussian(x,y,σ = 2.0)
    return (1. / z)*(exp((-(x^2 + y^2))/(2*σ^2)))
 end
 
-function gaussian_filter(filter_shape)
+function gaussian_filter(filter_shape,type_)
     # filter_shape : [width,height,C_in,1]
     out = zeros(filter_shape)
 
@@ -426,26 +426,33 @@ function gaussian_filter(filter_shape)
         end
     end
     
-    return Float64.(out/sum(out))
+    return convert.(type_,out/sum(out))
 end
 
-struct LocalContrastNorm{N}
+mutable struct LocalContrastNorm{N}
     r::N # Radius of kernel
+    filter # Kernel
 end
+
+LocalContrastNorm(r::Integer) = LocalContrastNorm(r,nothing)
 
 function(lcn::LocalContrastNorm)(x)
-    radius = lcn.r
-    
-    filter_shape = (radius,radius,size(x)[3],1)
-    filter = gaussian_filter(filter_shape)
+    filter_shape = (lcn.r,lcn.r,size(x)[3],1)
+    if lcn.filter == nothing
+      if typeof(x) <: TrackedArray
+        lcn.filter = gaussian_filter(filter_shape,eltype(x.data))
+      else
+        lcn.filter = gaussian_filter(filter_shape,eltype(x))
+      end
+    end
     
     pad = div(filter_shape[1],2)
-    m = NNlib.conv(x,filter,pad=pad,stride=1) # mean of filtering at pixel (i,j)
+    m = NNlib.conv(x,lcn.filter,pad=pad,stride=1) # mean of filtering at pixel (i,j)
     
     y = x .- m
     
     z = y.^2
-    σ = sqrt.(NNlib.conv(z,filter,pad=pad,stride=1))
+    σ = sqrt.(NNlib.conv(z,lcn.filter,pad=pad,stride=1))
     c = mean(σ)
     ϵ = 1.0f-4
     
