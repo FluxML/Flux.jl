@@ -426,7 +426,7 @@ function gaussian_filter(filter_shape)
         end
     end
     
-    return out/sum(out)
+    return Float64.(out/sum(out))
 end
 
 struct LocalContrastNorm{N}
