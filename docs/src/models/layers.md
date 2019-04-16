@@ -74,4 +74,5 @@ Dropout
 AlphaDropout
 LayerNorm
 LocalContrastNorm
+GroupNorm
 ```
