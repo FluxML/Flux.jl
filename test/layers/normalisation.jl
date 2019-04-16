@@ -314,25 +314,4 @@ end
 @testset "LRNorm" begin
   x = param(reshape(Float32[1:96;], 4, 4, 3, 2))
   @test size(LRNorm()(x)) == size(x) 
-
-  function iterative_lrnorm(x, a, b, n, k)
-    num_channels = size(x, 3)
-    y = ones(size(x))
-    for i in CartesianIndices(x)
-      norm_term = 0
-      lower_lim = max(1, trunc(Int, i[3] + 1 - n/2))
-      upper_lim = min(num_channels, trunc(Int, i[3] + 1 + n/2))
-      for j in lower_lim:upper_lim
-        norm_term += a * (x[i[1],i[2], j, i[4]]) ^ 2  
-      end
-      norm_term += k
-      norm_term = norm_term ^ b
-      norm_term = norm_term.data
-      y[i] = y[i] / norm_term     #Every spatial location normalised.
-    end
-    return y .* x
-  end
-
-  m = LRNorm()
-  @test m(x) ≈ iterative_lrnorm(x, 10.0^(-4), 0.75, 5, 2.0)
 end

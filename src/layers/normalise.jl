@@ -407,27 +407,31 @@ m(x) #x is a 4-D input
 ```
 """
 mutable struct LRNorm{F, V, W, N}
-  α :: F
-  β :: V
-  n :: W
-  k :: N
-  active :: Bool
+  α::F
+  β::V
+  n::W
+  k::N
+  active::Bool
 end
 
 LRNorm(α = 10.0 ^ (-4), β = 0.75, n = 5, k = 2.0) = LRNorm(α, β, n, k, true)
 
 function (lrn::LRNorm)(x)
   num_channels = size(x, 3)
-  y = zeros(eltype(x), size(x))
-  for i in size(y, 3)
-    lower_lim = max(1, trunc(Int, i + 1 - lrn.n/2))
-    upper_lim = min(num_channels, trunc(Int, i + 1 + lrn.n/2))
-    y[:, :, lower_lim:upper_lim, :] .= 1
+  if typeof(x) <: TrackedArray
+    y = zeros(eltype(x.data), 1, 1, num_channels, num_channels)
+  else
+    y = zeros(eltype(x), 1, 1, num_channels, num_channels)
   end
-  y = lrn.α .* sum(y .* (x .^ 2), dims = 3)
-  y = y .+ lrn.k
-  y = y .^ lrn.β
-  return x ./ y 
+  for i in num_channels
+    lower_lim = max(1, trunc(Int, i - lrn.n/2))
+    upper_lim = min(num_channels, trunc(Int, i + lrn.n/2))
+    y[1, 1, lower_lim:upper_lim, i] .= 1
+  end
+  norm = lrn.α .* NNlib.conv(x .^ 2, y)
+  norm = norm .+ lrn.k
+  norm = norm .^ lrn.β
+  return x ./ norm 
 end 
 
 children(lrn::LRNorm) =
@@ -437,3 +441,8 @@ mapchildren(f, lrn::LRNorm) =  # e.g. mapchildren(cu, BN)
   LRNorm(lrn.α, f(lrn.β), f(lrn.n), f(lrn.k), lrn.active)
 
 _testmode!(lrn::LRNorm, test) = (lrn.active = !test)
+
+function Base.show(io::IO, l::LRNorm)
+  print(io, "LRNorm(α = $(join(l.α))")
+  print(io, ",β = $(l.β) ,n = $(l.n),k = $(l.k))")
+end
