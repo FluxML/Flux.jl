@@ -420,8 +420,8 @@ function (lrn::LRNorm)(x)
   num_channels = size(x, 3)
   y = zeros(eltype(data(x)), 1, 1, num_channels, num_channels)
   for i in 1:num_channels
-    lower_lim = max(1, trunc(Int, i - lrn.n/2))
-    upper_lim = min(num_channels, trunc(Int, i + lrn.n/2))
+    lower_lim = max(1, trunc(Int, i - div(lrn.n,2)))
+    upper_lim = min(num_channels, trunc(Int, i + div(lrn.n,2)))
     y[1, 1, lower_lim:upper_lim, i] .= 1
   end
   norm = lrn.α .* NNlib.conv(x .^ 2, y)

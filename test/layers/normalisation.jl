@@ -326,7 +326,7 @@ end
 
   m2 = LRNorm()
   x2 = param(reshape(Float32[1:10;], 1, 1, 10, 1))
-  answer = [0.59 1.19 1.78 2.37 2.96 3.54 4.12 4.69 5.29 5.88]     #These values are computed using tensorflow's LRNorm. 
+  answer = [0.59 1.19 1.78 2.37 2.96 3.54 4.12 4.70 5.29 5.89]     #These values are computed using tensorflow's LRNorm. 
   answer = reshape(answer, 1, 1, 10, 1)
   #The value computed by LRNorm is approximately equal to that computed by tensorflow
   computed = m2(x2)
