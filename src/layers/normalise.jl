@@ -418,12 +418,8 @@ LRNorm(α = 10.0 ^ (-4), β = 0.75, n = 5, k = 2.0) = LRNorm(α, β, n, k, true)
 
 function (lrn::LRNorm)(x)
   num_channels = size(x, 3)
-  if typeof(x) <: TrackedArray
-    y = zeros(eltype(x.data), 1, 1, num_channels, num_channels)
-  else
-    y = zeros(eltype(x), 1, 1, num_channels, num_channels)
-  end
-  for i in num_channels
+  y = zeros(eltype(data(x)), 1, 1, num_channels, num_channels)
+  for i in 1:num_channels
     lower_lim = max(1, trunc(Int, i - lrn.n/2))
     upper_lim = min(num_channels, trunc(Int, i + lrn.n/2))
     y[1, 1, lower_lim:upper_lim, i] .= 1
