@@ -175,7 +175,7 @@ will construct a `Maxout` layer over 4 internal dense linear layers,
 each identical in structure (784 inputs, 128 outputs).
 ```julia
     insize = 784
-    outsie = 128
+    outsize = 128
     Maxout(()->Dense(insize, outsize), 4)
 ```
 """
