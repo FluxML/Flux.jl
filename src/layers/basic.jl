@@ -40,7 +40,24 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-activations(c::Chain, x) = accumulate((x, m) -> m(x), c.layers, init = x)
+
+# This is a temporary and naive implementation
+# it might be replaced in the future for better performance
+# see issue https://github.com/FluxML/Flux.jl/issues/702
+# Johnny Chen -- @johnnychen94
+"""
+    activations(c::Chain, input)
+Calculate the forward results of each layers in Chain `c` with `input` as model input.
+"""
+function activations(c::Chain, input)
+  rst = []
+  for l in c
+    x = get(rst, length(rst), input)
+    push!(rst, l(x))
+  end
+  return rst
+end
+
 
 """
     Dense(in::Integer, out::Integer, σ = identity)
@@ -158,7 +175,7 @@ will construct a `Maxout` layer over 4 internal dense linear layers,
 each identical in structure (784 inputs, 128 outputs).
 ```julia
     insize = 784
-    outsie = 128
+    outsize = 128
     Maxout(()->Dense(insize, outsize), 4)
 ```
 """

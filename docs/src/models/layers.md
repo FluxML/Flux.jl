@@ -73,4 +73,5 @@ BatchNorm
 Dropout
 AlphaDropout
 LayerNorm
+GroupNorm
 ```

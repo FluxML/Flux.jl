@@ -49,5 +49,12 @@ All optimisers return an object that, when passed to `train!`, will update the p
 Descent
 Momentum
 Nesterov
+RMSProp
 ADAM
+AdaMax
+ADAGrad
+ADADelta
+AMSGrad
+NADAM
+ADAMW
 ```
