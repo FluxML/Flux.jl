@@ -383,7 +383,7 @@ children(gn::GroupNorm) =
   (gn.λ, gn.β, gn.γ, gn.μ, gn.σ², gn.ϵ, gn.momentum, gn.active)
 
 mapchildren(f, gn::GroupNorm) =  # e.g. mapchildren(cu, BN)
-  GroupNorm(gn,G,gn.λ, f(gn.β), f(gn.γ), f(gn.μ), f(gn.σ²), gn.ϵ, gn.momentum, gn.active)
+  GroupNorm(gn.G,gn.λ, f(gn.β), f(gn.γ), f(gn.μ), f(gn.σ²), gn.ϵ, gn.momentum, gn.active)
 
 _testmode!(gn::GroupNorm, test) = (gn.active = !test)
 
