@@ -77,7 +77,7 @@ If you use the `RNN(10, 5)` constructor – as opposed to `RNNCell` – you'll s
 
 ```julia
 julia> RNN(10, 5)
-Recur(RNNCell(Dense(15, 5)))
+Recur(RNNCell(10, 5, tanh))
 ```
 
 ## Sequences
