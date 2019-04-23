@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Recurrence",
     "title": "Stateful Models",
     "category": "section",
-    "text": "For the most part, we don\'t want to manage hidden states ourselves, but to treat our models as being stateful. Flux provides the Recur wrapper to do this.x = rand(10)\nh = rand(5)\n\nm = Flux.Recur(rnn, h)\n\ny = m(x)The Recur wrapper stores the state between runs in the m.state field.If you use the RNN(10, 5) constructor – as opposed to RNNCell – you\'ll see that it\'s simply a wrapped cell.julia> RNN(10, 5)\nRecur(RNNCell(Dense(15, 5)))"
+    "text": "For the most part, we don\'t want to manage hidden states ourselves, but to treat our models as being stateful. Flux provides the Recur wrapper to do this.x = rand(10)\nh = rand(5)\n\nm = Flux.Recur(rnn, h)\n\ny = m(x)The Recur wrapper stores the state between runs in the m.state field.If you use the RNN(10, 5) constructor – as opposed to RNNCell – you\'ll see that it\'s simply a wrapped cell.julia> RNN(10, 5)\nRecur(RNNCell(10, 5, tanh))"
 },
 
 {
