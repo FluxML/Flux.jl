@@ -27,3 +27,8 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
+
+[compat]
+julia = "0.7-1"
+NNlib = "0.6"
+Tracker = "0.1"
