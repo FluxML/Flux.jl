@@ -30,5 +30,5 @@ test = ["Test"]
 
 [compat]
 julia = "0.7, 1"
-NNlib = "0.6"
+NNlib = "0.5"
 Tracker = "0.1"
