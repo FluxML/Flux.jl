@@ -47,10 +47,10 @@ julia> f(x) = W * x + b;
 julia> grads = Tracker.gradient(() -> f(4), params(W, b));
 
 julia> grads[W]
-4.0
+4.0 (tracked)
 
 julia> grads[b]
-1.0
+1.0 (tracked)
 ```
 
 There are a few things to notice here. Firstly, `W` and `b` now show up as *tracked*. Tracked things behave like normal numbers or arrays, but keep records of everything you do with them, allowing Flux to calculate their gradients. `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.
