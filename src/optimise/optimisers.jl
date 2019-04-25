@@ -66,7 +66,7 @@ end
 """
     RMSProp(η = 0.001, ρ = 0.9)
 
-[RMSProp](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+[RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 optimiser. Parameters other than learning rate don't need tuning. Often a good
 choice for recurrent networks.
 """
@@ -155,7 +155,7 @@ end
 """
     ADADelta(ρ = 0.9, ϵ = 1e-8)
 
-[ADADelta](http://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
+[ADADelta](https://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
 tuning.
 """
 mutable struct ADADelta
