@@ -63,6 +63,12 @@ git-tree-sha1 = "84aa74986c5b9b898b0d1acaf3258741ee64754f"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
 version = "2.1.0"
 
+[[Crayons]]
+deps = ["Test"]
+git-tree-sha1 = "f621b8ef51fd2004c7cf157ea47f027fdeac5523"
+uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+version = "4.0.0"
+
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections", "Random", "Serialization", "Test"]
 git-tree-sha1 = "ca971f03e146cf144a9e2f2ce59674f5bf0e8038"
@@ -100,10 +106,10 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.7.0"
 
 [[Documenter]]
-deps = ["Base64", "DocStringExtensions", "InteractiveUtils", "LibGit2", "Logging", "Markdown", "Pkg", "REPL", "Random", "Test", "Unicode"]
-git-tree-sha1 = "a8c41ba3d0861240dbec942ee1d0f86c57c37c1c"
+deps = ["Base64", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "Pkg", "REPL", "Random", "Test", "Unicode"]
+git-tree-sha1 = "13a6d15102410d8e70146533b759fc48d844a1d0"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-version = "0.21.5"
+version = "0.22.3"
 
 [[FixedPointNumbers]]
 deps = ["Test"]
@@ -126,6 +132,12 @@ version = "0.10.3"
 [[InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[JSON]]
+deps = ["Dates", "Distributed", "Mmap", "Sockets", "Test", "Unicode"]
+git-tree-sha1 = "1f7a25b53ec67f5e9422f1f551ee216503f4a0fa"
+uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+version = "0.20.0"
 
 [[Juno]]
 deps = ["Base64", "Logging", "Media", "Profile", "Test"]
@@ -172,10 +184,10 @@ version = "0.4.0"
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NNlib]]
-deps = ["Libdl", "LinearAlgebra", "MacroTools", "Requires", "Test"]
-git-tree-sha1 = "9ac5cd21484189339b27840818c4882d1b6df7fd"
+deps = ["Libdl", "LinearAlgebra", "Requires", "Statistics", "TimerOutputs"]
+git-tree-sha1 = "0c667371391fc6bb31f7f12f96a56a17098b3de8"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.5.0"
+version = "0.6.0"
 
 [[NaNMath]]
 deps = ["Compat"]
@@ -270,6 +282,12 @@ version = "0.30.0"
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[[TimerOutputs]]
+deps = ["Crayons", "Printf", "Test", "Unicode"]
+git-tree-sha1 = "b80671c06f8f8bae08c55d67b5ce292c5ae2660c"
+uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+version = "0.5.0"
+
 [[Tokenize]]
 deps = ["Printf", "Test"]
 git-tree-sha1 = "3e83f60b74911d3042d3550884ca2776386a02b8"
@@ -278,9 +296,9 @@ version = "0.5.3"
 
 [[Tracker]]
 deps = ["Adapt", "DiffRules", "ForwardDiff", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Printf", "Random", "Requires", "SpecialFunctions", "Statistics", "Test"]
-git-tree-sha1 = "4eeea9f0ef9b8c7d1c5c5b1f8f68cb9b7f45d7df"
+git-tree-sha1 = "0bec1b68c63a0e8a58d3944261cbf4cc9577c8a1"
 uuid = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
-version = "0.1.0"
+version = "0.2.0"
 
 [[TranscodingStreams]]
 deps = ["Random", "Test"]
