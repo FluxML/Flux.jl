@@ -19,7 +19,7 @@ function load()
   @info "Downloading CMUDict dataset"
   mkpath(deps("cmudict"))
   for (x, hash) in suffixes_and_hashes
-    download_and_verify("$cache_prefix/http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
+    download_and_verify("$cache_prefix/https://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-$version$x",
              deps("cmudict", "cmudict$x"), hash)
   end
 end
