@@ -252,7 +252,6 @@ end
       @test !m.active
 
       x′ = m(x).data
-      println(x′[1])
       @test isapprox(x′[1], (1 - 0.95) / sqrt(1.25 + 1f-5), atol = 1.0e-5)
   end
   # with activation function
