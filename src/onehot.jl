@@ -89,11 +89,6 @@ julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
   true  false   true
  false  false  false
 
-julia> onecold(ans, [:a, :b, :c])
-3-element Array{Symbol,1}:
-  :b
-  :a
-  :b
 ```
 """
 onehotbatch(ls, labels, unk...) =
@@ -107,9 +102,6 @@ Inverse operations of [`onehot`](@ref).
 ## Examples
 
 ```jldoctest
-julia> onecold(ans, [:a, :b, :c])
-:c
-
 julia> onecold([true, false, false], [:a, :b, :c])
 :a
 
