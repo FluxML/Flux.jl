@@ -43,7 +43,7 @@ end
     onehot(l, labels[, unk])
 
 Create an [`OneHotVector`](@ref) wtih `l`-th element be `true` based on possible `labels` set.
-If `unk` is given, it retruns `onehot(unk, labels)` if the input label `l` is not find in `labels` or
+If `unk` is given, it retruns `onehot(unk, labels)` if the input label `l` is not find in `labels`; otherwise
 it will error.
 
 ## Examples
