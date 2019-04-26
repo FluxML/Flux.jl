@@ -136,18 +136,17 @@ end
 (a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
 """
-    DepthwiseConv(size, in)
-    DepthwiseConv(size, in=>mul)
-    DepthwiseConv(size, in=>mul, relu)
+    DepthwiseConv(size, in=>out)
+    DepthwiseConv(size, in=>out, relu)
 
 Depthwise convolutional layer. `size` should be a tuple like `(2, 2)`.
-`in` and `mul` specify the number of input channels and channel multiplier respectively.
-In case the `mul` is not specified it is taken as 1.
+`in` and `out` specify the number of input and output channels respectively.
+Note that `out` must be an integer multiple of `in`.
 
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad` and `stride`.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -166,17 +165,18 @@ function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identit
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
-DepthwiseConv(k::NTuple{N,Integer}, ch::Integer, σ = identity; init = glorot_uniform,
-     stride = 1, pad = 0, dilation = 1) where N =
-  DepthwiseConv(param(init(k..., 1, ch)), param(zeros(ch)), σ,
-       stride = stride, pad = pad, dilation=dilation)
-
-DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; init = glorot_uniform,
-     stride::NTuple{N,Integer} = map(_->1,k),
-     pad::NTuple{N,Integer} = map(_->0,2 .* k),
-     dilation::NTuple{N,Integer} = map(_->1,k)) where N =
-  DepthwiseConv(param(init(k..., ch[2], ch[1])), param(zeros(ch[2]*ch[1])), σ,
-       stride = stride, pad = pad)
+function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N
+  @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
+  return DepthwiseConv(
+    param(init(k..., div(ch[2], ch[1]), ch[1])),
+    param(zeros(ch[2])),
+    σ;
+    stride = stride,
+    pad = pad,
+    dilation = dilation
+  )
+end
 
 @treelike DepthwiseConv
 
@@ -187,8 +187,8 @@ function (c::DepthwiseConv)(x)
 end
 
 function Base.show(io::IO, l::DepthwiseConv)
-  print(io, "DepthwiseConv(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
+  print(io, "DepthwiseConv(", size(l.weight)[1:end-2])
+  print(io, ", ", size(l.weight)[end], "=>", prod(size(l.weight)[end-1:end]))
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
