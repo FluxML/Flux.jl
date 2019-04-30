@@ -1,7 +1,7 @@
 using Documenter, Flux, NNlib
 
 makedocs(modules=[Flux, NNlib],
-         doctest = false,
+         doctest = true,
          analytics = "UA-36890222-9",
          sitename = "Flux",
          # Uncomment below for local build
@@ -19,6 +19,7 @@ makedocs(modules=[Flux, NNlib],
                   "One-Hot Encoding" => "data/onehot.md",
                   "GPU Support" => "gpu.md",
                   "Saving & Loading" => "saving.md",
+                  "Performance Tips" => "performance.md",
                   "Internals" =>
                     ["Backpropagation" => "internals/tracker.md"],
                   "Community" => "community.md"])

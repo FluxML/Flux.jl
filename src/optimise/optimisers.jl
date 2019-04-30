@@ -37,7 +37,7 @@ Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
 function apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(o.velocity, x, zero(x))::typeof(data(x))
   @. v = ρ * v - η * Δ
   @. Δ = -v
 end
@@ -57,7 +57,7 @@ Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
 function apply!(o::Nesterov, x, Δ)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(o.velocity, x, zero(x))::typeof(data(x))
   d = @. ρ^2 * v - (1+ρ) * η * Δ
   @. v = ρ*v - η*Δ
   @. Δ = -d
@@ -66,7 +66,7 @@ end
 """
     RMSProp(η = 0.001, ρ = 0.9)
 
-[RMSProp](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+[RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 optimiser. Parameters other than learning rate don't need tuning. Often a good
 choice for recurrent networks.
 """
@@ -80,7 +80,7 @@ RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 
 function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
-  acc = get!(o.acc, x, zero(x))::typeof(x)
+  acc = get!(o.acc, x, zero(x))::typeof(data(x))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -147,7 +147,7 @@ ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
-  acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(x)
+  acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(data(x))
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -155,7 +155,7 @@ end
 """
     ADADelta(ρ = 0.9, ϵ = 1e-8)
 
-[ADADelta](http://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
+[ADADelta](https://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
 tuning.
 """
 mutable struct ADADelta
@@ -321,7 +321,7 @@ end
 
 WeightDecay() = WeightDecay(0)
 
-function apply!(o::WeightDecay, x,  Δ)
+function apply!(o::WeightDecay, x, Δ)
   wd = o.wd
-  @. Δ += wd * x
+  @. Δ += wd * data(x)
 end

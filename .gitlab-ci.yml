@@ -1,0 +1,37 @@
+before_script:
+  - export CI_DISABLE_CURNN_TEST=true
+
+variables:
+  CI_IMAGE_TAG: 'cuda'
+
+include:
+  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v3/common.yml'
+
+.flux:
+  extends: .test
+  script:
+    - julia -e 'using InteractiveUtils;
+                versioninfo()'
+    - mkdir $JULIA_DEPOT_PATH # Pkg3.jl#325
+    - julia -e 'using Pkg;
+                Pkg.add("CuArrays");'
+    - julia --project -e 'using Pkg;
+                          Pkg.instantiate();
+                          Pkg.build();
+                          Pkg.test(; coverage=true);'
+
+test:v1.0:
+  extends: .flux
+  variables:
+    CI_VERSION_TAG: 'v1.0'
+  only:
+    - staging
+    - trying
+
+test:v1.1:
+  extends: .flux
+  variables:
+    CI_VERSION_TAG: 'v1.1'
+  only:
+    - staging
+    - trying

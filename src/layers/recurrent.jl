@@ -153,7 +153,7 @@ Base.show(io::IO, l::LSTMCell) =
 Long Short Term Memory recurrent layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.
 
-See [this article](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
@@ -194,7 +194,7 @@ Base.show(io::IO, l::GRUCell) =
 Gated Recurrent Unit layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.
 
-See [this article](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))

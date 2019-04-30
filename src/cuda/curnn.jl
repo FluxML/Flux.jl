@@ -101,18 +101,18 @@ function cudnnRNNForward(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, cd, c, wd, w, yd
   if reserve == nothing
     @check ccall((:cudnnRNNForwardInference, libcudnn), cudnnStatus_t,
                  (Ptr{Nothing}, Ptr{Nothing}, Cint,
-                  Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Csize_t),
+                  Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T}, Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Nothing}, CuPtr{T},
+                  Ptr{Nothing}, CuPtr{T},
+                  CuPtr{Nothing}, Csize_t),
                  handle(), rnn, seqlen,
                  xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
                  workspace, length(workspace))
   else
     @check ccall((:cudnnRNNForwardTraining, libcudnn), cudnnStatus_t,
                  (Ptr{Nothing}, Ptr{Nothing}, Cint,
-                  Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
-                  Ptr{Nothing}, Csize_t, Ptr{Nothing}, Csize_t),
+                  Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T},
+                  CuPtr{Nothing}, Csize_t, CuPtr{Nothing}, Csize_t),
                  handle(), rnn, seqlen,
                  xd, x, hd, h, cd, c, wd, w, yd, y, hod, ho, cod, co,
                  workspace, length(workspace), reserve, length(reserve))
@@ -121,7 +121,7 @@ end
 
 xDesc(x) = [TensorDesc(eltype(x), (1, size(x, 1), size(x, 2)))]
 
-hDesc(h::Nothing) = C_NULL, C_NULL
+hDesc(h::Nothing) = C_NULL, CU_NULL
 hDesc(x::Integer) = (@assert x == 0; hDesc(nothing))
 function hDesc(h::CuArray)
   TensorDesc(eltype(h), (size(h, 1), size(h, 2), 1)), h
@@ -169,10 +169,10 @@ function cudnnRNNBackwardData(rnn::RNNDesc{T}, seqlen, yd, y, dyd, dy, dhod, dho
                               wd, w, hd, h, cd, c, dxd, dx, dhd, dh, dcd, dc, ws, rs) where T
   @check ccall((:cudnnRNNBackwardData,libcudnn),cudnnStatus_t,
                (Ptr{Nothing}, Ptr{Nothing}, Cint,
-                Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T},
-                Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing},
-                Ptr{T}, Ptr{Ptr{Nothing}}, Ptr{T}, Ptr{Nothing}, Ptr{T}, Ptr{Nothing}, Ptr{T},
-                Ptr{Nothing}, Csize_t, Ptr{Nothing}, Csize_t),
+                Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Nothing}, CuPtr{T},
+                Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing},
+                CuPtr{T}, Ptr{Ptr{Nothing}}, CuPtr{T}, Ptr{Nothing}, CuPtr{T}, Ptr{Nothing}, CuPtr{T},
+                CuPtr{Nothing}, Csize_t, CuPtr{Nothing}, Csize_t),
                handle(), rnn, seqlen, yd, y, dyd, dy, dhod, dho, dcod, dco,
                wd, w, hd, h, cd, c, dxd, dx, dhd, dh, dcd, dc, ws, length(ws), rs, length(rs))
 end
@@ -199,12 +199,12 @@ function cudnnRNNBackwardWeights(rnn::RNNDesc{T}, seqlen, xd, x, hd, h, yd, y, d
                                  workspace, reserve) where T
   @check ccall((:cudnnRNNBackwardWeights,libcudnn), cudnnStatus_t,
                (Ptr{Nothing}, Ptr{Nothing}, Cint,  # handle, rnnDesc, seqLength
-                Ptr{Ptr{Nothing}}, Ptr{T}, #x
-                Ptr{Nothing}, Ptr{T}, #hx
-                Ptr{Ptr{Nothing}}, Ptr{T}, #y
-                Ptr{Nothing}, Csize_t, #ws
-                Ptr{Nothing}, Ptr{T}, #dw
-                Ptr{Nothing}, Csize_t), #rs
+                Ptr{Ptr{Nothing}}, CuPtr{T}, #x
+                Ptr{Nothing}, CuPtr{T}, #hx
+                Ptr{Ptr{Nothing}}, CuPtr{T}, #y
+                CuPtr{Nothing}, Csize_t, #ws
+                Ptr{Nothing}, CuPtr{T}, #dw
+                CuPtr{Nothing}, Csize_t), #rs
                handle(), rnn, seqlen, xd, x, hd, h, yd, y,
                workspace, length(workspace), dwd, dw, reserve, length(reserve))
 end

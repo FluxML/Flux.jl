@@ -1,6 +1,6 @@
 The Flux.jl package is licensed under the MIT "Expat" License:
 
-> Copyright (c) 2016: Mike Innes.
+> Copyright (c) 2016-19: Julia Computing, INc., Mike Innes and Contributors
 >
 > Permission is hereby granted, free of charge, to any person obtaining
 > a copy of this software and associated documentation files (the
