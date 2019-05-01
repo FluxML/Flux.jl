@@ -307,7 +307,7 @@ function apply!(o::ExpDecay, x, Δ)
     η = max(η * decay^(s / n), o.clip)
     o.eta = η
   end
-  @. Δ *= decay
+  @. Δ *= η
 end
 
 """
