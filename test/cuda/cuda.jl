@@ -36,6 +36,10 @@ c = gpu(Conv((2,2),3=>4))
 l = c(gpu(rand(10,10,3,2)))
 Flux.back!(sum(l))
 
+c = gpu(CrossCor((2,2),3=>4))
+l = c(gpu(rand(10,10,3,2)))
+Flux.back!(sum(l))
+
 end
 
 @testset "onecold gpu" begin
