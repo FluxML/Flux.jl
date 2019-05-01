@@ -61,3 +61,24 @@ end
   x_hat = ConvTranspose((3, 3), 1 => 1)(y)
   @test size(x_hat) == size(x)
 end
+
+@testset "CrossCor" begin
+  x = rand(Float32, 28, 28, 1, 1)
+  w = rand(2,2,1,1)
+  y = CrossCor(w, [0.0])
+  x_pred = y(x)
+
+  @test sum(w .* x[1:2, 1:2, :, :]) == x_pred[1, 1, 1, 1]
+  
+  r = zeros(Float32, 28, 28, 1, 5)
+  m = Chain(
+    CrossCor((2, 2), 1=>16, relu),
+    MaxPool((2,2)),
+    CrossCor((2, 2), 16=>8, relu),
+    MaxPool((2,2)),
+    x -> reshape(x, :, size(x, 4)),
+    Dense(288, 10), softmax)
+
+  @test size(m(r)) == (10, 5)
+  
+end
