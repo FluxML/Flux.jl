@@ -66,9 +66,8 @@ end
   x = rand(Float32, 28, 28, 1, 1)
   w = rand(2,2,1,1)
   y = CrossCor(w, [0.0])
-  x_pred = y(x)
 
-  @test sum(w .* x[1:2, 1:2, :, :]) == x_pred[1, 1, 1, 1]
+  @test sum(w .* x[1:2, 1:2, :, :]) == y(x)[1, 1, 1, 1]
   
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
@@ -80,6 +79,8 @@ end
     Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
+  @test y(x) != Conv(w, [0.0])(x)
+  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) == Conv(w, [0.0])(x)
 end
 
 @testset "Conv with non quadratic window #700" begin
