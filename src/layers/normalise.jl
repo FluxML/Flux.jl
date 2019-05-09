@@ -392,3 +392,53 @@ function Base.show(io::IO, l::GroupNorm)
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
+
+"""
+    LRNorm(α, β, n, k)
+Local Response Normalization layer. The `n` input should be the number of 
+adjacent kernel maps to sum over.
+See [ImageNet Classification with Deep Convolutional
+Neural Networks](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf).
+
+Example : 
+```julia
+m = LRNorm(0.0001, 0.75, 5, 2.0)
+m(x) #x is a 4-D input
+```
+"""
+mutable struct LRNorm{F, V, W, N}
+  α::F
+  β::V
+  n::W
+  k::N
+  active::Bool
+end
+
+LRNorm(α = 10.0 ^ (-4), β = 0.75, n = 5, k = 2.0) = LRNorm(α, β, n, k, true)
+
+function (lrn::LRNorm)(x)
+  num_channels = size(x, 3)
+  y = zeros(eltype(data(x)), 1, 1, num_channels, num_channels)
+  for i in 1:num_channels
+    lower_lim = max(1, trunc(Int, i - div(lrn.n,2)))
+    upper_lim = min(num_channels, trunc(Int, i + div(lrn.n,2)))
+    y[1, 1, lower_lim:upper_lim, i] .= 1
+  end
+  norm = lrn.α .* NNlib.conv(x .^ 2, y)
+  norm = norm .+ lrn.k
+  norm = norm .^ lrn.β
+  return x ./ norm 
+end 
+
+children(lrn::LRNorm) =
+  (lrn.α, lrn.β, lrn.n, lrn.k, lrn.active)
+
+mapchildren(f, lrn::LRNorm) =  # e.g. mapchildren(cu, BN)
+  LRNorm(lrn.α, f(lrn.β), f(lrn.n), f(lrn.k), lrn.active)
+
+_testmode!(lrn::LRNorm, test) = (lrn.active = !test)
+
+function Base.show(io::IO, l::LRNorm)
+  print(io, "LRNorm(α = $(join(l.α))")
+  print(io, ",β = $(l.β) ,n = $(l.n),k = $(l.k))")
+end

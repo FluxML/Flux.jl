@@ -47,6 +47,7 @@ Flux.testmode!
 BatchNorm
 Dropout
 LayerNorm
+LRNorm
 ```
 
 ## Activation Functions

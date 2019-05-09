@@ -311,3 +311,25 @@ end
   end
 
 end
+
+@testset "LRNorm" begin
+  x = param(reshape(Float32[1:96;], 4, 4, 3, 2))
+  @test size(LRNorm()(x)) == size(x)
+
+  #Show that when bias k = 0, and n = 0, alpha = 1, and beta = 0.5, all spatial locations will be normalised to a value of 1
+  m = LRNorm(1, 0.5, 0, 0)
+  @test m(x) ≈ ones(4, 4, 3, 2) 
+
+  #Show the trivial case when beta = 0, output is equal to input
+  m1 = LRNorm(1, 0, 5 ,2)
+  @test m1(x) ≈ x
+
+  m2 = LRNorm()
+  x2 = param(reshape(Float32[1:10;], 1, 1, 10, 1))
+  answer = [0.59 1.19 1.78 2.37 2.96 3.54 4.12 4.70 5.29 5.89]     #These values are computed using tensorflow's LRNorm. 
+  answer = reshape(answer, 1, 1, 10, 1)
+  #The value computed by LRNorm is approximately equal to that computed by tensorflow
+  computed = m2(x2)
+  approx = round.(computed, digits = 2)
+  @test approx ≈ answer
+end
