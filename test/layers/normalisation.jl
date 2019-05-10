@@ -28,11 +28,12 @@ using Flux.Tracker: data
   @test count(a->a == 0, y) == 0
 
   x = rand(100, 50)
-  m = Dropout(0.5)
-  y = m(x; dims=2)
+  m = Dropout(0.5, dims = 2)
+  y = m(x)
   c = map(i->count(a->a==0, @view y[i, :]), 1:100)
   @test minimum(c) == maximum(c)
-  y = m(x; dims=1)
+  m = Dropout(0.5, dims = 1)
+  y = m(x)
   c = map(i->count(a->a==0, @view y[:, i]), 1:50)
   @test minimum(c) == maximum(c)
 end
