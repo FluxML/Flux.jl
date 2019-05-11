@@ -38,17 +38,6 @@ But in contrast to the layers described in the other sections are not readily gr
 Maxout
 ```
 
-# Normalisation & Regularisation
-
-These layers don't affect the structure of the network but may improve training times or reduce overfitting.
-
-```@docs
-Flux.testmode!
-BatchNorm
-Dropout
-LayerNorm
-```
-
 ## Activation Functions
 
 Non-linearities that go between layers of your model. Most of these functions are defined in [NNlib](https://github.com/FluxML/NNlib.jl) but are available by default in Flux.
