@@ -59,6 +59,46 @@ function activations(c::Chain, input)
 end
 
 
+
+"""
+    Parallel(layers...)
+
+Call multiple layers / functions in parallel on a given input.
+
+```julia
+m = Parallel(x -> x^2, x -> x+1)
+m(5) == [25, 6]
+
+m = Chain(Dense(10, 5), Dense(5, 2))
+x = rand(10)
+m(x) == [m[1](x), m[2](x)]
+```
+
+`Parallel` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
+`m[1:3](x)` will calculate the output of the first three layers.
+"""
+struct Parallel{T<:Tuple}
+  layers::T
+  Parallel(xs...) = new{typeof(xs)}(xs)
+end
+
+@forward Parallel.layers Base.getindex, Base.length, Base.first, Base.last,
+  Base.iterate, Base.lastindex
+
+children(p::Parallel) = p.layers
+mapchildren(f, p::Parallel) = Parallel(f.(c.layers)...)
+
+(p::Parallel)(x) = [layer(x) for layer in p.layers]
+
+Base.getindex(p::Parallel, i::AbstractArray) = Parallel(p.layers[i]...)
+
+function Base.show(io::IO, p::Parallel)
+  print(io, "Parallel(")
+  join(io, p.layers, ", ")
+  print(io, ")")
+end
+
+
 """
     Dense(in::Integer, out::Integer, σ = identity)
 
