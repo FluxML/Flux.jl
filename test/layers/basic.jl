@@ -19,6 +19,14 @@ import Flux: activations
     # numeric test should be put into testset of corresponding layer
   end
 
+  @testset "Parallel" begin
+    input = randn(10)
+    model = Parallel(Dense(10, 5, σ), Dense(10, 5, σ))
+    @test_nowarn model(input)
+    @test model(input) == [model[1](input), model[2](input)]
+    @test_throws DimensionMismatch Parallel(Dense(10, 5, σ), Dense(5, 2, σ))(input)
+  end
+
   @testset "Dense" begin
     @test  length(Dense(10, 5)(randn(10))) == 5
     @test_throws DimensionMismatch Dense(10, 5)(randn(1))
