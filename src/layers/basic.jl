@@ -60,6 +60,46 @@ end
 
 
 """
+    MultiInput(layers...)
+
+Create a layer that accepts multiple inputs so that each layer gets
+called on one input.
+
+```julia
+m = MultiInput(x -> x^2, x -> x+1)
+m((5, 10)) == [25, 11]
+
+m = MultiInput(Dense(10, 5), Dense(5, 2))
+x = (rand(10), randn(5))
+m(x) == [m[1](x), m[2](x)]
+```
+
+`MultiInput` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
+`m[1:3](x)` will calculate the output of the first three layers.
+"""
+struct MultiInput{T<:Tuple}
+  layers::T
+  MultiInput(xs...) = new{typeof(xs)}(xs)
+end
+
+@forward MultiInput.layers Base.getindex, Base.length, Base.first, Base.last,
+  Base.iterate, Base.lastindex
+
+children(m::MultiInput) = m.layers
+mapchildren(f, m::MultiInput) = MultiInput(f.(m.layers)...)
+
+(m::MultiInput)(xs) = [layer(x) for (layer, x) in zip(m.layers, xs)]
+
+Base.getindex(m::MultiInput, i::AbstractArray) = MultiInput(m.layers[i]...)
+
+function Base.show(io::IO, m::MultiInput)
+  print(io, "MultiInput(")
+  join(io, m.layers, ", ")
+  print(io, ")")
+end
+
+
+"""
     Dense(in::Integer, out::Integer, σ = identity)
 
 Creates a traditional `Dense` layer with parameters `W` and `b`.

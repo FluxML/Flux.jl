@@ -19,6 +19,14 @@ import Flux: activations
     # numeric test should be put into testset of corresponding layer
   end
 
+  @testset "MultiInput" begin
+    model = MultiInput(Dense(10, 5, σ), Dense(5, 2, σ))
+    x = (randn(10), randn(5))
+    @test_nowarn model(x)
+    @test_throws DimensionMismatch MultiInput(Dense(10, 5, σ),Dense(2, 1))(x)
+    @test model(x) == [model[1](x[1]), model[2](x[2])]
+  end
+
   @testset "Dense" begin
     @test  length(Dense(10, 5)(randn(10))) == 5
     @test_throws DimensionMismatch Dense(10, 5)(randn(1))
