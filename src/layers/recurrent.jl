@@ -84,7 +84,7 @@ end
 RNNCell(in::Integer, out::Integer, σ = tanh;
         init = glorot_uniform) =
   RNNCell(σ, param(init(out, in)), param(init(out, out)),
-          param(zeros(out)), param(init(out)))
+          param(init(out)), param(zeros(out)))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -122,8 +122,8 @@ end
 
 function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform)
-  cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(zeros(out*4)),
-                  param(init(out)), param(init(out)))
+  cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(init(out*4)),
+                  param(zeros(out)), param(zeros(out)))
   cell.b.data[gate(out, 2)] .= 1
   return cell
 end
@@ -153,7 +153,7 @@ Base.show(io::IO, l::LSTMCell) =
 Long Short Term Memory recurrent layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.
 
-See [this article](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
@@ -169,7 +169,7 @@ end
 
 GRUCell(in, out; init = glorot_uniform) =
   GRUCell(param(init(out*3, in)), param(init(out*3, out)),
-          param(zeros(out*3)), param(init(out)))
+          param(init(out*3)), param(zeros(out)))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
@@ -194,7 +194,7 @@ Base.show(io::IO, l::GRUCell) =
 Gated Recurrent Unit layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.
 
-See [this article](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))

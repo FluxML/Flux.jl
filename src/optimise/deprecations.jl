@@ -4,7 +4,7 @@ using Flux: Params
 check_decay(opt, decay) = decay == 0 ? opt : Optimiser(opt, InvDecay(decay))
 
 # legacy update rule
-updaterule(opt, ps) = () -> update!(opt, ps)
+updaterule(opt, ps) = () -> _update_params!(opt, ps)
 
 function SGD(params::Union{AbstractArray, Params}, η = 0.1; decay = 0.)
   depwarn("SGD(params) is deprecated; use Descent(η::Float64) instead", :SGD)
@@ -117,7 +117,7 @@ struct OldOptimiser
   func
 end
 
-update!(opt::OldOptimiser, ps) = opt.func()
+_update_params!(opt::OldOptimiser, ps) = opt.func()
 
 # Train function
 function train!(loss, data, opt; cb = () -> ())

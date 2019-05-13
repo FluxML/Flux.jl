@@ -18,7 +18,7 @@ end
 
 Descent() = Descent(0.1)
 
-function update!(o::Descent, x, Δ)
+function apply!(o::Descent, x, Δ)
   Δ .*= o.eta
 end
 
@@ -35,9 +35,9 @@ end
 
 Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
-function update!(o::Momentum, x, Δ)
+function apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(o.velocity, x, zero(x))::typeof(data(x))
   @. v = ρ * v - η * Δ
   @. Δ = -v
 end
@@ -55,9 +55,9 @@ end
 
 Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
-function update!(o::Nesterov, x, Δ)
+function apply!(o::Nesterov, x, Δ)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(o.velocity, x, zero(x))::typeof(data(x))
   d = @. ρ^2 * v - (1+ρ) * η * Δ
   @. v = ρ*v - η*Δ
   @. Δ = -d
@@ -66,7 +66,7 @@ end
 """
     RMSProp(η = 0.001, ρ = 0.9)
 
-[RMSProp](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+[RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 optimiser. Parameters other than learning rate don't need tuning. Often a good
 choice for recurrent networks.
 """
@@ -78,9 +78,9 @@ end
 
 RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 
-function update!(o::RMSProp, x, Δ)
+function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
-  acc = get!(o.acc, x, zero(x))::typeof(x)
+  acc = get!(o.acc, x, zero(x))::typeof(data(x))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -98,7 +98,7 @@ end
 
 ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
 
-function update!(o::ADAM, x, Δ)
+function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
   mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
@@ -122,7 +122,7 @@ end
 
 AdaMax(η = 0.001, β = (0.9, 0.999)) = AdaMax(η, β, IdDict())
 
-function update!(o::AdaMax, x, Δ)
+function apply!(o::AdaMax, x, Δ)
   η, β = o.eta, o.beta
   mt, ut, βp = get!(o.state, x, (zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
@@ -145,9 +145,9 @@ end
 
 ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
-function update!(o::ADAGrad, x, Δ)
+function apply!(o::ADAGrad, x, Δ)
   η = o.eta
-  acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(x)
+  acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(data(x))
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -155,7 +155,7 @@ end
 """
     ADADelta(ρ = 0.9, ϵ = 1e-8)
 
-[ADADelta](http://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
+[ADADelta](https://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
 tuning.
 """
 mutable struct ADADelta
@@ -165,7 +165,7 @@ end
 
 ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
 
-function update!(o::ADADelta, x, Δ)
+function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(o.state, x, (zero(x), zero(x)))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
@@ -188,7 +188,7 @@ end
 
 AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
 
-function update!(o::AMSGrad, x, Δ)
+function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
   mt, vt, v̂t = get!(o.state, x, (fill(ϵ, size(x)), fill(ϵ, size(x)), fill(ϵ, size(x))))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
@@ -211,7 +211,7 @@ end
 
 NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
 
-function update!(o::NADAM, x, Δ)
+function apply!(o::NADAM, x, Δ)
   η, β = o.eta, o.beta
   β1p, β2p = o.beta
   mt, vt = get!(o.state, x, (zero(x), zero(x)))
@@ -250,9 +250,9 @@ Optimiser(o...) = Optimiser(Any[o...])
 
 Base.getindex(c::Optimiser, i::AbstractArray) = Optimiser(c.os[i]...)
 
-function update!(o::Optimiser, x, Δ)
+function apply!(o::Optimiser, x, Δ)
   for opt in o.os
-    Δ = update!(opt, x, Δ)
+    Δ = apply!(opt, x, Δ)
   end
   return Δ
 end
@@ -272,7 +272,7 @@ end
 
 InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
 
-function update!(o::InvDecay, x, Δ)
+function apply!(o::InvDecay, x, Δ)
   γ = o.gamma
   n = get!(o.state, x, 1)
   Δ .*= 1 / (1 + γ * n)
@@ -300,14 +300,14 @@ end
 
 ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
 
-function update!(o::ExpDecay, x, Δ)
+function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
   n = o.current[x] = get(o.current, x, 0) + 1
   if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
     η = max(η * decay^(s / n), o.clip)
     o.eta = η
   end
-  @. Δ *= decay
+  @. Δ *= η
 end
 
 """
@@ -321,7 +321,7 @@ end
 
 WeightDecay() = WeightDecay(0)
 
-function update!(o::WeightDecay, x,  Δ)
+function apply!(o::WeightDecay, x, Δ)
   wd = o.wd
-  @. Δ += wd * x
+  @. Δ += wd * data(x)
 end

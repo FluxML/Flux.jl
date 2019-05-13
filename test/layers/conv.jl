@@ -4,9 +4,9 @@ using Flux: maxpool, meanpool
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
   mp = MaxPool((2, 2))
-  @test mp(x) == maxpool(x, (2,2))
+  @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
-  @test mp(x) == meanpool(x, (2,2))
+  @test mp(x) == meanpool(x, PoolDims(x, 2))
 end
 
 @testset "CNN" begin
@@ -20,4 +20,70 @@ end
     Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
+end
+
+@testset "asymmetric padding" begin
+  r = ones(Float32, 28, 28, 1, 1)
+  m = Conv((3, 3), 1=>1, relu; pad=(0,1,1,2))
+  m.weight.data[:] .= 1.0
+  m.bias.data[:] .= 0.0
+  y_hat = Flux.data(m(r))[:,:,1,1]
+  @test size(y_hat) == (27, 29)
+  @test y_hat[1, 1] ≈ 6.0
+  @test y_hat[2, 2] ≈ 9.0
+  @test y_hat[end, 1] ≈ 4.0
+  @test y_hat[1, end] ≈ 3.0
+  @test y_hat[1, end-1] ≈ 6.0
+  @test y_hat[end, end] ≈ 2.0
+end
+
+@testset "Depthwise Conv" begin
+  r = zeros(Float32, 28, 28, 3, 5)
+  m1 = DepthwiseConv((2, 2), 3=>5)
+  @test size(m1(r), 3) == 15
+  m2 = DepthwiseConv((2, 2), 3)
+  @test size(m2(r), 3) == 3
+  
+  x = zeros(Float64, 28, 28, 3, 5)
+  
+  m3 = DepthwiseConv((2, 2), 3 => 5)
+  
+  @test size(m3(r), 3) == 15
+  
+  m4 = DepthwiseConv((2, 2), 3)
+  
+  @test size(m4(r), 3) == 3
+end
+
+@testset "ConvTranspose" begin
+  x = zeros(Float32, 28, 28, 1, 1)
+  y = Conv((3,3), 1 => 1)(x)
+  x_hat = ConvTranspose((3, 3), 1 => 1)(y)
+  @test size(x_hat) == size(x)
+end
+
+@testset "Conv with non quadratic window #700" begin
+  data = zeros(Float32, 7,7,1,1)
+  data[4,4,1,1] = 1
+
+  l = Conv((3,3), 1=>1)
+  expected = zeros(eltype(l.weight),5,5,1,1)
+  expected[2:end-1,2:end-1,1,1] = l.weight
+  @test expected == l(data)
+
+  l = Conv((3,1), 1=>1)
+  expected = zeros(eltype(l.weight),5,7,1,1)
+  expected[2:end-1,4,1,1] = l.weight
+  @test expected == l(data)
+
+  l = Conv((1,3), 1=>1)
+  expected = zeros(eltype(l.weight),7,5,1,1)
+  expected[4,2:end-1,1,1] = l.weight
+  @test expected == l(data)
+
+  @test begin
+    # we test that the next expression does not throw
+    randn(Float32, 10,10,1,1) |> Conv((6,1), 1=>1, Flux.σ)
+    true
+  end
 end
