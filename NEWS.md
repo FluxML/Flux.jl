@@ -1,5 +1,6 @@
 # v0.8.0
 
+* [Dropoutnow has a `dims` argument for specifying the unbroadcast dimensions.](https://github.com/FluxML/Flux.jl/pull/563)
 * New [ConvTranspose layer](https://github.com/FluxML/Flux.jl/pull/311).
 * New [Maxout layer](https://github.com/FluxML/Flux.jl/pull/647)
 * Datasets are now [hash verified on download](https://github.com/FluxML/Flux.jl/pull/585) to avoid corruption.
