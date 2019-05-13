@@ -26,6 +26,16 @@ using Flux.Tracker: data
   testmode!(m)
   y = m(x)
   @test count(a->a == 0, y) == 0
+
+  x = rand(100, 50)
+  m = Dropout(0.5, dims = 2)
+  y = m(x)
+  c = map(i->count(a->a==0, @view y[i, :]), 1:100)
+  @test minimum(c) == maximum(c)
+  m = Dropout(0.5, dims = 1)
+  y = m(x)
+  c = map(i->count(a->a==0, @view y[:, i]), 1:50)
+  @test minimum(c) == maximum(c)
 end
 
 @testset "BatchNorm" begin
