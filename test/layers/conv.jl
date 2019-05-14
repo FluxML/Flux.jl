@@ -101,4 +101,5 @@ end
     randn(Float32, 10,10,1,1) |> Conv((6,1), 1=>1, Flux.σ)
     true
   end
+end
 
