@@ -198,6 +198,76 @@ end
 
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
+"""
+    CrossCor(size, in=>out)
+    CrossCor(size, in=>out, relu)
+  
+Standard cross convolutional layer. `size` should be a tuple like `(2, 2)`.
+`in` and `out` specify the number of input and output channels respectively.
+    
+Example: Applying CrossCor layer to a 1-channel input using a 2x2 window size,
+         giving us a 16-channel output. Output is activated with ReLU.
+    
+    size = (2,2)
+    in = 1
+    out = 16 
+    CrossCor((2, 2), 1=>16, relu)
+    
+Data should be stored in WHCN order (width, height, # channels, # batches). 
+In other words, a 100×100 RGB image would be a `100×100×3×1` array, 
+and a batch of 50 would be a `100×100×3×50` array.
+    
+Takes the keyword arguments `pad`, `stride` and `dilation`.
+"""
+struct CrossCor{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  dilation::NTuple{N,Int}
+end
+
+function CrossCor(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N}
+  stride = expand(Val(N-2), stride)
+  pad = expand(Val(2*(N-2)), pad)
+  dilation = expand(Val(N-2), dilation)
+  return CrossCor(σ, w, b, stride, pad, dilation)
+end
+
+CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
+  CrossCor(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+       stride = stride, pad = pad, dilation = dilation)
+
+@treelike CrossCor
+
+function crosscor(x, w, ddims::DenseConvDims)
+  ddims = DenseConvDims(ddims, F=true)
+  return conv(x, w, ddims)
+end
+
+function (c::CrossCor)(x::AbstractArray)
+  # TODO: breaks gpu broadcast :(
+  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  σ.(crosscor(x, c.weight, cdims) .+ b)
+end
+
+function Base.show(io::IO, l::CrossCor)
+  print(io, "CrossCor(", size(l.weight)[1:ndims(l.weight)-2])
+  print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
+  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ")")
+end
+
+(a::CrossCor{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  invoke(a, Tuple{AbstractArray}, x)
+
+(a::CrossCor{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  a(T.(x))
 
 """
     MaxPool(k)
