@@ -88,7 +88,7 @@ end
 children(m::MultiInput) = m.layers
 mapchildren(f, m::MultiInput) = MultiInput(f.(m.layers)...)
 
-(m::MultiInput)(xs) = [layer(x) for (layer, x) in zip(m.layers, xs)]
+(m::MultiInput)(xs) = map((layer, x) -> layer(x), m.layers, xs)
 
 Base.getindex(m::MultiInput, i::AbstractArray) = MultiInput(m.layers[i]...)
 

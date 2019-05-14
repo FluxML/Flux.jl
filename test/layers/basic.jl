@@ -24,7 +24,7 @@ import Flux: activations
     x = (randn(10), randn(5))
     @test_nowarn model(x)
     @test_throws DimensionMismatch MultiInput(Dense(10, 5, σ),Dense(2, 1))(x)
-    @test model(x) == [model[1](x[1]), model[2](x[2])]
+    @test model(x) == (model[1](x[1]), model[2](x[2]))
   end
 
   @testset "Dense" begin
