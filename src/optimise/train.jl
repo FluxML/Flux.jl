@@ -63,7 +63,7 @@ The callback can call `Flux.stop()` to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> ())
+function train!(loss, ps, data, opt; regularization = nothing, cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
   @progress for d in data
@@ -72,6 +72,9 @@ function train!(loss, ps, data, opt; cb = () -> ())
         loss(d...)
       end
       update!(opt, ps, gs)
+      if regularization != nothing
+        update!(regularization, ps, gs)
+      end
       if cb() == :stop
         depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
         break

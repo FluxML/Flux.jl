@@ -7,7 +7,7 @@ using MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
-       DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm, 
+       DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        params, mapleaves, cpu, gpu, f32, f64
 
 @reexport using NNlib
@@ -21,7 +21,8 @@ using .Optimise
 using .Optimise: @epochs
 export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, InvDecay, ExpDecay, WeightDecay
+  ADAMW, InvDecay, ExpDecay, WeightDecay,
+  L1_regularization, L2_regularization
 
 include("utils.jl")
 include("onehot.jl")
