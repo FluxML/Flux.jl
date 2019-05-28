@@ -26,7 +26,7 @@ A very artificial example using an activation function like
 
 will result in performance on `Float32` input orders of magnitude slower than the normal `tanh` would,
 because it results in having to use slow mixed type multiplication in the dense layers.
-Similar can occur in the loss function during backpropagation.
+Similar situations can occur in the loss function during backpropagation.
 
 Which means if you change your data say from `Float64` to `Float32` (which should give a speedup: see above),
 you will see a large slow-down
