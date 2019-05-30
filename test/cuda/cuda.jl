@@ -1,5 +1,6 @@
 using Flux, Flux.Tracker, CuArrays, Test
 using Flux: gpu
+using CuArrays: @allowscalar
 
 @info "Testing GPU Support"
 
@@ -50,10 +51,11 @@ end
 
 @testset "Jacobian on GPU" begin
   # https://github.com/FluxML/Tracker.jl/pull/33
-  @test collect(jacobian(identity, gpu([0.0, 0.0]))) == [1 0; 0 1]
-  @test collect(jacobian(softmax, gpu(ones(2)))) == [0.25 -0.25; -0.25 0.25]
-  @test collect(gradient(x -> sum(jacobian(y -> y .^ 2, x) .^ 2),
-                         gpu([1.0, 2.0, 3.0]))) == [8.0, 16.0, 24.0]
+  @test collect(@allowscalar jacobian(identity, gpu([0.0, 0.0]))) == [1 0; 0 1]
+  @test collect(@allowscalar jacobian(softmax, gpu(ones(2)))) ==
+    [0.25 -0.25; -0.25 0.25]
+  @test collect(@allowscalar gradient(x -> sum(jacobian(y -> y .^ 2, x) .^ 2),
+                                      gpu([1.0, 2.0, 3.0]))) == [8.0, 16.0, 24.0]
 end
 
 if CuArrays.libcudnn != nothing
