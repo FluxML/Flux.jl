@@ -17,6 +17,7 @@ MaxPool
 MeanPool
 DepthwiseConv
 ConvTranspose
+CrossCor
 ```
 
 ## Recurrent Layers
