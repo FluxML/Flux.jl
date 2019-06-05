@@ -72,4 +72,16 @@ import Flux: activations
       @test length(ps) == 8  #4 alts, each with weight and bias
     end
   end
+
+  @testset "SkipConnection" begin
+    @testset "zero sum" begin
+      input = randn(10, 10, 10, 10)
+      @test SkipConnection(x -> zeros(size(x)), (a,b) -> a + b)(input) == input
+    end
+
+    @testset "concat size" begin
+      input = randn(10, 2)
+      @test size(SkipConnection(Dense(10,10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
+    end
+  end
 end

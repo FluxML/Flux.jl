@@ -189,3 +189,36 @@ end
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
+
+"""
+    SkipConnection(layers...)
+
+Creates a Skip Connection, which constitutes of a layer or Chain of consecutive layers
+and a shortcut connection linking the input to the block to the
+output through a user-supplied callable.
+
+`SkipConnection` requires the output dimension to be the same as the input.
+
+A 'ResNet'-type skip-connection with identity shortcut would simply be
+```julia
+    SkipConnection(layer, (a,b) -> a + b)
+```
+"""
+
+struct SkipConnection
+  layers
+  connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
+end
+
+@treelike SkipConnection
+
+function (skip::SkipConnection)(input)
+  #We apply the layers to the input and return the result of the application of the layers and the original input
+  skip.connection(skip.layers(input), input)
+end
+
+function Base.show(io::IO, b::SkipConnection)
+  print(io, "SkipConnection(")
+  join(io, b.layers, ", ")
+  print(io, ")")
+end
