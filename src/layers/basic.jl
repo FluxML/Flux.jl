@@ -189,3 +189,6 @@ end
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
+
+param(x) = x
+data(x) = x
