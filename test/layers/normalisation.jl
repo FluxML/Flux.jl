@@ -37,7 +37,7 @@ end
     # initial m.μ is 0
 
     y = trainmode(m, x)
-    @test y ≈ [-1.22474 0 1.22474; -1.22474 0 1.22474]
+    @test isapprox(y, [-1.22474 0 1.22474; -1.22474 0 1.22474], atol = 1.0e-5)
     # julia> x
     #  2×3 Array{Float64,2}:
     #  1.0  3.0  5.0
@@ -57,7 +57,7 @@ end
     #  1.3
     #  1.3
     @test m.σ² ≈ .1 .* var(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
-    
+
     x′ = m(x)
     @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
   end
