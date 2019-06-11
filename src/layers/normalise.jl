@@ -300,7 +300,7 @@ end
 GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   GroupNorm(G, λ, param(initβ(chs)), param(initγ(chs)),
-            zeros(G,1), ones(G,1), ϵ, momentum, true)
+            zeros(G,1), ones(G,1), ϵ, momentum)
 
 function(gn::GroupNorm)(x)
   size(x,ndims(x)-1) == length(gn.β) || error("Group Norm expected $(length(gn.β)) channels, but got $(size(x,ndims(x)-1)) channels")
