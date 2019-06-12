@@ -26,12 +26,17 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
-function (a::Dropout)(x)
+function dropout(x, p; dims = :)
   istraining() || return x
   y = similar(x)
   rand!(y)
   y .= _dropout_kernel.(y, p, 1 - p)
   return x .* y
+end
+
+function (a::Dropout)(x)
+  istraining() || return x
+  return dropout(x, a.p; dims = a.dims)
 end
 
 """
