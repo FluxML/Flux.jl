@@ -15,10 +15,11 @@ Does nothing to the input once in [`testmode!`](@ref).
 mutable struct Dropout{F}
   p::F
   dims::Union{Colon, Int, NTuple{N, Int} where N}
-  function Dropout(p; dims = :)
-    @assert 0 ≤ p ≤ 1
-    Dropout{typeof(p)}(p, dims)
-  end
+end
+
+function Dropout(p; dims = :)
+  @assert 0 ≤ p ≤ 1
+  Dropout{typeof(p)}(p, dims)
 end
 
 _dropout_shape(s, ::Colon) = size(s)
