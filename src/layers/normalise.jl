@@ -3,11 +3,12 @@ istraining() = false
 @adjoint istraining() = true, _ -> nothing
 
 """
-    Dropout(p)
+    Dropout(p, dims = :)
 
 A Dropout layer. For each input, either sets that input to `0` (with probability
-`p`) or scales it by `1/(1-p)`. This is used as a regularisation, i.e. it
-reduces overfitting during training.
+`p`) or scales it by `1/(1-p)`. The `dims` argument is to specified the unbroadcasted
+ dimensions, i.e. `dims=1` does dropout along columns and `dims=2` along rows. This is
+ used as a regularisation, i.e. it reduces overfitting during training. see also [`dropout`](@ref).
 
 Does nothing to the input once in [`testmode!`](@ref).
 """
@@ -19,13 +20,16 @@ mutable struct Dropout{F}
   end
 end
 
+_dropout_shape(s, ::Colon) = size(s)
+_dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
+
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 function (a::Dropout)(x)
   istraining() || return x
   y = similar(x)
   rand!(y)
-  y .= _dropout_kernel.(y, a.p, 1 - a.p)
+  y .= _dropout_kernel.(y, p, 1 - p)
   return x .* y
 end
 

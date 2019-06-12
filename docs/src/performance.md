@@ -18,7 +18,7 @@ And you use less memory.
 Not only should your activation functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
 they should also preserve the type of their inputs.
 
-A very artificial example using an activatioon function like
+A very artificial example using an activation function like
 
 ```
     my_tanh(x) = Float64(tanh(x))
@@ -73,4 +73,4 @@ end
 ```
 
 When doing this kind of concatenation use `reduce(hcat, xs)` rather than `hcat(xs...)`.
-This will avoid the splatting penality, and will hit the optimised `reduce` method.
+This will avoid the splatting penalty, and will hit the optimised `reduce` method.

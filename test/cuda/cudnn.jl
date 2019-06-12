@@ -1,16 +1,17 @@
 using Flux, CuArrays, Test
-
+trainmode(f, x...) = forward(f, x...)[1]
+#
 # @testset "CUDNN BatchNorm" begin
 #     @testset "4D Input" begin
-#         x = TrackedArray(Float64.(collect(reshape(1:12, 2, 2, 3, 1))))
+#         x = Float64.(collect(reshape(1:12, 2, 2, 3, 1)))
 #         m = BatchNorm(3)
 #         cx = gpu(x)
 #         cm = gpu(m)
 #
-#         y = m(x)
-#         cy = cm(cx)
+#         y = trainmode(m, x)
+#         cy = trainmode(cm, cx)
 #
-#         @test cy isa TrackedArray{Float32,4,CuArray{Float32,4}}
+#         # @test cy isa TrackedArray{Float32,4,CuArray{Float32,4}}
 #
 #         @test cpu(data(cy)) ≈ data(y)
 #

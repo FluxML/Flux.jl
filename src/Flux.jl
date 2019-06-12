@@ -10,7 +10,7 @@ using Zygote: Params, @adjoint, gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       params, mapleaves, cpu, gpu, f32, f64, param, data
+       SkipConnection,params, mapleaves, cpu, gpu, f32, f64, param, data
 
 include("optimise/Optimise.jl")
 using .Optimise
