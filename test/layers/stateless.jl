@@ -56,7 +56,7 @@ const ϵ = 1e-7
       y = rand(T, 2)
       ŷ = rand(T, 2)
       for f in (mse, crossentropy, logitcrossentropy)
-        fwd, back = Zygote.forward(mse, ŷ, y)
+        fwd, back = Zygote.forward(f, ŷ, y)
         @test fwd isa T
         @test eltype(back(one(T))[1]) == T
       end
