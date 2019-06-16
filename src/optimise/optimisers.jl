@@ -213,7 +213,6 @@ NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
 
 function apply!(o::NADAM, x, Δ)
   η, β = o.eta, o.beta
-  β1p, β2p = o.beta
   mt, vt, (β1p, β2p) = get!(o.state, x, (zero(x), zero(x), o.beta))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
