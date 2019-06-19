@@ -2,6 +2,7 @@ using Flux.Optimise
 using Flux.Optimise: runall
 using Zygote: Params, gradient
 using Test
+Zygote.@nograd sleep
 @testset "Optimise" begin
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
