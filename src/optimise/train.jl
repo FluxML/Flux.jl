@@ -67,6 +67,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
         loss(d...)
       end
       update!(opt, ps, gs)
+      cb()
     catch ex
       if ex isa StopException
         break
