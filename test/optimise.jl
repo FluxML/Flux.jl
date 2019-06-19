@@ -1,5 +1,6 @@
 using Flux.Optimise
 using Flux.Optimise: runall
+using Zygote
 using Zygote: Params, gradient
 using Test
 Zygote.@nograd sleep
