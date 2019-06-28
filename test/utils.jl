@@ -133,5 +133,12 @@ end
     @test destructure(m2)[1] == ps_new
 end
 
-@testset begin
+@testset "Restructure with Untracked" begin
+    m = Dense(2,3)
+    ps, re = destructure(m)
+    m2 = re(Flux.data(ps))
+    ps2,_ = destructure(m2)
+    println(ps)
+    println(ps2)
+    @test_broken ps == ps2
 end
