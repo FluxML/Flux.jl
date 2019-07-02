@@ -24,7 +24,7 @@ include("layers/conv.jl")
 
 @info "Running Gradient Checks"
 
-include("zygote.jl")
+include("gradients.jl")
 
 if Base.find_package("CuArrays") != nothing
   include("cuda/cuda.jl")
