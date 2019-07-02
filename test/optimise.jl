@@ -69,17 +69,19 @@ end
       θ = Params([w1])
       x = rand(10)
       θ̄ = gradient(() -> loss(x), θ)
-      Optimise.update!(o, θ, θ̄)
+      prev_grad = collect(θ̄[w1])
+      delta = Optimise.apply!(o, w1, θ̄[w1])
+      w1 .-= delta
       new_eta = o.eta
       if new_eta != prev_eta
         push!(decay_steps, t)
       end
-      # array = fill(o.eta, size(prev_grad))
-      # if array .* prev_grad != delta
-      #   flag = 0
-      # end
+      array = fill(o.eta, size(prev_grad))
+      if array .* prev_grad != delta
+        flag = 0
+      end
     end
-    #@test flag == 1
+    @test flag == 1
     # Test to check if decay happens at decay steps. Eta reaches clip value eventually.
     ground_truth = []
     for i in 1:11
