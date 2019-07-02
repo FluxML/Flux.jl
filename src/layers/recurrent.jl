@@ -109,7 +109,7 @@ function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform)
   cell = LSTMCell(init(out * 4, in), init(out * 4, out), init(out * 4),
                   zeros(out), zeros(out))
-  cell.b.data[gate(out, 2)] .= 1
+  cell.b[gate(out, 2)] .= 1
   return cell
 end
 
