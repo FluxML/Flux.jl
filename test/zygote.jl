@@ -22,7 +22,7 @@ gradcheck(f, xs...) =
 gradtest(f, xs::AbstractArray...) = gradcheck((xs...) -> sum(sin.(f(xs...))), xs...)
 gradtest(f, dims...) = gradtest(f, rand.(Float64, dims)...)
 
-@testset "Tracker" begin
+@testset "Zygote" begin
 
 @test gradtest(Flux.mse, rand(5,5), rand(5, 5))
 @test gradtest(Flux.crossentropy, rand(5,5), rand(5, 5))

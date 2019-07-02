@@ -276,12 +276,6 @@ git-tree-sha1 = "3e83f60b74911d3042d3550884ca2776386a02b8"
 uuid = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 version = "0.5.3"
 
-[[Tracker]]
-deps = ["Adapt", "DiffRules", "ForwardDiff", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Printf", "Random", "Requires", "SpecialFunctions", "Statistics", "Test"]
-git-tree-sha1 = "0bec1b68c63a0e8a58d3944261cbf4cc9577c8a1"
-uuid = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
-version = "0.2.0"
-
 [[TranscodingStreams]]
 deps = ["Random", "Test"]
 git-tree-sha1 = "a25d8e5a28c3b1b06d3859f30757d43106791919"
