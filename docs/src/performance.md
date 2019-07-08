@@ -41,7 +41,7 @@ While one could change your activation function (e.g. to use `0.01f0x`) to avoid
 the idiomatic (and safe way) is to use `oftype`.
 
 ```
-    leaky_tanh(x) = oftype(x/1, 0.01) + tanh(x)
+    leaky_tanh(x) = oftype(x/1, 0.01)x + tanh(x)
 ```
 
 
