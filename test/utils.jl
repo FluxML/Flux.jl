@@ -85,6 +85,17 @@ end
   @test size.(params(m)) == [(5, 10), (5,)]
   m = RNN(10, 5)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
+
+  # Layer duplicated in same chain, params just once pls.
+  c = Chain(m, m)
+  @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5,)]
+
+  # Recursive struct. Just want params, no stack overflow pls.
+  mutable struct R m;r end
+  Flux.@treelike R
+  r = R(m, nothing)
+  r.r = r
+  @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5,)]
 end
 
 @testset "Basic Stacking" begin

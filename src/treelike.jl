@@ -31,6 +31,7 @@ end
 
 function prefor(f, x; seen = IdSet())
   x ∈ seen && return
+  push!(seen, x)
   f(x)
   foreach(x -> prefor(f, x, seen = seen), children(x))
   return
