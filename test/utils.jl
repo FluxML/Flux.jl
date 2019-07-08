@@ -90,11 +90,10 @@ end
   c = Chain(m, m)
   @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5,)]
 
-  # Recursive struct. Just want params, no stack overflow pls.
-  mutable struct R m;r end
-  Flux.@treelike R
-  r = R(m, nothing)
-  r.r = r
+  # Self-referential array. Just want params, no stack overflow pls.
+  r = Any[nothing,m]
+  Flux.children(a::Vector{Any}) = Tuple(a)
+  r[1] = r
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5,)]
 end
 
