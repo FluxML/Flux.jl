@@ -7,6 +7,9 @@ function update!(x::AbstractArray, x̄)
 end
 
 function update!(opt, x, x̄)
+  if x̄ == nothing
+    x̄ = zeros(size(x)...)
+  end
   update!(x, -apply!(opt, x, x̄))
 end
 
