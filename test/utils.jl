@@ -133,6 +133,13 @@ end
     @test destructure(m2)[1] == ps_new
 end
 
+@testset "Wrong length ps" begin
+    #Single Dense Layer
+    m_orig = Dense(1,2)
+    ps, re = destructure(m_orig)
+    m_reparamed = re([ps;ps])
+end
+
 @testset "Restructure with Untracked" begin
     m = Dense(2,3)
     ps, re = destructure(m)

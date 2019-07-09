@@ -110,15 +110,17 @@ function destructure(m)
     p isa TrackedArray && push!(ps, p)
     return p
   end
-  return vcat(vec.(ps)...), ps->restructure(m,ps)
+  ps_vec = vcat(vec.(ps)...)
+  return ps_vec, ps_new->restructure(m,ps_new; len=length(ps_vec))
 end
 
 """
 Takes a model `m` and a vector of parameters `ps` and returns a new model like
 `m` parameterized by `ps`.
 """
-function restructure(m, ps)
-  i = 0
+function restructure(m, ps; len = length(ps))
+    @assert length(ps) == len
+    i = 0
   mapleaves(m) do p
     p isa TrackedArray || return p #TODO: should this be robust to restructuring with untracked?
     p = reshape(ps[i.+(1:length(p))], size(p))
