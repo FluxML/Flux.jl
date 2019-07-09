@@ -124,3 +124,11 @@ function loss(x,y)
   return l
 end
 ```
+
+## Learning the Initial State
+
+By default, the hidden state of RNN cells is initialised to zero, and is reset to zero every time `Flux.reset!` is called. Some models treat this initial state as a learnable parameter, which must be optimised during training. For such models, *learn_initial_state!* must be invoked:
+
+```julia
+Flux.learn_initial_state!(m)
+```
