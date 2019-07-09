@@ -69,22 +69,34 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
 """
 reset!(m) = prefor(x -> x isa Recur && (x.state = x.init), m)
 
+"""
+    learn_initial_state!(rnn)
+
+Make the initial state of the RNN a learnable parameter, such that its gradients
+are taken and its value is updated during training
+"""
+learn_initial_state!(rnn) = prefor(x -> x isa Recur && learn_initial_state_!(x), rnn)
+
+function learn_initial_state_!(rnn)
+  rnn.state = rnn.init = param(rnn.init)
+end
+
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 # Vanilla RNN
 
-mutable struct RNNCell{F,A,V}
+mutable struct RNNCell{F,A,V,S}
   σ::F
   Wi::A
   Wh::A
   b::V
-  h::V
+  h::S
 end
 
 RNNCell(in::Integer, out::Integer, σ = tanh;
         init = glorot_uniform) =
   RNNCell(σ, param(init(out, in)), param(init(out, out)),
-          param(init(out)), param(zeros(out)))
+          param(init(out)), zeros(out))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -112,18 +124,18 @@ RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
 # LSTM
 
-mutable struct LSTMCell{A,V}
+mutable struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  h::V
-  c::V
+  h::S
+  c::S
 end
 
 function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform)
   cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(init(out*4)),
-                  param(zeros(out)), param(zeros(out)))
+                  zeros(out), zeros(out))
   cell.b.data[gate(out, 2)] .= 1
   return cell
 end
@@ -160,16 +172,16 @@ LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # GRU
 
-mutable struct GRUCell{A,V}
+mutable struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  h::V
+  h::S
 end
 
 GRUCell(in, out; init = glorot_uniform) =
   GRUCell(param(init(out*3, in)), param(init(out*3, out)),
-          param(init(out*3)), param(zeros(out)))
+          param(init(out*3)), zeros(out))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)

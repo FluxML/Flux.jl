@@ -1,5 +1,6 @@
 using Flux
-using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack, unstack
+using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack, unstack,
+  learn_initial_state!
 using StatsBase: std
 using Random
 using Test
@@ -84,6 +85,8 @@ end
   m = Dense(10, 5)
   @test size.(params(m)) == [(5, 10), (5,)]
   m = RNN(10, 5)
+  @test size.(params(m)) == [(5, 10), (5, 5), (5,)]
+  learn_initial_state!(m)
   @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
 end
 

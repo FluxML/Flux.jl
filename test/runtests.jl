@@ -21,6 +21,7 @@ include("layers/basic.jl")
 include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")
+include("layers/recurrent.jl")
 
 @info "Running Gradient Checks"
 
