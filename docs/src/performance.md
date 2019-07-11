@@ -61,7 +61,7 @@ end
 
 It is much faster to concatenate them into a matrix,
 as this will hit BLAS matrix-matrix multiplication, which is much faster than the equivalent sequence of matrix-vector multiplications.
-The improvement is enough that it is worthwild allocating new memory to store them contiguously.
+The improvement is enough that it is worthwhile allocating new memory to store them contiguously.
 
 ```julia
 x_batch = reduce(hcat, xs)
