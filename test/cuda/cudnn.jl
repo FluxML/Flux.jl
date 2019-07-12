@@ -14,13 +14,11 @@ trainmode(f, x...) = forward(f, x...)[1]
 
         @test cpu(data(cy)) ≈ data(y)
 
-        g = rand(size(y)...)
-        # Flux.back!(y, g)
-        # Flux.back!(cy, gpu(g))
+        g = gradient(()->sum(m(x)), params(m))
+        cg = gradient(()->sum(cm(cx), params(cm))
 
-        @test m.γ ≈ cpu(cm.γ)
-        @test m.β ≈ cpu(cm.β)
-        @test x ≈ cpu(x)
+        @test g.grads[m.γ] ≈ cpu(cg.grads[cm.γ])
+        @test g.grads[m.β] ≈ cpu(cg.grads[cm.β])
     end
 
     @testset "2D Input" begin
@@ -36,12 +34,10 @@ trainmode(f, x...) = forward(f, x...)[1]
 
         @test cpu(data(cy)) ≈ data(y)
 
-        g = rand(size(y)...)
-        #Flux.back!(y, g)
-        #Flux.back!(cy, gpu(g))
+        g = gradient(()->sum(m(x)), params(m))
+        cg = gradient(()->sum(cm(cx), params(cm))
 
-        @test m.γ ≈ cpu(cm.γ)
-        @test m.β ≈ cpu(cm.β)
-        @test x ≈ cpu(x)
+        @test g.grads[m.γ] ≈ cpu(cg.grads[cm.γ])
+        @test g.grads[m.β] ≈ cpu(cg.grads[cm.β])
     end
 end

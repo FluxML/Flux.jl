@@ -6,8 +6,8 @@ trainmode(f, x...) = forward(f, x...)[1]
 @testset "Dropout" begin
   x = [1.,2.,3.]
   @test x == Dropout(0.1)(x)
-  @test x == trainmode(Dropout(0), (x))
-  @test zero(x) == trainmode(Dropout(1), (x))
+  @test x == trainmode(Dropout(0), x)
+  @test zero(x) == trainmode(Dropout(1), x)
 
   x = rand(100)
   m = Dropout(0.9)
