@@ -6,8 +6,6 @@ using Zygote
 
 @testset "CuArrays" begin
 
-CuArrays.allowscalar(false)
-
 x = param(randn(5, 5))
 cx = gpu(x)
 @test cx isa CuArray
