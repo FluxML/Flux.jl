@@ -234,7 +234,6 @@ end
       @test m.σ² ≈ mean(squeeze(var(reshape(x,3,2,2,2),dims=(1,2))).*.1,dims=2) .+ .9*1.
 
       x′ = m(x)
-      println(x′[1])
       @test isapprox(x′[1], (1 - 0.95) / sqrt(1.25 + 1f-5), atol = 1.0e-5)
   end
   # with activation function

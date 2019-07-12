@@ -6,6 +6,8 @@ using Zygote
 
 @testset "CuArrays" begin
 
+CuArrays.allowscalar(false)
+
 x = param(randn(5, 5))
 cx = gpu(x)
 @test cx isa CuArray
@@ -14,7 +16,7 @@ cx = gpu(x)
 
 x = Flux.onehotbatch([1, 2, 3], 1:3)
 cx = gpu(x)
-@test cx isa Flux.OneHotMatrix && cx isa CuArray
+@test cx isa Flux.OneHotMatrix && cx.data isa CuArray
 @test (cx .+ 1) isa CuArray
 
 m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
@@ -32,14 +34,14 @@ ys = Flux.onehotbatch(1:5,1:5)
 @test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
 
 c = gpu(Conv((2,2),3=>4))
+x = gpu(rand(10, 10, 3, 2))
 l = c(gpu(rand(10,10,3,2)))
-fwd, back = Zygote.forward(sum, l)
-back(one(Float64))
+@test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
 c = gpu(CrossCor((2,2),3=>4))
+x = gpu(rand(10, 10, 3, 2))
 l = c(gpu(rand(10,10,3,2)))
-fwd, back = Zygote.forward(sum, l)
-back(one(Float64))
+@test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
 end
 
