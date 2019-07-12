@@ -27,7 +27,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 [compat]
 NNlib = "0.6"
 Zygote = "0.3"
-julia = "0.7, 1"
+julia = "1.1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
