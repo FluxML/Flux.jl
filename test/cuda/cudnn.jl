@@ -17,8 +17,8 @@ trainmode(f, x...) = forward(f, x...)[1]
         g = gradient(()->sum(m(x)), params(m))
         cg = gradient(()->sum(cm(cx)), params(cm))
 
-        @test g.grads[m.γ] ≈ cpu(cg.grads[cm.γ])
-        @test g.grads[m.β] ≈ cpu(cg.grads[cm.β])
+        @test g[m.γ] ≈ cpu(cg[cm.γ])
+        @test g[m.β] ≈ cpu(cg[cm.β])
     end
 
     @testset "2D Input" begin
@@ -37,7 +37,7 @@ trainmode(f, x...) = forward(f, x...)[1]
         g = gradient(()->sum(m(x)), params(m))
         cg = gradient(()->sum(cm(cx)), params(cm))
 
-        @test g.grads[m.γ] ≈ cpu(cg.grads[cm.γ])
-        @test g.grads[m.β] ≈ cpu(cg.grads[cm.β])
+        @test g[m.γ] ≈ cpu(cg[cm.γ])
+        @test g[m.β] ≈ cpu(cg[cm.β])
     end
 end
