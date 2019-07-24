@@ -37,6 +37,12 @@ end
 
 (a::Dropout)(x) = dropout(x, a.p; dims = a.dims)
 
+function Base.show(io::IO, d::Dropout)
+  print(io, "Dropout(", d.p)
+  d.dims != (:) && print(io, ", dims = $(repr(d.dims))")
+  print(io, ")")
+end
+
 """
     AlphaDropout(p)
 A dropout layer. It is used in Self-Normalizing Neural Networks.
