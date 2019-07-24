@@ -13,17 +13,16 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight
 end
 
 """
-    binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
-
-Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerical stability.
-
+    binarycrossentropy(ŷ, y)
+Return `-log(y*ŷ + (1-y)*(1-ŷ))`, which is the same as `-y*log(ŷ) - (1-y)*log(1-ŷ)`
+    for `y ∈ (0,1)` but numerically more stable.
     julia> binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0.])
     3-element Array{Float64,1}:
     1.4244
     0.352317
     0.86167
 """
-binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+binarycrossentropy(ŷ, y) = -log(y*ŷ + (1 - y)*(1-ŷ))
 
 """
     logitbinarycrossentropy(logŷ, y)
