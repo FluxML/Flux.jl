@@ -12,6 +12,14 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight
   return -sum(y .* logsoftmax(logŷ) .* weight) * 1 // size(y, 2)
 end
 
+function smooth_l1_loss(y, fx; δ = 1)
+  α = abs(y - fx)
+  abs(α) <= δ && return 0.5f0 * α ^ 2
+  δ * α - (0.5f0 * δ ^ 2)
+end
+
+huber_loss = smooth_l1_loss
+
 """
     binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
 
