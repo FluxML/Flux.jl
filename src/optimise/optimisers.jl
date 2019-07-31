@@ -23,7 +23,7 @@ function apply!(o::Descent, x, Δ)
 end
 
 """
-    Momentum(params, η = 0.01; ρ = 0.9)
+    Momentum(η = 0.01; ρ = 0.9)
 
 Gradient descent with learning rate `η` and momentum `ρ`.
 """
