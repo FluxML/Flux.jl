@@ -186,8 +186,8 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
   else
     ivar = 1 ./ sqrt.(reshape(running_var, _wsize(x)) .+ eps)
     dx .= dy .* reshape(g, _wsize(x)) .* ivar
-    dg .= squeeze(sum(dy .* (x .- reshape(running_mean, _wsize(x))) .* ivar, _reddims(dy)), dims = (1,2,4))
-    db .= squeeze(sum(dy, _reddims(dy)), dims = (1,2,4))
+    dg .= dropdims(sum(dy .* (x .- reshape(running_mean, _wsize(x))) .* ivar, dims=_reddims(dy)), dims = (1,2,4))
+    db .= dropdims(sum(dy, dims=_reddims(dy)), dims = (1,2,4))
   end
 end
 
