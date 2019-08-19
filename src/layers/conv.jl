@@ -236,7 +236,7 @@ end
 
 CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
      init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
-  CrossCor(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+  CrossCor(init(k..., ch...), zeros(ch[2]), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 @treelike CrossCor
