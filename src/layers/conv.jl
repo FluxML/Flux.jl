@@ -74,8 +74,10 @@ end
 
 Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
+
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,M,F,A,V}
@@ -138,11 +140,14 @@ end
 """
     DepthwiseConv(size, in=>out)
     DepthwiseConv(size, in=>out, relu)
+
 Depthwise convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 Note that `out` must be an integer multiple of `in`.
+
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct DepthwiseConv{N,M,F,A,V}
