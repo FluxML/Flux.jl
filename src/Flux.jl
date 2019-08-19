@@ -11,7 +11,7 @@ export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       SkipConnection, params, mapleaves, cpu, gpu, f32, f64, param, data
+       SkipConnection, params, mapleaves, cpu, gpu, f32, f64
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -31,6 +31,8 @@ include("layers/recurrent.jl")
 include("layers/normalise.jl")
 
 include("data/Data.jl")
+
+include("deprecations.jl")
 
 @init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" include("cuda/cuda.jl")
 

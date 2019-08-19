@@ -222,5 +222,3 @@ function Base.show(io::IO, b::SkipConnection)
   join(io, b.layers, ", ")
   print(io, ")")
 end
-param(x) = x
-data(x) = x
