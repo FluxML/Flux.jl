@@ -265,7 +265,7 @@ function desc(rnn)
   return d
 end
 
-using Zygote: @adjoint
+using ..Flux: @adjoint
 
 function (m::CuRNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
   result = forward(desc(m), x, h)
@@ -295,7 +295,7 @@ for RNN in (CuRNN, CuGRU)
       h_ = hBatch(x, h)
       dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
       (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
-      nobacksies(:RNN, (dx, unbroadcast(h, dh), transpose(dWi), transpose(dWh), db))
+      (dx, unbroadcast(h, dh), transpose(dWi), transpose(dWh), db)
     end
   end
 end
@@ -309,8 +309,7 @@ end
     c_ = hBatch(x, c)
     dx, dh, dc = backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
     (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
-    nobacksies(:RNN,
-      (dx, unbroadcast(h, dh), unbroadcast(c, dc),
-       transpose(dWi), transpose(dWh), db))
+    (dx, unbroadcast(h, dh), unbroadcast(c, dc),
+     transpose(dWi), transpose(dWh), db)
   end
 end

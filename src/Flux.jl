@@ -3,10 +3,10 @@ module Flux
 # Zero Flux Given
 
 using Base: tail
-using MacroTools, Juno, Requires, Reexport, Statistics, Random
+using Zygote, MacroTools, Juno, Requires, Reexport, Statistics, Random
 using MacroTools: @forward
 @reexport using NNlib
-using Zygote: Params, @adjoint, gradient
+using Zygote: Params, @adjoint, gradient, forward
 export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,

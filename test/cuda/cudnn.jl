@@ -1,5 +1,4 @@
 using Flux, CuArrays, Test
-using Zygote
 trainmode(f, x...) = forward(f, x...)[1]
 
 @testset "CUDNN BatchNorm" begin

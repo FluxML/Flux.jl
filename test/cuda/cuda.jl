@@ -1,6 +1,5 @@
 using Flux, CuArrays, Test
 using Flux: gpu
-using Zygote
 
 @info "Testing GPU Support"
 
