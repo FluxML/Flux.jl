@@ -8,8 +8,8 @@ using Flux, CuArrays, Test
       Flux.reset!(rnn)
       Flux.reset!(curnn)
       x = batch_size == 1 ?
-        param(rand(10)) :
-        param(rand(10,batch_size))
+        rand(10) :
+        rand(10, batch_size)
       cux = gpu(x)
       y = (rnn(x); rnn(x))
       cuy = (curnn(cux); curnn(cux))

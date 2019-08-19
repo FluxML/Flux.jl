@@ -27,7 +27,7 @@ end
   m = Conv((3, 3), 1=>1, relu; pad=(0,1,1,2))
   m.weight[:] .= 1.0
   m.bias[:] .= 0.0
-  y_hat = Flux.data(m(r))[:,:,1,1]
+  y_hat = m(r)[:,:,1,1]
   @test size(y_hat) == (27, 29)
   @test y_hat[1, 1] ≈ 6.0
   @test y_hat[2, 2] ≈ 9.0

@@ -73,26 +73,26 @@ end
   end
 
   # with activation function
-  let m = BatchNorm(2, sigmoid), x = param([1.0 3.0 5.0;
-                                            2.0 4.0 6.0])
+  let m = BatchNorm(2, sigmoid), x = [1.0 3.0 5.0;
+                                      2.0 4.0 6.0]
     y = trainmode(m, x)
     y = m(x)
-    @test isapprox(y, data(sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ))), atol = 1.0e-7)
+    @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
   end
 
-  let m = BatchNorm(2), x = param(reshape(1:6, 3, 2, 1))
+  let m = BatchNorm(2), x = reshape(1:6, 3, 2, 1)
     y = reshape(permutedims(x, [2, 1, 3]), 2, :)
     y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
     @test m(x) == y
   end
 
-  let m = BatchNorm(2), x = param(reshape(1:12, 2, 3, 2, 1))
+  let m = BatchNorm(2), x = reshape(1:12, 2, 3, 2, 1)
     y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
     @test m(x) == y
   end
 
-  let m = BatchNorm(2), x = param(reshape(1:24, 2, 2, 3, 2, 1))
+  let m = BatchNorm(2), x = reshape(1:24, 2, 2, 3, 2, 1)
     y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
     @test m(x) == y
@@ -156,7 +156,7 @@ end
 
     y = trainmode(m, x)
     y = m(x)
-    @test isapprox(y, data(sigmoid.((x .- expand_inst(m.μ, affine_shape)) ./ sqrt.(expand_inst(m.σ², affine_shape) .+ m.ϵ))), atol = 1.0e-7)
+    @test isapprox(y, sigmoid.((x .- expand_inst(m.μ, affine_shape)) ./ sqrt.(expand_inst(m.σ², affine_shape) .+ m.ϵ)), atol = 1.0e-7)
   end
 
   let m = InstanceNorm(2), sizes = (2, 4, 1, 2, 3),
@@ -193,7 +193,7 @@ end
   squeeze(x) = dropdims(x, dims = tuple(findall(size(x) .== 1)...)) # To remove all singular dimensions
 
   let m = GroupNorm(4,2), sizes = (3,4,2),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
       x = Float64.(x)
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
@@ -238,7 +238,7 @@ end
   end
   # with activation function
   let m = GroupNorm(4,2, sigmoid), sizes = (3, 4, 2),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     x = Float64.(x)
     μ_affine_shape = ones(Int,length(sizes) + 1)
     μ_affine_shape[end-1] = 2 # Number of groups
@@ -254,12 +254,12 @@ end
     y = trainmode(m, x)
     y = m(x)
     x_ = reshape(x,affine_shape...)
-    out = reshape(data(sigmoid.((x_ .- reshape(m.μ,μ_affine_shape...)) ./ sqrt.(reshape(m.σ²,μ_affine_shape...) .+ m.ϵ))),og_shape)
+    out = reshape(sigmoid.((x_ .- reshape(m.μ,μ_affine_shape...)) ./ sqrt.(reshape(m.σ²,μ_affine_shape...) .+ m.ϵ)),og_shape)
     @test isapprox(y, out, atol = 1.0e-7)
   end
 
   let m = GroupNorm(2,2), sizes = (2, 4, 1, 2, 3),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
     @test m(x) == y
@@ -267,7 +267,7 @@ end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = GroupNorm(4,2), sizes = (5, 5, 3, 4, 4, 6),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     y = m(x)
     @test size(m.μ) == (m.G,1)
     @test size(m.σ²) == (m.G,1)
@@ -276,13 +276,13 @@ end
 
   # show that group norm is the same as instance norm when the group size is the same as the number of channels
   let IN = InstanceNorm(4), GN = GroupNorm(4,4), sizes = (2,2,3,4,5),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     @test IN(x) ≈ GN(x)
   end
 
   # show that group norm is the same as batch norm for a group of size 1 and batch of size 1
   let BN = BatchNorm(4), GN = GroupNorm(4,4), sizes = (2,2,3,4,1),
-      x = param(reshape(collect(1:prod(sizes)), sizes))
+      x = reshape(collect(1:prod(sizes)), sizes)
     @test BN(x) ≈ GN(x)
   end
 

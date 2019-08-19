@@ -8,11 +8,11 @@ using Zygote
 
 CuArrays.allowscalar(false)
 
-x = param(randn(5, 5))
+x = randn(5, 5)
 cx = gpu(x)
 @test cx isa CuArray
 
-@test Flux.onecold(param(gpu([1.,2.,3.]))) == 3
+@test Flux.onecold(gpu([1.0, 2.0, 3.0])) == 3
 
 x = Flux.onehotbatch([1, 2, 3], 1:3)
 cx = gpu(x)
@@ -29,7 +29,7 @@ x = [1,2,3]
 cx = gpu(x)
 @test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
 
-xs = param(rand(5,5))
+xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)
 @test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
 

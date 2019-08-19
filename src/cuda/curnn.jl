@@ -242,9 +242,9 @@ CuRNNs{T} = Union{CuRNN{T},CuGRU{T},CuLSTM{T}}
 
 function copyparams!(m::CuRNNs, d::RNNDesc)
   Wi, Wh = d.weights
-  copy_transpose!(Wi, Flux.data(m.Wi))
-  copy_transpose!(Wh, Flux.data(m.Wh))
-  copy_transpose!(d.bias, Flux.data(m.b))
+  copy_transpose!(Wi, m.Wi)
+  copy_transpose!(Wh, m.Wh)
+  copy_transpose!(d.bias, m.b)
   return
 end
 
@@ -301,7 +301,7 @@ for RNN in (CuRNN, CuGRU)
 end
 
 @adjoint function (m::CuLSTM)(x, h, c, Wi, Wh, b)
-  reserve, result = forwardTrain(desc(m), data.((x, h, c))...)
+  reserve, result = forwardTrain(desc(m), x, h, c)
   result, function (Δ)
     y, ho = result
     dy, dho, dco = Δ

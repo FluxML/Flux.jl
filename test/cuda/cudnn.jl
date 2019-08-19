@@ -12,7 +12,7 @@ trainmode(f, x...) = forward(f, x...)[1]
         y = trainmode(m, x)
         cy = trainmode(cm, cx)
 
-        @test cpu(data(cy)) ≈ data(y)
+        @test cpu(cy) ≈ y
 
         g = gradient(()->sum(m(x)), params(m))
         cg = gradient(()->sum(cm(cx)), params(cm))
@@ -32,7 +32,7 @@ trainmode(f, x...) = forward(f, x...)[1]
 
         @test cy isa CuArray{Float32,2}
 
-        @test cpu(data(cy)) ≈ data(y)
+        @test cpu(cy) ≈ y
 
         g = gradient(()->sum(m(x)), params(m))
         cg = gradient(()->sum(cm(cx)), params(cm))
