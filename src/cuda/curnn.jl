@@ -268,48 +268,55 @@ end
 using ..Flux: @adjoint
 
 function (m::CuRNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
-  result = forward(desc(m), x, h)
-  return result[2], result[1]
+  y, h′ = forward(desc(m), x, h)
+  return h′, y
 end
 
 function (m::CuGRU{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
-  result = forward(desc(m), x, h)
-  return result[2], result[1]
+  y, h′ = forward(desc(m), x, h)
+  return h′, y
 end
 
 function (m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
-  result = forward(desc(m), x, h[1], h[2])
-  return (result[2], result[3]), result[1]
+  y, h′, c′ = forward(desc(m), x, h[1], h[2])
+  return (h′, c′), y
 end
 
 (m::CuRNN{T})(h::CuArray{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 (m::CuGRU{T})(h::CuArray{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 (m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 
+trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val(ndims(x))))
+
+unbroadcast(x::AbstractArray, Δ) =
+  size(x) == size(Δ) ? Δ :
+  length(x) == length(Δ) ? trim(x, Δ) :
+    trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
+
 for RNN in (CuRNN, CuGRU)
-  @eval @adjoint function (m::$RNN)(x, h, Wi, Wh, b)
-    reserve, result = forwardTrain(desc(m), x, h)
-    result, function (Δ)
-      y, ho = result
-      dy, dho = Δ
+  @eval @adjoint function (m::$RNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
+    reserve, (y, ho) = forwardTrain(desc(m), x, h)
+    (ho, y), function (Δ)
+      dho, dy = Δ
       h_ = hBatch(x, h)
       dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
       (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
-      (dx, unbroadcast(h, dh), transpose(dWi), transpose(dWh), db)
+      dm = Ref{Any}((σ=nothing,Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing))
+      (dm, unbroadcast(h, dh), dx)
     end
   end
 end
 
-@adjoint function (m::CuLSTM)(x, h, c, Wi, Wh, b)
-  reserve, result = forwardTrain(desc(m), x, h, c)
-  result, function (Δ)
-    y, ho = result
-    dy, dho, dco = Δ
+@adjoint function (m::CuLSTM)((h, c)::Tuple{CuArray{T},CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  reserve, (y, ho, co) = forwardTrain(desc(m), x, h, c)
+  ((ho, co), y), function (Δ)
+    dhc, dy = Δ
+    dho, dco = dhc === nothing ? (nothing, nothing) : dhc
     h_ = hBatch(x, h)
     c_ = hBatch(x, c)
     dx, dh, dc = backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
     (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
-    (dx, unbroadcast(h, dh), unbroadcast(c, dc),
-     transpose(dWi), transpose(dWh), db)
+    dm = Ref{Any}((Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing,c=nothing))
+    (dm, (unbroadcast(h, dh), unbroadcast(c, dc)), dx)
   end
 end

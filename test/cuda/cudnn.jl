@@ -1,5 +1,5 @@
 using Flux, CuArrays, Test
-trainmode(f, x...) = forward(f, x...)[1]
+using Flux: forward
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input" begin
@@ -8,16 +8,18 @@ trainmode(f, x...) = forward(f, x...)[1]
         cx = gpu(x)
         cm = gpu(m)
 
-        y = trainmode(m, x)
-        cy = trainmode(cm, cx)
+        y, back = forward((m, x) -> m(x), m, x)
+        cy, cback = forward((m, x) -> m(x), cm, cx)
 
         @test cpu(cy) ≈ y
 
-        g = gradient(()->sum(m(x)), params(m))
-        cg = gradient(()->sum(cm(cx)), params(cm))
+        Δ = randn(size(y))
+        dm, dx = back(Δ)
+        cdm, cdx = cback(gpu(Δ))
 
-        @test g[m.γ] ≈ cpu(cg[cm.γ])
-        @test g[m.β] ≈ cpu(cg[cm.β])
+        @test dm[].γ ≈ cpu(cdm[].γ)
+        @test dm[].β ≈ cpu(cdm[].β)
+        @test dx ≈ cpu(cdx)
     end
 
     @testset "2D Input" begin
@@ -26,17 +28,17 @@ trainmode(f, x...) = forward(f, x...)[1]
         cx = gpu(x)
         cm = gpu(m)
 
-        y = trainmode(m, x)
-        cy = trainmode(cm, cx)
-
-        @test cy isa CuArray{Float32,2}
+        y, back = forward((m, x) -> m(x), m, x)
+        cy, cback = forward((m, x) -> m(x), cm, cx)
 
         @test cpu(cy) ≈ y
 
-        g = gradient(()->sum(m(x)), params(m))
-        cg = gradient(()->sum(cm(cx)), params(cm))
+        Δ = randn(size(y))
+        dm, dx = back(Δ)
+        cdm, cdx = cback(gpu(Δ))
 
-        @test g[m.γ] ≈ cpu(cg[cm.γ])
-        @test g[m.β] ≈ cpu(cg[cm.β])
+        @test dm[].γ ≈ cpu(cdm[].γ)
+        @test dm[].β ≈ cpu(cdm[].β)
+        @test dx ≈ cpu(cdx)
     end
 end
