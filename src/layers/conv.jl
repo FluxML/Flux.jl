@@ -194,7 +194,8 @@ end
   invoke(a, Tuple{AbstractArray}, x)
 
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-a(T.(x))
+  a(T.(x))
+
 """
     CrossCor(size, in=>out)
     CrossCor(size, in=>out, relu)
