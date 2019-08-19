@@ -5,7 +5,7 @@ using Test
 @testset "Optimise" begin
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-                       NADAM(), Descent(0.1), ADAM(), Nesterov(), RMSProp(),
+                       NADAM(), RADAM(), Descent(0.1), ADAM(), Nesterov(), RMSProp(),
                        Momentum()]
     w′ = param(randn(10, 10))
     loss(x) = Flux.mse(w*x, w′*x)
