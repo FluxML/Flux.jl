@@ -5,7 +5,7 @@ using MacroTools: @forward
 const ϵ = 1e-8
 
 # TODO: should use weak refs
-print_opt(io, name::String, args...) = print(io, name, "(", join(args, ", "), ")")
+print_opt(io, name::Union{String, Symbol}, args...) = print(io, name, "(", join(args, ", "), ")")
 print_opt(io, x::T, args...) where T = print_opt(io, nameof(T), args...)
 
 """
