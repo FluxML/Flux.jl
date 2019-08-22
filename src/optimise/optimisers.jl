@@ -5,6 +5,8 @@ using MacroTools: @forward
 const ϵ = 1e-8
 
 # TODO: should use weak refs
+print_opt(io, name::String, args...) = print(io, name, "(", join(args, ", "), ")")
+print_opt(io, x::T, args...) where T = print_opt(io, nameof(T), args...)
 
 """
     Descent(η)
@@ -42,6 +44,8 @@ function apply!(o::Momentum, x, Δ)
   @. Δ = -v
 end
 
+Base.show(io::IO, x::Momentum) = print_opt(io, x, x.eta, x.rho)
+
 """
     Nesterov(eta, ρ = 0.9)
 
@@ -62,6 +66,8 @@ function apply!(o::Nesterov, x, Δ)
   @. v = ρ*v - η*Δ
   @. Δ = -d
 end
+
+Base.show(io::IO, x::Nesterov) = print_opt(io, x, x.eta, x.rho)
 
 """
     RMSProp(η = 0.001, ρ = 0.9)
@@ -85,6 +91,8 @@ function apply!(o::RMSProp, x, Δ)
   @. Δ *= η / (√acc + ϵ)
 end
 
+Base.show(io::IO, x::RMSProp) = print_opt(io, x, x.eta, x.rho)
+
 """
     ADAM(η = 0.001, β = (0.9, 0.999))
 
@@ -107,6 +115,8 @@ function apply!(o::ADAM, x, Δ)
   o.state[x] = (mt, vt, βp .* β)
   return Δ
 end
+
+Base.show(io::IO, x::ADAM) = print_opt(io, x, x.eta, x.beta)
 
 """
     AdaMax(params, η = 0.001; β1 = 0.9, β2 = 0.999, ϵ = 1e-08)
@@ -132,6 +142,8 @@ function apply!(o::AdaMax, x, Δ)
   return Δ
 end
 
+Base.show(io::IO, x::AdaMax) = print_opt(io, x, x.eta, x.beta)
+
 """
     ADAGrad(η = 0.1; ϵ = 1e-8)
 
@@ -151,6 +163,9 @@ function apply!(o::ADAGrad, x, Δ)
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
+
+Base.show(io::IO, x::ADAGrad) = print_opt(io, x, x.eta)
+
 
 """
     ADADelta(ρ = 0.9, ϵ = 1e-8)
@@ -173,6 +188,9 @@ function apply!(o::ADADelta, x, Δ)
   @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
   return Δ
 end
+
+Base.show(io::IO, x::ADADelta) = print_opt(io, x, x.rho)
+
 
 """
     AMSGrad(η = 0.001, β = (0.9, 0.999))
@@ -197,6 +215,9 @@ function apply!(o::AMSGrad, x, Δ)
   @. Δ = η * mt / (√v̂t + ϵ)
 end
 
+Base.show(io::IO, x::AMSGrad) = print_opt(io, x, x.eta, x.beta)
+
+
 """
     NADAM(η = 0.001, β = (0.9, 0.999))
 
@@ -220,6 +241,9 @@ function apply!(o::NADAM, x, Δ)
   o.state[x] = (mt, vt, (β1p * β[1], β2p * β[2]))
   return Δ
 end
+
+Base.show(io::IO, x::NADAM) = print_opt(io, x, x.eta, x.beta)
+
 
 """
     ADAMW((η = 0.001, β = (0.9, 0.999), decay = 0)
