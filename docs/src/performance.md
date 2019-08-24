@@ -14,8 +14,8 @@ Which means allocations occur much faster.
 And you use less memory.
 
 
-## Make sure your custom activation functions preserve the type of their inputs
-Not only should your activation functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
+## Make sure your activation and loss functions preserve the type of their inputs
+Not only should your activation and loss functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
 they should also preserve the type of their inputs.
 
 A very artificial example using an activation function like
@@ -26,6 +26,7 @@ A very artificial example using an activation function like
 
 will result in performance on `Float32` input orders of magnitude slower than the normal `tanh` would,
 because it results in having to use slow mixed type multiplication in the dense layers.
+Similar situations can occur in the loss function during backpropagation.
 
 Which means if you change your data say from `Float64` to `Float32` (which should give a speedup: see above),
 you will see a large slow-down
@@ -41,7 +42,7 @@ While one could change your activation function (e.g. to use `0.01f0x`) to avoid
 the idiomatic (and safe way) is to use `oftype`.
 
 ```
-    leaky_tanh(x) = oftype(x/1, 0.01) + tanh(x)
+    leaky_tanh(x) = oftype(x/1, 0.01)x + tanh(x)
 ```
 
 
@@ -60,7 +61,7 @@ end
 
 It is much faster to concatenate them into a matrix,
 as this will hit BLAS matrix-matrix multiplication, which is much faster than the equivalent sequence of matrix-vector multiplications.
-Even though this means allocating new memory to store them contiguously.
+The improvement is enough that it is worthwhile allocating new memory to store them contiguously.
 
 ```julia
 x_batch = reduce(hcat, xs)
