@@ -44,10 +44,12 @@ const ϵ = 1e-7
   @testset "binarycrossentropy" begin
     @test binarycrossentropy.(σ.(logŷ), y; ϵ=0) ≈ -y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ))
     @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ)))
+    @test binarycrossentropy([σ(0)], 1) ≈ -log(σ(0) + eps(σ(0)))
   end
 
   @testset "logitbinarycrossentropy" begin
     @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0)
+    @test logitbinarycrossentropy([0.0], 1) ≈ binarycrossentropy(σ(0), 1; ϵ=0)
   end
 
   @testset "no spurious promotions" begin

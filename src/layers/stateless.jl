@@ -25,6 +25,11 @@ Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerica
 """
 binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
+function binarycrossentropy(ŷ::AbstractVector, y::Number; kwargs...)
+    length(ŷ) == 1 || throw(DimensionMismatch("expected scalar value"))
+    binarycrossentropy(ŷ[1], y; kwargs...)
+end
+
 """
     logitbinarycrossentropy(logŷ, y)
 
@@ -38,6 +43,11 @@ but it is more numerically stable.
      0.86167
 """
 logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
+
+function logitbinarycrossentropy(logŷ::AbstractVector, y::Number)
+    length(logŷ) == 1 || throw(DimensionMismatch("expected scalar value"))
+    logitbinarycrossentropy(logŷ[1], y)
+end
 
 """
     normalise(x::AbstractArray; dims=1)
