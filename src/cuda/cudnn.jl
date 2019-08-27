@@ -1,8 +1,12 @@
-using .CuArrays.CUDNN: @check, cudnnStatus_t, cudnnTensorDescriptor_t,
+using CuArrays: libcudnn
+using CuArrays.CUDNN: @check, handle, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, cudnnDataType, TensorDesc, FilterDesc
-using .CuArrays: libcudnn
-import ..Flux: data
+
+import CuArrays.CUDAdrv: CuPtr, CU_NULL
+
 using LinearAlgebra
+
+import ..Flux: data
 
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}

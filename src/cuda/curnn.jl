@@ -1,6 +1,9 @@
-using .CuArrays.CUDNN: @check, cudnnStatus_t, cudnnTensorDescriptor_t,
+using CuArrays: libcudnn
+using CuArrays.CUDNN: @check, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, cudnnDataType, TensorDesc, FilterDesc
-using .CuArrays: libcudnn
+
+import CuArrays.CUDAdrv: CuPtr, CU_NULL
+
 using LinearAlgebra
 
 const RNN_RELU = 0 # Stock RNN with ReLu activation
@@ -223,8 +226,8 @@ end
 
 import ..Flux: Flux, relu
 import ..Tracker: TrackedArray
-using .CuArrays.CUDAnative
-using .CuArrays: @cuindex, cudims
+using CuArrays.CUDAnative
+using CuArrays: @cuindex, cudims
 
 function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
   function kernel(dst, src)
