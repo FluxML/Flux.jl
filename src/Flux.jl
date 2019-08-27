@@ -33,6 +33,8 @@ if has_cuda()
     @warn "CUDA is installed, but CuArrays.jl fails to load" exception=(ex,catch_backtrace())
     @eval has_cuarrays() = false
   end
+else
+  has_cuarrays() = false
 end
 
 include("utils.jl")
