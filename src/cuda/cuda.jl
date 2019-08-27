@@ -2,7 +2,7 @@ module CUDA
 
 using ..CuArrays
 
-if has_cudnn()
+if CuArrays.libcudnn !== nothing  # TODO: use CuArrays.has_cudnn()
   include("curnn.jl")
   include("cudnn.jl")
 else
