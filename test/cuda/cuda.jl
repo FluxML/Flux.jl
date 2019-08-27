@@ -48,7 +48,7 @@ end
   @test y[3,:] isa CuArray
 end
 
-if has_cudnn() != nothing
+if CuArrays.libcudnn != nothing
     @info "Testing Flux/CUDNN"
     include("cudnn.jl")
     if !haskey(ENV, "CI_DISABLE_CURNN_TEST")
