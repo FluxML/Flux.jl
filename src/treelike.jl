@@ -60,10 +60,10 @@ end
 
 cpu(m) = mapleaves(x -> adapt(Array, x), m)
 
-gpu_adaptor = identity
-
-@init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
-  global gpu_adaptor = CuArrays.cu
+const gpu_adaptor = if has_cuarrays()
+  CuArrays.cu
+else
+  identity
 end
 
 gpu(x) = mapleaves(gpu_adaptor, x)

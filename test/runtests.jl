@@ -26,8 +26,10 @@ include("layers/conv.jl")
 
 include("tracker.jl")
 
-if Base.find_package("CuArrays") != nothing
+if isdefined(Flux, :CUDA)
   include("cuda/cuda.jl")
+else
+  @warn "CUDA unavailable, not testing GPU support"
 end
 
 end
