@@ -1,7 +1,6 @@
-using CuArrays: libcudnn
-using CuArrays.CUDNN: @check, handle, cudnnStatus_t, cudnnTensorDescriptor_t,
-  cudnnBatchNormMode_t, cudnnHandle_t, cudnnDataType, TensorDesc, FilterDesc
-import CuArrays.CUDAdrv: CuPtr, CU_NULL
+using CuArrays.CUDNN: handle, TensorDesc, FilterDesc
+
+import CuArrays.CUDAdrv: CU_NULL
 
 using LinearAlgebra
 
@@ -15,21 +14,16 @@ Base.unsafe_convert(::Type{Ptr{Nothing}}, dd::DropoutDesc) = dd.ptr
 function DropoutDesc(ρ::Real; seed::Integer=0)
   d = [C_NULL]
   s = Csize_t[0]
-  @check ccall((:cudnnCreateDropoutDescriptor,libcudnn), cudnnStatus_t, (Ptr{Ptr{Nothing}},), d)
-  @check ccall((:cudnnDropoutGetStatesSize,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Csize_t}),handle(),s)
+  CUDNN.cudnnCreateDropoutDescriptor(d)
+  CUDNN.cudnnDropoutGetStatesSize(handle(), s)
   states = CuArray{UInt8}(undef, s[]) # TODO: can we drop this when ρ=0?
   desc = DropoutDesc(d[], states)
-  @check ccall((:cudnnSetDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},Ptr{Nothing},Cfloat,CuPtr{Nothing},Csize_t,Culonglong),
-    desc,handle(),ρ,states,length(states),seed)
+  CUDNN.cudnnSetDropoutDescriptor(desc, handle(), ρ, states, length(states), seed)
   finalizer(desc) do x
-    @check ccall((:cudnnDestroyDropoutDescriptor,libcudnn),cudnnStatus_t,(Ptr{Nothing},),x)
+    CUDNN.cudnnDestroyDropoutDescriptor(x)
   end
   return desc
 end
-
-const BATCHNORM_SPATIAL = 1
-const BATCHNORM_ACTIVATION = 0
-const BATCHNORM_MIN_EPS = 1e-5
 
 @inline _wsize(y) = (map(_ -> 1, size(y)[1:end-2])..., size(y)[end-1], 1)
 
@@ -67,9 +61,9 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
                         alpha = T(1), beta = T(0),
                         eps = T(1e-5), training = true) where T<:Union{Float32, Float64}
   dims = _wsize(x)
-  if eps < BATCHNORM_MIN_EPS
-    # warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", BATCHNORM_MIN_EPS)
-    eps = BATCHNORM_MIN_EPS
+  if eps < CUDNN.CUDNN_BN_MIN_EPSILON
+    # warn("eps ",eps," is too small for CuDNN so eps has been assigned the value ", CUDNN.CUDNN_BN_MIN_EPSILON)
+    eps = CUDNN.CUDNN_BN_MIN_EPSILON
   end
   xd = TensorDesc(x)
   yd = TensorDesc(y)
@@ -85,42 +79,14 @@ function cudnnBNForward!(y::CuArray{T}, g::CuArray{T}, b::CuArray{T}, x::CuArray
       ivar = CU_NULL
     end
 
-    @check ccall((:cudnnBatchNormalizationForwardTraining, libcudnn), cudnnStatus_t,
-                 (cudnnHandle_t,cudnnBatchNormMode_t,
-                  Ptr{T}, Ptr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T}, CuPtr{T},
-                  Cdouble, CuPtr{T}, CuPtr{T},
-                  Cdouble, CuPtr{T}, CuPtr{T}),
-                  handle(), BATCHNORM_SPATIAL,
-                  Ref(T(alpha)), Ref(T(beta)),
-                  xd, x,
-                  yd, y,
-                  gd, g, b,
-                  momentum, running_mean, running_var,
-                  eps, mean, ivar)
+    CUDNN.cudnnBatchNormalizationForwardTraining(handle(), CUDNN.CUDNN_BATCHNORM_SPATIAL, Ref(T(alpha)), Ref(T(beta)), xd, x, yd, y, gd, g, b, momentum, running_mean, running_var, eps, mean, ivar)
 
     if cache !== nothing
       cache.mean = mean
       cache.ivar = ivar
     end
   else
-    @check ccall((:cudnnBatchNormalizationForwardInference, libcudnn), cudnnStatus_t,
-                 (Ptr{cudnnHandle_t},cudnnBatchNormMode_t,
-                  Ptr{T}, Ptr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T}, CuPtr{T},
-                  CuPtr{T}, CuPtr{T},
-                  Cdouble),
-                  handle(), BATCHNORM_SPATIAL,
-                  Ref(T(alpha)), Ref(T(beta)),
-                  xd, x,
-                  yd, y,
-                  gd, g, b,
-                  running_mean, running_var,
-                  eps)
+    CUDNN.cudnnBatchNormalizationForwardInference(handle(), CUDNN.CUDNN_BATCHNORM_SPATIAL, Ref(T(alpha)), Ref(T(beta)), xd, x, yd, y, gd, g, b, running_mean, running_var, eps)
   end
 end
 
@@ -164,27 +130,11 @@ function cudnnBNBackward!(dg::CuArray{T}, g::CuArray{T}, db::CuArray{T},
       mean, ivar = CU_NULL, CU_NULL
     end
 
-    if eps < BATCHNORM_MIN_EPS
-      eps = BATCHNORM_MIN_EPS
+    if eps < CUDNN.CUDNN_BN_MIN_EPSILON
+      eps = CUDNN.CUDNN_BN_MIN_EPSILON
     end
 
-    @check ccall((:cudnnBatchNormalizationBackward, libcudnn), cudnnStatus_t,
-                 (cudnnHandle_t,cudnnBatchNormMode_t,
-                  Ptr{T}, Ptr{T},
-                  Ptr{T}, Ptr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T},
-                  Ptr{Nothing}, CuPtr{T}, CuPtr{T}, CuPtr{T},
-                  Cdouble, CuPtr{T}, CuPtr{T}),
-                  handle(), BATCHNORM_SPATIAL,
-                  Ref(T(alpha)), Ref(T(beta)),
-                  Ref(T(dalpha)), Ref(T(dbeta)),
-                  xd, x,
-                  dyd, dy,
-                  dxd, dx,
-                  gd, g, dg, db,
-                  eps, mean, ivar)
+    CUDNN.cudnnBatchNormalizationBackward(handle(), CUDNN.CUDNN_BATCHNORM_SPATIAL, Ref(T(alpha)), Ref(T(beta)), Ref(T(dalpha)), Ref(T(dbeta)), xd, x, dyd, dy, dxd, dx, gd, g, dg, db, eps, mean, ivar)
   else
     ivar = 1 ./ sqrt.(reshape(running_var, _wsize(x)) .+ eps)
     dx .= dy .* reshape(g, _wsize(x)) .* ivar
