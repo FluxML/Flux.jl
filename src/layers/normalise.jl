@@ -49,12 +49,6 @@ A dropout layer. It is used in Self-Normalizing Neural Networks.
 (https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
 The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
 """
-"""
-    AlphaDropout(p)
-A dropout layer. It is used in Self-Normalizing Neural Networks.
-(https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
-The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
-"""
 mutable struct AlphaDropout{F}
   p::F
   function AlphaDropout(p)
