@@ -49,6 +49,12 @@ A dropout layer. It is used in Self-Normalizing Neural Networks.
 (https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
 The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
 """
+"""
+    AlphaDropout(p)
+A dropout layer. It is used in Self-Normalizing Neural Networks.
+(https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
+The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
+"""
 mutable struct AlphaDropout{F}
   p::F
   function AlphaDropout(p)
@@ -57,18 +63,23 @@ mutable struct AlphaDropout{F}
   end
 end
 
-function (a::AlphaDropout)(x)
-  istraining() || return x
+alphadropout(x, p) = x
+
+_alphadropout_kernel(x, noise, p, α1) = noise > (1 - p) ? x : α1
+
+@adjoint function alphadropout(x, p)
   λ = eltype(x)(1.0507009873554804934193349852946)
   α = eltype(x)(1.6732632423543772848170429916717)
   α1 = eltype(x)(-λ*α)
   noise = randn(eltype(x), size(x))
-  x = @. x*(noise > (1 - a.p)) + α1 * (noise <= (1 - a.p))
-  A = (a.p + a.p * (1 - a.p) * α1 ^ 2)^0.5
-  B = -A * α1 * (1 - a.p)
-  x = @. A * x + B
-  return x
+  x .= _alphadropout_kernel.(x, noise, p, α1)
+  A = (p + p * (1 - p) * α1 ^ 2) ^ 0.5
+  B = -A * α1 * (1 - p)
+  x = @. A * x + B 
+  return x, Δ -> (Δ .* A.* noise, nothing)
 end
+
+(a::AlphaDropout)(x) = alphadropout(x, a.p)
 
 """
     LayerNorm(h::Integer)
