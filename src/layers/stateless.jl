@@ -10,7 +10,14 @@ mae(ŷ, y) = sum(abs.(ŷ .- y)) * 1 // length(y)
 """
     mse(ŷ, y)
 
-Return the mean squared error `sum((ŷ .- y).^2) / length(y)`.
+Return the mean squared error between ŷ and y;
+defined as ``\\frac{1}{n} \\sum_{i=1}^n (ŷ_i - y_i)^2``.
+
+# Examples
+```jldoctest
+julia> Flux.mse([0, 2], [1, 1])
+1//1
+```
 """
 mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
@@ -58,22 +65,40 @@ function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Abstr
 end
 
 """
-    crossentropy(ŷ, y; weight=1)
+    crossentropy(ŷ, y; weight = nothing)
 
-Return the crossentropy computed as `-sum(y .* log.(ŷ) .* weight) / size(y, 2)`.
+Return the cross entropy between the given probability distributions;
+computed as `-sum(y .* log.(ŷ) .* weight) / size(y, 2)`.
+
+`weight` can be `Nothing`, a `Number` or an `AbstractVector`.
+`weight=nothing` acts like `weight=1` but is faster.
 
 See also [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref).
+
+# Examples
+```jldoctest
+julia> Flux.crossentropy(softmax([-1.1491, 0.8619, 0.3127]), [1, 1, 0])
+3.085467254747739
+```
 """
 crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight=nothing) = _crossentropy(ŷ, y, weight)
 
 """
-    logitcrossentropy(ŷ, y; weight=1)
+    logitcrossentropy(ŷ, y; weight = 1)
 
-Return the crossentropy computed after a [softmax](@ref) operation:
+Return the crossentropy computed after a [`logsoftmax`](@ref) operation;
+computed as `-sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)`.
 
-  -sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)
+`logitcrossentropy(ŷ, y)` is mathematically equivalent to
+[`crossentropy(softmax(log(ŷ)), y)`](@ref) but it is more numerically stable.
 
 See also [`crossentropy`](@ref), [`binarycrossentropy`](@ref).
+
+# Examples
+```jldoctest
+julia> Flux.logitcrossentropy([-1.1491, 0.8619, 0.3127], [1, 1, 0])
+3.085467254747738
+```
 """
 function logitcrossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
   return -sum(y .* logsoftmax(ŷ) .* weight) * 1 // size(y, 2)
