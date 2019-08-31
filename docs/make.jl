@@ -1,7 +1,13 @@
 using Documenter, Flux, NNlib
 
 makedocs(modules=[Flux, NNlib],
+         doctest = true,
          sitename = "Flux",
+         format = Documenter.HTML(
+                 analytics = "UA-36890222-9",
+                 assets = ["assets/flux.css"],
+                 prettyurls = get(ENV, "CI", nothing) == "true",
+         ),
          pages = ["Home" => "index.md",
                   "Building Models" =>
                     ["Basics" => "models/basics.md",
@@ -21,10 +27,8 @@ makedocs(modules=[Flux, NNlib],
                   "The Julia Ecosystem" => "ecosystem.md",
                   "Performance Tips" => "performance.md",
                   "Community" => "community.md"],
-         format = Documenter.HTML(assets = ["assets/flux.css"],
-                                  analytics = "UA-36890222-9",
-                                  prettyurls = haskey(ENV, "CI")))
+         )
 
-deploydocs(repo = "github.com/FluxML/Flux.jl.git",    
+deploydocs(repo = "github.com/FluxML/Flux.jl.git",
            target = "build",
            push_preview = true)
