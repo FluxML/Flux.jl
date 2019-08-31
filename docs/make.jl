@@ -1,5 +1,6 @@
 using Documenter, Flux, NNlib
 
+DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
 makedocs(modules=[Flux, NNlib],
          doctest = true,
          sitename = "Flux",
