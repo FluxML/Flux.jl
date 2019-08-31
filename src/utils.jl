@@ -125,8 +125,9 @@ unstack(xs, dim) = [copy(selectdim(xs, dim, i)) for i in 1:size(xs, dim)]
 
 Split `xs` into `n` parts.
 
-```julia
-julia> chunk(1:10, 3)
+# Examples
+```jldoctest
+julia> Flux.chunk(1:10, 3)
 3-element Array{Array{Int64,1},1}:
  [1, 2, 3, 4]
  [5, 6, 7, 8]
@@ -142,11 +143,12 @@ batchindex(xs, i) = (reverse(Base.tail(reverse(axes(xs))))..., i)
 
 Count the number of times that each element of `xs` appears.
 
-```julia
-julia> frequencies(['a','b','b'])
+# Examples
+```jldoctest
+julia> Flux.frequencies(['a','b','b'])
 Dict{Char,Int64} with 2 entries:
-  'b' => 2
   'a' => 1
+  'b' => 2
 ```
 """
 function frequencies(xs)
@@ -166,8 +168,9 @@ squeezebatch(x) = reshape(x, head(size(x)))
 
 Batch the arrays in `xs` into a single array.
 
-```julia
-julia> batch([[1,2,3],[4,5,6]])
+# Examples
+```jldoctest
+julia> Flux.batch([[1,2,3],[4,5,6]])
 3×2 Array{Int64,2}:
  1  4
  2  5
@@ -211,8 +214,9 @@ Base.rpad(v::AbstractVector, n::Integer, p) = [v; fill(p, max(n - length(v), 0))
 Take a list of `N` sequences, and turn them into a single sequence where each
 item is a batch of `N`. Short sequences will be padded by `pad`.
 
-```julia
-julia> batchseq([[1, 2, 3], [4, 5]], 0)
+# Examples
+```jldoctest
+julia> Flux.batchseq([[1, 2, 3], [4, 5]], 0)
 3-element Array{Array{Int64,1},1}:
  [1, 4]
  [2, 5]
@@ -269,11 +273,15 @@ end
 # Other
 
 """
-Returns a function that when invoked, will only be triggered at most once
-during `timeout` seconds. Normally, the throttled function will run
-as much as it can, without ever going more than once per `wait` duration;
-but if you'd like to disable the execution on the leading edge, pass
-`leading=false`. To enable execution on the trailing edge, ditto.
+    throttle(f, timeout; leading=true, trailing=false)
+
+Return a function that when invoked, will only be triggered at most once
+during `timeout` seconds.
+
+Normally, the throttled function will run as much as it can, without ever
+going more than once per `wait` duration; but if you'd like to disable the
+execution on the leading edge, pass `leading=false`. To enable execution on
+the trailing edge, pass `trailing=true`.
 """
 function throttle(f, timeout; leading=true, trailing=false)
   cooldown = true

@@ -8,25 +8,26 @@ _convtransoutdims(isize, ksize, ssize, dsize, pad) = (isize .- 1).*ssize .+ 1 .+
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 """
-    Conv(size, in=>out)
-    Conv(size, in=>out, relu)
+    Conv(size, in => out, σ = identity; init = glorot_uniform,
+         stride = 1, pad = 0, dilation = 1)
 
 Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
-
-Example: Applying Conv layer to a 1-channel input using a 2x2 window size,
-         giving us a 16-channel output. Output is activated with ReLU.
-
-    size = (2,2)
-    in = 1
-    out = 16
-    Conv((2, 2), 1=>16, relu)
 
 Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+# Examples
+
+Apply a `Conv` layer to a 1-channel input using a 2×2 window size, giving us a
+16-channel output. Output is activated with ReLU.
+```julia
+size = (2,2)
+in = 1
+out = 16
+Conv(size, in => out, relu)
+```
 """
 struct Conv{N,M,F,A,V}
   σ::F
@@ -76,8 +77,8 @@ end
 """
     outdims(l::Conv, isize::Tuple)
 
-Calculate the output dimensions given the input dimensions, `isize`.
-Batch size and channel size are ignored as per `NNlib.jl`.
+Calculate the output dimensions given the input dimensions `isize`.
+Batch size and channel size are ignored as per [NNlib.jl](https://github.com/FluxML/NNlib.jl).
 
 ```julia
 m = Conv((3, 3), 3 => 16)
@@ -89,17 +90,15 @@ outdims(l::Conv, isize) =
   output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
-    ConvTranspose(size, in=>out)
-    ConvTranspose(size, in=>out, relu)
+    ConvTranspose(size, in => out, σ = identity; init = glorot_uniform,
+                  stride = 1, pad = 0, dilation = 1)
 
 Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 
-Data should be stored in WHCN order (width, height, # channels, # batches).
+Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
-
-Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -165,18 +164,16 @@ end
 outdims(l::ConvTranspose{N}, isize) where N = _convtransoutdims(isize[1:2], size(l.weight)[1:N], l.stride, l.dilation, l.pad)
 
 """
-    DepthwiseConv(size, in=>out)
-    DepthwiseConv(size, in=>out, relu)
+    DepthwiseConv(size, in => out, σ = identity; init = glorot_uniform,
+                  stride = 1, pad = 0, dilation = 1)
 
 Depthwise convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 Note that `out` must be an integer multiple of `in`.
 
-Data should be stored in WHCN order (width, height, # channels, # batches).
+Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
-
-Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -233,25 +230,26 @@ outdims(l::DepthwiseConv, isize) =
   output_size(DepthwiseConvDims(_paddims(isize, (1, 1, size(l.weight)[end], 1)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
-    CrossCor(size, in=>out)
-    CrossCor(size, in=>out, relu)
+    CrossCor(size, in => out, σ = identity; init = glorot_uniform,
+             stride = 1, pad = 0, dilation = 1)
 
 Standard cross convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 
-Example: Applying CrossCor layer to a 1-channel input using a 2x2 window size,
-         giving us a 16-channel output. Output is activated with ReLU.
-
-    size = (2,2)
-    in = 1
-    out = 16
-    CrossCor((2, 2), 1=>16, relu)
-
-Data should be stored in WHCN order (width, height, # channels, # batches).
+Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+# Examples
+
+Apply a `CrossCor` layer to a 1-channel input using a 2×2 window size, giving us a
+16-channel output. Output is activated with ReLU.
+```julia
+size = (2,2)
+in = 1
+out = 16
+CrossCor((2, 2), 1=>16, relu)
+```
 """
 struct CrossCor{N,M,F,A,V}
   σ::F
@@ -357,11 +355,9 @@ function Base.show(io::IO, g::GlobalMeanPool)
 end
 
 """
-    MaxPool(k)
+    MaxPool(k; pad = 0, stride = k)
 
-Max pooling layer. `k` stands for the size of the window for each dimension of the input.
-
-Takes the keyword arguments `pad` and `stride`.
+Max pooling layer. `k` is the size of the window for each dimension of the input.
 """
 struct MaxPool{N,M}
   k::NTuple{N,Int}
@@ -388,11 +384,9 @@ end
 outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
 
 """
-    MeanPool(k)
+    MeanPool(k; pad = 0, stride = k)
 
-Mean pooling layer. `k` stands for the size of the window for each dimension of the input.
-
-Takes the keyword arguments `pad` and `stride`.
+Mean pooling layer. `k` is the size of the window for each dimension of the input.
 """
 struct MeanPool{N,M}
     k::NTuple{N,Int}

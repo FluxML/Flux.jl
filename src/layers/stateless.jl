@@ -73,7 +73,7 @@ computed as `-sum(y .* log.(ŷ) .* weight) / size(y, 2)`.
 `weight` can be `Nothing`, a `Number` or an `AbstractVector`.
 `weight=nothing` acts like `weight=1` but is faster.
 
-See also [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref).
+See also: [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
 
 # Examples
 ```jldoctest
@@ -86,13 +86,13 @@ crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight=nothing) = _cros
 """
     logitcrossentropy(ŷ, y; weight = 1)
 
-Return the crossentropy computed after a [`logsoftmax`](@ref) operation;
+Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
 computed as `-sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)`.
 
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`crossentropy(softmax(log(ŷ)), y)`](@ref) but it is more numerically stable.
+[`Flux.crossentropy(softmax(log(ŷ)), y)`](@ref) but it is more numerically stable.
 
-See also [`crossentropy`](@ref), [`binarycrossentropy`](@ref).
+See also: [`Flux.crossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
 
 # Examples
 ```jldoctest
@@ -107,9 +107,20 @@ end
 """
     binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
 
-Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerical stability.
+Return ``-y*\\log(ŷ + ϵ) - (1-y)*\\log(1-ŷ + ϵ)``. The `ϵ` term provides numerical stability.
 
 Typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
+
+See also: [`Flux.crossentropy`](@ref), [`Flux.logitcrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
+
+# Examples
+```jldoctest
+julia> Flux.binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0])
+3-element Array{Float64,1}:
+ 1.424397097347566
+ 0.35231664672364077
+ 0.8616703662235441
+```
 """
 binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
@@ -119,10 +130,19 @@ CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1
 """
     logitbinarycrossentropy(ŷ, y)
 
-`logitbinarycrossentropy(ŷ, y)` is mathematically equivalent to `binarycrossentropy(σ(ŷ), y)`
-but it is more numerically stable.
+`logitbinarycrossentropy(ŷ, y)` is mathematically equivalent to
+[`Flux.binarycrossentropy(σ(log(ŷ)), y)`](@ref) but it is more numerically stable.
 
-See also [`binarycrossentropy`](@ref), [`sigmoid`](@ref), [`logsigmoid`](@ref).
+See also: [`Flux.crossentropy`](@ref), [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref)
+
+# Examples
+```jldoctest
+julia> Flux.logitbinarycrossentropy.([-1.1491, 0.8619, 0.3127], [1, 1, 0])
+3-element Array{Float64,1}:
+ 1.4243970973475661
+ 0.35231664672364094
+ 0.8616703662235443
+```
 """
 logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 
@@ -132,26 +152,27 @@ CuArrays.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 """
     normalise(x; dims=1)
 
-Normalises `x` to mean 0 and standard deviation 1, across the dimensions given by `dims`. Defaults to normalising over columns.
+Normalise `x` to mean 0 and standard deviation 1 across the dimensions given by `dims`.
+Defaults to normalising over columns.
 
-```julia-repl
+```jldoctest
 julia> a = reshape(collect(1:9), 3, 3)
 3×3 Array{Int64,2}:
-  1  4  7
-  2  5  8
-  3  6  9
+ 1  4  7
+ 2  5  8
+ 3  6  9
 
-julia> normalise(a)
+julia> Flux.normalise(a)
 3×3 Array{Float64,2}:
-  -1.22474  -1.22474  -1.22474
+ -1.22474  -1.22474  -1.22474
   0.0       0.0       0.0
   1.22474   1.22474   1.22474
 
-julia> normalise(a, dims=2)
+julia> Flux.normalise(a, dims=2)
 3×3 Array{Float64,2}:
-  -1.22474  0.0  1.22474
-  -1.22474  0.0  1.22474
-  -1.22474  0.0  1.22474
+ -1.22474  0.0  1.22474
+ -1.22474  0.0  1.22474
+ -1.22474  0.0  1.22474
 ```
 """
 function normalise(x::AbstractArray; dims=1)
@@ -191,7 +212,7 @@ Measures the loss given the prediction `ŷ` and true labels `y` (containing 1 o
 Returns `sum((max.(0, 1 .- ŷ .* y))) / size(y, 2)`
 
 [Hinge Loss](https://en.wikipedia.org/wiki/Hinge_loss)
-See also [`squared_hinge`](@ref).
+See also: [`squared_hinge`](@ref)
 """
 hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) * 1 // size(y, 2)
 
@@ -201,7 +222,7 @@ hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) * 1 // size(y, 2)
 Computes squared hinge loss given the prediction `ŷ` and true labels `y` (conatining 1 or -1).
 Returns `sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)`
 
-See also [`hinge`](@ref).
+See also: [`hinge`](@ref)
 """
 squared_hinge(ŷ, y) = sum((max.(0, 1 .- ŷ .* y)).^2) * 1 // size(y, 2)
 

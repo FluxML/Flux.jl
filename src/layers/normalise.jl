@@ -10,14 +10,14 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout(p, dims = :)
+    dropout(x, p; dims = :)
 
-Dropout function. For each input, either sets that input to `0` (with probability
-`p`) or scales it by `1/(1-p)`. The `dims` argument is to specify the unbroadcasted
-dimensions, i.e. `dims=1` does dropout along columns and `dims=2` along rows. This is
-used as a regularisation, i.e. it reduces overfitting during training. 
- 
-See also [`Dropout`](@ref).
+The dropout function. For each input, either sets that input to `0` (with probability
+`p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
+e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
+This is used as a regularisation, i.e. it reduces overfitting during training.
+
+See also the [`Dropout`](@ref) layer.
 """
 dropout(x, p; dims = :) = x
 
@@ -32,7 +32,7 @@ end
 
 A Dropout layer. In the forward pass, applies the [`dropout`](@ref) function on the input.
 
-Does nothing to the input once [`testmode!`](@ref) is true.
+Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
 mutable struct Dropout{F,D}
   p::F
@@ -64,9 +64,9 @@ end
 
 """
     AlphaDropout(p)
-    
-A dropout layer. It is used in Self-Normalizing Neural Networks.
-(https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
+
+A dropout layer. It is used in
+[Self-Normalizing Neural Networks](https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf).
 The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
@@ -100,8 +100,8 @@ testmode!(m::AlphaDropout, mode = true) =
     LayerNorm(h::Integer)
 
 A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
-used with recurrent hidden states of size `h`. Normalises the mean/stddev of
-each input before applying a per-neuron gain/bias.
+used with recurrent hidden states of size `h`. Normalises the mean and standard
+deviation of each input before applying a per-neuron gain/bias.
 """
 struct LayerNorm{T}
   diag::Diagonal{T}
@@ -139,7 +139,7 @@ Use [`testmode!`](@ref) during inference.
 See [Batch Normalization: Accelerating Deep Network Training by Reducing
 Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
 
-Example:
+# Examples
 ```julia
 m = Chain(
   Dense(28^2, 64),
@@ -234,7 +234,7 @@ Use [`testmode!`](@ref) during inference.
 
 See [Instance Normalization: The Missing Ingredient for Fast Stylization](https://arxiv.org/abs/1607.08022).
 
-Example:
+# Examples
 ```julia
 m = Chain(
   Dense(28^2, 64),
@@ -316,28 +316,27 @@ function Base.show(io::IO, l::InstanceNorm)
 end
 
 """
-Group Normalization.
-This layer can outperform Batch-Normalization and Instance-Normalization.
+    GroupNorm(chs::Integer, G::Integer, λ = identity;
+              initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
+              ϵ = 1f-5, momentum = 0.1f0)
 
-	GroupNorm(chs::Integer, G::Integer, λ = identity;
-	          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
-	          ϵ = 1f-5, momentum = 0.1f0)
+[Group Normalization](https://arxiv.org/pdf/1803.08494.pdf) layer.
+This layer can outperform Batch Normalization and Instance Normalization.
 
-``chs`` is the number of channels, the channel dimension of your input.
-For an array of N dimensions, the (N-1)th index is the channel dimension.
+`chs` is the number of channels, the channel dimension of your input.
+For an array of N dimensions, the `N-1`th index is the channel dimension.
 
-``G`` is the number of groups along which the statistics would be computed.
+`G` is the number of groups along which the statistics are computed.
 The number of channels must be an integer multiple of the number of groups.
 
 Use [`testmode!`](@ref) during inference.
 
-Example:
-```
+# Examples
+```julia
 m = Chain(Conv((3,3), 1=>32, leakyrelu;pad = 1),
-          GroupNorm(32,16)) # 32 channels, 16 groups (G = 16), thus 2 channels per group used
+          GroupNorm(32,16))
+          # 32 channels, 16 groups (G = 16), thus 2 channels per group used
 ```
-
-Link : https://arxiv.org/pdf/1803.08494.pdf
 """
 mutable struct GroupNorm{F,V,W,N,T}
   G::T # number of groups
