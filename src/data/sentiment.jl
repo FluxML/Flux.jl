@@ -1,3 +1,4 @@
+"Stanford Sentiment Treebank dataset."
 module Sentiment
 
 using ZipFile
@@ -39,8 +40,28 @@ function gettrees(name)
   return parsetree.(ss)
 end
 
+"""
+    train()
+
+Return the train split of the Stanford Sentiment Treebank.
+The data is in [treebank](https://en.wikipedia.org/wiki/Treebank) format.
+"""
 train() = gettrees("train")
+
+"""
+    test()
+
+Return the test split of the Stanford Sentiment Treebank.
+The data is in [treebank](https://en.wikipedia.org/wiki/Treebank) format.
+"""
 test() = gettrees("test")
+
+"""
+    dev()
+
+Return the dev split of the Stanford Sentiment Treebank.
+The data is in [treebank](https://en.wikipedia.org/wiki/Treebank) format.
+"""
 dev() = gettrees("dev")
 
 end
