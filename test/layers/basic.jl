@@ -30,6 +30,14 @@ import Flux: activations
     @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
     @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
 
+    @test size(Dense(10 => 5)(randn(10))) == (5,)
+    @test size(Dense(10 => (5,))(randn(10))) == (5,)
+    @test size(Dense(10 => (5,))(randn(10,7))) == (5,7)
+    @test size(Dense(10 => (5,3))(randn(10,7))) == (5,3,7)
+    @test size(Dense((10,7) => 5)(randn(10,7))) == (5,)
+
+    @test Dense(10, (2,2), identity, initW=ones, initb=ones)(ones(10,3)) == 11 .* ones(2,2,3)
+    @test Dense((3,3) => (2,2), sqrt, initW=ones, initb=zeros)(ones(3,3,5)) == 3 .* ones(2,2,5)
   end
 
   @testset "Diagonal" begin

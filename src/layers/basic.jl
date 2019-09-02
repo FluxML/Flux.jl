@@ -60,7 +60,7 @@ end
 
 
 """
-    Dense(in::Integer, out::Integer, σ = identity)
+    Dense(in => out, σ = identity)
 
 Creates a traditional `Dense` layer with parameters `W` and `b`.
 
@@ -69,38 +69,62 @@ Creates a traditional `Dense` layer with parameters `W` and `b`.
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 
+If `in` or `out` is a tuple of dimensions, then reshaping is inserted to allow input
+with `size(x) == (in..., batch...)`, and produce output `size(y) == (out..., batch...)`.
+
 ```julia
 julia> d = Dense(5, 2)
-Dense(5, 2)
+Dense(5 => 2)
 
 julia> d(rand(5))
 Tracked 2-element Array{Float64,1}:
   0.00257447
   -0.00449443
+
+julia> d2 = Dense(5 => (2,2), tanh)
+Dense(5 => (2, 2), tanh)
+
+julia> size(d2(ones(5, 3, 7)))
+(2, 2, 3, 7)
 ```
 """
-struct Dense{F,S,T}
+struct Dense{F,S,T,D}
   W::S
   b::T
   σ::F
+  inout::D
 end
 
-Dense(W, b) = Dense(W, b, identity)
+Dense(W::AbstractMatrix, b, σ = identity) = Dense(W, b, σ, reverse(size(W)))
 
-function Dense(in::Integer, out::Integer, σ = identity;
+Dense(p::Pair, σ = identity; kw...) = Dense(p.first, p.second, σ; kw...)
+
+function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identity;
                initW = glorot_uniform, initb = zeros)
-  return Dense(param(initW(out, in)), param(initb(out)), σ)
+  Dense(param(initW(prod(out), prod(in))), param(initb(prod(out))), σ, (in, out))
 end
 
-@treelike Dense
+@treelike Dense (W,b,σ)
+
+# function (a::Dense{F,S,T,D} where {F,S,T, D<:Tuple{Integer, Integer}})(x::AbstractArray)
+#   W, b, σ = a.W, a.b, a.σ
+#   σ.(W*x .+ b)
+# end
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  σ.(W*x .+ b)
+  if a.inout isa Tuple{Integer, Integer}
+    return σ.(W*x .+ b)
+  else
+    in, out = a.inout
+    xin = reshape(x, prod(ntuple(d -> size(x,d), length(in))), :)
+    y = σ.(W*xin .+ b)
+    return reshape(y, out..., ntuple(d -> size(x,length(in)+d), ndims(x)-length(in))...)
+  end
 end
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
+  print(io, "Dense(", l.inout[1], " => ", l.inout[2])
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
