@@ -22,7 +22,7 @@ using .Optimise
 using .Optimise: @epochs
 export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, InvDecay, ExpDecay, WeightDecay
+  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
 
 using CUDAapi
 if has_cuda()
