@@ -42,7 +42,6 @@ end
   @test all(isapprox.(g1, g2, rtol=1e-5, atol=1e-5))
   
   if has_cuda()
-    println("shouldn't be here, but here we are")
     include("ctc-gpu.jl")
   end
   

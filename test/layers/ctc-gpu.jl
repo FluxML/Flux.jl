@@ -29,12 +29,15 @@ end
   y = reduce(hcat, repeat([Array{Float64}(I, 10, 10)[min(i, 9),:] for i in 1:10], inner=5))
   
   g1 = Flux.Tracker.gradient(ctc, CuArray(x), CuArray(y))[1]
-  g1 = Flux.Tracker.data(g2) |> Array
+  g1 = Flux.Tracker.data(g1) |> Array
   
   g2 = ctc_ngradient(x, y)[1]
   
   @test all(isapprox.(g1, g2, rtol=1e-5, atol=1e-5))
   
-  @test all(isapprox.(g1. Flux.Tracker.gradient(ctc, x, y)[1], rtol=1e-5, atol=1e-5))
+  l1 = Flux.ctc_(CuArray(x), CuArray(y))[1]
+  l2 = Flux.ctc_(x, y)[1]
+  
+  @test all(isapprox.(l1, l2, rtol=1e-5, atol=1e-5))
   
 end

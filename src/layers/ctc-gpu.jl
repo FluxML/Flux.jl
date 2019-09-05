@@ -157,7 +157,7 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
   
   # Fill in `grad` for last row
   idx = tid
-  while idx <= div(length(grad), T)
+  while idx <= CUDAnative.div_fast(Float32(length(grad)), Float32(T))
 #     
     startProbRow = (T - 1) * div(length(probs), T)
     startOutputRow = (T - 1) * S
@@ -243,7 +243,7 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
     idx = tid
     
     # Calculate gradients
-    while idx <= div(length(grad), T)
+    while idx <= CUDAnative.div_fast(Float32(length(grad)), Float32(T))
 #     
       startProbRow = (t - 1) * div(length(probs), T)
       startOutputRow = (t - 1) * S
@@ -275,7 +275,7 @@ function ctc(ŷ::CuArrays.CuArray, y)
 end
 
 function ctc_(ŷ::CuArrays.CuArray, y)
-
+  
   ŷ = logsoftmax(ŷ)
   floatType = typeof(ŷ[1]) 
   
@@ -305,7 +305,8 @@ function ctc_(ŷ::CuArrays.CuArray, y)
   ls = Array(reshape(Array(output), U′, T)')
   ls = -1 .* mapslices(logsum, ls, dims=2) |> vec
   
-  gs = reshape(grads, size(ŷ,1), size(ŷ,2)
+  gs = reshape(grads, size(ŷ,1), size(ŷ,2))
+#gs = reshape(Array(grads), size(ŷ,1), size(ŷ,2))
   
   ŷ = alphas = betas = output = accum = grads = nothing
   return ls, gs
