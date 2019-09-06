@@ -23,7 +23,7 @@ function apply!(o::Descent, x, Δ)
 end
 
 """
-    Momentum(params, η = 0.01; ρ = 0.9)
+    Momentum(η = 0.01; ρ = 0.9)
 
 Gradient descent with learning rate `η` and momentum `ρ`.
 """
@@ -105,6 +105,36 @@ function apply!(o::ADAM, x, Δ)
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
   o.state[x] = (mt, vt, βp .* β)
+  return Δ
+end
+
+"""
+    RADAM(η = 0.001, β = (0.9, 0.999))
+
+[RADAM](https://arxiv.org/pdf/1908.03265v1.pdf) optimiser (Rectified ADAM).
+"""
+mutable struct RADAM
+  eta::Float64
+  beta::Tuple{Float64,Float64}
+  state::IdDict
+end
+
+RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict())
+
+function apply!(o::RADAM, x, Δ)
+  η, β = o.eta, o.beta
+  ρ∞ = 2/(1-β[2])-1
+  mt, vt, βp, t = get!(o.state, x, (zero(x), zero(x), β, 1))
+  @. mt = β[1] * mt + (1 - β[1]) * Δ
+  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  ρ = ρ∞ - 2t*βp[2]/(1-βp[2])
+  if ρ > 4
+    r = sqrt((ρ-4)*(ρ-2)*ρ∞/((ρ∞-4)*(ρ∞-2)*ρ))
+    @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η * r
+  else
+    @. Δ =  mt / (1 - βp[1]) * η
+  end
+  o.state[x] = (mt, vt, βp .* β, t+1)
   return Δ
 end
 
