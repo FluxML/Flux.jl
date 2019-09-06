@@ -57,23 +57,18 @@ mutable struct AlphaDropout{F}
   end
 end
 
-alphadropout(x, p) = x
-
-_alphadropout_kernel(x, noise, p, α1) = noise > (1 - p) ? x : α1
-
-@adjoint function alphadropout(x, p)
+function (a::AlphaDropout)(x)
+  istraining() || return x
   λ = eltype(x)(1.0507009873554804934193349852946)
   α = eltype(x)(1.6732632423543772848170429916717)
   α1 = eltype(x)(-λ*α)
   noise = randn(eltype(x), size(x))
-  x .= _alphadropout_kernel.(x, noise, p, α1)
-  A = (p + p * (1 - p) * α1 ^ 2) ^ 0.5
-  B = -A * α1 * (1 - p)
-  x = @. A * x + B 
-  return x, Δ -> (Δ .* A.* noise, nothing)
+  x = @. x*(noise > (1 - a.p)) + α1 * (noise < (1 - a.p))
+  A = (a.p + a.p * (1 - a.p) * α1 ^ 2)^0.5
+  B = -A * α1 * (1 - a.p)
+  x = @. A * x + B
+  return x
 end
-
-(a::AlphaDropout)(x) = alphadropout(x, a.p)
 
 """
     LayerNorm(h::Integer)
