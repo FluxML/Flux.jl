@@ -2,8 +2,8 @@ using Test
 using Flux
 using Flux: ctc
 using Flux.Tracker: gradient
-using CUDAapi: has_cuda
 using LinearAlgebra
+using Statistics
 
 # Custom function to check numerical gradient of ctc loss,
 # based on `ngradient` in `Flux.Tracker`
@@ -41,8 +41,13 @@ end
   
   @test all(isapprox.(g1, g2, rtol=1e-5, atol=1e-5))
   
-  if has_cuda()
-    include("ctc-gpu.jl")
-  end
+  x = [1. 2. 3.; 2. 1. 1.; 3. 3. 2.]
+  y = [1 1 0; 0 0 1; 0 0 0]
+  
+  @test mean(ctc(x, y)) ≈ 3.6990738275138035
+  g = [-0.317671 -0.427729 0.665241; 0.244728 -0.0196172 -0.829811; 0.0729422 0.447346 0.16457]
+  ghat = gradient(ctc, x, y)[1]
+  
+  @test all(isapprox.(g, ghat, rtol=1e-5, atol=1e-5))
   
 end

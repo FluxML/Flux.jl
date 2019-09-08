@@ -32,9 +32,6 @@ function countRepeats(A)
   return repeats
 end
 
-# @require CUDAnative begin
-# @require CuArrays begin
-# using CUDAnative, CuArrays
 function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutBlanks, labelsWithBlanks, alpha, blankLabel)
   
   tid = threadIdx().x
@@ -280,7 +277,7 @@ function ctc_(ŷ::CuArrays.CuArray, y)
   floatType = typeof(ŷ[1]) 
   
   blank = size(ŷ, 1)
-  labels = vec(mapslices(argmax, y, dims=1))
+  labels = vec(mapslices(Base.argmax, y, dims=1))
   z = F(labels, blank)
   z′ = [blank]
   for label in z
@@ -289,6 +286,7 @@ function ctc_(ŷ::CuArrays.CuArray, y)
   end
   T = size(ŷ, 2)
   U′ = 2*length(z) + 1
+  # could try CuArrays.fill
   alphas = zeros(floatType, T * U′) |> CuArray |> x -> log.(x)
   betas = copy(alphas)
   output = copy(alphas)
@@ -302,14 +300,11 @@ function ctc_(ŷ::CuArrays.CuArray, y)
   
   @cuda blocks=1 threads=U′ computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
   
-  ls = Array(reshape(Array(output), U′, T)')
+  ls = reshape(collect(output), U′, T)' |> collect
   ls = -1 .* mapslices(logsum, ls, dims=2) |> vec
   
   gs = reshape(grads, size(ŷ,1), size(ŷ,2))
-#gs = reshape(Array(grads), size(ŷ,1), size(ŷ,2))
   
   ŷ = alphas = betas = output = accum = grads = nothing
   return ls, gs
 end
-# end # end of `@require CuArrays`
-# end # end of `@require CUDAnative`

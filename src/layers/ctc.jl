@@ -82,7 +82,7 @@ function ctc_(ŷ, y)
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
   
-  z = F(argmax.([y[:,i] for i=1:size(y,2)]), blank)
+  z = F(Base.argmax.([y[:,i] for i=1:size(y,2)]), blank)
   z′ = addBlanks(z, blank)
   T = size(ŷ, 2)
   U = length(z)
