@@ -1,6 +1,6 @@
 using Test
 using Flux
-using Flux: ctc
+using Flux: ctc_
 using Flux.Tracker: gradient
 using LinearAlgebra
 using Statistics
@@ -14,16 +14,16 @@ using Statistics
 # causing the gradients to change and thus not be comparable
 # between the numeric and analytical definitions
 function ctc_ngradient(xs...)
-  f = ctc
+  f = ctc_
   grads = zero.(xs)
   for (x, Δ) in zip(xs, grads), i in 1:length(x)
     δ = sqrt(eps())
     t = div(i-1, size(x, 1)) + 1
     tmp = x[i]
     x[i] = tmp - δ/2
-    y1 = f(xs...)[t]
+    y1 = f(xs...)[1][t]
     x[i] = tmp + δ/2
-    y2 = f(xs...)[t]
+    y2 = f(xs...)[1][t]
     x[i] = tmp
     Δ[i] = (y2-y1)/δ
   end
@@ -46,7 +46,7 @@ end
   x = [1. 2. 3.; 2. 1. 1.; 3. 3. 2.]
   y = [1 1 0; 0 0 1; 0 0 0]
   
-  @test mean(ctc(x, y)) ≈ 3.6990738275138035
+  @test ctc(x, y) ≈ 3.6990738275138035
   g = [-0.317671 -0.427729 0.665241; 0.244728 -0.0196172 -0.829811; 0.0729422 0.447346 0.16457]
   ghat = gradient(ctc, x, y)[1]
   

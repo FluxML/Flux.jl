@@ -1,6 +1,6 @@
 using Test
 using Flux
-using Flux: ctc
+using Flux: ctc_
 using Flux.Tracker: gradient
 using LinearAlgebra
 using CuArrays
@@ -15,16 +15,16 @@ using Statistics
 # causing the gradients to change and thus not be comparable
 # between the numeric and analytical definitions
 function ctc_ngradient(xs...)
-  f = ctc
+  f = ctc_
   grads = zero.(xs)
   for (x, Δ) in zip(xs, grads), i in 1:length(x)
     δ = sqrt(eps())
     t = div(i-1, size(x, 1)) + 1
     tmp = x[i]
     x[i] = tmp - δ/2
-    y1 = f(xs...)[t]
+    y1 = f(xs...)[1][t]
     x[i] = tmp + δ/2
-    y2 = f(xs...)[t]
+    y2 = f(xs...)[1][t]
     x[i] = tmp
     Δ[i] = (y2-y1)/δ
   end
