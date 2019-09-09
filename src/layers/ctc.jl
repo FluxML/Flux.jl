@@ -193,6 +193,12 @@ end
 
 ctc(ŷ::TrackedArray, y::AbstractArray) = Flux.Tracker.track(ctc_, ŷ, y)
 
+function ctc(ŷ::AbstractArray, y::TrackedArray)
+  return Flux.Tracker.track(ctc_, ŷ, y)
+end
+
+ctc(ŷ::TrackedArray, y::TrackedArray) = Flux.Tracker.track(ctc_, ŷ, y)
+
 @grad function ctc_(ŷ, y)
   ls, gs = ctc_(Flux.Tracker.data(ŷ), Flux.Tracker.data(y))
   return mean(ls), Δ -> (Δ .* gs, Δ)
