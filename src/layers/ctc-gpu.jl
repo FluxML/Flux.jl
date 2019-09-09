@@ -49,7 +49,7 @@ function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutB
   start = (L + repeats <= T) ? 0 : 1
   last = S > 1 ? 2 : 1
   
-  # Fill in first row
+  # Fill in first column (time step)
   i = tid
   while i <= last - start
     alpha[start + i] = probs[labels[start + i]]
@@ -60,16 +60,16 @@ function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutB
   
   # Fill in coefficients for each time step
   for t=2:T
-    startCurRow = (t-1) * S
-    startPrevRow = (t-2) * S
+    startCurCol = (t-1) * S
+    startPrevCol = (t-2) * S
     startProbCol = (t-1) * div(length(probs), T)
     
     # Corner-case checking
     if tid == 1 && !(1 < S - 2*(T-t) - 1)
       if start == 0
-        alpha[startCurRow + 1] = probs[startProbCol + blankLabel] + alpha[startPrevRow + 1]
+        alpha[startCurCol + 1] = probs[startProbCol + blankLabel] + alpha[startPrevCol + 1]
       elseif start == 1
-        alpha[startCurRow + 1] = alpha[startPrevRow + 1]
+        alpha[startCurCol + 1] = alpha[startPrevCol + 1]
       end
     end
     
@@ -80,16 +80,16 @@ function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutB
     idx = tid+1
     while idx <= S
       
-      prevSum = log_plus_f(alpha[startPrevRow + idx], alpha[startPrevRow + idx-1])
+      prevSum = log_plus_f(alpha[startPrevCol + idx], alpha[startPrevCol + idx-1])
       
       if labels[idx] != blankLabel && idx != 2 && labels[idx] != labels[idx-2]
-        prevSum = log_plus_f(prevSum, alpha[startPrevRow + idx-2])
+        prevSum = log_plus_f(prevSum, alpha[startPrevCol + idx-2])
       end
       
       if idx < S - 2*(T-t) - 1
-        alpha[idx + startCurRow] = -Inf32
+        alpha[idx + startCurCol] = -Inf32
       else
-        alpha[startCurRow + idx] = prevSum + probs[startProbCol + labels[idx]]
+        alpha[startCurCol + idx] = prevSum + probs[startProbCol + labels[idx]]
       end
     
       idx += blockDim().x
@@ -124,48 +124,49 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
   sync_threads()
   
   
-  startCurRow = (T-1)*S
+  startCurCol = (T-1)*S
   startProbCol = (T-1) * div(length(probs), T)
   
   i = tid
   
-  # Calculate coefficients for last row, then determine alpha and beta product
+  # Calculate coefficients for last column (time step)
+  # then determine alpha and beta product
   while i <= last - start + 1
 
-    beta[startCurRow + i + start] = 0
-    output[startCurRow + i + start] = beta[startCurRow + i + start] + alphas[startCurRow + i + start]
+    beta[startCurCol + i + start] = 0
+    output[startCurCol + i + start] = beta[startCurCol + i + start] + alphas[startCurCol + i + start]
     i += blockDim().x
   end
   
   sync_threads()
   
-  # Fill in `accum` for last row
+  # Fill in `accum` for last column (time step)
   if tid == 1
-    startAccRow = startProbCol
-    startOutputRow = startCurRow
+    startAccCol = startProbCol
+    startOutputCol = startCurCol
     
     for i=1:S
       labelIdx = labels[i]
-      accum[startAccRow + labelIdx] = log_plus_f(accum[startAccRow + labelIdx], output[startOutputRow + i])
+      accum[startAccCol + labelIdx] = log_plus_f(accum[startAccCol + labelIdx], output[startOutputCol + i])
     end
   end
   
   sync_threads()
   
-  # Fill in `grad` for last row
+  # Fill in `grad` for last column (time step)
   idx = tid
   while idx <= CUDAnative.div_fast(Float32(length(grad)), Float32(T))
 #     
-    startProbRow = (T - 1) * div(length(probs), T)
-    startOutputRow = (T - 1) * S
+    startProbCol = (T - 1) * div(length(probs), T)
+    startOutputCol = (T - 1) * S
     
     s = -Inf32
     for i=1:S
-      s = log_plus_f(s, output[startOutputRow + i])
+      s = log_plus_f(s, output[startOutputCol + i])
     end
     
     # ∂L/∂a (where a is activation before logsoftmax)
-    grad[startProbRow + idx] = CUDAnative.exp(probs[startProbRow + idx]) - CUDAnative.exp(accum[startProbRow + idx] - s)
+    grad[startProbCol + idx] = CUDAnative.exp(probs[startProbCol + idx]) - CUDAnative.exp(accum[startProbCol + idx] - s)
     idx += blockDim().x
   end
   
@@ -175,8 +176,8 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
   t = T-1
   while t >= 1
   
-    startCurRow = (t-1)*S
-    startNextRow = t*S
+    startCurCol = (t-1)*S
+    startNextCol = t*S
     startProbCol = t * div(length(probs), T)
 
     if t < T
@@ -184,18 +185,18 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
       idx = tid
       while idx <= S-1
         
-        nextSum = log_plus_f(beta[startNextRow + idx] + probs[startProbCol + labels[idx]],
-          beta[startNextRow + idx+1] + probs[startProbCol + labels[idx+1]])
+        nextSum = log_plus_f(beta[startNextCol + idx] + probs[startProbCol + labels[idx]],
+          beta[startNextCol + idx+1] + probs[startProbCol + labels[idx+1]])
         
         if labels[idx] != blankLabel && idx != S-1 && labels[idx] != labels[idx+2]
           nextSum = log_plus_f(nextSum,
-            beta[startNextRow + idx + 2] + probs[startProbCol + labels[idx+2]])
+            beta[startNextCol + idx + 2] + probs[startProbCol + labels[idx+2]])
         end
         
         if idx > 2*t
-          beta[idx + startCurRow] = -Inf32
+          beta[idx + startCurCol] = -Inf32
         else
-          beta[idx + startCurRow] = nextSum
+          beta[idx + startCurCol] = nextSum
             
         end
         
@@ -205,14 +206,14 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
       sync_threads()
       
       if tid == 1 && last == S
-        beta[startCurRow + S] = beta[startNextRow + S] + probs[startProbCol + blankLabel]
+        beta[startCurCol + S] = beta[startNextCol + S] + probs[startProbCol + blankLabel]
       end
       
       sync_threads()
       
       idx = tid
       while idx <= S
-        output[startCurRow + idx] = alphas[idx+startCurRow] + beta[startCurRow + idx]
+        output[startCurCol + idx] = alphas[idx+startCurCol] + beta[startCurCol + idx]
         idx += blockDim().x
       end
       
@@ -226,12 +227,12 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
     # each time step; used in calculating gradients
     if tid == 1
     
-      startAccRow = (t-1) * div(length(accum), T)
-      startOutputRow = (t-1) * S
+      startAccCol = (t-1) * div(length(accum), T)
+      startOutputCol = (t-1) * S
       
       for i=1:S
         labelIdx = labels[i]
-        accum[startAccRow + labelIdx] = log_plus_f(accum[startAccRow + labelIdx], output[startOutputRow + i])
+        accum[startAccCol + labelIdx] = log_plus_f(accum[startAccCol + labelIdx], output[startOutputCol + i])
       end
     end
     
@@ -242,16 +243,16 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
     # Calculate gradients
     while idx <= CUDAnative.div_fast(Float32(length(grad)), Float32(T))
 #     
-      startProbRow = (t - 1) * div(length(probs), T)
-      startOutputRow = (t - 1) * S
+      startProbCol = (t - 1) * div(length(probs), T)
+      startOutputCol = (t - 1) * S
       
       s = -Inf32
       for i=1:S
-        s = log_plus_f(s, output[startOutputRow + i])
+        s = log_plus_f(s, output[startOutputCol + i])
       end
       
       # ∂L/∂a (where a is activation before logsoftmax)
-      grad[startProbRow + idx] = CUDAnative.exp(probs[startProbRow + idx]) - CUDAnative.exp(accum[startProbRow + idx] - s)
+      grad[startProbCol + idx] = CUDAnative.exp(probs[startProbCol + idx]) - CUDAnative.exp(accum[startProbCol + idx] - s)
       idx += blockDim().x
     end
     
@@ -274,7 +275,6 @@ end
 function ctc_(ŷ::CuArrays.CuArray, y)
   
   ŷ = logsoftmax(ŷ)
-  floatType = typeof(ŷ[1]) 
   
   blank = size(ŷ, 1)
   labels = vec(mapslices(Base.argmax, y, dims=1))
@@ -286,8 +286,7 @@ function ctc_(ŷ::CuArrays.CuArray, y)
   end
   T = size(ŷ, 2)
   U′ = 2*length(z) + 1
-  # could try CuArrays.fill
-  alphas = zeros(floatType, T * U′) |> CuArray |> x -> log.(x)
+  alphas = CuArrays.fill(log(zero(ŷ[1])), T * U′)
   betas = copy(alphas)
   output = copy(alphas)
   
@@ -295,13 +294,14 @@ function ctc_(ŷ::CuArrays.CuArray, y)
 
   # 1 block with `U′` threads
   @cuda blocks=1 threads=U′ computeAlphaKernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z), CuArray(z′), alphas, blank)
-  grads = zeros(floatType, length(ŷ)) |> CuArray |> x -> log.(x)
+  
+  grads = CuArrays.fill(log(zero(ŷ[1])), length(ŷ))
   accum = copy(grads)
   
   @cuda blocks=1 threads=U′ computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
   
-  ls = reshape(collect(output), U′, T)' |> collect
-  ls = -1 .* mapslices(logsum, ls, dims=2) |> vec
+  ls = reshape(collect(output), U′, T)
+  ls = -1 .* mapslices(logsum, ls, dims=1) |> vec
   
   gs = reshape(grads, size(ŷ,1), size(ŷ,2))
   

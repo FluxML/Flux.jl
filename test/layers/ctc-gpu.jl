@@ -6,6 +6,14 @@ using LinearAlgebra
 using CuArrays
 using Statistics
 
+# Custom function to check numerical gradient of ctc loss,
+# based on `ngradient` in `Flux.Tracker`
+# 
+# Needs to check loss as defined at a particular time step
+# related to the change in x because slight deviations in
+# input propagate through further time steps, intrinsically
+# causing the gradients to change and thus not be comparable
+# between the numeric and analytical definitions
 function ctc_ngradient(xs...)
   f = ctc
   grads = zero.(xs)
@@ -38,10 +46,14 @@ end
   
   @test all(isapprox.(g1, g2, rtol=1e-5, atol=1e-5))
   
+  # test that GPU loss matches CPU implementation
+  
   l1 = Flux.ctc_(x_cu, y_cu)[1]
   l2 = Flux.ctc_(x, y)[1]
   
   @test all(isapprox.(l1, l2, rtol=1e-5, atol=1e-5))
+  
+  # tests using hand-calculated values
   
   x_cu = [1. 2. 3.; 2. 1. 1.; 3. 3. 2.] |> CuArray
   y_cu = [1 1 0; 0 0 1; 0 0 0] |> CuArray

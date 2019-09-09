@@ -73,10 +73,6 @@ function addBlanks(z, blank)
   return z′
 end
 
-function ctc(ŷ::Array, y::Array)
-  return ctc_(ŷ, y)[1]
-end
-
 function ctc_(ŷ, y)
 
   ŷ = logsoftmax(ŷ)
@@ -154,9 +150,7 @@ function ctc_(ŷ, y)
   
   # `accum` will hold the sum of the α and β coefficients for
   # each label class at time t; used in calculating gradients
-  accum = reshape([-Inf for x=1:length(ŷ )], size(ŷ ))
   accum = fill(-Inf, size(ŷ))  
-grads = reshape([-Inf for x=1:length(ŷ )], size(ŷ ))
   grads = fill(-Inf, size(ŷ))
   
   for t=1:T
@@ -167,8 +161,23 @@ grads = reshape([-Inf for x=1:length(ŷ )], size(ŷ ))
       grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -losses[t])
     end
   end
+  
+  losses = [x for x in losses]
 
   return losses, grads
+end
+
+"""
+  ctc(ŷ, y)
+  
+Computes the connectionist temporal classification loss between `ŷ` and `y`.
+
+Both `ŷ` and `y` must be classes-by-time matrices, i.e., each row represents a class and each column represents a time step. Additionally, the `logsoftmax` function will be applied to `ŷ`, so it must be the raw activation values from the neural network and not, for example, the activations after being passed through a `softmax` activation function.
+
+Used for sequence to sequence classification problems such as speech recognition and handwriting recognition where the exact time-alignment of the output (e.g., letters) is not needed to solve the problem. See [Graves et al. (2006)](https://www.cs.toronto.edu/~graves/icml_2006.pdf) or [Graves (2012)](https://www.cs.toronto.edu/~graves/preprint.pdf#chapter.7) for mathematical details.
+"""
+function ctc(ŷ::Array, y::Array)
+  return ctc_(ŷ, y)[1] |> mean
 end
 
 ctc(ŷ::TrackedArray, y::AbstractArray) = Flux.Tracker.track(ctc_, ŷ, y)

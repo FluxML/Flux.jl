@@ -41,6 +41,8 @@ end
   
   @test all(isapprox.(g1, g2, rtol=1e-5, atol=1e-5))
   
+  # tests using hand-calculated values
+  
   x = [1. 2. 3.; 2. 1. 1.; 3. 3. 2.]
   y = [1 1 0; 0 0 1; 0 0 0]
   
