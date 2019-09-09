@@ -268,22 +268,14 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
   return nothing
 end
 
-function ctc(ŷ::CuArrays.CuArray, y::Array)
-  return ctc_(ŷ, y)[1] |> mean
-end
+ctc(ŷ::CuArrays.CuArray, y::Array) = ctc_(ŷ, y)[1] |> mean
 
-function ctc(ŷ::Array, y::CuArrays.CuArray)
-  return ctc_(CuArray(ŷ), y)[1] |> mean
-end
+ctc(ŷ::Array, y::CuArrays.CuArray) = ctc_(CuArray(ŷ), y)[1] |> mean
 
-function ctc(ŷ::CuArrays.CuArray, y::CuArrays.CuArray)
-  return ctc_(ŷ, y)[1] |> mean
-end
+ctc(ŷ::CuArrays.CuArray, y::CuArrays.CuArray) = ctc_(ŷ, y)[1] |> mean
 
 # methods for `ctc_` helper function
-function ctc_(ŷ::Array, y::CuArrays.CuArray)
-  return ctc_(CuArray(ŷ), y)
-end
+ctc_(ŷ::Array, y::CuArrays.CuArray) =  ctc_(CuArray(ŷ), y)
 
 function ctc_(ŷ::CuArrays.CuArray, y)
   

@@ -193,9 +193,7 @@ end
 
 ctc(ŷ::TrackedArray, y::AbstractArray) = Flux.Tracker.track(ctc_, ŷ, y)
 
-function ctc(ŷ::AbstractArray, y::TrackedArray)
-  return Flux.Tracker.track(ctc_, ŷ, y)
-end
+ctc(ŷ::AbstractArray, y::TrackedArray) = Flux.Tracker.track(ctc_, ŷ, y)
 
 ctc(ŷ::TrackedArray, y::TrackedArray) = Flux.Tracker.track(ctc_, ŷ, y)
 
