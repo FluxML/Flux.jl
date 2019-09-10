@@ -19,10 +19,6 @@ include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")
 
-@info "Running Gradient Checks"
-
-include("gradients.jl")
-
 if isdefined(Flux, :CUDA)
   include("cuda/cuda.jl")
 else
