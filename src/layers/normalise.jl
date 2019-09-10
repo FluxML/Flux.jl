@@ -22,8 +22,6 @@ A Dropout layer. For each input, either sets that input to `0` (with probability
 `p`) or scales it by `1/(1-p)`. The `dims` argument is to specified the unbroadcasted
  dimensions, i.e. `dims=1` does dropout along columns and `dims=2` along rows. This is
  used as a regularisation, i.e. it reduces overfitting during training. see also [`dropout`](@ref).
-
-Does nothing to the input once in [`testmode!`](@ref).
 """
 mutable struct Dropout{F,D}
   p::F
@@ -297,7 +295,6 @@ m = Chain(Conv((3,3), 1=>32, leakyrelu;pad = 1),
 
 Link : https://arxiv.org/pdf/1803.08494.pdf
 """
-
 mutable struct GroupNorm{F,V,W,N,T}
   G::T # number of groups
   λ::F  # activation function

@@ -204,7 +204,6 @@ A 'ResNet'-type skip-connection with identity shortcut would simply be
     SkipConnection(layer, (a,b) -> a + b)
 ```
 """
-
 struct SkipConnection
   layers
   connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
