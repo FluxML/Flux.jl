@@ -97,6 +97,37 @@ Flux internally calls on this function via the `update!` function. It shares the
 Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimsers listed in it sequentially. Each optimiser produces a modified gradient
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
+```julia
+opt = Optimiser(ExpDecay(0.001, 0.1, 1000, 1e-4), Descent())
+```
+
+Here we apply exponential decay to the `Descent` optimser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
+It is then applied like any optimser.
+
+```julia
+w = randn(10, 10)
+w1 = randn(10,10)
+ps = Params([w, w1])
+
+loss(x) = Flux.mse(w * x, w1 * x)
+
+loss(rand(10)) # around 9
+
+for t = 1:10^5
+  θ = Params([w, w1])
+  θ̄ = gradient(() -> loss(rand(10)), θ)
+  Flux.Optimise.update!(opt, θ, θ̄)
+end
+
+loss(rand(10)) # around 0.9
+```
+
+In this manner it is possible to compose optimisers for some added flexibility.
+
+## Decays
+
+Similar to optimisers, Flux also defines some simple decays that can be used in conjunction with other optimisers, or standalone.
+
 ```@docs
 ExpDecay
 InvDecay
