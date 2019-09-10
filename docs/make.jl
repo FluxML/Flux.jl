@@ -21,8 +21,6 @@ makedocs(modules=[Flux, NNlib],
                   "GPU Support" => "gpu.md",
                   "Saving & Loading" => "saving.md",
                   "Performance Tips" => "performance.md",
-                  "Internals" =>
-                    ["Backpropagation" => "internals/tracker.md"],
                   "Community" => "community.md"],
          format = Documenter.HTML(assets = ["assets/flux.css"],
                                   analytics = "UA-36890222-9",
