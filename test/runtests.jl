@@ -19,16 +19,14 @@ include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")
 
-@info "Running Gradient Checks"
-
-include("gradients.jl")
-
 if isdefined(Flux, :CUDA)
   include("cuda/cuda.jl")
 else
   @warn "CUDA unavailable, not testing GPU support"
 end
 
-doctest(Flux)
+if VERSION >= v"1.2"
+  doctest(Flux)
+end
 
 end
