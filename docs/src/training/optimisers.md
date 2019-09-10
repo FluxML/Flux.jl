@@ -3,25 +3,25 @@
 Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
 
 ```julia
-using Flux, Flux.Tracker
+using Flux, Flux.Zygote
 
-W = param(rand(2, 5))
-b = param(rand(2))
+W = rand(2, 5))
+b = rand(2)
 
-predict(x) = W*x .+ b
+predict(x) = (W * x) .+ b
 loss(x, y) = sum((predict(x) .- y).^2)
 
 x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
 
 θ = Params([W, b])
-grads = Tracker.gradient(() -> loss(x, y), θ)
+grads = Zygote.gradient(() -> loss(x, y), θ)
 ```
 
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-using Flux.Tracker: grad, update!
+using Flux: update!
 
 η = 0.1 # Learning Rate
 for p in (W, b)
@@ -57,4 +57,48 @@ ADADelta
 AMSGrad
 NADAM
 ADAMW
+```
+
+## Optimiser Interface
+
+Flux's optimsers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
+
+In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
+
+```julia
+mutable struct Momentum{T,S,D}
+  eta::T
+  rho::S
+  velocity::D
+end
+```
+
+The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state. **Note that this behaviour is set to change in consequent versions of Flux**. We can now define the rule applied when this optimiser is invoked.
+
+```julia
+function apply!(o::Momentum, x, Δ)
+  η, ρ = o.eta, o.rho
+  v = get!(o.velocity, x, zero(x))::typeof(x)
+  @. v = ρ * v - η * Δ
+  @. Δ = -v
+end
+```
+
+This is the basic definition of a Momentum update rule given by:
+$v = ρ * v - η * Δ$
+$w = w - v$
+
+The `apply!` defines the update rules for an optimsier `opt`, given the parameters and gradients. It returns the updated gradients usually. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
+
+Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully. In the future, it will also be delegating immutable update operations.
+
+## Composing Optimisers
+
+Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimsers listed in it sequentially. Each optimiser produces a modified gradient
+that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
+
+```@docs
+ExpDecay
+InvDecay
+WeightDecay
 ```
