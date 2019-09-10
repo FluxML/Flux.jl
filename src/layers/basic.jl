@@ -50,9 +50,12 @@ end
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
 function activations(c::Chain, input)
-  buffed = accumulate!((x,y)->y(x), Zygote.Buffer([], length(c)),
-                       [l for l in c], dims=1, init=input) 
-  return copy(buffed)
+  res = Zygote.Buffer([], length(c))
+  res[1] = c[1](input)
+  for (i,l) in enumerate(c[2:end])
+    res[i+1] = l(res[i])
+  end
+  return copy(res)
 end
 
 
