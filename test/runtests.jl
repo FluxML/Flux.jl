@@ -29,6 +29,8 @@ else
   @warn "CUDA unavailable, not testing GPU support"
 end
 
-doctest(Flux)
+if VERSION >= v"1.2"
+  doctest(Flux)
+end
 
 end
