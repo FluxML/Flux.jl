@@ -54,17 +54,19 @@ it will error.
 ## Examples
 
 ```jldoctest
+julia> using Flux: onehot
+
 julia> onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
-  true
- false
+ 0
+ 1
+ 0
 
 julia> onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
- false
-  true
+ 0
+ 0
+ 1
 ```
 """
 function onehot(l, labels)
@@ -88,12 +90,13 @@ Create an [`OneHotMatrix`](@ref) with a batch of labels based on possible `label
 ## Examples
 
 ```jldoctest
-julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotMatrix:
- false   true  false
-  true  false   true
- false  false  false
+julia> using Flux: onehotbatch
 
+julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
+3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+ 0  1  0
+ 1  0  1
+ 0  0  0
 ```
 """
 onehotbatch(ls, labels, unk...) =
@@ -106,9 +109,9 @@ Base.argmax(xs::OneHotVector) = xs.ix
 
 Inverse operations of [`onehot`](@ref).
 
-## Examples
-
 ```jldoctest
+julia> using Flux: onecold
+
 julia> onecold([true, false, false], [:a, :b, :c])
 :a
 

@@ -1,10 +1,7 @@
-using Flux, Test, Random, Statistics
+using Flux, Test, Random, Statistics, Documenter
 using Random
 
 Random.seed!(0)
-
-# So we can use the system CuArrays
-insert!(LOAD_PATH, 2, "@v#.#")
 
 @testset "Flux" begin
 
@@ -31,5 +28,7 @@ if isdefined(Flux, :CUDA)
 else
   @warn "CUDA unavailable, not testing GPU support"
 end
+
+doctest(Flux)
 
 end
