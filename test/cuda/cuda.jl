@@ -1,4 +1,5 @@
-using Flux, CuArrays, Test
+using Flux, Test
+using Flux.CuArrays
 using Flux: gpu
 
 @info "Testing GPU Support"
