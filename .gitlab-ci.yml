@@ -13,8 +13,6 @@ include:
     - julia -e 'using InteractiveUtils;
                 versioninfo()'
     - mkdir $JULIA_DEPOT_PATH # Pkg3.jl#325
-    - julia -e 'using Pkg;
-                Pkg.add("CuArrays");'
     - julia --project -e 'using Pkg;
                           Pkg.instantiate();
                           Pkg.build();
@@ -32,6 +30,14 @@ test:v1.1:
   extends: .flux
   variables:
     CI_VERSION_TAG: 'v1.1'
+  only:
+    - staging
+    - trying
+
+test:v1.2:
+  extends: .flux
+  variables:
+    CI_VERSION_TAG: 'v1.2'
   only:
     - staging
     - trying
