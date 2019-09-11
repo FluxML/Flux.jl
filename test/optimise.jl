@@ -1,42 +1,44 @@
 using Flux.Optimise
 using Flux.Optimise: runall
-using Flux.Tracker
+using Flux: Params, gradient
 using Test
+
 @testset "Optimise" begin
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
                        NADAM(), RADAM(), Descent(0.1), ADAM(), Nesterov(), RMSProp(),
                        Momentum()]
-    w′ = param(randn(10, 10))
+    w′ = randn(10, 10)
     loss(x) = Flux.mse(w*x, w′*x)
     for t = 1: 10^5
       θ = Params([w′])
-      θ̄ = gradient(() -> loss(rand(10)), θ)
+      x = rand(10)
+      θ̄ = gradient(() -> loss(x), θ)
       Optimise.update!(opt, θ, θ̄)
     end
-    @test Flux.mse(w, w′) < 0.01
+    @test loss(rand(10, 10)) < 0.01
   end
 end
 
 @testset "Optimiser" begin
   w = randn(10, 10)
   @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
-    w′ = param(randn(10, 10))
+    w′ = randn(10, 10)
     loss(x) = Flux.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
     for t = 1:10^5
-      l = loss(rand(10))
-      back!(l)
-      delta = Optimise.apply!(opt, w′.data, w′.grad)
-      w′.data .-= delta
+      θ = Params([w′])
+      x = rand(10)
+      θ̄ = gradient(() -> loss(x), θ)
+      Optimise.update!(opt, θ, θ̄)
     end
-    @test Flux.mse(w, w′) < 0.01
+    @test loss(rand(10, 10)) < 0.01
   end
 end
 
 @testset "Training Loop" begin
   i = 0
-  l = param(1)
+  l = 1
 
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               (),
@@ -57,17 +59,18 @@ end
 @testset "ExpDecay" begin
     w = randn(10, 10)
     o = ExpDecay(0.1, 0.1, 1000, 1e-4)
-    w1 = param(randn(10,10))
+    w1 = randn(10,10)
     loss(x) = Flux.mse(w*x, w1*x)
     flag = 1
     decay_steps = []
     for t = 1:10^5
-      l = loss(rand(10))
-      back!(l)
       prev_eta = o.eta
-      prev_grad = collect(w1.grad)
-      delta = Optimise.apply!(o, w1.data, w1.grad)
-      w1.data .-= delta
+      θ = Params([w1])
+      x = rand(10)
+      θ̄ = gradient(() -> loss(x), θ)
+      prev_grad = collect(θ̄[w1])
+      delta = Optimise.apply!(o, w1, θ̄[w1])
+      w1 .-= delta
       new_eta = o.eta
       if new_eta != prev_eta
         push!(decay_steps, t)

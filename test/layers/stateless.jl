@@ -51,13 +51,13 @@ const ϵ = 1e-7
   end
 
   @testset "no spurious promotions" begin
-    for T in (Float16, Float32, Float64)
+    for T in (Float32, Float64)
       y = rand(T, 2)
       ŷ = rand(T, 2)
       for f in (mse, crossentropy, logitcrossentropy)
-        fwd, back = Flux.Tracker.forward(mse, ŷ, y)
-        @test typeof(fwd) == Flux.Tracker.TrackedReal{T}
-        @test eltype(back(one(T))[1]) == Flux.Tracker.TrackedReal{T}
+        fwd, back = Flux.forward(f, ŷ, y)
+        @test fwd isa T
+        @test eltype(back(one(T))[1]) == T
       end
     end
   end

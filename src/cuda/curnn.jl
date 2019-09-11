@@ -225,7 +225,6 @@ end
 # Interface
 
 import ..Flux: Flux, relu
-import ..Tracker: TrackedArray
 using CuArrays.CUDAnative
 using CuArrays: @cuindex, cudims
 
@@ -240,17 +239,16 @@ function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
   return dst
 end
 
-CuParam{T,N} = Union{CuArray{T,N},TrackedArray{T,N,CuArray{T,N}}}
-CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuParam{T,2},<:CuParam{T,1}}
-CuGRU{T} = Flux.GRUCell{<:CuParam{T,2},<:CuParam{T,1}}
-CuLSTM{T} = Flux.LSTMCell{<:CuParam{T,2},<:CuParam{T,1}}
+CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
+CuGRU{T} = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}
+CuLSTM{T} = Flux.LSTMCell{<:CuArray{T,2},<:CuArray{T,1}}
 CuRNNs{T} = Union{CuRNN{T},CuGRU{T},CuLSTM{T}}
 
 function copyparams!(m::CuRNNs, d::RNNDesc)
   Wi, Wh = d.weights
-  copy_transpose!(Wi, Flux.data(m.Wi))
-  copy_transpose!(Wh, Flux.data(m.Wh))
-  copy_transpose!(d.bias, Flux.data(m.b))
+  copy_transpose!(Wi, m.Wi)
+  copy_transpose!(Wh, m.Wh)
+  copy_transpose!(d.bias, m.b)
   return
 end
 
@@ -271,59 +269,58 @@ function desc(rnn)
   return d
 end
 
-import Flux.Tracker
-import Flux.Tracker: data, istracked, track, unbroadcast, @grad, nobacksies
+using ..Flux: @adjoint
 
-istrain(m::CuRNNs, args...) = any(x -> x isa TrackedArray, (m.Wi, m.Wh, m.b, args...))
-
-function (m::CuRNN{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  result = istrain(m, h, x) ?
-    track(m, x, h, m.Wi, m.Wh, m.b) :
-    forward(desc(m), x, h)
-  return result[2], result[1]
+function (m::CuRNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  y, h′ = forward(desc(m), x, h)
+  return h′, y
 end
 
-function (m::CuGRU{T})(h::CuParam{T}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  result = istrain(m, h, x) ?
-    track(m, x, h, m.Wi, m.Wh, m.b) :
-    forward(desc(m), x, h)
-  return result[2], result[1]
+function (m::CuGRU{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  y, h′ = forward(desc(m), x, h)
+  return h′, y
 end
 
-function (m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x::CuParam{T}) where T <: Union{Float32,Float64}
-  result = istrain(m, h, x) ?
-    track(m, x, h[1], h[2], m.Wi, m.Wh, m.b) :
-    forward(desc(m), x, h[1], h[2])
-  return (result[2], result[3]), result[1]
+function (m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  y, h′, c′ = forward(desc(m), x, h[1], h[2])
+  return (h′, c′), y
 end
 
-(m::CuRNN{T})(h::CuParam{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
-(m::CuGRU{T})(h::CuParam{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
-(m::CuLSTM{T})(h::NTuple{2,CuParam{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuRNN{T})(h::CuArray{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuGRU{T})(h::CuArray{T}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
+(m::CuLSTM{T})(h::NTuple{2,CuArray{T}}, x) where T <: Union{Float32,Float64} = m(h, CuArray{T}(x))
 
-@grad function (m::Union{CuRNN,CuGRU})(x, h, Wi, Wh, b)
-  reserve, result = forwardTrain(desc(m), data(x), data(h))
-  result, function (Δ)
-    y, ho = result
-    dy, dho = Δ
-    h_ = hBatch(x, data(h))
-    dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
-    (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
-    nobacksies(:RNN, (dx, unbroadcast(h, dh), transpose(dWi), transpose(dWh), db))
+trim(x, Δ) = reshape(Δ, ntuple(i -> size(Δ, i), Val(ndims(x))))
+
+unbroadcast(x::AbstractArray, Δ) =
+  size(x) == size(Δ) ? Δ :
+  length(x) == length(Δ) ? trim(x, Δ) :
+    trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
+
+for RNN in (CuRNN, CuGRU)
+  @eval @adjoint function (m::$RNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
+    reserve, (y, ho) = forwardTrain(desc(m), x, h)
+    (ho, y), function (Δ)
+      dho, dy = Δ
+      h_ = hBatch(x, h)
+      dx, dh = backwardData(descs[m], y, dy, dho, h_, reserve)
+      (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
+      dm = Ref{Any}((σ=nothing,Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing))
+      (dm, unbroadcast(h, dh), dx)
+    end
   end
 end
 
-@grad function (m::CuLSTM)(x, h, c, Wi, Wh, b)
-  reserve, result = forwardTrain(desc(m), data.((x, h, c))...)
-  result, function (Δ)
-    y, ho = result
-    dy, dho, dco = Δ
-    h_ = hBatch(x, data(h))
-    c_ = hBatch(x, data(c))
+@adjoint function (m::CuLSTM)((h, c)::Tuple{CuArray{T},CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
+  reserve, (y, ho, co) = forwardTrain(desc(m), x, h, c)
+  ((ho, co), y), function (Δ)
+    dhc, dy = Δ
+    dho, dco = dhc === nothing ? (nothing, nothing) : dhc
+    h_ = hBatch(x, h)
+    c_ = hBatch(x, c)
     dx, dh, dc = backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
-    (dWi, dWh), db = backwardWeights(descs[m], data(x), h_, y, reserve)
-    nobacksies(:RNN,
-      (dx, unbroadcast(h, dh), unbroadcast(c, dc),
-       transpose(dWi), transpose(dWh), db))
+    (dWi, dWh), db = backwardWeights(descs[m], x, h_, y, reserve)
+    dm = Ref{Any}((Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing,c=nothing))
+    (dm, (unbroadcast(h, dh), unbroadcast(c, dc)), dx)
   end
 end

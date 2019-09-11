@@ -1,12 +1,13 @@
+using Pkg;
+Pkg.activate(joinpath(@__DIR__, "..")); Pkg.instantiate()
+Pkg.activate(); Pkg.instantiate()
+
+pushfirst!(LOAD_PATH, joinpath(@__DIR__, ".."))
+
 using Documenter, Flux, NNlib
 
 makedocs(modules=[Flux, NNlib],
-         doctest = true,
-         analytics = "UA-36890222-9",
          sitename = "Flux",
-         # Uncomment below for local build
-         #format = Documenter.HTML(prettyurls = false),
-         assets = ["assets/flux.css"],
          pages = ["Home" => "index.md",
                   "Building Models" =>
                     ["Basics" => "models/basics.md",
@@ -20,8 +21,9 @@ makedocs(modules=[Flux, NNlib],
                   "GPU Support" => "gpu.md",
                   "Saving & Loading" => "saving.md",
                   "Performance Tips" => "performance.md",
-                  "Internals" =>
-                    ["Backpropagation" => "internals/tracker.md"],
-                  "Community" => "community.md"])
+                  "Community" => "community.md"],
+         format = Documenter.HTML(assets = ["assets/flux.css"],
+                                  analytics = "UA-36890222-9",
+                                  prettyurls = haskey(ENV, "CI")))
 
 deploydocs(repo = "github.com/FluxML/Flux.jl.git")

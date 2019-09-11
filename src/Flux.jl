@@ -3,19 +3,15 @@ module Flux
 # Zero Flux Given
 
 using Base: tail
-using MacroTools, Juno, Reexport, Statistics, Random
+using Zygote, MacroTools, Juno, Reexport, Statistics, Random
 using MacroTools: @forward
+@reexport using NNlib
+using Zygote: Params, @adjoint, gradient, forward
+export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       SkipConnection,
-       params, mapleaves, cpu, gpu, f32, f64
-
-@reexport using NNlib
-
-using Tracker
-using Tracker: data
-export Tracker, TrackedArray, TrackedVector, TrackedMatrix, param
+       SkipConnection, params, mapleaves, cpu, gpu, f32, f64
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -48,6 +44,8 @@ include("layers/recurrent.jl")
 include("layers/normalise.jl")
 
 include("data/Data.jl")
+
+include("deprecations.jl")
 
 if has_cuarrays()
   include("cuda/cuda.jl")

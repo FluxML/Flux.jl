@@ -3,25 +3,25 @@
 Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
 
 ```julia
-using Flux, Flux.Tracker
+using Flux
 
-W = param(rand(2, 5))
-b = param(rand(2))
+W = rand(2, 5))
+b = rand(2)
 
-predict(x) = W*x .+ b
+predict(x) = (W * x) .+ b
 loss(x, y) = sum((predict(x) .- y).^2)
 
 x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
 
 θ = Params([W, b])
-grads = Tracker.gradient(() -> loss(x, y), θ)
+grads = gradient(() -> loss(x, y), θ)
 ```
 
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-using Flux.Tracker: grad, update!
+using Flux: update!
 
 η = 0.1 # Learning Rate
 for p in (W, b)

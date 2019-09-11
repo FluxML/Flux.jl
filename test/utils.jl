@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, jacobian, glorot_uniform, glorot_normal, stack, unstack
+using Flux: throttle, glorot_uniform, glorot_normal, stack, unstack
 using StatsBase: std
 using Random
 using Test
@@ -52,15 +52,6 @@ using Test
   end
 end
 
-@testset "Jacobian" begin
-  A = param(randn(2,2))
-  x = randn(2)
-  m(x) = A*x
-  y = m(x)
-  J = jacobian(m,x)
-  @test J ≈ A.data
-end
-
 @testset "Initialization" begin
   # Set random seed so that these tests don't fail randomly
   Random.seed!(0)
@@ -106,12 +97,11 @@ end
 @testset "Precision" begin
   m = Chain(Dense(10, 5, relu), Dense(5, 2))
   x = rand(10)
-  @test eltype(m[1].W.data) == Float32
-  @test eltype(m(x).data) == Float32
-  @test eltype(f64(m)(x).data) == Float64
-  @test eltype(f64(m)[1].W.data) == Float64
-  @test eltype(f32(f64(m))[1].W.data) == Float32
-  @test Tracker.isleaf(f32(f64(m))[1].W)
+  @test eltype(m[1].W) == Float32
+  @test eltype(m(x)) == Float32
+  @test eltype(f64(m)(x)) == Float64
+  @test eltype(f64(m)[1].W) == Float64
+  @test eltype(f32(f64(m))[1].W) == Float32
 end
 
 @testset "Stacking" begin

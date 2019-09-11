@@ -1,48 +1,44 @@
-using Flux, Flux.Tracker, CuArrays, Test
-using Flux.Tracker: TrackedArray, data
+using Flux, CuArrays, Test
+using Flux: forward
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input" begin
-        x = TrackedArray(Float64.(collect(reshape(1:12, 2, 2, 3, 1))))
+        x = Float64.(collect(reshape(1:12, 2, 2, 3, 1)))
         m = BatchNorm(3)
         cx = gpu(x)
         cm = gpu(m)
 
-        y = m(x)
-        cy = cm(cx)
+        y, back = forward((m, x) -> m(x), m, x)
+        cy, cback = forward((m, x) -> m(x), cm, cx)
 
-        @test cy isa TrackedArray{Float32,4,CuArray{Float32,4}}
+        @test cpu(cy) ≈ y
 
-        @test cpu(data(cy)) ≈ data(y)
+        Δ = randn(size(y))
+        dm, dx = back(Δ)
+        cdm, cdx = cback(gpu(Δ))
 
-        g = rand(size(y)...)
-        Flux.back!(y, g)
-        Flux.back!(cy, gpu(g))
-
-        @test m.γ.grad ≈ cpu(cm.γ.grad)
-        @test m.β.grad ≈ cpu(cm.β.grad)
-        @test x.grad ≈ cpu(x.grad)
+        @test dm[].γ ≈ cpu(cdm[].γ)
+        @test dm[].β ≈ cpu(cdm[].β)
+        @test dx ≈ cpu(cdx)
     end
 
     @testset "2D Input" begin
-        x = TrackedArray(Float64.(collect(reshape(1:12, 3, 4))))
+        x = Float64.(collect(reshape(1:12, 3, 4)))
         m = BatchNorm(3)
         cx = gpu(x)
         cm = gpu(m)
 
-        y = m(x)
-        cy = cm(cx)
+        y, back = forward((m, x) -> m(x), m, x)
+        cy, cback = forward((m, x) -> m(x), cm, cx)
 
-        @test cy isa TrackedArray{Float32,2,CuArray{Float32,2}}
+        @test cpu(cy) ≈ y
 
-        @test cpu(data(cy)) ≈ data(y)
+        Δ = randn(size(y))
+        dm, dx = back(Δ)
+        cdm, cdx = cback(gpu(Δ))
 
-        g = rand(size(y)...)
-        Flux.back!(y, g)
-        Flux.back!(cy, gpu(g))
-
-        @test m.γ.grad ≈ cpu(cm.γ.grad)
-        @test m.β.grad ≈ cpu(cm.β.grad)
-        @test x.grad ≈ cpu(x.grad)
+        @test dm[].γ ≈ cpu(cdm[].γ)
+        @test dm[].β ≈ cpu(cdm[].β)
+        @test dx ≈ cpu(cdx)
     end
 end
