@@ -15,7 +15,7 @@ x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
 
 θ = Params([W, b])
-grads = Zygote.gradient(() -> loss(x, y), θ)
+grads = gradient(() -> loss(x, y), θ)
 ```
 
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
