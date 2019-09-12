@@ -50,15 +50,16 @@ end
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
 function activations(c::Chain, input)
-  res = Zygote.Buffer([], length(c))
-  if length(c) > 0
-    res[1] = c[1](input)
-    for (i,l) in enumerate(c[2:end])
-      res[i+1] = l(res[i])
-    end
-  end
-  return copy(res)
+    extraChain(c.layers, input)
 end
+
+function extraChain(fs::Tuple, x)
+    res = first(fs)(x)
+    return (res, extraChain(Base.tail(fs), res)...)
+end
+
+extraChain(::Tuple{}, x) = []
+
 
 
 """
