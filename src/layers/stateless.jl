@@ -18,7 +18,7 @@ function smooth_l1_loss(y, fx; δ = 1)
   δ * α - (0.5f0 * δ ^ 2)
 end
 
-huber_loss = smooth_l1_loss
+const huber_loss = smooth_l1_loss
 
 """
     binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
