@@ -83,6 +83,10 @@ img {
     max-width: 100%;
 }
 
+video {
+    max-width: 100%;
+}
+
 table {
     border-collapse: collapse;
     margin: 1em 0;
