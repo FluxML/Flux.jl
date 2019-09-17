@@ -5,7 +5,7 @@ Consider a [simple linear regression](../models/basics.md). We create some dummy
 ```julia
 using Flux
 
-W = rand(2, 5))
+W = rand(2, 5)
 b = rand(2)
 
 predict(x) = (W * x) .+ b

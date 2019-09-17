@@ -44,7 +44,8 @@ function desc(rnn)
   return d
 end
 
-using ..Flux: @adjoint
+import Zygote
+using Zygote: @adjoint
 
 function (m::CuRNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
   y, h′ = CUDNN.forward(desc(m), x, h)
@@ -72,15 +73,29 @@ unbroadcast(x::AbstractArray, Δ) =
   length(x) == length(Δ) ? trim(x, Δ) :
     trim(x, sum(Δ, dims = ntuple(i -> size(x, i) == 1 ? i : ndims(Δ)+1, Val(ndims(Δ)))))
 
+coerce_cuda(x::Union{CuArray,Nothing}) = x
+coerce_cuda(x::Tuple) = coerce_cuda.(x)
+
+coerce_cuda(x) = x .+ CuArrays.fill(0)
+
+function struct_grad!(cx::Zygote.Context, x, x̄)
+  for f in fieldnames(typeof(x))
+    Zygote.accum_param(cx, getfield(x, f), getfield(x̄, f))
+  end
+  dx = Zygote.grad_mut(cx, x)
+  dx[] = Zygote.accum(dx[], x̄)
+  return dx
+end
+
 for RNN in (CuRNN, CuGRU)
   @eval @adjoint function (m::$RNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
     reserve, (y, ho) = CUDNN.forwardTrain(desc(m), x, h)
     (ho, y), function (Δ)
-      dho, dy = Δ
+      dho, dy = coerce_cuda(Δ)
       h_ = CUDNN.hBatch(x, h)
       dx, dh = CUDNN.backwardData(descs[m], y, dy, dho, h_, reserve)
       (dWi, dWh), db = CUDNN.backwardWeights(descs[m], x, h_, y, reserve)
-      dm = Ref{Any}((σ=nothing,Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing))
+      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing))
       (dm, unbroadcast(h, dh), dx)
     end
   end
@@ -89,13 +104,13 @@ end
 @adjoint function (m::CuLSTM)((h, c)::Tuple{CuArray{T},CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
   reserve, (y, ho, co) = CUDNN.forwardTrain(desc(m), x, h, c)
   ((ho, co), y), function (Δ)
-    dhc, dy = Δ
+    dhc, dy = coerce_cuda(Δ)
     dho, dco = dhc === nothing ? (nothing, nothing) : dhc
     h_ = CUDNN.hBatch(x, h)
     c_ = CUDNN.hBatch(x, c)
     dx, dh, dc = CUDNN.backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
     (dWi, dWh), db = CUDNN.backwardWeights(descs[m], x, h_, y, reserve)
-    dm = Ref{Any}((Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing,c=nothing))
+    dm = struct_grad!(__context__, m, (Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing,c=nothing))
     (dm, (unbroadcast(h, dh), unbroadcast(c, dc)), dx)
   end
 end
