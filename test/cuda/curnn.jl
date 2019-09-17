@@ -4,7 +4,10 @@ using Flux: forward
 @testset for R in [RNN, GRU, LSTM]
   m = R(10, 5) |> gpu
   x = gpu(rand(10))
-  @test gradient(m -> sum(m(x)), m) isa Tuple
+  (m̄,) = gradient(m -> sum(m(x)), m)
+  Flux.reset!(m)
+  θ = gradient(() -> sum(m(x)), params(m))
+  @test collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
 end
 
 @testset "RNN" begin
