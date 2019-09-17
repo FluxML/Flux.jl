@@ -1,31 +1,11 @@
 import ..Flux: Flux, relu
 using CuArrays.CUDAnative
 using CuArrays: @cuindex, cudims
-using LinearAlgebra
-
-function LinearAlgebra.copy_transpose!(dst::CuArray, src::CuArray)
-  function kernel(dst, src)
-    I = @cuindex dst
-    dst[I...] = src[reverse(I)...]
-    return
-  end
-  blk, thr = cudims(dst)
-  @cuda blocks=blk threads=thr kernel(dst, src)
-  return dst
-end
 
 CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
 CuGRU{T} = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}
 CuLSTM{T} = Flux.LSTMCell{<:CuArray{T,2},<:CuArray{T,1}}
 CuRNNs{T} = Union{CuRNN{T},CuGRU{T},CuLSTM{T}}
-
-function copyparams!(m::CuRNNs, d::CUDNN.RNNDesc)
-  Wi, Wh = d.weights
-  copy_transpose!(Wi, m.Wi)
-  copy_transpose!(Wh, m.Wh)
-  copy_transpose!(d.bias, m.b)
-  return
-end
 
 function CUDNN.RNNDesc(m::CuRNNs{T}) where T
   h, i = length(m.h), size(m.Wi, 2)
@@ -40,7 +20,7 @@ const descs = WeakKeyDict()
 
 function desc(rnn)
   d = haskey(descs, rnn) ? descs[rnn] : (descs[rnn] = CUDNN.RNNDesc(rnn))
-  copyparams!(rnn, d)
+  CUDNN.setweights!(d, rnn.Wi, rnn.Wh, rnn.b)
   return d
 end
 

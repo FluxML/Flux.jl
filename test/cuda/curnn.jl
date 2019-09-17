@@ -22,8 +22,8 @@ end
       rand(10, batch_size)
     cux = gpu(x)
 
-    y, back = forward((r, x) -> (r(x)), rnn, x)
-    cuy, cuback = forward((r, x) -> (r(x)), curnn, cux)
+    y, back = forward((r, x) -> r(x), rnn, x)
+    cuy, cuback = forward((r, x) -> r(x), curnn, cux)
 
     @test y ≈ collect(cuy)
     @test haskey(Flux.CUDA.descs, curnn.cell)
