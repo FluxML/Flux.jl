@@ -1,7 +1,7 @@
 using Flux, Test, Statistics
-using Zygote: forward
+using Zygote: pullback
 
-trainmode(f, x...) = forward(f, x...)[1]
+trainmode(f, x...) = pullback(f, x...)[1]
 trainmode(f) = (x...) -> trainmode(f, x...)
 
 @testset "Dropout" begin
