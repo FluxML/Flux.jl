@@ -16,7 +16,7 @@ function makefunctor(m::Module, T, fs = fieldnames(T))
 end
 
 function functorm(T, fs = nothing)
-  fs == nothing || isexpr(fs, :tuple) || error("@treelike T (a, b)")
+  fs == nothing || isexpr(fs, :tuple) || error("@functor T (a, b)")
   fs = fs == nothing ? [] : [:($(map(QuoteNode, fs.args)...),)]
   :(makefunctor(@__MODULE__, $(esc(T)), $(fs...)))
 end
@@ -61,8 +61,6 @@ macro treelike(args...)
 end
 mapleaves(f, x) = fmap(f, x)
 
-# function params
-
 function loadparams!(m, xs)
   for (p, x) in zip(params(m), xs)
     size(p) == size(x) ||
@@ -73,7 +71,7 @@ end
 
 # CPU/GPU movement conveniences
 
-cpu(m) = mapleaves(x -> adapt(Array, x), m)
+cpu(m) = fmap(x -> adapt(Array, x), m)
 
 const gpu_adaptor = if has_cuarrays()
   CuArrays.cu
@@ -81,13 +79,13 @@ else
   identity
 end
 
-gpu(x) = mapleaves(gpu_adaptor, x)
+gpu(x) = fmap(gpu_adaptor, x)
 
 # Precision
 
 adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs)
 
-paramtype(T::Type{<:Real}, m) = mapleaves(x -> adapt(T, x), m)
+paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
 f32(m) = paramtype(Float32, m)
 f64(m) = paramtype(Float64, m)

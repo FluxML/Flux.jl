@@ -38,7 +38,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-@treelike Recur cell, init
+@functor Recur cell, init
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -80,7 +80,7 @@ end
 
 hidden(m::RNNCell) = m.h
 
-@treelike RNNCell
+@functor RNNCell
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
@@ -128,7 +128,7 @@ end
 
 hidden(m::LSTMCell) = (m.h, m.c)
 
-@treelike LSTMCell
+@functor LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
@@ -169,7 +169,7 @@ end
 
 hidden(m::GRUCell) = m.h
 
-@treelike GRUCell
+@functor GRUCell
 
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
