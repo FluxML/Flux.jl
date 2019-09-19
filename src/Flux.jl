@@ -35,7 +35,7 @@ end
 
 include("utils.jl")
 include("onehot.jl")
-include("treelike.jl")
+include("functor.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
