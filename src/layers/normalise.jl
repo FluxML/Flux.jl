@@ -166,11 +166,7 @@ function (BN::BatchNorm)(x)
   end
 end
 
-children(BN::BatchNorm) =
-  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ², BN.ϵ, BN.momentum)
-
-mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ²), BN.ϵ, BN.momentum)
+@functor BatchNorm
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(join(size(l.β), ", "))")
@@ -261,11 +257,7 @@ function (in::InstanceNorm)(x)
   end
 end
 
-children(in::InstanceNorm) =
-  (in.λ, in.β, in.γ, in.μ, in.σ², in.ϵ, in.momentum)
-
-mapchildren(f, in::InstanceNorm) =  # e.g. mapchildren(cu, in)
-  InstanceNorm(in.λ, f(in.β), f(in.γ), f(in.μ), f(in.σ²), in.ϵ, in.momentum)
+@functor InstanceNorm
 
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(join(size(l.β), ", "))")
@@ -360,11 +352,7 @@ function(gn::GroupNorm)(x)
   end
 end
 
-children(gn::GroupNorm) =
-  (gn.λ, gn.β, gn.γ, gn.μ, gn.σ², gn.ϵ, gn.momentum)
-
-mapchildren(f, gn::GroupNorm) =  # e.g. mapchildren(cu, BN)
-  GroupNorm(gn.G,gn.λ, f(gn.β), f(gn.γ), f(gn.μ), f(gn.σ²), gn.ϵ, gn.momentum)
+@functor GroupNorm
 
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(join(size(l.β), ", "))")

@@ -24,8 +24,7 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex
 
-children(c::Chain) = c.layers
-mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
+functor(c::Chain) = c.layers, ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))

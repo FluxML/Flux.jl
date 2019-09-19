@@ -1,52 +1,67 @@
 import Adapt: adapt, adapt_storage
-import Zygote: IdSet
+using Zygote: IdSet
 
-children(x) = ()
-mapchildren(f, x) = x
+functor(x) = (), _ -> x
 
-children(x::Tuple) = x
-children(x::NamedTuple) = x
-mapchildren(f, x::Tuple) = map(f, x)
-mapchildren(f, x::NamedTuple) = map(f, x)
+functor(x::Tuple) = x, y -> y
+functor(x::NamedTuple) = x, y -> y
 
-function treelike(m::Module, T, fs = fieldnames(T))
+functor(x::AbstractArray) = x, y -> y
+functor(x::AbstractArray{<:Number}) = (), _ -> x
+
+function makefunctor(m::Module, T, fs = fieldnames(T))
   @eval m begin
-    Flux.children(x::$T) = ($([:(x.$f) for f in fs]...),)
-    Flux.mapchildren(f, x::$T) = $T(f.($children(x))...)
+    Flux.functor(x::$T) = ($([:($f=x.$f) for f in fs]...),), y -> $T(y...)
   end
 end
 
-macro treelike(T, fs = nothing)
+function functorm(T, fs = nothing)
   fs == nothing || isexpr(fs, :tuple) || error("@treelike T (a, b)")
   fs = fs == nothing ? [] : [:($(map(QuoteNode, fs.args)...),)]
-  :(treelike(@__MODULE__, $(esc(T)), $(fs...)))
+  :(makefunctor(@__MODULE__, $(esc(T)), $(fs...)))
 end
 
-isleaf(x) = isempty(children(x))
+macro functor(args...)
+  functorm(args...)
+end
 
-function mapleaves(f, x; cache = IdDict())
+isleaf(x) = functor(x)[1] === ()
+
+function fmap1(f, x)
+  func, re = functor(x)
+  re(map(f, func))
+end
+
+function fmap(f, x; cache = IdDict())
   haskey(cache, x) && return cache[x]
-  cache[x] = isleaf(x) ? f(x) : mapchildren(x -> mapleaves(f, x, cache = cache), x)
+  cache[x] = isleaf(x) ? f(x) : fmap1(x -> fmap(f, x, cache = cache), x)
 end
 
-function prefor(f, x; seen = IdSet())
-  x ∈ seen && return
+children(m) = functor(m)[1]
+
+params!(p::Params, x::AbstractArray{<:Real}, seen = IdSet()) = push!(p, x)
+
+function params!(p::Params, x, seen = IdSet())
+  x in seen && return
   push!(seen, x)
-  f(x)
-  foreach(x -> prefor(f, x, seen = seen), children(x))
-  return
+  for child in children(x)
+    params!(p, child, seen)
+  end
 end
 
-function params(m)
+function params(m...)
   ps = Params()
-  prefor(p ->
-    p isa AbstractArray{<:Real} &&
-      !any(p′ -> p′ === p, ps) && push!(ps, p),
-    m)
+  params!(ps, m)
   return ps
 end
 
-params(m...) = params(m)
+# Deprecated stuff
+macro treelike(args...)
+  functorm(args...)
+end
+mapleaves(f, x) = fmap(f, x)
+
+# function params
 
 function loadparams!(m, xs)
   for (p, x) in zip(params(m), xs)
@@ -76,11 +91,3 @@ paramtype(T::Type{<:Real}, m) = mapleaves(x -> adapt(T, x), m)
 
 f32(m) = paramtype(Float32, m)
 f64(m) = paramtype(Float64, m)
-
-# General parameter map
-
-function mapparams(f, m)
-  mapleaves(m) do x
-    x isa Union{AbstractArray,Number} ? f(x) : x
-  end
-end

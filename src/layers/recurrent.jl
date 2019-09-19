@@ -52,7 +52,8 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
 
     rnn.state = hidden(rnn.cell)
 """
-reset!(m) = prefor(x -> x isa Recur && (x.state = x.init), m)
+reset!(m::Recur) = (m.state = m.init)
+reset!(m) = foreach(reset!, functor(m)[1])
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
