@@ -37,14 +37,14 @@ function fmap(f, x; cache = IdDict())
   cache[x] = isleaf(x) ? f(x) : fmap1(x -> fmap(f, x, cache = cache), x)
 end
 
-children(m) = functor(m)[1]
+trainable(m) = functor(m)[1]
 
 params!(p::Params, x::AbstractArray{<:Real}, seen = IdSet()) = push!(p, x)
 
 function params!(p::Params, x, seen = IdSet())
   x in seen && return
   push!(seen, x)
-  for child in children(x)
+  for child in trainable(x)
     params!(p, child, seen)
   end
 end

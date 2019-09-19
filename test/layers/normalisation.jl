@@ -42,7 +42,7 @@ end
   let m = BatchNorm(2), x = [1.0 3.0 5.0;
                              2.0 4.0 6.0]
 
-    @test_broken length(params(m)) == 2
+    @test length(params(m)) == 2
 
     @test m.β == [0, 0]  # initβ(2)
     @test m.γ == [1, 1]  # initγ(2)
@@ -113,7 +113,7 @@ end
   let m = InstanceNorm(2), sizes = (3, 2, 2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
-      @test_broken length(params(m)) == 2
+      @test length(params(m)) == 2
       x = Float64.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
@@ -198,7 +198,7 @@ end
   let m = GroupNorm(4,2), sizes = (3,4,2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
-      @test_broken length(params(m)) == 2
+      @test length(params(m)) == 2
       x = Float64.(x)
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)

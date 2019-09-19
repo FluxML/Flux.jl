@@ -134,6 +134,8 @@ BatchNorm(chs::Integer, λ = identity;
   BatchNorm(λ, initβ(chs), initγ(chs),
             zeros(chs), ones(chs), ϵ, momentum)
 
+trainable(bn::BatchNorm) = (bn.β, bn.γ)
+
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.β) ||
     error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
@@ -220,6 +222,8 @@ InstanceNorm(chs::Integer, λ = identity;
   InstanceNorm(λ, initβ(chs), initγ(chs),
             zeros(chs), ones(chs), ϵ, momentum)
 
+trainable(in::InstanceNorm) = (in.β, in.γ)
+
 function (in::InstanceNorm)(x)
   size(x, ndims(x)-1) == length(in.β) ||
     error("InstanceNorm expected $(length(in.β)) channels, got $(size(x, ndims(x)-1))")
@@ -302,6 +306,8 @@ GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   GroupNorm(G, λ, initβ(chs), initγ(chs),
             zeros(G,1), ones(G,1), ϵ, momentum)
+
+trainable(gn::GroupNorm) = (gn.β, gn.γ)
 
 function(gn::GroupNorm)(x)
   size(x,ndims(x)-1) == length(gn.β) || error("Group Norm expected $(length(gn.β)) channels, but got $(size(x,ndims(x)-1)) channels")
