@@ -100,15 +100,15 @@ Dense(W::AbstractMatrix, b, σ = identity) = Dense(W, b, σ, reverse(size(W)))
 Dense(p::Pair, σ = identity; kw...) = Dense(p.first, p.second, σ; kw...)
 
 function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  return Dense(initW(out, in), initb(out), σ, (in, out))
+               initW = glorot_uniform, initb = zeros, bias::Bool = true)
+  return Dense(initW(prod(out), prod(in)), bias ? initb(prod(out)) : false, σ, (in, out))
 end
 
 @treelike Dense (W,b,σ)
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  if a.inout isa Tuple{Integer, Integer}
+  if a.inout isa Tuple{Integer, Integer} && x isa AbstractVecOrMat
     return σ.(W*x .+ b)
   else
     in, out = a.inout
