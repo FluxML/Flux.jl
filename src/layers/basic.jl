@@ -101,15 +101,10 @@ Dense(p::Pair, σ = identity; kw...) = Dense(p.first, p.second, σ; kw...)
 
 function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identity;
                initW = glorot_uniform, initb = zeros)
-  Dense(param(initW(prod(out), prod(in))), param(initb(prod(out))), σ, (in, out))
+  return Dense(initW(out, in), initb(out), σ, (in, out))
 end
 
 @treelike Dense (W,b,σ)
-
-# function (a::Dense{F,S,T,D} where {F,S,T, D<:Tuple{Integer, Integer}})(x::AbstractArray)
-#   W, b, σ = a.W, a.b, a.σ
-#   σ.(W*x .+ b)
-# end
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
@@ -153,7 +148,7 @@ struct Diagonal{T}
 end
 
 Diagonal(in::Integer; initα = ones, initβ = zeros) =
-  Diagonal(param(initα(in)), param(initβ(in)))
+  Diagonal(initα(in), initβ(in))
 
 @treelike Diagonal
 
@@ -228,7 +223,6 @@ A 'ResNet'-type skip-connection with identity shortcut would simply be
     SkipConnection(layer, (a,b) -> a + b)
 ```
 """
-
 struct SkipConnection
   layers
   connection  #user can pass arbitrary connections here, such as (a,b) -> a + b

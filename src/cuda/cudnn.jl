@@ -1,12 +1,9 @@
 using CuArrays: libcudnn
 using CuArrays.CUDNN: @check, handle, cudnnStatus_t, cudnnTensorDescriptor_t,
   cudnnBatchNormMode_t, cudnnHandle_t, cudnnDataType, TensorDesc, FilterDesc
-
 import CuArrays.CUDAdrv: CuPtr, CU_NULL
 
 using LinearAlgebra
-
-import ..Flux: data
 
 mutable struct DropoutDesc
   ptr::Ptr{Nothing}
@@ -198,36 +195,8 @@ end
 
 # Flux Interface
 
-(BN::Flux.BatchNorm)(x::Union{CuParam{T,2},CuParam{T,4},CuParam{T,5}}, cache = nothing) where T<:Union{Float32, Float64} =
-  BN.λ.(batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum; cache = cache, alpha = 1, beta = 0, eps = BN.ϵ, training = BN.active))
+(BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}}, cache = nothing) where T<:Union{Float32, Float64} =
+  BN.λ.(batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum; cache = cache, alpha = 1, beta = 0, eps = BN.ϵ, training = Flux.istraining()))
 
-batchnorm(g::TrackedArray, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-batchnorm(g::TrackedArray, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-batchnorm(g::TrackedArray, b::CuArray{T}, x::TrackedArray, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-batchnorm(g::CuArray{T}, b::TrackedArray, x::CuArray{T}, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-batchnorm(g::CuArray{T}, b::TrackedArray, x::TrackedArray, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-batchnorm(g::TrackedArray, b::CuArray{T}, x::CuArray{T}, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-batchnorm(g::CuArray{T}, b::CuArray{T}, x::TrackedArray, running_mean::CuArray{T},
-          running_var::CuArray{T}, momentum; kw...) where T<:Union{Float32, Float64} =
-  track(batchnorm, g, b, x, running_mean, running_var, momentum; kw...)
-
-@grad batchnorm(g, b, x, running_mean, running_var, momentum; kw...) =
-  batchnorm(data.((g, b, x))..., running_mean, running_var, momentum; kw...), Δ -> (nobacksies(:batchnorm, ∇batchnorm(data.((g, b, x, Δ))..., running_mean, running_var, momentum; kw...))..., nothing, nothing, nothing)
+@adjoint batchnorm(g, b, x, running_mean, running_var, momentum; kw...) =
+  batchnorm(g, b, x, running_mean, running_var, momentum; kw...), Δ -> (∇batchnorm(g, b, x, Δ, running_mean, running_var, momentum; kw...)..., nothing, nothing, nothing)

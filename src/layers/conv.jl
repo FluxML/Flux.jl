@@ -14,11 +14,11 @@ Example: Applying Conv layer to a 1-channel input using a 2x2 window size,
 
     size = (2,2)
     in = 1
-    out = 16 
+    out = 16
     Conv((2, 2), 1=>16, relu)
 
-Data should be stored in WHCN order (width, height, # channels, # batches). 
-In other words, a 100×100 RGB image would be a `100×100×3×1` array, 
+Data should be stored in WHCN order (width, height, # channels, # batches).
+In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
@@ -42,7 +42,7 @@ end
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
      init = glorot_uniform,  stride = 1, pad = 0, dilation = 1) where N =
-  Conv(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+  Conv(init(k..., ch...), zeros(ch[2]), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 @treelike Conv
@@ -74,8 +74,10 @@ end
 
 Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
+
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,M,F,A,V}
@@ -97,7 +99,7 @@ end
 
 ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
               init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
-ConvTranspose(param(init(k..., reverse(ch)...)), param(zeros(ch[2])), σ,
+ConvTranspose(init(k..., reverse(ch)...), zeros(ch[2]), σ,
               stride = stride, pad = pad, dilation = dilation)
 
 @treelike ConvTranspose
@@ -169,8 +171,8 @@ function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ =
      init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N
   @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
   return DepthwiseConv(
-    param(init(k..., div(ch[2], ch[1]), ch[1])),
-    param(zeros(ch[2])),
+    init(k..., div(ch[2], ch[1]), ch[1]),
+    zeros(ch[2]),
     σ;
     stride = stride,
     pad = pad,
@@ -198,25 +200,26 @@ end
 
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
+
 """
     CrossCor(size, in=>out)
     CrossCor(size, in=>out, relu)
-  
+
 Standard cross convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
-    
+
 Example: Applying CrossCor layer to a 1-channel input using a 2x2 window size,
          giving us a 16-channel output. Output is activated with ReLU.
-    
+
     size = (2,2)
     in = 1
-    out = 16 
+    out = 16
     CrossCor((2, 2), 1=>16, relu)
-    
-Data should be stored in WHCN order (width, height, # channels, # batches). 
-In other words, a 100×100 RGB image would be a `100×100×3×1` array, 
+
+Data should be stored in WHCN order (width, height, # channels, # batches).
+In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
-    
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct CrossCor{N,M,F,A,V}
@@ -238,7 +241,7 @@ end
 
 CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
      init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N =
-  CrossCor(param(init(k..., ch...)), param(zeros(ch[2])), σ,
+  CrossCor(init(k..., ch...), zeros(ch[2]), σ,
        stride = stride, pad = pad, dilation = dilation)
 
 @treelike CrossCor

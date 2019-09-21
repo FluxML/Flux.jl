@@ -1,14 +1,6 @@
 # GPU Support
 
-## Installation
-
-To get GPU support for NVIDIA graphics cards, you need to install `CuArrays.jl`
-
-**Steps needed**
-
-1. Install [NVIDIA toolkit](https://developer.nvidia.com/cuda-downloads)
-2. Install [NVIDIA cuDNN library](https://developer.nvidia.com/cudnn)
-3. In Julia's terminal run `]add CuArrays`
+NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CuArrays](https://github.com/JuliaGPU/CuArrays.jl) readme.
 
 ## GPU Usage
 

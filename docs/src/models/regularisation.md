@@ -15,6 +15,8 @@ loss(x, y) = crossentropy(softmax(m(x)), y)
 We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
 
 ```julia
+using LinearAlgebra
+
 penalty() = norm(m.W) + norm(m.b)
 loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()
 ```
@@ -48,15 +50,17 @@ loss(rand(28^2), rand(10))
 One can also easily add per-layer regularisation via the `activations` function:
 
 ```julia
+julia> using Flux: activations
+
 julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)
-Chain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)
+Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
 
 julia> activations(c, rand(10))
 3-element Array{Any,1}:
- param([0.71068, 0.831145, 0.751219, 0.227116, 0.553074])
- param([0.0330606, -0.456104])
- param([0.61991, 0.38009])
+ Float32[0.84682214, 0.6704139, 0.42177814, 0.257832, 0.36255655]
+ Float32[0.1501253, 0.073269576]                                 
+ Float32[0.5192045, 0.48079553]                                  
 
 julia> sum(norm, ans)
-2.639678767773633 (tracked)
+2.1166067f0
 ```

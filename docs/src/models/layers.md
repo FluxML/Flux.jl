@@ -59,7 +59,6 @@ swish
 These layers don't affect the structure of the network but may improve training times or reduce overfitting.
 
 ```@docs
-Flux.testmode!
 BatchNorm
 Dropout
 AlphaDropout

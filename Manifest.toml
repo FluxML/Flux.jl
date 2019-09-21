@@ -46,9 +46,9 @@ version = "0.6.2"
 
 [[CUDAapi]]
 deps = ["Libdl", "Logging"]
-git-tree-sha1 = "9b2b4b71d6b7f946c9689bb4dea03ff92e3c7091"
+git-tree-sha1 = "e063efb91cfefd7e6afd92c435d01398107a500b"
 uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
-version = "1.1.0"
+version = "1.2.0"
 
 [[CUDAdrv]]
 deps = ["CUDAapi", "Libdl", "Printf"]
@@ -58,9 +58,9 @@ version = "3.1.0"
 
 [[CUDAnative]]
 deps = ["Adapt", "CUDAapi", "CUDAdrv", "DataStructures", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Printf", "TimerOutputs"]
-git-tree-sha1 = "0a00bef482b7c9127495c7f4a2a85e73b13b5af8"
+git-tree-sha1 = "52ae1ce10ebfa686e227655c47b19add89308623"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "2.3.0"
+version = "2.3.1"
 
 [[CodecZlib]]
 deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
@@ -147,9 +147,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[FFTW]]
 deps = ["AbstractFFTs", "BinaryProvider", "Conda", "Libdl", "LinearAlgebra", "Reexport", "Test"]
-git-tree-sha1 = "e1a479d3c972f20c9a70563eec740bbfc786f515"
+git-tree-sha1 = "6c5b420da0b8c12098048561b8d58f81adea506f"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "0.3.0"
+version = "1.0.1"
 
 [[FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays"]
@@ -170,9 +170,15 @@ version = "0.10.3"
 
 [[GPUArrays]]
 deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "StaticArrays", "Test"]
-git-tree-sha1 = "dd169c636d1d3656a9faca772f5bd7c226a61254"
+git-tree-sha1 = "77e27264276fe97a7e7fb928bf8999a145abc018"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "1.0.1"
+version = "1.0.3"
+
+[[IRTools]]
+deps = ["InteractiveUtils", "MacroTools", "Test"]
+git-tree-sha1 = "e23faa71b8f54c3fdc99b230b9c2906cafdddca5"
+uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
+version = "0.2.3"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -192,9 +198,9 @@ version = "0.7.2"
 
 [[LLVM]]
 deps = ["CEnum", "Libdl", "Printf", "Unicode"]
-git-tree-sha1 = "52cfea426bd248a427aace7d88eb5d45b84ea297"
+git-tree-sha1 = "4a05f742837779a00bd8c9a18da6817367c4245d"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "1.2.0"
+version = "1.3.0"
 
 [[LibGit2]]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
@@ -226,10 +232,9 @@ uuid = "e89f7d12-3494-54d1-8411-f7d8b9ae1f27"
 version = "0.5.0"
 
 [[Missings]]
-deps = ["SparseArrays", "Test"]
-git-tree-sha1 = "f0719736664b4358aa9ec173077d4285775f8007"
+git-tree-sha1 = "29858ce6c8ae629cf2d733bffa329619a1c843d0"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.4.1"
+version = "0.4.2"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -254,12 +259,12 @@ version = "1.1.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "db2b35dedab3c0e46dc15996d170af07a5ab91c9"
+git-tree-sha1 = "ef0af6c8601db18c282d092ccbd2f01f3f0cd70b"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "0.3.6"
+version = "0.3.7"
 
 [[Pkg]]
-deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
+deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[Printf]]
@@ -314,10 +319,10 @@ deps = ["LinearAlgebra", "Random"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialFunctions]]
-deps = ["BinDeps", "BinaryProvider", "Libdl", "Test"]
-git-tree-sha1 = "0b45dc2e45ed77f445617b99ff2adf0f5b0f23ea"
+deps = ["BinDeps", "BinaryProvider", "Libdl"]
+git-tree-sha1 = "3bdd374b6fd78faf0119b8c5d538788dbf910c6e"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "0.7.2"
+version = "0.8.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
@@ -350,12 +355,6 @@ git-tree-sha1 = "dfcdbbfb2d0370716c815cbd6f8a364efb6f42cf"
 uuid = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 version = "0.5.6"
 
-[[Tracker]]
-deps = ["Adapt", "DiffRules", "ForwardDiff", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Printf", "Random", "Requires", "SpecialFunctions", "Statistics", "Test"]
-git-tree-sha1 = "1aa443d3b4bfa91a8aec32f169a479cb87309910"
-uuid = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
-version = "0.2.3"
-
 [[TranscodingStreams]]
 deps = ["Random", "Test"]
 git-tree-sha1 = "7c53c35547de1c5b9d46a4797cf6d8253807108c"
@@ -386,3 +385,19 @@ deps = ["BinaryProvider", "Libdl", "Printf"]
 git-tree-sha1 = "580ce62b6c14244916cc28ad54f8a2e2886f843d"
 uuid = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 version = "0.8.3"
+
+[[Zygote]]
+deps = ["DiffRules", "FFTW", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
+git-tree-sha1 = "38241b40ebd8748bcacad5e6c7ba3ab3cc7a15c9"
+repo-rev = "master"
+repo-url = "https://github.com/FluxML/Zygote.jl.git"
+uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
+version = "0.3.4"
+
+[[ZygoteRules]]
+deps = ["MacroTools"]
+git-tree-sha1 = "c4c29b30b8ff3be13d4244e78be7df2a42bc54d0"
+repo-rev = "master"
+repo-url = "https://github.com/FluxML/ZygoteRules.jl.git"
+uuid = "700de1a5-db45-46bc-99cf-38207098b444"
+version = "0.2.0"
