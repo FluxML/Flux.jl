@@ -147,15 +147,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[FFTW]]
 deps = ["AbstractFFTs", "BinaryProvider", "Conda", "Libdl", "LinearAlgebra", "Reexport", "Test"]
-<<<<<<< HEAD
-git-tree-sha1 = "03f8776fbdae28c20c0d1d2ae4e090cd1dfcd247"
-uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.0.0"
-=======
 git-tree-sha1 = "6c5b420da0b8c12098048561b8d58f81adea506f"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 version = "1.0.1"
->>>>>>> upstream/master
 
 [[FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays"]
@@ -176,15 +170,9 @@ version = "0.10.3"
 
 [[GPUArrays]]
 deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "StaticArrays", "Test"]
-<<<<<<< HEAD
-git-tree-sha1 = "b5009ac44b141ded5e6f04c4db83807970f56e91"
-uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "1.0.2"
-=======
 git-tree-sha1 = "77e27264276fe97a7e7fb928bf8999a145abc018"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 version = "1.0.3"
->>>>>>> upstream/master
 
 [[IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
