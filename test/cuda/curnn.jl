@@ -1,5 +1,14 @@
 using Flux, CuArrays, Test
-using Flux: forward
+using Flux: pullback
+
+@testset for R in [RNN, GRU, LSTM]
+  m = R(10, 5) |> gpu
+  x = gpu(rand(10))
+  (m̄,) = gradient(m -> sum(m(x)), m)
+  Flux.reset!(m)
+  θ = gradient(() -> sum(m(x)), params(m))
+  @test collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
+end
 
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM], batch_size in (1, 5)
@@ -13,8 +22,8 @@ using Flux: forward
       rand(10, batch_size)
     cux = gpu(x)
 
-    y, back = forward((r, x) -> (r(x)), rnn, x)
-    cuy, cuback = forward((r, x) -> (r(x)), curnn, cux)
+    y, back = pullback((r, x) -> (r(x)), rnn, x)
+    cuy, cuback = pullback((r, x) -> (r(x)), curnn, cux)
 
     @test y ≈ collect(cuy)
     @test haskey(Flux.CUDA.descs, curnn.cell)
