@@ -24,8 +24,7 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex
 
-children(c::Chain) = c.layers
-mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
+functor(c::Chain) = c.layers, ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
@@ -106,7 +105,7 @@ function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identit
   return Dense(W, b, σ, (in, out))
 end
 
-@treelike Dense (W,b,σ)
+@functor Dense (W,b,σ)
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
@@ -152,7 +151,7 @@ end
 Diagonal(in::Integer; initα = ones, initβ = zeros) =
   Diagonal(initα(in), initβ(in))
 
-@treelike Diagonal
+@functor Diagonal
 
 function (a::Diagonal)(x)
   α, β = a.α, a.β
@@ -205,7 +204,7 @@ function Maxout(f, n_alts)
   return Maxout(over)
 end
 
-@treelike Maxout
+@functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
@@ -230,7 +229,7 @@ struct SkipConnection
   connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
-@treelike SkipConnection
+@functor SkipConnection
 
 function (skip::SkipConnection)(input)
   #We apply the layers to the input and return the result of the application of the layers and the original input

@@ -38,7 +38,7 @@ function (m::Recur)(xs...)
   return y
 end
 
-@treelike Recur cell, init
+@functor Recur cell, init
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -52,7 +52,8 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
 
     rnn.state = hidden(rnn.cell)
 """
-reset!(m) = prefor(x -> x isa Recur && (x.state = x.init), m)
+reset!(m::Recur) = (m.state = m.init)
+reset!(m) = foreach(reset!, functor(m)[1])
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
@@ -79,7 +80,7 @@ end
 
 hidden(m::RNNCell) = m.h
 
-@treelike RNNCell
+@functor RNNCell
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
@@ -127,7 +128,7 @@ end
 
 hidden(m::LSTMCell) = (m.h, m.c)
 
-@treelike LSTMCell
+@functor LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
@@ -168,7 +169,7 @@ end
 
 hidden(m::GRUCell) = m.h
 
-@treelike GRUCell
+@functor GRUCell
 
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")

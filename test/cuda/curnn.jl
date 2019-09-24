@@ -13,7 +13,7 @@ end
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM], batch_size in (1, 5)
     rnn = R(10, 5)
-    curnn = mapleaves(gpu, rnn)
+    curnn = fmap(gpu, rnn)
 
     Flux.reset!(rnn)
     Flux.reset!(curnn)

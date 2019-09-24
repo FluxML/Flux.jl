@@ -83,7 +83,6 @@ end
 
   # Self-referential array. Just want params, no stack overflow pls.
   r = Any[nothing,m]
-  Flux.children(a::Vector{Any}) = Tuple(a)
   r[1] = r
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5,)]
 end
