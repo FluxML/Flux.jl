@@ -5,47 +5,10 @@ variables:
   CI_IMAGE_TAG: 'cuda'
 
 include:
-  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v4/common.yml'
-
-.flux:
-  extends: .test
-  script:
-    - julia -e 'using InteractiveUtils;
-                versioninfo()'
-    - mkdir $JULIA_DEPOT_PATH # Pkg3.jl#325
-    - julia --project -e 'using Pkg;
-                          Pkg.instantiate();
-                          Pkg.build();
-                          Pkg.test(; coverage=true);'
-
-test:v1.0:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.0'
-
-test:v1.1:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.1'
-
-test:v1.2:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.2'
-
-test:v1.3:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.3'
-
-test:v1.0:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.0'
+  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v3/common.yml'
+  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v3/test_v1.0.yml'
+  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v3/test_v1.1.yml'
+  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v3/test_dev.yml'
 
 test:dev:
-  extends: .flux
-  variables:
-    CI_VERSION_TAG: 'dev'
-
   allow_failure: true
