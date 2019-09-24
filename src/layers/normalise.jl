@@ -82,7 +82,7 @@ end
 LayerNorm(h::Integer) =
   LayerNorm(Diagonal(h))
 
-@treelike LayerNorm
+@functor LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x))
 
@@ -134,6 +134,8 @@ BatchNorm(chs::Integer, λ = identity;
   BatchNorm(λ, initβ(chs), initγ(chs),
             zeros(chs), ones(chs), ϵ, momentum)
 
+trainable(bn::BatchNorm) = (bn.β, bn.γ)
+
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.β) ||
     error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
@@ -166,11 +168,7 @@ function (BN::BatchNorm)(x)
   end
 end
 
-children(BN::BatchNorm) =
-  (BN.λ, BN.β, BN.γ, BN.μ, BN.σ², BN.ϵ, BN.momentum)
-
-mapchildren(f, BN::BatchNorm) =  # e.g. mapchildren(cu, BN)
-  BatchNorm(BN.λ, f(BN.β), f(BN.γ), f(BN.μ), f(BN.σ²), BN.ϵ, BN.momentum)
+@functor BatchNorm
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(join(size(l.β), ", "))")
@@ -224,6 +222,8 @@ InstanceNorm(chs::Integer, λ = identity;
   InstanceNorm(λ, initβ(chs), initγ(chs),
             zeros(chs), ones(chs), ϵ, momentum)
 
+trainable(in::InstanceNorm) = (in.β, in.γ)
+
 function (in::InstanceNorm)(x)
   size(x, ndims(x)-1) == length(in.β) ||
     error("InstanceNorm expected $(length(in.β)) channels, got $(size(x, ndims(x)-1))")
@@ -261,11 +261,7 @@ function (in::InstanceNorm)(x)
   end
 end
 
-children(in::InstanceNorm) =
-  (in.λ, in.β, in.γ, in.μ, in.σ², in.ϵ, in.momentum)
-
-mapchildren(f, in::InstanceNorm) =  # e.g. mapchildren(cu, in)
-  InstanceNorm(in.λ, f(in.β), f(in.γ), f(in.μ), f(in.σ²), in.ϵ, in.momentum)
+@functor InstanceNorm
 
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(join(size(l.β), ", "))")
@@ -310,6 +306,8 @@ GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   GroupNorm(G, λ, initβ(chs), initγ(chs),
             zeros(G,1), ones(G,1), ϵ, momentum)
+
+trainable(gn::GroupNorm) = (gn.β, gn.γ)
 
 function(gn::GroupNorm)(x)
   size(x,ndims(x)-1) == length(gn.β) || error("Group Norm expected $(length(gn.β)) channels, but got $(size(x,ndims(x)-1)) channels")
@@ -360,11 +358,7 @@ function(gn::GroupNorm)(x)
   end
 end
 
-children(gn::GroupNorm) =
-  (gn.λ, gn.β, gn.γ, gn.μ, gn.σ², gn.ϵ, gn.momentum)
-
-mapchildren(f, gn::GroupNorm) =  # e.g. mapchildren(cu, BN)
-  GroupNorm(gn.G,gn.λ, f(gn.β), f(gn.γ), f(gn.μ), f(gn.σ²), gn.ϵ, gn.momentum)
+@functor GroupNorm
 
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(join(size(l.β), ", "))")

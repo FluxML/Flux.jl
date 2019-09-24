@@ -45,7 +45,7 @@ Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
   Conv(init(k..., ch...), zeros(ch[2]), σ,
        stride = stride, pad = pad, dilation = dilation)
 
-@treelike Conv
+@functor Conv
 
 function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
@@ -102,7 +102,7 @@ ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity
 ConvTranspose(init(k..., reverse(ch)...), zeros(ch[2]), σ,
               stride = stride, pad = pad, dilation = dilation)
 
-@treelike ConvTranspose
+@functor ConvTranspose
 
 function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
     # Calculate size of "input", from ∇conv_data()'s perspective...
@@ -180,7 +180,7 @@ function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ =
   )
 end
 
-@treelike DepthwiseConv
+@functor DepthwiseConv
 
 function (c::DepthwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
@@ -244,7 +244,7 @@ CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
   CrossCor(init(k..., ch...), zeros(ch[2]), σ,
        stride = stride, pad = pad, dilation = dilation)
 
-@treelike CrossCor
+@functor CrossCor
 
 function crosscor(x, w, ddims::DenseConvDims)
   ddims = DenseConvDims(ddims, F=true)
