@@ -7,7 +7,7 @@ variables:
 include:
   - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v4/common.yml'
 
-.test:
+.flux:
   extends: .test
   script:
     - julia -e 'using InteractiveUtils;
@@ -18,11 +18,34 @@ include:
                           Pkg.build();
                           Pkg.test(; coverage=true);'
 
-include:
-  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v4/test_v1.1.yml'
-  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v4/test_v1.2.yml'
-  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v4/test_v1.3.yml'
-  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v4/test_dev.yml'
+test:v1.0:
+   extends: .flux
+   variables:
+     CI_VERSION_TAG: 'v1.0'
+
+test:v1.1:
+   extends: .flux
+   variables:
+     CI_VERSION_TAG: 'v1.1'
+
+test:v1.2:
+   extends: .flux
+   variables:
+     CI_VERSION_TAG: 'v1.2'
+
+test:v1.3:
+   extends: .flux
+   variables:
+     CI_VERSION_TAG: 'v1.3'
+
+test:v1.0:
+   extends: .flux
+   variables:
+     CI_VERSION_TAG: 'v1.0'
 
 test:dev:
+  extends: .flux
+  variables:
+    CI_VERSION_TAG: 'dev'
+
   allow_failure: true
