@@ -100,8 +100,8 @@ Dense(W::AbstractMatrix, b, σ = identity) = Dense(W, b, σ, reverse(size(W)))
 Dense(p::Pair, σ = identity; kw...) = Dense(p.first, p.second, σ; kw...)
 
 function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identity;
-               initW = glorot_uniform, initb = zeros, bias::Bool = true)
-  return Dense(initW(prod(out), prod(in)), bias ? initb(prod(out)) : false, σ, (in, out))
+               initW = glorot_uniform, initb = zeros)
+  return Dense(initW(prod(out), prod(in)), initb(prod(out)), σ, (in, out))
 end
 
 @treelike Dense (W,b,σ)
