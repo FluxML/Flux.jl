@@ -92,7 +92,7 @@ struct Dense{F,S,T,D}
   W::S
   b::T
   σ::F
-  inout::D
+  shapes::D
 end
 
 Dense(W::AbstractMatrix, b, σ = identity) = Dense(W, b, σ, reverse(size(W)))
@@ -101,17 +101,19 @@ Dense(p::Pair, σ = identity; kw...) = Dense(p.first, p.second, σ; kw...)
 
 function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identity;
                initW = glorot_uniform, initb = zeros)
-  return Dense(initW(prod(out), prod(in)), initb(prod(out)), σ, (in, out))
+  W = initW(prod(out), prod(in))
+  b = initb(prod(out))
+  return Dense(W, b, σ, (in, out))
 end
 
 @treelike Dense (W,b,σ)
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  if a.inout isa Tuple{Integer, Integer} && x isa AbstractVecOrMat
+  if a.shapes isa Tuple{Integer, Integer} && x isa AbstractVecOrMat
     return σ.(W*x .+ b)
   else
-    in, out = a.inout
+    in, out = a.shapes
     xin = reshape(x, prod(ntuple(d -> size(x,d), length(in))), :)
     y = σ.(W*xin .+ b)
     return reshape(y, out..., ntuple(d -> size(x,length(in)+d), ndims(x)-length(in))...)
@@ -119,7 +121,7 @@ function (a::Dense)(x::AbstractArray)
 end
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", l.inout[1], " => ", l.inout[2])
+  print(io, "Dense(", l.shapes[1], " => ", l.shapes[2])
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
