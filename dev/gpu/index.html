@@ -15,13 +15,13 @@ predict(x) = W*x .+ b
 loss(x, y) = sum((predict(x) .- y).^2)
 
 x, y = cu(rand(5)), cu(rand(2)) # Dummy data
-loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>mapleaves</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia">d = Dense(10, 5, σ)
-d = mapleaves(cu, d)
+loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>fmap</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia">d = Dense(10, 5, σ)
+d = fmap(cu, d)
 d.W # Tracked CuArray
 d(cu(rand(10))) # CuArray output
 
 m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-m = mapleaves(cu, m)
+m = fmap(cu, m)
 d(cu(rand(10)))</code></pre><p>As a convenience, Flux provides the <code>gpu</code> function to convert models and data to the GPU if one is available. By default, it&#39;ll do nothing, but loading <code>CuArrays</code> will cause it to move data to the GPU instead.</p><pre><code class="language-julia">julia&gt; using Flux, CuArrays
 
 julia&gt; m = Dense(10,5) |&gt; gpu
