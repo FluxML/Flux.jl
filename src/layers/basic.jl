@@ -208,7 +208,6 @@ sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3))
 size(sm(x)) == (5, 5, 11, 10)
 ```
 """
-function SkipConnection end
 struct SkipConnection
   layers
   connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
