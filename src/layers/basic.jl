@@ -217,7 +217,7 @@ end
 
 function Base.show(io::IO, b::SkipConnection)
   print(io, "SkipConnection(")
-  b.layers isa Chain ? join(io, b.layers, ", ") : print(io, b.layers)
-  print(io, ",", b.connection)
-  print(io, ")")
+  b.layers isa Chain ? print(io, "Chain(", join(b.layers, ", "), "), ") :
+    print(io, b.layers, ", ")
+  print(io, b.connection, ")")
 end
