@@ -211,13 +211,9 @@ end
 @functor SkipConnection
 
 function (skip::SkipConnection)(input)
-  #We apply the layers to the input and return the result of the application of the layers and the original input
   skip.connection(skip.layers(input), input)
 end
 
 function Base.show(io::IO, b::SkipConnection)
-  print(io, "SkipConnection(")
-  b.layers isa Chain ? print(io, "Chain(", join(b.layers, ", "), "), ") :
-    print(io, b.layers, ", ")
-  print(io, b.connection, ")")
+  print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
