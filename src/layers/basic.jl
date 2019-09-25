@@ -190,9 +190,9 @@ function (mo::Maxout)(input::AbstractArray)
 end
 
 """
-    SkipConnection(layers...)
+    SkipConnection(layers, connection)
 
-Creates a Skip Connection, which constitutes of a layer or Chain of consecutive layers
+Creates a Skip Connection, which constitutes of a layer or `Chain` of consecutive layers
 and a shortcut connection linking the input to the block to the
 output through a user-supplied callable.
 
@@ -200,7 +200,7 @@ output through a user-supplied callable.
 
 A 'ResNet'-type skip-connection with identity shortcut would simply be
 ```julia
-    SkipConnection(layer, (a,b) -> a + b)
+    SkipConnection(layer, +)
 ```
 """
 struct SkipConnection
@@ -217,6 +217,7 @@ end
 
 function Base.show(io::IO, b::SkipConnection)
   print(io, "SkipConnection(")
-  join(io, b.layers, ", ")
+  b.layers isa Chain ? join(io, b.layers, ", ") : print(io, b.layers)
+  print(io, ",", b.connection)
   print(io, ")")
 end
