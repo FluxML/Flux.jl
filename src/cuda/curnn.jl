@@ -56,7 +56,7 @@ unbroadcast(x::AbstractArray, Δ) =
 coerce_cuda(x::Union{CuArray,Nothing}) = x
 coerce_cuda(x::Tuple) = coerce_cuda.(x)
 
-coerce_cuda(x) = x .+ CuArrays.fill(0)
+coerce_cuda(x::AbstractArray) = x .+ CuArrays.fill(0)
 
 function struct_grad!(cx::Zygote.Context, x, x̄)
   for f in fieldnames(typeof(x))
@@ -69,28 +69,23 @@ end
 
 for RNN in (CuRNN, CuGRU)
   @eval @adjoint function (m::$RNN{T})(h::CuArray{T}, x::CuArray{T}) where T <: Union{Float32,Float64}
-    reserve, (y, ho) = CUDNN.forwardTrain(desc(m), x, h)
+    (y, ho), back = CUDNN.pullback(desc(m), x, h)
     (ho, y), function (Δ)
-      dho, dy = coerce_cuda(Δ)
-      h_ = CUDNN.hBatch(x, h)
-      dx, dh = CUDNN.backwardData(descs[m], y, dy, dho, h_, reserve)
-      (dWi, dWh), db = CUDNN.backwardWeights(descs[m], x, h_, y, reserve)
-      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing))
-      (dm, unbroadcast(h, dh), dx)
+      dho, dy = coerce_cuda(Δ) # Support FillArrays etc.
+      m̄ = back(dy, dho)
+      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing))
+      (dm, unbroadcast(h, m̄.h), m̄.x)
     end
   end
 end
 
 @adjoint function (m::CuLSTM)((h, c)::Tuple{CuArray{T},CuArray{T}}, x::CuArray{T}) where T <: Union{Float32,Float64}
-  reserve, (y, ho, co) = CUDNN.forwardTrain(desc(m), x, h, c)
+  (y, ho, co), back = CUDNN.pullback(desc(m), x, h, c)
   ((ho, co), y), function (Δ)
-    dhc, dy = coerce_cuda(Δ)
+    dhc, dy = coerce_cuda(Δ) # Support FillArrays etc.
     dho, dco = dhc === nothing ? (nothing, nothing) : dhc
-    h_ = CUDNN.hBatch(x, h)
-    c_ = CUDNN.hBatch(x, c)
-    dx, dh, dc = CUDNN.backwardData(descs[m], y, dy, dho, dco, h_, c_, reserve)
-    (dWi, dWh), db = CUDNN.backwardWeights(descs[m], x, h_, y, reserve)
-    dm = struct_grad!(__context__, m, (Wi=transpose(dWi),Wh=transpose(dWh),b=db,h=nothing,c=nothing))
-    (dm, (unbroadcast(h, dh), unbroadcast(c, dc)), dx)
+    m̄ = back(dy, dho, dco)
+    dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing,c=nothing))
+    (dm, (unbroadcast(h, m̄.h), unbroadcast(c, m̄.c)), m̄.x)
   end
 end
