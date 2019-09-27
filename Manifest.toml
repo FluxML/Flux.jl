@@ -106,8 +106,8 @@ version = "4.0.0"
 
 [[CuArrays]]
 deps = ["AbstractFFTs", "Adapt", "CEnum", "CUDAapi", "CUDAdrv", "CUDAnative", "DataStructures", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "Requires", "SparseArrays", "TimerOutputs"]
-git-tree-sha1 = "cc22ec1abd471b4529883a8174944b513d75ab33"
-repo-rev = "tb/flux"
+git-tree-sha1 = "45683305171430978c17f496969dc9b6d3094a51"
+repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CuArrays.jl.git"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
 version = "1.3.0"
