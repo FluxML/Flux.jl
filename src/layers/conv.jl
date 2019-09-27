@@ -21,7 +21,7 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
 """
 struct Conv{N,M,F,A,V}
   σ::F
@@ -30,29 +30,34 @@ struct Conv{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
+  use_bias::Bool
 end
 
 function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-              stride = 1, pad = 0, dilation = 1) where {T,N}
+              stride = 1, pad = 0, dilation = 1, use_bias = true) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  return Conv(σ, w, b, stride, pad, dilation)
+  return Conv(σ, w, b, stride, pad, dilation, use_bias)
 end
 
 Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1) where N =
+     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1, use_bias = true) where N =
   Conv(init(k..., ch...), zeros(ch[2]), σ,
-       stride = stride, pad = pad, dilation = dilation)
+       stride = stride, pad = pad, dilation = dilation, use_bias = use_bias)
 
 @functor Conv
 
 function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
-  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  σ.(conv(x, c.weight, cdims) .+ b)
+  if c.use_bias
+    σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+    σ.(conv(x, c.weight, cdims) .+ b)
+  else
+    c.σ.(conv(x, c.weight, cdims))
+  end
 end
 
 function Base.show(io::IO, l::Conv)
