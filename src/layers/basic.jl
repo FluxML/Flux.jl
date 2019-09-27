@@ -99,9 +99,26 @@ Dense(W::AbstractMatrix, b, σ = identity) = Dense(W, b, σ, reverse(size(W)))
 Dense(p::Pair, σ = identity; kw...) = Dense(p.first, p.second, σ; kw...)
 
 function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  W = initW(prod(out), prod(in))
-  b = initb(prod(out))
+               init = glorot_uniform, bias = true,
+               initW = nothing, initb = nothing)
+
+  # depwarn as in https://github.com/FluxML/Flux.jl/pull/722
+  if initb === nothing
+    initb = init
+  else
+    depwarn("keyword argument `initb` is deprecated; use `init` or explicit `Dense(W,b)` to initialise")
+  end
+
+  # optional bias as in https://github.com/FluxML/Flux.jl/issues/868
+  b = (bias === true) ? initb(prod(out)) : bias
+
+  if initW === nothing
+    W = init(prod(out), prod(in))
+  else
+    depwarn("keyword argument `initW` is deprecated; use `init` or explicit `Dense(W,b)` to initialise")
+    W = initW(prod(out), prod(in))
+  end
+
   return Dense(W, b, σ, (in, out))
 end
 
