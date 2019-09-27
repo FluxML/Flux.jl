@@ -1,5 +1,5 @@
 using Flux, CuArrays, Test
-using Flux: forward
+using Flux: pullback
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input" begin
@@ -8,8 +8,8 @@ using Flux: forward
         cx = gpu(x)
         cm = gpu(m)
 
-        y, back = forward((m, x) -> m(x), m, x)
-        cy, cback = forward((m, x) -> m(x), cm, cx)
+        y, back = pullback((m, x) -> m(x), m, x)
+        cy, cback = pullback((m, x) -> m(x), cm, cx)
 
         @test cpu(cy) ≈ y
 
@@ -28,8 +28,8 @@ using Flux: forward
         cx = gpu(x)
         cm = gpu(m)
 
-        y, back = forward((m, x) -> m(x), m, x)
-        cy, cback = forward((m, x) -> m(x), cm, cx)
+        y, back = pullback((m, x) -> m(x), m, x)
+        cy, cback = pullback((m, x) -> m(x), cm, cx)
 
         @test cpu(cy) ≈ y
 
