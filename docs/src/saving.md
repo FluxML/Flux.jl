@@ -113,6 +113,6 @@ You can even store optimiser state alongside the model, to resume training
 exactly where you left off.
 
 ```julia
-opt = ADAM(params(model))
+opt = ADAM()
 @save "model-$(now()).bson" model opt
 ```
