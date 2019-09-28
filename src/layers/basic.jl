@@ -60,9 +60,11 @@ end
 using Base: depwarn
 
 """
-    Dense(in => out, σ = identity)
+    Dense(in => out, σ) = Dense(in, out, σ)
+    Dense(W::AbstractMatrix, b, σ)
 
-Creates a traditional `Dense` layer with parameters `W` and `b`.
+Creates a traditional `Dense` layer with parameters `W` and `b`,
+and by default `σ = identity`. This maps `x` to
 
     y = σ.(W * x .+ b)
 
@@ -72,12 +74,15 @@ as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 If `in` or `out` is a tuple of dimensions, then reshaping is inserted to allow input
 with `size(x) == (in..., batch...)`, and produce output `size(y) == (out..., batch...)`.
 
+Keyword `init = glorot_uniform` is the default function which generates `W` and `b`,
+and giving `bias = false` will omit the parameter `b`.
+
 ```julia
 julia> d = Dense(5, 2)
 Dense(5 => 2)
 
-julia> d(rand(5))
-Tracked 2-element Array{Float64,1}:
+julia> d(rand(Float32, 5))
+2-element Array{Float32,1}:
   0.00257447
   -0.00449443
 
