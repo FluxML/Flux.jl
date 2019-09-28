@@ -57,6 +57,7 @@ function activations(c::Chain, input)
   return rst
 end
 
+using Base: depwarn
 
 """
     Dense(in => out, σ = identity)
