@@ -112,7 +112,7 @@ function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identit
   if initb === nothing
     initb = init
   else
-    depwarn("keyword argument `initb` is deprecated; use `init` or explicit `Dense(W,b)` to initialise")
+    depwarn("keyword argument `initb` is deprecated; use `init` or explicit `Dense(W,b)` to initialise", :Dense)
   end
 
   # optional bias as in https://github.com/FluxML/Flux.jl/issues/868
@@ -121,7 +121,7 @@ function Dense(in::Union{Integer,Tuple}, out::Union{Integer,Tuple}, σ = identit
   if initW === nothing
     W = init(prod(out), prod(in))
   else
-    depwarn("keyword argument `initW` is deprecated; use `init` or explicit `Dense(W,b)` to initialise")
+    depwarn("keyword argument `initW` is deprecated; use `init` or explicit `Dense(W,b)` to initialise", :Dense)
     W = initW(prod(out), prod(in))
   end
 
