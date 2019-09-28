@@ -7,7 +7,7 @@ const ϵ = 1e-8
 # TODO: should use weak refs
 
 """
-    Descent() => Descent(η)
+    Descent(η)
     Defaults: η = 0.1
 
 Classic gradient descent optimiser with learning rate `η`.
@@ -24,7 +24,7 @@ function apply!(o::Descent, x, Δ)
 end
 
 """
-    Momentum() => Momentum(η, ρ)
+    Momentum(η, ρ)
     Defaults: η = 0.01, ρ = 0.9
 
 Gradient descent with learning rate `η` and momentum `ρ`.
@@ -45,7 +45,7 @@ function apply!(o::Momentum, x, Δ)
 end
 
 """
-    Nesterov() => Nesterov(η, ρ)
+    Nesterov(η, ρ)
     Defaults: η = 0.001, ρ = 0.9
 
 Gradient descent with learning rate  `η` and Nesterov momentum `ρ`.
@@ -67,7 +67,7 @@ function apply!(o::Nesterov, x, Δ)
 end
 
 """
-    RMSProp() => RMSProp(η, ρ)
+    RMSProp(η, ρ)
     Defaults: η = 0.001, ρ = 0.9
 
 [RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
@@ -90,7 +90,7 @@ function apply!(o::RMSProp, x, Δ)
 end
 
 """
-    ADAM() => ADAM(η, β)
+    ADAM(η, β)
     Defaults: η = 0.001, β = (0.9, 0.999)
 
 [ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
@@ -114,7 +114,7 @@ function apply!(o::ADAM, x, Δ)
 end
 
 """
-    RADAM() => RADAM(η, β)
+    RADAM(η, β)
     Defaults: η = 0.001, β = (0.9, 0.999)
 
 [RADAM](https://arxiv.org/pdf/1908.03265v1.pdf) optimiser (Rectified ADAM).
@@ -145,7 +145,7 @@ function apply!(o::RADAM, x, Δ)
 end
 
 """
-    AdaMax() => AdaMax(η, β)
+    AdaMax(η, β)
     Defaults: η = 0.001, β = (0.9, 0.999)
 
 [AdaMax](https://arxiv.org/abs/1412.6980v9) optimiser. Variant of ADAM based on
@@ -170,7 +170,7 @@ function apply!(o::AdaMax, x, Δ)
 end
 
 """
-    ADAGrad() => ADAGrad(η)
+    ADAGrad(η)
     Defaults: η = 0.1
 
 [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimiser.
@@ -191,7 +191,7 @@ function apply!(o::ADAGrad, x, Δ)
 end
 
 """
-    ADADelta() => ADADelta(ρ)
+    ADADelta(ρ)
     Defaults: ρ = 0.9
 
 [ADADelta](https://arxiv.org/abs/1212.5701) optimiser. Parameters don't need
@@ -214,7 +214,7 @@ function apply!(o::ADADelta, x, Δ)
 end
 
 """
-    AMSGrad() => AMSGrad(η, β)
+    AMSGrad(η, β)
     Defaults: η = 0.001, β = (0.9, 0.999)
 
 [AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ) optimiser. Parameters don't need
@@ -238,7 +238,7 @@ function apply!(o::AMSGrad, x, Δ)
 end
 
 """
-    NADAM() => NADAM(η, β)
+    NADAM(η, β)
     Defaults: η = 0.001, β = (0.9, 0.999)
 
 [NADAM](http://cs229.stanford.edu/proj2015/054_report.pdf) optimiser. Parameters don't need
@@ -263,8 +263,8 @@ function apply!(o::NADAM, x, Δ)
 end
 
 """
+    ADAMW(η, β, decay)
     Defaults: η = 0.001, β = (0.9, 0.999), decay = 0
-    ADAMW() => ADAMW(η, β, decay)
 
 [ADAMW](https://arxiv.org/abs/1711.05101) fixing weight decay regularization in Adam.
 """
@@ -299,7 +299,7 @@ function apply!(o::Optimiser, x, Δ)
 end
 
 """
-InvDecay() => InvDecay(γ)
+InvDecay(γ)
 Defaults: γ = 0.001
 
 Apply inverse time decay to an optimiser
@@ -354,7 +354,7 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-WeightDecay() => WeightDecay(wd)
+WeightDecay(wd)
 Defaults: wd = 0
 
 Decay the weight parameter by `wd`
