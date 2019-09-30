@@ -32,18 +32,6 @@ Flux.train!(loss, ps, data, opt)
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
 
-In-built loss functions:
-```@docs
-mse
-crossentropy
-logitcrossentropy
-binarycrossentropy
-logitbinarycrossentropy
-kldivergence
-poisson
-hinge
-```
-
 ## Datasets
 
 The `data` argument provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy data set with only one data point:

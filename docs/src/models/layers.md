@@ -66,3 +66,15 @@ AlphaDropout
 LayerNorm
 GroupNorm
 ```
+
+## In-built loss functions:
+```@docs
+mse
+crossentropy
+logitcrossentropy
+binarycrossentropy
+logitbinarycrossentropy
+kldivergence
+poisson
+hinge
+```
