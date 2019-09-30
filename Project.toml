@@ -1,35 +1,40 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.8.3"
+version = "0.9.0"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+CUDAapi = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+CuArrays = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Juno = "e5e0dc1b-0480-54bc-9374-aad01c23163d"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 
 [compat]
+CUDAapi = "1.1"
+CuArrays = "1.2"
 NNlib = "0.6"
-Tracker = "0.2"
-julia = "0.7, 1"
+Zygote = "0.3"
+julia = "1"
 
 [extras]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Documenter"]

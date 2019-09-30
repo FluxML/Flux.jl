@@ -75,4 +75,3 @@ https://isaacchanghau.github.io/post/loss_functions/
 poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
 
 hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
-

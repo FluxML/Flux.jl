@@ -38,24 +38,9 @@ function (m::Recur)(xs...)
   return y
 end
 
-@treelike Recur cell, init
+@functor Recur cell, init
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
-
-_truncate(x::AbstractArray) = Tracker.data(x)
-_truncate(x::Tuple) = _truncate.(x)
-
-"""
-    truncate!(rnn)
-
-Truncates the gradient of the hidden state in recurrent layers. The value of the
-state is preserved. See also `reset!`.
-
-Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
-
-    rnn.state = Tracker.data(rnn.state)
-"""
-truncate!(m) = prefor(x -> x isa Recur && (x.state = _truncate(x.state)), m)
 
 """
     reset!(rnn)
@@ -67,7 +52,8 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
 
     rnn.state = hidden(rnn.cell)
 """
-reset!(m) = prefor(x -> x isa Recur && (x.state = x.init), m)
+reset!(m::Recur) = (m.state = m.init)
+reset!(m) = foreach(reset!, functor(m)[1])
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
@@ -83,8 +69,8 @@ end
 
 RNNCell(in::Integer, out::Integer, σ = tanh;
         init = glorot_uniform) =
-  RNNCell(σ, param(init(out, in)), param(init(out, out)),
-          param(init(out)), param(zeros(out)))
+  RNNCell(σ, init(out, in), init(out, out),
+          init(out), zeros(out))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -94,7 +80,7 @@ end
 
 hidden(m::RNNCell) = m.h
 
-@treelike RNNCell
+@functor RNNCell
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
@@ -122,9 +108,9 @@ end
 
 function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform)
-  cell = LSTMCell(param(init(out*4, in)), param(init(out*4, out)), param(init(out*4)),
-                  param(zeros(out)), param(zeros(out)))
-  cell.b.data[gate(out, 2)] .= 1
+  cell = LSTMCell(init(out * 4, in), init(out * 4, out), init(out * 4),
+                  zeros(out), zeros(out))
+  cell.b[gate(out, 2)] .= 1
   return cell
 end
 
@@ -142,7 +128,7 @@ end
 
 hidden(m::LSTMCell) = (m.h, m.c)
 
-@treelike LSTMCell
+@functor LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
@@ -168,8 +154,8 @@ mutable struct GRUCell{A,V}
 end
 
 GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(param(init(out*3, in)), param(init(out*3, out)),
-          param(init(out*3)), param(zeros(out)))
+  GRUCell(init(out * 3, in), init(out * 3, out),
+          init(out * 3), zeros(out))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
@@ -183,7 +169,7 @@ end
 
 hidden(m::GRUCell) = m.h
 
-@treelike GRUCell
+@functor GRUCell
 
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")

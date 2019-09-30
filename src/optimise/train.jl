@@ -1,23 +1,19 @@
 using Juno
-import Flux.Tracker: Params, gradient, data, update!
-import Base.depwarn
+import Zygote: Params, gradient
+
+function update!(x::AbstractArray, x̄)
+  x .+= x̄
+  return x
+end
 
 function update!(opt, x, x̄)
-  update!(x, -apply!(opt, x, data(x̄)))
+  x .-= apply!(opt, x, x̄)
 end
 
 function update!(opt, xs::Params, gs)
   for x in xs
+    gs[x] == nothing && continue
     update!(opt, x, gs[x])
-  end
-end
-
-# Added as an internal API but everyone started using it.
-function _update_params!(opt, xs)
-  depwarn("`_update_params!` is deprecated, use `update!` instead.", :stop)
-  for x in xs
-    update!(opt, x, Tracker.grad(x))
-    x.tracker.grad = Tracker.zero_grad!(x.tracker.grad)
   end
 end
 
@@ -27,6 +23,7 @@ runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
 struct StopException <: Exception end
+
 """
     stop()
 
@@ -72,10 +69,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
         loss(d...)
       end
       update!(opt, ps, gs)
-      if cb() == :stop
-        depwarn("Use of `:stop` is deprecated; use `Flux.stop()` instead", :stop)
-        break
-      end
+      cb()
     catch ex
       if ex isa StopException
         break
