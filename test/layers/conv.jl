@@ -28,7 +28,11 @@ end
   op = bias(ip)
   @test sum(op) == prod(size(op))
 
-  bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3), use_bias = false)
+  bias = Conv(ones(Float32, 2, 2, 1, 3), Flux.ZeroType((3,)))
+  op = bias(ip)
+  @test sum(op) === 0.f0
+
+  bias = Conv(ones(Float32, 2, 2, 1, 3), nothing)
   op = bias(ip)
   @test sum(op) === 0.f0
 end

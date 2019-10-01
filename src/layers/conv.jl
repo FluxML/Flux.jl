@@ -21,7 +21,7 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct Conv{N,M,F,A,V}
   σ::F
@@ -30,34 +30,32 @@ struct Conv{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
-  use_bias::Bool
 end
 
-function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-              stride = 1, pad = 0, dilation = 1, use_bias = true) where {T,N}
+function Conv(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  return Conv(σ, w, b, stride, pad, dilation, use_bias)
+  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  return Conv(σ, w, b, stride, pad, dilation)
 end
 
-Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1, use_bias = true) where N =
-  Conv(init(k..., ch...), zeros(ch[2]), σ,
-       stride = stride, pad = pad, dilation = dilation, use_bias = use_bias)
+function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1, use_bias = true) where N
+  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2],))
+  Conv(init(k..., ch...), b, σ,
+       stride = stride, pad = pad, dilation = dilation)
+end
 
 @functor Conv
 
 function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  if c.use_bias
-    σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-    σ.(conv(x, c.weight, cdims) .+ b)
-  else
-    c.σ.(conv(x, c.weight, cdims))
-  end
+  σ.(conv(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::Conv)
@@ -83,7 +81,7 @@ Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -92,21 +90,23 @@ struct ConvTranspose{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
-  use_bias::Bool
 end
 
-function ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-              stride = 1, pad = 0, dilation = 1, use_bias = true) where {T,N}
+function ConvTranspose(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  return ConvTranspose(σ, w, b, stride, pad, dilation, use_bias)
+  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
-ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-              init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N =
-ConvTranspose(init(k..., reverse(ch)...), zeros(ch[2]), σ,
-              stride = stride, pad = pad, dilation = dilation, use_bias = use_bias)
+function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+              init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N
+  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2], ))
+  ConvTranspose(init(k..., reverse(ch)...), b, σ,
+              stride = stride, pad = pad, dilation = dilation)
+end
 
 @functor ConvTranspose
 
@@ -126,13 +126,9 @@ end
 
 function (c::ConvTranspose)(x::AbstractArray)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = conv_transpose_dims(c, x)
-  if c.use_bias
-    σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-    σ.(∇conv_data(x, c.weight, cdims) .+ b)
-  else
-    c.σ.(∇conv_data(x, c.weight, cdims))
-  end
+  σ.(∇conv_data(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::ConvTranspose)
@@ -158,7 +154,7 @@ Note that `out` must be an integer multiple of `in`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -167,41 +163,37 @@ struct DepthwiseConv{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
-  use_bias::Bool
 end
 
-function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-                       stride = 1, pad = 0, dilation = 1, use_bias = true) where {T,N}
+function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  return DepthwiseConv(σ, w, b, stride, pad, dilation, use_bias)
+  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
      init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N
   @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
+  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2], ))
   return DepthwiseConv(
     init(k..., div(ch[2], ch[1]), ch[1]),
-    zeros(ch[2]),
+    b,
     σ;
     stride = stride,
     pad = pad,
-    dilation = dilation,
-    use_bias = use_bias
+    dilation = dilation
   )
 end
 
 @functor DepthwiseConv
 
 function (c::DepthwiseConv)(x)
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = DepthwiseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  if c.use_bias
-    σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-    σ.(depthwiseconv(x, c.weight, cdims) .+ b)
-  else
-    c.σ.(depthwiseconv(x, c.weight, cdims))
-  end
+  σ.(depthwiseconv(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::DepthwiseConv)
@@ -236,7 +228,7 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
+Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct CrossCor{N,M,F,A,V}
   σ::F
@@ -245,21 +237,23 @@ struct CrossCor{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
-  use_bias::Bool
 end
 
-function CrossCor(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-              stride = 1, pad = 0, dilation = 1, use_bias = true) where {T,N}
+function CrossCor(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+              stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  return CrossCor(σ, w, b, stride, pad, dilation, use_bias)
+  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
-CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N =
-  CrossCor(init(k..., ch...), zeros(ch[2]), σ,
-       stride = stride, pad = pad, dilation = dilation, use_bias = use_bias)
+function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N
+  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2],))
+  CrossCor(init(k..., ch...), b, σ,
+       stride = stride, pad = pad, dilation = dilation)
+end
 
 @functor CrossCor
 
@@ -271,13 +265,9 @@ end
 function (c::CrossCor)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  if c.use_bias
-    σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-    σ.(crosscor(x, c.weight, cdims) .+ b)
-  else
-    c.σ.(crosscor(x, c.weight, cdims))
-  end
+  σ.(crosscor(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::CrossCor)
