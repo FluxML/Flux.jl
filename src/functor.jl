@@ -39,7 +39,7 @@ end
 
 trainable(m) = functor(m)[1]
 
-params!(p::Params, x::AbstractArray{<:Real}, seen = IdSet()) = push!(p, x)
+params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 
 function params!(p::Params, x, seen = IdSet())
   x in seen && return
