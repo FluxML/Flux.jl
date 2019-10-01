@@ -21,7 +21,7 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
 """
 struct Conv{N,M,F,A,V}
   σ::F
@@ -81,7 +81,7 @@ Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -154,7 +154,7 @@ Note that `out` must be an integer multiple of `in`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -228,7 +228,7 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `use_bias`, `pad`, `stride` and `dilation`.
 """
 struct CrossCor{N,M,F,A,V}
   σ::F
