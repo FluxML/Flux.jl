@@ -191,7 +191,6 @@ end
 
 Base.show(io::IO, x::ADADelta) = print_opt(io, x, x.rho)
 
-
 """
     AMSGrad(η = 0.001, β = (0.9, 0.999))
 
@@ -216,7 +215,6 @@ function apply!(o::AMSGrad, x, Δ)
 end
 
 Base.show(io::IO, x::AMSGrad) = print_opt(io, x, x.eta, x.beta)
-
 
 """
     NADAM(η = 0.001, β = (0.9, 0.999))
@@ -243,7 +241,6 @@ function apply!(o::NADAM, x, Δ)
 end
 
 Base.show(io::IO, x::NADAM) = print_opt(io, x, x.eta, x.beta)
-
 
 """
     ADAMW((η = 0.001, β = (0.9, 0.999), decay = 0)
