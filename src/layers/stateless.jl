@@ -50,11 +50,6 @@ function normalise(x::AbstractArray; dims=1)
   return (x .- μ′) ./ σ′
 end
 
-function normalise(x::AbstractArray, dims)
-  Base.depwarn("`normalise(x::AbstractArray, dims)` is deprecated, use `normalise(a, dims=dims)` instead.", :normalise)
-  normalise(x, dims = dims)
-end
-
 """
     Kullback Leibler Divergence(KL Divergence)
 KLDivergence is a measure of how much one probability distribution is different from the other.
@@ -74,4 +69,8 @@ https://isaacchanghau.github.io/post/loss_functions/
 """
 poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
 
+"""
+    Hinge Loss function
+Measures the loss given the prediction ŷ and true labels y(containing 1 or -1). This is usually used for measuring whether two inputs are similar or dissimilar
+"""
 hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
