@@ -25,16 +25,14 @@ allow_cuda() = parse(Bool, get(ENV, "FLUX_USE_CUDA", "true"))
 const consider_cuda = allow_cuda()
 
 using CUDAapi
-if consider_cuda && has_cuda()
+const use_cuda = consider_cuda && has_cuda()
+if use_cuda
   try
     using CuArrays
   catch
     @error "CUDA is installed, but CuArrays.jl fails to load. Please fix the issue, or load Flux with FLUX_USE_CUDA=false."
     rethrow()
   end
-  use_cuda() = true
-else
-  use_cuda() = false
 end
 
 include("utils.jl")
@@ -51,14 +49,14 @@ include("data/Data.jl")
 
 include("deprecations.jl")
 
-if use_cuda()
+if use_cuda
   include("cuda/cuda.jl")
 end
 
 function __init__()
   # check if the GPU usage conditions that are baked in the precompilation image
   # match the current situation, and force a recompilation if not.
-  if (allow_cuda() != consider_cuda) || (consider_cuda && has_cuda() != use_cuda())
+  if (allow_cuda() != consider_cuda) || (consider_cuda && has_cuda() != use_cuda)
       cachefile = if VERSION >= v"1.3-"
           Base.compilecache_path(Base.PkgId(Flux))
       else
