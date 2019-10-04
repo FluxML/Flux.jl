@@ -39,10 +39,10 @@ end
 
 @adjoint function Flux.fmap(f, x)
   op = Flux.fmap(f, x)
-  back = Flux.fmap(x) do x_
+  back(del) = Flux.fmap(del) do x_
     f'(x_)
   end
-  op, Δ -> (nothing, back)
+  op, Δ -> (nothing, back(Δ))
 end
 
 trainable(m) = functor(m)[1]
