@@ -37,6 +37,15 @@ function fmap(f, x; cache = IdDict())
   cache[x] = isleaf(x) ? f(x) : fmap1(x -> fmap(f, x, cache = cache), x)
 end
 
+@adjoint function Flux.fmap(f, x)
+  op = Flux.fmap(f, x)
+  back = Flux.fmap(x) do x_
+    f'(x_)
+  end
+  @show back
+  op, Δ -> (nothing, back)
+end
+
 trainable(m) = functor(m)[1]
 
 params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
