@@ -42,7 +42,6 @@ end
   back = Flux.fmap(x) do x_
     f'(x_)
   end
-  @show back
   op, Δ -> (nothing, back)
 end
 
