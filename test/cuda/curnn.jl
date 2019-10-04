@@ -13,7 +13,7 @@ end
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM], batch_size in (1, 5)
     rnn = R(10, 5)
-    curnn = mapleaves(gpu, rnn)
+    curnn = fmap(gpu, rnn)
 
     Flux.reset!(rnn)
     Flux.reset!(curnn)
@@ -22,8 +22,8 @@ end
       rand(10, batch_size)
     cux = gpu(x)
 
-    y, back = pullback((r, x) -> (r(x)), rnn, x)
-    cuy, cuback = pullback((r, x) -> (r(x)), curnn, cux)
+    y, back = pullback((r, x) -> r(x), rnn, x)
+    cuy, cuback = pullback((r, x) -> r(x), curnn, cux)
 
     @test y ≈ collect(cuy)
     @test haskey(Flux.CUDA.descs, curnn.cell)

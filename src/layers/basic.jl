@@ -24,8 +24,7 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex
 
-children(c::Chain) = c.layers
-mapchildren(f, c::Chain) = Chain(f.(c.layers)...)
+functor(c::Chain) = c.layers, ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
@@ -92,7 +91,7 @@ function Dense(in::Integer, out::Integer, σ = identity;
   return Dense(initW(out, in), initb(out), σ)
 end
 
-@treelike Dense
+@functor Dense
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
@@ -131,7 +130,7 @@ end
 Diagonal(in::Integer; initα = ones, initβ = zeros) =
   Diagonal(initα(in), initβ(in))
 
-@treelike Diagonal
+@functor Diagonal
 
 function (a::Diagonal)(x)
   α, β = a.α, a.β
@@ -184,24 +183,29 @@ function Maxout(f, n_alts)
   return Maxout(over)
 end
 
-@treelike Maxout
+@functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
 
 """
-    SkipConnection(layers...)
+    SkipConnection(layers, connection)
 
-Creates a Skip Connection, which constitutes of a layer or Chain of consecutive layers
-and a shortcut connection linking the input to the block to the
-output through a user-supplied callable.
+Creates a Skip Connection, of a layer or `Chain` of consecutive layers
+plus a shortcut connection. The connection function will combine the result of the layers
+with the original input, to give the final output.
 
-`SkipConnection` requires the output dimension to be the same as the input.
+The simplest 'ResNet'-type connection is just `SkipConnection(layer, +)`,
+and requires the output of the layers to be the same shape as the input.
+Here is a more complicated example:
+```
+m = Conv((3,3), 4=>7, pad=(1,1))
+x = ones(5,5,4,10);
+size(m(x)) == (5, 5, 7, 10)
 
-A 'ResNet'-type skip-connection with identity shortcut would simply be
-```julia
-    SkipConnection(layer, (a,b) -> a + b)
+sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3))
+size(sm(x)) == (5, 5, 11, 10)
 ```
 """
 struct SkipConnection
@@ -209,15 +213,12 @@ struct SkipConnection
   connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
-@treelike SkipConnection
+@functor SkipConnection
 
 function (skip::SkipConnection)(input)
-  #We apply the layers to the input and return the result of the application of the layers and the original input
   skip.connection(skip.layers(input), input)
 end
 
 function Base.show(io::IO, b::SkipConnection)
-  print(io, "SkipConnection(")
-  join(io, b.layers, ", ")
-  print(io, ")")
+  print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
