@@ -139,7 +139,6 @@ function throttle(f, timeout; leading=true, trailing=false)
   end
 end
 
-
 """
     @jit ...
 

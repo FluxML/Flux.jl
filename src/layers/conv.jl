@@ -259,7 +259,6 @@ function CrossCor(w::AbstractArray{T,N}, b::Union{Number, AbstractVector{T}}, σ
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
