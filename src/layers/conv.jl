@@ -42,7 +42,7 @@ forward pass.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+function Conv(w::AbstractArray{T,N}, b::Union{Number, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
@@ -105,19 +105,19 @@ struct ConvTranspose{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-function ConvTranspose(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function ConvTranspose(w::AbstractArray{T,N}, b::Union{Number, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-              init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N
-  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2], ))
-  ConvTranspose(init(k..., reverse(ch)...), b, σ,
+              init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
+              weight = convweight(k, reverse(ch), init = init), bias = convbias(ch[2])) where N
+  
+  ConvTranspose(weight, bias, σ,
               stride = stride, pad = pad, dilation = dilation)
 end
 
@@ -178,22 +178,24 @@ struct DepthwiseConv{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Number AbstractVector{T}}, σ = identity;
                        stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
+depthwiseconvweight(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
+  init = glorot_uniform) where N = init(k..., div(ch[2], ch[1]), ch[1])
+
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
+     weight = depthwiseconvweight(k, ch, init = init), bias = convbias(ch[2])) where N
   @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
-  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2], ))
   return DepthwiseConv(
-    init(k..., div(ch[2], ch[1]), ch[1]),
-    b,
+    weight,
+    bias,
     σ;
     stride = stride,
     pad = pad,
@@ -252,7 +254,7 @@ struct CrossCor{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-function CrossCor(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function CrossCor(w::AbstractArray{T,N}, b::Union{Number, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
@@ -262,9 +264,9 @@ function CrossCor(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVec
 end
 
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, use_bias = true) where N
-  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2],))
-  CrossCor(init(k..., ch...), b, σ,
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
+     weight = convweight(k, ch, init = init), bias = convbias(ch[2])) where N
+  CrossCor(weight, bias, σ,
        stride = stride, pad = pad, dilation = dilation)
 end
 
