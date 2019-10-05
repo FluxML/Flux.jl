@@ -32,19 +32,32 @@ struct Conv{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-function Conv(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+"""
+    Conv(weight::AbstractArray, bias::AbstractArray)
+    Conv(weight::AbstractArray, bias::AbstractArray, relu)
+
+Constructs the convolutional layer with user defined weight and bias arrays.
+All other behaviours of the Conv layer apply with regard to data order and
+forward pass.
+
+Takes the keyword arguments `pad`, `stride` and `dilation`.
+"""
+function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
+convweight(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}; init = glorot_uniform) = init(k..., ch...)
+const convbias = zeros
+
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1, use_bias = true) where N
-  b = use_bias ? zeros(ch[2]) : ZeroType((ch[2],))
-  Conv(init(k..., ch...), b, σ,
+     init = glorot_uniform,  stride = 1, pad = 0, dilation = 1,
+     weight = convweight(k, ch, init = init), bias = convbias(ch[2])) where N
+
+  Conv(weight, bias, σ,
        stride = stride, pad = pad, dilation = dilation)
 end
 
