@@ -179,7 +179,7 @@ struct DepthwiseConv{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Number AbstractVector{T}}, σ = identity;
+function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Number, AbstractVector{T}}, σ = identity;
                        stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
