@@ -50,7 +50,8 @@ function Conv(w::AbstractArray{T,N}, b::Union{Number, AbstractVector{T}}, σ = i
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
-convweight(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}; init = glorot_uniform) = init(k..., ch...)
+convweight(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
+  init = glorot_uniform) where N = init(k..., ch...)
 const convbias = zeros
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
