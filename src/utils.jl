@@ -139,6 +139,19 @@ function throttle(f, timeout; leading=true, trailing=false)
   end
 end
 
+import Base: +, reshape, size
+
+struct ZeroType{T} <: Number
+  size::T
+end
+
++(a::Number, ::ZeroType) = a
++(::ZeroType, a::Number) = a
+size(xs::ZeroType) = xs.size
+reshape(::ZeroType, args...) = ZeroType(args)
+@adjoint reshape(xs::ZeroType, dims...) =
+  ZeroType(dims), Δ -> (ZeroType(size(xs)), map(_ -> nothing, dims)...)
+
 """
     @jit ...
 
