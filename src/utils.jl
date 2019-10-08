@@ -141,16 +141,28 @@ end
 
 import Base: +, reshape, size
 
-struct ZeroType{T} <: Number
-  size::T
+"""
+    Zeros()
+    Zeros(T, a::Union{Colon, Int}...)
+
+Acts as a stand-in for an array of zeros that can be used during training which is
+ignored by the optimisers.
+"""
+struct Zeros{T} <: Number
+  size::Tuple
 end
 
-+(a::Number, ::ZeroType) = a
-+(::ZeroType, a::Number) = a
-size(xs::ZeroType) = xs.size
-reshape(::ZeroType, args...) = ZeroType(args)
-@adjoint reshape(xs::ZeroType, dims...) =
-  ZeroType(dims), Δ -> (ZeroType(size(xs)), map(_ -> nothing, dims)...)
+Zeros(::Type{T}, sz...) where T = Zeros{T}(sz)
+Zeros(sz::Union{Integer, Colon}...) = Zeros(Bool, sz...)
+
++(a::Number, ::Zeros) = a
++(::Zeros, a::Number) = a
+
+size(xs::Zeros) = xs.size
+reshape(z::Zeros{T}, args...) where T = Zeros(T, args...)
+
+@adjoint reshape(xs::Zeros{T}, dims...) where T =
+  Zeros(T, dims...), Δ -> (Zeros(T, size(xs)...), map(_ -> nothing, dims)...)
 
 """
     @jit ...

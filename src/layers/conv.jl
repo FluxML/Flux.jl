@@ -22,7 +22,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+Setting `bias` to `Flux.Zeros()` will switch bias off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
@@ -44,17 +44,17 @@ Constructs the convolutional layer with user defined weight and bias arrays.
 All other behaviours of the Conv layer apply with regard to data order and
 forward pass.
 
-Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+Setting `bias` to `nothing` or `Flux.Zeros()` would switch `bias` off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-function Conv(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function Conv(w::AbstractArray{T,N}, b::Union{Nothing, Zeros, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  b = b isa Nothing ? Zeros((size(w, ndims(w)), )) : b
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
@@ -114,7 +114,7 @@ Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+Setting `bias` to `Flux.Zeros()` will switch bias off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
@@ -136,17 +136,17 @@ Constructs the convolutional transpose layer with user defined weight and bias a
 All other behaviours of the ConvTranspose layer apply with regard to data order and
 forward pass.
 
-Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+Setting `bias` to `nothing` or `Flux.Zeros()` would switch `bias` off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-function ConvTranspose(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function ConvTranspose(w::AbstractArray{T,N}, b::Union{Nothing, Zeros, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  b = b isa Nothing ? Zeros((size(w, ndims(w)), )) : b
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
@@ -206,7 +206,7 @@ Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+Setting `bias` to `Flux.Zeros()` will switch bias off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
@@ -228,17 +228,17 @@ Constructs the `DepthwiseConv` layer with user defined weight and bias arrays.
 All other behaviours of the `DepthwiseConv` layer apply with regard to data order and
 forward pass.
 
-Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+Setting `bias` to `nothing` or `Flux.Zeros()` would switch `bias` off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Nothing, Zeros, AbstractVector{T}}, σ = identity;
                        stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  b = b isa Nothing ? Zeros((size(w, ndims(w)), )) : b
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
@@ -312,7 +312,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+Setting `bias` to `Flux.Zeros()` will switch bias off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
@@ -334,17 +334,17 @@ Constructs the standard cross convolutional layer with user defined weight and b
 arrays. All other behaviours of the CrossCor layer apply with regard to data order and
 forward pass.
 
-Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+Setting `bias` to `nothing` or `Flux.Zeros()` would switch `bias` off for the
 layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
-function CrossCor(w::AbstractArray{T,N}, b::Union{Nothing, ZeroType, AbstractVector{T}}, σ = identity;
+function CrossCor(w::AbstractArray{T,N}, b::Union{Nothing, Zeros, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  b = b isa Nothing ? ZeroType((size(w, ndims(w)), )) : b
+  b = b isa Nothing ? Zeros((size(w, ndims(w)), )) : b
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 

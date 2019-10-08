@@ -28,13 +28,13 @@ end
   op = bias(ip)
   @test sum(op) == prod(size(op))
 
-  bias = Conv((2,2), 1=>3, bias = Flux.ZeroType((3,)))
+  bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
   op = bias(ip)
   @test sum(op) === 0.f0
 
   # Train w/o bias and make sure no convergence happens
   # when only bias can be converged
-  bias = Conv((2, 2), 1=>3, bias = Flux.ZeroType((3,)));
+  bias = Conv((2, 2), 1=>3, bias = Flux.Zeros());
   ip = zeros(Float32, 28,28,1,1)
   op = zeros(Float32, 27,27,3,1) .+ 2.f0
   opt = Descent()
