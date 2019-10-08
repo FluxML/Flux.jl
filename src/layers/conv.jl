@@ -21,6 +21,10 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
+Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
+Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+layer.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct Conv{N,M,F,A,V}
@@ -39,6 +43,9 @@ end
 Constructs the convolutional layer with user defined weight and bias arrays.
 All other behaviours of the Conv layer apply with regard to data order and
 forward pass.
+
+Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
@@ -106,6 +113,10 @@ Standard convolutional transpose layer. `filter` should be a tuple like `(2, 2)`
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
+Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
+Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+layer.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct ConvTranspose{N,M,F,A,V}
@@ -124,6 +135,9 @@ end
 Constructs the convolutional transpose layer with user defined weight and bias arrays.
 All other behaviours of the ConvTranspose layer apply with regard to data order and
 forward pass.
+
+Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
@@ -191,6 +205,10 @@ Note that `out` must be an integer multiple of `in`.
 Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
+Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
+Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+layer.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct DepthwiseConv{N,M,F,A,V}
@@ -209,6 +227,9 @@ end
 Constructs the `DepthwiseConv` layer with user defined weight and bias arrays.
 All other behaviours of the `DepthwiseConv` layer apply with regard to data order and
 forward pass.
+
+Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
@@ -290,6 +311,10 @@ Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
+Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
+Setting `bias` to `Flux.ZeroType((out,))` will switch bias off for the
+layer.
+
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
 struct CrossCor{N,M,F,A,V}
@@ -308,6 +333,9 @@ end
 Constructs the standard cross convolutional layer with user defined weight and bias
 arrays. All other behaviours of the CrossCor layer apply with regard to data order and
 forward pass.
+
+Setting `bias` to `nothing` or `Flux.ZeroType((out,))` would switch `bias` off for the
+layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
