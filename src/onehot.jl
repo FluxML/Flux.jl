@@ -37,7 +37,7 @@ import Adapt: adapt, adapt_structure
 
 adapt_structure(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-if has_cuarrays()
+if use_cuda
   import .CuArrays: CuArray, cudaconvert
   import Base.Broadcast: BroadcastStyle, ArrayStyle
   BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = ArrayStyle{CuArray}()

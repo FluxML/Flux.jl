@@ -73,7 +73,7 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-const gpu_adaptor = if has_cuarrays()
+const gpu_adaptor = if use_cuda
   CuArrays.cu
 else
   identity
