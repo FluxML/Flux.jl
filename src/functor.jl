@@ -38,17 +38,10 @@ end
       x_ isa Nothing && return
       f'(x_)
     end
+    (;zip(keys(x), del)...)
   end
   map(f,x), Δ -> (nothing, back(Δ))
 end
-
-# @adjoint function fmap1(f, x)
-#   back(del) = fmap1(del) do x_
-#     x_ isa Nothing && return
-#     f'(x_)
-#   end
-#   fmap1(f, x), Δ -> (nothing, back(Δ))
-# end
 
 function fmap(f, x; cache = IdDict())
   haskey(cache, x) && return cache[x]
