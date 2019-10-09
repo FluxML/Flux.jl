@@ -32,19 +32,21 @@ function fmap1(f, x)
   re(map(f, func))
 end
 
+@adjoint function fmap1(f, x)
+  back(del) = fmap1(del) do x_
+    x_ isa Nothing && return
+    f'(x_)
+  end
+  fmap1(f, x), Δ -> (nothing, back(Δ))
+end
+
 function fmap(f, x; cache = IdDict())
   haskey(cache, x) && return cache[x]
   cache[x] = isleaf(x) ? f(x) : fmap1(x -> fmap(f, x, cache = cache), x)
 end
 
-@adjoint function Flux.fmap(f, x)
-  op = Flux.fmap(f, x)
-  back(del) = Flux.fmap(del) do x_
-    x_ isa Nothing && return
-    f'(x_)
-  end
-  op, Δ -> (nothing, back(Δ))
-end
+@adjoint haskey(cache, x) = false, _ -> nothing
+@adjoint isleaf(x) = isleaf(x), _ -> nothing
 
 trainable(m) = functor(m)[1]
 
