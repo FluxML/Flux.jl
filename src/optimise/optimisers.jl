@@ -7,13 +7,32 @@ const ϵ = 1e-8
 # TODO: should use weak refs
 
 """
-    Descent(η)
+# Descent
 
-    Calls to `Descent()` default with:
-      - learning rate (η): 0.1
-
+## Description
 Classic gradient descent optimiser with learning rate `η`.
-For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`.
+For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`
+
+## Constructors
+  - `Descent()`: Use the default learning rate (η), as described in the parameters section.
+
+  - `Descent(η)`: Provide a custom learning rate (η) to the Descent optimiser.
+
+## Parameters
+  - Learning rate (η): The amount by which the gradients are discounted before updating the weights. Defaults to `0.1`.
+
+## Example
+```julia-repl
+opt = Descent()
+
+ps = params(model)
+
+gs = gradient(ps) do
+  loss(x, y)
+end
+
+Flux.Optimise.update(opt, ps, gs)
+```
 """
 mutable struct Descent
   eta::Float64
