@@ -51,10 +51,10 @@ function normalise(x::AbstractArray; dims=1)
 end
 
 """
-    Kullback Leibler Divergence(KL Divergence)
+    kldivergence(ŷ, y)
 KLDivergence is a measure of how much one probability distribution is different from the other.
 It is always non-negative and zero only when both the distributions are equal everywhere.
-https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
+[KL Divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence).
 """
 function kldivergence(ŷ, y)
   entropy = sum(y .* log.(y)) *1 //size(y,2)
@@ -63,14 +63,15 @@ function kldivergence(ŷ, y)
 end
 
 """
-    Poisson Loss function
+    poisson(ŷ, y)
 Poisson loss function is a measure of how the predicted distribution diverges from the expected distribution.
-https://isaacchanghau.github.io/post/loss_functions/
+[Poisson Loss](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
 poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
 
 """
-    Hinge Loss function
-Measures the loss given the prediction ŷ and true labels y(containing 1 or -1). This is usually used for measuring whether two inputs are similar or dissimilar
+    hinge(ŷ, y)
+Measures the loss given the prediction ŷ and true labels y(containing 1 or -1). 
+[Hinge Loss](https://en.wikipedia.org/wiki/Hinge_loss).
 """
 hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
