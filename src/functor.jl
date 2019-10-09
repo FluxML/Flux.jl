@@ -32,13 +32,23 @@ function fmap1(f, x)
   re(map(f, func))
 end
 
-@adjoint function fmap1(f, x)
-  back(del) = fmap1(del) do x_
-    x_ isa Nothing && return
-    f'(x_)
+@adjoint function Base.map(f, x::NamedTuple)
+  function back(del)
+    del = map(del) do x_
+      x_ isa Nothing && return
+      f'(x_)
+    end
   end
-  fmap1(f, x), Δ -> (nothing, back(Δ))
+  map(f,x), Δ -> (nothing, back(Δ))
 end
+
+# @adjoint function fmap1(f, x)
+#   back(del) = fmap1(del) do x_
+#     x_ isa Nothing && return
+#     f'(x_)
+#   end
+#   fmap1(f, x), Δ -> (nothing, back(Δ))
+# end
 
 function fmap(f, x; cache = IdDict())
   haskey(cache, x) && return cache[x]
