@@ -19,6 +19,12 @@ import Flux: activations
     # numeric test should be put into testset of corresponding layer
   end
 
+  @testset "Activations" begin
+    c = Chain(Dense(3,5,relu), Dense(5,1,relu))
+    X = Float32.([1.0; 1.0; 1.0])
+    @test_nowarn gradient(()->Flux.activations(c, X)[2][1], params(c))
+  end
+
   @testset "Dense" begin
     @test  length(Dense(10, 5)(randn(10))) == 5
     @test_throws DimensionMismatch Dense(10, 5)(randn(1))
