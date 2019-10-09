@@ -31,6 +31,8 @@ applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 (c::Chain)(x) = applychain(c.layers, x)
 
+(c::Chain)(x, i) = extraChain(c.layers, x)[i]
+
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
 function Base.show(io::IO, c::Chain)
