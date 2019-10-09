@@ -66,7 +66,7 @@ LayerNorm
 GroupNorm
 ```
 
-## Loss functions:
+## Loss Functions
 ```@docs
 mse
 crossentropy
