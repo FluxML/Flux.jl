@@ -88,7 +88,7 @@ This is the basic definition of a Momentum update rule given by:
 $v = ρ * v - η * Δ$
 $w = w - v$
 
-The `apply!` defines the update rules for an optimsier `opt`, given the parameters and gradients. It returns the updated gradients usually. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
+The `apply!` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients usually. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
 
 Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully. In the future, it will also be delegating immutable update operations.
 
