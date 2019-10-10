@@ -94,7 +94,7 @@ Flux internally calls on this function via the `update!` function. It shares the
 
 ## Composing Optimisers
 
-Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimsers listed in it sequentially. Each optimiser produces a modified gradient
+Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
 ``julia
