@@ -9,7 +9,6 @@ const ϵ = 1e-8
 """
   Descent(η)
 
-## Description
 Classic gradient descent optimiser with learning rate `η`.
 For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`
 

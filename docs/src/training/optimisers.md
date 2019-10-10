@@ -66,14 +66,16 @@ Flux's optimsers are built around a `struct` that holds all the optimiser parame
 In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
 
 ```julia
-mutable struct Momentum{T,S,D}
-  eta::T
-  rho::S
-  velocity::D
+mutable struct Momentum
+  eta
+  rho
+  velocity
 end
+
+Momentum(eta::Real, rho::Real) = Momentum(eta, rho, IdDict())
 ```
 
-The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state. **Note that this behaviour is set to change in consequent versions of Flux**. We can now define the rule applied when this optimiser is invoked.
+The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state dictionary. Each parameter in our models will get an entry in there. We can now define the rule applied when this optimiser is invoked.
 
 ```julia
 function apply!(o::Momentum, x, Δ)
@@ -85,19 +87,22 @@ end
 ```
 
 This is the basic definition of a Momentum update rule given by:
-$v = ρ * v - η * Δ$
-$w = w - v$
+
+```math
+v = ρ * v - η * Δ
+w = w - v
+```
 
 The `apply!` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients usually. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
 
-Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully. In the future, it will also be delegating immutable update operations.
+Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully.
 
 ## Composing Optimisers
 
 Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
-``julia
+```julia
 opt = Optimiser(ExpDecay(0.001, 0.1, 1000, 1e-4), Descent())
 ```
 
