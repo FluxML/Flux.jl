@@ -4,9 +4,19 @@ using NNlib: logsoftmax, logσ
 
 mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
-function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
-  -sum(y .* log.(ŷ) .* weight) * 1 // size(y, 2)
+function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Nothing)
+  return -sum(y .* log.(ŷ)) * 1 // size(y, 2)
 end
+
+function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Number)
+  return -sum(y .* log.(ŷ)) .* weight * 1 // size(y, 2)
+end
+
+function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::AbstractVector)
+  return -sum(y .* log.(ŷ) .* weight) * 1 // size(y, 2)
+end
+
+crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight=nothing) = _crossentropy(ŷ, y, weight)
 
 function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1)
   return -sum(y .* logsoftmax(logŷ) .* weight) * 1 // size(y, 2)
