@@ -12,8 +12,8 @@ For stride > 1 the output shape depends on the type of convolution layer.
 """
 struct SamePad end
 
-calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*(N-2)), pad)
-function calc_padding(::SamePad, k, dilation, stride)
+calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
+function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Formula from Relationship 14 in http://deeplearning.net/software/theano_versions/dev/tutorial/conv_arithmetic.html
 
   # Effective kernel size, including dilation
