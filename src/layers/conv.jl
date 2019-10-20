@@ -308,6 +308,8 @@ end
 Max pooling layer. `k` stands for the size of the window for each dimension of the input.
 
 Takes the keyword arguments `pad` and `stride`.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride
 """
 struct MaxPool{N,M}
   k::NTuple{N,Int}
@@ -317,8 +319,7 @@ end
 
 function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = expand(Val(2*N), pad)
-
+  pad = calc_padding(pad, k, 1, stride)
   return MaxPool(k, pad, stride)
 end
 
@@ -337,6 +338,8 @@ end
 Mean pooling layer. `k` stands for the size of the window for each dimension of the input.
 
 Takes the keyword arguments `pad` and `stride`.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride
 """
 struct MeanPool{N,M}
     k::NTuple{N,Int}
@@ -346,7 +349,7 @@ end
 
 function MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = expand(Val(2*N), pad)
+  pad = calc_padding(pad, k, 1, stride)
   return MeanPool(k, pad, stride)
 end
 
