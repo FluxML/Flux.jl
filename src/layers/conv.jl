@@ -2,6 +2,28 @@ using NNlib: conv, ∇conv_data, depthwiseconv
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
+
+"""
+    SamePad
+
+Padding for convolutional layers will be calculated so that outputshape == inputshape when stride = 1.
+
+For stride > 1 the output shape depends on the type of convolution layer.
+"""
+struct SamePad end
+
+calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*(N-2)), pad)
+function calc_padding(::SamePad, k, dilation, stride)
+  #Formula from Relationship 14 in http://deeplearning.net/software/theano_versions/dev/tutorial/conv_arithmetic.html
+
+  # Effective kernel size, including dilation
+  k_eff = @. k + (k - 1) * (dilation - 1)
+  # How much total padding needs to be applied?
+  pad_amt = @. k_eff - 1
+  # In case amount of padding is odd we need to apply different amounts to each side.
+  return Tuple(mapfoldl(i -> [ceil(Int, i/2), i ÷ 2], vcat, pad_amt))
+end
+
 """
     Conv(size, in=>out)
     Conv(size, in=>out, relu)
@@ -22,6 +44,8 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride
 """
 struct Conv{N,M,F,A,V}
   σ::F
@@ -35,8 +59,8 @@ end
 function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
@@ -79,6 +103,8 @@ Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+
+Use `pad=SamePad()` to apply padding so that outputsize == stride * inputsize - stride + 1
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -92,8 +118,8 @@ end
 function ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
@@ -149,6 +175,8 @@ Data should be stored in WHCN order. In other words, a 100×100 RGB image would
 be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -162,8 +190,8 @@ end
 function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
                        stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
@@ -221,6 +249,8 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride
 """
 struct CrossCor{N,M,F,A,V}
   σ::F
@@ -234,8 +264,8 @@ end
 function CrossCor(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 

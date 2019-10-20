@@ -9,7 +9,7 @@ using MacroTools: @forward
 using Zygote: Params, @adjoint, gradient, pullback
 export gradient
 
-export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
+export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        SkipConnection, params, fmap, cpu, gpu, f32, f64
 

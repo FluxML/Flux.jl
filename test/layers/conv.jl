@@ -102,3 +102,20 @@ end
     true
   end
 end
+
+@testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
+  data = ones(Float32, (k .+ 3)..., 1,1)
+  l = ltype(k, 1=>1, pad=SamePad())
+  @test size(l(data)) == size(data)
+
+  l = ltype(k, 1=>1, pad=SamePad(), dilation = k .÷ 2)
+  @test size(l(data)) == size(data)
+
+  stride = 3
+  l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
+  if ltype == ConvTranspose
+    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2] .- stride .- 1
+  else
+    @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ stride)
+  end
+end
