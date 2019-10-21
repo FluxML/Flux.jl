@@ -442,14 +442,13 @@ function apply!(o::Optimiser, x, Δ)
 end
 
 """
-  InvDecay(γ)
+    InvDecay(γ)
 
 Applies inverse time decay to an optimiser
 
 ## Parameters
   - gamma (γ): Defaults to `0.001`
 
-## Example
 ```julia
   Optimiser(InvDecay(..), Opt(..))
 ```
@@ -470,7 +469,7 @@ function apply!(o::InvDecay, x, Δ)
 end
 
 """
-  ExpDecay(eta, decay, decay_step, clip)
+    ExpDecay(eta, decay, decay_step, clip)
 
 Discount the learning rate `eta` by `decay` every `decay_step` till a minimum of `clip`.
 
@@ -509,7 +508,7 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-  WeightDecay(wd)
+    WeightDecay(wd)
 
 Decays the weight by `wd`
 
