@@ -38,7 +38,7 @@ model = Chain(
 
 loss(x, y) = crossentropy(model(x), y)
 
-Flux.train!(loss, data, ADAM(...))
+Flux.train!(loss, params(model), data, ADAM(...))
 ```
 
 Yet you can easily strip away the layers, and directly write the mathematics for your problem. Flux will seamlessly take gradients of any Julia code, so your model looks just like the paper.
