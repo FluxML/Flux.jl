@@ -27,7 +27,7 @@ gs = gradient(ps) do
   loss(x, y)
 end
 
-Flux.Optimise.update(opt, ps, gs)
+Flux.Optimise.update!(opt, ps, gs)
 ```
 """
 mutable struct Descent
