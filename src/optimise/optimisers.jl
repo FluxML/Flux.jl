@@ -27,7 +27,7 @@ gs = gradient(ps) do
   loss(x, y)
 end
 
-Flux.Optimise.update(opt, ps, gs)
+Flux.Optimise.update!(opt, ps, gs)
 ```
 """
 mutable struct Descent
@@ -230,7 +230,7 @@ Variant of ADAM based on ∞-norm.
 
 ## Examples
 ```julia
-opt = AdaMax() # uses default η and β	
+opt = AdaMax() # uses default η and β
 
 opt = AdaMax(0.001, (0.9, 0.995))
 ```
@@ -405,7 +405,7 @@ Variant of ADAM defined by fixing weight decay regularization.
 ## Examples
 ```julia
 opt = ADAMW() # uses default η, β and decay
-opt = ADAMW(0.001, (0.89, 0.995), 0.1) 
+opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 
 ## References
