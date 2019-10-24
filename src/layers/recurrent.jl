@@ -1,5 +1,5 @@
 gate(h, n) = (1:h) .+ h*(n-1)
-gate(x::AbstractVector, h, n) = x[gate(h,n)]
+gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
 
 # Stateful recurrence
