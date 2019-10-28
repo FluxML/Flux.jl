@@ -3,27 +3,28 @@ language: julia
 
 os:
   - linux
-  # - osx
 
 julia:
   - 1.1
+  - 1.2
   - nightly
 
 matrix:
   allow_failures:
     - julia: nightly
+  fast_finish: true
+
+codecov: true
+
+coveralls: true
 
 jobs:
   include:
-    - stage: "Documentation"
+    - stage: Documentation
       julia: 1.0
-      os: linux
-      script:
-        - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
-                                               Pkg.instantiate()'
-        - julia --project=docs/ docs/make.jl
+      script: julia --project=docs -e '
+          using Pkg;
+          Pkg.develop(PackageSpec(path=pwd()));
+          Pkg.instantiate();
+          include("docs/make.jl");'
       after_success: skip
-
-## uncomment the following lines to override the default test script
-script:
- - julia --color=yes -e 'using Pkg; Pkg.activate(); Pkg.instantiate(); Pkg.test()'

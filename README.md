@@ -1,8 +1,14 @@
 <p align="center">
-<img width="400px" src="https://raw.githubusercontent.com/FluxML/fluxml.github.io/master/logo.png"/>
+    <img width="50%" src="https://fluxml.ai/logo.png" />
 </p>
 
-[![Build Status](https://travis-ci.org/FluxML/Flux.jl.svg?branch=master)](https://travis-ci.org/FluxML/Flux.jl) [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) [![](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://slackinvite.julialang.org/) [![DOI](https://joss.theoj.org/papers/10.21105/joss.00602/status.svg)](https://doi.org/10.21105/joss.00602)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://fluxml.github.io/Flux.jl/dev/)
+[![Build Status](https://travis-ci.com/FluxML/Flux.jl.svg?branch=master)](https://travis-ci.com/FluxML/Flux.jl)
+[![Codecov](https://codecov.io/gh/FluxML/Flux.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/FluxML/Flux.jl)
+[![Coveralls](https://coveralls.io/repos/github/FluxML/Flux.jl/badge.svg?branch=master)](https://coveralls.io/github/FluxML/Flux.jl?branch=master)
+[![Chat](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://slackinvite.julialang.org/)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.00602/status.svg)](https://doi.org/10.21105/joss.00602)
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
