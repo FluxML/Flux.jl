@@ -53,7 +53,7 @@ end
   @test y[3,:] isa CuArray
 end
 
-if CuArrays.libcudnn != nothing
+if CuArrays.has_cudnn()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")
