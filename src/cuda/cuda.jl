@@ -1,9 +1,9 @@
 module CUDA
 
+using ..Flux: has_cudnn
 using ..CuArrays
 
-if CuArrays.has_cudnn()
-  using CuArrays: CUDNN
+if has_cudnn()
   include("curnn.jl")
   include("cudnn.jl")
 else

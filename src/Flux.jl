@@ -26,6 +26,7 @@ const consider_cuda = allow_cuda()
 
 using CUDAapi
 const use_cuda = consider_cuda && has_cuda()
+has_cudnn() = find_cuda_library("cudnn", find_toolkit()) !== nothing
 if use_cuda
   try
     using CuArrays
