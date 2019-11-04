@@ -39,8 +39,6 @@ include("data/Data.jl")
 
 include("deprecations.jl")
 
-include("cuda/cuda.jl")
-
 function __init__()
   if !CUDAdrv.functional()
     @warn "CUDA available, but CUDAdrv.jl failed to load"
@@ -48,10 +46,16 @@ function __init__()
     @warn "CUDA available, but no GPU detected"
   elseif !CuArrays.functional()
     @warn "CUDA GPU available, but CuArrays.jl failed to load"
-  elseif !CuArrays.has_cudnn()
-    @warn "CUDA GPU available, but CuArrays.jl did not find libcudnn"
   else
     use_cuda[] = true
+
+    # FIXME: this functionality should be conditional at run time by checking `use_cuda`
+    #        (or even better, get moved to CuArrays.jl as much as possible)
+    if CuArrays.has_cudnn()
+      include(joinpath(@__DIR__, "cuda/cuda.jl"))
+    else
+      @warn "CUDA GPU available, but CuArrays.jl did not find libcudnn. Some functionality will not be available."
+    end
   end
 end
 
