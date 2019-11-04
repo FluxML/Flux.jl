@@ -18,16 +18,6 @@ include:
                           Pkg.build();
                           Pkg.test(; coverage=true);'
 
-test:v1.0:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.0'
-
-test:v1.1:
-   extends: .flux
-   variables:
-     CI_VERSION_TAG: 'v1.1'
-
 test:v1.2:
    extends: .flux
    variables:
