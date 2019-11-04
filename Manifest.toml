@@ -51,16 +51,16 @@ uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
 version = "1.2.0"
 
 [[CUDAdrv]]
-deps = ["CUDAapi", "Libdl", "Printf"]
-git-tree-sha1 = "9ce99b5732c70e06ed97c042187baed876fb1698"
+deps = ["CEnum", "Printf"]
+git-tree-sha1 = "90fa52c4acb2fadf7be48b0d73d9865c16ab9908"
 uuid = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
-version = "3.1.0"
+version = "4.0.1"
 
 [[CUDAnative]]
-deps = ["Adapt", "CUDAapi", "CUDAdrv", "DataStructures", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Printf", "TimerOutputs"]
-git-tree-sha1 = "52ae1ce10ebfa686e227655c47b19add89308623"
+deps = ["Adapt", "CEnum", "CUDAapi", "CUDAdrv", "DataStructures", "InteractiveUtils", "LLVM", "Libdl", "Printf", "TimerOutputs"]
+git-tree-sha1 = "5afb86987488ce2f31f9e5426f551d2480d17666"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "2.3.1"
+version = "2.5.0"
 
 [[CodecZlib]]
 deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
@@ -105,12 +105,10 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.0.0"
 
 [[CuArrays]]
-deps = ["AbstractFFTs", "Adapt", "CEnum", "CUDAapi", "CUDAdrv", "CUDAnative", "DataStructures", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "Requires", "SparseArrays", "TimerOutputs"]
-git-tree-sha1 = "45683305171430978c17f496969dc9b6d3094a51"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CuArrays.jl.git"
+deps = ["AbstractFFTs", "Adapt", "CEnum", "CUDAapi", "CUDAdrv", "CUDAnative", "DataStructures", "GPUArrays", "Libdl", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "Requires", "SparseArrays", "TimerOutputs"]
+git-tree-sha1 = "5eaae49796a3fec88cb2ad5f3f206f4bbb6598bc"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
-version = "1.3.0"
+version = "1.4.0"
 
 [[DataAPI]]
 git-tree-sha1 = "8903f0219d3472543fc4b2f5ebaf675a07f817c0"
@@ -171,10 +169,10 @@ uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.3"
 
 [[GPUArrays]]
-deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "StaticArrays", "Test"]
-git-tree-sha1 = "77e27264276fe97a7e7fb928bf8999a145abc018"
+deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "Test"]
+git-tree-sha1 = "8d74ced24448c52b539a23d107bd2424ee139c0f"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "1.0.3"
+version = "1.0.4"
 
 [[IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
@@ -200,9 +198,9 @@ version = "0.7.2"
 
 [[LLVM]]
 deps = ["CEnum", "Libdl", "Printf", "Unicode"]
-git-tree-sha1 = "4a05f742837779a00bd8c9a18da6817367c4245d"
+git-tree-sha1 = "3680605a77f20bec59eea00389eb7aafe973abbb"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "1.3.0"
+version = "1.3.1"
 
 [[LibGit2]]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
