@@ -29,7 +29,7 @@ ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 CUDAapi = "1.1"
 CuArrays = "1.2"
 NNlib = "0.6"
-Zygote = "0.3"
+Zygote = "0.4"
 julia = "1"
 
 [extras]
