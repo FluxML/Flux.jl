@@ -73,13 +73,7 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-const gpu_adaptor = if use_cuda
-  CuArrays.cu
-else
-  identity
-end
-
-gpu(x) = fmap(gpu_adaptor, x)
+gpu(x) = use_cuda[] ? fmap(CuArrays.cu, x) : x
 
 # Precision
 
