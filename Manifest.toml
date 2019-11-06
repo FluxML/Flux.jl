@@ -58,9 +58,9 @@ version = "4.0.2"
 
 [[CUDAnative]]
 deps = ["Adapt", "CEnum", "CUDAapi", "CUDAdrv", "DataStructures", "InteractiveUtils", "LLVM", "Libdl", "Printf", "TimerOutputs"]
-git-tree-sha1 = "861a1a9e9741cc55c973a4688079f467a72337a7"
+git-tree-sha1 = "f4a95ba943507f1586c29208957141fc49d9d718"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "2.5.1"
+version = "2.5.2"
 
 [[CodecZlib]]
 deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
@@ -176,9 +176,9 @@ version = "1.0.4"
 
 [[IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
-git-tree-sha1 = "e23faa71b8f54c3fdc99b230b9c2906cafdddca5"
+git-tree-sha1 = "72421971e60917b8cd7737f9577c4f0f87eab306"
 uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
-version = "0.2.3"
+version = "0.3.0"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -389,16 +389,12 @@ version = "0.8.3"
 
 [[Zygote]]
 deps = ["DiffRules", "FFTW", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "38241b40ebd8748bcacad5e6c7ba3ab3cc7a15c9"
-repo-rev = "master"
-repo-url = "https://github.com/FluxML/Zygote.jl.git"
+git-tree-sha1 = "b2e42a21dc3d1ecd3cbe8c83a454ca56fbf423c4"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.3.4"
+version = "0.4.0"
 
 [[ZygoteRules]]
 deps = ["MacroTools"]
-git-tree-sha1 = "c4c29b30b8ff3be13d4244e78be7df2a42bc54d0"
-repo-rev = "master"
-repo-url = "https://github.com/FluxML/ZygoteRules.jl.git"
+git-tree-sha1 = "b3b4882cc9accf6731a08cc39543fbc6b669dca8"
 uuid = "700de1a5-db45-46bc-99cf-38207098b444"
 version = "0.2.0"
