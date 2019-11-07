@@ -41,7 +41,7 @@ include("deprecations.jl")
 
 function __init__()
   if !CUDAdrv.functional()
-    @warn "CUDA available, but CUDAdrv.jl failed to load"
+    # nothing to do here, the user doesn't have CUDA
   elseif length(devices()) == 0
     @warn "CUDA available, but no GPU detected"
   elseif !CuArrays.functional()
