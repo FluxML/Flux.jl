@@ -28,6 +28,8 @@ cm = gpu(m)
 x = [1,2,3]
 cx = gpu(x)
 @test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
+@test Flux.crossentropy(x,x, weight=1.0) ≈ Flux.crossentropy(cx,cx, weight=1.0)
+@test Flux.crossentropy(x,x, weight=[1.0;2.0;3.0]) ≈ Flux.crossentropy(cx,cx, weight=cu([1.0;2.0;3.0]))
 
 xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)
@@ -51,8 +53,10 @@ end
   @test y[3,:] isa CuArray
 end
 
-if CuArrays.libcudnn != nothing
+if CuArrays.has_cudnn()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")
+else
+  @warn "CUDNN unavailable, not testing GPU DNN support"
 end

@@ -5,7 +5,7 @@ version = "0.9.0"
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-CUDAapi = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
+CUDAdrv = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 CuArrays = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
@@ -23,13 +23,12 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
-ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 
 [compat]
-CUDAapi = "1.1"
-CuArrays = "1.2"
+CUDAdrv = "4.0.1"
+CuArrays = "1.4.2"
 NNlib = "0.6"
-Zygote = "0.3"
+Zygote = "0.4"
 julia = "1"
 
 [extras]

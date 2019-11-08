@@ -19,7 +19,7 @@ include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")
 
-if isdefined(Flux, :CUDA)
+if Flux.use_cuda[]
   include("cuda/cuda.jl")
 else
   @warn "CUDA unavailable, not testing GPU support"

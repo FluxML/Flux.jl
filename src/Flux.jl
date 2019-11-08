@@ -21,19 +21,9 @@ export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
 
 
-allow_cuda() = parse(Bool, get(ENV, "FLUX_USE_CUDA", "true"))
-const consider_cuda = allow_cuda()
-
-using CUDAapi
-const use_cuda = consider_cuda && has_cuda()
-if use_cuda
-  try
-    using CuArrays
-  catch
-    @error "CUDA is installed, but CuArrays.jl fails to load. Please fix the issue, or load Flux with FLUX_USE_CUDA=false."
-    rethrow()
-  end
-end
+ENV["CUDA_INIT_SILENT"] = true
+using CUDAdrv, CuArrays
+const use_cuda = Ref(false)
 
 include("utils.jl")
 include("onehot.jl")
@@ -49,21 +39,23 @@ include("data/Data.jl")
 
 include("deprecations.jl")
 
-if use_cuda
-  include("cuda/cuda.jl")
-end
-
 function __init__()
-  # check if the GPU usage conditions that are baked in the precompilation image
-  # match the current situation, and force a recompilation if not.
-  if (allow_cuda() != consider_cuda) || (consider_cuda && has_cuda() != use_cuda)
-      cachefile = if VERSION >= v"1.3-"
-          Base.compilecache_path(Base.PkgId(Flux))
-      else
-          abspath(DEPOT_PATH[1], Base.cache_file_entry(Base.PkgId(Flux)))
-      end
-      rm(cachefile)
-      error("Your set-up changed, and Flux.jl needs to be reconfigured. Please load the package again.")
+  if !CUDAdrv.functional()
+    @warn "CUDA available, but CUDAdrv.jl failed to load"
+  elseif length(devices()) == 0
+    @warn "CUDA available, but no GPU detected"
+  elseif !CuArrays.functional()
+    @warn "CUDA GPU available, but CuArrays.jl failed to load"
+  else
+    use_cuda[] = true
+
+    # FIXME: this functionality should be conditional at run time by checking `use_cuda`
+    #        (or even better, get moved to CuArrays.jl as much as possible)
+    if CuArrays.has_cudnn()
+      include(joinpath(@__DIR__, "cuda/cuda.jl"))
+    else
+      @warn "CUDA GPU available, but CuArrays.jl did not find libcudnn. Some functionality will not be available."
+    end
   end
 end
 
