@@ -1,6 +1,6 @@
 # Training
 
-To actually train a model we need three things:
+To actually train a model we need three things, in addition to the tracked parameters that will be fitted:
 
 * A *objective function*, that evaluates how well a model is doing given some input data.
 * A collection of data points that will be provided to the objective function.
@@ -11,6 +11,7 @@ With these we can call `Flux.train!`:
 ```julia
 Flux.train!(objective, params, data, opt)
 ```
+At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!`. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately (see below) provides more flexibility, and the possibility of optimizing the calculations.
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
 
