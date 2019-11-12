@@ -11,7 +11,6 @@ With these we can call `Flux.train!`:
 ```julia
 Flux.train!(objective, params, data, opt)
 ```
-At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!`. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately (see below) provides more flexibility, and the possibility of optimizing the calculations.
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
 
@@ -32,6 +31,8 @@ Flux.train!(loss, ps, data, opt)
 ```
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
+
+At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
 
 ## Datasets
 
