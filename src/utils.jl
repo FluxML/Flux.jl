@@ -215,7 +215,7 @@ end
 Base.:+(a::Zeros, b::AbstractArray) = b
 Base.:-(a::Zeros, b::AbstractArray) = -b
 Base.:*(a::Union{AbstractArray{<:Number}, Zeros}, b::Zeros) = zero(a)
-Base.:*(a::Zeros, b::AbstractArray) = zero(a)
+Base.:*(a::Zeros, b::AbstractArray) = zero(b)
 
 # Hook into broadcasting API - to allow using as a regular array
 Base.BroadcastStyle(::Type{<:Zeros}) = Broadcast.ArrayStyle{Zeros}()
