@@ -31,7 +31,7 @@ applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 (c::Chain)(x) = applychain(c.layers, x)
 
-(c::Chain)(x, i) = extraChain(c.layers, x)[i]
+(c::Chain)(x) = extraChain(c.layers, x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
@@ -60,7 +60,7 @@ function extraChain(fs::Tuple, x)
     return (res, extraChain(Base.tail(fs), res)...)
 end
 
-extraChain(::Tuple{}, x) = []
+extraChain(::Tuple{}, x) = ()
 
 
 
