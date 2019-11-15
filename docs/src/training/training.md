@@ -3,7 +3,7 @@
 To actually train a model we need four things:
 
 * A *objective function*, that evaluates how well a model is doing given some input data.
-* The parameters of the model.
+* The trainable parameters of the model.
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
