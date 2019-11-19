@@ -21,8 +21,7 @@ export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
 
 
-ENV["CUDA_INIT_SILENT"] = true
-using CUDAdrv, CuArrays
+using CuArrays
 const use_cuda = Ref(false)
 
 include("utils.jl")
@@ -40,12 +39,8 @@ include("data/Data.jl")
 include("deprecations.jl")
 
 function __init__()
-  if !CUDAdrv.functional()
-    @warn "CUDA available, but CUDAdrv.jl failed to load"
-  elseif length(devices()) == 0
-    @warn "CUDA available, but no GPU detected"
-  elseif !CuArrays.functional()
-    @warn "CUDA GPU available, but CuArrays.jl failed to load"
+  if !CuArrays.functional()
+    # nothing to do here, and either CuArrays or one of its dependencies will have warned
   else
     use_cuda[] = true
 
@@ -54,7 +49,7 @@ function __init__()
     if CuArrays.has_cudnn()
       include(joinpath(@__DIR__, "cuda/cuda.jl"))
     else
-      @warn "CUDA GPU available, but CuArrays.jl did not find libcudnn. Some functionality will not be available."
+      @warn "CuArrays.jl did not find libcudnn. Some functionality will not be available."
     end
   end
 end
