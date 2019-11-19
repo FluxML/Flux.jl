@@ -1,6 +1,12 @@
 # Arrays
-glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
-glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
+nfan(n_in, n_out) = n_in, n_out #fan-in, fan-out
+nfan(dims...) = prod(dims[1:end-2]) .* (dims[end-1], dims[end]) #In case of convolution kernels
+
+glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+
+he_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / first(nfan(dims...)))
+he_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / first(nfan(dims...)))
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
