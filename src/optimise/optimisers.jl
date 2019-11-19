@@ -349,10 +349,10 @@ AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
 
 function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, v̂t = get!(o.state, x, (fill(ϵ, size(x)), fill(ϵ, size(x)), fill(ϵ, size(x))))
+  mt, vt, v̂t = get!(o.state, x, (fill!(zero(x), ϵ), fill!(zero(x), ϵ), fill!(zero(x), ϵ)))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ ^ 2
-  @. v̂t = max.(v̂t, vt)
+  @. v̂t = max(v̂t, vt)
   @. Δ = η * mt / (√v̂t + ϵ)
 end
 
