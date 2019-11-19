@@ -73,7 +73,10 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-gpu(x) = use_cuda[] ? fmap(CuArrays.cu, x) : x
+gpu(x) = use_cuda[] ? fmap(CuArrays.cu, x) :
+        (use_rocm[] ? fmap(ROCArrays.roc, x) : x)
+cugpu(x) = use_cuda[] ? fmap(CuArrays.cu, x) : x
+rocgpu(x) = use_rocm[] ? fmap(ROCArrays.roc, x) : x
 
 # Precision
 

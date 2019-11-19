@@ -1,4 +1,5 @@
 using CuArrays
+using ROCArrays
 using NNlib: logsoftmax, logσ
 
 # Cost functions
@@ -36,8 +37,9 @@ Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerica
 """
 binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
-# Re-definition to fix interaction with CuArrays.
+# Re-definition to fix interaction with CuArrays and ROCArrays
 CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+ROCArrays.@rocfunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
     logitbinarycrossentropy(logŷ, y)

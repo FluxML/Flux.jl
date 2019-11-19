@@ -11,7 +11,7 @@ export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       SkipConnection, params, fmap, cpu, gpu, f32, f64
+       SkipConnection, params, fmap, cpu, gpu, cugpu, rocgpu, f32, f64
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -23,6 +23,8 @@ export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
 
 using CuArrays
 const use_cuda = Ref(false)
+using ROCArrays
+const use_rocm = Ref(false)
 
 include("utils.jl")
 include("onehot.jl")
@@ -51,6 +53,12 @@ function __init__()
     else
       @warn "CuArrays.jl did not find libcudnn. Some functionality will not be available."
     end
+  end
+  if !ROCArrays.functional()
+    # nothing to do here, and either ROCArrays or one of its dependencies will have warned
+  else
+    use_rocm[] = true
+    include(joinpath(@__DIR__, "rocm/rocm.jl"))
   end
 end
 
