@@ -25,8 +25,8 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-CUDAdrv = "4.0.1"
-CuArrays = "1.4.2"
+CUDAdrv = "4.0.3"
+CuArrays = "1.4.3"
 NNlib = "0.6"
 Zygote = "0.4"
 julia = "1"
