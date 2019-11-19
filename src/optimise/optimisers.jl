@@ -283,7 +283,7 @@ ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
-  acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(x)
+  acc = get!(o.acc, x, fill!(zero(x), ϵ))::typeof(x)
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
