@@ -1,6 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, he_uniform, he_normal,
-  stack, unstack
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, stack, unstack
 using StatsBase: var
 using Random
 using Test
@@ -74,18 +73,6 @@ end
         v = init(dims...)
         fan_in, fan_out = nfan(dims...)
         σ2 = 2 / (fan_in + fan_out)
-        @test 0.9σ2 < var(v) < 1.1σ2
-      end
-    end
-  end
-
-  @testset "he" begin
-    # he_uniform and he_normal should both yield a kernel with variance ≈ 2/fan_in
-    for dims ∈ [(1000,), (100, 100), (100, 400), (2, 3, 32, 64), (2, 3, 4, 32, 64)]
-      for init ∈ [he_uniform, he_normal]
-        v = init(dims...)
-        fan_in, fan_out = nfan(dims...)
-        σ2 = 2 / fan_out
         @test 0.9σ2 < var(v) < 1.1σ2
       end
     end
