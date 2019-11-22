@@ -39,6 +39,12 @@ include("data/Data.jl")
 include("deprecations.jl")
 
 function __init__()
+  precompiling = ccall(:jl_generating_output, Cint, ()) != 0
+
+  # we don't want to include the CUDA module when precompiling,
+  # or we could end up replacing it at run time (triggering a warning)
+  precompiling && return
+
   if !CuArrays.functional()
     # nothing to do here, and either CuArrays or one of its dependencies will have warned
   else
