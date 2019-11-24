@@ -55,9 +55,8 @@ end
   y = Conv((3,3), 1 => 1)(x)
   x_hat = ConvTranspose((3, 3), 1 => 1)(y)
   @test size(x_hat) == size(x)
-  m = ConvTranspose((3,3), 2=>1)
-  x = rand(10,10,2,1)
 
+  m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
