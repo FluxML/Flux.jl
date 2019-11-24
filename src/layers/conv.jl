@@ -118,6 +118,8 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
     )
 end
 
+@nograd conv_transpose_dims
+
 function (c::ConvTranspose)(x::AbstractArray)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)

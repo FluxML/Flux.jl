@@ -6,7 +6,7 @@ using Base: tail
 using Zygote, MacroTools, Juno, Reexport, Statistics, Random
 using MacroTools: @forward
 @reexport using NNlib
-using Zygote: Params, @adjoint, gradient, pullback
+using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
