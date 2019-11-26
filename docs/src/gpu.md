@@ -1,14 +1,16 @@
 # GPU Support
 
-NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CuArrays](https://github.com/JuliaGPU/CuArrays.jl) readme.
+NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CuArrays](https://github.com/JuliaGPU/CuArrays.jl) readme. AMD GPU support should work out of the box on systems with ROCm and external libraries installed. For more details see the [ROCArrays](https://github.com/jpsamaroo/ROCArrays.jl) readme.
 
 ## GPU Usage
 
-Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CuArrays](https://github.com/JuliaGPU/CuArrays.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
+Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CuArrays](https://github.com/JuliaGPU/CuArrays.jl) and [ROCArrays](https://github.com/jpsamaroo/ROCArrays.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
 For example, we can use `CuArrays` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
 
 (Note that you need to have CUDA available to use CuArrays – please see the [CuArrays.jl](https://github.com/JuliaGPU/CuArrays.jl) instructions for more details.)
+
+(Note that the following examples should work on AMD GPUs by loading `ROCArrays` instead of `CuArrays` and replacing `cu` with `roc`. The `gpu` function will automatically use ROCArrays if possible.)
 
 ```julia
 using CuArrays
