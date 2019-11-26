@@ -53,6 +53,9 @@ but it is more numerically stable.
 """
 logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 
+# Re-definition to fix interaction with CuArrays.
+CuArrays.@cufunc logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
+
 """
     normalise(x::AbstractArray; dims=1)
 
