@@ -118,6 +118,7 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
     )
 end
 
+# TODO: Find proper fix for https://github.com/FluxML/Flux.jl/issues/900
 @nograd conv_transpose_dims
 
 function (c::ConvTranspose)(x::AbstractArray)
