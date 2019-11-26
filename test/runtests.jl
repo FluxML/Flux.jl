@@ -24,6 +24,11 @@ if Flux.use_cuda[]
 else
   @warn "CUDA unavailable, not testing GPU support"
 end
+if Flux.use_rocm[]
+  include("rocm/rocm.jl")
+else
+  @warn "ROCm unavailable, not testing GPU support"
+end
 
 if VERSION >= v"1.2"
   doctest(Flux)

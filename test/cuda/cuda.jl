@@ -2,7 +2,7 @@ using Flux, Test
 using Flux.CuArrays
 using Flux: gpu
 
-@info "Testing GPU Support"
+@info "Testing CUDA GPU Support"
 
 @testset "CuArrays" begin
 

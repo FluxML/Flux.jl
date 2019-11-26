@@ -54,7 +54,7 @@ function __init__()
       @warn "CuArrays.jl did not find libcudnn. Some functionality will not be available."
     end
   end
-  if !ROCArrays.functional()
+  if !ROCArrays.configured
     # nothing to do here, and either ROCArrays or one of its dependencies will have warned
   else
     use_rocm[] = true
