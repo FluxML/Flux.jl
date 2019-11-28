@@ -8,7 +8,7 @@
 * Added [clearer docs](https://github.com/FluxML/Flux.jl/pull/904) around training and the Optimiser interface.
 * [Layer initialisations](https://github.com/FluxML/Flux.jl/pull/937) have been improved with a clearer API on how to extend it for other purposes.
 * [Better messaging around CUDA availability](https://github.com/FluxML/Flux.jl/pull/924), with hooks to initialize the GPU as default where possible.
-* @treelike has been formalised as a [functor](https://github.com/FluxML/Flux.jl/pull/865), with an effective deprecation.
+* `@treelike` has been formalised as a [functor](https://github.com/FluxML/Flux.jl/pull/865), with an effective deprecation.
 * `testmode!` is deprecated in favour of [istraining](https://github.com/FluxML/Flux.jl/pull/669)
 
 # v0.9.0
