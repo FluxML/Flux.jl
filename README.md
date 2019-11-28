@@ -12,4 +12,4 @@ Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, a
 
 See the [documentation](https://fluxml.github.io/Flux.jl/) or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
 
-If you use Flux in research, please see [CITATION.bib] for papers to cite.
+If you use Flux in research, please see [our papers](CITATION.bib) for appropriate citations.
