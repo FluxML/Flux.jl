@@ -24,8 +24,17 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+AbstractTrees = "0.2"
+Adapt = "1"
+CodecZlib = "0.5, 0.6"
+Colors = "0.8, 0.9"
 CuArrays = "1.4.3"
+Juno = "0.5, 0.6, 0.7"
+MacroTools = "0.3, 0.4, 0.5"
 NNlib = "0.6"
+Reexport = "0.2"
+StatsBase = "0"
+ZipFile = "0.7, 0.8"
 Zygote = "0.4"
 julia = "1"
 
