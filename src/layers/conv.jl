@@ -1,4 +1,4 @@
-using NNlib: conv, ∇conv_data, depthwiseconv
+using NNlib: conv, ∇conv_data
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -51,6 +51,7 @@ function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  @show b
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
@@ -160,41 +161,52 @@ struct DepthwiseConv{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
+  groupcount::Int
 end
 
+# TODO groupcount should be inferred.
 function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-                       stride = 1, pad = 0, dilation = 1) where {T,N}
+                       stride = 1, pad = 0, dilation = 1, groupcount =  1) where {T,N}
   stride = expand(Val(N-2), stride)
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
-  return DepthwiseConv(σ, w, b, stride, pad, dilation)
+  return DepthwiseConv(σ, w, b, stride, pad, dilation, groupcount)
 end
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-     init = glorot_uniform, stride = 1, pad = 0, dilation = 1) where N
-  @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groupcount=1) where N
+  @assert ch[2] % groupcount == 0 "Output channels must be integer multiple of input channels"
+  @assert ch[1] % groupcount == 0 "Input channels must be interger multiples of groupcount"
   return DepthwiseConv(
-    init(k..., div(ch[2], ch[1]), ch[1]),
+    init(k..., div(ch[1], groupcount), ch[2]),
     zeros(ch[2]),
     σ;
     stride = stride,
     pad = pad,
-    dilation = dilation
+    dilation = dilation,
+    groupcount = groupcount
   )
 end
 
 @functor DepthwiseConv
 
+# TODO may not necessary
+function depthwiseconv(x, w, ddims::DenseConvDims)
+  ddims = DenseConvDims(ddims)
+  return conv(x, w, ddims)
+end
+
 function (c::DepthwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  cdims = DepthwiseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  σ.(depthwiseconv(x, c.weight, cdims) .+ b)
+  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  σ.(conv(x, c.weight, cdims) .+ b)
 end
 
 function Base.show(io::IO, l::DepthwiseConv)
-  print(io, "DepthwiseConv(", size(l.weight)[1:end-2])
-  print(io, ", ", size(l.weight)[end], "=>", prod(size(l.weight)[end-1:end]))
+  print(io, "DepthwiseConv(", size(l.weight, ndims(l.weight)-2))
+  print(io, ", ", size(l.weight, ndims(l.weight)-1)*l.groupcount, "=>", size(l.weight, ndims(l.weight)))
   l.σ == identity || print(io, ", ", l.σ)
+  l.groupcount == 1 || print(io, ", groupcount = ", l.groupcount)
   print(io, ")")
 end
 
@@ -203,6 +215,84 @@ end
 
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
+
+
+"""
+    GroupwiseConv(size, in=>out)
+    GroupwiseConv(size, in=>out, relu)
+
+Groupwise convolutional layer. `size` should be a tuple like `(2, 2)`.
+`in` and `out` specify the number of input and output channels respectively.
+Note that `out` must be an integer multiple of `in`.
+
+Data should be stored in WHCN order. In other words, a 100×100 RGB image would
+be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+
+Takes the keyword arguments `pad`, `stride` and `dilation`.
+"""
+struct GroupwiseConv{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  dilation::NTuple{N,Int}
+  groupcount::Int
+end
+
+# TODO groupcount should be mandatory
+function GroupwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
+                       stride = 1, pad = 0, dilation = 1, groupcount =  1) where {T,N}
+  stride = expand(Val(N-2), stride)
+  pad = expand(Val(2*(N-2)), pad)
+  dilation = expand(Val(N-2), dilation)
+  return GroupwiseConv(σ, w, b, stride, pad, dilation, groupcount)
+end
+
+function GroupwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groupcount=1) where N
+  @assert ch[2] % groupcount == 0 "Output channels must be integer multiple of input channels"
+  @assert ch[1] % groupcount == 0 "Input channels must be interger multiples of groupcount"
+  return GroupwiseConv(
+    init(k..., div(ch[1], groupcount), ch[2]),
+    zeros(ch[2]),
+    σ;
+    stride = stride,
+    pad = pad,
+    dilation = dilation,
+    groupcount = groupcount
+  )
+end
+
+@functor GroupwiseConv
+
+# TODO may not necessary
+function groupwiseconv(x, w, ddims::DenseConvDims)
+  ddims = DenseConvDims(ddims)
+  return conv(x, w, ddims)
+end
+
+function (c::GroupwiseConv)(x)
+  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  @info b, c.bias
+  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  σ.(conv(x, c.weight, cdims) .+ b)
+end
+
+function Base.show(io::IO, l::GroupwiseConv)
+  print(io, "GroupwiseConv(", size(l.weight, ndims(l.weight)-2))
+  print(io, ", ", size(l.weight, ndims(l.weight)-1)*l.groupcount, "=>", size(l.weight, ndims(l.weight)))
+  l.σ == identity || print(io, ", ", l.σ)
+  l.groupcount == 1 || print(io, ", groupcount = ", l.groupcount)
+  print(io, ")")
+end
+
+(a::GroupwiseConv{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  invoke(a, Tuple{AbstractArray}, x)
+
+(a::GroupwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+  a(T.(x))
+
 
 """
     CrossCor(size, in=>out)
