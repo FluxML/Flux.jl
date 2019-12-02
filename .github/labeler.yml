@@ -1,0 +1,5 @@
+documentation:
+- "**/*.md"
+CI:
+- "**/*.yml"
+- ".github/workflows/**/*"
