@@ -95,8 +95,9 @@ outdims(l::Conv, isize) =
 Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 
-Data should be stored in WHCN order. In other words, a 100×100 RGB image would
-be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+Data should be stored in WHCN order (width, height, # channels, # batches).
+In other words, a 100×100 RGB image would be a `100×100×3×1` array,
+and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
@@ -171,8 +172,9 @@ Depthwise convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
 Note that `out` must be an integer multiple of `in`.
 
-Data should be stored in WHCN order. In other words, a 100×100 RGB image would
-be a `100×100×3` array, and a batch of 50 would be a `100×100×3×50` array.
+Data should be stored in WHCN order (width, height, # channels, # batches).
+In other words, a 100×100 RGB image would be a `100×100×3×1` array,
+and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 """
@@ -305,6 +307,56 @@ outdims(l::CrossCor, isize) =
   output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
+    GlobalMaxPool()
+
+Global max pooling layer.
+
+Transforms (w,h,c,b)-shaped input into (1,1,c,b)-shaped output,
+by performing max pooling on the complete (w,h)-shaped feature maps.
+"""
+struct GlobalMaxPool end
+
+function (g::GlobalMaxPool)(x)
+  # Input size
+  x_size = size(x)
+  # Kernel size
+  k = x_size[1:end-2]
+  # Pooling dimensions
+  pdims = PoolDims(x, k)
+
+  return maxpool(x, pdims)
+end
+
+function Base.show(io::IO, g::GlobalMaxPool)
+  print(io, "GlobalMaxPool()")
+end
+
+"""
+    GlobalMeanPool()
+
+Global mean pooling layer.
+
+Transforms (w,h,c,b)-shaped input into (1,1,c,b)-shaped output,
+by performing mean pooling on the complete (w,h)-shaped feature maps.
+"""
+struct GlobalMeanPool end
+
+function (g::GlobalMeanPool)(x)
+  # Input size
+  x_size = size(x)
+  # Kernel size
+  k = x_size[1:end-2]
+  # Pooling dimensions
+  pdims = PoolDims(x, k)
+
+  return meanpool(x, pdims)
+end
+
+function Base.show(io::IO, g::GlobalMeanPool)
+  print(io, "GlobalMeanPool()")
+end
+
+"""
     MaxPool(k)
 
 Max pooling layer. `k` stands for the size of the window for each dimension of the input.
@@ -364,3 +416,21 @@ function Base.show(io::IO, m::MeanPool)
 end
 
 outdims(l::MeanPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
+
+"""
+    Flatten()
+
+Flattening layer.
+
+Transforms (w,h,c,b)-shaped input into (w*h*c,b)-shaped output,
+by linearizing all values for each element in the batch.
+"""
+struct Flatten end
+
+function (f::Flatten)(x)
+  return reshape(x, :, size(x)[end])
+end
+
+function Base.show(io::IO, f::Flatten)
+  print(io, "Flatten()")
+end
