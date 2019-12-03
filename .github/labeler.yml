@@ -1,5 +1,4 @@
 documentation:
 - "**/*.md"
-CI:
-- "**/*.yml"
-- ".github/workflows/**/*"
+enhancement:
+- "**/*.jl"
