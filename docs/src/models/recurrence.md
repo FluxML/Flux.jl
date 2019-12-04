@@ -101,26 +101,4 @@ m = Chain(LSTM(10, 15), Dense(15, 5))
 m.(seq)
 ```
 
-## Truncating Gradients
-
-By default, calculating the gradients in a recurrent layer involves its entire history. For example, if we call the model on 100 inputs, we'll have to calculate the gradient for those 100 calls. If we then calculate another 10 inputs we have to calculate 110 gradients – this accumulates and quickly becomes expensive.
-
-To avoid this we can *truncate* the gradient calculation, forgetting the history.
-
-```julia
-truncate!(m)
-```
-
-Calling `truncate!` wipes the slate clean, so we can call the model with more inputs without building up an expensive gradient computation.
-
-`truncate!` makes sense when you are working with multiple chunks of a large sequence, but we may also want to work with a set of independent sequences. In this case the hidden state should be completely reset to its original value, throwing away any accumulated information. `reset!` does this for you.
-
-In general, when training with recurrent layers in your model, you'll want to call `reset!` or `truncate!` for each loss calculation:
-
-```julia
-function loss(x,y)
-  l = Flux.mse(m(x), y)
-  Flux.reset!(m)
-  return l
-end
-```
+Finally, we can reset the hidden state of the cell back to its initial value using `reset!(m)`.

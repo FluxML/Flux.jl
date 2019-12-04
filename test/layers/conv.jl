@@ -1,5 +1,6 @@
 using Flux, Test
 using Flux: maxpool, meanpool
+using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
@@ -25,9 +26,9 @@ end
 @testset "asymmetric padding" begin
   r = ones(Float32, 28, 28, 1, 1)
   m = Conv((3, 3), 1=>1, relu; pad=(0,1,1,2))
-  m.weight.data[:] .= 1.0
-  m.bias.data[:] .= 0.0
-  y_hat = Flux.data(m(r))[:,:,1,1]
+  m.weight[:] .= 1.0
+  m.bias[:] .= 0.0
+  y_hat = m(r)[:,:,1,1]
   @test size(y_hat) == (27, 29)
   @test y_hat[1, 1] ≈ 6.0
   @test y_hat[2, 2] ≈ 9.0
@@ -41,7 +42,7 @@ end
   r = zeros(Float32, 28, 28, 3, 5)
   m1 = DepthwiseConv((2, 2), 3=>15)
   @test size(m1(r), 3) == 15
-  
+
   m3 = DepthwiseConv((2, 3), 3=>9)
   @test size(m3(r), 3) == 9
 
@@ -54,6 +55,10 @@ end
   y = Conv((3,3), 1 => 1)(x)
   x_hat = ConvTranspose((3, 3), 1 => 1)(y)
   @test size(x_hat) == size(x)
+
+  m = ConvTranspose((3,3), 1=>1)
+  # Test that the gradient call does not throw: #900
+  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
 
 @testset "CrossCor" begin
@@ -62,7 +67,7 @@ end
   y = CrossCor(w, [0.0])
 
   @test sum(w .* x[1:2, 1:2, :, :]) == y(x)[1, 1, 1, 1]
-  
+
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
     CrossCor((2, 2), 1=>16, relu),
@@ -102,4 +107,3 @@ end
     true
   end
 end
-

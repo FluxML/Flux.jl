@@ -1,4 +1,5 @@
-using Flux, Flux.Tracker, CuArrays, Test
+using Flux, Test
+using Flux.CuArrays
 using Flux: gpu
 
 @info "Testing GPU Support"
@@ -7,11 +8,11 @@ using Flux: gpu
 
 CuArrays.allowscalar(false)
 
-x = param(randn(5, 5))
+x = randn(5, 5)
 cx = gpu(x)
-@test cx isa TrackedArray && cx.data isa CuArray
+@test cx isa CuArray
 
-@test Flux.onecold(param(gpu([1.,2.,3.]))) == 3
+@test Flux.onecold(gpu([1.0, 2.0, 3.0])) == 3
 
 x = Flux.onehotbatch([1, 2, 3], 1:3)
 cx = gpu(x)
@@ -21,24 +22,33 @@ cx = gpu(x)
 m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
 cm = gpu(m)
 
-@test all(p isa TrackedArray && p.data isa CuArray for p in params(cm))
-@test cm(gpu(rand(10, 10))) isa TrackedArray{Float32,2,CuArray{Float32,2}}
+@test all(p isa CuArray for p in params(cm))
+@test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
 x = [1,2,3]
 cx = gpu(x)
 @test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
+@test Flux.crossentropy(x,x, weight=1.0) ≈ Flux.crossentropy(cx,cx, weight=1.0)
+@test Flux.crossentropy(x,x, weight=[1.0;2.0;3.0]) ≈ Flux.crossentropy(cx,cx, weight=cu([1.0;2.0;3.0]))
 
-xs = param(rand(5,5))
+x = [-1.1491, 0.8619, 0.3127]
+y = [1, 1, 0.]
+@test Flux.binarycrossentropy.(σ.(x),y) ≈ Flux.binarycrossentropy.(cu(σ.(x)),cu(y))
+@test Flux.logitbinarycrossentropy.(x,y) ≈ Flux.logitbinarycrossentropy.(cu(x),cu(y))
+
+xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)
 @test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
 
 c = gpu(Conv((2,2),3=>4))
+x = gpu(rand(10, 10, 3, 2))
 l = c(gpu(rand(10,10,3,2)))
-Flux.back!(sum(l))
+@test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
 c = gpu(CrossCor((2,2),3=>4))
+x = gpu(rand(10, 10, 3, 2))
 l = c(gpu(rand(10,10,3,2)))
-Flux.back!(sum(l))
+@test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
 end
 
@@ -48,10 +58,10 @@ end
   @test y[3,:] isa CuArray
 end
 
-if CuArrays.libcudnn != nothing
-    @info "Testing Flux/CUDNN"
-    include("cudnn.jl")
-    if !haskey(ENV, "CI_DISABLE_CURNN_TEST")
-      include("curnn.jl")
-    end
+if CuArrays.has_cudnn()
+  @info "Testing Flux/CUDNN"
+  include("cudnn.jl")
+  include("curnn.jl")
+else
+  @warn "CUDNN unavailable, not testing GPU DNN support"
 end
