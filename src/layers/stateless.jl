@@ -1,3 +1,4 @@
+using CuArrays
 using NNlib: logsoftmax, logσ
 
 # Cost functions
@@ -35,6 +36,9 @@ Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerica
 """
 binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
+# Re-definition to fix interaction with CuArrays.
+CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+
 """
     logitbinarycrossentropy(logŷ, y)
 
@@ -48,6 +52,9 @@ but it is more numerically stable.
      0.86167
 """
 logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
+
+# Re-definition to fix interaction with CuArrays.
+CuArrays.@cufunc logitbinarycrossentropy(logŷ, y) = (1 - y)*logŷ - logσ(logŷ)
 
 """
     normalise(x::AbstractArray; dims=1)
