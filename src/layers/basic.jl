@@ -39,6 +39,17 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
+"""
+    outdims(c::Chain, isize::Tuple)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+
+```julia
+m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
+outdims(m, (10, 10)) == (6, 6)
+```
+"""
+outdims(c::Chain, isize::Tuple) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -117,6 +128,19 @@ end
   a(T.(x))
 
 """
+    outdims(l::Dense, isize)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+
+```julia
+m = Dense(10, 5)
+outdims(m, (5, 2)) == (5,)
+outdims(m, (10,)) == (5,)
+```
+"""
+outdims(l::Dense, isize) = (size(l.W)[2],)
+
+"""
     Diagonal(in::Integer)
 
 Creates an element-wise linear transformation layer with learnable
@@ -145,6 +169,17 @@ function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
 
+"""
+    outdims(l::Diagonal, isize)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+
+```julia
+m = Diagonal(10)
+outdims(m, (10,)) == (10,)
+```
+"""
+outdims(l::Diagonal, isize) = (length(l.α),)
 
 """
     Maxout(over)
