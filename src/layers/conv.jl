@@ -425,12 +425,20 @@ Flattening layer.
 Transforms (w,h,c,b)-shaped input into (w*h*c,b)-shaped output,
 by linearizing all values for each element in the batch.
 """
-struct Flatten end
+struct Flatten{F}
+  σ::F
+  function Flatten(σ::F = identity) where {F}
+    return new{F}(σ)
+  end
+end
 
-function (f::Flatten)(x)
-  return reshape(x, :, size(x)[end])
+function (f::Flatten)(x::AbstractArray)
+  σ = f.σ
+  σ(flatten(x))
 end
 
 function Base.show(io::IO, f::Flatten)
-  print(io, "Flatten()")
+  print(io, "Flatten(")
+  f.σ == identity || print(io, f.σ)
+  print(io, ")")
 end

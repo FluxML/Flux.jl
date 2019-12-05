@@ -1,6 +1,6 @@
 using Test
 using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
-            σ, binarycrossentropy, logitbinarycrossentropy
+            σ, binarycrossentropy, logitbinarycrossentropy, flatten
 
 const ϵ = 1e-7
 
@@ -114,5 +114,12 @@ const ϵ = 1e-7
         @test eltype(back(one(T))[1]) == T
       end
     end
+  end
+end
+
+@testset "helpers" begin
+  @testset "flatten" begin
+    x = randn(Float32, 10, 10, 3, 2)
+    @test size(flatten(x)) == (300, 2)
   end
 end
