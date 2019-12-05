@@ -61,6 +61,7 @@ if CuArrays.has_cudnn()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")
+  include("layers.jl")
 else
   @warn "CUDNN unavailable, not testing GPU DNN support"
 end

@@ -52,9 +52,9 @@ version = "4.0.4"
 
 [[CUDAnative]]
 deps = ["Adapt", "CEnum", "CUDAapi", "CUDAdrv", "DataStructures", "InteractiveUtils", "LLVM", "Libdl", "Printf", "TimerOutputs"]
-git-tree-sha1 = "93f6c917ab2a9b5bb54f8f738f4ec1a6693cb716"
+git-tree-sha1 = "a67b38619d1fa131027bac1c4a81f0012254d1fd"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "2.5.5"
+version = "2.6.0"
 
 [[CodecZlib]]
 deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
@@ -94,9 +94,11 @@ version = "1.3.0"
 
 [[CuArrays]]
 deps = ["AbstractFFTs", "Adapt", "CEnum", "CUDAapi", "CUDAdrv", "CUDAnative", "DataStructures", "GPUArrays", "Libdl", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "Requires", "SparseArrays", "TimerOutputs"]
-git-tree-sha1 = "4757376a85ffb27d4c4f6cdf9635261e6c3a5fec"
+git-tree-sha1 = "dc6e4f2bf3d84861ca00face3f0209ab71a0bc00"
+repo-rev = "master"
+repo-url = "https://github.com/JuliaGPU/CuArrays.jl.git"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
-version = "1.4.7"
+version = "1.5.0"
 
 [[DataAPI]]
 git-tree-sha1 = "674b67f344687a88310213ddfa8a2b3c76cc4252"
@@ -204,10 +206,10 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MacroTools]]
-deps = ["Compat", "DataStructures", "Test"]
-git-tree-sha1 = "82921f0e3bde6aebb8e524efc20f4042373c0c06"
+deps = ["DataStructures", "Markdown", "Random"]
+git-tree-sha1 = "e2fc7a55bb2224e203bbd8b59f72b91323233458"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.2"
+version = "0.5.3"
 
 [[Markdown]]
 deps = ["Base64"]
@@ -229,8 +231,10 @@ version = "0.4.3"
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NNlib]]
-deps = ["Libdl", "LinearAlgebra", "Requires", "Statistics", "TimerOutputs"]
-git-tree-sha1 = "0c667371391fc6bb31f7f12f96a56a17098b3de8"
+deps = ["BinaryProvider", "Libdl", "LinearAlgebra", "Requires", "Statistics"]
+git-tree-sha1 = "fe5de1375620c3b5e04bdfc3dee5199cbefb2c0c"
+repo-rev = "master"
+repo-url = "https://github.com/FluxML/NNlib.jl.git"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 version = "0.6.0"
 
