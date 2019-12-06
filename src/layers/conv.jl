@@ -1,7 +1,7 @@
 using NNlib: conv, ∇conv_data, depthwiseconv
 
 _convoutdims(isize, ksize, ssize, pad) = Int.(floor.((isize .- ksize .+ 2 .* pad) ./ ssize .+ 1))
-_convtransoutdims(isize, ksize, ssize, pad) = Int.(ssize .* (isize .- 1) .+ ksize .- 2 .* pad))
+_convtransoutdims(isize, ksize, ssize, pad) = Int.(ssize .* (isize .- 1) .+ ksize .- 2 .* pad)
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -238,7 +238,7 @@ end
 Calculate the output dimensions given the input dimensions, `isize`.
 
 ```julia
-m = DepthwiseConv((3, 3), 3 => 16)
+m = DepthwiseConv((3, 3), 3 => 6)
 outdims(m, (10, 10)) == (8, 8)
 ```
 """
@@ -366,7 +366,7 @@ m = MaxPool((2, 2))
 outdims(m, (10, 10)) == (5, 5)
 ```
 """
-outdims(l::MaxPool{N}, isize) where N = _convoutdims(isize, l.weight, l.stride, l.pad[1:N])
+outdims(l::MaxPool{N}, isize) where N = _convoutdims(isize, l.k, l.stride, l.pad[1:N])
 
 """
     MeanPool(k)
@@ -406,4 +406,4 @@ m = MeanPool((2, 2))
 outdims(m, (10, 10)) == (5, 5)
 ```
 """
-outdims(l::MeanPool{N}, isize) where N = _convoutdims(isize, l.weight, l.stride, l.pad[1:N])
+outdims(l::MeanPool{N}, isize) where N = _convoutdims(isize, l.k, l.stride, l.pad[1:N])

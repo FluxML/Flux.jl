@@ -107,3 +107,23 @@ end
     true
   end
 end
+
+@testset "conv output dimensions" begin
+  m = Conv((3, 3), 3 => 16)
+  @test Flux.outdims(m, (10, 10)) == (8, 8)
+
+  m = ConvTranspose((3, 3), 3 => 16)
+  @test Flux.outdims(m, (8, 8)) == (10, 10)
+
+  m = DepthwiseConv((3, 3), 3 => 6)
+  @test Flux.outdims(m, (10, 10)) == (8, 8)
+
+  m = CrossCor((3, 3), 3 => 16)
+  @test Flux.outdims(m, (10, 10)) == (8, 8)
+
+  m = MaxPool((2, 2))
+  @test Flux.outdims(m, (10, 10)) == (5, 5)
+
+  m = MeanPool((2, 2))
+  @test Flux.outdims(m, (10, 10)) == (5, 5)
+end

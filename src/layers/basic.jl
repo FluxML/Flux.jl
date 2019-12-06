@@ -49,7 +49,7 @@ m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
 outdims(m, (10, 10)) == (6, 6)
 ```
 """
-outdims(c::Chain, isize) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))
+outdims(c::Chain, isize) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))(isize)
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -138,7 +138,7 @@ outdims(m, (5, 2)) == (5,)
 outdims(m, (10,)) == (5,)
 ```
 """
-outdims(l::Dense, isize) = (size(l.W)[2],)
+outdims(l::Dense, isize) = (size(l.W)[1],)
 
 """
     Diagonal(in::Integer)
@@ -234,11 +234,11 @@ end
 Calculate the output dimensions given the input dimensions, `isize`.
 
 ```julia
-m = Maxout(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
+m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
 outdims(m, (10, 10)) == (8, 8)
 ```
 """
-outdims(l::Maxout, isize) = outdims(first(l.over))
+outdims(l::Maxout, isize) = outdims(first(l.over), isize)
 
 """
     SkipConnection(layers, connection)
