@@ -40,7 +40,7 @@ function Base.show(io::IO, c::Chain)
 end
 
 """
-    outdims(c::Chain, isize::Tuple)
+    outdims(c::Chain, isize)
 
 Calculate the output dimensions given the input dimensions, `isize`.
 
@@ -49,7 +49,7 @@ m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
 outdims(m, (10, 10)) == (6, 6)
 ```
 """
-outdims(c::Chain, isize::Tuple) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))
+outdims(c::Chain, isize) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -227,6 +227,18 @@ end
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
+
+"""
+    outdims(c::Maxout, isize)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+
+```julia
+m = Maxout(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
+outdims(m, (10, 10)) == (8, 8)
+```
+"""
+outdims(l::Maxout, isize) = outdims(first(l.over))
 
 """
     SkipConnection(layers, connection)

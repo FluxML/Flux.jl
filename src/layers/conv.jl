@@ -1,6 +1,7 @@
 using NNlib: conv, ∇conv_data, depthwiseconv
 
 _convoutdims(isize, ksize, ssize, pad) = Int.(floor.((isize .- ksize .+ 2 .* pad) ./ ssize .+ 1))
+_convtransoutdims(isize, ksize, ssize, pad) = Int.(ssize .* (isize .- 1) .+ ksize .- 2 .* pad))
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -156,6 +157,18 @@ end
   a(T.(x))
 
 """
+    outdims(l::ConvTranspose, isize::Tuple)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+
+```julia
+m = ConvTranspose((3, 3), 3 => 16)
+outdims(m, (8, 8)) == (10, 10)
+```
+"""
+outdims(l::ConvTranspose{N}, isize) where N = _convtransoutdims(isize, size(l.weight)[1:N], l.stride, l.pad[1:N])
+
+"""
     DepthwiseConv(size, in=>out)
     DepthwiseConv(size, in=>out, relu)
 
@@ -301,6 +314,18 @@ end
 
 (a::CrossCor{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
+
+"""
+    outdims(l::CrossCor, isize::Tuple)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+
+```julia
+m = CrossCor((3, 3), 3 => 16)
+outdims(m, (10, 10)) == (8, 8)
+```
+"""
+outdims(l::CrossCor{N}, isize) where N = _convoutdims(isize, size(l.weight)[1:N], l.stride, l.pad[1:N])
 
 """
     MaxPool(k)
