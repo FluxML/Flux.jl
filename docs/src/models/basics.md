@@ -219,3 +219,13 @@ Flux.@functor Affine
 ```
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
+
+## Utility functions
+
+Flux provides some utility functions to help you generate models in an automated fashion.
+
+`outdims` enables you to calculate the spatial output dimensions of layers like `Conv` when applied to input images of a given size.
+
+```@docs
+outdims
+```
