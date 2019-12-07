@@ -169,16 +169,6 @@ function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
 
-"""
-    outdims(l::Diagonal, isize)
-
-Calculate the output dimensions given the input dimensions, `isize`.
-
-```julia
-m = Diagonal(10)
-outdims(m, (10,)) == (10,)
-```
-"""
 outdims(l::Diagonal, isize) = (length(l.α),)
 
 """
@@ -228,16 +218,6 @@ function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
 
-"""
-    outdims(c::Maxout, isize)
-
-Calculate the output dimensions given the input dimensions, `isize`.
-
-```julia
-m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
-outdims(m, (10, 10)) == (8, 8)
-```
-"""
 outdims(l::Maxout, isize) = outdims(first(l.over), isize)
 
 """
