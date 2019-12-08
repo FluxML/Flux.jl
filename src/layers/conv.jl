@@ -1,4 +1,4 @@
-using NNlib: conv, ∇conv_data
+using NNlib: conv, ∇conv_data, group_count, channels_in
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -51,8 +51,8 @@ function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  @show b
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=1)
+  # @assert group_count(cdims) == 1 DimensionMismatch("Group count is expected to be 1; (1) vs. $(group_count(cdims)))")
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -111,8 +111,8 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
     I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
     C_in = size(c.weight)[end-1]
     batch_size = size(x)[end]
-    # Create DenseConvDims() that looks like the corresponding conv()
-    return DenseConvDims((I..., C_in, batch_size), size(c.weight);
+    # Create ConvDims() that looks like the corresponding conv()
+    return ConvDims((I..., C_in, batch_size), size(c.weight);
         stride=c.stride,
         padding=c.pad,
         dilation=c.dilation,
@@ -191,14 +191,16 @@ end
 @functor DepthwiseConv
 
 # TODO may not necessary
-function depthwiseconv(x, w, ddims::DenseConvDims)
-  ddims = DenseConvDims(ddims)
+function depthwiseconv(x, w, ddims::ConvDims)
+  # @assert x[end-1] == channels_in(cdims) DimensionMismatch("Data input channel count ($(x[M-1]) vs. $(channels_in(cdims)))")
+  ddims = ConvDims(ddims)
   return conv(x, w, ddims)
 end
 
 function (c::DepthwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  @assert group_count(cdims) == channels_in(cdims) DimensionMismatch("Data input channel count ≠ group count ($(group_count(cdims)) ≠ $(channels_in(cdims)))")
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -267,15 +269,14 @@ end
 @functor GroupwiseConv
 
 # TODO may not necessary
-function groupwiseconv(x, w, ddims::DenseConvDims)
-  ddims = DenseConvDims(ddims)
+function groupwiseconv(x, w, ddims::ConvDims)
+  ddims = ConvDims(ddims)
   return conv(x, w, ddims)
 end
 
 function (c::GroupwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  @info b, c.bias
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -339,8 +340,8 @@ CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
 
 @functor CrossCor
 
-function crosscor(x, w, ddims::DenseConvDims)
-  ddims = DenseConvDims(ddims, F=true)
+function crosscor(x, w, ddims::ConvDims)
+  ddims = ConvDims(ddims, F=true)
   return conv(x, w, ddims)
 end
 
@@ -348,7 +349,7 @@ function (c::CrossCor)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(crosscor(x, c.weight, cdims) .+ b)
 end
 
