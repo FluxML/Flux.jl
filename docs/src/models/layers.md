@@ -66,7 +66,7 @@ LayerNorm
 GroupNorm
 ```
 
-## Loss Functions
+## Cost Functions
 ```@docs
 mse
 crossentropy
