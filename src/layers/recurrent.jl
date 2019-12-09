@@ -98,31 +98,39 @@ RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
 # LSTM
 
-mutable struct LSTMCell{A,V}
+mutable struct LSTMCell{A,V,F,G}
   Wi::A
   Wh::A
   b::V
   h::V
   c::V
+  sigmRepl::F
+  tanhRepl::G
 end
 
-function LSTMCell(in::Integer, out::Integer;
+function LSTMCell(in::Integer, out::Integer, sigmRepl=sigmoid, tanhRepl=tanh;
                   init = glorot_uniform)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), init(out * 4),
-                  zeros(out), zeros(out))
+  cell = LSTMCell( init(out * 4, in), 
+                   init(out * 4, out),
+                   init(out * 4),
+                   zeros(out),
+                   zeros(out),
+                   sigmRepl,
+                   tanhRepl)
+
   cell.b[gate(out, 2)] .= 1
   return cell
 end
 
 function (m::LSTMCell)((h, c), x)
-  b, o = m.b, size(h, 1)
-  g = m.Wi*x .+ m.Wh*h .+ b
-  input = σ.(gate(g, o, 1))
-  forget = σ.(gate(g, o, 2))
-  cell = tanh.(gate(g, o, 3))
-  output = σ.(gate(g, o, 4))
-  c = forget .* c .+ input .* cell
-  h′ = output .* tanh.(c)
+  b, o   = m.b, size(h, 1)
+  g      = m.Wi*x .+ m.Wh*h .+ b
+  input  = m.sigmRepl.(gate(g, o, 1))
+  forget = m.sigmRepl.(gate(g, o, 2))
+  cell   = m.tanhRepl.(gate(g, o, 3))
+  output = m.sigmRepl.(gate(g, o, 4))
+  c      = forget .* c .+ input .* cell
+  h′     = output .* m.tanhRepl.(c)
   return (h′, c), h′
 end
 
@@ -146,23 +154,31 @@ LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # GRU
 
-mutable struct GRUCell{A,V}
+mutable struct GRUCell{A,V,F,G}
   Wi::A
   Wh::A
   b::V
   h::V
+  sigmRepl::F
+  tanhRepl::G
 end
 
-GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(init(out * 3, in), init(out * 3, out),
-          init(out * 3), zeros(out))
+function GRUCell(in, out, sigmRepl=sigmoid, tanhRepl=tanh; init = glorot_uniform)
+    GRUCell(init(out * 3, in), 
+            init(out * 3, out),
+            init(out * 3), 
+            zeros(out),
+            sigmRepl,
+            tanhRepl
+            )
+end
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
-  h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
+  r = m.sigmRepl.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+  z = m.sigmRepl.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  h̃ = m.tanhRepl.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z).*h̃ .+ z.*h
   return h′, h′
 end
