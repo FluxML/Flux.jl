@@ -152,10 +152,6 @@ used during training which is ignored by the optimisers.
 
 Useful to turn bias off for a forward pass of a layer.
 
-!!! warning
-    Zeros acts a scalar while broadcasting, so does not
-    expand dims. Checks for shape compatibility by default.
-
 ## Examples
 
 ```julia
