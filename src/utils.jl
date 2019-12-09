@@ -193,11 +193,6 @@ Base.getindex(xs::Zeros{T,N}, I::Int) where {T,N} = zero(T)
 Base.getindex(xs::Zeros{T,N}, inds::Union{Base.OneTo, Base.UnitRange}) where {T,N} =
               Zeros(T, inds.stop)
 
-Base.setindex(xs::Zeros, args...) =
-              error("setindex disallowed on Zeros Array")
-Base.setindex!(xs::Zeros, args...) =
-              error("setindex! disallowed on Zeros Array")
-
 Base.collect(xs::Zeros{T,N}) where {T,N} = fill(zero(T), size(xs))
 
 @adjoint reshape(xs::Zeros{T}, dims...) where T =
