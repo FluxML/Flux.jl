@@ -231,15 +231,15 @@ for op in (:+, :-)
   end
 end
 
-broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(typeof(+), b, a)
-broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(typeof(+), -b, a)
+broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
+broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
 
 function broadcasted(::typeof(*), a::AbstractArray, b::Zeros)
   sz = similar(a, Broadcast.broadcast_shape(size(a), size(b)))
   sz .= zero(a)
 end
 
-broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = broadcasted(typeof(*), b, a)
+broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = broadcasted(*, b, a)
 
 for op in (:+, :-, :*)
   @eval broadcasted(::typeof($op), a::Zeros, b::Zeros) = Zeros(Broadcast.broadcast_shape(size(a), size(b))...)
