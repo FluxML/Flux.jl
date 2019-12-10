@@ -444,7 +444,8 @@ end
 """
   InvDecay(γ)
 
-Applies inverse time decay to an optimiser
+Applies inverse time decay to an optimiser, i.e., the effective step size at iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size. The wrapped optimiser's step size is not modified.
+```
 
 ## Parameters
   - gamma (γ): Defaults to `0.001`
@@ -472,7 +473,7 @@ end
 """
   ExpDecay(eta, decay, decay_step, clip)
 
-Discount the learning rate `eta` by `decay` every `decay_step` till a minimum of `clip`.
+Discount the learning rate `eta` by a multiplicative factor `decay` every `decay_step` till a minimum of `clip`.
 
 ## Parameters
   - Learning Rate (eta): Defaults to `0.001`.
