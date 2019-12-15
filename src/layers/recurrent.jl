@@ -106,7 +106,7 @@ mutable struct LSTMCell{A,V,F,G}
   c::V
   sigmRepl::F
   tanhRepl::G
-end
+end 
 
 function LSTMCell(in::Integer, out::Integer, sigmRepl=sigmoid, tanhRepl=tanh;
                   init = glorot_uniform)
@@ -163,13 +163,13 @@ mutable struct GRUCell{A,V,F,G}
   tanhRepl::G
 end
 
-function GRUCell(in, out, sigmRepl=sigmoid, tanhRepl=tanh; init = glorot_uniform)
+function GRUCell(in, out, sigmr=sigmoid, tanhr=tanh; init = glorot_uniform)
     GRUCell(init(out * 3, in), 
             init(out * 3, out),
             init(out * 3), 
             zeros(out),
-            sigmRepl,
-            tanhRepl
+            sigmr,
+            tanhr
             )
 end
 

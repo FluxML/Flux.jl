@@ -1,17 +1,17 @@
-import ..Flux: Flux, relu
+import ..Flux: Flux, relu, sigmoid
 using CuArrays.CUDAnative
 using CuArrays: @cuindex, cudims
 
-CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
-CuGRU{T} = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}
-CuLSTM{T} = Flux.LSTMCell{<:CuArray{T,2},<:CuArray{T,1}}
+CuRNN{T}  = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
+CuGRU{T}  = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}#Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1},<:typeof(sigmoid),<:typeof(tanh)}
+CuLSTM{T} = Flux.LSTMCell{<:CuArray{T,2},<:CuArray{T,1},<:typeof(sigmoid),<:typeof(tanh)}
 CuRNNs{T} = Union{CuRNN{T},CuGRU{T},CuLSTM{T}}
 
 function CUDNN.RNNDesc(m::CuRNNs{T}) where T
   h, i = length(m.h), size(m.Wi, 2)
   mode = m isa CuRNN ?
     (m.σ == tanh ? CUDNN.CUDNN_RNN_TANH : CUDNN.CUDNN_RNN_RELU) :
-    m isa CuGRU ? CUDNN.CUDNN_GRU : CUDNN.CUDNN_LSTM
+    (m isa CuGRU ? CUDNN.CUDNN_GRU : (m isa CuLSTM ? CUDNN.CUDNN_LSTM : println("No CUDNN RNN available.")))
   r = CUDNN.RNNDesc{T}(mode, i, h)
   return r
 end
@@ -73,7 +73,7 @@ for RNN in (CuRNN, CuGRU)
     (ho, y), function (Δ)
       dho, dy = coerce_cuda(Δ) # Support FillArrays etc.
       m̄ = back(dy, dho)
-      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing))
+      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing, sigmRepl=nothing, tanhRepl=nothing))
       (dm, unbroadcast(h, m̄.h), m̄.x)
     end
   end
@@ -85,7 +85,7 @@ end
     dhc, dy = coerce_cuda(Δ) # Support FillArrays etc.
     dho, dco = dhc === nothing ? (nothing, nothing) : dhc
     m̄ = back(dy, dho, dco)
-    dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing,c=nothing))
+    dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing,c=nothing, sigmRepl=nothing, tanhRepl=nothing))
     (dm, (unbroadcast(h, m̄.h), unbroadcast(c, m̄.c)), m̄.x)
   end
 end
