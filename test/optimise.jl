@@ -12,7 +12,7 @@ using Random
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
                        NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), AdaBelief(),
-                       Nesterov(), RMSProp(), Momentum()]
+                       Nesterov(), RMSProp(), Momentum(), Lookahead(RADAM()), Lookahead(ADAMW())]
     Random.seed!(42)
     w′ = randn(10, 10)
     b = Flux.Zeros()
