@@ -6,7 +6,7 @@
 
 # generic movement tests
 @test_broken gradient(x -> sum(gpu(x)), rand(3,3)) isa Tuple
-@test gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
+@test_throws ErrorException gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
 
 function gradtest(layers, args...; name = "Conv", xs = rand(Float32, 28, 28, 1, 1))
   @testset "$name GPU grad tests" begin
