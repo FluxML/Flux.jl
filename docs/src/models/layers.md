@@ -38,6 +38,9 @@ But in contrast to the layers described in the other sections are not readily gr
 ```@docs
 Maxout
 SkipConnection
+GroupedConvolutions
+ChannelShuffle
+ShuffledGroupedConvolutions
 ```
 
 ## Activation Functions
