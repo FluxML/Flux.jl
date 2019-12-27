@@ -149,6 +149,7 @@ function (BN::BatchNorm)(x)
 	  dims = length(size(x))
 	  channels = size(x, dims)
 	  affine_shape = ntuple(i->i == ndims(x)  ? size(x, i) : 1, ndims(x))
+  end
   m = div(prod(size(x)), channels)
   γ = reshape(BN.γ, affine_shape...)
   β = reshape(BN.β, affine_shape...)
