@@ -137,11 +137,18 @@ BatchNorm(chs::Integer, λ = identity;
 trainable(bn::BatchNorm) = (bn.β, bn.γ)
 
 function (BN::BatchNorm)(x)
-  size(x, ndims(x)-1) == length(BN.β) ||
-    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
-  dims = length(size(x))
-  channels = size(x, dims-1)
-  affine_shape = ntuple(i->i == ndims(x) - 1 ? size(x, i) : 1, ndims(x))
+  if ndims(x) != 1
+	  size(x, ndims(x)-1) == length(BN.β) ||
+	    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
+	  dims = length(size(x))
+	  channels = size(x, dims-1)
+	  affine_shape = ntuple(i->i == ndims(x) - 1 ? size(x, i) : 1, ndims(x))
+  else
+	size(x, ndims(x)) == length(BN.β) ||
+	    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
+	  dims = length(size(x))
+	  channels = size(x, dims)
+	  affine_shape = ntuple(i->i == ndims(x)  ? size(x, i) : 1, ndims(x))
   m = div(prod(size(x)), channels)
   γ = reshape(BN.γ, affine_shape...)
   β = reshape(BN.β, affine_shape...)
