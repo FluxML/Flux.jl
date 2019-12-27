@@ -145,7 +145,7 @@ function (BN::BatchNorm)(x)
 	  affine_shape = ntuple(i->i == ndims(x) - 1 ? size(x, i) : 1, ndims(x))
   else
 	size(x, ndims(x)) == length(BN.β) ||
-	    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
+	    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)))")
 	  dims = length(size(x))
 	  channels = size(x, dims)
 	  affine_shape = ntuple(i->i == ndims(x)  ? size(x, i) : 1, ndims(x))
