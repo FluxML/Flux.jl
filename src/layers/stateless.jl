@@ -84,3 +84,10 @@ function normalise(x::AbstractArray; dims=1)
   σ′ = std(x, dims = dims, mean = μ′, corrected=false)
   return (x .- μ′) ./ σ′
 end
+
+function normalise(x::CuArray; dims=1)
+  μ′ = mean(x, dims = dims)
+  n = size(x)[dims]
+  σ′ = sqrt.(sum((x.-μ′).^2,dims=dims)/n)
+  return (x .- μ′) ./ σ′
+end
