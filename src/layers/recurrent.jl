@@ -146,23 +146,26 @@ LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # GRU
 
-mutable struct GRUCell{A,V}
+mutable struct GRUCell{F,G,A,V}
+  σ::F
+  τ::G
   Wi::A
   Wh::A
   b::V
   h::V
 end
 
-GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(init(out * 3, in), init(out * 3, out),
+GRUCell(in, out, σ = σ, τ = tanh; init = glorot_uniform) =
+  GRUCell(σ, τ, init(out * 3, in), init(out * 3, out),
           init(out * 3), zeros(out))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
+  σ, τ = m.σ, m.τ
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
-  h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
+  h̃ = τ.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z).*h̃ .+ z.*h
   return h′, h′
 end
@@ -171,11 +174,14 @@ hidden(m::GRUCell) = m.h
 
 @functor GRUCell
 
-Base.show(io::IO, l::GRUCell) =
-  print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+function Base.show(io::IO, l::GRUCell)
+  print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3)
+  (l.σ, l.τ) == (σ, tanh) || print(io, ", ", l.σ, ", ", l.τ)
+  print(io, ")")
+end
 
 """
-    GRU(in::Integer, out::Integer)
+    GRU(in::Integer, out::Integer, σ = σ, τ = tanh)
 
 Gated Recurrent Unit layer. Behaves like an RNN but generally
 exhibits a longer memory span over sequences.
