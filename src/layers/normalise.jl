@@ -153,7 +153,7 @@ function (BN::BatchNorm)(x)
     T = eltype(x)
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
     μ = mean(x, dims = axes)
-    σ² = sum((x .- μ) .^ 2, dims = axes) ./ m
+    σ² = sum((x .- μ) .^ 2, dims = axes) ./ T(m)
     ϵ = convert(T, BN.ϵ)
     # update moving mean/std
     mtm = BN.momentum
