@@ -53,7 +53,7 @@ julia> using Flux
 julia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)
 Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
 
-julia> weights = Tracker.data.(params(model));
+julia> weights = params(model);
 
 julia> using BSON: @save
 
@@ -113,6 +113,6 @@ You can even store optimiser state alongside the model, to resume training
 exactly where you left off.
 
 ```julia
-opt = ADAM(params(model))
+opt = ADAM()
 @save "model-$(now()).bson" model opt
 ```

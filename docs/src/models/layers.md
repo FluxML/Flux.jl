@@ -17,6 +17,7 @@ MaxPool
 MeanPool
 DepthwiseConv
 ConvTranspose
+CrossCor
 ```
 
 ## Recurrent Layers
@@ -36,17 +37,7 @@ But in contrast to the layers described in the other sections are not readily gr
 
 ```@docs
 Maxout
-```
-
-# Normalisation & Regularisation
-
-These layers don't affect the structure of the network but may improve training times or reduce overfitting.
-
-```@docs
-Flux.testmode!
-BatchNorm
-Dropout
-LayerNorm
+SkipConnection
 ```
 
 ## Activation Functions
@@ -68,7 +59,6 @@ swish
 These layers don't affect the structure of the network but may improve training times or reduce overfitting.
 
 ```@docs
-Flux.testmode!
 BatchNorm
 Dropout
 AlphaDropout
