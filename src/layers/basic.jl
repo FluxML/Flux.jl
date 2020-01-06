@@ -16,6 +16,9 @@ m(x) == m[2](m[1](x))
 `Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
 `m[1:3](x)` will calculate the output of the first three layers.
 """
+# using SparseArrays
+using SparseArrays
+
 struct Chain{T<:Tuple}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
@@ -116,6 +119,11 @@ end
 (a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
 
+function (a::Dense{<:Any,W,})(x::AbstractSparseArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}}
+  w, b, σ = a.W, a.b, a.σ
+  σ.(w*x .+ b)
+end
+   
 """
     Diagonal(in::Integer)
 
