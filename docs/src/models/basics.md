@@ -2,7 +2,7 @@
 
 ## Taking Gradients
 
-Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
+Flux's core feature is taking gradients of Julia code. The [`gradient`](@ref) function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
 ```jldoctest basics
 julia> using Flux
