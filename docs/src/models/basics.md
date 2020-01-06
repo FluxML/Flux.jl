@@ -41,6 +41,8 @@ julia> x = [2, 1];
 
 julia> y = [2, 0];
 
+julia> f(x, y) = sum((x .- y).^2);
+
 julia> gs = gradient(params(x, y)) do
          f(x, y)
        end
