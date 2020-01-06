@@ -20,12 +20,15 @@ julia> d2f(2)
 6
 ```
 
-When a function has many parameters, we can get gradients of each one at the same time:
+When a function has many parameters, we can get gradients of each one at the same time by passing vectors of corresponding inputs for each argument to `gradient`:
 
 ```jldoctest basics
 julia> f(x, y) = sum((x .- y).^2);
+```
 
-julia> gradient(f, [2, 1], [2, 0])
+Now we calculate gradient of `f` for `x=2, y=2` and `x=1, y=0`:
+```jldoctest basics
+julia> gradient(f, [2, 1], [2, 0])  # same as: df(x,y) = gradient(f,x,y); df([2,1], [2,0])
 ([0, 2], [0, -2])
 ```
 
