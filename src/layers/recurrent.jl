@@ -55,7 +55,13 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
 reset!(m::Recur) = (m.state = m.init)
 reset!(m) = foreach(reset!, functor(m)[1])
 
-flip(f, xs) = reverse(f.(reverse(xs)))
+function flip(f, xs)
+   flipped_xs = Zygote.Buffer(xs)
+   for t ∈ Iterators.reverse(eachindex(xs))
+      flipped_xs[t] = f(xs[t])
+   end
+   return copy(flipped_xs)
+end
 
 # Vanilla RNN
 
