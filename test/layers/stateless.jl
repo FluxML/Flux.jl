@@ -75,7 +75,7 @@ const ϵ = 1e-7
     for T in (Float32, Float64)
       y = rand(T, 2)
       ŷ = rand(T, 2)
-      for f in (mse, crossentropy, logitcrossentropy)
+      for f in (mse, crossentropy, logitcrossentropy, Flux.kldivergence, Flux.hinge, Flux.poisson)
         fwd, back = Flux.pullback(f, ŷ, y)
         @test fwd isa T
         @test eltype(back(one(T))[1]) == T
