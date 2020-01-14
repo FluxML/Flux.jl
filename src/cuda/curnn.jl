@@ -3,7 +3,7 @@ using CuArrays.CUDAnative
 using CuArrays: @cuindex, cudims
 
 CuRNN{T}  = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
-CuGRU{T}  = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}#Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1},<:typeof(sigmoid),<:typeof(tanh)}
+CuGRU{T}  = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1},<:typeof(sigmoid),<:typeof(tanh)}
 CuLSTM{T} = Flux.LSTMCell{<:CuArray{T,2},<:CuArray{T,1},<:typeof(sigmoid),<:typeof(tanh)}
 CuRNNs{T} = Union{CuRNN{T},CuGRU{T},CuLSTM{T}}
 
@@ -11,7 +11,7 @@ function CUDNN.RNNDesc(m::CuRNNs{T}) where T
   h, i = length(m.h), size(m.Wi, 2)
   mode = m isa CuRNN ?
     (m.σ == tanh ? CUDNN.CUDNN_RNN_TANH : CUDNN.CUDNN_RNN_RELU) :
-    (m isa CuGRU ? CUDNN.CUDNN_GRU : (m isa CuLSTM ? CUDNN.CUDNN_LSTM : println("No CUDNN RNN available.")))
+    (m isa CuGRU ? CUDNN.CUDNN_GRU : (m isa CuLSTM ? CUDNN.CUDNN_LSTM : error("No CUDNN RNN available.")))
   r = CUDNN.RNNDesc{T}(mode, i, h)
   return r
 end
