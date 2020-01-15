@@ -35,13 +35,9 @@ where `x = [2, 1]` and `y = [2, 0]`
 But machine learning models can have *hundreds* of parameters! To handle this, Flux lets you work with collections of parameters, via `params`. You can get the gradient of all parameters used in a program without explicitly passing them in.
 
 ```jldoctest basics
-julia> using Flux
-
 julia> x = [2, 1];
 
 julia> y = [2, 0];
-
-julia> f(x, y) = sum((x .- y).^2);
 
 julia> gs = gradient(params(x, y)) do
          f(x, y)
