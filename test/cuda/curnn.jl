@@ -11,7 +11,7 @@ using Flux: pullback
 end
 
 @testset for R in [GRU, LSTM]
-  m = R(10, 5, sigmoid, tanh) |> gpu
+  m = R(10, 5, (sigmoid, tanh) ) |> gpu
   x = gpu(rand(10))
   (m̄,) = gradient(m -> sum(m(x)), m)
   Flux.reset!(m)
@@ -22,7 +22,7 @@ end
 @testset for R in [GRU, LSTM]
   sigRep(x)  = oftype(x, 0.1)
   tanhRep(x) = oftype(x, 0.1)
-  m = R(10, 5, sigRep, tanhRep) |> gpu
+  m = R(10, 5, (sigRep, tanhRep)) |> gpu
   x = gpu(rand(10))
   (m̄,) = gradient(m -> sum(m(x)), m)
   Flux.reset!(m)

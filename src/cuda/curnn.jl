@@ -73,7 +73,7 @@ for RNN in (CuRNN, CuGRU)
     (ho, y), function (Δ)
       dho, dy = coerce_cuda(Δ) # Support FillArrays etc.
       m̄ = back(dy, dho)
-      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing, sigmRepl=nothing, tanhRepl=nothing))
+      dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing, activations=nothing))
       (dm, unbroadcast(h, m̄.h), m̄.x)
     end
   end
@@ -85,7 +85,7 @@ end
     dhc, dy = coerce_cuda(Δ) # Support FillArrays etc.
     dho, dco = dhc === nothing ? (nothing, nothing) : dhc
     m̄ = back(dy, dho, dco)
-    dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing,c=nothing, sigmRepl=nothing, tanhRepl=nothing))
+    dm = struct_grad!(__context__, m, (σ=nothing,Wi=transpose(m̄.Wi),Wh=transpose(m̄.Wh),b=m̄.b,h=nothing,c=nothing, activations=nothing))
     (dm, (unbroadcast(h, m̄.h), unbroadcast(c, m̄.c)), m̄.x)
   end
 end

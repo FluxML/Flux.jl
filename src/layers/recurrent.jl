@@ -104,19 +104,17 @@ mutable struct LSTMCell{A,V,F,G}
   b::V
   h::V
   c::V
-  sigmRepl::F
-  tanhRepl::G
+  activations::Tuple{F,G}
 end 
 
-function LSTMCell(in::Integer, out::Integer, sigmRepl=sigmoid, tanhRepl=tanh;
+function LSTMCell(in::Integer, out::Integer, activ=(sigmoid, tanh);
                   init = glorot_uniform)
   cell = LSTMCell( init(out * 4, in), 
                    init(out * 4, out),
                    init(out * 4),
                    zeros(out),
                    zeros(out),
-                   sigmRepl,
-                   tanhRepl)
+                   activ )
 
   cell.b[gate(out, 2)] .= 1
   return cell
@@ -125,12 +123,12 @@ end
 function (m::LSTMCell)((h, c), x)
   b, o   = m.b, size(h, 1)
   g      = m.Wi*x .+ m.Wh*h .+ b
-  input  = m.sigmRepl.(gate(g, o, 1))
-  forget = m.sigmRepl.(gate(g, o, 2))
-  cell   = m.tanhRepl.(gate(g, o, 3))
-  output = m.sigmRepl.(gate(g, o, 4))
+  input  = m.activations[1].(gate(g, o, 1))
+  forget = m.activations[1].(gate(g, o, 2))
+  cell   = m.activations[2].(gate(g, o, 3))
+  output = m.activations[1].(gate(g, o, 4))
   c      = forget .* c .+ input .* cell
-  h′     = output .* m.tanhRepl.(c)
+  h′     = output .* m.activations[2].(c)
   return (h′, c), h′
 end
 
@@ -159,26 +157,24 @@ mutable struct GRUCell{A,V,F,G}
   Wh::A
   b::V
   h::V
-  sigmRepl::F
-  tanhRepl::G
+  activations::Tuple{F,G}
 end
 
-function GRUCell(in, out, sigmr=sigmoid, tanhr=tanh; init = glorot_uniform)
+function GRUCell(in, out, activ=(sigmoid, tanh); init = glorot_uniform)
     GRUCell(init(out * 3, in), 
             init(out * 3, out),
             init(out * 3), 
             zeros(out),
-            sigmr,
-            tanhr
+            activ
             )
 end
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
-  r = m.sigmRepl.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = m.sigmRepl.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
-  h̃ = m.tanhRepl.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
+  r = m.activations[1].(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+  z = m.activations[1].(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  h̃ = m.activations[2].(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z).*h̃ .+ z.*h
   return h′, h′
 end
