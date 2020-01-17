@@ -8,20 +8,25 @@
 @test_broken gradient(x -> sum(gpu(x)), rand(3,3)) isa Tuple
 @test_throws ErrorException gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
 
-function gradtest(layers, args...; name = "Conv", xs = rand(Float32, 28, 28, 1, 1))
+function gradtest(name::String, layers::Vector, xs = nothing, args...)
+  isnothing(xs) && error("Missing input to test the layers against.")
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer GPU grad test" begin
         l = gpu(layer(args...))
         xs = gpu(xs)
         if l isa DepthwiseConv
-          @test_broken gradient(Flux.params(l)) do
-            sum(l(xs))
-          end isa Flux.Zygote.Grads
+          ps = Flux.params(l)
+          @test_broken gradient(() -> sum(l(xs)), ps) isa Flux.Zygote.Grads
         else
-          @test gradient(Flux.params(l)) do
-            sum(l(xs))
-          end isa Flux.Zygote.Grads
+          ps = Flux.params(l)
+          @test gradient(() -> sum(l(xs)), ps) isa Flux.Zygote.Grads
+          gs = gradient(() -> sum(l(xs)), ps)
+
+          # Handle pooling layers
+          if !isempty(ps)
+            @test gs[first(ps)] isa Flux.CuArrays.CuArray
+          end
         end
       end
     end
@@ -30,27 +35,28 @@ end
 
 # Repeats from Conv, CrossCor
 
+r = rand(Float32, 28, 28, 1, 1)
 conv_layers = [Conv, ConvTranspose, CrossCor, DepthwiseConv]
-gradtest(conv_layers, (2,2), 1=>3, name = "Conv")
+gradtest("Conv", conv_layers, r, (2,2), 1=>3)
 
 pooling_layers = [MaxPool, MeanPool]
-gradtest(pooling_layers, (2,2), name = "Pooling")
+gradtest("Pooling", pooling_layers, r, (2,2))
 
 dropout_layers = [Dropout, AlphaDropout]
-gradtest(dropout_layers, 0.5f0, name = "Dropout")
+gradtest("Dropout", dropout_layers, r, 0.5f0)
 
 norm_layers = [LayerNorm, BatchNorm]
-gradtest(norm_layers, 1, name = "Normalising", xs = rand(Float32, 28,28,3,1))
+gradtest("Normalising" norm_layers, rand(Float32, 28,28,3,1), 1)
 
 instancenorm = [InstanceNorm]
-gradtest(instancenorm, 1, name = "InstanceNorm")
+gradtest(instancenorm, r, "InstanceNorm", 1)
 
 groupnorm = [GroupNorm]
-gradtest(groupnorm, 3, 1, name = "GroupNorm", xs = rand(Float32, 28,28,3,1))
+gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1)
 
 const stateless_layers = [Flux.mse,
                           Flux.crossentropy,
-                          Flux.logitcrossentropy,]
+                          Flux.logitcrossentropy,
                           Flux.normalise]
 
 const stateless_layers_broadcasted = [Flux.binarycrossentropy,
