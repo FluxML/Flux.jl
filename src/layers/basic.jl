@@ -226,3 +226,50 @@ end
 function Base.show(io::IO, b::SkipConnection)
   print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
+
+"""
+    DenselyConnected(layers, connection)
+
+Creates a dense-connection of a Tuple of consecutive layers plus a
+connectivity pattern. The connection is an arbitrary callable, often a function.
+This means that the input of each layer is given by the output of all previous layers.
+
+The simplest 'DenseNet'-type connection is, when applied to images,
+`DenselyConnectedBlock(layers, (x,y) -> cat(x, y, dims = 3)`.
+Notice, however, that the number of channels increase with each application.
+It is up to the user to select the appropriate sizes for the layers.
+
+A simple example:
+```
+layers = (Dense(1,1), Dense(2,1), Dense(3,1))
+connection = (x,y) -> vcat(x, y)
+db = DenselyConnected(layers, connection)
+x = zeros(Float32,1,2)
+size(db(x)) == (4,2)
+```
+"""
+
+
+struct DenselyConnectedBlock
+    layers
+    connection
+end
+
+@functor DenselyConnected
+
+applydense(::Tuple{}, x, conn) = x
+applydense(fs::Tuple, x, conn) = (inner = applydense(fs[1:end-1], x, conn); conn(last(fs)(inner), inner))
+
+(db::DenselyConnected)(x) = applydense(db.layers, x, db.connection)
+
+DenselyConnected((Dense(1,1), Dense(2,1), Dense(3,1)), (x,y) -> vcat(x, y))(zeros(Float32,1,2))
+
+Base.getindex(db::DenselyConnected, ur::UnitRange) = DenselyConnected(db.layers[ur], db.connection)
+Base.getindex(db::DenselyConnected, i::Integer) = db.layers[i]
+
+function Base.show(io::IO, db::DenselyConnected)
+    print(io, "DenselyConnected(")
+    join(io, db.layers, ", ")
+    print(io, ")")
+end
+
