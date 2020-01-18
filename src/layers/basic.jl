@@ -262,8 +262,6 @@ applydense(fs::Tuple, x, conn) = (inner = applydense(fs[1:end-1], x, conn); conn
 
 (db::DenselyConnected)(x) = applydense(db.layers, x, db.connection)
 
-DenselyConnected((Dense(1,1), Dense(2,1), Dense(3,1)), (x,y) -> vcat(x, y))(zeros(Float32,1,2))
-
 Base.getindex(db::DenselyConnected, ur::UnitRange) = DenselyConnected(db.layers[ur], db.connection)
 Base.getindex(db::DenselyConnected, i::Integer) = db.layers[i]
 
