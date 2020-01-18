@@ -235,7 +235,7 @@ connectivity pattern. The connection is an arbitrary callable, often a function.
 This means that the input of each layer is given by the output of all previous layers.
 
 The simplest 'DenseNet'-type connection is, when applied to images,
-`DenselyConnectedBlock(layers, (x,y) -> cat(x, y, dims = 3)`.
+`DenselyConnected(layers, (x,y) -> cat(x, y, dims = 3)`.
 Notice, however, that the number of channels increase with each application.
 It is up to the user to select the appropriate sizes for the layers.
 
@@ -250,7 +250,7 @@ size(db(x)) == (4,2)
 """
 
 
-struct DenselyConnectedBlock
+struct DenselyConnected
     layers
     connection
 end
