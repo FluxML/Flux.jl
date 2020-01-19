@@ -3,10 +3,9 @@ using Flux
 using Flux: ctc_
 using Zygote: gradient
 using LinearAlgebra
-using Statistics
 
 # Custom function to check numerical gradient of ctc loss,
-# based on `ngradient` in `Flux.Tracker`
+# based on `ngradient` in `Tracker.jl`
 # 
 # Needs to check loss as defined at a particular time step
 # related to the change in x because slight deviations in
