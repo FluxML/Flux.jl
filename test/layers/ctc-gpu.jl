@@ -1,7 +1,7 @@
 using Test
 using Flux
 using Flux: ctc_
-using Flux.Tracker: gradient
+using Zygote: gradient
 using LinearAlgebra
 using CuArrays
 using Statistics
@@ -39,8 +39,8 @@ end
   x_cu = CuArray(x)
   y_cu = CuArray(y)
   
-  g1 = Flux.Tracker.gradient(ctc, x_cu, y_cu)[1]
-  g1 = Flux.Tracker.data(g1) |> collect
+  g1 = gradient(ctc, x_cu, y_cu)[1]
+  g1 = g1 |> collect
   
   g2 = ctc_ngradient(x, y)[1]
   

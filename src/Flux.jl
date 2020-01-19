@@ -22,6 +22,7 @@ export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
 
 
 using CuArrays
+using CUDAapi
 const use_cuda = Ref(false)
 
 include("utils.jl")

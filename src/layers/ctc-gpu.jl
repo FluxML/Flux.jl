@@ -5,7 +5,6 @@
 # paper: https://arxiv.org/pdf/1512.02595.pdf
 
 using Flux
-using Flux.Tracker: @grad
 using Statistics
 using CuArrays
 using CUDAnative

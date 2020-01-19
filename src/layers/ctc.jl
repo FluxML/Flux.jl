@@ -1,5 +1,5 @@
 using Flux
-using Flux.Tracker: @grad
+using Zygote: @adjoint
 using Statistics
 
 # CPU implementation
@@ -191,13 +191,7 @@ function ctc(ŷ::Array, y::Array)
   return ctc_(ŷ, y)[1] |> mean
 end
 
-ctc(ŷ::TrackedArray, y::AbstractArray) = Flux.Tracker.track(ctc_, ŷ, y)
-
-ctc(ŷ::AbstractArray, y::TrackedArray) = Flux.Tracker.track(ctc_, ŷ, y)
-
-ctc(ŷ::TrackedArray, y::TrackedArray) = Flux.Tracker.track(ctc_, ŷ, y)
-
-@grad function ctc_(ŷ, y)
-  ls, gs = ctc_(Flux.Tracker.data(ŷ), Flux.Tracker.data(y))
+@adjoint function ctc_(ŷ, y)
+  ls, gs = ctc_(ŷ, y)
   return mean(ls), Δ -> (Δ .* gs, Δ)
 end
