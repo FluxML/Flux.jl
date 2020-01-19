@@ -39,9 +39,9 @@ end
 
 trainable(m) = functor(m)[1]
 
-params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
+params!(p, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 
-function params!(p::Params, x, seen = IdSet())
+function params!(p, x, seen = IdSet())
   x in seen && return
   push!(seen, x)
   for child in trainable(x)
@@ -50,9 +50,9 @@ function params!(p::Params, x, seen = IdSet())
 end
 
 function params(m...)
-  ps = Params()
+  ps = Zygote.Buffer([])
   params!(ps, m)
-  return ps
+  return Params(copy(ps))
 end
 
 # Deprecated stuff
