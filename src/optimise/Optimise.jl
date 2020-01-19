@@ -7,6 +7,5 @@ export train!,
 
 include("optimisers.jl")
 include("train.jl")
-include("deprecations.jl")
 
 end

@@ -1,11 +1,8 @@
-using Flux, Test, Random, Statistics
+using Flux, Test, Random, Statistics, Documenter
 using Random
 using CUDAapi: has_cuda
 
 Random.seed!(0)
-
-# So we can use the system CuArrays
-insert!(LOAD_PATH, 2, "@v#.#")
 
 @testset "Flux" begin
 
@@ -25,14 +22,14 @@ include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("layers/conv.jl")
 
-@info "Running Gradient Checks"
-
-include("tracker.jl")
-
-if isdefined(Flux, :CUDA)
+if Flux.use_cuda[]
   include("cuda/cuda.jl")
 else
   @warn "CUDA unavailable, not testing GPU support"
+end
+
+if VERSION >= v"1.2"
+  doctest(Flux)
 end
 
 end

@@ -37,12 +37,10 @@ import Adapt: adapt, adapt_structure
 
 adapt_structure(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-if has_cuarrays()
-  import .CuArrays: CuArray, cudaconvert
-  import Base.Broadcast: BroadcastStyle, ArrayStyle
-  BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = ArrayStyle{CuArray}()
-  cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
-end
+import .CuArrays: CuArray, cudaconvert
+import Base.Broadcast: BroadcastStyle, ArrayStyle
+BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = ArrayStyle{CuArray}()
+cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 
 """
     onehot(l, labels[, unk])
@@ -54,17 +52,19 @@ it will error.
 ## Examples
 
 ```jldoctest
+julia> using Flux: onehot
+
 julia> onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
-  true
- false
+ 0
+ 1
+ 0
 
 julia> onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
- false
-  true
+ 0
+ 0
+ 1
 ```
 """
 function onehot(l, labels)
@@ -88,12 +88,13 @@ Create an [`OneHotMatrix`](@ref) with a batch of labels based on possible `label
 ## Examples
 
 ```jldoctest
-julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotMatrix:
- false   true  false
-  true  false   true
- false  false  false
+julia> using Flux: onehotbatch
 
+julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
+3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+ 0  1  0
+ 1  0  1
+ 0  0  0
 ```
 """
 onehotbatch(ls, labels, unk...) =
@@ -106,9 +107,9 @@ Base.argmax(xs::OneHotVector) = xs.ix
 
 Inverse operations of [`onehot`](@ref).
 
-## Examples
-
 ```jldoctest
+julia> using Flux: onecold
+
 julia> onecold([true, false, false], [:a, :b, :c])
 :a
 
@@ -124,15 +125,6 @@ onecold(y::AbstractMatrix, labels...) =
 onecold(y::OneHotMatrix, labels...) =
   mapreduce(x -> Flux.onecold(x, labels...), |, y.data, dims = 2, init = 0)
 
-function argmax(xs...)
-  Base.depwarn("`argmax(...)` is deprecated, use `onecold(...)` instead.", :argmax)
-  return onecold(xs...)
-end
-
-# Ambiguity hack
-
-a::TrackedMatrix * b::OneHotVector = invoke(*, Tuple{AbstractMatrix,OneHotVector}, a, b)
-a::TrackedMatrix * b::OneHotMatrix = invoke(*, Tuple{AbstractMatrix,OneHotMatrix}, a, b)
-
-onecold(x::TrackedVector, l...) = onecold(data(x), l...)
-onecold(x::TrackedMatrix, l...) = onecold(data(x), l...)
+# TODO probably still want this as a custom adjoint Zygote
+# onecold(x::TrackedVector, l...) = onecold(data(x), l...)
+# onecold(x::TrackedMatrix, l...) = onecold(data(x), l...)
