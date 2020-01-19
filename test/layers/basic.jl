@@ -92,4 +92,17 @@ import Flux: activations
       @test size(SkipConnection(Dense(10,10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
     end
   end
+  
+  @testset "DenselyConnected" begin
+    @testset "zero sum" begin
+      input = randn(10, 10, 10, 10)
+      @test DenselyConnected((x -> zeros(size(x)),), (a,b) -> a + b)(input) == input
+    end
+
+    @testset "concat size" begin
+      input = randn(10, 2)
+      @test size(DenselyConnected((Dense(10,1),Dense(11,2)), (a,b) -> vcat(a, b))(input)) == (13,2)
+    end
+  end
+  
 end
