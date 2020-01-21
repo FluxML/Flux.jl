@@ -35,7 +35,7 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/ctc.jl")
-has_cuda() && has_cuarrays() && include("layers/ctc-gpu.jl")
+has_cuda() && CuArrays.functional() && include("layers/ctc-gpu.jl")
 export ctc
 
 include("data/Data.jl")
