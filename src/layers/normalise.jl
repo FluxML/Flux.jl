@@ -365,3 +365,79 @@ function Base.show(io::IO, l::GroupNorm)
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
+
+
+"""
+Weight Normalization.
+This layer reparametrizes weights (w) of a layer with its decomposition into magnitude (g) and direction (v).
+
+	WeightNorm(layer, weight::Union{Symbol,Int}, dim)
+
+``layer`` is the layer being normalized.
+
+``weight`` is the parameter to be normalized.
+
+``dim`` is the dimension of normalization.
+Often, its the dimension encoding the output channels.
+
+Example:
+```
+d = Dense(10, 9, tanh);
+wndA = WeightNorm(d, :W, 2); #The param d.W is now normalized in the second dimension, i.e normalization per output channel
+wndB = WeightNorm(d, :W, 1:2); #Now we normalize all directions together, keeping a single magnitude
+```
+
+Link : https://arxiv.org/pdf/1602.07868.pdf
+"""
+
+struct WeightNormWeight{T,N}
+  g::AbstractArray{T,N}
+  v::AbstractArray{T,N}
+end
+
+Base.size(w::WeightNormWeight, i...) = size(w.v, i...)
+Base.size(w::WeightNormWeight) = size(w.v)
+Base.iterate(w::WeightNormWeight, i...) = iterate(w.v .* w.g, i...)
+Base.getindex(w::WeightNormWeight, i...) = getindex(w.v .* w.g, i...)
+Base.ndims(w::WeightNormWeight) = ndims(w.v)
+
+Flux.@functor WeightNormWeight
+
+WN_mag(p, dim) = sqrt.(sum(abs2.(p), dims = dim))
+WN_dir(p, mag, eps) = p ./ (mag .+ eps)
+WN_dir(p, mag) = WN_dir(p, mag, eps(eltype(p)))
+
+import Base.*, Base./, Base.+, Base.-
+for f in (:+, :-, :*, :/)
+  @eval ($f)(z::AbstractArray, w::WeightNormWeight) = ($f)(z, w.g .* w.v)
+  @eval ($f)(z::WeightNormWeight, w::AbstractArray) = ($f)(z.g .* z.v, w)
+end
+
+struct WeightNorm{L,E,I,W}
+  layer::L
+  eps::E
+  weight::W
+  dim::I
+end
+
+Flux.@functor WeightNorm
+
+function Base.show(io::IO, wn::WeightNorm)
+  print(io, "WeightNorm(", wn.layer, ", ", wn.weight, ", ", wn.dim, ")")
+end
+
+function WeightNorm(layer, weight::Union{Symbol,Int}, dim)
+  #Expose layer fields and constructor
+  func, re = Flux.functor(layer)
+  #Get the fields
+  par = [getfield(layer, fn) for fn in keys(func)]
+  w = getfield(layer, weight)
+  g = WN_mag(w, dim)
+  v = WN_dir(w, g)
+  par[findfirst(keys(func) .== weight)] = WeightNormWeight(g, v)
+  return WeightNorm(re(par), eps(Float32),dim,weight)
+end
+
+function (wn::WeightNorm)(x)
+  wn.layer(x)
+end
