@@ -435,7 +435,7 @@ function WeightNorm(layer, weight::Union{Symbol,Int}, dim)
   g = WN_mag(w, dim)
   v = WN_dir(w, g)
   par[findfirst(keys(func) .== weight)] = WeightNormWeight(g, v)
-  return WeightNorm(re(par), eps(Float32),dim,weight)
+  return WeightNorm(re(par), eps(Float32), weight, dim)
 end
 
 function (wn::WeightNorm)(x)
