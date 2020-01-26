@@ -191,6 +191,20 @@ end
 
 end
 
+@testset "WeightNorm" begin
+  let d = Dense(10, 9, tanh);
+    wnd = WeightNorm(d, :W, 1:2)
+    gs = gradient(() -> sum(abs2, d(fake_data)), params(d))
+    gswn = gradient(() -> sum(abs2, wnd(fake_data)), params(wnd))
+    ΔW = gs[d.W]
+    Δg = gswn[wnd.layer.W.g]
+    Δv = gswn[wnd.layer.W.v]
+    @test size(Δv) == size(ΔW)
+    @test isa(wnd.layer.W, WeightNormWeight)
+    @test sum(ΔW .* wnd.layer.W.v ./ Flux.WN_mag(wnd.layer.W.v, 1:2), dims = 1:2) ≈ Δg
+  end
+end
+
 if VERSION >= v"1.1"
 @testset "GroupNorm" begin
   # begin tests
