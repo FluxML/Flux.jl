@@ -390,15 +390,16 @@ wndB = WeightNorm(d, :W, 1:2); #Now we normalize all directions together, keepin
 Link : https://arxiv.org/pdf/1602.07868.pdf
 """
 
-struct WeightNormWeight{T,N}
+struct WeightNormWeight{T,N,I}
   g::AbstractArray{T,N}
   v::AbstractArray{T,N}
+  dim::I
 end
 
 Base.size(w::WeightNormWeight, i...) = size(w.v, i...)
 Base.size(w::WeightNormWeight) = size(w.v)
-Base.iterate(w::WeightNormWeight, i...) = iterate(w.v .* w.g, i...)
-Base.getindex(w::WeightNormWeight, i...) = getindex(w.v .* w.g, i...)
+Base.iterate(w::WeightNormWeight, i...) = iterate(w.g .* w.v ./ WN_mag(w.v, w.dim), i...)
+Base.getindex(w::WeightNormWeight, i...) = getindex(w.g .* w.v ./ WN_mag(w.v, w.dim), i...)
 Base.ndims(w::WeightNormWeight) = ndims(w.v)
 
 Flux.@functor WeightNormWeight
@@ -409,8 +410,8 @@ WN_dir(p, mag) = WN_dir(p, mag, eps(eltype(p)))
 
 import Base.*, Base./, Base.+, Base.-
 for f in (:+, :-, :*, :/)
-  @eval ($f)(z::AbstractArray, w::WeightNormWeight) = ($f)(z, w.g .* w.v)
-  @eval ($f)(z::WeightNormWeight, w::AbstractArray) = ($f)(z.g .* z.v, w)
+  @eval ($f)(z::AbstractArray, w::WeightNormWeight) = ($f)(z, w.g .* w.v ./ WN_mag(w.v, w.dim))
+  @eval ($f)(w::WeightNormWeight, z::AbstractArray) = ($f)(w.g .* w.v ./ WN_mag(w.v, w.dim), z)
 end
 
 struct WeightNorm{L,E,I,W}
@@ -434,7 +435,7 @@ function WeightNorm(layer, weight::Union{Symbol,Int}, dim)
   w = getfield(layer, weight)
   g = WN_mag(w, dim)
   v = WN_dir(w, g)
-  par[findfirst(keys(func) .== weight)] = WeightNormWeight(g, v)
+  par[findfirst(keys(func) .== weight)] = WeightNormWeight(g, v, dim)
   return WeightNorm(re(par), eps(Float32), weight, dim)
 end
 
