@@ -192,16 +192,25 @@ end
 end
 
 @testset "WeightNorm" begin
-  let d = Dense(10, 9, tanh);
-    wnd = WeightNorm(d, :W, 1:2)
+  let fake_data = randn(Float32, 10,3)
+    d = Dense(10, 9, tanh)
     gs = gradient(() -> sum(abs2, d(fake_data)), params(d))
-    gswn = gradient(() -> sum(abs2, wnd(fake_data)), params(wnd))
-    ΔW = gs[d.W]
-    Δg = gswn[wnd.layer.W.g]
-    Δv = gswn[wnd.layer.W.v]
-    @test size(Δv) == size(ΔW)
-    @test isa(wnd.layer.W, WeightNormWeight)
-    @test sum(ΔW .* wnd.layer.W.v ./ Flux.WN_mag(wnd.layer.W.v, 1:2), dims = 1:2) ≈ Δg
+    W = d.W
+    for WN_dim in [1, 2, 1:2]
+      wnd = WeightNorm(d, :W, WN_dim)
+      gswn = gradient(() -> sum(abs2, wnd(fake_data)), params(wnd))
+      g = wnd.layer.W.g
+      v = wnd.layer.W.v
+      normv = sum(abs2, v, dims = WN_dim)
+      
+      ΔW = gs[W]
+      Δg = gswn[g]
+      Δv = gswn[v]
+      @test sum(ΔW .* v ./ normv, dims = WN_dim) ≈ Δg
+      @test g ./ normv .* ΔW - g .* Δg .* v ./ (normv.^2) ≈ Δv
+      @test size(Δv) == size(ΔW)
+      @test isa(wnd.layer.W, WeightNormWeight)
+    end
   end
 end
 
