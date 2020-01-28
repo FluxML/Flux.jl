@@ -303,11 +303,11 @@ function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
 end
 
 function (a::Bilinear)(x::AbstractArray, y::AbstractArray)
-  W, b, σ = a.W, a.b, a.σ
-  outdim = size(W, 1)
   if size(x, 2) ≠ size(y, 2)
     error("Bilinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
   end
+  W, b, σ = a.W, a.b, a.σ
+  outdim = size(W, 1)
   samplesize = size(x,2)
   reduce(hcat, [reduce(vcat, [σ(x[:,s]' * W[o,:,:] * y[:,s] + b[o]) for o in 1:outdim]) for s in 1:samplesize])
 end
