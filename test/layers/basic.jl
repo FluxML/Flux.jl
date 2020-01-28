@@ -107,10 +107,10 @@ import Flux: activations
     end
   end
 
-  @testset "Billinear" begin
+  @testset "Bilinear" begin
     @testset "SkipConnection recombinator" begin
       d = Dense(10, 10)
-      @test_nowarn b = Billinear(10, 10, 5)
+      @test_nowarn b = Bilinear(10, 10, 5)
       x = randn(Float32,10,9)
       sc = SkipConnection(d, b)
       @test size(sc(x)) == (5,9)
@@ -119,14 +119,14 @@ import Flux: activations
     @testset "Two-streams zero sum" begin
       x = zeros(Float32,10,9)
       y = zeros(Float32,2,9)
-      b = Billinear(10, 2, 3)
+      b = Bilinear(10, 2, 3)
       @test size(b(x,y)) == (3,9)
       @test sum(abs2, b(x,y)) == 0f0
     end
 
     @testset "Inner interactions" begin
       x = randn(Float32,11,7)
-      b = Billinear(11, 11, 3)
+      b = Bilinear(11, 11, 3)
       @test size(b(x)) == (3,7)
       @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
     end

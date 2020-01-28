@@ -255,67 +255,67 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    Billinear(in1, in2, out)
+    Bilinear(in1, in2, out)
 
-Creates a Billinear layer, that operates over two inputs at the same time.
+Creates a Bilinear layer, that operates over two inputs at the same time.
 Given parameters W and b, it's output is an interaction of the form 
 
 z_i = σ.(x * W_i * y' .+ b_i)
 
 All `z_i` are then concatenated across output dimensions `i` and samples.
 
-Billinear can be used to create interactions between features as well.
+Bilinear can be used to create interactions between features as well.
 
 ```
 d = Dense(10, 10)
-b = Billinear(10, 10, 5)
+b = Bilinear(10, 10, 5)
 x = randn(Float32,10,9)
 
-#using Billinear as the recombinator in a SkipConnection
+#using Bilinear as the recombinator in a SkipConnection
 sc = SkipConnection(d, b)
 size(sc(x)) == (5,9)
 
-#using Billinear in two data streams at once
+#using Bilinear in two data streams at once
 x = randn(Float32,10,9)
 y = randn(Float32,2,9)
-b = Billinear(10, 2, 3)
+b = Bilinear(10, 2, 3)
 size(b(x,y)) == (3,9)
 
-#using Billinear to generate interactions
+#using Bilinear to generate interactions
 x = randn(Float32,11,7)
-b = Billinear(11, 11, 3)
+b = Bilinear(11, 11, 3)
 size(b(x)) == (3,7)
 ```
 """
-struct Billinear{A,B,S}
+struct Bilinear{A,B,S}
   W::A
   b::B
   σ::S
 end
 
-@functor Billinear
+@functor Bilinear
 
-Billinear(W, b) = Billinear(W, b, identity)
+Bilinear(W, b) = Bilinear(W, b, identity)
 
-function Billinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
+function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
   initW = glorot_uniform, initb = zeros)
-  return Billinear(initW(out, in1, in2), initb(out), σ)
+  return Bilinear(initW(out, in1, in2), initb(out), σ)
 end
 
-function (a::Billinear)(x::AbstractArray, y::AbstractArray)
+function (a::Bilinear)(x::AbstractArray, y::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
   outdim = size(W, 1)
   if size(x, 2) ≠ size(y, 2)
-    error("Billinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
+    error("Bilinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
   end
   samplesize = size(x,2)
   reduce(hcat, [reduce(vcat, [σ(x[:,s]' * W[o,:,:] * y[:,s] + b[o]) for o in 1:outdim]) for s in 1:samplesize])
 end
 
-(a::Billinear)(x::AbstractArray) = a(x,x)
+(a::Bilinear)(x::AbstractArray) = a(x,x)
 
-function Base.show(io::IO, l::Billinear)
-print(io, "Billinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
+function Base.show(io::IO, l::Bilinear)
+print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
 l.σ == identity || print(io, ", ", l.σ)
 print(io, ")")
 end
