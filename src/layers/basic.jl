@@ -309,7 +309,7 @@ function (a::Billinear)(x::AbstractArray, y::AbstractArray)
     error("Billinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
   end
   samplesize = size(x,2)
-  reduce(hcat, [reduce(vcat, [x[:,s]' * W[o,:,:] * y[:,s] .+ b[o] for o in 1:outdim]) for s in 1:samplesize])
+  reduce(hcat, [reduce(vcat, [σ(x[:,s]' * W[o,:,:] * y[:,s] + b[o]) for o in 1:outdim]) for s in 1:samplesize])
 end
 
 (a::Billinear)(x::AbstractArray) = a(x,x)
