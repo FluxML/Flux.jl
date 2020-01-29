@@ -110,7 +110,7 @@ import Flux: activations
   @testset "Bilinear" begin
     @testset "SkipConnection recombinator" begin
       d = Dense(10, 10)
-      @test_nowarn b = Flux.Bilinear(10, 10, 5)
+      b = Flux.Bilinear(10, 10, 5)
       x = randn(Float32,10,9)
       sc = SkipConnection(d, b)
       @test size(sc(x)) == (5,9)
