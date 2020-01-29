@@ -309,7 +309,7 @@ function (a::Bilinear)(x::AbstractArray, y::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
   outdim = size(W, 1)
   samplesize = size(x,2)
-  reduce(hcat, [reduce(vcat, [σ(x[:,s]' * W[o,:,:] * y[:,s] + b[o]) for o in 1:outdim]) for s in 1:samplesize])
+  hcat([vcat([σ(x[:,s]' * W[o,:,:] * y[:,s] + b[o]) for o in 1:outdim]...) for s in 1:samplesize]...)
 end
 
 (a::Bilinear)(x::AbstractArray) = a(x,x)
