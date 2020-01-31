@@ -221,38 +221,38 @@ function *(a::Zeros{T,2}, b::AbstractArray{S,2}) where {T,S}
   res .= zero(S)
 end
 
-Base.copy(xs::Zeros{T,N}) where {T,N} = Zeros(T, size(xs)...)
+Base.copy(xs::Zeros{T,N}) where {T,N} = xs
 
 # Define broadcasting behaviour
 for op in (:+, :-)
-  @eval function broadcasted($op, a::AbstractArray, b::Zeros)
+  @eval function broadcasted(::typeof($op), a::AbstractArray, b::Zeros)
     sz = similar(a, Broadcast.broadcast_shape(size(a), size(b)))
     sz .= a
   end
 end
 
-broadcasted(+, a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
-broadcasted(-, a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
+broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
+broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
 
-function broadcasted(*, a::AbstractArray, b::Zeros)
+function broadcasted(::typeof(*), a::AbstractArray, b::Zeros)
   sz = similar(a, Broadcast.broadcast_shape(size(a), size(b)))
   sz .= zero(a)
 end
 
-broadcasted(*, a::Zeros, b::AbstractArray) = broadcasted(*, b, a)
+broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = broadcasted(*, b, a)
 
 for op in (:+, :-, :*)
-  @eval broadcasted($op, a::Zeros, b::Zeros) = Zeros(Broadcast.broadcast_shape(size(a), size(b))...)
+  @eval broadcasted(::typeof($op), a::Zeros, b::Zeros) = Zeros(Broadcast.broadcast_shape(size(a), size(b))...)
 end
 
 # Some opportunities to avoid scalar indexing, intermediaries
-broadcasted(+, a::AbstractArray, b::Zeros{T,0}) where T = a
-broadcasted(+, a::Zeros{T,0}, b::AbstractArray) where T = b
-broadcasted(-, a::AbstractArray, b::Zeros{T,0}) where T = a
-broadcasted(-, a::Zeros{T,0}, b::AbstractArray) where T = -b
-broadcasted(*, a::AbstractArray, b::Zeros{T,0}) where T = zero(a)
-broadcasted(*, a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
-broadcasted(/, a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
+broadcasted(::typeof(+), a::AbstractArray, b::Zeros{T,0}) where T = a
+broadcasted(::typeof(+), a::Zeros{T,0}, b::AbstractArray) where T = b
+broadcasted(::typeof(-), a::AbstractArray, b::Zeros{T,0}) where T = a
+broadcasted(::typeof(-), a::Zeros{T,0}, b::AbstractArray) where T = -b
+broadcasted(::typeof(*), a::AbstractArray, b::Zeros{T,0}) where T = zero(a)
+broadcasted(::typeof(*), a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
+broadcasted(::typeof(/), a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
 
 """
     @jit ...
