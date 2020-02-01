@@ -206,7 +206,7 @@ end
 ############################################################################
 struct Trainable_layer
     layer_name::Any
-    num_params::Int
+    num_params::Int64
 end
     
 struct Summary
@@ -216,7 +216,7 @@ end
 
 """
     print_summary(Summary)
-This function allows to print the Summary of the model in a clean formatted manner. 
+Helper function for printing the summary of the model in a proper format. 
 """
 function print_summary(summ)
     
