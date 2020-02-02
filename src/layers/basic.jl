@@ -329,10 +329,10 @@ end
 
 collecteachcol(x::AbstractMatrix) = collect(eachcol(x))
 
-Zygote.@adjoint collecteachcol(x::AbstractMatrix) =
+@adjoint collecteachcol(x::AbstractMatrix) =
   collecteachcol(x), dy -> (reducehcat(dy),)
 
 reducehcat(x::AbstractVector{<:AbstractVector}) = reduce(hcat, x)
 
-Zygote.@adjoint reducehcat(V::AbstractVector{<:AbstractVector}) =
+@adjoint reducehcat(V::AbstractVector{<:AbstractVector}) =
   reducehcat(V), dM -> (collecteachcol(dM),)
