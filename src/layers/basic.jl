@@ -308,11 +308,11 @@ function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   end
   W, b, σ = a.W, a.b, a.σ
   Wp = permutedims(W, (2,1,3)) # could store in this order
-  o, i, j = size(W)
+  out_size, x_size, y_size = size(W)
   xs, ys = collecteachcol(x), collecteachcol(y)
-  Zs = map(xs, ys) do x,y
-    Wy = reshape(Wp, :,j) * y
-    xWy = vec(x' * reshape(Wy, j, o))
+  Zs = map(xs, ys) do x, y
+    Wy = reshape(Wp, :, y_size) * y
+    xWy = vec(x' * reshape(Wy, x_size, out_size))
   end
   Z = reducehcat(Zs)
   σ.(Z .+ b)
@@ -327,7 +327,7 @@ function Base.show(io::IO, l::Bilinear)
   print(io, ")")
 end
 
-collecteachcol(x::AbstractMatrix) = collect(eachcol(x))
+collecteachcol(x::AbstractMatrix) = [view(x, :,c) for c in axes(x,2)]
 
 @adjoint collecteachcol(x::AbstractMatrix) =
   collecteachcol(x), dy -> (reducehcat(dy),)
