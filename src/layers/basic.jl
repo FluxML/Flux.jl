@@ -302,20 +302,36 @@ function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
   return Bilinear(initW(out, in1, in2), initb(out), σ)
 end
 
-function (a::Bilinear)(x::AbstractArray, y::AbstractArray)
+function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   if size(x, 2) ≠ size(y, 2)
     error("Bilinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
   end
-  W, b, σ = a.W, a.b, a.σ
-  outdim = size(W, 1)
-  samplesize = size(x,2)
-  hcat([vcat([σ(x[:,s]' * W[o,:,:] * y[:,s] + b[o]) for o in 1:outdim]...) for s in 1:samplesize]...)
+  Wp = permutedims(W, (2,1,3)) # could store in this order
+  o, i, j = size(W)
+  xs, ys = collecteachcol(x), collecteachcol(y)
+  Zs = map(xs, ys) do x,y
+    Wy = reshape(Wp, :,j) * y
+    xWy = vec(x' * reshape(Wy, j, o))
+  end
+  Z = reducehcat(Zs)
+  σ.(Z .+ b)
 end
 
 (a::Bilinear)(x::AbstractArray) = a(x,x)
+(a::Bilinear)(x::AbstractVector, y::AbstractVector) = vec(a(reshape(x, :,1), reshape(y, :,1)))
 
 function Base.show(io::IO, l::Bilinear)
-print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
-l.σ == identity || print(io, ", ", l.σ)
-print(io, ")")
+  print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
+  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ")")
 end
+
+collecteachcol(x::AbstractMatrix) = collect(eachcol(x))
+
+Zygote.@adjoint collecteachcol(x::AbstractMatrix) =
+  collecteachcol(x), dy -> (reducehcat(dy),)
+
+reducehcat(x::AbstractVector{<:AbstractVector}) = reduce(hcat, x)
+
+Zygote.@adjoint reducehcat(V::AbstractVector{<:AbstractVector}) =
+  reducehcat(V), dM -> (collecteachcol(dM),)
