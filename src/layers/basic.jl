@@ -306,6 +306,7 @@ function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   if size(x, 2) ≠ size(y, 2)
     error("Bilinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
   end
+  W, b, σ = a.W, a.b, a.σ
   Wp = permutedims(W, (2,1,3)) # could store in this order
   o, i, j = size(W)
   xs, ys = collecteachcol(x), collecteachcol(y)
