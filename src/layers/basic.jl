@@ -332,7 +332,7 @@ collecteachcol(x::AbstractMatrix) = [view(x, :,c) for c in axes(x,2)]
 @adjoint collecteachcol(x::AbstractMatrix) =
   collecteachcol(x), dy -> (reducehcat(dy),)
 
-reducehcat(x::AbstractVector{<:AbstractVector}) = reduce(hcat, x)
+reducehcat(x) = reduce(hcat, x)
 
-@adjoint reducehcat(V::AbstractVector{<:AbstractVector}) =
+@adjoint reducehcat(V) =
   reducehcat(V), dM -> (collecteachcol(dM),)
