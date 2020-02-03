@@ -56,11 +56,8 @@ reset!(m::Recur) = (m.state = m.init)
 reset!(m) = foreach(reset!, functor(m)[1])
 
 function flip(f, xs)
-   flipped_xs = Zygote.Buffer(xs)
-   for t ∈ Iterators.reverse(eachindex(xs))
-      flipped_xs[t] = f(xs[t])
-   end
-   return copy(flipped_xs)
+  rev_time = reverse(eachindex(xs))
+  return getindex.(Ref(f.(getindex.(Ref(xs), rev_time))), rev_time)
 end
 
 # Vanilla RNN
