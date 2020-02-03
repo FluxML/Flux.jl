@@ -56,7 +56,7 @@ reset!(m::Recur) = (m.state = m.init)
 reset!(m) = foreach(reset!, functor(m)[1])
 
 function flip(f, xs)
-  rev_time = reverse(eachindex(xs))
+  rev_time = Iterators.reverse(eachindex(xs))
   return getindex.(Ref(f.(getindex.(Ref(xs), rev_time))), rev_time)
 end
 
