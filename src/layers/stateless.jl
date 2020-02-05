@@ -6,7 +6,7 @@ using NNlib: logsoftmax, logσ
     mae(ŷ, y)
 L1 loss function. Computes the mean of absolute error between prediction and true values
 """
-mae(ŷ, y) = sum(abs.(ŷ.- y)) * 1 // length(y)
+mae(ŷ, y) = sum(abs.(ŷ .- y)) * 1 // length(y)
 
 
 """
@@ -42,9 +42,9 @@ Alias:
   msle(ŷ,y;ϵ1=eps.(Float64.(ŷ)),ϵ2=eps.(Float64.(y)))
 
 """
-mean_squared_logarithmic_error(ŷ, y;ϵ1=eps.(Float64.(ŷ)),ϵ2=eps.(Float64.(y))) = sum((log.(ŷ+ϵ1).-log.(y+ϵ2)).^2) * 1 // length(y)
+mean_squared_logarithmic_error(ŷ, y;ϵ1=eps.(ŷ),ϵ2=eps.(eltype(ŷ).(y))) = sum((log.(ŷ+ϵ1).-log.(y+ϵ2)).^2) * 1 // length(y)
 #Alias
-msle(ŷ, y;ϵ1=eps.(Float64.(ŷ)),ϵ2=eps.(Float64.(y))) = sum((log.(ŷ+ϵ1).-log.(y+ϵ2)).^2) * 1 // length(y)
+msle(ŷ, y;ϵ1=eps.(ŷ),ϵ2=eps.(eltype(ŷ).(y))) = sum((log.(ŷ+ϵ1).-log.(y+ϵ2)).^2) * 1 // length(y)
 
 
 
@@ -74,12 +74,14 @@ Computes the mean of the Huber loss between prediction ŷ and true values y. By
 """
 function huber_loss(ŷ, y,delta=1.0)
   abs_error = abs.(ŷ.-y)
-  hub_loss =0
+  type_ = eltype(ŷ)
+  delta = type_(delta)
+  hub_loss =type_(0)
   for i in 1:length(y)
     if (abs_error[i]<=delta)
-      hub_loss+=abs_error[i]^2*0.5
+      hub_loss+=abs_error[i]^2*type_(0.5)
     else
-      hub_loss+=delta*(abs_error[i]-0.5*delta)
+      hub_loss+=delta*(abs_error[i]-type_(0.5*delta))
     end
   
   return hub_loss*1//length(y)
