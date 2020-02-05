@@ -6,7 +6,7 @@ using NNlib: logsoftmax, logσ
     mae(ŷ, y)
 L1 loss function. Computes the mean of absolute error between prediction and true values
 """
-mae(ŷ, y) = sum(abs.(ŷ, y)) * 1 // length(y)
+mae(ŷ, y) = sum(abs.(ŷ.- y)) * 1 // length(y)
 
 
 """
