@@ -223,5 +223,5 @@ hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
 
 L2 loss function. Computes squared hinge loss over the prediction ŷ and true labels y(conatining 1 or -1)
 """
-squared_hinge(ŷ, y) = sum((max.(0,1.-ŷ.*y)).^2) *1//size(y,2)
+squared_hinge(ŷ, y) = sum((max.(0,1 .-ŷ .* y)).^2) *1//size(y,2)
   
