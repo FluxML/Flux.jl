@@ -16,7 +16,13 @@ using Test
 @test Data.Sentiment.train() isa Vector{Data.Tree{Any}}
 
 @test Iris.features() isa Matrix
-@test size(Iris.features()) == (4,150)
+@test size(Iris.features()) == (4,150) 
 
 @test Iris.labels() isa Vector{String}
 @test size(Iris.labels()) == (150,)
+
+@test Housing.features() isa Matrix
+@test size(Housing.features()) == (506, 13)
+
+@test Housing.targets() isa Array{Float64}
+@test size(Housing.targets()) == (506, 1)

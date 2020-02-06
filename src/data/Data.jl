@@ -42,4 +42,7 @@ using .Sentiment
 include("iris.jl")
 export Iris
 
+include("housing.jl")
+export Housing
+
 end
