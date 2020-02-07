@@ -22,31 +22,42 @@ const ϵ = 1e-7
 
   @testset "crossentropy" begin
     @test crossentropy(ŷ, y) ≈ lossvalue
+    @test crossentropy(ŷ, y, label_smoothing=0.2) ≈ lossvalue
   end
 
   @testset "logitcrossentropy" begin
     @test logitcrossentropy(logŷ, y) ≈ lossvalue
+    @test logitcrossentropy(logŷ, y, label_smoothing=0.2) ≈ lossvalue
   end
 
   @testset "weighted_crossentropy" begin
     @test crossentropy(ŷ, y, weight = ones(2)) ≈ lossvalue
     @test crossentropy(ŷ, y, weight = [.5, .5]) ≈ lossvalue/2
+    @test crossentropy(ŷ, y, weight = ones(2), label_smoothing=0.2) ≈ lossvalue
+    @test crossentropy(ŷ, y, weight = [.5, .5], label_smoothing=0.2) ≈ lossvalue/2
     @test crossentropy(ŷ, y, weight = [2, .5]) ≈ 1.5049660054074199
   end
 
   @testset "weighted_logitcrossentropy" begin
     @test logitcrossentropy(logŷ, y, weight = ones(2)) ≈ lossvalue
     @test logitcrossentropy(logŷ, y, weight = [.5, .5]) ≈ lossvalue/2
+    @test logitcrossentropy(logŷ, y, weight = ones(2), label_smoothing=0.2) ≈ lossvalue
+    @test logitcrossentropy(logŷ, y, weight = [.5, .5],label_smoothing=0.2) ≈ lossvalue/2
     @test logitcrossentropy(logŷ, y, weight = [2, .5]) ≈ 1.5049660054074199
   end
 
   logŷ, y = randn(3), rand(3)
+  ydb = [0.1, 0.9, 0.9, 0.1]
+  yb  = [1., 1., 0., 0.]
+  yr  = [2.0828626352604234, 0.3250829733914482, 2.0828626352604234, 0.3250829733914482]
   @testset "binarycrossentropy" begin
+    @test binarycrossentropy.(ydb, yb; ϵ=0, label_smoothing=0.2) ≈ yr
     @test binarycrossentropy.(σ.(logŷ), y; ϵ=0) ≈ -y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ))
     @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ)))
   end
 
   @testset "logitbinarycrossentropy" begin
+    @test logitbinarycrossentropy.(logŷ, y, label_smoothing=0.2) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0, label_smoothing=0.2)
     @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0)
   end
   
