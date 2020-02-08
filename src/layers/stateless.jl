@@ -28,9 +28,10 @@ function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight
 end
 
 """
-    binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
+    binarycrossentropy(ŷ, y; ϵ=eps(ŷ), label_smoothing=zero(y))
 
 Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerical stability.
+`label_smoothing` can provide better generalization and continuity to the loss function.
 
     julia> binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0.])
     3-element Array{Float64,1}:
@@ -54,6 +55,7 @@ end
 
 `logitbinarycrossentropy(logŷ, y)` is mathematically equivalent to `binarycrossentropy(σ(logŷ), y)`
 but it is more numerically stable.
+`label_smoothing` can provide better generalization and continuity to the loss function.
 
     julia> logitbinarycrossentropy.([-1.1491, 0.8619, 0.3127], [1, 1, 0.])
     3-element Array{Float64,1}:
