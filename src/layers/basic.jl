@@ -41,28 +41,20 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-"""
-    allowconvert(flag=true)
-Setting this to `false` will cause an error on some type mismatches (instead of silently converting).
-"""
-allowconvert(flag::Bool=true) = convert_allowed[] = flag
-
-const convert_allowed = Ref(true)
-
-convert_check(arg...) = convert_allowed[] || error(string(arg..., ".\n",
-  "Flux.allowconvert(true) will disable this error."))
-
-Zygote.@nograd convert_check
-
 @adjoint function (c::Chain)(x)
   y, back = Zygote.pullback(applychain, c.layers, x)
   T = typeof(y)
   y, dy -> begin
-    eltype(y) == eltype(dy) ||
-      convert_check("Chain(...) has output ", eltype(y), " but receives gradient ", eltype(dy))
+    eltype(y) == eltype(dy) || debug_string(
+      "Chain(...) has output of eltype ", eltype(y),
+      " but receives gradient of eltype ", eltype(dy))
     back(dy)
   end
 end
+
+Zygote.@nograd debug_string
+
+debug_string(arg...) = @debug string(arg...)
 
 """
     outdims(c::Chain, isize)
@@ -150,7 +142,8 @@ end
   invoke(a, Tuple{AbstractArray}, x)
 
 function (a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}}
-  convert_check("Layer ", a, " of contains ", T," but acts on data ", typeof(x))
+  debug_string("Layer ", a, " has parameters of eltype ", T," but acts on data ", typeof(x).
+    ", which will be converted to match.")
   a(T.(x))
 end
 
