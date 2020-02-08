@@ -42,6 +42,29 @@ function Base.show(io::IO, c::Chain)
 end
 
 """
+    allowconvert(flag=true)
+Setting this to `false` will cause an error on some type mismatches (instead of silently converting).
+"""
+allowconvert(flag::Bool=true) = convert_allowed[] = flag
+
+const convert_allowed = Ref(true)
+
+convert_check(arg...) = convert_allowed[] || error(string(arg..., ".\n",
+  "Flux.allowconvert(true) will disable this error."))
+
+Zygote.@nograd convert_check
+
+@adjoint function (c::Chain)(x)
+  y, back = Zygote.pullback(applychain, c.layers, x)
+  T = typeof(y)
+  y, dy -> begin
+    eltype(y) == eltype(dy) ||
+      convert_check("Chain(...) has output ", eltype(y), " but receives gradient ", eltype(dy))
+    back(dy)
+  end
+end
+
+"""
     outdims(c::Chain, isize)
 
 Calculate the output dimensions given the input dimensions, `isize`.
@@ -126,8 +149,10 @@ end
 (a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   invoke(a, Tuple{AbstractArray}, x)
 
-(a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
+function (a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}}
+  convert_check("Layer ", a, " of contains ", T," but acts on data ", typeof(x))
   a(T.(x))
+end
 
 """
     outdims(l::Dense, isize)
