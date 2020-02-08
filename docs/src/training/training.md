@@ -41,6 +41,23 @@ The model to be trained must have a set of tracked parameters that are used to c
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 
+When it is desired to not include all the model parameters (for e.g. transfer learning), we can simply not pass in those layers into our call to `params`.
+
+Consider the simple multi-layer model where we want to omit optimising the second layer. This setup would look something like so:
+
+```julia
+m = Chain(
+  Dense(784, 64, σ),
+  Dense(64, 32),
+  Dense(32, 10), softmax)
+
+ps = Flux.params(m[1], m[3:end])
+```
+
+`ps` now holds a reference to only the parameters of the layers passed to it.
+
+Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../models/basics.md) section. 
+
 ## Datasets
 
 The `data` argument provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy data set with only one data point:
