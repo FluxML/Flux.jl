@@ -142,7 +142,7 @@ end
   invoke(a, Tuple{AbstractArray}, x)
 
 function (a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}}
-  debug_string("Layer ", a, " has parameters of eltype ", T," but acts on data ", typeof(x).
+  debug_string("Layer ", a, " has parameters of eltype ", T," but acts on data ", typeof(x),
     ", which will be converted to match.")
   a(T.(x))
 end
