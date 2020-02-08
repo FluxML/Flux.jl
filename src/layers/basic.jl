@@ -52,9 +52,9 @@ end
   end
 end
 
-Zygote.@nograd debug_string
-
 debug_string(arg...) = @debug string(arg...)
+
+Zygote.@nograd debug_string
 
 """
     outdims(c::Chain, isize)
