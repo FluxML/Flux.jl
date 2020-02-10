@@ -49,12 +49,33 @@ const ϵ = 1e-7
   @testset "logitbinarycrossentropy" begin
     @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0)
   end
-
+  
+  y = [1 2 3]
+  y1 = [4.0 5.0 6.0]
+  @testset "kldivergence" begin
+    @test Flux.kldivergence(y, y1) ≈ 4.761838062403337
+    @test Flux.kldivergence(y, y) ≈ 0 
+  end
+  
+  y = [1 2 3 4]
+  y1 = [5.0 6.0 7.0 8.0]
+  @testset "hinge" begin
+    @test Flux.hinge(y, y1) ≈ 0
+    @test Flux.hinge(y, 0.5 .* y) ≈ 0.125
+  end
+  
+  y = [0.1 0.2 0.3]
+  y1 = [0.4 0.5 0.6]
+  @testset "poisson" begin
+    @test Flux.poisson(y, y1) ≈ 1.0160455586700767
+    @test Flux.poisson(y, y) ≈ 0.5044459776946685
+  end
+  
   @testset "no spurious promotions" begin
     for T in (Float32, Float64)
       y = rand(T, 2)
       ŷ = rand(T, 2)
-      for f in (mse, crossentropy, logitcrossentropy)
+      for f in (mse, crossentropy, logitcrossentropy, Flux.kldivergence, Flux.hinge, Flux.poisson)
         fwd, back = Flux.pullback(f, ŷ, y)
         @test fwd isa T
         @test eltype(back(one(T))[1]) == T

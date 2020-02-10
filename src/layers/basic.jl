@@ -44,18 +44,21 @@ end
 # it might be replaced in the future for better performance
 # see issue https://github.com/FluxML/Flux.jl/issues/702
 # Johnny Chen -- @johnnychen94
+# only slightly changed to better handle interaction with Zygote @dsweber2
 """
     activations(c::Chain, input)
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
 function activations(c::Chain, input)
-  rst = []
-  for l in c
-    x = get(rst, length(rst), input)
-    push!(rst, l(x))
-  end
-  return rst
+    extraChain(c.layers, input)
 end
+
+function extraChain(fs::Tuple, x)
+    res = first(fs)(x)
+    return (res, extraChain(Base.tail(fs), res)...)
+end
+
+extraChain(::Tuple{}, x) = ()
 
 using Base: depwarn
 
@@ -234,17 +237,22 @@ function (mo::Maxout)(input::AbstractArray)
 end
 
 """
-    SkipConnection(layers...)
+    SkipConnection(layers, connection)
 
-Creates a Skip Connection, which constitutes of a layer or Chain of consecutive layers
-and a shortcut connection linking the input to the block to the
-output through a user-supplied callable.
+Creates a Skip Connection, of a layer or `Chain` of consecutive layers
+plus a shortcut connection. The connection function will combine the result of the layers
+with the original input, to give the final output.
 
-`SkipConnection` requires the output dimension to be the same as the input.
+The simplest 'ResNet'-type connection is just `SkipConnection(layer, +)`,
+and requires the output of the layers to be the same shape as the input.
+Here is a more complicated example:
+```
+m = Conv((3,3), 4=>7, pad=(1,1))
+x = ones(5,5,4,10);
+size(m(x)) == (5, 5, 7, 10)
 
-A 'ResNet'-type skip-connection with identity shortcut would simply be
-```julia
-    SkipConnection(layer, (a,b) -> a + b)
+sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3))
+size(sm(x)) == (5, 5, 11, 10)
 ```
 """
 struct SkipConnection
@@ -255,12 +263,9 @@ end
 @functor SkipConnection
 
 function (skip::SkipConnection)(input)
-  #We apply the layers to the input and return the result of the application of the layers and the original input
   skip.connection(skip.layers(input), input)
 end
 
 function Base.show(io::IO, b::SkipConnection)
-  print(io, "SkipConnection(")
-  join(io, b.layers, ", ")
-  print(io, ")")
+  print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end

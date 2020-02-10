@@ -39,7 +39,7 @@ end
 
 trainable(m) = functor(m)[1]
 
-params!(p::Params, x::AbstractArray{<:Real}, seen = IdSet()) = push!(p, x)
+params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 
 function params!(p::Params, x, seen = IdSet())
   x in seen && return
@@ -73,13 +73,7 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-const gpu_adaptor = if has_cuarrays()
-  CuArrays.cu
-else
-  identity
-end
-
-gpu(x) = fmap(gpu_adaptor, x)
+gpu(x) = use_cuda[] ? fmap(CuArrays.cu, x) : x
 
 # Precision
 

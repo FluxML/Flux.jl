@@ -1,8 +1,9 @@
 # Training
 
-To actually train a model we need three things:
+To actually train a model we need four things:
 
 * A *objective function*, that evaluates how well a model is doing given some input data.
+* The trainable parameters of the model.
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
@@ -31,6 +32,14 @@ Flux.train!(loss, ps, data, opt)
 ```
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
+
+At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
+
+## Model parameters
+
+The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `params(m)`.
+
+Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 
 ## Datasets
 
@@ -101,3 +110,30 @@ cb = function ()
   accuracy() > 0.9 && Flux.stop()
 end
 ```
+
+## Custom Training loops
+
+The `Flux.train!` function can be very convenient, especially for simple problems.
+Its also very flexible with the use of callbacks.
+But for some problems its much cleaner to write your own custom training loop.
+An example follows that works similar to the default `Flux.train` but with no callbacks.
+You don't need callbacks if you just code the calls to your functions directly into the loop.
+E.g. in the places marked with comments.
+
+```
+function my_custom_train!(loss, ps, data, opt)
+  ps = Params(ps)
+  for d in data
+    gs = gradient(ps) do
+      training_loss = loss(d...)
+      # Insert what ever code you want here that needs Training loss, e.g. logging
+      return training_loss
+    end
+    # insert what ever code you want here that needs gradient
+    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge
+    update!(opt, ps, gs)
+    # Here you might like to check validation set accuracy, and break out to do early stopping
+  end
+end
+```
+You could simplify this further, for example by hard-coding in the loss function.
