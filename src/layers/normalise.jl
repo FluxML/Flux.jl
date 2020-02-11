@@ -370,6 +370,7 @@ end
 """
 Weight Normalization.
 This layer reparametrizes weights (w) of a layer with its decomposition into magnitude (g) and direction (v).
+WeightNorm has been implemented solely for `Dense` layers in Flux.
 
 	WeightNorm(layer, weight, dim)
 
@@ -384,7 +385,7 @@ Example:
 ```
 d = Dense(10, 9, tanh);
 wndA = WeightNorm(d, :W, 2); #The param d.W is now normalized in the second dimension, i.e normalization per output channel
-wndB = WeightNorm(d, :W, 1:2); #Now we normalize all directions together, keeping a single magnitude
+wndB = WeightNorm(d, :W, [1:2]); #Now we normalize all directions together, keeping a single magnitude
 ```
 
 Link : https://arxiv.org/pdf/1602.07868.pdf
@@ -429,6 +430,9 @@ function Base.show(io::IO, wn::WeightNorm)
 end
 
 function WeightNorm(layer, weight::Vector, dim::Vector)
+  if !isa(layer, Dense)
+    error("WeightNorm is defined only for Dense layers!")
+  end
   #Expose layer fields and constructor
   func, re = Flux.functor(layer)
   #Get the fields
