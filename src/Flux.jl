@@ -11,7 +11,7 @@ export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       WeightNorm, WeightNormWeight, SkipConnection, params, fmap, cpu, gpu, f32, f64
+       WeightNorm, WeightNormParam, SkipConnection, params, fmap, cpu, gpu, f32, f64
 
 include("optimise/Optimise.jl")
 using .Optimise

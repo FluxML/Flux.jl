@@ -196,20 +196,26 @@ end
     d = Dense(10, 9, tanh)
     gs = gradient(() -> sum(abs2, d(fake_data)), params(d))
     W = d.W
-    for WN_dim in [1, 2, 1:2]
+    for WN_dim in [[1], 1, [2], 2, [1:2]]
       wnd = WeightNorm(d, :W, WN_dim)
       gswn = gradient(() -> sum(abs2, wnd(fake_data)), params(wnd))
       g = wnd.layer.W.g
       v = wnd.layer.W.v
-      normv = sum(abs2, v, dims = WN_dim)
       
       ΔW = gs[W]
       Δg = gswn[g]
       Δv = gswn[v]
-      @test sum(ΔW .* v ./ normv, dims = WN_dim) ≈ Δg
+      @test wnd(fake_data) ≈ d(fake_data)
+      if isa(WN_dim, Int)
+        normv = sum(abs2, v, dims = WN_dim)
+        @test sum(ΔW .* v ./ normv, dims = WN_dim) ≈ Δg
+      else
+        normv = sum(abs2, v, dims = WN_dim[1])
+        @test sum(ΔW .* v ./ normv, dims = WN_dim[1]) ≈ Δg
+      end
       @test g ./ normv .* ΔW - g .* Δg .* v ./ (normv.^2) ≈ Δv
       @test size(Δv) == size(ΔW)
-      @test isa(wnd.layer.W, WeightNormWeight)
+      @test isa(wnd.layer.W, Flux.WeightNormParam)
     end
   end
 end
