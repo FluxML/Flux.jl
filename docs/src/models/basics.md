@@ -231,7 +231,7 @@ Flux.trainable(a::Affine) = (a.W, a.b,)
 Only the fields returned by `trainable` will be collected as trainable parameters of the layer when calling `Flux.params`. 
 
 Another way of achieving this is through the `@functor` macro. Here, wee can mark the fields we are interested in like so:
-
+Another way of achieving this is through the `@functor` macro. Here, we can mark the fields we are interested in by grouping them in the second argument:
 ```julia
 Flux.@functor Affine (W,)
 ```
