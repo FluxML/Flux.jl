@@ -1,5 +1,6 @@
 using Flux, Test
 using Flux: maxpool, meanpool
+using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
@@ -54,6 +55,10 @@ end
   y = Conv((3,3), 1 => 1)(x)
   x_hat = ConvTranspose((3, 3), 1 => 1)(y)
   @test size(x_hat) == size(x)
+
+  m = ConvTranspose((3,3), 1=>1)
+  # Test that the gradient call does not throw: #900
+  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
 
 @testset "CrossCor" begin
@@ -61,7 +66,7 @@ end
   w = rand(2,2,1,1)
   y = CrossCor(w, [0.0])
 
-  @test sum(w .* x[1:2, 1:2, :, :]) == y(x)[1, 1, 1, 1]
+  @test isapprox(sum(w .* x[1:2, 1:2, :, :]), y(x)[1, 1, 1, 1], rtol=1e-7)
 
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
@@ -84,17 +89,17 @@ end
   l = Conv((3,3), 1=>1)
   expected = zeros(eltype(l.weight),5,5,1,1)
   expected[2:end-1,2:end-1,1,1] = l.weight
-  @test expected == l(data)
+  @test expected ≈ l(data)
 
   l = Conv((3,1), 1=>1)
   expected = zeros(eltype(l.weight),5,7,1,1)
   expected[2:end-1,4,1,1] = l.weight
-  @test expected == l(data)
+  @test expected ≈ l(data)
 
   l = Conv((1,3), 1=>1)
   expected = zeros(eltype(l.weight),7,5,1,1)
   expected[4,2:end-1,1,1] = l.weight
-  @test expected == l(data)
+  @test expected ≈ l(data)
 
   @test begin
     # we test that the next expression does not throw

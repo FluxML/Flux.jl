@@ -65,3 +65,15 @@ AlphaDropout
 LayerNorm
 GroupNorm
 ```
+
+## Cost Functions
+```@docs
+mse
+crossentropy
+logitcrossentropy
+binarycrossentropy
+logitbinarycrossentropy
+kldivergence
+poisson
+hinge
+```
