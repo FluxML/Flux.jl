@@ -228,7 +228,7 @@ The first way of achieving this is through overloading the `trainable` function.
 Flux.trainable(a::Affine) = (a.W, a.b,)
 ```
 
-To add other fields is simply to add them to the tuple.
+Only the fields returned by `trainable` will be collected as trainable parameters of the layer when calling `Flux.params`. 
 
 Another way of achieving this is through the `@functor` macro. Here, wee can mark the fields we are interested in like so:
 
