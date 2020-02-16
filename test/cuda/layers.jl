@@ -15,7 +15,7 @@ function gradtest(name::String, layers::Vector, xs = nothing, args...)
       @testset "$layer GPU grad test" begin
         l = gpu(layer(args...))
         xs = gpu(xs)
-        if l isa DepthwiseConv
+        if l isa DepthwiseConv || l isa AlphaDropout
           ps = Flux.params(l)
           @test_broken gradient(() -> sum(l(xs)), ps) isa Flux.Zygote.Grads
         else
