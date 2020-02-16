@@ -283,7 +283,7 @@ ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
-  acc = get!(o.acc, x, fill(ϵ, size(x)))::typeof(x)
+  acc = get!(o.acc, x, fill!(zero(x), ϵ))::typeof(x)
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -349,10 +349,10 @@ AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
 
 function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, v̂t = get!(o.state, x, (fill(ϵ, size(x)), fill(ϵ, size(x)), fill(ϵ, size(x))))
+  mt, vt, v̂t = get!(o.state, x, (fill!(zero(x), ϵ), fill!(zero(x), ϵ), fill!(zero(x), ϵ)))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ ^ 2
-  @. v̂t = max.(v̂t, vt)
+  @. v̂t = max(v̂t, vt)
   @. Δ = η * mt / (√v̂t + ϵ)
 end
 
@@ -444,7 +444,8 @@ end
 """
   InvDecay(γ)
 
-Applies inverse time decay to an optimiser
+Applies inverse time decay to an optimiser, i.e., the effective step size at iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size. The wrapped optimiser's step size is not modified.
+```
 
 ## Parameters
   - gamma (γ): Defaults to `0.001`
@@ -472,7 +473,7 @@ end
 """
   ExpDecay(eta, decay, decay_step, clip)
 
-Discount the learning rate `eta` by `decay` every `decay_step` till a minimum of `clip`.
+Discount the learning rate `eta` by a multiplicative factor `decay` every `decay_step` till a minimum of `clip`.
 
 ## Parameters
   - Learning Rate (eta): Defaults to `0.001`.

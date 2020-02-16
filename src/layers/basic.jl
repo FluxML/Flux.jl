@@ -44,18 +44,22 @@ end
 # it might be replaced in the future for better performance
 # see issue https://github.com/FluxML/Flux.jl/issues/702
 # Johnny Chen -- @johnnychen94
+# only slightly changed to better handle interaction with Zygote @dsweber2
 """
     activations(c::Chain, input)
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
 function activations(c::Chain, input)
-  rst = []
-  for l in c
-    x = get(rst, length(rst), input)
-    push!(rst, l(x))
-  end
-  return rst
+    extraChain(c.layers, input)
 end
+
+function extraChain(fs::Tuple, x)
+    res = first(fs)(x)
+    return (res, extraChain(Base.tail(fs), res)...)
+end
+
+extraChain(::Tuple{}, x) = ()
+
 
 
 """
