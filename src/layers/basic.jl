@@ -214,7 +214,7 @@ size(sm(x)) == (5, 5, 11, 10)
 """
 struct SkipConnection
   layers
-  connection  # user can pass arbitrary connections here, such as (a,b) -> a + b
+  connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
 @functor SkipConnection
