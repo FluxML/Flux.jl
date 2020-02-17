@@ -19,39 +19,45 @@ const ϵ = 1e-7
   v = log(.1 / .9)
   logŷ = [v 0.0; 0.0 v; 0.0 v; v 0.0]'
   lossvalue = 1.203972804325936
+  yl = onehotbatch([1], 0:1)
+  ls = 0.1
+  yls = [ls (1-ls)]'  # Effective y after label smoothing
+  ylp = [0.9 0.1]'
+  logylp = [0.0 v]'
 
   @testset "crossentropy" begin
     @test crossentropy(ŷ, y) ≈ lossvalue
-    @test crossentropy(ŷ, y, label_smoothing=0.2) ≈ lossvalue
+    @test crossentropy(ylp, yl, label_smoothing=2*ls) ≈ -sum(yls.*log.(ylp))
+    @test crossentropy(ylp, yl) ≈ -sum(yl.*log.(ylp))
   end
 
   @testset "logitcrossentropy" begin
     @test logitcrossentropy(logŷ, y) ≈ lossvalue
-    @test logitcrossentropy(logŷ, y, label_smoothing=0.2) ≈ lossvalue
+    @test logitcrossentropy(logylp, yl) ≈ -sum(yl.*logsoftmax(logylp))
+    @test logitcrossentropy(logylp, yl, label_smoothing=2*ls) ≈ -sum(yls.*logsoftmax(logylp))
   end
 
   @testset "weighted_crossentropy" begin
     @test crossentropy(ŷ, y, weight = ones(2)) ≈ lossvalue
     @test crossentropy(ŷ, y, weight = [.5, .5]) ≈ lossvalue/2
-    @test crossentropy(ŷ, y, weight = ones(2), label_smoothing=0.2) ≈ lossvalue
-    @test crossentropy(ŷ, y, weight = [.5, .5], label_smoothing=0.2) ≈ lossvalue/2
+    @test crossentropy(ylp, yl, weight = ones(2), label_smoothing=2ls) ≈ -sum(yls.*log.(ylp))
+    @test crossentropy(ylp, yl, weight = [.5, .5], label_smoothing=2ls) ≈ -sum(yls.*log.(ylp))/2
     @test crossentropy(ŷ, y, weight = [2, .5]) ≈ 1.5049660054074199
   end
 
   @testset "weighted_logitcrossentropy" begin
     @test logitcrossentropy(logŷ, y, weight = ones(2)) ≈ lossvalue
     @test logitcrossentropy(logŷ, y, weight = [.5, .5]) ≈ lossvalue/2
-    @test logitcrossentropy(logŷ, y, weight = ones(2), label_smoothing=0.2) ≈ lossvalue
-    @test logitcrossentropy(logŷ, y, weight = [.5, .5],label_smoothing=0.2) ≈ lossvalue/2
+    @test logitcrossentropy(logylp, yl, weight = ones(2), label_smoothing=0.2) ≈ -sum(yls.*logsoftmax(logylp))
+    @test logitcrossentropy(logylp, yl, weight = [.5, .5],label_smoothing=0.2) ≈ -sum(yls.*logsoftmax(logylp))/2
     @test logitcrossentropy(logŷ, y, weight = [2, .5]) ≈ 1.5049660054074199
   end
 
   logŷ, y = randn(3), rand(3)
-  ydb = [0.1, 0.9, 0.9, 0.1]
-  yb  = [1., 1., 0., 0.]
-  yr  = [2.0828626352604234, 0.3250829733914482, 2.0828626352604234, 0.3250829733914482]
+  yls = y.*(1-2ls).+ls
+
   @testset "binarycrossentropy" begin
-    @test binarycrossentropy.(ydb, yb; ϵ=0, label_smoothing=0.2) ≈ yr
+    @test binarycrossentropy.(σ.(logŷ), y; ϵ=0, label_smoothing=2*ls) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
     @test binarycrossentropy.(σ.(logŷ), y; ϵ=0) ≈ -y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ))
     @test binarycrossentropy.(σ.(logŷ), y) ≈ -y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ)))
   end
