@@ -5,25 +5,23 @@ using NNlib: logsoftmax, logσ
 
 mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
-function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Nothing)
-  return -sum(y .* log.(ŷ)) * 1 // size(y, 2)
-end
+_crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Nothing) =
+  -sum(y .* log.(ŷ)) * 1 // size(y, 2)
 
-function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Number)
-  return -sum(y .* log.(ŷ)) .* weight * 1 // size(y, 2)
-end
-
-function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::AbstractVector)
-  return -sum(y .* log.(ŷ) .* weight) * 1 // size(y, 2)
-end
+_crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Union{Number, AbstractVector}) =
+  _crossentropy(ŷ, y.*weight, nothing)
 
 function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight=nothing, label_smoothing=zero(eltype(y)))
-  y = y .* (1 - label_smoothing) .+ label_smoothing / size(y, 1)
+  if !iszero(label_smoothing)
+    y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
+  end
   return _crossentropy(ŷ, y, weight)
 end
 
 function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1, label_smoothing=zero(eltype(y)))
-  y = y .* (1 - label_smoothing) .+ label_smoothing / size(y, 1)
+  if !iszero(label_smoothing)
+    y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
+  end
   return -sum(y .* logsoftmax(logŷ) .* weight) * 1 // size(y, 2)
 end
 
@@ -40,13 +38,17 @@ Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerica
     0.86167
 """
 function binarycrossentropy(ŷ, y; ϵ=eps(ŷ), label_smoothing=zero(y))
-  y = y*(1 - label_smoothing) + label_smoothing/2
+  if !iszero(label_smoothing)
+    y = y*(1 - label_smoothing) + label_smoothing*1//2
+  end
   return -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 end
 
 # Re-definition to fix interaction with CuArrays.
 CuArrays.@cufunc function binarycrossentropy(ŷ, y; ϵ=eps(ŷ), label_smoothing=zero(y))
-  y = y*(1 - label_smoothing) + label_smoothing/2
+  if !iszero(label_smoothing)
+    y = y*(1 - label_smoothing) + label_smoothing*1//2
+  end
   return -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 end
 
@@ -63,15 +65,19 @@ but it is more numerically stable.
      0.352317
      0.86167
 """
-function logitbinarycrossentropy(logŷ, y; label_smoothing=zero(logŷ))
-  y = y*(1 - label_smoothing) + label_smoothing/2
+function logitbinarycrossentropy(logŷ, y; label_smoothing=zero(y))
+  if !iszero(label_smoothing)
+    y = y*(1 - label_smoothing) + label_smoothing*1//2
+  end
   return (1 - y)*logŷ - logσ(logŷ)
 end
 
 # Re-definition to fix interaction with CuArrays.
 
-CuArrays.@cufunc function logitbinarycrossentropy(logŷ, y; label_smoothing=zero(logŷ))
-  y = y*(1 - label_smoothing) + label_smoothing/2
+CuArrays.@cufunc function logitbinarycrossentropy(logŷ, y; label_smoothing=zero(y))
+  if !iszero(label_smoothing)
+    y = y*(1 - label_smoothing) + label_smoothing*1//2
+  end
   return (1 - y)*logŷ - logσ(logŷ)
 end
 

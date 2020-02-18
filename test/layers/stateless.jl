@@ -25,10 +25,21 @@ const ϵ = 1e-7
   ylp = [0.9 0.1]'
   logylp = [0.0 v]'
 
+
+  ya = onehotbatch([1, 1, 1, 0, 0], 0:1)
+  y_same = Float32.(ya)
+  y_sim = y_same .* (1-2*ls) .+ ls
+  y_dis = copy(y_sim)
+  y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
+
   @testset "crossentropy" begin
     @test crossentropy(ŷ, y) ≈ lossvalue
     @test crossentropy(ylp, yl, label_smoothing=2*ls) ≈ -sum(yls.*log.(ylp))
     @test crossentropy(ylp, yl) ≈ -sum(yl.*log.(ylp))
+    @test iszero(crossentropy(y_same, ya))
+    @test iszero(crossentropy(ya, ya))
+    @test crossentropy(y_sim, ya) < crossentropy(y_sim, ya, label_smoothing=2*ls)
+    @test crossentropy(y_dis, ya) > crossentropy(y_dis, ya, label_smoothing=2*ls)
   end
 
   @testset "logitcrossentropy" begin
