@@ -25,7 +25,9 @@ const ϵ = 1e-7
   ylp = [0.9 0.1]'
   logylp = [0.0 v]'
 
-
+  # Construct `sim`ilar and `dis`imilar versions of the dataset so we can test effect of smoothing
+  # smoothing should decrease loss on disimilar and increase the loss on similar, compared to 
+  # the loss without smoothing
   ya = onehotbatch([1, 1, 1, 0, 0], 0:1)
   y_same = Float32.(ya)
   y_sim = y_same .* (1-2*ls) .+ ls
