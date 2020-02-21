@@ -39,6 +39,19 @@ end
 
 trainable(m) = functor(m)[1]
 
+"""
+  testmode!(m, mode = true)
+
+Set a layer or model's test mode (see below).
+Using `:auto` mode will treat any gradient computation as training.
+
+Possible values include:
+- `false` for training
+- `true` for testing
+- `:auto` or `nothing` for Flux to detect the mode automatically
+"""
+testmode!(m, mode) = nothing
+
 params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 
 function params!(p::Params, x, seen = IdSet())
