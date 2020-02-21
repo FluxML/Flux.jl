@@ -1,30 +1,33 @@
 using Flux, Test, Statistics
 using Zygote: pullback
 
-trainmode(f, x...) = pullback(f, x...)[1]
-trainmode(f) = (x...) -> trainmode(f, x...)
+evalwgrad(f, x...) = pullback(f, x...)[1]
+trainmode(f) = (testmode!(f, false); f)
 
 @testset "Dropout" begin
   x = [1.,2.,3.]
   @test x == Dropout(0.1)(x)
-  @test x == trainmode(Dropout(0), x)
-  @test zero(x) == trainmode(Dropout(1), x)
+  @test x == evalwgrad(Dropout(0), x)
+  @test zero(x) == evalwgrad(Dropout(1), x)
 
   x = rand(100)
   m = Dropout(0.9)
-  y = trainmode(m, x)
+  y = evalwgrad(m, x)
   @test count(a->a==0, y) > 50
-  y = m(x)
+  testmode!(m, true)
+  y = evalwgrad(m, x) # should override istraining
   @test count(a->a==0, y) == 0
-  y = trainmode(m, x)
+  testmode!(m, false)
+  y = evalwgrad(m, x)
   @test count(a->a==0, y) > 50
 
   x = rand(Float32, 100)
   m = Chain(Dense(100,100),
             Dropout(0.9))
-  y = trainmode(m, x)
+  y = evalwgrad(m, x)
   @test count(a->a == 0, y) > 50
-  y = m(x)
+  testmode!(m, true)
+  y = evalwgrad(m, x) # should override istraining
   @test count(a->a == 0, y) == 0
 
   x = rand(100, 50)
@@ -49,7 +52,7 @@ end
     # initial m.σ is 1
     # initial m.μ is 0
 
-    y = trainmode(m, x)
+    y = evalwgrad(m, x)
     @test isapprox(y, [-1.22474 0 1.22474; -1.22474 0 1.22474], atol = 1.0e-5)
     # julia> x
     #  2×3 Array{Float64,2}:
@@ -117,7 +120,7 @@ end
       x = Float64.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
-      y = trainmode(m, x)
+      y = evalwgrad(m, x)
 
       #julia> x
       #[:, :, 1] =
@@ -172,7 +175,7 @@ end
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = InstanceNorm(2), sizes = (5, 5, 3, 4, 2, 6),
       x = reshape(Float32.(collect(1:prod(sizes))), sizes)
-    y = trainmode(m, x)
+    y = evalwgrad(m, x)
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
     @test size(y) == sizes
@@ -204,7 +207,7 @@ if VERSION >= v"1.1"
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
 
-      y = trainmode(m, x)
+      y = evalwgrad(m, x)
 
       #julia> x
       #[:, :, 1]  =
@@ -273,7 +276,7 @@ if VERSION >= v"1.1"
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = GroupNorm(4,2), sizes = (5, 5, 3, 4, 4, 6),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
-    y = trainmode(m, x)
+    y = evalwgrad(m, x)
     @test size(m.μ) == (m.G,1)
     @test size(m.σ²) == (m.G,1)
     @test size(y) == sizes
