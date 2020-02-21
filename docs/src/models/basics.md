@@ -225,6 +225,17 @@ This enables a useful extra set of functionality for our `Affine` layer, such as
 Flux provides some utility functions to help you generate models in an automated fashion.
 
 `outdims` enables you to calculate the spatial output dimensions of layers like `Conv` when applied to input images of a given size.
+Currently limited to the following layers:
+- `Chain`
+- `Dense`
+- `Conv`
+- `Diagonal`
+- `Maxout`
+- `ConvTranspose`
+- `DepthwiseConv`
+- `CrossCor`
+- `MaxPool`
+- `MeanPool`
 
 ```@docs
 outdims
