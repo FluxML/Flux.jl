@@ -68,12 +68,12 @@ GroupNorm
 
 ## Cost Functions
 ```@docs
-mse
-crossentropy
-logitcrossentropy
-binarycrossentropy
-logitbinarycrossentropy
-kldivergence
-poisson
-hinge
+Flux.mse
+Flux.crossentropy
+Flux.logitcrossentropy
+Flux.binarycrossentropy
+Flux.logitbinarycrossentropy
+Flux.kldivergence
+Flux.poisson
+Flux.hinge
 ```
