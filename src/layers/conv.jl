@@ -17,7 +17,7 @@ Example: Applying Conv layer to a 1-channel input using a 2x2 window size,
     out = 16
     Conv((2, 2), 1=>16, relu)
 
-Data should be stored in WHCN order (width, height, # channels, # batches).
+Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
