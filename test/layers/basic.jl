@@ -105,4 +105,18 @@ import Flux: activations
     end
   end
   
+  @testset "output dimensions" begin
+    m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
+    @test Flux.outdims(m, (10, 10)) == (6, 6)
+
+    m = Dense(10, 5)
+    @test Flux.outdims(m, (5, 2)) == (5,)
+    @test Flux.outdims(m, (10,)) == (5,)
+
+    m = Flux.Diagonal(10)
+    @test Flux.outdims(m, (10,)) == (10,)
+
+    m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
+    @test Flux.outdims(m, (10, 10)) == (8, 8)
+  end
 end
