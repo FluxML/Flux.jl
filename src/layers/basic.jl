@@ -237,8 +237,10 @@ The connection is an arbitrary callable, often a function,
 and is used to combine all outputs from previous layers before applying the next
 layer.
 
-The simplest 'DenseNet'-type connection is, when applied to images,
-`DenselyConnected(layers, (x,y) -> cat(x, y, dims = 3)`.
+The simplest 'DenseNet'-type connection is, when applied to images:
+
+    DenselyConnected(layers, (x,y) -> cat(x, y, dims = 3)
+    
 Notice, however, that the number of channels increase with each application.
 It is up to the user to select the appropriate sizes for the layers.
 
