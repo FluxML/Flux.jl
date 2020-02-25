@@ -231,8 +231,11 @@ end
     DenselyConnected(layers, connection)
 
 Creates a dense-connection of a Tuple of consecutive layers plus a
-connectivity pattern. The connection is an arbitrary callable, often a function.
-This means that the input of each layer is given by the output of all previous layers.
+connectivity pattern. In this structure layers are applied sequentially
+to the combined output of all previous layers in the structure.
+The connection is an arbitrary callable, often a function,
+and is used to combine all outputs from previous layers before applying the next
+layer.
 
 The simplest 'DenseNet'-type connection is, when applied to images,
 `DenselyConnected(layers, (x,y) -> cat(x, y, dims = 3)`.
@@ -240,16 +243,14 @@ Notice, however, that the number of channels increase with each application.
 It is up to the user to select the appropriate sizes for the layers.
 
 A simple example:
-```
-layers = (Dense(1,1), Dense(2,1), Dense(3,1))
-connection = (x,y) -> vcat(x, y)
-db = DenselyConnected(layers, connection)
-x = zeros(Float32,1,2)
-size(db(x)) == (4,2)
+```julia
+    layers = (Dense(1,1), Dense(2,1), Dense(3,1))
+    connection = (x,y) -> vcat(x, y)
+    db = DenselyConnected(layers, connection)
+    x = zeros(Float32,1,2)
+    size(db(x)) == (4,2)
 ```
 """
-
-
 struct DenselyConnected
     layers
     connection
