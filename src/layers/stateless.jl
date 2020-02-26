@@ -74,14 +74,14 @@ Computes the mean of the Huber loss between prediction ŷ and true values y. By
 """
 function huber_loss(ŷ, y,delta=1.0)
   abs_error = abs.(ŷ.-y)
-  type_ = eltype(ŷ)
-  delta = type_(delta)
-  hub_loss =type_(0)
+  dtype= eltype(ŷ)
+  delta = dtype(delta)
+  hub_loss = dtype(0)
   for i in 1:length(y)
     if (abs_error[i]<=delta)
-      hub_loss+=abs_error[i]^2*type_(0.5)
+      hub_loss+=abs_error[i]^2*dtype(0.5)
     else
-      hub_loss+=delta*(abs_error[i]-type_(0.5*delta))
+      hub_loss+=delta*(abs_error[i]- dtype(0.5*delta))
     end
   
   return hub_loss*1//length(y)
@@ -226,4 +226,29 @@ hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
 L2 loss function. Computes squared hinge loss over the prediction ŷ and true labels y(conatining 1 or -1)
 """
 squared_hinge(ŷ, y) = sum((max.(0,1 .-ŷ .* y)).^2) *1//size(y,2)
-  
+
+"""
+    dice_coeff_loss(y_pred,y_true,smooth = 1)
+
+Loss function used in Image Segmentation. Calculates loss based on dice coefficient. Similar to F1_score
+    Dice_Coefficient(A,B) = 2*sum(|A*B|+smooth)/(sum(A^2)+sum(B^2)+ smooth)
+    Dice_loss = 1-Dice_Coefficient
+
+Ref: [V-Net: Fully Convolutional Neural Networks forVolumetric Medical Image Segmentation](https://arxiv.org/pdf/1606.04797v1.pdf)
+"""
+function dice_coeff_loss(y_pred,y_true,smooth=eltype(y_pred)(1.0))
+    intersection = sum(y_true.*y_pred)
+    return 1 - (2*intersection + smooth)/(sum(y_true.^2) + sum(y_pred.^2)+smooth)
+end
+
+"""
+    tversky_loss(y_pred,y_true,beta = 0.7)
+
+Used with imbalanced data to give more weightage to False negatives. Larger β weigh recall higher than precision (by placing more emphasis on false negatives)
+    tversky_loss(ŷ,y,beta) = 1 - sum(|y.*ŷ| + 1) / (sum(y.*ŷ + beta*(1 .- y).*ŷ + (1 .- beta)*y.*(1 .- ŷ))+ 1)
+Ref: [Tversky loss function for image segmentation using 3D fully convolutional deep networks](https://arxiv.org/pdf/1706.05721.pdf)
+"""
+function tversky_loss(y_pred,y_true,beta = eltype(y_pred)(0.7))
+    intersection = sum(y_true.*y_pred)
+    return 1 - (intersection+1)/(sum(y_true.*y_pred + beta*(1 .- y_true).* y_pred + (1-beta).*y_true.*(1 .- y_pred))+1)
+end
