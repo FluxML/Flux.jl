@@ -7,6 +7,7 @@ _convtransoutdims(isize, ksize, ssize, dsize, pad) = (isize .- 1).*ssize .+ 1 .+
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
+
 """
     Conv(filter::Tuple, in=>out)
     Conv(filter::Tuple, in=>out, activation)
@@ -127,7 +128,7 @@ outdims(l::Conv, isize) =
 
 """
     ConvTranspose(size, in=>out)
-    ConvTranspose(size, in=>out, relu)
+    ConvTranspose(size, in=>out, activation)
 
 Standard convolutional transpose layer. `filter` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
