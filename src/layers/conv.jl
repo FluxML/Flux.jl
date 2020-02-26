@@ -55,6 +55,11 @@ function Conv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = id
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
+function Conv(;weight::AbstractArray, bias::Union{Zeros, AbstractVector{T}}, activation = identity,
+              stride = 1, pad = 0, dilation = 1) where {T,N}
+  Conv(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
+end
+
 """
     convfilter(filter::Tuple, in=>out)
 
@@ -144,6 +149,11 @@ function ConvTranspose(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
+function ConvTranspose(;weight::AbstractArray{T,N}, bias::Union{Zeros, AbstractVector{T}},
+                        activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
+  ConvTranspose(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
+end
+
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
                       weight = convfilter(k, reverse(ch), init = init), bias = zeros(ch[2])) where N
@@ -231,6 +241,11 @@ function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}
   pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
+end
+
+function DepthwiseConv(;weight::AbstractArray, bias::Union{Zeros, AbstractVector{T}},
+                      activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
+  DepthwiseConv(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
 end
 
 """
