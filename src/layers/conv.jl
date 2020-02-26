@@ -107,7 +107,7 @@ end
 
 """
     ConvTranspose(filter::Tuple, in=>out)
-    ConvTranspose(filter::Tuple, in=>out, relu)
+    ConvTranspose(filter::Tuple, in=>out, activation)
 
 Standard convolutional transpose layer. `filter` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
@@ -200,7 +200,7 @@ end
 
 """
     DepthwiseConv(filter::Tuple, in=>out)
-    DepthwiseConv(filter::Tuple, in=>out, relu)
+    DepthwiseConv(filter::Tuple, in=>out, activation)
 
 Depthwise convolutional layer. `filter` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
