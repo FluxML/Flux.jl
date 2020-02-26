@@ -1,6 +1,11 @@
 # Arrays
-glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0/sum(dims))
-glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0/sum(dims))
+nfan() = 1, 1 #fan_in, fan_out
+nfan(n) = 1, n #A vector is treated as a n×1 matrix
+nfan(n_out, n_in) = n_in, n_out #In case of Dense kernels: arranged as matrices
+nfan(dims...) = prod(dims[1:end-2]) .* (dims[end-1], dims[end]) #In case of convolution kernels
+
+glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
@@ -96,6 +101,48 @@ julia> batchseq([[1, 2, 3], [4, 5]], 0)
 function batchseq(xs, pad = nothing, n = maximum(length(x) for x in xs))
   xs_ = [rpad(x, n, pad) for x in xs]
   [batch([xs_[j][i] for j = 1:length(xs_)]) for i = 1:n]
+end
+
+# Flattening models to weight vectors, and back
+
+function _restructure(m, xs)
+  i = 0
+  fmap(m) do x
+    x isa AbstractArray || return x
+    x = reshape(xs[i.+(1:length(x))], size(x))
+    i += length(x)
+    return x
+  end
+end
+
+"""
+    destructure(m)
+
+Flatten a model's parameters into a single weight vector.
+
+    julia> m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+
+    julia> θ, re = destructure(m);
+
+    julia> θ
+    67-element Array{Float32,1}:
+    -0.1407104
+    ...
+
+The second return value `re` allows you to reconstruct the original network after making
+modifications to the weight vector (for example, with a hypernetwork).
+
+    julia> re(θ .* 2)
+    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+"""
+function destructure(m)
+  xs = Zygote.Buffer([])
+  fmap(m) do x
+    x isa AbstractArray && push!(xs, x)
+    return x
+  end
+  return vcat(vec.(copy(xs))...), p -> _restructure(m, p)
 end
 
 # Other

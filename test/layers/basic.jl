@@ -4,11 +4,13 @@ import Flux: activations
 @testset "basic" begin
   @testset "helpers" begin
     @testset "activations" begin
-      dummy_model = Chain(Dense(10,5,σ),Dense(5,2),softmax)
-      x = rand(10)
-      @test activations(Chain(), x) == []
-      @test activations(dummy_model, x)[1] == dummy_model[1](x)
-      @test activations(dummy_model, x)[2] == x |> dummy_model[1] |> dummy_model[2]
+      dummy_model = Chain(x->x.^2, x->x .- 3, x -> tan.(x))
+      x = randn(10)
+      @test activations(dummy_model, x)[1] == x.^2
+      @test activations(dummy_model, x)[2] == (x.^2 .- 3)
+      @test activations(dummy_model, x)[3] == tan.(x.^2 .- 3)
+
+      @test activations(Chain(), x) == ()
       @test activations(Chain(identity, x->:foo), x)[2] == :foo # results include `Any` type
     end
   end
@@ -17,6 +19,12 @@ import Flux: activations
     @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn(10))
     @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn(10))
     # numeric test should be put into testset of corresponding layer
+  end
+
+  @testset "Activations" begin
+    c = Chain(Dense(3,5,relu), Dense(5,1,relu))
+    X = Float32.([1.0; 1.0; 1.0])
+    @test_nowarn gradient(()->Flux.activations(c, X)[2][1], params(c))
   end
 
   @testset "Dense" begin
@@ -83,5 +91,20 @@ import Flux: activations
       input = randn(10, 2)
       @test size(SkipConnection(Dense(10,10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
     end
+  end
+
+  @testset "output dimensions" begin
+    m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
+    @test Flux.outdims(m, (10, 10)) == (6, 6)
+
+    m = Dense(10, 5)
+    @test Flux.outdims(m, (5, 2)) == (5,)
+    @test Flux.outdims(m, (10,)) == (5,)
+
+    m = Flux.Diagonal(10)
+    @test Flux.outdims(m, (10,)) == (10,)
+
+    m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
+    @test Flux.outdims(m, (10, 10)) == (8, 8)
   end
 end

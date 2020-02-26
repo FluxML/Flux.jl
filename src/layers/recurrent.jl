@@ -1,5 +1,5 @@
 gate(h, n) = (1:h) .+ h*(n-1)
-gate(x::AbstractVector, h, n) = x[gate(h,n)]
+gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
 
 # Stateful recurrence
@@ -45,8 +45,7 @@ Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 """
     reset!(rnn)
 
-Reset the hidden state of a recurrent layer back to its original value. See also
-`truncate!`.
+Reset the hidden state of a recurrent layer back to its original value.
 
 Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
 

@@ -1,4 +1,9 @@
-using NNlib: conv, ∇conv_data, depthwiseconv
+using NNlib: conv, ∇conv_data, depthwiseconv, output_size
+
+# pad dims of x with dims of y until ndims(x) == ndims(y)
+_paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]...)
+
+_convtransoutdims(isize, ksize, ssize, dsize, pad) = (isize .- 1).*ssize .+ 1 .+ (ksize .- 1).*dsize .- (pad[1:2:end] .+ pad[2:2:end])
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
@@ -17,7 +22,7 @@ Example: Applying Conv layer to a 1-channel input using a 2x2 window size,
     out = 16
     Conv((2, 2), 1=>16, relu)
 
-Data should be stored in WHCN order (width, height, # channels, # batches).
+Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
@@ -106,8 +111,23 @@ end
   a(T.(x))
 
 """
-    ConvTranspose(filter::Tuple, in=>out)
-    ConvTranspose(filter::Tuple, in=>out, activation)
+    outdims(l::Conv, isize::Tuple)
+
+Calculate the output dimensions given the input dimensions, `isize`.
+Batch size and channel size are ignored as per `NNlib.jl`.
+
+```julia
+m = Conv((3, 3), 3 => 16)
+outdims(m, (10, 10)) == (8, 8)
+outdims(m, (10, 10, 1, 3)) == (8, 8)
+```
+"""
+outdims(l::Conv, isize) =
+  output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
+
+"""
+    ConvTranspose(size, in=>out)
+    ConvTranspose(size, in=>out, relu)
 
 Standard convolutional transpose layer. `filter` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
@@ -178,6 +198,9 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
     )
 end
 
+# TODO: Find proper fix for https://github.com/FluxML/Flux.jl/issues/900
+@nograd conv_transpose_dims
+
 function (c::ConvTranspose)(x::AbstractArray)
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
@@ -197,6 +220,8 @@ end
 
 (a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
+
+outdims(l::ConvTranspose{N}, isize) where N = _convtransoutdims(isize[1:2], size(l.weight)[1:N], l.stride, l.dilation, l.pad)
 
 """
     DepthwiseConv(filter::Tuple, in=>out)
@@ -298,9 +323,12 @@ end
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
 
+outdims(l::DepthwiseConv, isize) =
+  output_size(DepthwiseConvDims(_paddims(isize, (1, 1, size(l.weight)[end], 1)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
+
 """
     CrossCor(size, in=>out)
-    CrossCor(size, in=>out, relu)
+    CrossCor(size, in=>out, activation)
 
 Standard cross convolutional layer. `size` should be a tuple like `(2, 2)`.
 `in` and `out` specify the number of input and output channels respectively.
@@ -351,6 +379,11 @@ function CrossCor(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ 
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
+function CrossCor(;weight::AbstractArray, bias::Union{Zeros, AbstractVector{T}},
+                      activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
+  CrossCor(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
+end
+
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                   init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
                   weight = convfilter(k, ch, init = init), bias = zeros(ch[2])) where N
@@ -387,6 +420,9 @@ end
 (a::CrossCor{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
 
+outdims(l::CrossCor, isize) =
+  output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
+
 """
     MaxPool(k)
 
@@ -416,6 +452,8 @@ function Base.show(io::IO, m::MaxPool)
   print(io, "MaxPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
 end
 
+outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
+
 """
     MeanPool(k)
 
@@ -443,3 +481,5 @@ end
 function Base.show(io::IO, m::MeanPool)
   print(io, "MeanPool(", m.k, ", pad = ", m.pad, ", stride = ", m.stride, ")")
 end
+
+outdims(l::MeanPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))

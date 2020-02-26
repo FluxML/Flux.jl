@@ -6,7 +6,7 @@ using Base: tail
 using Zygote, MacroTools, Juno, Reexport, Statistics, Random
 using MacroTools: @forward
 @reexport using NNlib
-using Zygote: Params, @adjoint, gradient, pullback
+using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
@@ -20,18 +20,9 @@ export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
   ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
 
-using CUDAapi
-if has_cuda()
-  try
-    using CuArrays
-    @eval has_cuarrays() = true
-  catch ex
-    @warn "CUDA is installed, but CuArrays.jl fails to load" exception=(ex,catch_backtrace())
-    @eval has_cuarrays() = false
-  end
-else
-  has_cuarrays() = false
-end
+
+using CuArrays
+const use_cuda = Ref(false)
 
 include("utils.jl")
 include("onehot.jl")
@@ -47,8 +38,26 @@ include("data/Data.jl")
 
 include("deprecations.jl")
 
-if has_cuarrays()
-  include("cuda/cuda.jl")
+function __init__()
+  precompiling = ccall(:jl_generating_output, Cint, ()) != 0
+
+  # we don't want to include the CUDA module when precompiling,
+  # or we could end up replacing it at run time (triggering a warning)
+  precompiling && return
+
+  if !CuArrays.functional()
+    # nothing to do here, and either CuArrays or one of its dependencies will have warned
+  else
+    use_cuda[] = true
+
+    # FIXME: this functionality should be conditional at run time by checking `use_cuda`
+    #        (or even better, get moved to CuArrays.jl as much as possible)
+    if CuArrays.has_cudnn()
+      include(joinpath(@__DIR__, "cuda/cuda.jl"))
+    else
+      @warn "CuArrays.jl did not find libcudnn. Some functionality will not be available."
+    end
+  end
 end
 
 end # module
