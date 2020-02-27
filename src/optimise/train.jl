@@ -79,7 +79,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   @progress for d in data
     try
-      if d isa AbstractArray
+      if d isa AbstractArray{<:Number}
         gs = gradient(ps) do
           loss(d)
         end
