@@ -17,33 +17,28 @@ mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
 
 """
-    mean_squared_logarithmic_error(ŷ, y;ϵ1=eps.(Float64.(ŷ)),ϵ2=eps.(Float64.(y)))
+    msle(ŷ, y;ϵ1=eps.(Float64.(ŷ)),ϵ2=eps.(Float64.(y)))
 
-L2 loss function. Returns the mean of the squared logarithmic errors of prediction ŷ, and true values y. The ϵ1 and ϵ2 terms provide numerical stability.
+Mean Squared Logarithmic Error,an L2 loss function. Returns the mean of the squared logarithmic errors of prediction ŷ, and true values y. The ϵ1 and ϵ2 terms provide numerical stability.
 (Computes mean of squared(log(predicted values)-log(true value)). This error penalizes an under-predicted estimate greater than an over-predicted estimate.
 
   ```julia
-  julia> y_=[14726,327378,74734]
+  julia> y=[14726,327378,74734]
   3-element Array{Int64,1}:
     14726
   327378
     74734
 
-  julia> y = [12466.1,16353.95,16367.98]
+  julia> ŷ = [12466.1,16353.95,16367.98]
   3-element Array{Float64,1}:
   12466.1 
   16353.95
   16367.98
 
-  julia> mean_squared_logarithmic_error(y,y_)
+  julia> msle(ŷ,y)
   3.771271382334686
   ```
-Alias:
-  msle(ŷ,y;ϵ1=eps.(Float64.(ŷ)),ϵ2=eps.(Float64.(y)))
-
 """
-mean_squared_logarithmic_error(ŷ, y;ϵ1=eps.(ŷ),ϵ2=eps.(eltype(ŷ).(y))) = sum((log.(ŷ+ϵ1).-log.(y+ϵ2)).^2) * 1 // length(y)
-#Alias
 msle(ŷ, y;ϵ1=eps.(ŷ),ϵ2=eps.(eltype(ŷ).(y))) = sum((log.(ŷ+ϵ1).-log.(y+ϵ2)).^2) * 1 // length(y)
 
 
