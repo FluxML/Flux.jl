@@ -79,8 +79,8 @@ function huber_loss(ŷ, y,delta=1.0)
       hub_loss+=delta*(abs_error[i]- dtype(0.5*delta))
     end
   
-  return hub_loss*1//length(y)
   end
+  hub_loss*1//length(y)
 end
 
 

@@ -18,7 +18,7 @@ const ϵ = 1e-7
   end
   
   @testset "huber_loss" begin
-    @test Flux.huber_loss(ŷ, y) ≈ 0.0012499999999999994
+    @test Flux.huber_loss(ŷ, y) ≈ 0.20500000000000002
   end       
             
   y = [123.0,456.0,789.0]
