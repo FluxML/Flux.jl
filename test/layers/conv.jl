@@ -12,8 +12,6 @@ using Flux: gradient
   @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
   @test mp(x) == meanpool(x, PoolDims(x, 2))
-  f = Flatten()
-  @test size(f(x)) == (300, 2)
 end
 
 @testset "CNN" begin

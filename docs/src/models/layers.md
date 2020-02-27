@@ -20,7 +20,7 @@ GlobalMeanPool
 DepthwiseConv
 ConvTranspose
 CrossCor
-Flatten
+flatten
 ```
 
 ## Recurrent Layers
