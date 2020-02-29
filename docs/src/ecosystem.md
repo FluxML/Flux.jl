@@ -16,3 +16,6 @@ machine learning and deep learning workflows:
 - [Parameters.jl](https://github.com/mauro3/Parameters.jl): types with default field values, keyword constructors and (un-)pack macros
 - [ProgressMeters.jl](https://github.com/timholy/ProgressMeter.jl): progress meters for long-running computations
 - [TensorBoardLogger.jl](https://github.com/PhilipVinc/TensorBoardLogger.jl): easy peasy logging to [tensorboard](https://www.tensorflow.org/tensorboard) in Julia
+
+
+This tight integration among Julia pakages is shown in some of the examples in the [model-zoo](https://github.com/FluxML/model-zoo) repository.
