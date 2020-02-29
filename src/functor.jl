@@ -50,7 +50,7 @@ Possible values include:
 - `true` for testing
 - `:auto` or `nothing` for Flux to detect the mode automatically
 """
-testmode!(m, mode) = nothing
+testmode!(m, mode = true) = m
 
 params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 

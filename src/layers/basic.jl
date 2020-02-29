@@ -33,7 +33,7 @@ applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
-testmode!(m::Chain, mode = true) = map(x -> testmode!(x, mode), m.layers)
+testmode!(m::Chain, mode = true) = (map(x -> testmode!(x, mode), m.layers); m)
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")

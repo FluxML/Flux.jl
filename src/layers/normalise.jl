@@ -44,7 +44,7 @@ function (a::Dropout)(x)
 end
 
 testmode!(m::Dropout, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode)
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, d::Dropout)
   print(io, "Dropout(", d.p)
@@ -83,7 +83,7 @@ function (a::AlphaDropout)(x)
 end
 
 testmode!(m::AlphaDropout, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode)
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
     LayerNorm(h::Integer)
@@ -191,7 +191,7 @@ end
 @functor BatchNorm
 
 testmode!(m::BatchNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode)
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(join(size(l.β), ", "))")
@@ -290,7 +290,7 @@ end
 @functor InstanceNorm
 
 testmode!(m::InstanceNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode)
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(join(size(l.β), ", "))")
@@ -393,7 +393,7 @@ end
 @functor GroupNorm
 
 testmode!(m::GroupNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode)
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(join(size(l.β), ", "))")
