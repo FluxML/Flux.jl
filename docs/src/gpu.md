@@ -30,7 +30,7 @@ If you define a structured model, like a `Dense` layer or `Chain`, you just need
 ```julia
 d = Dense(10, 5, σ)
 d = fmap(cu, d)
-d.W # Tracked CuArray
+d.W # CuArray
 d(cu(rand(10))) # CuArray output
 
 m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
@@ -53,7 +53,7 @@ julia> x = rand(10) |> gpu
  0.511655
 
 julia> m(x)
-Tracked 5-element CuArray{Float32,1}:
+5-element CuArray{Float32,1}:
  -0.30535
  ⋮
  -0.618002
