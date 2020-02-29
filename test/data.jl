@@ -76,7 +76,7 @@ end
     @test size(Iris.labels()) == (150,)
 end
 
-@testest "Housing" begin
+@testset "Housing" begin
     @test Housing.features() isa Matrix
     @test size(Housing.features()) == (506, 13)
 
