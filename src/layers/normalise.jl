@@ -7,6 +7,16 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
+"""
+    dropout(p, dims = :)
+
+Dropout function. For each input, either sets that input to `0` (with probability
+`p`) or scales it by `1/(1-p)`. The `dims` argument is to specify the unbroadcasted
+dimensions, i.e. `dims=1` does dropout along columns and `dims=2` along rows. This is
+used as a regularisation, i.e. it reduces overfitting during training. 
+ 
+See also [`Dropout`](@ref).
+"""
 dropout(x, p; dims = :) = x
 
 @adjoint function dropout(x, p; dims = :)
@@ -18,10 +28,7 @@ end
 """
     Dropout(p, dims = :)
 
-A Dropout layer. For each input, either sets that input to `0` (with probability
-`p`) or scales it by `1/(1-p)`. The `dims` argument is to specified the unbroadcasted
- dimensions, i.e. `dims=1` does dropout along columns and `dims=2` along rows. This is
- used as a regularisation, i.e. it reduces overfitting during training. see also [`dropout`](@ref).
+A Dropout layer. In the forward pass, applies the [`dropout`](@ref) function on the input.
 """
 mutable struct Dropout{F,D}
   p::F
@@ -43,6 +50,7 @@ end
 
 """
     AlphaDropout(p)
+    
 A dropout layer. It is used in Self-Normalizing Neural Networks.
 (https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
 The AlphaDropout layer ensures that mean and variance of activations remains the same as before.

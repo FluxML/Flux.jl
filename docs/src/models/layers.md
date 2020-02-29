@@ -40,19 +40,6 @@ Maxout
 SkipConnection
 ```
 
-## Activation Functions
-
-Non-linearities that go between layers of your model. Most of these functions are defined in [NNlib](https://github.com/FluxML/NNlib.jl) but are available by default in Flux.
-
-Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call `σ.(xs)`, `relu.(xs)` and so on.
-
-```@docs
-σ
-relu
-leakyrelu
-elu
-swish
-```
 
 ## Normalisation & Regularisation
 
@@ -61,6 +48,7 @@ These layers don't affect the structure of the network but may improve training 
 ```@docs
 BatchNorm
 Dropout
+Flux.dropout
 AlphaDropout
 LayerNorm
 GroupNorm
@@ -68,12 +56,12 @@ GroupNorm
 
 ## Cost Functions
 ```@docs
-mse
-crossentropy
-logitcrossentropy
-binarycrossentropy
-logitbinarycrossentropy
-kldivergence
-poisson
-hinge
+Flux.mse
+Flux.crossentropy
+Flux.logitcrossentropy
+Flux.binarycrossentropy
+Flux.logitbinarycrossentropy
+Flux.kldivergence
+Flux.poisson
+Flux.hinge
 ```
