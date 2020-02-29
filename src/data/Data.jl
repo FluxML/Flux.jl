@@ -48,11 +48,7 @@ using .Sentiment
 include("iris.jl")
 export Iris
 
-<<<<<<< HEAD
 include("housing.jl")
 export Housing
 
 end
-=======
-end #module
->>>>>>> af20a785... add DataLoader
