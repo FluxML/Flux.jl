@@ -2,7 +2,6 @@ using Flux, Test, Statistics
 using Zygote: pullback
 
 evalwgrad(f, x...) = pullback(f, x...)[1]
-trainmode(f) = (testmode!(f, false); f)
 
 @testset "Dropout" begin
   x = [1.,2.,3.]
