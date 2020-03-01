@@ -110,7 +110,7 @@ function apply!(o::Rprop, x, Δ)
   signΔ= zero(Δ)+oftype(Δ,Δ.>0)-oftype(Δ,Δ.<0) 
   @.step = clamp(step.*sign,step_limit[1],step_limit[2])
   @.state = Δ
-  @.Δ =  oftype(Δ,Δ>=0).*(-step).*(signΔ)
+  @.Δ =  oftype(Δ,Δ>=0).*(step).*(signΔ)
 end
 
 """
@@ -493,6 +493,26 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
   Optimiser(ADAM(η, β), WeightDecay(decay))
+
+"""
+## References
+[HeavyBall Method](http://pages.cs.wisc.edu/~brecht/cs726docs/HeavyBallLinear.pdf)
+"""
+
+mutable struct HeavyBall
+    alpha::Float64
+    beta::Float64
+    p::IdDict
+end
+
+HeavyBall(α = 0.1, β = 0.01, p=IdDict()) = HeavyBall(α, β, p)
+
+function apply!(o::HeavyBall, x, Δ)
+    α, β = o.alpha, o.beta
+    p = get!(o.p, x, zero(x))::typeof(x)
+    @.p = -Δ + β*p
+    @.Δ = -α.*p
+end
 
 # Compose optimizers
 
