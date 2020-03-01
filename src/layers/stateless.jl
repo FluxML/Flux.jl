@@ -29,7 +29,7 @@ msle(ŷ, y;ϵ1=eps.(ŷ),ϵ2=eps.(eltype(ŷ).(y))) = sum((log.(ŷ+ϵ1).-log.(
     huber_loss(ŷ, y,delta=1.0)
 
 Computes the mean of the Huber loss. By default, delta is set to 1.0.
-                    | 0.5*|(ŷ-y)|,   for |ŷ-y|<delta
+                    | 0.5*|(ŷ-y)|,   for |ŷ-y|<=delta
       Hubber loss = |
                     | delta*(|ŷ-y| - 0.5*delta),  otherwise
 
@@ -169,7 +169,7 @@ poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
 Measures the loss given the prediction `ŷ` and true labels `y` (containing 1 or -1). 
 
 [Hinge Loss](https://en.wikipedia.org/wiki/Hinge_loss)
-See also [`squared_hinge`](@ref)
+See also [`squared_hinge`](@ref).
 """
 hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
 
@@ -178,7 +178,7 @@ hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)
 
 Computes squared hinge loss given the prediction `ŷ` and true labels `y` (conatining 1 or -1)
 
-See also [`hinge`](@ref)
+See also [`hinge`](@ref).
 """
 squared_hinge(ŷ, y) = sum((max.(0,1 .-ŷ .* y)).^2) *1//size(y,2)
 
@@ -186,8 +186,8 @@ squared_hinge(ŷ, y) = sum((max.(0,1 .-ŷ .* y)).^2) *1//size(y,2)
     dice_coeff_loss(y_pred,y_true,smooth = 1)
 
 Loss function used in Image Segmentation. Calculates loss based on dice coefficient. Similar to F1_score
-    Dice_Coefficient(A,B) = 2*sum(|A*B|+smooth)/(sum(A^2)+sum(B^2)+ smooth)
-    Dice_loss = 1-Dice_Coefficient
+    Dice_Coefficient(A,B) = 2 * sum( |A*B| + smooth) / (sum( A^2 ) + sum( B^2 )+ smooth)
+    Dice_loss = 1 - Dice_Coefficient
 
 Ref: [V-Net: Fully Convolutional Neural Networks forVolumetric Medical Image Segmentation](https://arxiv.org/pdf/1606.04797v1.pdf)
 """
