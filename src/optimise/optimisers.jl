@@ -217,6 +217,44 @@ function apply!(o::ADAM, x, Δ)
 end
 
 """
+    SparseADAM(η, β::Tuple)
+
+Implements the SparseADAM optimiser, i.e. update only those states which appear in the gradient. 
+
+## Paramters
+  - Learning Rate (`η`): Defaults to `0.001`.
+  - Beta (`β::Tuple`): The first element refers to β1 and the second to β2. Defaults to `(0.9, 0.999)`.
+
+## Examples
+
+```julia
+opt = SparseADAM() # uses the default η = 0.001 and β = (0.9, 0.999)
+
+opt = SparseADAM(0.001, (0.9, 0.8))
+```
+## References
+[ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
+"""
+mutable struct SparseADAM
+  eta::Float64
+  beta::Tuple{Float64,Float64}
+  state::IdDict
+end
+
+SparseADAM(η = 0.001, β = (0.9, 0.999)) = SparseADAM(η, β, IdDict())
+
+function apply!(o::SparseADAM, x, Δ)
+  η, β = o.eta, o.beta
+  mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
+  mask = oftype(Δ,Δ.!=0)
+  @. mt = (β[1] * mt + (1 - β[1]) * Δ).*mask + mt.*(one(Δ)-mask)
+  @. vt = (β[2] * vt + (1 - β[2]) * Δ^2).*mask + vt.*(one(Δ)-mask)
+  @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
+  o.state[x] = (mt, vt, βp .* β)
+  return Δ
+end
+
+"""
     RADAM(η, β::Tuple)
 
 Implements the rectified ADAM optimizer.
