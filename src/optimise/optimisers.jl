@@ -451,7 +451,7 @@ Applies inverse time decay to an optimiser, i.e., the effective step size at ite
 
 ## Example
 ```julia
-  Optimiser(InvDecay(..), Opt(..))
+Optimiser(InvDecay(..), Opt(..))
 ```
 """
 mutable struct InvDecay
@@ -483,9 +483,8 @@ Discount the learning rate `eta` by a multiplicative factor `decay` every `decay
 ## Example
 To apply exponential decay to an optimiser:
 ```julia
-  Optimiser(ExpDecay(..), Opt(..))
-
-  opt = Optimiser(ExpDecay(), ADAM())
+Optimiser(ExpDecay(..), Opt(..))
+opt = Optimiser(ExpDecay(), ADAM())
 ```
 """
 mutable struct ExpDecay
