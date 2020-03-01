@@ -72,6 +72,7 @@ Many normalisation layers behave differently under training and inference (testi
 
 ```@docs
 testmode!
+trainmode!
 ```
 
 ## Cost Functions
