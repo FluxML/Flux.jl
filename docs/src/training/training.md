@@ -7,10 +7,10 @@ To actually train a model we need four things:
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
-With these we can call `Flux.train!`:
+With these we can call `train!`:
 
-```julia
-Flux.train!(objective, params, data, opt)
+```@docs
+Flux.Optimise.train!
 ```
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
@@ -56,7 +56,8 @@ data = [(x, y)]
 ```julia
 data = [(x, y), (x, y), (x, y)]
 # Or equivalently
-data = Iterators.repeated((x, y), 3)
+using IterTools: ncycle
+data = ncycle([(x, y)], 3)
 ```
 
 It's common to load the `x`s and `y`s separately. In this case you can use `zip`:
@@ -65,6 +66,14 @@ It's common to load the `x`s and `y`s separately. In this case you can use `zip`
 xs = [rand(784), rand(784), rand(784)]
 ys = [rand( 10), rand( 10), rand( 10)]
 data = zip(xs, ys)
+```
+
+Training data can be conveniently  partitioned for mini-batch training using the [`Flux.Data.DataLoader`](@ref) type:
+
+```julia
+X = rand(28, 28, 60000)
+Y = rand(0:9, 60000)
+data = DataLoader(X, Y, batchsize=128) 
 ```
 
 Note that, by default, `train!` only loops over the data once (a single "epoch").
@@ -120,7 +129,7 @@ An example follows that works similar to the default `Flux.train` but with no ca
 You don't need callbacks if you just code the calls to your functions directly into the loop.
 E.g. in the places marked with comments.
 
-```
+```julia
 function my_custom_train!(loss, ps, data, opt)
   ps = Params(ps)
   for d in data

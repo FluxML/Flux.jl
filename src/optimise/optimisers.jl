@@ -1,5 +1,4 @@
 using Flux
-using Base: @get!
 using MacroTools: @forward
 
 const ϵ = 1e-8
