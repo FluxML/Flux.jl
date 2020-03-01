@@ -279,7 +279,7 @@ size(sc(x)) == (5,9)
 x = randn(Float32,10,9)
 y = randn(Float32,2,9)
 b = Chain(Bilinear(10, 2, 3), Dense(3, 1))
-size(b([x,y])) == (1,9)
+size(b((x,y))) == (1,9)
 
 #using Bilinear to generate interactions
 x = randn(Float32,11,7)
@@ -320,8 +320,7 @@ end
 
 (a::Bilinear)(x::AbstractArray) = a(x,x)
 (a::Bilinear)(x::AbstractVector, y::AbstractVector) = vec(a(reshape(x, :,1), reshape(y, :,1)))
-(a::Bilinear)(x::AbstractVector) = a(x...)
-(a::Bilinear)(x::Tuple) = a(x...)
+(a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x...)
 
 function Base.show(io::IO, l::Bilinear)
   print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
