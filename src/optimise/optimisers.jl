@@ -70,6 +70,29 @@ function apply!(o::Momentum, x, Δ)
   @. Δ = -v
 end
 
+mutable struct Rprop
+  alpha::Float64
+  eta::Tuple{Float64,Float64}
+  step_limit::Tuple{Float64,Float64}
+  step::IdDict
+  state::IdDict
+end
+
+Rprop(α = 0.01, η = (0.5, 1.2), step_limit = (1e-6, 50.0)) = Rprop(α, η, step_limit, IdDict(), IdDict()) 
+
+function apply!(o::Rprop, x, Δ)
+  α, η = o.alpha, o.eta
+  step_limit = o.step_limit
+  state= get!(o.state, x, zero(Δ))::typeof(Δ) 
+  step = get!(o.step, x, one(x)*α)::typeof(x)
+  temp = Δ.*state
+  sign = oftype(temp,temp.>0)*η[2]+oftype(temp,temp.<0)*η[1]+oftype(temp,temp.==0)
+  signΔ= zero(Δ)+oftype(Δ,Δ.>0)-oftype(Δ,Δ.<0) 
+  @.step = clamp(step.*sign,step_limit[1],step_limit[2])
+  @.state = Δ
+  @.Δ =  oftype(Δ,Δ>=0).*(-step).*(signΔ)
+end
+
 """
     Nesterov(η, ρ)
 

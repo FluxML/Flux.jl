@@ -7,7 +7,7 @@ using Test
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
                        NADAM(), RADAM(), Descent(0.1), ADAM(), Nesterov(), RMSProp(),
-                       Momentum()]
+                       Momentum(),  Rprop()]
     w′ = randn(10, 10)
     loss(x) = Flux.mse(w*x, w′*x)
     for t = 1: 10^5
