@@ -444,7 +444,6 @@ end
     InvDecay(γ)
 
 Applies inverse time decay to an optimiser, i.e., the effective step size at iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size. The wrapped optimiser's step size is not modified.
-```
 
 ## Parameters
   - gamma (γ): Defaults to `0.001`
