@@ -11,7 +11,7 @@ struct DataLoader
 end
 
 """
-     DataLoader(data...; batchsize=1, shuffle=false, partial=true)
+    DataLoader(data...; batchsize=1, shuffle=false, partial=true)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one). 

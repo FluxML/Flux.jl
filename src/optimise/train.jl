@@ -3,8 +3,8 @@ import Zygote: Params, gradient
 
 
 """
-  update!(opt, p, g)
-  update!(opt, ps::Params, gs)
+    update!(opt, p, g)
+    update!(opt, ps::Params, gs)
 
 Perform an update step of the parameters `ps` (or the single parameter `p`) 
 according to optimizer `opt`  and the gradients `gs` (the gradient `g`).

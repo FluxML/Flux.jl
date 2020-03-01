@@ -60,7 +60,7 @@ head(x::Tuple) = reverse(Base.tail(reverse(x)))
 squeezebatch(x) = reshape(x, head(size(x)))
 
 """
-  batch(xs)
+    batch(xs)
 
 Batch the arrays in `xs` into a single array.
 
