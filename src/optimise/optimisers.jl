@@ -77,7 +77,7 @@ Gradient descent with learning rate  `η` and Nesterov momentum `ρ`.
 
 ## Parameters
   - Learning Rate (η): Amount by which the gradients are dicsounted berfore updating the weights. Defaults to `0.001`.
-  - Nesterov Momentum (ρ): Paramters controlling the amount of nesterov momentum to be applied. Defaults to `0.9`.
+  - Nesterov Momentum (ρ): Parameters controlling the amount of nesterov momentum to be applied. Defaults to `0.9`.
 
 ## Examples
 ```julia
@@ -105,7 +105,7 @@ end
 """
     RMSProp(η, ρ)
 
-Implements the RMSProp algortihm. Often a good choice for recurrent networks. Paramters other than learning rate generally don't need tuning.
+Implements the RMSProp algortihm. Often a good choice for recurrent networks. Parameters other than learning rate generally don't need tuning.
 
 ## Parameters
   - Learning Rate (η): Defaults to `0.001`.
