@@ -70,6 +70,26 @@ function apply!(o::Momentum, x, Δ)
   @. Δ = -v
 end
 
+"""
+    Rprop(α, η, step_limit)
+
+Implements the resilient backpropagation algorithm.
+
+## Parameters
+    - Learning Rate (`α`): Amount by which gradients are discounted before updating the weights. Defaults to `0.01`.
+    - Step_size (`η::Tuple`): pair of (etaminus, etaplis), that are multiplicative increase and decrease factors (default: (0.5, 1.2))
+    - Step_limit (`step_limit::Tuple`): a pair of minimal and maximal allowed step sizes (default: (1e-6, 50))
+
+##Examples
+```julia
+opt = Rprop() # uses default values
+
+opt = Rprop(0.001, (-1,1), (1,100))
+```
+
+##References
+[Rprop](https://arxiv.org/pdf/1509.04612.pdf)
+"""
 mutable struct Rprop
   alpha::Float64
   eta::Tuple{Float64,Float64}
