@@ -59,7 +59,7 @@ testmode!(m, mode = true) = m
     trainmode!(m, mode = true)
 
 Set a layer of model's train mode (see below).
-Symmetric to [`testmode`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)).
+Symmetric to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)).
 
 _Note_: if you manually set a model into train mode, you need to manually place
 it into test mode.
