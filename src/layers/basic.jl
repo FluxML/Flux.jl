@@ -45,12 +45,12 @@ end
   y, back = Zygote.pullback(applychain, c.layers, x)
   eltype(x) == eltype(y) || debug_string(
     "Chain(...) receives input of eltype ", eltype(x), " but creates output of eltype ",
-    eltype(y), ". \nThis is likely to indicate a performance issue.")
+    eltype(y), ". \nThis is may indicate a performance problem with one of the layers.")
   T = typeof(y)
   y, dy -> begin
     eltype(y) == eltype(dy) || debug_string(
       "Chain(...) creates output of eltype ", eltype(y), " but receives gradient of eltype ",
-      eltype(dy), ". \nThis is likely to indicate a performance issue.")
+      eltype(dy), ". \nThis is likely to be slow, and the loss function may be the problem.")
     back(dy)
   end
 end
