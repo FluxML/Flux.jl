@@ -1,4 +1,3 @@
-include("optimise/Optimise.jl")
 using .Optimise: stop
 using BSON
 
