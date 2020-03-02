@@ -220,20 +220,4 @@ Flux.@functor Affine
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
 
-By default all the fields in the `Affine` type are collected as its parameters, however, in some cases it may be desired to hold other metadata in our "layers" that may not be needed for training, and are hence supposed to be ignored while the parameters are collected. With Flux, it is possible to mark the fields of our layers that are trainable in two ways.
-
-The first way of achieving this is through overloading the `trainable` function.
-
-```julia
-Flux.trainable(a::Affine) = (a.W, a.b,)
-```
-
-Only the fields returned by `trainable` will be collected as trainable parameters of the layer when calling `Flux.params`. 
-
-Another way of achieving this is through the `@functor` macro. Here, wee can mark the fields we are interested in like so:
-Another way of achieving this is through the `@functor` macro. Here, we can mark the fields we are interested in by grouping them in the second argument:
-```julia
-Flux.@functor Affine (W,)
-```
-
-However, doing this requires the `struct` to have a corresponding constructor that accepts those parameters.
+For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advacned.md).
