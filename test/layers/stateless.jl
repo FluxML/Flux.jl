@@ -99,7 +99,7 @@ const ϵ = 1e-7
             
   @testset "tversky_loss" begin
     @test Flux.tversky_loss(y,y1) ≈ 0.028747433264887046
-    @test Flux.tversky_loss(y,y1,0.8) ≈ 0.050200803212851364
+    @test Flux.tversky_loss(y,y1,beta = 0.8) ≈ 0.050200803212851364
     @test Flux.tversky_loss(y,y) ≈ -0.5576923076923075
   end
             
