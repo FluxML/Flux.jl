@@ -43,11 +43,14 @@ end
 
 @adjoint function (c::Chain)(x)
   y, back = Zygote.pullback(applychain, c.layers, x)
+  eltype(x) == eltype(y) || debug_string(
+    "Chain(...) receives input of eltype ", eltype(x), " but creates output of eltype ",
+    eltype(y), ". \nThis is likely to indicate a performance issue.")
   T = typeof(y)
   y, dy -> begin
     eltype(y) == eltype(dy) || debug_string(
-      "Chain(...) has output of eltype ", eltype(y),
-      " but receives gradient of eltype ", eltype(dy))
+      "Chain(...) creates output of eltype ", eltype(y), " but receives gradient of eltype ",
+      eltype(dy), ". \nThis is likely to indicate a performance issue.")
     back(dy)
   end
 end
