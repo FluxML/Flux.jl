@@ -495,6 +495,21 @@ ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
   Optimiser(ADAM(η, β), WeightDecay(decay))
 
 """
+    HeavyBall(α, β, p)
+
+Heavy Ball Method , is a multi-step iterative method that exploits iterates prior to the most recent one 
+
+## Parameters
+  - Learning Rate (α): Defaults to `0.1`.
+  - Beta (β): Defaults to `0.1`
+  - p: Initial step value, Defaults to `0.0`
+
+## Examples
+```julia
+opt = HeavyBall() # uses default α, β and p
+opt = HeavyBall(0.01, 0.001)
+```
+
 ## References
 [HeavyBall Method](http://pages.cs.wisc.edu/~brecht/cs726docs/HeavyBallLinear.pdf)
 """
