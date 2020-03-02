@@ -255,36 +255,35 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    Bilinear(in1, in2, out)
+    B = Bilinear(in1, in2, out)
 
-Creates a Bilinear layer, that operates over two inputs at the same time.
-Given parameters W and b, it's output is an interaction of the form 
+Creates a Bilinear layer, which operates on two inputs at the same time.
+It has parameters `W` and `b`, and its output given vectors `x`, `y` is of the form 
 
-z_i = σ.(x * W_i * y' .+ b_i)
+`z[i] = σ.(x' * W[i,:,:] * y .+ b[i])`
 
-All `z_i` are then concatenated across output dimensions `i` and samples.
+If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form.
 
-Bilinear can be used to create interactions between features as well.
+If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
+The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
+which is accepted as the input to a `Chain`.
 
 ```
-d = Dense(10, 10)
-b = Bilinear(10, 10, 5)
-x = randn(Float32,10,9)
+# using Bilinear to generate interactions, on one input
+x = randn(Float32, 11, 7)
+B = Bilinear(11, 11, 3)
+size(B(x)) == (3, 7)
 
-#using Bilinear as the recombinator in a SkipConnection
-sc = SkipConnection(d, b)
-size(sc(x)) == (5,9)
+# using Bilinear on two data streams at once, as a tuple
+x = randn(Float32, 10, 9)
+y = randn(Float32, 2, 9)
+m = Chain(Bilinear(10, 2, 3), Dense(3, 1))
+size(m((x, y))) == (1, 9)
 
-#using Bilinear in two data streams at once
-x = randn(Float32,10,9)
-y = randn(Float32,2,9)
-b = Chain(Bilinear(10, 2, 3), Dense(3, 1))
-size(b((x,y))) == (1,9)
-
-#using Bilinear to generate interactions
-x = randn(Float32,11,7)
-b = Bilinear(11, 11, 3)
-size(b(x)) == (3,7)
+# using Bilinear as the recombinator in a SkipConnection
+x = randn(Float32, 10, 9)
+sc = SkipConnection(Dense(10, 10), Bilinear(10, 10, 5))
+size(sc(x)) == (5, 9)
 ```
 """
 struct Bilinear{A,B,S}
