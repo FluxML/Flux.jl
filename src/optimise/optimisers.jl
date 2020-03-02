@@ -1,5 +1,4 @@
 using Flux
-using Base: @get!
 using MacroTools: @forward
 
 const ϵ = 1e-8
@@ -7,7 +6,7 @@ const ϵ = 1e-8
 # TODO: should use weak refs
 
 """
-  Descent(η)
+    Descent(η)
 
 Classic gradient descent optimiser with learning rate `η`.
 For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`
@@ -78,7 +77,7 @@ Gradient descent with learning rate  `η` and Nesterov momentum `ρ`.
 
 ## Parameters
   - Learning Rate (η): Amount by which the gradients are dicsounted berfore updating the weights. Defaults to `0.001`.
-  - Nesterov Momentum (ρ): Paramters controlling the amount of nesterov momentum to be applied. Defaults to `0.9`.
+  - Nesterov Momentum (ρ): Parameters controlling the amount of nesterov momentum to be applied. Defaults to `0.9`.
 
 ## Examples
 ```julia
@@ -106,7 +105,7 @@ end
 """
     RMSProp(η, ρ)
 
-Implements the RMSProp algortihm. Often a good choice for recurrent networks. Paramters other than learning rate generally don't need tuning.
+Implements the RMSProp algortihm. Often a good choice for recurrent networks. Parameters other than learning rate generally don't need tuning.
 
 ## Parameters
   - Learning Rate (η): Defaults to `0.001`.
@@ -442,17 +441,16 @@ function apply!(o::Optimiser, x, Δ)
 end
 
 """
-  InvDecay(γ)
+    InvDecay(γ)
 
 Applies inverse time decay to an optimiser, i.e., the effective step size at iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size. The wrapped optimiser's step size is not modified.
-```
 
 ## Parameters
   - gamma (γ): Defaults to `0.001`
 
 ## Example
 ```julia
-  Optimiser(InvDecay(..), Opt(..))
+Optimiser(InvDecay(..), Opt(..))
 ```
 """
 mutable struct InvDecay
@@ -471,7 +469,7 @@ function apply!(o::InvDecay, x, Δ)
 end
 
 """
-  ExpDecay(eta, decay, decay_step, clip)
+    ExpDecay(eta, decay, decay_step, clip)
 
 Discount the learning rate `eta` by a multiplicative factor `decay` every `decay_step` till a minimum of `clip`.
 
@@ -484,9 +482,8 @@ Discount the learning rate `eta` by a multiplicative factor `decay` every `decay
 ## Example
 To apply exponential decay to an optimiser:
 ```julia
-  Optimiser(ExpDecay(..), Opt(..))
-
-  opt = Optimiser(ExpDecay(), ADAM())
+Optimiser(ExpDecay(..), Opt(..))
+opt = Optimiser(ExpDecay(), ADAM())
 ```
 """
 mutable struct ExpDecay
@@ -510,7 +507,7 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-  WeightDecay(wd)
+    WeightDecay(wd)
 
 Decays the weight by `wd`
 

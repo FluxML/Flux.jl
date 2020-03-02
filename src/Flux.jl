@@ -7,11 +7,12 @@ using Zygote, MacroTools, Juno, Reexport, Statistics, Random
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
+
 export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       SkipConnection, params, fmap, cpu, gpu, f32, f64
+       SkipConnection, params, fmap, cpu, gpu, f32, f64, testmode!, trainmode!
 
 include("optimise/Optimise.jl")
 using .Optimise
