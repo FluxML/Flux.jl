@@ -52,14 +52,18 @@ function history(x,y,accuracy)
 Learning Rate Decay based on previous performance. Reduce learning rate when a metric has stopped improving.
 Arguments:
     x,y: could be training data (x,y) or can be different
+
     factor: factor by which learning rate is reduced in every updation. Default set to 0.2
     
     loss: function to be used to calculate loss, when monitor set to 'loss'. Otherwise, optional.
     
     accuracy_fn: function to be used to calculate accuracy, when monitor set to 'acc'. Otherwise, optional
+    
     patience: number of epochs that produced the monitored quantity with no improvement, 
-	after which learning rate will be reduced or training stopped. Default value set to 5.
+	      after which learning rate will be reduced or training stopped. Default value set to 5.
+    
     min_lr: lower bound on the learning rate. If no improvement seen even below that after 'patience' number of steps, the training is terminated.
+    
     monitor: Quantity to be monitored for the provided (x,y). Can take values 'acc' or 'loss'. Default set to 'loss'
 """
 
@@ -106,21 +110,29 @@ end
 """
     model_checkpoint(x,y,model_arr;loss = loss,accuracy_fn=nothing,monitor="acc",
 				filename= "model.bson",path = "./",verbose=1,save_best_model_only =1)
+
 Saves the model after each epoch whenever the monitored qunatity improves.
 Arguments:
     x,y:  Could be training data (x,y) or can be different
     
     model_arr: Array of sub-models being used in the model. For a single model input should be [model]. 
 	       For more sub_models provide models in sequence,[model1,model2,....] 
+    
     loss: function to be used to calculate loss, when monitor set to 'loss'. Otherwise, optional.
     
     accuracy_fn: function to be used to calculate accuracy, when monitor set to 'acc'. Otherwise, optional.
+    
     monitor: monitor: quantity to be monitored for the provided (x,y). Can take values 'acc' or 'loss'. Default set to 'loss'
+    
     filename: name of the model file with extension .BSON to which model is needed to be saved. 
 	      By default, saved to 'model.bson'.
-    filepath: Path to the file where the model is needed to be saved.
+    
+    filepath: Path to the file where the model is needed to be saved. By default, set to "./", 
+	      i.e. saves files to current directory
+    
     save_best_model_only: save only the best model to `filename` provided, if set to 1. 
 			  Else save models at every improvement to different files as {epoch}_filename. Default set to 1.
+
 In order to load the saved model, use:  `BSON.@load joinpath(path, filename) m ctr acc` or `BSON.@load joinpath(path, filename) m ctr l`<br> 
 where m represent a chain of all the sub-models of the function. To access each individual model, use m.layers[i] for ith sub-model.
 """
