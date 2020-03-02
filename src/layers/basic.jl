@@ -302,21 +302,21 @@ function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
 end
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
-    W, b, σ = a.W, a.b, a.σ
+  W, b, σ = a.W, a.b, a.σ
 
-    d_z, d_x, d_y = size(W)
-    d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
-    size(x,2) == size(y,2) || throw(DimensionMismatch("data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
+  d_z, d_x, d_y = size(W)
+  d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
+  size(x,2) == size(y,2) || throw(DimensionMismatch("data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
 
-    # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
-    Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
+  # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
+  Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
 
-    # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
-    Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
-    Z = reshape(Wyx, (d_z, :))
+  # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
+  Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
+  Z = reshape(Wyx, (d_z, :))
 
-    # @einsum out[o,s] := σ(Z[o,i] + b[o])
-    σ.(Z .+ b)
+  # @einsum out[o,s] := σ(Z[o,i] + b[o])
+  σ.(Z .+ b)
 end
 
 (a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
