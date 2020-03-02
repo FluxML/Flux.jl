@@ -118,5 +118,8 @@ macro epochs(n, ex)
   :(@progress for i = 1:$(esc(n))
       @info "Epoch $i"
       $(esc(ex))
+      if (@isdefined stop_itr) && stop_itr==true  
+                break               #Stop_itr used to stop the execution of epochs when Flux.stop() called in callback
+      end
     end)
 end
