@@ -230,9 +230,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[NNlib]]
 deps = ["BinaryProvider", "Libdl", "LinearAlgebra", "Requires", "Statistics"]
-git-tree-sha1 = "755c0bab3912ff782167e1b4b774b833f8a0e550"
+git-tree-sha1 = "21a3c22bc197b6ae2f8d4d75631876e2b6506dbe"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.6.4"
+version = "0.6.5"
 
 [[NaNMath]]
 git-tree-sha1 = "928b8ca9b2791081dc71a51c55347c27c618760f"
@@ -361,11 +361,9 @@ version = "1.2.11+8"
 
 [[Zygote]]
 deps = ["DiffRules", "FFTW", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "3c65158c0aa0808cdfff8bca2a36430b038aad00"
-repo-rev = "master"
-repo-url = "https://github.com/FluxML/Zygote.jl.git"
+git-tree-sha1 = "f8329b595c465caf3ca87c4f744e6041a4983e43"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.4.7"
+version = "0.4.8"
 
 [[ZygoteRules]]
 deps = ["MacroTools"]

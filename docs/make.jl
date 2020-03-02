@@ -1,9 +1,3 @@
-using Pkg;
-Pkg.activate(joinpath(@__DIR__, "..")); Pkg.instantiate()
-Pkg.activate(); Pkg.instantiate()
-
-pushfirst!(LOAD_PATH, joinpath(@__DIR__, ".."))
-
 using Documenter, Flux, NNlib
 
 makedocs(modules=[Flux, NNlib],
@@ -30,4 +24,6 @@ makedocs(modules=[Flux, NNlib],
                                   analytics = "UA-36890222-9",
                                   prettyurls = haskey(ENV, "CI")))
 
-deploydocs(repo = "github.com/FluxML/Flux.jl.git")
+deploydocs(repo = "github.com/FluxML/Flux.jl.git",    
+           target = "build",
+           push_preview = true)
