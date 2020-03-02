@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>DataLoader · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+</script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link href="../../assets/documenter.css" rel="stylesheet" type="text/css"/><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>Flux</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../">Home</a></li><li><span class="toctext">Building Models</span><ul><li><a class="toctext" href="../../models/basics/">Basics</a></li><li><a class="toctext" href="../../models/recurrence/">Recurrence</a></li><li><a class="toctext" href="../../models/regularisation/">Regularisation</a></li><li><a class="toctext" href="../../models/layers/">Model Reference</a></li><li><a class="toctext" href="../../models/nnlib/">NNlib</a></li></ul></li><li><span class="toctext">Handling Data</span><ul><li><a class="toctext" href="../onehot/">One-Hot Encoding</a></li><li class="current"><a class="toctext" href>DataLoader</a><ul class="internal"></ul></li></ul></li><li><span class="toctext">Training Models</span><ul><li><a class="toctext" href="../../training/optimisers/">Optimisers</a></li><li><a class="toctext" href="../../training/training/">Training</a></li></ul></li><li><a class="toctext" href="../../gpu/">GPU Support</a></li><li><a class="toctext" href="../../saving/">Saving &amp; Loading</a></li><li><a class="toctext" href="../../ecosystem/">The Julia Ecosystem</a></li><li><a class="toctext" href="../../performance/">Performance Tips</a></li><li><a class="toctext" href="../../community/">Community</a></li></ul></nav><article id="docs"><header><nav><ul><li>Handling Data</li><li><a href>DataLoader</a></li></ul><a class="edit-page" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/data/dataloader.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>DataLoader</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="DataLoader-1" href="#DataLoader-1">DataLoader</a></h1><p>Flux provides the <code>DataLoader</code> type in the <code>Flux.Data</code> module to handle iteration over mini-batches of data. </p><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="Flux.Data.DataLoader" href="#Flux.Data.DataLoader"><code>Flux.Data.DataLoader</code></a> — <span class="docstring-category">Type</span>.</div><div><div><pre><code class="language-julia">DataLoader(data...; batchsize=1, shuffle=false, partial=true)</code></pre><p>An object that iterates over mini-batches of <code>data</code>, each mini-batch containing <code>batchsize</code> observations (except possibly the last one). </p><p>Takes as input one or more data tensors, e.g. X in unsupervised learning, X and Y in  supervised learning. The last dimension in each tensor is considered to be the observation dimension. </p><p>If <code>shuffle=true</code>, shuffles the observations each time iterations are re-started. If <code>partial=false</code>, drops the last mini-batch if it is smaller than the batchsize.</p><p>Example usage:</p><pre><code class="language-none">Xtrain = rand(10, 100)
+dtrain = DataLoader(Xtrain, batchsize=2) 
+# iterate over 50 mini-batches
+for x in dtrain: 
+    @assert size(x) == (10, 2)
+    ...
+end
+
+Xtrain = rand(10, 100)
+Ytrain = rand(100)
+dtrain = DataLoader(Xtrain, Ytrain, batchsize=2, shuffle=true) 
+for epoch in 1:100
+    for (x, y) in dtrain: 
+        @assert size(x) == (10, 2)
+        @assert size(y) == (2,)
+        ...
+    end
+end
+
+# train for 10 epochs
+using IterTools: ncycle 
+Flux.train!(loss, ps, ncycle(dtrain, 10), opt)</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ddab979ea9d062acc9e8e700404fd51997581ada/src/data/dataloader.jl#L13-L50">source</a></section><footer><hr/><a class="previous" href="../onehot/"><span class="direction">Previous</span><span class="title">One-Hot Encoding</span></a><a class="next" href="../../training/optimisers/"><span class="direction">Next</span><span class="title">Optimisers</span></a></footer></article></body></html>
