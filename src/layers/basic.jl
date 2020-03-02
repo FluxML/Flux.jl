@@ -303,22 +303,24 @@ function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
 end
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
-  if size(x, 2) ≠ size(y, 2)
-    error("Bilinear expected equal number of samples in both streams. Got $(size(x,2)) and $(size(y,2))")
-  end
-  W, b, σ = a.W, a.b, a.σ
-  out_size, x_size, y_size = size(W)
-  samples = axes(x, 2)
-  Z = Zygote.Buffer(x, out_size, length(samples))
-  for s in samples
-      for o in axes(W, 1)
-          Z[o, s] = x[:,s]' * W[o,:,:] * y[:,s]
-      end
-  end
-  σ.(copy(Z) .+ b)
+    W, b, σ = a.W, a.b, a.σ
+
+    d_z, d_x, d_y = size(W)
+    d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
+    size(x,2) == size(y,2) || throw(DimensionMismatch("data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
+
+    # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
+    Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
+
+    # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
+    Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
+    Z = reshape(Wyx, (d_z, :))
+
+    # @einsum out[o,s] := σ(Z[o,i] + b[o])
+    σ.(Z .+ b)
 end
 
-(a::Bilinear)(x::AbstractArray) = a(x,x)
+(a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
 (a::Bilinear)(x::AbstractVector, y::AbstractVector) = vec(a(reshape(x, :,1), reshape(y, :,1)))
 (a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x...)
 
