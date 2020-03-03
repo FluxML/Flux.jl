@@ -80,9 +80,6 @@ mutable struct AlphaDropout{F}
   end
 end
 
-# TODO: deprecate in v0.11
-AlphaDropout(p) = AlphaDropout(p, nothing)
-
 function (a::AlphaDropout)(x)
   _isactive(a) || return x
   λ = eltype(x)(1.0507009873554804934193349852946)
