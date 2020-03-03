@@ -37,7 +37,7 @@ include("layers/normalise.jl")
 
 include("data/Data.jl")
 
-include("deprecations.jl")
+include("deprecated.jl")
 
 function __init__()
   precompiling = ccall(:jl_generating_output, Cint, ()) != 0
