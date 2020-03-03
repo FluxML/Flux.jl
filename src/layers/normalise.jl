@@ -40,6 +40,7 @@ mutable struct Dropout{F,D}
   active::Union{Bool, Nothing}
 end
 
+# TODO: deprecate in v0.11
 Dropout(p, dims) = Dropout(p, dims, nothing)
 
 function Dropout(p; dims = :)
@@ -79,6 +80,7 @@ mutable struct AlphaDropout{F}
   end
 end
 
+# TODO: deprecate in v0.11
 AlphaDropout(p) = AlphaDropout(p, nothing)
 
 function (a::AlphaDropout)(x)
@@ -161,6 +163,7 @@ mutable struct BatchNorm{F,V,W,N}
   active::Union{Bool, Nothing}
 end
 
+# TODO: deprecate in v0.11
 BatchNorm(λ, β, γ, μ, σ², ϵ, momentum) = BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 BatchNorm(chs::Integer, λ = identity;
@@ -257,6 +260,7 @@ mutable struct InstanceNorm{F,V,W,N}
   active::Union{Bool, Nothing}
 end
 
+# TODO: deprecate in v0.11
 InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 InstanceNorm(chs::Integer, λ = identity;
@@ -350,6 +354,7 @@ mutable struct GroupNorm{F,V,W,N,T}
   active::Union{Bool, Nothing}
 end
 
+# TODO: deprecate in v0.11
 GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum) = GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 GroupNorm(chs::Integer, G::Integer, λ = identity;
