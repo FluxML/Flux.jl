@@ -40,6 +40,8 @@ mutable struct Dropout{F,D}
   active::Union{Bool, Nothing}
 end
 
+Dropout(p, dims) = Dropout(p, dims, nothing)
+
 function Dropout(p; dims = :)
   @assert 0 ≤ p ≤ 1
   Dropout{typeof(p),typeof(dims)}(p, dims, nothing)
@@ -76,6 +78,8 @@ mutable struct AlphaDropout{F}
     new{typeof(p)}(p, active)
   end
 end
+
+AlphaDropout(p) = AlphaDropout(p, nothing)
 
 function (a::AlphaDropout)(x)
   _isactive(a) || return x
@@ -253,6 +257,8 @@ mutable struct InstanceNorm{F,V,W,N}
   active::Union{Bool, Nothing}
 end
 
+InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
+
 InstanceNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   InstanceNorm(λ, initβ(chs), initγ(chs),
@@ -343,6 +349,8 @@ mutable struct GroupNorm{F,V,W,N,T}
   momentum::N
   active::Union{Bool, Nothing}
 end
+
+GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum) = GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
