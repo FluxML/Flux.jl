@@ -12,9 +12,9 @@ NNlib.gelu
 NNlib.leakyrelu
 NNlib.logcosh
 NNlib.logsigmoid
-NNlib.sigmoid
 NNlib.relu
 NNlib.selu
+NNlib.sigmoid
 NNlib.softplus
 NNlib.softsign
 NNlib.swish
@@ -47,4 +47,5 @@ NNlib.depthwiseconv
 NNlib.batched_mul
 NNlib.batched_mul!
 NNlib.batched_adjoint
+NNlib.batched_transpose
 ```
