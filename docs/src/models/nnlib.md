@@ -7,17 +7,27 @@ Flux re-exports all of the functions exported by the [NNlib](https://github.com/
 Non-linearities that go between layers of your model. Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call `σ.(xs)`, `relu.(xs)` and so on.
 
 ```@docs
+NNlib.celu
 NNlib.elu
 NNlib.gelu
+NNlib.hardsigmoid
+NNlib.hardtanh
 NNlib.leakyrelu
+NNlib.lisht
 NNlib.logcosh
 NNlib.logsigmoid
+NNlib.mish
 NNlib.relu
+NNlib.relu6
+NNlib.rrelu
 NNlib.selu
 NNlib.sigmoid
 NNlib.softplus
+NNlib.softshrink
 NNlib.softsign
 NNlib.swish
+NNlib.tanhshrink
+NNlib.trelu
 ```
 
 ## Softmax
