@@ -16,33 +16,33 @@ mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
 
 """
-    msle(ŷ, y; ϵ = eps.(Float64.(ŷ)))
+    msle(ŷ, y; ϵ=eps(eltype(ŷ)))
 
-Returns the mean of the squared logarithmic errors `sum((log.(ŷ + ϵ) .- log.(y + ϵ)).^2) / length(y)`.
+Returns the mean of the squared logarithmic errors `sum((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)).^2) / length(y)`.
 The `ϵ` term provides numerical stability. 
 
 This error penalizes an under-predicted estimate greater than an over-predicted estimate.
 """
-msle(ŷ, y; ϵ = eps.(ŷ)) = sum((log.(ŷ + ϵ).-log.(y + ϵ)).^2) * 1 // length(y)
+msle(ŷ, y; ϵ=eps(eltype(ŷ))) = sum((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)).^2) * 1 // length(y)
 
 
 
 """
-    huber_loss(ŷ, y; delta = 1.0)
+    huber_loss(ŷ, y; δ=1.0)
 
-Computes the mean of the Huber loss given the prediction `ŷ` and true values `y`. By default, delta is set to 1.0.
+Computes the mean of the Huber loss given the prediction `ŷ` and true values `y`. By default, δ is set to 1.0.
 
-                    | 0.5*|ŷ - y|,   for |ŷ - y| <= delta
+                    | 0.5*|ŷ - y|,   for |ŷ - y| <= δ
       Hubber loss = |
-                    | delta*(|ŷ- y| - 0.5*delta),  otherwise
+                    |  δ*(|ŷ - y| - 0.5*δ),  otherwise
 
 [`Huber Loss`](https://en.wikipedia.org/wiki/Huber_loss).
 """
-function huber_loss(ŷ, y; delta = eltype(ŷ)(1))
-   abs_error = abs.(ŷ.-y)
-   temp = abs_error.<delta
+function huber_loss(ŷ, y;  δ=eltype(ŷ)(1))
+   abs_error = abs.(ŷ .- y)
+   temp = abs_error .<  δ
    x = eltype(ŷ)(0.5)
-   hub_loss = sum(((abs_error.^2).*temp).*x .+ delta*(abs_error.- x*delta).*(1 .-temp)) * 1 // length(y)
+   hub_loss = sum(((abs_error.^2) .* temp) .* x .+ δ*(abs_error .- x*δ) .* (1 .- temp)) * 1 // length(y)
 end
 
 function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Nothing)
@@ -144,7 +144,7 @@ It is always non-negative and zero only when both the distributions are equal ev
 [KL Divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence).
 """
 function kldivergence(ŷ, y)
-  entropy = sum(y .* log.(y)) *1 //size(y,2)
+  entropy = sum(y .* log.(y)) * 1 //size(y,2)
   cross_entropy = crossentropy(ŷ, y)
   return entropy + cross_entropy
 end
@@ -157,7 +157,7 @@ Returns `sum(ŷ .- y .* log.(ŷ)) / size(y, 2)`
 
 [Poisson Loss](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
-poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
+poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) * 1 // size(y,2)
 
 """
     hinge(ŷ, y)
@@ -168,7 +168,7 @@ Returns `sum((max.(0, 1 .- ŷ .* y))) / size(y, 2)`
 [Hinge Loss](https://en.wikipedia.org/wiki/Hinge_loss)
 See also [`squared_hinge`](@ref).
 """
-hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y, 2)
+hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) * 1 // size(y, 2)
 
 """
     squared_hinge(ŷ, y)
@@ -178,34 +178,25 @@ Returns `sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)`
 
 See also [`hinge`](@ref).
 """
-squared_hinge(ŷ, y) = sum((max.(0, 1 .- ŷ .* y)).^2) *1 // size(y, 2)
+squared_hinge(ŷ, y) = sum((max.(0, 1 .- ŷ .* y)).^2) * 1 // size(y, 2)
 
 """
-    dice_coeff_loss(ŷ, y, smooth = 1)
+    dice_coeff_loss(ŷ, y; smooth=1)
 
 Loss function used in Image Segmentation. Calculates loss based on dice coefficient. Similar to F1_score.
-    
-    Dice_Coefficient(ŷ, y) = 2 * sum( |ŷ.* y| + smooth) / (sum( ŷ.^2 ) + sum( y.^2 ) + smooth)
-    Dice_loss = 1 - Dice_Coefficient
+Returns `1 - 2*sum(|ŷ .* y| + smooth) / (sum(ŷ.^2) + sum(y.^2) + smooth)`
 
 [V-Net: Fully Convolutional Neural Networks forVolumetric Medical Image Segmentation](https://arxiv.org/pdf/1606.04797v1.pdf)
 """
-function dice_coeff_loss(ŷ, y; smooth = eltype(ŷ)(1.0))
-    intersection = sum(y.*ŷ)
-    return 1 - (2*intersection + smooth) / (sum(y.^2) + sum(ŷ.^2) + smooth)
-end
+dice_coeff_loss(ŷ, y; smooth=eltype(ŷ)(1.0)) = 1 - (2*sum(y .* ŷ) + smooth) / (sum(y.^2) + sum(ŷ.^2) + smooth)
 
 """
-    tversky_loss(ŷ, y, β = 0.7)
+    tversky_loss(ŷ, y; β=0.7)
 
 Used with imbalanced data to give more weightage to False negatives. 
 Larger β weigh recall higher than precision (by placing more emphasis on false negatives)
-    
-    tversky_loss(ŷ, y, β) = 1 - sum(|y.*ŷ| + 1) / (sum(y.*ŷ + β *(1 .- y).*ŷ + (1 - β).*y.*(1 .- ŷ))+ 1)
+Returns `1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)`
 
 [Tversky loss function for image segmentation using 3D fully convolutional deep networks](https://arxiv.org/pdf/1706.05721.pdf)
 """
-function tversky_loss(ŷ, y; β = eltype(ŷ)(0.7))
-    intersection = sum(y.*ŷ)
-    return 1 - (intersection + 1) / (sum(y.* ŷ + β *(1 .- y).* ŷ + (1 - β).*y.*(1 .- ŷ)) + 1)
-end
+tversky_loss(ŷ, y; β=eltype(ŷ)(0.7)) = 1 - (sum(y .* ŷ) + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
