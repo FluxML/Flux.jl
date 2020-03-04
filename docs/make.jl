@@ -8,6 +8,7 @@ makedocs(modules=[Flux, NNlib],
                      "Recurrence" => "models/recurrence.md",
                      "Regularisation" => "models/regularisation.md",
                      "Model Reference" => "models/layers.md",
+                     "Advanced Model Building" => "models/advanced.md",
                      "NNlib" => "models/nnlib.md"],
                   "Handling Data" =>
                     ["One-Hot Encoding" => "data/onehot.md",
