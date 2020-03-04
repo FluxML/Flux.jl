@@ -256,18 +256,6 @@ end
 +(a::Zeros, b::AbstractArray) = b + a
 -(a::Zeros, b::AbstractArray) = -b + a
 
-function *(a::AbstractArray{S,2}, b::Zeros{T,2}) where {T,S}
-  @assert size(a,2) == size(b,1) throw(DimensionMismatch("A has dimensions $(size(a)) but B has dimensions $(size(b))"))
-  res = similar(a, size(a,1), size(b,2))
-  res .= zero(S)
-end
-
-function *(a::Zeros{T,2}, b::AbstractArray{S,2}) where {T,S}
-  @assert size(a,2) == size(b,1) throw(DimensionMismatch("A has dimensions $(size(a)) but B has dimensions $(size(b))"))
-  res = similar(b, size(a,1), size(b,2))
-  res .= zero(S)
-end
-
 Base.copy(xs::Zeros{T,N}) where {T,N} = xs
 
 # Define broadcasting behaviour
@@ -282,8 +270,7 @@ broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
 broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
 
 function broadcasted(::typeof(*), a::AbstractArray, b::Zeros)
-  sz = similar(a, Broadcast.broadcast_shape(size(a), size(b)))
-  sz .= zero(a)
+  Zeros(Broadcast.broadcast_shape(size(a), size(b))...)
 end
 
 broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = broadcasted(*, b, a)
