@@ -247,7 +247,7 @@ Base.collect(xs::Zeros{T,N}) where {T,N} = fill(zero(T), size(xs))
 
 # Define basic ops
 for f in (:+, :-)
-  @eval function $f(a::Union{AbstractArray{<:Number}, Zeros}, b::Zeros)
+  @eval @inline function $f(a::Union{AbstractArray{<:Number}, Zeros}, b::Zeros)
     @assert size(a) == size(b) throw(DimensionMismatch("dimensions must match"))
     a
   end
@@ -261,7 +261,9 @@ Base.copy(xs::Zeros{T,N}) where {T,N} = xs
 # Define broadcasting behaviour
 for op in (:+, :-)
   @eval function broadcasted(::typeof($op), a::AbstractArray, b::Zeros)
-    sz = similar(a, Broadcast.broadcast_shape(size(a), size(b)))
+    bs = Broadcast.broadcast_shape(size(a), size(b))
+    size(a) == bs && return a
+    sz = similar(a, bs)
     sz .= a
   end
 end
