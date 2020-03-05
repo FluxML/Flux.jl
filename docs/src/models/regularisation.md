@@ -31,7 +31,7 @@ julia> params(m)
  param([0.0, 0.0, 0.0, 0.0, 0.0])
 
 julia> sum(norm, params(m))
-26.01749952921026 (tracked)
+26.01749952921026
 ```
 
 Here's a larger example with a multi-layer perceptron.
@@ -52,7 +52,7 @@ One can also easily add per-layer regularisation via the `activations` function:
 ```julia
 julia> using Flux: activations
 
-julia> c = Chain(Dense(10,5,σ),Dense(5,2),softmax)
+julia> c = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
 Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
 
 julia> activations(c, rand(10))

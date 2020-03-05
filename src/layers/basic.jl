@@ -33,6 +33,8 @@ applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
+testmode!(m::Chain, mode = true) = (map(x -> testmode!(x, mode), m.layers); m)
+
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   join(io, c.layers, ", ")
@@ -88,7 +90,7 @@ julia> d = Dense(5, 2)
 Dense(5, 2)
 
 julia> d(rand(5))
-Tracked 2-element Array{Float64,1}:
+Array{Float64,1}:
   0.00257447
   -0.00449443
 ```

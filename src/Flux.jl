@@ -7,11 +7,12 @@ using Zygote, MacroTools, Juno, Reexport, Statistics, Random
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
+
 export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       SkipConnection, params, fmap, cpu, gpu, f32, f64
+       SkipConnection, params, fmap, cpu, gpu, f32, f64, testmode!, trainmode!
 
 include("optimise/Optimise.jl")
 using .Optimise
@@ -38,24 +39,13 @@ include("data/Data.jl")
 
 include("deprecations.jl")
 
+include("cuda/cuda.jl")
+
 function __init__()
-  precompiling = ccall(:jl_generating_output, Cint, ()) != 0
-
-  # we don't want to include the CUDA module when precompiling,
-  # or we could end up replacing it at run time (triggering a warning)
-  precompiling && return
-
-  if !CuArrays.functional()
-    # nothing to do here, and either CuArrays or one of its dependencies will have warned
-  else
-    use_cuda[] = true
-
-    # FIXME: this functionality should be conditional at run time by checking `use_cuda`
-    #        (or even better, get moved to CuArrays.jl as much as possible)
-    if CuArrays.has_cudnn()
-      include(joinpath(@__DIR__, "cuda/cuda.jl"))
-    else
-      @warn "CuArrays.jl did not find libcudnn. Some functionality will not be available."
+  use_cuda[] = CuArrays.functional() # Can be overridden after load with `Flux.use_cuda[] = false`
+  if CuArrays.functional()
+    if !CuArrays.has_cudnn()
+      @warn "CuArrays.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
   end
 end

@@ -21,7 +21,7 @@ grads = gradient(() -> loss(x, y), θ)
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-using Flux: update!
+using Flux.Optimise: update!
 
 η = 0.1 # Learning Rate
 for p in (W, b)
@@ -46,6 +46,7 @@ An optimiser `update!` accepts a parameter and a gradient, and updates the param
 All optimisers return an object that, when passed to `train!`, will update the parameters passed to it.
 
 ```@docs
+Flux.Optimise.update!
 Descent
 Momentum
 Nesterov
@@ -61,7 +62,7 @@ ADAMW
 
 ## Optimiser Interface
 
-Flux's optimsers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
+Flux's optimisers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
 
 In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
 
@@ -99,15 +100,15 @@ Flux internally calls on this function via the `update!` function. It shares the
 
 ## Composing Optimisers
 
-Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
+Flux defines a special kind of optimiser simply called `Optimiser` which takes in arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
 ```julia
 opt = Optimiser(ExpDecay(0.001, 0.1, 1000, 1e-4), Descent())
 ```
 
-Here we apply exponential decay to the `Descent` optimser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
-It is then applied like any optimser.
+Here we apply exponential decay to the `Descent` optimiser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
+It is then applied like any optimiser.
 
 ```julia
 w = randn(10, 10)

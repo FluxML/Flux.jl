@@ -1,30 +1,32 @@
 using Flux, Test, Statistics
 using Zygote: pullback
 
-trainmode(f, x...) = pullback(f, x...)[1]
-trainmode(f) = (x...) -> trainmode(f, x...)
+evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
   x = [1.,2.,3.]
   @test x == Dropout(0.1)(x)
-  @test x == trainmode(Dropout(0), x)
-  @test zero(x) == trainmode(Dropout(1), x)
+  @test x == evalwgrad(Dropout(0), x)
+  @test zero(x) == evalwgrad(Dropout(1), x)
 
   x = rand(100)
   m = Dropout(0.9)
-  y = trainmode(m, x)
+  y = evalwgrad(m, x)
   @test count(a->a==0, y) > 50
-  y = m(x)
+  testmode!(m, true)
+  y = evalwgrad(m, x) # should override istraining
   @test count(a->a==0, y) == 0
-  y = trainmode(m, x)
+  testmode!(m, false)
+  y = evalwgrad(m, x)
   @test count(a->a==0, y) > 50
 
   x = rand(Float32, 100)
   m = Chain(Dense(100,100),
             Dropout(0.9))
-  y = trainmode(m, x)
+  y = evalwgrad(m, x)
   @test count(a->a == 0, y) > 50
-  y = m(x)
+  testmode!(m, true)
+  y = evalwgrad(m, x) # should override istraining
   @test count(a->a == 0, y) == 0
 
   x = rand(100, 50)
@@ -49,7 +51,7 @@ end
     # initial m.σ is 1
     # initial m.μ is 0
 
-    y = trainmode(m, x)
+    y = evalwgrad(m, x)
     @test isapprox(y, [-1.22474 0 1.22474; -1.22474 0 1.22474], atol = 1.0e-5)
     # julia> x
     #  2×3 Array{Float64,2}:
@@ -82,19 +84,19 @@ end
     @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
   end
 
-  let m = trainmode(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)
+  let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)
     y = reshape(permutedims(x, [2, 1, 3]), 2, :)
     y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
     @test m(x) == y
   end
 
-  let m = trainmode(BatchNorm(2)), x = reshape(Float32.(1:12), 2, 3, 2, 1)
+  let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:12), 2, 3, 2, 1)
     y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
     @test m(x) == y
   end
 
-  let m = trainmode(BatchNorm(2)), x = reshape(Float32.(1:24), 2, 2, 3, 2, 1)
+  let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:24), 2, 2, 3, 2, 1)
     y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
     @test m(x) == y
@@ -117,7 +119,7 @@ end
       x = Float64.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
-      y = trainmode(m, x)
+      y = evalwgrad(m, x)
 
       #julia> x
       #[:, :, 1] =
@@ -162,7 +164,7 @@ end
     @test isapprox(y, sigmoid.((x .- expand_inst(m.μ, affine_shape)) ./ sqrt.(expand_inst(m.σ², affine_shape) .+ m.ϵ)), atol = 1.0e-7)
   end
 
-  let m = trainmode(InstanceNorm(2)), sizes = (2, 4, 1, 2, 3),
+  let m = trainmode!(InstanceNorm(2)), sizes = (2, 4, 1, 2, 3),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
@@ -172,14 +174,14 @@ end
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = InstanceNorm(2), sizes = (5, 5, 3, 4, 2, 6),
       x = reshape(Float32.(collect(1:prod(sizes))), sizes)
-    y = trainmode(m, x)
+    y = evalwgrad(m, x)
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
     @test size(y) == sizes
   end
 
   # show that instance norm is equal to batch norm when channel and batch dims are squashed
-  let m_inorm = trainmode(InstanceNorm(2)), m_bnorm = trainmode(BatchNorm(12)), sizes = (5, 5, 3, 4, 2, 6),
+  let m_inorm = trainmode!(InstanceNorm(2)), m_bnorm = trainmode!(BatchNorm(12)), sizes = (5, 5, 3, 4, 2, 6),
       x = reshape(Float32.(collect(1:prod(sizes))), sizes)
     @test m_inorm(x) == reshape(m_bnorm(reshape(x, (sizes[1:end - 2]..., :, 1))), sizes)
   end
@@ -204,7 +206,7 @@ if VERSION >= v"1.1"
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
 
-      y = trainmode(m, x)
+      y = evalwgrad(m, x)
 
       #julia> x
       #[:, :, 1]  =
@@ -263,7 +265,7 @@ if VERSION >= v"1.1"
     @test isapprox(y, out, atol = 1.0e-7)
   end
 
-  let m = trainmode(GroupNorm(2,2)), sizes = (2, 4, 1, 2, 3),
+  let m = trainmode!(GroupNorm(2,2)), sizes = (2, 4, 1, 2, 3),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
@@ -273,20 +275,20 @@ if VERSION >= v"1.1"
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = GroupNorm(4,2), sizes = (5, 5, 3, 4, 4, 6),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
-    y = trainmode(m, x)
+    y = evalwgrad(m, x)
     @test size(m.μ) == (m.G,1)
     @test size(m.σ²) == (m.G,1)
     @test size(y) == sizes
   end
 
   # show that group norm is the same as instance norm when the group size is the same as the number of channels
-  let IN = trainmode(InstanceNorm(4)), GN = trainmode(GroupNorm(4,4)), sizes = (2,2,3,4,5),
+  let IN = trainmode!(InstanceNorm(4)), GN = trainmode!(GroupNorm(4,4)), sizes = (2,2,3,4,5),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test IN(x) ≈ GN(x)
   end
 
   # show that group norm is the same as batch norm for a group of size 1 and batch of size 1
-  let BN = trainmode(BatchNorm(4)), GN = trainmode(GroupNorm(4,4)), sizes = (2,2,3,4,1),
+  let BN = trainmode!(BatchNorm(4)), GN = trainmode!(GroupNorm(4,4)), sizes = (2,2,3,4,1),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end

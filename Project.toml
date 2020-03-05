@@ -1,6 +1,6 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.10.2"
+version = "0.10.3"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -40,7 +40,9 @@ julia = "1"
 
 [extras]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Documenter"]
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra"]
