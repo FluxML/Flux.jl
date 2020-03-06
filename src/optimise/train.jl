@@ -17,10 +17,23 @@ Update the array `x` according to `x .-= x̄`.
 """
 function update!(x::AbstractArray, x̄)
   x .-= x̄
+  return
 end
 
-function update!(opt, x, x̄)
-  x .-= apply!(opt, x, x̄)
+update!(x::AbstractArray, x̄::Nothing) = nothing
+
+function update!(opt, x::AbstractArray, x̄)
+  x .-= apply!(opt, x::AbstractArray, x̄)
+  return
+end
+
+update!(opt, m::M, ∇m::Nothing) where M = nothing
+
+function update!(opt, m::M, ∇m) where M
+  for each in fieldnames(M)
+    update!(opt, getfield(m, each), getfield(∇m, each))
+  end
+  return
 end
 
 function update!(opt, xs::Params, gs)
@@ -28,6 +41,7 @@ function update!(opt, xs::Params, gs)
     gs[x] == nothing && continue
     update!(opt, x, gs[x])
   end
+  return
 end
 
 # Callback niceties
