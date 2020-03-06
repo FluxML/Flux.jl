@@ -29,11 +29,22 @@ end
 
 update!(opt, m::M, ∇m::Nothing) where M = nothing
 
-function update!(opt, m::M, ∇m) where M
-  for each in fieldnames(M)
-    update!(opt, getfield(m, each), getfield(∇m, each))
+function update!(opt, m::Tuple, ∇m::Tuple)
+  for (x, ∇x) in zip(m, ∇m)
+    update!(opt, x, ∇x)
   end
-  return
+end
+
+# NOTE: since there won't be real loop in a struct
+#       we could always flatten it, which is a bit
+#       faster.
+@generated function update!(opt, m::M, ∇m) where M
+  body = Expr(:block)
+  for each in fieldnames(M)
+    each = QuoteNode(each)
+    push!(body.args, :(update!(opt, getfield(m, $each), getfield(∇m, $each))))
+  end
+  return body
 end
 
 function update!(opt, xs::Params, gs)
