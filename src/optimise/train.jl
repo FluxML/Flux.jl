@@ -20,15 +20,15 @@ function update!(x::AbstractArray, x̄)
   return
 end
 
+# skip, if gradient is nothing
 update!(x::AbstractArray, x̄::Nothing) = nothing
 update!(opt, x::AbstractArray, x̄::Nothing) = nothing
+update!(opt, m::M, ∇m::Nothing) where M = nothing
 
 function update!(opt, x::AbstractArray, x̄)
   x .-= apply!(opt, x::AbstractArray, x̄)
   return
 end
-
-update!(opt, m::M, ∇m::Nothing) where M = nothing
 
 # NOTE: since there won't be real loop in a struct
 #       we could always flatten it, which is a bit
