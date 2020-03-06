@@ -29,12 +29,6 @@ end
 
 update!(opt, m::M, ∇m::Nothing) where M = nothing
 
-function update!(opt, m::Tuple, ∇m::Tuple)
-  for (x, ∇x) in zip(m, ∇m)
-    update!(opt, x, ∇x)
-  end
-end
-
 # NOTE: since there won't be real loop in a struct
 #       we could always flatten it, which is a bit
 #       faster.
