@@ -1,5 +1,5 @@
 using Flux.Optimise
-using Flux.Optimise: runall
+using Flux.Optimise: runall, update!
 using Flux: Params, gradient
 using Test
 
@@ -88,4 +88,25 @@ end
     end
     @test decay_steps == ground_truth
     @test o.eta == o.clip
+end
+
+@testset "update!" begin
+  opt = ADAM()
+  A = rand(2, 2)
+  B = copy(A)
+  @test update!(opt, A, nothing) == nothing
+  @test A == B
+
+  A = Dense(10, 10)
+  B = deepcopy(A)
+  @test update!(opt, A, nothing) == nothing
+  @test A.W == B.W && A.b == B.b
+
+  gs = (W=rand(10, 10), b=rand(10), σ=nothing)
+  update!(opt, A, gs)
+
+  update!(opt, B.W, gs.W)
+  update!(opt, B.b, gs.b)
+
+  @test A.W ≈ B.W && A.b ≈ B.b
 end
