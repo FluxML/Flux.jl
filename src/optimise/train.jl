@@ -21,6 +21,7 @@ function update!(x::AbstractArray, x̄)
 end
 
 update!(x::AbstractArray, x̄::Nothing) = nothing
+update!(opt, x::AbstractArray, x̄::Nothing) = nothing
 
 function update!(opt, x::AbstractArray, x̄)
   x .-= apply!(opt, x::AbstractArray, x̄)
