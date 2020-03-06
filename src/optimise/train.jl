@@ -44,7 +44,6 @@ end
 
 function update!(opt, xs::Params, gs)
   for x in xs
-    gs[x] == nothing && continue
     update!(opt, x, gs[x])
   end
   return
