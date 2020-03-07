@@ -2,180 +2,143 @@ using .Optimise: stop
 using BSON
 
 """
-   init_cb()
+    terminateOnNaN(calc_metric)
 
-Function to initialise global variables required in various callback functions.
+Callback that terminates training when `NaN` is encountered for `calc_metric` value.
+
 """
-function init_cb()
-    global ctr = 0                     #global counter for how many times the callback has been called
-    global stop_itr = false
-    global loss_history = []
-    global best_acc = 0
-    global best_loss = Inf
-    global last_improvement = 0 
+mutable struct terminateOnNaN{F}
+    calc_metric::F
+end
+
+function (cb::terminateOnNaN)()
+    if isnan(cb.calc_metric())
+        @info "NaN loss, Terminating execution!!!!"
+        stop()
+    end
 end
 
 """
-   terminateOnNaN(x,y)
- 
-Callback that terminates training when a NaN loss is encountered. Here, x and y could be training data (x,y) or can be different.
-"""
-function terminateOnNaN(x,y)
-       if isnan(loss(x,y))
-           stop_itr = true
-           @info "NaN loss, Terminating execution!!!!"
-           stop()
-           end
-       end
+    HistoryCallback()
+
+Callback that records `cal_metric` values into an array. Array can be accessed using `cb.history` for `cb = HistoryCallback(calc_metric)`.
 
 """
-    history(x,y,accuracy)
+mutable struct HistoryCallback{F,T}
+    calc_metric::F
+    history::Vector{T}
+end
 
-Callback that records loss and accuracy into an array. Array can be accessed using `loss_history`.
-Arguments:
-    x,y: Could be training data (x,y) or can be different
-    
-    accuracy(optional): function to be used to calculate accuracy on x,y. If not provided, loss_history returns only loss
-"""
-function history(x,y)
-           push!(loss_history,loss(x,y))
-           end
+HistoryCallback(calc_metric) = HistoryCallback(calc_metric, [calc_metric()])
 
-function history(x,y,accuracy)
-           push!(loss_history,[loss(x,y),accuracy(x,y)])
-           end
+(cb::HistoryCallback)() = push!(cb.history, cb.calc_metric())
 
 """
-    lrdecay(x,y;factor = 0.2,loss = loss,accuracy_fn = nothing,patience=5,min_lr = 0.000001,monitor="acc")
+    lrdecay(calc_metric, opt; factor=0.2, patience=5, descend = true, min_lr=1e-5)
 
 Learning Rate Decay based on previous performance. Reduce learning rate when a metric has stopped improving.
-Arguments:
-    x,y: could be training data (x,y) or can be different
+By default, it watches if `calc_metric` descends.
 
-    factor: factor by which learning rate is reduced in every updation. Default set to 0.2
-    
-    loss: function to be used to calculate loss, when monitor set to 'loss'. Otherwise, optional.
-    
-    accuracy_fn: function to be used to calculate accuracy, when monitor set to 'acc'. Otherwise, optional
-    
-    patience: number of epochs that produced the monitored quantity with no improvement, 
-	      after which learning rate will be reduced or training stopped. Default value set to 5.
-    
-    min_lr: lower bound on the learning rate. If no improvement seen even below that after 'patience' number of steps, the training is terminated.
-    
-    monitor: Quantity to be monitored for the provided (x,y). Can take values 'acc' or 'loss'. Default set to 'loss'
+# Arguments
+- `calc_metric`: the metric to be monitored. Evaluated at every call of callback function   
+- `opt`: the optimizer used while training
+- `factor::Float64=0.2`: factor by which learning rate is reduced in every updation.
+- `patience::Int=5`: number of epochs that produced the monitored 'calc_metric' with no improvement, after which learning rate will be reduced or training stopped.    
+- `descend::Bool=true`: if 'true', considers descend in 'calc_metric' as improvement.
+- `min_lr::Float64=1e-5`: lower bound on the learning rate. If no improvement seen even below that, after 'patience' number of steps, the training is terminated.
+
 """
-
-function lrdecay(x,y;factor = 0.2,loss = loss,accuracy_fn = nothing,patience=5,min_lr = 1e-5,monitor="loss")
-            global ctr+=1
-            global best_acc,last_improvement,best_loss,stop_itr
-            if monitor == "acc"
-               acc = accuracy_fn(x,y)
-               if acc>best_acc
-                   best_acc = acc
-                   last_improvement = ctr
-               elseif (ctr-last_improvement)>patience
-                   if opt.eta>min_lr
-                       @warn(" -> Haven't improved in a while, dropping learning rate to $(opt.eta)!")
-                       opt.eta = factor*opt.eta
-                       last_improvement = ctr
-                   else 
-                       stop_itr = true
-                       @warn("We are calling this converged")
-                       stop()
-                   end
-               end
-            elseif monitor== "loss"
-                loss_ = loss(x,y)
-                if loss_<best_loss
-                   best_loss = loss_
-                   last_improvement = ctr
-                elseif (ctr-last_improvement)>patience
-                   if opt.eta>min_lr
-                       @warn(" -> Haven't improved in a while, dropping learning rate to $(opt.eta)!")
-                       opt.eta = factor*opt.eta
-                       last_improvement = ctr
-                   else 
-                       stop_itr = true
-                       @warn("We are calling this as converged")
-                       stop()
-                   end
-                end
-        else
-            @warn("Invalid argument for 'monitor'")
-            end
+mutable struct lrdecay{F,A}
+    calc_metric::F
+    opt::A
+    best_metric::Float64
+    ctr::Int
+    factor::Float64
+    last_improvement::Int
+    descend::Bool
+    patience::Int
+    min_lr::Float64
 end
 
+lrdecay(calc_metric, opt; factor=0.2, patience=5, descend = true, min_lr=1e-6) = lrdecay(calc_metric, opt, calc_metric(), 0, factor, 0, descend, patience, min_lr, false)
+
+function (cb::lrdecay)()
+    cb.ctr += 1
+    metric = cb.calc_metric()
+    if (metric<cb.best_metric && cb.descend == true) || (metric>cb.best_metric && cb.descend == false)
+        cb.best_metric = metric
+        cb.last_improvement = cb.ctr
+    elseif (cb.ctr-cb.last_improvement) > cb.patience
+        if cb.opt.eta* cb.factor > cb.min_lr
+            @warn(" -> Haven't improved in a while, dropping learning rate to $(opt.eta)!")
+            cb.opt.eta = cb.factor * cb.opt.eta
+            cb.last_improvement = cb.ctr
+        else
+            @warn("We are calling this converged")
+            stop()
+        end
+    end
+end    
+
 """
-    model_checkpoint(x,y,model_arr;loss = loss,accuracy_fn=nothing,monitor="acc",
-				filename= "model.bson",path = "./",verbose=1,save_best_model_only =1)
+    ModelCheckpoint(calc_metric, model_arr; descend=true, savepath="./", filename="model.bson", save_best_model_only=true, verbose=1)
 
-Saves the model after each epoch whenever the monitored qunatity improves.
-Arguments:
-    x,y:  Could be training data (x,y) or can be different
-    
-    model_arr: Array of sub-models being used in the model. For a single model input should be [model]. 
-	       For more sub_models provide models in sequence,[model1,model2,....] 
-    
-    loss: function to be used to calculate loss, when monitor set to 'loss'. Otherwise, optional.
-    
-    accuracy_fn: function to be used to calculate accuracy, when monitor set to 'acc'. Otherwise, optional.
-    
-    monitor: monitor: quantity to be monitored for the provided (x,y). Can take values 'acc' or 'loss'. Default set to 'loss'
-    
-    filename: name of the model file with extension .BSON to which model is needed to be saved. 
-	      By default, saved to 'model.bson'.
-    
-    filepath: Path to the file where the model is needed to be saved. By default, set to "./", 
-	      i.e. saves files to current directory
-    
-    save_best_model_only: save only the best model to `filename` provided, if set to 1. 
-			  Else save models at every improvement to different files as {epoch}_filename. Default set to 1.
+Saves the model after each epoch whenever the monitored 'calc_metric' improves. Save model as Chain of sub-models used
+By default, it watches if `calc_metric` descends.
 
-In order to load the saved model, use:  `BSON.@load joinpath(path, filename) m ctr acc` or `BSON.@load joinpath(path, filename) m ctr l`<br> 
+# Arguments
+- `calc_metric`: the metric to be monitored. Evaluated at every call of callback function
+- `model_arr`: array of sub-models used in the model. For a single model, it should be [model]
+- `descend=true`: if 'true', considers descend in 'calc_metric' as improvement.
+- `savepath='./'`: the path of the directory in which the model is to be saved.
+- `filename='model.bson'`: name of the file to which model is to be saved, must end with a '.bson' extension.
+- `save_best_model_only=true`: whether only the best model is to be saved or model at each improvement is to be saved in a seperate file
+- `verbose=1`: whether to display 'saving' message on model improvement or not. Can take values `0`=> no messsage or `1`=> display message.
+
+In order to load the saved model, use:  `BSON.@load joinpath(savepath, filename) m epoch metric` (in case of `save_best_model_only=true`)
+or `BSON.@load joinpath(savepath, string('{epoch}_', filename) m epoch metric` (in case of `save_best_model_only=false`)  
 where m represent a chain of all the sub-models of the function. To access each individual model, use m.layers[i] for ith sub-model.
+
 """
-function model_checkpoint(x,y,model_arr;loss = loss,accuracy_fn = nothing,monitor = "loss",
-		filename= "model.bson",path = "./",verbose=1,save_best_model_only=1)   
-	global ctr = ctr + 1
-    global best_acc,last_improvement,best_loss
-    if  monitor == "acc"
-            acc = accuracy_fn(x,y)
-        if acc>=best_acc
-            if verbose==1
-                if save_best_model_only ==1
-                @warn(" -> Monitored `$monitor` improved ! Saving model out to $path$filename")
-                else
-                @warn(" -> Monitored `$monitor` improved! Saving model out to $path{$ctr}_$filename")
-                end
-            end
-            m = Chain(model_arr...)
-            if save_best_model_only ==1
-                BSON.@save joinpath(path, filename) m ctr acc
+
+mutable struct ModelCheckpoint{F,T,S,I}
+    calc_metric::F
+    model_arr::AbstractArray{T}
+    best_metric::Float64
+    last_improvement::Int
+    descend::Bool
+    ctr::Int
+    savepath::S
+    filename::S
+    save_best_model_only::Bool
+    verbose::I
+end
+
+
+function ModelCheckpoint(calc_metric, model_arr; descend=true, savepath="./", filename="model.bson", save_best_model_only=true, verbose=1)
+    return ModelCheckpoint(calc_metric, model_arr,calc_metric(), 0, descend, 0, savepath, filename, save_best_model_only, verbose)
+end
+
+function (cb::ModelCheckpoint)()
+    cb.ctr += 1
+    metric = cb.calc_metric()
+    epoch = cb.ctr
+    if (metric<cb.best_metric && cb.descend == true) || (metric>cb.best_metric && cb.descend == false)
+        if cb.verbose==1
+            path = cb.savepath
+            filename = cb.filename
+            if cb.save_best_model_only ==1
+                @warn(" -> Monitored metric improved ! Saving model out to $path$filename")
             else
-                BSON.@save joinpath(path, string("{$ctr}_",filename)) m ctr acc
+                @warn(" -> Monitored metric improved! Saving model out to $path{$epoch}_$filename")
             end
-            global best_acc = acc
         end
-    elseif monitor == "loss"
-            l = loss(x,y)
-        if l<best_loss  
-            if verbose==1
-                if save_best_model_only ==1
-                @warn(" -> Monitored `$monitor` improved ! Saving model out to $path$filename")
-                else
-                @warn(" -> Monitored `$monitor` improved! Saving model out to $path{$ctr}_$filename")
-                end
-            end
-            m = Chain(model_arr...)
-            if save_best_model_only ==1
-                BSON.@save joinpath(path, filename) m ctr l
-            else
-                BSON.@save joinpath(path, string("{ctr}_",filename)) m ctr l
-            end
-            global best_loss = l
+        m = Chain(cb.model_arr...)
+        if cb.save_best_model_only==1
+            BSON.@save joinpath(cb.savepath, cb.filename) m epoch metric
+        else
+            BSON.@save joinpath(cb.savepath, string("{$epoch}_",cb.filename)) m epoch metric
         end
-    else
-        @warn("Invalid argument for 'monitor'")
+        cb.best_metric = metric
     end
 end
