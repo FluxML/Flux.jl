@@ -18,6 +18,7 @@ function (cb::terminateOnNaN)()
     end
 end
 
+
 """
     HistoryCallback()
 
@@ -32,6 +33,7 @@ end
 HistoryCallback(calc_metric) = HistoryCallback(calc_metric, [calc_metric()])
 
 (cb::HistoryCallback)() = push!(cb.history, cb.calc_metric())
+
 
 """
     lrdecay(calc_metric, opt; factor=0.2, patience=5, descend = true, min_lr=1e-5)
@@ -60,7 +62,7 @@ mutable struct lrdecay{F,A}
     min_lr::Float64
 end
 
-lrdecay(calc_metric, opt; factor=0.2, patience=5, descend = true, min_lr=1e-6) = lrdecay(calc_metric, opt, calc_metric(), 0, factor, 0, descend, patience, min_lr, false)
+lrdecay(calc_metric, opt; factor=0.2, patience=5, descend = true, min_lr=1e-6) = lrdecay(calc_metric, opt, calc_metric(), 0, factor, 0, descend, patience, min_lr)
 
 function (cb::lrdecay)()
     cb.ctr += 1
@@ -79,6 +81,7 @@ function (cb::lrdecay)()
         end
     end
 end    
+
 
 """
     ModelCheckpoint(calc_metric, model_arr; descend=true, savepath="./", filename="model.bson", save_best_model_only=true, verbose=1)
@@ -113,7 +116,6 @@ mutable struct ModelCheckpoint{F,T,S,I}
     save_best_model_only::Bool
     verbose::I
 end
-
 
 function ModelCheckpoint(calc_metric, model_arr; descend=true, savepath="./", filename="model.bson", save_best_model_only=true, verbose=1)
     return ModelCheckpoint(calc_metric, model_arr,calc_metric(), 0, descend, 0, savepath, filename, save_best_model_only, verbose)
