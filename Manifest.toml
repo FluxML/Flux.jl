@@ -372,9 +372,7 @@ version = "1.2.11+8"
 
 [[Zygote]]
 deps = ["ArrayLayouts", "DiffRules", "FFTW", "FillArrays", "ForwardDiff", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "37627c4582c3564e0d27777f65dd1bb26a2a919d"
-repo-rev = "master"
-repo-url = "https://github.com/FluxML/Zygote.jl.git"
+git-tree-sha1 = "7dc5fdb4917ac5a84e199ae654316a01cd4a278b"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
 version = "0.4.9"
 

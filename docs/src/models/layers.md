@@ -65,7 +65,10 @@ trainmode!
 
 ## Cost Functions
 ```@docs
+Flux.mae
 Flux.mse
+Flux.msle
+Flux.huber_loss
 Flux.crossentropy
 Flux.logitcrossentropy
 Flux.binarycrossentropy
@@ -73,4 +76,7 @@ Flux.logitbinarycrossentropy
 Flux.kldivergence
 Flux.poisson
 Flux.hinge
+Flux.squared_hinge
+Flux.dice_coeff_loss
+Flux.tversky_loss
 ```

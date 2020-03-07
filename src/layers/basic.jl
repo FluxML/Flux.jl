@@ -90,7 +90,7 @@ julia> d = Dense(5, 2)
 Dense(5, 2)
 
 julia> d(rand(5))
-Tracked 2-element Array{Float64,1}:
+Array{Float64,1}:
   0.00257447
   -0.00449443
 ```
