@@ -268,7 +268,7 @@ If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
 
-```
+```julia
 # using Bilinear to generate interactions, on one input
 x = randn(Float32, 11, 7)
 B = Bilinear(11, 11, 3)
