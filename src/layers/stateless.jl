@@ -204,7 +204,7 @@ tversky_loss(ŷ, y; β=eltype(ŷ)(0.7)) = 1 - (sum(y .* ŷ) + 1) / (sum(y .* 
 """
     flatten(x::AbstractArray)
 
-Transforms (w,h,c,b)-shaped input into (w*h*c,b)-shaped output,
+Transforms (w,h,c,b)-shaped input into (w x h x c,b)-shaped output,
 by linearizing all values for each element in the batch.
 """
 function flatten(x::AbstractArray)
