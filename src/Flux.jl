@@ -10,7 +10,8 @@ using Zygote: Params, @adjoint, gradient, pullback, @nograd
 
 export gradient
 
-export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
+export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose,
+       GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool, flatten,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        SkipConnection, params, fmap, cpu, gpu, f32, f64, testmode!, trainmode!
 

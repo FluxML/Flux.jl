@@ -14,10 +14,13 @@ These layers are used to build convolutional neural networks (CNNs).
 ```@docs
 Conv
 MaxPool
+GlobalMaxPool
 MeanPool
+GlobalMeanPool
 DepthwiseConv
 ConvTranspose
 CrossCor
+flatten
 ```
 
 ## Recurrent Layers

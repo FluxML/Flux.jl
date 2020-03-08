@@ -2,7 +2,7 @@
 """
     mae(ŷ, y)
 
-Return the mean of absolute error `sum(abs.(ŷ .- y)) / length(y)` 
+Return the mean of absolute error `sum(abs.(ŷ .- y)) / length(y)`
 """
 mae(ŷ, y) = sum(abs.(ŷ .- y)) * 1 // length(y)
 
@@ -10,7 +10,7 @@ mae(ŷ, y) = sum(abs.(ŷ .- y)) * 1 // length(y)
 """
     mse(ŷ, y)
 
-Return the mean squared error `sum((ŷ .- y).^2) / length(y)`. 
+Return the mean squared error `sum((ŷ .- y).^2) / length(y)`.
 """
 mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
@@ -19,7 +19,7 @@ mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
     msle(ŷ, y; ϵ=eps(eltype(ŷ)))
 
 Returns the mean of the squared logarithmic errors `sum((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)).^2) / length(y)`.
-The `ϵ` term provides numerical stability. 
+The `ϵ` term provides numerical stability.
 
 This error penalizes an under-predicted estimate greater than an over-predicted estimate.
 """
@@ -60,7 +60,7 @@ end
 """
     crossentropy(ŷ, y; weight=1)
 
-Return the crossentropy computed as `-sum(y .* log.(ŷ) .* weight) / size(y, 2)`. 
+Return the crossentropy computed as `-sum(y .* log.(ŷ) .* weight) / size(y, 2)`.
 
 See also [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref).
 """
@@ -69,7 +69,7 @@ crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight=nothing) = _cros
 """
     logitcrossentropy(ŷ, y; weight=1)
 
-Return the crossentropy computed after a [softmax](@ref) operation: 
+Return the crossentropy computed after a [softmax](@ref) operation:
 
   -sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)
 
@@ -97,7 +97,7 @@ CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1
 `logitbinarycrossentropy(ŷ, y)` is mathematically equivalent to `binarycrossentropy(σ(ŷ), y)`
 but it is more numerically stable.
 
-See also [`binarycrossentropy`](@ref), [`sigmoid`](@ref), [`logsigmoid`](@ref).  
+See also [`binarycrossentropy`](@ref), [`sigmoid`](@ref), [`logsigmoid`](@ref).
 """
 logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 
@@ -162,7 +162,7 @@ poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) * 1 // size(y,2)
 """
     hinge(ŷ, y)
 
-Measures the loss given the prediction `ŷ` and true labels `y` (containing 1 or -1). 
+Measures the loss given the prediction `ŷ` and true labels `y` (containing 1 or -1).
 Returns `sum((max.(0, 1 .- ŷ .* y))) / size(y, 2)`
 
 [Hinge Loss](https://en.wikipedia.org/wiki/Hinge_loss)
@@ -193,10 +193,20 @@ dice_coeff_loss(ŷ, y; smooth=eltype(ŷ)(1.0)) = 1 - (2*sum(y .* ŷ) + smooth
 """
     tversky_loss(ŷ, y; β=0.7)
 
-Used with imbalanced data to give more weightage to False negatives. 
+Used with imbalanced data to give more weightage to False negatives.
 Larger β weigh recall higher than precision (by placing more emphasis on false negatives)
 Returns `1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)`
 
 [Tversky loss function for image segmentation using 3D fully convolutional deep networks](https://arxiv.org/pdf/1706.05721.pdf)
 """
 tversky_loss(ŷ, y; β=eltype(ŷ)(0.7)) = 1 - (sum(y .* ŷ) + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
+
+"""
+    flatten(x::AbstractArray)
+
+Transforms (w,h,c,b)-shaped input into (w x h x c,b)-shaped output,
+by linearizing all values for each element in the batch.
+"""
+function flatten(x::AbstractArray)
+  return reshape(x, :, size(x)[end])
+end
