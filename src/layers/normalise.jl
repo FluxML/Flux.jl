@@ -32,7 +32,7 @@ end
 
 A Dropout layer. In the forward pass, applies the [`dropout`](@ref) function on the input.
 
-Does nothing to the input once [`testmode!`](@ref) is false.
+Does nothing to the input once [`testmode!`](@ref) is true.
 """
 mutable struct Dropout{F,D}
   p::F
