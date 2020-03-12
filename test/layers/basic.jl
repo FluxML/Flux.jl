@@ -109,7 +109,7 @@ import Flux: activations
   end
 
   @testset "type mismatches" begin
-    env = ENV["JULIA_DEBUG"]
+    env = haskey(ENV, "JULIA_DEBUG") ? ENV["JULIA_DEBUG"] : nothing
     ENV["JULIA_DEBUG"] = "all"
 
     m = Chain(Dense(2,2)); x= rand(Float32, 2); y=rand(2); # labels are Float64
@@ -129,6 +129,10 @@ import Flux: activations
         "Chain(...) receives input of eltype Float64 but creates output of eltype Float32. \nThis is may indicate a performance problem with one of the layers."
         ) gradient(() -> sum(m(x) .- y), params(m))
 
-    ENV["JULIA_DEBUG"] = env
+    if env === nothing
+        delete!(ENV, "JULIA_DEBUG")
+    else
+        ENV["JULIA_DEBUG"] = env
+    end
   end
 end
