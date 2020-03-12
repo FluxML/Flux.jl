@@ -109,30 +109,24 @@ import Flux: activations
   end
 
   @testset "type mismatches" begin
-    env = haskey(ENV, "JULIA_DEBUG") ? ENV["JULIA_DEBUG"] : nothing
-    ENV["JULIA_DEBUG"] = "all"
-
-    m = Chain(Dense(2,2)); x= rand(Float32, 2); y=rand(2); # labels are Float64
-    @test_logs (:debug,
-        "Chain(...) creates output of eltype Float32 but receives gradient of eltype Float64. \nThis is likely to be slow, and the loss function may be the problem."
-        ) gradient(() -> sum(m(x) .- y), params(m))
+    using Base.CoreLogging: Debug
 
     m = Chain(Dense(2,2, x->x + 0.1)); x= rand(Float32, 2); y=rand(Float32, 2); # activation creates Float64
-    @test_logs (:debug,
-        "Chain(...) receives input of eltype Float32 but creates output of eltype Float64. \nThis is may indicate a performance problem with one of the layers."
-        ) gradient(() -> sum(m(x) .- y), params(m))
+    @test_logs min_level=Debug (:debug,
+      "Chain(...) receives input of eltype Float32 but creates output of eltype Float64. \nThis is may indicate a performance problem with one of the layers."
+      ) gradient(() -> sum(m(x) .- y), params(m))
+
+    m = Chain(Dense(2,2)); x= rand(Float32, 2); y=rand(2); # loss function contains Float64
+    @test_logs min_level=Debug (:debug,
+      "Chain(...) creates output of eltype Float32 but receives gradient of eltype Float64. \nThis is likely to be slow, and the loss function may be the problem."
+      ) gradient(() -> sum(m(x) .- y), params(m))
 
     m = Chain(Dense(2,2)); x= rand(2); y=rand(Float32, 2); # data is Float64
-    @test_logs (:debug,
-        "Layer Dense(2, 2) has parameters of eltype Float32 but acts on data Array{Float64,1}, which will be converted to match."
-        ) (:debug,
-        "Chain(...) receives input of eltype Float64 but creates output of eltype Float32. \nThis is may indicate a performance problem with one of the layers."
-        ) gradient(() -> sum(m(x) .- y), params(m))
+    @test_logs min_level=Debug (:debug,
+      "Layer Dense(2, 2) has parameters of eltype Float32 but acts on data Array{Float64,1}, which will be converted to match."
+      ) (:debug,
+      "Chain(...) receives input of eltype Float64 but creates output of eltype Float32. \nThis is may indicate a performance problem with one of the layers."
+      ) gradient(() -> sum(m(x) .- y), params(m))
 
-    if env === nothing
-        delete!(ENV, "JULIA_DEBUG")
-    else
-        ENV["JULIA_DEBUG"] = env
-    end
   end
 end
