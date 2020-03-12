@@ -107,4 +107,28 @@ import Flux: activations
     m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
     @test Flux.outdims(m, (10, 10)) == (8, 8)
   end
+
+  @testset "type mismatches" begin
+    env = ENV["JULIA_DEBUG"]
+    ENV["JULIA_DEBUG"] = "all"
+
+    m = Chain(Dense(2,2)); x= rand(Float32, 2); y=rand(2); # labels are Float64
+    @test_logs (:debug,
+        "Chain(...) creates output of eltype Float32 but receives gradient of eltype Float64. \nThis is likely to be slow, and the loss function may be the problem."
+        ) gradient(() -> sum(m(x) .- y), params(m))
+
+    m = Chain(Dense(2,2, x->x + 0.1)); x= rand(Float32, 2); y=rand(Float32, 2); # activation creates Float64
+    @test_logs (:debug,
+        "Chain(...) receives input of eltype Float32 but creates output of eltype Float64. \nThis is may indicate a performance problem with one of the layers."
+        ) gradient(() -> sum(m(x) .- y), params(m))
+
+    m = Chain(Dense(2,2)); x= rand(2); y=rand(Float32, 2); # data is Float64
+    @test_logs (:debug,
+        "Layer Dense(2, 2) has parameters of eltype Float32 but acts on data Array{Float64,1}, which will be converted to match."
+        ) (:debug,
+        "Chain(...) receives input of eltype Float64 but creates output of eltype Float32. \nThis is may indicate a performance problem with one of the layers."
+        ) gradient(() -> sum(m(x) .- y), params(m))
+
+    ENV["JULIA_DEBUG"] = env
+  end
 end
