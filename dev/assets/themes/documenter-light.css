@@ -7383,6 +7383,7 @@ html {
   padding: 0;
   flex: 0 0 18rem;
   z-index: 5;
+  font-size: 1rem;
   position: fixed;
   left: -18rem;
   width: 18rem;
@@ -7424,7 +7425,6 @@ html {
   #documenter .docs-sidebar ul.docs-menu {
     flex-grow: 1;
     user-select: none;
-    font-size: 1rem;
     border-top: 1px solid #dbdbdb;
     padding-bottom: 1.5rem;
     /* Managing collapsible submenus */ }
@@ -7464,15 +7464,20 @@ html {
       display: block;
       padding: 0.5rem 0.5rem; }
       #documenter .docs-sidebar ul.docs-menu .tocitem, #documenter .docs-sidebar ul.docs-menu .tocitem:hover {
-        color: #0a0a0a; }
+        color: #0a0a0a;
+        background: whitesmoke; }
     #documenter .docs-sidebar ul.docs-menu a.tocitem:hover, #documenter .docs-sidebar ul.docs-menu label.tocitem:hover {
+      color: #0a0a0a;
       background-color: #ebebeb; }
     #documenter .docs-sidebar ul.docs-menu li.is-active {
-      border-top: 1px solid #c7c7c7;
+      border-top: 1px solid #dbdbdb;
       border-bottom: 1px solid #dbdbdb;
       background-color: white; }
-      #documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem, #documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem:hover {
+      #documenter .docs-sidebar ul.docs-menu li.is-active .tocitem, #documenter .docs-sidebar ul.docs-menu li.is-active .tocitem:hover {
         background-color: white;
+        color: #0a0a0a; }
+      #documenter .docs-sidebar ul.docs-menu li.is-active ul.internal .tocitem:hover {
+        background-color: #ebebeb;
         color: #0a0a0a; }
     #documenter .docs-sidebar ul.docs-menu > li.is-active:first-child {
       border-top: none; }

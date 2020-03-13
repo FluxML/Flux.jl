@@ -7401,6 +7401,7 @@ html.theme--documenter-dark {
     padding: 0;
     flex: 0 0 18rem;
     z-index: 5;
+    font-size: 15px;
     position: fixed;
     left: -18rem;
     width: 18rem;
@@ -7442,7 +7443,6 @@ html.theme--documenter-dark {
     html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu {
       flex-grow: 1;
       user-select: none;
-      font-size: 15px;
       border-top: 1px solid #5e6d6f;
       padding-bottom: 1.5rem;
       /* Managing collapsible submenus */ }
@@ -7482,15 +7482,20 @@ html.theme--documenter-dark {
         display: block;
         padding: 0.5rem 0.5rem; }
         html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu .tocitem, html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu .tocitem:hover {
-          color: #fff; }
+          color: #fff;
+          background: #282f2f; }
       html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu a.tocitem:hover, html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu label.tocitem:hover {
+        color: #fff;
         background-color: #32393a; }
       html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active {
-        border-top: 1px solid #718385;
+        border-top: 1px solid #5e6d6f;
         border-bottom: 1px solid #5e6d6f;
         background-color: #1f2424; }
-        html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem, html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active > .tocitem:hover {
+        html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active .tocitem, html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active .tocitem:hover {
           background-color: #1f2424;
+          color: #fff; }
+        html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active ul.internal .tocitem:hover {
+          background-color: #32393a;
           color: #fff; }
       html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu > li.is-active:first-child {
         border-top: none; }
