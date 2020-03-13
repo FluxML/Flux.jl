@@ -56,15 +56,15 @@ julia> using Flux: onehot
 
 julia> onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
- 0
- 1
- 0
+ false
+ true
+ false
 
 julia> onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
- 0
- 0
- 1
+ false
+ false
+ true
 ```
 """
 function onehot(l, labels)
@@ -92,9 +92,9 @@ julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
 3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
- 0  1  0
- 1  0  1
- 0  0  0
+ false   true  false
+  true  false   true
+ false  false  false
 ```
 """
 onehotbatch(ls, labels, unk...) =
