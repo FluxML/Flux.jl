@@ -69,7 +69,7 @@ A dropout layer. It is used in Self-Normalizing Neural Networks.
 (https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
 The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
 
-Does nothing to the input once [`testmode!`](@ref) is false.
+Does nothing to the input once [`testmode!`](@ref) is true.
 """
 mutable struct AlphaDropout{F}
   p::F
