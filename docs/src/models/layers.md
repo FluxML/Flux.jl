@@ -14,10 +14,13 @@ These layers are used to build convolutional neural networks (CNNs).
 ```@docs
 Conv
 MaxPool
+GlobalMaxPool
 MeanPool
+GlobalMeanPool
 DepthwiseConv
 ConvTranspose
 CrossCor
+flatten
 ```
 
 ## Recurrent Layers
@@ -54,9 +57,21 @@ LayerNorm
 GroupNorm
 ```
 
+### Testmode
+
+Many normalisation layers behave differently under training and inference (testing). By default, Flux will automatically determine when a layer evaluation is part of training or inference. Still, depending on your use case, it may be helpful to manually specify when these layers should be treated as being trained or not. For this, Flux provides `testmode!`. When called on a model (e.g. a layer or chain of layers), this function will place the model into the mode specified.
+
+```@docs
+testmode!
+trainmode!
+```
+
 ## Cost Functions
 ```@docs
+Flux.mae
 Flux.mse
+Flux.msle
+Flux.huber_loss
 Flux.crossentropy
 Flux.logitcrossentropy
 Flux.binarycrossentropy
@@ -64,4 +79,7 @@ Flux.logitbinarycrossentropy
 Flux.kldivergence
 Flux.poisson
 Flux.hinge
+Flux.squared_hinge
+Flux.dice_coeff_loss
+Flux.tversky_loss
 ```
