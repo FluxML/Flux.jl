@@ -388,6 +388,37 @@ end
 outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
 
 """
+    AdapMaxPool(out)
+
+Adaptive Max pooling layer. `out` stands for the size of the desired output.
+
+"""
+
+struct AdapMaxPool{N}
+    out::NTuple{N, Int}
+end
+
+function AdapMaxPool(out::NTuple{N,Integer}) where N
+    AdapMaxPool(out)
+end
+
+function (m::AdapMaxPool)(x)
+    val = size(x)
+    stride = (val[2] - val[1])//(m.out[2]-m.out[1])
+    k = val[2] - stride*(m.out[2]-1)
+    pad = 0
+    pdims = PoolDims(x, k; pad = pad, stride = stride)
+    return maxpool(x, pdims)
+end
+
+
+function Base.show(io::IO, m::AdapMaxPool)
+    print(io, "AdapMaxPool(", k, ", pad = ", pad, ", stride = ", stride, ")")
+end
+
+outdims(l::AdapMaxPool{N},isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
+
+"""
     MeanPool(k)
 
 Mean pooling layer. `k` stands for the size of the window for each dimension of the input.
@@ -416,3 +447,31 @@ function Base.show(io::IO, m::MeanPool)
 end
 
 outdims(l::MeanPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
+
+"""
+    AdapMeanPool(out)
+
+Adaptive Mean pooling layer. `out` stands for the size of the desired output.
+
+"""
+struct AdapMeanPool{N}
+    out::NTuple{N, Int}
+end
+
+function AdapMeanPool(out::NTuple{2,Int})
+    AdapMeanPool(out)
+end
+
+function (m::AdapMeanPool)(x)
+    val = size(x)
+    stride = (val[2] - val[1])//(m.out[2]-m.out[1])
+    k = val[2] - stride*(m.out[2]-1)
+    pad = 0
+    pdims = PoolDims(x, k; pad = pad, stride = stride)
+    return meanpool(x, pdims)
+end
+
+
+function Base.show(io::IO, m::AdapMeanPool)
+    print(io, "AdapMeanPool(", k, ", pad = ", pad, ", stride = ", stride, ")")
+end
