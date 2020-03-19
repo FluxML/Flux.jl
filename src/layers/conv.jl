@@ -27,6 +27,10 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For Input dimension N, 
+`pad` should be a single Integer or a tuple of with 2*(N-2) parameters indicating 
+padding values for each dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 """
 struct Conv{N,M,F,A,V}
   σ::F
@@ -100,6 +104,10 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For Input dimension N, 
+`pad` should be a single Integer or a tuple of with 2*(N-2) parameters indicating 
+padding values for each dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -177,6 +185,10 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For Input dimension N, 
+`pad` should be a single Integer or a tuple of with 2*(N-2) parameters indicating 
+padding values for each dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -252,6 +264,10 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For Input dimension N, 
+`pad` should be a single Integer or a tuple of with 2*(N-2) parameters indicating 
+padding values for each dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 """
 struct CrossCor{N,M,F,A,V}
   σ::F
