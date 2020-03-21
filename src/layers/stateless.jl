@@ -210,19 +210,15 @@ by linearizing all values for each element in the batch.
 function flatten(x::AbstractArray)
   return reshape(x, :, size(x)[end])
 end
+
 """
 cos_embedding_loss takes
  x1 and x2 as inputs
  y = 1 or -1 as mode
  margin = 0 which can range from -1 to 1 and has 0 as its default value
-<<<<<<< HEAD
  pad has default value 'false'. If pad = true is passed zeros are padded and the cos_embedding_loss() is calculated. It requires PaddedViews.jl to be added.
 """
-=======
- pad has default value 'false'. If pad = true is passed zeros are padded and the cos_embedding_loss() is calculated. It requires PaddedViews.jl to be added. But this is not recommended.
-"""
 
->>>>>>> master
 function cos_theta(x1::Array{Float32,N}, x2::Array{Float32,N}) where N
     return  dot(x1,x2) / (norm(x1) * norm(x2))
 end
