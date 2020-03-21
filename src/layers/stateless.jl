@@ -221,7 +221,6 @@ cos_embedding_loss takes
 =======
  pad has default value 'false'. If pad = true is passed zeros are padded and the cos_embedding_loss() is calculated. It requires PaddedViews.jl to be added. But this is not recommended.
 """
-using LinearAlgebra
 
 >>>>>>> master
 function cos_theta(x1::Array{Float32,N}, x2::Array{Float32,N}) where N
