@@ -210,3 +210,51 @@ by linearizing all values for each element in the batch.
 function flatten(x::AbstractArray)
   return reshape(x, :, size(x)[end])
 end
+"""
+cos_embedding_loss takes
+ x1 and x2 as inputs
+ y = 1 or -1 as mode
+ margin = 0 which can range from -1 to 1 and has 0 as its default value
+ pad has default value 'false'. If pad = true is passed zeros are padded and the cos_embedding_loss() is calculated. It requires PaddedViews.jl to be added.
+"""
+function cos_theta(x1::Array{Float32,N}, x2::Array{Float32,N}) where N
+    return  dot(x1,x2) / (norm(x1) * norm(x2))
+end
+
+function cos_embedding_loss(x1::AbstractMatrix, x2::AbstractMatrix, y::Any; margin=0, pad = false)
+    @assert (margin <= 1 && margin >= -1)
+    @assert y ∈ (1,-1)
+    if (pad == false && (size(x1) != size(x2)))
+        throw(DimensionMismatch("If you wish to calculate the loss by padding zeros, pass 'pad = true' as an arguement and add PaddedView.jl to the environment"))
+    elseif (pad == true && (size(x1) != size(x2)))
+        size(x1) > size(x2) ? x2 = PaddedView(0.0, x2, size(x1)) : x1 = PaddedView(0.0, x1, (size(x2)))
+    end
+
+    x1 = Float32.(x1); x2 = Float32.(x2); y = Int64(y); margin = Float32(margin)
+
+    cos_embedding_loss(x1,x2,y,margin)
+end
+
+function cos_embedding_loss(x1::AbstractArray, x2::AbstractArray, y::Any; margin=0, pad = false)
+    @assert (margin <= 1 && margin >= -1)
+    @assert y ∈ (1,-1)
+    if (pad == false && (size(x1) != size(x2)))
+        throw(DimensionMismatch("If you wish to calculate the loss by padding zeros, pass 'pad = true' as an arguement and add PaddedView.jl to the environment"))
+    elseif (pad == true && (size(x1) != size(x2)))
+        size(x1) > size(x2) ? x2 = PaddedView(0.0, x2, size(x1)) : x1 = PaddedView(0.0, x1, (size(x2)))
+    end
+
+    x1 = Float32.(x1); x2 = Float32.(x2); y = Int64(y); margin = Float32(margin)
+
+    cos_embedding_loss(x1,x2,y, margin)
+end
+
+function cos_embedding_loss(x1::Array{Float32,N}, x2::Array{Float32,N}, y::Int64, margin) where N
+    @assert (margin <= 1 && margin >= -1)
+    @assert y ∈ (1,-1)
+    if (y == 1)
+        return (1 - cos_theta(x1, x2))
+    elseif (y == -1)
+        return max(0, (cos_theta(x1,x2)-margin))
+    end
+end
