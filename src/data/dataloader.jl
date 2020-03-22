@@ -30,7 +30,7 @@ Example usage:
     Xtrain = rand(10, 100)
     train_loader = DataLoader(Xtrain, batchsize=2) 
     # iterate over 50 mini-batches of size 2
-    for x in train_loader: 
+    for x in train_loader
         @assert size(x) == (10, 2)
         ...
     end
@@ -41,7 +41,7 @@ Example usage:
     Ytrain = rand(100)
     train_loader = DataLoader(Xtrain, Ytrain, batchsize=2, shuffle=true) 
     for epoch in 1:100
-        for (x, y) in train_loader: 
+        for (x, y) in train_loader
             @assert size(x) == (10, 2)
             @assert size(y) == (2,)
             ...
