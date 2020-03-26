@@ -1,6 +1,6 @@
-using Flux 
+using Flux
 using Flux.Data
-using Test 
+using Test
 using Random, Statistics, LinearAlgebra
 using Documenter
 using IterTools: ncycle
@@ -19,6 +19,10 @@ Random.seed!(0)
 
   @testset "Optimise" begin
     include("optimise.jl")
+  end
+
+  @testset "FreezeLayers" begin
+    include("freezelayers.jl")
   end
 
   @testset "Data" begin
