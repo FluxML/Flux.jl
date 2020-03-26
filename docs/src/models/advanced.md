@@ -62,12 +62,32 @@ During training, the gradients will only be computed for (and applied to) the la
 Flux.params(m[1], m[3:end])
 ```
 
-Sometimes, a more fine-tuned control is needed. 
-We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`, 
+Sometimes, a more fine-tuned control is needed.
+We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`,
 by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
-delete!(ps, m[2].b) 
+delete!(ps, m[2].b)
 ```
 
+The `freezelayers!` function prevents parameters of multiple layers from being updated. The following example stops the parameters of the first and third layer from being updated.
+
+```julia
+m = Chain(
+    Dense(4, 2),
+    Dense(2, 3),
+    Dense(3, 4),
+    Dense(4, 3),
+    softmax
+)
+
+freezed_layer_indexes = [1, 3]
+
+train!(
+    (x, y) -> crossentropy(m(x), y),
+    freezelayers!(params(m), m, freezed_layer_indexes),
+    [(rand(4, 10), rand(1, 10))],
+    ADAM(0.005)
+)
+```

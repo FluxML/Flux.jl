@@ -1,8 +1,8 @@
 module Optimise
 
-export train!, update!, freezeparam!, freezelayers!,
+export train!, update!, freezelayers!,
 	SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
-	ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW,RADAM, 
+	ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW,RADAM,
 	InvDecay, ExpDecay, WeightDecay, stop, Optimiser
 
 include("optimisers.jl")

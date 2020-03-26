@@ -1,5 +1,4 @@
 using Juno
-using Zygote: delete!
 import Zygote: Params, gradient
 
 
@@ -13,7 +12,7 @@ according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
 As a result, the parameters are mutated and the optimizer's internal state may change.
 
   update!(x, x̄)
- 
+
 Update the array `x` according to `x .-= x̄`.
 """
 function update!(x::AbstractArray, x̄)
@@ -31,19 +30,13 @@ function update!(opt, xs::Params, gs)
   end
 end
 
-# Fix params
-function freezeparam!(ps::Params, p)
-        delete!(ps, p)
-    return ps
-end
-
 # Fix layers
 function freezelayers!(ps::Params, m, layer_indexes::Vector{Int64})
     for layer_index in layer_indexes
         layer = m.layers[layer_index]
         param_names = fieldnames(typeof(layer))
         for param_name in param_names
-            freezeparam!(ps, getfield(layer, param_name))
+            delete!(ps, getfield(layer, param_name))
         end
     end
 
