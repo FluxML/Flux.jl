@@ -1,6 +1,6 @@
 using Test
 using Flux: onehotbatch, mse, crossentropy, logitcrossentropy,
-            σ, binarycrossentropy, logitbinarycrossentropy, flatten
+            σ, binarycrossentropy, logitbinarycrossentropy, margin_ranking_loss, flatten
 
 const ϵ = 1e-7
 
@@ -12,15 +12,15 @@ const ϵ = 1e-7
   @testset "mse" begin
     @test mse(ŷ, y) ≈ (.1^2 + .9^2)/2
   end
-  
+
   @testset "mae" begin
     @test Flux.mae(ŷ, y) ≈ 1/2
   end
-  
+
   @testset "huber_loss" begin
     @test Flux.huber_loss(ŷ, y) ≈ 0.20500000000000002
-  end       
-            
+  end
+
   y = [123.0,456.0,789.0]
   ŷ = [345.0,332.0,789.0]
   @testset "msle" begin
@@ -63,46 +63,46 @@ const ϵ = 1e-7
   @testset "logitbinarycrossentropy" begin
     @test logitbinarycrossentropy.(logŷ, y) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0)
   end
-  
+
   y = [1 2 3]
   ŷ = [4.0 5.0 6.0]
   @testset "kldivergence" begin
     @test Flux.kldivergence(ŷ, y) ≈ -1.7661057888493457
-    @test Flux.kldivergence(y, y) ≈ 0 
+    @test Flux.kldivergence(y, y) ≈ 0
   end
-  
+
   y = [1 2 3 4]
   ŷ = [5.0 6.0 7.0 8.0]
   @testset "hinge" begin
     @test Flux.hinge(ŷ, y) ≈ 0
     @test Flux.hinge(y, 0.5 .* y) ≈ 0.125
   end
-  
+
   @testset "squared_hinge" begin
     @test Flux.squared_hinge(ŷ, y) ≈ 0
     @test Flux.squared_hinge(y, 0.5 .* y) ≈ 0.0625
   end
-  
+
   y = [0.1 0.2 0.3]
   ŷ = [0.4 0.5 0.6]
   @testset "poisson" begin
     @test Flux.poisson(ŷ, y) ≈ 0.6278353988097339
     @test Flux.poisson(y, y) ≈ 0.5044459776946685
   end
-  
+
   y = [1.0 0.5 0.3 2.4]
   ŷ = [0 1.4 0.5 1.2]
   @testset "dice_coeff_loss" begin
     @test Flux.dice_coeff_loss(ŷ, y) ≈ 0.2799999999999999
     @test Flux.dice_coeff_loss(y, y) ≈ 0.0
   end
-            
+
   @testset "tversky_loss" begin
     @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
     @test Flux.tversky_loss(ŷ, y, β = 0.8) ≈ -0.09490740740740744
     @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
   end
-            
+
   @testset "no spurious promotions" begin
     for T in (Float32, Float64)
       y = rand(T, 2)
@@ -112,6 +112,26 @@ const ϵ = 1e-7
         fwd, back = Flux.pullback(f, ŷ, y)
         @test fwd isa T
         @test eltype(back(one(T))[1]) == T
+      end
+    end
+  end
+
+  x1 = [1.2 2.3 3.4]
+  x2 = [9.8 8.7 7.6]
+  y = 1
+  @testset "margin_ranking_loss" begin
+    @test margin_ranking_loss(x1, x2, y) ≈ [8.6 6.4 4.2]
+    @test margin_ranking_loss(x1, x2, y, margin=1.0) ≈ [9.6 7.4 5.2]
+    @test margin_ranking_loss(x1, x2, y, margin=1.0, mode=sum) ≈ 22.2
+  end
+
+  @testset "no spurious promotions for margin_ranking_loss" begin
+    for T in (Float32, Float64)
+      x1 = rand(T, 2)
+      x2 = rand(T, 2)
+       for y in (1,-1)
+        fwd, back = Flux.pullback(margin_ranking_loss, x1, x2, y)
+        @test eltype(fwd) == Float64
       end
     end
   end

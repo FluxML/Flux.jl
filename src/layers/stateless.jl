@@ -1,5 +1,5 @@
 # Cost functions
-using Statistics, PaddedViews
+using Statistics
 """
     mae(ŷ, y)
 
@@ -213,18 +213,12 @@ function flatten(x::AbstractArray)
 end
 
 """
-
-  margin_ranking_loss(x1, x2, y; margin=0, mode=identity, pad=false)
+  margin_ranking_loss(x1, x2, y; margin=0, mode=identity)
 
 Measures the margin ranking loss between `x1`, `x2` for `y` = 1 or -1 and `margin`. `mode` can be additionally specified as mean, sum.
-
-```math
-\text{loss}(x, y) = \max(0, -y * (x1 - x2) + \text{margin})
-```
 """
 
-function margin_ranking_loss(x1, x2, y; margin=zero(eltype(x1)), mode=identity, pad=false)
-  if (y ∉ (1,-1)) error("Mode can be either 1 or -1, got $y") end
-  if (pad==true && size(x1)!= size(x2)) x1, x2 = paddedviews(zero(eltype(x1)), x1, x2) end
+function margin_ranking_loss(x1, x2, y; margin=zero(eltype(x1)), mode=identity)
+  y ∈ (1, -1) || error("Mode can be either 1 or -1, got $y")
   return (max.(0.0, mode(((-y) .* (x1 .- x2)) .+ margin)))
 end
