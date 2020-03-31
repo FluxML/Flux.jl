@@ -217,8 +217,7 @@ end
 
 Measures the margin ranking loss between `x1`, `x2` for `y` = 1 or -1 and `margin`. `mode` can be additionally specified as mean, sum.
 """
-
 function margin_ranking_loss(x1, x2, y; margin=zero(eltype(x1)), mode=identity)
   y ∈ (1, -1) || error("Mode can be either 1 or -1, got $y")
-  return (max.(0.0, mode(((-y) .* (x1 .- x2)) .+ margin)))
+  return (max.(zero(eltype(x1)), mode(((-y) .* (x1 .- x2)) .+ margin)))
 end

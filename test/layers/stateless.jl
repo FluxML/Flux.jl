@@ -131,7 +131,7 @@ const ϵ = 1e-7
       x2 = rand(T, 2)
        for y in (1,-1)
         fwd, back = Flux.pullback(margin_ranking_loss, x1, x2, y)
-        @test eltype(fwd) == Float64
+        @test eltype(fwd) == T
       end
     end
   end
