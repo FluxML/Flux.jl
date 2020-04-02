@@ -262,7 +262,8 @@ It has parameters `W` and `b`, and its output given vectors `x`, `y` is of the f
 
 `z[i] = σ.(x' * W[i,:,:] * y .+ b[i])`
 
-If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form.
+If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form,
+given that `B` is a Bilinear layer of appropriate size.
 
 If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
