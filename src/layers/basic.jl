@@ -255,7 +255,7 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    B = Bilinear(in1, in2, out)
+    Bilinear(in1, in2, out)
 
 Creates a Bilinear layer, which operates on two inputs at the same time.
 It has parameters `W` and `b`, and its output given vectors `x`, `y` is of the form 
