@@ -98,10 +98,9 @@ julia> d = Dense(5, 2)
 Dense(5, 2)
 
 julia> d(rand(5))
-Array{Float64,1}:
-  0.00257447
-  -0.00449443
-```
+2-element Array{Float32,1}:
+  -0.16210233
+   0.12311903```
 """
 struct Dense{F,S,T}
   W::S

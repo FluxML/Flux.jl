@@ -17,7 +17,6 @@ makedocs(modules=[Flux, NNlib],
                      "DataLoader" => "data/dataloader.md"],
                   "Training Models" =>
                     ["Optimisers" => "training/optimisers.md",
-                     "Loss Functions" => "training/loss_functions.md",
                      "Training" => "training/training.md"],
                   "GPU Support" => "gpu.md",
                   "Saving & Loading" => "saving.md",

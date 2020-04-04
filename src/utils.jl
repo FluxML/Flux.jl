@@ -128,7 +128,13 @@ Split `xs` into `n` parts.
 # Examples
 ```jldoctest
 julia> Flux.chunk(1:10, 3)
-3-element Array{Array{Int64,1},1}:
+3-element Array{UnitRange{Int64},1}:
+ 1:4
+ 5:8
+ 9:10
+
+julia> Flux.chunk(collect(1:10), 3)
+3-element Array{SubArray{Int64,1,Array{Int64,1},Tuple{UnitRange{Int64}},true},1}:
  [1, 2, 3, 4]
  [5, 6, 7, 8]
  [9, 10]
