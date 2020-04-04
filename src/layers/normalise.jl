@@ -65,9 +65,10 @@ end
 """
     AlphaDropout(p)
 
-A dropout layer. It is used in
+A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf).
-The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
+The AlphaDropout layer ensures that mean and variance of activations
+remain the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
 """
@@ -123,8 +124,8 @@ end
               initβ = zeros, initγ = ones,
               ϵ = 1e-8, momentum = .1)
 
-Batch Normalization layer. The `channels` input should be the size of the
-channel dimension in your data (see below).
+[Batch Normalization](https://arxiv.org/pdf/1502.03167.pdf) layer.
+`channels` should be the size of the channel dimension in your data (see below).
 
 Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
 a batch of feature vectors this is just the data dimension, for `WHCN` images
@@ -135,9 +136,6 @@ shifts them to have a new mean and variance (corresponding to the learnable,
 per-channel `bias` and `scale` parameters).
 
 Use [`testmode!`](@ref) during inference.
-
-See [Batch Normalization: Accelerating Deep Network Training by Reducing
-Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
 
 # Examples
 ```julia
@@ -213,37 +211,6 @@ function Base.show(io::IO, l::BatchNorm)
   print(io, ")")
 end
 
-
-"""
-    InstanceNorm(channels::Integer, σ = identity;
-                 initβ = zeros, initγ = ones,
-                 ϵ = 1e-8, momentum = .1)
-
-Instance Normalization layer. The `channels` input should be the size of the
-channel dimension in your data (see below).
-
-Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
-a batch of feature vectors this is just the data dimension, for `WHCN` images
-it's the usual channel dimension.)
-
-`InstanceNorm` computes the mean and variance for each each `W×H×1×1` slice and
-shifts them to have a new mean and variance (corresponding to the learnable,
-per-channel `bias` and `scale` parameters).
-
-Use [`testmode!`](@ref) during inference.
-
-See [Instance Normalization: The Missing Ingredient for Fast Stylization](https://arxiv.org/abs/1607.08022).
-
-# Examples
-```julia
-m = Chain(
-  Dense(28^2, 64),
-  InstanceNorm(64, relu),
-  Dense(64, 10),
-  InstanceNorm(10),
-  softmax)
-```
-"""
 expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
 
 mutable struct InstanceNorm{F,V,W,N}
@@ -258,6 +225,34 @@ mutable struct InstanceNorm{F,V,W,N}
 end
 
 # TODO: deprecate in v0.11
+"""
+    InstanceNorm(channels::Integer, σ = identity;
+                 initβ = zeros, initγ = ones,
+                 ϵ = 1e-8, momentum = .1)
+
+[Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
+`channels` should be the size of the channel dimension in your data (see below).
+
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
+a batch of feature vectors this is just the data dimension, for `WHCN` images
+it's the usual channel dimension.)
+
+`InstanceNorm` computes the mean and variance for each each `W×H×1×1` slice and
+shifts them to have a new mean and variance (corresponding to the learnable,
+per-channel `bias` and `scale` parameters).
+
+Use [`testmode!`](@ref) during inference.
+
+# Examples
+```julia
+m = Chain(
+  Dense(28^2, 64),
+  InstanceNorm(64, relu),
+  Dense(64, 10),
+  InstanceNorm(10),
+  softmax)
+```
+"""
 InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 InstanceNorm(chs::Integer, λ = identity;

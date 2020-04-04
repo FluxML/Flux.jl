@@ -183,18 +183,11 @@ outdims(l::Diagonal, isize) = (length(l.α),)
 """
     Maxout(over)
 
-`Maxout` is a neural network layer which has a number of internal layers
-which all receive the same input. The layer returns the elementwise maximium
-of the internal layers' outputs.
+The [Maxout](https://arxiv.org/pdf/1302.4389.pdf) layer has a number of
+internal layers which all receive the same input. It returns the elementwise
+maximum of the internal layers' outputs.
 
 Maxout over linear dense layers satisfies the univeral approximation theorem.
-
-Reference:
-Ian J. Goodfellow, David Warde-Farley, Mehdi Mirza, Aaron Courville, and Yoshua Bengio.
-2013. Maxout networks.
-In Proceedings of the 30th International Conference on International Conference on Machine Learning - Volume 28 (ICML'13),
-Sanjoy Dasgupta and David McAllester (Eds.), Vol. 28. JMLR.org III-1319-III-1327.
-https://arxiv.org/pdf/1302.4389.pdf
 """
 struct Maxout{FS<:Tuple}
     over::FS
