@@ -27,7 +27,7 @@ end
 """
     phones()
 
-Return a `Vector` containing the phones used in the dataset.
+Return a `Vector` containing the phones used in the CMU Pronouncing Dictionary.
 """
 function phones()
   load()
@@ -38,7 +38,7 @@ end
 """
     symbols()
 
-Return a `Vector` containing the symbols used in the dataset.
+Return a `Vector` containing the symbols used in the CMU Pronouncing Dictionary.
 A symbol is a phone with optional auxiliary symbols, indicating for example the
 amount of stress on the phone.
 """

@@ -30,7 +30,7 @@ end
 """
     Dropout(p, dims = :)
 
-Dropout layer. In the forward pass, applies the [`Flux.dropout`](@ref) function on the input.
+Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
