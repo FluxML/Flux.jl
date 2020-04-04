@@ -35,9 +35,15 @@ Flux.glorot_uniform
 Flux.glorot_normal
 ```
 
+## Model Abstraction
+
+```@docs
+Flux.destructure
+```
+
 ## Callback Helpers
 
 ```@docs
 Flux.throttle
+Flux.stop
 ```
-
