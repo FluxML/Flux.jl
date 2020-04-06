@@ -52,6 +52,7 @@ Momentum
 Nesterov
 RMSProp
 ADAM
+RADAM
 AdaMax
 ADAGrad
 ADADelta

@@ -52,7 +52,7 @@ e.g.
 ```julia
 function loss_total(xs::AbstractVector{<:Vector}, ys::AbstractVector{<:Vector})
     sum(zip(xs, ys)) do (x, y_target)
-        y_pred = model(x) #  evaluate the model
+        y_pred = model(x)  # evaluate the model
         return loss(y_pred, y_target)
     end
 end

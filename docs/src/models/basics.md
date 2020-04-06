@@ -220,7 +220,7 @@ Flux.@functor Affine
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
 
-For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advacned.md).
+For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).
 
 ## Utility functions
 
@@ -240,5 +240,5 @@ Currently limited to the following layers:
 - `MeanPool`
 
 ```@docs
-outdims
+Flux.outdims
 ```

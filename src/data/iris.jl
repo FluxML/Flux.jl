@@ -2,13 +2,12 @@
 Fisher's classic iris dataset.
 
 Measurements from 3 different species of iris: setosa, versicolor and
-virginica.  There are 50 examples of each species.
+virginica. There are 50 examples of each species.
 
-There are 4 measurements for each example: sepal length, sepal width, petal
-length and petal width.  The measurements are in centimeters.
+There are 4 measurements for each example: sepal length, sepal width,
+petal length and petal width. The measurements are in centimeters.
 
 The module retrieves the data from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/iris).
-
 """
 module Iris
 
@@ -33,9 +32,7 @@ end
 Get the labels of the iris dataset, a 150 element array of strings listing the
 species of each example.
 
-```jldoctest
-julia> using Flux
-
+```jldoctest; setup = :(Flux.Data.Iris.load())
 julia> labels = Flux.Data.Iris.labels();
 
 julia> summary(labels)
@@ -54,13 +51,11 @@ end
 """
     features()
 
-Get the features of the iris dataset.  This is a 4x150 matrix of Float64
-elements.  It has a row for each feature (sepal length, sepal width,
+Get the features of the iris dataset. This is a 4x150 matrix of Float64
+elements. It has a row for each feature (sepal length, sepal width,
 petal length, petal width) and a column for each example.
 
-```jldoctest
-julia> using Flux
-
+```jldoctest; setup = :(Flux.Data.Iris.load())
 julia> features = Flux.Data.Iris.features();
 
 julia> summary(features)
