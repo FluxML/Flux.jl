@@ -78,9 +78,9 @@ end
 
 
 @testset "Housing" begin
-    @test_broken Housing.features() isa Matrix # test broken due to SSL certifate expiration problem
-    @test_broken size(Housing.features()) == (506, 13)
+    @test Housing.features() isa Matrix # test broken due to SSL certifate expiration problem
+    @test size(Housing.features()) == (506, 13)
 
-    @test_broken Housing.targets() isa Array{Float64}
-    @test_broken size(Housing.targets()) == (506, 1)
+    @test Housing.targets() isa Array{Float64}
+    @test size(Housing.targets()) == (506, 1)
 end
