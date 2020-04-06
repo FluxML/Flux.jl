@@ -76,8 +76,9 @@ end
     @test size(Iris.labels()) == (150,)
 end
 
+
 @testset "Housing" begin
-    @test Housing.features() isa Matrix
+    @test Housing.features() isa Matrix # test broken due to SSL certifate expiration problem
     @test size(Housing.features()) == (506, 13)
 
     @test Housing.targets() isa Array{Float64}
