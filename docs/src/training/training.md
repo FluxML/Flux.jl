@@ -15,7 +15,7 @@ Flux.Optimise.train!
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
 
-## Loss
+## Loss Functions
 
 The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective. We can also define an objective in terms of some model:
 
