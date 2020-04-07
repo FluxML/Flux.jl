@@ -37,6 +37,15 @@ function fmap(f, x; cache = IdDict())
   cache[x] = isleaf(x) ? f(x) : fmap1(x -> fmap(f, x, cache = cache), x)
 end
 
+@adjoint function Flux.fmap(f, x)
+  op = Flux.fmap(f, x)
+  back(del) = Flux.fmap(del) do x_
+    x_ isa Nothing && return
+    f'(x_)
+  end
+  op, Δ -> (nothing, back(Δ))
+end
+
 trainable(m) = functor(m)[1]
 
 """
