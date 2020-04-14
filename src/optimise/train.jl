@@ -4,7 +4,7 @@ import Zygote: Params, gradient
 
 
 """
-  update!(x, x̄)
+    update!(x, x̄)
 
 Update the array `x` according to `x .-= x̄`.
 """
