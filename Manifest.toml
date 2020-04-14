@@ -156,6 +156,14 @@ git-tree-sha1 = "869540e4367122fbffaace383a5bdc34d6e5e5ac"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.10"
 
+[[Functors]]
+deps = ["MacroTools"]
+git-tree-sha1 = "58dd223f9ad2601b0e9964fd65fa9d2c7219be41"
+repo-rev = "master"
+repo-url = "https://github.com/FluxML/Functors.jl"
+uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
+version = "0.1.0"
+
 [[GPUArrays]]
 deps = ["AbstractFFTs", "Adapt", "LinearAlgebra", "Printf", "Random", "Serialization"]
 git-tree-sha1 = "d586762b08dcda13228df8967119b9cb6f22ade5"
