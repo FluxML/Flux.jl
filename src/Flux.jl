@@ -18,7 +18,7 @@ export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose,
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
-export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
+export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
   ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
 
