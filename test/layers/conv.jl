@@ -4,6 +4,10 @@ using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
+  gmp = GlobalMaxPool()
+  @test size(gmp(x)) == (1, 1, 3, 2)
+  gmp = GlobalMeanPool()
+  @test size(gmp(x)) == (1, 1, 3, 2)
   mp = MaxPool((2, 2))
   @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
@@ -106,4 +110,56 @@ end
     randn(Float32, 10,10,1,1) |> Conv((6,1), 1=>1, Flux.σ)
     true
   end
+end
+
+@testset "conv output dimensions" begin
+  m = Conv((3, 3), 3 => 16)
+  @test Flux.outdims(m, (10, 10)) == (8, 8)
+  m = Conv((3, 3), 3 => 16; stride = 2)
+  @test Flux.outdims(m, (5, 5)) == (2, 2)
+  m = Conv((3, 3), 3 => 16; stride = 2, pad = 3)
+  @test Flux.outdims(m, (5, 5)) == (5, 5)
+  m = Conv((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
+  @test Flux.outdims(m, (5, 5)) == (4, 4)
+
+  m = ConvTranspose((3, 3), 3 => 16)
+  @test Flux.outdims(m, (8, 8)) == (10, 10)
+  m = ConvTranspose((3, 3), 3 => 16; stride = 2)
+  @test Flux.outdims(m, (2, 2)) == (5, 5)
+  m = ConvTranspose((3, 3), 3 => 16; stride = 2, pad = 3)
+  @test Flux.outdims(m, (5, 5)) == (5, 5)
+  m = ConvTranspose((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
+  @test Flux.outdims(m, (4, 4)) == (5, 5)
+
+  m = DepthwiseConv((3, 3), 3 => 6)
+  @test Flux.outdims(m, (10, 10)) == (8, 8)
+  m = DepthwiseConv((3, 3), 3 => 6; stride = 2)
+  @test Flux.outdims(m, (5, 5)) == (2, 2)
+  m = DepthwiseConv((3, 3), 3 => 6; stride = 2, pad = 3)
+  @test Flux.outdims(m, (5, 5)) == (5, 5)
+  m = DepthwiseConv((3, 3), 3 => 6; stride = 2, pad = 3, dilation = 2)
+  @test Flux.outdims(m, (5, 5)) == (4, 4)
+
+  m = CrossCor((3, 3), 3 => 16)
+  @test Flux.outdims(m, (10, 10)) == (8, 8)
+  m = CrossCor((3, 3), 3 => 16; stride = 2)
+  @test Flux.outdims(m, (5, 5)) == (2, 2)
+  m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3)
+  @test Flux.outdims(m, (5, 5)) == (5, 5)
+  m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
+  @test Flux.outdims(m, (5, 5)) == (4, 4)
+
+  m = MaxPool((2, 2))
+  @test Flux.outdims(m, (10, 10)) == (5, 5)
+  m = MaxPool((2, 2); stride = 1)
+  @test Flux.outdims(m, (5, 5)) == (4, 4)
+  m = MaxPool((2, 2); stride = 2, pad = 3)
+  @test Flux.outdims(m, (5, 5)) == (5, 5)
+
+  m = MeanPool((2, 2))
+  @test Flux.outdims(m, (10, 10)) == (5, 5)
+  m = MeanPool((2, 2); stride = 1)
+  @test Flux.outdims(m, (5, 5)) == (4, 4)
+  m = MeanPool((2, 2); stride = 2, pad = 3)
+  @test Flux.outdims(m, (5, 5)) == (5, 5)
 end

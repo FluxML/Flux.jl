@@ -1,6 +1,5 @@
 import ..Flux: Flux, relu
 using CuArrays.CUDAnative
-using CuArrays: @cuindex, cudims
 
 CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
 CuGRU{T} = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}
