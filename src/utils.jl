@@ -24,7 +24,7 @@ glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum
     glorot_normal(dims...)
 
 Return an `Array` of size `dims` containing random variables taken from a normal
-distribution with mean 0 and standard deviation `(2 / sum(dims))`.
+distribution with mean 0 and standard deviation `sqrt(2 / sum(dims))`.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
