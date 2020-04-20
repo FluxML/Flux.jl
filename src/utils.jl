@@ -37,6 +37,24 @@ julia> Flux.glorot_normal(3, 2)
 """
 glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
 
+"""
+    orthogonal(dim)
+
+Return a random orthogonal maxtrix of size `(dim, dim)`.
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.orthogonal(2)
+2×2 Array{Float32,2}:
+ -0.633973  -0.773356
+ -0.773356   0.633973
+```
+
+See [Exact solutions to the nonlinear dynamics of learning in deep linear neural networks](http://arxiv.org/abs/1312.6120)
+"""
+orthogonal(dim) = Matrix(qr(randn(Float32, dim, dim)).Q)
+orthogonal(dim1, dim2) = vcat([orthogonal(dim2) for n in 1:(dim1 ÷ dim2)]...)
+
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
 
