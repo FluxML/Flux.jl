@@ -179,3 +179,103 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+
+mutable struct SGRUCell{A, V}
+    Wi::A
+    Wh::A
+    b::V
+    h::V
+end
+
+SGRUCell(in, out; init = glorot_uniform, kernel_init = glorot_uniform) =
+    SGRUCell(init(out, in), glorot_uniform(3out, out), zeros(3out), zeros(out))
+
+function (m::SGRUCell)(h, x)
+    b, o = m.b, size(h, 1)
+    gx, gh = m.Wi * x, m.Wh * h
+    r = σ.(gate(gh, o, 1) .+ gate(b, o, 1))
+    z = σ.(gate(gh, o, 2) .+ gate(b, o, 2))
+    h̃ = tanh.(gx .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
+    h′ = (1 .- z) .* h̃ .+ z .* h
+    return h′, h′
+end
+
+hidden(m::SGRUCell) = m.h
+
+@functor SGRUCell
+
+Base.show(io::IO, l::SGRUCell) =
+    print(io, "SGRUCell(", size(l.Wi, 2), ", ", size(l.Wh, 1) ÷ 3, ")")
+
+"""
+    SGRU(in::Integer, out::Integer)
+
+[Simplified Gated Recurrent Unit](https://arxiv.org/abs/1701.03452) layer.
+"""
+SGRU(a...; ka...) = Recur(SGRUCell(a...; ka...))
+
+mutable struct MGUCell{A, V}
+    Wi::A
+    Wh::A
+    b::V
+    h::V
+end
+
+MGUCell(in, out; init = glorot_uniform, kernel_init = glorot_uniform) =
+    MGUCell(init(2out, in), kernel_init(2out, out), zeros(2out), zeros(out))
+
+function (m::MGUCell)(h, x)
+    b, o = m.b, size(h, 1)
+    gx, gh = m.Wi * x, m.Wh * h
+    r = z = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+    h̃ = tanh.(gate(gx, o, 2) .+ r .* gate(gh, o, 2) .+ gate(b, o, 2))
+    h′ = (1 .- z) .* h̃ .+ z .* h
+    return h′, h′
+end
+
+hidden(m::MGUCell) = m.h
+
+@functor MGUCell
+
+Base.show(io::IO, l::MGUCell) =
+    print(io, "MGUCell(", size(l.Wi, 2), ", ", size(l.Wh, 1) ÷ 2, ")")
+
+"""
+    MGU(in::Integer, out::Integer)
+
+[Minimal Gated Unit](https://arxiv.org/abs/1603.09420) layer.
+"""
+MGU(a...; ka...) = Recur(MGUCell(a...; ka...))
+
+mutable struct SMGUCell{A, V}
+    Wi::A
+    Wh::A
+    b::V
+    h::V
+end
+
+SMGUCell(in, out; init = glorot_uniform, kernel_init = glorot_uniform) =
+    SMGUCell(init(out, in), kernel_init(2out, out), zeros(2out), zeros(out))
+
+function (m::SMGUCell)(h, x)
+    b, o = m.b, size(h, 1)
+    gx, gh = m.Wi * x, m.Wh * h
+    r = z = σ.(gate(gh, o, 1) .+ gate(b, o, 1))
+    h̃ = tanh.(gx .+ r .* gate(gh, o, 2) .+ gate(b, o, 2))
+    h′ = (1 .- z) .* h̃ .+ z .* h
+    return h′, h′
+end
+
+hidden(m::SMGUCell) = m.h
+
+@functor SMGUCell
+
+Base.show(io::IO, l::SMGUCell) =
+    print(io, "SMGUCell(", size(l.Wi, 2), ", ", size(l.Wh, 1) ÷ 2, ")")
+
+"""
+    SMGU(in::Integer, out::Integer)
+
+[Simplified Minimal Gated Unit](https://arxiv.org/abs/1701.03452) layer.
+"""
+SMGU(a...; ka...) = Recur(SMGUCell(a...; ka...))
