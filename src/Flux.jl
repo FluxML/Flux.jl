@@ -4,7 +4,7 @@ module Flux
 
 using Base: tail
 using Statistics, Random, LinearAlgebra
-using Zygote, MacroTools, Juno, Reexport, Requires
+using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
@@ -51,6 +51,7 @@ function __init__()
       @warn "CuArrays.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
   end
+  @require MPI="da04e1cc-30fd-572f-bb4f-1f8673147195" include("optimise/mpi.jl")
 end
 
 end # module
