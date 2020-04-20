@@ -335,3 +335,20 @@ be used for aesthetic purposes, or by recovering Python users.
 macro jit(ex)
   esc(ex)
 end
+
+"""
+    *ᶜ(A, B)
+
+Contract tensor `A` and `B`
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> rand(2, 2, 3) *ᶜ rand(3)
+2×2 Array{Float64,2}:
+ 0.323728  1.43236 
+ 1.38479   0.873424
+"""
+function *ᶜ(A, B)
+  Cr = reshape(A, :, size(A)[end]) * reshape(B, size(B, 1), :)
+  C = reshape(Cr, size(A)[1:end-1]..., size(B)[2:end]...)
+end
