@@ -51,7 +51,6 @@ function __init__()
       @warn "CuArrays.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
   end
-  @require MPI="da04e1cc-30fd-572f-bb4f-1f8673147195" include("optimise/mpi.jl")
 end
 
 end # module
