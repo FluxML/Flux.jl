@@ -414,3 +414,27 @@ function Base.show(io::IO, l::GroupNorm)
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
+
+"""
+    GaussianNoise(stddev)
+
+Gaussian Noise layer. In the forward pass, add gaussian noise with standard deviation `stddev` to the input.
+
+Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
+"""
+mutable struct GaussianNoise{F}
+  stddev::F
+  active::Union{Bool, Nothing}
+end
+
+GaussianNoise(stddev) = GaussianNoise(stddev, true)
+
+function (m::GaussianNoise)(x)
+  _isactive(a) || return x
+  a.stddev == 0 && return x
+  y = m.stddev .* randn!(similar(x))
+  return x .+ y
+end
+
+testmode!(m::GaussianNoise, mode = true) = 
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
