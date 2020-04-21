@@ -75,30 +75,43 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> ())
-  ps = Params(ps)
-  cb = runall(cb)
-  @progress for d in data
-    try
-      if d isa AbstractArray{<:Number}
-        gs = gradient(ps) do
-          loss(d)
+function train!(loss, ps, data, opt; cb = () -> (), epochs = 1, steps_per_epoch = typemax(Int), verbose = true)
+  l̄ = 0f0
+  cb_narg = methods(cb).ms[1].nargs - 1
+  ndata = min(length(data), steps_per_epoch)
+  for epoch in 1:epochs
+    println("Epoch $epoch/$epochs ")
+    prog = Progress(ndata)
+    for (n, d) in enumerate(data)
+      n > steps_per_epoch && break
+      try
+        local l
+        if d isa AbstractArray{<:Number}
+          gs = gradient(ps) do
+            l = loss(d)
+          end
+        else
+          gs = gradient(ps) do
+            l = loss(d...)
+          end
         end
-      else
-        gs = gradient(ps) do
-          loss(d...)
+        update!(opt, ps, gs)
+        l̄ = ((n - 1) * l̄ + l) / n
+        if verbose
+          prog.desc = "$n/$ndata"
+          next!(prog, showvalues = [(:loss, l), (:avgloss, l̄)])
         end
-      end
-      update!(opt, ps, gs)
-      cb()
-    catch ex
-      if ex isa StopException
-        break
-      else
-        rethrow(ex)
+        cb_narg > 0 ? cb(ps, l) : cb()
+      catch ex
+        if ex isa StopException
+          break
+        else
+          rethrow(ex)
+        end
       end
     end
   end
+  return l̄
 end
 
 """

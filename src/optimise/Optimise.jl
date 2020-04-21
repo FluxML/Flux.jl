@@ -1,5 +1,7 @@
 module Optimise
 
+using ProgressMeter
+
 export train!, update!,
 	Descent, ADAM, Momentum, Nesterov, RMSProp,
 	ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW,RADAM, 
