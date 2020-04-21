@@ -538,9 +538,6 @@ end
     ClipValue(thresh)
 
 Clip gradients when their absolute value exceeds `thresh`.
-
-# Parameters
-- Clipping threshold (`thresh`)
 """
 mutable struct ClipValue{T}
     thresh::T
@@ -552,9 +549,6 @@ apply!(o::ClipValue, x, Δ) = clamp!(Δ, -o.thresh, o.thresh)
     ClipNorm(thresh)
 
 Clip gradients when their L2 norm exceeds `thresh`.
-
-# Parameters
-- Clipping threshold (`thresh`)
 """
 mutable struct ClipNorm{T}
     thresh::T
