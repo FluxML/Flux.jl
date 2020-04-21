@@ -32,6 +32,8 @@ function update!(opt, xs::Params, gs)
   end
 end
 
+bcast!(xs) = nothing
+
 # Callback niceties
 call(f, xs...) = f(xs...)
 runall(f) = f
@@ -76,6 +78,7 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, ps, data, opt; cb = () -> ())
+  bcast!(ps)
   ps = Params(ps)
   cb = runall(cb)
   @progress for d in data
