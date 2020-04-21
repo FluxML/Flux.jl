@@ -76,6 +76,8 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, ps, data, opt; cb = () -> (), epochs = 1, steps_per_epoch = typemax(Int), verbose = true)
+  ps = Params(ps)
+  cb = runall(cb)
   l̄ = 0f0
   cb_narg = methods(cb).ms[1].nargs - 1
   ndata = min(length(data), steps_per_epoch)
