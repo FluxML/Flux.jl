@@ -8,25 +8,30 @@ _convtransoutdims(isize, ksize, ssize, dsize, pad) = (isize .- 1).*ssize .+ 1 .+
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 
-"""
-    SamePad
+calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
 
-Padding for convolutional layers will be calculated so that outputshape == inputshape when stride = 1.
-
-For stride > 1 the output shape depends on the type of convolution layer.
-"""
-struct SamePad end
-
-calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
-function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
+function calc_padding(pad::AbstractString, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/pdf/1603.07285
 
   # Effective kernel size, including dilation
   k_eff = @. k + (k - 1) * (dilation - 1)
-  # How much total padding needs to be applied?
-  pad_amt = @. k_eff - 1
-  # In case amount of padding is odd we need to apply different amounts to each side.
-  return Tuple(mapfoldl(i -> [ceil(Int, i/2), floor(Int, i/2)], vcat, pad_amt))
+  if pad == "same"
+    # Padding for convolutional layers will be calculated so that outputshape == inputshape when stride = 1.
+    # For stride > 1 the output shape depends on the type of convolution layer.
+    # In case amount of padding is odd we need to apply different amounts to each side.
+    ntuple(Val(2*N)) do d
+      p = k_eff[d ÷ 2 + 1] - 1
+      isodd(d) ? ceil(Int, p / 2) : pad ÷ 2
+    end
+  elseif pad == "causal"
+    @assert length(k) == 1
+    ntuple(Val(2*N)) do d
+      p = k_eff[d ÷ 2 + 1] - 1
+      isodd(d) ? p : 0 
+    end
+  elseif pad == "valid"
+    expand(Val(2*N), 0)
+  end
 end
 
 """
