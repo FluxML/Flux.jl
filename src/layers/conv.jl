@@ -36,6 +36,8 @@ end
 
 need_manual_padding(x, pad) = x isa CuArrays.CuArray && pad[1:2:end] != pad[2:2:end]
 
+@nograd need_manual_padding
+
 function padding(x, pad::NTuple{N, Int}) where N
   all(iszero, pad) && return x
   if sum(pad) > 0
@@ -45,7 +47,6 @@ function padding(x, pad::NTuple{N, Int}) where N
   else
     ids = ntuple(Val(N ÷ 2)) do d
       l, r = pad[2d - 1], pad[2d]
-      @show l, r
       (1 - l):(size(x, d) + r)
     end
     x[ids..., :, :]
