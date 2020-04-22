@@ -2,11 +2,23 @@ istraining() = false
 
 @adjoint istraining() = true, _ -> nothing
 
+_isactive(m) = isnothing(m.active) ? istraining() : m.active
+
 _dropout_shape(s, ::Colon) = size(s)
 _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
+"""
+    dropout(x, p; dims = :)
+
+The dropout function. For each input, either sets that input to `0` (with probability
+`p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
+e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
+This is used as a regularisation, i.e. it reduces overfitting during training.
+
+See also the [`Dropout`](@ref) layer.
+"""
 dropout(x, p; dims = :) = x
 
 @adjoint function dropout(x, p; dims = :)
@@ -18,22 +30,31 @@ end
 """
     Dropout(p, dims = :)
 
-A Dropout layer. For each input, either sets that input to `0` (with probability
-`p`) or scales it by `1/(1-p)`. The `dims` argument is to specified the unbroadcasted
- dimensions, i.e. `dims=1` does dropout along columns and `dims=2` along rows. This is
- used as a regularisation, i.e. it reduces overfitting during training. see also [`dropout`](@ref).
+Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
+
+Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
 mutable struct Dropout{F,D}
   p::F
   dims::D
+  active::Union{Bool, Nothing}
 end
+
+# TODO: deprecate in v0.11
+Dropout(p, dims) = Dropout(p, dims, nothing)
 
 function Dropout(p; dims = :)
   @assert 0 ≤ p ≤ 1
-  Dropout{typeof(p),typeof(dims)}(p, dims)
+  Dropout{typeof(p),typeof(dims)}(p, dims, nothing)
 end
 
-(a::Dropout)(x) = dropout(x, a.p; dims = a.dims)
+function (a::Dropout)(x)
+  _isactive(a) || return x
+  return dropout(x, a.p; dims = a.dims)
+end
+
+testmode!(m::Dropout, mode = true) =
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, d::Dropout)
   print(io, "Dropout(", d.p)
@@ -43,20 +64,25 @@ end
 
 """
     AlphaDropout(p)
-A dropout layer. It is used in Self-Normalizing Neural Networks.
-(https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf)
-The AlphaDropout layer ensures that mean and variance of activations remains the same as before.
+
+A dropout layer. Used in
+[Self-Normalizing Neural Networks](https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf).
+The AlphaDropout layer ensures that mean and variance of activations
+remain the same as before.
+
+Does nothing to the input once [`testmode!`](@ref) is true.
 """
 mutable struct AlphaDropout{F}
   p::F
-  function AlphaDropout(p)
+  active::Union{Bool, Nothing}
+  function AlphaDropout(p, active = nothing)
     @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p)
+    new{typeof(p)}(p, active)
   end
 end
 
 function (a::AlphaDropout)(x)
-  istraining() || return x
+  _isactive(a) || return x
   λ = eltype(x)(1.0507009873554804934193349852946)
   α = eltype(x)(1.6732632423543772848170429916717)
   α1 = eltype(x)(-λ*α)
@@ -68,12 +94,15 @@ function (a::AlphaDropout)(x)
   return x
 end
 
+testmode!(m::AlphaDropout, mode = true) =
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+
 """
     LayerNorm(h::Integer)
 
 A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
-used with recurrent hidden states of size `h`. Normalises the mean/stddev of
-each input before applying a per-neuron gain/bias.
+used with recurrent hidden states of size `h`. Normalises the mean and standard
+deviation of each input before applying a per-neuron gain/bias.
 """
 struct LayerNorm{T}
   diag::Diagonal{T}
@@ -95,8 +124,8 @@ end
               initβ = zeros, initγ = ones,
               ϵ = 1e-8, momentum = .1)
 
-Batch Normalization layer. The `channels` input should be the size of the
-channel dimension in your data (see below).
+[Batch Normalization](https://arxiv.org/pdf/1502.03167.pdf) layer.
+`channels` should be the size of the channel dimension in your data (see below).
 
 Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
 a batch of feature vectors this is just the data dimension, for `WHCN` images
@@ -106,10 +135,9 @@ it's the usual channel dimension.)
 shifts them to have a new mean and variance (corresponding to the learnable,
 per-channel `bias` and `scale` parameters).
 
-See [Batch Normalization: Accelerating Deep Network Training by Reducing
-Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf).
+Use [`testmode!`](@ref) during inference.
 
-Example:
+# Examples
 ```julia
 m = Chain(
   Dense(28^2, 64),
@@ -127,12 +155,16 @@ mutable struct BatchNorm{F,V,W,N}
   σ²::W  # moving std
   ϵ::N
   momentum::N
+  active::Union{Bool, Nothing}
 end
+
+# TODO: deprecate in v0.11
+BatchNorm(λ, β, γ, μ, σ², ϵ, momentum) = BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 BatchNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   BatchNorm(λ, initβ(chs), initγ(chs),
-            zeros(chs), ones(chs), ϵ, momentum)
+            zeros(chs), ones(chs), ϵ, momentum, nothing)
 
 trainable(bn::BatchNorm) = (bn.β, bn.γ)
 
@@ -145,7 +177,7 @@ function (BN::BatchNorm)(x)
   m = div(prod(size(x)), channels)
   γ = reshape(BN.γ, affine_shape...)
   β = reshape(BN.β, affine_shape...)
-  if !istraining()
+  if !_isactive(BN)
     μ = reshape(BN.μ, affine_shape...)
     σ² = reshape(BN.σ², affine_shape...)
     ϵ = BN.ϵ
@@ -170,41 +202,15 @@ end
 
 @functor BatchNorm
 
+testmode!(m::BatchNorm, mode = true) =
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(join(size(l.β), ", "))")
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
   print(io, ")")
 end
 
-
-"""
-    InstanceNorm(channels::Integer, σ = identity;
-                 initβ = zeros, initγ = ones,
-                 ϵ = 1e-8, momentum = .1)
-
-Instance Normalization layer. The `channels` input should be the size of the
-channel dimension in your data (see below).
-
-Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
-a batch of feature vectors this is just the data dimension, for `WHCN` images
-it's the usual channel dimension.)
-
-`InstanceNorm` computes the mean and variance for each each `W×H×1×1` slice and
-shifts them to have a new mean and variance (corresponding to the learnable,
-per-channel `bias` and `scale` parameters).
-
-See [Instance Normalization: The Missing Ingredient for Fast Stylization](https://arxiv.org/abs/1607.08022).
-
-Example:
-```julia
-m = Chain(
-  Dense(28^2, 64),
-  InstanceNorm(64, relu),
-  Dense(64, 10),
-  InstanceNorm(10),
-  softmax)
-```
-"""
 expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
 
 mutable struct InstanceNorm{F,V,W,N}
@@ -215,12 +221,44 @@ mutable struct InstanceNorm{F,V,W,N}
   σ²::W  # moving std
   ϵ::N
   momentum::N
+  active::Union{Bool, Nothing}
 end
+
+# TODO: deprecate in v0.11
+"""
+    InstanceNorm(channels::Integer, σ = identity;
+                 initβ = zeros, initγ = ones,
+                 ϵ = 1e-8, momentum = .1)
+
+[Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
+`channels` should be the size of the channel dimension in your data (see below).
+
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
+a batch of feature vectors this is just the data dimension, for `WHCN` images
+it's the usual channel dimension.)
+
+`InstanceNorm` computes the mean and variance for each each `W×H×1×1` slice and
+shifts them to have a new mean and variance (corresponding to the learnable,
+per-channel `bias` and `scale` parameters).
+
+Use [`testmode!`](@ref) during inference.
+
+# Examples
+```julia
+m = Chain(
+  Dense(28^2, 64),
+  InstanceNorm(64, relu),
+  Dense(64, 10),
+  InstanceNorm(10),
+  softmax)
+```
+"""
+InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 InstanceNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   InstanceNorm(λ, initβ(chs), initγ(chs),
-            zeros(chs), ones(chs), ϵ, momentum)
+            zeros(chs), ones(chs), ϵ, momentum, nothing)
 
 trainable(in::InstanceNorm) = (in.β, in.γ)
 
@@ -237,7 +275,7 @@ function (in::InstanceNorm)(x)
   m = div(prod(size(x)), c*bs)
   γ, β = expand_inst(in.γ, affine_shape), expand_inst(in.β, affine_shape)
 
-  if !istraining()
+  if !_isactive(in)
     μ = expand_inst(in.μ, affine_shape)
     σ² = expand_inst(in.σ², affine_shape)
     ϵ = in.ϵ
@@ -263,6 +301,9 @@ end
 
 @functor InstanceNorm
 
+testmode!(m::InstanceNorm, mode = true) =
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(join(size(l.β), ", "))")
   (l.λ == identity) || print(io, ", λ = $(l.λ)")
@@ -270,26 +311,27 @@ function Base.show(io::IO, l::InstanceNorm)
 end
 
 """
-Group Normalization.
-This layer can outperform Batch-Normalization and Instance-Normalization.
+    GroupNorm(chs::Integer, G::Integer, λ = identity;
+              initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
+              ϵ = 1f-5, momentum = 0.1f0)
 
-	GroupNorm(chs::Integer, G::Integer, λ = identity;
-	          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
-	          ϵ = 1f-5, momentum = 0.1f0)
+[Group Normalization](https://arxiv.org/pdf/1803.08494.pdf) layer.
+This layer can outperform Batch Normalization and Instance Normalization.
 
-``chs`` is the number of channels, the channel dimension of your input.
-For an array of N dimensions, the (N-1)th index is the channel dimension.
+`chs` is the number of channels, the channel dimension of your input.
+For an array of N dimensions, the `N-1`th index is the channel dimension.
 
-``G`` is the number of groups along which the statistics would be computed.
+`G` is the number of groups along which the statistics are computed.
 The number of channels must be an integer multiple of the number of groups.
 
-Example:
-```
-m = Chain(Conv((3,3), 1=>32, leakyrelu;pad = 1),
-          GroupNorm(32,16)) # 32 channels, 16 groups (G = 16), thus 2 channels per group used
-```
+Use [`testmode!`](@ref) during inference.
 
-Link : https://arxiv.org/pdf/1803.08494.pdf
+# Examples
+```julia
+m = Chain(Conv((3,3), 1=>32, leakyrelu;pad = 1),
+          GroupNorm(32,16))
+          # 32 channels, 16 groups (G = 16), thus 2 channels per group used
+```
 """
 mutable struct GroupNorm{F,V,W,N,T}
   G::T # number of groups
@@ -300,12 +342,16 @@ mutable struct GroupNorm{F,V,W,N,T}
   σ²::W  # moving std
   ϵ::N
   momentum::N
+  active::Union{Bool, Nothing}
 end
+
+# TODO: deprecate in v0.11
+GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum) = GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   GroupNorm(G, λ, initβ(chs), initγ(chs),
-            zeros(G,1), ones(G,1), ϵ, momentum)
+            zeros(G,1), ones(G,1), ϵ, momentum, nothing)
 
 trainable(gn::GroupNorm) = (gn.β, gn.γ)
 
@@ -329,7 +375,7 @@ function(gn::GroupNorm)(x)
   β = reshape(gn.β, affine_shape...)
 
   y = reshape(x,((size(x))[1:end-2]...,channels_per_group,groups,batches))
-  if !istraining()
+  if !_isactive(gn)
     og_shape = size(x)
     μ = reshape(gn.μ, μ_affine_shape...) # Shape : (1,1,...C/G,G,1)
     σ² = reshape(gn.σ², μ_affine_shape...) # Shape : (1,1,...C/G,G,1)
@@ -359,6 +405,9 @@ function(gn::GroupNorm)(x)
 end
 
 @functor GroupNorm
+
+testmode!(m::GroupNorm, mode = true) =
+  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(join(size(l.β), ", "))")

@@ -31,6 +31,11 @@ julia> onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 ```
 
+```@docs
+Flux.onehot
+Flux.onecold
+```
+
 ## Batches
 
 `onehotbatch` creates a batch (matrix) of one-hot vectors, and `onecold` treats matrices as batches.
@@ -52,3 +57,7 @@ julia> onecold(ans, [:a, :b, :c])
 ```
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.
+
+```@docs
+Flux.onehotbatch
+```
