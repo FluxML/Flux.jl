@@ -1,3 +1,5 @@
+using LinearAlgebra
+
 """
     Chain(layers...)
 
@@ -258,3 +260,5 @@ end
 function Base.show(io::IO, b::SkipConnection)
   print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
+
+@functor Cholesky
