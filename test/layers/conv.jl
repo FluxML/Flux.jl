@@ -164,7 +164,7 @@ end
   @test Flux.outdims(m, (5, 5)) == (5, 5)
 end
 
-@testset "same padding" for layer in (Conv, ConvTranspose, DepthwiseConv, CrossCor, MeanPool, MaxPool)
+@testset "same padding $layer" for layer in (Conv, ConvTranspose, DepthwiseConv, CrossCor, MeanPool, MaxPool)
   for k in ((1,), (2,), (3,), (4, 5), (6, 7, 8))
     data = ones(Float32, (k .+ 3)..., 1,1)
 
@@ -186,4 +186,5 @@ end
         @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ stride)
       end
     end
+  end
 end

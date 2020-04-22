@@ -20,13 +20,13 @@ function calc_padding(pad::AbstractString, k::NTuple{N,T}, dilation, stride) whe
     # For stride > 1 the output shape depends on the type of convolution layer.
     # In case amount of padding is odd we need to apply different amounts to each side.
     ntuple(Val(2*N)) do d
-      p = k_eff[d ÷ 2 + 1] - 1
-      isodd(d) ? ceil(Int, p / 2) : pad ÷ 2
+      p = k_eff[(d + 1) ÷ 2] - 1
+      isodd(d) ? ceil(Int, p / 2) : p ÷ 2
     end
   elseif pad == "causal"
     @assert length(k) == 1
     ntuple(Val(2*N)) do d
-      p = k_eff[d ÷ 2 + 1] - 1
+      p = k_eff[(d + 1) ÷ 2] - 1
       isodd(d) ? p : 0 
     end
   elseif pad == "valid"
