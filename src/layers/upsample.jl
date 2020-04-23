@@ -1,3 +1,23 @@
+"""
+    BilinearUpsample(factor::Tuple{Integer,Integer})
+
+Create an upsampling layer that uses bilinear interpolation.
+
+The `factor` tuple the multiple the width and height dimension grows.
+
+# Examples
+```jldoctest; setup = :(using Flux: BilinearUpsample; using Random; Random.seed!(0))
+julia> b = Flux.BilinearUpsample((2, 2))
+BilinearUpsample(2, 2)
+
+julia> b(rand(2, 2, 1, 1))
+4×4×1×1 Array{Float64,4}:
+[:, :, 1, 1] =
+ 0.823648  0.658877  0.329336  0.164566
+ 0.845325  0.675933  0.337149  0.167757
+ 0.888679  0.710044  0.352773  0.174138
+ 0.910357  0.7271    0.360586  0.177329```
+"""
 struct BilinearUpsample{T<:Integer}
     factor::Tuple{T,T}
 end
@@ -30,7 +50,7 @@ function (b::BilinearUpsample)(x::AbstractArray)
                 x[i1, j2, c, n] * (w2 - w₀) * (h₀ - h1) +
                 x[i2, j1, c, n] * (w₀ - w1) * (h2 - h₀) +
                 x[i2, j2, c, n] * (w₀ - w1) * (h₀ - h1)
-            ) / (w2 - w1 * h2 - h1)
+            ) / ((w2 - w1) * (h2 - h1))
     end
 
     out
