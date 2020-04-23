@@ -30,7 +30,7 @@ function (b::BilinearUpsample)(x::AbstractArray)
 
     out = similar(x, (newW, newH, C, N))
 
-    for n = 1:N, c = 1:C, w = 1:newW, h = 1:newH
+    @inbounds for w = 1:newW, h = 1:newH
         w₀ = (w - 0.5) / b.factor[1] + 0.5
         h₀ = (h - 0.5) / b.factor[2] + 0.5
 
@@ -44,12 +44,12 @@ function (b::BilinearUpsample)(x::AbstractArray)
         j1 = clamp(h1, 1, H)
         j2 = clamp(h2, 1, H)
 
-        out[w, h, c, n] =
+        @views out[w, h, :, :] =
             (
-                x[i1, j1, c, n] * (w2 - w₀) * (h2 - h₀) +
-                x[i1, j2, c, n] * (w2 - w₀) * (h₀ - h1) +
-                x[i2, j1, c, n] * (w₀ - w1) * (h2 - h₀) +
-                x[i2, j2, c, n] * (w₀ - w1) * (h₀ - h1)
+                x[i1, j1, :, :] * (w2 - w₀) * (h2 - h₀) +
+                x[i1, j2, :, :] * (w2 - w₀) * (h₀ - h1) +
+                x[i2, j1, :, :] * (w₀ - w1) * (h2 - h₀) +
+                x[i2, j2, :, :] * (w₀ - w1) * (h₀ - h1)
             ) / ((w2 - w1) * (h2 - h1))
     end
 
