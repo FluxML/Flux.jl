@@ -1,6 +1,6 @@
-using Flux 
+using Flux
 using Flux.Data
-using Test 
+using Test
 using Random, Statistics, LinearAlgebra
 using Documenter
 using IterTools: ncycle
@@ -30,6 +30,7 @@ Random.seed!(0)
     include("layers/normalisation.jl")
     include("layers/stateless.jl")
     include("layers/conv.jl")
+    include("layers/upsample.jl")
   end
 
   @testset "CUDA" begin
