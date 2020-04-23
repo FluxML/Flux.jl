@@ -3,7 +3,7 @@
 
 Create an upsampling layer that uses bilinear interpolation.
 
-The width and height dimension grows by the `factor` tuple.
+The width and height dimensions grow by the `factor` tuple.
 
 # Examples
 ```jldoctest; setup = :(using Flux: BilinearUpsample; using Random; Random.seed!(0))
