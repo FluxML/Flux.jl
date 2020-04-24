@@ -24,18 +24,35 @@ function load()
   end
 end
 
+"""
+    phones()
+
+Return a `Vector` containing the phones used in the CMU Pronouncing Dictionary.
+"""
 function phones()
   load()
   Symbol.(first.(split.(split(read(deps("cmudict", "cmudict.phones"),String),
                         "\n", keepempty = false), "\t")))
 end
 
+"""
+    symbols()
+
+Return a `Vector` containing the symbols used in the CMU Pronouncing Dictionary.
+A symbol is a phone with optional auxiliary symbols, indicating for example the
+amount of stress on the phone.
+"""
 function symbols()
   load()
   Symbol.(split(read(deps("cmudict", "cmudict.symbols"),String),
                 "\n", keepempty = false))
 end
 
+"""
+    rawdict()
+
+Return the unfiltered CMU Pronouncing Dictionary.
+"""
 function rawdict()
   load()
   Dict(String(xs[1]) => Symbol.(xs[2:end]) for xs in
@@ -44,6 +61,14 @@ end
 
 validword(s) = isascii(s) && occursin(r"^[\w\-\.]+$", s)
 
+"""
+    cmudict()
+
+Return a filtered CMU Pronouncing Dictionary.
+
+It is filtered so each word contains only ASCII characters and a combination of
+word characters (as determined by the regex engine using `\\w`), '-' and '.'.
+"""
 cmudict() = filter(p -> validword(p.first), rawdict())
 
 alphabet() = ['A':'Z'..., '0':'9'..., '_', '-', '.']

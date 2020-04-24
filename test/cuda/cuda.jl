@@ -25,7 +25,7 @@ cm = gpu(m)
 @test all(p isa CuArray for p in params(cm))
 @test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
-x = [1,2,3]
+x = [1.,2.,3.]
 cx = gpu(x)
 @test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
 @test Flux.crossentropy(x,x, weight=1.0) ≈ Flux.crossentropy(cx,cx, weight=1.0)
@@ -33,8 +33,8 @@ cx = gpu(x)
 
 x = [-1.1491, 0.8619, 0.3127]
 y = [1, 1, 0.]
-@test Flux.binarycrossentropy.(σ.(x),y) ≈ Flux.binarycrossentropy.(cu(σ.(x)),cu(y))
-@test Flux.logitbinarycrossentropy.(x,y) ≈ Flux.logitbinarycrossentropy.(cu(x),cu(y))
+@test Flux.binarycrossentropy.(σ.(x),y) ≈ Array(Flux.binarycrossentropy.(cu(σ.(x)),cu(y)))
+@test Flux.logitbinarycrossentropy.(x,y) ≈ Array(Flux.logitbinarycrossentropy.(cu(x),cu(y)))
 
 xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)
@@ -56,6 +56,13 @@ end
   y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
   @test Flux.onecold(y) isa CuArray
   @test y[3,:] isa CuArray
+end
+
+@testset "restructure gpu" begin
+  dudt = Dense(1,1) |> gpu
+  p,re = Flux.destructure(dudt)
+  foo(x) = sum(re(p)(x))
+  @test gradient(foo, cu(rand(1)))[1] isa CuArray
 end
 
 if CuArrays.has_cudnn()
