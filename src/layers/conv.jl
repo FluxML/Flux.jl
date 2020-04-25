@@ -7,6 +7,28 @@ _convtransoutdims(isize, ksize, ssize, dsize, pad) = (isize .- 1).*ssize .+ 1 .+
 
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
+
+"""
+    SamePad
+
+Padding for convolutional layers will be calculated so that outputshape == inputshape when stride = 1.
+
+For stride > 1 the output shape depends on the type of convolution layer.
+"""
+struct SamePad end
+
+calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
+function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
+  #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/pdf/1603.07285
+
+  # Effective kernel size, including dilation
+  k_eff = @. k + (k - 1) * (dilation - 1)
+  # How much total padding needs to be applied?
+  pad_amt = @. k_eff - 1
+  # In case amount of padding is odd we need to apply different amounts to each side.
+  return Tuple(mapfoldl(i -> [ceil(Int, i/2), floor(Int, i/2)], vcat, pad_amt))
+end
+
 """
     Conv(size, in => out, σ = identity; init = glorot_uniform,
          stride = 1, pad = 0, dilation = 1)
@@ -17,6 +39,8 @@ Standard convolutional layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 
 # Examples
 
@@ -41,8 +65,8 @@ end
 function Conv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
@@ -99,6 +123,8 @@ Standard convolutional transpose layer. `size` should be a tuple like `(2, 2)`.
 Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
+
+Use `pad=SamePad()` to apply padding so that outputsize == stride * inputsize - stride + 1.
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -112,8 +138,8 @@ end
 function ConvTranspose(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
@@ -174,6 +200,8 @@ Note that `out` must be an integer multiple of `in`.
 Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -187,8 +215,8 @@ end
 function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
                        stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
@@ -240,6 +268,8 @@ Data should be stored in WHCN order (width, height, # channels, batch size).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
+
 # Examples
 
 Apply a `CrossCor` layer to a 1-channel input using a 2×2 window size, giving us a
@@ -263,8 +293,8 @@ end
 function CrossCor(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  pad = expand(Val(2*(N-2)), pad)
   dilation = expand(Val(N-2), dilation)
+  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
@@ -358,6 +388,9 @@ end
     MaxPool(k; pad = 0, stride = k)
 
 Max pooling layer. `k` is the size of the window for each dimension of the input.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
+=======
 """
 struct MaxPool{N,M}
   k::NTuple{N,Int}
@@ -367,8 +400,7 @@ end
 
 function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = expand(Val(2*N), pad)
-
+  pad = calc_padding(pad, k, 1, stride)
   return MaxPool(k, pad, stride)
 end
 
@@ -387,6 +419,8 @@ outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.
     MeanPool(k; pad = 0, stride = k)
 
 Mean pooling layer. `k` is the size of the window for each dimension of the input.
+
+Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 """
 struct MeanPool{N,M}
     k::NTuple{N,Int}
@@ -396,7 +430,7 @@ end
 
 function MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = expand(Val(2*N), pad)
+  pad = calc_padding(pad, k, 1, stride)
   return MeanPool(k, pad, stride)
 end
 
