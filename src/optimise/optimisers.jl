@@ -74,6 +74,53 @@ function apply!(o::Momentum, x, Δ)
 end
 
 """
+    Rprop(η, step_size, step_limit)
+
+Implements the resilient backpropagation algorithm.
+
+## Parameters
+- Learning Rate (`η`): Amount by which gradients are discounted before updating
+                       the weights. Defaults to `0.01`.
+- Step_size (`step_size::Tuple`): pair of floats, that are multiplicative
+                                  increase and decrease factors (default: (0.5, 1.2))
+- Step_limit (`step_limit::Tuple`): a pair of minimal and maximal allowed step sizes 
+                                    (default: (1e-6, 50))
+
+##Examples
+```julia
+opt = Rprop() # uses default values
+
+opt = Rprop(0.001, (-1,1), (1,100))
+```
+
+##References
+[Rprop](https://arxiv.org/pdf/1509.04612.pdf)
+"""
+mutable struct Rprop
+  eta::Float64
+  step_size::Tuple{Float64,Float64}
+  step_limit::Tuple{Float64,Float64}
+  step::IdDict
+  state::IdDict
+end
+
+Rprop(η = 0.01, step_size = (0.5, 1.2), step_limit = (1e-6, 50.0)) = Rprop(η, step_size, step_limit, IdDict(), IdDict()) 
+
+function apply!(o::Rprop, x, Δ)
+  η, step_size = o.eta, o.step_size
+  step_limit = o.step_limit
+  state= get!(o.state, x, zero(Δ))::typeof(Δ) 
+  step = get!(o.step, x, one(x)*η)::typeof(x)
+  temp = Δ.*state
+  Δ_zero = convert(eltype(Δ), 0)
+  sign = (temp.>Δ_zero)*step_size[2]+(temp.<Δ_zero)*step_size[1]+(temp.==Δ_zero)
+  signΔ= zero(Δ)+(Δ.>Δ_zero)-(Δ.<Δ_zero) 
+  @.step = clamp(step.*sign,step_limit[1],step_limit[2])
+  @.state = Δ
+  @.Δ =  (Δ>=Δ_zero).*(step).*(signΔ)
+end
+
+"""
     Nesterov(η = 0.001, ρ = 0.9)
 
 Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
@@ -418,6 +465,41 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
   Optimiser(ADAM(η, β), WeightDecay(decay))
+
+"""
+    HeavyBall(η, β, p)
+
+Heavy Ball Method , is a multi-step iterative method that exploits iterates prior to the most recent one 
+
+## Parameters
+- Learning Rate (η): Defaults to `0.1`.
+- Beta (β): Defaults to `0.1`
+- p: Initial step value, Defaults to `0.0`
+
+## Examples
+```julia
+opt = HeavyBall() # uses default η, β and p
+
+opt = HeavyBall(0.01, 0.001)
+```
+
+## References
+[HeavyBall Method](http://pages.cs.wisc.edu/~brecht/cs726docs/HeavyBallLinear.pdf)
+"""
+mutable struct HeavyBall
+  eta::Float64
+  beta::Float64
+  p::IdDict
+end
+
+HeavyBall(η = 0.1, β = 0.01, p=IdDict()) = HeavyBall(η, β, p)
+
+function apply!(o::HeavyBall, x, Δ)
+  η, β = o.eta, o.beta
+  p = get!(o.p, x, zero(x))::typeof(x)
+  @.p = -Δ + β*p
+  @.Δ = -η.*p
+end
 
 # Compose optimizers
 
