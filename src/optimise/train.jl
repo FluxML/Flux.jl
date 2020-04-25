@@ -103,7 +103,8 @@ function train!(loss, ps, data, opt; cb = () -> (), epochs = 1, steps_per_epoch 
           prog.desc = "$n/$ndata "
           next!(prog, showvalues = [(:loss, l), (:avgloss, l̄)])
         end
-        cb_narg > 0 ? cb(ps, l) : cb()
+        # backward compatibility
+        hasmethod(cb, Tuple{typeof(ps), typeof(l)}) ? cb(ps, l) : cb()
       catch ex
         if ex isa StopException
           break
