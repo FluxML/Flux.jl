@@ -3,7 +3,7 @@ module Flux
 # Zero Flux Given
 
 using Base: tail
-using Zygote, MacroTools, Juno, Reexport, Statistics, Random
+using Zygote, MacroTools, Juno, Reexport, Statistics, Random, LinearAlgebra
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
