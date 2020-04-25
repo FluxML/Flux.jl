@@ -1,4 +1,5 @@
 import Adapt: adapt, adapt_storage
+using  LinearAlgebra: Cholesky
 using Zygote: IdSet
 
 functor(x) = (), _ -> x
@@ -115,3 +116,6 @@ paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
 f32(m) = paramtype(Float32, m)
 f64(m) = paramtype(Float64, m)
+
+# Functors for certain Julia data structures
+@functor Cholesky
