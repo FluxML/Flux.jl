@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, stack, unstack
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, stack, unstack, *ᶜ
 using StatsBase: var
 using Random
 using Test
@@ -117,4 +117,11 @@ end
   @test unstack(stacked_array, 2) == unstacked_array
   @test stack(unstacked_array, 2) == stacked_array
   @test stack(unstack(stacked_array, 1), 1) == stacked_array
+end
+
+@testset "Tensor Contraction" begin
+  x = reshape([1, 2], 1, 1, 2)
+  y = reshape([3, 2], 2, 1, 1)
+  z = reshape([7], 1, 1, 1, 1)
+  @test x *ᶜ y == z
 end
