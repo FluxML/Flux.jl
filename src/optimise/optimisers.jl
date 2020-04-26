@@ -555,7 +555,7 @@ mutable struct ClipNorm{T}
 end
 
 function apply!(o::ClipNorm, x, Δ)
-    Δnrm = norm(Δ, 2)
+    Δnrm = norm(Δ)
     if Δnrm > o.thresh
         rmul!(Δ, o.thresh / Δnrm)
     end
