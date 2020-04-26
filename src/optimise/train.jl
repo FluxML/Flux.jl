@@ -79,7 +79,6 @@ function train!(loss, ps, data, opt; cb = () -> (), epochs = 1, steps_per_epoch 
   ps = Params(ps)
   cb = runall(cb)
   l̄ = 0f0
-  cb_narg = methods(cb).ms[1].nargs - 1
   ndata = min(length(data), steps_per_epoch)
   for epoch in 1:epochs
     printstyled("Epoch $epoch/$epochs\n", color = :yellow)
@@ -103,8 +102,7 @@ function train!(loss, ps, data, opt; cb = () -> (), epochs = 1, steps_per_epoch 
           prog.desc = "$n/$ndata "
           next!(prog, showvalues = [(:loss, l), (:avgloss, l̄)])
         end
-        # backward compatibility
-        hasmethod(cb, Tuple{typeof(ps), typeof(l)}) ? cb(ps, l) : cb()
+        cb()
       catch ex
         if ex isa StopException
           break
