@@ -35,6 +35,7 @@ include("onehot.jl")
 include("functor.jl")
 
 include("layers/stateless.jl")
+include("layers/losses.jl")
 include("layers/basic.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")

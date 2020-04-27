@@ -33,8 +33,8 @@ cx = gpu(x)
 
 x = [-1.1491, 0.8619, 0.3127]
 y = [1, 1, 0.]
-@test Flux.binarycrossentropy.(σ.(x),y) ≈ Array(Flux.binarycrossentropy.(cu(σ.(x)),cu(y)))
-@test Flux.logitbinarycrossentropy.(x,y) ≈ Array(Flux.logitbinarycrossentropy.(cu(x),cu(y)))
+@test Flux.bce_loss(σ.(x), y) ≈ Flux.bce_loss(cu(σ.(x)), cu(y))
+@test Flux.logitbce_loss(x, y) ≈ Flux.logitbce_loss(cu(x), cu(y))
 
 xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)
