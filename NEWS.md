@@ -1,3 +1,6 @@
+# v0.10.5
+* Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
+
 # v0.10.0
 * The default AD engine has switched from [Tracker to Zygote.jl](https://github.com/FluxML/Flux.jl/pull/669)
   - The dependency on Tracker.jl has been removed.

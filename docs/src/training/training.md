@@ -7,10 +7,10 @@ To actually train a model we need four things:
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
-With these we can call `Flux.train!`:
+With these we can call `train!`:
 
-```julia
-Flux.train!(objective, params, data, opt)
+```@docs
+Flux.Optimise.train!
 ```
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
@@ -32,6 +32,7 @@ Flux.train!(loss, ps, data, opt)
 ```
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
+For a list of all built-in loss functions, check out the [layer reference](../models/layers.md).
 
 At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
 
@@ -40,6 +41,8 @@ At first glance it may seem strange that the model that we want to train is not 
 The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `params(m)`.
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
+
+Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../models/basics.md) section. Also, for freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
 
 ## Datasets
 
@@ -56,7 +59,8 @@ data = [(x, y)]
 ```julia
 data = [(x, y), (x, y), (x, y)]
 # Or equivalently
-data = Iterators.repeated((x, y), 3)
+using IterTools: ncycle
+data = ncycle([(x, y)], 3)
 ```
 
 It's common to load the `x`s and `y`s separately. In this case you can use `zip`:
@@ -65,6 +69,14 @@ It's common to load the `x`s and `y`s separately. In this case you can use `zip`
 xs = [rand(784), rand(784), rand(784)]
 ys = [rand( 10), rand( 10), rand( 10)]
 data = zip(xs, ys)
+```
+
+Training data can be conveniently  partitioned for mini-batch training using the [`Flux.Data.DataLoader`](@ref) type:
+
+```julia
+X = rand(28, 28, 60000)
+Y = rand(0:9, 60000)
+data = DataLoader(X, Y, batchsize=128) 
 ```
 
 Note that, by default, `train!` only loops over the data once (a single "epoch").
@@ -81,6 +93,10 @@ hello
 
 julia> @epochs 2 Flux.train!(...)
 # Train for two epochs
+```
+
+```@docs
+Flux.@epochs
 ```
 
 ## Callbacks
@@ -120,7 +136,7 @@ An example follows that works similar to the default `Flux.train` but with no ca
 You don't need callbacks if you just code the calls to your functions directly into the loop.
 E.g. in the places marked with comments.
 
-```
+```julia
 function my_custom_train!(loss, ps, data, opt)
   ps = Params(ps)
   for d in data

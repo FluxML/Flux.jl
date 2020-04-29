@@ -4,6 +4,10 @@ using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
+  gmp = GlobalMaxPool()
+  @test size(gmp(x)) == (1, 1, 3, 2)
+  gmp = GlobalMeanPool()
+  @test size(gmp(x)) == (1, 1, 3, 2)
   mp = MaxPool((2, 2))
   @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
@@ -187,4 +191,28 @@ end
   @test Flux.outdims(m, (5, 5)) == (4, 4)
   m = MeanPool((2, 2); stride = 2, pad = 3)
   @test Flux.outdims(m, (5, 5)) == (5, 5)
+end
+
+@testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
+  data = ones(Float32, (k .+ 3)..., 1,1)
+  l = ltype(k, 1=>1, pad=SamePad())
+  @test size(l(data)) == size(data)
+
+  l = ltype(k, 1=>1, pad=SamePad(), dilation = k .÷ 2)
+  @test size(l(data)) == size(data)
+
+  stride = 3
+  l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
+  if ltype == ConvTranspose
+    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2] .- stride .+ 1
+  else
+    @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ stride)
+  end
+end
+
+@testset "$ltype SamePad windowsize $k" for ltype in (MeanPool, MaxPool), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
+  data = ones(Float32, (k .+ 3)..., 1,1)
+
+  l = ltype(k, pad=SamePad())
+  @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ k)
 end
