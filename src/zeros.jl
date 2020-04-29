@@ -94,6 +94,9 @@ for op in (:+, :-, :*)
 end
 
 # Some opportunities to avoid scalar indexing, intermediaries
+# Since it replicates a little of what we expect Base to do,
+# it should be possible to remove in the future, but for now,
+# these help with performance.
 broadcasted(::typeof(+), a::AbstractArray, b::Zeros{T,0}) where T = a
 broadcasted(::typeof(+), a::Zeros{T,0}, b::AbstractArray) where T = b
 broadcasted(::typeof(-), a::AbstractArray, b::Zeros{T,0}) where T = a
