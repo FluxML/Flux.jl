@@ -50,7 +50,7 @@ Base.IndexStyle(::Type{<:Zeros}) = IndexLinear()
 
 Base.getindex(xs::Zeros{T,N}, I::Int) where {T,N} = zero(T)
 Base.getindex(xs::Zeros{T,N}, inds::Union{Base.OneTo, Base.UnitRange}) where {T,N} =
-              Zeros(T, inds.stop)
+              Zeros(T, length(inds))
 
 Base.collect(xs::Zeros{T,N}) where {T,N} = fill(zero(T), size(xs))
 
