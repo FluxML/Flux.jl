@@ -119,3 +119,4 @@ f64(m) = paramtype(Float64, m)
 
 # Functors for certain Julia data structures
 @functor Cholesky
+trainable(c::Cholesky) = ()
