@@ -8,9 +8,12 @@ const ϵ = 1e-7
 @testset "xlogx & xlogy" begin
     @test iszero(xlogx(0))
     @test xlogx(2) ≈ 2.0 * log(2.0)
-
+    @inferred xlogx(2)
+    @inferred xlogx(0)
     @test iszero(xlogy(0, 1))
     @test xlogy(2, 3) ≈ 2.0 * log(3.0)
+    @inferred xlogy(2, 3)
+    @inferred xlogy(0, 1)
 end
 
 @testset "losses" begin
