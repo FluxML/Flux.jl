@@ -91,7 +91,7 @@ Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
 calculated as `-sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)`.
 
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.crossentropy(softmax(log(ŷ)), y)`](@ref) but it is more numerically stable.
+[`Flux.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
 
 See also: [`Flux.crossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
 
@@ -132,7 +132,7 @@ CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1
     logitbinarycrossentropy(ŷ, y)
 
 `logitbinarycrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.binarycrossentropy(σ(log(ŷ)), y)`](@ref) but it is more numerically stable.
+[`Flux.binarycrossentropy(σ(ŷ), y)`](@ref) but it is more numerically stable.
 
 See also: [`Flux.crossentropy`](@ref), [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref)
 
