@@ -44,6 +44,7 @@ end
   lossvalue = 1.203972804325936
 
   @testset "crossentropy" begin
+    @test crossentropy([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ crossentropy([0.1,0.9], [0.1,0.9])
     @test crossentropy(ŷ, y) ≈ lossvalue
   end
 
@@ -76,6 +77,7 @@ end
   y = [1 2 3]
   ŷ = [4.0 5.0 6.0]
   @testset "kldivergence" begin
+    @test Flux.kldivergence([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ Flux.kldivergence([0.1,0.9], [0.1,0.9])
     @test Flux.kldivergence(ŷ, y) ≈ -1.7661057888493457
     @test Flux.kldivergence(y, y) ≈ 0
   end
