@@ -269,11 +269,11 @@ Return `x * log(x)` for `x ≥ 0`, handling `x = 0` by taking the downward limit
 """
 function xlogx(x)
   result = x * log(x)
-  ifelse(x > zero(x), result, zero(result))
+  ifelse(iszero(x), zero(result), result)
 end
 CuArrays.@cufunc function xlogx(x)
   result = x * log(x)
-  ifelse(x > zero(x), result, zero(result))
+  ifelse(iszero(x), zero(result), result)
 end
 
 """
@@ -282,9 +282,9 @@ Return `x * log(y)` for `y > 0` with correct limit at `x = 0`.
 """
 function xlogy(x, y)
   result = x * log(y)
-  ifelse(x > zero(x), result, zero(result))
+  ifelse(iszero(x), zero(result), result)
 end
 CuArrays.@cufunc function xlogy(x, y)
   result = x * log(y)
-  ifelse(x > zero(x), result, zero(result))
+  ifelse(iszero(x), zero(result), result)
 end
