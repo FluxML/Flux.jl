@@ -122,7 +122,7 @@ function (m::LSTMCell)((h, c), x)
   cell = tanh.(gate(g, o, 3))
   output = σ.(gate(g, o, 4))
   c = forget .* c .+ input .* cell
-  h′ = output .* tanh.(c)
+  h′ = output .* (c_ = tanh.(c))
   return (h′, c), h′
 end
 
@@ -160,9 +160,9 @@ GRUCell(in, out; init = glorot_uniform) =
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
-  h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
+  r = σ.((r_ = gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1);))
+  z = σ.((z_ = gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2));)
+  h̃ = tanh.((h̃_ = gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3);))
   h′ = (1 .- z).*h̃ .+ z.*h
   return h′, h′
 end
