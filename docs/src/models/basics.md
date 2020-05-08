@@ -134,7 +134,7 @@ model(x) = linear2(σ.(linear1(x)))
 model(rand(5)) # => 2-element vector
 ```
 
-Another (equivalent) way is to create a struct that explicitly represents the affine layer.
+Another way is to create a struct that explicitly represents the affine layer.  This way works better for providing params to the optimizer later on.
 
 ```julia
 struct Affine
@@ -147,6 +147,9 @@ Affine(in::Integer, out::Integer) =
 
 # Overload call, so the object can be used as a function
 (m::Affine)(x) = m.W * x .+ m.b
+
+# Tell flux where params to optimize come from
+Flux.@functor Affine (W,b)
 
 a = Affine(10, 5)
 
