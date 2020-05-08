@@ -75,40 +75,36 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> (), epochs = 1, steps_per_epoch = typemax(Int), verbose = true)
+function train!(loss, ps, data, opt; cb = () -> (), verbose = true)
   ps = Params(ps)
   cb = runall(cb)
   l̄ = 0f0
-  ndata = min(length(data), steps_per_epoch)
-  for epoch in 1:epochs
-    printstyled("Epoch $epoch/$epochs\n", color = :yellow)
-    prog = Progress(ndata)
-    for (n, d) in enumerate(data)
-      n > steps_per_epoch && break
-      try
-        local l
-        if d isa AbstractArray{<:Number}
-          gs = gradient(ps) do
-            l = loss(d)
-          end
-        else
-          gs = gradient(ps) do
-            l = loss(d...)
-          end
+  ndata = length(data)
+  prog = Progress(ndata)
+  for (n, d) in enumerate(data)
+    try
+      local l
+      if d isa AbstractArray{<:Number}
+        gs = gradient(ps) do
+          l = loss(d)
         end
-        update!(opt, ps, gs)
-        l̄ = ((n - 1) * l̄ + l) / n
-        if verbose
-          prog.desc = "$n/$ndata "
-          next!(prog, showvalues = [(:loss, l), (:avgloss, l̄)])
+      else
+        gs = gradient(ps) do
+          l = loss(d...)
         end
-        cb()
-      catch ex
-        if ex isa StopException
-          break
-        else
-          rethrow(ex)
-        end
+      end
+      update!(opt, ps, gs)
+      l̄ = ((n - 1) * l̄ + l) / n
+      if verbose
+        prog.desc = "$n/$ndata "
+        next!(prog, showvalues = [(:loss, l), (:avgloss, l̄)])
+      end
+      cb()
+    catch ex
+      if ex isa StopException
+        break
+      else
+        rethrow(ex)
       end
     end
   end
