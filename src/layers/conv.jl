@@ -126,7 +126,7 @@ Conv(weight = weight,
 function Conv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  dilation = expand(Val(N-2), max.(1, dilation))
+  dilation = expand(Val(N-2), dilation)
   pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return Conv(σ, w, b, stride, pad, dilation)
 end
@@ -245,7 +245,7 @@ For keyword-only constuctor, see also [`Conv`](@ref)
 function ConvTranspose(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  dilation = expand(Val(N-2), max.(1, dilation))
+  dilation = expand(Val(N-2), dilation)
   pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
@@ -354,7 +354,7 @@ For keyword-only constuctor, see also [`Conv`](@ref)
 function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  dilation = expand(Val(N-2), max.(1, dilation))
+  dilation = expand(Val(N-2), dilation)
   pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
@@ -477,7 +477,7 @@ For keyword-only constuctor, see also [`Conv`](@ref)
 function CrossCor(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
-  dilation = expand(Val(N-2), max.(1, dilation))
+  dilation = expand(Val(N-2), dilation)
   pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
