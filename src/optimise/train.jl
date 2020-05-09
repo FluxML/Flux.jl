@@ -81,7 +81,7 @@ function train!(loss, ps, data, opt; cb = () -> (), verbose = true)
   l̄ = 0f0
   ndata = length(data)
   prog = Progress(ndata)
-  for (n, d) in enumerate(data)
+  @progress for (n, d) in enumerate(data)
     try
       local l
       if d isa AbstractArray{<:Number}
