@@ -140,3 +140,16 @@ ExpDecay
 InvDecay
 WeightDecay
 ```
+
+## Gradient Clipping
+
+Gradient clipping is useful for training recurrent neural networks, which have a tendency to suffer from the exploding gradient problem. An example usage is
+
+```julia
+opt = Optimiser(ClipValue(1e-3), ADAM(1e-3))
+```
+
+```@docs
+ClipValue
+ClipNorm
+```
