@@ -80,7 +80,7 @@ Momentum(eta::Real, rho::Real) = Momentum(eta, rho, IdDict())
 The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state dictionary. Each parameter in our models will get an entry in there. We can now define the rule applied when this optimiser is invoked.
 
 ```julia
-function apply!(o::Momentum, x, Δ)
+function Flux.Optimise.apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
   v = get!(o.velocity, x, zero(x))::typeof(x)
   @. v = ρ * v - η * Δ

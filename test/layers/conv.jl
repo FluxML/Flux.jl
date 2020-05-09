@@ -25,6 +25,35 @@ end
     Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
+
+  # Test bias switch
+  bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
+  ip = zeros(Float32, 28,28,1,1)
+
+  op = bias(ip)
+  @test sum(op) == prod(size(op))
+
+  bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
+  op = bias(ip)
+  @test sum(op) === 0.f0
+  gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
+  @test gs[bias.bias] == nothing
+
+  # Train w/o bias and make sure no convergence happens
+  # when only bias can be converged
+  bias = Conv((2, 2), 1=>3, bias = Flux.Zeros());
+  ip = zeros(Float32, 28,28,1,1)
+  op = zeros(Float32, 27,27,3,1) .+ 2.f0
+  opt = Descent()
+
+  for _ = 1:10^3
+    gs = gradient(params(bias)) do
+      Flux.mse(bias(ip), op)
+    end
+    Flux.Optimise.update!(opt, params(bias), gs)
+  end
+
+  @test Flux.mse(bias(ip), op) ≈ 4.f0
 end
 
 @testset "asymmetric padding" begin
