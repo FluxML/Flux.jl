@@ -432,7 +432,7 @@ GaussianNoise(stddev) = GaussianNoise(stddev, true)
 function (m::GaussianNoise)(x)
   _isactive(a) || return x
   a.stddev == 0 && return x
-  y = m.stddev .* randn!(similar(x))
+  y = convert(eltype(x), m.stddev) .* randn!(similar(x))
   return x .+ y
 end
 
