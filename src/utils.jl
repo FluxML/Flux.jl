@@ -40,7 +40,7 @@ glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims..
 """
     orthogonal(dim)
 
-Return a random orthogonal maxtrix of size `(dim, dim)`.
+Return a random orthogonal maxtrix of size `(dim, dim)`. This is commonly used for kernel initialization of recurrent layers.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
