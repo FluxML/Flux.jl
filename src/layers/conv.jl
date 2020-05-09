@@ -38,11 +38,18 @@ need_manual_padding(x, pad) = x isa CuArrays.CuArray && pad[1:2:end] != pad[2:2:
 
 @nograd need_manual_padding
 
+function _get_paddings(x, pad)
+  xl = fill!(similar(x, pad[1:2:end]..., size(x)[end-1:end]...), 0)
+  xr = fill!(similar(x, pad[2:2:end]..., size(x)[end-1:end]...), 0)
+  return xl, xr
+end
+
+@nograd _get_paddings
+
 function padding(x, pad::NTuple{N, Int}) where N
   all(iszero, pad) && return x
   if sum(pad) > 0
-    xl = fill!(similar(x, pad[1:2:end]..., size(x)[end-1:end]...), 0)
-    xr = fill!(similar(x, pad[2:2:end]..., size(x)[end-1:end]...), 0)
+    xl, xr = _get_paddings(x, pad)
     cat(xl, x, xr, dims = 1:(N ÷ 2))
   else
     ids = ntuple(Val(N ÷ 2)) do d
