@@ -65,6 +65,14 @@ julia> sum(norm, ans)
 2.1166067f0
 ```
 
+One can also add regularisation only for weights by filtering out biaes using `namedparams`.
+
+```
+ps = [p for (p, name) in Flux.namedparams(m) if !occursin(r"^b", name)]
+loss(x, y) = crossentropy(m(x), y) + sum(norm, p)
+```
+
 ```@docs
 Flux.activations
+Flux.namedparams
 ```
