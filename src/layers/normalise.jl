@@ -415,6 +415,14 @@ function Base.show(io::IO, l::GroupNorm)
   print(io, ")")
 end
 
+gaussiannoise(x, stddev; dims = :) = x
+
+@adjoint function gaussiannoise(x, stddev; dims = :)
+  y = randn!(similar(x, _dropout_shape(x, dims)))
+  y .*= convert(eltype(x), stddev)
+  return x .+ y, Δ -> (Δ, nothing)
+end
+
 """
     GaussianNoise(stddev)
 
@@ -422,19 +430,28 @@ Gaussian Noise layer. In the forward pass, add gaussian noise with standard devi
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
-mutable struct GaussianNoise{F}
+mutable struct GaussianNoise{F, D}
   stddev::F
+  dims::D
   active::Union{Bool, Nothing}
 end
 
-GaussianNoise(stddev) = GaussianNoise(stddev, true)
+function GaussianNoise(stddev; dims = :)
+  @assert stddev >= 0
+  GaussianNoise{typeof(stddev),typeof(dims)}(stddev, dims, nothing)
+end
 
 function (m::GaussianNoise)(x)
-  _isactive(a) || return x
-  a.stddev == 0 && return x
-  y = convert(eltype(x), m.stddev) .* randn!(similar(x))
-  return x .+ y
+  _isactive(m) || return x
+  m.stddev == 0 && return x
+  gaussiannoise(x, m.stddev; dims = m.dims)
 end
 
 testmode!(m::GaussianNoise, mode = true) = 
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+ 
+function Base.show(io::IO, d::GaussianNoise)
+  print(io, "GaussianNoise(", d.stddev)
+  d.dims != (:) && print(io, ", dims = $(repr(d.dims))")
+  print(io, ")")
+end
