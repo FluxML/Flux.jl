@@ -69,17 +69,17 @@ Zygote.IdSet{Any}(IdDict{Any,Nothing}(Float32[0.0] => nothing,Float32[0.0] => no
 ```
 """
 function states(m)
-  set = IdSet()
+  ss = []
   smap(f, x) = (f(x); fmap1(f, x))
   smap(m) do x
     x isa Recur || return 
     if x.state isa Tuple
-      push!(set, x.state...)
+      push!(ss, x.state...)
     else
-      push!(set, x.state)
+      push!(ss, x.state)
     end
   end
-  return set
+  return ss
 end
 
 """
@@ -90,7 +90,6 @@ Load states `xs` into model `m`
 # Examples
 ```julia
 julia> model = Chain(LSTM(1, 1))
-Chain(Recur(LSTMCell(1, 1)))
 julia> Flux.loadstates!(model, Flux.states(m))
 ```
 """
