@@ -204,7 +204,7 @@ end
       l = layer(k, 1 => 1, pad = "same")
       @test size(l(data)) == size(data)
   
-      l = layer(k, 1=>1, pad = "same", dilation = max(1, k .÷ 2))
+      l = layer(k, 1=>1, pad = "same", dilation = max.(1, k .÷ 2))
       @test size(l(data)) == size(data)
   
       stride = 3
