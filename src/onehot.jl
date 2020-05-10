@@ -27,7 +27,8 @@ Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = OneHotMatrix(xs.height, copy
 
 Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
-A::AbstractMatrix * B::OneHotMatrix = @inbounds A[:, map(x->x.ix, B.data)]
+# remove workaround when https://github.com/JuliaGPU/CuArrays.jl/issues/676 is fixed
+A::AbstractMatrix * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs...])
 
