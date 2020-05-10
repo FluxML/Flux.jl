@@ -39,7 +39,7 @@ include("layers/normalise.jl")
 
 include("data/Data.jl")
 
-include("deprecations.jl")
+include("deprecated.jl")
 
 include("cuda/cuda.jl")
 
