@@ -91,7 +91,7 @@ Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
 calculated as `-sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)`.
 
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.crossentropy(softmax(log(ŷ)), y)`](@ref) but it is more numerically stable.
+[`Flux.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
 
 See also: [`Flux.crossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
 
