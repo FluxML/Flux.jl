@@ -509,7 +509,7 @@ function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
   n = o.current[x] = get(o.current, x, 0) + 1
   if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
-    η = max(η * decay^(s / n), o.clip)
+    η = max(η * decay, o.clip)
     o.eta = η
   end
   @. Δ *= η
