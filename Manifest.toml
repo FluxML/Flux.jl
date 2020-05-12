@@ -158,9 +158,7 @@ version = "0.10.10"
 
 [[Functors]]
 deps = ["MacroTools"]
-git-tree-sha1 = "58dd223f9ad2601b0e9964fd65fa9d2c7219be41"
-repo-rev = "master"
-repo-url = "https://github.com/FluxML/Functors.jl"
+git-tree-sha1 = "f40adc6422f548176bb4351ebd29e4abf773040a"
 uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 version = "0.1.0"
 
