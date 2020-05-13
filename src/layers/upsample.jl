@@ -130,6 +130,10 @@ end
 Does the heavy lifting part of the bilinear upsampling operation
 """
 function bilinear_upsample_workhorse(img, ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2)
+    if typeof(img) <: CuArray
+        wdiff1 = CuArray(wdiff1)
+        wdiff2 = CuArray(wdiff2)
+    end
     imgupsampled = @view(img[ilow1,ilow2,:,:]) .* (1 .- wdiff1) .+ @view(img[ihigh1,ilow2,:,:]) .* wdiff1
     imgupsampled = imgupsampled .* (1 .- wdiff2) .+ @view(imgupsampled[:,ihigh2_r,:,:]) .* wdiff2
 end
