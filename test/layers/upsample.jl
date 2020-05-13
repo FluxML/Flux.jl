@@ -21,7 +21,7 @@ using Test
     factors1 = (3, 2)
     f1(x) = sum(BilinearUpsample2d(factors1)(x))
     df1(x) = Flux.gradient(f1, x)[1]
-    @test df1(testimg1) ≈ fill(eltype(testimg1).(prod(factors)), size(testimg1))
+    @test df1(testimg1) ≈ fill(eltype(testimg1).(prod(factors1)), size(testimg1))
 
     testimg2 = [1. 0.; 0 0][:,:,:,:]
     factors2 = (3, 2)
@@ -29,5 +29,5 @@ using Test
     df2(x) = Flux.gradient(f2, x)[1]
     @test df2(testimg2) ≈
     [1//2  1//6
-     1//4  1//12][:,:,:,:]     
+     1//4  1//12][:,:,:,:]
 end
