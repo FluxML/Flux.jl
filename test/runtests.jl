@@ -30,6 +30,7 @@ Random.seed!(0)
     include("layers/normalisation.jl")
     include("layers/stateless.jl")
     include("layers/conv.jl")
+include("layers/upsample.jl")
   end
 
   @testset "CUDA" begin
