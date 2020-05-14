@@ -17,15 +17,16 @@ julia> b(rand(2, 2, 1, 1))
  0.888679  0.710044  0.352773  0.174138
  0.910357  0.7271    0.360586  0.177329```
 """
-struct BilinearUpsample2d{}
-    factors::Tuple{T,T} where T<:Integer
-    BilinearUpsample2d(factors::Tuple{R,R}) where R<:Integer = new(factors)
-    BilinearUpsample2d(factors::F) where F<:Integer = new((factors, factors))
+
+struct BilinearUpsample2d{T<:Integer}
+    factors::Tuple{T,T}
 end
+
+BilinearUpsample2d(factor::F) where F<:Integer = BilinearUpsample2d((factor, factor))
 
 @functor BilinearUpsample2d
 
-function (c::BilinearUpsample2d)(x::AbstractArray)
+function (c::T where T<:BilinearUpsample2d)(x::AbstractArray)
     bilinear_upsample2d(x, c.factors)
 end
 
@@ -81,9 +82,12 @@ Determines the adjoint of the vector of indices `idx`, based on the following as
 * `idx[1] == 1`
 * `all(d in [0,1] for d in diff(idx))`
 
-The adjoint of `idx` can be seen as an inverse operation:
-```jldoctest
-x[idx][idx_adjoint] == x
+The adjoint of `idx` can be seen as an inverse operation such that:
+```
+x = [1, 2, 3, 4, 5]
+idx = [1, 2, 2, 3, 4, 4, 5]
+idx_adjoint = adjoint_of_idx(idx)
+@assert x[idx][idx_adjoint] == x
 ```
 
 The above holds as long as `idx` contains every index in `x`.
