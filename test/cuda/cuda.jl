@@ -50,6 +50,19 @@ x = gpu(rand(10, 10, 3, 2))
 l = c(gpu(rand(10,10,3,2)))
 @test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
+# BilinearUpsample2d
+c = BilinearUpsample2d((2,2))
+x = rand(10,10,3,2)
+f = x -> sum(c(x))
+df = x -> gradient(f, x)[1]
+
+c_c = gpu(c)
+x_c = gpu(x)
+f_c = x_c -> sum(c_c(x_c))
+df_c = x -> gradient(f_c, x_c)[1]
+@test df_c(x_c) isa CuArray
+@test df(x) == cpu(df_c(x_c))
+
 end
 
 @testset "onecold gpu" begin
