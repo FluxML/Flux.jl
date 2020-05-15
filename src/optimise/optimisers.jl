@@ -533,3 +533,31 @@ function apply!(o::WeightDecay, x, Δ)
   wd = o.wd
   @. Δ += wd * x
 end
+
+"""
+    ClipValue(thresh)
+
+Clip gradients when their absolute value exceeds `thresh`.
+"""
+mutable struct ClipValue{T}
+    thresh::T
+end
+
+apply!(o::ClipValue, x, Δ) = clamp!(Δ, -o.thresh, o.thresh)
+
+"""
+    ClipNorm(thresh)
+
+Clip gradients when their L2 norm exceeds `thresh`.
+"""
+mutable struct ClipNorm{T}
+    thresh::T
+end
+
+function apply!(o::ClipNorm, x, Δ)
+    Δnrm = norm(Δ)
+    if Δnrm > o.thresh
+        rmul!(Δ, o.thresh / Δnrm)
+    end
+    return Δ
+end

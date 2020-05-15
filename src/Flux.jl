@@ -3,7 +3,8 @@ module Flux
 # Zero Flux Given
 
 using Base: tail
-using Zygote, MacroTools, Juno, Reexport, Statistics, Random
+using Statistics, Random, LinearAlgebra
+using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
@@ -20,7 +21,8 @@ using .Optimise
 using .Optimise: @epochs
 export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
+  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay,
+  ClipValue, ClipNorm
 
 
 using CuArrays
