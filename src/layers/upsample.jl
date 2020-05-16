@@ -34,6 +34,10 @@ function Base.show(io::IO, l::BilinearUpsample2d)
   print(io, "BilinearUpsample2d( $(l.factors[1]), $(l.factors[2]) )")
 end
 
+@adjoint function (c::T where T<:BilinearUpsample2d)(x::AbstractArray)
+    (c::T where T<:BilinearUpsample2d)(x), c̄ -> (nothing, bilinear_upsample_adjoint(c̄, c.factors))
+end
+
 """
     `construct_xq(n::T, m::T) where T<:Integer`
 
@@ -121,7 +125,7 @@ using bilinear interpolation. The interpolation grid is identical to the one use
 """
 function bilinear_upsample2d(img::AbstractArray{T,4}, k_upsample::NTuple{2,<:Real}) where T
 
-    ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2 = setup_upsample(size(img), eltype(img), k_upsample)
+    ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r = setup_upsample(size(img), eltype(img), k_upsample)
 
     @inbounds imgupsampled = bilinear_upsample_workhorse(img, ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2)
 
@@ -165,6 +169,147 @@ Creates arrays of interpolation indices and weights for the bilinear_upsample2d 
     wdiff1 = imgdtype.(wdiff1)
     wdiff2 = imgdtype.(wdiff2)
 
-    return ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2
+    return ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r
 
+end
+
+"""
+ `get_downsamplekernel(n::T) where T<:Integer`
+
+# Arguments
+- `n<:Integer`: upsample factor for which a downsample kernel will be determined
+
+# Outputs
+- `kernel`: downsample kernel
+
+"""
+function get_downsamplekernel(n::T) where T<:Integer
+    step = 1//n
+    if n % 2 == 0
+        start = step//2
+        upward = collect(start:step:1//1)
+        kernel = [upward; reverse(upward)]
+    else
+        start = step
+        upward = collect(start:step:1//1)
+        kernel = [upward; reverse(upward[1:end-1])]
+    end
+    return kernel
+end
+
+"""
+    `bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where T<:Integer)`
+
+# Arguments
+- `arr::AbstractArray`: array that has been upsampled using the upsample factors in `factors`
+
+# Outputs
+- `arr_ds`: downsampled version of `arr`
+
+# Explanation
+Custom adjoint for `BilinearUpsample2d`. Needed because Zygote cannot properly determine gradients
+for the current implementation of the forward pass. The adjoint of upsampling is a downsampling operation, which
+in this implementation is performed using `Flux.Conv` in combination with a downsampling kernel based on the
+upsampling factors. Because of the zero-padding during convolution, the values at the boundary are polluted by edge-effects,
+which have been corrected for manually.
+"""
+function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where T<:Integer)
+
+    if size(arr,1) == factors[1]
+        arr = sum(arr, dims=1)
+        factors = (1, factors[2])
+    end
+
+    if size(arr,2) == factors[2]
+        arr = sum(arr, dims=2)
+        factors = (factors[1], 1)
+    end
+
+    if size(arr)[1:2] == (1,1)
+        ds_arr = arr
+        return ds_arr
+    end
+
+    n_chan, n_batch = size(arr)[3:4]
+
+    kern1 = get_downsamplekernel(factors[1])
+    kern2 = get_downsamplekernel(factors[2])
+    kern = kern1 .* kern2'
+
+    kern_sizes = size(kern)
+    pads = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    strides = factors
+
+    conv_ds = Conv(kern_sizes, n_chan=>n_chan, pad=pads, stride=strides)
+
+    conv_ds.weight .*= 0
+    for i in 1:n_chan
+        conv_ds.weight[:,:,i,i] .= kern
+    end
+    conv_ds.bias .*= 0
+
+    if arr isa CuArray
+        conv_ds = gpu(conv_ds)
+    end
+
+    arr_ds = conv_ds(arr)
+
+    # Still have to fix edge effects due to zero-padding of convolution,
+    # TODO: Could be circumvented by having padding that just extrapolates the value at the first/last index
+    nextras = tuple((Int.(floor(factor//2)) for factor in factors)...)
+
+    # First dimension edge-effect correction
+    if nextras[1] > 0
+        kern_extra1 = kern[1:nextras[1],:]
+        conv_extra1 = Conv(size(kern_extra1), n_chan=>n_chan, pad=(0,pads[2]), stride=(1,strides[2]))
+
+        conv_extra1.weight .*= 0
+        for i in 1:n_chan
+            conv_extra1.weight[:,:,i,i] .= kern_extra1
+        end
+        conv_extra1.bias .*= 0
+
+        if arr isa CuArray
+            conv_extra1 = gpu(conv_extra1)
+        end
+
+        arr_ds[[1],:,:,:] .+= conv_extra1(arr[1:nextras[1],:,:,:])
+        conv_extra1.weight .= conv_extra1.weight[end:-1:1,:,:,:]
+        arr_ds[[end],:,:,:] .+= conv_extra1(arr[end-nextras[1]+1:end,:,:,:])
+    end
+
+    # Second dimension edge-effect correction
+    if nextras[2] > 0
+        kern_extra2 = kern[:,1:nextras[2]]
+        conv_extra2 = Conv(size(kern_extra2), n_chan=>n_chan, pad=(pads[1],0), stride=(strides[1],1))
+
+        conv_extra2.weight .*= 0
+        for i in 1:n_chan
+            conv_extra2.weight[:,:,i,i] .= kern_extra2
+        end
+        conv_extra2.bias .*= 0
+
+        if arr isa CuArray
+            conv_extra2 = gpu(conv_extra2)
+        end
+
+        arr_ds[:,[1],:,:] .+= conv_extra2(arr[:,1:nextras[2],:,:])
+        conv_extra2.weight .= conv_extra2.weight[:,end:-1:1,:,:]
+        arr_ds[:,[end],:,:] .+= conv_extra2(arr[:,end-nextras[2]+1:end,:,:])
+    end
+
+    # Finally fix four corners if needed
+    kern = eltype(arr).(kern)
+    if arr isa CuArray
+        kern = gpu(kern)
+    end
+    n1, n2 = nextras
+    if (n1 > 0) & (n2 > 0)
+        arr_ds[1,1,:,:] .+= sum(kern[1:n1,1:n2] .* arr[1:n1,1:n2,:,:], dims=(1,2))[1,1,:,:]
+        arr_ds[1,end,:,:] .+= sum(kern[1:n1,end-n2+1:end] .* arr[1:n1,end-n2+1:end,:,:], dims=(1,2))[1,1,:,:]
+        arr_ds[end,end,:,:] .+= sum(kern[end-n1+1:end,end-n2+1:end] .* arr[end-n1+1:end,end-n2+1:end,:,:], dims=(1,2))[1,1,:,:]
+        arr_ds[end,1,:,:] .+= sum(kern[end-n1+1:end,1:n2] .* arr[end-n1+1:end,1:n2,:,:], dims=(1,2))[1,1,:,:]
+    end
+
+    return arr_ds
 end
