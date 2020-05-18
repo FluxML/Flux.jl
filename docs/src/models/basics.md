@@ -32,8 +32,6 @@ julia> gradient(f, [2, 1], [2, 0])
 But machine learning models can have *hundreds* of parameters! To handle this, Flux lets you work with collections of parameters, via `params`. You can get the gradient of all parameters used in a program without explicitly passing them in.
 
 ```jldoctest basics
-julia> using Flux
-
 julia> x = [2, 1];
 
 julia> y = [2, 0];
@@ -220,7 +218,7 @@ Flux.@functor Affine
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
 
-For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advacned.md).
+For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).
 
 ## Utility functions
 
@@ -240,5 +238,5 @@ Currently limited to the following layers:
 - `MeanPool`
 
 ```@docs
-outdims
+Flux.outdims
 ```

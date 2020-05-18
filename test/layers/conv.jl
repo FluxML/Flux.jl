@@ -4,6 +4,10 @@ using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
+  gmp = GlobalMaxPool()
+  @test size(gmp(x)) == (1, 1, 3, 2)
+  gmp = GlobalMeanPool()
+  @test size(gmp(x)) == (1, 1, 3, 2)
   mp = MaxPool((2, 2))
   @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
@@ -21,6 +25,35 @@ end
     Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
+
+  # Test bias switch
+  bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
+  ip = zeros(Float32, 28,28,1,1)
+
+  op = bias(ip)
+  @test sum(op) == prod(size(op))
+
+  bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
+  op = bias(ip)
+  @test sum(op) === 0.f0
+  gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
+  @test gs[bias.bias] == nothing
+
+  # Train w/o bias and make sure no convergence happens
+  # when only bias can be converged
+  bias = Conv((2, 2), 1=>3, bias = Flux.Zeros());
+  ip = zeros(Float32, 28,28,1,1)
+  op = zeros(Float32, 27,27,3,1) .+ 2.f0
+  opt = Descent()
+
+  for _ = 1:10^3
+    gs = gradient(params(bias)) do
+      Flux.mse(bias(ip), op)
+    end
+    Flux.Optimise.update!(opt, params(bias), gs)
+  end
+
+  @test Flux.mse(bias(ip), op) ≈ 4.f0
 end
 
 @testset "asymmetric padding" begin
@@ -158,4 +191,28 @@ end
   @test Flux.outdims(m, (5, 5)) == (4, 4)
   m = MeanPool((2, 2); stride = 2, pad = 3)
   @test Flux.outdims(m, (5, 5)) == (5, 5)
+end
+
+@testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
+  data = ones(Float32, (k .+ 3)..., 1,1)
+  l = ltype(k, 1=>1, pad=SamePad())
+  @test size(l(data)) == size(data)
+
+  l = ltype(k, 1=>1, pad=SamePad(), dilation = k .÷ 2)
+  @test size(l(data)) == size(data)
+
+  stride = 3
+  l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
+  if ltype == ConvTranspose
+    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2] .- stride .+ 1
+  else
+    @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ stride)
+  end
+end
+
+@testset "$ltype SamePad windowsize $k" for ltype in (MeanPool, MaxPool), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
+  data = ones(Float32, (k .+ 3)..., 1,1)
+
+  l = ltype(k, pad=SamePad())
+  @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ k)
 end

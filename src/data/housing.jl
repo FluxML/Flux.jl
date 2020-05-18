@@ -50,7 +50,7 @@ function load()
     isfile(deps("housing.data")) && return
     
     @info "Downloading the Boston housing Dataset"
-    download_and_verify("$(cache_prefix)https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data",
+    download_and_verify("$(cache_prefix)http://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data",
                         deps("housing.data"),
                         "baadf72995725d76efe787b664e1f083388c79ba21ef9a7990d87f774184735a")
     

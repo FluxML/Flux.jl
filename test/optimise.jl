@@ -89,3 +89,15 @@ end
     @test decay_steps == ground_truth
     @test o.eta == o.clip
 end
+
+@testset "Clipping" begin
+    w = randn(10, 10)
+    loss(x) = sum(w * x)
+    θ = Params([w])
+    x = 1000 * randn(10)
+    w̄ = gradient(() -> loss(x), θ)[w]
+    w̄_value = Optimise.apply!(ClipValue(1.0), w, copy(w̄))
+    @test all(w̄_value .<= 1)
+    w̄_norm = Optimise.apply!(ClipNorm(1.0), w, copy(w̄))
+    @test norm(w̄_norm) <= 1
+end

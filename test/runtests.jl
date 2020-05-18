@@ -41,7 +41,8 @@ Random.seed!(0)
   end
 
   @testset "Docs" begin
-    if VERSION >= v"1.2"
+    if VERSION >= v"1.4"
+      DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
       doctest(Flux)
     end
   end

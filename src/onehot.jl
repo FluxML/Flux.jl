@@ -37,30 +37,28 @@ import Adapt: adapt, adapt_structure
 
 adapt_structure(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-import .CuArrays: CuArray, cudaconvert
+import .CuArrays: CuArray, CuArrayStyle, cudaconvert
 import Base.Broadcast: BroadcastStyle, ArrayStyle
-BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = ArrayStyle{CuArray}()
+BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = CuArrayStyle{2}()
 cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 
 """
     onehot(l, labels[, unk])
 
-Create an [`OneHotVector`](@ref) wtih `l`-th element be `true` based on possible `labels` set.
-If `unk` is given, it retruns `onehot(unk, labels)` if the input label `l` is not find in `labels`; otherwise
-it will error.
+Create a `OneHotVector` with its `l`-th element `true` based on the
+possible set of `labels`.
+If `unk` is given, return `onehot(unk, labels)` if the input label `l` is not found
+in `labels`; otherwise it will error.
 
-## Examples
-
+# Examples
 ```jldoctest
-julia> using Flux: onehot
-
-julia> onehot(:b, [:a, :b, :c])
+julia> Flux.onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
  0
  1
  0
 
-julia> onehot(:c, [:a, :b, :c])
+julia> Flux.onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
  0
  0
@@ -82,15 +80,14 @@ end
 """
     onehotbatch(ls, labels[, unk...])
 
-Create an [`OneHotMatrix`](@ref) with a batch of labels based on possible `labels` set, returns the
-`onehot(unk, labels)` if given labels `ls` is not found in set `labels`.
+Create a `OneHotMatrix` with a batch of labels based on the
+possible set of `labels`.
+If `unk` is given, return [`onehot(unk, labels)`](@ref) if one of the input
+labels `ls` is not found in `labels`; otherwise it will error.
 
-## Examples
-
+# Examples
 ```jldoctest
-julia> using Flux: onehotbatch
-
-julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
+julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
 3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
  0  1  0
  1  0  1
@@ -107,13 +104,12 @@ Base.argmax(xs::OneHotVector) = xs.ix
 
 Inverse operations of [`onehot`](@ref).
 
+# Examples
 ```jldoctest
-julia> using Flux: onecold
-
-julia> onecold([true, false, false], [:a, :b, :c])
+julia> Flux.onecold([true, false, false], [:a, :b, :c])
 :a
 
-julia> onecold([0.3, 0.2, 0.5], [:a, :b, :c])
+julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 ```
 """

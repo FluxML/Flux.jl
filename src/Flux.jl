@@ -3,29 +3,33 @@ module Flux
 # Zero Flux Given
 
 using Base: tail
-using Zygote, MacroTools, Juno, Reexport, Statistics, Random
+using Statistics, Random, LinearAlgebra
+using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 
 export gradient
 
-export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
+export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTranspose,
+       GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool, flatten,
        DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        SkipConnection, params, fmap, cpu, gpu, f32, f64, testmode!, trainmode!
 
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
-export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
+export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
+  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay,
+  ClipValue, ClipNorm
 
 
 using CuArrays
 const use_cuda = Ref(false)
 
 include("utils.jl")
+include("zeros.jl")
 include("onehot.jl")
 include("functor.jl")
 
