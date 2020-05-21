@@ -273,9 +273,9 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
             conv_extra1 = gpu(conv_extra1)
         end
 
-        arr_ds[[1],:,:,:] .+= conv_extra1(arr[1:nextras[1],:,:,:])
-        conv_extra1.weight .= conv_extra1.weight[end:-1:1,:,:,:]
-        arr_ds[[end],:,:,:] .+= conv_extra1(arr[end-nextras[1]+1:end,:,:,:])
+        arr_ds[[1],:,:,:] .+= conv_extra1(@view(arr[1:nextras[1],:,:,:]))
+        conv_extra1.weight .= @view(conv_extra1.weight[end:-1:1,:,:,:])
+        arr_ds[[end],:,:,:] .+= conv_extra1(@view(arr[end-nextras[1]+1:end,:,:,:]))
     end
 
     # Second dimension edge-effect correction
@@ -293,9 +293,9 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
             conv_extra2 = gpu(conv_extra2)
         end
 
-        arr_ds[:,[1],:,:] .+= conv_extra2(arr[:,1:nextras[2],:,:])
-        conv_extra2.weight .= conv_extra2.weight[:,end:-1:1,:,:]
-        arr_ds[:,[end],:,:] .+= conv_extra2(arr[:,end-nextras[2]+1:end,:,:])
+        arr_ds[:,[1],:,:] .+= conv_extra2(@view(arr[:,1:nextras[2],:,:]))
+        conv_extra2.weight .= @view(conv_extra2.weight[:,end:-1:1,:,:])
+        arr_ds[:,[end],:,:] .+= conv_extra2(@view(arr[:,end-nextras[2]+1:end,:,:]))
     end
 
     # Finally fix four corners if needed
