@@ -58,15 +58,22 @@ end
 
 Creates interpolation lower and upper indices, and broadcastable weights
 """
-@nograd function get_inds_and_ws(xq, dim, n_dims)
+@nograd function get_inds_and_ws(xq, dim)
     n = length(xq)
 
     ilow = floor.(Int, xq)
     ihigh = ceil.(Int, xq)
 
-    wdiff = xq .- ilow
+    wdiff = xq[:,:,:,:] .- ilow[:,:,:,:]
 
-    newsizetup = tuple((i == dim ? n : 1 for i in 1:n_dims)...)
+    if dim == 1
+        newsizetup = (n, 1, 1, 1)
+    elseif dim == 2
+        newsizetup = (1, n, 1, 1)
+    else
+        error("Unreachable reached")
+    end
+
     wdiff = reshape(wdiff, newsizetup)
 
     return ilow, ihigh, wdiff
@@ -125,7 +132,7 @@ using bilinear interpolation. The interpolation grid is identical to the one use
 """
 function bilinear_upsample2d(img::AbstractArray{T,4}, k_upsample::NTuple{2,<:Real}) where T
 
-    ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r = setup_upsample(size(img), eltype(img), k_upsample)
+    ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r = setup_upsample(img, k_upsample)
 
     @inbounds imgupsampled = bilinear_upsample_workhorse(img, ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2)
 
@@ -138,10 +145,6 @@ end
 Does the heavy lifting part of the bilinear upsampling operation
 """
 function bilinear_upsample_workhorse(img, ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2)
-    if typeof(img) <: CuArray
-        wdiff1 = CuArray(wdiff1)
-        wdiff2 = CuArray(wdiff2)
-    end
     imgupsampled = @view(img[ilow1,ilow2,:,:]) .* (1 .- wdiff1) .+ @view(img[ihigh1,ilow2,:,:]) .* wdiff1
     imgupsampled = imgupsampled .* (1 .- wdiff2) .+ @view(imgupsampled[:,ihigh2_r,:,:]) .* wdiff2
 end
@@ -151,8 +154,9 @@ end
 
 Creates arrays of interpolation indices and weights for the bilinear_upsample2d operation.
 """
-@nograd function setup_upsample(imgsize::NTuple{4,<:Integer}, imgdtype, k_upsample::NTuple{2,<:Real})
+@nograd function setup_upsample(img, k_upsample::NTuple{2,<:Real})
     n_dims = 4
+    imgsize = size(img)
     newsize = get_newsize(imgsize, k_upsample)
 
     # Create interpolation grids
@@ -160,14 +164,19 @@ Creates arrays of interpolation indices and weights for the bilinear_upsample2d 
     xq2 = construct_xq(imgsize[2], newsize[2])
 
     # Get linear interpolation lower- and upper index, and weights
-    ilow1, ihigh1, wdiff1 = get_inds_and_ws(xq1, 1, n_dims)
-    ilow2, ihigh2, wdiff2 = get_inds_and_ws(xq2, 2, n_dims)
+    ilow1, ihigh1, wdiff1 = get_inds_and_ws(xq1, 1)
+    ilow2, ihigh2, wdiff2 = get_inds_and_ws(xq2, 2)
 
     # Adjust the upper interpolation indices of the second dimension
     ihigh2_r = adjoint_of_idx(ilow2)[ihigh2]
 
-    wdiff1 = imgdtype.(wdiff1)
-    wdiff2 = imgdtype.(wdiff2)
+    wdiff1 = eltype(img).(wdiff1)
+    wdiff2 = eltype(img).(wdiff2)
+
+    if typeof(img) <: CuArray
+        wdiff1 = CuArray(wdiff1)
+        wdiff2 = CuArray(wdiff2)
+    end
 
     return ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r
 
@@ -225,19 +234,19 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
         factors = (factors[1], 1)
     end
 
-    if size(arr)[1:2] == (1,1)
+    if (size(arr,1) == 1) & (size(arr,2) == 1)
         ds_arr = arr
         return ds_arr
     end
 
-    n_chan, n_batch = size(arr)[3:4]
+    n_chan, n_batch = size(arr,3), size(arr,4)
 
     kern1 = get_downsamplekernel(factors[1])
     kern2 = get_downsamplekernel(factors[2])
     kern = kern1 .* kern2'
 
     kern_sizes = size(kern)
-    pads = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    pads = (floor(Int, factors[1]//2), floor(Int, factors[2]//2))
     strides = factors
 
     conv_ds = Conv(kern_sizes, n_chan=>n_chan, pad=pads, stride=strides)
@@ -256,7 +265,8 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
 
     # Still have to fix edge effects due to zero-padding of convolution,
     # TODO: Could be circumvented by having padding that just extrapolates the value at the first/last index
-    nextras = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    # nextras = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    nextras = (floor(Int, factors[1]//2), floor(Int, factors[2]//2))
 
     # First dimension edge-effect correction
     if nextras[1] > 0
@@ -269,7 +279,7 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
         end
         conv_extra1.bias .*= 0
 
-        if arr isa CuArray
+        if typeof(arr) <: CuArray
             conv_extra1 = gpu(conv_extra1)
         end
 
@@ -289,7 +299,7 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
         end
         conv_extra2.bias .*= 0
 
-        if arr isa CuArray
+        if typeof(arr) <: CuArray
             conv_extra2 = gpu(conv_extra2)
         end
 
@@ -299,16 +309,16 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
     end
 
     # Finally fix four corners if needed
-    kern = eltype(arr).(kern)
-    if arr isa CuArray
+    # kern = eltype(arr).(kern)
+    if typeof(arr) <: CuArray
         kern = gpu(kern)
     end
     n1, n2 = nextras
     if (n1 > 0) & (n2 > 0)
-        arr_ds[1,1,:,:] .+= sum(kern[1:n1,1:n2] .* arr[1:n1,1:n2,:,:], dims=(1,2))[1,1,:,:]
-        arr_ds[1,end,:,:] .+= sum(kern[1:n1,end-n2+1:end] .* arr[1:n1,end-n2+1:end,:,:], dims=(1,2))[1,1,:,:]
-        arr_ds[end,end,:,:] .+= sum(kern[end-n1+1:end,end-n2+1:end] .* arr[end-n1+1:end,end-n2+1:end,:,:], dims=(1,2))[1,1,:,:]
-        arr_ds[end,1,:,:] .+= sum(kern[end-n1+1:end,1:n2] .* arr[end-n1+1:end,1:n2,:,:], dims=(1,2))[1,1,:,:]
+        arr_ds[1,1,:,:] .+= sum(kern[1:n1,1:n2] .* @view(arr[1:n1,1:n2,:,:]), dims=(1,2))[1,1,:,:]
+        arr_ds[1,end,:,:] .+= sum(kern[1:n1,end-n2+1:end] .* @view(arr[1:n1,end-n2+1:end,:,:]), dims=(1,2))[1,1,:,:]
+        arr_ds[end,end,:,:] .+= sum(kern[end-n1+1:end,end-n2+1:end] .* @view(arr[end-n1+1:end,end-n2+1:end,:,:]), dims=(1,2))[1,1,:,:]
+        arr_ds[end,1,:,:] .+= sum(kern[end-n1+1:end,1:n2] .* @view(arr[end-n1+1:end,1:n2,:,:]), dims=(1,2))[1,1,:,:]
     end
 
     return arr_ds
