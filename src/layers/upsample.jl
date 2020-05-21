@@ -58,15 +58,22 @@ end
 
 Creates interpolation lower and upper indices, and broadcastable weights
 """
-@nograd function get_inds_and_ws(xq, dim, n_dims)
+@nograd function get_inds_and_ws(xq, dim)
     n = length(xq)
 
     ilow = floor.(Int, xq)
     ihigh = ceil.(Int, xq)
 
-    wdiff = xq .- ilow
+    wdiff = xq[:,:,:,:] .- ilow[:,:,:,:]
 
-    newsizetup = tuple((i == dim ? n : 1 for i in 1:n_dims)...)
+    if dim == 1
+        newsizetup = (n, 1, 1, 1)
+    elseif dim == 2
+        newsizetup = (1, n, 1, 1)
+    else
+        error("Unreachable reached")
+    end
+
     wdiff = reshape(wdiff, newsizetup)
 
     return ilow, ihigh, wdiff
@@ -125,7 +132,7 @@ using bilinear interpolation. The interpolation grid is identical to the one use
 """
 function bilinear_upsample2d(img::AbstractArray{T,4}, k_upsample::NTuple{2,<:Real}) where T
 
-    ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r = setup_upsample(size(img), eltype(img), k_upsample)
+    ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r = setup_upsample(img, k_upsample)
 
     @inbounds imgupsampled = bilinear_upsample_workhorse(img, ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2)
 
@@ -138,10 +145,6 @@ end
 Does the heavy lifting part of the bilinear upsampling operation
 """
 function bilinear_upsample_workhorse(img, ilow1, ihigh1, wdiff1, ilow2, ihigh2_r, wdiff2)
-    if typeof(img) <: CuArray
-        wdiff1 = CuArray(wdiff1)
-        wdiff2 = CuArray(wdiff2)
-    end
     imgupsampled = @view(img[ilow1,ilow2,:,:]) .* (1 .- wdiff1) .+ @view(img[ihigh1,ilow2,:,:]) .* wdiff1
     imgupsampled = imgupsampled .* (1 .- wdiff2) .+ @view(imgupsampled[:,ihigh2_r,:,:]) .* wdiff2
 end
@@ -151,8 +154,9 @@ end
 
 Creates arrays of interpolation indices and weights for the bilinear_upsample2d operation.
 """
-@nograd function setup_upsample(imgsize::NTuple{4,<:Integer}, imgdtype, k_upsample::NTuple{2,<:Real})
+@nograd function setup_upsample(img, k_upsample::NTuple{2,<:Real})
     n_dims = 4
+    imgsize = size(img)
     newsize = get_newsize(imgsize, k_upsample)
 
     # Create interpolation grids
@@ -160,14 +164,19 @@ Creates arrays of interpolation indices and weights for the bilinear_upsample2d 
     xq2 = construct_xq(imgsize[2], newsize[2])
 
     # Get linear interpolation lower- and upper index, and weights
-    ilow1, ihigh1, wdiff1 = get_inds_and_ws(xq1, 1, n_dims)
-    ilow2, ihigh2, wdiff2 = get_inds_and_ws(xq2, 2, n_dims)
+    ilow1, ihigh1, wdiff1 = get_inds_and_ws(xq1, 1)
+    ilow2, ihigh2, wdiff2 = get_inds_and_ws(xq2, 2)
 
     # Adjust the upper interpolation indices of the second dimension
     ihigh2_r = adjoint_of_idx(ilow2)[ihigh2]
 
-    wdiff1 = imgdtype.(wdiff1)
-    wdiff2 = imgdtype.(wdiff2)
+    wdiff1 = eltype(img).(wdiff1)
+    wdiff2 = eltype(img).(wdiff2)
+
+    if typeof(img) <: CuArray
+        wdiff1 = CuArray(wdiff1)
+        wdiff2 = CuArray(wdiff2)
+    end
 
     return ilow1, ihigh1, wdiff1, ilow2, ihigh2, wdiff2, ihigh2_r
 
