@@ -305,10 +305,10 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
     end
     n1, n2 = nextras
     if (n1 > 0) & (n2 > 0)
-        arr_ds[1,1,:,:] .+= sum(kern[1:n1,1:n2] .* arr[1:n1,1:n2,:,:], dims=(1,2))[1,1,:,:]
-        arr_ds[1,end,:,:] .+= sum(kern[1:n1,end-n2+1:end] .* arr[1:n1,end-n2+1:end,:,:], dims=(1,2))[1,1,:,:]
-        arr_ds[end,end,:,:] .+= sum(kern[end-n1+1:end,end-n2+1:end] .* arr[end-n1+1:end,end-n2+1:end,:,:], dims=(1,2))[1,1,:,:]
-        arr_ds[end,1,:,:] .+= sum(kern[end-n1+1:end,1:n2] .* arr[end-n1+1:end,1:n2,:,:], dims=(1,2))[1,1,:,:]
+        arr_ds[1,1,:,:] .+= sum(kern[1:n1,1:n2] .* @view(arr[1:n1,1:n2,:,:]), dims=(1,2))[1,1,:,:]
+        arr_ds[1,end,:,:] .+= sum(kern[1:n1,end-n2+1:end] .* @view(arr[1:n1,end-n2+1:end,:,:]), dims=(1,2))[1,1,:,:]
+        arr_ds[end,end,:,:] .+= sum(kern[end-n1+1:end,end-n2+1:end] .* @view(arr[end-n1+1:end,end-n2+1:end,:,:]), dims=(1,2))[1,1,:,:]
+        arr_ds[end,1,:,:] .+= sum(kern[end-n1+1:end,1:n2] .* @view(arr[end-n1+1:end,1:n2,:,:]), dims=(1,2))[1,1,:,:]
     end
 
     return arr_ds
