@@ -234,19 +234,19 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
         factors = (factors[1], 1)
     end
 
-    if size(arr)[1:2] == (1,1)
+    if (size(arr,1) == 1) & (size(arr,2) == 1)
         ds_arr = arr
         return ds_arr
     end
 
-    n_chan, n_batch = size(arr)[3:4]
+    n_chan, n_batch = size(arr,3), size(arr,4)
 
     kern1 = get_downsamplekernel(factors[1])
     kern2 = get_downsamplekernel(factors[2])
     kern = kern1 .* kern2'
 
     kern_sizes = size(kern)
-    pads = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    pads = (floor(Int, factors[1]//2), floor(Int, factors[2]//2))
     strides = factors
 
     conv_ds = Conv(kern_sizes, n_chan=>n_chan, pad=pads, stride=strides)
@@ -265,7 +265,8 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
 
     # Still have to fix edge effects due to zero-padding of convolution,
     # TODO: Could be circumvented by having padding that just extrapolates the value at the first/last index
-    nextras = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    # nextras = tuple((Int.(floor(factor//2)) for factor in factors)...)
+    nextras = (floor(Int, factors[1]//2), floor(Int, factors[2]//2))
 
     # First dimension edge-effect correction
     if nextras[1] > 0
@@ -278,7 +279,7 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
         end
         conv_extra1.bias .*= 0
 
-        if arr isa CuArray
+        if typeof(arr) <: CuArray
             conv_extra1 = gpu(conv_extra1)
         end
 
@@ -298,7 +299,7 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
         end
         conv_extra2.bias .*= 0
 
-        if arr isa CuArray
+        if typeof(arr) <: CuArray
             conv_extra2 = gpu(conv_extra2)
         end
 
@@ -308,8 +309,8 @@ function bilinear_upsample_adjoint(arr::AbstractArray, factors::Tuple{T,T} where
     end
 
     # Finally fix four corners if needed
-    kern = eltype(arr).(kern)
-    if arr isa CuArray
+    # kern = eltype(arr).(kern)
+    if typeof(arr) <: CuArray
         kern = gpu(kern)
     end
     n1, n2 = nextras
