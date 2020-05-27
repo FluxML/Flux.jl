@@ -1,7 +1,7 @@
 [Please delete this text and describe your change here.
 For bugfixes, please detail the bug and include a test case which your patch fixes.
 If you are adding a new feature, please clearly describe the design, its rationale, the possible alternatives considered.
-It is easiest to merge new features when there is clear precedent in other libraries; we need to know we're taking
+It is easiest to merge new features when there is clear precedent in other systems; we need to know we're taking
 the right direction since it can be hard to change later.]
 
 ### PR Checklist
