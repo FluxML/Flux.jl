@@ -105,7 +105,7 @@ function bce_loss(ŷ, y; agg=mean, ϵ=epseltype(ŷ))
     agg(@.(-xlogy(y, ŷ+ϵ) - xlogy(1-y, 1-ŷ+ϵ)))
 end
 # Re-definition to fix interaction with CuArrays.
-# CuArrays.@cufunc bce_loss(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+# CUDA.@cufunc bce_loss(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
     logitbce_loss(ŷ, y; agg=mean)
@@ -120,7 +120,7 @@ function logitbce_loss(ŷ, y; agg=mean)
     agg(@.((1-y)*ŷ - logσ(ŷ)))
 end
 # Re-definition to fix interaction with CuArrays.
-# CuArrays.@cufunc logitbce_loss(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
+# CUDA.@cufunc logitbce_loss(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 
 
 """
@@ -210,7 +210,7 @@ function xlogx(x)
   ifelse(iszero(x), zero(result), result)
 end
 
-CuArrays.@cufunc function xlogx(x)
+CUDA.@cufunc function xlogx(x)
   result = x * log(x)
   ifelse(iszero(x), zero(result), result)
 end
@@ -225,7 +225,7 @@ function xlogy(x, y)
   ifelse(iszero(x), zero(result), result)
 end
 
-CuArrays.@cufunc function xlogy(x, y)
+CUDA.@cufunc function xlogy(x, y)
   result = x * log(y)
   ifelse(iszero(x), zero(result), result)
 end
