@@ -125,8 +125,8 @@ julia> Flux.binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0])
 """
 binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)
 
-# Re-definition to fix interaction with CuArrays.
-CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+# Re-definition to fix interaction with CUDA.
+CUDA.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
     logitbinarycrossentropy(ŷ, y)
@@ -147,8 +147,8 @@ julia> Flux.logitbinarycrossentropy.([-1.1491, 0.8619, 0.3127], [1, 1, 0])
 """
 logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 
-# Re-definition to fix interaction with CuArrays.
-CuArrays.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
+# Re-definition to fix interaction with CUDA.
+CUDA.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 
 """
     normalise(x; dims=1)
@@ -271,7 +271,7 @@ function xlogx(x)
   result = x * log(x)
   ifelse(iszero(x), zero(result), result)
 end
-CuArrays.@cufunc function xlogx(x)
+CUDA.@cufunc function xlogx(x)
   result = x * log(x)
   ifelse(iszero(x), zero(result), result)
 end
@@ -284,7 +284,7 @@ function xlogy(x, y)
   result = x * log(y)
   ifelse(iszero(x), zero(result), result)
 end
-CuArrays.@cufunc function xlogy(x, y)
+CUDA.@cufunc function xlogy(x, y)
   result = x * log(y)
   ifelse(iszero(x), zero(result), result)
 end

@@ -34,33 +34,15 @@ uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.9"
 
 [[CEnum]]
-git-tree-sha1 = "1b77a77c3b28e0b3f413f7567c9bb8dd9bdccd14"
+git-tree-sha1 = "215a9aa4a1f23fbd05b92769fdd62559488d70e9"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
-version = "0.3.0"
+version = "0.4.1"
 
-[[CUDAapi]]
-deps = ["Libdl", "Logging"]
-git-tree-sha1 = "831b825d10104bd29e28f6da93312a976830717b"
-uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
-version = "4.0.0"
-
-[[CUDAdrv]]
-deps = ["CEnum", "CUDAapi", "Printf"]
-git-tree-sha1 = "f56bbf18c86bcff7a961a32a4947a5abb2963a29"
-uuid = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
-version = "6.3.0"
-
-[[CUDAnative]]
-deps = ["Adapt", "BinaryProvider", "CEnum", "CUDAapi", "CUDAdrv", "ExprTools", "GPUCompiler", "LLVM", "Libdl", "Pkg", "Printf"]
-git-tree-sha1 = "ac86db2b05fdfec96b011e25a504ffe7476e8a68"
-uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "3.1.0"
-
-[[CodeTracking]]
-deps = ["InteractiveUtils", "UUIDs"]
-git-tree-sha1 = "cab4da992adc0a64f63fa30d2db2fd8bec40cab4"
-uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
-version = "0.5.11"
+[[CUDA]]
+deps = ["AbstractFFTs", "Adapt", "BinaryProvider", "CEnum", "DataStructures", "ExprTools", "GPUArrays", "GPUCompiler", "LLVM", "Libdl", "LinearAlgebra", "Logging", "MacroTools", "NNlib", "Pkg", "Printf", "Random", "Reexport", "Requires", "SparseArrays", "Statistics", "TimerOutputs"]
+git-tree-sha1 = "3d247bd2260259f86853e52584169ddeca648ebc"
+uuid = "052768ef-5323-5732-b1bb-66c8b64840ba"
+version = "0.1.0"
 
 [[CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -91,18 +73,6 @@ deps = ["Libdl", "Pkg"]
 git-tree-sha1 = "7c4f882c41faa72118841185afc58a2eb00ef612"
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "0.3.3+0"
-
-[[Cthulhu]]
-deps = ["CodeTracking", "InteractiveUtils", "REPL", "Unicode"]
-git-tree-sha1 = "a4849ec61df9659423cc63b298ed895904ee9743"
-uuid = "f68482b8-f384-11e8-15f7-abe071a5a75f"
-version = "1.0.2"
-
-[[CuArrays]]
-deps = ["AbstractFFTs", "Adapt", "CEnum", "CUDAapi", "CUDAdrv", "CUDAnative", "DataStructures", "GPUArrays", "Libdl", "LinearAlgebra", "MacroTools", "NNlib", "Pkg", "Printf", "Random", "Reexport", "Requires", "SparseArrays", "Statistics", "TimerOutputs"]
-git-tree-sha1 = "870a4ac61e99c36f42d15e496fd290c841541d90"
-uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
-version = "2.2.0"
 
 [[DataAPI]]
 git-tree-sha1 = "176e23402d80e7743fc26c19c681bfb11246af32"
@@ -173,15 +143,15 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[GPUArrays]]
 deps = ["AbstractFFTs", "Adapt", "LinearAlgebra", "Printf", "Random", "Serialization"]
-git-tree-sha1 = "ce4579ebffef43e07318e9544ffeb6532c95d04d"
+git-tree-sha1 = "5f90fd4385ae86ab56cdd9bd4717f7bd2ff2acdf"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "3.3.0"
+version = "3.4.0"
 
 [[GPUCompiler]]
-deps = ["Cthulhu", "DataStructures", "InteractiveUtils", "LLVM", "Libdl", "TimerOutputs"]
-git-tree-sha1 = "5275aa268ecd09640b32560e1eae90c78816e4d1"
+deps = ["DataStructures", "InteractiveUtils", "LLVM", "Libdl", "TimerOutputs", "UUIDs"]
+git-tree-sha1 = "7ed10d9c41b7bb392f3e645233e45ecf93217130"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
-version = "0.2.0"
+version = "0.3.0"
 
 [[IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
@@ -201,9 +171,9 @@ version = "0.8.1"
 
 [[LLVM]]
 deps = ["CEnum", "Libdl", "Printf", "Unicode"]
-git-tree-sha1 = "93d2e1e960fe47db1a9015e86fad1d47cf67cf59"
+git-tree-sha1 = "dd3f584c3dbefe39b2a8fbafa1a3b77e31e21255"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "1.4.1"
+version = "1.5.1"
 
 [[LibGit2]]
 deps = ["Printf"]
@@ -370,9 +340,9 @@ version = "0.9.1"
 
 [[Zlib_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "2f6c3e15e20e036ee0a0965879b31442b7ec50fa"
+git-tree-sha1 = "a2e0d558f6031002e380a90613b199e37a8565bf"
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.11+9"
+version = "1.2.11+10"
 
 [[Zygote]]
 deps = ["AbstractFFTs", "ArrayLayouts", "DiffRules", "FillArrays", "ForwardDiff", "Future", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
