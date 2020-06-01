@@ -1,5 +1,6 @@
 # v0.11
 
+* Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
 * Add [kaiming initialization](https://arxiv.org/abs/1502.01852) methods: [kaiming_uniform and kaiming_normal](https://github.com/FluxML/Flux.jl/pull/1243)
 * Use `DataLoader` with `NamedTuple`s, so that tensors can be accessed [by name](https://github.com/FluxML/Flux.jl/pull/1221).
 * Error if Dense layers weights and biases are [not arrays](https://github.com/FluxML/Flux.jl/pull/1218).
