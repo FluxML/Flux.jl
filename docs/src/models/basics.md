@@ -72,7 +72,7 @@ function loss(x, y)
 end
 
 x, y = rand(5), rand(2) # Dummy data
-loss(x, y) # ~ 3
+loss(x, y) # ~ 5.77
 ```
 
 To improve the prediction we can take the gradients of `W` and `b` with respect to the loss and perform gradient descent.
