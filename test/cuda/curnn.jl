@@ -1,4 +1,4 @@
-using Flux, CuArrays, Test
+using Flux, CUDA, Test
 using Flux: pullback
 
 @testset for R in [RNN, GRU, LSTM]

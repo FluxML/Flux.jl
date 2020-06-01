@@ -1,4 +1,4 @@
-using Flux, CuArrays, Test
+using Flux, CUDA, Test
 using Flux: pullback
 
 @testset "CUDNN BatchNorm" begin
