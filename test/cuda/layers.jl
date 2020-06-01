@@ -35,7 +35,7 @@ function gradtest(name::String, layers::Vector, xs = nothing, args...)
 
           # Handle pooling layers
           if !isempty(ps)
-            @test gs[first(ps)] isa Flux.CuArrays.CuArray
+            @test gs[first(ps)] isa Flux.CUDA.CuArray
           end
         end
       end
