@@ -363,7 +363,7 @@ version = "1.2.11+10"
 
 [[Zygote]]
 deps = ["AbstractFFTs", "ArrayLayouts", "ChainRules", "FillArrays", "ForwardDiff", "Future", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "Random", "Requires", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "df4392bb922b6aacc36b131835dd54e65782f15a"
+git-tree-sha1 = "83eb4b290d1904af0ba22cc6bb95e98479eec9f1"
 repo-rev = "dg/cuda"
 repo-url = "https://github.com/FluxML/Zygote.jl.git"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
