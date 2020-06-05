@@ -54,15 +54,15 @@ function huber_loss(ŷ, y;  δ=eltype(ŷ)(1))
 end
 
 function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Nothing)
-  return -sum(y .* log.(ŷ)) * 1 // size(y, 2)
+  return -sum(xlogy.(y, ŷ)) * 1 // size(y, 2)
 end
 
 function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Number)
-  return -sum(y .* log.(ŷ)) .* weight * 1 // size(y, 2)
+  return -sum(xlogy.(y, ŷ)) .* weight * 1 // size(y, 2)
 end
 
 function _crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::AbstractVector)
-  return -sum(y .* log.(ŷ) .* weight) * 1 // size(y, 2)
+  return -sum(xlogy.(y, ŷ) .* weight) * 1 // size(y, 2)
 end
 
 """
@@ -91,7 +91,7 @@ Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
 calculated as `-sum(y .* logsoftmax(ŷ) .* weight) / size(y, 2)`.
 
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.crossentropy(softmax(log(ŷ)), y)`](@ref) but it is more numerically stable.
+[`Flux.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
 
 See also: [`Flux.crossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
 
@@ -123,7 +123,7 @@ julia> Flux.binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0])
  0.8616703662235441
 ```
 """
-binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)
 
 # Re-definition to fix interaction with CuArrays.
 CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
@@ -132,7 +132,7 @@ CuArrays.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1
     logitbinarycrossentropy(ŷ, y)
 
 `logitbinarycrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.binarycrossentropy(σ(log(ŷ)), y)`](@ref) but it is more numerically stable.
+[`Flux.binarycrossentropy(σ(ŷ), y)`](@ref) but it is more numerically stable.
 
 See also: [`Flux.crossentropy`](@ref), [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref)
 
@@ -195,7 +195,7 @@ It is always non-negative and zero only when both the distributions are equal
 everywhere.
 """
 function kldivergence(ŷ, y)
-  entropy = sum(y .* log.(y)) * 1 //size(y,2)
+  entropy = sum(xlogx.(y)) * 1 //size(y,2)
   cross_entropy = crossentropy(ŷ, y)
   return entropy + cross_entropy
 end
@@ -208,7 +208,7 @@ distribution `y`; calculated as `sum(ŷ .- y .* log.(ŷ)) / size(y, 2)`.
 
 [More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
-poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) * 1 // size(y,2)
+poisson(ŷ, y) = sum(ŷ .- xlogy.(y, ŷ)) * 1 // size(y,2)
 
 """
     hinge(ŷ, y)
@@ -261,4 +261,35 @@ by linearizing all values for each element in the batch.
 """
 function flatten(x::AbstractArray)
   return reshape(x, :, size(x)[end])
+end
+
+"""
+    xlogx(x)
+Return `x * log(x)` for `x ≥ 0`, handling `x = 0` by taking the downward limit.
+"""
+function xlogx(x)
+  result = x * log(x)
+  ifelse(iszero(x), zero(result), result)
+end
+CuArrays.@cufunc function xlogx(x)
+  result = x * log(x)
+  ifelse(iszero(x), zero(result), result)
+end
+
+"""
+    xlogy(x, y)
+Return `x * log(y)` for `y > 0` with correct limit at `x = 0`.
+"""
+function xlogy(x, y)
+  result = x * log(y)
+  ifelse(iszero(x), zero(result), result)
+end
+CuArrays.@cufunc function xlogy(x, y)
+  result = x * log(y)
+  ifelse(iszero(x), zero(result), result)
+end
+
+@adjoint function broadcasted(::typeof(xlogy), x::Zygote.Numeric, y::Zygote.Numeric)
+  res = xlogy.(x, y)
+  res, Δ -> (nothing, Zygote.unbroadcast(x, xlogy.(Δ, y)), Zygote.unbroadcast(y, Δ .* x ./ y))
 end
