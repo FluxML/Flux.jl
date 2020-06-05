@@ -142,7 +142,7 @@ function my_custom_train!(loss, ps, data, opt)
   for d in data
     gs = gradient(ps) do
       training_loss = loss(d...)
-      # Insert what ever code you want here that needs Training loss, e.g. logging
+      # Insert whatever code you want here that needs Training loss, e.g. logging
       return training_loss
     end
     # insert what ever code you want here that needs gradient
