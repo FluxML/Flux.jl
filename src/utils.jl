@@ -246,6 +246,10 @@ function _restructure(m, xs)
   end
 end
 
+@adjoint function _restructure(m, xs)
+  _restructure(m, xs), dm -> (nothing,destructure(dm)[1])
+end
+
 """
     destructure(m)
 
