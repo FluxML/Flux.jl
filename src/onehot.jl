@@ -48,7 +48,7 @@ cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.d
 Create a `OneHotVector` with its `l`-th element `true` based on the
 possible set of `labels`.
 If `unk` is given, return `onehot(unk, labels)` if the input label `l` is not found
-in `labels`; otherwise it will error.
+in `labels`; otherwise, it will raise an error.
 
 # Examples
 ```jldoctest
