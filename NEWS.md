@@ -1,3 +1,6 @@
+# v0.11
+* Change to the `DataLoader` (constructor)[https://github.com/FluxML/Flux.jl/pull/1152] 
+
 # v0.10.5
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
 * Added option to set `bias` to [Flux.Zeros](https://github.com/FluxML/Flux.jl/pull/873) to eliminating `bias` from being trained.
