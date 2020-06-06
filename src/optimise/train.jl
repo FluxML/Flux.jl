@@ -57,7 +57,7 @@ function stop()
 end
 
 """
-    train!(loss, params, data, opt; cb)
+    train!(loss, params, data, opt; cb, verbose)
 
 For each datapoint `d` in `data` compute the gradient of `loss(d...)` through
 backpropagation and call the optimizer `opt`.
@@ -73,9 +73,11 @@ A callback is given with the keyword argument `cb`. For example, this will print
 
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
+If `verbose` is true, a progress bar along with current and average losses will be displayed.
+
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> (), verbose = true)
+function train!(loss, ps, data, opt; cb = () -> (), verbose = false)
   ps = Params(ps)
   cb = runall(cb)
   l̄ = 0f0
