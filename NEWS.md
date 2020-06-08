@@ -1,5 +1,5 @@
 # v0.11
-* Change to the `DataLoader` (constructor)[https://github.com/FluxML/Flux.jl/pull/1152] 
+* Change to `DataLoader`'s constructor [https://github.com/FluxML/Flux.jl/pull/1152] 
 
 # v0.10.5
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
