@@ -1,8 +1,6 @@
-# v0.11.1
-* Error if Dense layers weights and biases are not arrays [https://github.com/FluxML/Flux.jl/pull/1218].
-
 # v0.11
 * Change to `DataLoader`'s constructor [https://github.com/FluxML/Flux.jl/pull/1152] 
+* Error if Dense layers weights and biases are not arrays [https://github.com/FluxML/Flux.jl/pull/1218].
 
 # v0.10.5
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
