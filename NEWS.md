@@ -1,3 +1,6 @@
+# v0.11
+* Change to `DataLoader`'s constructor [https://github.com/FluxML/Flux.jl/pull/1152] 
+
 # v0.10.5
 * Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.

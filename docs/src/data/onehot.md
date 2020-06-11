@@ -7,15 +7,15 @@ julia> using Flux: onehot, onecold
 
 julia> onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
-  true
- false
+ 0
+ 1
+ 0
 
 julia> onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
- false
-  true
+ 0
+ 0
+ 1
 ```
 
 The inverse is `onecold` (which can take a general probability distribution, as well as just booleans).
