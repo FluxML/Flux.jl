@@ -4,6 +4,7 @@
 
     d = DataLoader(X, batchsize=2)
     batches = collect(d)
+    @test eltype(batches) == eltype(d) == typeof(X)
     @test length(batches) == 3
     @test batches[1] == X[:,1:2]
     @test batches[2] == X[:,3:4]
@@ -11,12 +12,21 @@
 
     d = DataLoader(X, batchsize=2, partial=false)
     batches = collect(d)
+    @test eltype(batches) == eltype(d) == typeof(X)
     @test length(batches) == 2
     @test batches[1] == X[:,1:2]
     @test batches[2] == X[:,3:4]
 
-    d = DataLoader(X, Y, batchsize=2)
+    d = DataLoader((X,), batchsize=2, partial=false)
     batches = collect(d)
+    @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
+    @test length(batches) == 2
+    @test batches[1] == (X[:,1:2],)
+    @test batches[2] == (X[:,3:4],)
+
+    d = DataLoader((X, Y), batchsize=2)
+    batches = collect(d)
+    @test eltype(batches) == eltype(d) == Tuple{typeof(X), typeof(Y)}
     @test length(batches) == 3
     @test length(batches[1]) == 2
     @test length(batches[2]) == 2
@@ -41,7 +51,7 @@
     X = ones(2, 10)
     Y = fill(2, 10)
     loss(x, y) = sum((y - x'*θ).^2)
-    d  = DataLoader(X, Y) 
+    d  = DataLoader((X, Y)) 
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ .- 1) < 1e-10
 end
@@ -76,8 +86,9 @@ end
     @test size(Iris.labels()) == (150,)
 end
 
+
 @testset "Housing" begin
-    @test Housing.features() isa Matrix
+    @test Housing.features() isa Matrix # test broken due to SSL certifate expiration problem
     @test size(Housing.features()) == (506, 13)
 
     @test Housing.targets() isa Array{Float64}

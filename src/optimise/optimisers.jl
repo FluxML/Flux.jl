@@ -6,24 +6,25 @@ const ϵ = 1e-8
 # TODO: should use weak refs
 
 """
-    Descent(η)
+    Descent(η = 0.1)
 
 Classic gradient descent optimiser with learning rate `η`.
 For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`
 
-## Parameters
-  - Learning Rate (η): The amount by which the gradients are discounted before updating the weights. Defaults to `0.1`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
 
-## Example
-```julia-repl
-opt = Descent() # uses default η (0.1)
+# Examples
+```julia
+opt = Descent()
 
-opt = Descent(0.3) # use provided η
+opt = Descent(0.3)
 
 ps = params(model)
 
 gs = gradient(ps) do
-  loss(x, y)
+    loss(x, y)
 end
 
 Flux.Optimise.update!(opt, ps, gs)
@@ -40,17 +41,19 @@ function apply!(o::Descent, x, Δ)
 end
 
 """
-    Momentum(η, ρ)
+    Momentum(η = 0.01, ρ = 0.9)
 
-Gradient descent with learning rate `η` and momentum `ρ`.
+Gradient descent optimizer with learning rate `η` and momentum `ρ`.
 
-## Parameters
-  - Learning Rate (`η`): Amount by which gradients are discounted before updating the weights. Defaults to `0.01`.
-  - Momentum (`ρ`): Parameter that accelerates descent in the relevant direction and dampens oscillations. Defaults to `0.9`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Momentum (`ρ`): Controls the acceleration of gradient descent in the
+                  prominent direction, in effect dampening oscillations.
 
-## Examples
+# Examples
 ```julia
-opt = Momentum() # uses defaults of η = 0.01 and ρ = 0.9
+opt = Momentum()
 
 opt = Momentum(0.01, 0.99)
 ```
@@ -71,17 +74,19 @@ function apply!(o::Momentum, x, Δ)
 end
 
 """
-    Nesterov(η, ρ)
+    Nesterov(η = 0.001, ρ = 0.9)
 
-Gradient descent with learning rate  `η` and Nesterov momentum `ρ`.
+Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
 
-## Parameters
-  - Learning Rate (η): Amount by which the gradients are dicsounted berfore updating the weights. Defaults to `0.001`.
-  - Nesterov Momentum (ρ): Parameters controlling the amount of nesterov momentum to be applied. Defaults to `0.9`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Nesterov momentum (`ρ`): Controls the acceleration of gradient descent in the
+                           prominent direction, in effect dampening oscillations.
 
-## Examples
+# Examples
 ```julia
-opt = Nesterov() # uses defaults η = 0.001 and ρ = 0.9
+opt = Nesterov()
 
 opt = Nesterov(0.003, 0.95)
 ```
@@ -103,23 +108,25 @@ function apply!(o::Nesterov, x, Δ)
 end
 
 """
-    RMSProp(η, ρ)
+    RMSProp(η = 0.001, ρ = 0.9)
 
-Implements the RMSProp algortihm. Often a good choice for recurrent networks. Parameters other than learning rate generally don't need tuning.
+Optimizer using the
+[RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+algorithm. Often a good choice for recurrent networks. Parameters other than learning rate
+generally don't need tuning.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.001`.
-  - Rho (ρ): Defaults to `0.9`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Momentum (`ρ`): Controls the acceleration of gradient descent in the
+                  prominent direction, in effect dampening oscillations.
 
-## Examples
+# Examples
 ```julia
-opt = RMSProp() # uses default η = 0.001 and ρ = 0.9
+opt = RMSProp()
 
 opt = RMSProp(0.002, 0.95)
 ```
-
-## References
-[RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 """
 mutable struct RMSProp
   eta::Float64
@@ -137,23 +144,22 @@ function apply!(o::RMSProp, x, Δ)
 end
 
 """
-    ADAM(η, β::Tuple)
+    ADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-Implements the ADAM optimiser.
+[ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
 
-## Paramters
-  - Learning Rate (`η`): Defaults to `0.001`.
-  - Beta (`β::Tuple`): The first element refers to β1 and the second to β2. Defaults to `(0.9, 0.999)`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
 
-## Examples
-
+# Examples
 ```julia
-opt = ADAM() # uses the default η = 0.001 and β = (0.9, 0.999)
+opt = ADAM()
 
 opt = ADAM(0.001, (0.9, 0.8))
 ```
-## References
-[ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
 """
 mutable struct ADAM
   eta::Float64
@@ -174,24 +180,22 @@ function apply!(o::ADAM, x, Δ)
 end
 
 """
-    RADAM(η, β::Tuple)
+    RADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-Implements the rectified ADAM optimizer.
+[Rectified ADAM](https://arxiv.org/pdf/1908.03265v1.pdf) optimizer.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.001`
-  - Beta (β::Tuple): The first element refers to β1 and the second to β2. Defaults to `(0.9, 0.999)`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
 
-## Examples
-
+# Examples
 ```julia
-opt = RADAM() # uses the default η = 0.001 and β = (0.9, 0.999)
+opt = RADAM()
 
 opt = RADAM(0.001, (0.9, 0.8))
 ```
-
-## References
-[RADAM](https://arxiv.org/pdf/1908.03265v1.pdf) optimiser (Rectified ADAM).
 """
 mutable struct RADAM
   eta::Float64
@@ -219,22 +223,22 @@ function apply!(o::RADAM, x, Δ)
 end
 
 """
-    AdaMax(η, β::Tuple)
+    AdaMax(η = 0.001, β::Tuple = (0.9, 0.999))
 
-Variant of ADAM based on ∞-norm.
+[AdaMax](https://arxiv.org/abs/1412.6980v9) is a variant of ADAM based on the ∞-norm.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.001`
-  - Beta (β::Tuple): The first element refers to β1 and the second to β2. Defaults to `(0.9, 0.999)`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
 
-## Examples
+# Examples
 ```julia
-opt = AdaMax() # uses default η and β
+opt = AdaMax()
 
 opt = AdaMax(0.001, (0.9, 0.995))
 ```
-## References
-[AdaMax](https://arxiv.org/abs/1412.6980v9) optimiser.
 """
 mutable struct AdaMax
   eta::Float64
@@ -255,23 +259,22 @@ function apply!(o::AdaMax, x, Δ)
 end
 
 """
-    ADAGrad(η)
+    ADAGrad(η = 0.1)
 
-Implements AdaGrad. It has parameter specific learning rates based on how frequently it is updated.
+[ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimizer. It has
+parameter specific learning rates based on how frequently it is updated.
+Parameters don't need tuning.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.1`
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
 
-## Examples
+# Examples
 ```julia
-opt = ADAGrad() # uses default η = 0.1
+opt = ADAGrad()
 
 opt = ADAGrad(0.001)
 ```
-
-## References
-[ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimiser.
-Parameters don't need tuning.
 """
 mutable struct ADAGrad
   eta::Float64
@@ -288,21 +291,21 @@ function apply!(o::ADAGrad, x, Δ)
 end
 
 """
-    ADADelta(ρ)
+    ADADelta(ρ = 0.9)
 
-Version of ADAGrad that adapts learning rate based on a window of past gradient updates. Parameters don't need tuning.
+[ADADelta](https://arxiv.org/abs/1212.5701) is a version of ADAGrad adapting its learning
+rate based on a window of past gradient updates.
+Parameters don't need tuning.
 
-## Parameters
-  - Rho (ρ): Factor by which gradient is decayed at each time step. Defaults to `0.9`.
+# Parameters
+- Rho (`ρ`): Factor by which the gradient is decayed at each time step.
 
-## Examples
+# Examples
 ```julia
-opt = ADADelta() # uses default ρ = 0.9
+opt = ADADelta()
+
 opt = ADADelta(0.89)
 ```
-
-## References
-[ADADelta](https://arxiv.org/abs/1212.5701) optimiser.
 """
 mutable struct ADADelta
   rho::Float64
@@ -321,22 +324,23 @@ function apply!(o::ADADelta, x, Δ)
 end
 
 """
-    AMSGrad(η, β::Tuple)
+    AMSGrad(η = 0.001, β::Tuple = (0.9, 0.999))
 
-Implements AMSGrad version of the ADAM optimiser. Parameters don't need tuning.
+The [AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ) version of the ADAM
+optimiser. Parameters don't need tuning.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.001`.
-  - Beta (β::Tuple): The first element refers to β1 and the second to β2. Defaults to `(0.9, 0.999)`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
 
-## Examples
+# Examples
 ```julia
-opt = AMSGrad() # uses default η and β
+opt = AMSGrad()
+
 opt = AMSGrad(0.001, (0.89, 0.995))
 ```
-
-## References
-[AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ) optimiser.
 """
 mutable struct AMSGrad
   eta::Float64
@@ -356,22 +360,23 @@ function apply!(o::AMSGrad, x, Δ)
 end
 
 """
-    NADAM(η, β::Tuple)
+    NADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-Nesterov variant of ADAM. Parameters don't need tuning.
+[NADAM](http://cs229.stanford.edu/proj2015/054_report.pdf) is a Nesterov variant of ADAM.
+Parameters don't need tuning.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.001`.
-  - Beta (β::Tuple): The first element refers to β1 and the second to β2. Defaults to `(0.9, 0.999)`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
 
-## Examples
+# Examples
 ```julia
-opt = NADAM() # uses default η and β
+opt = NADAM()
+
 opt = NADAM(0.002, (0.89, 0.995))
 ```
-
-## References
-[NADAM](http://cs229.stanford.edu/proj2015/054_report.pdf) optimiser.
 """
 mutable struct NADAM
   eta::Float64
@@ -392,23 +397,24 @@ function apply!(o::NADAM, x, Δ)
 end
 
 """
-    ADAMW(η, β::Tuple, decay)
+    ADAMW(η = 0.001, β::Tuple = (0.9, 0.999), decay = 0)
 
-Variant of ADAM defined by fixing weight decay regularization.
+[ADAMW](https://arxiv.org/abs/1711.05101) is a variant of ADAM fixing (as in repairing) its
+weight decay regularization.
 
-## Parameters
-  - Learning Rate (η): Defaults to `0.001`.
-  - Beta (β::Tuple): The first element refers to β1 and the second to β2. Defaults to (0.9, 0.999).
-  - decay: Decay applied to weights during optimisation. Defaults to 0.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
+- `decay`: Decay applied to weights during optimisation.
 
-## Examples
+# Examples
 ```julia
-opt = ADAMW() # uses default η, β and decay
+opt = ADAMW()
+
 opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
-
-## References
-[ADAMW](https://arxiv.org/abs/1711.05101)
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
   Optimiser(ADAM(η, β), WeightDecay(decay))
@@ -441,14 +447,13 @@ function apply!(o::Optimiser, x, Δ)
 end
 
 """
-    InvDecay(γ)
+    InvDecay(γ = 0.001)
 
-Applies inverse time decay to an optimiser, i.e., the effective step size at iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size. The wrapped optimiser's step size is not modified.
+Apply inverse time decay to an optimiser, so that the effective step size at
+iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size.
+The wrapped optimiser's step size is not modified.
 
-## Parameters
-  - gamma (γ): Defaults to `0.001`
-
-## Example
+# Examples
 ```julia
 Optimiser(InvDecay(..), Opt(..))
 ```
@@ -469,20 +474,24 @@ function apply!(o::InvDecay, x, Δ)
 end
 
 """
-    ExpDecay(eta, decay, decay_step, clip)
+    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4)
 
-Discount the learning rate `eta` by a multiplicative factor `decay` every `decay_step` till a minimum of `clip`.
+Discount the learning rate `η` by the factor `decay` every `decay_step` steps till
+a minimum of `clip`.
 
-## Parameters
-  - Learning Rate (eta): Defaults to `0.001`.
-  - decay: Factor by which the learning rate is discounted. Defaults to `0.1`.
-  - decay_step: Schedules decay operations by setting number of steps between two decay operations. Defaults to `1000`.
-  - clip: Minimum value of learning rate. Defaults to `1e-4`.
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- `decay`: Factor by which the learning rate is discounted.
+- `decay_step`: Schedule decay operations by setting the number of steps between
+                two decay operations.
+- `clip`: Minimum value of learning rate.
 
-## Example
+# Examples
 To apply exponential decay to an optimiser:
 ```julia
 Optimiser(ExpDecay(..), Opt(..))
+
 opt = Optimiser(ExpDecay(), ADAM())
 ```
 """
@@ -500,19 +509,19 @@ function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
   n = o.current[x] = get(o.current, x, 0) + 1
   if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
-    η = max(η * decay^(s / n), o.clip)
+    η = max(η * decay, o.clip)
     o.eta = η
   end
   @. Δ *= η
 end
 
 """
-    WeightDecay(wd)
+    WeightDecay(wd = 0)
 
-Decays the weight by `wd`
+Decay weights by `wd`.
 
-## Parameters
-  - weight decay (wd): 0
+# Parameters
+- Weight decay (`wd`)
 """
 mutable struct WeightDecay
   wd::Real
@@ -523,4 +532,32 @@ WeightDecay() = WeightDecay(0)
 function apply!(o::WeightDecay, x, Δ)
   wd = o.wd
   @. Δ += wd * x
+end
+
+"""
+    ClipValue(thresh)
+
+Clip gradients when their absolute value exceeds `thresh`.
+"""
+mutable struct ClipValue{T}
+    thresh::T
+end
+
+apply!(o::ClipValue, x, Δ) = clamp!(Δ, -o.thresh, o.thresh)
+
+"""
+    ClipNorm(thresh)
+
+Clip gradients when their L2 norm exceeds `thresh`.
+"""
+mutable struct ClipNorm{T}
+    thresh::T
+end
+
+function apply!(o::ClipNorm, x, Δ)
+    Δnrm = norm(Δ)
+    if Δnrm > o.thresh
+        rmul!(Δ, o.thresh / Δnrm)
+    end
+    return Δ
 end

@@ -64,3 +64,7 @@ julia> activations(c, rand(10))
 julia> sum(norm, ans)
 2.1166067f0
 ```
+
+```@docs
+Flux.activations
+```

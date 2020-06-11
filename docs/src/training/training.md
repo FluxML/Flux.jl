@@ -32,6 +32,7 @@ Flux.train!(loss, ps, data, opt)
 ```
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
+For a list of all built-in loss functions, check out the [layer reference](../models/layers.md).
 
 At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
 
@@ -94,6 +95,10 @@ julia> @epochs 2 Flux.train!(...)
 # Train for two epochs
 ```
 
+```@docs
+Flux.@epochs
+```
+
 ## Callbacks
 
 `train!` takes an additional argument, `cb`, that's used for callbacks so that you can observe the training process. For example:
@@ -137,7 +142,7 @@ function my_custom_train!(loss, ps, data, opt)
   for d in data
     gs = gradient(ps) do
       training_loss = loss(d...)
-      # Insert what ever code you want here that needs Training loss, e.g. logging
+      # Insert whatever code you want here that needs Training loss, e.g. logging
       return training_loss
     end
     # insert what ever code you want here that needs gradient

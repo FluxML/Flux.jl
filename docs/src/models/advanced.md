@@ -19,7 +19,7 @@ Affine{Array{Float64,2},Array{Float64,1}}([0.66722 0.774872 0.249809; 0.843321 0
 julia> Flux.params(a) # default behavior
 Params([[0.66722 0.774872 0.249809; 0.843321 0.403843 0.429232; 0.683525 0.662455 0.065297], [0.42394, 0.0170927, 0.544955]])
 
-julia> Flux.trainable(a::Affine) = (a.W, a.b,)
+julia> Flux.trainable(a::Affine) = (a.W,)
 
 julia> Flux.params(a)
 Params([[0.66722 0.774872 0.249809; 0.843321 0.403843 0.429232; 0.683525 0.662455 0.065297]])

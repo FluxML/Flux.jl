@@ -7,15 +7,15 @@ julia> using Flux: onehot, onecold
 
 julia> onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
-  true
- false
+ 0
+ 1
+ 0
 
 julia> onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
- false
- false
-  true
+ 0
+ 0
+ 1
 ```
 
 The inverse is `onecold` (which can take a general probability distribution, as well as just booleans).
@@ -29,6 +29,11 @@ julia> onecold([true, false, false], [:a, :b, :c])
 
 julia> onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
+```
+
+```@docs
+Flux.onehot
+Flux.onecold
 ```
 
 ## Batches
@@ -52,3 +57,7 @@ julia> onecold(ans, [:a, :b, :c])
 ```
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.
+
+```@docs
+Flux.onehotbatch
+```

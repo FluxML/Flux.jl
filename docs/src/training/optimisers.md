@@ -52,6 +52,7 @@ Momentum
 Nesterov
 RMSProp
 ADAM
+RADAM
 AdaMax
 ADAGrad
 ADADelta
@@ -79,7 +80,7 @@ Momentum(eta::Real, rho::Real) = Momentum(eta, rho, IdDict())
 The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state dictionary. Each parameter in our models will get an entry in there. We can now define the rule applied when this optimiser is invoked.
 
 ```julia
-function apply!(o::Momentum, x, Δ)
+function Flux.Optimise.apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
   v = get!(o.velocity, x, zero(x))::typeof(x)
   @. v = ρ * v - η * Δ
@@ -138,4 +139,17 @@ Similar to optimisers, Flux also defines some simple decays that can be used in 
 ExpDecay
 InvDecay
 WeightDecay
+```
+
+## Gradient Clipping
+
+Gradient clipping is useful for training recurrent neural networks, which have a tendency to suffer from the exploding gradient problem. An example usage is
+
+```julia
+opt = Optimiser(ClipValue(1e-3), ADAM(1e-3))
+```
+
+```@docs
+ClipValue
+ClipNorm
 ```

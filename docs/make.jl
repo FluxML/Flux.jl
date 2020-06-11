@@ -1,6 +1,8 @@
 using Documenter, Flux, NNlib
 
+DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
 makedocs(modules=[Flux, NNlib],
+         doctest = VERSION >= v"1.4",
          sitename = "Flux",
          pages = ["Home" => "index.md",
                   "Building Models" =>
@@ -19,12 +21,16 @@ makedocs(modules=[Flux, NNlib],
                   "GPU Support" => "gpu.md",
                   "Saving & Loading" => "saving.md",
                   "The Julia Ecosystem" => "ecosystem.md",
+                  "Utility Functions" => "utilities.md",
                   "Performance Tips" => "performance.md",
+                  "Datasets" => "datasets.md",
                   "Community" => "community.md"],
-         format = Documenter.HTML(assets = ["assets/flux.css"],
-                                  analytics = "UA-36890222-9",
-                                  prettyurls = haskey(ENV, "CI")))
+         format = Documenter.HTML(
+             analytics = "UA-36890222-9",
+             assets = ["assets/flux.css"],
+             prettyurls = get(ENV, "CI", nothing) == "true"),
+         )
 
-deploydocs(repo = "github.com/FluxML/Flux.jl.git",    
+deploydocs(repo = "github.com/FluxML/Flux.jl.git",
            target = "build",
            push_preview = true)
