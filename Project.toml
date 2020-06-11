@@ -27,7 +27,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 AbstractTrees = "0.2, 0.3"
-Adapt = "1"
+Adapt = "1, 2.0"
 CodecZlib = "0.5, 0.6, 0.7"
 Colors = "0.8, 0.9, 0.10, 0.11, 0.12"
 CuArrays = "2"
