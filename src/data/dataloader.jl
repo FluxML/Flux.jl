@@ -88,19 +88,19 @@ end
 
 _nobs(data::AbstractArray) = size(data)[end]
 
-function _nobs(data::Tuple)
+function _nobs(data::Union{Tuple,NamedTuple})
     length(data) > 0 || throw(ArgumentError("Need at least one data input"))
     n = _nobs(data[1])
-    if !all(x -> _nobs(x) == n, data[2:end])
+    if !all(x -> _nobs(x) == n, Base.tail(data))
         throw(DimensionMismatch("All data should contain same number of observations"))
     end
     return n
 end
 
 function _getobs(data::AbstractArray{T,N}, i) where {T,N}
-    getindex(data, ntuple(i->Colon(), N-1)..., i)
+    getindex(data, ntuple(i->Colon(), Val(N-1))..., i)
 end
 
-_getobs(data::Tuple, i) = map(x -> _getobs(x, i), data)
+_getobs(data::Union{Tuple,NamedTuple}, i) = map(x -> _getobs(x, i), data)
 
 Base.eltype(d::DataLoader{D}) where D = D
