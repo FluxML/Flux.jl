@@ -38,5 +38,4 @@ julia:nightly:
     - .test
   tags:
     - nvidia
->>>>>>> upstream/master
   allow_failure: true
