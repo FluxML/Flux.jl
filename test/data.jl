@@ -39,7 +39,7 @@
     @test batches[3][2] == Y[5:5]
 
     # test with NamedTuple
-    d = DataLoader((x = X, y = Y), batchsize=2)
+    d = DataLoader((x=X, y=Y), batchsize=2)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == NamedTuple{(:x, :y), Tuple{typeof(X), typeof(Y)}}
     @test length(batches) == 3

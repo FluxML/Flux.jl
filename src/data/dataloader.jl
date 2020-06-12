@@ -16,7 +16,7 @@ end
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one). 
 
-Takes as input a data tensors or a tuple (or `NamedTuple`) of one or more such tensors.
+Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is considered to be the observation dimension.
 
 If `shuffle=true`, shuffles the observations each time iterations are re-started.
@@ -59,7 +59,7 @@ Usage example:
     Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
 
     # can use NamedTuple to name tensors
-    train_loader = DataLoader((images = Xtrain, labels = Ytrain), batchsize=2, shuffle=true)
+    train_loader = DataLoader((images=Xtrain, labels=Ytrain), batchsize=2, shuffle=true)
     for datum in train_loader
         @assert size(datum.images) == (10, 2)
         @assert size(datum.labels) == (2,)
@@ -95,7 +95,7 @@ end
 
 _nobs(data::AbstractArray) = size(data)[end]
 
-function _nobs(data::Union{Tuple,NamedTuple})
+function _nobs(data::Union{Tuple, NamedTuple})
     length(data) > 0 || throw(ArgumentError("Need at least one data input"))
     n = _nobs(data[1])
     if !all(x -> _nobs(x) == n, Base.tail(data))
@@ -108,6 +108,6 @@ function _getobs(data::AbstractArray{T,N}, i) where {T,N}
     getindex(data, ntuple(i->Colon(), Val(N-1))..., i)
 end
 
-_getobs(data::Union{Tuple,NamedTuple}, i) = map(x -> _getobs(x, i), data)
+_getobs(data::Union{Tuple, NamedTuple}, i) = map(x -> _getobs(x, i), data)
 
 Base.eltype(d::DataLoader{D}) where D = D
