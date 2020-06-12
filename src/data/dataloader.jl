@@ -105,6 +105,6 @@ function _nobs(data::Union{Tuple, NamedTuple})
 end
 
 _getobs(data::AbstractArray, i) = selectdim(data, ndims(data), i)
-_getobs(data::Union{Tuple, NamedTuple}, i) = map(x -> _getobs(x, i), data)
+_getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(_getobs, i), data)
 
-Base.eltype(d::DataLoader{D}) where D = D
+Base.eltype(::DataLoader{D}) where D = D
