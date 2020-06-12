@@ -104,10 +104,7 @@ function _nobs(data::Union{Tuple, NamedTuple})
     return n
 end
 
-function _getobs(data::AbstractArray{T,N}, i) where {T,N}
-    getindex(data, ntuple(i->Colon(), Val(N-1))..., i)
-end
-
+_getobs(data::AbstractArray, i) = selectdim(data, ndims(data), i)
 _getobs(data::Union{Tuple, NamedTuple}, i) = map(x -> _getobs(x, i), data)
 
 Base.eltype(d::DataLoader{D}) where D = D
