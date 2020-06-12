@@ -16,8 +16,8 @@ end
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one). 
 
-Takes as input a data tensors or a tuple of one or more such tensors. 
-The last dimension in each tensor is considered to be the observation dimension. 
+Takes as input a data tensors or a tuple (or `NamedTuple`) of one or more such tensors.
+The last dimension in each tensor is considered to be the observation dimension.
 
 If `shuffle=true`, shuffles the observations each time iterations are re-started.
 If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
@@ -57,6 +57,13 @@ Usage example:
     # train for 10 epochs
     using IterTools: ncycle 
     Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
+
+    # can use NamedTuple to name tensors
+    train_loader = DataLoader((images = Xtrain, labels = Ytrain), batchsize=2, shuffle=true)
+    for datum in train_loader
+        @assert size(datum.images) == (10, 2)
+        @assert size(datum.labels) == (2,)
+    end
 """
 function DataLoader(data; batchsize=1, shuffle=false, partial=true)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
