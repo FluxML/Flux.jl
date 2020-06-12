@@ -33,7 +33,7 @@ import Flux: activations
       @test Dense(rand(100,10), rand(10)).σ == identity
 
       @test_throws MethodError Dense(10, 10.5)
-      @test_throws MethodError Dense(10, 10.5; σ=tanh)
+      @test_throws MethodError Dense(10, 10.5, tanh)
     end
 
     @test  length(Dense(10, 5)(randn(10))) == 5
