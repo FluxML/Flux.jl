@@ -132,7 +132,7 @@ end
 function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
-  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ, b = c.σ, reshape(c.bias, ntuple(_->1, length(c.stride))..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
@@ -222,7 +222,7 @@ end
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
                       weight = convfilter(k, reverse(ch), init = init), bias = zeros(ch[2])) where N
-  
+
   ConvTranspose(weight, bias, σ,
               stride = stride, pad = pad, dilation = dilation)
 end
