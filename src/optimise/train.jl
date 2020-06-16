@@ -37,6 +37,26 @@ call(f, xs...) = f(xs...)
 runall(f) = f
 runall(fs::AbstractVector) = () -> foreach(call, fs)
 
+struct SkipException <: Exception end
+
+"""
+    skip()
+
+Call `Flux.skip()` in a callback to indicate when a callback condition is met.
+This will trigger the train loop to skip the current data point and not update with the calculated gradient.
+
+# Examples
+```julia
+cb = function ()
+  loss() > 1e7 && Flux.skip()
+end
+```
+"""
+function skip()
+  throw(SkipException())
+end
+
+
 struct StopException <: Exception end
 
 """
@@ -93,6 +113,8 @@ function train!(loss, ps, data, opt; cb = () -> ())
     catch ex
       if ex isa StopException
         break
+      elseif ex isa SkipException
+        continue
       else
         rethrow(ex)
       end
