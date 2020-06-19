@@ -491,8 +491,7 @@ struct AdaptiveMaxPool{S, O}
 end
 
 function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
-    sz = size(x)
-    insize = sz[1:end-2]
+    insize = size(x)[1:end-2]
     outsize = a.out
     stride = insize ./ outsize
     k = insize .- (outsize .- 1) .* stride
@@ -516,8 +515,7 @@ struct AdaptiveMeanPool{S, O}
 end
 
 function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
-    sz = size(x)
-    insize = sz[1:end-2]
+    insize = size(x)[1:end-2]
     outsize = a.out
     stride = insize ./ outsize
     k = insize .- (outsize .- 1) .* stride
