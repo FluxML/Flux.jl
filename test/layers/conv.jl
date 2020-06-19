@@ -4,6 +4,10 @@ using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
+  amp = AdaptiveMaxPool((5,5))
+  @test amp(x) == maxpool(x, PoolDims(x, 2))
+  amp = AdaptiveMeanPool((5,5))
+  @test amp(x) == meanpool(x, PoolDims(x, 2))
   gmp = GlobalMaxPool()
   @test size(gmp(x)) == (1, 1, 3, 2)
   gmp = GlobalMeanPool()

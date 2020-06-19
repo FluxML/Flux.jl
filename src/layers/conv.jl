@@ -481,6 +481,65 @@ outdims(l::CrossCor, isize) =
   output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
+    AdaptiveMaxPool(out)
+Adaptive max pooling layer. `out` is the size of the dimension of the output.
+The output dimension is fixed irrespective of the size of the input. The stride,
+kernel and padding is internally calculated using the input and output dimensions.
+"""
+struct AdaptiveMaxPool{S, O}
+     out::NTuple{O, Int}
+     AdaptiveMaxPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
+end
+
+function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
+    in_size = size(x)
+    #Output_size
+    out_size = a.out
+    #Stride
+    stride = in_size ./ out_size
+    #Kernel_size
+    k = in_size .- (out_size .- 1) .* stride
+    #Padding
+    pad = 0
+    pdims = PoolDims(x, k; padding=pad, stride=stride)
+    return maxpool(x, pdims)
+end
+
+function Base.show(io::IO, a::AdaptiveMaxPool)
+  print(io, "AdaptiveMaxPool(", a.out, ")")
+end
+
+"""
+    AdaptiveMeanPool(out)
+Adaptive mean pooling layer. `out` is the size of the dimension of the output.
+The output dimension is fixed irrespective of the size of the input. The stride,
+kernel and padding is internally calculated using the input and output dimensions.
+"""
+struct AdaptiveMeanPool{S, O}
+     out::NTuple{O, Int}
+     AdaptiveMeanPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
+end
+
+function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
+    #Input_size
+    in_size = size(x)
+    #Output_size
+    out_size = a.out
+    #Stride
+    stride = in_size ./ out_size
+    #Kernel_size
+    k = in_size .- (out_size .- 1) .* stride
+    #Padding
+    pad = 0
+    pdims = PoolDims(x, k; padding=pad, stride=stride)
+    return meanpool(x, pdims)
+end
+
+function Base.show(io::IO, a::AdaptiveMeanPool)
+  print(io, "AdaptiveMeanPool(", a.out, ")")
+end
+
+"""
     GlobalMaxPool()
 
 Global max pooling layer.
