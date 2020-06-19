@@ -483,9 +483,7 @@ outdims(l::CrossCor, isize) =
 """
     AdaptiveMaxPool(out)
 
-Adaptive max pooling layer. `out` is the size of the dimension of the output.
-
-The output dimension is fixed irrespective of the size of the input.
+Adaptive max pooling layer. `out` is the desired output size (batch and channel dimension excluded).
 """
 struct AdaptiveMaxPool{S, O}
      out::NTuple{O, Int}
@@ -510,9 +508,7 @@ end
 """
     AdaptiveMeanPool(out)
 
-Adaptive mean pooling layer. `out` is the size of the dimension of the output.
-
-The output dimension is fixed irrespective of the size of the input.
+Adaptive mean pooling layer. `out` is the desired output size (batch and channel dimension excluded).
 """
 struct AdaptiveMeanPool{S, O}
      out::NTuple{O, Int}
