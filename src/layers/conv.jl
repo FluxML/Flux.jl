@@ -497,7 +497,7 @@ function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
     #Output size
     outsize = a.out
     #Stride
-    stride = insize[1:end-2] ./ out_size
+    stride = insize[1:end-2] ./ outsize
     #Kernel size
     k = insize .- (outsize .- 1) .* stride
     #Padding
