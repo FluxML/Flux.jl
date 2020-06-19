@@ -492,13 +492,14 @@ struct AdaptiveMaxPool{S, O}
 end
 
 function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
-    in_size = size(x)
-    #Output_size
-    out_size = a.out
+    #Input size
+    insize = size(x)
+    #Output size
+    outsize = a.out
     #Stride
-    stride = in_size ./ out_size
-    #Kernel_size
-    k = in_size .- (out_size .- 1) .* stride
+    stride = insize[1:end-2] ./ out_size
+    #Kernel size
+    k = insize .- (outsize .- 1) .* stride
     #Padding
     pad = 0
     pdims = PoolDims(x, k; padding=pad, stride=stride)
@@ -521,14 +522,14 @@ struct AdaptiveMeanPool{S, O}
 end
 
 function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
-    #Input_size
-    in_size = size(x)
-    #Output_size
-    out_size = a.out
+    #Input size
+    insize = size(x)
+    #Outputsize
+    outsize = a.out
     #Stride
-    stride = in_size ./ out_size
-    #Kernel_size
-    k = in_size .- (out_size .- 1) .* stride
+    stride = insize[1:end-2] ./ outsize
+    #Kernel size
+    k = insize .- (outsize .- 1) .* stride
     #Padding
     pad = 0
     pdims = PoolDims(x, k; padding=pad, stride=stride)
