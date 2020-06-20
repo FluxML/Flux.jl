@@ -99,7 +99,7 @@ This works even when we've chain recurrent layers into a larger model.
 ```julia
 m = Chain(LSTM(10, 15), Dense(15, 5))
 m.(seq)
-reset!(m) # rest the hidden state
+
 ```
 
 Finally, we can reset the hidden state of the cell back to its initial value using `reset!(m)`.
