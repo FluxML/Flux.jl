@@ -2,7 +2,7 @@
 
 ## Recurrent Cells
 
-In the simple feedforward case, our model `m` is a simple function from various inputs `xᵢ` to predictions `yᵢ`. (For example, each `x` might be an MNIST digit image vectors and each `y` a digit label.) The predictions are jointly independent, where prediction  `y` is fixed given `x`.
+In the simple feedforward case, our model `m` is a simple function from various inputs `xᵢ` to predictions `yᵢ`. (For example, each `x` might be an MNIST digit and each `y` a digit label.) Each prediction is completely independent of any others, and using the same `x` will always produce the same `y`.
 
 ```julia
 y₁ = f(x₁)
@@ -11,17 +11,17 @@ y₃ = f(x₃)
 # ...
 ```
 
-Recurrent networks introduce *hidden states* that gets carried over each time we run the model. The model takes the old `h` as an input, and produces a new `h` as output for each iteration.
+Recurrent networks introduce a _hidden state_ that gets carried over each time we run the model. The model now takes the old `h` as an input, and produces a new `h` as output, each time we run it.
 
 ```julia
 h = # ... initial state ...
 h, y₁ = f(h, x₁)
 h, y₂ = f(h, x₂)
-h, y₃ = f(h, x₃) # y₃ is dependant on x₁, x₂,x₃
+h, y₃ = f(h, x₃)
 # ...
 ```
 
-Information stored in `h` is carried through the next prediction,  funcitoning as a memory-like feature in the network. This means that the prediction made for a given `x` depends on all the inputs previously fed into the model. 
+Information stored in `h` is preserved for the next prediction, allowing it to function as a kind of memory. This also means that the prediction made for a given `x` depends on all the inputs previously fed into the model.
 
 (This might be important if, for example, each `x` represents one word of a sentence; the model's interpretation of the word "bank" should change if the previous input was "river" rather than "investment".)
 
@@ -45,7 +45,7 @@ h, y = rnn(h, x)
 
 If you run the last line a few times, you'll notice the output `y` changing slightly even though the input `x` is the same.
 
-We sometimes refer to functions like `rnn` above, which explicitly manage states, as recurrent *cells*. There are various recurrent cells available, which are documented in the [layer reference](layers.md). The hand-written example above can be replaced with:
+We sometimes refer to functions like `rnn` above, which explicitly manage state, as recurrent _cells_. There are various recurrent cells available, which are documented in the [layer reference](layers.md). The hand-written example above can be replaced with:
 
 ```julia
 using Flux
@@ -103,4 +103,3 @@ reset!(m) # rest the hidden state
 ```
 
 Finally, we can reset the hidden state of the cell back to its initial value using `reset!(m)`.
-
