@@ -2,13 +2,16 @@
 nfan() = 1, 1 # fan_in, fan_out
 nfan(n) = 1, n # A vector is treated as a n×1 matrix
 nfan(n_out, n_in) = n_in, n_out # In case of Dense kernels: arranged as matrices
+nfan(dims::Tuple) = nfan(dims...)
 nfan(dims...) = prod(dims[1:end-2]) .* (dims[end-1], dims[end]) # In case of convolution kernels
 
 """
     glorot_uniform(dims...)
 
 Return an `Array` of size `dims` containing random variables taken from a uniform
-distribution in the interval ``[-x, x]``, where `x = sqrt(24 / sum(dims)) / 2`.
+distribution in the interval ``[-x, x]``, where `x = sqrt(6 / (fan_in + fan_out))`.
+
+This method is described in [1] and also known as Xavier initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
@@ -17,6 +20,13 @@ julia> Flux.glorot_uniform(2, 3)
  0.601094  -0.57414   -0.814925
  0.900868   0.805994   0.057514
 ```
+
+See also: [`glorot_normal`](@ref Flux.glorot_normal), [`kaiming_normal`](@ref Flux.kaiming_normal),
+[`kaiming_uniform`](@ref Flux.kaiming_uniform)
+
+# References
+
+[1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
 glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
 
@@ -24,7 +34,9 @@ glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum
     glorot_normal(dims...)
 
 Return an `Array` of size `dims` containing random variables taken from a normal
-distribution with mean 0 and standard deviation `sqrt(2 / sum(dims))`.
+distribution with mean 0 and standard deviation `sqrt(2 / (fan_in + fan_out))`.
+
+This method is described in [1] and also known as Xavier initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
@@ -34,8 +46,74 @@ julia> Flux.glorot_normal(3, 2)
   0.523935   0.371009
  -0.223261   0.188052
 ```
+
+See also: [`glorot_uniform`](@ref Flux.glorot_uniform), [`kaiming_normal`](@ref Flux.kaiming_normal),
+[`kaiming_uniform`](@ref Flux.kaiming_uniform)
+
+# References
+
+[1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
+
 """
 glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+
+"""
+    kaiming_uniform(dims...; gain = √2)
+
+Return an `Array` of size `dims` containing random variables taken from a uniform distribution in the
+interval `[-x, x]`, where `x = gain * sqrt(3/fan_in)`.
+
+This method is described in [1] and also known as He initialization.
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.kaiming_uniform(3, 2)
+3×2 Array{Float32,2}:
+  0.950413   1.27439
+  1.4244    -1.28851
+ -0.907795   0.0909376
+```
+
+See also: [`kaiming_normal`](@ref Flux.kaiming_normal), [`glorot_normal`](@ref Flux.glorot_normal),
+[`glorot_uniform`](@ref Flux.glorot_uniform)
+
+# References
+
+[1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
+"""
+function kaiming_uniform(dims...; gain = √2)
+  bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
+  return (rand(Float32, dims...) .- 0.5f0) .* 2bound
+end
+
+"""
+    kaiming_normal(dims...; gain = √2)
+
+Return an `Array` of size `dims` containing random variables taken from a normal
+distribution with mean 0 and standard deviation `gain * sqrt(fan_in)`.
+
+This method is described in [1] and also known as He initialization.
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.kaiming_normal(3, 2)
+3×2 Array{Float32,2}:
+  0.679107  -0.134854
+  0.828413   0.586617
+ -0.353007   0.297336
+```
+
+See also: [`kaiming_uniform`](@ref Flux.kaiming_uniform), [`glorot_normal`](@ref Flux.glorot_normal),
+[`glorot_uniform`](@ref Flux.glorot_uniform)
+
+# References
+
+[1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
+"""
+function kaiming_normal(dims...; gain = √2f0)
+  std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
+  return randn(Float32, dims...) .* std
+end
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
