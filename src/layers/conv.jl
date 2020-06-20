@@ -486,18 +486,18 @@ outdims(l::CrossCor, isize) =
 Adaptive max pooling layer. `out` is the desired output size (batch and channel dimension excluded).
 """
 struct AdaptiveMaxPool{S, O}
-     out::NTuple{O, Int}
-     AdaptiveMaxPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
+  out::NTuple{O, Int}
+  AdaptiveMaxPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
 end
 
 function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
-    insize = size(x)[1:end-2]
-    outsize = a.out
-    stride = insize ./ outsize
-    k = insize .- (outsize .- 1) .* stride
-    pad = 0
-    pdims = PoolDims(x, k; padding=pad, stride=stride)
-    return maxpool(x, pdims)
+  insize = size(x)[1:end-2]
+  outsize = a.out
+  stride = insize ./ outsize
+  k = Int.(insize .- (outsize .- 1) .* stride)
+  pad = 0
+  pdims = PoolDims(x, k; padding=pad, stride=stride)
+  return maxpool(x, pdims)
 end
 
 function Base.show(io::IO, a::AdaptiveMaxPool)
@@ -510,18 +510,18 @@ end
 Adaptive mean pooling layer. `out` is the desired output size (batch and channel dimension excluded).
 """
 struct AdaptiveMeanPool{S, O}
-     out::NTuple{O, Int}
-     AdaptiveMeanPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
+  out::NTuple{O, Int}
+  AdaptiveMeanPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
 end
 
 function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
-    insize = size(x)[1:end-2]
-    outsize = a.out
-    stride = insize ./ outsize
-    k = insize .- (outsize .- 1) .* stride
-    pad = 0
-    pdims = PoolDims(x, k; padding=pad, stride=stride)
-    return meanpool(x, pdims)
+  insize = size(x)[1:end-2]
+  outsize = a.out
+  stride = insize ./ outsize
+  k = Int.(insize .- (outsize .- 1) .* stride)
+  pad = 0
+  pdims = PoolDims(x, k; padding=pad, stride=stride)
+  return meanpool(x, pdims)
 end
 
 function Base.show(io::IO, a::AdaptiveMeanPool)
