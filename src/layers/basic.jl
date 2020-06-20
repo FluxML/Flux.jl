@@ -103,7 +103,7 @@ julia> d(rand(5))
    0.12311903
 ```
 """
-struct Dense{F,S,T}
+struct Dense{F,S<:AbstractArray,T<:AbstractArray}
   W::S
   b::T
   σ::F
