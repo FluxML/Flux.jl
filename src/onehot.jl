@@ -27,7 +27,8 @@ Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = OneHotMatrix(xs.height, copy
 
 Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
-A::AbstractMatrix * B::OneHotMatrix = A[:, map(x->x.ix, B.data)]
+# remove workaround when https://github.com/JuliaGPU/CuArrays.jl/issues/676 is fixed
+A::AbstractMatrix * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs...])
 
@@ -48,7 +49,7 @@ cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.d
 Create a `OneHotVector` with its `l`-th element `true` based on the
 possible set of `labels`.
 If `unk` is given, return `onehot(unk, labels)` if the input label `l` is not found
-in `labels`; otherwise it will error.
+in `labels`; otherwise, it will raise an error.
 
 # Examples
 ```jldoctest
