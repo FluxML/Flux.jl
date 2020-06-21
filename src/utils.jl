@@ -1,4 +1,31 @@
 # Arrays
+"""
+    nfan(n_out, n_in=1) -> Tuple
+    nfan(dims...)
+    nfan(dims::Tuple)
+
+For a layer characterized by dimensions `dims`, return a tuple `(fan_in, fan_out)`, where `fan_in`
+is the number of input neurons connected to an output one, and `fan_out` is the number of output neurons
+connected to an input one.
+
+This function is mainly used by weight initializers, e.g., [`kaiming_normal`](@ref Flux.kaiming_normal).
+
+# Examples
+
+```jldoctest
+julia> layer = Dense(10, 20)
+Dense(10, 20)
+
+julia> Flux.nfan(size(layer.W))
+(10, 20)
+
+julia> layer = Conv((3, 3), 2=>10)
+Conv((3, 3), 2=>10)
+
+julia> Flux.nfan(size(layer.weight))
+(18, 90)
+```
+"""
 nfan() = 1, 1 # fan_in, fan_out
 nfan(n) = 1, n # A vector is treated as a n×1 matrix
 nfan(n_out, n_in) = n_in, n_out # In case of Dense kernels: arranged as matrices
@@ -21,8 +48,12 @@ julia> Flux.glorot_uniform(2, 3)
  0.900868   0.805994   0.057514
 ```
 
-See also: [`glorot_normal`](@ref Flux.glorot_normal), [`kaiming_normal`](@ref Flux.kaiming_normal),
-[`kaiming_uniform`](@ref Flux.kaiming_uniform)
+# See also
+
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
@@ -47,13 +78,16 @@ julia> Flux.glorot_normal(3, 2)
  -0.223261   0.188052
 ```
 
-See also: [`glorot_uniform`](@ref Flux.glorot_uniform), [`kaiming_normal`](@ref Flux.kaiming_normal),
-[`kaiming_uniform`](@ref Flux.kaiming_uniform)
+# See also
+
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
-
 """
 glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
 
@@ -74,8 +108,12 @@ julia> Flux.kaiming_uniform(3, 2)
  -0.907795   0.0909376
 ```
 
-See also: [`kaiming_normal`](@ref Flux.kaiming_normal), [`glorot_normal`](@ref Flux.glorot_normal),
-[`glorot_uniform`](@ref Flux.glorot_uniform)
+# See also
+
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
@@ -103,8 +141,12 @@ julia> Flux.kaiming_normal(3, 2)
  -0.353007   0.297336
 ```
 
-See also: [`kaiming_uniform`](@ref Flux.kaiming_uniform), [`glorot_normal`](@ref Flux.glorot_normal),
-[`glorot_uniform`](@ref Flux.glorot_uniform)
+# See also
+
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
