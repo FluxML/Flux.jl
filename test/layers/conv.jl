@@ -4,7 +4,7 @@ using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
-  y = randn(float32, 20, 20, 3, 2)
+  y = randn(Float32, 20, 20, 3, 2)
   ampx = AdaptiveMaxPool((5,5))
   @test ampx(x) == maxpool(x, PoolDims(x, 2))
   ampx = AdaptiveMeanPool((5,5))
