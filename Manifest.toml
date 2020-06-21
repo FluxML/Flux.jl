@@ -20,9 +20,9 @@ version = "2.0.0"
 
 [[ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "a504dca2ac7eda8761c8f7c1ed52427a1be75a3c"
+git-tree-sha1 = "89182776a99b69964e995cc2f1e37b5fc3476d56"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "0.2.6"
+version = "0.3.4"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -45,6 +45,18 @@ repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDA.jl.git"
 uuid = "052768ef-5323-5732-b1bb-66c8b64840ba"
 version = "1.0.2"
+
+[[ChainRules]]
+deps = ["ChainRulesCore", "LinearAlgebra", "Reexport", "Requires", "Statistics"]
+git-tree-sha1 = "85f130f2c5ce208a5a395b550802398d2fcc5ee6"
+uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
+version = "0.6.4"
+
+[[ChainRulesCore]]
+deps = ["MuladdMacro"]
+git-tree-sha1 = "32e2c6e44d4fdd985b5688b5e85c1f6892cf3d15"
+uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+version = "0.8.0"
 
 [[CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -157,9 +169,9 @@ version = "0.4.0"
 
 [[IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
-git-tree-sha1 = "90ee39f9beaaa186e4968417ea2b8ed5673c91c0"
+git-tree-sha1 = "6875ae3cfcb9a50af80553d5cc825f406e8d13bc"
 uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
-version = "0.3.3"
+version = "0.4.0"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -221,11 +233,22 @@ version = "0.4.3"
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
+[[MuladdMacro]]
+git-tree-sha1 = "c6190f9a7fc5d9d5915ab29f2134421b12d24a68"
+uuid = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
+version = "0.2.2"
+
+[[NNPACK_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "c3d1a616362645754b18e12dbba96ec311b0867f"
+uuid = "a6bfbf70-4841-5cb9-aa18-3a8ad3c413ee"
+version = "2018.6.22+0"
+
 [[NNlib]]
-deps = ["BinaryProvider", "Libdl", "LinearAlgebra", "Requires", "Statistics"]
-git-tree-sha1 = "d9f196d911f55aeaff11b11f681b135980783824"
+deps = ["Libdl", "LinearAlgebra", "NNPACK_jll", "Pkg", "Requires", "Statistics"]
+git-tree-sha1 = "04bae5dcd446ee45d6a3b9e84adca85ee33fb20c"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.6.6"
+version = "0.7.0"
 
 [[NaNMath]]
 git-tree-sha1 = "928b8ca9b2791081dc71a51c55347c27c618760f"
@@ -352,10 +375,10 @@ uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
 version = "1.2.11+11"
 
 [[Zygote]]
-deps = ["AbstractFFTs", "ArrayLayouts", "DiffRules", "FillArrays", "ForwardDiff", "Future", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Random", "Requires", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "707ceea58e2bd0ff3077ab13a92f8355181d3ee4"
+deps = ["AbstractFFTs", "ArrayLayouts", "ChainRules", "FillArrays", "ForwardDiff", "Future", "IRTools", "InteractiveUtils", "LinearAlgebra", "MacroTools", "NNlib", "Random", "Requires", "Statistics", "ZygoteRules"]
+git-tree-sha1 = "e27f5f2d2676f9e7487e97f5765b5c46a522d950"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.4.20"
+version = "0.5.0"
 
 [[ZygoteRules]]
 deps = ["MacroTools"]
