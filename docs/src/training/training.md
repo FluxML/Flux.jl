@@ -146,6 +146,7 @@ function my_custom_train!(loss, ps, data, opt)
       training_loss = loss(d...)
       # Code inserted here will be differentiated, unless you need that gradient information
       # it is better to do the work outside this block.
+      return training_loss
     end
     # Insert whatever code you want here that needs Training loss, e.g. logging
     # logging_callback(training_loss)
