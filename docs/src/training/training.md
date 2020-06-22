@@ -162,7 +162,7 @@ You could simplify this further, for example by hard-coding in the loss function
 Another possibility is to use [`Zygote.pullback`](https://fluxml.ai/Zygote.jl/dev/adjoints/#Pullbacks-1)
 to access the training loss and the gradient simultaneously.
 
-```
+```julia
 function my_custom_train!(loss, ps, data, opt)
   ps = Params(ps)
   for d in data
