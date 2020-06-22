@@ -261,7 +261,7 @@ end
 """
     OADAM(η = 0.0001, β::Tuple = (0.5, 0.9))
 
-[OADAM](https://par.nsf.gov/biblio/10079723-training-gans-optimism) (Optimistic ADAM)
+[OADAM](https://arxiv.org/abs/1711.00141) (Optimistic ADAM)
 is a variant of ADAM adding an "optimistic" term suitable for adversarial training.
 
 # Parameters
