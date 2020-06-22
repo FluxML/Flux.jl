@@ -4,6 +4,7 @@
 * Use `DataLoader` with `NamedTuple`s, so that tensors can be accessed by name [https://github.com/FluxML/Flux.jl/pull/1221].
 * Error if Dense layers weights and biases are not arrays [https://github.com/FluxML/Flux.jl/pull/1218].
 * Add `Adaptive Pooling` in Flux layers [https://github.com/FluxML/Flux.jl/pull/1239].
+* Optimistic ADAM (OADAM) optimizer for adversarial training [https://github.com/FluxML/Flux.jl/pull/1246].
 
 # v0.10.5
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
