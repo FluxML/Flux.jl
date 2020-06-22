@@ -287,12 +287,13 @@ OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
 
 function apply!(o::OADAM, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
-  prv = @. η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+  mt, vt, Δ_, βp = get!(o.state, x, (zero(x), zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  @. Δ = 2η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) - prv
-  o.state[x] = (mt, vt, βp .* β)
+  @. Δ = -Δ_
+  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+  @. Δ += 2Δ_
+  o.state[x] = (mt, vt, Δ_, βp .* β)
   return Δ
 end
 
