@@ -138,7 +138,7 @@ E.g. in the places marked with comments.
 
 ```julia
 function my_custom_train!(loss, ps, data, opt)
-  # training_loss is declared local so it will be available for logging outside the gradient calculation
+  # training_loss is declared local so it will be available for logging outside the gradient calculation.
   local training_loss
   ps = Params(ps)
   for d in data
@@ -148,13 +148,34 @@ function my_custom_train!(loss, ps, data, opt)
       # it is better to do the work outside this block.
       return training_loss
     end
-    # Insert whatever code you want here that needs Training loss, e.g. logging
+    # Insert whatever code you want here that needs training_loss, e.g. logging.
     # logging_callback(training_loss)
-    # insert what ever code you want here that needs gradient
-    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge
+    # Insert what ever code you want here that needs gradient.
+    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge.
     update!(opt, ps, gs)
-    # Here you might like to check validation set accuracy, and break out to do early stopping
+    # Here you might like to check validation set accuracy, and break out to do early stopping.
   end
 end
 ```
 You could simplify this further, for example by hard-coding in the loss function.
+
+Another possibility is to use [`Zygote.pullback`](https://fluxml.ai/Zygote.jl/dev/adjoints/#Pullbacks-1)
+to access the training loss and the gradient simultaneously.
+
+```
+function my_custom_train!(loss, ps, data, opt)
+  ps = Params(ps)
+  for d in data
+    # back is a method that computes the product of the gradient so far with its argument.
+    train_loss, back = Zygote.pullback(() -> loss(d...), ps)
+    # Insert whatever code you want here that needs training_loss, e.g. logging.
+    # logging_callback(training_loss)
+    # Apply back() to the correct type of 1.0 to get the gradient of loss.
+    gs = back(one(train_loss))
+    # Insert what ever code you want here that needs gradient.
+    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge.
+    update!(opt, ps, gs)
+    # Here you might like to check validation set accuracy, and break out to do early stopping.
+  end
+end
+```
