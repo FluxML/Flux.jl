@@ -38,7 +38,7 @@ NNlib = "0.6"
 Reexport = "0.2"
 StatsBase = "0"
 ZipFile = "0.7, 0.8, 0.9"
-Zygote = "0.4.13"
+Zygote = "0.4.13, 0.5"
 julia = "1.3"
 
 [extras]
