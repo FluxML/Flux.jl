@@ -45,9 +45,9 @@ julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
 3×3 Flux.OneHotMatrix:
- false   true  false
-  true  false   true
- false  false  false
+    0    1    0
+    1    0    1
+    0    0    0
 
 julia> onecold(ans, [:a, :b, :c])
 3-element Array{Symbol,1}:
