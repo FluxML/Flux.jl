@@ -64,6 +64,10 @@ outdims(c::Chain, isize) = foldr(outdims, reverse(c.layers), init = isize)
 # see issue https://github.com/FluxML/Flux.jl/issues/702
 # Johnny Chen -- @johnnychen94
 # only slightly changed to better handle interaction with Zygote @dsweber2
+
+# fallback
+outdims(f::Function, isize::Tuple) = size(f(ones(Float32, isize..., 1)))[1:end-1]    # since we aren't care about batch dimension, we are free to just set it to 1
+
 """
     activations(c::Chain, input)
 
@@ -144,13 +148,13 @@ Calculate the output dimensions given the input dimensions, `isize`.
 
 ```julia
 m = Dense(10, 5)
-outdims(m, (5, 2)) == (5,)
 outdims(m, (10,)) == (5,)
+outdims(m, (10, 2)) == (5, 2)
 ```
 """
 function outdims(l::Dense, isize)
-    first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)),), got $isize"))
-    return (size(l.W, 1),)
+    first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)), ...), got $isize"))
+    return (size(l.W, 1), Base.tail(isize))
 end
 
 """
