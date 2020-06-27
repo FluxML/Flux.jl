@@ -57,7 +57,7 @@ m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
 outdims(m, (10, 10)) == (6, 6)
 ```
 """
-outdims(c::Chain, isize) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))(isize)
+outdims(c::Chain, isize) = foldr(outdims, reverse(c.layers), init = isize)
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -147,7 +147,10 @@ outdims(m, (5, 2)) == (5,)
 outdims(m, (10,)) == (5,)
 ```
 """
-outdims(l::Dense, isize) = (size(l.W)[1],)
+function outdims(l::Dense, isize)
+    first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)),), got $isize"))
+    return (size(l.W, 1),)
+end
 
 """
     Diagonal(in::Integer)
