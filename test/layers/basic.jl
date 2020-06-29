@@ -107,6 +107,7 @@ import Flux: activations
     m = Dense(10, 5)
     @test_throws DimensionMismatch Flux.outdims(m, (5, 2)) == (5,)
     @test Flux.outdims(m, (10,)) == (5,)
+    @test Flux.outdims(m, (10, 2)) == (5, 2)
 
     m = Chain(Dense(10, 8, σ), Dense(8, 5), Dense(5, 2))
     @test Flux.outdims(m, (10,)) == (2,)

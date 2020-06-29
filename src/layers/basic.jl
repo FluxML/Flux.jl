@@ -154,7 +154,7 @@ outdims(m, (10, 2)) == (5, 2)
 """
 function outdims(l::Dense, isize)
     first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)), ...), got $isize"))
-    return (size(l.W, 1), Base.tail(isize))
+    return (size(l.W, 1), Base.tail(isize)...)
 end
 
 """
