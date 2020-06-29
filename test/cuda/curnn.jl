@@ -10,6 +10,26 @@ using Flux: pullback
   @test collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
 end
 
+@testset for R in [GRU, LSTM]
+  m = R(10, 5, (sigmoid, tanh) ) |> gpu
+  x = gpu(rand(10))
+  (m̄,) = gradient(m -> sum(m(x)), m)
+  Flux.reset!(m)
+  θ = gradient(() -> sum(m(x)), params(m))
+  @test collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
+end 
+
+@testset for R in [GRU, LSTM]
+  sigRep(x)  = oftype(x, 0.1)
+  tanhRep(x) = oftype(x, 0.1)
+  m = R(10, 5, (sigRep, tanhRep)) |> gpu
+  x = gpu(rand(10))
+  (m̄,) = gradient(m -> sum(m(x)), m)
+  Flux.reset!(m)
+  θ = gradient(() -> sum(m(x)), params(m))
+  @test collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
+end
+
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM], batch_size in (1, 5)
     rnn = R(10, 5)
