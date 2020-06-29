@@ -2,7 +2,7 @@
 
 It's common to encode categorical variables (like `true`, `false` or `cat`, `dog`) in "one-of-k" or ["one-hot"](https://en.wikipedia.org/wiki/One-hot) form. Flux provides the `onehot` function to make this easy.
 
-```
+```jldoctest onehot
 julia> using Flux: onehot, onecold
 
 julia> onehot(:b, [:a, :b, :c])
@@ -20,7 +20,7 @@ julia> onehot(:c, [:a, :b, :c])
 
 The inverse is `onecold` (which can take a general probability distribution, as well as just booleans).
 
-```julia
+```jldoctest onehot
 julia> onecold(ans, [:a, :b, :c])
 :c
 
@@ -40,14 +40,14 @@ Flux.onecold
 
 `onehotbatch` creates a batch (matrix) of one-hot vectors, and `onecold` treats matrices as batches.
 
-```julia
+```jldoctest onehot
 julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
 3×3 Flux.OneHotMatrix:
- false   true  false
-  true  false   true
- false  false  false
+    0    1    0
+    1    0    1
+    0    0    0
 
 julia> onecold(ans, [:a, :b, :c])
 3-element Array{Symbol,1}:
