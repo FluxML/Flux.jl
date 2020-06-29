@@ -294,3 +294,33 @@ if VERSION >= v"1.1"
   end
 end
 end
+
+@testset "GaussianNoise" begin
+  x = [1.,2.,3.]
+  @test x == GaussianNoise(0.1)(x)
+  @test x == evalwgrad(GaussianNoise(0), x)
+
+  x = randn(100000)
+  m = GaussianNoise(0.1)
+  y = evalwgrad(m, x)
+  @test 0.05 < std(y .- x) < 0.15
+  testmode!(m, true)
+  y = evalwgrad(m, x) # should override istraining
+  @test y == x
+  testmode!(m, false)
+  y = evalwgrad(m, x)
+  @test 0.05 < std(y .- x) < 0.15
+
+  x = randn(Float32, 100, 1000)
+  m = Chain(Dense(100, 100), GaussianNoise(0.1))
+  y = evalwgrad(m, x)
+  @test 0.09 < std(y .- m(x)) < 0.12
+
+  x = randn(100, 50)
+  m = GaussianNoise(0.1, dims = 2)
+  c = std(evalwgrad(m, x) .- x, dims = 2)
+  @test minimum(c) ≈ maximum(c)
+  m = GaussianNoise(0.2, dims = 1)
+  c = std(evalwgrad(m, x) .- x, dims = 1)
+  @test minimum(c) ≈ maximum(c)
+end

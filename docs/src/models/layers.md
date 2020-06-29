@@ -62,6 +62,7 @@ AlphaDropout
 LayerNorm
 InstanceNorm
 GroupNorm
+GaussianNoise
 ```
 
 ### Testmode
