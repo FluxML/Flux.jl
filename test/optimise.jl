@@ -54,10 +54,6 @@ end
   cbs = runall(fs)
   cbs()
   @test x == 1
-
-  r = rand(3, 3)
-  loss(x) = sum(x .* x)
-  Flux.train!(loss, Flux.params(r), (r,), Descent())
 end
 
 @testset "ExpDecay" begin
