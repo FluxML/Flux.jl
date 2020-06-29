@@ -26,6 +26,7 @@ end
     cuy, cuback = pullback((r, x) -> r(x), curnn, cux)
 
     @test y ≈ collect(cuy)
+
     @test haskey(Flux.CUDAint.descs, curnn.cell)
 
     ȳ = randn(size(y))
