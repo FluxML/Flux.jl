@@ -92,15 +92,16 @@ Create a traditional `Dense` layer with parameters `W` and `b`.
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 
-# Examples
+# Example
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> d = Dense(5, 2)
 Dense(5, 2)
 
 julia> d(rand(5))
 2-element Array{Float32,1}:
-  -0.16210233
-   0.12311903```
+ -0.16210233
+  0.12311903
+```
 """
 struct Dense{F,S<:AbstractArray,T<:AbstractArray}
   W::S
