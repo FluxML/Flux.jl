@@ -1,4 +1,5 @@
 # v0.11
+* Add [kaiming initialization](https://arxiv.org/abs/1502.01852) methods: `kaiming_uniform` and `kaiming_normal` [https://github.com/FluxML/Flux.jl/pull/1243]
 * Change to `DataLoader`'s constructor [https://github.com/FluxML/Flux.jl/pull/1152]
 * Use `DataLoader` with `NamedTuple`s, so that tensors can be accessed by name [https://github.com/FluxML/Flux.jl/pull/1221].
 * Error if Dense layers weights and biases are not arrays [https://github.com/FluxML/Flux.jl/pull/1218].
