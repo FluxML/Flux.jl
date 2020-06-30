@@ -13,8 +13,10 @@ These layers are used to build convolutional neural networks (CNNs).
 
 ```@docs
 Conv
+AdaptiveMaxPool
 MaxPool
 GlobalMaxPool
+AdaptiveMeanPool
 MeanPool
 GlobalMeanPool
 DepthwiseConv

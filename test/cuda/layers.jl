@@ -52,6 +52,9 @@ gradtest("Conv", conv_layers, r, (2,2), 1=>3)
 pooling_layers = [MaxPool, MeanPool]
 gradtest("Pooling", pooling_layers, r, (2,2))
 
+adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
+gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
+
 dropout_layers = [Dropout, AlphaDropout]
 gradtest("Dropout", dropout_layers, r, 0.5f0)
 
