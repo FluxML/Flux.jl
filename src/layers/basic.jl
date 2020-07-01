@@ -100,7 +100,7 @@ Dense(5, 2)
 julia> d(rand(5))
 2-element Array{Float32,1}:
  -0.16210233
-  0.12311903
+  0.123119034
 ```
 """
 struct Dense{F,S<:AbstractArray,T<:AbstractArray}
