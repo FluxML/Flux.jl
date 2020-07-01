@@ -90,7 +90,7 @@ end
 
   for layer in stateless_layers
     if layer == Flux.normalise
-      stateless_gradtest(layer, x)
+      stateless_gradtest(x -> layer(x, dims=1), x)
     else
       stateless_gradtest(layer, x, y)
     end

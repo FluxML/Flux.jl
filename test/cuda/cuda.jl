@@ -1,6 +1,7 @@
 using Flux, Test
 using Flux.CuArrays
 using Flux: gpu
+using Statistics: mean
 
 @info "Testing GPU Support"
 
@@ -27,9 +28,9 @@ cm = gpu(m)
 
 x = [1.,2.,3.]
 cx = gpu(x)
-@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
-@test Flux.crossentropy(x,x, weight=1.0) ≈ Flux.crossentropy(cx,cx, weight=1.0)
-@test Flux.crossentropy(x,x, weight=[1.0;2.0;3.0]) ≈ Flux.crossentropy(cx,cx, weight=cu([1.0;2.0;3.0]))
+@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx) 
+@test Flux.crossentropy(x,x, agg=identity) ≈ Flux.crossentropy(cx,cx, agg=identity) |> cpu
+@test Flux.crossentropy(x,x, agg=x->mean([1.0;2.0;3.0].*x)) ≈ Flux.crossentropy(cx,cx, agg=x->mean(cu([1.0;2.0;3.0]).*x))
 
 x = [-1.1491, 0.8619, 0.3127]
 y = [1, 1, 0.]
