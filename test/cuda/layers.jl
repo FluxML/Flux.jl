@@ -70,10 +70,11 @@ gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1)
 const stateless_layers = [Flux.mse,
                           Flux.crossentropy,
                           Flux.logitcrossentropy,
-                          Flux.normalise]
+                          Flux.normalise,
+                          Flux.bce_loss,
+                          Flux.logitbce_loss]
 
-const stateless_layers_broadcasted = [Flux.binarycrossentropy,
-                                      Flux.logitbinarycrossentropy]
+const stateless_layers_broadcasted = []
 
 function stateless_gradtest(f, args...)
   @test gradient((args...) -> sum(f(args...)), args...)[1] isa CuArray
@@ -89,7 +90,7 @@ end
 
   for layer in stateless_layers
     if layer == Flux.normalise
-      stateless_gradtest(layer, x)
+      stateless_gradtest(x -> layer(x, dims=1), x)
     else
       stateless_gradtest(layer, x, y)
     end

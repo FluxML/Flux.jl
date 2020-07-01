@@ -32,6 +32,9 @@ nfan(n_out, n_in) = n_in, n_out # In case of Dense kernels: arranged as matrices
 nfan(dims::Tuple) = nfan(dims...)
 nfan(dims...) = prod(dims[1:end-2]) .* (dims[end-1], dims[end]) # In case of convolution kernels
 
+ofeltype(x, y) = convert(float(eltype(x)), y)
+epseltype(x) = eps(float(eltype(x)))
+
 """
     glorot_uniform(dims...)
 
