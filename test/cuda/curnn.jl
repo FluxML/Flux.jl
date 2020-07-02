@@ -55,9 +55,7 @@ end
     cuohx = gpu(ohx)
     y = (rnn(ohx); rnn(ohx))
     
-    # TODO: FIX ERROR
-    @test_broken 1 == 2
-    # cuy = (curnn(cuohx); curnn(cuohx))
-    # @test y ≈ collect(cuy)
+    cuy = (curnn(cuohx); curnn(cuohx))
+    @test y ≈ collect(cuy)
   end
 end
