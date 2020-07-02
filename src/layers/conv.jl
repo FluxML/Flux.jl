@@ -49,6 +49,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 
 # Examples
@@ -80,6 +85,11 @@ Constructs the convolutional layer with user defined weight and bias arrays.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 There is also a keyword-only constuctor available for all convoultional
 layers.
@@ -182,6 +192,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == stride * inputsize - stride + 1.
 """
 struct ConvTranspose{N,M,F,A,V}
@@ -203,6 +218,11 @@ forward pass.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
@@ -286,6 +306,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 """
 struct DepthwiseConv{N,M,F,A,V}
@@ -307,6 +332,11 @@ forward pass.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
@@ -393,6 +423,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 
 # Examples
@@ -425,6 +460,11 @@ arrays.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
