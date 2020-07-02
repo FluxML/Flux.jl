@@ -1,7 +1,7 @@
 # v0.11 deprecations
-@deprecate poisson poisson_loss
-@deprecate hinge hinge_loss
-@deprecate squared_hinge squared_hinge_loss
-@deprecate binarycrossentropy(ŷ, y) bce_loss(ŷ, y, agg=identity)
-@deprecate logitbinarycrossentropy(ŷ, y) logitbce_loss(ŷ, y, agg=identity)
-@deprecate normalise(x) normalise(x, dims=1) 
+@deprecate poisson poisson_loss false
+@deprecate hinge hinge_loss false
+@deprecate squared_hinge squared_hinge_loss false
+@deprecate binarycrossentropy(ŷ, y) Flux.Losses.binarycrossentropy(ŷ, y, agg=identity) false
+@deprecate logitbinarycrossentropy(ŷ, y) Flux.Losses.logitbinarycrossentropy(ŷ, y, agg=identity) false
+@deprecate normalise(x) normalise(x, dims=1) false

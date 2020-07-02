@@ -3,6 +3,7 @@ using Flux.CUDA
 using Flux: cpu, gpu
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky
+using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy
 
 @info "Testing GPU Support"
 
@@ -29,14 +30,14 @@ cm = gpu(m)
 
 x = [1.,2.,3.]
 cx = gpu(x)
-@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx) 
-@test Flux.crossentropy(x,x, agg=identity) ≈ Flux.crossentropy(cx,cx, agg=identity) |> cpu
-@test Flux.crossentropy(x,x, agg=x->mean([1.0;2.0;3.0].*x)) ≈ Flux.crossentropy(cx,cx, agg=x->mean(cu([1.0;2.0;3.0]).*x))
+@test crossentropy(x,x) ≈ crossentropy(cx,cx) 
+@test crossentropy(x,x, agg=identity) ≈ crossentropy(cx,cx, agg=identity) |> cpu
+@test crossentropy(x,x, agg=x->mean([1.0;2.0;3.0].*x)) ≈ crossentropy(cx,cx, agg=x->mean(cu([1.0;2.0;3.0]).*x))
 
 x = [-1.1491, 0.8619, 0.3127]
 y = [1, 1, 0.]
-@test Flux.bce_loss(σ.(x), y) ≈ Flux.bce_loss(cu(σ.(x)), cu(y))
-@test Flux.logitbce_loss(x, y) ≈ Flux.logitbce_loss(cu(x), cu(y))
+@test binarycrossentropy(σ.(x), y) ≈ binarycrossentropy(cu(σ.(x)), cu(y))
+@test logitbinarycrossentropy(x, y) ≈ logitbinarycrossentropy(cu(x), cu(y))
 
 xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)

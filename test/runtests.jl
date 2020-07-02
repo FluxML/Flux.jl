@@ -22,6 +22,11 @@ end
   include("data.jl")
 end
 
+@testset "Losses" begin
+  include("losses.jl")
+end
+
+
 @testset "Layers" begin
   include("layers/basic.jl")
   include("layers/normalisation.jl")
