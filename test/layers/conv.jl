@@ -57,12 +57,12 @@ end
 
   for _ = 1:10^3
     gs = gradient(params(bias)) do
-      Flux.mse(bias(ip), op)
+      Flux.Losses.mse(bias(ip), op)
     end
     Flux.Optimise.update!(opt, params(bias), gs)
   end
 
-  @test Flux.mse(bias(ip), op) ≈ 4.f0
+  @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
 end
 
 @testset "asymmetric padding" begin

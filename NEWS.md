@@ -7,7 +7,7 @@
 * Add [Adaptive Pooling](https://github.com/FluxML/Flux.jl/pull/1239) in Flux layers.
 * Change to `DataLoader`'s [constructor](https://github.com/FluxML/Flux.jl/pull/1152)
 * Uniform loss [interface](https://github.com/FluxML/Flux.jl/pull/1150)
-* Loss functions now live in the `Flux.Losses` module
+* Loss functions now live in the `Flux.Losses` pmodule](https://github.com/FluxML/Flux.jl/pull/1264)
 * Optimistic ADAM (OADAM) optimizer for [adversarial training](https://github.com/FluxML/Flux.jl/pull/1246).
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
 * Added option to set `bias` to [Flux.Zeros](https://github.com/FluxML/Flux.jl/pull/873) to eliminating `bias` from being trained.

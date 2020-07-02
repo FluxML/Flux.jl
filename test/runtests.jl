@@ -26,7 +26,6 @@ end
   include("losses.jl")
 end
 
-
 @testset "Layers" begin
   include("layers/basic.jl")
   include("layers/normalisation.jl")

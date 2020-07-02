@@ -9,7 +9,7 @@ using Test
                        NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), Nesterov(), RMSProp(),
                        Momentum()]
     w′ = randn(10, 10)
-    loss(x) = Flux.mse(w*x, w′*x)
+    loss(x) = Flux.Losses.mse(w*x, w′*x)
     for t = 1: 10^5
       θ = Params([w′])
       x = rand(10)
@@ -24,7 +24,7 @@ end
   w = randn(10, 10)
   @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
     w′ = randn(10, 10)
-    loss(x) = Flux.mse(w*x, w′*x)
+    loss(x) = Flux.Losses.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
     for t = 1:10^5
       θ = Params([w′])
@@ -74,7 +74,7 @@ end
   w = randn(10, 10)
   o = ExpDecay(0.1, 0.1, 1000, 1e-4)
   w1 = randn(10,10)
-  loss(x) = Flux.mse(w*x, w1*x)
+  loss(x) = Flux.Losses.mse(w*x, w1*x)
   flag = 1
   decay_steps = []
   for t = 1:10^5

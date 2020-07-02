@@ -99,9 +99,9 @@ calculated as
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
 
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
+[`Flux.Losses.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
 
-See also: [`Flux.crossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
+See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.binarycrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
 """
 function logitcrossentropy(ŷ, y; dims=1, agg=mean)
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
@@ -120,7 +120,7 @@ Typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) ac
 
 Use of `logitbinarycrossentropy` is recomended over `binarycrossentropy` for numerical stability.
 
-See also: [`Flux.crossentropy`](@ref), [`Flux.logitcrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
+See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
 """
 function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ))
     agg(@.(-xlogy(y, ŷ+ϵ) - xlogy(1-y, 1-ŷ+ϵ)))
@@ -134,7 +134,7 @@ end
 Mathematically equivalent to
 [`Flux.binarycrossentropy(σ(ŷ), y)`](@ref) but is more numerically stable.
 
-See also: [`Flux.crossentropy`](@ref), [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref)
+See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.binarycrossentropy`](@ref)
 ```
 """
 function logitbinarycrossentropy(ŷ, y; agg=mean)
