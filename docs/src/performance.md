@@ -39,7 +39,7 @@ E.g. the following will have run into the same problem as above:
     leaky_tanh(x) = 0.01*x + tanh(x)
 ```
 
-While one could change the activation function (e.g. to use `0.01f0x`), the idiomatic (and safe way)  to avoid type casts whenever inputs changes is to use `oftype`:
+While one could change the activation function (e.g. to use `0.01f0*x`), the idiomatic (and safe way)  to avoid type casts whenever inputs changes is to use `oftype`:
 ```
     leaky_tanh(x) = oftype(x/1, 0.01)*x + tanh(x)
 ```

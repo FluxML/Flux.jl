@@ -51,4 +51,6 @@ export Iris
 include("housing.jl")
 export Housing
 
+@deprecate DataLoader(x...; kws...) DataLoader(x; kws...)
+
 end

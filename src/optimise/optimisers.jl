@@ -259,6 +259,45 @@ function apply!(o::AdaMax, x, Δ)
 end
 
 """
+    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9))
+
+[OADAM](https://arxiv.org/abs/1711.00141) (Optimistic ADAM)
+is a variant of ADAM adding an "optimistic" term suitable for adversarial training.
+
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
+
+# Examples
+```julia
+opt = OADAM()
+
+opt = OADAM(0.001, (0.9, 0.995))
+```
+"""
+mutable struct OADAM
+  eta::Float64
+  beta::Tuple{Float64,Float64}
+  state::IdDict
+end
+
+OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
+
+function apply!(o::OADAM, x, Δ)
+  η, β = o.eta, o.beta
+  mt, vt, Δ_, βp = get!(o.state, x, (zero(x), zero(x), zero(x), β))
+  @. mt = β[1] * mt + (1 - β[1]) * Δ
+  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. Δ = -Δ_
+  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+  @. Δ += 2Δ_
+  o.state[x] = (mt, vt, Δ_, βp .* β)
+  return Δ
+end
+
+"""
     ADAGrad(η = 0.1)
 
 [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimizer. It has
@@ -509,7 +548,7 @@ function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
   n = o.current[x] = get(o.current, x, 0) + 1
   if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
-    η = max(η * decay^(s / n), o.clip)
+    η = max(η * decay, o.clip)
     o.eta = η
   end
   @. Δ *= η
@@ -532,4 +571,32 @@ WeightDecay() = WeightDecay(0)
 function apply!(o::WeightDecay, x, Δ)
   wd = o.wd
   @. Δ += wd * x
+end
+
+"""
+    ClipValue(thresh)
+
+Clip gradients when their absolute value exceeds `thresh`.
+"""
+mutable struct ClipValue{T}
+    thresh::T
+end
+
+apply!(o::ClipValue, x, Δ) = clamp!(Δ, -o.thresh, o.thresh)
+
+"""
+    ClipNorm(thresh)
+
+Clip gradients when their L2 norm exceeds `thresh`.
+"""
+mutable struct ClipNorm{T}
+    thresh::T
+end
+
+function apply!(o::ClipNorm, x, Δ)
+    Δnrm = norm(Δ)
+    if Δnrm > o.thresh
+        rmul!(Δ, o.thresh / Δnrm)
+    end
+    return Δ
 end
