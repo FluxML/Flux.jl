@@ -17,7 +17,14 @@ The dropout function. For each input, either sets that input to `0` (with probab
 e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
 This is used as a regularisation, i.e. it reduces overfitting during training.
 
-See also the [`Dropout`](@ref) layer.
+Warning: this function is always "active", i.e. it always applies
+the dropout mask. Usually instead, dropout is used while training 
+but is deactivated in the inference phase. This can be easily
+realized using the [`Dropout`](@ref) layer instead of the 
+`dropout` function. 
+
+The [`Dropout`](@ref) layer is what you should use in most use-cases
+instead of this.
 """
 function dropout(x, p; dims=:)
   y = dropout_mask(x, p, dims=dims)
