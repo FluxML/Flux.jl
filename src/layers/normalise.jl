@@ -10,7 +10,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout(x, p; dims = :)
+    dropout(x, p; dims=:)
 
 The dropout function. For each input, either sets that input to `0` (with probability
 `p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
@@ -19,12 +19,20 @@ This is used as a regularisation, i.e. it reduces overfitting during training.
 
 See also the [`Dropout`](@ref) layer.
 """
-dropout(x, p; dims = :) = x
+function dropout(x, p; dims=:)
+  y = dropout_mask(x, p, dims=dims)
+  return x .* y
+end
 
-@adjoint function dropout(x, p; dims = :)
+@adjoint function dropout(x, p; dims=:)
+  y = dropout_mask(x, p, dims=dims)
+  return x .* y, Δ -> (Δ .* y, nothing)
+end
+
+function dropout_mask(x, p; dims=:)
   y = rand!(similar(x, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
-  return x .* y, Δ -> (Δ .* y, nothing)
+  return y
 end
 
 """

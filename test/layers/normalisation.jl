@@ -38,6 +38,21 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
   y = m(x)
   c = map(i->count(a->a==0, @view y[:, i]), 1:50)
   @test minimum(c) == maximum(c)
+
+  # issue #1084
+  m = Dropout(0.9)
+  x = rand(100)
+
+  testmode!(m)
+  y = m(x) 
+  @test count(a->a == 0, y) == 0
+  trainmode!(m)
+  y = m(x) 
+  @test count(a->a == 0, y) > 50
+
+  y = Flux.dropout(x, 0.9) 
+  @test count(a->a == 0, y) > 50
+
 end
 
 @testset "BatchNorm" begin
