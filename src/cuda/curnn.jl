@@ -1,5 +1,4 @@
 import ..Flux: Flux, relu
-using CuArrays.CUDAnative
 
 CuRNN{T} = Flux.RNNCell{<:Union{typeof(tanh),typeof(relu)},<:CuArray{T,2},<:CuArray{T,1}}
 CuGRU{T} = Flux.GRUCell{<:CuArray{T,2},<:CuArray{T,1}}
@@ -55,7 +54,7 @@ unbroadcast(x::AbstractArray, Δ) =
 coerce_cuda(x::Union{CuArray,Nothing}) = x
 coerce_cuda(x::Tuple) = coerce_cuda.(x)
 
-coerce_cuda(x::AbstractArray) = x .+ CuArrays.fill(0)
+coerce_cuda(x::AbstractArray) = x .+ CUDA.fill(0)
 
 function struct_grad!(cx::Zygote.Context, x, x̄)
   for f in fieldnames(typeof(x))

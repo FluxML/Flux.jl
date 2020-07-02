@@ -1,13 +1,13 @@
 using Flux, Test
-using Flux.CuArrays
+using Flux.CUDA
 using Flux: gpu
 using Statistics: mean
 
 @info "Testing GPU Support"
 
-@testset "CuArrays" begin
+@testset "CUDA" begin
 
-CuArrays.allowscalar(false)
+CUDA.allowscalar(false)
 
 x = randn(5, 5)
 cx = gpu(x)
@@ -66,7 +66,7 @@ end
   @test gradient(foo, cu(rand(1)))[1] isa CuArray
 end
 
-if CuArrays.has_cudnn()
+if CUDA.has_cudnn()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")
