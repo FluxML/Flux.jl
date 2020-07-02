@@ -1,7 +1,8 @@
 using Flux, Test
 using Flux.CUDA
-using Flux: gpu
+using Flux: cpu, gpu
 using Statistics: mean
+using LinearAlgebra: I, cholesky, Cholesky
 
 @info "Testing GPU Support"
 
@@ -64,6 +65,17 @@ end
   p,re = Flux.destructure(dudt)
   foo(x) = sum(re(p)(x))
   @test gradient(foo, cu(rand(1)))[1] isa CuArray
+end
+
+@testset "GPU functors" begin
+  @testset "Cholesky" begin
+    M = 2.0*I(10) |> collect
+    Q = cholesky(M)
+    Q_gpu = Q |> gpu
+    @test Q_gpu isa Cholesky{<:Any,<:CuArray}
+    Q_cpu = Q_gpu |> cpu
+    @test Q_cpu == cholesky(eltype(Q_gpu).(M))
+  end
 end
 
 if CUDA.has_cudnn()
