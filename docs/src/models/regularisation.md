@@ -1,7 +1,7 @@
 # Regularisation
 
 Applying regularisation to model parameters is straightforward. We just need to
-apply an appropriate regulariser, such as `norm`, to each model parameter and
+apply an appropriate regulariser to each model parameter and
 add the result to the overall loss.
 
 For example, say we have a simple regression.
@@ -13,12 +13,10 @@ m = Dense(10, 5)
 loss(x, y) = logitcrossentropy(m(x), y)
 ```
 
-We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
+We can apply L2 regularisation by taking the squared norm of the parameters , `m.W` and `m.b`.
 
 ```julia
-using LinearAlgebra
-
-penalty() = norm(m.W) + norm(m.b)
+penalty() = sum(abs2, m.W) + sum(abs2, m.b)
 loss(x, y) = logitcrossentropy(m(x), y) + penalty()
 ```
 
@@ -31,7 +29,9 @@ julia> Flux.params(m)
  param([0.355408 0.533092; … 0.430459 0.171498])
  param([0.0, 0.0, 0.0, 0.0, 0.0])
 
-julia> sum(norm, Flux.params(m))
+julia> sqnorm(x) = sum(abs2, x)
+
+julia> sum(sqnorm, Flux.params(m))
 26.01749952921026
 ```
 
@@ -43,7 +43,9 @@ m = Chain(
   Dense(128, 32, relu),
   Dense(32, 10))
 
-loss(x, y) = logitcrossentropy(m(x), y) + sum(norm, Flux.params(m))
+sqnorm(x) = sum(abs2, x)
+
+loss(x, y) = logitcrossentropy(m(x), y) + sum(sqnorm, Flux.params(m))
 
 loss(rand(28^2), rand(10))
 ```
@@ -62,8 +64,8 @@ julia> activations(c, rand(10))
  Float32[0.1501253, 0.073269576]                                 
  Float32[0.5192045, 0.48079553]                                  
 
-julia> sum(norm, ans)
-2.1166067f0
+julia> sum(sqnorm, ans)
+2.0710278f0
 ```
 
 ```@docs
