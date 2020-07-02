@@ -44,7 +44,7 @@ end
 
   bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
   op = bias(ip)
-  @test sum(op) === 0.f0
+  @test sum(op) ≈ 0.f0
   gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
   @test gs[bias.bias] == nothing
 

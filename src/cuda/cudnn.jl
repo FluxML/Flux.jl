@@ -1,4 +1,3 @@
-import ..Flux: data
 import CUDA.CUDNN: batchnorm, ∇batchnorm
 
 (BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}}, cache = nothing) where T<:Union{Float32, Float64} =
