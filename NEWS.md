@@ -4,7 +4,7 @@
 * Add [kaiming initialization](https://arxiv.org/abs/1502.01852) methods: [kaiming_uniform and kaiming_normal](https://github.com/FluxML/Flux.jl/pull/1243)
 * Use `DataLoader` with `NamedTuple`s, so that tensors can be accessed [by name](https://github.com/FluxML/Flux.jl/pull/1221).
 * Error if Dense layers weights and biases are [not arrays](https://github.com/FluxML/Flux.jl/pull/1218).
-* Add (Adaptive Pooling)[https://github.com/FluxML/Flux.jl/pull/1239] in Flux layers.
+* Add [Adaptive Pooling](https://github.com/FluxML/Flux.jl/pull/1239) in Flux layers.
 * Change to `DataLoader`'s [constructor](https://github.com/FluxML/Flux.jl/pull/1152)
 * Uniform loss [interface](https://github.com/FluxML/Flux.jl/pull/1150)
 * Optimistic ADAM (OADAM) optimizer for [adversarial training](https://github.com/FluxML/Flux.jl/pull/1246).
