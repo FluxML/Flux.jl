@@ -9,4 +9,4 @@ the right direction since it can be hard to change later.]
 - [ ] Tests are added
 - [ ] Entry in NEWS.md
 - [ ] Documentation, if applicable
-- [ ] Final review from `@MikeInnes` or `@dhairyagandhi96` (for API changes).
+- [ ] Final review from `@dhairyagandhi96` (for API changes).
