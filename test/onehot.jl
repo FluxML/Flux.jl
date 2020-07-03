@@ -13,7 +13,7 @@ using Test
 
   data = [:b, :a, :c]
   labels = [:a, :b, :c]
-  hot = onehotbatch(data, labels)
+  hot = Flux.onehotbatch(data, labels)
   cold = onecold(hot, labels)
 
   @test cold == data
