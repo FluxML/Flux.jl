@@ -119,7 +119,6 @@ onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
 onecold(y::AbstractMatrix, labels...) =
   dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
 
-onecold(y::OneHotMatrix, labels...) =
-  mapreduce(x -> Flux.onecold(x, labels...), |, y.data, dims = 2, init = 0)
+onecold(y::OneHotMatrix, labels...) = map(x -> Flux.onecold(x, labels...), y.data)
 
 @nograd onecold, onehot, onehotbatch
