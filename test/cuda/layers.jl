@@ -67,12 +67,7 @@ gradtest("InstanceNorm", instancenorm, r, 1)
 groupnorm = [GroupNorm]
 gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1)
 
-const stateless_layers = [Flux.Losses.mse,
-                          Flux.Losses.crossentropy,
-                          Flux.Losses.logitcrossentropy,
-                          Flux.Losses.binarycrossentropy,
-                          Flux.Losses.logitbinarycrossentropy,
-                          Flux.normalise]
+const stateless_layers = [Flux.normalise]
 
 const stateless_layers_broadcasted = []
 

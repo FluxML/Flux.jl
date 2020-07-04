@@ -35,7 +35,7 @@ end
 
 @testset "CUDA" begin
   if Flux.use_cuda[]
-    include("cuda/cuda.jl")
+    include("cuda/runtests.jl")
   else
     @warn "CUDA unavailable, not testing GPU support"
   end
