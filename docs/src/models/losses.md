@@ -1,4 +1,4 @@
-## Loss Functions
+# Loss Functions
 
 Flux provides a large number of common loss functions used for training machine learning models.
 They are grouped together in the `Flux.Losses` module.
@@ -21,7 +21,7 @@ loss(ŷ, y, agg=x->mean(w .* x))    # weighted mean
 loss(ŷ, y, agg=identity)           # no aggregation.
 ```
 
-### Losses Reference
+## Losses Reference
 
 ```@docs
 Flux.Losses.mae

@@ -18,18 +18,6 @@ export mse, mae, msle,
     poisson_loss,
     hinge_loss, squared_hinge_loss
 
-# group here all losses, used in tests
-const ALL_LOSSES = [mse, mae, msle,
-                    crossentropy, logitcrossentropy,
-                    binarycrossentropy, logitbinarycrossentropy, 
-                    kldivergence,
-                    huber_loss,
-                    tversky_loss,
-                    dice_coeff_loss,
-                    poisson_loss,
-                    hinge_loss, squared_hinge_loss]
-
-
 
 """
     mae(ŷ, y; agg=mean)
@@ -267,5 +255,17 @@ end
   res = xlogy.(x, y)
   res, Δ -> (nothing, Zygote.unbroadcast(x, xlogy.(Δ, y)), Zygote.unbroadcast(y, Δ .* x ./ y))
 end
+
+
+# group here all losses, used in tests
+const ALL_LOSSES = [mse, mae, msle,
+                    crossentropy, logitcrossentropy,
+                    binarycrossentropy, logitbinarycrossentropy, 
+                    kldivergence,
+                    huber_loss,
+                    tversky_loss,
+                    dice_coeff_loss,
+                    poisson_loss,
+                    hinge_loss, squared_hinge_loss]
 
 end #module
