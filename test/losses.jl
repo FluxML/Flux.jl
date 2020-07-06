@@ -4,6 +4,17 @@ using Flux: onehotbatch, σ
 using Flux.Losses: mse, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
 using Flux.Losses: xlogx, xlogy
 
+# group here all losses, used in tests
+const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
+                    Flux.Losses.crossentropy, Flux.Losses.logitcrossentropy,
+                    Flux.Losses.binarycrossentropy, Flux.Losses.logitbinarycrossentropy, 
+                    Flux.Losses.kldivergence,
+                    Flux.Losses.huber_loss,
+                    Flux.Losses.tversky_loss,
+                    Flux.Losses.dice_coeff_loss,
+                    Flux.Losses.poisson_loss,
+                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss]
+
 
 @testset "xlogx & xlogy" begin
   @test iszero(xlogx(0))
@@ -118,7 +129,7 @@ end
   for T in (Float32, Float64)
     y = rand(T, 2)
     ŷ = rand(T, 2)
-    for f in Flux.Losses.ALL_LOSSES
+    for f in ALL_LOSSES
       fwd, back = Flux.pullback(f, ŷ, y)
       @test fwd isa T
       @test eltype(back(one(T))[1]) == T
