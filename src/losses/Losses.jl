@@ -21,15 +21,4 @@ export mse, mae, msle,
 include("utils.jl")
 include("functions.jl")
 
-# group here all losses, used in tests
-const ALL_LOSSES = [mse, mae, msle,
-                    crossentropy, logitcrossentropy,
-                    binarycrossentropy, logitbinarycrossentropy, 
-                    kldivergence,
-                    huber_loss,
-                    tversky_loss,
-                    dice_coeff_loss,
-                    poisson_loss,
-                    hinge_loss, squared_hinge_loss]
-
 end #module

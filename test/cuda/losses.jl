@@ -2,6 +2,17 @@ using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy
 using Zygote: pullback
 
 
+# group here all losses, used in tests
+const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
+                    Flux.Losses.crossentropy, Flux.Losses.logitcrossentropy,
+                    Flux.Losses.binarycrossentropy, Flux.Losses.logitbinarycrossentropy, 
+                    Flux.Losses.kldivergence,
+                    Flux.Losses.huber_loss,
+                    Flux.Losses.tversky_loss,
+                    Flux.Losses.dice_coeff_loss,
+                    Flux.Losses.poisson_loss,
+                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss]
+
 @testset "Losses" begin 
 
 x = [1.,2.,3.]
