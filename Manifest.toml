@@ -45,10 +45,10 @@ uuid = "052768ef-5323-5732-b1bb-66c8b64840ba"
 version = "1.0.2"
 
 [[ChainRules]]
-deps = ["ChainRulesCore", "LinearAlgebra", "Reexport", "Requires", "Statistics"]
-git-tree-sha1 = "9d1951a1686e4849bda5469caadf7de593d56dcd"
+deps = ["ChainRulesCore", "LinearAlgebra", "Random", "Reexport", "Requires", "Statistics"]
+git-tree-sha1 = "49a636fcd40d624124529871228c38ceeab8e46b"
 uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-version = "0.7.2"
+version = "0.7.5"
 
 [[ChainRulesCore]]
 deps = ["MuladdMacro"]
@@ -64,9 +64,9 @@ version = "0.7.0"
 
 [[ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
-git-tree-sha1 = "cd19496d8943326b752d1712afd6ab79c7514d28"
+git-tree-sha1 = "6e7aa35d0294f647bb9c985ccc34d4f5d371a533"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
-version = "0.10.5"
+version = "0.10.6"
 
 [[Colors]]
 deps = ["ColorTypes", "FixedPointNumbers", "InteractiveUtils", "Reexport"]

@@ -43,7 +43,7 @@ include("layers/normalise.jl")
 include("data/Data.jl")
 
 include("losses/Losses.jl")
-using .Losses
+using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12 
 
 include("deprecations.jl")
 
