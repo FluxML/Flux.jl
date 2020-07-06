@@ -10,6 +10,13 @@ using Test
   @test onecold(A) == [3, 1, 4]
   @test onecold(a, labels) == 'C'
   @test onecold(A, labels) == ['C', 'A', 'D']
+
+  data = [:b, :a, :c]
+  labels = [:a, :b, :c]
+  hot = Flux.onehotbatch(data, labels)
+  cold = onecold(hot, labels)
+
+  @test cold == data
 end
 
 @testset "onehotbatch indexing" begin

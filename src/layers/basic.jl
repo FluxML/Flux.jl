@@ -57,7 +57,7 @@ m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
 outdims(m, (10, 10)) == (6, 6)
 ```
 """
-outdims(c::Chain, isize) = foldl(∘, map(l -> (x -> outdims(l, x)), c.layers))(isize)
+outdims(c::Chain, isize) = foldr(outdims, reverse(c.layers), init = isize)
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -92,17 +92,18 @@ Create a traditional `Dense` layer with parameters `W` and `b`.
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 
-# Examples
-```jldoctest; setup = :(using Random; Random.seed!(0))
+# Example
+```
 julia> d = Dense(5, 2)
 Dense(5, 2)
 
 julia> d(rand(5))
 2-element Array{Float32,1}:
-  -0.16210233
-   0.12311903```
+ -0.16210233
+  0.123119034
+```
 """
-struct Dense{F,S,T}
+struct Dense{F,S<:AbstractArray,T<:AbstractArray}
   W::S
   b::T
   σ::F
@@ -147,7 +148,10 @@ outdims(m, (5, 2)) == (5,)
 outdims(m, (10,)) == (5,)
 ```
 """
-outdims(l::Dense, isize) = (size(l.W)[1],)
+function outdims(l::Dense, isize)
+    first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)),), got $isize"))
+    return (size(l.W, 1),)
+end
 
 """
     Diagonal(in::Integer)

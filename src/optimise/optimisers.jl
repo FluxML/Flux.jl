@@ -259,6 +259,45 @@ function apply!(o::AdaMax, x, Δ)
 end
 
 """
+    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9))
+
+[OADAM](https://arxiv.org/abs/1711.00141) (Optimistic ADAM)
+is a variant of ADAM adding an "optimistic" term suitable for adversarial training.
+
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
+
+# Examples
+```julia
+opt = OADAM()
+
+opt = OADAM(0.001, (0.9, 0.995))
+```
+"""
+mutable struct OADAM
+  eta::Float64
+  beta::Tuple{Float64,Float64}
+  state::IdDict
+end
+
+OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
+
+function apply!(o::OADAM, x, Δ)
+  η, β = o.eta, o.beta
+  mt, vt, Δ_, βp = get!(o.state, x, (zero(x), zero(x), zero(x), β))
+  @. mt = β[1] * mt + (1 - β[1]) * Δ
+  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. Δ = -Δ_
+  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+  @. Δ += 2Δ_
+  o.state[x] = (mt, vt, Δ_, βp .* β)
+  return Δ
+end
+
+"""
     ADAGrad(η = 0.1)
 
 [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimizer. It has

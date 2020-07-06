@@ -1,12 +1,14 @@
 using Flux, Test
-using Flux.CuArrays
-using Flux: gpu
+using Flux.CUDA
+using Flux: cpu, gpu
+using Statistics: mean
+using LinearAlgebra: I, cholesky, Cholesky
 
 @info "Testing GPU Support"
 
-@testset "CuArrays" begin
+@testset "CUDA" begin
 
-CuArrays.allowscalar(false)
+CUDA.allowscalar(false)
 
 x = randn(5, 5)
 cx = gpu(x)
@@ -27,14 +29,14 @@ cm = gpu(m)
 
 x = [1.,2.,3.]
 cx = gpu(x)
-@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
-@test Flux.crossentropy(x,x, weight=1.0) ≈ Flux.crossentropy(cx,cx, weight=1.0)
-@test Flux.crossentropy(x,x, weight=[1.0;2.0;3.0]) ≈ Flux.crossentropy(cx,cx, weight=cu([1.0;2.0;3.0]))
+@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx) 
+@test Flux.crossentropy(x,x, agg=identity) ≈ Flux.crossentropy(cx,cx, agg=identity) |> cpu
+@test Flux.crossentropy(x,x, agg=x->mean([1.0;2.0;3.0].*x)) ≈ Flux.crossentropy(cx,cx, agg=x->mean(cu([1.0;2.0;3.0]).*x))
 
 x = [-1.1491, 0.8619, 0.3127]
 y = [1, 1, 0.]
-@test Flux.binarycrossentropy.(σ.(x),y) ≈ Array(Flux.binarycrossentropy.(cu(σ.(x)),cu(y)))
-@test Flux.logitbinarycrossentropy.(x,y) ≈ Array(Flux.logitbinarycrossentropy.(cu(x),cu(y)))
+@test Flux.bce_loss(σ.(x), y) ≈ Flux.bce_loss(cu(σ.(x)), cu(y))
+@test Flux.logitbce_loss(x, y) ≈ Flux.logitbce_loss(cu(x), cu(y))
 
 xs = rand(5, 5)
 ys = Flux.onehotbatch(1:5,1:5)
@@ -65,7 +67,18 @@ end
   @test gradient(foo, cu(rand(1)))[1] isa CuArray
 end
 
-if CuArrays.has_cudnn()
+@testset "GPU functors" begin
+  @testset "Cholesky" begin
+    M = 2.0*I(10) |> collect
+    Q = cholesky(M)
+    Q_gpu = Q |> gpu
+    @test Q_gpu isa Cholesky{<:Any,<:CuArray}
+    Q_cpu = Q_gpu |> cpu
+    @test Q_cpu == cholesky(eltype(Q_gpu).(M))
+  end
+end
+
+if CUDA.has_cudnn()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")
