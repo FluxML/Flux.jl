@@ -18,7 +18,7 @@
 * Functors have now moved to [Functors.jl](https://github.com/FluxML/Flux.jl/pull/1174) to allow for their use outside of Flux.
 * Added [helper functions](https://github.com/FluxML/Flux.jl/pull/873) `Flux.convfilter` and `Flux.depthwiseconvfilter` to construct weight arrays for convolutions outside of layer constructors so as to not have to depend on the default layers for custom implementations.
 * `dropout` function now has a mandatory [active](https://github.com/FluxML/Flux.jl/pull/1263)
-keyword argument. The `Dropout` struct is the recommended choice for common usage.
+keyword argument. The `Dropout` struct *whose behavior is left unchanged) is the recommended choice for common usage.
 * and many more fixes and additions...
 
 # v0.10.1 - v0.10.4
