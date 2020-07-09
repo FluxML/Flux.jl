@@ -9,22 +9,43 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
+# TODO set active's default to true in v0.12
+# or deprecate the keyword altogheter
 """
-    dropout(x, p; dims = :)
+    dropout(x, p; dims=:, active::Bool)
 
-The dropout function. For each input, either sets that input to `0` (with probability
+The dropout function. If `active` is `true`,
+for each input, either sets that input to `0` (with probability
 `p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
 e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
 This is used as a regularisation, i.e. it reduces overfitting during training.
 
-See also the [`Dropout`](@ref) layer.
-"""
-dropout(x, p; dims = :) = x
+If `active` is `false`, it just returns the input `x`
 
-@adjoint function dropout(x, p; dims = :)
+Warning: when using this function, you have to manually manage the activation 
+state. Usually in fact, dropout is used while training 
+but is deactivated in the inference phase. This can be 
+automatically managed using the [`Dropout`](@ref) layer instead of the 
+`dropout` function. 
+
+The [`Dropout`](@ref) layer is what you should use in most scenarios.
+"""
+function dropout(x, p; dims=:, active::Bool)
+  active || return x
+  y = dropout_mask(x, p, dims=dims)
+  return x .* y
+end
+
+@adjoint function dropout(x, p; dims=:, active::Bool)
+  active || return x, Δ -> (Δ, nothing) 
+  y = dropout_mask(x, p, dims=dims)
+  return x .* y, Δ -> (Δ .* y, nothing)
+end
+
+function dropout_mask(x, p; dims=:)
   y = rand!(similar(x, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
-  return x .* y, Δ -> (Δ .* y, nothing)
+  return y
 end
 
 """
@@ -50,7 +71,7 @@ end
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims = a.dims)
+  return dropout(x, a.p; dims = a.dims, active=true)
 end
 
 testmode!(m::Dropout, mode = true) =
