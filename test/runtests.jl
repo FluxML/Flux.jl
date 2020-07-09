@@ -22,6 +22,10 @@ end
   include("data.jl")
 end
 
+@testset "Losses" begin
+  include("losses.jl")
+end
+
 @testset "Layers" begin
   include("layers/basic.jl")
   include("layers/normalisation.jl")
@@ -31,7 +35,7 @@ end
 
 @testset "CUDA" begin
   if Flux.use_cuda[]
-    include("cuda/cuda.jl")
+    include("cuda/runtests.jl")
   else
     @warn "CUDA unavailable, not testing GPU support"
   end

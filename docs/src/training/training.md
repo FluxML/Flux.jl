@@ -17,14 +17,17 @@ There are plenty of examples in the [model zoo](https://github.com/FluxML/model-
 
 ## Loss Functions
 
-The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective. We can also define an objective in terms of some model:
+The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective.
+In addition to custom losses, model can be trained in conjuction with
+the commonly used losses that are grouped under the `Flux.Losses` module.
+We can also define an objective in terms of some model:
 
 ```julia
 m = Chain(
   Dense(784, 32, σ),
   Dense(32, 10), softmax)
 
-loss(x, y) = Flux.mse(m(x), y)
+loss(x, y) = Flux.Losses.mse(m(x), y)
 ps = Flux.params(m)
 
 # later
@@ -32,7 +35,7 @@ Flux.train!(loss, ps, data, opt)
 ```
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
-For a list of all built-in loss functions, check out the [layer reference](../models/layers.md).
+For a list of all built-in loss functions, check out the [losses reference](../models/losses.md).
 
 At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
 
@@ -157,6 +160,7 @@ function my_custom_train!(loss, ps, data, opt)
   end
 end
 ```
+
 You could simplify this further, for example by hard-coding in the loss function.
 
 Another possibility is to use [`Zygote.pullback`](https://fluxml.ai/Zygote.jl/dev/adjoints/#Pullbacks-1)

@@ -14,7 +14,7 @@ end
 # `AlphaDropout` throws a compilation error on GPUs,
 # whereas, the rest are scalar indexing issues.
 const BROKEN_LAYERS = [DepthwiseConv,
-		       AlphaDropout,
+		                   AlphaDropout,
                        InstanceNorm,
                        GroupNorm]
 
@@ -67,12 +67,7 @@ gradtest("InstanceNorm", instancenorm, r, 1)
 groupnorm = [GroupNorm]
 gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1)
 
-const stateless_layers = [Flux.mse,
-                          Flux.crossentropy,
-                          Flux.logitcrossentropy,
-                          Flux.normalise,
-                          Flux.bce_loss,
-                          Flux.logitbce_loss]
+const stateless_layers = [Flux.normalise]
 
 const stateless_layers_broadcasted = []
 

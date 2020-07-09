@@ -8,7 +8,7 @@ For example, say we have a simple regression.
 
 ```julia
 using Flux
-using Flux: logitcrossentropy
+using Flux.Losses: logitcrossentropy
 m = Dense(10, 5)
 loss(x, y) = logitcrossentropy(m(x), y)
 ```

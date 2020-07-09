@@ -1,6 +1,7 @@
-## Loss Functions
+# Loss Functions
 
 Flux provides a large number of common loss functions used for training machine learning models.
+They are grouped together in the `Flux.Losses` module.
 
 Loss functions for supervised learning typically expect as inputs a target `y`, and a prediction `ŷ`.
 In Flux's convention, the order of the arguments is the following
@@ -20,21 +21,21 @@ loss(ŷ, y, agg=x->mean(w .* x))    # weighted mean
 loss(ŷ, y, agg=identity)           # no aggregation.
 ```
 
-### Losses Reference
+## Losses Reference
 
 ```@docs
-Flux.mae
-Flux.mse
-Flux.msle
-Flux.huber_loss
-Flux.crossentropy
-Flux.logitcrossentropy
-Flux.bce_loss
-Flux.logitbce_loss
-Flux.kldivergence
-Flux.poisson_loss
-Flux.hinge_loss
-Flux.squared_hinge_loss
-Flux.dice_coeff_loss
-Flux.tversky_loss
+Flux.Losses.mae
+Flux.Losses.mse
+Flux.Losses.msle
+Flux.Losses.huber_loss
+Flux.Losses.crossentropy
+Flux.Losses.logitcrossentropy
+Flux.Losses.binarycrossentropy
+Flux.Losses.logitbinarycrossentropy
+Flux.Losses.kldivergence
+Flux.Losses.poisson_loss
+Flux.Losses.hinge_loss
+Flux.Losses.squared_hinge_loss
+Flux.Losses.dice_coeff_loss
+Flux.Losses.tversky_loss
 ```

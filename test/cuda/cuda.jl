@@ -4,53 +4,37 @@ using Flux: cpu, gpu
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky
 
-@info "Testing GPU Support"
-
 @testset "CUDA" begin
+  x = randn(5, 5)
+  cx = gpu(x)
+  @test cx isa CuArray
 
-CUDA.allowscalar(false)
+  @test Flux.onecold(gpu([1.0, 2.0, 3.0])) == 3
 
-x = randn(5, 5)
-cx = gpu(x)
-@test cx isa CuArray
+  x = Flux.onehotbatch([1, 2, 3], 1:3)
+  cx = gpu(x)
+  @test cx isa Flux.OneHotMatrix && cx.data isa CuArray
+  @test (cx .+ 1) isa CuArray
 
-@test Flux.onecold(gpu([1.0, 2.0, 3.0])) == 3
+  m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
+  cm = gpu(m)
 
-x = Flux.onehotbatch([1, 2, 3], 1:3)
-cx = gpu(x)
-@test cx isa Flux.OneHotMatrix && cx.data isa CuArray
-@test (cx .+ 1) isa CuArray
+  @test all(p isa CuArray for p in params(cm))
+  @test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
-m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
-cm = gpu(m)
+  xs = rand(5, 5)
+  ys = Flux.onehotbatch(1:5,1:5)
+  @test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
 
-@test all(p isa CuArray for p in params(cm))
-@test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
+  c = gpu(Conv((2,2),3=>4))
+  x = gpu(rand(10, 10, 3, 2))
+  l = c(gpu(rand(10,10,3,2)))
+  @test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
-x = [1.,2.,3.]
-cx = gpu(x)
-@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx) 
-@test Flux.crossentropy(x,x, agg=identity) ≈ Flux.crossentropy(cx,cx, agg=identity) |> cpu
-@test Flux.crossentropy(x,x, agg=x->mean([1.0;2.0;3.0].*x)) ≈ Flux.crossentropy(cx,cx, agg=x->mean(cu([1.0;2.0;3.0]).*x))
-
-x = [-1.1491, 0.8619, 0.3127]
-y = [1, 1, 0.]
-@test Flux.bce_loss(σ.(x), y) ≈ Flux.bce_loss(cu(σ.(x)), cu(y))
-@test Flux.logitbce_loss(x, y) ≈ Flux.logitbce_loss(cu(x), cu(y))
-
-xs = rand(5, 5)
-ys = Flux.onehotbatch(1:5,1:5)
-@test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
-
-c = gpu(Conv((2,2),3=>4))
-x = gpu(rand(10, 10, 3, 2))
-l = c(gpu(rand(10,10,3,2)))
-@test gradient(x -> sum(c(x)), x)[1] isa CuArray
-
-c = gpu(CrossCor((2,2),3=>4))
-x = gpu(rand(10, 10, 3, 2))
-l = c(gpu(rand(10,10,3,2)))
-@test gradient(x -> sum(c(x)), x)[1] isa CuArray
+  c = gpu(CrossCor((2,2),3=>4))
+  x = gpu(rand(10, 10, 3, 2))
+  l = c(gpu(rand(10,10,3,2)))
+  @test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
 end
 
@@ -76,13 +60,4 @@ end
     Q_cpu = Q_gpu |> cpu
     @test Q_cpu == cholesky(eltype(Q_gpu).(M))
   end
-end
-
-if CUDA.has_cudnn()
-  @info "Testing Flux/CUDNN"
-  include("cudnn.jl")
-  include("curnn.jl")
-  include("layers.jl")
-else
-  @warn "CUDNN unavailable, not testing GPU DNN support"
 end

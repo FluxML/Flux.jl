@@ -116,7 +116,7 @@ w = randn(10, 10)
 w1 = randn(10,10)
 ps = Params([w, w1])
 
-loss(x) = Flux.mse(w * x, w1 * x)
+loss(x) = Flux.Losses.mse(w * x, w1 * x)
 
 loss(rand(10)) # around 9
 
