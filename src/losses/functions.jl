@@ -176,7 +176,7 @@ squared_hinge_loss(ŷ, y; agg=mean) = agg((max.(0, 1 .- ŷ .* y)).^2)
     dice_coeff_loss(ŷ, y; smooth=1)
 
 Return a loss based on the dice coefficient.
-Used in the [V-Net](https://arxiv.org/abs/1606.04797v1) image segmentation
+Used in the [V-Net](https://arxiv.org/abs/1606.04797) image segmentation
 architecture.
 Similar to the F1_score. Calculated as:
 
