@@ -182,7 +182,7 @@ end
 """
     RADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-[Rectified ADAM](https://arxiv.org/pdf/1908.03265v1.pdf) optimizer.
+[Rectified ADAM](https://arxiv.org/abs/1908.03265v1) optimizer.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating

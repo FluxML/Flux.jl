@@ -87,7 +87,7 @@ end
     AlphaDropout(p)
 
 A dropout layer. Used in
-[Self-Normalizing Neural Networks](https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf).
+[Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
 The AlphaDropout layer ensures that mean and variance of activations
 remain the same as before.
 
@@ -121,7 +121,7 @@ testmode!(m::AlphaDropout, mode = true) =
 """
     LayerNorm(h::Integer)
 
-A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
+A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states of size `h`. Normalises the mean and standard
 deviation of each input before applying a per-neuron gain/bias.
 """
@@ -145,7 +145,7 @@ end
               initβ = zeros, initγ = ones,
               ϵ = 1e-8, momentum = .1)
 
-[Batch Normalization](https://arxiv.org/pdf/1502.03167.pdf) layer.
+[Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
 
 Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
@@ -336,7 +336,7 @@ end
               initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
               ϵ = 1f-5, momentum = 0.1f0)
 
-[Group Normalization](https://arxiv.org/pdf/1803.08494.pdf) layer.
+[Group Normalization](https://arxiv.org/abs/1803.08494) layer.
 This layer can outperform Batch Normalization and Instance Normalization.
 
 `chs` is the number of channels, the channel dimension of your input.
