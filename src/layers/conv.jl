@@ -19,7 +19,7 @@ struct SamePad end
 
 calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
 function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
-  #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/pdf/1603.07285
+  #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
   # Effective kernel size, including dilation
   k_eff = @. k + (k - 1) * (dilation - 1)

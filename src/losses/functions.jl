@@ -176,7 +176,7 @@ squared_hinge_loss(ŷ, y; agg=mean) = agg((max.(0, 1 .- ŷ .* y)).^2)
     dice_coeff_loss(ŷ, y; smooth=1)
 
 Return a loss based on the dice coefficient.
-Used in the [V-Net](https://arxiv.org/pdf/1606.04797v1.pdf) image segmentation
+Used in the [V-Net](https://arxiv.org/abs/1606.04797) image segmentation
 architecture.
 Similar to the F1_score. Calculated as:
 
@@ -187,7 +187,7 @@ dice_coeff_loss(ŷ, y; smooth=ofeltype(ŷ, 1.0)) = 1 - (2*sum(y .* ŷ) + smoo
 """
     tversky_loss(ŷ, y; β=0.7)
 
-Return the [Tversky loss](https://arxiv.org/pdf/1706.05721.pdf).
+Return the [Tversky loss](https://arxiv.org/abs/1706.05721).
 Used with imbalanced data to give more weight to false negatives.
 Larger β weigh recall more than precision (by placing more emphasis on false negatives)
 Calculated as:

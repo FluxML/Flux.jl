@@ -187,7 +187,7 @@ outdims(l::Diagonal, isize) = (length(l.α),)
 """
     Maxout(over)
 
-The [Maxout](https://arxiv.org/pdf/1302.4389.pdf) layer has a number of
+The [Maxout](https://arxiv.org/abs/1302.4389) layer has a number of
 internal layers which all receive the same input. It returns the elementwise
 maximum of the internal layers' outputs.
 
