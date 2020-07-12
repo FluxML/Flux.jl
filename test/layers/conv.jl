@@ -46,7 +46,7 @@ end
   op = bias(ip)
   @test sum(op) ≈ 0.f0
   gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-  @test gs[bias.bias] == nothing
+  @test !haskey(gs, bias.bias)
 
   # Train w/o bias and make sure no convergence happens
   # when only bias can be converged
