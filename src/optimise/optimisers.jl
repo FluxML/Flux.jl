@@ -485,6 +485,22 @@ function apply!(o::Optimiser, x, Δ)
   return Δ
 end
 
+mutable struct MultiLR{T,F}
+  opt::T
+  decay::F
+  milestone::AbstractVector
+end
+
+function apply!(o::MultiLR, x, Δ)
+  lr!(o.opt, lr(o.opt) / o.decay)
+  apply!(opt.opt, x, Δ)
+end
+
+lr(o) = o.eta
+function lr!(opt, lr)
+  opt.eta = lr
+end
+
 """
     InvDecay(γ = 0.001)
 
