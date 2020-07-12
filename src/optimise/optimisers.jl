@@ -489,10 +489,17 @@ mutable struct MultiLR{T,F}
   opt::T
   decay::F
   milestone::AbstractVector
+  current::Int
 end
 
+MultiLR(opt, decay = 1, milestone = []) =
+  MultiLR(opt, decay, sort(milestone), 0)
+
 function apply!(o::MultiLR, x, Δ)
-  lr!(o.opt, lr(o.opt) / o.decay)
+  if o.curent in o.milestone
+    lr!(o.opt, lr(o.opt) / o.decay)
+  end
+  o.current >= o.milstone[end] || (o.current += 1)
   apply!(opt.opt, x, Δ)
 end
 
