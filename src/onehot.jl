@@ -45,16 +45,12 @@ cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.d
 
 """
     onehot(l, labels[, unk])
-Create a `OneHotVector` based on `l` and `labels`.
 
-If `l` is present in `k`th index of `labels` the function returns a `OneHotVector`
-with `1` in `k`th position and `0` in other in other indexes.
+Return a `OneHotVector` where only first occourence of `l` in `labels` is `1` and
+all other elements are `0`.
 
 If `l` is not found in labels and  `unk` is present, the function returns
-`onehot(unk, labels)`.
-
-Otherwise the function returns an error message.
-
+`onehot(unk, labels)`; otherwise the function raises an error.
 
 # Examples
 ```jldoctest
@@ -86,13 +82,10 @@ end
 """
     onehotbatch(ls, labels[, unk...])
 
-Create a `OneHotMatrix` with a batch of labels based on the
-possible set of `labels`.
-If every element of `ls` is present in labels it return a matrix with columns as
-If every element of `ls` is present in labels, it return a matrix with one-hot vectors as columns. The `k`th column of the matrix has value of `onehot(ls[k], labels)`.
+Return a `OneHotMatrix` where `k`th column of the matrix is `onehot(ls[k], labels)`.
 
-If `unk` is given, return [`onehot(unk, labels)`](@ref) if one of the input
-labels `ls` is not found in `labels`; otherwise it will error.
+If one of the input labels `ls` is not found in `labels` and `unk` is given,
+return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an error.
 
 # Examples
 ```jldoctest
