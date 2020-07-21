@@ -67,8 +67,8 @@ Usage example:
 """
 function DataLoader(data; batchsize=1, shuffle=false, partial=true)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
-    
-    n = _nobs(data) 
+
+    n = nobs(data)
     if n < batchsize
         @warn "Number of observations less than batchsize, decreasing the batchsize to $n"
         batchsize = n
@@ -84,7 +84,7 @@ end
     end
     nexti = min(i + d.batchsize, d.nobs)
     ids = d.indices[i+1:nexti]
-    batch = _getobs(d.data, ids)
+    batch = getobs(d.data, ids)
     return (batch, nexti)
 end
 
@@ -93,18 +93,18 @@ function Base.length(d::DataLoader)
     d.partial ? ceil(Int,n) : floor(Int,n)
 end
 
-_nobs(data::AbstractArray) = size(data)[end]
+nobs(data::AbstractArray) = size(data)[end]
 
-function _nobs(data::Union{Tuple, NamedTuple})
+function nobs(data::Union{Tuple, NamedTuple})
     length(data) > 0 || throw(ArgumentError("Need at least one data input"))
-    n = _nobs(data[1])
-    if !all(x -> _nobs(x) == n, Base.tail(data))
+    n = nobs(data[1])
+    if !all(x -> nobs(x) == n, Base.tail(data))
         throw(DimensionMismatch("All data should contain same number of observations"))
     end
     return n
 end
 
-_getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
-_getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(_getobs, i), data)
+getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
+getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(getobs, i), data)
 
 Base.eltype(::DataLoader{D}) where D = D

@@ -76,6 +76,38 @@
     @test norm(θ .- 1) < 1e-10
 end
 
+@testset "Dataset" begin
+    struct ZerosDataset{T, N}
+        element_size::Tuple
+        total::Int
+    end
+
+    Base.eltype(::ZerosDataset{T, N}) where {T, N} = Array{T, N}
+    Base.eltype(::DataLoader{ZerosDataset{T, N}}) where {T, N} = Array{T, N}
+
+    Flux.Data.nobs(d::ZerosDataset) = d.total
+    function Flux.Data.getobs(d::ZerosDataset{T, N}, i)::Array{T, N} where {T, N}
+        zeros(T, d.element_size..., length(i))
+    end
+
+    batch_size = 4
+    data_length = 16
+    item_size = (28, 28, 1)
+
+    dataset = ZerosDataset{Float32, 4}(item_size, data_length)
+    loader = DataLoader(dataset, batchsize=batch_size, shuffle=true)
+
+    @inferred first(loader)
+    @test length(loader) == data_length / batch_size
+
+    batches = collect(loader)
+    @test length(batches) == data_length / batch_size
+
+    for b in batches
+        @test size(b) == (item_size..., batch_size)
+    end
+end
+
 @testset "CMUDict" begin 
     @test cmudict()["CATASTROPHE"] == :[K,AH0,T,AE1,S,T,R,AH0,F,IY0].args
 
