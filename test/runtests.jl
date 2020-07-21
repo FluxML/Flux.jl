@@ -1,4 +1,4 @@
-using Flux 
+using Flux
 using Flux.Data
 using Test 
 using Random, Statistics, LinearAlgebra
@@ -31,6 +31,7 @@ end
   include("layers/normalisation.jl")
   include("layers/stateless.jl")
   include("layers/conv.jl")
+  include("layers/structure.jl")
 end
 
 @testset "CUDA" begin

@@ -73,36 +73,38 @@ delete!(ps, m[2].b)
 
 ## Custom multiple input or output layer, and the custom parallel layer
 
-Sometimes a model receives multiple inputs at once, or multiple outputs are needed. Parallel paths are also considered within the deep structures of the model.
+Sometimes a model needs to receive several separate inputs at once, or several separate outputs are required. Sometimes parallel separate paths within the deeper structures of the model are advantageous.
 
-The custom layers possible for implementation are therefore explained below: Join, Split and Parallel. All layers may work with gpu acceleration. Nevertheless, the code below might have performance issues and is not tested and optimized for performance.
+With FluxML, custom layers can be implemented that allow multiple inputs, outputs or even internal parallel structures. The custom layers that can be used for this purpose are explained below, namely Join, Split and Parallel. All layers should work with gpu acceleration. The examples have not been tested or optimized for performance.
 
-Additionally, you can find these premade layers in the flux default layers -> "structure".
+These layers are also already implemented as standard layers in Flux, and can be accessed via `Flux.Join(..)`, `Flux.Split(..)`, or `Flux.Parallel(..)`.
 
-### The custom multiple input layer: the join layer
+### The custom multiple input layer: the custom join layer
 
-By using the following layer, your model can receive multiple inputs by a single tuple. `Join(a,b)` reveives a tuple with two entries ~ `([], [])` and returns a concatenated vector of the outputs of each path. The length of the tuple is arbitrary with the following code. The defined number paths and the length of the input tuple need to be equal. For now it is recommended to use simple formats for the output, e.g., the Dense layer output.
+By using the following layer, your model can receive multiple inputs through a single tuple. `CustomJoin(a,b)` receives a tuple with two entries ~ `([], [])` and returns a concatenated vector of the outputs of each path. The length of the tuple is arbitrary in the following code, so the input tuple can contain 2, 3, or more arrays. The defined number of paths (separated by a comma: `CustomJoin(p1,p2,...)`) and the length of the input tuple must be equal. It is recommended to use simple formats for the output, e.g. layers with a vector as output.
 
 ```julia
 using Flux
 using CUDA
 
-struct Join
+# custom join layer
+struct CustomJoin
   fs
 end
 
-function Join(fs...)
-  Join(fs)
+function CustomJoin(fs...)
+  CustomJoin(fs)
 end
 
-function (w::Join)(t::Tuple)
+function (w::CustomJoin)(t::Tuple)
   vcat([w.fs[i](t[i]) for i in 1:length(w.fs)]...)
 end
 
-Flux.@functor Join
+Flux.@functor CustomJoin
 
+# test
 model = Chain(
-  Join(
+  CustomJoin(
     Chain(
       Dense(1, 5),
       Dense(5, 1)
@@ -116,34 +118,36 @@ model = Chain(
 tuple_input = cu(rand(1), rand(1), rand(1))
 
 model(tuple_input)
-# returns a single float vector, with one value
+# returns a single float vector with one value
 ```
 
-### The custom multiple output layer: the split layer
+### The custom multiple output layer: the custom split layer
 
-By using the following layer, your model can return multiple outputs as a tuple. `Split(a,b)` reveives a single array but returns a tuple with two or more entries ~ `([], [])`. The length of the tuple is arbitrary, and depends on the number of paths. For now it is recommended to use simple formats for the output, e.g., the Dense layer output.
+By using the following layer, your model can return multiple outputs as tuples. `CustomSplit(a,b)` receives a single array but returns a tuple with two or more entries ~ `([], [])`. The length of the tuple is arbitrary and depends on the number of implemented paths. It is recommended to use simple formats for the output, e.g. dense layer output.
 
 ```julia
 using Flux
 using CUDA
 
-struct Split
+custom split layer
+struct CustomSplit
   fs
 end
 
-function Split(fs...)
-  Split(fs)
+function CustomSplit(fs...)
+  CustomSplit(fs)
 end
 
-function (w::Split)(x::AbstractArray)
+function (w::CustomSplit)(x::AbstractArray)
   tuple([w.fs[i](x) for i in 1:length(w.fs)])
 end
 
-Flux.@functor Split
+Flux.@functor CustomSplit
 
+# test
 model = Chain(
   Dense(1, 1),
-  Split(
+  CustomSplit(
     Dense(1, 1),
     Dense(1, 1),
     Dense(1, 1)
@@ -154,31 +158,43 @@ model(cu(rand(1)))
 # returns a tuple with three float vectors, each with one value
 ```
 
+A custom loss function for the multiple outputs may look like this:
+
+```
+using Statistics
+function loss(x, y)
+  # rms over all the mse
+  sqrt(mean([Flux.mse(modelSplit(x)[i], y[i]) for i in 1:length(y)].^2.))
+end
+```
+
 ### The custom multiple paths internal layer: the parallel layer
 
-By using the following layer, your model can compute seperate multiple layers inside your model. `Parallel(a,b)` reveives a single input vector and returns a concatenated vector of the outputs of each path. But inside the parallel layer multiple forward paths are created. For now it is recommended to use simple formats for the output, e.g., the Dense layer output.
+By using the following layer, your model can calculate several separate layers within your model separately. CustomParallel(a,b)` receives a single input vector and returns a merged vector of the outputs of each path. However, multiple forward paths are created within the parallel layer. It is recommended to use simple formats for the output, e.g. the output of the dense layer.
 
 ```julia
 using Flux
 using CUDA
 
-struct Parallel
+# custom parallel layer
+struct CustomParallel
   fs
 end
 
-function Parallel(fs...)
-  Parallel(fs)
+function CustomParallel(fs...)
+  CustomParallel(fs)
 end
 
-function (w::Parallel)(x::AbstractArray)
+function (w::CustomParallel)(x::AbstractArray)
   vcat([w.fs[i](x) for i in 1:length(w.fs)]...)
 end
 
-Flux.@functor Parallel
+Flux.@functor CustomParallel
 
+# test
 model = Chain(
   Dense(1, 1),
-  Parallel(
+  CustomParallel(
     Dense(1, 1),
     Dense(1, 3),
     Chain(
@@ -190,7 +206,7 @@ model = Chain(
 ) |> gpu
 
 model(cu((rand(1))))
-# returns a single float vector, with one value
+# returns a single float vector with one value
 ```
 
 
