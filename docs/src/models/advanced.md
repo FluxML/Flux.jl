@@ -71,3 +71,132 @@ ps = params(m)
 delete!(ps, m[2].b) 
 ```
 
+## Custom multiple input or output layer, and the custom parallel layer
+
+Sometimes a model receives multiple inputs at once, or multiple outputs are needed. Parallel paths are also considered within the deep structures of the model.
+
+The custom layers possible for implementation are therefore explained below: Join, Split and Parallel. All layers may work with gpu acceleration. Nevertheless, the code below might have performance issues and is not tested and optimized for performance.
+
+Additionally, you can find these premade layers in the flux default layers -> "structure".
+
+### The custom multiple input layer: the join layer
+
+By using the following layer, your model can receive multiple inputs by a single tuple. `Join(a,b)` reveives a tuple with two entries ~ `([], [])` and returns a concatenated vector of the outputs of each path. The length of the tuple is arbitrary with the following code. The defined number paths and the length of the input tuple need to be equal. For now it is recommended to use simple formats for the output, e.g., the Dense layer output.
+
+```julia
+using Flux
+using CUDA
+
+struct Join
+  fs
+end
+
+function Join(fs...)
+  Join(fs)
+end
+
+function (w::Join)(t::Tuple)
+  vcat([w.fs[i](t[i]) for i in 1:length(w.fs)]...)
+end
+
+Flux.@functor Join
+
+model = Chain(
+  Join(
+    Chain(
+      Dense(1, 5),
+      Dense(5, 1)
+    ),
+    Dense(1, 2),
+    Dense(1, 1),
+  ),
+  Dense(4, 1)
+) |> gpu
+
+tuple_input = cu(rand(1), rand(1), rand(1))
+
+model(tuple_input)
+# returns a single float vector, with one value
+```
+
+### The custom multiple output layer: the split layer
+
+By using the following layer, your model can return multiple outputs as a tuple. `Split(a,b)` reveives a single array but returns a tuple with two or more entries ~ `([], [])`. The length of the tuple is arbitrary, and depends on the number of paths. For now it is recommended to use simple formats for the output, e.g., the Dense layer output.
+
+```julia
+using Flux
+using CUDA
+
+struct Split
+  fs
+end
+
+function Split(fs...)
+  Split(fs)
+end
+
+function (w::Split)(x::AbstractArray)
+  tuple([w.fs[i](x) for i in 1:length(w.fs)])
+end
+
+Flux.@functor Split
+
+model = Chain(
+  Dense(1, 1),
+  Split(
+    Dense(1, 1),
+    Dense(1, 1),
+    Dense(1, 1)
+  )
+) |> gpu
+
+model(cu(rand(1))) 
+# returns a tuple with three float vectors, each with one value
+```
+
+### The custom multiple paths internal layer: the parallel layer
+
+By using the following layer, your model can compute seperate multiple layers inside your model. `Parallel(a,b)` reveives a single input vector and returns a concatenated vector of the outputs of each path. But inside the parallel layer multiple forward paths are created. For now it is recommended to use simple formats for the output, e.g., the Dense layer output.
+
+```julia
+using Flux
+using CUDA
+
+struct Parallel
+  fs
+end
+
+function Parallel(fs...)
+  Parallel(fs)
+end
+
+function (w::Parallel)(x::AbstractArray)
+  vcat([w.fs[i](x) for i in 1:length(w.fs)]...)
+end
+
+Flux.@functor Parallel
+
+model = Chain(
+  Dense(1, 1),
+  Parallel(
+    Dense(1, 1),
+    Dense(1, 3),
+    Chain(
+      Dense(1, 5),
+      Dense(5, 2),
+    )
+  ),
+  Dense(6, 1)
+) |> gpu
+
+model(cu((rand(1))))
+# returns a single float vector, with one value
+```
+
+
+
+
+
+
+
+
