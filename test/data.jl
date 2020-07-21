@@ -82,7 +82,6 @@ end
         total::Int
     end
 
-    Base.eltype(::ZerosDataset{T, N}) where {T, N} = Array{T, N}
     Base.eltype(::DataLoader{ZerosDataset{T, N}}) where {T, N} = Array{T, N}
 
     Flux.Data.nobs(d::ZerosDataset) = d.total
