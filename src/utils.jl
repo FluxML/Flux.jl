@@ -36,7 +36,7 @@ ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
 
 """
-    glorot_uniform(dims...)
+    glorot_uniform([rng=GLOBAL_RNG], dims...)
 
 Return an `Array` of size `dims` containing random variables taken from a uniform
 distribution in the interval ``[-x, x]``, where `x = sqrt(6 / (fan_in + fan_out))`.
@@ -62,10 +62,12 @@ julia> Flux.glorot_uniform(2, 3)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_uniform(dims...) = (rand(Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+glorot_uniform(rng::AbstractRNG, dims...) = (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+glorot_uniform(dims...) = glorot_uniform(Random.GLOBAL_RNG, dims...)
+glorot_uniform(rng::AbstractRNG) = (dims...) -> glorot_uniform(rng, dims...)
 
 """
-    glorot_normal(dims...)
+    glorot_normal([rng=GLOBAL_RNG], dims...)
 
 Return an `Array` of size `dims` containing random variables taken from a normal
 distribution with mean 0 and standard deviation `sqrt(2 / (fan_in + fan_out))`.
@@ -92,10 +94,12 @@ julia> Flux.glorot_normal(3, 2)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_normal(dims...) = randn(Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+glorot_normal(rng::AbstractRNG, dims...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+glorot_normal(dims...) = glorot_normal(Random.GLOBAL_RNG, dims...)
+glorot_normal(rng::AbstractRNG) = (dims...) -> glorot_normal(rng, dims...)
 
 """
-    kaiming_uniform(dims...; gain = √2)
+    kaiming_uniform([rng=GLOBAL_RNG], dims...; gain = √2)
 
 Return an `Array` of size `dims` containing random variables taken from a uniform distribution in the
 interval `[-x, x]`, where `x = gain * sqrt(3/fan_in)`.
@@ -122,13 +126,16 @@ julia> Flux.kaiming_uniform(3, 2)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_uniform(dims...; gain = √2)
+function kaiming_uniform(rng::AbstractRNG, dims...; gain = √2)
   bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
-  return (rand(Float32, dims...) .- 0.5f0) .* 2bound
+  return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
+kaiming_uniform(dims...;kwargs...) = kaiming_uniform(Random.GLOBAL_RNG, dims...;kwargs...)
+kaiming_uniform(rng::AbstractRNG;kwargs...) = (dims...;kwargs...) -> kaiming_uniform(rng, dims...;kwargs...)
+
 """
-    kaiming_normal(dims...; gain = √2)
+    kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
 
 Return an `Array` of size `dims` containing random variables taken from a normal
 distribution with mean 0 and standard deviation `gain * sqrt(fan_in)`.
@@ -155,10 +162,13 @@ julia> Flux.kaiming_normal(3, 2)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_normal(dims...; gain = √2f0)
+function kaiming_normal(rng::AbstractRNG, dims...; gain = √2f0)
   std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
-  return randn(Float32, dims...) .* std
+  return randn(rng, Float32, dims...) .* std
 end
+
+kaiming_normal(dims...;kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...;kwargs...)
+kaiming_normal(rng::AbstractRNG;kwargs...) = (dims...;kwargs...) -> kaiming_normal(rng, dims...;kwargs...)
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
