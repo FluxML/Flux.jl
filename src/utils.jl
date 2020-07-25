@@ -131,8 +131,8 @@ function kaiming_uniform(rng::AbstractRNG, dims...; gain = √2)
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
-kaiming_uniform(dims...;kwargs...) = kaiming_uniform(Random.GLOBAL_RNG, dims...;kwargs...)
-kaiming_uniform(rng::AbstractRNG;kwargs...) = (dims...;kwargs...) -> kaiming_uniform(rng, dims...;kwargs...)
+kaiming_uniform(dims...; kwargs...) = kaiming_uniform(Random.GLOBAL_RNG, dims...; kwargs...)
+kaiming_uniform(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; kwargs...)
 
 """
     kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
