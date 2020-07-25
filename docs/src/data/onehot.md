@@ -49,6 +49,11 @@ julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
  1  0  1
  0  0  0
 
+julia> onecold(ans, [:a, :b, :c])	
+3-element Array{Symbol,1}:	
+ :b	
+ :a	
+ :b   
 ```
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.
