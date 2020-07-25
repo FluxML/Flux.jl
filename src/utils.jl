@@ -168,7 +168,7 @@ function kaiming_normal(rng::AbstractRNG, dims...; gain = √2f0)
 end
 
 kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...;kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
+kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
