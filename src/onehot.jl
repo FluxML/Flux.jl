@@ -12,7 +12,7 @@ Base.getindex(xs::OneHotVector, i::Integer) = i == xs.ix
 Base.getindex(xs::OneHotVector, ::Colon) = OneHotVector(xs.ix, xs.of)
 
 function Base.:*(A::AbstractMatrix, b::OneHotVector)
-  if size(A)[2] != b.of
+  if size(A, 2) != b.of
     throw(DimensionMismatch("Matrix column must correspond with OneHotVector size"))
   end
   return A[:, b.ix]
