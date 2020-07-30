@@ -311,3 +311,31 @@ if VERSION >= v"1.1"
   end
 end
 end
+
+@testset "normalise" begin
+  # begin tests
+  let sizes = (3,2,2),
+        x = reshape(collect(1:prod(sizes)), sizes)
+
+      @test Flux.normalise(x, dims=[1, 2]) ≈ reshape([
+      -1.46384153   -1.46384153
+      -0.87830492   -0.87830492
+      -0.29276830   -0.29276830
+       0.29276830    0.29276830
+       0.87830492    0.87830492
+       1.46384153    1.46384153
+         ], sizes)
+
+      @test Flux.normalise(x, dims=1) ≈ reshape([
+      -1.22472987   -1.22472987
+       0.0                  0.0
+       1.22472987    1.22472987
+      -1.22472987   -1.22472987
+       0.0                  0.0
+       1.22472987    1.22472987
+         ], sizes)
+
+      @test Flux.normalise(Float32[], dims=1) ≈ Float32[]
+
+      @test Flux.normalise(ones(sizes), dims=1) ≈ zeros(sizes)
+end
