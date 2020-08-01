@@ -441,12 +441,14 @@ mutable struct NADAM
   eta::Float64
   beta::Tuple{Float64, Float64}
   state::IdDict
+  eta_dict::IdDict
+  beta_dict::IdDict
 end
 
-NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
+NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict(), IdDict(), IdDict())
 
 function apply!(o::NADAM, x, Δ)
-  η, β = o.eta, o.beta
+  η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
   mt, vt, (β1p, β2p) = get!(o.state, x, (zero(x), zero(x), o.beta))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
