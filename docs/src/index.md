@@ -12,6 +12,8 @@ Download [Julia 1.0](https://julialang.org/) or later, if you haven't already. Y
 
 If you have CUDA you can also run `] add CUDA` to get GPU support; see [here](gpu.md) for more details.
 
+NOTE: Flux used to have a CuArrays.jl dependency until v0.10.4, replaced by CUDA.jl in v0.11.0. If you're upgrading Flux from v0.10.4 or a lower version, you may need to remove CuArrays (run `] rm CuArrays`) before you can upgrade.
+
 ## Learning Flux
 
 There are several different ways to learn Flux. If you just want to get started writing models, the [model zoo](https://github.com/FluxML/model-zoo/) gives good starting points for many common ones. This documentation provides a reference to all of Flux's APIs, as well as a from-scratch introduction to Flux's take on models and how they work. Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
