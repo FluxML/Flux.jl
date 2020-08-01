@@ -11,7 +11,12 @@ Base.getindex(xs::OneHotVector, i::Integer) = i == xs.ix
 
 Base.getindex(xs::OneHotVector, ::Colon) = OneHotVector(xs.ix, xs.of)
 
-A::AbstractMatrix * b::OneHotVector = A[:, b.ix]
+function Base.:*(A::AbstractMatrix, b::OneHotVector)
+  if size(A, 2) != b.of
+    throw(DimensionMismatch("Matrix column must correspond with OneHotVector size"))
+  end
+  return A[:, b.ix]
+end
 
 struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
   height::Int
