@@ -334,12 +334,13 @@ opt = ADAGrad(0.001)
 mutable struct ADAGrad
   eta::Float64
   acc::IdDict
+  eta_dict::IdDict
 end
 
-ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
+ADAGrad(η = 0.1) = ADAGrad(η, IdDict(), IdDict())
 
 function apply!(o::ADAGrad, x, Δ)
-  η = o.eta
+  η = get(o.eta_dict, x, o.eta)
   acc = get!(o.acc, x, fill!(zero(x), ϵ))::typeof(x)
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
