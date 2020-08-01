@@ -64,12 +64,14 @@ mutable struct Momentum
   eta::Float64
   rho::Float64
   velocity::IdDict
+  eta_dict::IdDict
+  rho_dict::IdDict
 end
 
-Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
+Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict(), IdDict(), IdDict())
 
 function apply!(o::Momentum, x, Δ)
-  η, ρ = o.eta, o.rho
+  η, ρ = get(o.eta_dict, x, o.eta), get(o.rho_dict, x, o.rho)
   v = get!(o.velocity, x, zero(x))::typeof(x)
   @. v = ρ * v - η * Δ
   @. Δ = -v
