@@ -99,12 +99,14 @@ mutable struct Nesterov
   eta::Float64
   rho::Float64
   velocity::IdDict
+  eta_dict::IdDict
+  rho_dict::IdDict
 end
 
-Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
+Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict(), IdDict(), IdDict())
 
 function apply!(o::Nesterov, x, Δ)
-  η, ρ = o.eta, o.rho
+  η, ρ = get(o.eta_dict, x, o.eta), get(o.rho_dict, x, o.rho)
   v = get!(o.velocity, x, zero(x))::typeof(x)
   d = @. ρ^2 * v - (1+ρ) * η * Δ
   @. v = ρ*v - η*Δ
