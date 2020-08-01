@@ -607,10 +607,16 @@ end
 Clip gradients when their absolute value exceeds `thresh`.
 """
 mutable struct ClipValue{T}
-    thresh::T
+  thresh::T
+  thresh_dict::IdDict
 end
 
-apply!(o::ClipValue, x, Δ) = clamp!(Δ, -o.thresh, o.thresh)
+ClipValue(thresh) = ClipValue(thresh, IdDict())
+
+function apply!(o::ClipValue, x, Δ)
+  thresh = get(o.thresh_dict, x, o.thresh)
+  clamp!(Δ, -thresh, thresh)
+end
 
 """
     ClipNorm(thresh)
