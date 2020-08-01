@@ -211,12 +211,14 @@ mutable struct RADAM
   eta::Float64
   beta::Tuple{Float64,Float64}
   state::IdDict
+  eta_dict::IdDict
+  beta_dict::IdDict
 end
 
-RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict())
+RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict(), IdDict(), IdDict())
 
 function apply!(o::RADAM, x, Δ)
-  η, β = o.eta, o.beta
+  η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
   ρ∞ = 2/(1-β[2])-1
   mt, vt, βp, t = get!(o.state, x, (zero(x), zero(x), β, 1))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
