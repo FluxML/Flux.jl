@@ -591,12 +591,13 @@ Decay weights by `wd`.
 """
 mutable struct WeightDecay
   wd::Real
+  decay_dict::IdDict
 end
 
-WeightDecay() = WeightDecay(0)
+WeightDecay(decay = 0) = WeightDecay(decay, IdDict())
 
 function apply!(o::WeightDecay, x, Δ)
-  wd = o.wd
+  wd = get(o.decay_dict, x, o.wd)
   @. Δ += wd * x
 end
 
