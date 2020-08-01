@@ -35,7 +35,7 @@ mutable struct Descent
   eta_dict::IdDict
 end
 
-Descent(eta = 0.1) = Descent(eta, IdDict())
+Descent(η = 0.1) = Descent(η, IdDict())
 
 function apply!(o::Descent, x, Δ)
   η = get(o.eta_dict, x, o.eta)
