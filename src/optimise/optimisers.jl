@@ -563,15 +563,19 @@ mutable struct ExpDecay
   step::Int64
   clip::Float64
   current::IdDict
+  eta_dict::IdDict
+  decay_dict::IdDict
+  step_dict::IdDict
+  clip_dict::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict(), IdDict(), IdDict(), IdDict(), IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
-  η, s, decay = o.eta, o.step, o.decay
+  η, s, decay, clip = get(o.eta_dict, x, o.eta), get(o.step_dict, x, o.step), get(o.decay_dict, x, o.decay), get(o.clip_dict, x, o.clip)
   n = o.current[x] = get(o.current, x, 0) + 1
   if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
-    η = max(η * decay, o.clip)
+    η = max(η * decay, clip)
     o.eta = η
   end
   @. Δ *= η
