@@ -295,12 +295,14 @@ mutable struct OADAM
   eta::Float64
   beta::Tuple{Float64,Float64}
   state::IdDict
+  eta_dict::IdDict
+  beta_dict::IdDict
 end
 
-OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
+OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict(), IdDict(), IdDict())
 
 function apply!(o::OADAM, x, Δ)
-  η, β = o.eta, o.beta
+  η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
   mt, vt, Δ_, βp = get!(o.state, x, (zero(x), zero(x), zero(x), β))
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
