@@ -138,12 +138,14 @@ mutable struct RMSProp
   eta::Float64
   rho::Float64
   acc::IdDict
+  eta_dict::IdDict
+  rho_dict::IdDict
 end
 
-RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
+RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict(), IdDict(), IdDict())
 
 function apply!(o::RMSProp, x, Δ)
-  η, ρ = o.eta, o.rho
+  η, ρ = get(o.eta_dict, x, o.eta), get(o.rho_dict, x, o.rho)
   acc = get!(o.acc, x, zero(x))::typeof(x)
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   @. Δ *= η / (√acc + ϵ)
