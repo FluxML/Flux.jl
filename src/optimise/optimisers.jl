@@ -366,12 +366,13 @@ opt = ADADelta(0.89)
 mutable struct ADADelta
   rho::Float64
   state::IdDict
+  rho_dict::IdDict
 end
 
-ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
+ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict(), IdDict())
 
 function apply!(o::ADADelta, x, Δ)
-  ρ = o.rho
+  ρ = get(o.rho_dict, x, o.rho)
   acc, Δacc = get!(o.state, x, (zero(x), zero(x)))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   @. Δ *= √Δacc/ (√acc + ϵ)
