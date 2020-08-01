@@ -628,7 +628,7 @@ mutable struct ClipNorm{T}
   thresh_dict::IdDict
 end
 
-ClipNorm(thresh) = ClipNorm(thresh, IdDict)
+ClipNorm(thresh) = ClipNorm(thresh, IdDict())
 
 function apply!(o::ClipNorm, x, Δ)
   thresh = get(o.thresh_dict, x, o.thresh)
