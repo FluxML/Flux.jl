@@ -522,12 +522,13 @@ Optimiser(InvDecay(..), Opt(..))
 mutable struct InvDecay
   gamma::Float64
   state::IdDict
+  gamma_dict::IdDict
 end
 
-InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
+InvDecay(γ = 0.001) = InvDecay(γ, IdDict(), IdDict())
 
 function apply!(o::InvDecay, x, Δ)
-  γ = o.gamma
+  γ = get(o.gamma_dict, x, o.gamma)
   n = get!(o.state, x, 1)
   Δ .*= 1 / (1 + γ * n)
   o.state[x] = n + 1
