@@ -624,13 +624,17 @@ end
 Clip gradients when their L2 norm exceeds `thresh`.
 """
 mutable struct ClipNorm{T}
-    thresh::T
+  thresh::T
+  thresh_dict::IdDict
 end
 
+ClipNorm(thresh) = ClipNorm(thresh, IdDict)
+
 function apply!(o::ClipNorm, x, Δ)
-    Δnrm = norm(Δ)
-    if Δnrm > o.thresh
-        rmul!(Δ, o.thresh / Δnrm)
-    end
-    return Δ
+  thresh = get(o.thresh_dict, x, o.thresh)
+  Δnrm = norm(Δ)
+  if Δnrm > o.thresh
+      rmul!(Δ, thresh / Δnrm)
+  end
+  return Δ
 end
