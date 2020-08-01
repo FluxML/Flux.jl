@@ -32,12 +32,14 @@ Flux.Optimise.update!(opt, ps, gs)
 """
 mutable struct Descent
   eta::Float64
+  eta_dict::IdDict
 end
 
-Descent() = Descent(0.1)
+Descent(eta = 0.1) = Descent(eta, IdDict())
 
 function apply!(o::Descent, x, Δ)
-  Δ .*= o.eta
+  η = get(o.eta_dict, x, o.eta)
+  Δ .*= η
 end
 
 """
