@@ -35,7 +35,7 @@ mutable struct Descent
   eta_dict::IdDict
 end
 
-Descent(η = 0.1) = Descent(η, IdDict())
+Descent(η = 0.1; η_dict = IdDict()) = Descent(η, η_dict)
 
 function apply!(o::Descent, x, Δ)
   η = get(o.eta_dict, x, o.eta)
@@ -68,7 +68,7 @@ mutable struct Momentum
   rho_dict::IdDict
 end
 
-Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict(), IdDict(), IdDict())
+Momentum(η = 0.01, ρ = 0.9; η_dict = IdDict(), ρ_dict = IdDict()) = Momentum(η, ρ, IdDict(), η_dict, ρ_dict)
 
 function apply!(o::Momentum, x, Δ)
   η, ρ = get(o.eta_dict, x, o.eta), get(o.rho_dict, x, o.rho)
@@ -103,7 +103,7 @@ mutable struct Nesterov
   rho_dict::IdDict
 end
 
-Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict(), IdDict(), IdDict())
+Nesterov(η = 0.001, ρ = 0.9; η_dict = IdDict(), ρ_dict = IdDict()) = Nesterov(η, ρ, IdDict(), η_dict, ρ_dict)
 
 function apply!(o::Nesterov, x, Δ)
   η, ρ = get(o.eta_dict, x, o.eta), get(o.rho_dict, x, o.rho)
@@ -142,7 +142,7 @@ mutable struct RMSProp
   rho_dict::IdDict
 end
 
-RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict(), IdDict(), IdDict())
+RMSProp(η = 0.001, ρ = 0.9; η_dict = IdDict(), ρ_dict = IdDict()) = RMSProp(η, ρ, IdDict(), η_dict, ρ_dict)
 
 function apply!(o::RMSProp, x, Δ)
   η, ρ = get(o.eta_dict, x, o.eta), get(o.rho_dict, x, o.rho)
@@ -177,7 +177,7 @@ mutable struct ADAM
   beta_dict::IdDict
 end
 
-ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict(), IdDict(), IdDict())
+ADAM(η = 0.001, β = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict()) = ADAM(η, β, IdDict(), η_dict, β_dict)
 
 function apply!(o::ADAM, x, Δ)
   η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
@@ -215,7 +215,7 @@ mutable struct RADAM
   beta_dict::IdDict
 end
 
-RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict(), IdDict(), IdDict())
+RADAM(η = 0.001, β = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict()) = RADAM(η, β, IdDict(), η_dict, β_dict)
 
 function apply!(o::RADAM, x, Δ)
   η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
@@ -260,7 +260,7 @@ mutable struct AdaMax
   beta_dict::IdDict
 end
 
-AdaMax(η = 0.001, β = (0.9, 0.999)) = AdaMax(η, β, IdDict(), IdDict(), IdDict())
+AdaMax(η = 0.001, β = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict()) = AdaMax(η, β, IdDict(), η_dict, β_dict)
 
 function apply!(o::AdaMax, x, Δ)
   η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
@@ -299,7 +299,7 @@ mutable struct OADAM
   beta_dict::IdDict
 end
 
-OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict(), IdDict(), IdDict())
+OADAM(η = 0.0001, β = (0.5, 0.9); η_dict = IdDict(), β_dict = IdDict()) = OADAM(η, β, IdDict(), η_dict, β_dict)
 
 function apply!(o::OADAM, x, Δ)
   η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
@@ -337,7 +337,7 @@ mutable struct ADAGrad
   eta_dict::IdDict
 end
 
-ADAGrad(η = 0.1) = ADAGrad(η, IdDict(), IdDict())
+ADAGrad(η = 0.1; η_dict = IdDict()) = ADAGrad(η, IdDict(), η_dict)
 
 function apply!(o::ADAGrad, x, Δ)
   η = get(o.eta_dict, x, o.eta)
@@ -369,7 +369,7 @@ mutable struct ADADelta
   rho_dict::IdDict
 end
 
-ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict(), IdDict())
+ADADelta(ρ = 0.9; ρ_dict = IdDict()) = ADADelta(ρ, IdDict(), ρ_dict)
 
 function apply!(o::ADADelta, x, Δ)
   ρ = get(o.rho_dict, x, o.rho)
@@ -407,7 +407,7 @@ mutable struct AMSGrad
   beta_dict::IdDict
 end
 
-AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict(), IdDict(), IdDict())
+AMSGrad(η = 0.001, β = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict()) = AMSGrad(η, β, IdDict(), η_dict, β_dict)
 
 function apply!(o::AMSGrad, x, Δ)
   η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
@@ -445,7 +445,7 @@ mutable struct NADAM
   beta_dict::IdDict
 end
 
-NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict(), IdDict(), IdDict())
+NADAM(η = 0.001, β = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict()) = NADAM(η, β, IdDict(), η_dict, β_dict)
 
 function apply!(o::NADAM, x, Δ)
   η, β = get(o.eta_dict, x, o.eta), get(o.beta_dict, x, o.beta)
@@ -477,8 +477,8 @@ opt = ADAMW()
 opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
-ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(η, β), WeightDecay(decay))
+ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0; η_dict = IdDict(), β_dict = IdDict(), decay_dict = IdDict()) =
+  Optimiser(ADAM(η, β; η_dict = η_dict, β_dict = β_dict), WeightDecay(decay; decay_dict = decay_dict))
 
 # Compose optimizers
 
@@ -525,7 +525,7 @@ mutable struct InvDecay
   gamma_dict::IdDict
 end
 
-InvDecay(γ = 0.001) = InvDecay(γ, IdDict(), IdDict())
+InvDecay(γ = 0.001; γ_dict = IdDict()) = InvDecay(γ, IdDict(), γ_dict)
 
 function apply!(o::InvDecay, x, Δ)
   γ = get(o.gamma_dict, x, o.gamma)
@@ -569,7 +569,9 @@ mutable struct ExpDecay
   clip_dict::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict(), IdDict(), IdDict(), IdDict(), IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4;
+η_dict = IdDict(), decay_dict = IdDict(), step_dict = IdDict(), clip_dict = IdDict()) = 
+  ExpDecay(opt, decay, decay_step, clip, IdDict(), η_dict, decay_dict, step_dict, clip_dict)
 
 function apply!(o::ExpDecay, x, Δ)
   η, s, decay, clip = get(o.eta_dict, x, o.eta), get(o.step_dict, x, o.step), get(o.decay_dict, x, o.decay), get(o.clip_dict, x, o.clip)
@@ -594,7 +596,7 @@ mutable struct WeightDecay
   decay_dict::IdDict
 end
 
-WeightDecay(decay = 0) = WeightDecay(decay, IdDict())
+WeightDecay(decay = 0; decay_dict = IdDict()) = WeightDecay(decay, decay_dict)
 
 function apply!(o::WeightDecay, x, Δ)
   wd = get(o.decay_dict, x, o.wd)
@@ -611,7 +613,7 @@ mutable struct ClipValue{T}
   thresh_dict::IdDict
 end
 
-ClipValue(thresh) = ClipValue(thresh, IdDict())
+ClipValue(thresh; thresh_dict = IdDict()) = ClipValue(thresh, thresh_dict)
 
 function apply!(o::ClipValue, x, Δ)
   thresh = get(o.thresh_dict, x, o.thresh)
@@ -628,7 +630,7 @@ mutable struct ClipNorm{T}
   thresh_dict::IdDict
 end
 
-ClipNorm(thresh) = ClipNorm(thresh, IdDict())
+ClipNorm(thresh; thresh_dict = IdDict()) = ClipNorm(thresh, thresh_dict)
 
 function apply!(o::ClipNorm, x, Δ)
   thresh = get(o.thresh_dict, x, o.thresh)
