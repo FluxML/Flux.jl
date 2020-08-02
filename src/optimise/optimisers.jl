@@ -357,7 +357,9 @@ function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(o.state, x, (zero(x), zero(x)))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
-  @. Δ *= √Δacc/ (√acc + ϵ)
+  # DON'T remove epsilon from numerator
+  # or even out of the square roots
+  @. Δ *= √(Δacc + ϵ) / √(acc + ϵ)
   @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
   return Δ
 end
