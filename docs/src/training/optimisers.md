@@ -41,6 +41,20 @@ end
 
 An optimiser `update!` accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass `opt` to our [training loop](training.md), which will update all parameters of the model in a loop. However, we can now easily replace `Descent` with a more advanced optimiser such as `ADAM`.
 
+All optimisers also support per-parameter options, specified using `IdDict`s. For example, if we wanted to learn `b` at a slower rate than `W`, we could achieve it like this.
+
+```julia
+eta_dict = IdDict()
+eta_dict[b] = 0.01
+opt = Descent(0.1, eta_dict)
+
+for p in (W, b)
+  update!(opt, p, grads[p])
+end
+```
+
+This will use the default value 0.1 for `W` and 0.01 for `b` through the `eta_dict`.
+
 ## Optimiser Reference
 
 All optimisers return an object that, when passed to `train!`, will update the parameters passed to it.

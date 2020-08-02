@@ -6,14 +6,19 @@ const ϵ = 1e-8
 # TODO: should use weak refs
 
 """
-    Descent(η = 0.1)
+    Descent(η = 0.1; η_dict = IdDict())
 
 Classic gradient descent optimiser with learning rate `η`.
 For each parameter `p` and its gradient `δp`, this runs `p -= η*δp`
+Optionally, different learning rates can be specified for different parameters
+through `η_dict`. The parameters without specific learning rates will use the
+`η` value.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -22,6 +27,9 @@ opt = Descent()
 opt = Descent(0.3)
 
 ps = params(model)
+
+# Use 0.3 η for all parameters except ps[2], use 0.2 for ps[2]
+opt = Descent(0.3, IdDict([(ps[2], 0.2)]))
 
 gs = gradient(ps) do
     loss(x, y)
@@ -43,7 +51,7 @@ function apply!(o::Descent, x, Δ)
 end
 
 """
-    Momentum(η = 0.01, ρ = 0.9)
+    Momentum(η = 0.01, ρ = 0.9; η_dict = IdDict(), ρ_dict = IdDict())
 
 Gradient descent optimizer with learning rate `η` and momentum `ρ`.
 
@@ -52,6 +60,10 @@ Gradient descent optimizer with learning rate `η` and momentum `ρ`.
                        the weights.
 - Momentum (`ρ`): Controls the acceleration of gradient descent in the
                   prominent direction, in effect dampening oscillations.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum (`ρ_dict`): Same as the momentum but specific for each
+                                     parameter.
 
 # Examples
 ```julia
@@ -78,7 +90,7 @@ function apply!(o::Momentum, x, Δ)
 end
 
 """
-    Nesterov(η = 0.001, ρ = 0.9)
+    Nesterov(η = 0.001, ρ = 0.9; η_dict = IdDict(), ρ_dict = IdDict())
 
 Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
 
@@ -87,6 +99,10 @@ Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
                        the weights.
 - Nesterov momentum (`ρ`): Controls the acceleration of gradient descent in the
                            prominent direction, in effect dampening oscillations.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum (`ρ_dict`): Same as the momentum but specific for each
+                                     parameter.
 
 # Examples
 ```julia
@@ -114,7 +130,7 @@ function apply!(o::Nesterov, x, Δ)
 end
 
 """
-    RMSProp(η = 0.001, ρ = 0.9)
+    RMSProp(η = 0.001, ρ = 0.9; η_dict = IdDict(), ρ_dict = IdDict())
 
 Optimizer using the
 [RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
@@ -126,6 +142,10 @@ generally don't need tuning.
                        the weights.
 - Momentum (`ρ`): Controls the acceleration of gradient descent in the
                   prominent direction, in effect dampening oscillations.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum (`ρ_dict`): Same as the momentum but specific for each
+                                     parameter.
 
 # Examples
 ```julia
@@ -152,7 +172,7 @@ function apply!(o::RMSProp, x, Δ)
 end
 
 """
-    ADAM(η = 0.001, β::Tuple = (0.9, 0.999))
+    ADAM(η = 0.001, β::Tuple = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict())
 
 [ADAM](https://arxiv.org/abs/1412.6980) optimiser.
 
@@ -161,6 +181,10 @@ end
                        the weights.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -190,7 +214,7 @@ function apply!(o::ADAM, x, Δ)
 end
 
 """
-    RADAM(η = 0.001, β::Tuple = (0.9, 0.999))
+    RADAM(η = 0.001, β::Tuple = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict())
 
 [Rectified ADAM](https://arxiv.org/abs/1908.03265) optimizer.
 
@@ -199,6 +223,10 @@ end
                        the weights.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -235,7 +263,7 @@ function apply!(o::RADAM, x, Δ)
 end
 
 """
-    AdaMax(η = 0.001, β::Tuple = (0.9, 0.999))
+    AdaMax(η = 0.001, β::Tuple = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict())
 
 [AdaMax](https://arxiv.org/abs/1412.6980) is a variant of ADAM based on the ∞-norm.
 
@@ -244,6 +272,10 @@ end
                        the weights.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -273,7 +305,7 @@ function apply!(o::AdaMax, x, Δ)
 end
 
 """
-    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9))
+    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9); η_dict = IdDict(), β_dict = IdDict())
 
 [OADAM](https://arxiv.org/abs/1711.00141) (Optimistic ADAM)
 is a variant of ADAM adding an "optimistic" term suitable for adversarial training.
@@ -283,6 +315,10 @@ is a variant of ADAM adding an "optimistic" term suitable for adversarial traini
                        the weights.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -314,7 +350,7 @@ function apply!(o::OADAM, x, Δ)
 end
 
 """
-    ADAGrad(η = 0.1)
+    ADAGrad(η = 0.1; η_dict = IdDict())
 
 [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimizer. It has
 parameter specific learning rates based on how frequently it is updated.
@@ -323,6 +359,8 @@ Parameters don't need tuning.
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -347,7 +385,7 @@ function apply!(o::ADAGrad, x, Δ)
 end
 
 """
-    ADADelta(ρ = 0.9)
+    ADADelta(ρ = 0.9; ρ_dict = IdDict())
 
 [ADADelta](https://arxiv.org/abs/1212.5701) is a version of ADAGrad adapting its learning
 rate based on a window of past gradient updates.
@@ -355,6 +393,8 @@ Parameters don't need tuning.
 
 # Parameters
 - Rho (`ρ`): Factor by which the gradient is decayed at each time step.
+- Per-parameter momentum decay (`ρ_dict`): Same as `ρ` but specific for each
+                                           parameter.
 
 # Examples
 ```julia
@@ -381,7 +421,7 @@ function apply!(o::ADADelta, x, Δ)
 end
 
 """
-    AMSGrad(η = 0.001, β::Tuple = (0.9, 0.999))
+    AMSGrad(η = 0.001, β::Tuple = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict())
 
 The [AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ) version of the ADAM
 optimiser. Parameters don't need tuning.
@@ -391,6 +431,10 @@ optimiser. Parameters don't need tuning.
                        the weights.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -419,7 +463,7 @@ function apply!(o::AMSGrad, x, Δ)
 end
 
 """
-    NADAM(η = 0.001, β::Tuple = (0.9, 0.999))
+    NADAM(η = 0.001, β::Tuple = (0.9, 0.999); η_dict = IdDict(), β_dict = IdDict())
 
 [NADAM](http://cs229.stanford.edu/proj2015/054_report.pdf) is a Nesterov variant of ADAM.
 Parameters don't need tuning.
@@ -429,6 +473,10 @@ Parameters don't need tuning.
                        the weights.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
 
 # Examples
 ```julia
@@ -458,7 +506,7 @@ function apply!(o::NADAM, x, Δ)
 end
 
 """
-    ADAMW(η = 0.001, β::Tuple = (0.9, 0.999), decay = 0)
+    ADAMW(η = 0.001, β::Tuple = (0.9, 0.999), decay = 0; η_dict = IdDict(), β_dict = IdDict(), decay_dict = IdDict())
 
 [ADAMW](https://arxiv.org/abs/1711.05101) is a variant of ADAM fixing (as in repairing) its
 weight decay regularization.
@@ -469,6 +517,12 @@ weight decay regularization.
 - Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
                                    second (β2) momentum estimate.
 - `decay`: Decay applied to weights during optimisation.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter momentum decay (`β_dict`): Same as the decay of momentum but
+                                           specific for each parameter.
+- Per-parameter decay (`decay_dict`): Same as the decay but specific for each
+                                      parameter.
 
 # Examples
 ```julia
@@ -508,11 +562,16 @@ function apply!(o::Optimiser, x, Δ)
 end
 
 """
-    InvDecay(γ = 0.001)
+    InvDecay(γ = 0.001; γ_dict = IdDict())
 
 Apply inverse time decay to an optimiser, so that the effective step size at
 iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size.
 The wrapped optimiser's step size is not modified.
+
+# Parameters
+- Decay rate (`γ`): Multiplicative factor for the decay calculation.
+- Per-parameter decay rate (`γ_dict`): Same as the decay rate but specific for
+                                       each parameter.
 
 # Examples
 ```julia
@@ -536,7 +595,8 @@ function apply!(o::InvDecay, x, Δ)
 end
 
 """
-    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4)
+    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4;
+    η_dict = IdDict(), decay_dict = IdDict(), step_dict = IdDict(), clip_dict = IdDict())
 
 Discount the learning rate `η` by the factor `decay` every `decay_step` steps till
 a minimum of `clip`.
@@ -548,6 +608,14 @@ a minimum of `clip`.
 - `decay_step`: Schedule decay operations by setting the number of steps between
                 two decay operations.
 - `clip`: Minimum value of learning rate.
+- Per-parameter learning rates (`η_dict`): Same as the learning rate but
+                                           specific for each parameter.
+- Per-parameter decay (`decay_dict`): Same as the decay but specific for each
+                                      parameter.
+- Per-parameter step (`step_dict`): Same as the step but specific for each
+                                    parameter.
+- Per-parameter clip (`clip_dict`): Same as the clip but specific for each
+                                    parameter.
 
 # Examples
 To apply exponential decay to an optimiser:
@@ -584,12 +652,14 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-    WeightDecay(wd = 0)
+    WeightDecay(wd = 0; decay_dict = IdDict())
 
 Decay weights by `wd`.
 
 # Parameters
 - Weight decay (`wd`)
+- Per-parameter weigth decay (`decay_dict`): Same as weight decay but specific
+                                             for each parameter (weight).
 """
 mutable struct WeightDecay
   wd::Real
@@ -604,9 +674,10 @@ function apply!(o::WeightDecay, x, Δ)
 end
 
 """
-    ClipValue(thresh)
+    ClipValue(thresh; thresh_dict = IdDict())
 
-Clip gradients when their absolute value exceeds `thresh`.
+Clip gradients when their absolute value exceeds `thresh`. Thresholds can be
+specified for individual parameters through thresh_dict.
 """
 mutable struct ClipValue{T}
   thresh::T
@@ -621,9 +692,10 @@ function apply!(o::ClipValue, x, Δ)
 end
 
 """
-    ClipNorm(thresh)
+    ClipNorm(thresh; thresh_dict = IdDict())
 
-Clip gradients when their L2 norm exceeds `thresh`.
+Clip gradients when their L2 norm exceeds `thresh`. Thresholds can be specified
+for individual parameters through thresh_dict.
 """
 mutable struct ClipNorm{T}
   thresh::T
