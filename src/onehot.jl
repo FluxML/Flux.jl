@@ -51,10 +51,11 @@ cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.d
 """
     onehot(l, labels[, unk])
 
-Create a `OneHotVector` with its `l`-th element `true` based on the
-possible set of `labels`.
-If `unk` is given, return `onehot(unk, labels)` if the input label `l` is not found
-in `labels`; otherwise, it will raise an error.
+Return a `OneHotVector` where only first occourence of `l` in `labels` is `1` and
+all other elements are `0`.
+
+If `l` is not found in labels and  `unk` is present, the function returns
+`onehot(unk, labels)`; otherwise the function raises an error.
 
 # Examples
 ```jldoctest
@@ -86,10 +87,10 @@ end
 """
     onehotbatch(ls, labels[, unk...])
 
-Create a `OneHotMatrix` with a batch of labels based on the
-possible set of `labels`.
-If `unk` is given, return [`onehot(unk, labels)`](@ref) if one of the input
-labels `ls` is not found in `labels`; otherwise it will error.
+Return a `OneHotMatrix` where `k`th column of the matrix is `onehot(ls[k], labels)`.
+
+If one of the input labels `ls` is not found in `labels` and `unk` is given,
+return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an error.
 
 # Examples
 ```jldoctest
