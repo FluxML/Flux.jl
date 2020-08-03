@@ -2,7 +2,8 @@ istraining() = false
 
 @adjoint istraining() = true, _ -> nothing
 
-_isactive(m) = isnothing(m.active) ? istraining() : m.active
+# _isactive(m) = isnothing(m.active) ? istraining() : m.active
+const _isactive = istraining
 
 _dropout_shape(s, ::Colon) = size(s)
 _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
@@ -30,14 +31,14 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(x, p; dims=:, active::Bool)
-  active || return x
+function dropout(x, p; dims=:)
+  !istraining() || return x
   y = dropout_mask(x, p, dims=dims)
   return x .* y
 end
 
-@adjoint function dropout(x, p; dims=:, active::Bool)
-  active || return x, Δ -> (Δ, nothing) 
+@adjoint function dropout(x, p; dims=:)
+  # istraining() || return x, Δ -> (Δ, nothing) 
   y = dropout_mask(x, p, dims=dims)
   return x .* y, Δ -> (Δ .* y, nothing)
 end
@@ -58,24 +59,24 @@ Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 mutable struct Dropout{F,D}
   p::F
   dims::D
-  active::Union{Bool, Nothing}
+  # active::Union{Bool, Nothing}
 end
 
 # TODO: deprecate in v0.11
-Dropout(p, dims) = Dropout(p, dims, nothing)
+Dropout(p, dims) = Dropout(p, dims)
 
 function Dropout(p; dims = :)
   @assert 0 ≤ p ≤ 1
-  Dropout{typeof(p),typeof(dims)}(p, dims, nothing)
+  Dropout{typeof(p),typeof(dims)}(p, dims)
 end
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims = a.dims, active=true)
+  return dropout(x, a.p; dims = a.dims)
 end
 
-testmode!(m::Dropout, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+# testmode!(m::Dropout, mode = true) =
+#   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, d::Dropout)
   print(io, "Dropout(", d.p)
@@ -95,7 +96,7 @@ Does nothing to the input once [`testmode!`](@ref) is true.
 """
 mutable struct AlphaDropout{F}
   p::F
-  active::Union{Bool, Nothing}
+  # active::Union{Bool, Nothing}
   function AlphaDropout(p, active = nothing)
     @assert 0 ≤ p ≤ 1
     new{typeof(p)}(p, active)
@@ -103,7 +104,7 @@ mutable struct AlphaDropout{F}
 end
 
 function (a::AlphaDropout)(x)
-  _isactive(a) || return x
+  istraining() || return x
   λ = eltype(x)(1.0507009873554804934193349852946)
   α = eltype(x)(1.6732632423543772848170429916717)
   α1 = eltype(x)(-λ*α)
@@ -115,8 +116,8 @@ function (a::AlphaDropout)(x)
   return x
 end
 
-testmode!(m::AlphaDropout, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+# testmode!(m::AlphaDropout, mode = true) =
+#   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
     LayerNorm(h::Integer)
@@ -176,16 +177,16 @@ mutable struct BatchNorm{F,V,W,N}
   σ²::W  # moving std
   ϵ::N
   momentum::N
-  active::Union{Bool, Nothing}
+  # active::Union{Bool, Nothing}
 end
 
 # TODO: deprecate in v0.11
-BatchNorm(λ, β, γ, μ, σ², ϵ, momentum) = BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
+BatchNorm(λ, β, γ, μ, σ², ϵ, momentum) = BatchNorm(λ, β, γ, μ, σ², ϵ, momentum)
 
 BatchNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   BatchNorm(λ, initβ(chs), initγ(chs),
-            zeros(chs), ones(chs), ϵ, momentum, nothing)
+            zeros(chs), ones(chs), ϵ, momentum)
 
 trainable(bn::BatchNorm) = (bn.β, bn.γ)
 
@@ -198,7 +199,7 @@ function (BN::BatchNorm)(x)
   m = div(prod(size(x)), channels)
   γ = reshape(BN.γ, affine_shape...)
   β = reshape(BN.β, affine_shape...)
-  if !_isactive(BN)
+  if !istraining()
     μ = reshape(BN.μ, affine_shape...)
     σ² = reshape(BN.σ², affine_shape...)
     ϵ = BN.ϵ
@@ -223,8 +224,8 @@ end
 
 @functor BatchNorm
 
-testmode!(m::BatchNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+# testmode!(m::BatchNorm, mode = true) =
+#   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(join(size(l.β), ", "))")
@@ -242,7 +243,7 @@ mutable struct InstanceNorm{F,V,W,N}
   σ²::W  # moving std
   ϵ::N
   momentum::N
-  active::Union{Bool, Nothing}
+  # active::Union{Bool, Nothing}
 end
 
 # TODO: deprecate in v0.11
@@ -274,12 +275,12 @@ m = Chain(
   softmax)
 ```
 """
-InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
+InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum)
 
 InstanceNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   InstanceNorm(λ, initβ(chs), initγ(chs),
-            zeros(chs), ones(chs), ϵ, momentum, nothing)
+            zeros(chs), ones(chs), ϵ, momentum)
 
 trainable(in::InstanceNorm) = (in.β, in.γ)
 
@@ -296,7 +297,7 @@ function (in::InstanceNorm)(x)
   m = div(prod(size(x)), c*bs)
   γ, β = expand_inst(in.γ, affine_shape), expand_inst(in.β, affine_shape)
 
-  if !_isactive(in)
+  if !istraining()
     μ = expand_inst(in.μ, affine_shape)
     σ² = expand_inst(in.σ², affine_shape)
     ϵ = in.ϵ
@@ -322,8 +323,8 @@ end
 
 @functor InstanceNorm
 
-testmode!(m::InstanceNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+# testmode!(m::InstanceNorm, mode = true) =
+#   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(join(size(l.β), ", "))")
@@ -363,16 +364,16 @@ mutable struct GroupNorm{F,V,W,N,T}
   σ²::W  # moving std
   ϵ::N
   momentum::N
-  active::Union{Bool, Nothing}
+  # active::Union{Bool, Nothing}
 end
 
 # TODO: deprecate in v0.11
-GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum) = GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, nothing)
+GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum) = GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum)
 
 GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   GroupNorm(G, λ, initβ(chs), initγ(chs),
-            zeros(G,1), ones(G,1), ϵ, momentum, nothing)
+            zeros(G,1), ones(G,1), ϵ, momentum)
 
 trainable(gn::GroupNorm) = (gn.β, gn.γ)
 
@@ -396,7 +397,7 @@ function(gn::GroupNorm)(x)
   β = reshape(gn.β, affine_shape...)
 
   y = reshape(x,((size(x))[1:end-2]...,channels_per_group,groups,batches))
-  if !_isactive(gn)
+  if !istraining()
     og_shape = size(x)
     μ = reshape(gn.μ, μ_affine_shape...) # Shape : (1,1,...C/G,G,1)
     σ² = reshape(gn.σ², μ_affine_shape...) # Shape : (1,1,...C/G,G,1)
@@ -427,8 +428,8 @@ end
 
 @functor GroupNorm
 
-testmode!(m::GroupNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+# testmode!(m::GroupNorm, mode = true) =
+#   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(join(size(l.β), ", "))")
