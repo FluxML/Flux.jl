@@ -32,7 +32,7 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
 function dropout(x, p; dims=:)
-  !istraining() || return x
+  # !istraining() || return x
   y = dropout_mask(x, p, dims=dims)
   return x .* y
 end
@@ -71,7 +71,7 @@ function Dropout(p; dims = :)
 end
 
 function (a::Dropout)(x)
-  _isactive(a) || return x
+  istraining() || return x
   return dropout(x, a.p; dims = a.dims)
 end
 
