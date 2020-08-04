@@ -19,6 +19,11 @@ using Test
   @test cold == data
 end
 
+@testset "onehotvector" begin
+  @test Flux.OneHotVector(1,2) == [1; 0]
+  @test_throws DimensionMismatch Flux.OneHotVector(2,1)
+end
+
 @testset "onehotbatch indexing" begin
   y = Flux.onehotbatch(ones(3), 1:10)
   @test y[:,1] isa Flux.OneHotVector

@@ -3,6 +3,7 @@ import Base: *
 struct OneHotVector <: AbstractVector{Bool}
   ix::UInt32
   of::UInt32
+  OneHotVector(ix, of) = ix > of ? throw(DimensionMismatch("index must be less than OneHotVector size")) : new(ix, of)
 end
 
 Base.size(xs::OneHotVector) = (Int64(xs.of),)
@@ -23,8 +24,9 @@ struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
   data::A
 end
 
-Base.size(xs::OneHotMatrix) = (Int64(xs.height),length(xs.data))
-
+function Base.size(xs::OneHotMatrix)
+    (Int64(xs.height),length(xs.data))
+end
 Base.getindex(xs::OneHotMatrix, i::Union{Integer, AbstractVector}, j::Integer) = xs.data[j][i]
 Base.getindex(xs::OneHotMatrix, ::Colon, i::Integer) = xs.data[i]
 Base.getindex(xs::OneHotMatrix, ::Colon, i::AbstractArray) = OneHotMatrix(xs.height, xs.data[i])
