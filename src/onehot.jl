@@ -24,9 +24,8 @@ struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
   data::A
 end
 
-function Base.size(xs::OneHotMatrix)
-    (Int64(xs.height),length(xs.data))
-end
+Base.size(xs::OneHotMatrix) = (Int64(xs.height),length(xs.data))
+
 Base.getindex(xs::OneHotMatrix, i::Union{Integer, AbstractVector}, j::Integer) = xs.data[j][i]
 Base.getindex(xs::OneHotMatrix, ::Colon, i::Integer) = xs.data[i]
 Base.getindex(xs::OneHotMatrix, ::Colon, i::AbstractArray) = OneHotMatrix(xs.height, xs.data[i])
