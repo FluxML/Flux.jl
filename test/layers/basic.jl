@@ -126,5 +126,8 @@ import Flux: activations
 
     m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
     @test Flux.outdims(m, (10, 10)) == (8, 8)
+
+    m = flatten
+    @test Flux.outdims(m, (5, 5, 3, 10)) == (75,)
   end
 end
