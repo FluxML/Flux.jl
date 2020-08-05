@@ -309,3 +309,27 @@ end
     @test BN(x) ≈ GN(x)
   end
 end
+
+@testset "normalisation output dimensions" begin
+    m = Dropout(0.1)
+    @test Flux.outdims(m, (10, 10)) == (10, 10)
+    @test Flux.outdims(m, (10,)) == (10,)
+
+    m = AlphaDropout(0.1)
+    @test Flux.outdims(m, (10, 10)) == (10, 10)
+    @test Flux.outdims(m, (10,)) == (10,)
+
+    m = LayerNorm(2)
+    @test Flux.outdims(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
+
+    m = BatchNorm(3)
+    @test Flux.outdims(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
+
+    m = InstanceNorm(3)
+    @test Flux.outdims(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
+
+    if VERSION >= v"1.1"
+      m = GroupNorm(16, 4)
+      @test Flux.outdims(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
+    end
+end
