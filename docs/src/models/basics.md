@@ -236,6 +236,13 @@ Currently limited to the following layers:
 - `CrossCor`
 - `MaxPool`
 - `MeanPool`
+- `Dropout`
+- `AlphaDropout`
+- `LayerNorm`
+- `BatchNorm`
+- `InstanceNorm`
+- `GroupNorm`
+- generic functions, `f`, by applying `f` to `ones(isize)`
 
 ```@docs
 Flux.outdims
