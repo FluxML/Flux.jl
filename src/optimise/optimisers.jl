@@ -283,7 +283,7 @@ mutable struct OADAM
   state::IdDict
 end
 
-OADAM(η = 0.0001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
+OADAM(η = 0.001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
 
 function apply!(o::OADAM, x, Δ)
   η, β = o.eta, o.beta
