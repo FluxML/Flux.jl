@@ -2,12 +2,17 @@ using Flux.Optimise
 using Flux.Optimise: runall
 using Flux: Params, gradient
 using Test
+using Random
 
 @testset "Optimise" begin
+  # Ensure rng has different state inside and outside the inner @testset
+  # so that w and w' are different
+  Random.seed!(84)
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
                        NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), Nesterov(), RMSProp(),
                        Momentum()]
+    Random.seed!(42)
     w′ = randn(10, 10)
     loss(x) = Flux.Losses.mse(w*x, w′*x)
     for t = 1: 10^5
@@ -21,8 +26,10 @@ using Test
 end
 
 @testset "Optimiser" begin
+  Random.seed!(84)
   w = randn(10, 10)
   @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
+    Random.seed!(42)
     w′ = randn(10, 10)
     loss(x) = Flux.Losses.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
