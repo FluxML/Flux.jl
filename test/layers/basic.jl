@@ -109,7 +109,7 @@ import Flux: activations
 
   @testset "output dimensions" begin
     m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
-    @test Flux.outdims(m, (10, 10)) == (6, 6)
+    @test Flux.outdims(m, (10, 10, 3)) == (6, 6, 32)
 
     m = Dense(10, 5)
     @test_throws DimensionMismatch Flux.outdims(m, (5, 2)) == (5,)
@@ -125,9 +125,9 @@ import Flux: activations
     @test Flux.outdims(m, (10,)) == (10,)
 
     m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
-    @test Flux.outdims(m, (10, 10)) == (8, 8)
+    @test Flux.outdims(m, (10, 10, 3)) == (8, 8, 16)
 
     m = flatten
-    @test Flux.outdims(m, (5, 5, 3, 10)) == (75,)
+    @test Flux.outdims(m, (5, 5, 3, 10)) == (75, 10)
   end
 end
