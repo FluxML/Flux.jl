@@ -35,6 +35,7 @@ outdims(f, isize...; preserve_batch = false) = size(f([ones(Float32, s) for s in
 ### start basic ###
 """
     outdims(c::Chain, isize)
+    outdims(layers::AbstractVector, isize)
 
 Calculate the output dimensions given the input dimensions, `isize`.
 
@@ -43,17 +44,19 @@ m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
 outdims(m, (10, 10)) == (6, 6)
 ```
 """
-function outdims(c::Chain, isize; preserve_batch = false)
+function outdims(layers::T, isize; preserve_batch = false) where T<:Union{Tuple, AbstractVector}
   # if the first layer has different output with
   # preserve_batch = true vs preserve_batch = false
   # then the batch dimension is not included by the user
-  initsize = outdims(first(c.layers), isize; preserve_batch = true)
-  hasbatch = (outdims(first(c.layers), isize) == initsize)
+  initsize = outdims(first(layers), isize; preserve_batch = true)
+  hasbatch = (outdims(first(layers), isize) == initsize)
   outsize = foldl((isize, layer) -> outdims(layer, isize; preserve_batch = true),
-                  tail(c.layers); init = initsize)
+                  tail(layers); init = initsize)
   
   return hasbatch ? outsize : outsize[1:(end - 1)]
 end
+outdims(c::Chain, isize; preserve_batch = false) =
+  outdims(c.layers, isize; preserve_batch = preserve_batch)
 
 """
 outdims(l::Dense, isize; preserve_batch = false)
