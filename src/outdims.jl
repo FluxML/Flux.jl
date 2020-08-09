@@ -143,7 +143,21 @@ outdims(l::MeanPool{N}, isize; preserve_batch = false) where N =
     (output_size(pdims)..., NNlib.channels_out(pdims), isize[end])
   end, isize, 4; preserve_batch = preserve_batch)
 
-## TODO: global and adaptive pooling
+outdims(l::AdaptiveMaxPool, isize; preserve_batch = false) =
+  return _handle_batch(isize -> (l.out..., isize[end - 1], isize[end]),
+                       isize, 4; preserve_batch = preserve_batch)
+
+outdims(l::AdaptiveMeanPool, isize; preserve_batch = false) =
+  return _handle_batch(isize -> (l.out..., isize[end - 1], isize[end]),
+                       isize, 4; preserve_batch = preserve_batch)
+
+outdims(::GlobalMaxPool, isize; preserve_batch = false) =
+  return _handle_batch(isize -> (1, 1, isize[end - 1], isize[end]),
+                       isize, 4; preserve_batch = preserve_batch)
+
+outdims(::GlobalMeanPool, isize; preserve_batch = false) =
+  return _handle_batch(isize -> (1, 1, isize[end - 1], isize[end]),
+                       isize, 4; preserve_batch = preserve_batch)
 
 #### end conv ####
 

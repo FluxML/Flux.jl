@@ -66,6 +66,22 @@ end
   m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
   @test outdims(m, (5, 5, 3)) == (4, 4, 16)
 
+  m = AdaptiveMaxPool((2, 2))
+  @test outdims(m, (10, 10, 3)) == (2, 2, 3)
+  @test outdims(m, (10, 10, 3, 4)) == (2, 2, 3, 4)
+
+  m = AdaptiveMeanPool((2, 2))
+  @test outdims(m, (10, 10, 3)) == (2, 2, 3)
+  @test outdims(m, (10, 10, 3, 4)) == (2, 2, 3, 4)
+
+  m = GlobalMaxPool()
+  @test outdims(m, (10, 10, 3)) == (1, 1, 3)
+  @test outdims(m, (10, 10, 3, 4)) == (1, 1, 3, 4)
+
+  m = GlobalMeanPool()
+  @test outdims(m, (10, 10, 3)) == (1, 1, 3)
+  @test outdims(m, (10, 10, 3, 4)) == (1, 1, 3, 4)
+
   m = MaxPool((2, 2))
   @test outdims(m, (10, 10, 3)) == (5, 5, 3)
   m = MaxPool((2, 2); stride = 1)
