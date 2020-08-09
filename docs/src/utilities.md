@@ -35,6 +35,32 @@ Flux.glorot_uniform
 Flux.glorot_normal
 ```
 
+## Model Building
+
+Flux provides some utility functions to help you generate models in an automated fashion.
+
+`outdims` enables you to calculate the spatial output dimensions of layers like `Conv` when applied to input images of a given size.
+Currently limited to the following layers:
+- basic layers (e.g. `Chain`, `Dense`, `SkipConnection`, etc.)
+- convolution-style layers (e.g. `Conv`, `MaxPool`, `CrossCor`, etc.)
+- normalisation layers (e.g. `BatchNorm`, `Dropout`, etc.)
+- arbitrary functions (done by evaluating the function which can be slow)
+
+Using this utility function lets you automate model building for various inputs like so:
+```julia
+function make_model(width, height, nchannels, nclasses)
+  # returns 1D array of conv layers
+  conv_layers = make_conv(width, height, nchannels)
+  conv_outsize = outdims(conv_layers, (width, height, nchannels))
+
+  return Chain(conv_layers..., Dense(prod(conv_outsize), nclasses))
+end
+```
+
+```@docs
+Flux.outdims
+```
+
 ## Model Abstraction
 
 ```@docs
