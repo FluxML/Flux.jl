@@ -25,6 +25,9 @@
 
   m = Chain(Conv((3, 3), 3 => 16), flatten, Dense(1024, 10))
   @test outdims(m, (10, 10, 3, 50)) == (10, 50)
+
+  m = SkipConnection(Conv((3, 3), 3 => 16; pad = 1), (mx, x) -> cat(mx, x; dims = 3))
+  @test outdims(m, (10, 10, 3)) == (10, 10, 19)
 end
 
 @testset "conv" begin

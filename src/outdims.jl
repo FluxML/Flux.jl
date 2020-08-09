@@ -24,13 +24,13 @@ end
 # fallback for arbitrary functions/layers
 # ideally, users should only rely on this for flatten, etc. inside Chains
 """
-    outdims(f, isize)
+    outdims(f, isize...)
 
 Calculates the output dimensions of `f(x)` where `size(x) == isize`.
 The batch dimension **must** be included.
 *Warning: this may be slow depending on `f`*
 """
-outdims(f, isize; preserve_batch = false) = size(f(ones(Float32, isize)))
+outdims(f, isize...; preserve_batch = false) = size(f([ones(Float32, s) for s in isize]...))
 
 ### start basic ###
 """
@@ -83,7 +83,11 @@ end
 
 outdims(l::Maxout, isize; preserve_batch = false) = outdims(first(l.over), isize; preserve_batch = preserve_batch)
 
-## TODO: SkipConnection
+function outdims(l::SkipConnection, isize; preserve_batch = false)
+  branch_outsize = outdims(l.layers, isize; preserve_batch = preserve_batch)
+
+  return outdims(l.connection, branch_outsize, isize; preserve_batch = preserve_batch)
+end
 
 #### end basic ####
 
