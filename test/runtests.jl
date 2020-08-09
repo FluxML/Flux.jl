@@ -34,6 +34,10 @@ end
   include("layers/conv.jl")
 end
 
+@testset "outdims" begin
+  include("outdims.jl")
+end
+
 @testset "CUDA" begin
   if Flux.use_cuda[]
     include("cuda/runtests.jl")
