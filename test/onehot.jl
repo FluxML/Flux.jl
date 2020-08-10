@@ -22,6 +22,8 @@ end
 @testset "onehotvector" begin
   @test Flux.OneHotVector(1,2) == [1; 0]
   @test_throws DimensionMismatch Flux.OneHotVector(2,1)
+  @test_throws DimensionMismatch Flux.OneHotVector(0,3)
+  @test_throws DimensionMismatch Flux.OneHotVector(0,0)
 end
 
 @testset "onehotbatch indexing" begin
