@@ -89,7 +89,7 @@ end
 """
     binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ))
 
-Return the binary cross-entropy loss, computer as 
+Return the binary cross-entropy loss, computed as 
 
     agg(@.(-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)))
     
