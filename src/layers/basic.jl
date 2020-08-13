@@ -92,6 +92,8 @@ Create a traditional `Dense` layer with parameters `W` and `b`.
 The input `x` must be a vector of length `in`, or a batch of vectors represented
 as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
 
+Setting `initb` to `Flux.Zeros()` would switch `bias` off for the layer.
+
 # Example
 ```
 julia> d = Dense(5, 2)
@@ -103,7 +105,8 @@ julia> d(rand(5))
   0.123119034
 ```
 """
-struct Dense{F,S<:AbstractArray,T<:AbstractArray}
+
+struct Dense{F,S<:AbstractArray,T<: Union{Zeros, AbstractArray}}
   W::S
   b::T
   σ::F
@@ -112,15 +115,15 @@ end
 Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  return Dense(initW(out, in), initb(out), σ)
+               initW = glorot_uniform, initb = zeros(out))
+  return Dense(initW(out, in), initb, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  σ.(W*x .+ b)
+  typeof(b) <: Zeros ? σ.(W*x ) : σ.(W*x .+ b)
 end
 
 function Base.show(io::IO, l::Dense)
