@@ -41,10 +41,10 @@ import Flux: activations
     @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
     @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
 
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+    @test Dense(10, 1, identity, initW = ones, initb = zeros(1) )(ones(10,1)) == 10*ones(1, 1)
+    @test Dense(10, 1, identity, initW = ones )(ones(10,2)) == 10*ones(1, 2)
+    @test Dense(10, 2, identity, initW = ones, initb = zeros(2) )(ones(10,1)) == 10*ones(2, 1)
+    @test Dense(10, 2, identity, initW = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
   end
 
   @testset "Diagonal" begin
