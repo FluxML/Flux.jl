@@ -8,7 +8,7 @@ using CUDA
 using NNlib: logsoftmax, logσ
 import Base.Broadcast: broadcasted
 
-export mse, mae, msle,
+export mse, mae,nll, msle,softplus,logcosh,
     crossentropy, logitcrossentropy,
     # binarycrossentropy, logitbinarycrossentropy # export only after end deprecation
     kldivergence,

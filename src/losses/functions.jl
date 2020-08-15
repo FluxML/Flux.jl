@@ -8,12 +8,47 @@ Return the loss corresponding to mean absolute error:
 mae(ŷ, y; agg=mean) = agg(abs.(ŷ .- y))
 
 """
+    nll(y; agg=sum) [Pytorch source](https://pytorch.org/docs/stable/generated/torch.nn.NLLLoss.html#torch.nn.NLLLoss)
+
+Return the loss corresponding to negative log likelihood. The agg can be mean or sum.
+    
+    -agg(log.(y))
+"""
+
+nll(y; agg=sum) = -agg(log.(y))
+
+"""
+    softplus(y,β=1) [Pytorch source](https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html#torch.nn.Softplus)
+
+Return the output of the softplus function with β being a parameter of the softplus
+    
+    (1/β).*(log.(exp.(β .* x).+1))
+"""
+
+softplus(y,β=1) = (1/β).*(log.(exp.(β .* x).+1))
+
+"""
+    logcosh(y,ŷ) [Tensorflow 2.0 source](https://www.tensorflow.org/api_docs/python/tf/keras/losses/log_cosh)
+
+Return the output of the logcosh function as a loss function.
+    x = ŷ - y
+    mean(x.+softplus(-2 .*x) .- log(2.))
+"""
+
+function logcosh(y,ŷ, agg = mean)
+    x = ŷ - y
+    return agg(x.+softplus(-2 .*x) .- log(2.))
+end
+
+
+"""
     mse(ŷ, y; agg=mean)
 
 Return the loss corresponding to mean square error: 
     
     agg((ŷ .- y).^2)
 """
+
 mse(ŷ, y; agg=mean) = agg((ŷ .- y).^2)
 
 """
