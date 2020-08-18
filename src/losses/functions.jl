@@ -22,10 +22,10 @@ nll(y; agg=sum) = -agg(log.(y))
 
 Return the output of the softplus function with β being a parameter of the softplus
     
-    (1/β).*(log.(exp.(β .* x).+1))
+    (1/β).*(log.(exp.(β .* y).+1))
 """
 
-softplus(y,β=1) = (1/β).*(log.(exp.(β .* x).+1))
+softplus(y,β=1) = (1/β).*(log.(exp.(β .* y).+1))
 
 """
     logcosh(y,ŷ) [Tensorflow 2.0 source](https://www.tensorflow.org/api_docs/python/tf/keras/losses/log_cosh)
