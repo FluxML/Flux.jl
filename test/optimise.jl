@@ -2,14 +2,19 @@ using Flux.Optimise
 using Flux.Optimise: runall
 using Flux: Params, gradient
 using Test
+using Random
 
 @testset "Optimise" begin
+  # Ensure rng has different state inside and outside the inner @testset
+  # so that w and w' are different
+  Random.seed!(84)
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-                       NADAM(), RADAM(), Descent(0.1), ADAM(), Nesterov(), RMSProp(),
+                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), Nesterov(), RMSProp(),
                        Momentum()]
+    Random.seed!(42)
     w′ = randn(10, 10)
-    loss(x) = Flux.mse(w*x, w′*x)
+    loss(x) = Flux.Losses.mse(w*x, w′*x)
     for t = 1: 10^5
       θ = Params([w′])
       x = rand(10)
@@ -21,10 +26,12 @@ using Test
 end
 
 @testset "Optimiser" begin
+  Random.seed!(84)
   w = randn(10, 10)
   @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
+    Random.seed!(42)
     w′ = randn(10, 10)
-    loss(x) = Flux.mse(w*x, w′*x)
+    loss(x) = Flux.Losses.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
     for t = 1:10^5
       θ = Params([w′])
@@ -62,6 +69,10 @@ end
   cbs = runall(fs)
   cbs()
   @test x == 1
+
+  r = rand(3, 3)
+  loss(x) = sum(x .* x)
+  Flux.train!(loss, Flux.params(r), (r,), Descent())
 end
 
 @testset "ExpDecay" begin
@@ -78,7 +89,7 @@ end
   w = randn(10, 10)
   o = ExpDecay(0.1, 0.1, 1000, 1e-4)
   w1 = randn(10,10)
-  loss(x) = Flux.mse(w*x, w1*x)
+  loss(x) = Flux.Losses.mse(w*x, w1*x)
   flag = 1
   decay_steps = []
   for t = 1:10^5

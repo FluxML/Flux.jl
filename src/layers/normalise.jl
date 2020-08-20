@@ -9,22 +9,43 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
+# TODO set active's default to true in v0.12
+# or deprecate the keyword altogheter
 """
-    dropout(x, p; dims = :)
+    dropout(x, p; dims=:, active::Bool)
 
-The dropout function. For each input, either sets that input to `0` (with probability
+The dropout function. If `active` is `true`,
+for each input, either sets that input to `0` (with probability
 `p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
 e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
 This is used as a regularisation, i.e. it reduces overfitting during training.
 
-See also the [`Dropout`](@ref) layer.
-"""
-dropout(x, p; dims = :) = x
+If `active` is `false`, it just returns the input `x`
 
-@adjoint function dropout(x, p; dims = :)
+Warning: when using this function, you have to manually manage the activation 
+state. Usually in fact, dropout is used while training 
+but is deactivated in the inference phase. This can be 
+automatically managed using the [`Dropout`](@ref) layer instead of the 
+`dropout` function. 
+
+The [`Dropout`](@ref) layer is what you should use in most scenarios.
+"""
+function dropout(x, p; dims=:, active::Bool)
+  active || return x
+  y = dropout_mask(x, p, dims=dims)
+  return x .* y
+end
+
+@adjoint function dropout(x, p; dims=:, active::Bool)
+  active || return x, Δ -> (Δ, nothing) 
+  y = dropout_mask(x, p, dims=dims)
+  return x .* y, Δ -> (Δ .* y, nothing)
+end
+
+function dropout_mask(x, p; dims=:)
   y = rand!(similar(x, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
-  return x .* y, Δ -> (Δ .* y, nothing)
+  return y
 end
 
 """
@@ -50,7 +71,7 @@ end
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims = a.dims)
+  return dropout(x, a.p; dims = a.dims, active=true)
 end
 
 testmode!(m::Dropout, mode = true) =
@@ -66,7 +87,7 @@ end
     AlphaDropout(p)
 
 A dropout layer. Used in
-[Self-Normalizing Neural Networks](https://papers.nips.cc/paper/6698-self-normalizing-neural-networks.pdf).
+[Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
 The AlphaDropout layer ensures that mean and variance of activations
 remain the same as before.
 
@@ -100,7 +121,7 @@ testmode!(m::AlphaDropout, mode = true) =
 """
     LayerNorm(h::Integer)
 
-A [normalisation layer](https://arxiv.org/pdf/1607.06450.pdf) designed to be
+A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states of size `h`. Normalises the mean and standard
 deviation of each input before applying a per-neuron gain/bias.
 """
@@ -113,7 +134,7 @@ LayerNorm(h::Integer) =
 
 @functor LayerNorm
 
-(a::LayerNorm)(x) = a.diag(normalise(x))
+(a::LayerNorm)(x) = a.diag(normalise(x, dims=1))
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", length(l.diag.α), ")")
@@ -124,7 +145,7 @@ end
               initβ = zeros, initγ = ones,
               ϵ = 1e-8, momentum = .1)
 
-[Batch Normalization](https://arxiv.org/pdf/1502.03167.pdf) layer.
+[Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
 
 Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
@@ -315,7 +336,7 @@ end
               initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
               ϵ = 1f-5, momentum = 0.1f0)
 
-[Group Normalization](https://arxiv.org/pdf/1803.08494.pdf) layer.
+[Group Normalization](https://arxiv.org/abs/1803.08494) layer.
 This layer can outperform Batch Normalization and Instance Normalization.
 
 `chs` is the number of channels, the channel dimension of your input.

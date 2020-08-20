@@ -1,8 +1,8 @@
-module CUDA
+module CUDAint
 
-using ..CuArrays
+using ..CUDA
 
-using CuArrays: CUDNN
+using CUDA: CUDNN
 include("curnn.jl")
 include("cudnn.jl")
 

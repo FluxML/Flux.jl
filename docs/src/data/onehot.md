@@ -2,7 +2,7 @@
 
 It's common to encode categorical variables (like `true`, `false` or `cat`, `dog`) in "one-of-k" or ["one-hot"](https://en.wikipedia.org/wiki/One-hot) form. Flux provides the `onehot` function to make this easy.
 
-```
+```jldoctest onehot
 julia> using Flux: onehot, onecold
 
 julia> onehot(:b, [:a, :b, :c])
@@ -20,7 +20,7 @@ julia> onehot(:c, [:a, :b, :c])
 
 The inverse is `onecold` (which can take a general probability distribution, as well as just booleans).
 
-```julia
+```jldoctest onehot
 julia> onecold(ans, [:a, :b, :c])
 :c
 
@@ -40,20 +40,20 @@ Flux.onecold
 
 `onehotbatch` creates a batch (matrix) of one-hot vectors, and `onecold` treats matrices as batches.
 
-```julia
+```jldoctest onehot
 julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotMatrix:
- false   true  false
-  true  false   true
- false  false  false
+3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+ 0  1  0
+ 1  0  1
+ 0  0  0
 
-julia> onecold(ans, [:a, :b, :c])
-3-element Array{Symbol,1}:
-  :b
-  :a
-  :b
+julia> onecold(ans, [:a, :b, :c])	
+3-element Array{Symbol,1}:	
+ :b	
+ :a	
+ :b   
 ```
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.

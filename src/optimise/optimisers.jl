@@ -146,7 +146,7 @@ end
 """
     ADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-[ADAM](https://arxiv.org/abs/1412.6980v8) optimiser.
+[ADAM](https://arxiv.org/abs/1412.6980) optimiser.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
@@ -182,7 +182,7 @@ end
 """
     RADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-[Rectified ADAM](https://arxiv.org/pdf/1908.03265v1.pdf) optimizer.
+[Rectified ADAM](https://arxiv.org/abs/1908.03265) optimizer.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
@@ -225,7 +225,7 @@ end
 """
     AdaMax(η = 0.001, β::Tuple = (0.9, 0.999))
 
-[AdaMax](https://arxiv.org/abs/1412.6980v9) is a variant of ADAM based on the ∞-norm.
+[AdaMax](https://arxiv.org/abs/1412.6980) is a variant of ADAM based on the ∞-norm.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
@@ -255,6 +255,45 @@ function apply!(o::AdaMax, x, Δ)
   @. ut = max(β[2] * ut, abs(Δ))
   @. Δ = (η/(1 - βp[1])) * mt/(ut + ϵ)
   o.state[x] = (mt, ut, βp .* β)
+  return Δ
+end
+
+"""
+    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9))
+
+[OADAM](https://arxiv.org/abs/1711.00141) (Optimistic ADAM)
+is a variant of ADAM adding an "optimistic" term suitable for adversarial training.
+
+# Parameters
+- Learning rate (`η`): Amount by which gradients are discounted before updating
+                       the weights.
+- Decay of momentums (`β::Tuple`): Exponential decay for the first (β1) and the
+                                   second (β2) momentum estimate.
+
+# Examples
+```julia
+opt = OADAM()
+
+opt = OADAM(0.001, (0.9, 0.995))
+```
+"""
+mutable struct OADAM
+  eta::Float64
+  beta::Tuple{Float64,Float64}
+  state::IdDict
+end
+
+OADAM(η = 0.001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
+
+function apply!(o::OADAM, x, Δ)
+  η, β = o.eta, o.beta
+  mt, vt, Δ_, βp = get!(o.state, x, (zero(x), zero(x), zero(x), β))
+  @. mt = β[1] * mt + (1 - β[1]) * Δ
+  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. Δ = -Δ_
+  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+  @. Δ += 2Δ_
+  o.state[x] = (mt, vt, Δ_, βp .* β)
   return Δ
 end
 
@@ -318,7 +357,9 @@ function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(o.state, x, (zero(x), zero(x)))
   @. acc = ρ * acc + (1 - ρ) * Δ^2
-  @. Δ *= √Δacc/ (√acc + ϵ)
+  # DON'T remove epsilon from numerator
+  # or even out of the square roots
+  @. Δ *= √(Δacc + ϵ) / √(acc + ϵ)
   @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
   return Δ
 end

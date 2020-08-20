@@ -19,7 +19,7 @@ struct SamePad end
 
 calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
 function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
-  #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/pdf/1603.07285
+  #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
   # Effective kernel size, including dilation
   k_eff = @. k + (k - 1) * (dilation - 1)
@@ -49,6 +49,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 
 # Examples
@@ -80,6 +85,11 @@ Constructs the convolutional layer with user defined weight and bias arrays.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 There is also a keyword-only constuctor available for all convoultional
 layers.
@@ -182,6 +192,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == stride * inputsize - stride + 1.
 """
 struct ConvTranspose{N,M,F,A,V}
@@ -203,6 +218,11 @@ forward pass.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
@@ -286,6 +306,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 """
 struct DepthwiseConv{N,M,F,A,V}
@@ -307,6 +332,11 @@ forward pass.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
@@ -393,6 +423,11 @@ Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
 Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
 
 # Examples
@@ -425,6 +460,11 @@ arrays.
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
+For input dimension N, 
+`pad` should be a single Integer indicating equal padding value for each spatial dimension,
+a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
+indicating padding values for each spatial dimension at both the ends.
+`stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
@@ -479,6 +519,54 @@ end
 
 outdims(l::CrossCor, isize) =
   output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
+
+"""
+    AdaptiveMaxPool(out)
+
+Adaptive max pooling layer. `out` is the desired output size (batch and channel dimension excluded).
+"""
+struct AdaptiveMaxPool{S, O}
+  out::NTuple{O, Int}
+  AdaptiveMaxPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
+end
+
+function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
+  insize = size(x)[1:end-2]
+  outsize = a.out
+  stride = insize .÷ outsize
+  k = insize .- (outsize .- 1) .* stride
+  pad = 0
+  pdims = PoolDims(x, k; padding=pad, stride=stride)
+  return maxpool(x, pdims)
+end
+
+function Base.show(io::IO, a::AdaptiveMaxPool)
+  print(io, "AdaptiveMaxPool(", a.out, ")")
+end
+
+"""
+    AdaptiveMeanPool(out)
+
+Adaptive mean pooling layer. `out` is the desired output size (batch and channel dimension excluded).
+"""
+struct AdaptiveMeanPool{S, O}
+  out::NTuple{O, Int}
+  AdaptiveMeanPool(out::NTuple{O, Int}) where O = new{O + 2, O}(out)
+end
+
+function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
+  insize = size(x)[1:end-2]
+  outsize = a.out
+  stride = insize .÷ outsize
+  k = insize .- (outsize .- 1) .* stride
+  pad = 0
+  pdims = PoolDims(x, k; padding=pad, stride=stride)
+  return meanpool(x, pdims)
+end
+
+function Base.show(io::IO, a::AdaptiveMeanPool)
+  print(io, "AdaptiveMeanPool(", a.out, ")")
+end
 
 """
     GlobalMaxPool()
