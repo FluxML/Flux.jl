@@ -39,6 +39,14 @@ end
 @testset "Training Loop" begin
   i = 0
   l = 1
+  Flux.train!(
+              () -> (sleep(0.1); Flux.skip(); i+=1),
+              (),
+              Iterators.repeated((), 10),
+              Descent()
+             )
+
+  @test i==0 #all skipped
 
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               (),

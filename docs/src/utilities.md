@@ -46,4 +46,5 @@ Flux.destructure
 ```@docs
 Flux.throttle
 Flux.stop
+Flux.skip
 ```
