@@ -28,9 +28,6 @@ function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,
   # In case amount of padding is odd we need to apply different amounts to each side.
   return Tuple(mapfoldl(i -> [cld(i, 2), fld(i,2)], vcat, pad_amt))
 end
-function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
-  calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
-end
 
 """
     Conv(filter, in => out, σ = identity; init = glorot_uniform,
@@ -290,6 +287,10 @@ end
   a(T.(x))
 
 outdims(l::ConvTranspose{N}, isize) where N = _convtransoutdims(isize[1:2], size(l.weight)[1:N], l.stride, l.dilation, l.pad)
+
+function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
+  calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
+end
 
 """
     DepthwiseConv(filter::Tuple, in=>out)
