@@ -4,6 +4,15 @@ using Flux: gradient
 
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
+  y = randn(Float32, 20, 20, 3, 2)
+  ampx = AdaptiveMaxPool((5,5))
+  @test ampx(x) == maxpool(x, PoolDims(x, 2))
+  ampx = AdaptiveMeanPool((5,5))
+  @test ampx(x) == meanpool(x, PoolDims(x, 2))
+  ampy = AdaptiveMaxPool((10, 5))
+  @test ampy(y) == maxpool(y, PoolDims(y, (2, 4)))
+  ampy = AdaptiveMeanPool((10, 5))
+  @test ampy(y) == meanpool(y, PoolDims(y, (2, 4)))
   gmp = GlobalMaxPool()
   @test size(gmp(x)) == (1, 1, 3, 2)
   gmp = GlobalMeanPool()
@@ -35,7 +44,7 @@ end
 
   bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
   op = bias(ip)
-  @test sum(op) === 0.f0
+  @test sum(op) ≈ 0.f0
   gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
   @test gs[bias.bias] == nothing
 
@@ -48,12 +57,12 @@ end
 
   for _ = 1:10^3
     gs = gradient(params(bias)) do
-      Flux.mse(bias(ip), op)
+      Flux.Losses.mse(bias(ip), op)
     end
     Flux.Optimise.update!(opt, params(bias), gs)
   end
 
-  @test Flux.mse(bias(ip), op) ≈ 4.f0
+  @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
 end
 
 @testset "asymmetric padding" begin

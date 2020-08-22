@@ -1,4 +1,5 @@
 import Adapt: adapt, adapt_storage
+using  LinearAlgebra: Cholesky
 using Zygote: IdSet
 import Functors: @functor, functor, fmap
 
@@ -24,7 +25,7 @@ testmode!(m, mode = true) = m
     trainmode!(m, mode = true)
 
 Set a layer of model's train mode (see below).
-Symmetric to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)).
+Symmetric to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)`).
 
 _Note_: if you manually set a model into train mode, you need to manually place
 it into test mode during testing phase.
@@ -70,7 +71,7 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-gpu(x) = use_cuda[] ? fmap(CuArrays.cu, x) : x
+gpu(x) = use_cuda[] ? fmap(CUDA.cu, x) : x
 
 # Precision
 
@@ -80,3 +81,7 @@ paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
 f32(m) = paramtype(Float32, m)
 f64(m) = paramtype(Float64, m)
+
+# Functors for certain Julia data structures
+@functor Cholesky
+trainable(c::Cholesky) = ()

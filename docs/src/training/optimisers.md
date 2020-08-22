@@ -14,7 +14,7 @@ loss(x, y) = sum((predict(x) .- y).^2)
 x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
 
-θ = Params([W, b])
+θ = params([W, b])
 grads = gradient(() -> loss(x, y), θ)
 ```
 
@@ -25,7 +25,7 @@ using Flux.Optimise: update!
 
 η = 0.1 # Learning Rate
 for p in (W, b)
-  update!(p, -η * grads[p])
+  update!(p, η * grads[p])
 end
 ```
 
@@ -116,7 +116,7 @@ w = randn(10, 10)
 w1 = randn(10,10)
 ps = Params([w, w1])
 
-loss(x) = Flux.mse(w * x, w1 * x)
+loss(x) = Flux.Losses.mse(w * x, w1 * x)
 
 loss(rand(10)) # around 9
 
@@ -139,4 +139,17 @@ Similar to optimisers, Flux also defines some simple decays that can be used in 
 ExpDecay
 InvDecay
 WeightDecay
+```
+
+## Gradient Clipping
+
+Gradient clipping is useful for training recurrent neural networks, which have a tendency to suffer from the exploding gradient problem. An example usage is
+
+```julia
+opt = Optimiser(ClipValue(1e-3), ADAM(1e-3))
+```
+
+```@docs
+ClipValue
+ClipNorm
 ```

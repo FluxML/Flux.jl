@@ -1,6 +1,6 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, stack, unstack
-using StatsBase: var
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, stack, unstack
+using StatsBase: var, std
 using Random
 using Test
 
@@ -59,7 +59,7 @@ end
   @testset "Fan in/out" begin
     @test nfan() == (1, 1) #For a constant
     @test nfan(100) == (1, 100) #For vector
-    @test nfan(100, 200) == (200, 100) #For Dense layer
+    @test nfan(100, 200) == (200, 100) == nfan((100, 200)) #For Dense layer
     @test nfan(2, 30, 40) == (2 * 30, 2 * 40) #For 1D Conv layer
     @test nfan(2, 3, 40, 50) == (2 * 3 * 40, 2 * 3 * 50) #For 2D Conv layer
     @test nfan(2, 3, 4, 50, 60) == (2 * 3 * 4 * 50, 2 * 3 * 4 * 60) #For 3D Conv layer
@@ -74,7 +74,25 @@ end
         fan_in, fan_out = nfan(dims...)
         σ2 = 2 / (fan_in + fan_out)
         @test 0.9σ2 < var(v) < 1.1σ2
+        @test eltype(v) == Float32
       end
+    end
+  end
+
+  @testset "kaiming" begin
+    # kaiming_uniform should yield a kernel in range [-sqrt(6/n_out), sqrt(6/n_out)]
+    # and kaiming_normal should yield a kernel with stddev ~= sqrt(2/n_out)
+    for (n_in, n_out) in [(100, 100), (100, 400)]
+      v = kaiming_uniform(n_in, n_out)
+      σ2 = sqrt(6/n_out)
+      @test -1σ2  < minimum(v) < -0.9σ2
+      @test 0.9σ2  < maximum(v) < 1σ2
+      @test eltype(v) == Float32
+
+      v = kaiming_normal(n_in, n_out)
+      σ2 = sqrt(2/n_out)
+      @test 0.9σ2 < std(v) < 1.1σ2
+      @test eltype(v) == Float32
     end
   end
 end
