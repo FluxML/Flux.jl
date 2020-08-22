@@ -213,9 +213,9 @@ end
   stride = 3
   l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
   if ltype == ConvTranspose
-    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2] .- stride .+ 1
+    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2]
   else
-    @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ stride)
+    @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], stride)
   end
 end
 
@@ -223,5 +223,5 @@ end
   data = ones(Float32, (k .+ 3)..., 1,1)
 
   l = ltype(k, pad=SamePad())
-  @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ k)
+  @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
 end

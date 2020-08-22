@@ -17,8 +17,8 @@ For stride > 1 the output shape depends on the type of convolution layer.
 """
 struct SamePad end
 
-calc_padding(pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
-function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
+calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
+function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
   # Effective kernel size, including dilation
@@ -26,7 +26,10 @@ function calc_padding(::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   # How much total padding needs to be applied?
   pad_amt = @. k_eff - 1
   # In case amount of padding is odd we need to apply different amounts to each side.
-  return Tuple(mapfoldl(i -> [ceil(Int, i/2), floor(Int, i/2)], vcat, pad_amt))
+  return Tuple(mapfoldl(i -> [cld(i, 2), fld(i,2)], vcat, pad_amt))
+end
+function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
+  calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
 end
 
 """
@@ -106,7 +109,7 @@ function Conv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = id
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
-  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
+  pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
   return Conv(σ, w, b, stride, pad, dilation)
 end
 
@@ -197,7 +200,7 @@ For input dimension N,
 a tuple of length (N-2) to apply symmetric padding or a tuple of length 2*(N-2)
 indicating padding values for each spatial dimension at both the ends.
 `stride` and `dilation` should be a single Integer or a tuple with N-2 parameters.
-Use `pad=SamePad()` to apply padding so that outputsize == stride * inputsize - stride + 1.
+Use `pad=SamePad()` to apply padding so that outputsize == stride * inputsize.
 """
 struct ConvTranspose{N,M,F,A,V}
   σ::F
@@ -230,7 +233,7 @@ function ConvTranspose(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
-  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
+  pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
   return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
@@ -344,7 +347,7 @@ function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
-  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
+  pad = calc_padding(DepthwiseConv, pad, size(w)[1:N-2], dilation, stride)
   return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
@@ -472,7 +475,7 @@ function CrossCor(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ 
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
-  pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
+  pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
@@ -634,7 +637,7 @@ end
 
 function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = calc_padding(pad, k, 1, stride)
+  pad = calc_padding(MaxPool ,pad, k, 1, stride)
   return MaxPool(k, pad, stride)
 end
 
@@ -664,7 +667,7 @@ end
 
 function MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = calc_padding(pad, k, 1, stride)
+  pad = calc_padding(MeanPool, pad, k, 1, stride)
   return MeanPool(k, pad, stride)
 end
 
