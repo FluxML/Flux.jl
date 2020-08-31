@@ -1,0 +1,137 @@
+using Juno
+<<<<<<< Updated upstream
+import Zygote: Params, gradient
+
+function update!(x::AbstractArray, x̄)
+  x .+= x̄
+  return x
+end
+
+function update!(opt, x, x̄)
+  x .-= apply!(opt, x, x̄)
+=======
+<<<<<<< Updated upstream
+import Flux.Tracker: Params, gradient, data, update!
+import Base.depwarn
+
+function update!(opt, x, x̄)
+  update!(x, -apply!(opt, x, data(x̄)))
+=======
+import Zygote: Params, gradient
+
+"""
+function _update!(x::AbstractArray, x̄)
+  x .+= x̄
+  return x
+end
+
+function _update!(opt, x, x̄, state)
+  Δ, state = apply!(opt, x, x̄, state)
+  x .-= Δ
+  state
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+end
+
+update!(opt, xs::Params, gs; state = IdDict()) = _update!(opt, xs, gs, state)
+
+function _update!(opt, xs::Params, gs, state::IdDict)
+  for x in xs
+<<<<<<< Updated upstream
+    gs[x] == nothing && continue
+=======
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+    update!(opt, x, gs[x])
+=======
+    gs[x] == nothing && continue
+    state = _update!(opt, x, gs[x], state)
+>>>>>>> Stashed changes
+  end
+  state
+end
+"""
+
+# Callback niceties
+call(f, xs...) = f(xs...)
+runall(f) = f
+runall(fs::AbstractVector) = () -> foreach(call, fs)
+
+struct StopException <: Exception end
+
+"""
+    stop()
+
+Call `Flux.stop()` in a callback to indicate when a callback condition is met.
+This would trigger the train loop to stop and exit.
+
+```julia
+# Example callback:
+
+cb = function ()
+  accuracy() > 0.9 && Flux.stop()
+end
+```
+"""
+function stop()
+  throw(StopException())
+end
+
+"""
+    train!(loss, params, data, opt; cb)
+
+For each datapoint `d` in `data` computes the gradient of `loss(d...)` through
+backpropagation and calls the optimizer `opt`.
+
+Takes a callback as keyword argument `cb`. For example, this will print "training"
+every 10 seconds:
+
+```julia
+Flux.train!(loss, params, data, opt,
+            cb = throttle(() -> println("training"), 10))
+```
+
+The callback can call `Flux.stop()` to interrupt the training loop.
+
+Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
+"""
+function train!(loss, ps, data, opt; cb = () -> ())
+  ps = Params(ps)
+  cb = runall(cb)
+  @progress for d in data
+    try
+      gs = gradient(ps) do
+        loss(d...)
+      end
+      update!(opt, ps, gs)
+      cb()
+    catch ex
+      if ex isa StopException
+        break
+      else
+        rethrow(ex)
+      end
+    end
+  end
+end
+
+"""
+    @epochs N body
+
+Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
+training in a REPL.
+
+```julia
+julia> @epochs 2 println("hello")
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+```
+"""
+macro epochs(n, ex)
+  :(@progress for i = 1:$(esc(n))
+      @info "Epoch $i"
+      $(esc(ex))
+    end)
+end

@@ -490,17 +490,22 @@ mutable struct MultiLR{T,F}
   decay::F
   milestone::AbstractVector
   current::Int
+  dataset_length::Int
 end
 
-MultiLR(opt, decay = 1, milestone = []) =
-  MultiLR(opt, decay, sort(milestone), 0)
+MultiLR(opt, decay = 1, milestone = []; dataset_length::Int) =
+  MultiLR(opt, decay, sort(milestone), 0, dataset_length)
 
 function apply!(o::MultiLR, x, Δ)
-  if o.curent in o.milestone
-    lr!(o.opt, lr(o.opt) / o.decay)
+  cur_epoch = o.current ÷ o.dataset_length
+  if cur_epoch in o.milestone
+    # @show cur_epoch
+    lr!(o.opt, lr(o.opt) * o.decay)
+    o.current += 1
+    # popfirst!(o.milestone)
   end
-  o.current >= o.milstone[end] || (o.current += 1)
-  apply!(opt.opt, x, Δ)
+  cur_epoch >= o.milestone[end] || (o.current += 1)
+  apply!(o.opt, x, Δ)
 end
 
 lr(o) = o.eta
