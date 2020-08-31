@@ -99,7 +99,7 @@ mutable struct AlphaDropout{F}
   # active::Union{Bool, Nothing}
   function AlphaDropout(p, active = nothing)
     @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p, active)
+    new{typeof(p)}(p)
   end
 end
 
@@ -108,7 +108,7 @@ function (a::AlphaDropout)(x)
   λ = eltype(x)(1.0507009873554804934193349852946)
   α = eltype(x)(1.6732632423543772848170429916717)
   α1 = eltype(x)(-λ*α)
-  noise = randn(eltype(x), size(x))
+  noise = convert(typeof(x), rand!(similar(x, eltype(x))))
   x = @. x*(noise > (1 - a.p)) + α1 * (noise < (1 - a.p))
   A = (a.p + a.p * (1 - a.p) * α1 ^ 2)^0.5
   B = -A * α1 * (1 - a.p)
