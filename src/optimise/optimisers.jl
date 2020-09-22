@@ -403,7 +403,7 @@ end
 """
     NADAM(η = 0.001, β::Tuple = (0.9, 0.999))
 
-[NADAM](http://cs229.stanford.edu/proj2015/054_report.pdf) is a Nesterov variant of ADAM.
+[NADAM](https://openreview.net/forum?id=OM0jvwB8jIp57ZJjtNEZ) is a Nesterov variant of ADAM.
 Parameters don't need tuning.
 
 # Parameters
