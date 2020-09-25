@@ -1,25 +1,33 @@
 """
-    _handle_batch(f, isize, dimsize)
+    _handle_batchin(isize, dimsize)
 
-Gracefully handle ignoring batch dimension.
+Gracefully handle ignoring batch dimension by padding `isize` with a 1 if necessary.
+Also returns a boolean indicating if the batch dimension was padded.
 
 # Arguments:
-- `f`: a function of `isize` (including batch) that computes the output size
 - `isize`: the input size as specified by the user
 - `dimsize`: the expected number of dimensions for this layer (including batch)
+"""
+function _handle_batchin(isize, dimsize)
+  indims = length(isize)
+  @assert indims == dimsize || indims == dimsize - 1
+    "outdims expects ndims(isize) == $dimsize (got isize = $isize). isize should be the size of the input to the function (with batch size optionally left off)"
+  
+  return (indims == dimsize) ? (isize, false) : ((isize..., 1), true)
+end
+
+"""
+    _handle_batchout(outsize, ispadded; preserve_batch = false)
+
+Drop the batch dimension if requested.
+
+# Arguments:
+- `outsize`: the output size from a function
+- `ispadded`: indicates whether the batch dimension in `outsize` is padded (see _handle_batchin)
 - `preserve_batch`: set to `true` to always retain the batch dimension
 """
-function _handle_batch(f, isize, dimsize; preserve_batch = false)
-  indims = length(isize)
-  if indims == dimsize
-    return f(isize)
-  elseif indims == dimsize - 1
-    outsize = f((isize..., 1))
-    return preserve_batch ? outsize : outsize[1:(end - 1)]
-  else
-    throw(DimensionMismatch("outdims expects ndims(isize) == $dimsize (got isize = $isize). isize should be the size of the input to the function (with batch size optionally left off)"))
-  end
-end
+_handle_batchout(outsize, ispadded; preserve_batch = false) =
+  (ispadded && !preserve_batch) ? outsize[1:(end - 1)] : outsize
 
 # fallback for arbitrary functions/layers
 # ideally, users should only rely on this for flatten, etc. inside Chains
@@ -74,14 +82,16 @@ function outdims(l::Dense, isize; preserve_batch = false)
   first(isize) == size(l.W, 2) ||
     throw(DimensionMismatch("input size should equal ($(size(l.W, 2)), nbatches), got $isize"))
 
-  return _handle_batch(isize -> (size(l.W, 1), Base.tail(isize)...), isize, 2; preserve_batch = preserve_batch)
+  isize, ispadded = _handle_batchin(isize, 2)
+  return _handle_batchout((size(l.W, 1), Base.tail(isize)...), ispadded; preserve_batch = preserve_batch)
 end
 
 function outdims(l::Diagonal, isize; preserve_batch = false)
   first(isize) == length(l.α) ||
     throw(DimensionMismatch("input length should equal $(length(l.α)), got $(first(isize))"))
 
-  return _handle_batch(isize -> (length(l.α), Base.tail(isize)...), isize, 2; preserve_batch = preserve_batch)
+  isize, ispadded = _handle_batchin(isize, 2)
+  return _handle_batchout((length(l.α), Base.tail(isize)...), ispadded; preserve_batch = preserve_batch)
 end
 
 outdims(l::Maxout, isize; preserve_batch = false) = outdims(first(l.over), isize; preserve_batch = preserve_batch)
@@ -111,60 +121,80 @@ outdims(m, (10, 10)) == (8, 8)
 outdims(m, (10, 10, 1, 3)) == (8, 8)
 ```
 """
-outdims(l::Conv, isize; preserve_batch = false) =
-  return _handle_batch(isize -> begin
-    cdims = DenseConvDims(isize, size(l.weight);
-                          stride = l.stride, padding = l.pad, dilation = l.dilation)
-    (output_size(cdims)..., NNlib.channels_out(cdims), isize[end])
-  end, isize, ndims(l.weight); preserve_batch = preserve_batch)
-
-outdims(l::ConvTranspose{N}, isize; preserve_batch = false) where N =
-  return _handle_batch(isize -> begin
-    cdims = _convtransoutdims(isize[1:(end - 2)], size(l.weight)[1:N], l.stride, l.dilation, l.pad)
-    (cdims..., size(l.weight)[end - 1], isize[end])
-  end, isize, 4; preserve_batch = preserve_batch)
-
-outdims(l::DepthwiseConv, isize; preserve_batch = false) =
-  return _handle_batch(isize -> begin
-    cdims = DepthwiseConvDims(isize, size(l.weight);
-                              stride = l.stride, padding = l.pad, dilation = l.dilation)
-    (output_size(cdims)..., NNlib.channels_out(cdims), isize[end])
-  end, isize, 4; preserve_batch = preserve_batch)
-
-outdims(l::CrossCor, isize; preserve_batch = false) =
-  return _handle_batch(isize -> begin
+function outdims(l::Conv, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, ndims(l.weight))
   cdims = DenseConvDims(isize, size(l.weight);
                         stride = l.stride, padding = l.pad, dilation = l.dilation)
-    (output_size(cdims)..., NNlib.channels_out(cdims), isize[end])
-  end, isize, 4; preserve_batch = preserve_batch)
+  
+  return _handle_batchout((output_size(cdims)..., NNlib.channels_out(cdims), isize[end]), ispadded;
+                          preserve_batch = preserve_batch)
+end
 
-outdims(l::MaxPool{N}, isize; preserve_batch = false) where N =
-  return _handle_batch(isize -> begin
-    pdims = PoolDims(isize, l.k; stride = l.stride, padding = l.pad)
-    (output_size(pdims)..., NNlib.channels_out(pdims), isize[end])
-  end, isize, 4; preserve_batch = preserve_batch)
+function outdims(l::ConvTranspose{N}, isize; preserve_batch = false) where N
+  isize, ispadded = _handle_batchin(isize, 4)
+  cdims = _convtransoutdims(isize[1:(end - 2)], size(l.weight)[1:N], l.stride, l.dilation, l.pad)
+  
+  return _handle_batchout((cdims..., size(l.weight)[end - 1], isize[end]), ispadded;
+                          preserve_batch = preserve_batch)
+end
 
-outdims(l::MeanPool{N}, isize; preserve_batch = false) where N =
-  return _handle_batch(isize -> begin
-    pdims = PoolDims(isize, l.k; stride = l.stride, padding = l.pad)
-    (output_size(pdims)..., NNlib.channels_out(pdims), isize[end])
-  end, isize, 4; preserve_batch = preserve_batch)
+function outdims(l::DepthwiseConv, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, 4)
+  cdims = DepthwiseConvDims(isize, size(l.weight);
+                            stride = l.stride, padding = l.pad, dilation = l.dilation)
+  
+  return _handle_batchout((output_size(cdims)..., NNlib.channels_out(cdims), isize[end]), ispadded;
+                          preserve_batch = preserve_batch)
+end
 
-outdims(l::AdaptiveMaxPool, isize; preserve_batch = false) =
-  return _handle_batch(isize -> (l.out..., isize[end - 1], isize[end]),
-                       isize, 4; preserve_batch = preserve_batch)
+function outdims(l::CrossCor, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, 4)
+  cdims = DenseConvDims(isize, size(l.weight);
+                        stride = l.stride, padding = l.pad, dilation = l.dilation)
+  
+  return _handle_batchout((output_size(cdims)..., NNlib.channels_out(cdims), isize[end]), ispadded;
+                          preserve_batch = preserve_batch)
+end
 
-outdims(l::AdaptiveMeanPool, isize; preserve_batch = false) =
-  return _handle_batch(isize -> (l.out..., isize[end - 1], isize[end]),
-                       isize, 4; preserve_batch = preserve_batch)
+function outdims(l::MaxPool{N}, isize; preserve_batch = false) where N
+  isize, ispadded = _handle_batchin(isize, 4)
+  pdims = PoolDims(isize, l.k; stride = l.stride, padding = l.pad)
+  
+  return _handle_batchout((output_size(pdims)..., NNlib.channels_out(pdims), isize[end]), ispadded;
+                          preserve_batch = preserve_batch)
+end
 
-outdims(::GlobalMaxPool, isize; preserve_batch = false) =
-  return _handle_batch(isize -> (1, 1, isize[end - 1], isize[end]),
-                       isize, 4; preserve_batch = preserve_batch)
+function outdims(l::MeanPool{N}, isize; preserve_batch = false) where N
+  isize, ispadded = _handle_batchin(isize, 4)
+  pdims = PoolDims(isize, l.k; stride = l.stride, padding = l.pad)
 
-outdims(::GlobalMeanPool, isize; preserve_batch = false) =
-  return _handle_batch(isize -> (1, 1, isize[end - 1], isize[end]),
-                       isize, 4; preserve_batch = preserve_batch)
+  return _handle_batchout((output_size(pdims)..., NNlib.channels_out(pdims), isize[end]), ispadded;
+                          preserve_batch = preserve_batch)
+end
+
+function outdims(l::AdaptiveMaxPool, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, 4)
+
+  return _handle_batchout((l.out..., isize[end - 1], isize[end]), ispadded; preserve_batch = preserve_batch)
+end
+
+function outdims(l::AdaptiveMeanPool, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, 4)
+
+  return _handle_batchout((l.out..., isize[end - 1], isize[end]), ispadded; preserve_batch = preserve_batch)
+end
+
+function outdims(::GlobalMaxPool, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, 4)
+
+  return _handle_batchout((1, 1, isize[end - 1], isize[end]), ispadded; preserve_batch = preserve_batch)
+end
+
+function outdims(::GlobalMeanPool, isize; preserve_batch = false)
+  isize, ispadded = _handle_batchin(isize, 4)
+
+  return _handle_batchout((1, 1, isize[end - 1], isize[end]), ispadded; preserve_batch = preserve_batch)
+end
 
 #### end conv ####
 
