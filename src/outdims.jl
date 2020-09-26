@@ -2,7 +2,6 @@ module NilNumber
 
 using LinearAlgebra
 
-
 """
     Nil <: Number
 Nil is a singleton type with a single instance `nil`. Unlike
@@ -73,16 +72,70 @@ end  # module
 using .NilNumber: Nil, nil
 
 """
-    outdims(m, isize)
+    _handle_batchin(isize, dimsize)
 
-Calculate the output size of module `m` given an input of size `isize`.
-`isize` should include the batch dimension.
+Gracefully handle ignoring batch dimension by padding `isize` with a 1 if necessary.
+Also returns a boolean indicating if the batch dimension was padded.
 
-Should work for all custom layers.
+# Arguments:
+- `isize`: the input size as specified by the user
+- `dimsize`: the expected number of dimensions for this layer (including batch)
 """
-outdims(m, isize) = with_logger(NullLogger()) do
-    size(m(fill(nil, isize)))
+function _handle_batchin(isize, dimsize)
+  indims = length(isize)
+  @assert isnothing(dimsize) || indims == dimsize || indims == dimsize - 1
+    "outdims expects ndims(isize) == $dimsize (got isize = $isize). isize should be the size of the input to the function (with batch size optionally left off)"
+  
+  return (indims == dimsize || isnothing(dimsize)) ? (isize, false) : ((isize..., 1), true)
 end
+
+"""
+    _handle_batchout(outsize, ispadded; preserve_batch = false)
+
+Drop the batch dimension if requested.
+
+# Arguments:
+- `outsize`: the output size from a function
+- `ispadded`: indicates whether the batch dimension in `outsize` is padded (see _handle_batchin)
+- `preserve_batch`: set to `true` to always retain the batch dimension
+"""
+_handle_batchout(outsize, ispadded; preserve_batch = false) =
+  (ispadded && !preserve_batch) ? outsize[1:(end - 1)] : outsize
+
+"""
+    outdims(m, isize; preserve_batch = false)
+
+Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
+`isize` should include all dimensions (except batch dimension can be optionally excluded).
+Set `preserve_batch = true` to retrain the output batch dimension even if `isize` excludes it.
+
+*Note*: this method should work out of the box for custom layers.
+"""
+outdims(m, isize; preserve_batch = false) = with_logger(NullLogger()) do
+    isize, ispadded = _handle_batchin(isize, dimhint(m))
+    
+    return _handle_batchout(size(m(fill(nil, isize))), ispadded; preserve_batch = preserve_batch)
+end
+
+## dimension hints
+
+dimhint(m) = nothing
+dimhint(m::Tuple) = dimhint(first(m))
+dimhint(m::Chain) = dimhint(m.layers)
+dimhint(::Dense) = 2
+dimhint(::Diagonal) = 2
+dimhint(m::Maxout) = dimhint(first(m.over))
+dimhint(m::SkipConnection) = dimhint(m.layers)
+dimhint(m::Conv) = ndims(m.weight)
+dimhint(::ConvTranspose) = 4
+dimhint(::DepthwiseConv) = 4
+dimhint(::CrossCor) = 4
+dimhint(::MaxPool) = 4
+dimhint(::MeanPool) = 4
+dimhint(::AdaptiveMaxPool) = 4
+dimhint(::AdaptiveMeanPool) = 4
+dimhint(::GlobalMaxPool) = 4
+dimhint(::GlobalMeanPool) = 4
 
 
 ## fixes for layers that don't work out of the box
