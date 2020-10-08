@@ -55,7 +55,8 @@ end
 
 # Deprecated stuff
 macro treelike(args...)
-  functorm(args...)
+  @warn "@treelike has been deprecate please use @functor instead"
+  functor(args...)
 end
 mapleaves(f, x) = fmap(f, x)
 
