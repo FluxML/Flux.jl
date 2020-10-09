@@ -55,6 +55,16 @@ end
 
   @test i==0 #all skipped
 
+  Flux.train!(
+              () -> (sleep(0.1); i==8 && Flux.skip(); i+=1),
+              (),
+              Iterators.repeated((), 10),
+              Descent()
+             )
+
+  @test i==8 #skip after i hit 8
+
+  i = 0
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               (),
               Iterators.repeated((), 100),
