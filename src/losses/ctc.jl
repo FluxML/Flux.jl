@@ -52,7 +52,7 @@ function F(A, blank)
   for curr in A[2:end]
     if curr != prev && curr != blank
       push!(z, curr)
-``    end
+    end
     prev = curr
   end
   return z
@@ -75,6 +75,8 @@ end
 
 function ctc_(ŷ, y)
 
+  typedZero = zero(ŷ[1])
+  
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
 
@@ -85,19 +87,17 @@ function ctc_(ŷ, y)
   U′ = length(z′)
 
   # Calculate α coefficients, from the upper-left, to the bottom-right
-  α = zeros(Float64, T, U′)
+  α = fill(typedZero, T, U′)
   for t=1:T
     for u=1:U′
       if t == u == 1
-#         α[t,u] = ŷ[t, blank]
         α[t,u] = ŷ[blank, t]
       elseif t == 1 && u == 2
-#         α[t,u] = ŷ[t, z′[2]]
         α[t,u] = ŷ[z′[2], t]
       elseif t == 1 && u > 2
-        α[t,u] = -Inf
+        α[t,u] = log(typedZero)
       elseif u < U′ - 2(T - t) - 1
-        α[t,u] = -Inf
+        α[t,u] = log(typedZero)
       else
         idx = u - 2
         idx += z′[u] == blank || (u > 2 && z′[u-2] == z′[u])
@@ -109,49 +109,37 @@ function ctc_(ŷ, y)
   end
 
   # Calculate beta coefficients, from the bottom-right, to the upper-left
-  β = zeros(Float64, T, U′)
-  for i=1:length(β)
-    β[i] = -Inf
-  end
+  β = fill(log(typedZero), T, U′)
 
   # Fill bottom-right corner so bounding errors can be avoided
   # by starting `u` at `U′-1`
-  β[T,U′] = 0.0
-
-  for t=T:-1:1
-    for u=(U′-1):-1:1
-      if t == T && u >= U′ - 1
-        β[t,u] = 0.0
-      elseif t == T && u < U′ - 1
+  β[T,U′] = typedZero
+  β[T,U′-1] = typedZero
+  
+  # start at T-1 so that β(T, u) = log(0) for all u < U′ - 1
+  for t=(T-1):-1:1
+    for u=U′:-1:1
+      if u > 2t || u > U′ + 1
         continue
-      elseif u > 2t || u > U′ + 1
-        continue
-      else
-        idx = u+2
-        idx -= z′[u] == blank || (idx < U′ && z′[u+2] == z′[u])
-        idx = min(idx, U′)
-
-        v = [β[t+1,i] + ŷ[z′[i], t+1] for i=u:idx]
-        β[t, u] = logsum(v)
       end
-    end
-    if t < T-1
-      β[t, U′] = β[t+1, U′] + ŷ[blank, t]
+	  
+      idx = u+2
+      idx -= z′[u] == blank || (idx < U′ && z′[u+2] == z′[u])
+      idx = min(idx, U′)
+
+      v = [β[t+1,i] + ŷ[z′[i], t+1] for i=u:idx]
+      β[t, u] = logsum(v)
     end
   end
+  
 
-  # Loss at each time t is taken as the sum of the product of the α and β coefficients for
-  # all the label classes at time t
-  losses = Vector()
-  for t=1:T
-    v = [α[t,u] + β[t,u] for u in 1:U′]
-    push!(losses, -logsum(v))
-  end
+  # Loss at each time t is taken as the sum of the product (sum in log space) of the
+  # α and β coefficients for all the label classes at time t
+  αβ = α + β
+  losses = -1 .* mapslices(logsum, αβ, dims=2)
 
-  # `accum` will hold the sum of the α and β coefficients for
-  # each label class at time t; used in calculating gradients
-  accum = fill(-Inf, size(ŷ))
-  grads = fill(-Inf, size(ŷ))
+  accum = fill(log(typedZero), size(ŷ))
+  grads = fill(log(typedZero), size(ŷ))
 
   for t=1:T
     for u=1:U′
@@ -163,7 +151,6 @@ function ctc_(ŷ, y)
   end
 
   losses = [x for x in losses]
-
   return losses, grads
 end
 
