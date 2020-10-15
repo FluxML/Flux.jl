@@ -136,3 +136,20 @@ end
   @test stack(unstacked_array, 2) == stacked_array
   @test stack(unstack(stacked_array, 1), 1) == stacked_array
 end
+
+@testset "Base.show for trees" begin
+  # testcase for issue #1354
+  function is_tree_type_show(i)
+    param = getfield(i.sig, 1)
+    i.module == Flux.Data && param.name == :T
+  end
+  a = filter(i->i.module == Flux.Data, methods(Base.show).ms)
+  getfield(a[2].sig, 1).name
+
+  is_tree_type_show_methods = filter(is_tree_type_show, methods(Base.show).ms)
+  @test length(is_tree_type_show_methods) == 1
+  buf = IOBuffer()
+  Base.show(buf, is_tree_type_show_methods[1])
+  str_repr = String(take!(buf))
+  @test occursin("Type{Tree{T}}) where T", str_repr)
+end

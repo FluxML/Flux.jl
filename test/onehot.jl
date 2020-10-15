@@ -33,3 +33,16 @@ end
   @test A*b1 == A[:,1]
   @test_throws DimensionMismatch A*b2
 end
+
+@testset "onehotmatrix multiplication and gradient" begin
+  m = Dense(8, 2)
+  x_str = [:a, :b, :c, :d, :e, :a, :b, :e]
+  values = sort(unique(x_str))
+  x = Flux.onehotbatch(x_str, values)
+  y = m(x)
+  @test y isa Array{Float32, 2}
+  @test size(y) == (2,8)
+  y2 = m(x')
+  @test y2 isa Array{Float32, 2}
+  @test size(y2) == (2,5)
+end

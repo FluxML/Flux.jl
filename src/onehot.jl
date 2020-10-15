@@ -1,4 +1,5 @@
 import Base: *
+using LinearAlgebra
 
 struct OneHotVector <: AbstractVector{Bool}
   ix::UInt32
@@ -34,6 +35,32 @@ Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
 # remove workaround when https://github.com/JuliaGPU/CuArrays.jl/issues/676 is fixed
 A::AbstractMatrix * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
+
+function Base.:*(A::AbstractMatrix, B::Flux.OneHotMatrix)
+	m = size(A,1)
+	Y = similar(A, m, size(B,2))
+	for (j,ohv) in enumerate(B.data)
+		ix = ohv.ix
+		for i in 1:m
+			@inbounds Y[i,j] = A[i,ix]
+		end
+	end
+	Y
+end
+
+function Base.:*(A::AbstractMatrix, B::Adjoint{Bool,<: Flux.OneHotMatrix})
+	m = size(A,1)
+	Y = similar(A, m, size(B,2))
+	Y .= 0
+	BT = B'
+	for (j,ohv) in enumerate(BT.data)
+		ix = ohv.ix
+		for i in 1:m
+			@inbounds Y[i,ix] += A[i,j]
+		end
+	end
+	Y
+end
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs...])
 
