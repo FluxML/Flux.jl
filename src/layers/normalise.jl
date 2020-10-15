@@ -135,7 +135,6 @@ LayerNorm(h::Integer) =
 @functor LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x, dims=1))
-(a::LayerNorm)(x::Flux.OneHotMatrix) = x
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", length(l.diag.α), ")")

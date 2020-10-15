@@ -20,6 +20,7 @@
 * Added [helper functions](https://github.com/FluxML/Flux.jl/pull/873) `Flux.convfilter` and `Flux.depthwiseconvfilter` to construct weight arrays for convolutions outside of layer constructors so as to not have to depend on the default layers for custom implementations.
 * `dropout` function now has a mandatory [active](https://github.com/FluxML/Flux.jl/pull/1263)
 keyword argument. The `Dropout` struct *whose behavior is left unchanged) is the recommended choice for common usage.
+* Optimized inference of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1357)
 * and many more fixes and additions...
 
 # v0.10.1 - v0.10.4

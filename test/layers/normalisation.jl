@@ -44,16 +44,16 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
   x = rand(100)
 
   testmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) == 0
   trainmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=true) 
+  y = Flux.dropout(x, 0.9, active=true)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=false) 
+  y = Flux.dropout(x, 0.9, active=false)
   @test count(a->a == 0, y) == 0
 end
 
@@ -315,7 +315,8 @@ end
 @testset "normalise" begin
   # begin tests
   let sizes = (3,2,2),
-        x = reshape(collect(1:prod(sizes)), sizes)
+      x = reshape(collect(1:prod(sizes)), sizes),
+      x_empty = reshape(Float32[], 0, 2, 2)
 
       @test Flux.normalise(x, dims=[1, 2]) ≈ reshape([
       -1.46384153   -1.46384153
@@ -338,4 +339,9 @@ end
       @test Flux.normalise(Float32[], dims=1) ≈ Float32[]
 
       @test Flux.normalise(ones(sizes), dims=1) ≈ zeros(sizes)
+
+      @test Flux.normalise(x_empty, dims=1) ≈ x_empty
+      @test Flux.normalise(x_empty, dims=2) ≈ x_empty
+      @test Flux.normalise(x_empty, dims=3) ≈ x_empty
+    end
 end

@@ -20,6 +20,6 @@ Normalise `x` to mean 0 and standard deviation 1 across the dimensions given by 
 function normalise(x::AbstractArray; dims, ϵ=ofeltype(x, 1e-5))
   μ = mean(x, dims=dims)
   #   σ = std(x, dims=dims, mean=μ, corrected=false) # use this when #https://github.com/FluxML/Zygote.jl/pull/478 gets merged
-  σ = std(x, dims=dims, mean=μ, corrected=false)
+  σ = std(x, dims=dims, corrected=false)
   return (x .- μ) ./ (σ .+ ϵ)
 end

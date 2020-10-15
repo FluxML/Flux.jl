@@ -33,9 +33,6 @@ Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = OneHotMatrix(xs.height, copy
 
 Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
-# remove workaround when https://github.com/JuliaGPU/CuArrays.jl/issues/676 is fixed
-A::AbstractMatrix * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
-
 function Base.:*(A::AbstractMatrix, B::Flux.OneHotMatrix)
 	m = size(A,1)
 	Y = similar(A, m, size(B,2))
