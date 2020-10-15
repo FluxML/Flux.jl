@@ -184,3 +184,7 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+
+@adjoint function Broadcast.broadcasted(f::Recur, args...)
+  Zygote.∇map(__context__, f, args...)
+end
