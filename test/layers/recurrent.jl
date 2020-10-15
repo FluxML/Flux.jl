@@ -1,7 +1,8 @@
 # Ref FluxML/Flux.jl#1209
 @testset "BPTT" begin
   seq = [rand(2) for i = 1:3]
-  for rnn ∈ [RNN,]
+  for r ∈ [RNN,]
+    rnn = r(2,3)
     Flux.reset!(rnn)
     grads_seq = gradient(Flux.params(rnn)) do
       sum(rnn.(seq)[3])
