@@ -16,11 +16,12 @@ export mse, mae, msle,
     tversky_loss,
     dice_coeff_loss,
     poisson_loss,
-    hinge_loss, siquared_hinge_loss,
+    hinge_loss, squared_hinge_loss,
     ctc
 
 include("utils.jl")
 include("functions.jl")
 include("ctc.jl")
+if CUDA.functional() include("ctc-gpu.jl") end
 
 end #module

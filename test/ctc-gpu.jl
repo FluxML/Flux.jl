@@ -1,9 +1,9 @@
 using Test
 using Flux
-using Flux: ctc_
+using Flux.Losses: ctc
 using Zygote: gradient
 using LinearAlgebra
-using CuArrays
+using CUDA
 using Statistics
 
 # Custom function to check numerical gradient of ctc loss,
@@ -15,7 +15,7 @@ using Statistics
 # causing the gradients to change and thus not be comparable
 # between the numeric and analytical definitions
 function ctc_ngradient(xs...)
-  f = ctc_
+  f = Flux.Losses.ctc_
   grads = zero.(xs)
   for (x, Δ) in zip(xs, grads), i in 1:length(x)
     δ = sqrt(eps())
@@ -35,7 +35,7 @@ end
   
   x = rand(10, 50)
   y = reduce(hcat, repeat([Array{Float64}(I, 10, 10)[min(i, 9),:] for i in 1:10], inner=5))
-  
+
   x_cu = CuArray(x)
   y_cu = CuArray(y)
   
@@ -48,8 +48,8 @@ end
   
   # test that GPU loss matches CPU implementation
   
-  l1 = Flux.ctc_(x_cu, y_cu)[1]
-  l2 = Flux.ctc_(x, y)[1]
+  l1 = ctc(x_cu, y_cu)
+  l2 = ctc(x, y)
   
   @test all(isapprox.(l1, l2, rtol=1e-5, atol=1e-5))
   
@@ -63,6 +63,15 @@ end
   g = [-0.317671 -0.427729 0.665241; 0.244728 -0.0196172 -0.829811; 0.0729422 0.447346 0.16457]
   ghat = gradient(ctc, x_cu, y_cu)[1] |> collect
   
+  @test all(isapprox.(g, ghat, rtol=1e-5, atol=1e-5))
+
+  x_cu = [-3. 12. 8. 15.; 4. 20. -2. 20.; 8. -33. 6. 5.] |> CuArray
+  y_cu = [1 1 0 0; 0 0 1 1; 0 0 0 0] |> CuArray
+  @test ctc(x_cu, y_cu) ≈ 8.02519869363453
+
+  g = [-2.29294774655333e-06 -0.999662657278862 1.75500863563993e-06 0.00669284889063; 0.017985914969696 0.999662657278861 -1.9907078755387e-06 -0.006693150917307; -0.01798362202195 -2.52019580677916e-20 2.35699239251042e-07 3.02026677058789e-07]
+
+  ghat = gradient(ctc, x_cu, y_cu)[1] |> collect
   @test all(isapprox.(g, ghat, rtol=1e-5, atol=1e-5))
   
 end
