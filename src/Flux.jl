@@ -23,8 +23,8 @@ using .Optimise: @epochs
 using .Optimise: skip
 export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
-  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay,
-  ClipValue, ClipNorm
+  ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
+  WeightDecay, ClipValue, ClipNorm
 
 
 using CUDA
