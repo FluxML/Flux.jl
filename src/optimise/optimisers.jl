@@ -463,7 +463,8 @@ ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
 """
     AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999))
 
-[AdaBelief](https://arxiv.org/abs/2010.07468) optimiser.
+The [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser is a variant of the well-known
+ADAM optimiser.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
