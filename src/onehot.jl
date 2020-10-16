@@ -33,7 +33,11 @@ Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = OneHotMatrix(xs.height, copy
 
 Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
-function Base.:*(A::AbstractMatrix, B::Flux.OneHotMatrix)
+# choosing fastest combination for each of (array, cuarray), (onehotmatrix, adjoinmatrix)
+A::CuArray * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
+A::CuArray * B::Adjoint{Bool,<: OneHotMatrix} = cpu(cu_x)*B
+
+function Base.:*(A::AbstractMatrix, B::OneHotMatrix)
 	m = size(A,1)
 	Y = similar(A, m, size(B,2))
 	for (j,ohv) in enumerate(B.data)
@@ -45,7 +49,7 @@ function Base.:*(A::AbstractMatrix, B::Flux.OneHotMatrix)
 	Y
 end
 
-function Base.:*(A::AbstractMatrix, B::Adjoint{Bool,<: Flux.OneHotMatrix})
+function Base.:*(A::AbstractMatrix, B::Adjoint{Bool,<: OneHotMatrix})
 	m = size(A,1)
 	Y = similar(A, m, size(B,2))
 	Y .= 0
