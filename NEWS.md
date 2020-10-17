@@ -1,3 +1,7 @@
+# v0.11.2
+
+* Add [CTC loss function](https://github.com/FluxML/Flux.jl/pull/1287) to Losses module
+
 # v0.11
 
 * Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
