@@ -35,7 +35,7 @@ Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
 # choosing fastest combination for each of (array, cuarray), (onehotmatrix, adjoinmatrix)
 A::CuArray * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
-A::CuArray * B::Adjoint{Bool,<: OneHotMatrix} = cpu(cu_x)*B
+A::CuArray * B::Adjoint{Bool,<: OneHotMatrix} = cpu(A)*B
 
 function Base.:*(A::AbstractMatrix, B::OneHotMatrix)
 	m = size(A,1)
