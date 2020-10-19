@@ -1,15 +1,4 @@
-include:
-  - 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v6.yml'
-
-image: nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
-
-
-# julia:1.4:
-#   extends:
-#     - .julia:1.4
-#     - .test
-#   tags:
-#     - nvidia
+include: 'https://raw.githubusercontent.com/JuliaGPU/gitlab-ci/master/templates/v6.yml'
 
 julia:1.5:
   extends:
