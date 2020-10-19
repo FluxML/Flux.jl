@@ -1,3 +1,7 @@
+# v0.11.2
+
+* Adds the [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser.
+
 # v0.11
 
 * Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
