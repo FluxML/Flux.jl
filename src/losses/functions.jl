@@ -34,7 +34,7 @@ msle(ŷ, y; agg=mean, ϵ=epseltype(ŷ)) = agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ)))
 Return the mean of the [Huber loss](https://en.wikipedia.org/wiki/Huber_loss)
 given the prediction `ŷ` and true values `y`.
 
-                 | 0.5 * |ŷ - y|,            for |ŷ - y| <= δ
+                 | 0.5 * |ŷ - y|^2,            for |ŷ - y| <= δ
     Huber loss = |
                  |  δ * (|ŷ - y| - 0.5 * δ), otherwise
 """
