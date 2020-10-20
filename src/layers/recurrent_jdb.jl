@@ -65,7 +65,7 @@ mutable struct RNNCell{F,A,V}
   Wi::A
   Wh::A
   b::V
-  # init::V # change from h - remove - init state learnable parameter from Recur
+  # h::V # remove - init state learnable parameter from Recur
 end
 
 RNNCell(in::Integer, out::Integer, σ = tanh; init = glorot_uniform) =
