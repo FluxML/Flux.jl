@@ -114,3 +114,12 @@ end
     @test Housing.targets() isa Array{Float64}
     @test size(Housing.targets()) == (506, 1)
 end
+
+@testset "Tree show" begin
+    # testcase for issue #1354
+    # testing that methods(Base.show) does not throw. Having something more specific would be too fragile
+    buf = IOBuffer()
+    Base.show(buf, methods(Base.show))
+    str_repr = String(take!(buf))
+    @test !isempty(str_repr)
+end
