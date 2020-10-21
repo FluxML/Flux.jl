@@ -52,7 +52,7 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
 rnn.state = hidden(rnn.cell)
 ```
 """
-reset!(m::Recur) = (m.state = m.init) #modif to broadcast value of init into state
+reset!(m::Recur) = (m.state = m.init)
 reset!(m) = foreach(reset!, functor(m)[1])
 
 flip(f, xs) = reverse(f.(reverse(xs)))
@@ -67,7 +67,7 @@ mutable struct RNNCell{F,A,V}
 end
 
 RNNCell(in::Integer, out::Integer, σ = tanh; init = glorot_uniform) =
-  RNNCell(σ, init(out, in), init(out, out), init(out)) # remove h/init initialization
+  RNNCell(σ, init(out, in), init(out, out), init(out))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
