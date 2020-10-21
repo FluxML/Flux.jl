@@ -10,8 +10,8 @@ using Random
   Random.seed!(84)
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), Nesterov(), RMSProp(),
-                       Momentum()]
+                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), AdaBelief(),
+                       Nesterov(), RMSProp(), Momentum()]
     Random.seed!(42)
     w′ = randn(10, 10)
     loss(x) = Flux.Losses.mse(w*x, w′*x)
