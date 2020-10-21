@@ -7,7 +7,6 @@ import ..Flux: Flux
 import Zygote
 using Zygote: @adjoint
 
-# include("curnn.jl")
 include("cudnn.jl")
 
 end
