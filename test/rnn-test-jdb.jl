@@ -77,3 +77,92 @@ using CUDA
 
 x1 = LSTM(16,8)
 CUDA.CUDNN.RNNDesc(x1)
+
+
+########################
+# rnn test gpu
+########################
+feat = 2
+h_size = 11
+seq_len = 4
+batch_size = 3
+rnn = Chain(RNN(feat, h_size),
+  Dense(h_size, 1, σ),
+  x -> reshape(x,:))
+
+X = [rand(feat, batch_size) for i in 1:seq_len]
+Y = rand(batch_size, seq_len) ./ 10
+
+rnn = rnn |> gpu
+X = gpu(X)
+Y = gpu(Y)
+
+θ = Flux.params(rnn)
+mapreduce(length, +, θ) - h_size -1 # num params in RNN
+
+function loss(x,y)
+  l = mean((Flux.stack(map(rnn, x),2) .- y) .^ 2f0)
+  Flux.reset!(rnn)
+  return l
+end
+
+opt = ADAM(1e-3)
+loss(X,Y)
+Flux.reset!(rnn)
+Flux.train!(loss, θ, [(X,Y)], opt)
+loss(X,Y)
+for i in 1:100
+  Flux.train!(loss, θ, [(X,Y)], opt)
+end
+Flux.reset!(rnn)
+Flux.train!(loss, θ, [(X,Y)], opt)
+
+θ[1]
+θ[3]
+θ[4]
+
+
+########################
+# LSTM test gpu
+########################
+feat = 32
+h_size = 64
+seq_len = 10
+batch_size = 32
+
+rnn = Chain(RNN(feat, h_size),
+  Dense(h_size, 1, σ),
+  x -> reshape(x,:))
+
+X = [rand(feat, batch_size) for i in 1:seq_len]
+Y = rand(batch_size, seq_len) ./ 10
+
+rnn = rnn |> gpu
+X = gpu(X)
+Y = gpu(Y)
+
+θ = Flux.params(rnn)
+function loss(x,y)
+  l = mean((Flux.stack(map(rnn, x),2) .- y) .^ 2f0)
+  Flux.reset!(rnn)
+  return l
+end
+
+opt = ADAM(1e-4)
+loss(X,Y)
+Flux.reset!(rnn)
+Flux.train!(loss, θ, [(X,Y)], opt)
+loss(X,Y)
+for i in 1:100
+  Flux.train!(loss, θ, [(X,Y)], opt)
+end
+Flux.reset!(rnn)
+Flux.train!(loss, θ, [(X,Y)], opt)
+
+θ[1]
+θ[2]
+θ[3]
+θ[4]
+θ[5]
+θ[6]
+θ[7]
