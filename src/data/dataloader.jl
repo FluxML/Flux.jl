@@ -14,7 +14,7 @@ end
     DataLoader(data; batchsize=1, shuffle=false, partial=true)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
-(except possibly the last one). 
+(except possibly the last one).
 
 Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is considered to be the observation dimension.
@@ -22,12 +22,12 @@ The last dimension in each tensor is considered to be the observation dimension.
 If `shuffle=true`, shuffles the observations each time iterations are re-started.
 If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
 
-The original data is preserved in the `data` field of the DataLoader. 
+The original data is preserved in the `data` field of the DataLoader.
 
 Usage example:
 
     Xtrain = rand(10, 100)
-    train_loader = DataLoader(Xtrain, batchsize=2) 
+    train_loader = DataLoader(Xtrain, batchsize=2)
     # iterate over 50 mini-batches of size 2
     for x in train_loader
         @assert size(x) == (10, 2)
@@ -37,7 +37,7 @@ Usage example:
     train_loader.data   # original dataset
 
     # similar, but yielding tuples
-    train_loader = DataLoader((Xtrain,), batchsize=2) 
+    train_loader = DataLoader((Xtrain,), batchsize=2)
     for (x,) in train_loader
         @assert size(x) == (10, 2)
         ...
@@ -45,7 +45,7 @@ Usage example:
 
     Xtrain = rand(10, 100)
     Ytrain = rand(100)
-    train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true) 
+    train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true)
     for epoch in 1:100
         for (x, y) in train_loader
             @assert size(x) == (10, 2)
@@ -55,7 +55,7 @@ Usage example:
     end
 
     # train for 10 epochs
-    using IterTools: ncycle 
+    using IterTools: ncycle
     Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
 
     # can use NamedTuple to name tensors
@@ -67,8 +67,8 @@ Usage example:
 """
 function DataLoader(data; batchsize=1, shuffle=false, partial=true)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
-    
-    n = _nobs(data) 
+
+    n = _nobs(data)
     if n < batchsize
         @warn "Number of observations less than batchsize, decreasing the batchsize to $n"
         batchsize = n

@@ -44,16 +44,16 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
   x = rand(100)
 
   testmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) == 0
   trainmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=true) 
+  y = Flux.dropout(x, 0.9, active=true)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=false) 
+  y = Flux.dropout(x, 0.9, active=false)
   @test count(a->a == 0, y) == 0
 end
 
