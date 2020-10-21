@@ -1,7 +1,7 @@
 """
     mae(ŷ, y; agg=mean)
 
-Return the loss corresponding to mean absolute error: 
+Return the loss corresponding to mean absolute error:
 
     agg(abs.(ŷ .- y))
 """
@@ -10,8 +10,8 @@ mae(ŷ, y; agg=mean) = agg(abs.(ŷ .- y))
 """
     mse(ŷ, y; agg=mean)
 
-Return the loss corresponding to mean square error: 
-    
+Return the loss corresponding to mean square error:
+
     agg((ŷ .- y).^2)
 """
 mse(ŷ, y; agg=mean) = agg((ŷ .- y).^2)
@@ -55,12 +55,12 @@ calculated as
     agg(-sum(y .* log.(ŷ .+ ϵ); dims=dims))
 
 Cross entropy is tipically used as a loss in multi-class classification,
-in which case the labels `y` are given in a one-hot format. 
+in which case the labels `y` are given in a one-hot format.
 `dims` specifies the dimension (or the dimensions) containing the class probabilities.
 The prediction `ŷ` is supposed to sum to one across `dims`,
-as would be the case with the output of a [`softmax`](@ref) operation. 
+as would be the case with the output of a [`softmax`](@ref) operation.
 
-Use of [`logitcrossentropy`](@ref) is recomended over `crossentropy` for 
+Use of [`logitcrossentropy`](@ref) is recomended over `crossentropy` for
 numerical stability.
 
 See also: [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
@@ -73,7 +73,7 @@ end
     logitcrossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean)
 
 Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
-calculated as 
+calculated as
 
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
 
@@ -89,10 +89,10 @@ end
 """
     binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ))
 
-Return the binary cross-entropy loss, computed as 
+Return the binary cross-entropy loss, computed as
 
     agg(@.(-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)))
-    
+
 The `ϵ` term provides numerical stability.
 
 Typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
