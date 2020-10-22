@@ -1,6 +1,6 @@
 using Revise
 using Flux
-# using CUDA
+using CUDA
 using Statistics: mean
 
 ################################################
@@ -16,9 +16,9 @@ gs[m.cell.Wi]
 ########################
 
 # illustrate diverging behavior of GPU execution
-feat = 16
-h_size = 32
-seq_len = 10
+feat = 32
+h_size = 64
+seq_len = 20
 batch_size = 100
 
 rnn = Chain(RNN(feat, h_size),
