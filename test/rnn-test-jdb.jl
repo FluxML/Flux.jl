@@ -3,6 +3,14 @@ using Flux
 # using CUDA
 using Statistics: mean
 
+################################################
+# Too many wrappers issue #1259
+################################################
+m = RNN(3,2) |> gpu
+x = CUDA.ones(3,2)
+gs = gradient(() -> sum(m(x)), params(m))
+gs[m.cell.Wi]
+
 ########################
 # RNN test gpu
 ########################
