@@ -1,6 +1,6 @@
-using Flux 
+using Flux
 using Flux.Data
-using Test 
+using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 

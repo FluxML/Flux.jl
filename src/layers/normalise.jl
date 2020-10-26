@@ -22,11 +22,11 @@ This is used as a regularisation, i.e. it reduces overfitting during training.
 
 If `active` is `false`, it just returns the input `x`
 
-Warning: when using this function, you have to manually manage the activation 
-state. Usually in fact, dropout is used while training 
-but is deactivated in the inference phase. This can be 
-automatically managed using the [`Dropout`](@ref) layer instead of the 
-`dropout` function. 
+Warning: when using this function, you have to manually manage the activation
+state. Usually in fact, dropout is used while training
+but is deactivated in the inference phase. This can be
+automatically managed using the [`Dropout`](@ref) layer instead of the
+`dropout` function.
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
@@ -37,7 +37,7 @@ function dropout(x, p; dims=:, active::Bool)
 end
 
 @adjoint function dropout(x, p; dims=:, active::Bool)
-  active || return x, Δ -> (Δ, nothing) 
+  active || return x, Δ -> (Δ, nothing)
   y = dropout_mask(x, p, dims=dims)
   return x .* y, Δ -> (Δ .* y, nothing)
 end
