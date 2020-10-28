@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, stack, unstack
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, stack, unstack, Zeros
 using StatsBase: var, std
 using Random
 using Test
@@ -127,6 +127,12 @@ end
   @test eltype(f64(m)(x)) == Float64
   @test eltype(f64(m)[1].W) == Float64
   @test eltype(f32(f64(m))[1].W) == Float32
+end
+
+@testset "Zeros" begin
+  m = Dense(randn(2,3), Zeros())
+  @test f64(m).b === m.b
+  @test f32(m).b === m.b
 end
 
 @testset "Stacking" begin

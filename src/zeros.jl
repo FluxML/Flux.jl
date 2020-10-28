@@ -54,6 +54,8 @@ Base.getindex(xs::Zeros{T,N}, inds::Union{Base.OneTo, Base.UnitRange}) where {T,
 
 Base.collect(xs::Zeros{T,N}) where {T,N} = fill(zero(T), size(xs))
 
+# Or else they'll turn into a ReshapedArray and all the stuff below is circumvented
+Base.reshape(xs::Zeros{T}, dims::Vararg{Union{Colon, Int64},N}) where {T, N} = Zeros(T, Base._reshape_uncolon(xs, dims)...)
 @adjoint reshape(xs::Zeros{T}, dims...) where T =
                 reshape(xs, dims...), _ -> nothing
 

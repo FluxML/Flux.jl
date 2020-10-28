@@ -42,11 +42,13 @@ end
   op = bias(ip)
   @test sum(op) == prod(size(op))
 
-  bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
-  op = bias(ip)
-  @test sum(op) ≈ 0.f0
-  gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-  @test gs[bias.bias] == nothing
+  @testset "Zeros mapped through $lmap" for lmap in (identity, cpu, f32)
+    bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
+    op = bias(ip)
+    @test sum(op) ≈ 0.f0
+    gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
+    @test gs[bias.bias] === nothing
+  end
 
   # Train w/o bias and make sure no convergence happens
   # when only bias can be converged

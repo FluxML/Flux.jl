@@ -78,6 +78,7 @@ gpu(x) = use_cuda[] ? fmap(CUDA.cu, x) : x
 adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs)
 
 paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
+adapt(::Any, x::Zeros) = x # So that we for example don't accidentally end up with layers having a scalar for bias
 
 f32(m) = paramtype(Float32, m)
 f64(m) = paramtype(Float64, m)

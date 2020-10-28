@@ -45,8 +45,12 @@ end
 
 # Repeats from Conv, CrossCor
 
+ConvZeros(args...) = Conv(args...; bias=Flux.Zeros())
+ConvTransposeZeros(args...) = ConvTranspose(args...; bias=Flux.Zeros())
+CrossCorZeros(args...) = CrossCor(args...; bias=Flux.Zeros())
+DepthwiseConvZeros(args...) = DepthwiseConv(args...;bias=Flux.Zeros())
 r = rand(Float32, 28, 28, 1, 1)
-conv_layers = [Conv, ConvTranspose, CrossCor, DepthwiseConv]
+conv_layers = [Conv, ConvZeros, ConvTranspose, ConvTransposeZeros, CrossCor, CrossCorZeros, DepthwiseConv, DepthwiseConvZeros]
 gradtest("Conv", conv_layers, r, (2,2), 1=>3)
 
 pooling_layers = [MaxPool, MeanPool]
