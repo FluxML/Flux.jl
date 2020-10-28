@@ -48,14 +48,8 @@ function loss_gpu(x,y)
   return l
 end
 
-opt = ADAM(1e-4)
-opt_gpu = ADAM(1e-4)
-# loss(X,Y)
-# loss_gpu(X_gpu, Y_gpu)
-# Flux.train!(loss, θ, [(X,Y)], opt)
-# Flux.train!(loss_gpu, θ_gpu, [(X_gpu,Y_gpu)], opt_gpu)
-# loss(X,Y)
-# loss_gpu(X_gpu, Y_gpu)
+opt = Descent(1e-2)
+opt_gpu = Descent(1e-2)
 for i in 1:50
   println("iter: ", i)
   Flux.train!(loss, θ, [(X,Y)], opt)
