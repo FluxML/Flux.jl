@@ -9,11 +9,10 @@ using Statistics: mean
 ################################################
 mutable struct MyRecur{T}
     cell::T
-    init
     state
 end
 
-MyRecur(m, h=hidden(m)) = MyRecur(m, h, h)
+MyRecur(m) = MyRecur(m, init(m))
 
 function (m::MyRecur)(xs...)
     h, y = m.cell(m.state, xs...)
@@ -23,22 +22,22 @@ end
 
 # Flux.@functor MyRecur cell, init
 Flux.@functor MyRecur
-Flux.trainable(a::MyRecur) = (a.cell, a.init)
+Flux.trainable(a::MyRecur) = (a.cell,)
 # Flux.trainable(a::MyRecur) = (a.cell,)
 
-reset!(m::MyRecur) = (m.state = m.init)
+reset!(m::MyRecur) = (m.state = m.cell.init)
 reset!(m) = foreach(reset!, functor(m)[1])
 
 # Vanilla RNN
-struct MyRNNCell{F,A,V}
+struct MyRNNCell{F,A,V,S}
     σ::F
     Wi::A
     Wh::A
     b::V
+    init::S
 end
 
-MyRNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform) =
-MyRNNCell(σ, init(out, in), init(out, out), init(out))
+MyRNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform) = MyRNNCell(σ, init(out, in), init(out, out), zeros(Float32, out), zeros(Float32, out))
 
 function (m::MyRNNCell)(h, x)
     σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -46,10 +45,8 @@ function (m::MyRNNCell)(h, x)
     return h, h
 end
 
-hidden(m::MyRNNCell) = m.h
+init(m::MyRNNCell) = m.init
 Flux.@functor MyRNNCell
-
-MyRecur(m::MyRNNCell) = MyRecur(m, zeros(Float32, length(m.b)), zeros(Float32, length(m.b)))
 MyRNN(a...; ka...) = MyRecur(MyRNNCell(a...; ka...))
 
 ########################
@@ -87,8 +84,8 @@ function loss_gpu(x, y)
     return l
 end
 
-opt = Descent(1e-2)
-opt_gpu = Descent(1e-2)
+opt = ADAM(1e-3)
+opt_gpu = ADAM(1e-3)
 for i in 1:25
     println("iter: ", i)
     Flux.train!(loss, θ, [(X, Y)], opt)
