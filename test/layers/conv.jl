@@ -43,7 +43,7 @@ end
   @test sum(op) == prod(size(op))
 
   @testset "Zeros mapped through $lmap" for lmap in (identity, cpu, f32)
-    bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
+    bias = Conv((2,2), 1=>3, bias = Flux.Zeros()) |> lmap
     op = bias(ip)
     @test sum(op) ≈ 0.f0
     gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
