@@ -99,3 +99,16 @@ end
     stateless_gradtest_broadcasted(layer, x, y)
   end
 end
+
+@testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
+  l = cl((2,2), 1=>3, bias = Flux.Zeros()) |> gpu
+  ip = zeros(Float32, 28,28,1,1) |> gpu
+  if cl in BROKEN_LAYERS
+    @test_broken sum(l(ip)) ≈ 0.f0
+    @test_broken gradient(() -> sum(l(ip)), Flux.params(l)) isa Flux.Zygote.Grads
+  else
+    @test sum(l(ip)) ≈ 0.f0
+    gs = gradient(() -> sum(l(ip)), Flux.params(l))
+    @test gs[l.bias] === nothing
+  end
+end
