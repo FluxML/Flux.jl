@@ -131,8 +131,8 @@ end
 
 @testset "Zeros" begin
   m = Dense(randn(2,3), Zeros())
-  @test f64(m).b === m.b
-  @test f32(m).b === m.b
+  @test f64(m).b === m.b === Zeros()
+  @test f32(m).b === m.b === Zeros()
 end
 
 @testset "Stacking" begin
