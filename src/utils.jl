@@ -372,6 +372,7 @@ end
 function _restructure(m, xs)
   i = 0
   fmap(m) do x
+    x isa Zeros && return x
     x isa AbstractArray || return x
     x = reshape(xs[i.+(1:length(x))], size(x))
     i += length(x)
@@ -407,6 +408,7 @@ modifications to the weight vector (for example, with a hypernetwork).
 function destructure(m)
   xs = Zygote.Buffer([])
   fmap(m) do x
+    x isa Zeros && return x # We don't want to include any Zeros as we allow everything returned to be changed
     x isa AbstractArray && push!(xs, x)
     return x
   end

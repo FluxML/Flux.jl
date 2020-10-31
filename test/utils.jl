@@ -206,27 +206,36 @@ end
   @test typeof(l1.b) === typeof(l2.b)
   end
 
-  ZerosNoShape(::Integer) = Zeros()
+  ZerosNoShape(::Integer) = Zeros() # Just to get a readable name in testsets
+  @testset "loadparams!" begin 
+    import Flux: loadparams!
+    pararray(m) = mapreduce(l -> collect(params(l).order), vcat, m)
+    @testset "Bias type $bt" for bt in (zeros, Zeros, ZerosNoShape)
+      m = dm(bt)
+      loadparams!(m, params(m))
+      testdense(m, bt)
+    end
 
-  pararray(m) = mapreduce(l -> collect(params(l).order), vcat, m)
-
-  @testset "Dense bias type $bt" for bt in (zeros, Zeros, ZerosNoShape)
-    m = dm(bt)
-    Flux.loadparams!(m, params(m))
-    testdense(m, bt)
+    @testset "$b1 to $b2" for (b1, b2, be) in (
+      (zeros, ones, ones),          # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+      (ones, Zeros, zeros),         # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+      (Zeros, ones, Zeros),         # Load ones as bias to a model with Zeros as bias-> model bias does not change
+      (ones, ZerosNoShape, zeros),  # Load 0d Zeros as bias to a model with ones as bias -> model get zeros as bias   
+      #(ZerosNoShape, ones, ZerosNoShape), # Does not work as loadmodel! uses params which is backed by a set -> different number of parameters in models
+    )
+      m1 = dm(b1)
+      m2 = dm(b2)
+      loadparams!(m1, pararray(m2))
+      testdense(m1, be)
+    end
   end
 
-
-  @testset "$b1 to $b2" for (b1, b2, be) in (
-    (zeros, ones, ones),          # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-    (ones, Zeros, zeros),         # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-    (Zeros, ones, Zeros),         # Load ones as bias to a model with Zeros as bias-> model bias does not change
-    (ones, ZerosNoShape, zeros),  # Load 0d Zeros as bias to a model with ones as bias -> model get zeros as bias   
-    #(ZerosNoShape, ones, ZerosNoShape), # Does not work as loadmodel! uses params which is backed by a set -> different number of parameters in models
-  )
-    m1 = dm(b1)
-    m2 = dm(b2)
-    Flux.loadparams!(m1, pararray(m2))
-    testdense(m1, be)
+  @testset "destructure" begin
+    import Flux: destructure
+    @testset "Bias type $bt" for bt in (zeros, Zeros, ZerosNoShape)
+      m = dm(bt)
+      p, re = destructure(m)
+      testdense(re(p), bt)
+    end
   end
 end
