@@ -25,9 +25,9 @@ rnn.(1:10)  # apply to a sequence
 rnn.state   # 60
 ```
 """
-mutable struct Recur{T}
+mutable struct Recur{T,S}
   cell::T
-  state
+  state::S
 end
 
 function (m::Recur)(xs...)
@@ -58,16 +58,16 @@ flip(f, xs) = reverse(f.(reverse(xs)))
 
 # Vanilla RNN
 
-struct RNNCell{F,A,V}
+struct RNNCell{F,A,V,S}
   σ::F
   Wi::A
   Wh::A
   b::V
-  state::V
+  state::S
 end
 
 RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
-  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out))
+  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
@@ -105,7 +105,7 @@ function LSTMCell(in::Integer, out::Integer;
                   init = glorot_uniform,
                   initb = zeros,
                   init_state = zeros)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out), init_state(out)))
+  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out,1), init_state(out,1)))
   cell.b[gate(out, 2)] .= 1
   return cell
 end
@@ -143,15 +143,15 @@ LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # GRU
 
-struct GRUCell{A,V}
+struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state::V
+  state::S
 end
 
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
-  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out))
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
