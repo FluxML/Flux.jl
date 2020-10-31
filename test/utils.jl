@@ -133,6 +133,54 @@ end
   m = Dense(randn(2,3), Zeros())
   @test f64(m).b === m.b === Zeros()
   @test f32(m).b === m.b === Zeros()
+
+  @testset "gradients $op size $s" for op in (+,-,*), s in ((1,), (2,3))
+    o = ones(s)
+    z = zeros(s)
+    Zs = Zeros(s...)
+    Z0 = Zeros()
+
+    @testset "Explicit" begin
+      gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
+      g = gfun(o, z) 
+      @test gfun(o, Zs) == (g[1], nothing)
+      @test gfun(o, Z0) == (g[1], nothing)
+
+      g = gfun(z, o) 
+      @test gfun(Zs, o) == (nothing, g[2])
+      @test gfun(Z0, o) == (nothing, g[2])
+
+      @test gfun(Zs, Zs) == gfun(Z0, Z0) == gfun(Zs, Z0) == gfun(Z0, Zs) == (nothing, nothing)
+    end
+    
+    @testset "Implicit" begin
+      gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
+      g = gfun(o, z) 
+
+      gres = gfun(o, Zs)
+      @test gres[o] == g[o]
+      @test gres[Zs] === nothing
+
+      gres = gfun(o, Z0)
+      @test gres[o] == g[o]
+      @test gres[Z0] === nothing
+
+      g = gfun(z, o) 
+
+      gres = gfun(Zs, o)
+      @test gres[o] == g[o]
+      @test gres[Zs] === nothing
+
+
+      gres = gfun(Z0, o)
+      @test gres[o] == g[o]
+      @test gres[Z0] === nothing
+
+      gfunc(args...) = gfun(args...).grads |> values |> Tuple
+      @test gfunc(Zs, Zs) == gfunc(Z0, Z0) == (nothing,)
+      @test gfunc(Zs, Z0) == gfunc(Z0, Zs) == (nothing, nothing)
+    end
+  end
 end
 
 @testset "Stacking" begin

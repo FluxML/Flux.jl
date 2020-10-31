@@ -1,5 +1,6 @@
 import Base: +, -, *, reshape, size
 import Base.Broadcast: broadcasted, Broadcasted, BroadcastStyle
+import Zygote: unbroadcast
 
 """
     Zeros()
@@ -74,35 +75,49 @@ Base.copy(xs::Zeros{T,N}) where {T,N} = xs
 
 # Define broadcasting behaviour
 for op in (:+, :-)
-  @eval function broadcasted(::typeof($op), a::AbstractArray, b::Zeros)
+  @eval function broadcasted(::typeof($op), a::AbstractArray{<:Number}, b::Zeros)
     bs = Broadcast.broadcast_shape(size(a), size(b))
     size(a) == bs && return a
     sz = similar(a, bs)
     sz .= a
+    return sz
   end
 end
 
-broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
-broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
+# This is a bit of a whack-a-mole with avoiding ambiguity while still making sure we capture all signatures...
 
-function broadcasted(::typeof(*), a::AbstractArray, b::Zeros)
-  Zeros(Broadcast.broadcast_shape(size(a), size(b))...)
+@adjoint broadcasted(::typeof(+), a::AbstractArray{<:Number}, b::Zeros) = broadcasted(+, a, b), ā -> (nothing, unbroadcast(a, ā), nothing)
+@adjoint broadcasted(::typeof(+), a::Zeros, b::AbstractArray{<:Number}) = broadcasted(+, b, a), b̄ -> (nothing, nothing, unbroadcast(b, b̄))
+
+@adjoint broadcasted(::typeof(-), a::Zeros, b::AbstractArray{<:Number}) = broadcasted(+, -b, a), b̄ -> (nothing, nothing, -unbroadcast(b, b̄))
+@adjoint broadcasted(::typeof(-), a::AbstractArray{<:Number}, b::Zeros) = broadcasted(+, a, b), ā -> (nothing, unbroadcast(a, ā), nothing)
+
+@adjoint function broadcasted(::typeof(*), a::AbstractArray{T}, b::Zeros) where T<:Number 
+  zs = zeros(T, Broadcast.broadcast_shape(size(a), size(b))...)
+  zs, ā -> (nothing, unbroadcast(a, zs), nothing)
 end
 
-broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = broadcasted(*, b, a)
+@adjoint function broadcasted(::typeof(*), a::Zeros, b::AbstractArray{T}) where T<:Number 
+  zs = zeros(T, Broadcast.broadcast_shape(size(a), size(b))...)
+  zs, b̄ -> (nothing, nothing, unbroadcast(b, zs))
+end
 
 for op in (:+, :-, :*)
-  @eval broadcasted(::typeof($op), a::Zeros, b::Zeros) = Zeros(Broadcast.broadcast_shape(size(a), size(b))...)
+  @eval @adjoint broadcasted(::typeof($op), a::Zeros, b::Zeros) = Zeros(Broadcast.broadcast_shape(size(a), size(b))...), _ -> (nothing, nothing, nothing)
+  # To avoid ambiguity with 0-size Zeros below
+  @eval @adjoint broadcasted(::typeof($op), a::Zeros, b::Zeros{T, 0}) where T<:Number = a, _ -> (nothing, nothing, nothing)
+  @eval @adjoint broadcasted(::typeof($op), a::Zeros{T, 0}, b::Zeros{T, 0}) where T<:Number = a, _ -> (nothing, nothing, nothing)
+  @eval @adjoint broadcasted(::typeof($op), a::Zeros{T, 0}, b::Zeros) where T<:Number = a, _ -> (nothing, nothing, nothing)
 end
 
 # Some opportunities to avoid scalar indexing, intermediaries
 # Since it replicates a little of what we expect Base to do,
 # it should be possible to remove in the future, but for now,
 # these help with performance.
-broadcasted(::typeof(+), a::AbstractArray, b::Zeros{T,0}) where T = a
-broadcasted(::typeof(+), a::Zeros{T,0}, b::AbstractArray) where T = b
-broadcasted(::typeof(-), a::AbstractArray, b::Zeros{T,0}) where T = a
-broadcasted(::typeof(-), a::Zeros{T,0}, b::AbstractArray) where T = -b
-broadcasted(::typeof(*), a::AbstractArray, b::Zeros{T,0}) where T = zero(a)
-broadcasted(::typeof(*), a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
-broadcasted(::typeof(/), a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
+@adjoint broadcasted(::typeof(+), a::AbstractArray{T}, b::Zeros{<:Number,0}) where T<:Number = a, ā -> (nothing, unbroadcast(a, ā), nothing)
+@adjoint broadcasted(::typeof(+), a::Zeros{T,0}, b::AbstractArray{<:Number}) where T<:Number = b, b̄ -> (nothing, nothing, unbroadcast(b, b̄))
+@adjoint broadcasted(::typeof(-), a::AbstractArray{<:Number}, b::Zeros{T,0}) where T<:Number = a, ā -> (nothing, unbroadcast(a, ā), nothing)
+@adjoint broadcasted(::typeof(-), a::Zeros{T,0}, b::AbstractArray{<:Number}) where T<:Number = -b, b̄ -> (nothing, nothing, -unbroadcast(b, b̄))
+@adjoint broadcasted(::typeof(*), a::AbstractArray{<:Number}, b::Zeros{T,0}) where T<:Number = zero(a), ā -> (nothing, unbroadcast(a, Zeros(eltype(a), size(a)...)), nothing)
+@adjoint broadcasted(::typeof(*), a::Zeros{T,0}, b::AbstractArray{<:Number}) where T<:Number = zero(b), b̄ -> (nothing, nothing, unbroadcast(b, Zeros(eltype(b), size(b)...)))
+@adjoint broadcasted(::typeof(/), a::Zeros{T,0}, b::AbstractArray{<:Number}) where T<:Number = zero(b), b̄ -> (nothing, nothing, unbroadcast(b, Zeros(eltype(b), size(b)...)))
