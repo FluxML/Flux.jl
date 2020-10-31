@@ -1,11 +1,17 @@
-# v0.11.3
-* Added option to set `bias` to [false](https://github.com/FluxML/Flux.jl/pull/1379) to eliminating `bias` from being trained. 
+# Flux Release Notes
 
-# v0.11.2
+## v0.12.0
+
+* Excise datasets in favour of other providers in the julia ecosystem.
+* other new features and bug fixes (see GitHub's releases page)
+* Added option to set `bias` to [false](https://github.com/FluxML/Flux.jl/pull/1379) to eliminating `bias` from being trained.
+
+## v0.11.2
 
 * Adds the [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser.
+* other new features and bug fixes (see GitHub releases page)
 
-# v0.11
+## v0.11
 
 * Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
 * Add [kaiming initialization](https://arxiv.org/abs/1502.01852) methods: [kaiming_uniform and kaiming_normal](https://github.com/FluxML/Flux.jl/pull/1243)
@@ -29,11 +35,11 @@
 keyword argument. The `Dropout` struct *whose behavior is left unchanged) is the recommended choice for common usage.
 * and many more fixes and additions...
 
-# v0.10.1 - v0.10.4
+## v0.10.1 - v0.10.4
 
 See GitHub's releases.
 
-# v0.10.0
+## v0.10.0
 
 * The default AD engine has switched from [Tracker to Zygote.jl](https://github.com/FluxML/Flux.jl/pull/669)
   - The dependency on Tracker.jl has been removed.
@@ -47,13 +53,13 @@ See GitHub's releases.
 * `@treelike` has been formalised as a [functor](https://github.com/FluxML/Flux.jl/pull/865), with an effective deprecation.
 * `testmode!` is deprecated in favour of [istraining](https://github.com/FluxML/Flux.jl/pull/669)
 
-# v0.9.0
+## v0.9.0
 
 * [Depthwise convolutional layer API changes](https://github.com/FluxML/Flux.jl/pull/756) from `in => mult` channel specification to `in => out` channel specification, and deprecates implicit `out` constructor.
 * New [SkipConnection](https://github.com/FluxML/Flux.jl/pull/446), which can be used to train residual neural network architectures.
 * New [RADAM](https://github.com/FluxML/Flux.jl/pull/842) optimiser.
 
-# v0.8.0
+## v0.8.0
 
 * [Dropout now has a `dims` argument for specifying the unbroadcast dimensions.](https://github.com/FluxML/Flux.jl/pull/563)
 * New [ConvTranspose layer](https://github.com/FluxML/Flux.jl/pull/311).
@@ -77,6 +83,6 @@ AD Changes:
 * Support for [PermuteDimsArray](https://github.com/FluxML/Flux.jl/pull/576).
 * Flux.Tracker is now its [own package](https://github.com/FluxML/Tracker.jl), in preparation for replacing it with Zygote.
 
-# v0.7.0
+## v0.7.0
 
 Despite the heroic efforts of scholars and archeologists, pre-0.7 history is lost to the sands of time.
