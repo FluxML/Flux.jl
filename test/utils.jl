@@ -182,6 +182,27 @@ end
     end
   end
 
+  @testset "Gradients for broadcasted / with sizes $s" for s in ((1,), (2,3))
+    o = ones(s)
+    z = zeros(s)
+    Z = Zeros() # Only defined for 0-dim
+
+    @testset "Explicit" begin
+      gfun(args...) = gradient((x, y) -> sum(x ./ y), args...)
+      g = gfun(z, o) 
+      @test gfun(Z, o) == (nothing, g[2])
+    end
+
+    @testset "Implicit" begin
+      gfun(x,y) = gradient(() -> sum(x ./ y), params([x,y]))
+      
+      g = gfun(z, o) 
+      gres = gfun(Z, o)
+      @test gres[o] == g[o]
+      @test gres[Z] === nothing
+    end
+  end
+
   @testset "Gradients for $op with sizes $s" for op in (+,-), s in (tuple(), (1,), (2,3))
     o = ones(s)
     z = zeros(s)
