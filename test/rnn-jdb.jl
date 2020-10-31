@@ -64,6 +64,8 @@ function speed_gpu(n=10)
     return loss_gpu(X_gpu, Y_gpu)
 end
 
+@code_warntype rnn(X[1])
+
 @time speed_cpu(100)
 @time speed_gpu(100)
 
@@ -132,7 +134,7 @@ function speed_gpu(n=10)
     return loss_gpu(X_gpu, Y_gpu)
 end
 
-@code_warntype rnn(X)
+@code_warntype rnn(X[1])
 
 @time speed_cpu(100)
 @time speed_gpu(100)
@@ -197,7 +199,7 @@ function speed_gpu(n=10)
     return loss_gpu(X_gpu, Y_gpu)
 end
 
-@code_warntype rnn(X)
+@code_warntype rnn(X[1])
 
 @time speed_cpu(100)
 @time speed_gpu(100)
