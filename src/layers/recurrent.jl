@@ -27,18 +27,17 @@ rnn.state   # 60
 """
 mutable struct Recur{T}
   cell::T
-  init
   state
 end
 
-Recur(m, h = hidden(m)) = Recur(m, h, h)
-
 function (m::Recur)(xs...)
-  m.state, y = m.cell(m.state, xs...)
+  h, y = m.cell(m.state, xs...)
+  m.state = h
   return y
 end
 
-@functor Recur cell, init
+@functor Recur
+trainable(a::Recur) = (a.cell,)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -52,7 +51,7 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
 rnn.state = hidden(rnn.cell)
 ```
 """
-reset!(m::Recur) = (m.state = m.init)
+reset!(m::Recur) = (m.state = m.cell.state)
 reset!(m) = foreach(reset!, functor(m)[1])
 
 flip(f, xs) = reverse(f.(reverse(xs)))
@@ -64,18 +63,17 @@ struct RNNCell{F,A,V}
   Wi::A
   Wh::A
   b::V
+  state::V
 end
 
-RNNCell(in::Integer, out::Integer, σ = tanh; init = glorot_uniform) =
-  RNNCell(σ, init(out, in), init(out, out), init(out))
+RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
+  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
   return h, h
 end
-
-hidden(m::RNNCell) = m.h
 
 @functor RNNCell
 
@@ -91,20 +89,23 @@ end
 The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 """
-Recur(m::RNNCell) = Recur(m, zeros(length(m.b)), zeros(length(m.b)))
+Recur(m::RNNCell) = Recur(m, m.state)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
 # LSTM
 
-struct LSTMCell{A,V}
+struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
+  state::S
 end
 
 function LSTMCell(in::Integer, out::Integer;
-                  init = glorot_uniform)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), init(out * 4))
+                  init = glorot_uniform,
+                  initb = zeros,
+                  init_state = zeros)
+  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out), init_state(out)))
   cell.b[gate(out, 2)] .= 1
   return cell
 end
@@ -135,8 +136,9 @@ recurrent layer. Behaves like an RNN but generally exhibits a longer memory span
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
-Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
-  (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
+# Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
+#   (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
+Recur(m::LSTMCell) = Recur(m, m.state)
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # GRU
@@ -145,10 +147,11 @@ struct GRUCell{A,V}
   Wi::A
   Wh::A
   b::V
+  state::V
 end
 
-GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(init(out * 3, in), init(out * 3, out), init(out * 3))
+GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
@@ -174,7 +177,7 @@ RNN but generally exhibits a longer memory span over sequences.
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
-Recur(m::GRUCell) = Recur(m, zeros(length(m.b)÷3), zeros(length(m.b)÷3))
+Recur(m::GRUCell) = Recur(m, m.state)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
