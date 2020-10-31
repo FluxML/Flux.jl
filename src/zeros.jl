@@ -73,6 +73,10 @@ end
 
 Base.copy(xs::Zeros{T,N}) where {T,N} = xs
 
+Base.copyto!(dest::AbstractArray, ::Zeros) = copyto!(dest, zeros(size(dest)))
+Base.copyto!(dest::Zeros, ::AbstractArray) = dest
+Base.copyto!(dest::Zeros, ::Zeros) = dest
+
 # Define broadcasting behaviour
 for op in (:+, :-)
   @eval function broadcasted(::typeof($op), a::AbstractArray{<:Number}, b::Zeros)

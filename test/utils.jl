@@ -190,3 +190,43 @@ end
   @test stack(unstacked_array, 2) == stacked_array
   @test stack(unstack(stacked_array, 1), 1) == stacked_array
 end
+
+@testset "Param remapping" begin
+  ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...)
+  dl(nin, nout, bias) = Dense(ls(nin, nout), bias(nout)) 
+  dm(bias) = Chain(
+    dl(3, 5, bias),
+    dl(5, 4, bias),
+    dl(4, 3, bias)
+  )
+
+  testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
+  @test l1.W == l2.W
+  @test l1.b == l2.b
+  @test typeof(l1.b) === typeof(l2.b)
+  end
+
+  ZerosNoShape(::Integer) = Zeros()
+
+  pararray(m) = mapreduce(l -> collect(params(l).order), vcat, m)
+
+  @testset "Dense bias type $bt" for bt in (zeros, Zeros, ZerosNoShape)
+    m = dm(bt)
+    Flux.loadparams!(m, params(m))
+    testdense(m, bt)
+  end
+
+
+  @testset "$b1 to $b2" for (b1, b2, be) in (
+    (zeros, ones, ones),          # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+    (ones, Zeros, zeros),         # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+    (Zeros, ones, Zeros),         # Load ones as bias to a model with Zeros as bias-> model bias does not change
+    (ones, ZerosNoShape, zeros),  # Load 0d Zeros as bias to a model with ones as bias -> model get zeros as bias   
+    #(ZerosNoShape, ones, ZerosNoShape), # Does not work as loadmodel! uses params which is backed by a set -> different number of parameters in models
+  )
+    m1 = dm(b1)
+    m2 = dm(b2)
+    Flux.loadparams!(m1, pararray(m2))
+    testdense(m1, be)
+  end
+end

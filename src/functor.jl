@@ -61,7 +61,7 @@ mapleaves(f, x) = fmap(f, x)
 
 function loadparams!(m, xs)
   for (p, x) in zip(params(m), xs)
-    size(p) == size(x) ||
+    (any(y -> y isa Zeros, (p, x)) || size(p) == size(x)) ||
       error("Expected param size $(size(p)), got $(size(x))")
     copyto!(p, x)
   end
