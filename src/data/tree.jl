@@ -14,7 +14,7 @@ AbstractTrees.children(t::Tree) = t.children
 AbstractTrees.printnode(io::IO, t::Tree) = show(io, t.value)
 
 Base.show(io::IO, t::Type{Tree}) = print(io, "Tree")
-Base.show(io::IO, t::Type{Tree{T}}) where T = print(io, "Tree{", T, "}")
+Base.show(io::IO, t::Type{Tree{T}}) where T = print(io, "Tree{", @isdefined(T) ? T : :T, "}")
 
 function Base.show(io::IO, t::Tree)
   println(io, typeof(t))

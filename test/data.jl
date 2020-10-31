@@ -62,7 +62,7 @@
     θ = ones(2)
     X = zeros(2, 10)
     loss(x) = sum((x .- θ).^2)
-    d  = DataLoader(X) 
+    d  = DataLoader(X)
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ) < 1e-4
 
@@ -71,12 +71,12 @@
     X = ones(2, 10)
     Y = fill(2, 10)
     loss(x, y) = sum((y - x'*θ).^2)
-    d  = DataLoader((X, Y)) 
+    d  = DataLoader((X, Y))
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ .- 1) < 1e-10
 end
 
-@testset "CMUDict" begin 
+@testset "CMUDict" begin
     @test cmudict()["CATASTROPHE"] == :[K,AH0,T,AE1,S,T,R,AH0,F,IY0].args
 
     @test length(CMUDict.phones()) == 39
@@ -84,21 +84,21 @@ end
     @test length(CMUDict.symbols()) == 84
 end
 
-@testset "MNIST" begin 
+@testset "MNIST" begin
     @test MNIST.images()[1] isa Matrix
     @test MNIST.labels() isa Vector{Int64}
 end
 
-@testset "FashionMNIST" begin 
+@testset "FashionMNIST" begin
     @test FashionMNIST.images()[1] isa Matrix
     @test FashionMNIST.labels() isa Vector{Int64}
 end
 
-@testset "Sentiment" begin 
+@testset "Sentiment" begin
     @test Data.Sentiment.train() isa Vector{Data.Tree{Any}}
 end
 
-@testset "Iris" begin 
+@testset "Iris" begin
     @test Iris.features() isa Matrix
     @test size(Iris.features()) == (4,150)
 
@@ -113,4 +113,13 @@ end
 
     @test Housing.targets() isa Array{Float64}
     @test size(Housing.targets()) == (506, 1)
+end
+
+@testset "Tree show" begin
+    # testcase for issue #1354
+    # testing that methods(Base.show) does not throw. Having something more specific would be too fragile
+    buf = IOBuffer()
+    Base.show(buf, filter(x->x.module == Flux, methods(Base.show).ms))
+    str_repr = String(take!(buf))
+    @test !isempty(str_repr)
 end

@@ -2,11 +2,11 @@ using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy
 using Zygote: pullback
 
 
-@testset "Losses" begin 
+@testset "Losses" begin
 
 x = [1.,2.,3.]
 cx = gpu(x)
-@test crossentropy(x,x) ≈ crossentropy(cx,cx) 
+@test crossentropy(x,x) ≈ crossentropy(cx,cx)
 @test crossentropy(x,x, agg=identity) ≈ crossentropy(cx,cx, agg=identity) |> cpu
 @test crossentropy(x,x, agg=x->mean([1.0;2.0;3.0].*x)) ≈ crossentropy(cx,cx, agg=x->mean(gpu([1.0;2.0;3.0]).*x))
 
@@ -18,13 +18,13 @@ y = [1, 1, 0.]
 
 function gpu_gradtest(f, args...)
   args_gpu = gpu.(args)
-  
+
   l_cpu, back_cpu = pullback((args...) -> f(args...), args...)
   g_cpu = back_cpu(1)[1]
-  
+
   l_gpu, back_gpu = pullback((args_gpu...) -> f(args_gpu...), args_gpu...)
   g_gpu = back_gpu(1)[1]
-  
+
   @test l_cpu ≈ l_gpu
   @test g_gpu isa CuArray
   @test g_cpu ≈ collect(g_gpu) atol=1e-6

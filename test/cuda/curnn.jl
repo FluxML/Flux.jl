@@ -54,7 +54,7 @@ end
       Flux.onehotbatch(rand(1:10, batch_size), 1:10)
     cuohx = gpu(ohx)
     y = (rnn(ohx); rnn(ohx))
-    
+
     # TODO: FIX ERROR
     @test_broken 1 == 2
     # cuy = (curnn(cuohx); curnn(cuohx))
