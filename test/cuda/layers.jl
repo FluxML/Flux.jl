@@ -45,12 +45,13 @@ end
 
 # Repeats from Conv, CrossCor
 
-ConvZeros(args...) = Conv(args...; bias=Flux.Zeros())
-ConvTransposeZeros(args...) = ConvTranspose(args...; bias=Flux.Zeros())
-CrossCorZeros(args...) = CrossCor(args...; bias=Flux.Zeros())
-DepthwiseConvZeros(args...) = DepthwiseConv(args...;bias=Flux.Zeros())
+# Just to give testset in gradtest meaningful labels
+ConvNoBias(args...) = Conv(args...; bias=Flux.Zeros())
+ConvTransposeNoBias(args...) = ConvTranspose(args...; bias=Flux.Zeros())
+CrossCorNoBias(args...) = CrossCor(args...; bias=Flux.Zeros())
+DepthwiseConvNoBias(args...) = DepthwiseConv(args...;bias=Flux.Zeros())
 r = rand(Float32, 28, 28, 1, 1)
-conv_layers = [Conv, ConvZeros, ConvTranspose, ConvTransposeZeros, CrossCor, CrossCorZeros, DepthwiseConv, DepthwiseConvZeros]
+conv_layers = [Conv, ConvNoBias, ConvTranspose, ConvTransposeNoBias, CrossCor, CrossCorNoBias, DepthwiseConv, DepthwiseConvNoBias]
 gradtest("Conv", conv_layers, r, (2,2), 1=>3)
 
 pooling_layers = [MaxPool, MeanPool]
@@ -111,4 +112,13 @@ end
     gs = gradient(() -> sum(l(ip)), Flux.params(l))
     @test gs[l.bias] === nothing
   end
+end
+
+@testset "Dense with Zeros bias" begin
+  l = Dense(ones(Float32, 4,3), Flux.Zeros()) |> gpu
+  ip = zeros(Float32, 3, 7) |> gpu
+  
+  @test sum(l(ip)) ≈ 0.f0  
+  gs = gradient(() -> sum(l(ip)), Flux.params(l))
+  @test gs[l.b] === nothing
 end

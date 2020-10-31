@@ -68,8 +68,15 @@ for f in (:+, :-)
   end
 end
 
-+(a::Zeros, b::AbstractArray) = b + a
--(a::Zeros, b::AbstractArray) = -b + a
+# This is a bit of a whack-a-mole with avoiding ambiguity while still making sure we capture all signatures...
+@adjoint +(a::AbstractArray{<:Number}, b::Zeros) = a + b, ā -> (ā, nothing)
+@adjoint +(a::Zeros, b::AbstractArray{<:Number}) = b + a, b̄ -> (nothing, b̄)
+@adjoint +(a::Zeros, b::Zeros) = b + a, _ -> (nothing, nothing)
+
+@adjoint -(a::AbstractArray{<:Number}, b::Zeros) = a - b, ā -> (ā, nothing)
+@adjoint -(a::Zeros, b::AbstractArray{<:Number}) = -b + a, b̄ -> (nothing, -b̄)
+@adjoint -(a::Zeros{<:Number}, b::Zeros{<:Number}) = a - b, _ -> (nothing, nothing)
+
 
 Base.copy(xs::Zeros{T,N}) where {T,N} = xs
 
@@ -87,8 +94,6 @@ for op in (:+, :-)
     return sz
   end
 end
-
-# This is a bit of a whack-a-mole with avoiding ambiguity while still making sure we capture all signatures...
 
 @adjoint broadcasted(::typeof(+), a::AbstractArray{<:Number}, b::Zeros) = broadcasted(+, a, b), ā -> (nothing, unbroadcast(a, ā), nothing)
 @adjoint broadcasted(::typeof(+), a::Zeros, b::AbstractArray{<:Number}) = broadcasted(+, b, a), b̄ -> (nothing, nothing, unbroadcast(b, b̄))

@@ -134,7 +134,7 @@ end
   @test f64(m).b === m.b === Zeros()
   @test f32(m).b === m.b === Zeros()
 
-  @testset "gradients $op size $s" for op in (+,-,*), s in ((1,), (2,3))
+  @testset "Gradients for broadcasted $op with sizes $s" for op in (+,-,*), s in ((1,), (2,3))
     o = ones(s)
     z = zeros(s)
     Zs = Zeros(s...)
@@ -181,6 +181,41 @@ end
       @test gfunc(Zs, Z0) == gfunc(Z0, Zs) == (nothing, nothing)
     end
   end
+
+  @testset "Gradients for $op with sizes $s" for op in (+,-), s in (tuple(), (1,), (2,3))
+    o = ones(s)
+    z = zeros(s)
+    Z = Zeros(s...)
+
+
+    @testset "Explicit" begin
+      gfun(args...) = gradient((x, y) -> sum(op(x,y)), args...)
+
+      g = gfun(o, z) 
+      @test gfun(o, Z) == (g[1], nothing)
+
+      g = gfun(z, o) 
+      @test gfun(Z, o) == (nothing, g[2])
+
+      @test gfun(Z, Z) == (nothing, nothing)
+    end
+
+    @testset "Implicit" begin
+      gfun(args...) = gradient(() -> sum(op(args...)), params(collect(args)))
+      g = gfun(o, z) 
+      gres = gfun(o, Z)
+      @test gres[o] == g[o]
+      @test gres[Z] === nothing
+
+      g = gfun(z, o) 
+      gres = gfun(Z, o)
+      @test gres[o] == g[o]
+      @test gres[Z] === nothing
+
+      gfunc(args...) = gfun(args...).grads |> values |> Tuple
+      @test gfunc(Z, Z) == (nothing,)
+    end
+  end
 end
 
 @testset "Stacking" begin
@@ -201,9 +236,9 @@ end
   )
 
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
-  @test l1.W == l2.W
-  @test l1.b == l2.b
-  @test typeof(l1.b) === typeof(l2.b)
+    @test l1.W == l2.W
+    @test l1.b == l2.b
+    @test typeof(l1.b) === typeof(l2.b)
   end
 
   ZerosNoShape(::Integer) = Zeros() # Just to get a readable name in testsets
