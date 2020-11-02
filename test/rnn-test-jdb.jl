@@ -137,6 +137,8 @@ seq_len = 50
 batch_size = 256
 
 rnn = Chain(LSTM(feat, h_size),
+    LSTM(h_size, h_size),
+    LSTM(h_size, h_size),
   Dense(h_size, 1, σ),
   x -> reshape(x, :))
 
@@ -190,7 +192,7 @@ end
 @code_warntype rnn(X[1])
 
 @time speed_cpu(100)
-@time speed_gpu(100)
+@btime speed_gpu(100)
 
 
 #####################################
