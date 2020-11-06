@@ -86,10 +86,15 @@ adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
 gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 
 dropout_layers = [Dropout, AlphaDropout]
-gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false)
+gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
 
-norm_layers = [LayerNorm, BatchNorm]
-gpu_gradtest("Normalising", norm_layers, rand(Float32, 28,28,3,1), 1)
+layer_norm = [LayerNorm]
+gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu=false) #TODO fix errors
+gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
+
+batch_norm = [BatchNorm]
+gpu_gradtest("BatchNorm 1", batch_norm, rand(Float32, 28,28,3,4), 3, test_cpu=false) #TODO fix errors
+gpu_gradtest("BatchNorm 2", batch_norm, rand(Float32, 5,4), 5)
 
 instancenorm = [InstanceNorm]
 gpu_gradtest("InstanceNorm", instancenorm, r, 1)

@@ -53,10 +53,14 @@ end
     cuohx = gpu(ohx)
     y = (rnn(ohx); rnn(ohx))
 
-    # TODO: FIX ERROR
-    @test_broken begin
+    if batch_size == 1
       cuy = (curnn(cuohx); curnn(cuohx))
-      y ≈ collect(cuy)
+      @test y ≈ collect(cuy)  
+    else 
+      @test_broken begin
+        cuy = (curnn(cuohx); curnn(cuohx))
+        y ≈ collect(cuy)
+      end
     end
   end
 end
