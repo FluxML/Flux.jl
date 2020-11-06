@@ -6,6 +6,7 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.julia-version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
