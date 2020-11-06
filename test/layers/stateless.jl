@@ -7,8 +7,8 @@ using Flux: flatten
     @test size(flatten(x)) == (300, 2)
   end
 
-  @testset "normalize" begin
+  @testset "normalise" begin
     x = randn(Float32, 3, 2, 2)
-    @test normalize(x) == normalize(x; dims=3)
+    @test normalise(x) == normalise(x; dims=3)
   end
 end
