@@ -77,11 +77,17 @@ const stateless_layers = [Flux.normalise]
 const stateless_layers_broadcasted = []
 
 function stateless_gradtest(f, args...)
-  @test gradient((args...) -> sum(f(args...)), args...)[1] isa CuArray
+  g_gpu = gradient((args...) -> sum(f(args...)), args...)[1] 
+  g_cpu = gradient((args...) -> sum(f(args...)), cpu.(args)...)[1] 
+  @test g_cpu isa CuArray
+  @test Array(g_cpu) ≈ g_cpu
 end
 
 function stateless_gradtest_broadcasted(f, args...)
-  @test gradient((args...) -> sum(f.(args...)), args...)[1] isa CuArray
+  g_gpu = gradient((args...) -> sum(f.(args...)), args...)[1] 
+  g_cpu = gradient((args...) -> sum(f.(args...)), cpu.(args)...)[1] 
+  @test g_cpu isa CuArray
+  @test Array(g_cpu) ≈ g_cpu  
 end
 
 @testset "Stateless GPU grad tests" begin
@@ -91,6 +97,8 @@ end
   for layer in stateless_layers
     if layer == Flux.normalise
       stateless_gradtest(x -> layer(x, dims=1), x)
+      stateless_gradtest(x -> layer(x, dims=2), x)
+      stateless_gradtest(x -> layer(x), x)
     else
       stateless_gradtest(layer, x, y)
     end

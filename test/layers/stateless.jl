@@ -9,6 +9,6 @@ using Flux: flatten
 
   @testset "normalise" begin
     x = randn(Float32, 3, 2, 2)
-    @test normalise(x) == normalise(x; dims=3)
+    @test Flux.normalise(x) == Flux.normalise(x; dims=3)
   end
 end
