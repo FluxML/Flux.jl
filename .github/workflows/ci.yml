@@ -46,16 +46,19 @@ jobs:
         with:
           version: '1'
       - run: |
+          git config --global user.name name
+          git config --global user.email email
+          git config --global github.user username
+      - run: |
           julia --project=docs -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using DocumenterGitHubActions
-            DocMeta.setdocmeta!(DocumenterGitHubActions, :DocTestSetup, :(using DocumenterGitHubActions); recursive=true)
-            doctest(DocumenterGitHubActions)'
+            using Documenter: doctest
+            using Flux
+            doctest(Flux)'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
