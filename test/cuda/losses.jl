@@ -20,11 +20,7 @@ y = [1, 1, 0.]
   y = rand(Float32, 3,3)
 
   for loss in ALL_LOSSES
-    # if loss == Flux.Losses.huber_loss  # remove when fixed
-    #   @test_broken (gpu_gradtest(loss, x, y); 1==1)  #throws error
-    # else
     gpu_gradtest(loss, x, y)
-    # end
   end
 end
 
