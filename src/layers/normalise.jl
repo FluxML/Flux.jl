@@ -9,10 +9,8 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
-# TODO set active's default to true in v0.12
-# or deprecate the keyword altogheter
 """
-    dropout(x, p; dims=:, active::Bool)
+    dropout(x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -30,13 +28,13 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(x, p; dims=:, active::Bool)
+function dropout(x, p; dims=:, active::Bool=true)
   active || return x
   y = dropout_mask(x, p, dims=dims)
   return x .* y
 end
 
-@adjoint function dropout(x, p; dims=:, active::Bool)
+@adjoint function dropout(x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
   y = dropout_mask(x, p, dims=dims)
   return x .* y, Δ -> (Δ .* y, nothing)
@@ -49,7 +47,7 @@ function dropout_mask(x, p; dims=:)
 end
 
 """
-    Dropout(p, dims = :)
+    Dropout(p, dims=:)
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
@@ -61,12 +59,9 @@ mutable struct Dropout{F,D}
   active::Union{Bool, Nothing}
 end
 
-# TODO: deprecate in v0.11
-Dropout(p, dims) = Dropout(p, dims, nothing)
-
-function Dropout(p; dims = :)
+function Dropout(p; dims=:)
   @assert 0 ≤ p ≤ 1
-  Dropout{typeof(p),typeof(dims)}(p, dims, nothing)
+  Dropout(p, dims, nothing)
 end
 
 function (a::Dropout)(x)
@@ -74,7 +69,7 @@ function (a::Dropout)(x)
   return dropout(x, a.p; dims = a.dims, active=true)
 end
 
-testmode!(m::Dropout, mode = true) =
+testmode!(m::Dropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, d::Dropout)
@@ -179,9 +174,6 @@ mutable struct BatchNorm{F,V,W,N}
   active::Union{Bool, Nothing}
 end
 
-# TODO: deprecate in v0.11
-BatchNorm(λ, β, γ, μ, σ², ϵ, momentum) = BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
-
 BatchNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   BatchNorm(λ, initβ(chs), initγ(chs),
@@ -245,7 +237,6 @@ mutable struct InstanceNorm{F,V,W,N}
   active::Union{Bool, Nothing}
 end
 
-# TODO: deprecate in v0.11
 """
     InstanceNorm(channels::Integer, σ = identity;
                  initβ = zeros, initγ = ones,
@@ -274,8 +265,6 @@ m = Chain(
   softmax)
 ```
 """
-InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum) = InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, nothing)
-
 InstanceNorm(chs::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
   InstanceNorm(λ, initβ(chs), initγ(chs),
@@ -365,9 +354,6 @@ mutable struct GroupNorm{F,V,W,N,T}
   momentum::N
   active::Union{Bool, Nothing}
 end
-
-# TODO: deprecate in v0.11
-GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum) = GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, nothing)
 
 GroupNorm(chs::Integer, G::Integer, λ = identity;
           initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
