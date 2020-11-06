@@ -210,7 +210,6 @@ end
 
 end
 
-if VERSION >= v"1.1"
 @testset "GroupNorm" begin
   # begin tests
   squeeze(x) = dropdims(x, dims = tuple(findall(size(x) .== 1)...)) # To remove all singular dimensions
@@ -309,5 +308,4 @@ if VERSION >= v"1.1"
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end
-end
 end

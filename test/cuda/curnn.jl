@@ -54,8 +54,9 @@ end
     y = (rnn(ohx); rnn(ohx))
 
     # TODO: FIX ERROR
-    @test_broken 1 == 2
-    # cuy = (curnn(cuohx); curnn(cuohx))
-    # @test y ≈ collect(cuy)
+    @test_broken begin
+      cuy = (curnn(cuohx); curnn(cuohx))
+      y ≈ collect(cuy)
+    end
   end
 end
