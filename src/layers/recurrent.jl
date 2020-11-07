@@ -56,7 +56,7 @@ reset!(m) = foreach(reset!, functor(m)[1])
 function Base.getproperty(m::Recur, sym::Symbol)
   if sym === :init
     @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
-    return getfield(m.cell, sym)
+    return getfield(m.cell, :state0)
   else
     return getfield(m, sym)
   end
@@ -97,12 +97,12 @@ end
 The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 """
-Recur(m::RNNCell) = Recur(m, m.state)
+Recur(m::RNNCell) = Recur(m, m.state0)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
 function Base.getproperty(m::RNNCell, sym::Symbol)
   if sym === :h
-    @warn "RNNCell field :h has been deprecated for m::RNNCell.state0."
+    @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
     return getfield(m, :state0)
   else
     return getfield(m, sym)
@@ -155,15 +155,15 @@ for a good overview of the internals.
 """
 # Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
 #   (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
-Recur(m::LSTMCell) = Recur(m, m.state)
+Recur(m::LSTMCell) = Recur(m, m.state0)
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 function Base.getproperty(m::LSTMCell, sym::Symbol)
   if sym === :h
-    @warn "LSTMCell field :h has been deprecated for m::LSTMCell.state0[1]."
+    @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
     return getfield(m, :state0)[1]
   elseif sym === :c
-      @warn "LSTMCell field :c has been deprecated for m::LSTMCell.state0[2]."
+      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
       return getfield(m, :state0)[2]
   else
     return getfield(m, sym)
@@ -206,12 +206,12 @@ RNN but generally exhibits a longer memory span over sequences.
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
-Recur(m::GRUCell) = Recur(m, m.state)
+Recur(m::GRUCell) = Recur(m, m.state0)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 
 function Base.getproperty(m::GRUCell, sym::Symbol)
   if sym === :h
-    @warn "GRUCell field :h has been deprecated for m::GRUCell.state0."
+    @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
     return getfield(m, :state0)
   else
     return getfield(m, sym)
