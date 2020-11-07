@@ -101,16 +101,16 @@ end
   m = Dense(10, 5)
   @test size.(params(m)) == [(5, 10), (5,)]
   m = RNN(10, 5)
-  @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5,)]
+  @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Layer duplicated in same chain, params just once pls.
   c = Chain(m, m)
-  @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5,)]
+  @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Self-referential array. Just want params, no stack overflow pls.
   r = Any[nothing,m]
   r[1] = r
-  @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5,)]
+  @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
 end
 
 @testset "Basic Stacking" begin

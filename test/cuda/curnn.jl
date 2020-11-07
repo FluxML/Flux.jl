@@ -8,7 +8,7 @@ using Flux: pullback
   Flux.reset!(m)
   θ = gradient(() -> sum(m(x)), params(m))
   @test x isa CuArray
-  @test_broken θ[m.cell.Wi] isa CuArray
+  @test θ[m.cell.Wi] isa CuArray
   @test_broken collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
 end
 
@@ -20,16 +20,14 @@ end
     Flux.reset!(rnn)
     Flux.reset!(curnn)
     x = batch_size == 1 ?
-      rand(10) :
-      rand(10, batch_size)
+      rand(Float32, 10) :
+      rand(Float32, 10, batch_size)
     cux = gpu(x)
 
     y, back = pullback((r, x) -> r(x), rnn, x)
     cuy, cuback = pullback((r, x) -> r(x), curnn, cux)
 
     @test y ≈ collect(cuy)
-
-    @test haskey(Flux.CUDAint.descs, curnn.cell)
 
     ȳ = randn(size(y))
     m̄, x̄ = back(ȳ)

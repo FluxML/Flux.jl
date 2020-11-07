@@ -1,9 +1,12 @@
 module CUDAint
 
 using ..CUDA
-
 using CUDA: CUDNN
-include("curnn.jl")
+
+import ..Flux: Flux
+import Zygote
+using Zygote: @adjoint
+
 include("cudnn.jl")
 
 end

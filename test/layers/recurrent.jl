@@ -1,6 +1,6 @@
 # Ref FluxML/Flux.jl#1209
 @testset "BPTT" begin
-  seq = [rand(2) for i = 1:3]
+  seq = [rand(Float32, (2,1)) for i = 1:3]
   for r ∈ [RNN,]
     rnn = r(2,3)
     Flux.reset!(rnn)
@@ -11,7 +11,7 @@
     bptt = gradient(Wh->sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
                                   tanh.(rnn.cell.Wi * seq[2] + Wh *
                                         tanh.(rnn.cell.Wi * seq[1] +
-                                            Wh * rnn.init
+                                            Wh * rnn.cell.state
                                         + rnn.cell.b)
                                   + rnn.cell.b)
                             + rnn.cell.b)),
