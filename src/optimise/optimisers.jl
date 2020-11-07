@@ -171,11 +171,11 @@ ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
 
 function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
+  mt, vt, βp = get!(() -> (zero(x), zero(x), Float64[β[1], β[2]]), o.state, x)::Tuple{typeof(x),typeof(x),Vector{Float64}}
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
-  o.state[x] = (mt, vt, βp .* β)
+  βp .= βp .* β
   return Δ
 end
 
