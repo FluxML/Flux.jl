@@ -31,8 +31,7 @@ mutable struct Recur{T,S}
 end
 
 function (m::Recur)(xs...)
-  h, y = m.cell(m.state, xs...)
-  m.state = h
+  m.state, y = m.cell(m.state, xs...)
   return y
 end
 
@@ -51,8 +50,17 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
 rnn.state = hidden(rnn.cell)
 ```
 """
-reset!(m::Recur) = (m.state = m.cell.state)
+reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
+
+function Base.getproperty(m::Recur, sym::Symbol)
+  if sym === :init
+    @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    return getfield(m.cell, sym)
+  else
+    return getfield(m, sym)
+  end
+end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
@@ -63,7 +71,7 @@ struct RNNCell{F,A,V,S}
   Wi::A
   Wh::A
   b::V
-  state::S
+  state0::S
 end
 
 RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
@@ -92,13 +100,22 @@ output fed back into the input each time step.
 Recur(m::RNNCell) = Recur(m, m.state)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
+function Base.getproperty(m::RNNCell, sym::Symbol)
+  if sym === :h
+    @warn "RNNCell field :h has been deprecated for m::RNNCell.state0."
+    return getfield(m, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
+
 # LSTM
 
 struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state::S
+  state0::S
 end
 
 function LSTMCell(in::Integer, out::Integer;
@@ -141,13 +158,25 @@ for a good overview of the internals.
 Recur(m::LSTMCell) = Recur(m, m.state)
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
+function Base.getproperty(m::LSTMCell, sym::Symbol)
+  if sym === :h
+    @warn "LSTMCell field :h has been deprecated for m::LSTMCell.state0[1]."
+    return getfield(m, :state0)[1]
+  elseif sym === :c
+      @warn "LSTMCell field :c has been deprecated for m::LSTMCell.state0[2]."
+      return getfield(m, :state0)[2]
+  else
+    return getfield(m, sym)
+  end
+end
+
 # GRU
 
 struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state::S
+  state0::S
 end
 
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
@@ -159,7 +188,7 @@ function (m::GRUCell)(h, x)
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1 .- z).*h̃ .+ z.*h
+  h′ = (1 .- z) .* h̃ .+ z .* h
   return h′, h′
 end
 
@@ -179,6 +208,15 @@ for a good overview of the internals.
 """
 Recur(m::GRUCell) = Recur(m, m.state)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+
+function Base.getproperty(m::GRUCell, sym::Symbol)
+  if sym === :h
+    @warn "GRUCell field :h has been deprecated for m::GRUCell.state0."
+    return getfield(m, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
 
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
   Zygote.∇map(__context__, f, args...)
