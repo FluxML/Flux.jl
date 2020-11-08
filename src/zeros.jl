@@ -11,11 +11,14 @@ Useful to turn bias off for a forward pass of a layer.
 ## Examples
 
 ```julia-repl
-julia> bias_less_conv = Conv((2,2), 1=>3, bias = Flux.Zeros())
+julia> bias_less_conv = Conv((2,2), 1=>3; bias = false)
 Conv((2, 2), 1=>3)
 
-julia> bias_less_dense = Dense(10, 2, initb = Zeros)
-Dense(10, 2)
+julia> params(bias_less_conv) |> length
+1
+
+julia> bias_less_conv.bias
+Flux.Zeros()
 ```
 """
 struct Zeros end

@@ -130,7 +130,7 @@ end
 end
 
 @testset "Zeros" begin
-  m = Dense(randn(2,3), Zeros())
+  m = Dense(3,2; bias=false)
   @test f64(m).b === m.b === Zeros()
   @test f32(m).b === m.b === Zeros()
 
