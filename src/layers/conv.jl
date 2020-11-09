@@ -209,6 +209,8 @@ Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
 `in` and `out` specify the number of input and output channels.
 
+Note that `pad=SamePad()` here tries to ensure `size(output,d) == size(x,d) * stride`.
+
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
 
@@ -318,7 +320,7 @@ end
     DepthwiseConv(filter, in=>out, σ = identity; [stride = 1, pad = 0, dilation = 1])
 
 Depthwise convolutional layer. `filter` is a tuple of integers
-specifying the size of the convolutional kernel;
+specifying the size of the convolutional kernel, while
 `in` and `out` specify the number of input and output channels.
 
 Note that `out` must be an integer multiple of `in`.
@@ -337,8 +339,10 @@ DepthwiseConv((5, 5), 3=>6, relu)
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
-```
 
+julia> DepthwiseConv((5,5), 3 => 9, stride=2, pad=2)(xs) |> size
+(50, 50, 9, 50)
+```
 """
 struct DepthwiseConv{N,M,F,A,V}
   σ::F
@@ -445,6 +449,9 @@ CrossCor((5, 5), 3=>6, relu)
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
+
+julia> CrossCor((5,5), 3=>7, stride=3, pad=(2,0))(xs) |> size
+(34, 32, 7, 50)
 ```
 """
 struct CrossCor{N,M,F,A,V}
