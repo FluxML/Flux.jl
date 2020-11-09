@@ -97,11 +97,11 @@ struct Conv{N,M,F,A,V}
 end
 
 """
-    Conv(weight::AbstractArray, bias, σ = identity; [stride, pad, dilation])
-    Conv(; weight, [bias, activation, stride, pad, dilation])
+    Conv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
+    Conv(; weight, bias, [activation, stride, pad, dilation])
 
 Constructs a convolutional layer with the given weight and bias arrays.
-Accepts the same keywords as the `Conv((4,4), 3=>7, relu)` constructor.
+Accepts the same keywords as the `Conv((4,4), 3=>7, relu)` method.
 
 # Examples
 ```jldoctest
@@ -203,7 +203,7 @@ outdims(l::Conv, isize) =
   output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
-    ConvTranspose(filter, in => out, [σ = identity; stride = 1, pad = 0, dilation = 1])
+    ConvTranspose(filter, in => out, σ = identity; [stride = 1, pad = 0, dilation = 1])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -236,10 +236,10 @@ end
 
 """
     ConvTranspose(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    ConvTranspose(; weight, [bias, activation, stride, pad, dilation])
+    ConvTranspose(; weight, bias, [activation, stride, pad, dilation])
 
 Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `ConvTranspose((4,4), 3=>7, relu)` constructor.
+Accepts the same keywords as the `ConvTranspose((4,4), 3=>7, relu)` method.
 """
 function ConvTranspose(w::AbstractArray{T,N}, b::Union{Bool,AbstractVector{T}}, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
@@ -309,7 +309,7 @@ function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilat
 end
 
 """
-    DepthwiseConv(filter, in=>out, [σ = identity, stride = 1, pad = 0, dilation = 1])
+    DepthwiseConv(filter, in=>out, σ = identity; [stride = 1, pad = 0, dilation = 1])
 
 Depthwise convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -345,10 +345,10 @@ end
 
 """
     DepthwiseConv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    DepthwiseConv(; weight, [bias, activation, stride, pad, dilation])
+    DepthwiseConv(; weight, bias, [activation, stride, pad, dilation])
 
 Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `DepthwiseConv((4,4), 3=>6, relu)` constructor.
+Accepts the same keywords as the `DepthwiseConv((4,4), 3=>6, relu)` method.
 """
 function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
@@ -452,10 +452,10 @@ end
 
 """
     CrossCor(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    CrossCor(; weight, [bias, activation, stride, pad, dilation])
+    CrossCor(; weight, bias, [activation, stride, pad, dilation])
 
 Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `CrossCor((4,4), 3=>7, relu)` constructor.
+Accepts the same keywords as the `CrossCor((4,4), 3=>7, relu)` method.
 """
 function CrossCor(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
@@ -517,7 +517,7 @@ Adaptive max pooling layer. Calculates the necessary window size
 such that its output has `size(y)[1:N] == out`.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
-batch dimensions, where `N == length(window)`.
+batch dimensions, where `N == length(out)`.
 
 See also [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 
@@ -558,7 +558,7 @@ Adaptive mean pooling layer. Calculates the necessary window size
 such that its output has `size(y)[1:N] == out`.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
-batch dimensions, where `N == length(window)`.
+batch dimensions, where `N == length(out)`.
 
 See also [`MaxPool`](@ref), [`AdaptiveMaxPool`](@ref).
 
