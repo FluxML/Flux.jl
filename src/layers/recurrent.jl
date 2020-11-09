@@ -53,6 +53,7 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
+# TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
   if sym === :init
     @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
@@ -100,6 +101,7 @@ output fed back into the input each time step.
 Recur(m::RNNCell) = Recur(m, m.state0)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 
+# TODO remove in v0.13
 function Base.getproperty(m::RNNCell, sym::Symbol)
   if sym === :h
     @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
@@ -158,6 +160,7 @@ for a good overview of the internals.
 Recur(m::LSTMCell) = Recur(m, m.state0)
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
+# TODO remove in v0.13
 function Base.getproperty(m::LSTMCell, sym::Symbol)
   if sym === :h
     @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
@@ -209,6 +212,7 @@ for a good overview of the internals.
 Recur(m::GRUCell) = Recur(m, m.state0)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 
+# TODO remove in v0.13
 function Base.getproperty(m::GRUCell, sym::Symbol)
   if sym === :h
     @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
