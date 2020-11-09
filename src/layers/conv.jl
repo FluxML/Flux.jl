@@ -223,6 +223,12 @@ ConvTranspose((5, 5), 3=>7, relu)
 
 julia> lay(xs) |> size
 (104, 104, 7, 50)
+
+julia> ConvTranspose((5,5), 3=>7, stride=2, bias=false)(xs) |> size
+(203, 203, 7, 50)
+
+julia> ConvTranspose((5,5), 3=>7, stride=3, pad=SamePad(), bias=false)(xs) |> size
+(300, 300, 7, 50)
 ```
 """
 struct ConvTranspose{N,M,F,A,V}
