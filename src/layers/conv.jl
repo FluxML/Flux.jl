@@ -687,7 +687,7 @@ See also [`Conv`](@ref), [`MeanPool`](@ref), [`AdaptiveMaxPool`](@ref), [`Global
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
-julia> c
+julia> m = Chain(Conv((5, 5), 3=>7), MaxPool((5, 5), pad = 2))
 Chain(Conv((5, 5), 3=>7), MaxPool((5, 5), pad = 2, stride = (5, 5)))
 
 julia> m[1](xs) |> size
