@@ -522,7 +522,7 @@ batch dimensions, where `N == length(out)`.
 See also [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 
 # Examples
-```jldocstring
+```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
 julia> AdaptiveMaxPool((25, 25))(xs) |> size
@@ -563,7 +563,7 @@ batch dimensions, where `N == length(out)`.
 See also [`MaxPool`](@ref), [`AdaptiveMaxPool`](@ref).
 
 # Examples
-```jldocstring
+```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
 julia> AdaptiveMeanPool((25, 25))(xs) |> size
@@ -602,7 +602,7 @@ by performing max pooling on the complete (w,h)-shaped feature maps.
 
 See also [`MaxPool`](@ref), [`GlobalMeanPool`](@ref).
 
-```jldocstring
+```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
 julia> m = Chain(Conv((3,3), 3=>7), GlobalMaxPool())
@@ -640,7 +640,7 @@ Global mean pooling layer.
 Transforms (w,h,c,b)-shaped input into (1,1,c,b)-shaped output,
 by performing mean pooling on the complete (w,h)-shaped feature maps.
 
-```jldocstring
+```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
 julia> m = Chain(Conv((3,3), 3=>7), GlobalMeanPool())
