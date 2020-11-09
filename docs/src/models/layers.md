@@ -24,7 +24,6 @@ ConvTranspose
 CrossCor
 SamePad
 flatten
-Flux.Zeros
 Flux.convfilter
 Flux.depthwiseconvfilter
 ```

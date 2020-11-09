@@ -46,7 +46,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
+Setting `bias` to `false` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -82,7 +82,7 @@ end
 
 Constructs the convolutional layer with user defined weight and bias arrays.
 
-Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
+Setting `bias` to `false` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -102,15 +102,16 @@ Conv(weight = weight,
     σ = sigmoid)
 ```
 """
-function Conv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
+function Conv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
-  return Conv(σ, w, b, stride, pad, dilation)
+  bias = create_bias(b, zeros, size(w, N)) 
+  return Conv(σ, w, bias, stride, pad, dilation)
 end
 
-function Conv(;weight::AbstractArray{T,N}, bias::Union{Zeros, AbstractVector{T}},
+function Conv(;weight::AbstractArray{T,N}, bias::Union{Bool, Zeros, AbstractVector{T}},
               activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
   Conv(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
 end
@@ -131,7 +132,7 @@ convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
             init = glorot_uniform,  stride = 1, pad = 0, dilation = 1,
-            weight = convfilter(k, ch, init = init), bias = zeros(ch[2])) where N
+            weight = convfilter(k, ch, init = init), bias = true) where N
 
   Conv(weight, bias, σ,
       stride = stride, pad = pad, dilation = dilation)
@@ -189,7 +190,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
+Setting `bias` to `false` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -215,7 +216,7 @@ end
 Constructs the convolutional transpose layer with user defined weight and bias arrays.
 forward pass.
 
-Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
+Setting `bias` to `false` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -226,22 +227,23 @@ indicating padding values for each spatial dimension at both the ends.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
-function ConvTranspose(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
+function ConvTranspose(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  return ConvTranspose(σ, w, b, stride, pad, dilation)
+  bias = create_bias(b, zeros, size(w, N)) 
+  return ConvTranspose(σ, w, bias, stride, pad, dilation)
 end
 
-function ConvTranspose(;weight::AbstractArray{T,N}, bias::Union{Zeros, AbstractVector{T}},
+function ConvTranspose(;weight::AbstractArray{T,N}, bias::Union{Bool, Zeros, AbstractVector{T}},
                         activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
   ConvTranspose(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
 end
 
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                      weight = convfilter(k, reverse(ch), init = init), bias = zeros(ch[2])) where N
+                      weight = convfilter(k, reverse(ch), init = init), bias = true) where N
 
   ConvTranspose(weight, bias, σ,
               stride = stride, pad = pad, dilation = dilation)
@@ -307,7 +309,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
+Setting `bias` to `false` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -333,7 +335,7 @@ end
 Constructs the `DepthwiseConv` layer with user defined weight and bias arrays.
 forward pass.
 
-Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
+Setting `bias` to `false` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -344,15 +346,16 @@ indicating padding values for each spatial dimension at both the ends.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
+function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(DepthwiseConv, pad, size(w)[1:N-2], dilation, stride)
-  return DepthwiseConv(σ, w, b, stride, pad, dilation)
+  bias = create_bias(b, zeros, prod(size(w)[N-1:end])) 
+  return DepthwiseConv(σ, w, bias, stride, pad, dilation)
 end
 
-function DepthwiseConv(;weight::AbstractArray{T,N}, bias::Union{Zeros, AbstractVector{T}},
+function DepthwiseConv(;weight::AbstractArray{T,N}, bias::Union{Bool, Zeros, AbstractVector{T}},
                       activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
   DepthwiseConv(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
 end
@@ -373,7 +376,7 @@ depthwiseconvfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                      weight = depthwiseconvfilter(k, ch, init = init), bias = zeros(ch[2])) where N
+                      weight = depthwiseconvfilter(k, ch, init = init), bias = true) where N
   @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
 
   return DepthwiseConv(
@@ -424,7 +427,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 
 Accepts keyword arguments `weight` and `bias` to set the corresponding fields.
-Setting `bias` to `Flux.Zeros()` will switch bias off for the layer.
+Setting `bias` to `false` will switch bias off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -461,7 +464,7 @@ end
 Constructs the standard cross convolutional layer with user defined weight and bias
 arrays.
 
-Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
+Setting `bias` to `false` would switch `bias` off for the layer.
 
 Takes the keyword arguments `pad`, `stride` and `dilation`.
 For input dimension N,
@@ -472,22 +475,23 @@ indicating padding values for each spatial dimension at both the ends.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
-function CrossCor(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
+function CrossCor(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
-  return CrossCor(σ, w, b, stride, pad, dilation)
+  bias = create_bias(b, zeros, size(w, N)) 
+  return CrossCor(σ, w, bias, stride, pad, dilation)
 end
 
-function CrossCor(;weight::AbstractArray{T,N}, bias::Union{Zeros, AbstractVector{T}},
+function CrossCor(;weight::AbstractArray{T,N}, bias::Union{Bool, Zeros, AbstractVector{T}},
                       activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
   CrossCor(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
 end
 
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                   init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                  weight = convfilter(k, ch, init = init), bias = zeros(ch[2])) where N
+                  weight = convfilter(k, ch, init = init), bias = true) where N
 
   CrossCor(weight, bias, σ,
        stride = stride, pad = pad, dilation = dilation)
