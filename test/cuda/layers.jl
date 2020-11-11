@@ -62,8 +62,6 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu=nothing, args...; test
   end
 end
 
-<<<<<<< HEAD
-# Repeats from Conv, CrossCor
 
 # Just to give testset in gradtest meaningful labels
 ConvNoBias(args...) = Conv(args...; bias=false)
@@ -72,12 +70,7 @@ CrossCorNoBias(args...) = CrossCor(args...; bias=false)
 DepthwiseConvNoBias(args...) = DepthwiseConv(args...;bias=false)
 r = rand(Float32, 28, 28, 1, 1)
 conv_layers = [Conv, ConvNoBias, ConvTranspose, ConvTransposeNoBias, CrossCor, CrossCorNoBias, DepthwiseConv, DepthwiseConvNoBias]
-gradtest("Conv", conv_layers, r, (2,2), 1=>3)
-=======
-r = rand(Float32, 28, 28, 1, 1)
-conv_layers = [Conv, ConvTranspose, CrossCor, DepthwiseConv]
 gpu_gradtest("Conv", conv_layers, r, (2,2), 1=>3)
->>>>>>> cda20abb (revamp tests)
 
 pooling_layers = [MaxPool, MeanPool]
 gpu_gradtest("Pooling", pooling_layers, r, (2,2))
