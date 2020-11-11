@@ -1,5 +1,4 @@
 using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy
-using Zygote: pullback
 
 
 @testset "Losses" begin
@@ -16,36 +15,12 @@ y = [1, 1, 0.]
 @test logitbinarycrossentropy(x, y) ≈ logitbinarycrossentropy(gpu(x), gpu(y))
 
 
-function gpu_gradtest(f, args...)
-  args_gpu = gpu.(args)
-
-  l_cpu, back_cpu = pullback((args...) -> f(args...), args...)
-  g_cpu = back_cpu(1)[1]
-
-  l_gpu, back_gpu = pullback((args_gpu...) -> f(args_gpu...), args_gpu...)
-  g_gpu = back_gpu(1)[1]
-
-  @test l_cpu ≈ l_gpu
-  @test g_gpu isa CuArray
-  @test g_cpu ≈ collect(g_gpu) atol=1e-6
-end
-
-
 @testset "GPU grad tests" begin
   x = rand(Float32, 3,3)
   y = rand(Float32, 3,3)
 
   for loss in ALL_LOSSES
-    if loss == Flux.Losses.huber_loss  # remove when fixed
-      try 
-        gpu_gradtest(loss, x, y)
-        @test 1 == 2
-      catch
-        @test_broken 1 == 2
-      end
-    else
-      gpu_gradtest(loss, x, y)
-    end
+    gpu_gradtest(loss, x, y)
   end
 end
 

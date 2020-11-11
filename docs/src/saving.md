@@ -45,7 +45,7 @@ versions of Flux).
 
 In some cases it may be useful to save only the model parameters themselves, and
 rebuild the model architecture in your code. You can use `params(model)` to get
-model parameters. You can also use `data.(params)` to remove tracking.
+model parameters.
 
 ```Julia
 julia> using Flux
