@@ -121,10 +121,13 @@ end
 
 @testset "Precision" begin
   m = Chain(Dense(10, 5, relu), Dense(5, 2))
-  x = rand(10)
+  x64 = rand(Float64, 10)
+  x32 = rand(Float32, 10)
   @test eltype(m[1].W) == Float32
-  @test eltype(m(x)) == Float32
-  @test eltype(f64(m)(x)) == Float64
+  @test eltype(m(x32)) == Float32
+  @test eltype(m(x64)) == Float64
+  @test eltype(f64(m)(x32)) == Float64
+  @test eltype(f64(m)(x64)) == Float64
   @test eltype(f64(m)[1].W) == Float64
   @test eltype(f32(f64(m))[1].W) == Float32
 end
