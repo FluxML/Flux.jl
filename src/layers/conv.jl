@@ -711,7 +711,7 @@ julia> m(xs) |> size
 (20, 20, 7, 50)
 
 julia> lay = MaxPool((5,), pad=2, stride=3)  # one-dimensional window
-MaxPool((5,), pad = (2, 2), stride = (3,))
+MaxPool((5,), pad = 2, stride = (3,))
 
 julia> lay(rand(Float32, 100, 7, 50)) |> size
 (34, 7, 50)
