@@ -701,17 +701,17 @@ See also [`Conv`](@ref), [`MeanPool`](@ref), [`AdaptiveMaxPool`](@ref), [`Global
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
-julia> m = Chain(Conv((5, 5), 3=>7), MaxPool((5, 5), pad=2))
-Chain(Conv((5, 5), 3=>7), MaxPool((5, 5), pad=2, stride=(5, 5)))
+julia> m = Chain(Conv((5, 5), 3=>7, pad=SamePad()), MaxPool((5, 5), pad=SamePad()))
+Chain(Conv((5, 5), 3=>7), MaxPool((5, 5), pad=2))
 
 julia> m[1](xs) |> size
-(96, 96, 7, 50)
+(100, 100, 7, 50)
 
 julia> m(xs) |> size
 (20, 20, 7, 50)
 
-julia> lay = MaxPool((5,), pad=2, stride=3)  # one-dimensional window
-MaxPool((5,), pad=2, stride=(3,))
+julia> lay = MaxPool((5,), pad=2, stride=(3,))  # one-dimensional window
+MaxPool((5,), pad=2, stride=3)
 
 julia> lay(rand(Float32, 100, 7, 50)) |> size
 (34, 7, 50)
@@ -735,11 +735,14 @@ function (m::MaxPool)(x)
 end
 
 function Base.show(io::IO, m::MaxPool)
-  print(io, "MaxPool(", m.k, ", pad=", _pad_string(m.pad), ", stride=", m.stride, ")")
+  print(io, "MaxPool(", m.k)
+  all(==(0), m.pad) || print(io, ", pad=", _maybetuple_string(m.pad))
+  m.stride == m.k || print(io, ", stride=", _maybetuple_string(m.stride))
+  print(io, ")")
 end
 
-_pad_string(pad) = string(pad)
-_pad_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
+_maybetuple_string(pad) = string(pad)
+_maybetuple_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
 
 outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
 
@@ -763,7 +766,7 @@ See also [`Conv`](@ref), [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
 julia> m = Chain(Conv((5,5), 3 => 7), MeanPool((5,5), pad=SamePad()))
-Chain(Conv((5, 5), 3=>7), MeanPool((5, 5), pad=2, stride=(5, 5)))
+Chain(Conv((5, 5), 3=>7), MeanPool((5, 5), pad=2))
 
 julia> m[1](xs) |> size
 (96, 96, 7, 50)
@@ -790,7 +793,10 @@ function (m::MeanPool)(x)
 end
 
 function Base.show(io::IO, m::MeanPool)
-  print(io, "MeanPool(", m.k, ", pad=", _pad_string(m.pad), ", stride=", m.stride, ")")
+  print(io, "MeanPool(", m.k)
+  all(==(0), m.pad) || print(io, ", pad=", _maybetuple_string(m.pad))
+  m.stride == m.k || print(io, ", stride=", _maybetuple_string(m.stride))
+  print(io, ")")
 end
 
 outdims(l::MeanPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
