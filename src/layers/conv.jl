@@ -682,10 +682,10 @@ function Base.show(io::IO, g::GlobalMeanPool)
 end
 
 """
-    MaxPool(window; pad=0, stride=window)
+    MaxPool(window::NTuple; pad=0, stride=window)
 
 Max pooling layer, which replaces all pixels in a block of
-size `window::NTuple` with one.
+size `window` with one.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
 batch dimensions, after the `N` feature dimensions, where `N = length(window)`.
@@ -744,9 +744,9 @@ _pad_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
 outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
 
 """
-    MeanPool(window; pad=0, stride=window)
+    MeanPool(window::NTuple; pad=0, stride=window)
 
-Mean pooling layer, averaging all pixels in a block of size `window::NTuple`.
+Mean pooling layer, averaging all pixels in a block of size `window`.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
 batch dimensions, after the `N` feature dimensions, where `N = length(window)`.
@@ -773,9 +773,9 @@ julia> m(xs) |> size
 ```
 """
 struct MeanPool{N,M}
-    k::NTuple{N,Int}
-    pad::NTuple{M,Int}
-    stride::NTuple{N,Int}
+  k::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  stride::NTuple{N,Int}
 end
 
 function MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
