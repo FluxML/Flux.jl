@@ -164,11 +164,6 @@ function Base.show(io::IO, l::Conv)
   print(io, ")")
 end
 
-(a::Conv{<:Any,<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
-
-(a::Conv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
 
 """
     ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
