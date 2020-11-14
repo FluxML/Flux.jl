@@ -32,7 +32,7 @@ function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,
 end
 
 """
-    Conv(filter, in => out, σ = identity; stride = 1, pad = 0, dilation = 1)
+    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -203,7 +203,7 @@ outdims(l::Conv, isize) =
   output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
-    ConvTranspose(filter, in => out, σ = identity; [stride = 1, pad = 0, dilation = 1])
+    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -317,7 +317,7 @@ function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilat
 end
 
 """
-    DepthwiseConv(filter, in=>out, σ = identity; [stride = 1, pad = 0, dilation = 1])
+    DepthwiseConv(filter, in=>out, σ=identity; stride=1, pad=0, dilation=1)
 
 Depthwise convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -428,7 +428,7 @@ outdims(l::DepthwiseConv, isize) =
   output_size(DepthwiseConvDims(_paddims(isize, (1, 1, size(l.weight)[end], 1)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
-    CrossCor(filter, in => out, [σ = identity; stride = 1, pad = 0, dilation = 1])
+    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
 
 Standard cross convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -681,7 +681,7 @@ function Base.show(io::IO, g::GlobalMeanPool)
 end
 
 """
-    MaxPool(window; [pad = 0, stride = window])
+    MaxPool(window; pad=0, stride=window)
 
 Max pooling layer, which replaces all pixels in a block of
 size `window::NTuple` with one.
@@ -743,7 +743,7 @@ _pad_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
 outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
 
 """
-    MeanPool(window; [pad = 0, stride = window])
+    MeanPool(window; pad=0, stride=window)
 
 Mean pooling layer, averaging all pixels in a block of size `window::NTuple`.
 
