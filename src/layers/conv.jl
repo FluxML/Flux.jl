@@ -100,8 +100,9 @@ end
     Conv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
     Conv(; weight, bias, [activation, stride, pad, dilation])
 
-Constructs a convolutional layer with the given weight and bias arrays.
-Accepts the same keywords as the `Conv((4,4), 3=>7, relu)` method.
+Constructs a convolutional layer with the given weight and bias.
+Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3=>7, relu)`
+method.
 
 # Examples
 ```jldoctest
@@ -530,7 +531,7 @@ Adaptive max pooling layer. Calculates the necessary window size
 such that its output has `size(y)[1:N] == out`.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
-batch dimensions, where `N == length(out)`.
+batch dimensions, after the `N` feature dimensions, where `N = length(out)`.
 
 See also [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 
@@ -571,7 +572,7 @@ Adaptive mean pooling layer. Calculates the necessary window size
 such that its output has `size(y)[1:N] == out`.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
-batch dimensions, where `N == length(out)`.
+batch dimensions, after the `N` feature dimensions, where `N = length(out)`.
 
 See also [`MaxPool`](@ref), [`AdaptiveMaxPool`](@ref).
 
@@ -687,7 +688,7 @@ Max pooling layer, which replaces all pixels in a block of
 size `window::NTuple` with one.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
-batch dimensions, where `N == length(window)`.
+batch dimensions, after the `N` feature dimensions, where `N = length(window)`.
 
 By default the window size is also the stride in each dimension.
 The keyword `pad` accepts the same options as for the `Conv` layer,
@@ -748,7 +749,7 @@ outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.
 Mean pooling layer, averaging all pixels in a block of size `window::NTuple`.
 
 Expects as input an array with `ndims(x) == N+2`, i.e. channel and
-batch dimensions, where `N == length(window)`.
+batch dimensions, after the `N` feature dimensions, where `N = length(window)`.
 
 By default the window size is also the stride in each dimension.
 The keyword `pad` accepts the same options as for the `Conv` layer,
