@@ -42,14 +42,27 @@ outdims(f, isize...; preserve_batch = false) = size(f([ones(Float32, s) for s in
 
 ### start basic ###
 """
-    outdims(c::Chain, isize)
-    outdims(layers::AbstractVector, isize)
+    outdims(c::Chain, isize; preserve_batch = false)
+    outdims(layers::Union{Tuple, AbstractVector}, isize; preserve_batch = false)
 
-Calculate the output dimensions given the input dimensions, `isize`.
+Calculate the size of the spatial output dimensions, given the input size.
+Set `preserve_batch` to `true` to always return with the batch dimension included.
 
-```julia
-m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
-outdims(m, (10, 10)) == (6, 6)
+# Examples
+```jldoctest
+julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
+
+julia> m(randn(Float32, 10, 10, 3, 64)) |> size
+(6, 6, 32, 64)
+
+julia> Flux.outdims(m, (10, 10, 3))
+(6, 6, 32)
+
+julia> Flux.outdims(m, (10, 10, 3, 64))
+(6, 6, 32, 64)
+
+julia> try Flux.outdims(m, (10, 10, 7, 64)) catch e println(e) end
+DimensionMismatch("Input channels must match! (7 vs. 3)")
 ```
 """
 function outdims(layers::T, isize; preserve_batch = false) where T<:Union{Tuple, AbstractVector}
@@ -61,7 +74,7 @@ function outdims(layers::T, isize; preserve_batch = false) where T<:Union{Tuple,
   outsize = foldl((isize, layer) -> outdims(layer, isize; preserve_batch = true),
                   tail(layers); init = initsize)
   
-  return hasbatch ? outsize : outsize[1:(end - 1)]
+  return (hasbatch || preserve_batch) ? outsize : outsize[1:(end - 1)]
 end
 outdims(c::Chain, isize; preserve_batch = false) =
   outdims(c.layers, isize; preserve_batch = preserve_batch)
@@ -72,10 +85,21 @@ outdims(l::Dense, isize; preserve_batch = false)
 Calculate the output dimensions given the input dimensions, `isize`.
 Set `preserve_batch` to `true` to always return with the batch dimension included.
 
-```julia
-m = Dense(10, 5)
-outdims(m, (10,)) == (5,)
-outdims(m, (10, 2)) == (5, 2)
+# Examples
+```jldoctest
+julia> d = Dense(10, 5);
+
+julia> Flux.outdims(d, (10,))
+(5,)
+
+julia> Flux.outdims(d, (10, 32))
+(5, 32)
+
+julia> Flux.outdims(d, (10,); preserve_batch=true)
+(5, 1)
+
+julia> d(randn(Float32, 10, 32)) |> size
+(5, 32)
 ```
 """
 function outdims(l::Dense, isize; preserve_batch = false)
@@ -112,13 +136,24 @@ _convtransoutdims(isize, ksize, ssize, dsize, pad) =
 """
     outdims(l::Conv, isize; preserve_batch = false)
 
-Calculate the output dimensions given the input dimensions `isize`.
+Calculate the size of the spatial output dimensions, given the input dimensions `isize`.
 Set `preserve_batch` to `true` to always return with the batch dimension included.
 
-```julia
-m = Conv((3, 3), 3 => 16)
-outdims(m, (10, 10)) == (8, 8)
-outdims(m, (10, 10, 1, 3)) == (8, 8)
+# Examples
+```jldoctest
+julia> c = Conv((3, 3), 3 => 16);
+
+julia> Flux.outdims(c, (10, 10, 3))
+(8, 8, 16)
+
+julia> Flux.outdims(c, (10, 10, 3, 50))
+(8, 8, 16, 50)
+
+julia> Flux.outdims(c, (10, 10, 3), preserve_batch=true) 
+(8, 8, 16, 1)
+
+julia> try Flux.outdims(c, (10, 10, 1, 50)) catch e println(e) end
+DimensionMismatch("Input channels must match! (1 vs. 3)")
 ```
 """
 function outdims(l::Conv, isize; preserve_batch = false)
