@@ -120,6 +120,9 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractArray)
+  if eltype(a.W) != eltype(x)
+    @warn "Element types of input and weights differ." W=eltype(a.W) x=eltype(x) maxlog=1
+  end
   W, b, σ = a.W, a.b, a.σ
   # reshape to handle dims > 1 as batch dimensions
   sz = size(x)
