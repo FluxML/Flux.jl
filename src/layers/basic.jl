@@ -119,10 +119,8 @@ end
 
 @functor Dense
 
-function (a::Dense)(x::AbstractArray)
-  if eltype(a.W) != eltype(x)
-    @warn "Element types of input and weights differ." W=eltype(a.W) x=eltype(x) maxlog=1
-  end
+function (a::Dense)(x::AbstractVecOrMat)
+  eltype(a.W) == eltype(x) || _dense_typewarn(a, x)
   W, b, σ = a.W, a.b, a.σ
   # reshape to handle dims > 1 as batch dimensions
   sz = size(x)
@@ -130,6 +128,9 @@ function (a::Dense)(x::AbstractArray)
   x = σ.(W*x .+ b)
   return reshape(x, :, sz[2:end]...)
 end
+
+_dense_typewarn(d, x) = @warn "Element types don't match for layer $d, this will be slow." typeof(d.W) typeof(x) maxlog=1
+Zygote.@nograd _dense_typewarn
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
