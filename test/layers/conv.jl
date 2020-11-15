@@ -109,7 +109,7 @@ end
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 
   x = zeros(Float32, 5, 5, 2, 4)
-  m = ConvTranspose((3,3), 1=>3)
+  m = ConvTranspose((3,3), 2=>3)
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
 
