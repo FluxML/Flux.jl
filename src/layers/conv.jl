@@ -221,16 +221,16 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
-julia> lay = ConvTranspose((5,5), 3 => 7, relu; bias=false)
+julia> lay = ConvTranspose((5,5), 3 => 7, relu)
 ConvTranspose((5, 5), 3=>7, relu)
 
 julia> lay(xs) |> size
 (104, 104, 7, 50)
 
-julia> ConvTranspose((5,5), 3=>7, stride=2, bias=false)(xs) |> size
+julia> ConvTranspose((5,5), 3=>7, stride=2)(xs) |> size
 (203, 203, 7, 50)
 
-julia> ConvTranspose((5,5), 3=>7, stride=3, pad=SamePad(), bias=false)(xs) |> size
+julia> ConvTranspose((5,5), 3=>7, stride=3, pad=SamePad())(xs) |> size
 (300, 300, 7, 50)
 ```
 """
@@ -255,7 +255,7 @@ function ConvTranspose(w::AbstractArray{T,N}, b::Union{Bool,AbstractVector{T}}, 
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
+  bias = create_bias(b, zeros, size(w, N-1)) 
   return ConvTranspose(σ, w, bias, stride, pad, dilation)
 end
 

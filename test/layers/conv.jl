@@ -98,7 +98,7 @@ end
 end
 
 @testset "ConvTranspose" begin
-  x = zeros(Float32, 28, 28, 1, 1)
+  x = zeros(Float32, 5, 5, 1, 1)
   y = Conv((3,3), 1 => 1)(x)
   x_hat1 = ConvTranspose((3, 3), 1 => 1)(y)
   x_hat2 = ConvTranspose((3, 3), 1 => 1, bias=false)(y)
@@ -106,6 +106,10 @@ end
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
+  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+
+  x = zeros(Float32, 5, 5, 2, 4)
+  m = ConvTranspose((3,3), 2=>3)
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
 
