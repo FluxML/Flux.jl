@@ -148,9 +148,9 @@ end
 
 function Base.show(io::IO, l::LayerNorm)
   if a.σ == identity
-    print(io, "LayerNorm($(length(l.size)))")
+    print(io, "LayerNorm($(l.size))")
   else
-    print(io, "LayerNorm($(length(l.size)), $(a.σ))")
+    print(io, "LayerNorm($(l.size), $(a.σ))")
 end
 
 # For InstanceNorm and BatchNorm
