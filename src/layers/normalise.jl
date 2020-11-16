@@ -125,7 +125,7 @@ deviation of each input along the first `length(sz)` dimensions.
 If `affine=true` also applies a learnable shift and rescaling
 as in the [`Diagonal`](@ref) layer.
 
-Se also [`normalise`](@ref).
+Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """
 struct LayerNorm
   σ
@@ -147,7 +147,10 @@ function (a::LayerNorm)(x)
 end
 
 function Base.show(io::IO, l::LayerNorm)
-  print(io, "LayerNorm(", length(l.diag.α), ")")
+  if a.σ == identity
+    print(io, "LayerNorm($(length(l.size)))")
+  else
+    print(io, "LayerNorm($(length(l.size)), $(a.σ))")
 end
 
 """
@@ -179,11 +182,11 @@ m = Chain(
 ```
 """
 mutable struct BatchNorm{F,V,W,N}
-  λ::F  # activation function
+  σ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ::W  # moving mean
-  σ²::W  # moving var
+  μ     # moving mean
+  σ²    # moving var
   ϵ::N
   momentum::N
   active::Union{Bool, Nothing}
@@ -195,7 +198,7 @@ function BatchNorm(chs::Integer, λ=identity;
           ϵ=1f-5, momentum=0.1f0)
   
   return BatchNorm(λ, initβ(chs), initγ(chs),
-            zeros(Float32, chs), ones(Float32, chs), ϵ, momentum, nothing)
+            0, 1, ϵ, momentum, nothing)
 end
 
 trainable(bn::BatchNorm) = (bn.β, bn.γ)
@@ -245,20 +248,21 @@ end
 
 
 mutable struct InstanceNorm{F,V,W,N}
-  λ::F  # activation function
+  σ::F  # activation function
   β::V  # bias
   γ::V  # scale
   μ  # moving mean
   σ²  # moving var
   ϵ::N
   momentum::N
+  track_stats::Bool
   active::Union{Bool, Nothing}
 end
 
 """
     InstanceNorm(channels::Integer, σ=identity;
                  initβ=zeros, initγ=ones,
-                 affine=false,
+                 affine=false, track_stats=false,
                  ϵ=1f-5, momentum = 0.1f0)
 
 [Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
@@ -283,13 +287,21 @@ m = Chain(
       softmax)
 ```
 """
-function InstanceNorm(chs::Integer, λ=identity;
+function InstanceNorm(chs::Integer, σ=identity;
                     initβ = i -> zeros(Float32, i), 
                     initγ = i -> ones(Float32, i), 
+                    affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
-  
-  return InstanceNorm(λ, initβ(chs), initγ(chs),
-            0, 1, ϵ, momentum, nothing)
+
+  if affine
+    β = initβ(chs)
+    γ = initγ(chs)
+  else
+    β = nothing
+    γ = nothing
+  end  
+  return InstanceNorm(σ, β, γ,
+            0, 1, ϵ, momentum, track_stats, nothing)
 end
 
 trainable(in::InstanceNorm) = (in.β, in.γ)
@@ -297,37 +309,25 @@ trainable(in::InstanceNorm) = (in.β, in.γ)
 function (in::InstanceNorm)(x)
   size(x, ndims(x)-1) == length(in.β) ||
     error("InstanceNorm expected $(length(in.β)) channels, got $(size(x, ndims(x)-1))")
-  # these are repeated later on depending on the batch size
+  @assert ndims(x) > 2
   dims = length(size(x))
-  c = size(x, dims-1)
-  bs = size(x, dims)
-  affine_shape = ntuple(i->i == dims - 1 ? size(x, i) : 1, dims)
-  m = div(prod(size(x)), c*bs)
-  γ = reshape(in.γ, affine_shape)
-  β = reshape(in.β, affine_shape)
-  ϵ = in.ϵ
-  # ϵ = convert(T, in.ϵ)
-  # if !_isactive(in)
-  #   μ = reshape(in.μ, affine_shape)
-  #   σ² = reshape(in.σ², affine_shape)
-  # else
-    # T = eltype(x)
-
-    # ϵ = convert(T, in.ϵ)
-  axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
-  μ = mean(x, dims=axes)
-  σ² = mean((x .- μ) .^ 2, dims=axes)
-  #   S = eltype(in.μ)
-  #   # update moving mean/std
-  #   mtm = in.momentum
-  #   in.μ = (1 - mtm) .* in.μ .+ mtm .* S.(reshape(μ, (c, bs)))
-  #   in.σ² = (1 - mtm) .* in.σ² .+ mtm .* S.(reshape(σ², (c, bs)))
-  # end
-
-  let λ = in.λ
-    x̂ = (x .- μ) ./ sqrt.(σ² .+ ϵ)
-    λ.(γ .* x̂ .+ β)
+  affine_shape = ntuple(i->i == dims - 1 : 1, dims)
+  if !_isactive(in) && in.track_stats
+    μ = reshape(in.μ, affine_shape)
+    σ² = reshape(in.σ², affine_shape)
+  else
+    axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
+    μ = mean(x, dims=axes)
+    σ² = mean((x .- μ).^2, dims=axes)
+    if track_stats
+      # update moving mean/std
+      mtm = in.momentum
+      in.μ = (1 - mtm) .* in.μ .+ mtm .* mean(μ, dims=ndims(μ))
+      in.σ² = (1 - mtm) .* in.σ² .+ mtm .* mean(σ², dims=ndims(σ²))
+    end
   end
+  x̂ = (x .- μ) ./ sqrt.(σ² .+ in.ϵ)
+  return in.affine ? in.σ.(γ .* x̂ .+ β) : in.σ.(x̂)
 end
 
 @functor InstanceNorm
