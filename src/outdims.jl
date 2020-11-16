@@ -90,31 +90,28 @@ function _handle_batchin(isize, dimsize)
 end
 
 """
-    _handle_batchout(outsize, ispadded; preserve_batch = false)
+    _handle_batchout(outsize, ispadded)
 
 Drop the batch dimension if requested.
 
 # Arguments:
 - `outsize`: the output size from a function
 - `ispadded`: indicates whether the batch dimension in `outsize` is padded (see _handle_batchin)
-- `preserve_batch`: set to `true` to always retain the batch dimension
 """
-_handle_batchout(outsize, ispadded; preserve_batch = false) =
-  (ispadded && !preserve_batch) ? outsize[1:(end - 1)] : outsize
+_handle_batchout(outsize, ispadded) = ispadded ? outsize[1:(end - 1)] : outsize
 
 """
-    outdims(m, isize; preserve_batch = false)
+    outdims(m, isize)
 
 Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
 `isize` should include all dimensions (except batch dimension can be optionally excluded).
-Set `preserve_batch = true` to retrain the output batch dimension even if `isize` excludes it.
 
 *Note*: this method should work out of the box for custom layers.
 """
 outdims(m, isize; preserve_batch = false) = with_logger(NullLogger()) do
     isize, ispadded = _handle_batchin(isize, dimhint(m))
     
-    return _handle_batchout(size(m(fill(nil, isize))), ispadded; preserve_batch = preserve_batch)
+    return _handle_batchout(size(m(fill(nil, isize))), ispadded)
 end
 
 ## dimension hints
