@@ -153,6 +153,34 @@ function Base.show(io::IO, l::LayerNorm)
     print(io, "LayerNorm($(length(l.size)), $(a.σ))")
 end
 
+# For InstanceNorm and BatchNorm
+function _norm_layer_forward(l, x; dims)
+  N = ndims(x)
+  affine_shape = ntuple(i -> i == N-1 : 1, N)
+  if !_isactive(l) && l.track_stats
+    μ = reshape(l.μ, affle_shape)
+    σ² = reshape(l.σ², affine_shape)
+  else
+    axes = 1:N-2 # axes to reduce along (all but channels and batch size axes)
+    μ = mean(x; dims)
+    σ² = mean((x .- μ).^2; dims)
+    if track_stats
+      # update moving mean/std
+      mtm = l.momentum
+      m = prod(size(x)) ÷ size(x, ndims(x)) # batch-size  
+      l.μ = (1 - mtm) .* l.μ .+ mtm .*  mean(μ, dims=ndims(μ))
+      l.σ² = (1 - mtm) .* l.σ² .+ mtm .* m/(m-1f0) * mean(σ², dims=ndims(σ²))
+    end
+  end
+  x̂ = (x .- μ) ./ sqrt.(σ² .+ l.ϵ)
+  if l.affine
+    return l.σ.(γ .* x̂ .+ β)
+  else
+    return l.σ.(x̂)
+  end
+end
+
+
 """
     BatchNorm(channels::Integer, σ=identity;
               initβ=zeros, initγ=ones,
@@ -189,60 +217,45 @@ mutable struct BatchNorm{F,V,W,N}
   σ²    # moving var
   ϵ::N
   momentum::N
+  affine::Bool
+  track_stats::Bool
   active::Union{Bool, Nothing}
 end
 
-function BatchNorm(chs::Integer, λ=identity;
+function BatchNorm(chs::Integer, σ=identity;
           initβ = i -> zeros(Float32, i), 
           initγ = i -> ones(Float32, i), 
+          affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
-  
-  return BatchNorm(λ, initβ(chs), initγ(chs),
-            0, 1, ϵ, momentum, nothing)
-end
 
-trainable(bn::BatchNorm) = (bn.β, bn.γ)
-
-function (BN::BatchNorm)(x)
-  size(x, ndims(x)-1) == length(BN.β) ||
-    error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
-  dims = ndims(x)
-  channels = size(x, dims-1)
-  affine_shape = ntuple(i->i == dims - 1 ? size(x, i) : 1, dims)
-  m = div(prod(size(x)), channels)
-  γ = reshape(BN.γ, affine_shape...)
-  β = reshape(BN.β, affine_shape...)
-  if !_isactive(BN)
-    μ = reshape(BN.μ, affine_shape...)
-    σ² = reshape(BN.σ², affine_shape...)
-    ϵ = BN.ϵ
+  if affine
+    β = initβ(chs)
+    γ = initγ(chs)
   else
-    T = eltype(x)
-    axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
-    μ = mean(x, dims=axes)
-    σ² = sum((x .- μ) .^ 2, dims=axes) ./ m
-    ϵ = convert(T, BN.ϵ)
-    # update moving mean/std
-    mtm = BN.momentum
-    S = eltype(BN.μ)
-    BN.μ  = (1 - mtm) .* BN.μ .+ mtm .* S.(reshape(μ, :))
-    BN.σ² = (1 - mtm) .* BN.σ² .+ (mtm * m / (m - 1)) .* S.(reshape(σ², :))
-  end
-
-  let λ = BN.λ
-    x̂ = (x .- μ) ./ sqrt.(σ² .+ ϵ)
-    λ.(γ .* x̂ .+ β)
-  end
+    β = nothing
+    γ = nothing
+  end  
+  
+  return BatchNorm(σ, initβ(chs), initγ(chs),
+            0, 1, ϵ, momentum, 
+            affine, track_stats, nothing)
 end
 
 @functor BatchNorm
+trainable(bn::BatchNorm) = bn.affine ? (bn.β, bn.γ) : ()
+
+function (BN::BatchNorm)(x)
+  N = ndims(x)
+  dims = [1:N-2; N]
+  _norm_layer_forward(BN, x; dims)
+end
 
 testmode!(m::BatchNorm, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(join(size(l.β), ", "))")
-  (l.λ == identity) || print(io, ", λ = $(l.λ)")
+  (l.σ == identity) || print(io, ", $(l.σ)")
   print(io, ")")
 end
 
@@ -255,6 +268,7 @@ mutable struct InstanceNorm{F,V,W,N}
   σ²  # moving var
   ϵ::N
   momentum::N
+  affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
 end
@@ -301,43 +315,28 @@ function InstanceNorm(chs::Integer, σ=identity;
     γ = nothing
   end  
   return InstanceNorm(σ, β, γ,
-            0, 1, ϵ, momentum, track_stats, nothing)
+            0, 1, ϵ, momentum, 
+            affine, track_stats, nothing)
 end
 
-trainable(in::InstanceNorm) = (in.β, in.γ)
-
-function (in::InstanceNorm)(x)
-  size(x, ndims(x)-1) == length(in.β) ||
-    error("InstanceNorm expected $(length(in.β)) channels, got $(size(x, ndims(x)-1))")
-  @assert ndims(x) > 2
-  dims = length(size(x))
-  affine_shape = ntuple(i->i == dims - 1 : 1, dims)
-  if !_isactive(in) && in.track_stats
-    μ = reshape(in.μ, affine_shape)
-    σ² = reshape(in.σ², affine_shape)
-  else
-    axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
-    μ = mean(x, dims=axes)
-    σ² = mean((x .- μ).^2, dims=axes)
-    if track_stats
-      # update moving mean/std
-      mtm = in.momentum
-      in.μ = (1 - mtm) .* in.μ .+ mtm .* mean(μ, dims=ndims(μ))
-      in.σ² = (1 - mtm) .* in.σ² .+ mtm .* mean(σ², dims=ndims(σ²))
-    end
-  end
-  x̂ = (x .- μ) ./ sqrt.(σ² .+ in.ϵ)
-  return in.affine ? in.σ.(γ .* x̂ .+ β) : in.σ.(x̂)
-end
-
+trainable(in::InstanceNorm) = in.affine ? (in.β, in.γ) : ()
 @functor InstanceNorm
 
-testmode!(m::InstanceNorm, mode = true) =
+function (l::InstanceNorm)(x)
+  @assert ndims(x) > 2
+  N = ndims(x)
+  dims = 1:N-2 # axes to reduce along (all but channels and batch size axes)
+  _norm_layer_forward(l, x; dims)
+end
+
+
+testmode!(m::InstanceNorm, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
+#TODO
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(join(size(l.β), ", "))")
-  (l.λ == identity) || print(io, ", λ = $(l.λ)")
+  (l.σ == identity) || print(io, ", $(l.σ)")
   print(io, ")")
 end
 
