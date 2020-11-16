@@ -20,7 +20,7 @@ y = [1, 1, 0.]
   y = rand(Float32, 3,3)
 
   for loss in ALL_LOSSES
-    gpu_gradtest(loss, x, y)
+    gpu_autodiff_test(loss, x, y)
   end
 end
 
