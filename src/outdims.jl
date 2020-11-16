@@ -48,7 +48,7 @@ outdims(f, isize...; preserve_batch=false) = size(f([ones(Float32, s) for s in i
     outdims(c::Chain, isize; preserve_batch=false)
     outdims(layers::Union{Tuple, AbstractVector}, isize; preserve_batch=false)
 
-Calculate the size of the spatial output dimensions, given the input size.
+Calculate the output dimensions given the input dimensions, `isize`.
 Set `preserve_batch` to `true` to always return with the batch dimension included.
 
 # Examples
@@ -139,7 +139,7 @@ _convtransoutdims(isize, ksize, ssize, dsize, pad) =
 """
     outdims(l::Conv, isize; preserve_batch=false)
 
-Calculate the size of the spatial output dimensions, given the input dimensions `isize`.
+Calculate the output dimensions given the input dimensions, `isize`.
 Set `preserve_batch` to `true` to always return with the batch dimension included.
 
 # Examples
