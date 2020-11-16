@@ -110,35 +110,50 @@ function (a::AlphaDropout)(x)
   return x
 end
 
-testmode!(m::AlphaDropout, mode = true) =
+testmode!(m::AlphaDropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
-    LayerNorm(h::Integer)
+    LayerNorm(sz, σ=identity; affine=true, ϵ=1fe-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
-used with recurrent hidden states of size `h`. Normalises the mean and standard
-deviation of each input before applying a per-neuron gain/bias.
+used with recurrent hidden states. 
+Expects inputs with size of the first dimensions equal to `sz` 
+Normalises the mean and standard 
+deviation of each input along the first `length(sz)` dimensions.
+
+If `affine=true` also applies a learnable shift and rescaling
+as in the [`Diagonal`](@ref) layer.
+
+Se also [`normalise`](@ref).
 """
-struct LayerNorm{T}
-  diag::Diagonal{T}
+struct LayerNorm
+  σ
+  diag
+  eps
+  size  
 end
 
-LayerNorm(h::Integer) =
-  LayerNorm(Diagonal(h))
+function LayerNorm(sz, σ=identity; affine=true, ϵ=1f-5)
+  diag = affine ? Diagonal(sz) : nothing
+  return LayerNorm(σ, diag, ϵ, sz)
+end
 
 @functor LayerNorm
 
-(a::LayerNorm)(x) = a.diag(normalise(x, dims=1))
+function (a::LayerNorm)(x)
+  x = normalise(x, dims=1:length(a.size), ϵ=a.ϵ)
+  a.diag === nothing ? a.σ.(x) : a.σ.(a.diag(x))
+end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", length(l.diag.α), ")")
 end
 
 """
-    BatchNorm(channels::Integer, σ = identity;
-              initβ = zeros, initγ = ones,
-              ϵ = 1e-8, momentum = .1)
+    BatchNorm(channels::Integer, σ=identity;
+              initβ=zeros, initγ=ones,
+              ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -147,7 +162,7 @@ Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
 a batch of feature vectors this is just the data dimension, for `WHCN` images
 it's the usual channel dimension.)
 
-`BatchNorm` computes the mean and variance for each each `W×H×1×N` slice and
+`BatchNorm` computes the mean and variance for each `W×H×1×N` slice and
 shifts them to have a new mean and variance (corresponding to the learnable,
 per-channel `bias` and `scale` parameters).
 
@@ -168,25 +183,29 @@ mutable struct BatchNorm{F,V,W,N}
   β::V  # bias
   γ::V  # scale
   μ::W  # moving mean
-  σ²::W  # moving std
+  σ²::W  # moving var
   ϵ::N
   momentum::N
   active::Union{Bool, Nothing}
 end
 
-BatchNorm(chs::Integer, λ = identity;
-          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
-  BatchNorm(λ, initβ(chs), initγ(chs),
-            zeros(chs), ones(chs), ϵ, momentum, nothing)
+function BatchNorm(chs::Integer, λ=identity;
+          initβ = i -> zeros(Float32, i), 
+          initγ = i -> ones(Float32, i), 
+          ϵ=1f-5, momentum=0.1f0)
+  
+  return BatchNorm(λ, initβ(chs), initγ(chs),
+            zeros(Float32, chs), ones(Float32, chs), ϵ, momentum, nothing)
+end
 
 trainable(bn::BatchNorm) = (bn.β, bn.γ)
 
 function (BN::BatchNorm)(x)
   size(x, ndims(x)-1) == length(BN.β) ||
     error("BatchNorm expected $(length(BN.β)) channels, got $(size(x, ndims(x)-1))")
-  dims = length(size(x))
+  dims = ndims(x)
   channels = size(x, dims-1)
-  affine_shape = ntuple(i->i == ndims(x) - 1 ? size(x, i) : 1, ndims(x))
+  affine_shape = ntuple(i->i == dims - 1 ? size(x, i) : 1, dims)
   m = div(prod(size(x)), channels)
   γ = reshape(BN.γ, affine_shape...)
   β = reshape(BN.β, affine_shape...)
@@ -197,8 +216,8 @@ function (BN::BatchNorm)(x)
   else
     T = eltype(x)
     axes = [1:dims-2; dims] # axes to reduce along (all but channels axis)
-    μ = mean(x, dims = axes)
-    σ² = sum((x .- μ) .^ 2, dims = axes) ./ m
+    μ = mean(x, dims=axes)
+    σ² = sum((x .- μ) .^ 2, dims=axes) ./ m
     ϵ = convert(T, BN.ϵ)
     # update moving mean/std
     mtm = BN.momentum
@@ -215,7 +234,7 @@ end
 
 @functor BatchNorm
 
-testmode!(m::BatchNorm, mode = true) =
+testmode!(m::BatchNorm, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::BatchNorm)
@@ -224,32 +243,31 @@ function Base.show(io::IO, l::BatchNorm)
   print(io, ")")
 end
 
-expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
 
 mutable struct InstanceNorm{F,V,W,N}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ::W  # moving mean
-  σ²::W  # moving std
+  μ  # moving mean
+  σ²  # moving var
   ϵ::N
   momentum::N
   active::Union{Bool, Nothing}
 end
 
 """
-    InstanceNorm(channels::Integer, σ = identity;
-                 initβ = zeros, initγ = ones,
-                 ϵ = 1e-8, momentum = .1)
+    InstanceNorm(channels::Integer, σ=identity;
+                 initβ=zeros, initγ=ones,
+                 affine=false,
+                 ϵ=1f-5, momentum = 0.1f0)
 
 [Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
 `channels` should be the size of the channel dimension in your data (see below).
 
-Given an array with `N` dimensions, call the `N-1`th the channel dimension. (For
-a batch of feature vectors this is just the data dimension, for `WHCN` images
-it's the usual channel dimension.)
+Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension. 
+For `WHCN` images it's the usual channel dimension.
 
-`InstanceNorm` computes the mean and variance for each each `W×H×1×1` slice and
+`InstanceNorm` computes the mean and variance for each `W×H×1×1` slice and
 shifts them to have a new mean and variance (corresponding to the learnable,
 per-channel `bias` and `scale` parameters).
 
@@ -258,50 +276,53 @@ Use [`testmode!`](@ref) during inference.
 # Examples
 ```julia
 m = Chain(
-  Dense(28^2, 64),
-  InstanceNorm(64, relu),
-  Dense(64, 10),
-  InstanceNorm(10),
-  softmax)
+      Dense(28^2, 64),
+      InstanceNorm(64, relu),
+      Dense(64, 10),
+      InstanceNorm(10),
+      softmax)
 ```
 """
-InstanceNorm(chs::Integer, λ = identity;
-          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
-  InstanceNorm(λ, initβ(chs), initγ(chs),
-            zeros(chs), ones(chs), ϵ, momentum, nothing)
+function InstanceNorm(chs::Integer, λ=identity;
+                    initβ = i -> zeros(Float32, i), 
+                    initγ = i -> ones(Float32, i), 
+                    ϵ=1f-5, momentum=0.1f0)
+  
+  return InstanceNorm(λ, initβ(chs), initγ(chs),
+            0, 1, ϵ, momentum, nothing)
+end
 
 trainable(in::InstanceNorm) = (in.β, in.γ)
 
 function (in::InstanceNorm)(x)
   size(x, ndims(x)-1) == length(in.β) ||
     error("InstanceNorm expected $(length(in.β)) channels, got $(size(x, ndims(x)-1))")
-  ndims(x) > 2 ||
-    error("InstanceNorm requires at least 3 dimensions. With 2 dimensions an array of zeros would be returned")
   # these are repeated later on depending on the batch size
   dims = length(size(x))
   c = size(x, dims-1)
   bs = size(x, dims)
-  affine_shape = ntuple(i->i == ndims(x) - 1 || i == ndims(x) ? size(x, i) : 1, ndims(x))
+  affine_shape = ntuple(i->i == dims - 1 ? size(x, i) : 1, dims)
   m = div(prod(size(x)), c*bs)
-  γ, β = expand_inst(in.γ, affine_shape), expand_inst(in.β, affine_shape)
+  γ = reshape(in.γ, affine_shape)
+  β = reshape(in.β, affine_shape)
+  ϵ = in.ϵ
+  # ϵ = convert(T, in.ϵ)
+  # if !_isactive(in)
+  #   μ = reshape(in.μ, affine_shape)
+  #   σ² = reshape(in.σ², affine_shape)
+  # else
+    # T = eltype(x)
 
-  if !_isactive(in)
-    μ = expand_inst(in.μ, affine_shape)
-    σ² = expand_inst(in.σ², affine_shape)
-    ϵ = in.ϵ
-  else
-    T = eltype(x)
-
-    ϵ = convert(T, in.ϵ)
-    axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
-    μ = mean(x, dims = axes)
-    σ² = mean((x .- μ) .^ 2, dims = axes)
-    S = eltype(in.μ)
-    # update moving mean/std
-    mtm = in.momentum
-    in.μ = dropdims(mean(repeat((1 - mtm) .* in.μ, outer=[1, bs]) .+ mtm .* S.(reshape(μ, (c, bs))), dims = 2), dims=2)
-    in.σ² = dropdims(mean((repeat((1 - mtm) .* in.σ², outer=[1, bs]) .+ (mtm * m / (m - 1)) .* S.(reshape(σ², (c, bs)))), dims = 2), dims=2)
-  end
+    # ϵ = convert(T, in.ϵ)
+  axes = 1:dims-2 # axes to reduce along (all but channels and batch size axes)
+  μ = mean(x, dims=axes)
+  σ² = mean((x .- μ) .^ 2, dims=axes)
+  #   S = eltype(in.μ)
+  #   # update moving mean/std
+  #   mtm = in.momentum
+  #   in.μ = (1 - mtm) .* in.μ .+ mtm .* S.(reshape(μ, (c, bs)))
+  #   in.σ² = (1 - mtm) .* in.σ² .+ mtm .* S.(reshape(σ², (c, bs)))
+  # end
 
   let λ = in.λ
     x̂ = (x .- μ) ./ sqrt.(σ² .+ ϵ)

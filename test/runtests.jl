@@ -6,25 +6,25 @@ using IterTools: ncycle
 
 Random.seed!(0)
 
-@testset "Utils" begin
-  include("utils.jl")
-end
+# @testset "Utils" begin
+#   include("utils.jl")
+# end
 
-@testset "Onehot" begin
-  include("onehot.jl")
-end
+# @testset "Onehot" begin
+#   include("onehot.jl")
+# end
 
-@testset "Optimise" begin
-  include("optimise.jl")
-end
+# @testset "Optimise" begin
+#   include("optimise.jl")
+# end
 
-@testset "Data" begin
-  include("data.jl")
-end
+# @testset "Data" begin
+#   include("data.jl")
+# end
 
-@testset "Losses" begin
-  include("losses.jl")
-end
+# @testset "Losses" begin
+#   include("losses.jl")
+# end
 
 @testset "Layers" begin
   include("layers/basic.jl")
