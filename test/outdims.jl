@@ -23,7 +23,7 @@
   m = flatten
   @test outdims(m, (5, 5, 3, 10)) == (75, 10)
 
-  m = Chain(Conv((3, 3), 3 => 16), flatten, Dense(1024, 10))
+  m = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), flatten, Dense(1024, 10))
   @test outdims(m, (10, 10, 3, 50)) == (10, 50)
   @test outdims(m.layers, (10, 10, 3, 2)) == (10, 2)
 
