@@ -55,7 +55,8 @@ jobs:
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
       - run: |
-          julia --project=docs -e '
+          julia --project=. -e '
+            using Pkg; Pkg.activate(\"docs\")
             using Documenter: doctest
             using Flux
             doctest(Flux)'
