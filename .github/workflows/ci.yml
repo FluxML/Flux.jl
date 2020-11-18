@@ -56,7 +56,7 @@ jobs:
             Pkg.instantiate()'
       - run: |
           julia --project=. -e '
-            using Pkg; Pkg.activate(\"docs\")
+            using Pkg; Pkg.activate("docs")
             using Documenter: doctest
             using Flux
             doctest(Flux)'
