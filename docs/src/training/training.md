@@ -117,7 +117,7 @@ A more typical callback might look like this:
 ```julia
 test_x, test_y = # ... create single batch of test data ...
 evalcb() = @show(loss(test_x, test_y))
-throttled_cb = throttle(evalcb,5)
+throttled_cb = throttle(evalcb, 5)
 Flux.@epochs 20 Flux.train!(objective, ps, data, opt, cb = throttled_cb)
 ```
 
