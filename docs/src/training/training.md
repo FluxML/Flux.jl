@@ -118,8 +118,7 @@ A more typical callback might look like this:
 test_x, test_y = # ... create single batch of test data ...
 evalcb() = @show(loss(test_x, test_y))
 throttled_cb = throttle(evalcb,5)
-@epochs 20 Flux.train!(objective, ps, data, opt,
-            cb = throttled_cb)
+Flux.@epochs 20 Flux.train!(objective, ps, data, opt, cb = throttled_cb)
 ```
 
 Calling `Flux.stop()` in a callback will exit the training loop early.
