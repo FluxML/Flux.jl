@@ -70,7 +70,7 @@ for op in (:+, :-)
     Base.broadcasted($op, a, b), Δ -> begin
       dims = M > N ? tuple(setdiff(1:M, 1:N)...) : tuple(setdiff(1:N, 1:M)...)
       da = dims == tuple(1:N...) ? Δ : dropdims(sum(Δ, dims = dims), dims = dims)
-      (nothing, transpose(da), nothing)
+      (nothing, da, nothing)
     end
   end
 end
