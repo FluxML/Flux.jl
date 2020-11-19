@@ -151,6 +151,7 @@ function Base.show(io::IO, l::LayerNorm)
     print(io, "LayerNorm($(l.size))")
   else
     print(io, "LayerNorm($(l.size), $(a.σ))")
+  end
 end
 
 # For InstanceNorm and BatchNorm
@@ -301,10 +302,12 @@ m = Chain(
       softmax)
 ```
 """
+
+# TODO v0.13: add affine=false and track_stats=false defaults
 function InstanceNorm(chs::Integer, σ=identity;
                     initβ = i -> zeros(Float32, i), 
                     initγ = i -> ones(Float32, i), 
-                    affine=false, track_stats=false,
+                    affine, track_stats,
                     ϵ=1f-5, momentum=0.1f0)
 
   if affine
