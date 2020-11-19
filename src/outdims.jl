@@ -1,6 +1,7 @@
 module NilNumber
 
 using LinearAlgebra
+using NNlib
 
 """
     Nil <: Number
@@ -12,6 +13,7 @@ struct Nil <: Number end
 const nil = Nil()
 
 Nil(::T) where T<:Number = nil
+(::Type{T})(::Nil) where T<:Number = nil
 
 Base.float(::Type{Nil}) = Nil
 Base.copy(::Nil) = nil
@@ -44,6 +46,8 @@ Base.inv(::Nil) = nil
 Base.isless(::Nil, ::Nil) = true
 Base.isless(::Nil, ::Number) = true
 Base.isless(::Number, ::Nil) = true
+
+Base.isnan(::Nil) = false
 
 Base.abs(::Nil) = nil
 Base.exp(::Nil) = nil
@@ -106,16 +110,59 @@ _handle_batchout(outsize, ispadded) = ispadded ? outsize[1:(end - 1)] : outsize
 Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
 `isize` should include all dimensions (except batch dimension can be optionally excluded).
 
-*Note*: this method should work out of the box for custom layers.
+*Note*: this method should work out of the box for custom layers,
+  but you may need to specify the batch size manually.
+To take advantage of automatic batch dim handling for your layer, define [`dimhint`](@ref).
+
+# Examples
+```jldoctest
+julia> outdims(Dense(10, 4), (10,))
+(4,)
+
+julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
+
+julia> m(randn(Float32, 10, 10, 3, 64)) |> size
+(6, 6, 32, 64)
+
+julia> outdims(m, (10, 10, 3))
+(6, 6, 32)
+
+julia> outdims(m, (10, 10, 3, 64))
+(6, 6, 32, 64)
+
+julia> try outdims(m, (10, 10, 7, 64)) catch e println(e) end
+DimensionMismatch("Input channels must match! (7 vs. 3)")
+
+julia> using LinearAlgebra: norm
+
+julia> f(x) = x ./ norm.(eachcol(x));
+
+julia> outdims(f, (10, 1)) # manually specify batch size as 1
+(10, 1)
+
+julia> Flux.dimhint(::typeof(f)) = 2; # our custom f expects 2D arrays (batch included)
+
+julia> outdims(f, (10,)) # no need to mention batch size
+(10,)
+```
 """
 outdims(m, isize; preserve_batch = false) = with_logger(NullLogger()) do
-    isize, ispadded = _handle_batchin(isize, dimhint(m))
-    
-    return _handle_batchout(size(m(fill(nil, isize))), ispadded)
+  isize, ispadded = _handle_batchin(isize, dimhint(m))
+  
+  return _handle_batchout(size(m(fill(nil, isize))), ispadded)
 end
 
 ## dimension hints
 
+"""
+    dimhint(m)
+
+Return the expected dimensions of the input to a function.
+So, for a function `f(x)`, `dimhint(f) == ndims(x)`.
+
+Override this method for your custom layer to take advantage
+  of the automatic batch handling in [`outdims`](@ref).
+"""
 dimhint(m) = nothing
 dimhint(m::Tuple) = dimhint(first(m))
 dimhint(m::Chain) = dimhint(m.layers)
@@ -138,13 +185,13 @@ dimhint(::GlobalMeanPool) = 4
 ## fixes for layers that don't work out of the box
 
 for (fn, Dims) in ((:conv, DenseConvDims), (:depthwiseconv, DepthwiseConvDims))
-    @eval begin
-        function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims) where T
-            NNlib.$fn(fill(nil, size(a)), b, dims)
-        end
-
-        function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims) where T
-            NNlib.$fn(a, fill(nil, size(b)), dims)
-        end
+  @eval begin
+    function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims) where T
+      NNlib.$fn(fill(nil, size(a)), b, dims)
     end
+
+    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims) where T
+      NNlib.$fn(a, fill(nil, size(b)), dims)
+    end
+  end
 end
