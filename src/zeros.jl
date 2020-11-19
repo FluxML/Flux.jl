@@ -21,7 +21,7 @@ julia> bias_less_conv.bias
 Flux.Zeros()
 ```
 """
-struct Zeros{T,N} <: AbstractArray{T,N}
+mutable struct Zeros{T,N} <: AbstractArray{T,N}
   dims::NTuple{N,Int}
 end
 
@@ -30,12 +30,15 @@ Zeros(dims...) = Zeros(Bool, dims...)
 
 Base.reshape(x::Zeros{T}, dims::Union{Colon,Int}...) where T = Zeros(T, Base._reshape_uncolon(x, dims)...)
 Base.getindex(z::Zeros, args...) = error("Calling getindex on Zeros object, materialize to normal array or check for correctness")
+# Base.getindex(z::Zeros{T}, args...) where T = zero(T)
 Base.collect(x::Zeros{T}) where T = zeros(T, x.dims...)
 
 Base.size(xs::Zeros) = xs.dims
 Base.copyto!(a::Zeros, b::Zeros) = b
 
-Base.collect(xs::Zeros{T,N}) where {T,N} = fill(zero(T), size(xs))
+# Base.print_array(io::IO, z::Zeros{T}) where T = print(io, "Zeros object with size $(z.dims)")
+
+Flux.CUDA.Adapt.adapt(to, x::Zeros) = x
 
 @adjoint reshape(xs::Zeros{T}, dims...) where T =
                 reshape(xs, dims...), _ -> nothing
