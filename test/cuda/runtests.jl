@@ -17,6 +17,11 @@ function gpu_gradtest(f, args...)
   @test l_cpu ≈ l_gpu   rtol=1e-4 atol=1e-4
   @test g_gpu isa CuArray
   @test g_cpu ≈ collect(g_gpu)   rtol=1e-4 atol=1e-4
+
+  z = Flux.Zeros()
+  z2 = Flux.Zeros(3,3)
+  @test z === gpu(z)
+  @test z2 === gpu(z2)
 end
 
 
