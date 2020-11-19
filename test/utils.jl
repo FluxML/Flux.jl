@@ -138,12 +138,47 @@ end
     o = ones(s)
     z = zeros(s)
     Z = Zeros()
+    a = ones(3,3)
+    b = zeros(3,3)
+    b′ = Zeros(3,3)
+
+
+    @testset "Basic operations" begin
+      a = rand(3,3)
+      b = zeros(3,3)
+      bz = Zeros(3,3)
+      
+      for op in (+, -)
+        @test op(a,b) == op(a, bz)
+      end
+
+      for op in (+, -)
+        gs = gradient((a,b) -> sum(op(a, b)), a, b)
+        gsz = gradient((a,b) -> sum(op(a, b)), a, bz)
+        @test gs[1] == gsz[1]
+        @test gsz[2] === nothing
+      end
+
+      # Check with broadcasting
+      b = zeros(3,3,3)
+      bz = Zeros(3,3,3)
+
+      for op in (+, -)
+        @test broadcast(op, a,b) == broadcast(op, a, bz)
+      end
+
+      for op in (+, -)
+        gs = gradient((a,b) -> sum(broadcast(op, a, b)), a, b)
+        gsz = gradient((a,b) -> sum(broadcast(op, a, b)), a, bz)
+        @test gs[1] == gsz[1]
+        @test gsz[2] === nothing
+      end
+    end
 
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
       g = gfun(o, z) 
       @test gfun(o, Z) == (g[1], nothing)
-
       g = gfun(z, o) 
       @test gfun(Z, o) == (nothing, g[2])
     end
