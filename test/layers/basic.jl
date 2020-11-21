@@ -121,4 +121,18 @@ import Flux: activations
     m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
     @test Flux.outdims(m, (10, 10)) == (8, 8)
   end
+
+  @testset "type mismatches" begin
+    m = Chain(Dense(2, 10, x->x + 0.1), Dense(10, 2)) # activation creates Float64
+    x = rand(Float32, 2); y=rand(Float32, 2)
+    @test_logs (:warn, # warning from 2nd layer, forward pass
+      "Element types don't match for layer Dense(10, 2), this will be slow."
+      ) gradient(() -> sum(m(x) .- y), params(m))
+
+    m = Chain(Dense(2, 2))
+    x = rand(Float32, 2); y = rand(2) # loss function contains Float64
+    @test_logs (:warn,
+      "Chain receives gradient of mismatched element type, this may be slow!"
+      ) gradient(() -> sum(abs2, m(x) .- y), params(m))
+  end
 end

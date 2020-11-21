@@ -35,7 +35,7 @@ functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
-(c::Chain)(x) = applychain(c.layers, x)
+(c::Chain)(x) = applychain(c.layers, x) |> _chain_typecheck
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
@@ -46,6 +46,15 @@ function Base.show(io::IO, c::Chain)
   join(io, c.layers, ", ")
   print(io, ")")
 end
+
+_chain_typecheck(y) = @show y
+_chain_typewarn(y, ∇y) = @warn "Chain receives gradient of mismatched element type, this may be slow!" typeof(y) typeof(∇y) maxlog=1
+
+Zygote.@adjoint _chain_typecheck(y) = y, ∇y -> begin
+  eltype(y) == eltype(∇y) || _chain_typewarn(y, ∇y)
+  (∇y,)
+end
+Zygote.@nograd _chain_typewarn
 
 """
     outdims(c::Chain, isize)
