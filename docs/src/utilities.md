@@ -39,26 +39,24 @@ Flux.glorot_normal
 
 Flux provides some utility functions to help you generate models in an automated fashion.
 
-`outdims` enables you to calculate the spatial output dimensions of layers like `Conv` when applied to input images of a given size.
-Currently limited to the following layers:
-- basic layers (e.g. `Chain`, `Dense`, `SkipConnection`, etc.)
-- convolution-style layers (e.g. `Conv`, `MaxPool`, `CrossCor`, etc.)
-- normalisation layers (e.g. `BatchNorm`, `Dropout`, etc.)
-- arbitrary functions (done by evaluating the function which can be slow)
+[`outdims`](@ref) enables you to calculate the spatial output dimensions of layers like [`Conv`](@ref) when applied to input images of a given size. This is achieved by passing a "dummy" array into the model that preserves size information without running any computation. `outdims(f, isize)` works for all layers (including custom layers) out of the box as long as `isize` includes the batch dimension. If [`Flux.dimhint`](@ref) is defined for a layer, then `isize` may drop the batch dimension.
 
 Using this utility function lets you automate model building for various inputs like so:
 ```julia
 function make_model(width, height, nchannels, nclasses)
-  # returns 1D array of conv layers
+  # returns 1D array (vector) of conv layers
   conv_layers = make_conv(width, height, nchannels)
   conv_outsize = outdims(conv_layers, (width, height, nchannels))
 
+  # the input dimension to Dense is programatically calculated from
+  #  width, height, and nchannels
   return Chain(conv_layers..., Dense(prod(conv_outsize), nclasses))
 end
 ```
 
 ```@docs
 Flux.outdims
+Flux.dimhint
 ```
 
 ## Model Abstraction

@@ -5,8 +5,9 @@ using NNlib
 
 """
     Nil <: Number
-Nil is a singleton type with a single instance `nil`. Unlike
-`Nothing` and `Missing` it subtypes `Number`.
+
+Nil is a singleton type with a single instance `nil`.
+Unlike `Nothing` and `Missing` it subtypes `Number`.
 """
 struct Nil <: Number end
 
@@ -109,6 +110,7 @@ _handle_batchout(outsize, ispadded) = ispadded ? outsize[1:(end - 1)] : outsize
 
 Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
 `isize` should include all dimensions (except batch dimension can be optionally excluded).
+If `m` is a `Tuple` or `Vector`, `outdims` treats `m` like a `Chain`.
 
 *Note*: this method should work out of the box for custom layers,
   but you may need to specify the batch size manually.
@@ -133,6 +135,9 @@ julia> outdims(m, (10, 10, 3, 64))
 julia> try outdims(m, (10, 10, 7, 64)) catch e println(e) end
 DimensionMismatch("Input channels must match! (7 vs. 3)")
 
+julia> outdims([Dense(10, 4), Dense(4, 2)], (10,))
+(2,)
+
 julia> using LinearAlgebra: norm
 
 julia> f(x) = x ./ norm.(eachcol(x));
@@ -155,10 +160,13 @@ end
 ## dimension hints
 
 """
-    dimhint(m)
+    Flux.dimhint(m)
 
 Return the expected dimensions of the input to a function.
 So, for a function `f(x)`, `dimhint(f) == ndims(x)`.
+
+Note that for [`Chain`](@ref), only the first layer must support
+  `dimhint`.
 
 Override this method for your custom layer to take advantage
   of the automatic batch handling in [`outdims`](@ref).
@@ -181,6 +189,16 @@ dimhint(::AdaptiveMeanPool) = 4
 dimhint(::GlobalMaxPool) = 4
 dimhint(::GlobalMeanPool) = 4
 
+## make tuples and vectors be like Chains
+
+(m::Tuple)(x::AbstractArray{Nil}) = applychain(m, x)
+outdims(m::AbstractVector, isize) = outdims(tuple(m...), isize)
+
+## bypass statistics in normalization layers
+
+for layer in (:LayerNorm, :BatchNorm, :InstanceNorm, :GroupNorm)
+  @eval (l::$layer)(x::AbstractArray{Nil}) = x
+end
 
 ## fixes for layers that don't work out of the box
 
