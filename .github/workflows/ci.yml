@@ -6,7 +6,6 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.julia-version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
@@ -22,10 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
+        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: actions/cache@v1
+        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
         env:
           cache-name: cache-artifacts
         with:
@@ -36,7 +37,9 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
+        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
       - uses: julia-actions/julia-runtest@v1
+        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
   docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -55,12 +58,12 @@ jobs:
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
       - run: |
-          julia --project=. -e '
-            using Pkg; Pkg.activate("docs")
+          julia --project=docs/ -e '
+            using Flux
+            # using Pkg; Pkg.activate("docs")
             using Documenter
             using Documenter: doctest
             DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
-            using Flux
             doctest(Flux)'
       - run: julia --project=docs docs/make.jl
         env:
