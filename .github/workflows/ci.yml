@@ -58,6 +58,7 @@ jobs:
           julia --project=. -e '
             using Pkg; Pkg.activate("docs")
             using Documenter: doctest
+            DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
             using Flux
             doctest(Flux)'
       - run: julia --project=docs docs/make.jl
