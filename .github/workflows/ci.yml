@@ -57,6 +57,7 @@ jobs:
       - run: |
           julia --project=. -e '
             using Pkg; Pkg.activate("docs")
+            using Documenter
             using Documenter: doctest
             DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
             using Flux
