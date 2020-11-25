@@ -125,7 +125,11 @@ end
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  σ.(W*x .+ b)
+  # reshape to handle dims > 1 has batch dimensions
+  sz = size(x)
+  x = reshape(x, sz[1], :) 
+  x = σ.(W*x .+ b)
+  return reshape(x, :, sz[2:end]...)
 end
 
 function Base.show(io::IO, l::Dense)
