@@ -85,14 +85,19 @@ extraChain(::Tuple{}, x) = ()
 """
     Dense(in::Integer, out::Integer, σ = identity; bias=true)
 
-Create a traditional `Dense` layer with parameters `W` and `b`.
+Create a traditional `Dense` layer with in×out weight matrix `W` and 
+bias vector  `b` of length `out`. The forward pass is given by:
 
     y = σ.(W * x .+ b)
 
-The input `x` must be a vector of length `in`, or a batch of vectors represented
-as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+The input `x` must be a vector of length `in`, a batch of vectors represented
+as an `in × N` matrix, or a higher order tensor where all dimensions
+after the first will be treated as batch dimensions.
 
-Setting `bias` to `false` will switch bias off for the layer.
+The out `y` will be a vector  of length `out` or a batch whose first
+dimension is `out` and the remaining dimensions are the same as in the input.
+
+Setting `bias` to `false` will switch the bias  off for the layer.
 
 # Example
 ```
