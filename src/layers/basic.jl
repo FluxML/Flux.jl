@@ -92,7 +92,7 @@ bias vector  `b` of length `out`. The forward pass is given by:
 
 The input `x` must be a vector of length `in`, a batch of vectors represented
 as an `in × N` matrix, or a higher order tensor where all dimensions
-after the first will be treated as batch dimensions.
+after the first one will be treated as batch dimensions.
 
 The out `y` will be a vector  of length `out` or a batch whose first
 dimension is `out` and the remaining dimensions are the same as in the input.
@@ -130,7 +130,7 @@ end
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  # reshape to handle dims > 1 has batch dimensions
+  # reshape to handle dims > 1 as batch dimensions
   sz = size(x)
   x = reshape(x, sz[1], :) 
   x = σ.(W*x .+ b)
