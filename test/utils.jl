@@ -273,3 +273,14 @@ end
     end
   end
 end 
+@testset "size checks" begin
+  m = Chain(Dense(5,4), Dense(4,3))
+  p, re = destructure(m)
+  @test_throws BoundsError re(p[1:end-1])
+  @test_throws ErrorException re(vcat(p,1))
+
+  @test_throws ErrorException loadparams!(Chain(Dense(5,4), Dense(4,3), Dense(3,2)), params(m))
+  @test_throws ErrorException loadparams!(Chain(Dense(5,4), Dense(4,3, bias=false)), params(m))
+  @test_throws ErrorException loadparams!(Chain(Dense(5,4, bias=false), Dense(4,3)), params(m))
+  @test_throws ErrorException loadparams!(Chain(Dense(3,4), Dense(4,5)), params(m))
+end
