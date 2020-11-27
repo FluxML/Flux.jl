@@ -54,6 +54,8 @@ function params(m...)
 end
 
 function loadparams!(m, xs)
+  length(params(m)) == length(xs) ||
+    error("Expected $(length(params(m))) parameter arrays, but got $(length(xs))")
   for (p, x) in zip(params(m), xs)
     size(p) == size(x) ||
       error("Expected param size $(size(p)), got $(size(x))")

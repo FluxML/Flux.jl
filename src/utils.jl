@@ -391,6 +391,8 @@ function _restructure(m, xs)
     i += length(x)
     return x
   end
+  i == length(xs) || error("Expected a vector of $i parameters, got $(length(xs))")
+  m
 end
 
 @adjoint function _restructure(m, xs)
