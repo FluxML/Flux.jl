@@ -89,7 +89,7 @@ batch_norm = [BatchNorm]
 gpu_gradtest("BatchNorm 1", batch_norm, rand(Float32, 28,28,3,4), 3, test_cpu=false) #TODO fix errors
 gpu_gradtest("BatchNorm 2", batch_norm, rand(Float32, 5,4), 5)
 
-instancenorm = [InstanceNorm]
+instancenorm = [i -> InstanceNorm(i;affine=false), i -> InstanceNorm(i;affine=true)]
 gpu_gradtest("InstanceNorm", instancenorm, r, 1)
 
 groupnorm = [GroupNorm]
