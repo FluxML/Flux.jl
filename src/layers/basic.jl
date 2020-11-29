@@ -133,18 +133,6 @@ function Base.show(io::IO, l::Dense)
   print(io, ")")
 end
 
-<<<<<<< HEAD
-=======
-# Try to avoid hitting generic matmul in some simple cases
-# Base's matmul is so slow that it's worth the extra conversion to hit BLAS
-(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
-
-(a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
-
-
->>>>>>> 74f53c13 (update Diagonal and LayerNorm)
 """
     Diagonal(α, β)
     Diagonal(sz::Integer...; initα=ones, initβ=zeros)

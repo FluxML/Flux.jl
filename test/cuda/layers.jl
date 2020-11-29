@@ -14,48 +14,25 @@ end
 # `AlphaDropout` throws a compilation error on GPUs,
 # whereas, the rest are scalar indexing issues.
 const BROKEN_LAYERS = Union{DepthwiseConv,
-                            AlphaDropout,
-                            InstanceNorm,
-                            GroupNorm}
+                            AlphaDropout}
 
-function gpu_gradtest(name::String, layers::Vector, x_cpu=nothing, args...; test_cpu=true)
-  isnothing(x_cpu) && error("Missing input to test the layers against.")
+function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; 
+            setmode=false, test_cpu=true, rtol=1e-5, atol=1e-5)
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer GPU grad test" begin
-
-        # compute output and grad of parameters
         l_cpu = layer(args...)
-        ps_cpu = Flux.params(l_cpu)
-        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
-        gs_cpu = back_cpu(1f0)
-
-        x_gpu = gpu(x_cpu)
-        l_gpu = l_cpu |> gpu
-        ps_gpu = Flux.params(l_gpu)
-
-        if l_gpu isa BROKEN_LAYERS
-          @test_broken gradient(() -> sum(l_gpu(x_gpu)), ps_gpu) isa Flux.Zygote.Grads
+        if l_cpu isa BROKEN_LAYERS
+          @test_broken gpu_autodiff_test(l_cpu, x_cpu, 
+                          test_equal=test_cpu, rtol=rtol, atol=atol)
         else
-          y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
-          gs_gpu = back_gpu(1f0) # TODO many layers error out when backprop int 1, should fix
-
-          # compute grad of input
-          xg_cpu = gradient(x -> sum(l_cpu(x)), x_cpu)[1]
-          xg_gpu = gradient(x -> sum(l_gpu(x)), x_gpu)[1]
-
-          # test 
-          if test_cpu
-            @test y_gpu ≈ y_cpu   rtol=1e-4 atol=1e-4
-            @test Array(xg_gpu) ≈ xg_cpu   rtol=1e-4 atol=1e-4
-          end
-          @test gs_gpu isa Flux.Zygote.Grads
-          for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
-            @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
-            if test_cpu
-              @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu]   rtol=1e-4 atol=1e-4
-            end
-          end
+          gpu_autodiff_test(l_cpu, x_cpu, 
+              test_equal=test_cpu, rtol=rtol, atol=atol)
+          if setmode
+            testmode!(l_cpu)
+            gpu_autodiff_test(l_cpu, x_cpu, 
+              test_equal=test_cpu, rtol=rtol, atol=atol)
+          end  
         end
       end
     end
@@ -67,7 +44,7 @@ end
 ConvNoBias(args...) = Conv(args...; bias=false)
 ConvTransposeNoBias(args...) = ConvTranspose(args...; bias=false)
 CrossCorNoBias(args...) = CrossCor(args...; bias=false)
-DepthwiseConvNoBias(args...) = DepthwiseConv(args...;bias=false)
+DepthwiseConvNoBias(args...) = DepthwiseConv(args...; bias=false)
 r = rand(Float32, 28, 28, 1, 1)
 conv_layers = [Conv, ConvNoBias, ConvTranspose, ConvTransposeNoBias, CrossCor, CrossCorNoBias, DepthwiseConv, DepthwiseConvNoBias]
 gpu_gradtest("Conv", conv_layers, r, (2,2), 1=>3)
@@ -79,27 +56,34 @@ adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
 gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 
 dropout_layers = [Dropout, AlphaDropout]
-gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
+gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false, setmode=true) # dropout is not deterministic
 
-layer_norm = [LayerNorm]
-gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu=false) #TODO fix errors
-gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
+layer_norm = [i -> LayerNorm(i; affine=false), i -> LayerNorm(i; affine=true)]
+gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 8, 8, 3, 4), 8)
+gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 8, 8, 3, 4), (8,8))
+gpu_gradtest("LayerNorm 3", layer_norm, rand(Float32, 5, 4), 5)
 
 batch_norm = [BatchNorm]
-gpu_gradtest("BatchNorm 1", batch_norm, rand(Float32, 28,28,3,4), 3, test_cpu=false) #TODO fix errors
-gpu_gradtest("BatchNorm 2", batch_norm, rand(Float32, 5,4), 5)
+gpu_gradtest("BatchNorm 3d", batch_norm, rand(Float32, 8, 8, 8, 3, 4), 3, setmode=false) # bug in CUDA.jl with gradient in testmode
+gpu_gradtest("BatchNorm 2d", batch_norm, rand(Float32, 8, 8, 3, 4), 3, setmode=false) # bug in CUDA.jl with gradient in testmode
+gpu_gradtest("BatchNorm 1d", batch_norm, rand(Float32, 8, 3, 4), 3, setmode=false) # bug in CUDA.jl with gradient in testmode
+gpu_gradtest("BatchNorm fullyconn", batch_norm, rand(Float32, 5,4), 5, setmode=false)
 
-instancenorm = [i -> InstanceNorm(i;affine=false), i -> InstanceNorm(i;affine=true)]
-gpu_gradtest("InstanceNorm", instancenorm, r, 1)
+instancenorm = [i -> InstanceNorm(i; affine=false), i -> InstanceNorm(i; affine=true)]
+gpu_gradtest("InstanceNorm 3d", instancenorm, rand(Float32, 8, 8, 8, 3, 4), 3, setmode=true)
+gpu_gradtest("InstanceNorm 2d", instancenorm, rand(Float32, 8, 8, 3, 4), 3, setmode=true)
+gpu_gradtest("InstanceNorm 1d", instancenorm, rand(Float32, 8, 3, 4), 3, setmode=true)
 
-groupnorm = [GroupNorm]
-gpu_gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1)
+groupnorm = [(i, j) -> GroupNorm(i, j; affine=false), (i, j) -> GroupNorm(i, j; affine=true)]
+gpu_gradtest("GroupNorm 3d", groupnorm, rand(Float32, 8, 8, 8, 12, 4), 12, 3, setmode=true)
+gpu_gradtest("GroupNorm 2d", groupnorm, rand(Float32, 8, 8, 12, 4), 12, 3, setmode=true)
+gpu_gradtest("GroupNorm 1d", groupnorm, rand(Float32, 8, 3, 12, 4), 12, 3, setmode=true)
 
 @testset "function layers" begin
-  x = rand(3,3)
-  gpu_gradtest(x -> sum(Flux.normalise(x; dims=1)), x)
-  gpu_gradtest(x -> sum(Flux.normalise(x; dims=2)), x)
-  gpu_gradtest(x -> sum(Flux.normalise(x)), x)
+  x = rand(Float32, 3,3)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=2)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
 end
 
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)

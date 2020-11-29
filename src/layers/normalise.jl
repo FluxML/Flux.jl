@@ -18,7 +18,7 @@ for each input, either sets that input to `0` (with probability
 e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
 This is used as a regularisation, i.e. it reduces overfitting during training.
 
-If `active` is `false`, it just returns the input `x`
+If `active` is `false`, it just returns the input `x`.
 
 Warning: when using this function, you have to manually manage the activation
 state. Usually in fact, dropout is used while training
@@ -104,7 +104,7 @@ function (a::AlphaDropout)(x)
   α1 = eltype(x)(-λ*α)
   noise = randn(eltype(x), size(x))
   x = @. x*(noise > (1 - a.p)) + α1 * (noise < (1 - a.p))
-  A = (a.p + a.p * (1 - a.p) * α1 ^ 2)^0.5
+  A = sqrt(a.p + a.p * (1 - a.p) * α1^2)
   B = -A * α1 * (1 - a.p)
   x = @. A * x + B
   return x
@@ -131,11 +131,11 @@ as in the [`Diagonal`](@ref) layer.
 
 Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """
-struct LayerNorm
-  σ
-  diag
-  ϵ
-  size
+struct LayerNorm{F,D,T,N}
+  σ::F
+  diag::D
+  ϵ::T
+  size::NTuple{N,Int}
   affine::Bool
 end
 
@@ -159,29 +159,25 @@ function Base.show(io::IO, l::LayerNorm)
   print(io, ")")
 end
 
-# For InstanceNorm and BatchNorm
-# Compute the statistics on the slices specified by dims.
-# dims=[1,...,N-2,N] for BatchNorm
-# dims=[1,...,N-2] for InstanceNorm
-function _norm_layer_forward(l, x; dims)
+# For InstanceNorm, GroupNorm, and BatchNorm.
+# Compute the statistics on the slices specified by reduce_dims.
+# reduce_dims=[1,...,N-2,N] for BatchNorm
+# reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
+function _norm_layer_forward(l, x; reduce_dims, affine_shape)
   N = ndims(x)
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   if !_isactive(l) && l.track_stats
-    if l.μ isa AbstractArray
-      μ = reshape(l.μ, affine_shape)
-      σ² = reshape(l.σ², affine_shape)
-    else
-      μ , σ² = l.μ, l.σ²
-    end
+    stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
+    μ = reshape(l.μ, stats_shape)
+    σ² = reshape(l.σ², stats_shape)
   else
-    μ = mean(x; dims)
-    σ² = mean((x .- μ).^2; dims)
+    μ = mean(x; dims=reduce_dims)
+    σ² = mean((x .- μ).^2; dims=reduce_dims)
     if l.track_stats
       # update moving mean/std
       mtm = l.momentum
-      m = prod(size(x)) ÷ size(x, N-1)  # needed for computing corrected var
-      l.μ = (1-mtm) .* l.μ .+ mtm .* vec(N ∈ dims ? μ : mean(μ, dims=N))
-      l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m/(m-1f0)) .* vec(N ∈ dims ? σ² : mean(σ², dims=N))
+      m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
+      l.μ = (1-mtm) .* l.μ .+ mtm .* vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
+      l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m/(m-1f0)) .* vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
     end
   end
   if hasaffine(l)
@@ -228,12 +224,12 @@ m = Chain(
   softmax)
 ```
 """
-mutable struct BatchNorm{F,V,N}
+mutable struct BatchNorm{F,V,N,W}
   σ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ     # moving mean
-  σ²    # moving var
+  μ::W     # moving mean
+  σ²::W    # moving var
   ϵ::N
   momentum::N
   affine::Bool
@@ -247,16 +243,13 @@ function BatchNorm(chs::Integer, σ=identity;
           affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
 
-  if affine
-    β = initβ(chs)
-    γ = initγ(chs)
-  else
-    β = nothing
-    γ = nothing
-  end  
-  
+  β = affine ? initβ(chs) : nothing
+  γ = affine ? initγ(chs) : nothing
+  μ = track_stats ? zeros(Float32, chs) : nothing
+  σ² = track_stats ? ones(Float32, chs) : nothing
+
   return BatchNorm(σ, β, γ,
-            0, 1, ϵ, momentum, 
+            μ, σ², ϵ, momentum, 
             affine, track_stats, nothing)
 end
 
@@ -265,8 +258,9 @@ trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 
 function (BN::BatchNorm)(x)
   N = ndims(x)
-  dims = [1:N-2; N]
-  _norm_layer_forward(BN, x; dims)
+  reduce_dims = [1:N-2; N]
+  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
+  _norm_layer_forward(BN, x; reduce_dims, affine_shape)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -296,32 +290,20 @@ For `WHCN` images it's the usual channel dimension.
 input slice and normalises the input accordingly.
 
 If `affine=true`, it also applies  a shift and a rescale to the input 
-through to learnable per-channel bias β and scale γ parameters.
+through to learnable per-channel bias `β` and scale `γ` parameters.
 
 If `track_stats=true`, accumulates mean and var statistics in training phase 
 that will be used to renormalize the input in test phase.
 
-Use [`testmode!`](@ref) during inference.
-
 **Warning**: the defaults for `affine` and `track_stats` used to be `true` 
 in previous Flux versions (< v0.12).
-
-# Examples
-```julia
-m = Chain(
-      Dense(28^2, 64),
-      InstanceNorm(64, relu),
-      Dense(64, 10),
-      InstanceNorm(10),
-      softmax)
-```
 """
-mutable struct InstanceNorm{F,V,N}
+mutable struct InstanceNorm{F,V,N,W}
   σ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ  # moving mean
-  σ²  # moving var
+  μ::W  # moving mean
+  σ²::W  # moving var
   ϵ::N
   momentum::N
   affine::Bool
@@ -335,46 +317,45 @@ function InstanceNorm(chs::Integer, σ=identity;
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
 
-  if affine
-    β = initβ(chs)
-    γ = initγ(chs)
-  else
-    β = nothing
-    γ = nothing
-  end  
+  β = affine ? initβ(chs) : nothing
+  γ = affine ? initγ(chs) : nothing
+  μ = track_stats ? zeros(Float32, chs) : nothing
+  σ² = track_stats ? ones(Float32, chs) : nothing
+
   return InstanceNorm(σ, β, γ,
-            0, 1, ϵ, momentum, 
+            μ, σ², ϵ, momentum, 
             affine, track_stats, nothing)
 end
 
-trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
 @functor InstanceNorm
+trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
   N = ndims(x)
-  dims = 1:N-2 # axes to reduce along (all but channels and batch size axes)
-  _norm_layer_forward(l, x; dims)
+  reduce_dims = 1:N-2
+  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
+  _norm_layer_forward(l, x; reduce_dims, affine_shape)
 end
-
 
 testmode!(m::InstanceNorm, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
-#TODO
 function Base.show(io::IO, l::InstanceNorm)
-  print(io, "InstanceNorm($(join(size(l.β), ", "))")
+  print(io, "InstanceNorm(")
+  print(io, hasaffine(l) ? "affine=false" : length(l.β))
   (l.σ == identity) || print(io, ", $(l.σ)")
   print(io, ")")
 end
 
 """
-    GroupNorm(chs::Integer, G::Integer, λ = identity;
-              initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i),
-              ϵ = 1f-5, momentum = 0.1f0)
+    GroupNorm(channels::Integer, G::Integer, σ=identity;
+              initβ = (i) -> zeros(Float32, i), 
+              initγ = (i) -> ones(Float32, i),
+              affine=true, track_stats=false,
+              ϵ=1f-5, momentum=0.1f0)
 
 [Group Normalization](https://arxiv.org/abs/1803.08494) layer.
-This layer can outperform Batch Normalization and Instance Normalization.
 
 `chs` is the number of channels, the channel dimension of your input.
 For an array of N dimensions, the `N-1`th index is the channel dimension.
@@ -382,94 +363,75 @@ For an array of N dimensions, the `N-1`th index is the channel dimension.
 `G` is the number of groups along which the statistics are computed.
 The number of channels must be an integer multiple of the number of groups.
 
-Use [`testmode!`](@ref) during inference.
+`channels` should be the size of the channel dimension in your data (see below).
 
-# Examples
-```julia
-m = Chain(Conv((3,3), 1=>32, leakyrelu;pad = 1),
-          GroupNorm(32,16))
-          # 32 channels, 16 groups (G = 16), thus 2 channels per group used
-```
+Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension. 
+For `WHCN` images it's the usual channel dimension.
+
+If `affine=true`, it also applies  a shift and a rescale to the input 
+through to learnable per-channel bias `β` and scale `γ` parameters.
+
+If `track_stats=true`, accumulates mean and var statistics in training phase 
+that will be used to renormalize the input in test phase.
 """
-mutable struct GroupNorm{F,V,W,N,T}
-  G::T # number of groups
-  λ::F  # activation function
+mutable struct GroupNorm{F,V,N,T,W}
+  G::T  # number of groups
+  σ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ::W  # moving mean
-  σ²::W  # moving std
+  μ::W     # moving mean
+  σ²::W    # moving std
   ϵ::N
   momentum::N
+  affine::Bool
+  track_stats::Bool
   active::Union{Bool, Nothing}
 end
 
-GroupNorm(chs::Integer, G::Integer, λ = identity;
-          initβ = (i) -> zeros(Float32, i), initγ = (i) -> ones(Float32, i), ϵ = 1f-5, momentum = 0.1f0) =
-  GroupNorm(G, λ, initβ(chs), initγ(chs),
-            zeros(G,1), ones(G,1), ϵ, momentum, nothing)
+@functor GroupNorm
+trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
-trainable(gn::GroupNorm) = (gn.β, gn.γ)
+function GroupNorm(chs::Integer, G::Integer, σ=identity;
+              initβ = (i) -> zeros(Float32, i), 
+              initγ = (i) -> ones(Float32, i), 
+              affine=true, track_stats=false,
+              ϵ = 1f-5, momentum = 0.1f0) 
 
-function(gn::GroupNorm)(x)
-  size(x,ndims(x)-1) == length(gn.β) || error("Group Norm expected $(length(gn.β)) channels, but got $(size(x,ndims(x)-1)) channels")
-  ndims(x) > 2 || error("Need to pass at least 3 channels for Group Norm to work")
-  (size(x,ndims(x) -1))%gn.G == 0 || error("The number of groups ($(gn.G)) must divide the number of channels ($(size(x,ndims(x) -1)))")
+  chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
-  dims = length(size(x))
-  groups = gn.G
-  channels = size(x, dims-1)
-  batches = size(x,dims)
-  channels_per_group = div(channels,groups)
-  affine_shape = ntuple(i->i == ndims(x) - 1 ? size(x, i) : 1, ndims(x))
+  β = affine ? initβ(chs) : nothing
+  γ = affine ? initγ(chs) : nothing
+  μ = track_stats ? zeros(Float32, G) : nothing
+  σ² = track_stats ? ones(Float32, G) : nothing
 
-  # Output reshaped to (W,H...,C/G,G,N)
-  μ_affine_shape = ntuple(i->i == ndims(x) ? groups : 1, ndims(x) + 1)
 
-  m = prod(size(x)[1:end-2]) * channels_per_group
-  γ = reshape(gn.γ, affine_shape)
-  β = reshape(gn.β, affine_shape)
-
-  y = reshape(x,((size(x))[1:end-2]...,channels_per_group,groups,batches))
-  if !_isactive(gn)
-    og_shape = size(x)
-    μ = reshape(gn.μ, μ_affine_shape) # Shape : (1,1,...C/G,G,1)
-    σ² = reshape(gn.σ², μ_affine_shape) # Shape : (1,1,...C/G,G,1)
-    ϵ = gn.ϵ
-  else
-    T = eltype(x)
-    og_shape = size(x)
-    axes = 1:ndims(y)-2 # axes to reduce along (all but channels axis)
-    μ = mean(y, dims=axes)
-    σ² = mean((y .- μ) .^ 2, dims=axes)
-
-    ϵ = convert(T, gn.ϵ)
-    # update moving mean/std
-    mtm = gn.momentum
-    S = eltype(gn.μ)
-    gn.μ = mean((1 - mtm) .* gn.μ .+ mtm .* S.(reshape(μ, (groups,batches))),dims=2)
-    gn.σ² = mean((1 - mtm) .* gn.σ² .+ (mtm * m / (m - 1)) .* S.(reshape(σ², (groups,batches))),dims=2)
-  end
-
-  let λ = gn.λ
-    x̂ = (y .- μ) ./ sqrt.(σ² .+ ϵ)
-
-    # Reshape x̂
-    x̂ = reshape(x̂, og_shape)
-    λ.(γ .* x̂ .+ β)
-  end
+  return GroupNorm(G, σ, β, γ,
+            μ, σ², 
+            ϵ, momentum, 
+            affine, track_stats, nothing)
 end
 
-@functor GroupNorm
+function (gn::GroupNorm)(x)
+  @assert ndims(x) > 2
+  N = ndims(x)
+  sz = size(x)
+  x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
+  N = ndims(x)
+  reduce_dims = 1:N-2
+  affine_shape = ntuple(i -> i ∈ (N-1,N-2) ? size(x, i) : 1, N)
+  x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
+  return reshape(x, sz)
+end
 
 testmode!(m::GroupNorm, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
-  print(io, "GroupNorm($(join(size(l.β), ", "))")
-  (l.λ == identity) || print(io, ", λ = $(l.λ)")
+  print(io, "GroupNorm(")
+  print(io, hasaffine(l) ? "affine=false" : length(l.β))
+  (l.σ == identity) || print(io, ", $(l.σ)")
   print(io, ")")
 end
-
 
 """
   hasaffine(l)
@@ -477,6 +439,6 @@ end
 Return `true` if a normalisation layer has trainable shift and 
 scale parameters, `false` otherwise.
 
-See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), and [`LayerNorm`](@ref).
+See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
 """
-hasaffine(l::Union{BatchNorm,InstanceNorm, LayerNorm}) = l.affine  # alternative is  l.β !== nothing
+hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine  # alternative is  l.β !== nothing

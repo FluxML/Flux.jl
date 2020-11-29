@@ -64,7 +64,6 @@ import Flux: activations
     @test Flux.Diagonal(2)([1,2]) == [1,2]
     @test Flux.Diagonal(2)([1 2; 3 4]) == [1 2; 3 4]
 
-
     @test Flux.Diagonal(2)(rand(2,3,4)) |> size == (2, 3, 4)
     @test Flux.Diagonal(2,3)(rand(2,3,4)) |> size == (2, 3, 4)
     @test Flux.Diagonal(2,3,4)(rand(2,3,4)) |> size == (2, 3, 4)

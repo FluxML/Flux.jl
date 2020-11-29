@@ -218,30 +218,4 @@ Flux.@functor Affine
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
 
-<<<<<<< HEAD
 For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).
-=======
-For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).
-
-## Utility functions
-
-Flux provides some utility functions to help you generate models in an automated fashion.
-
-`outdims` enables you to calculate the spatial output dimensions of layers like `Conv` when applied to input images of a given size.
-Currently limited to the following layers:
-  
-- `Chain`
-- `Dense`
-- `Conv`
-- `Diagonal`
-- `Maxout`
-- `ConvTranspose`
-- `DepthwiseConv`
-- `CrossCor`
-- `MaxPool`
-- `MeanPool`
-
-```@docs
-Flux.outdims
-```
->>>>>>> 95f178ea (update Diagonal and LayerNorm)
