@@ -46,11 +46,11 @@ import Flux: activations
       @test size(Dense(10, 5)(randn(10,2,3,4))) == (5,2,3,4)
     end
     @testset "zeros" begin
-      @test Dense(10, 1, identity, initW=ones, initb=zeros)(ones(10,1)) == 10*ones(1, 1)
-      @test Dense(10, 1, identity, initW=ones, initb=zeros)(ones(10,2)) == 10*ones(1, 2)
-      @test Dense(10, 2, identity, initW=ones, initb=zeros)(ones(10,1)) == 10*ones(2, 1)
-      @test Dense(10, 2, identity, initW=ones, initb=zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
-      @test Dense(10, 2, identity, initW=ones, bias=false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
+      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
+      @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
+      @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 2, identity, initW = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
     end
   end
 
