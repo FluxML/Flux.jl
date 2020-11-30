@@ -25,7 +25,7 @@ end
 
 Xtrain = rand(10, 100)
 Ytrain = rand(100)
-train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true)
+train_loader = DataLoader((Xtrain, Ytrain), batchsize = 2, shuffle = true)
 for epoch in 1:100
     for (x, y) in train_loader
         @assert size(x) == (10, 2)
