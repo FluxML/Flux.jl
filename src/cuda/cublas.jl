@@ -9,7 +9,7 @@ function (a::Dense{F,<:CUDA.CuArray{wT},<:CUDA.CuArray{bT}}(x::CUDA.CuArray{T}) 
 end
 
 function _lowprecmul(A::CUDA.CuArray{T}, B::CUDA.CuArray{T}) where T <: Float16
-  y = similar(x, Float32, (size(A, 1), size(B, 2)))
+  y = similar(A, Float32, (size(A, 1), size(B, 2)))
   CUDA.mul!(y, A, B)
   y
 end
