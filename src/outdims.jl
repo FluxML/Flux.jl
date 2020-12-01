@@ -151,7 +151,7 @@ julia> outdims(f, (10,)) # no need to mention batch size
 (10,)
 ```
 """
-outdims(m, isize; preserve_batch = false) = with_logger(NullLogger()) do
+function outdims(m, isize; preserve_batch = false)
   isize, ispadded = _handle_batchin(isize, dimhint(m))
   
   return _handle_batchout(size(m(fill(nil, isize))), ispadded)
@@ -204,11 +204,15 @@ end
 
 for (fn, Dims) in ((:conv, DenseConvDims), (:depthwiseconv, DepthwiseConvDims))
   @eval begin
-    function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims) where T
+    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
+      fill(nil, NNlib.output_size(dims)..., NNlib.channels_out(dims), size(a)[end])
+    end
+
+    function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims)
       NNlib.$fn(fill(nil, size(a)), b, dims)
     end
 
-    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims) where T
+    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims)
       NNlib.$fn(a, fill(nil, size(b)), dims)
     end
   end
