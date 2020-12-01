@@ -1,7 +1,14 @@
 name: CI
+# env:
+#   JULIA_NUM_THREADS: 2
 on:
-  - push
-  - pull_request
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+    tags: '*'
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -10,17 +17,26 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.5'
+          - '1.5' # Replace this with the minimum Julia version that your package supports.
+          # - '1'   # automatically expands to the latest stable 1.x release of Julia
           - 'nightly'
         os:
           - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+          # - macOS-latest
+          # - windows-latest
         arch:
           - x64
+        include:
+          - os: windows-latest
+            version: '1'
+            arch: x64
+          - os: macOS-latest
+            version: '1'
+            arch: x64
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
+        # `allow-failure` not available yet https://github.com/actions/toolkit/issues/399
         continue-on-error: ${{ matrix.julia-version == 'nightly' }}
         with:
           version: ${{ matrix.version }}
@@ -40,6 +56,11 @@ jobs:
         continue-on-error: ${{ matrix.julia-version == 'nightly' }}
       - uses: julia-actions/julia-runtest@v1
         continue-on-error: ${{ matrix.julia-version == 'nightly' }}
+      - uses: codecov/codecov-action@v1
+        continue-on-error: ${{ matrix.version == 'nightly' }}
+        with:
+          file: lcov.info
+
   docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -48,10 +69,6 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1'
-      - run: |
-          git config --global user.name name
-          git config --global user.email email
-          git config --global github.user username
       - run: |
           julia --project=docs -e '
             using Pkg
