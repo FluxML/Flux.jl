@@ -4,7 +4,6 @@ steps:
       - JuliaCI/julia#v0.5:
           version: '1.5'
       - JuliaCI/julia-test#v0.3:
-    branches: "!gh-pages"
     agents:
       queue: "juliagpu"
     timeout_in_minutes: 60
