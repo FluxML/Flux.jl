@@ -1,0 +1,16 @@
+steps:
+  - label: "GPU Integeration"
+    plugins:
+      - JuliaCI/julia#v0.5:
+          version: '1.5'
+      - JuliaCI/julia-test#v0.3:
+          test_args: "--thorough"
+    agents:
+      queue: "juliagpu"
+      cuda: "11.1"
+      cap: "recent"
+    env:
+      JULIA_CUDA_VERSION: '11.1'
+      JULIA_CUDA_USE_BINARYBUILDER: 'true'
+    if: build.message !~ /\[skip ci\]/
+    timeout_in_minutes: 60
