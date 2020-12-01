@@ -3,8 +3,9 @@ function (a::Dense{F,<:CUDA.CuArray{wT},<:CUDA.CuArray{bT}}(x::CUDA.CuArray{T}) 
   # low precision mul! with accumulating into Float32
   # needed for dispatching to the correct low precision
   # kernel in CUDA.jl to use the tensor cores
-  y = _lowprecmul(a.W, x)
-  a.σ.(y .+ a.b)
+  y = repeat(a.b, 1, size(x)[end])
+  CUDA.mul!(y, a.W, x, one(T), one(T))
+  a.σ.(y)
 end
 
 function _lowprecmul(A::CUDA.CuArray{T}, B::CUDA.CuArray{T}) where T <: Float16
