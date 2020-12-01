@@ -191,8 +191,8 @@ dimhint(::GlobalMeanPool) = 4
 
 ## make tuples and vectors be like Chains
 
-(m::Tuple)(x::AbstractArray{Nil}) = applychain(m, x)
-outdims(m::AbstractVector, isize) = outdims(tuple(m...), isize)
+outdims(m::Tuple, isize) = outdims(Chain(m...), isize)
+outdims(m::AbstractVector, isize) = outdims(Chain(m...), isize)
 
 ## bypass statistics in normalization layers
 
