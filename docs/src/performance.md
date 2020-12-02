@@ -13,7 +13,6 @@ not because the operations are faster, but because the memory usage is halved.
 Which means allocations occur much faster.
 And you use less memory.
 
-
 ## Preserve inputs' types
 
 Not only should your activation and loss functions be [type-stable](https://docs.julialang.org/en/v1/manual/performance-tips/#Write-%22type-stable%22-functions-1),
@@ -21,8 +20,8 @@ they should also preserve the type of their inputs.
 
 A very artificial example using an activation function like
 
-```
-    my_tanh(x) = Float64(tanh(x))
+```julia
+my_tanh(x) = Float64(tanh(x))
 ```
 
 will result in performance on `Float32` input orders of magnitude slower than the normal `tanh` would,
@@ -35,20 +34,21 @@ you will see a large slow-down.
 This can occur sneakily, because you can cause type-promotion by interacting with a numeric literals.
 E.g. the following will have run into the same problem as above:
 
-```
-    leaky_tanh(x) = 0.01*x + tanh(x)
+```julia
+leaky_tanh(x) = 0.01*x + tanh(x)
 ```
 
 While one could change the activation function (e.g. to use `0.01f0*x`), the idiomatic (and safe way)  to avoid type casts whenever inputs changes is to use `oftype`:
-```
-    leaky_tanh(x) = oftype(x/1, 0.01)*x + tanh(x)
-```
 
+```julia
+leaky_tanh(x) = oftype(x/1, 0.01)*x + tanh(x)
+```
 
 ## Evaluate batches as Matrices of features
 
 While it can sometimes be tempting to process your observations (feature vectors) one at a time
 e.g.
+
 ```julia
 function loss_total(xs::AbstractVector{<:Vector}, ys::AbstractVector{<:Vector})
     sum(zip(xs, ys)) do (x, y_target)
