@@ -119,11 +119,10 @@ end
 
 @functor Dense
 
-function (a::Dense)(x::AbstractVecOrMat)
+function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  # reshape to handle dims > 1 as batch dimensions
   sz = size(x)
-  x = reshape(x, sz[1], :) 
+  x = reshape(x, sz[1], :) # reshape to handle dims > 1 as batch dimensions 
   x = σ.(W*x .+ b)
   return reshape(x, :, sz[2:end]...)
 end
