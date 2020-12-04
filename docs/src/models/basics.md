@@ -23,9 +23,9 @@ julia> d2f(2)
 When a function has many parameters, we can get gradients of each one at the same time:
 
 ```jldoctest basics
-julia> f(x, y) = sum((x .- y).^2);
+julia> f(x, y) = sum((x .- y).^2); ∑(x-y)^2 for some range of n
 
-julia> gradient(f, [2, 1], [2, 0])
+julia> gradient(f, [2, 1], [2, 0]) # gradient(function,[x1,x2], [y1,y2]) = ([δf/δx(x1,y1),δf/δx(x2,y2)], [δf/δy(x1,y1),δf/δy(x2,y2)])
 ([0, 2], [0, -2])
 ```
 
