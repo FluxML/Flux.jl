@@ -83,14 +83,21 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in::Integer, out::Integer, σ = identity)
+    Dense(in::Integer, out::Integer, σ = identity; bias=true)
 
-Create a traditional `Dense` layer with parameters `W` and `b`.
+Create a traditional `Dense` layer with in×out weight matrix `W` and 
+bias vector  `b` of length `out`. The forward pass is given by:
 
     y = σ.(W * x .+ b)
 
-The input `x` must be a vector of length `in`, or a batch of vectors represented
-as an `in × N` matrix. The out `y` will be a vector or batch of length `out`.
+The input `x` must be a vector of length `in`, a batch of vectors represented
+as an `in × N` matrix, or a higher order tensor where all dimensions
+after the first one will be treated as batch dimensions.
+
+The out `y` will be a vector  of length `out` or a batch whose first
+dimension is `out` and the remaining dimensions are the same as in the input.
+
+Setting `bias` to `false` will switch the bias  off for the layer.
 
 # Example
 ```
@@ -101,9 +108,12 @@ julia> d(rand(5))
 2-element Array{Float32,1}:
  -0.16210233
   0.123119034
+
+julia> d = Dense(5, 2; bias=false)
+Dense(5, 2)
 ```
 """
-struct Dense{F,S<:AbstractArray,T<:AbstractArray}
+struct Dense{F,S<:AbstractArray,T<:Union{Zeros, AbstractVector}}
   W::S
   b::T
   σ::F
@@ -112,15 +122,19 @@ end
 Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  return Dense(initW(out, in), initb(out), σ)
+               initW = glorot_uniform, initb = zeros, bias=true)
+  return Dense(initW(out, in), create_bias(bias, initb, out), σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  σ.(W*x .+ b)
+  # reshape to handle dims > 1 as batch dimensions
+  sz = size(x)
+  x = reshape(x, sz[1], :) 
+  x = σ.(W*x .+ b)
+  return reshape(x, :, sz[2:end]...)
 end
 
 function Base.show(io::IO, l::Dense)

@@ -44,16 +44,16 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
   x = rand(100)
 
   testmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) == 0
   trainmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=true) 
+  y = Flux.dropout(x, 0.9, active=true)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=false) 
+  y = Flux.dropout(x, 0.9, active=false)
   @test count(a->a == 0, y) == 0
 end
 
@@ -210,7 +210,6 @@ end
 
 end
 
-if VERSION >= v"1.1"
 @testset "GroupNorm" begin
   # begin tests
   squeeze(x) = dropdims(x, dims = tuple(findall(size(x) .== 1)...)) # To remove all singular dimensions
@@ -309,5 +308,4 @@ if VERSION >= v"1.1"
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end
-end
 end
