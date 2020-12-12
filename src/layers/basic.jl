@@ -113,6 +113,9 @@ julia> d(rand(Float32, 5))
 2-element Array{Float32,1}:
  -0.16210233
   0.123119034
+
+julia> d = Dense(5, 2; bias=false)
+Dense(5, 2)
 ```
 """
 struct Dense{F,S<:AbstractArray,T<:Union{Zeros, AbstractVector}}
