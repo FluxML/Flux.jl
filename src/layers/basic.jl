@@ -101,7 +101,7 @@ dimension is `out` and the remaining dimensions are the same as in the input.
 Setting `bias` to `false` will switch the bias  off for the layer.
 
 `initW` and `initb` are callables used to initialize weights and biases respectively,
-trhough the calls `initW(out, in)` and `initb(out)`.
+through the calls `initW(out, in)` and `initb(out)`.
 
 # Examples
 
