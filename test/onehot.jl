@@ -27,10 +27,14 @@ end
 
 @testset "abstractmatrix onehotvector multiplication" begin
   A = [1 3 5; 2 4 6; 3 6 9]
+  B = [1, 2, 3, 4, 5]
   b1 = Flux.OneHotVector(1, 3)
   b2 = Flux.OneHotVector(3, 5)
 
   @test A*b1 == A[:,1]
+  @test b1' * A == (A'[:, b1.ix])'
+  @test A' * b1 == A'[:, b1.ix]
+  @test B' * b2 == B[b2.ix: b2.ix]
   @test_throws DimensionMismatch A*b2
 end
 
