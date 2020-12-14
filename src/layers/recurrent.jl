@@ -1,3 +1,4 @@
+
 gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
@@ -12,33 +13,30 @@ in the background. `cell` should be a model of the form:
 
     h, y = cell(h, x...)
 
-For example, here's a recurrent network that keeps a running total of its inputs.
+For example, here's a recurrent network that keeps a running total of its inputs:
 
 ```julia
-accum(h, x) = (h+x, x)
+accum(h, x) = (h + x, x)
 rnn = Flux.Recur(accum, 0)
-rnn(2) # 2
-rnn(3) # 3
-rnn.state # 5
-rnn.(1:10) # apply to a sequence
-rnn.state # 60
+rnn(2)      # 2
+rnn(3)      # 3
+rnn.state   # 5
+rnn.(1:10)  # apply to a sequence
+rnn.state   # 60
 ```
 """
-mutable struct Recur{T}
+mutable struct Recur{T,S}
   cell::T
-  init
-  state
+  state::S
 end
 
-Recur(m, h = hidden(m)) = Recur(m, h, h)
-
 function (m::Recur)(xs...)
-  h, y = m.cell(m.state, xs...)
-  m.state = h
+  m.state, y = m.cell(m.state, xs...)
   return y
 end
 
-@functor Recur cell, init
+@functor Recur
+trainable(a::Recur) = (a.cell,)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -47,37 +45,44 @@ Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
 Reset the hidden state of a recurrent layer back to its original value.
 
-Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to
-
-    rnn.state = hidden(rnn.cell)
+Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
+```julia
+rnn.state = hidden(rnn.cell)
+```
 """
-reset!(m::Recur) = (m.state = m.init)
+reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
+
+# TODO remove in v0.13
+function Base.getproperty(m::Recur, sym::Symbol)
+  if sym === :init
+    @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    return getfield(m.cell, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 # Vanilla RNN
 
-mutable struct RNNCell{F,A,V}
+struct RNNCell{F,A,V,S}
   σ::F
   Wi::A
   Wh::A
   b::V
-  h::V
+  state0::S
 end
 
-RNNCell(in::Integer, out::Integer, σ = tanh;
-        init = glorot_uniform) =
-  RNNCell(σ, init(out, in), init(out, out),
-          init(out), zeros(out))
+RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
+  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
 function (m::RNNCell)(h, x)
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
   return h, h
 end
-
-hidden(m::RNNCell) = m.h
 
 @functor RNNCell
 
@@ -93,22 +98,33 @@ end
 The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 """
+Recur(m::RNNCell) = Recur(m, m.state0)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
+
+# TODO remove in v0.13
+function Base.getproperty(m::RNNCell, sym::Symbol)
+  if sym === :h
+    @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    return getfield(m, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
 
 # LSTM
 
-mutable struct LSTMCell{A,V}
+struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  h::V
-  c::V
+  state0::S
 end
 
 function LSTMCell(in::Integer, out::Integer;
-                  init = glorot_uniform)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), init(out * 4),
-                  zeros(out), zeros(out))
+                  init = glorot_uniform,
+                  initb = zeros,
+                  init_state = zeros)
+  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out,1), init_state(out,1)))
   cell.b[gate(out, 2)] .= 1
   return cell
 end
@@ -125,8 +141,6 @@ function (m::LSTMCell)((h, c), x)
   return (h′, c), h′
 end
 
-hidden(m::LSTMCell) = (m.h, m.c)
-
 @functor LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
@@ -135,26 +149,41 @@ Base.show(io::IO, l::LSTMCell) =
 """
     LSTM(in::Integer, out::Integer)
 
-Long Short Term Memory recurrent layer. Behaves like an RNN but generally
-exhibits a longer memory span over sequences.
+[Long Short Term Memory](https://www.researchgate.net/publication/13853244_Long_Short-term_Memory)
+recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
+# Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
+#   (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
+Recur(m::LSTMCell) = Recur(m, m.state0)
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
+
+# TODO remove in v0.13
+function Base.getproperty(m::LSTMCell, sym::Symbol)
+  if sym === :h
+    @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    return getfield(m, :state0)[1]
+  elseif sym === :c
+      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
+      return getfield(m, :state0)[2]
+  else
+    return getfield(m, sym)
+  end
+end
 
 # GRU
 
-mutable struct GRUCell{A,V}
+struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  h::V
+  state0::S
 end
 
-GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(init(out * 3, in), init(out * 3, out),
-          init(out * 3), zeros(out))
+GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
 function (m::GRUCell)(h, x)
   b, o = m.b, size(h, 1)
@@ -162,11 +191,9 @@ function (m::GRUCell)(h, x)
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1 .- z).*h̃ .+ z.*h
+  h′ = (1 .- z) .* h̃ .+ z .* h
   return h′, h′
 end
-
-hidden(m::GRUCell) = m.h
 
 @functor GRUCell
 
@@ -176,10 +203,25 @@ Base.show(io::IO, l::GRUCell) =
 """
     GRU(in::Integer, out::Integer)
 
-Gated Recurrent Unit layer. Behaves like an RNN but generally
-exhibits a longer memory span over sequences.
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
+RNN but generally exhibits a longer memory span over sequences.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
+Recur(m::GRUCell) = Recur(m, m.state0)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+
+# TODO remove in v0.13
+function Base.getproperty(m::GRUCell, sym::Symbol)
+  if sym === :h
+    @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    return getfield(m, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
+
+@adjoint function Broadcast.broadcasted(f::Recur, args...)
+  Zygote.∇map(__context__, f, args...)
+end

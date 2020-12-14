@@ -3,28 +3,35 @@ module Flux
 # Zero Flux Given
 
 using Base: tail
-using Zygote, MacroTools, Juno, Reexport, Statistics, Random
+using Statistics, Random, LinearAlgebra
+using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
+
 export gradient
 
-export Chain, Dense, Maxout, RNN, LSTM, GRU, Conv, CrossCor, ConvTranspose, MaxPool, MeanPool,
-       DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
-       SkipConnection, params, fmap, cpu, gpu, f32, f64
+export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTranspose,
+       AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool,
+       MeanPool, flatten, DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm,
+       InstanceNorm, GroupNorm, SkipConnection, params, fmap, cpu, gpu, f32, f64,
+       testmode!, trainmode!
 
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
-export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
-  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
+using .Optimise: skip
+export Descent, ADAM, Momentum, Nesterov, RMSProp,
+  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
+  ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
+  WeightDecay, ClipValue, ClipNorm
 
 
-using CuArrays
+using CUDA
 const use_cuda = Ref(false)
 
 include("utils.jl")
+include("zeros.jl")
 include("onehot.jl")
 include("functor.jl")
 
@@ -36,26 +43,18 @@ include("layers/normalise.jl")
 
 include("data/Data.jl")
 
+include("losses/Losses.jl")
+using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
+
 include("deprecations.jl")
 
+include("cuda/cuda.jl")
+
 function __init__()
-  precompiling = ccall(:jl_generating_output, Cint, ()) != 0
-
-  # we don't want to include the CUDA module when precompiling,
-  # or we could end up replacing it at run time (triggering a warning)
-  precompiling && return
-
-  if !CuArrays.functional()
-    # nothing to do here, and either CuArrays or one of its dependencies will have warned
-  else
-    use_cuda[] = true
-
-    # FIXME: this functionality should be conditional at run time by checking `use_cuda`
-    #        (or even better, get moved to CuArrays.jl as much as possible)
-    if CuArrays.has_cudnn()
-      include(joinpath(@__DIR__, "cuda/cuda.jl"))
-    else
-      @warn "CuArrays.jl did not find libcudnn. Some functionality will not be available."
+  use_cuda[] = CUDA.functional() # Can be overridden after load with `Flux.use_cuda[] = false`
+  if CUDA.functional()
+    if !CUDA.has_cudnn()
+      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
   end
 end

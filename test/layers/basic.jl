@@ -28,16 +28,30 @@ import Flux: activations
   end
 
   @testset "Dense" begin
-    @test  length(Dense(10, 5)(randn(10))) == 5
-    @test_throws DimensionMismatch Dense(10, 5)(randn(1))
-    @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
-    @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+    @testset "constructors" begin
+      @test size(Dense(10, 100).W) == (100, 10)
+      @test Dense(rand(100,10), rand(10)).σ == identity
 
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
-
+      @test_throws MethodError Dense(10, 10.5)
+      @test_throws MethodError Dense(10, 10.5, tanh)
+    end
+    @testset "dimensions" begin
+      @test  length(Dense(10, 5)(randn(10))) == 5
+      @test_throws DimensionMismatch Dense(10, 5)(randn(1))
+      @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
+      @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+      @test size(Dense(10, 5)(randn(10))) == (5,)
+      @test size(Dense(10, 5)(randn(10,2))) == (5,2)
+      @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
+      @test size(Dense(10, 5)(randn(10,2,3,4))) == (5,2,3,4)
+    end
+    @testset "zeros" begin
+      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
+      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
+      @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
+      @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 2, identity, initW = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+    end
   end
 
   @testset "Diagonal" begin
@@ -91,5 +105,26 @@ import Flux: activations
       input = randn(10, 2)
       @test size(SkipConnection(Dense(10,10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
     end
+  end
+
+  @testset "output dimensions" begin
+    m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
+    @test Flux.outdims(m, (10, 10)) == (6, 6)
+
+    m = Dense(10, 5)
+    @test_throws DimensionMismatch Flux.outdims(m, (5, 2)) == (5,)
+    @test Flux.outdims(m, (10,)) == (5,)
+
+    m = Chain(Dense(10, 8, σ), Dense(8, 5), Dense(5, 2))
+    @test Flux.outdims(m, (10,)) == (2,)
+
+    m = Chain(Dense(10, 8, σ), Dense(8, 4), Dense(5, 2))
+    @test_throws DimensionMismatch Flux.outdims(m, (10,))
+
+    m = Flux.Diagonal(10)
+    @test Flux.outdims(m, (10,)) == (10,)
+
+    m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
+    @test Flux.outdims(m, (10, 10)) == (8, 8)
   end
 end

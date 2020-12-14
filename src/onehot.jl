@@ -11,7 +11,12 @@ Base.getindex(xs::OneHotVector, i::Integer) = i == xs.ix
 
 Base.getindex(xs::OneHotVector, ::Colon) = OneHotVector(xs.ix, xs.of)
 
-A::AbstractMatrix * b::OneHotVector = A[:, b.ix]
+function Base.:*(A::AbstractMatrix, b::OneHotVector)
+  if size(A, 2) != b.of
+    throw(DimensionMismatch("Matrix column must correspond with OneHotVector size"))
+  end
+  return A[:, b.ix]
+end
 
 struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
   height::Int
@@ -27,7 +32,8 @@ Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = OneHotMatrix(xs.height, copy
 
 Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
 
-A::AbstractMatrix * B::OneHotMatrix = A[:, map(x->x.ix, B.data)]
+# remove workaround when https://github.com/JuliaGPU/CuArrays.jl/issues/676 is fixed
+A::AbstractMatrix * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
 
 Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs...])
 
@@ -37,30 +43,29 @@ import Adapt: adapt, adapt_structure
 
 adapt_structure(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
 
-import .CuArrays: CuArray, cudaconvert
+import .CUDA: CuArray, CuArrayStyle, cudaconvert
 import Base.Broadcast: BroadcastStyle, ArrayStyle
-BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = ArrayStyle{CuArray}()
+BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = CuArrayStyle{2}()
 cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
 
 """
     onehot(l, labels[, unk])
 
-Create an [`OneHotVector`](@ref) wtih `l`-th element be `true` based on possible `labels` set.
-If `unk` is given, it retruns `onehot(unk, labels)` if the input label `l` is not find in `labels`; otherwise
-it will error.
+Return a `OneHotVector` where only first occourence of `l` in `labels` is `1` and
+all other elements are `0`.
 
-## Examples
+If `l` is not found in labels and  `unk` is present, the function returns
+`onehot(unk, labels)`; otherwise the function raises an error.
 
+# Examples
 ```jldoctest
-julia> using Flux: onehot
-
-julia> onehot(:b, [:a, :b, :c])
+julia> Flux.onehot(:b, [:a, :b, :c])
 3-element Flux.OneHotVector:
  0
  1
  0
 
-julia> onehot(:c, [:a, :b, :c])
+julia> Flux.onehot(:c, [:a, :b, :c])
 3-element Flux.OneHotVector:
  0
  0
@@ -82,15 +87,14 @@ end
 """
     onehotbatch(ls, labels[, unk...])
 
-Create an [`OneHotMatrix`](@ref) with a batch of labels based on possible `labels` set, returns the
-`onehot(unk, labels)` if given labels `ls` is not found in set `labels`.
+Return a `OneHotMatrix` where `k`th column of the matrix is `onehot(ls[k], labels)`.
 
-## Examples
+If one of the input labels `ls` is not found in `labels` and `unk` is given,
+return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an error.
 
+# Examples
 ```jldoctest
-julia> using Flux: onehotbatch
-
-julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
+julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
 3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
  0  1  0
  1  0  1
@@ -107,13 +111,12 @@ Base.argmax(xs::OneHotVector) = xs.ix
 
 Inverse operations of [`onehot`](@ref).
 
+# Examples
 ```jldoctest
-julia> using Flux: onecold
-
-julia> onecold([true, false, false], [:a, :b, :c])
+julia> Flux.onecold([true, false, false], [:a, :b, :c])
 :a
 
-julia> onecold([0.3, 0.2, 0.5], [:a, :b, :c])
+julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 ```
 """
@@ -122,7 +125,6 @@ onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
 onecold(y::AbstractMatrix, labels...) =
   dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
 
-onecold(y::OneHotMatrix, labels...) =
-  mapreduce(x -> Flux.onecold(x, labels...), |, y.data, dims = 2, init = 0)
+onecold(y::OneHotMatrix, labels...) = map(x -> Flux.onecold(x, labels...), y.data)
 
 @nograd onecold, onehot, onehotbatch

@@ -1,17 +1,17 @@
 # GPU Support
 
-NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CuArrays](https://github.com/JuliaGPU/CuArrays.jl) readme.
+NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CUDA](https://github.com/JuliaGPU/CUDA.jl) readme.
 
 ## GPU Usage
 
-Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CuArrays](https://github.com/JuliaGPU/CuArrays.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
+Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA](https://github.com/JuliaGPU/CUDA.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
-For example, we can use `CuArrays` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
+For example, we can use `CUDA.CuArray` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
 
-(Note that you need to have CUDA available to use CuArrays – please see the [CuArrays.jl](https://github.com/JuliaGPU/CuArrays.jl) instructions for more details.)
+(Note that you need to have CUDA available to use CUDA.CuArray – please see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) instructions for more details.)
 
 ```julia
-using CuArrays
+using CUDA
 
 W = cu(rand(2, 5)) # a 2×5 CuArray
 b = cu(rand(2))
@@ -30,7 +30,7 @@ If you define a structured model, like a `Dense` layer or `Chain`, you just need
 ```julia
 d = Dense(10, 5, σ)
 d = fmap(cu, d)
-d.W # Tracked CuArray
+d.W # CuArray
 d(cu(rand(10))) # CuArray output
 
 m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
@@ -38,10 +38,10 @@ m = fmap(cu, m)
 d(cu(rand(10)))
 ```
 
-As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing, but loading `CuArrays` will cause it to move data to the GPU instead.
+As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing, but loading `CUDA` will cause it to move data to the GPU instead.
 
 ```julia
-julia> using Flux, CuArrays
+julia> using Flux, CUDA
 
 julia> m = Dense(10,5) |> gpu
 Dense(10, 5)
@@ -53,7 +53,7 @@ julia> x = rand(10) |> gpu
  0.511655
 
 julia> m(x)
-Tracked 5-element CuArray{Float32,1}:
+5-element CuArray{Float32,1}:
  -0.30535
  ⋮
  -0.618002

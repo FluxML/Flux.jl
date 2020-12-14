@@ -1,137 +1,24 @@
-using CuArrays
-using NNlib: logsoftmax, logσ
+"""
+    flatten(x::AbstractArray)
 
-# Cost functions
-
-mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
-
-_crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Nothing) =
-  -sum(y .* log.(ŷ)) * 1 // size(y, 2)
-
-_crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat, weight::Union{Number, AbstractVector}) =
-  _crossentropy(ŷ, y.*weight, nothing)
-
-function crossentropy(ŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight=nothing, label_smoothing=zero(eltype(y)))
-  if !iszero(label_smoothing)
-    y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
-  end
-  return _crossentropy(ŷ, y, weight)
-end
-
-function logitcrossentropy(logŷ::AbstractVecOrMat, y::AbstractVecOrMat; weight = 1, label_smoothing=zero(eltype(y)))
-  if !iszero(label_smoothing)
-    y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
-  end
-  return -sum(y .* logsoftmax(logŷ) .* weight) * 1 // size(y, 2)
+Reshape arbitrarly-shaped input into a matrix-shaped output
+preserving the last dimension size.
+Equivalent to `reshape(x, :, size(x)[end])`.
+"""
+function flatten(x::AbstractArray)
+  return reshape(x, :, size(x)[end])
 end
 
 """
-    binarycrossentropy(ŷ, y; ϵ=eps(ŷ), label_smoothing=zero(y))
+    normalise(x; dims=ndims(x), ϵ=1e-5)
 
-Return `-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)`. The ϵ term provides numerical stability.
-`label_smoothing` can provide better generalization and continuity to the loss function.
-
-    julia> binarycrossentropy.(σ.([-1.1491, 0.8619, 0.3127]), [1, 1, 0.])
-    3-element Array{Float64,1}:
-    1.4244
-    0.352317
-    0.86167
+Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
+Per default, `dims` is the last dimension. 
+`ϵ` is a small additive factor added to the denominator for numerical stability.
 """
-function binarycrossentropy(ŷ, y; ϵ=eps(ŷ), label_smoothing=zero(y))
-  if !iszero(label_smoothing)
-    y = y*(1 - label_smoothing) + label_smoothing*1//2
-  end
-  return -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+function normalise(x::AbstractArray; dims=ndims(x), ϵ=ofeltype(x, 1e-5))
+  μ = mean(x, dims=dims)
+    #   σ = std(x, dims=dims, mean=μ, corrected=false) # use this when Zygote#478 gets merged
+  σ = std(x, dims=dims, corrected=false)
+  return (x .- μ) ./ (σ .+ ϵ)
 end
-
-# Re-definition to fix interaction with CuArrays.
-CuArrays.@cufunc function binarycrossentropy(ŷ, y; ϵ=eps(ŷ), label_smoothing=zero(y))
-  if !iszero(label_smoothing)
-    y = y*(1 - label_smoothing) + label_smoothing*1//2
-  end
-  return -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
-end
-
-"""
-    logitbinarycrossentropy(logŷ, y)
-
-`logitbinarycrossentropy(logŷ, y)` is mathematically equivalent to `binarycrossentropy(σ(logŷ), y)`
-but it is more numerically stable.
-`label_smoothing` can provide better generalization and continuity to the loss function.
-
-    julia> logitbinarycrossentropy.([-1.1491, 0.8619, 0.3127], [1, 1, 0.])
-    3-element Array{Float64,1}:
-     1.4244
-     0.352317
-     0.86167
-"""
-function logitbinarycrossentropy(logŷ, y; label_smoothing=zero(y))
-  if !iszero(label_smoothing)
-    y = y*(1 - label_smoothing) + label_smoothing*1//2
-  end
-  return (1 - y)*logŷ - logσ(logŷ)
-end
-
-# Re-definition to fix interaction with CuArrays.
-
-CuArrays.@cufunc function logitbinarycrossentropy(logŷ, y; label_smoothing=zero(y))
-  if !iszero(label_smoothing)
-    y = y*(1 - label_smoothing) + label_smoothing*1//2
-  end
-  return (1 - y)*logŷ - logσ(logŷ)
-end
-
-"""
-    normalise(x::AbstractArray; dims=1)
-
-Normalises `x` to mean 0 and standard deviation 1, across the dimensions given by `dims`. Defaults to normalising over columns.
-
-    julia> a = reshape(collect(1:9), 3, 3)
-    3×3 Array{Int64,2}:
-     1  4  7
-     2  5  8
-     3  6  9
-
-    julia> normalise(a)
-    3×3 Array{Float64,2}:
-     -1.22474  -1.22474  -1.22474
-      0.0       0.0       0.0
-      1.22474   1.22474   1.22474
-
-    julia> normalise(a, dims=2)
-    3×3 Array{Float64,2}:
-     -1.22474  0.0  1.22474
-     -1.22474  0.0  1.22474
-     -1.22474  0.0  1.22474
-"""
-function normalise(x::AbstractArray; dims=1)
-  μ′ = mean(x, dims = dims)
-  σ′ = std(x, dims = dims, mean = μ′, corrected=false)
-  return (x .- μ′) ./ σ′
-end
-
-"""
-    kldivergence(ŷ, y)
-KLDivergence is a measure of how much one probability distribution is different from the other.
-It is always non-negative and zero only when both the distributions are equal everywhere.
-[KL Divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence).
-"""
-function kldivergence(ŷ, y)
-  entropy = sum(y .* log.(y)) *1 //size(y,2)
-  cross_entropy = crossentropy(ŷ, y)
-  return entropy + cross_entropy
-end
-
-"""
-    poisson(ŷ, y)
-Poisson loss function is a measure of how the predicted distribution diverges from the expected distribution.
-[Poisson Loss](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
-"""
-poisson(ŷ, y) = sum(ŷ .- y .* log.(ŷ)) *1 // size(y,2)
-
-"""
-    hinge(ŷ, y)
-Measures the loss given the prediction ŷ and true labels y(containing 1 or -1). 
-[Hinge Loss](https://en.wikipedia.org/wiki/Hinge_loss).
-"""
-hinge(ŷ, y) = sum(max.(0, 1 .-  ŷ .* y)) *1 // size(y,2)

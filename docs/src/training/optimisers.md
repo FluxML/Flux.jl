@@ -14,18 +14,18 @@ loss(x, y) = sum((predict(x) .- y).^2)
 x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
 
-θ = Params([W, b])
+θ = params(W, b)
 grads = gradient(() -> loss(x, y), θ)
 ```
 
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-using Flux: update!
+using Flux.Optimise: update!
 
 η = 0.1 # Learning Rate
 for p in (W, b)
-  update!(p, -η * grads[p])
+  update!(p, η * grads[p])
 end
 ```
 
@@ -46,11 +46,13 @@ An optimiser `update!` accepts a parameter and a gradient, and updates the param
 All optimisers return an object that, when passed to `train!`, will update the parameters passed to it.
 
 ```@docs
+Flux.Optimise.update!
 Descent
 Momentum
 Nesterov
 RMSProp
 ADAM
+RADAM
 AdaMax
 ADAGrad
 ADADelta
@@ -61,7 +63,7 @@ ADAMW
 
 ## Optimiser Interface
 
-Flux's optimsers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
+Flux's optimisers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
 
 In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
 
@@ -78,7 +80,7 @@ Momentum(eta::Real, rho::Real) = Momentum(eta, rho, IdDict())
 The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state dictionary. Each parameter in our models will get an entry in there. We can now define the rule applied when this optimiser is invoked.
 
 ```julia
-function apply!(o::Momentum, x, Δ)
+function Flux.Optimise.apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
   v = get!(o.velocity, x, zero(x))::typeof(x)
   @. v = ρ * v - η * Δ
@@ -99,22 +101,22 @@ Flux internally calls on this function via the `update!` function. It shares the
 
 ## Composing Optimisers
 
-Flux defines a special kind of optimiser called simply as `Optimiser` which takes in a arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
+Flux defines a special kind of optimiser simply called `Optimiser` which takes in arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
 ```julia
 opt = Optimiser(ExpDecay(0.001, 0.1, 1000, 1e-4), Descent())
 ```
 
-Here we apply exponential decay to the `Descent` optimser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
-It is then applied like any optimser.
+Here we apply exponential decay to the `Descent` optimiser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
+It is then applied like any optimiser.
 
 ```julia
 w = randn(10, 10)
 w1 = randn(10,10)
 ps = Params([w, w1])
 
-loss(x) = Flux.mse(w * x, w1 * x)
+loss(x) = Flux.Losses.mse(w * x, w1 * x)
 
 loss(rand(10)) # around 9
 
@@ -137,4 +139,17 @@ Similar to optimisers, Flux also defines some simple decays that can be used in 
 ExpDecay
 InvDecay
 WeightDecay
+```
+
+## Gradient Clipping
+
+Gradient clipping is useful for training recurrent neural networks, which have a tendency to suffer from the exploding gradient problem. An example usage is
+
+```julia
+opt = Optimiser(ClipValue(1e-3), ADAM(1e-3))
+```
+
+```@docs
+ClipValue
+ClipNorm
 ```
