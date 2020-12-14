@@ -60,24 +60,49 @@ y = onehotbatch([1, 1, 0, 0], 0:1)
 v = log(.1 / .9)
 logŷ = [v 0.0; 0.0 v; 0.0 v; v 0.0]'
 lossvalue = 1.203972804325936
+yl = onehotbatch([1], 0:1)
+ls = 0.1
+yls = [ls (1-ls)]'  # Effective y after label smoothing
+ylp = [0.9 0.1]'
+logylp = [0.0 v]'
+
+# Construct `sim`ilar and `dis`imilar versions of the dataset so we can test effect of smoothing
+# smoothing should decrease loss on disimilar and increase the loss on similar, compared to
+# the loss without smoothing
+ya = onehotbatch([1, 1, 1, 0, 0], 0:1)
+y_same = Float32.(ya)
+y_sim = y_same .* (1-2*ls) .+ ls
+y_dis = copy(y_sim)
+y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
 
 @testset "crossentropy" begin
   @test crossentropy([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ crossentropy([0.1,0.9], [0.1,0.9])
   @test crossentropy(ŷ, y) ≈ lossvalue
+  @test crossentropy(ylp, yl, label_smoothing=2*ls) ≈ -sum(yls.*log.(ylp))
+  @test crossentropy(ylp, yl) ≈ -sum(yl.*log.(ylp))
+  @test iszero(crossentropy(y_same, ya, ϵ=0))
+  @test iszero(crossentropy(ya, ya, ϵ=0))
+  @test crossentropy(y_sim, ya) < crossentropy(y_sim, ya, label_smoothing=2*ls)
+  @test crossentropy(y_dis, ya) > crossentropy(y_dis, ya, label_smoothing=2*ls)
 end
 
 @testset "logitcrossentropy" begin
   @test logitcrossentropy(logŷ, y) ≈ lossvalue
+  @test logitcrossentropy(logylp, yl) ≈ -sum(yl.*logsoftmax(logylp))
+  @test logitcrossentropy(logylp, yl, label_smoothing=2*ls) ≈ -sum(yls.*logsoftmax(logylp))
 end
 
 logŷ, y = randn(3), rand(3)
+yls = y.*(1-2ls).+ls
 
 @testset "binarycrossentropy" begin
+  @test binarycrossentropy.(σ.(logŷ), y; ϵ=0, label_smoothing=2*ls) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
   @test binarycrossentropy(σ.(logŷ), y; ϵ=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
   @test binarycrossentropy(σ.(logŷ), y) ≈ mean(-y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ))))
 end
 
 @testset "logitbinarycrossentropy" begin
+  @test logitbinarycrossentropy.(logŷ, y, label_smoothing=0.2) ≈ binarycrossentropy.(σ.(logŷ), y; ϵ=0, label_smoothing=0.2)
   @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(σ.(logŷ), y; ϵ=0)
 end
 
