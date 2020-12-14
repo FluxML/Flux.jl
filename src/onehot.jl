@@ -188,16 +188,14 @@ function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   return A[:, onecold(B)]
 end
 function Base.:*(A::LinearAlgebra.Adjoint{T1,<:AbstractArray{T,2}}, b::OneHotVector) where {T1,T}
-  # fixes u' * m and m' * u
   if size(A, 2) != b.of
-    throw(DimensionMismatch("Matrix column must correspond with OneHotVector size"))
+    throw(DimensionMismatch("Adjoint matrix column must correspond with OneHotVector size"))
   end
   return A[:, b.ix]
 end
 function Base.:*(A::LinearAlgebra.Adjoint{T1,<:AbstractArray{T,1}}, b::OneHotVector) where {T1<:Number,T}
-  # fixes u' * u2
   if size(A, 2) != b.of
-    throw(DimensionMismatch("Matrix column must correspond with OneHotVector size"))
+    throw(DimensionMismatch("Adjoint matrix column must correspond with OneHotVector size"))
   end
   return A[b.ix:b.ix]
 end
