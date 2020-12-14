@@ -22,7 +22,7 @@ function log_plus_f(p1, p2)
   return p1 + CUDA.log(1+CUDA.exp(p2 - p1))
 end
 
-function countRepeats(A)
+function count_repeats(A)
   repeats = 0
   for (i,elem) in enumerate(A)
     if i > 1 && A[i] == A[i-1]
@@ -32,7 +32,7 @@ function countRepeats(A)
   return repeats
 end
 
-function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutBlanks, labelsWithBlanks, alpha, blankLabel)
+function compute_alpha_kernel(probs, labelSize, uttLength, repeats, labelsWithoutBlanks, labelsWithBlanks, alpha, blankLabel)
   
   tid = threadIdx().x
   L = labelSize
@@ -97,7 +97,7 @@ function computeAlphaKernel(probs, labelSize, uttLength, repeats, labelsWithoutB
   return nothing
 end
 
-function computeBetasAndGradKernel(probs, labelSize, uttLength,
+function compute_betas_and_grad_kernel(probs, labelSize, uttLength,
                   repeatsInLabel, labelsWithBlanks,
                   alphas, beta, output, accum,
                   grad, blankLabel)
@@ -273,15 +273,15 @@ function ctc_(ŷ::CuArray, y)
   betas = CUDA.fill(log(zero(ŷ[1])), U′, T)
   output = CUDA.fill(log(zero(ŷ[1])), U′, T)
   
-  nRepeats = countRepeats(labels)
+  nRepeats = count_repeats(labels)
   nThreads = min(U′, MAX_THREADS)
 
-  @cuda blocks=1 threads=nThreads computeAlphaKernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z), CuArray(z′), alphas, blank)
+  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z), CuArray(z′), alphas, blank)
   
   grads = CUDA.fill(log(zero(ŷ[1])), size(ŷ))
   accum = CUDA.fill(log(zero(ŷ[1])), size(ŷ))
   
-  @cuda blocks=1 threads=nThreads computeBetasAndGradKernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
+  @cuda blocks=1 threads=nThreads compute_beta_and_grad_kernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
   
   ls = collect(output)
   ls = vec(-1 .* [logsum(ls[:,i]) for i in 1:size(ls, 2)])
