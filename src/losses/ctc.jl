@@ -3,7 +3,6 @@ using Zygote: @adjoint
 using Statistics
 
 # CPU implementation
-
 """
   logadd(a, b)
 
@@ -21,7 +20,6 @@ function logadd(a, b)
   if a < b
     a, b = b, a
   end
-
   return a + log(1+exp(b-a))
 end
 
@@ -74,12 +72,9 @@ function addBlanks(z, blank)
 end
 
 function ctc_(ŷ, y)
-
   typedZero = zero(ŷ[1])
-  
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
-
   z = F(Base.argmax.([y[:,i] for i=1:size(y,2)]), blank)
   z′ = addBlanks(z, blank)
   T = size(ŷ, 2)
@@ -102,7 +97,6 @@ function ctc_(ŷ, y)
         idx = u - 2
         idx += z′[u] == blank || (u > 2 && z′[u-2] == z′[u])
         idx = max(1, idx)
-
         α[t,u] = ŷ[z′[u], t] + logsum(α[t-1, idx:u])
       end
     end
@@ -122,11 +116,9 @@ function ctc_(ŷ, y)
       if u > 2t || u > U′ + 1
         continue
       end
-	  
       idx = u+2
       idx -= z′[u] == blank || (idx < U′ && z′[u+2] == z′[u])
       idx = min(idx, U′)
-
       v = [β[t+1,i] + ŷ[z′[i], t+1] for i=u:idx]
       β[t, u] = logsum(v)
     end
@@ -137,10 +129,8 @@ function ctc_(ŷ, y)
   # α and β coefficients for all the label classes at time t
   αβ = α + β
   losses = -1 .* mapslices(logsum, αβ, dims=2)
-
   accum = fill(log(typedZero), size(ŷ))
   grads = fill(log(typedZero), size(ŷ))
-
   for t=1:T
     for u=1:U′
       accum[z′[u], t] = logadd(accum[z′[u], t], α[t,u] + β[t,u])
@@ -149,7 +139,6 @@ function ctc_(ŷ, y)
       grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -losses[t])
     end
   end
-
   losses = [x for x in losses]
   return losses, grads
 end
