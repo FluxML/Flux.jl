@@ -1,4 +1,4 @@
-# GPU impelmentation
+# GPU implementation
 
 # a port of the GPU kernels from Baidu's C++ warp-ctc package
 # GitHub: https://github.com/baidu-research/warp-ctc/
