@@ -115,7 +115,7 @@ Use of `logitbinarycrossentropy` is recomended over `binarycrossentropy` for num
 See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
 """
 function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ), label_smoothing=zero(y))
-    if (label_smoothing < 0 || label_smoothing > 1)
+    if (any(label_smoothing .< 0) || any(label_smoothing .> 1))
         throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
     elseif !iszero(label_smoothing)
         y = y * (1 - label_smoothing) + label_smoothing*1//2
@@ -135,7 +135,7 @@ See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](
 ```
 """
 function logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(y))
-    if (label_smoothing < 0 || label_smoothing > 1)
+    if (any(label_smoothing .< 0) || any(label_smoothing .> 1))
         throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
     elseif !iszero(label_smoothing)
         y = y * (1 - label_smoothing) + label_smoothing*1//2
