@@ -1,6 +1,10 @@
 # GPU implementation
 
-# a port of the GPU kernels from Baidu's C++ warp-ctc package
+# a port of the GPU kernels from Baidu's C++ warp-ctc package,
+# which itself is Copyright 2015-2016 Baidu USA LLC
+# and available under the Apache 2.0 license
+#
+# Apache 2.0 license: https://www.apache.org/licenses/LICENSE-2.0
 # GitHub: https://github.com/baidu-research/warp-ctc/
 # paper: https://arxiv.org/pdf/1512.02595.pdf
 
