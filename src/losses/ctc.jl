@@ -155,7 +155,7 @@ function ctc_(ŷ, y)
 end
 
 """
-  ctc(ŷ, y)
+  ctc_loss(ŷ, y)
 
 Computes the connectionist temporal classification loss between `ŷ`
 and `y`.
@@ -174,7 +174,7 @@ solve the problem. See [Graves et al. (2006)](https://www.cs.toronto.edu/~graves
 or [Graves (2012)](https://www.cs.toronto.edu/~graves/preprint.pdf#chapter.7)
 for mathematical details.
 """
-function ctc(ŷ::Array, y::Array)
+function ctc_loss(ŷ::Array, y::Array)
   return ctc_(ŷ, y)[1] |> mean
 end
 

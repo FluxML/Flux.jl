@@ -248,9 +248,9 @@ function computeBetasAndGradKernel(probs, labelSize, uttLength,
 end
 
 # methods for `ctc_` helper function
-ctc(ŷ::CuArray, y::Array) = ctc_(ŷ, y)[1] |> mean
-ctc(ŷ::Array, y::CuArray) = ctc_(CuArray(ŷ), collect(y))[1] |> mean
-ctc(ŷ::CuArray, y::CuArray) = ctc_(ŷ, collect(y))[1] |> mean
+ctc_loss(ŷ::CuArray, y::Array) = ctc_(ŷ, y)[1] |> mean
+ctc_loss(ŷ::Array, y::CuArray) = ctc_(CuArray(ŷ), collect(y))[1] |> mean
+ctc_loss(ŷ::CuArray, y::CuArray) = ctc_(ŷ, collect(y))[1] |> mean
 ctc_(ŷ::Array, y::CuArray) =  ctc_(CuArray(ŷ), collect(y))
 
 function ctc_(ŷ::CuArray, y)
