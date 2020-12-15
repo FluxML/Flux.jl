@@ -46,6 +46,24 @@ function huber_loss(ŷ, y; agg=mean, δ=ofeltype(ŷ, 1))
    agg(((abs_error.^2) .* temp) .* x .+ δ*(abs_error .- x*δ) .* (1 .- temp))
 end
 
+function apply_label_smoothing(y::AbstractArray, label_smoothing)
+    if (label_smoothing < 0 || label_smoothing > 1)
+        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
+    elseif !iszero(label_smoothing)
+        y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
+    end
+    return y
+end
+
+function apply_label_smoothing(y::Number, label_smoothing)
+    if (label_smoothing < 0 || label_smoothing > 1)
+        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
+    elseif !iszero(label_smoothing)
+        y = y * (1 - label_smoothing) + label_smoothing*1//2
+    end
+    return y
+end
+
 """
     crossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean, label_smoothing=zero(eltype(y)))
 
@@ -67,11 +85,7 @@ numerical stability.
 See also: [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
 """
 function crossentropy(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ), label_smoothing=zero(eltype(y)))
-    if (label_smoothing < 0 || label_smoothing > 1)
-        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
-    elseif !iszero(label_smoothing)
-        y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
-    end
+    y = apply_label_smoothing(y, label_smoothing)
     agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims=dims))
 end
 
@@ -89,11 +103,7 @@ calculated as
 See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.binarycrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
 """
 function logitcrossentropy(ŷ, y; dims=1, agg=mean, label_smoothing=zero(eltype(y)))
-    if (label_smoothing < 0 || label_smoothing > 1)
-        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
-    elseif !iszero(label_smoothing)
-        y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
-    end
+    y = apply_label_smoothing(y, label_smoothing)
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
 end
 
@@ -114,12 +124,8 @@ Use of `logitbinarycrossentropy` is recomended over `binarycrossentropy` for num
 
 See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
 """
-function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ), label_smoothing=zero(y))
-    if (any(label_smoothing .< 0) || any(label_smoothing .> 1))
-        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
-    elseif !iszero(label_smoothing)
-        y = y * (1 - label_smoothing) + label_smoothing*1//2
-    end
+function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ), label_smoothing=zero(eltype(y)))
+    y = apply_label_smoothing(y, label_smoothing)
     agg(@.(-xlogy(y, ŷ+ϵ) - xlogy(1-y, 1-ŷ+ϵ)))
 end
 # Re-definition to fix interaction with CuArrays.
@@ -134,12 +140,8 @@ Mathematically equivalent to
 See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.binarycrossentropy`](@ref)
 ```
 """
-function logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(y))
-    if (any(label_smoothing .< 0) || any(label_smoothing .> 1))
-        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
-    elseif !iszero(label_smoothing)
-        y = y * (1 - label_smoothing) + label_smoothing*1//2
-    end
+function logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(eltype(y)))
+    y = apply_label_smoothing(y, label_smoothing)
     agg(@.((1-y)*ŷ - logσ(ŷ)))
 end
 # Re-definition to fix interaction with CuArrays.
