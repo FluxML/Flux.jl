@@ -5,5 +5,5 @@
 docs/build/
 docs/site/
 deps
-# .vscode/
+.vscode/
 # Manifest.toml
