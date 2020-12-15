@@ -108,7 +108,7 @@ function logitcrossentropy(ŷ, y; dims=1, agg=mean, label_smoothing=zero(eltype
 end
 
 """
-    binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ), label_smoothing=zero(y))
+    binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ), label_smoothing=zero(eltype(y)))
 
 Return the binary cross-entropy loss, computed as
 
@@ -132,7 +132,7 @@ end
 # CUDA.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
-    logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(y))
+    logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(eltype(y)))
 
 Mathematically equivalent to
 [`Flux.binarycrossentropy(σ(ŷ), y)`](@ref) but is more numerically stable.
