@@ -68,7 +68,7 @@ Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
 function apply!(o::Momentum, x, Δ)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(() -> zero(x), o.velocity, x)::typeof(x)
   @. v = ρ * v - η * Δ
   @. Δ = -v
 end
@@ -101,7 +101,7 @@ Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
 function apply!(o::Nesterov, x, Δ)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
+  v = get!(() -> zero(x), o.velocity, x)::typeof(x)
   d = @. ρ^2 * v - (1+ρ) * η * Δ
   @. v = ρ*v - η*Δ
   @. Δ = -d
@@ -138,7 +138,7 @@ RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 
 function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
-  acc = get!(o.acc, x, zero(x))::typeof(x)
+  acc = get!(() -> zero(x), o.acc, x)::typeof(x)
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -171,11 +171,16 @@ ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
 
 function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, βp = get!(o.state, x, (zero(x), zero(x), β))
+
+  mt, vt, βp = get!(o.state, x) do
+      (zero(x), zero(x), Float64[β[1], β[2]])
+  end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
+
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
-  o.state[x] = (mt, vt, βp .* β)
+  βp .= βp .* β
+
   return Δ
 end
 
@@ -208,17 +213,23 @@ RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict())
 function apply!(o::RADAM, x, Δ)
   η, β = o.eta, o.beta
   ρ∞ = 2/(1-β[2])-1
-  mt, vt, βp, t = get!(o.state, x, (zero(x), zero(x), β, 1))
+
+  mt, vt, βp, t = get!(o.state, x) do
+      (zero(x), zero(x), Float64[β[1], β[2]], Ref(1))
+  end :: Tuple{typeof(x),typeof(x),Vector{Float64},Ref{Int}}
+
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  ρ = ρ∞ - 2t*βp[2]/(1-βp[2])
+  ρ = ρ∞ - 2t[] * βp[2] / (1 - βp[2])
   if ρ > 4
     r = sqrt((ρ-4)*(ρ-2)*ρ∞/((ρ∞-4)*(ρ∞-2)*ρ))
     @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η * r
   else
     @. Δ =  mt / (1 - βp[1]) * η
   end
-  o.state[x] = (mt, vt, βp .* β, t+1)
+  βp .= βp .* β
+  t[] += 1
+
   return Δ
 end
 
@@ -250,11 +261,16 @@ AdaMax(η = 0.001, β = (0.9, 0.999)) = AdaMax(η, β, IdDict())
 
 function apply!(o::AdaMax, x, Δ)
   η, β = o.eta, o.beta
-  mt, ut, βp = get!(o.state, x, (zero(x), zero(x), β))
+
+  mt, ut, βp = get!(o.state, x) do
+      (zero(x), zero(x), Float64[β[1], β[2]])
+  end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
+
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. ut = max(β[2] * ut, abs(Δ))
   @. Δ = (η/(1 - βp[1])) * mt/(ut + ϵ)
-  o.state[x] = (mt, ut, βp .* β)
+  βp .= βp .* β
+
   return Δ
 end
 
@@ -287,13 +303,18 @@ OADAM(η = 0.001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
 
 function apply!(o::OADAM, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, Δ_, βp = get!(o.state, x, (zero(x), zero(x), zero(x), β))
+
+  mt, vt, Δ_, βp = get!(o.state, x) do
+      (zero(x), zero(x), zero(x), Float64[β[1], β[2]])
+  end :: Tuple{typeof(x),typeof(x),typeof(x),Vector{Float64}}
+
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ = -Δ_
   @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
   @. Δ += 2Δ_
-  o.state[x] = (mt, vt, Δ_, βp .* β)
+  βp .= βp .* β
+
   return Δ
 end
 
@@ -324,7 +345,7 @@ ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
-  acc = get!(o.acc, x, fill!(zero(x), ϵ))::typeof(x)
+  acc = get!(() -> fill!(similar(x), ϵ), o.acc, x)::typeof(x)
   @. acc += Δ^2
   @. Δ *= η / (√acc + ϵ)
 end
@@ -355,7 +376,7 @@ ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
 
 function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
-  acc, Δacc = get!(o.state, x, (zero(x), zero(x)))
+  acc, Δacc = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
   @. acc = ρ * acc + (1 - ρ) * Δ^2
   # DON'T remove epsilon from numerator
   # or even out of the square roots
@@ -393,7 +414,11 @@ AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
 
 function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, v̂t = get!(o.state, x, (fill!(zero(x), ϵ), fill!(zero(x), ϵ), fill!(zero(x), ϵ)))
+
+  mt, vt, v̂t = get!(o.state, x) do
+    (fill!(similar(x), ϵ), fill!(similar(x), ϵ), fill!(similar(x), ϵ))
+  end :: NTuple{3,typeof(x)}
+
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ ^ 2
   @. v̂t = max(v̂t, vt)
@@ -429,11 +454,17 @@ NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
 
 function apply!(o::NADAM, x, Δ)
   η, β = o.eta, o.beta
-  mt, vt, (β1p, β2p) = get!(o.state, x, (zero(x), zero(x), o.beta))
+
+  mt, vt, βp = get!(o.state, x) do
+    (zero(x), zero(x), Float64[o.beta[1], o.beta[2]])
+  end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
+  β1p, β2p = βp
+
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ^2
   @. Δ = (β[1] * mt / (1 - β[1] * β1p) + (1 - β[1]) * Δ / (1 - β1p)) / (√(vt * β[2] / (1 - β2p)) + ϵ) * η
-  o.state[x] = (mt, vt, (β1p * β[1], β2p * β[2]))
+  βp .= βp .* β
+
   return Δ
 end
 
@@ -489,11 +520,10 @@ AdaBelief(η = 0.001, β = (0.9, 0.999)) = AdaBelief(η, β, IdDict())
 
 function apply!(o::AdaBelief, x, Δ)
   η, β = o.eta, o.beta
-  mt, st = get!(o.state, x, (zero(x), zero(x)))
+  mt, st = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. st = β[2] * st + (1 - β[2]) * (Δ - mt)^2
   @. Δ =  η * mt / (√(st) + ϵ)
-  o.state[x] = (mt, st)
   return Δ
 end
 

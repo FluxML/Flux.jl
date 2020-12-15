@@ -49,7 +49,7 @@ Handling all the parameters on a layer by layer basis is explained in the [Layer
 
 ## Datasets
 
-The `data` argument provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy data set with only one data point:
+The `data` argument of `train!` provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy dataset with only one data point:
 
 ```julia
 x = rand(784)
@@ -117,9 +117,8 @@ A more typical callback might look like this:
 ```julia
 test_x, test_y = # ... create single batch of test data ...
 evalcb() = @show(loss(test_x, test_y))
-
-Flux.train!(objective, ps, data, opt,
-            cb = throttle(evalcb, 5))
+throttled_cb = throttle(evalcb, 5)
+Flux.@epochs 20 Flux.train!(objective, ps, data, opt, cb = throttled_cb)
 ```
 
 Calling `Flux.stop()` in a callback will exit the training loop early.

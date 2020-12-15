@@ -1,0 +1,9 @@
+steps:
+  - label: "GPU Integeration"
+    plugins:
+      - JuliaCI/julia#v0.5:
+          version: '1.5'
+      - JuliaCI/julia-test#v0.3:
+    agents:
+      queue: "juliagpu"
+    timeout_in_minutes: 60

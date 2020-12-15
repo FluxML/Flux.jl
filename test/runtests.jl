@@ -42,7 +42,7 @@ end
   end
 end
 
-@static if VERSION >= v"1.4"
+@static if VERSION == v"1.5"
   using Documenter
   @testset "Docs" begin
     DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
