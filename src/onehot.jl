@@ -187,7 +187,7 @@ function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
   return A[:, onecold(B)]
 end
-function Base.:*(A::LinearAlgebra.Adjoint{T1,<:AbstractArray{T,2}}, b::OneHotVector) where {T1,T}
+function Base.:*(A::LinearAlgebra.Transpose{T1,<:AbstractArray{T,2}}, b::OneHotVector) where {T1,T}
   if size(A, 2) != b.of
     throw(DimensionMismatch("Adjoint matrix column must correspond with OneHotVector size"))
   end
@@ -195,7 +195,13 @@ function Base.:*(A::LinearAlgebra.Adjoint{T1,<:AbstractArray{T,2}}, b::OneHotVec
 end
 function Base.:*(A::LinearAlgebra.Adjoint{T1,<:AbstractArray{T,1}}, b::OneHotVector) where {T1<:Number,T}
   if size(A, 2) != b.of
-    throw(DimensionMismatch("Adjoint matrix column must correspond with OneHotVector size"))
+    throw(DimensionMismatch("length of row vector must match that of OneHotVector"))
   end
-  return A[b.ix:b.ix]
+  return A[b.ix]
+end
+function Base.:*(A::LinearAlgebra.Transpose{T1,<:AbstractArray{T,1}}, b::OneHotVector) where {T1<:Number,T}
+  if size(A, 2) != b.of
+    throw(DimensionMismatch("length of row vector must match that of OneHotVector"))
+  end
+  return A[b.ix]
 end
