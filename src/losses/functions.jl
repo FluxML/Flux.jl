@@ -70,7 +70,7 @@ function crossentropy(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ))
 end
 
 """
-    logitcrossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean)
+    logitcrossentropy(ŷ, y; dims=1, agg=mean)
 
 Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
 calculated as
