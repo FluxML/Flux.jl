@@ -27,17 +27,17 @@ end
 
 @testset "abstractmatrix onehotvector multiplication" begin
   A = [1 3 5; 2 4 6; 3 6 9]
-  B = [1, 2, 3, 4, 5]
-  X = reshape(B, (5, 1))
+  v = [1, 2, 3, 4, 5]
+  X = reshape(v, (5, 1))
   b1 = Flux.OneHotVector(1, 3)
   b2 = Flux.OneHotVector(3, 5)
 
   @test A*b1 == A[:,1]
-  @test b1' * A == (A'[:, b1.ix])'
-  @test A' * b1 == A'[:, b1.ix]
-  @test B' * b2 == B[b2.ix]
-  @test transpose(X) * b2 == transpose(X)[:, b2.ix]
-  @test transpose(B) * b2 == transpose(X)[b2.ix]
+  @test b1' * A == Array(b1') * A
+  @test A' * b1 == A' * Array(b1)
+  @test v' * b2 == v' * Array(b2)
+  @test transpose(X) * b2 == transpose(X) * Array(b2)
+  @test transpose(v) * b2 == transpose(v) * Array(b2)
   @test_throws DimensionMismatch A*b2
 end
 
