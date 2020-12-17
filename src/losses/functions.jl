@@ -46,26 +46,32 @@ function huber_loss(ŷ, y; agg=mean, δ=ofeltype(ŷ, 1))
    agg(((abs_error.^2) .* temp) .* x .+ δ*(abs_error .- x*δ) .* (1 .- temp))
 end
 
-function apply_label_smoothing(y::AbstractArray, label_smoothing)
-    if (label_smoothing < 0 || label_smoothing > 1)
-        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
-    elseif !iszero(label_smoothing)
-        y = y .* (1 - label_smoothing) .+ label_smoothing* 1 // size(y, 1)
+"""
+    label_smoothing(y::Union{Number, AbstractArray}, smoothing_factor)
+
+Returns smoothed labels
+
+`smoothing_factor` is a number in interval (0, 1). Higher the value of
+`smoothing_factor` larger the smoothing of `y`.
+"""
+function label_smoothing(y::AbstractArray, smoothing_factor::Number)
+    if !(0 < smoothing_factor < 1)
+        throw(ArgumentError("`smoothing_factor` must be between 0 and 1"))
     end
-    return y
+    smoothed_y = y .* (1 - smoothing_factor) .+ smoothing_factor* 1 // size(y, 1)
+    return smoothed_y
 end
 
-function apply_label_smoothing(y::Number, label_smoothing)
-    if (label_smoothing < 0 || label_smoothing > 1)
-        throw(ArgumentError("`label_smoothing` must be between 0 and 1"))
-    elseif !iszero(label_smoothing)
-        y = y * (1 - label_smoothing) + label_smoothing*1//2
+function label_smoothing(y::Number, smoothing_factor::Number)
+    if !(0 < smoothing_factor < 1)
+        throw(ArgumentError("`smoothing_factor` must be between 0 and 1"))
     end
-    return y
+    smoothed_y = y * (1 - smoothing_factor) + smoothing_factor*1//2
+    return smoothed_y
 end
 
 """
-    crossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean, label_smoothing=zero(eltype(y)))
+    crossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean)
 
 Return the cross entropy between the given probability distributions;
 calculated as
@@ -77,38 +83,43 @@ in which case the labels `y` are given in a one-hot format.
 `dims` specifies the dimension (or the dimensions) containing the class probabilities.
 The prediction `ŷ` is supposed to sum to one across `dims`,
 as would be the case with the output of a [`softmax`](@ref) operation.
-`label_smoothing` can provide better generalization and continuity to the loss function.
+
+Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
+computing the loss.
 
 Use of [`logitcrossentropy`](@ref) is recomended over `crossentropy` for
 numerical stability.
 
-See also: [`Flux.logitcrossentropy`](@ref), [`Flux.binarycrossentropy`](@ref), [`Flux.logitbinarycrossentropy`](@ref)
+See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), 
+[`label_smoothing`](@ref)
 """
-function crossentropy(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ), label_smoothing=zero(eltype(y)))
-    y = apply_label_smoothing(y, label_smoothing)
+function crossentropy(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ))
     agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims=dims))
 end
 
 """
-    logitcrossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean, label_smoothing=zero(eltype(y)))
+    logitcrossentropy(ŷ, y; dims=1, agg=mean)
 
 Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
 calculated as
 
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
 
+Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
+computing the loss.
+
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
 [`Flux.Losses.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
 
-See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.binarycrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
+
+See also: [`crossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref)
 """
-function logitcrossentropy(ŷ, y; dims=1, agg=mean, label_smoothing=zero(eltype(y)))
-    y = apply_label_smoothing(y, label_smoothing)
+function logitcrossentropy(ŷ, y; dims=1, agg=mean)
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
 end
 
 """
-    binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ), label_smoothing=zero(eltype(y)))
+    binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ))
 
 Return the binary cross-entropy loss, computed as
 
@@ -116,32 +127,35 @@ Return the binary cross-entropy loss, computed as
 
 The `ϵ` term provides numerical stability.
 
-`label_smoothing` can provide better generalization and continuity to the loss function.
-
 Typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
+
+Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
+computing the loss.
 
 Use of `logitbinarycrossentropy` is recomended over `binarycrossentropy` for numerical stability.
 
-See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.logitbinarycrossentropy`](@ref)
+See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), 
+[`label_smoothing`](@ref)
 """
-function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ), label_smoothing=zero(eltype(y)))
-    y = apply_label_smoothing(y, label_smoothing)
+function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ))
     agg(@.(-xlogy(y, ŷ+ϵ) - xlogy(1-y, 1-ŷ+ϵ)))
 end
 # Re-definition to fix interaction with CuArrays.
 # CUDA.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
 
 """
-    logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(eltype(y)))
+    logitbinarycrossentropy(ŷ, y; agg=mean)
 
 Mathematically equivalent to
-[`Flux.binarycrossentropy(σ(ŷ), y)`](@ref) but is more numerically stable.
+[`binarycrossentropy(σ(ŷ), y)`](@ref) but is more numerically stable.
 
-See also: [`Flux.Losses.crossentropy`](@ref), [`Flux.Losses.logitcrossentropy`](@ref), [`Flux.Losses.binarycrossentropy`](@ref)
+Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
+computing the loss.
+
+See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`label_smoothing`](@ref)
 ```
 """
-function logitbinarycrossentropy(ŷ, y; agg=mean, label_smoothing=zero(eltype(y)))
-    y = apply_label_smoothing(y, label_smoothing)
+function logitbinarycrossentropy(ŷ, y; agg=mean)
     agg(@.((1-y)*ŷ - logσ(ŷ)))
 end
 # Re-definition to fix interaction with CuArrays.
