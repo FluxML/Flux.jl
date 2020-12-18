@@ -47,36 +47,48 @@ function huber_loss(ŷ, y; agg=mean, δ=ofeltype(ŷ, 1))
 end
 
 """
-    label_smoothing(y::Union{Number, AbstractArray}, α; dims=1)
+    label_smoothing(y::Union{Number, AbstractArray}, α; dims::Int=1)
 
 Returns smoothed labels, meaning the confidence on label values are relaxed.
 
-when `y` given as one-hot vector or batch of one-hot, its calculated as
+When `y` is given as one-hot vector or batch of one-hot, its calculated as
 
-    Label smoothing = y .* (1 - α) .+ α * 1 // size(y, 1)
+    y .* (1 - α) .+ α / size(y, dims)
 
-when `y` given as a number or batch of numbers for binary classification,
+when `y` is given as a number or batch of numbers for binary classification,
 its calculated as
 
-    Label smoothing = y .* (1 - α) .+ α*1//2
+    y .* (1 - α) .+ α / 2
 
 in which case the labels are squeezed towards `0.5`.
 
 α is a number in interval (0, 1) called the smoothing factor. Higher the
 value of α larger the smoothing of `y`.
 
-`dims` denotes the one-hot dimension (default), unless `dims=0` which denotes
-binary distributions
+`dims` denotes the one-hot dimension, unless `dims=0` which denotes the application
+of label smoothing to binary distributions encoded in a single number.
 
+Usage example:
+
+    sf = 0.1
+    y = onehotbatch([1, 1, 1, 0, 0], 0:1)
+    y_smoothed = label_smoothing(ya, 2sf)
+    y_sim = y .* (1-2sf) .+ sf
+    y_dis = copy(y_sim)
+    y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
+    @assert crossentropy(y_sim, y) < crossentropy(y_sim, y_smoothed)
+    @assert crossentropy(y_dis, y) > crossentropy(y_dis, y_smoothed)
 """
-function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims=1)
+function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int=1)
     if !(0 < α < 1)
         throw(ArgumentError("α must be between 0 and 1"))
     end
-    if (iszero(dims) || isnothing(dims))
+    if dims == 0
         y_smoothed = y .* (1 - α) .+ α*1//2
-    else
+    elseif dims == 1
         y_smoothed = y .* (1 - α) .+ α* 1 // size(y, 1)
+    else
+        throw(ArgumentError("`dims` should be either 0 or 1"))
     end
     return y_smoothed
 end
