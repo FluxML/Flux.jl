@@ -100,7 +100,7 @@ logŷ, y = randn(3), rand(3)
 yls = y.*(1-2sf).+sf
 
 @testset "binarycrossentropy" begin
-  @test binarycrossentropy.(σ.(logŷ), label_smoothing.(y, 2sf); ϵ=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
+  @test binarycrossentropy.(σ.(logŷ), label_smoothing(y, 2sf; dims=0); ϵ=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
   @test binarycrossentropy(σ.(logŷ), y; ϵ=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
   @test binarycrossentropy(σ.(logŷ), y) ≈ mean(-y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ))))
 end
@@ -114,7 +114,9 @@ y = onehotbatch([1], 0:1)
 yls = [0.1 0.9]'
 @testset "label_smoothing" begin
   @test label_smoothing(y, 0.2) == yls
+  @test label_smoothing(y, 0.2; dims=0) == label_smoothing.(y, 0.2; dims=0)
   @test_throws ArgumentError label_smoothing([0., 0., 1., 0.], 1.2)
+  @test_throws ArgumentError label_smoothing([0., 0., 1., 0.], 0.)
 end
 
 y = [1 2 3]

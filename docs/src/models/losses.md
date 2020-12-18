@@ -28,6 +28,7 @@ Flux.Losses.mae
 Flux.Losses.mse
 Flux.Losses.msle
 Flux.Losses.huber_loss
+Flux.Losses.label_smoothing
 Flux.Losses.crossentropy
 Flux.Losses.logitcrossentropy
 Flux.Losses.binarycrossentropy

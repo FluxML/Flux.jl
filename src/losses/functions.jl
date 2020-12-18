@@ -47,27 +47,38 @@ function huber_loss(ŷ, y; agg=mean, δ=ofeltype(ŷ, 1))
 end
 
 """
-    label_smoothing(y::Union{Number, AbstractArray}, smoothing_factor)
+    label_smoothing(y::Union{Number, AbstractArray}, α; dims=1)
 
-Returns smoothed labels
+Returns smoothed labels, meaning the confidence on label values are relaxed.
 
-`smoothing_factor` is a number in interval (0, 1). Higher the value of
-`smoothing_factor` larger the smoothing of `y`.
+when `y` given as one-hot vector or batch of one-hot, its calculated as
+
+    Label smoothing = y .* (1 - α) .+ α * 1 // size(y, 1)
+
+when `y` given as a number or batch of numbers for binary classification,
+its calculated as
+
+    Label smoothing = y .* (1 - α) .+ α*1//2
+
+in which case the labels are squeezed towards `0.5`.
+
+α is a number in interval (0, 1) called the smoothing factor. Higher the
+value of α larger the smoothing of `y`.
+
+`dims` denotes the one-hot dimension (default), unless `dims=0` which denotes
+binary distributions
+
 """
-function label_smoothing(y::AbstractArray, smoothing_factor::Number)
-    if !(0 < smoothing_factor < 1)
-        throw(ArgumentError("`smoothing_factor` must be between 0 and 1"))
+function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims=1)
+    if !(0 < α < 1)
+        throw(ArgumentError("α must be between 0 and 1"))
     end
-    smoothed_y = y .* (1 - smoothing_factor) .+ smoothing_factor* 1 // size(y, 1)
-    return smoothed_y
-end
-
-function label_smoothing(y::Number, smoothing_factor::Number)
-    if !(0 < smoothing_factor < 1)
-        throw(ArgumentError("`smoothing_factor` must be between 0 and 1"))
+    if (iszero(dims) || isnothing(dims))
+        y_smoothed = y .* (1 - α) .+ α*1//2
+    else
+        y_smoothed = y .* (1 - α) .+ α* 1 // size(y, 1)
     end
-    smoothed_y = y * (1 - smoothing_factor) + smoothing_factor*1//2
-    return smoothed_y
+    return y_smoothed
 end
 
 """
@@ -100,7 +111,7 @@ end
 """
     logitcrossentropy(ŷ, y; dims=1, agg=mean)
 
-Return the crossentropy computed after a [`Flux.logsoftmax`](@ref) operation;
+Return the crossentropy computed after a [`logsoftmax`](@ref) operation;
 calculated as
 
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
@@ -109,7 +120,7 @@ Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
 computing the loss.
 
 `logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`Flux.Losses.crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
+[`crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
 
 
 See also: [`crossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref)
@@ -153,7 +164,6 @@ Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
 computing the loss.
 
 See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`label_smoothing`](@ref)
-```
 """
 function logitbinarycrossentropy(ŷ, y; agg=mean)
     agg(@.((1-y)*ŷ - logσ(ŷ)))
