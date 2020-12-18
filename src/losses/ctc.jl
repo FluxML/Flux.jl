@@ -1,42 +1,9 @@
 using Flux
 using Zygote: @adjoint
 using Statistics
+using NNlib
 
 # CPU implementation
-"""
-  logadd(a, b)
-
-Adds log-space `a` and `b` such that the result equals `log(exp(a)+exp(b))`
-"""
-function logadd(a, b)
-  isinf(a) && return b
-  isinf(b) && return a
-
-  # always want the greater number on the left in the exponentiation;
-  # the magnitude difference may end up making the number very positive
-  # which will cause exp() to return Inf
-  # E.g., a = -900, b = -800, will give exp(-800 - -900), which will be
-  # Inf for Float32 values
-  if a < b
-    a, b = b, a
-  end
-  return a + log(1+exp(b-a))
-end
-
-"""
-  logsum(a)
-
-Sums the elements in `a` such that the result equals `log(sum(exp.(a)))`
-"""
-function logsum(a::AbstractArray)
-  local s
-  s = a[1]
-  for item in a[2:end]
-    s = logadd(s, item)
-  end
-  return s
-end
-
 """
   F(A, blank)
 
@@ -57,11 +24,11 @@ function F(A, blank)
 end
 
 """
-  addBlanks(z)
+  add_blanks(z)
 
 Adds blanks to the start and end of `z`, and between item in `z`
 """
-function addBlanks(z, blank)
+function add_blanks(z, blank)
 
   z′ = [blank]
   for label in z
@@ -76,7 +43,7 @@ function ctc_(ŷ, y)
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
   z = F(Base.argmax.([y[:,i] for i=1:size(y,2)]), blank)
-  z′ = addBlanks(z, blank)
+  z′ = add_blanks(z, blank)
   T = size(ŷ, 2)
   U = length(z)
   U′ = length(z′)
@@ -97,7 +64,11 @@ function ctc_(ŷ, y)
         idx = u - 2
         idx += z′[u] == blank || (u > 2 && z′[u-2] == z′[u])
         idx = max(1, idx)
-        α[t,u] = ŷ[z′[u], t] + logsum(α[t-1, idx:u])
+        α[t,u] = ŷ[z′[u], t] + logsumexp(α[t-1, idx:u])
+	if isnan(α[t,u])
+		println(α[t-1, idx:u])
+		exit()
+	end
       end
     end
   end
@@ -120,7 +91,7 @@ function ctc_(ŷ, y)
       idx -= z′[u] == blank || (idx < U′ && z′[u+2] == z′[u])
       idx = min(idx, U′)
       v = [β[t+1,i] + ŷ[z′[i], t+1] for i=u:idx]
-      β[t, u] = logsum(v)
+      β[t, u] = logsumexp(v)
     end
   end
   
@@ -128,12 +99,12 @@ function ctc_(ŷ, y)
   # Loss at each time t is taken as the sum of the product (sum in log space) of the
   # α and β coefficients for all the label classes at time t
   αβ = α + β
-  losses = -1 .* mapslices(logsum, αβ, dims=2)
+  losses = -1 .* mapslices(logsumexp, αβ, dims=2)
   accum = fill(log(typedZero), size(ŷ))
   grads = fill(log(typedZero), size(ŷ))
   for t=1:T
     for u=1:U′
-      accum[z′[u], t] = logadd(accum[z′[u], t], α[t,u] + β[t,u])
+      accum[z′[u], t] = logsumexp([accum[z′[u], t], α[t,u] + β[t,u]])
     end
     for u=1:size(grads, 1)
       grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -losses[t])
