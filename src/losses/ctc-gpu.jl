@@ -11,6 +11,7 @@
 using Flux
 using Statistics
 using CUDA
+using NNlib
 
 const MAX_THREADS = 256
 
@@ -245,7 +246,7 @@ function ctc_(ŷ::CuArray, y)
   
   @cuda blocks=1 threads=nThreads compute_beta_and_grad_kernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
   ls = collect(output)
-  ls = vec(-1 .* [logsum(ls[:,i]) for i in 1:size(ls, 2)])
+  ls = vec(-1 .* [logsumexp(ls[:,i]) for i in 1:size(ls, 2)])
   ŷ = alphas = betas = output = accum = nothing
   return ls, grads
 end
