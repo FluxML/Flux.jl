@@ -8,7 +8,6 @@ makedocs(modules=[Flux, NNlib],
                   "Building Models" =>
                     ["Basics" => "models/basics.md",
                      "Recurrence" => "models/recurrence.md",
-                     "Recurrence - part 2" => "models/recurrence-detailed.md",
                      "Model Reference" => "models/layers.md",
                      "Loss Functions" => "models/losses.md",
                      "Regularisation" => "models/regularisation.md",
