@@ -9,6 +9,7 @@ using NNlib: logsoftmax, logσ
 import Base.Broadcast: broadcasted
 
 export mse, mae, msle,
+    label_smoothing,
     crossentropy, logitcrossentropy,
     # binarycrossentropy, logitbinarycrossentropy # export only after end deprecation
     kldivergence,

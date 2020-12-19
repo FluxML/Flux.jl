@@ -83,7 +83,8 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in::Integer, out::Integer, σ = identity; bias=true)
+    Dense(in, out, σ=identity; initW=glorot_uniform, initb=zeros, bias=true)
+    Dense(W, b, σ=identity)
 
 Create a traditional `Dense` layer with in×out weight matrix `W` and 
 bias vector  `b` of length `out`. The forward pass is given by:
@@ -99,12 +100,16 @@ dimension is `out` and the remaining dimensions are the same as in the input.
 
 Setting `bias` to `false` will switch the bias  off for the layer.
 
-# Example
-```
+`initW` and `initb` are callables used to initialize weights and biases respectively,
+through the calls `initW(out, in)` and `initb(out)`.
+
+# Examples
+
+```julia-repl
 julia> d = Dense(5, 2)
 Dense(5, 2)
 
-julia> d(rand(5))
+julia> d(rand(Float32, 5))
 2-element Array{Float32,1}:
  -0.16210233
   0.123119034
