@@ -39,8 +39,8 @@ using Flux
 
 rnn = Flux.RNNCell(2, 5)
 
-x = rand(2) # dummy data
-h = rand(5)  # initial hidden state
+x = rand(Float32, 2) # dummy data
+h = rand(Float32, 5)  # initial hidden state
 
 h, y = rnn(h, x)
 ```
@@ -50,8 +50,8 @@ h, y = rnn(h, x)
 For the most part, we don't want to manage hidden states ourselves, but to treat our models as being stateful. Flux provides the `Recur` wrapper to do this.
 
 ```julia
-x = rand(2)
-h = rand(5)
+x = rand(Float32, 2)
+h = rand(Float32, 5)
 
 m = Flux.Recur(rnn, h)
 
@@ -80,7 +80,7 @@ m = Chain(RNN(2, 5), Dense(5, 1), x -> reshape(x, :))
 Using the previously defined `m` recurrent model, we can the apply it to a single step from our sequence:
 
 ```julia
-x = rand(2)
+x = rand(Float32, 2)
 julia> m(x)
 1-element Array{Float32,1}:
  0.028398542
@@ -90,7 +90,7 @@ The m(x) operation would be represented by `x1 -> A -> y1` in our diagram.
 If we perform this operation a second time, it will be equivalent to `x2 -> A -> y2` since the model `m` has stored the state resulting from the `x1` step:
 
 ```julia
-x = rand(2)
+x = rand(Float32, 2)
 julia> m(x)
 1-element Array{Float32,1}:
  0.07381232
@@ -101,7 +101,7 @@ Now, instead of computing a single step at a time, we can get the full `y1` to `
 To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of length = `seq_length` and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
 
 ```julia
-x = [rand(2) for i = 1:3]
+x = [rand(Float32, 2) for i = 1:3]
 julia> m.(x)
 3-element Array{Array{Float32,1},1}:
  [-0.17945863]
@@ -116,7 +116,7 @@ function loss(x, y)
   sum((Flux.stack(m.(x)[2:end],1) .- y) .^ 2)
 end
 
-y = rand(2)
+y = rand(Float32, 2)
 julia> loss(x, y)
 1.7021208968648693
 ```
@@ -130,12 +130,12 @@ function loss(x, y)
   sum((Flux.stack(m.(x),1) .- y) .^ 2)
 end
 
-seq_init = [rand(2) for i = 1:1]
-seq_1 = [rand(2) for i = 1:3]
-seq_2 = [rand(2) for i = 1:3]
+seq_init = [rand(Float32, 2) for i = 1:1]
+seq_1 = [rand(Float32, 2) for i = 1:3]
+seq_2 = [rand(Float32, 2) for i = 1:3]
 
-y1 = rand(3)
-y2 = rand(3)
+y1 = rand(Float32, 3)
+y2 = rand(Float32, 3)
 
 X = [seq_1, seq_2]
 Y = [y1, y2]
@@ -156,7 +156,7 @@ In this scenario, it is important to note that a single continuous sequence is c
 Batch size would be 1 here as there's only a single sequence within each batch. If the model was to be trained on multiple independent sequences, then these sequences could be added to the input data as a second dimension. For example, in a language model, each batch would contain multiple independent sentences. In such scenario, if we set the batch size to 4, a single batch would be of the shape:
 
 ```julia
-batch = [rand(2, 4) for i = 1:3]
+batch = [rand(Float32, 2, 4) for i = 1:3]
 ```
 
 That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix).
