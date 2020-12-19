@@ -5,6 +5,25 @@ using NNlib
 
 # CPU implementation
 """
+  logaddexp(a, b)
+Adds log-space `a` and `b` such that the result equals `log(exp(a)+exp(b))`
+"""
+function logaddexp(a, b)
+  isinf(a) && return b
+  isinf(b) && return a
+
+  # always want the greater number on the left in the exponentiation;
+  # the magnitude difference may end up making the number very positive
+  # which will cause exp() to return Inf
+  # E.g., a = -900, b = -800, will give exp(-800 - -900), which will be
+  # Inf for Float32 values
+  if a < b
+    a, b = b, a
+  end
+  return a + log(1+exp(b-a))
+end
+
+"""
   F(A, blank)
 
 Removes blanks and repetitions in the sequence `A`
@@ -64,11 +83,7 @@ function ctc_(ŷ, y)
         idx = u - 2
         idx += z′[u] == blank || (u > 2 && z′[u-2] == z′[u])
         idx = max(1, idx)
-        α[t,u] = ŷ[z′[u], t] + logsumexp(α[t-1, idx:u])
-	if isnan(α[t,u])
-		println(α[t-1, idx:u])
-		exit()
-	end
+        α[t,u] = ŷ[z′[u], t] + foldl(logaddexp, α[t-1, idx:u])
       end
     end
   end
@@ -91,7 +106,7 @@ function ctc_(ŷ, y)
       idx -= z′[u] == blank || (idx < U′ && z′[u+2] == z′[u])
       idx = min(idx, U′)
       v = [β[t+1,i] + ŷ[z′[i], t+1] for i=u:idx]
-      β[t, u] = logsumexp(v)
+      β[t, u] = foldl(logaddexp, v)
     end
   end
   
@@ -99,12 +114,12 @@ function ctc_(ŷ, y)
   # Loss at each time t is taken as the sum of the product (sum in log space) of the
   # α and β coefficients for all the label classes at time t
   αβ = α + β
-  losses = -1 .* mapslices(logsumexp, αβ, dims=2)
+  losses = -1 .* logsumexp(αβ, dims=2)
   accum = fill(log(typedZero), size(ŷ))
   grads = fill(log(typedZero), size(ŷ))
   for t=1:T
     for u=1:U′
-      accum[z′[u], t] = logsumexp([accum[z′[u], t], α[t,u] + β[t,u]])
+      accum[z′[u], t] = logaddexp(accum[z′[u], t], α[t,u] + β[t,u])
     end
     for u=1:size(grads, 1)
       grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -losses[t])
