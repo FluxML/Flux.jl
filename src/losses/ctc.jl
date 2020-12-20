@@ -58,7 +58,7 @@ function add_blanks(z, blank)
 end
 
 function ctc_(ŷ, y)
-  typedZero = zero(ŷ[1])
+  typed_zero = zero(ŷ[1])
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
   z = F(Base.argmax.([y[:,i] for i=1:size(y,2)]), blank)
@@ -68,7 +68,7 @@ function ctc_(ŷ, y)
   U′ = length(z′)
 
   # Calculate α coefficients, from the upper-left, to the bottom-right
-  α = fill(typedZero, T, U′)
+  α = fill(typed_zero, T, U′)
   for t=1:T
     for u=1:U′
       if t == u == 1
@@ -76,9 +76,9 @@ function ctc_(ŷ, y)
       elseif t == 1 && u == 2
         α[t,u] = ŷ[z′[2], t]
       elseif t == 1 && u > 2
-        α[t,u] = log(typedZero)
+        α[t,u] = log(typed_zero)
       elseif u < U′ - 2(T - t) - 1
-        α[t,u] = log(typedZero)
+        α[t,u] = log(typed_zero)
       else
         idx = u - 2
         idx += z′[u] == blank || (u > 2 && z′[u-2] == z′[u])
@@ -89,12 +89,12 @@ function ctc_(ŷ, y)
   end
 
   # Calculate beta coefficients, from the bottom-right, to the upper-left
-  β = fill(log(typedZero), T, U′)
+  β = fill(log(typed_zero), T, U′)
 
   # Fill bottom-right corner so bounding errors can be avoided
   # by starting `u` at `U′-1`
-  β[T,U′] = typedZero
-  β[T,U′-1] = typedZero
+  β[T,U′] = typed_zero
+  β[T,U′-1] = typed_zero
   
   # start at T-1 so that β(T, u) = log(0) for all u < U′ - 1
   for t=(T-1):-1:1
@@ -115,8 +115,8 @@ function ctc_(ŷ, y)
   # α and β coefficients for all the label classes at time t
   αβ = α + β
   losses = -1 .* logsumexp(αβ, dims=2)
-  accum = fill(log(typedZero), size(ŷ))
-  grads = fill(log(typedZero), size(ŷ))
+  accum = fill(log(typed_zero), size(ŷ))
+  grads = fill(log(typed_zero), size(ŷ))
   for t=1:T
     for u=1:U′
       accum[z′[u], t] = logaddexp(accum[z′[u], t], α[t,u] + β[t,u])
