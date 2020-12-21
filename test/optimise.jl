@@ -2,16 +2,22 @@ using Flux.Optimise
 using Flux.Optimise: runall
 using Flux: Params, gradient
 using Test
+using Random
 
 @testset "Optimise" begin
+  # Ensure rng has different state inside and outside the inner @testset
+  # so that w and w' are different
+  Random.seed!(84)
   w = randn(10, 10)
   @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), Nesterov(), RMSProp(),
-                       Momentum()]
+                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), AdaBelief(),
+                       Nesterov(), RMSProp(), Momentum()]
+    Random.seed!(42)
     w′ = randn(10, 10)
-    loss(x) = Flux.Losses.mse(w*x, w′*x)
+    b = Flux.Zeros()
+    loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
     for t = 1: 10^5
-      θ = Params([w′])
+      θ = params([w′, b])
       x = rand(10)
       θ̄ = gradient(() -> loss(x), θ)
       Optimise.update!(opt, θ, θ̄)
@@ -21,8 +27,10 @@ using Test
 end
 
 @testset "Optimiser" begin
+  Random.seed!(84)
   w = randn(10, 10)
   @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
+    Random.seed!(42)
     w′ = randn(10, 10)
     loss(x) = Flux.Losses.mse(w*x, w′*x)
     opt = Optimiser(Opt(), ADAM(0.001))
@@ -39,7 +47,25 @@ end
 @testset "Training Loop" begin
   i = 0
   l = 1
+  Flux.train!(
+              () -> (sleep(0.1); Flux.skip(); i+=1),
+              (),
+              Iterators.repeated((), 10),
+              Descent()
+             )
 
+  @test i==0 #all skipped
+
+  Flux.train!(
+              () -> (sleep(0.1); i==8 && Flux.skip(); i+=1),
+              (),
+              Iterators.repeated((), 10),
+              Descent()
+             )
+
+  @test i==8 #skip after i hit 8
+
+  i = 0
   Flux.train!(() -> (sleep(0.1); i += 1; l),
               (),
               Iterators.repeated((), 100),

@@ -42,15 +42,17 @@ end
   op = bias(ip)
   @test sum(op) == prod(size(op))
 
-  bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
-  op = bias(ip)
-  @test sum(op) ≈ 0.f0
-  gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-  @test gs[bias.bias] == nothing
+  @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
+    bias = Conv((2,2), 1=>3, bias = false) |> lmap
+    op = bias(ip)
+    @test sum(op) ≈ 0.f0
+    gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
+    @test bias.bias ∉ gs.params
+  end
 
   # Train w/o bias and make sure no convergence happens
   # when only bias can be converged
-  bias = Conv((2, 2), 1=>3, bias = Flux.Zeros());
+  bias = Conv((2, 2), 1=>3, bias = false);
   ip = zeros(Float32, 28,28,1,1)
   op = zeros(Float32, 27,27,3,1) .+ 2.f0
   opt = Descent()
@@ -85,21 +87,29 @@ end
   m1 = DepthwiseConv((2, 2), 3=>15)
   @test size(m1(r), 3) == 15
 
-  m3 = DepthwiseConv((2, 3), 3=>9)
-  @test size(m3(r), 3) == 9
+  m2 = DepthwiseConv((2, 3), 3=>9)
+  @test size(m2(r), 3) == 9
+
+  m3 = DepthwiseConv((2, 3), 3=>9; bias=false)
+  @test size(m2(r), 3) == 9
 
   # Test that we cannot ask for non-integer multiplication factors
   @test_throws AssertionError DepthwiseConv((2,2), 3=>10)
 end
 
 @testset "ConvTranspose" begin
-  x = zeros(Float32, 28, 28, 1, 1)
+  x = zeros(Float32, 5, 5, 1, 1)
   y = Conv((3,3), 1 => 1)(x)
-  x_hat = ConvTranspose((3, 3), 1 => 1)(y)
-  @test size(x_hat) == size(x)
+  x_hat1 = ConvTranspose((3, 3), 1 => 1)(y)
+  x_hat2 = ConvTranspose((3, 3), 1 => 1, bias=false)(y)
+  @test size(x_hat1) == size(x_hat2) == size(x)
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
+  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+
+  x = zeros(Float32, 5, 5, 2, 4)
+  m = ConvTranspose((3,3), 2=>3)
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
 
@@ -114,7 +124,7 @@ end
   m = Chain(
     CrossCor((2, 2), 1=>16, relu),
     MaxPool((2,2)),
-    CrossCor((2, 2), 16=>8, relu),
+    CrossCor((2, 2), 16=>8, relu; bias=false),
     MaxPool((2,2)),
     x -> reshape(x, :, size(x, 4)),
     Dense(288, 10), softmax)
@@ -213,9 +223,9 @@ end
   stride = 3
   l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
   if ltype == ConvTranspose
-    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2] .- stride .+ 1
+    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2]
   else
-    @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ stride)
+    @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], stride)
   end
 end
 
@@ -223,5 +233,5 @@ end
   data = ones(Float32, (k .+ 3)..., 1,1)
 
   l = ltype(k, pad=SamePad())
-  @test size(l(data))[1:end-2] == ceil.(Int, size(data)[1:end-2] ./ k)
+  @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
 end

@@ -1,20 +1,6 @@
 # Datasets
 
-Flux includes several standard machine learning datasets.
+Commonly used machine learning datasets are provided by the following packages in the julia ecosystem:
 
-```@docs
-Flux.Data.Iris.features()
-Flux.Data.Iris.labels()
-Flux.Data.MNIST.images()
-Flux.Data.MNIST.labels()
-Flux.Data.FashionMNIST.images()
-Flux.Data.FashionMNIST.labels()
-Flux.Data.CMUDict.phones()
-Flux.Data.CMUDict.symbols()
-Flux.Data.CMUDict.rawdict()
-Flux.Data.CMUDict.cmudict()
-Flux.Data.Sentiment.train()
-Flux.Data.Sentiment.test()
-Flux.Data.Sentiment.dev()
-```
-
+- [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl): utility package for accessing common machine learning datasets.
+- [GraphMLDatasets.jl](https://github.com/yuehhua/GraphMLDatasets.jl): a library for machine learning datasets on graph.

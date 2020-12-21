@@ -1,6 +1,6 @@
-using Flux 
+using Flux
 using Flux.Data
-using Test 
+using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 
@@ -30,6 +30,7 @@ end
   include("layers/basic.jl")
   include("layers/normalisation.jl")
   include("layers/stateless.jl")
+  include("layers/recurrent.jl")
   include("layers/conv.jl")
 end
 
@@ -41,7 +42,7 @@ end
   end
 end
 
-@static if VERSION >= v"1.4"
+@static if VERSION == v"1.5"
   using Documenter
   @testset "Docs" begin
     DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)

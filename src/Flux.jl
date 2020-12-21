@@ -20,10 +20,11 @@ export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTransp
 include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
+using .Optimise: skip
 export Descent, ADAM, Momentum, Nesterov, RMSProp,
-  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay,
-  ClipValue, ClipNorm
+  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
+  ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
+  WeightDecay, ClipValue, ClipNorm
 
 
 using CUDA
@@ -43,7 +44,7 @@ include("layers/normalise.jl")
 include("data/Data.jl")
 
 include("losses/Losses.jl")
-using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12 
+using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
 
 include("deprecations.jl")
 

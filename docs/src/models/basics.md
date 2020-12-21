@@ -75,7 +75,7 @@ x, y = rand(5), rand(2) # Dummy data
 loss(x, y) # ~ 3
 ```
 
-To improve the prediction we can take the gradients of `W` and `b` with respect to the loss and perform gradient descent.
+To improve the prediction we can take the gradients of the loss with respect to `W` and `b` and perform gradient descent.
 
 ```julia
 using Flux

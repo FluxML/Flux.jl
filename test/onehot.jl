@@ -24,3 +24,12 @@ end
   @test y[:,1] isa Flux.OneHotVector
   @test y[:,:] isa Flux.OneHotMatrix
 end
+
+@testset "abstractmatrix onehotvector multiplication" begin
+  A = [1 3 5; 2 4 6; 3 6 9]
+  b1 = Flux.OneHotVector(1,3)
+  b2 = Flux.OneHotVector(3,5)
+
+  @test A*b1 == A[:,1]
+  @test_throws DimensionMismatch A*b2
+end

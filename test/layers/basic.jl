@@ -35,16 +35,23 @@ import Flux: activations
       @test_throws MethodError Dense(10, 10.5)
       @test_throws MethodError Dense(10, 10.5, tanh)
     end
-
-    @test  length(Dense(10, 5)(randn(10))) == 5
-    @test_throws DimensionMismatch Dense(10, 5)(randn(1))
-    @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
-    @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
-
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+    @testset "dimensions" begin
+      @test  length(Dense(10, 5)(randn(10))) == 5
+      @test_throws DimensionMismatch Dense(10, 5)(randn(1))
+      @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
+      @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+      @test size(Dense(10, 5)(randn(10))) == (5,)
+      @test size(Dense(10, 5)(randn(10,2))) == (5,2)
+      @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
+      @test size(Dense(10, 5)(randn(10,2,3,4))) == (5,2,3,4)
+    end
+    @testset "zeros" begin
+      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
+      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
+      @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
+      @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 2, identity, initW = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+    end
   end
 
   @testset "Diagonal" begin
