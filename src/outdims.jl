@@ -1,6 +1,5 @@
 module NilNumber
 
-using LinearAlgebra
 using NNlib
 
 """
@@ -15,13 +14,14 @@ const nil = Nil()
 
 Nil(::T) where T<:Number = nil
 (::Type{T})(::Nil) where T<:Number = nil
+Base.convert(::Type{Nil}, ::Number) = nil
 
 Base.float(::Type{Nil}) = Nil
 
 for f in [:copy, :zero, :one, :oneunit,
           :+, :-, :abs, :abs2, :inv,
           :exp, :log, :log1p, :log2, :log10,
-          :sqrt, :tanh]
+          :sqrt, :tanh, :conj]
   @eval Base.$f(::Nil) = nil
 end
 
@@ -39,10 +39,6 @@ Base.typemin(::Type{Nil}) = nil
 Base.typemax(::Type{Nil}) = nil
 
 Base.promote_rule(x::Type{Nil}, y::Type{<:Number}) = Nil
-
-
-LinearAlgebra.adjoint(::Nil) = nil
-LinearAlgebra.transpose(::Nil) = nil
 
 end  # module
 
