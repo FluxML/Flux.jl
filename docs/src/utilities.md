@@ -39,7 +39,12 @@ Flux.glorot_normal
 
 Flux provides some utility functions to help you generate models in an automated fashion.
 
-[`outdims`](@ref) enables you to calculate the spatial output dimensions of layers like [`Conv`](@ref) when applied to input images of a given size. This is achieved by passing a "dummy" array into the model that preserves size information without running any computation. `outdims(f, isize)` works for all layers (including custom layers) out of the box as long as `isize` includes the batch dimension. If [`Flux.dimhint`](@ref) is defined for a layer, then `isize` may drop the batch dimension.
+[`outdims`](@ref) enables you to calculate the output dimensions of layers like [`Conv`](@ref)
+when applied to input samples of a given size. This is achieved by passing a "dummy" array into
+the model that preserves size information without running any computation.
+`outdims(f, isize)` works for all layers (including custom layers) out of the box.
+By default, `isize` excludes the batch dimension (assuming it is one),
+but you can set a specific batch size with `outdims(f, isize; padbatch = false)`.
 
 Using this utility function lets you automate model building for various inputs like so:
 ```julia
@@ -56,7 +61,6 @@ end
 
 ```@docs
 Flux.outdims
-Flux.dimhint
 ```
 
 ## Model Abstraction

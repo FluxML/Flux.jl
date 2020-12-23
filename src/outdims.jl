@@ -49,49 +49,18 @@ end  # module
 using .NilNumber: Nil, nil
 
 """
-    _handle_batchin(isize, dimsize)
-
-Gracefully handle ignoring batch dimension by padding `isize` with a 1 if necessary.
-Also returns a boolean indicating if the batch dimension was padded.
-
-# Arguments:
-- `isize`: the input size as specified by the user
-- `dimsize`: the expected number of dimensions for this layer (including batch)
-"""
-function _handle_batchin(isize, dimsize)
-  indims = length(isize)
-  @assert isnothing(dimsize) || indims == dimsize || indims == dimsize - 1
-    "outdims expects ndims(isize) == $dimsize (got isize = $isize). isize should be the size of the input to the function (with batch size optionally left off)"
-  
-  return (indims == dimsize || isnothing(dimsize)) ? (isize, false) : ((isize..., 1), true)
-end
-
-"""
-    _handle_batchout(outsize, ispadded)
-
-Drop the batch dimension if requested.
-
-# Arguments:
-- `outsize`: the output size from a function
-- `ispadded`: indicates whether the batch dimension in `outsize` is padded (see _handle_batchin)
-"""
-_handle_batchout(outsize, ispadded) = ispadded ? outsize[1:(end - 1)] : outsize
-
-"""
-    outdims(m, isize)
+    outdims(m, isize; padbatch = true)
 
 Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
-`isize` should include all dimensions (except batch dimension can be optionally excluded).
+`isize` should include all dimensions (except the batch dimension can be excluded when `padbatch == true`).
 If `m` is a `Tuple` or `Vector`, `outdims` treats `m` like a `Chain`.
 
-*Note*: this method should work out of the box for custom layers,
-  but you may need to specify the batch size manually.
-To take advantage of automatic batch dim handling for your layer, define [`dimhint`](@ref).
+*Note*: this method should work out of the box for custom layers.
 
 # Examples
 ```jldoctest
 julia> outdims(Dense(10, 4), (10,))
-(4,)
+(4, 1)
 
 julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
 
@@ -99,67 +68,33 @@ julia> m(randn(Float32, 10, 10, 3, 64)) |> size
 (6, 6, 32, 64)
 
 julia> outdims(m, (10, 10, 3))
-(6, 6, 32)
+(6, 6, 32, 1)
 
-julia> outdims(m, (10, 10, 3, 64))
+julia> outdims(m, (10, 10, 3, 64); padbatch = false)
 (6, 6, 32, 64)
 
-julia> try outdims(m, (10, 10, 7, 64)) catch e println(e) end
+julia> try outdims(m, (10, 10, 7, 64); padbatch = false) catch e println(e) end
 DimensionMismatch("Input channels must match! (7 vs. 3)")
 
 julia> outdims([Dense(10, 4), Dense(4, 2)], (10,))
-(2,)
+(2, 1)
 
 julia> using LinearAlgebra: norm
 
 julia> f(x) = x ./ norm.(eachcol(x));
 
-julia> outdims(f, (10, 1)) # manually specify batch size as 1
+julia> outdims(f, (10, 1); padbatch = false) # manually specify batch size as 1
 (10, 1)
 
-julia> Flux.dimhint(::typeof(f)) = 2; # our custom f expects 2D arrays (batch included)
-
 julia> outdims(f, (10,)) # no need to mention batch size
-(10,)
+(10, 1)
 ```
 """
-function outdims(m, isize; preserve_batch = false)
-  isize, ispadded = _handle_batchin(isize, dimhint(m))
+function outdims(m, isize; padbatch = true)
+  isize = padbatch ? (isize..., 1) : isize
   
-  return _handle_batchout(size(m(fill(nil, isize))), ispadded)
+  return size(m(fill(nil, isize)))
 end
-
-## dimension hints
-
-"""
-    Flux.dimhint(m)
-
-Return the expected dimensions of the input to a function.
-So, for a function `f(x)`, `dimhint(f) == ndims(x)`.
-
-Note that for [`Chain`](@ref), only the first layer must support
-  `dimhint`.
-
-Override this method for your custom layer to take advantage
-  of the automatic batch handling in [`outdims`](@ref).
-"""
-dimhint(m) = nothing
-dimhint(m::Tuple) = dimhint(first(m))
-dimhint(m::Chain) = dimhint(m.layers)
-dimhint(::Dense) = 2
-dimhint(::Diagonal) = 2
-dimhint(m::Maxout) = dimhint(first(m.over))
-dimhint(m::SkipConnection) = dimhint(m.layers)
-dimhint(m::Conv) = ndims(m.weight)
-dimhint(::ConvTranspose) = 4
-dimhint(::DepthwiseConv) = 4
-dimhint(::CrossCor) = 4
-dimhint(::MaxPool) = 4
-dimhint(::MeanPool) = 4
-dimhint(::AdaptiveMaxPool) = 4
-dimhint(::AdaptiveMeanPool) = 4
-dimhint(::GlobalMaxPool) = 4
-dimhint(::GlobalMeanPool) = 4
 
 ## make tuples and vectors be like Chains
 
