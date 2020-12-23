@@ -23,8 +23,9 @@ Base.sqrt(::Nil) = nil
 Base.zero(::Type{Nil}) = nil
 Base.one(::Type{Nil}) = nil
 
-Base.:+(::Nil) = nil
-Base.:-(::Nil) = nil
+for f in [copy, zero, one, oneunit, :+, :-, :abs, :abs2, :inv, :exp, :log]
+    @eval Base.$f(::Nil) = nil
+end
 
 Base.:+(::Nil, ::Nil) = nil
 Base.:+(::Nil, ::Number) = nil
