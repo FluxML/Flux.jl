@@ -30,6 +30,15 @@
   @test outdims(m, (10, 10, 3)) == (10, 10, 19)
 end
 
+@testset "activations" begin
+  @testset for f in [celu, elu, gelu, hardsigmoid, hardtanh,
+                     leakyrelu, lisht, logcosh, logσ, mish,
+                     relu, relu6, rrelu, selu, σ, softplus,
+                     softshrink, softsign, swish, tanhshrink, trelu]
+    @test outdims(Dense(10, 5, f), (10,)) == (5,)
+  end
+end
+
 @testset "conv" begin
   m = Conv((3, 3), 3 => 16)
   @test outdims(m, (10, 10, 3)) == (8, 8, 16)

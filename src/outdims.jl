@@ -17,21 +17,17 @@ Nil(::T) where T<:Number = nil
 (::Type{T})(::Nil) where T<:Number = nil
 
 Base.float(::Type{Nil}) = Nil
-Base.copy(::Nil) = nil
-Base.abs2(::Nil) = nil
-Base.sqrt(::Nil) = nil
-Base.zero(::Type{Nil}) = nil
-Base.one(::Type{Nil}) = nil
 
-for f in [copy, zero, one, oneunit, :+, :-, :abs, :abs2, :inv, :exp, :log]
-    @eval Base.$f(::Nil) = nil
+for f in [:copy, :zero, :one, :oneunit,
+          :+, :-, :abs, :abs2, :inv,
+          :exp, :log, :log1p, :log2, :log10,
+          :sqrt, :tanh]
+  @eval Base.$f(::Nil) = nil
 end
 
-for f in [:+, :-, :*, :/, :mod, :div, :rem]
-    @eval Base.$f(::Nil, ::Nil) = nil
+for f in [:+, :-, :*, :/, :^, :mod, :div, :rem]
+  @eval Base.$f(::Nil, ::Nil) = nil
 end
-
-Base.inv(::Nil) = nil
 
 Base.isless(::Nil, ::Nil) = true
 Base.isless(::Nil, ::Number) = true
@@ -39,23 +35,10 @@ Base.isless(::Number, ::Nil) = true
 
 Base.isnan(::Nil) = false
 
-Base.abs(::Nil) = nil
-Base.exp(::Nil) = nil
-
 Base.typemin(::Type{Nil}) = nil
 Base.typemax(::Type{Nil}) = nil
-Base.:^(::Nil, ::Nil) = nil
 
-# TODO: can this be shortened?
-Base.promote(x::Nil, y::Nil) = (nil, nil)
-Base.promote(x::Nil, y) = (nil, nil)
-Base.promote(x, y::Nil) = (nil, nil)
-Base.promote(x::Nil, y, z) = (nil, nil, nil)
-Base.promote(x, y::Nil, z) = (nil, nil, nil)
-Base.promote(x, y, z::Nil) = (nil, nil, nil)
-Base.promote(x::Nil, y, z::Nil) = (nil, nil, nil)
-Base.promote(x::Nil, y::Nil, z::Nil) = (nil, nil, nil)
-Base.promote(x::Nil, y::Nil, z) = (nil, nil, nil)
+Base.promote_rule(x::Type{Nil}, y::Type{<:Number}) = Nil
 
 
 LinearAlgebra.adjoint(::Nil) = nil
