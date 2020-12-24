@@ -48,7 +48,6 @@ end
 Adds blanks to the start and end of `z`, and between item in `z`
 """
 function add_blanks(z, blank)
-
   z′ = [blank]
   for label in z
     push!(z′, label)
@@ -61,65 +60,66 @@ function ctc_(ŷ, y)
   typed_zero = zero(ŷ[1])
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
-  z = F(Base.argmax.([y[:,i] for i=1:size(y,2)]), blank)
+  z = F(Base.argmax.(eachcol(y)), blank)
   z′ = add_blanks(z, blank)
   T = size(ŷ, 2)
-  U = length(z)
   U′ = length(z′)
 
-  # Calculate α coefficients, from the upper-left, to the bottom-right
-  α = fill(log(typed_zero), T, U′)
+  α = fill(log(typed_zero), U′, T)
   α[1,1] = ŷ[blank, 1]
-  α[1,2] = ŷ[z′[2], 1]
+  α[2,1] = ŷ[z′[2], 1]
   for t=2:T
 	bound = U′ - 2(T - t) - 1
     for u=1:U′
-	  if u < bound continue end
+	  u < bound && continue
 	  if u == 1
-		α[t,u] = α[t-1, u]
+		α[u,t] = α[u, t-1]
 	  else
-		α[t,u] = logaddexp(α[t-1, u], α[t-1, u-1])
+		α[u,t] = logaddexp(α[u, t-1], α[u-1, t-1])
+		
+		# array bounds check and f(u) function from Eq. 7.9
 		if z′[u] != blank && u != 2 && z′[u] != z′[u-2]
-		  α[t,u] = logaddexp(α[t,u], α[t-1,u-2])
+		  α[u,t] = logaddexp(α[u,t], α[u-2,t-1])
 		end
 	  end
-	  α[t,u] += ŷ[z′[u], t]
+	  α[u,t] += ŷ[z′[u], t]
     end
   end
 
   # Calculate beta coefficients, from the bottom-right, to the upper-left
-  β = fill(log(typed_zero), T, U′)
+  β = fill(log(typed_zero), U′, T)
 
   # Fill bottom-right corner so bounding errors can be avoided
   # by starting `u` at `U′-1`
-  β[T,U′] = typed_zero
-  β[T,U′-1] = typed_zero
+  β[U′, T] = typed_zero
+  β[U′-1, T] = typed_zero
   
   # start at T-1 so that β(T, u) = log(0) for all u < U′ - 1
   for t=(T-1):-1:1
-	bound1 = 2t
-	bound2 = U′ + 1
+	bound = min(U′ + 1, 2t)
     for u=U′:-1:1
-      if u > bound1 || u > bound2 continue end
+      u > bound && continue
 	  if u == U′
-		β[t, u] = ŷ[z′[u], t+1] + β[t+1, u]
+		β[u,t] = ŷ[z′[u], t+1] + β[u, t+1]
 	  else
-		β[t, u] = logaddexp(ŷ[z′[u], t+1] + β[t+1, u], ŷ[z′[u+1], t+1] + β[t+1,u+1])
+		β[u,t] = logaddexp(ŷ[z′[u], t+1] + β[u, t+1], ŷ[z′[u+1], t+1] + β[u+1,t+1])
+		
+		# array bounds check and g(u) function from Eq. 7.16
 		if z′[u] != blank && u != U′-1 && z′[u] != z′[u+2]
-		  β[t, u] = logaddexp(β[t, u], ŷ[z′[u+2], t+1] + β[t+1, u+2])
+		  β[u,t] = logaddexp(β[u,t], ŷ[z′[u+2], t+1] + β[u+2, t+1])
 	    end
 	  end
     end
   end
 
-  # Loss at each time t is taken as the sum of the product (sum in log space) of the
-  # α and β coefficients for all the label classes at time t
-  loss = -1 * logaddexp(α[T,end], α[T, end-1])
+  # Loss is taken as the product (sum in log space) of the last two
+  # cells in the last column in α
+  loss = -1 * logaddexp(α[end,T], α[end-1, T])
   accum = fill(log(typed_zero), size(ŷ))
   grads = fill(log(typed_zero), size(ŷ))
   for t=1:T
     for u=1:U′
-      accum[z′[u], t] = logaddexp(accum[z′[u], t], α[t,u] + β[t,u])
+      accum[z′[u], t] = logaddexp(accum[z′[u], t], α[u,t] + β[u,t])
     end
     for u=1:size(grads, 1)
       grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -loss)
