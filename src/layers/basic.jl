@@ -50,9 +50,13 @@ end
 
 Calculate the output dimensions given the input dimensions, `isize`.
 
-```julia
-m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
-outdims(m, (10, 10)) == (6, 6)
+```jldoctest
+julia> using Flux: outdims
+
+julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
+
+julia> outdims(m, (10, 10)) == (6, 6)
+true
 ```
 """
 outdims(c::Chain, isize) = foldr(outdims, reverse(c.layers), init = isize)
@@ -159,10 +163,16 @@ end
 
 Calculate the output dimensions given the input dimensions, `isize`.
 
-```julia
-m = Dense(10, 5)
-outdims(m, (5, 2)) == (5,)
-outdims(m, (10,)) == (5,)
+```jldoctest
+julia> using Flux: outdims
+
+julia> m = Dense(10, 5);
+
+julia> outdims(m, (10, 100)) == (5,)
+true
+
+julia> outdims(m, (10,)) == (5,)
+true
 ```
 """
 function outdims(l::Dense, isize)
@@ -225,10 +235,12 @@ Conventionally, this is a linear dense layer.
 
 This constructs a `Maxout` layer over 4 internal dense linear layers, each
 identical in structure (784 inputs, 128 outputs):
-```julia
-insize = 784
-outsize = 128
-Maxout(()->Dense(insize, outsize), 4)
+```jldoctest
+julia> insize = 784;
+
+julia> outsize = 128;
+
+julia> Maxout(()->Dense(insize, outsize), 4);
 ```
 """
 function Maxout(f, n_alts)
@@ -256,13 +268,18 @@ will be propagated through the given `layer` while the second is the unchanged,
 The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`,
 and requires the output of the layers to be the same shape as the input.
 Here is a more complicated example:
-```julia
-m = Conv((3,3), 4=>7, pad=(1,1))
-x = ones(5,5,4,10);
-size(m(x)) == (5, 5, 7, 10)
+```jldoctest
+julia> m = Conv((3,3), 4 => 7, pad=(1,1));
 
-sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3))
-size(sm(x)) == (5, 5, 11, 10)
+julia> x = ones(Float32, 5, 5, 4, 10);
+
+julia> size(m(x)) == (5, 5, 7, 10)
+true
+
+julia> sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3));
+
+julia> size(sm(x)) == (5, 5, 11, 10)
+true
 ```
 """
 struct SkipConnection
