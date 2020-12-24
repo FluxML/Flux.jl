@@ -2,7 +2,7 @@
 
 ## Recurrent cells
 
-To introduce Flux's recurrence functionnalities, we will consider the following vanilla recurrent neural network structure:
+To introduce Flux's recurrence functionalities, we will consider the following vanilla recurrent neural network structure:
 
 ![](../assets/rnn-basic.png)
 
