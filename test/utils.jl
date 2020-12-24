@@ -272,4 +272,17 @@ end
       testdense(re(p), bt)
     end
   end
-end 
+end
+
+@testset "Train and test mode" begin
+  mutable struct DummyLayer
+    testing::Bool
+  end
+  Flux.testmode!(m::DummyLayer, testing=true) = (m.testing = testing; m)
+
+  c = Chain(DummyLayer(true))
+  testmode!(c)
+  @test c[1].testing
+  trainmode!(c)
+  @test !c[1].testing
+end
