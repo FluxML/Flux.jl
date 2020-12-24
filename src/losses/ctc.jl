@@ -68,23 +68,22 @@ function ctc_(ŷ, y)
   U′ = length(z′)
 
   # Calculate α coefficients, from the upper-left, to the bottom-right
-  α = fill(typed_zero, T, U′)
-  for t=1:T
+  α = fill(log(typed_zero), T, U′)
+  α[1,1] = ŷ[blank, 1]
+  α[1,2] = ŷ[z′[2], 1]
+  for t=2:T
+	bound = U′ - 2(T - t) - 1
     for u=1:U′
-      if t == u == 1
-        α[t,u] = ŷ[blank, t]
-      elseif t == 1 && u == 2
-        α[t,u] = ŷ[z′[2], t]
-      elseif t == 1 && u > 2
-        α[t,u] = log(typed_zero)
-      elseif u < U′ - 2(T - t) - 1
-        α[t,u] = log(typed_zero)
-      else
-        idx = u - 2
-        idx += z′[u] == blank || (u > 2 && z′[u-2] == z′[u])
-        idx = max(1, idx)
-        α[t,u] = ŷ[z′[u], t] + foldl(logaddexp, α[t-1, idx:u])
-      end
+	  if u < bound continue end
+	  if u == 1
+		α[t,u] = α[t-1, u]
+	  else
+		α[t,u] = logaddexp(α[t-1, u], α[t-1, u-1])
+		if z′[u] != blank && u != 2 && z′[u] != z′[u-2]
+		  α[t,u] = logaddexp(α[t,u], α[t-1,u-2])
+		end
+	  end
+	  α[t,u] += ŷ[z′[u], t]
     end
   end
 
@@ -98,23 +97,24 @@ function ctc_(ŷ, y)
   
   # start at T-1 so that β(T, u) = log(0) for all u < U′ - 1
   for t=(T-1):-1:1
+	bound1 = 2t
+	bound2 = U′ + 1
     for u=U′:-1:1
-      if u > 2t || u > U′ + 1
-        continue
-      end
-      idx = u+2
-      idx -= z′[u] == blank || (idx < U′ && z′[u+2] == z′[u])
-      idx = min(idx, U′)
-      v = [β[t+1,i] + ŷ[z′[i], t+1] for i=u:idx]
-      β[t, u] = foldl(logaddexp, v)
+      if u > bound1 || u > bound2 continue end
+	  if u == U′
+		β[t, u] = ŷ[z′[u], t+1] + β[t+1, u]
+	  else
+		β[t, u] = logaddexp(ŷ[z′[u], t+1] + β[t+1, u], ŷ[z′[u+1], t+1] + β[t+1,u+1])
+		if z′[u] != blank && u != U′-1 && z′[u] != z′[u+2]
+		  β[t, u] = logaddexp(β[t, u], ŷ[z′[u+2], t+1] + β[t+1, u+2])
+	    end
+	  end
     end
   end
-  
 
   # Loss at each time t is taken as the sum of the product (sum in log space) of the
   # α and β coefficients for all the label classes at time t
-  αβ = α + β
-  losses = -1 .* logsumexp(αβ, dims=2)
+  loss = -1 * logaddexp(α[T,end], α[T, end-1])
   accum = fill(log(typed_zero), size(ŷ))
   grads = fill(log(typed_zero), size(ŷ))
   for t=1:T
@@ -122,11 +122,10 @@ function ctc_(ŷ, y)
       accum[z′[u], t] = logaddexp(accum[z′[u], t], α[t,u] + β[t,u])
     end
     for u=1:size(grads, 1)
-      grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -losses[t])
+      grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -loss)
     end
   end
-  losses = [x for x in losses]
-  return losses, grads
+  return loss, grads
 end
 
 """
@@ -150,7 +149,7 @@ or [Graves (2012)](https://www.cs.toronto.edu/~graves/preprint.pdf#chapter.7)
 for mathematical details.
 """
 function ctc_loss(ŷ::Array, y::Array)
-  return ctc_(ŷ, y)[1] |> mean
+  return ctc_(ŷ, y)[1]
 end
 
 @adjoint function ctc_(ŷ, y)
