@@ -48,11 +48,8 @@ end
 Adds blanks to the start and end of `z`, and between item in `z`
 """
 function add_blanks(z, blank)
-  z′ = [blank]
-  for label in z
-    push!(z′, label)
-    push!(z′, blank)
-  end
+  z′ = fill(blank, 2*length(z) + 1)
+  z′[2 .* eachindex(z)] = z
   return z′
 end
 
@@ -122,7 +119,7 @@ function ctc_(ŷ, y)
       accum[z′[u], t] = logaddexp(accum[z′[u], t], α[u,t] + β[u,t])
     end
     for u=1:size(grads, 1)
-      grads[u,t] = exp(ŷ[u, t]) - exp(accum[u, t] - -loss)
+      grads[u,t] = exp(ŷ[u,t]) - exp(accum[u,t] + loss)
     end
   end
   return loss, grads
