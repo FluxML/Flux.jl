@@ -86,6 +86,68 @@ gpu_gradtest("GroupNorm 1d", groupnorm, rand(Float32, 8, 3, 12, 4), 12, 3, setmo
   gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
 end
 
+@testset "BatchNorm mix stuff" begin
+  m_cpu = BatchNorm(2)
+  m_gpu = m_cpu |> gpu
+  x_cpu = rand(Float32, 3, 2, 2)
+  x_gpu = x_cpu |> gpu
+  
+  ## In :auto mode, track statistics only in gradient contest
+  μ_cpu = copy(m_cpu.μ)
+  m_cpu(x_cpu)
+  @test m_cpu.μ ≈ μ_cpu
+  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  @test !(m_cpu.μ ≈ μ_cpu)
+  
+  μ_gpu = copy(m_gpu.μ)
+  m_gpu(x_gpu)
+  @test m_gpu.μ ≈ μ_gpu
+  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  @test !(m_gpu.μ ≈ μ_gpu)
+
+  @test Array(m_gpu.μ) ≈ m_cpu.μ
+
+  ## In testmode, never track statistics
+  testmode!(m_cpu)
+  μ_cpu = copy(m_cpu.μ)
+  m_cpu(x_cpu)
+  @test m_cpu.μ ≈ μ_cpu
+  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  @test m_cpu.μ ≈ μ_cpu
+  
+  testmode!(m_gpu)
+  μ_gpu = copy(m_gpu.μ)
+  m_gpu(x_gpu)
+  @test m_gpu.μ ≈ μ_gpu
+  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  @test m_gpu.μ ≈ μ_gpu
+
+  ## In trainmode, always track statistics
+  trainmode!(m_cpu)
+  μ_cpu = copy(m_cpu.μ)
+  m_cpu(x_cpu)
+  @test !(m_cpu.μ ≈ μ_cpu)
+  μ_cpu = copy(m_cpu.μ)
+  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  @test !(m_cpu.μ ≈ μ_cpu)
+  
+  trainmode!(m_gpu)
+  μ_gpu = copy(m_gpu.μ)
+  m_gpu(x_gpu)
+  @test !(m_gpu.μ ≈ μ_gpu)
+  μ_gpu = copy(m_gpu.μ)
+  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  @test !(m_gpu.μ ≈ μ_gpu)
+
+  ## No errors if input type mistmatch
+  x_cpu = rand(Float64, 3, 2, 2)
+  x_gpu = x_cpu |> gpu
+  m_cpu(x_cpu)
+  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  m_gpu(x_gpu)
+  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+end
+
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
   l = cl((2,2), 1=>3, bias = false) |> gpu
   ip = zeros(Float32, 28,28,1,1) |> gpu

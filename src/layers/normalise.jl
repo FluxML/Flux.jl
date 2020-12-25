@@ -165,19 +165,23 @@ end
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
 function _norm_layer_forward(l, x; reduce_dims, affine_shape)
   N = ndims(x)
-  if !_isactive(l) && l.track_stats
+  if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
-  else
+  else  # trainmode or testmode without tracked stats
     μ = mean(x; dims=reduce_dims)
     σ² = mean((x .- μ).^2; dims=reduce_dims)
     if l.track_stats
-      # update moving mean/std
-      mtm = l.momentum
-      m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
-      l.μ = (1-mtm) .* l.μ .+ mtm .* vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
-      l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m/(m-1f0)) .* vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
+      ## update moving mean/std
+      Zygote.ignore() do
+        mtm = l.momentum
+        m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
+        μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
+        σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
+        l.μ = (1-mtm) .* l.μ .+ mtm .* μnew
+        l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
+      end
     end
   end
   if hasaffine(l)
@@ -269,9 +273,9 @@ testmode!(m::BatchNorm, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::BatchNorm)
-  print(io, "BatchNorm(")
-  print(io, hasaffine(l) ? "affine=false" : length(l.β))
-  (l.λ == identity) || print(io, ", $(l.λ)")
+  print(io, "BatchNorm($(l.chs)")
+  l.λ == identity || print(io, ", $(l.λ)")
+  hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
 
@@ -346,9 +350,9 @@ testmode!(m::InstanceNorm, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::InstanceNorm)
-  print(io, "InstanceNorm(")
-  print(io, hasaffine(l) ? "affine=false" : length(l.β))
-  (l.λ == identity) || print(io, ", $(l.λ)")
+  print(io, "InstanceNorm($(l.chs)")
+  l.λ == identity || print(io, ", $(l.λ)")
+  hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
 
@@ -409,7 +413,6 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
   μ = track_stats ? zeros(Float32, G) : nothing
   σ² = track_stats ? ones(Float32, G) : nothing
 
-
   return GroupNorm(chs, G, λ, 
             β, γ,
             μ, σ², 
@@ -434,9 +437,9 @@ testmode!(m::GroupNorm, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
-  print(io, "GroupNorm(")
-  print(io, hasaffine(l) ? "affine=false" : length(l.β))
-  (l.λ == identity) || print(io, ", $(l.λ)")
+  print(io, "GroupNorm($(l.chs), $(l.G)")
+  l.λ == identity || print(io, ", $(l.λ)")
+  hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
 
