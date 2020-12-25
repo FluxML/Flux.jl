@@ -1,0 +1,59 @@
+##### Master 
+
+julia> include("perf.jl")
+# Shape (10, 10)
+forward gradient context
+  35.807 μs (508 allocations: 32.97 KiB)
+pullback
+  250.860 μs (714 allocations: 23.14 KiB)
+# Shape (100, 100)
+forward gradient context
+  207.208 μs (877 allocations: 431.64 KiB)
+pullback
+  715.362 μs (30697 allocations: 999.34 KiB)
+# Shape (1000, 1000)
+forward gradient context
+  19.116 ms (5457 allocations: 38.32 MiB)
+pullback
+  54.512 ms (3003397 allocations: 95.48 MiB)
+
+##### This PR
+
+  
+ julia> include("perf.jl")
+# Shape (10, 10)
+forward in gradient context
+  27.025 μs (400 allocations: 29.41 KiB)
+pullback
+  216.878 μs (708 allocations: 23.17 KiB)
+# Shape (100, 100)
+forward in gradient context
+  192.794 μs (409 allocations: 419.22 KiB)
+pullback
+  681.668 μs (30692 allocations: 1.01 MiB)
+# Shape (1000, 1000)
+forward in gradient context
+  19.810 ms (409 allocations: 38.21 MiB)
+pullback
+  53.283 ms (3003392 allocations: 99.29 MiB)
+
+
+### this PR w/o affine and track_stats branching
+
+julia> include("perf.jl")p
+# Shape (10, 10)
+forward in gradient context
+  27.070 μs (365 allocations: 27.00 KiB)
+pullback
+  198.775 μs (693 allocations: 22.67 KiB)
+# Shape (100, 100)
+forward in gradient context
+  194.250 μs (374 allocations: 416.81 KiB)
+pullback
+  661.045 μs (30677 allocations: 1.01 MiB)
+# Shape (1000, 1000)
+forward in gradient context
+  20.032 ms (374 allocations: 38.20 MiB)
+pullback
+  54.227 ms (3003377 allocations: 99.29 MiB)
+
