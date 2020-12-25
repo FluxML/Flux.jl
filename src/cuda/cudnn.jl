@@ -5,8 +5,8 @@ function (BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}},
   
   @assert BN.affine "BatchNorm: only affine=true supported on gpu"
   @assert BN.track_stats "BatchNorm: only track_stats=true supported on gpu"
-  
-  return BN.σ.(batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum; 
+  @assert length(BN.β) == size(x, ndims(x)-1) "BatchNorm: input has wronng number of channels"
+  return BN.λ.(batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum; 
                   cache=cache, alpha=1, beta=0, eps=BN.ϵ, 
                   training=Flux._isactive(BN)))
 end
