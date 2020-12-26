@@ -86,7 +86,7 @@ julia> outdims(f, (10,)) # no need to mention batch size
 (10, 1)
 ```
 """
-function outdims(m, isize; padbatch = true)
+function outdims(m, isize::Tuple; padbatch = true)
   isize = padbatch ? (isize..., 1) : isize
   
   return size(m(fill(nil, isize)))
