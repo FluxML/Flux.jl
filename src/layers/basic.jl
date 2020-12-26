@@ -69,25 +69,22 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ=identity; initW=glorot_uniform, initb=zeros, bias=true)
-    Dense(W, b, σ=identity)
+    Dense(in, out, σ=identity; bias=true)
+    Dense(W::AbstractMatrix, bias, [σ])
 
-Create a traditional `Dense` layer with in×out weight matrix `W` and 
-bias vector  `b` of length `out`. The forward pass is given by:
+Create a traditional `Dense` layer, whose forward pass is given by:
 
     y = σ.(W * x .+ b)
 
-The input `x` must be a vector of length `in`, a batch of vectors represented
-as an `in × N` matrix, or a higher order tensor where all dimensions
-after the first one will be treated as batch dimensions.
+The input `x` should be a vector of length `in`, or batch of vectors represented
+as an `in × N` matrix, or any array with `size(x,1) == in`.
+The out `y` will be a vector  of length `out`, or a batch with
+`size(y) == (out, size(x)[2:end]...)`
 
-The out `y` will be a vector  of length `out` or a batch whose first
-dimension is `out` and the remaining dimensions are the same as in the input.
-
-Setting `bias` to `false` will switch the bias  off for the layer.
-
-`initW` and `initb` are callables used to initialize weights and biases respectively,
-through the calls `initW(out, in)` and `initb(out)`.
+Keyword `bias=false` will switch off trainable bias for the layer.
+The initialisation of the weight matrix is `W = init(out, in)`, controlled by
+another keyword, with default `init=glorot_uniform`. The weight matrix and the
+weight vector may also be provided explicitly.
 
 # Examples
 
@@ -113,8 +110,24 @@ end
 Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros, bias=true)
-  return Dense(initW(out, in), create_bias(bias, initb, out), σ)
+               initW = nothing, initb = nothing,
+               init = glorot_uniform, bias=true)
+
+  W = if initW !== nothing
+    @warn "keyword initW is deprecated, please use init" maxlog=1 _id=hash(initW)
+    initW(out, in)
+  else
+    init(out, in)
+  end
+
+  b = if bias === true && initb !== nothing
+    @warn "keyword initb is deprecated, please simply supply the " maxlog=1 _id=hash(initW)
+    create_bias(bias, initb, out)
+  else
+    create_bias(bias, zeros, out)
+  end
+
+  return Dense(W, b, σ)
 end
 
 @functor Dense
