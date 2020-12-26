@@ -15,8 +15,7 @@ export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTransp
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool,
        MeanPool, flatten, DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm,
        InstanceNorm, GroupNorm, SkipConnection, params, fmap, cpu, gpu, f32, f64,
-       testmode!, trainmode!,
-       outdims
+       testmode!, trainmode!
 
 include("optimise/Optimise.jl")
 using .Optimise

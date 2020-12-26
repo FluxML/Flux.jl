@@ -187,10 +187,7 @@ end
   a(T.(x))
 
 """
-    ConvTranspose(filter, in=>out)
-    ConvTranspose(filter, in=>out, activation)
-    ConvTranspose(filter, in => out, σ = identity; init = glorot_uniform,
-                  stride = 1, pad = 0, dilation = 1)
+    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while

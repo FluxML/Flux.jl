@@ -35,6 +35,7 @@ end
 end
 
 @testset "outdims" begin
+  using Flux: outdims
   include("outdims.jl")
 end
 

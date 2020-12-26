@@ -45,7 +45,7 @@ end  # module
 using .NilNumber: Nil, nil
 
 """
-    outdims(m, isize; padbatch = true)
+    outdims(m, isize; padbatch=false)
 
 Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
 `isize` should include all dimensions (except the batch dimension can be excluded when `padbatch == true`).
@@ -55,7 +55,7 @@ If `m` is a `Tuple` or `Vector`, `outdims` treats `m` like a `Chain`.
 
 # Examples
 ```jldoctest
-julia> outdims(Dense(10, 4), (10,))
+julia> outdims(Dense(10, 4), (10,); padbatch=true)
 (4, 1)
 
 julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
@@ -63,30 +63,30 @@ julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
 julia> m(randn(Float32, 10, 10, 3, 64)) |> size
 (6, 6, 32, 64)
 
-julia> outdims(m, (10, 10, 3))
+julia> outdims(m, (10, 10, 3); padbatch=true)
 (6, 6, 32, 1)
 
-julia> outdims(m, (10, 10, 3, 64); padbatch = false)
+julia> outdims(m, (10, 10, 3, 64))
 (6, 6, 32, 64)
 
-julia> try outdims(m, (10, 10, 7, 64); padbatch = false) catch e println(e) end
+julia> try outdims(m, (10, 10, 7, 64)) catch e println(e) end
 DimensionMismatch("Input channels must match! (7 vs. 3)")
 
-julia> outdims([Dense(10, 4), Dense(4, 2)], (10,))
+julia> outdims([Dense(10, 4), Dense(4, 2)], (10, 1))
 (2, 1)
 
 julia> using LinearAlgebra: norm
 
 julia> f(x) = x ./ norm.(eachcol(x));
 
-julia> outdims(f, (10, 1); padbatch = false) # manually specify batch size as 1
+julia> outdims(f, (10, 1)) # manually specify batch size as 1
 (10, 1)
 
-julia> outdims(f, (10,)) # no need to mention batch size
+julia> outdims(f, (10,); padbatch=true) # no need to mention batch size
 (10, 1)
 ```
 """
-function outdims(m, isize::Tuple; padbatch = true)
+function outdims(m, isize::Tuple; padbatch=false)
   isize = padbatch ? (isize..., 1) : isize
   
   return size(m(fill(nil, isize)))
