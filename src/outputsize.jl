@@ -47,11 +47,15 @@ using .NilNumber: Nil, nil
 """
     outputsize(m, inputsize::Tuple; padbatch=false)
 
-Calculate the output size of model/function `m` given an input of size `inputsize` (w/o computing results).
-`inputsize` should include all dimensions (except the batch dimension can be excluded when `padbatch == true`).
-If `m` is a `Tuple` or `Vector`, `outputsize` treats `m` like a `Chain`.
+Calculate the output size of model `m` given the input size. 
+Obeys `outputsize(m, size(x)) == size(m(x))` for valid input `x`.
+Keyword `padbatch=true` is equivalent to using `(inputsize..., 1)`, and 
+returns the final size including this extra batch dimension.
 
-*Note*: this method should work out of the box for custom layers.
+This should be faster than calling `size(m(x))`. It uses a trivial number type, 
+and thus should work out of the box for custom layers.
+
+If `m` is a `Tuple` or `Vector`, its elements are applied in sequence, like `Chain(m...)`.
 
 # Examples
 ```jldoctest
