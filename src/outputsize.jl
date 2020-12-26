@@ -100,8 +100,8 @@ end
 
 ## make tuples and vectors be like Chains
 
-outputsize(m::Tuple, inputsize; padbatch=false) = outputsize(Chain(m...), inputsize; padbatch=padbatch)
-outputsize(m::AbstractVector, inputsize; padbatch=false) = outputsize(Chain(m...), inputsize; padbatch=padbatch)
+outputsize(m::Tuple, inputsize::Tuple; padbatch=false) = outputsize(Chain(m...), inputsize; padbatch=padbatch)
+outputsize(m::AbstractVector, inputsize::Tuple; padbatch=false) = outputsize(Chain(m...), inputsize; padbatch=padbatch)
 
 ## bypass statistics in normalization layers
 
