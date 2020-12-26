@@ -107,7 +107,7 @@ struct Dense{F,S<:AbstractArray,T<:Union{Zeros, AbstractVector}}
   σ::F
 end
 
-Dense(W, b) = Dense(W, b, identity)
+Dense(W, bias) = Dense(W, create_bias(bias, zeros, size(W,1)), identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
                initW = nothing, initb = nothing,
@@ -121,7 +121,7 @@ function Dense(in::Integer, out::Integer, σ = identity;
   end
 
   b = if bias === true && initb !== nothing
-    @warn "keyword initb is deprecated, please simply supply the " maxlog=1 _id=hash(initW)
+    @warn "keyword initb is deprecated, please simply supply the " maxlog=1 _id=hash(initb)
     create_bias(bias, initb, out)
   else
     create_bias(bias, zeros, out)
