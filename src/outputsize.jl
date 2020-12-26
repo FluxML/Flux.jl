@@ -55,6 +55,8 @@ If `m` is a `Tuple` or `Vector`, `outputsize` treats `m` like a `Chain`.
 
 # Examples
 ```jldoctest
+julia> using Flux: outputsize
+
 julia> outputsize(Dense(10, 4), (10,); padbatch=true)
 (4, 1)
 
