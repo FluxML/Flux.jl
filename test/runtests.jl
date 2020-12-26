@@ -34,9 +34,9 @@ end
   include("layers/conv.jl")
 end
 
-@testset "outdims" begin
-  using Flux: outdims
-  include("outdims.jl")
+@testset "outputsize" begin
+  using Flux: outputsize
+  include("outputsize.jl")
 end
 
 @testset "CUDA" begin

@@ -45,17 +45,17 @@ end  # module
 using .NilNumber: Nil, nil
 
 """
-    outdims(m, isize; padbatch=false)
+    outputsize(m, inputsize::Tuple; padbatch=false)
 
-Calculate the output size of model/function `m` given an input of size `isize` (w/o computing results).
-`isize` should include all dimensions (except the batch dimension can be excluded when `padbatch == true`).
-If `m` is a `Tuple` or `Vector`, `outdims` treats `m` like a `Chain`.
+Calculate the output size of model/function `m` given an input of size `inputsize` (w/o computing results).
+`inputsize` should include all dimensions (except the batch dimension can be excluded when `padbatch == true`).
+If `m` is a `Tuple` or `Vector`, `outputsize` treats `m` like a `Chain`.
 
 *Note*: this method should work out of the box for custom layers.
 
 # Examples
 ```jldoctest
-julia> outdims(Dense(10, 4), (10,); padbatch=true)
+julia> outputsize(Dense(10, 4), (10,); padbatch=true)
 (4, 1)
 
 julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
@@ -63,39 +63,39 @@ julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
 julia> m(randn(Float32, 10, 10, 3, 64)) |> size
 (6, 6, 32, 64)
 
-julia> outdims(m, (10, 10, 3); padbatch=true)
+julia> outputsize(m, (10, 10, 3); padbatch=true)
 (6, 6, 32, 1)
 
-julia> outdims(m, (10, 10, 3, 64))
+julia> outputsize(m, (10, 10, 3, 64))
 (6, 6, 32, 64)
 
-julia> try outdims(m, (10, 10, 7, 64)) catch e println(e) end
+julia> try outputsize(m, (10, 10, 7, 64)) catch e println(e) end
 DimensionMismatch("Input channels must match! (7 vs. 3)")
 
-julia> outdims([Dense(10, 4), Dense(4, 2)], (10, 1))
+julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1))
 (2, 1)
 
 julia> using LinearAlgebra: norm
 
 julia> f(x) = x ./ norm.(eachcol(x));
 
-julia> outdims(f, (10, 1)) # manually specify batch size as 1
+julia> outputsize(f, (10, 1)) # manually specify batch size as 1
 (10, 1)
 
-julia> outdims(f, (10,); padbatch=true) # no need to mention batch size
+julia> outputsize(f, (10,); padbatch=true) # no need to mention batch size
 (10, 1)
 ```
 """
-function outdims(m, isize::Tuple; padbatch=false)
-  isize = padbatch ? (isize..., 1) : isize
+function outputsize(m, inputsize::Tuple; padbatch=false)
+  inputsize = padbatch ? (inputsize..., 1) : inputsize
   
-  return size(m(fill(nil, isize)))
+  return size(m(fill(nil, inputsize)))
 end
 
 ## make tuples and vectors be like Chains
 
-outdims(m::Tuple, isize) = outdims(Chain(m...), isize)
-outdims(m::AbstractVector, isize) = outdims(Chain(m...), isize)
+outputsize(m::Tuple, inputsize) = outputsize(Chain(m...), inputsize)
+outputsize(m::AbstractVector, inputsize) = outputsize(Chain(m...), inputsize)
 
 ## bypass statistics in normalization layers
 

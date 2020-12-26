@@ -39,12 +39,12 @@ Flux.glorot_normal
 
 Flux provides some utility functions to help you generate models in an automated fashion.
 
-[`outdims`](@ref) enables you to calculate the output dimensions of layers like [`Conv`](@ref)
+[`outputsize`](@ref) enables you to calculate the output dimensions of layers like [`Conv`](@ref)
 when applied to input samples of a given size. This is achieved by passing a "dummy" array into
 the model that preserves size information without running any computation.
-`outdims(f, isize)` works for all layers (including custom layers) out of the box.
-By default, `isize` expects the batch dimension,
-but you can exclude the batch size with `outdims(f, isize; padbatch=true)` (assuming it to be one).
+`outputsize(f, inputsize)` works for all layers (including custom layers) out of the box.
+By default, `inputsize` expects the batch dimension,
+but you can exclude the batch size with `outputsize(f, inputsize; padbatch=true)` (assuming it to be one).
 
 Using this utility function lets you automate model building for various inputs like so:
 ```julia
@@ -71,7 +71,7 @@ function make_model(width, height, inchannels, nclasses;
 
   # compute the output dimensions for the conv layers
   # use padbatch=true to set the batch dimension to 1
-  conv_outsize = outdims(conv_layers, (width, height, nchannels); padbatch=true)
+  conv_outsize = Flux.outputsize(conv_layers, (width, height, nchannels); padbatch=true)
 
   # the input dimension to Dense is programatically calculated from
   #  width, height, and nchannels
@@ -80,7 +80,7 @@ end
 ```
 
 ```@docs
-Flux.outdims
+Flux.outputsize
 ```
 
 ## Model Abstraction
