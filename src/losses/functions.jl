@@ -106,7 +106,7 @@ in which case the labels `y` are given in a one-hot format.
 `dims` specifies the dimension (or the dimensions) containing the class probabilities.
 The prediction `ŷ` is supposed to sum to one across `dims`,
 as would be the case with the output of a [`softmax`](@ref) operation.
-Flux.
+
 Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
 computing the loss.
 
