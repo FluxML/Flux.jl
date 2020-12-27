@@ -62,12 +62,11 @@ During training, the gradients will only be computed for (and applied to) the la
 Flux.params(m[1], m[3:end])
 ```
 
-Sometimes, a more fine-tuned control is needed. 
-We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`, 
+Sometimes, a more fine-tuned control is needed.
+We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`,
 by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
 delete!(ps, m[2].b) 
 ```
-
