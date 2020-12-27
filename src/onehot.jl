@@ -107,24 +107,32 @@ onehotbatch(ls, labels, unk...) =
 Base.argmax(xs::OneHotVector) = xs.ix
 
 """
-    onecold(y[, labels = 1:length(y)])
+    onecold(y::AbstractVector, labels = 1:length(y))
+    onecold(y::AbstractMatrix, labels = 1:size(y,1))
 
-Inverse operations of [`onehot`](@ref).
+Inverse operations of [`onehot`](@ref), corresponding
+to taking the argmax along the first dimension. 
 
 # Examples
 ```jldoctest
-julia> Flux.onecold([true, false, false], [:a, :b, :c])
-:a
-
 julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
+
+julia> Flux.onecold([1 3 4
+                     0 2 5])
+3-element Array{Int64,1}:
+ 1
+ 1
+ 2
 ```
 """
-onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
+onecold(y::AbstractVector, labels = 1:length(y)) = 
+  labels[Base.argmax(y)]
 
-onecold(y::AbstractMatrix, labels...) =
-  dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
+onecold(y::AbstractMatrix, labels = 1:size(y,1)) =
+  vec(map(x -> labels[x[1]], argmax(y; dims=1)))
 
-onecold(y::OneHotMatrix, labels...) = map(x -> Flux.onecold(x, labels...), y.data)
+onecold(y::OneHotMatrix, labels...) = 
+  map(x -> Flux.onecold(x, labels...), y.data)
 
 @nograd onecold, onehot, onehotbatch

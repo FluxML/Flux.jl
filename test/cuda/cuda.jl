@@ -42,6 +42,15 @@ end
   y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
   @test Flux.onecold(y) isa CuArray
   @test y[3,:] isa CuArray
+
+  y = rand(Float32, 10, 100) |> gpu
+  z = onecold(y)
+  @test z isa CuVector{Int}
+  @test Array(z) == onecold(y |> cpu)
+
+  z = onecold(y, 10:30)
+  @test z isa CuVector{Int}
+  @test Array(z) == onecold(y |> cpu, 10:30)
 end
 
 @testset "restructure gpu" begin
