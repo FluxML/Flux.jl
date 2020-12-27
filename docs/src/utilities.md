@@ -91,6 +91,7 @@ Flux.outputsize
 ## Model Abstraction
 
 ```@docs
+Flux.modules
 Flux.destructure
 Flux.nfan
 ```

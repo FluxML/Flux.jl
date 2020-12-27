@@ -393,3 +393,19 @@ end
   trainmode!(c)
   @test !c[1].testing
 end
+
+@testset "modules" begin
+  m1 = Conv((2,3), 4=>5; pad=6, stride=7)
+  m2 = LayerNorm(8)
+  m3 = m2.diag
+  m4 = SkipConnection(m1, +)
+  m5 =  Chain(m4, m2)
+  modules = Flux.modules(m5)
+  # Depth-first descent
+  @test length(modules) == 5
+  @test modules[1] === m5
+  @test modules[2] === m4
+  @test modules[3] === m1
+  @test modules[4] === m2
+  @test modules[5] === m3
+end

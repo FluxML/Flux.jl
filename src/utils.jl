@@ -701,3 +701,50 @@ function throttle(f, timeout; leading=true, trailing=false)
     return result
   end
 end
+
+
+"""
+    modules(m)
+
+Return an iterator over non-leaf objects
+that can be reached from `m` through recursion
+on the children given by [`trainable`](@ref).
+
+It can be used to apply a regularization
+over certain specific modules or subsets of
+the parameters (e.g. the weights but not the biases).
+
+# Examples
+
+```jldoctest
+julia> m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu))
+Chain(Dense(784, 64), BatchNorm(64, relu))
+
+julia> m2 = Chain(model1, Dense(64, 10))
+Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
+
+julia> Flux.modules(m2)
+5-element Vector{Any}:
+ Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
+ Chain(Dense(784, 64), BatchNorm(64, relu))
+ Dense(784, 64)
+ BatchNorm(64, relu)
+ Dense(64, 10)
+
+julia> L2(model) = sum(sum(abs2, m.weight) for m in Flux.modules(model) if m isa Dense)
+```
+"""
+modules(m) = [x for x in traverse_trainables(m) if !isleaflike(x)]
+
+function traverse_trainables(x, cache=[])
+  x in cache && return cache
+  push!(cache, x)
+  foreach(y -> traverse_trainables(y, cache), trainable(x))
+  return cache
+end
+
+isleaflike(x) = trainable(x) === ()
+isleaflike(::Tuple{Vararg{<:Number}}) = true
+isleaflike(::Tuple{Vararg{<:AbstractArray}}) = true
+
+@nograd modules
