@@ -3,8 +3,6 @@ using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 # pad dims of x with dims of y until ndims(x) == ndims(y)
 _paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]...)
 
-_convtransoutdims(isize, ksize, ssize, dsize, pad) = (isize .- 1).*ssize .+ 1 .+ (ksize .- 1).*dsize .- (pad[1:2:end] .+ pad[2:2:end])
-
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 
@@ -189,21 +187,6 @@ end
   a(T.(x))
 
 """
-    outdims(l::Conv, isize::Tuple)
-
-Calculate the output dimensions given the input dimensions `isize`.
-Batch size and channel size are ignored as per [NNlib.jl](https://github.com/FluxML/NNlib.jl).
-
-```julia
-m = Conv((3, 3), 3 => 16)
-outdims(m, (10, 10)) == (8, 8)
-outdims(m, (10, 10, 1, 3)) == (8, 8)
-```
-"""
-outdims(l::Conv, isize) =
-  output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
-
-"""
     ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
@@ -310,8 +293,6 @@ end
 
 (a::ConvTranspose{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
-
-outdims(l::ConvTranspose{N}, isize) where N = _convtransoutdims(isize[1:2], size(l.weight)[1:N], l.stride, l.dilation, l.pad)
 
 function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
@@ -425,9 +406,6 @@ end
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
 
-outdims(l::DepthwiseConv, isize) =
-  output_size(DepthwiseConvDims(_paddims(isize, (1, 1, size(l.weight)[end], 1)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
-
 """
     CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
 
@@ -520,9 +498,6 @@ end
 
 (a::CrossCor{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
-
-outdims(l::CrossCor, isize) =
-  output_size(DenseConvDims(_paddims(isize, size(l.weight)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
 
 """
     AdaptiveMaxPool(out::NTuple)
@@ -744,8 +719,6 @@ end
 _maybetuple_string(pad) = string(pad)
 _maybetuple_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
 
-outdims(l::MaxPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))
-
 """
     MeanPool(window::NTuple; pad=0, stride=window)
 
@@ -798,5 +771,3 @@ function Base.show(io::IO, m::MeanPool)
   m.stride == m.k || print(io, ", stride=", _maybetuple_string(m.stride))
   print(io, ")")
 end
-
-outdims(l::MeanPool{N}, isize) where N = output_size(PoolDims(_paddims(isize, (l.k..., 1, 1)), l.k; stride = l.stride, padding = l.pad))

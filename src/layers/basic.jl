@@ -45,22 +45,6 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-"""
-    outdims(c::Chain, isize)
-
-Calculate the output dimensions given the input dimensions, `isize`.
-
-```jldoctest
-julia> using Flux: outdims
-
-julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
-
-julia> outdims(m, (10, 10)) == (6, 6)
-true
-```
-"""
-outdims(c::Chain, isize) = foldr(outdims, reverse(c.layers), init = isize)
-
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
 # see issue https://github.com/FluxML/Flux.jl/issues/702
@@ -159,28 +143,6 @@ end
   a(T.(x))
 
 """
-    outdims(l::Dense, isize)
-
-Calculate the output dimensions given the input dimensions, `isize`.
-
-```jldoctest
-julia> using Flux: outdims
-
-julia> m = Dense(10, 5);
-
-julia> outdims(m, (10, 100)) == (5,)
-true
-
-julia> outdims(m, (10,)) == (5,)
-true
-```
-"""
-function outdims(l::Dense, isize)
-    first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)),), got $isize"))
-    return (size(l.W, 1),)
-end
-
-"""
     Diagonal(in::Integer)
 
 Create an element-wise linear transformation layer with learnable
@@ -208,8 +170,6 @@ end
 function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
-
-outdims(l::Diagonal, isize) = (length(l.α),)
 
 """
     Maxout(over)
@@ -253,8 +213,6 @@ end
 function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
-
-outdims(l::Maxout, isize) = outdims(first(l.over), isize)
 
 """
     SkipConnection(layer, connection)
