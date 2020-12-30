@@ -23,8 +23,8 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu, args...;
       @testset "$layer GPU grad test" begin
         l_cpu = layer(args...)
         if l_cpu isa BROKEN_LAYERS
-          @test_broken gpu_autodiff_test(l_cpu, x_cpu, 
-                          test_equal=test_cpu, rtol=rtol, atol=atol)
+          l_gpu, x_gpu = l_cpu |> gpu, x_cpu |> gpu
+          @test_broken gradient(() -> sum(l_gpu(x_gpu)), Flux.params(l_gpu)) isa Flux.Zygote.Grads
         else
           gpu_autodiff_test(l_cpu, x_cpu, 
               test_equal=test_cpu, rtol=rtol, atol=atol)
