@@ -69,6 +69,11 @@ Base.zero(o::O) where {O<:OneHot} = toOneHot(O, 0x00000000)
 Base.zero(::Type{<:OneHot{K}}) where K = OneHot(K, 0)
 Base.iszero(o::O) where {O<:OneHot} = iszero(convert(UInt32, o))
 
+# number
+
+Base.typemin(::Type{<:OneHot{K}}) where K = OneHot(K, 0)
+Base.typemax(::Type{<:OneHot{K}}) where K = OneHot(K, K)
+
 # bit-op
 
 function check_onehot_top_bit(::Type{OneHot{K}}, x) where {K}
@@ -217,7 +222,7 @@ function Base.reshape(parent::OneHotArray{K}, dims::Dims) where K
     Base._reshape(parent, dims)
 end
 
-function Base.reshape(parent::OneHotArray{K}, dims::Tuple{Vararg{Union{Colon, Int64}}}) where K
+function Base.reshape(parent::OneHotArray{K}, dims::Tuple{Vararg{Union{Colon, Int}}}) where K
   rdims = Base._reshape_uncolon(parent, dims)
   return isequal(K, first(rdims)) ?
     ohreshape(parent, Base.tail(rdims)) :
@@ -229,9 +234,43 @@ end
 import Adapt: adapt, adapt_structure
 adapt_structure(T, oa::OneHotArray) = OneHotArray(adapt(T, oa.onehots))
 
-import .CUDA: CuArray, CuArrayStyle
+import .CUDA
+import .CUDA: CuArray, CuArrayStyle, @allowscalar
 
 Base.BroadcastStyle(::Type{<: OneHotArray{K, N, var"N+1", A}}) where {K, N, var"N+1", A <: CuArray} = CuArrayStyle{var"N+1"}()
+
+# avoid scalar operation by broadcasting assigment
+CuArray(o::OneHotArray) = CuArray{Bool}(o)
+function CuArray{F}(o::OneHotArray{K, N, var"N+1", A}) where {F, K, N, var"N+1", A <: CuArray}
+  dest = similar(o, F)
+  dest .= o
+  return dest
+end
+
+using Base.Cartesian
+
+function Base.findmax(o::OneHotArray{K, N, var"N+1", A}; dims=:) where {K, N, var"N+1", A <: CuArray}
+  if dims == Colon()
+    return (true, argmax(o, dims=dims))
+  elseif isone(dims)
+    return (CUDA.ones(Bool, size(o.onehots)), argmax(o, dims=dims))
+  else
+    a = CuArray{Bool}(o)
+    return findmax(a, dims=dims)
+  end
+end
+
+function Base.argmax(o::OneHotArray{K, N, var"N+1", A}; dims=:) where {K, N, var"N+1", A <: CuArray}
+  if dims == Colon()
+    n = findfirst(!isequal(zero(eltype(o.onehots))), o.onehots)
+    x = @allowscalar o.onehots[n]
+    return CartesianIndex(Int(x), n)
+  elseif isone(dims)
+    return map((x, i)->CartesianIndex(Int(x), i), o.onehots, CartesianIndices(o.onehots)) |> Base.Fix2(reshape, (1, size(o.onehots)...))
+  else
+    return findmax(o, dims=dims)[2]
+  end
+end
 
 # api
 
@@ -307,20 +346,25 @@ julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 ```
 """
-onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
-
-onecold(y::AbstractMatrix, labels...) =
-  dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
-
-function onecold(y::OneHotArray, labels = 1:onehotsize(y))
-  @assert onehotsize(y) == length(labels)
-  x = convert(AbstractArray{Int}, y.onehots)
-  if labels == 1:onehotsize(y)
-    return x
+function onecold(y::AbstractArray, labels = 1:size(y, 1))
+  @assert size(y, 1) == length(labels)
+  indices = _onecold(y)
+  if labels == 1:size(y, 1)
+    return indices
   else
-    return map(xi -> labels[xi], x)
+    if isbits(labels)
+      xs = indices
+    else
+      xs = collect(indices) # non-bit type cannot be handled by CUDA
+    end
+    return map(xi -> labels[xi], xs)
   end
 end
+
+onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
+
+_onecold(y::AbstractArray) = dropdims(map(x->Int32(x[1]), Base.argmax(y, dims=1)), dims=1)
+_onecold(y::OneHotArray) = convert(AbstractArray{Int32}, y.onehots)
 
 # AD
 @nograd OneHot, OneHotArray, onecold, onehot, onehotbatch
