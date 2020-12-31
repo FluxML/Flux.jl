@@ -98,8 +98,8 @@ end
 The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 """
-Recur(m::RNNCell) = Recur(m, m.state0)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
+Recur(m::RNNCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::RNNCell, sym::Symbol)
@@ -155,10 +155,10 @@ recurrent layer. Behaves like an RNN but generally exhibits a longer memory span
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
+LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 # Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
 #   (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
 Recur(m::LSTMCell) = Recur(m, m.state0)
-LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 
 # TODO remove in v0.13
 function Base.getproperty(m::LSTMCell, sym::Symbol)
@@ -209,8 +209,8 @@ RNN but generally exhibits a longer memory span over sequences.
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
-Recur(m::GRUCell) = Recur(m, m.state0)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+Recur(m::GRUCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::GRUCell, sym::Symbol)

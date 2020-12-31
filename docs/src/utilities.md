@@ -25,6 +25,7 @@ Flux initializes convolutional layers and recurrent cells with `glorot_uniform`
 by default.
 To change the default on an applicable layer, pass the desired function with the
 `init` keyword. For example:
+
 ```jldoctest; setup = :(using Flux)
 julia> conv = Conv((3, 3), 1 => 8, relu; init=Flux.glorot_normal)
 Conv((3, 3), 1=>8, relu)
@@ -33,6 +34,8 @@ Conv((3, 3), 1=>8, relu)
 ```@docs
 Flux.glorot_uniform
 Flux.glorot_normal
+Flux.kaiming_uniform
+Flux.kaiming_normal
 ```
 
 ## Model Building
@@ -87,6 +90,7 @@ Flux.outputsize
 
 ```@docs
 Flux.destructure
+Flux.nfan
 ```
 
 ## Callback Helpers

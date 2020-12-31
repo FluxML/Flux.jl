@@ -1,10 +1,11 @@
-## Basic Layers
+# Basic Layers
 
 These core layers form the foundation of almost all neural networks.
 
 ```@docs
 Chain
 Dense
+Flux.Diagonal
 ```
 
 ## Convolution and Pooling Layers
@@ -41,6 +42,7 @@ Flux.reset!
 ```
 
 ## Other General Purpose Layers
+
 These are marginally more obscure than the Basic Layers.
 But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).
 
@@ -48,7 +50,6 @@ But in contrast to the layers described in the other sections are not readily gr
 Maxout
 SkipConnection
 ```
-
 
 ## Normalisation & Regularisation
 
