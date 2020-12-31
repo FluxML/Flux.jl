@@ -4,13 +4,14 @@
 
 * The Dense layer now supports inputs with [multiple batch dimensions](https://github.com/FluxML/Flux.jl/pull/1405)
 * Excise datasets in favour of other providers in the julia ecosystem.
-* other new features and bug fixes (see GitHub's releases page)
 * Added option to set `bias` to [false](https://github.com/FluxML/Flux.jl/pull/1379) to eliminating `bias` from being trained.
+* Removed kwarg only constructors for [`convolutional layers`](https://github.com/FluxML/Flux.jl/pull/1379)).
+* Other new features and bug fixes (see GitHub releases page)
 
 ## v0.11.2
 
 * Adds the [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser.
-* other new features and bug fixes (see GitHub releases page)
+* Other new features and bug fixes (see GitHub releases page)
 
 ## v0.11
 
