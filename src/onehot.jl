@@ -115,6 +115,9 @@ to taking the argmax along the first dimension.
 
 # Examples
 ```jldoctest
+julia> Flux.onecold([true, false, false], [:a, :b, :c])
+:a
+
 julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 
