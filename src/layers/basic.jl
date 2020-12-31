@@ -241,7 +241,7 @@ through a user-supplied 2-argument callable. The first argument to the callable
 will be propagated through the given `layer` while the second is the unchanged,
 "skipped" input.
 
-The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`
+The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`.
 Here is a more complicated example:
 ```julia
 m = Conv((3,3), 4=>7, pad=(1,1))
