@@ -68,20 +68,27 @@ function ctc_(ŷ, y)
   for t=2:T
 	bound = U′ - 2(T - t) - 1
     for u=1:U′
-	  u < bound && continue
 	  if u == 1
 		α[u,t] = α[u, t-1]
-	  else
+	  elseif u >= bound
 		α[u,t] = logaddexp(α[u, t-1], α[u-1, t-1])
 		
 		# array bounds check and f(u) function from Eq. 7.9
-		if z′[u] != blank && u != 2 && z′[u] != z′[u-2]
+		if u > 2 && z′[u] != blank && z′[u] != z′[u-2]
 		  α[u,t] = logaddexp(α[u,t], α[u-2,t-1])
 		end
 	  end
 	  α[u,t] += ŷ[z′[u], t]
     end
   end
+  return (loss=-1 * logaddexp(α[end,T], α[end-1, T]), alpha=α, zprime=z′, logsoftyhat=ŷ)
+end
+  
+@adjoint function ctc_(ŷ, y)
+  loss, α, z′, ŷ = ctc_(ŷ, y)
+  U′, T = size(α)
+  blank = U′
+  typed_zero = zero(first(α))
 
   # Calculate beta coefficients, from the bottom-right, to the upper-left
   β = fill(log(typed_zero), U′, T)
@@ -95,34 +102,29 @@ function ctc_(ŷ, y)
   for t=(T-1):-1:1
 	bound = min(U′ + 1, 2t)
     for u=U′:-1:1
-      u > bound && continue
 	  if u == U′
 		β[u,t] = ŷ[z′[u], t+1] + β[u, t+1]
-	  else
+	  elseif u <= bound
 		β[u,t] = logaddexp(ŷ[z′[u], t+1] + β[u, t+1], ŷ[z′[u+1], t+1] + β[u+1,t+1])
 		
 		# array bounds check and g(u) function from Eq. 7.16
-		if z′[u] != blank && u != U′-1 && z′[u] != z′[u+2]
+		if u < U′-1 && z′[u] != blank && z′[u] != z′[u+2]
 		  β[u,t] = logaddexp(β[u,t], ŷ[z′[u+2], t+1] + β[u+2, t+1])
 	    end
 	  end
     end
   end
 
-  # Loss is taken as the product (sum in log space) of the last two
-  # cells in the last column in α
-  loss = -1 * logaddexp(α[end,T], α[end-1, T])
+  # Accumulate alpha-beta products for each category,
+  # then calculate gradients
   accum = fill(log(typed_zero), size(ŷ))
-  grads = fill(log(typed_zero), size(ŷ))
   for t=1:T
     for u=1:U′
       accum[z′[u], t] = logaddexp(accum[z′[u], t], α[u,t] + β[u,t])
     end
-    for u=1:size(grads, 1)
-      grads[u,t] = exp(ŷ[u,t]) - exp(accum[u,t] + loss)
-    end
   end
-  return loss, grads
+  grads = exp.(ŷ) .- exp.(accum .+ loss)
+  return loss, g -> (g .* grads, nothing)
 end
 
 """
@@ -147,9 +149,4 @@ for mathematical details.
 """
 function ctc_loss(ŷ::Array, y::Array)
   return ctc_(ŷ, y)[1]
-end
-
-@adjoint function ctc_(ŷ, y)
-  ls, gs = ctc_(ŷ, y)
-  return mean(ls), Δ -> (Δ .* gs, Δ)
 end
