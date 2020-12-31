@@ -21,14 +21,14 @@ end
 
 @testset "onehotbatch indexing" begin
   y = Flux.onehotbatch(ones(3), 1:10)
-  @test y[:,1] isa Flux.OneHotVector
-  @test y[:,:] isa Flux.OneHotMatrix
+  @test y[:,1] isa Flux.OneHot
+  @test y[:,:] isa Flux.OneHotArray
 end
 
 @testset "abstractmatrix onehotvector multiplication" begin
   A = [1 3 5; 2 4 6; 3 6 9]
-  b1 = Flux.OneHotVector(1,3)
-  b2 = Flux.OneHotVector(3,5)
+  b1 = Flux.OneHot(3, 1)
+  b2 = Flux.OneHot(5, 3)
 
   @test A*b1 == A[:,1]
   @test_throws DimensionMismatch A*b2
