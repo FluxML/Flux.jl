@@ -7239,6 +7239,9 @@ h1:hover .docs-heading-anchor-permalink, h2:hover .docs-heading-anchor-permalink
   .docstring > section:hover a.docs-sourcelink {
     opacity: 1; }
 
+.documenter-example-output {
+  background-color: white; }
+
 .content pre {
   border: 1px solid #dbdbdb; }
 
@@ -7274,6 +7277,9 @@ h1:hover .docs-heading-anchor-permalink, h2:hover .docs-heading-anchor-permalink
   top: 0;
   right: 0; }
 
+.katex-display, mjx-container, .MathJax_Display {
+  margin: 0.5em 0 !important; }
+
 html {
   -moz-osx-font-smoothing: auto;
   -webkit-font-smoothing: auto; }
@@ -7284,6 +7290,8 @@ html {
  */
 #documenter .docs-main > article {
   overflow-wrap: break-word; }
+  #documenter .docs-main > article .math-container {
+    overflow-x: auto; }
 
 @media screen and (min-width: 1056px) {
   #documenter .docs-main {
@@ -7360,6 +7368,7 @@ html {
 
 #documenter .docs-main .docs-footer {
   display: flex;
+  flex-wrap: wrap;
   margin-left: 0;
   margin-right: 0;
   border-top: 1px solid #dbdbdb;
@@ -7373,6 +7382,13 @@ html {
     flex-grow: 1; }
   #documenter .docs-main .docs-footer .docs-footer-nextpage {
     text-align: right; }
+  #documenter .docs-main .docs-footer .flexbox-break {
+    flex-basis: 100%;
+    height: 0; }
+  #documenter .docs-main .docs-footer .footer-message {
+    font-size: 0.8em;
+    margin: 0.5em auto 0 auto;
+    text-align: center; }
 
 #documenter .docs-sidebar {
   display: flex;
