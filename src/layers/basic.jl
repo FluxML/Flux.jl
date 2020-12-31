@@ -223,8 +223,7 @@ through a user-supplied 2-argument callable. The first argument to the callable
 will be propagated through the given `layer` while the second is the unchanged,
 "skipped" input.
 
-The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`,
-and requires the output of the layers to be the same shape as the input.
+The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`.
 Here is a more complicated example:
 ```jldoctest
 julia> m = Conv((3,3), 4 => 7, pad=(1,1));
@@ -240,9 +239,9 @@ julia> size(sm(x)) == (5, 5, 11, 10)
 true
 ```
 """
-struct SkipConnection
-  layers
-  connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
+struct SkipConnection{T,F}
+  layers::T
+  connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
 @functor SkipConnection
