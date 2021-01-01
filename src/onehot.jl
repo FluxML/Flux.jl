@@ -131,6 +131,7 @@ function OneHotArray{K, N, var"N+1"}(xs::AbstractArray{T, N}) where {K, N, var"N
   OneHotArray(K, xs)
 end
 
+const OneHotVector{K} = OneHot{K}
 const OneHotMatrix{K} = OneHotArray{K, 1}
 
 onehotsize(::OneHotArray{K}) where K = Int(K)
