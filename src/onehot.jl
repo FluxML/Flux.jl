@@ -323,7 +323,7 @@ return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an erro
 # Examples
 ```jldoctest
 julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHoArray{3, 2, Array{Flux.OneHot{0x00000003},1}}:
+3×3 Flux.OneHotArray{3, 2, Array{Flux.OneHot{0x00000003},1}}:
  0  1  0
  1  0  1
  0  0  0
