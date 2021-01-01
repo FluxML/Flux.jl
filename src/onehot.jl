@@ -3,6 +3,8 @@ import Base: *
 struct OneHotVector <: AbstractVector{Bool}
   ix::UInt32
   of::UInt32
+  OneHotVector(ix, of) = 0 < ix <= of ? new(ix, of) :
+  throw(DimensionMismatch("index must be between 1 and vector size"))
 end
 
 Base.size(xs::OneHotVector) = (Int64(xs.of),)
