@@ -124,11 +124,14 @@ julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 """
 onecold(y::AbstractVector, labels = 1:length(y)) = labels[argmax(y)]
 function onecold(y::AbstractArray, labels = 1:size(y, 1))
-  indices = dropdims(argmax(y; dims = 1); dims = 1)
+  indices = convert(Array, _fast_argmax(y))
   xs = isbits(labels) ? indices : collect(indices) # non-bit type cannot be handled by CUDA
 
   return map(xi -> labels[xi[1]], xs)
 end
+
+_fast_argmax(x::AbstractArray) = dropdims(argmax(x; dims = 1); dims = 1)
+_fast_argmax(x::OneHotArray) = x.indices
 
 @nograd OneHotArray, onecold, onehot, onehotbatch
 
