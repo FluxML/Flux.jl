@@ -131,7 +131,7 @@ function onecold(y::AbstractArray, labels = 1:size(y, 1))
 end
 
 _fast_argmax(x::AbstractArray) = dropdims(argmax(x; dims = 1); dims = 1)
-_fast_argmax(x::OneHotArray) = convert(Array, x.indices)
+_fast_argmax(x::OneHotArray) = convert(AbstractArray, x.indices)
 
 @nograd OneHotArray, onecold, onehot, onehotbatch
 
