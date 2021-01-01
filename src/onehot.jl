@@ -191,7 +191,7 @@ for math_op in [:Adjoint, :Transpose]
   @eval begin
     function Base.:*(A::$math_op{T1,<:AbstractArray{T,2}}, b::OneHotVector) where {T1,T}
       if size(A, 2) != b.of
-        throw(DimensionMismatch("Adjoint matrix column must correspond with ONeHotVector size"))
+        throw(DimensionMismatch("Second element of Adjoint matrix size $(size(A)) must correspond with OneHotVector size $(size(b))"))
       end
       return A[:, b.ix]
     end
