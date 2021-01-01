@@ -13,7 +13,7 @@ using LinearAlgebra: I, cholesky, Cholesky
 
   x = Flux.onehotbatch([1, 2, 3], 1:3)
   cx = gpu(x)
-  @test cx isa Flux.OneHotMatrix && cx.data isa CuArray
+  @test cx isa Flux.OneHotMatrix && cx.indices isa CuArray
   @test (cx .+ 1) isa CuArray
 
   m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
