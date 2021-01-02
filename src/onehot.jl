@@ -33,7 +33,7 @@ function Base.cat(xs::OneHotArray{<:Any, L}...; dims::Int) where L
   if isone(dims)
     return cat(map(x -> convert(_onehot_bool_type(x), x), xs)...; dims = 1)
   else
-    return OneHotArray(L, cat(_indices.(xs)...; dims = dims = dims - 1))
+    return OneHotArray(L, cat(_indices.(xs)...; dims = dims - 1))
   end
 end
 
