@@ -41,7 +41,8 @@ Base.hcat(xs::OneHotArray...) = cat(xs...; dims = 2)
 Base.vcat(xs::OneHotArray...) = cat(xs...; dims = 1)
 
 Base.reshape(x::OneHotArray{<:Any, L}, dims...) where L =
-  (first(dims) == L) ? OneHotArray(L, reshape(x.indices, dims[2:end]...)) : reshape(x, dims...)
+  (first(dims) == L) ? OneHotArray(L, reshape(x.indices, dims[2:end]...)) :
+                       reshape(convert(_onehot_bool_type(x), x), dims...)
 
 batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(L, _indices.(xs))
 
