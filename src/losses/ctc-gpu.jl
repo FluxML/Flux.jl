@@ -110,7 +110,6 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
   start = S > 1 ? S-2 : 0
   last = L + repeats < T ? S : S-1
   sync_threads()
-
   i = tid
   
   # Calculate coefficients for last column (time step)
@@ -129,7 +128,6 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
       accum[labelIdx, T] = log_plus_f(accum[labelIdx, T], output[i, T])
     end
   end
-  
   sync_threads()
   
   # Fill in `grad` for last column (time step)
@@ -175,7 +173,6 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
         beta[S, t] = beta[S, t] + probs[blankLabel, t+1]
       end
       sync_threads()
-      
       idx = tid
       while idx <= S
         output[idx, t] = alphas[idx, t] + beta[idx, t]
@@ -207,7 +204,6 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
       grad[idx, t] = CUDA.exp(probs[idx, t]) - CUDA.exp(accum[idx, t] - s)
       idx += blockDim().x
     end
-    
     sync_threads()
     t -= 1
     sync_threads()
@@ -215,38 +211,35 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
   return nothing
 end
 
-# methods for `ctc_` helper function
-ctc_loss(ŷ::CuArray, y::Array) = ctc_(ŷ, y)[1] |> mean
-ctc_loss(ŷ::Array, y::CuArray) = ctc_(CuArray(ŷ), collect(y))[1] |> mean
-ctc_loss(ŷ::CuArray, y::CuArray) = ctc_(ŷ, collect(y))[1] |> mean
-ctc_(ŷ::Array, y::CuArray) =  ctc_(CuArray(ŷ), collect(y))
-
-function ctc_(ŷ::CuArray, y)
+function ctc_alpha(ŷ::CuArray, y)
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
-  labels = [Base.argmax(y[:,i]) for i in 1:size(y, 2)]
+  labels = Base.argmax.(eachcol(y))
   z = F(labels, blank)
-  z′ = [blank]
-  for label in z
-    push!(z′, label)
-    push!(z′, blank)
-  end
-  
+  z′ = fill(blank, 2 * length(z) + 1)
+  z′[eachindex(z) .* 2] = z
   T = size(ŷ, 2)
   U′ = 2*length(z) + 1
-  alphas = CUDA.fill(log(zero(ŷ[1])), U′, T)
-  betas = CUDA.fill(log(zero(ŷ[1])), U′, T)
-  output = CUDA.fill(log(zero(ŷ[1])), U′, T)
+  alphas = CUDA.fill(log(zero(ŷ[1])), U′,T)
   nRepeats = count_repeats(labels)
   nThreads = min(U′, MAX_THREADS)
+  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(z), T, nRepeats, CuArray(z), CuArray(z′), alphas, blank)
+  return (loss=-1 * logsumexp(alphas[end-1:end]), alpha=alphas, z=z, z′=z′, yhat=ŷ, nRepeats=nRepeats)
+end
 
-  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z), CuArray(z′), alphas, blank)
-  grads = CUDA.fill(log(zero(ŷ[1])), size(ŷ))
-  accum = CUDA.fill(log(zero(ŷ[1])), size(ŷ))
-  
-  @cuda blocks=1 threads=nThreads compute_beta_and_grad_kernel(ŷ, length(z), size(ŷ,2), nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
-  ls = collect(output)
-  ls = vec(-1 .* [logsumexp(ls[:,i]) for i in 1:size(ls, 2)])
+ctc_loss(ŷ::CuArray, y) = ctc_alpha(ŷ::CuArray, y).loss
+
+function ∇ctc_loss(ŷ::CuArray, y, out)
+  loss, alphas, z, z′, ŷ, nRepeats = out
+  U′, T = size(alphas)
+  blank = size(ŷ, 1)
+  typed_zero = zero(first(ŷ))
+  betas = CUDA.fill(log(typed_zero), U′, T)
+  output = CUDA.fill(log(typed_zero), U′, T)
+  nThreads = min(U′, MAX_THREADS)
+  grads = CUDA.fill(log(typed_zero), size(ŷ))
+  accum = CUDA.fill(log(typed_zero), size(ŷ))  
+  @cuda blocks=1 threads=nThreads compute_beta_and_grad_kernel(ŷ, length(z), T, nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
   ŷ = alphas = betas = output = accum = nothing
-  return ls, grads
+  return grads
 end

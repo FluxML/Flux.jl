@@ -7,22 +7,16 @@ using CUDA
 
 # Custom function to check numerical gradient of ctc loss,
 # based on `ngradient` in `Tracker.jl`
-# 
-# Checks loss at the particular time step related to change
-# in input value because the gradient for that changed
-# value is calculated from the loss value associated with
-# that time step in the analytical gradient calculation.
 function ctc_ngradient(xs...)
-  f = Flux.Losses.ctc_
+  f = Flux.Losses.ctc_loss
   grads = zero.(xs)
   for (x, Δ) in zip(xs, grads), i in 1:length(x)
     δ = sqrt(eps())
-    t = div(i-1, size(x, 1)) + 1
     tmp = x[i]
     x[i] = tmp - δ/2
-    y1 = f(xs...)[1][t]
+    y1 = f(xs...)[1]
     x[i] = tmp + δ/2
-    y2 = f(xs...)[1][t]
+    y2 = f(xs...)[1]
     x[i] = tmp
     Δ[i] = (y2-y1)/δ
   end
