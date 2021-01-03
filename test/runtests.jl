@@ -36,6 +36,11 @@ end
   include("layers/conv.jl")
 end
 
+@testset "outputsize" begin
+  using Flux: outputsize
+  include("outputsize.jl")
+end
+
 @testset "CUDA" begin
   if Flux.use_cuda[]
     include("cuda/runtests.jl")

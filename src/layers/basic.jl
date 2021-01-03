@@ -39,25 +39,11 @@ applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
-testmode!(m::Chain, mode = true) = (map(x -> testmode!(x, mode), m.layers); m)
-
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   join(io, c.layers, ", ")
   print(io, ")")
 end
-
-"""
-    outdims(c::Chain, isize)
-
-Calculate the output dimensions given the input dimensions, `isize`.
-
-```julia
-m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
-outdims(m, (10, 10)) == (6, 6)
-```
-"""
-outdims(c::Chain, isize) = foldr(outdims, reverse(c.layers), init = isize)
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -157,22 +143,6 @@ end
   a(T.(x))
 
 """
-    outdims(l::Dense, isize)
-
-Calculate the output dimensions given the input dimensions, `isize`.
-
-```julia
-m = Dense(10, 5)
-outdims(m, (5, 2)) == (5,)
-outdims(m, (10,)) == (5,)
-```
-"""
-function outdims(l::Dense, isize)
-    first(isize) == size(l.W, 2) || throw(DimensionMismatch("input size should equal to ($(size(l.W, 2)),), got $isize"))
-    return (size(l.W, 1),)
-end
-
-"""
     Diagonal(in::Integer)
 
 Create an element-wise linear transformation layer with learnable
@@ -201,8 +171,6 @@ function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", length(l.α), ")")
 end
 
-outdims(l::Diagonal, isize) = (length(l.α),)
-
 """
     Maxout(over)
 
@@ -227,10 +195,12 @@ Conventionally, this is a linear dense layer.
 
 This constructs a `Maxout` layer over 4 internal dense linear layers, each
 identical in structure (784 inputs, 128 outputs):
-```julia
-insize = 784
-outsize = 128
-Maxout(()->Dense(insize, outsize), 4)
+```jldoctest
+julia> insize = 784;
+
+julia> outsize = 128;
+
+julia> Maxout(()->Dense(insize, outsize), 4);
 ```
 """
 function Maxout(f, n_alts)
@@ -244,8 +214,6 @@ function (mo::Maxout)(input::AbstractArray)
     mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
 
-outdims(l::Maxout, isize) = outdims(first(l.over), isize)
-
 """
     SkipConnection(layer, connection)
 
@@ -255,21 +223,25 @@ through a user-supplied 2-argument callable. The first argument to the callable
 will be propagated through the given `layer` while the second is the unchanged,
 "skipped" input.
 
-The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`,
-and requires the output of the layers to be the same shape as the input.
+The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`.
 Here is a more complicated example:
-```julia
-m = Conv((3,3), 4=>7, pad=(1,1))
-x = ones(5,5,4,10);
-size(m(x)) == (5, 5, 7, 10)
+```jldoctest
+julia> m = Conv((3,3), 4 => 7, pad=(1,1));
 
-sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3))
-size(sm(x)) == (5, 5, 11, 10)
+julia> x = ones(Float32, 5, 5, 4, 10);
+
+julia> size(m(x)) == (5, 5, 7, 10)
+true
+
+julia> sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3));
+
+julia> size(sm(x)) == (5, 5, 11, 10)
+true
 ```
 """
-struct SkipConnection
-  layers
-  connection  #user can pass arbitrary connections here, such as (a,b) -> a + b
+struct SkipConnection{T,F}
+  layers::T
+  connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
 @functor SkipConnection

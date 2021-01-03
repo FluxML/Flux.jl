@@ -41,6 +41,8 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 
+include("outputsize.jl")
+
 include("data/Data.jl")
 
 include("losses/Losses.jl")

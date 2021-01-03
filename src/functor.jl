@@ -19,7 +19,7 @@ Possible values include:
 - `true` for testing
 - `:auto` or `nothing` for Flux to detect the mode automatically
 """
-testmode!(m, mode = true) = m
+testmode!(m, mode = true) = (foreach(x -> testmode!(x, mode), trainable(m)); m)
 
 """
     trainmode!(m, mode = true)

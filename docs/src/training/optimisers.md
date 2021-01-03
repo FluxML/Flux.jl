@@ -59,6 +59,8 @@ ADADelta
 AMSGrad
 NADAM
 ADAMW
+OADAM
+AdaBelief
 ```
 
 ## Optimiser Interface
@@ -130,6 +132,10 @@ loss(rand(10)) # around 0.9
 ```
 
 In this manner it is possible to compose optimisers for some added flexibility.
+
+```@docs
+Flux.Optimise.Optimiser
+```
 
 ## Decays
 
