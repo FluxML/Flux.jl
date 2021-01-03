@@ -34,11 +34,12 @@ function F(A, blank)
   prev = A[1]
   z = [prev]
   for curr in A[2:end]
-    if curr != prev && curr != blank
+    if curr != prev
       push!(z, curr)
     end
     prev = curr
   end
+  filter!(x -> x != blank, z)
   return z
 end
 
@@ -53,7 +54,7 @@ function add_blanks(z, blank)
   return z′
 end
 
-function ctc_(ŷ, y)
+function ctc_alpha(ŷ::AbstractArray, y)
   typed_zero = zero(ŷ[1])
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
@@ -84,8 +85,8 @@ function ctc_(ŷ, y)
   return (loss=-1 * logaddexp(α[end,T], α[end-1, T]), alpha=α, zprime=z′, logsoftyhat=ŷ)
 end
   
-@adjoint function ctc_(ŷ, y)
-  loss, α, z′, ŷ = ctc_(ŷ, y)
+function ∇ctc_loss(ŷ::AbstractArray, y, out)
+  loss, α, z′, ŷ = out
   U′, T = size(α)
   blank = U′
   typed_zero = zero(first(α))
@@ -124,7 +125,7 @@ end
     end
   end
   grads = exp.(ŷ) .- exp.(accum .+ loss)
-  return loss, g -> (g .* grads, nothing)
+  return grads
 end
 
 """
@@ -147,6 +148,10 @@ solve the problem. See [Graves et al. (2006)](https://www.cs.toronto.edu/~graves
 or [Graves (2012)](https://www.cs.toronto.edu/~graves/preprint.pdf#chapter.7)
 for mathematical details.
 """
-function ctc_loss(ŷ::Array, y::Array)
-  return ctc_(ŷ, y)[1]
+ctc_loss(ŷ::AbstractArray, y) = ctc_alpha(ŷ, y).loss
+
+@adjoint function ctc_loss(ŷ, y)
+	out = ctc_alpha(ŷ, y)
+	ctc_loss_pullback(Δ) = (Δ .* ∇ctc_loss(ŷ, y, out), nothing)
+	return out.loss, ctc_loss_pullback
 end
