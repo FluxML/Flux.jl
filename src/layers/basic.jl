@@ -307,7 +307,7 @@ function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
 
   d_z, d_x, d_y = size(W)
   d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
-  size(x,2) == size(y,2) || throw(DimensionMismatch("data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
+  size(x,2) == size(y,2) || throw(DimensionMismatch("Data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
 
   # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
   Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
