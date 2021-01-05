@@ -322,7 +322,7 @@ end
 
 (a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
 (a::Bilinear)(x::AbstractVector, y::AbstractVector) = vec(a(reshape(x, :,1), reshape(y, :,1)))
-(a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x...)
+(a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x[1], x[2])
 
 function Base.show(io::IO, l::Bilinear)
   print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
