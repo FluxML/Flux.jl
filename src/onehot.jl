@@ -1,9 +1,7 @@
 import Adapt
 import .CUDA
 
-const OneHotIndex{T, N} = Union{T, AbstractArray{T, N}}
-
-struct OneHotArray{T<:Integer, L, N, var"N+1", I<:OneHotIndex{T, N}} <: AbstractArray{Bool, var"N+1"}
+struct OneHotArray{T<:Integer, L, N, var"N+1", I<:Union{T, AbstractArray{T, N}}} <: AbstractArray{Bool, var"N+1"}
   indices::I
 end
 OneHotArray{T, L, N, I}(indices) where {T, L, N, I} = OneHotArray{T, L, N, N+1, I}(indices)
@@ -15,18 +13,22 @@ _indices(x::OneHotArray) = x.indices
 const OneHotVector{T, L} = OneHotArray{T, L, 0, 1, T}
 const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 
+OneHotVector(L, idx) = OneHotArray(L, idx)
+OneHotMatrix(L, indices) = OneHotArray(L, indices)
+
 Base.size(x::OneHotArray{<:Any, L}) where L = (Int(L), size(x.indices)...)
 
 _onehotindex(x, i) = (x == i)
 
 Base.getindex(x::OneHotVector, i::Integer) = _onehotindex(x.indices, i)
-Base.getindex(x::OneHotVector{T, L}, ::Colon) where {T, L} = OneHotVector{T, L}(x.indices)
+Base.getindex(x::OneHotVector{T, L}, ::Colon) where {T, L} = x
 
 Base.getindex(x::OneHotArray, i::Integer, I...) = _onehotindex.(x.indices[I...], i)
 Base.getindex(x::OneHotArray{<:Any, L}, ::Colon, I...) where L = OneHotArray(L, x.indices[I...])
+Base.getindex(x::OneHotArray{<:Any, <:Any, <:Any, N}, ::Vararg{Colon, N}) where N = x
 Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2:N]...]
 
-_onehot_bool_type(x::OneHotArray{<:Any, <:Any, <:Any, N, <:OneHotIndex}) where N = Array{Bool, N}
+_onehot_bool_type(x::OneHotArray{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
 _onehot_bool_type(x::OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
 
 function Base.cat(xs::OneHotArray{<:Any, L}...; dims::Int) where L
@@ -48,7 +50,7 @@ batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(L, _ind
 
 Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(L, adapt(T, x.indices))
 
-Base.BroadcastStyle(::Type{<:OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}}) where N = CuArrayStyle{N}()
+Base.BroadcastStyle(::Type{<:OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}}) where N = CUDA.CuArrayStyle{N}()
 
 Base.argmax(x::OneHotArray; dims = Colon()) =
   (dims == 1) ? reshape(CartesianIndex.(x.indices, CartesianIndices(x.indices)), 1, size(x.indices)...) :
