@@ -115,7 +115,7 @@ end
       expected_zeros = ceil(Integer, n_in * sparsity)
       v = sparse(n_in, n_out, sparsity=sparsity)
       @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
-      σ  = 0.01 # default value
+      σ = 0.01 # default value
       @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
       @test eltype(v) == Float32
     end
