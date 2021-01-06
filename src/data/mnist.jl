@@ -5,7 +5,11 @@ using ..Data: download_and_verify
 
 const Gray = Colors.Gray{Colors.N0f8}
 
-const dir = joinpath(@__DIR__, "../../deps/mnist")
+const dir = if isnothing(@__DIR__)
+    joinpath("deps", "mnist")
+  else
+    joinpath(@__DIR__, "../../deps/mnist")
+end
 
 function gzopen(f, file)
   open(file) do io
