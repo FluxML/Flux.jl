@@ -186,7 +186,7 @@ This method is described in [1].
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> Flux.sparse(3, 2, sparsity=0.1)
-3×2 Array{Float64,2}:
+3×2 Array{Float32,2}:
  0.00679107  0.0
  0.00828413  0.00586617
  0.0         0.00297336
