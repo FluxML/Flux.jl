@@ -16,7 +16,13 @@ import SHA
 
 deprecation_message() = @warn("Flux's datasets are deprecated, please use the package MLDatasets.jl")
 
-deps(path...) = joinpath(@__DIR__, "..", "..", "deps", path...)
+function deps(path...)
+  if isnothing(@__DIR__) # sysimages
+    joinpath("deps", path...)
+  else
+    joinpath(@__DIR__, "..", "..", "deps", path...)
+  end
+end
 
 function download_and_verify(url, path, hash)
     tmppath = tempname()
