@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, stack, unstack, Zeros
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, sparse, stack, unstack, Zeros
 using StatsBase: var, std
 using Random
 using Test
