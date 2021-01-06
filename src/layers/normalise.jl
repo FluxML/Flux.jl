@@ -163,8 +163,7 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x; reduce_dims, affine_shape)
-  N = ndims(x)
+function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
   if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
