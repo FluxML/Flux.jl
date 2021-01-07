@@ -45,6 +45,7 @@ Base.vcat(xs::OneHotArray...) = cat(xs...; dims = 1)
 Base.reshape(x::OneHotArray{<:Any, L}, dims::Dims) where L =
   (first(dims) == L) ? OneHotArray(L, reshape(x.indices, dims[2:end]...)) :
                        throw(ArgumentError("Cannot reshape OneHotArray if first(dims) != size(x, 1)"))
+Base._reshape(x::OneHotArray, dims::Tuple{Vararg{Int}}) = reshape(x, dims)
 
 batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(L, _indices.(xs))
 
