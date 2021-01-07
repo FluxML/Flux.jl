@@ -36,7 +36,7 @@ Flux.glorot_uniform
 Flux.glorot_normal
 Flux.kaiming_uniform
 Flux.kaiming_normal
-Flux.sparse
+Flux.sparse_init
 ```
 
 ## Model Building

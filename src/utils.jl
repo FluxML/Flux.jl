@@ -56,7 +56,7 @@ julia> Flux.glorot_uniform(2, 3)
 * glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
 * kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
 * kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* sparse initialization: [`sparse`](@ref Flux.sparse)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -89,7 +89,7 @@ julia> Flux.glorot_normal(3, 2)
 * glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
 * kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
 * kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* sparse initialization: [`sparse`](@ref Flux.sparse)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -122,7 +122,7 @@ julia> Flux.kaiming_uniform(3, 2)
 * kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
 * glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
 * glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
-* sparse initialization: [`sparse`](@ref Flux.sparse)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -159,7 +159,7 @@ julia> Flux.kaiming_normal(3, 2)
 * kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
 * glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
 * glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
-* sparse initialization: [`sparse`](@ref Flux.sparse)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -175,7 +175,7 @@ kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; 
 kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
 
 """
-    sparse([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
+    sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
 
 Return an `Array` of size `dims` where each column contains a fixed fraction of
 zero elements given by `sparsity`. Non-zero elements are normally distributed
@@ -185,7 +185,7 @@ This method is described in [1].
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.sparse(3, 2, sparsity=0.1)
+julia> Flux.sparse_init(3, 2, sparsity=0.1)
 3×2 Array{Float32,2}:
  0.00679107  0.0
  0.00828413  0.00586617
@@ -203,7 +203,7 @@ julia> Flux.sparse(3, 2, sparsity=0.1)
 
 [1] Martens, J, "Deep learning via Hessian-free optimization" _Proceedings of the 27th International Conference on International Conference on Machine Learning_. 2010.
 """
-function sparse(rng::AbstractRNG, dims...; sparsity, std = 0.01)
+function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
   if length(dims) != 2
     throw(ArgumentError("Only 2-dimensional outputs are supported for sparse initialization."))
   end
@@ -211,17 +211,12 @@ function sparse(rng::AbstractRNG, dims...; sparsity, std = 0.01)
   prop_zero = min(1.0, sparsity)
   num_zeros = ceil(Integer, prop_zero * rows)
   sparse_array = randn(rng, Float32, dims...) .* Float32(std)
-  row_indices = collect(1:rows)
-  for col in 1:cols
-    randperm!(row_indices)
-    zero_indices = row_indices[1:num_zeros]
-    sparse_array[zero_indices, col] .= 0.0
-  end
-  return sparse_array
+  sparse_array[1:num_zeros, :] .= zero(Float32)
+  return mapslices(shuffle, sparse_array, dims=1)
 end
 
-sparse(dims...; kwargs...) = sparse(Random.GLOBAL_RNG, dims...; kwargs...)
-sparse(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> sparse(rng, dims...; kwargs...)
+sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs...)
+sparse_init(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; kwargs...)
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
