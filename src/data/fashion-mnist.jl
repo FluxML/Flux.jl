@@ -3,7 +3,11 @@ module FashionMNIST
 using ..MNIST: gzopen, imageheader, rawimage, labelheader, rawlabel
 using ..Data: download_and_verify
 
-const dir = joinpath(@__DIR__, "../../deps/fashion-mnist")
+const dir = if isnothing(@__DIR__)
+    joinpath("deps", "fashion-mnist")
+  else
+    joinpath(@__DIR__, "../../deps/fashion-mnist")
+end
 
 function load()
   mkpath(dir)

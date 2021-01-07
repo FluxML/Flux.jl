@@ -8,7 +8,13 @@ using Base: @propagate_inbounds
 
 export CMUDict, cmudict
 
-deps(path...) = joinpath(@__DIR__, "..", "..", "deps", path...)
+function deps(path...)
+  if isnothing(@__DIR__) # sysimages
+    joinpath("deps", path...)
+  else
+    joinpath(@__DIR__, "..", "..", "deps", path...)
+  end
+end
 
 function download_and_verify(url, path, hash)
     tmppath = tempname()
