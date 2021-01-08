@@ -63,7 +63,7 @@ end
 
 """
 Gets the targets for the Boston housing dataset, a 506 element array listing the targets for each example
-```jldoctest
+```julia
 julia> using Flux
 julia> target = Flux.Data.Housing.targets()
 julia> summary(target)
@@ -91,7 +91,7 @@ end
 Gets the features of the Boston Housing Dataset. This is a 506x13 Matrix of Float64 datatypes.
 The values are in the order ["crim","zn","indus","chas","nox","rm","age","dis","rad","tax","ptratio","b","lstat"].
 It has 506 examples.
-```jldoctest
+```julia
 julia> using Flux
 julia> features = Flux.Data.Housing.features()
 julia> summary(features)

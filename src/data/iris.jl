@@ -27,7 +27,7 @@ end
     labels()
 Get the labels of the iris dataset, a 150 element array of strings listing the
 species of each example.
-```jldoctest; setup = :(Flux.Data.Iris.load())
+```julia
 julia> labels = Flux.Data.Iris.labels();
 julia> summary(labels)
 "150-element Array{String,1}"
@@ -47,7 +47,7 @@ end
 Get the features of the iris dataset. This is a 4x150 matrix of Float64
 elements. It has a row for each feature (sepal length, sepal width,
 petal length, petal width) and a column for each example.
-```jldoctest; setup = :(Flux.Data.Iris.load())
+```julia
 julia> features = Flux.Data.Iris.features();
 julia> summary(features)
 "4×150 Array{Float64,2}"
