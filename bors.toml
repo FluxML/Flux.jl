@@ -1,4 +1,4 @@
 status = [
-  "buildkite/flux-dot-jl/julia-1-dot-5"
+  "buildkite/flux-dot-jl/gpu-integration"
 ]
 timeout-sec = 7200
