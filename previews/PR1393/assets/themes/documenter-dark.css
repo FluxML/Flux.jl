@@ -7277,6 +7277,8 @@ html.theme--documenter-dark {
       opacity: 0.2; }
     html.theme--documenter-dark .docstring > section:hover a.docs-sourcelink {
       opacity: 1; }
+  html.theme--documenter-dark .documenter-example-output {
+    background-color: #1f2424; }
   html.theme--documenter-dark .content pre {
     border: 1px solid #5e6d6f; }
   html.theme--documenter-dark .content code {
@@ -7303,11 +7305,15 @@ html.theme--documenter-dark {
   html.theme--documenter-dark .katex .katex-mathml {
     top: 0;
     right: 0; }
+  html.theme--documenter-dark .katex-display, html.theme--documenter-dark mjx-container, html.theme--documenter-dark .MathJax_Display {
+    margin: 0.5em 0 !important; }
   html.theme--documenter-dark html {
     -moz-osx-font-smoothing: auto;
     -webkit-font-smoothing: auto; }
   html.theme--documenter-dark #documenter .docs-main > article {
     overflow-wrap: break-word; }
+    html.theme--documenter-dark #documenter .docs-main > article .math-container {
+      overflow-x: auto; }
   @media screen and (min-width: 1056px) {
     html.theme--documenter-dark #documenter .docs-main {
       max-width: 52rem;
@@ -7379,6 +7385,7 @@ html.theme--documenter-dark {
       margin-bottom: 0.4em; }
   html.theme--documenter-dark #documenter .docs-main .docs-footer {
     display: flex;
+    flex-wrap: wrap;
     margin-left: 0;
     margin-right: 0;
     border-top: 1px solid #5e6d6f;
@@ -7392,6 +7399,13 @@ html.theme--documenter-dark {
       flex-grow: 1; }
     html.theme--documenter-dark #documenter .docs-main .docs-footer .docs-footer-nextpage {
       text-align: right; }
+    html.theme--documenter-dark #documenter .docs-main .docs-footer .flexbox-break {
+      flex-basis: 100%;
+      height: 0; }
+    html.theme--documenter-dark #documenter .docs-main .docs-footer .footer-message {
+      font-size: 0.8em;
+      margin: 0.5em auto 0 auto;
+      text-align: center; }
   html.theme--documenter-dark #documenter .docs-sidebar {
     display: flex;
     flex-direction: column;
