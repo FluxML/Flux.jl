@@ -6,13 +6,13 @@ It's common to encode categorical variables (like `true`, `false` or `cat`, `dog
 julia> using Flux: onehot, onecold
 
 julia> onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotVector:
+3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
  0
  1
  0
 
 julia> onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotVector:
+3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
  0
  0
  1
@@ -44,7 +44,7 @@ Flux.onecold
 julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+3×3 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
  0  1  0
  1  0  1
  0  0  0
