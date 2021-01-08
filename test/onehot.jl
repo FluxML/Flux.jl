@@ -27,8 +27,8 @@ end
 
 @testset "abstractmatrix onehotvector multiplication" begin
   A = [1 3 5; 2 4 6; 3 6 9]
-  b1 = Flux.OneHotVector{eltype(A), 3}(1)
-  b2 = Flux.OneHotVector{eltype(A), 5}(3)
+  b1 = Flux.OneHotVector(1, 3)
+  b2 = Flux.OneHotVector(3, 5)
 
   @test A*b1 == A[:,1]
   @test_throws DimensionMismatch A*b2
@@ -37,9 +37,9 @@ end
 @testset "OneHotArray" begin
   using Flux: OneHotArray, OneHotVector, OneHotMatrix
   
-  ov = OneHotVector(10, rand(1:10))
-  om = OneHotMatrix(10, rand(1:10, 5))
-  oa = OneHotArray(10, rand(1:10, 5, 5))
+  ov = OneHotVector(rand(1:10), 10)
+  om = OneHotMatrix(rand(1:10, 5), 10)
+  oa = OneHotArray(rand(1:10, 5, 5), 10)
 
   # sizes
   @testset "Base.size" begin
@@ -55,16 +55,16 @@ end
     
     # matrix indexing
     @test om[3, 3] == (om.indices[3] == 3)
-    @test om[:, 3] == OneHotVector(10, om.indices[3])
+    @test om[:, 3] == OneHotVector(om.indices[3], 10)
     @test om[3, :] == (om.indices .== 3)
     @test om[:, :] == om
 
     # array indexing
     @test oa[3, 3, 3] == (oa.indices[3, 3] == 3)
-    @test oa[:, 3, 3] == OneHotVector(10, oa.indices[3, 3])
+    @test oa[:, 3, 3] == OneHotVector(oa.indices[3, 3], 10)
     @test oa[3, :, 3] == (oa.indices[:, 3] .== 3)
     @test oa[3, :, :] == (oa.indices .== 3)
-    @test oa[:, 3, :] == OneHotMatrix(10, oa.indices[3, :])
+    @test oa[:, 3, :] == OneHotMatrix(oa.indices[3, :], 10)
     @test oa[:, :, :] == oa
 
     # cartesian indexing
@@ -73,18 +73,18 @@ end
 
   @testset "Concatenating" begin
     # vector cat
-    @test hcat(ov, ov) == OneHotMatrix(10, vcat(ov.indices, ov.indices))
-    @test vcat(ov, ov) == vcat(convert(Array{Bool}, ov), convert(Array{Bool}, ov))
-    @test cat(ov, ov; dims = 3) == OneHotArray(10, cat(ov.indices, ov.indices; dims = 2))
+    @test hcat(ov, ov) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
+    @test_throws ArgumentError vcat(ov, ov)
+    @test cat(ov, ov; dims = 3) == OneHotArray(cat(ov.indices, ov.indices; dims = 2), 10)
 
     # matrix cat
-    @test hcat(om, om) == OneHotMatrix(10, vcat(om.indices, om.indices))
-    @test vcat(om, om) == vcat(convert(Array{Bool}, om), convert(Array{Bool}, om))
-    @test cat(om, om; dims = 3) == OneHotArray(10, cat(om.indices, om.indices; dims = 2))
+    @test hcat(om, om) == OneHotMatrix(vcat(om.indices, om.indices), 10)
+    @test_throws ArgumentError vcat(om, om)
+    @test cat(om, om; dims = 3) == OneHotArray(cat(om.indices, om.indices; dims = 2), 10)
 
     # array cat
-    @test cat(oa, oa; dims = 3) == OneHotArray(10, cat(oa.indices, oa.indices; dims = 2))
-    @test cat(oa, oa; dims = 1) == cat(convert(Array{Bool}, oa), convert(Array{Bool}, oa); dims = 1)
+    @test cat(oa, oa; dims = 3) == OneHotArray(cat(oa.indices, oa.indices; dims = 2), 10)
+    @test_throws ArgumentError cat(oa, oa; dims = 1)
   end
 
   @testset "Base.reshape" begin
