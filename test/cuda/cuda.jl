@@ -43,7 +43,7 @@ end
   l = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
   @test Flux.onecold(y) isa CuArray
   @test y[3,:] isa CuArray
-  @test Flux.onecold(y, l) isa CuArray
+  @test Flux.onecold(y, l) == ['a', 'a', 'a']
 end
 
 @testset "restructure gpu" begin
