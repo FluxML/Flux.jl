@@ -41,7 +41,7 @@ Base.typemax(::Type{Nil}) = nil
 
 Base.promote_rule(x::Type{Nil}, y::Type{<:Number}) = Nil
 
-Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{Nil}) = Nil
+Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{Nil}) = nil
 
 end  # module
 
