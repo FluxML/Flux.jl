@@ -92,8 +92,8 @@ end
     @test reshape(oa, 10, 25) isa OneHotArray
     @test reshape(oa, 10, :) isa OneHotArray
     @test reshape(oa, :, 25) isa OneHotArray
-    @test_throws ArgumentError reshape(oa, 50, :)
-    @test_throws ArgumentError reshape(oa, 5, 10, 5)
+    @test reshape(oa, 50, :) isa Array
+    @test reshape(oa, 5, 10, 5) isa Array
     @test reshape(oa, (10, 25)) isa OneHotArray
   end
 
