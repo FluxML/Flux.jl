@@ -74,17 +74,17 @@ end
   @testset "Concatenating" begin
     # vector cat
     @test hcat(ov, ov) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
-    @test_throws ArgumentError vcat(ov, ov)
+    @test vcat(ov, ov) == vcat(collect(ov), collect(ov))
     @test cat(ov, ov; dims = 3) == OneHotArray(cat(ov.indices, ov.indices; dims = 2), 10)
 
     # matrix cat
     @test hcat(om, om) == OneHotMatrix(vcat(om.indices, om.indices), 10)
-    @test_throws ArgumentError vcat(om, om)
+    @test vcat(om, om) == vcat(collect(om), collect(om))
     @test cat(om, om; dims = 3) == OneHotArray(cat(om.indices, om.indices; dims = 2), 10)
 
     # array cat
     @test cat(oa, oa; dims = 3) == OneHotArray(cat(oa.indices, oa.indices; dims = 2), 10)
-    @test_throws ArgumentError cat(oa, oa; dims = 1)
+    @test cat(oa, oa; dims = 1) == cat(collect(oa), collect(oa); dims = 1)
   end
 
   @testset "Base.reshape" begin

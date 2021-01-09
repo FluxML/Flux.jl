@@ -33,7 +33,7 @@ _onehot_bool_type(x::OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}) where N = C
 
 function Base.cat(xs::OneHotArray{<:Any, L}...; dims::Int) where L
   if isone(dims)
-    return throw(ArgumentError("Cannot concat OneHotArray along first dimension. Use collect to convert to Bool array first."))
+    return cat(map(x -> convert(_onehot_bool_type(x), x), xs)...; dims = dims)
   else
     return OneHotArray(cat(_indices.(xs)...; dims = dims - 1), L)
   end
