@@ -260,7 +260,7 @@ end
 Creates a Bilinear layer, which operates on two inputs at the same time.
 It has parameters `W` and `b`, and its output given vectors `x`, `y` is of the form 
 
-`z[i] = σ.(x' * W[i,:,:] * y .+ b[i])`
+    z[i] = σ.(x' * W[i,:,:] * y .+ b[i])
 
 If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form,
 given that `B` is a Bilinear layer of appropriate size.
