@@ -269,8 +269,11 @@ julia> model = Chain(
   Dense(1, 1),
   Parallel(vcat, Dense(1, 1), Dense(1, 3), Chain(Dense(1, 5), Dense(5, 2))),
   Dense(6, 1));
-julia> model(rand(1))
-Float32[0.27]
+julia> size(model(rand(1)))
+(1,)
+julia> model = Parallel(+, Dense(10, 2), Dense(5, 2));
+julia> size(model(rand(10), rand(5)))
+(2,)
 ```
 """
 struct Parallel{F, T}
@@ -283,6 +286,7 @@ Parallel(connection, layers...) = Parallel(connection, layers)
 @functor Parallel
 
 (m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
+(m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
 
 Base.getindex(m::Parallel, i::Integer) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractArray) = Parallel(m.connection, m.layers[i]...)
