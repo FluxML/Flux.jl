@@ -4,6 +4,14 @@
 Return the loss corresponding to mean absolute error:
 
     agg(abs.(ŷ .- y))
+
+# Example
+```jldoctest
+julia> y_model = [1.1, 1.9, 3.1];
+
+julia> Flux.mae(y_model, 1:3)
+0.10000000000000009
+```
 """
 mae(ŷ, y; agg=mean) = agg(abs.(ŷ .- y))
 
@@ -13,6 +21,18 @@ mae(ŷ, y; agg=mean) = agg(abs.(ŷ .- y))
 Return the loss corresponding to mean square error:
 
     agg((ŷ .- y).^2)
+
+See also: [`mae`](@ref), [`msle`](@ref), [`crossentropy`](@ref).
+
+# Example
+```jldoctest
+julia> y_model = [1.1, 1.9, 3.1];
+
+julia> y_true = 1:3;
+
+julia> Flux.mse(y_model, y_true)
+0.010000000000000018
+```
 """
 mse(ŷ, y; agg=mean) = agg((ŷ .- y).^2)
 
@@ -25,6 +45,15 @@ The loss corresponding to mean squared logarithmic errors, calculated as
 
 The `ϵ` term provides numerical stability.
 Penalizes an under-estimation more than an over-estimatation.
+
+# Example
+```jldoctest
+julia> Flux.msle(Float32[1.1, 2.2, 3.3], 1:3)
+0.009084041f0
+
+julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
+0.011100831f0
+```
 """
 msle(ŷ, y; agg=mean, ϵ=epseltype(ŷ)) = agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))).^2)
 
@@ -292,16 +321,39 @@ end
 
 
 """
-    kldivergence(ŷ, y; agg=mean)
+    kldivergence(ŷ, y; agg=mean, ϵ=eps(ŷ))
 
 Return the
 [Kullback-Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence)
 between the given probability distributions.
 
-KL divergence is a measure of how much one probability distribution is different
-from the other.
-It is always non-negative and zero only when both the distributions are equal
-everywhere.
+The KL divergence is a measure of how much one probability distribution is different
+from the other. It is always non-negative, and zero only when both the distributions are equal.
+
+# Example
+```jldoctest
+julia> p1 = [1 0; 0 1]
+2×2 Array{Int64,2}:
+ 1  0
+ 0  1
+
+julia> p2 = fill(0.5, 2, 2)
+2×2 Array{Float64,2}:
+ 0.5  0.5
+ 0.5  0.5
+
+julia> Flux.kldivergence(p2, p1) ≈ log(2)
+true
+
+julia> Flux.kldivergence(p2, p1; agg=sum) ≈ 2log(2)
+true
+
+julia> Flux.kldivergence(p2, p2; ϵ=0)  # about -2e-16 with the regulator
+0.0
+
+julia> Flux.kldivergence(p1, p2; ϵ=0)  # about 17.3 with the regulator
+Inf
+```
 """
 function kldivergence(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ))
   entropy = agg(sum(xlogx.(y), dims=dims))
