@@ -261,7 +261,8 @@ Create a new 'Parallel' layer that passes a single input array each path in
 `layers`, combining the output of each path with `connection`.
 `connection` should be a reducible operator (i.e. it can be passed to `Base.reduce`).
 
-# Example
+# Examples
+
 ```jldoctest
 julia> model = Chain(
   Dense(1, 1),
@@ -275,7 +276,7 @@ julia> model = Chain(
     )
   ),
   Dense(6, 1)
-)
+);
 julia> model(rand(1))
 Float32[0.27]
 ```
