@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, stack, unstack, Zeros
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, sparse_init, stack, unstack, Zeros
 using StatsBase: var, std
 using Random
 using Test
@@ -95,6 +95,30 @@ end
       @test eltype(v) == Float32
     end
   end
+
+  @testset "sparse_init" begin
+    # sparse_init should yield an error for non 2-d dimensions
+    # sparse_init should yield no zero elements if sparsity < 0
+    # sparse_init should yield all zero elements if sparsity > 1
+    # sparse_init should yield exactly ceil(n_in * sparsity) elements in each column for other sparsity values
+    # sparse_init should yield a kernel in its non-zero elements consistent with the std parameter
+
+    @test_throws ArgumentError sparse_init(100, 100, 100, sparsity=0.1)
+    v = sparse_init(100, 100, sparsity=-0.1)
+    @test sum(v .== 0) == 0
+    @test eltype(v) == Float32
+    v = sparse_init(100, 100, sparsity=1.1)
+    @test sum(v .== 0) == length(v)
+    @test eltype(v) == Float32
+
+    for (n_in, n_out, sparsity, σ) in [(100, 100, 0.25, 0.1), (100, 400, 0.75, 0.01)]
+      expected_zeros = ceil(Integer, n_in * sparsity)
+      v = sparse_init(n_in, n_out, sparsity=sparsity, std=σ)
+      @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
+      @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
+      @test eltype(v) == Float32
+    end
+  end
 end
 
 @testset "Params" begin
@@ -141,22 +165,22 @@ end
 
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
-      g = gfun(o, z) 
+      g = gfun(o, z)
       @test gfun(o, Z) == (g[1], nothing)
 
-      g = gfun(z, o) 
+      g = gfun(z, o)
       @test gfun(Z, o) == (nothing, g[2])
     end
 
     @testset "Implicit" begin
       gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
-      g = gfun(o, z) 
+      g = gfun(o, z)
 
       gres = gfun(o, Z)
       @test gres[o] == g[o]
       @test Z ∉ gres.params
 
-      g = gfun(z, o) 
+      g = gfun(z, o)
       gres = gfun(Z, o)
       @test gres[o] == g[o]
       @test Z ∉ gres.params
@@ -170,14 +194,14 @@ end
 
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(x ./ y), args...)
-      g = gfun(z, o) 
+      g = gfun(z, o)
       @test gfun(Z, o) == (nothing, g[2])
     end
 
     @testset "Implicit" begin
       gfun(x,y) = gradient(() -> sum(x ./ y), params([x,y]))
 
-      g = gfun(z, o) 
+      g = gfun(z, o)
       gres = gfun(Z, o)
       @test gres[o] == g[o]
       @test Z ∉ gres.params
@@ -193,21 +217,21 @@ end
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(op(x,y)), args...)
 
-      g = gfun(o, z) 
+      g = gfun(o, z)
       @test gfun(o, Z) == (g[1], nothing)
 
-      g = gfun(z, o) 
+      g = gfun(z, o)
       @test gfun(Z, o) == (nothing, g[2])
     end
 
     @testset "Implicit" begin
       gfun(args...) = gradient(() -> sum(op(args...)), params(collect(args)))
-      g = gfun(o, z) 
+      g = gfun(o, z)
       gres = gfun(o, Z)
       @test gres[o] == g[o]
       @test Z ∉ gres.params
 
-      g = gfun(z, o) 
+      g = gfun(z, o)
       gres = gfun(Z, o)
       @test gres[o] == g[o]
       @test Z ∉ gres.params
@@ -225,7 +249,7 @@ end
 
 @testset "Param remapping" begin
   ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...)
-  dl(nin, nout, bias) = Dense(ls(nin, nout), bias(nout)) 
+  dl(nin, nout, bias) = Dense(ls(nin, nout), bias(nout))
   dm(bias) = Chain(
     dl(3, 5, bias),
     dl(5, 4, bias),
@@ -239,10 +263,10 @@ end
     @test typeof(l1.b) === typeof(l2.b)
   end
 
-  @testset "loadparams!" begin 
+  @testset "loadparams!" begin
     import Flux: loadparams!
     pars(w, b::Zeros) = [w, zeros(size(w,2))]
-    pars(w, b) = [w, b] 
+    pars(w, b) = [w, b]
     pars(l) = pars(l.W, l.b)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.W], vcat, m)
