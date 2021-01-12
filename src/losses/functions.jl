@@ -100,22 +100,22 @@ of label smoothing to binary distributions encoded in a single number.
 # Example
 ```jldoctest
 julia> y = Flux.onehotbatch([1, 1, 1, 0, 1, 0], 0:1)
-2×6 Flux.OneHotArray{UInt32, 2, 1, 2, Vector{UInt32}}:
+2×6 Flux.OneHotArray{UInt32,2,1,2,Array{UInt32,1}}:
  0  0  0  1  0  1
  1  1  1  0  1  0
 
 julia> y_smoothed = Flux.label_smoothing(y, 0.2f0)
-2×6 Matrix{Float32}:
+2×6 Array{Float32,2}:
  0.1  0.1  0.1  0.9  0.1  0.9
  0.9  0.9  0.9  0.1  0.9  0.1
 
 julia> y_sim = softmax(y .* log(2f0))
-2×6 Matrix{Float32}:
+2×6 Array{Float32,2}:
  0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
  0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
 
 julia> y_dis = vcat(y_sim[2,:]', y_sim[1,:]')
-2×6 Matrix{Float32}:
+2×6 Array{Float32,2}:
  0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
  0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
 
@@ -165,7 +165,7 @@ See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbina
 # Example
 ```jldoctest
 julia> y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
-3×5 Flux.OneHotArray{UInt32, 3, 1, 2, Vector{UInt32}}:
+3×5 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
  1  0  0  0  1
  0  1  0  1  0
  0  0  1  0  0
@@ -216,7 +216,7 @@ See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`lab
 # Example
 ```jldoctest
 julia> y_label = Flux.onehotbatch(collect("abcabaa"), 'a':'c')
-3×7 Flux.OneHotArray{UInt32, 3, 1, 2, Vector{UInt32}}:
+3×7 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
  1  0  0  1  0  1  1
  0  1  0  0  1  0  0
  0  0  1  0  0  0  0
