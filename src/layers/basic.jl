@@ -260,7 +260,8 @@ end
 Create a 'Parallel' layer that passes an input array to each path in
 `layers`, reducing the output with `connection`.
 
-Equivalent to calling `reduce(connection, [l(x) for l in layers]...)`.
+Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
+If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 # Examples
 
