@@ -265,10 +265,10 @@ Equivalent to calling `reduce(connection, [l(x) for l in layers]...)`.
 # Examples
 
 ```jldoctest
-julia> model = Chain(Dense(1, 1), Parallel(vcat, Dense(1, 1), Dense(1, 3), Chain(Dense(1, 5), Dense(5, 2))), Dense(6, 1));
+julia> model = Chain(Dense(3, 13, tanh), Parallel(vcat, Dense(13, 4), Chain(Dense(13, 7, tanh), Dense(7, 4))), Dense(8, 17));
 
-julia> size(model(rand(1)))
-(1,)
+julia> size(model(rand(3)))
+(17,)
 
 julia> model = Parallel(+, Dense(10, 2), Dense(5, 2))
 Parallel(+, Dense(10, 2), Dense(5, 2))
