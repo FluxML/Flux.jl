@@ -257,26 +257,18 @@ end
 """
     Parallel(connection, layers...)
 
-Create a new 'Parallel' layer that passes a single input array each path in
-`layers`, combining the output of each path with `connection`.
-`connection` should be a reducible operator (i.e. it can be passed to `Base.reduce`).
+Create a 'Parallel' layer that passes an input array to each path in
+`layers`, reducing the output with `connection`.
+
+Equivalent to calling `reduce(connection, [l(x) for l in layers]...)`.
 
 # Examples
 
 ```jldoctest
 julia> model = Chain(
   Dense(1, 1),
-  Parallel(
-    vcat,
-    Dense(1, 1),
-    Dense(1, 3),
-    Chain(
-      Dense(1, 5),
-      Dense(5, 2),
-    )
-  ),
-  Dense(6, 1)
-);
+  Parallel(vcat, Dense(1, 1), Dense(1, 3), Chain(Dense(1, 5), Dense(5, 2))),
+  Dense(6, 1));
 julia> model(rand(1))
 Float32[0.27]
 ```
