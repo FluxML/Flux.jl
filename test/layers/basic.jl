@@ -106,4 +106,16 @@ import Flux: activations
       @test size(SkipConnection(Dense(10,10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
     end
   end
+
+  @testset "Parallel" begin
+    @testset "zero sum" begin
+      input = randn(10, 10, 10, 10)
+      @test Parallel(+, x -> zeros(size(x)), identity)(input) == input
+    end
+
+    @testset "concat size" begin
+      input = randn(10, 2)
+      @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
+    end
+  end
 end

@@ -253,3 +253,48 @@ end
 function Base.show(io::IO, b::SkipConnection)
   print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
+
+"""
+    Parallel(connection, layers...)
+
+Create a new 'Parallel' layer that passes a single input array each path in
+`layers`, combining the output of each path with `connection`.
+`connection` should be a reducible operator (i.e. it can be passed to `Base.reduce`).
+
+# Example
+```jldoctest
+julia> model = Chain(
+  Dense(1, 1),
+  Parallel(
+    Dense(1, 1),
+    Dense(1, 3),
+    Chain(
+      Dense(1, 5),
+      Dense(5, 2),
+    )
+  ),
+  Dense(6, 1)
+)
+julia> model(rand(1))
+Float32[0.27]
+```
+"""
+struct Parallel{F, T}
+  connection::F
+  layers::T
+end
+
+Parallel(connection, layers...) = Parallel(connection, layers)
+
+Flux.@functor Parallel
+
+(m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
+
+Base.getindex(m::Parallel, i::Integer) = m.layers[i]
+Base.getindex(m::Parallel, i::AbstractArray) = Parallel(m.connection, m.layers[i]...)
+
+function Base.show(io::IO, m::Parallel)
+  print(io, "Parallel(", m.connection, ", ")
+  join(io, m.layers, ", ")
+  print(io, ")")
+end
