@@ -68,16 +68,34 @@ value of α larger the smoothing of `y`.
 `dims` denotes the one-hot dimension, unless `dims=0` which denotes the application
 of label smoothing to binary distributions encoded in a single number.
 
-Usage example:
+# Example
+```jldoctest
+julia> y = Flux.onehotbatch([1, 1, 1, 0, 1, 0], 0:1)
+2×6 Flux.OneHotArray{UInt32, 2, 1, 2, Vector{UInt32}}:
+ 0  0  0  1  0  1
+ 1  1  1  0  1  0
 
-    sf = 0.1
-    y = onehotbatch([1, 1, 1, 0, 0], 0:1)
-    y_smoothed = label_smoothing(ya, 2sf)
-    y_sim = y .* (1-2sf) .+ sf
-    y_dis = copy(y_sim)
-    y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
-    @assert crossentropy(y_sim, y) < crossentropy(y_sim, y_smoothed)
-    @assert crossentropy(y_dis, y) > crossentropy(y_dis, y_smoothed)
+julia> y_smoothed = Flux.label_smoothing(y, 0.2f0)
+2×6 Matrix{Float32}:
+ 0.1  0.1  0.1  0.9  0.1  0.9
+ 0.9  0.9  0.9  0.1  0.9  0.1
+
+julia> y_sim = softmax(y .* log(2f0))
+2×6 Matrix{Float32}:
+ 0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
+ 0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
+
+julia> y_dis = vcat(y_sim[2,:]', y_sim[1,:]')
+2×6 Matrix{Float32}:
+ 0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
+ 0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
+
+julia> Flux.crossentropy(y_sim, y) < Flux.crossentropy(y_sim, y_smoothed)
+true
+
+julia> Flux.crossentropy(y_dis, y) > Flux.crossentropy(y_dis, y_smoothed)
+true
+```
 """
 function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int=1)
     if !(0 < α < 1)
@@ -99,7 +117,7 @@ end
 Return the cross entropy between the given probability distributions;
 calculated as
 
-    agg(-sum(y .* log.(ŷ .+ ϵ); dims=dims))
+    agg(-sum(y .* log.(ŷ .+ ϵ); dims))
 
 Cross entropy is typically used as a loss in multi-class classification,
 in which case the labels `y` are given in a one-hot format.
@@ -107,14 +125,47 @@ in which case the labels `y` are given in a one-hot format.
 The prediction `ŷ` is supposed to sum to one across `dims`,
 as would be the case with the output of a [`softmax`](@ref) operation.
 
+For numerical stability, it is recommended to use [`logitcrossentropy`](@ref)
+rather than `softmax` followed by `crossentropy` .
+
 Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
 computing the loss.
 
-Use of [`logitcrossentropy`](@ref) is recomended over `crossentropy` for
-numerical stability.
+See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref).
 
-See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), 
-[`label_smoothing`](@ref)
+# Example
+```jldoctest
+julia> y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
+3×5 Flux.OneHotArray{UInt32, 3, 1, 2, Vector{UInt32}}:
+ 1  0  0  0  1
+ 0  1  0  1  0
+ 0  0  1  0  0
+
+julia> y_model = softmax(reshape(-7:7, 3, 5) .* 1f0)
+3×5 Array{Float32,2}:
+ 0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
+ 0.244728   0.244728   0.244728   0.244728   0.244728
+ 0.665241   0.665241   0.665241   0.665241   0.665241
+
+julia> sum(y_model; dims=1)
+1×5 Array{Float32,2}:
+ 1.0  1.0  1.0  1.0  1.0
+
+julia> Flux.crossentropy(y_model, y_label)
+1.6076052f0
+
+julia> Flux.crossentropy(y_model, y_label; agg=sum)
+8.038026f0
+
+julia> y_smooth = Flux.label_smoothing(y_label, 0.15f0)
+3×5 Array{Float32,2}:
+ 0.9   0.05  0.05  0.9   0.05
+ 0.05  0.9   0.05  0.05  0.9
+ 0.05  0.05  0.9   0.05  0.05
+
+julia> Flux.crossentropy(y_model, y_smooth)
+1.5776052f0
+```
 """
 function crossentropy(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ))
     agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims=dims))
@@ -123,19 +174,36 @@ end
 """
     logitcrossentropy(ŷ, y; dims=1, agg=mean)
 
-Return the crossentropy computed after a [`logsoftmax`](@ref) operation;
-calculated as
+Return the cross entropy calculated by
 
-    agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
+    agg(-sum(y .* logsoftmax(ŷ; dims); dims))
 
-Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
-computing the loss.
+This is mathematically equivalent to `crossentropy(softmax(ŷ), y)`,
+but is more numerically stable than using functions [`crossentropy`](@ref)
+and [`softmax`](@ref) separately.
 
-`logitcrossentropy(ŷ, y)` is mathematically equivalent to
-[`crossentropy(softmax(ŷ), y)`](@ref) but it is more numerically stable.
+See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref).
 
+# Example
+```jldoctest
+julia> y_label = Flux.onehotbatch(collect("abcabaa"), 'a':'c')
+3×7 Flux.OneHotArray{UInt32, 3, 1, 2, Vector{UInt32}}:
+ 1  0  0  1  0  1  1
+ 0  1  0  0  1  0  0
+ 0  0  1  0  0  0  0
 
-See also: [`crossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref)
+julia> y_model = reshape(vcat(-9:0, 0:9, 7.5f0), 3, 7)
+3×7 Array{Float32,2}:
+ -9.0  -6.0  -3.0  0.0  2.0  5.0  8.0
+ -8.0  -5.0  -2.0  0.0  3.0  6.0  9.0
+ -7.0  -4.0  -1.0  1.0  4.0  7.0  7.5
+
+julia> Flux.logitcrossentropy(y_model, y_label)
+1.5791205f0
+
+julia> Flux.crossentropy(softmax(y_model), y_label)
+1.5791197f0
+```
 """
 function logitcrossentropy(ŷ, y; dims=1, agg=mean)
     agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
@@ -148,17 +216,42 @@ Return the binary cross-entropy loss, computed as
 
     agg(@.(-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)))
 
-The `ϵ` term provides numerical stability.
-
-Typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
+Where typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
+The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
+over `binarycrossentropy` for numerical stability.
 
 Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
 computing the loss.
 
-Use of `logitbinarycrossentropy` is recomended over `binarycrossentropy` for numerical stability.
+See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
-See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), 
-[`label_smoothing`](@ref)
+# Examples
+```jldoctest
+julia> y_bin = Bool[1,0,1]
+3-element Array{Bool,1}:
+ 1
+ 0
+ 1
+
+julia> y_prob = softmax(reshape(vcat(1:3, 3:5), 2, 3) .* 1f0)
+2×3 Array{Float32,2}:
+ 0.268941  0.5  0.268941
+ 0.731059  0.5  0.731059
+
+julia> Flux.binarycrossentropy(y_prob[2,:], y_bin)
+0.43989f0
+
+julia> all(p -> 0<p<1, y_prob[2,:])  # else DomainError
+true
+
+julia> y_hot = Flux.onehotbatch(y_bin, 0:1)
+2×3 Flux.OneHotArray{UInt32,2,1,2,Array{UInt32,1}}:
+ 0  1  0
+ 1  0  1
+
+julia> Flux.crossentropy(y_prob, y_hot)
+0.43989f0
+```
 """
 function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ))
     agg(@.(-xlogy(y, ŷ+ϵ) - xlogy(1-y, 1-ŷ+ϵ)))
@@ -172,10 +265,24 @@ end
 Mathematically equivalent to
 [`binarycrossentropy(σ(ŷ), y)`](@ref) but is more numerically stable.
 
-Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
-computing the loss.
+See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
-See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`label_smoothing`](@ref)
+# Examples
+```jldoctest
+julia> y_bin = Bool[1,0,1];
+
+julia> y_model = Float32[2, -1, pi]
+3-element Array{Float32,1}:
+  2.0
+ -1.0
+  3.1415927
+
+julia> Flux.logitbinarycrossentropy(y_model, y_bin)
+0.160832f0
+
+julia> Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
+0.16083185f0
+```
 """
 function logitbinarycrossentropy(ŷ, y; agg=mean)
     agg(@.((1-y)*ŷ - logσ(ŷ)))
