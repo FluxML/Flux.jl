@@ -266,6 +266,7 @@ Create a new 'Parallel' layer that passes a single input array each path in
 julia> model = Chain(
   Dense(1, 1),
   Parallel(
+    vcat,
     Dense(1, 1),
     Dense(1, 3),
     Chain(
