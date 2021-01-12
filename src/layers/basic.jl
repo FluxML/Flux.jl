@@ -288,7 +288,7 @@ end
 
 Parallel(connection, layers...) = Parallel(connection, layers)
 
-Flux.@functor Parallel
+@functor Parallel
 
 (m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
 
