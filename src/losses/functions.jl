@@ -207,8 +207,8 @@ end
 
 # Return how much the predicted distribution `ŷ` diverges from the expected Poisson
 # distribution `y`; calculated as `sum(ŷ .- y .* log.(ŷ)) / size(y, 2)`.
-REDO
-[More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson_loss).
+
+[More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
 poisson_loss(ŷ, y; agg=mean) = agg(ŷ .- xlogy.(y, ŷ))
 
