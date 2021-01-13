@@ -186,15 +186,15 @@ julia> sum(y_model; dims=1)
  1.0  1.0  1.0  1.0  1.0
 
 julia> Flux.crossentropy(y_model, y_label)
-1.6076052f0
+1.6076053f0
 
-julia> Flux.crossentropy(y_model, y_label; agg=sum)
-8.038026f0
+julia> 5 * ans ≈ Flux.crossentropy(y_model, y_label; agg=sum)
+true
 
 julia> y_smooth = Flux.label_smoothing(y_label, 0.15f0)
 3×5 Array{Float32,2}:
- 0.9   0.05  0.05  0.9   0.05
- 0.05  0.9   0.05  0.05  0.9
+ 0.9   0.05  0.05  0.05  0.9
+ 0.05  0.9   0.05  0.9   0.05
  0.05  0.05  0.9   0.05  0.05
 
 julia> Flux.crossentropy(y_model, y_smooth)
