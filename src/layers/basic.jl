@@ -291,6 +291,7 @@ Parallel(connection, layers...) = Parallel(connection, layers)
 
 (m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
 (m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
+(m::Parallel)(xs::Tuple) = m(xs...)
 
 Base.getindex(m::Parallel, i::Integer) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)

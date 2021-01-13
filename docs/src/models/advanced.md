@@ -79,7 +79,7 @@ Naively, we could have a struct that stores the weights of along each path and i
 
 ### Multiple inputs: a custom `Join` layer
 
-Our custom `Join` layer will accept multiple inputs at once, pass each input through a separate path, then combine the results together.
+Our custom `Join` layer will accept multiple inputs at once, pass each input through a separate path, then combine the results together. Note that this layer can already be constructed using [`Parallel`](@ref), but we will first walk through how do this manually.
 
 We start by defining a new struct, `Join`, that stores the different paths and a combine operation as its fields.
 ```julia
@@ -110,6 +110,32 @@ Finally, we define the forward pass. For `Join`, this means applying each `path`
 
 Lastly, we can test our new layer. Thanks to the proper abstractions in Julia, our layer works on GPU arrays out of the box!
 ```julia
+model = Chain(
+          Join(vcat,
+            Chain(
+              Dense(1, 5),
+              Dense(5, 1)
+            ),
+            Dense(1, 2),
+            Dense(1, 1),
+          ),
+          Dense(4, 1)
+        ) |> gpu
+
+xs = map(gpu, (rand(1), rand(1), rand(1)))
+
+model(xs)
+# returns a single float vector with one value
+```
+
+#### Using `Parallel`
+
+Flux already provides [`Parallel`](@ref) that can offer the same functionality. In this case, `Join` is going to just be syntactic sugar for `Parallel`.
+```julia
+Join(combine, paths) = Parallel(combine, paths)
+Join(combine, paths...) = Join(combine, paths)
+
+# use vararg/tuple version of Parallel forward pass
 model = Chain(
           Join(vcat,
             Chain(

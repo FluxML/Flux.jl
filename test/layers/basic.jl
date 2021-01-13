@@ -117,5 +117,10 @@ import Flux: activations
       input = randn(10, 2)
       @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
     end
+
+    @testset "vararg input" begin
+      inputs = randn(10), randn(5), randn(4)
+      @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
+    end
   end
 end
