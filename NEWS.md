@@ -8,6 +8,7 @@
 * Removed kwarg only constructors for [`convolutional layers`](https://github.com/FluxML/Flux.jl/pull/1379).
 * Add [sparse initialization](https://github.com/FluxML/Flux.jl/pull/1454) as described in [Deep learning via Hessian-free optimization](https://dl.acm.org/doi/abs/10.5555/3104322.3104416).
 * Moved GPU CI to use buildkite instead of GitLab
+* New [`Parallel` layer](https://github.com/FluxML/Flux.jl/pull/1462) adds inception module-like building blocks.
 * Other new features and bug fixes (see GitHub releases page)
 
 ## v0.11.2
