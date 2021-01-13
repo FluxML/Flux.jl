@@ -1,3 +1,8 @@
+# In this file, doctests which differ in the printed Float32 values won't fail
+```@meta
+DocTestFilters = r"[0-9\.]+f0"
+```
+
 """
     mae(ŷ, y; agg=mean)
 
@@ -419,3 +424,8 @@ function tversky_loss(ŷ, y; β=ofeltype(ŷ, 0.7))
     den = sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1
     1 - num / den
 end
+
+
+```@meta
+DocTestFilters = nothing
+```
