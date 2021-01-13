@@ -291,7 +291,7 @@ Parallel(connection, layers...) = Parallel(connection, layers)
 (m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
 
 Base.getindex(m::Parallel, i::Integer) = m.layers[i]
-Base.getindex(m::Parallel, i::AbstractArray) = Parallel(m.connection, m.layers[i]...)
+Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
