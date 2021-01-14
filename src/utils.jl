@@ -56,6 +56,7 @@ julia> Flux.glorot_uniform(2, 3)
 * glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
 * kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
 * kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -88,6 +89,7 @@ julia> Flux.glorot_normal(3, 2)
 * glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
 * kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
 * kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -120,6 +122,7 @@ julia> Flux.kaiming_uniform(3, 2)
 * kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
 * glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
 * glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -156,6 +159,7 @@ julia> Flux.kaiming_normal(3, 2)
 * kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
 * glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
 * glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 * calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
@@ -170,6 +174,50 @@ end
 kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; kwargs...)
 kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
 
+"""
+    sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
+
+Return an `Array` of size `dims` where each column contains a fixed fraction of
+zero elements given by `sparsity`. Non-zero elements are normally distributed
+with a mean of zero and standard deviation `std`.
+
+This method is described in [1].
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.sparse_init(3, 2, sparsity=0.1)
+3×2 Array{Float32,2}:
+  0.00828413  0.0
+ -0.00353007  0.00297336
+  0.0         0.00586617
+```
+
+# See also
+
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+
+# References
+
+[1] Martens, J, "Deep learning via Hessian-free optimization" _Proceedings of the 27th International Conference on International Conference on Machine Learning_. 2010.
+"""
+function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
+  if length(dims) != 2
+    throw(ArgumentError("Only 2-dimensional outputs are supported for sparse initialization."))
+  end
+  rows, cols = dims
+  prop_zero = min(1.0, sparsity)
+  num_zeros = ceil(Integer, prop_zero * rows)
+  sparse_array = randn(rng, Float32, dims...) .* Float32(std)
+  sparse_array[1:num_zeros, :] .= 0f0
+  return mapslices(shuffle, sparse_array, dims=1)
+end
+
+sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs...)
+sparse_init(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; kwargs...)
+
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
 
@@ -177,7 +225,7 @@ ones(dims...) = Base.ones(Float32, dims...)
 zeros(dims...) = Base.zeros(Float32, dims...)
 
 """
-    create_bias(shallcreate::Bool, iftrue, dims...) 
+    create_bias(shallcreate::Bool, iftrue, dims...)
     create_bias(x, ::Any...)
 
 Return a bias parameter for a layer.
@@ -188,7 +236,7 @@ Essentially handles the allowed input options for the `bias` keyword:
     If not a boolean, return self to handle the case of bias=somearray.
 """
 create_bias(shallcreate::Bool, iftrue, dims...) = shallcreate ? iftrue(dims...) : Zeros()
-create_bias(x, ::Any...) = x  
+create_bias(x, ::Any...) = x
 
 """
     unsqueeze(xs, dim)
