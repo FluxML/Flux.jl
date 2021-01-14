@@ -63,7 +63,7 @@ function compute_alpha_kernel(probs, labelSize, uttLength, repeats, labelsWithou
     # Corner-case checking
     if tid == 1 && !(1 < S - 2*(T-t) - 1)
       if start == 0
-        alpha[1, t] = probs[blankLabel, t] + alpha[1, t-1]
+        alpha[1, t] = alpha[1, t-1] + probs[blankLabel, t]
       elseif start == 1
         alpha[1, t] = alpha[1, t-1]
       end
@@ -93,7 +93,7 @@ end
 function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
                   repeatsInLabel, labelsWithBlanks,
                   alphas, beta, output, accum,
-                  grad, blankLabel)
+                  grad, blankLabel, loss)
   
   tid = threadIdx().x
   L = labelSize
@@ -114,7 +114,7 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
   
   # Calculate coefficients for last column (time step)
   # then determine alpha and beta product
-  while i <= last - start + 1
+  while i <= last - start
     beta[i+start, T] = 0
     output[i+start, T] = beta[i+start, T] + alphas[i+start, T]
     i += blockDim().x
@@ -149,16 +149,15 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
   while t >= 1
     if t < T
       idx = tid
-      # while idx <= S-1
       while idx <= S
-        nextSum = beta[idx, t+1] + probs[labels[idx], t+1]
+        nextSum = probs[labels[idx], t+1] + beta[idx, t+1]
         if idx < S
           nextSum = log_plus_f(nextSum,
-            beta[idx+1, t+1] + probs[labels[idx+1], t+1])
+            probs[labels[idx+1], t+1] + beta[idx+1, t+1])
         end
         if labels[idx] != blankLabel && idx != S-1 && labels[idx] != labels[idx+2]
           nextSum = log_plus_f(nextSum,
-            beta[idx + 2, t+1] + probs[labels[idx+2], t+1])
+            probs[labels[idx+2], t+1] + beta[idx + 2, t+1])
         end
         if idx > 2*t
           beta[idx, t] = -Inf32
@@ -166,11 +165,6 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
           beta[idx, t] = nextSum
         end
         idx += blockDim().x
-      end
-      sync_threads()
-      
-      if tid == 1 && last == S
-        beta[S, t] = beta[S, t] + probs[blankLabel, t+1]
       end
       sync_threads()
       idx = tid
@@ -195,13 +189,9 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
     
     # Calculate gradients
     while idx <= size(grad, 1)
-      s = -Inf32
-      for i=1:S
-        s = log_plus_f(s, output[i, t])
-      end
       
       # ∂L/∂a (where a is activation before logsoftmax)
-      grad[idx, t] = CUDA.exp(probs[idx, t]) - CUDA.exp(accum[idx, t] - s)
+      grad[idx, t] = CUDA.exp(probs[idx, t]) - CUDA.exp(accum[idx, t] + loss)
       idx += blockDim().x
     end
     sync_threads()
@@ -214,23 +204,21 @@ end
 function ctc_alpha(ŷ::CuArray, y)
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
-  labels = Base.argmax.(eachcol(y))
-  z = F(labels, blank)
-  z′ = fill(blank, 2 * length(z) + 1)
-  z′[eachindex(z) .* 2] = z
+  z′ = fill(blank, 2 * length(y) + 1)
+  z′[eachindex(y) .* 2] = y
   T = size(ŷ, 2)
-  U′ = 2*length(z) + 1
+  U′ = 2*length(y) + 1
   alphas = CUDA.fill(log(zero(ŷ[1])), U′,T)
-  nRepeats = count_repeats(labels)
+  nRepeats = count_repeats(y)
   nThreads = min(U′, MAX_THREADS)
-  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(z), T, nRepeats, CuArray(z), CuArray(z′), alphas, blank)
-  return (loss=-1 * logsumexp(alphas[end-1:end]), alpha=alphas, z=z, z′=z′, yhat=ŷ, nRepeats=nRepeats)
+  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(y), T, nRepeats, CuArray(y), CuArray(z′), alphas, blank)
+  return (loss=-1 * logsumexp(alphas[end-1:end]), alpha=alphas, z′=z′, yhat=ŷ, nRepeats=nRepeats)
 end
 
 ctc_loss(ŷ::CuArray, y) = ctc_alpha(ŷ::CuArray, y).loss
 
 function ∇ctc_loss(ŷ::CuArray, y, out)
-  loss, alphas, z, z′, ŷ, nRepeats = out
+  loss, alphas, z′, ŷ, nRepeats = out
   U′, T = size(alphas)
   blank = size(ŷ, 1)
   typed_zero = zero(first(ŷ))
@@ -238,8 +226,7 @@ function ∇ctc_loss(ŷ::CuArray, y, out)
   output = CUDA.fill(log(typed_zero), U′, T)
   nThreads = min(U′, MAX_THREADS)
   grads = CUDA.fill(log(typed_zero), size(ŷ))
-  accum = CUDA.fill(log(typed_zero), size(ŷ))  
-  @cuda blocks=1 threads=nThreads compute_beta_and_grad_kernel(ŷ, length(z), T, nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank)
-  ŷ = alphas = betas = output = accum = nothing
+  accum = CUDA.fill(log(typed_zero), size(ŷ))
+  @cuda blocks=1 threads=nThreads compute_beta_and_grad_kernel(ŷ, length(y), T, nRepeats, CuArray(z′), alphas, betas, output, accum, grads, blank, loss)
   return grads
 end

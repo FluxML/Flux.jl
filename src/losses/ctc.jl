@@ -24,29 +24,9 @@ function logaddexp(a, b)
 end
 
 """
-  F(A, blank)
-
-Removes blanks and repetitions in the sequence `A`
-
-This is the function `F` as defined in Graves (2012)
-"""
-function F(A, blank)
-  prev = A[1]
-  z = [prev]
-  for curr in A[2:end]
-    if curr != prev
-      push!(z, curr)
-    end
-    prev = curr
-  end
-  filter!(x -> x != blank, z)
-  return z
-end
-
-"""
   add_blanks(z)
 
-Adds blanks to the start and end of `z`, and between item in `z`
+Adds blanks to the start and end of `z`, and between items in `z`
 """
 function add_blanks(z, blank)
   z′ = fill(blank, 2*length(z) + 1)
@@ -58,8 +38,7 @@ function ctc_alpha(ŷ::AbstractArray, y)
   typed_zero = zero(ŷ[1])
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
-  z = F(Base.argmax.(eachcol(y)), blank)
-  z′ = add_blanks(z, blank)
+  z′ = add_blanks(y, blank)
   T = size(ŷ, 2)
   U′ = length(z′)
 
@@ -67,15 +46,15 @@ function ctc_alpha(ŷ::AbstractArray, y)
   α[1,1] = ŷ[blank, 1]
   α[2,1] = ŷ[z′[2], 1]
   for t=2:T
-	bound = U′ - 2(T - t) - 1
-    for u=1:U′
+	bound = max(1, U′ - 2(T - t) - 1)
+    for u=bound:U′
 	  if u == 1
 		α[u,t] = α[u, t-1]
-	  elseif u >= bound
+	  else
 		α[u,t] = logaddexp(α[u, t-1], α[u-1, t-1])
 		
 		# array bounds check and f(u) function from Eq. 7.9
-		if u > 2 && z′[u] != blank && z′[u] != z′[u-2]
+		if u > 2 && !(z′[u] == blank || z′[u-2] == z′[u])
 		  α[u,t] = logaddexp(α[u,t], α[u-2,t-1])
 		end
 	  end
@@ -88,7 +67,7 @@ end
 function ∇ctc_loss(ŷ::AbstractArray, y, out)
   loss, α, z′, ŷ = out
   U′, T = size(α)
-  blank = U′
+  blank = size(ŷ, 1)
   typed_zero = zero(first(α))
 
   # Calculate beta coefficients, from the bottom-right, to the upper-left
@@ -101,15 +80,15 @@ function ∇ctc_loss(ŷ::AbstractArray, y, out)
   
   # start at T-1 so that β(T, u) = log(0) for all u < U′ - 1
   for t=(T-1):-1:1
-	bound = min(U′ + 1, 2t)
-    for u=U′:-1:1
+	bound = min(U′, 2t)
+    for u=bound:-1:1
 	  if u == U′
 		β[u,t] = ŷ[z′[u], t+1] + β[u, t+1]
-	  elseif u <= bound
+	  else
 		β[u,t] = logaddexp(ŷ[z′[u], t+1] + β[u, t+1], ŷ[z′[u+1], t+1] + β[u+1,t+1])
-		
+
 		# array bounds check and g(u) function from Eq. 7.16
-		if u < U′-1 && z′[u] != blank && z′[u] != z′[u+2]
+		if u+2 <= U′ && z′[u] != blank && z′[u] != z′[u+2]
 		  β[u,t] = logaddexp(β[u,t], ŷ[z′[u+2], t+1] + β[u+2, t+1])
 	    end
 	  end
@@ -134,14 +113,16 @@ end
 Computes the connectionist temporal classification loss between `ŷ`
 and `y`.
 
-Both `ŷ` and `y` must be classes-by-time matrices, i.e., each row
+`ŷ` must be a classes-by-time matrices, i.e., each row
 represents a class and each column represents a time step.
 Additionally, the `logsoftmax` function will be applied to `ŷ`, so
-it must be the raw activation values from the neural network and
+`ŷ` must be the raw activation values from the neural network and
 not, for example, the activations after being passed through a
-`softmax` activation function.
+`softmax` activation function. `y` must be a 1D `Array` of the labels
+associated with `ŷ`. The blank label is assumed to be the last label
+category in `ŷ`, so it is equivalent to `size(ŷ, 1)`.
 
-Used for sequence to sequence classification problems such as
+Used for sequence-to-sequence classification problems such as
 speech recognition and handwriting recognition where the exact
 time-alignment of the output (e.g., letters) is not needed to
 solve the problem. See [Graves et al. (2006)](https://www.cs.toronto.edu/~graves/icml_2006.pdf)
