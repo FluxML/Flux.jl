@@ -28,6 +28,9 @@
 
   m = SkipConnection(Conv((3, 3), 3 => 16; pad = 1), (mx, x) -> cat(mx, x; dims = 3))
   @test outputsize(m, (10, 10, 3, 1)) == (10, 10, 19, 1)
+
+  m = Parallel((mx, x) -> cat(mx, x; dims = 3), Conv((3, 3), 3 => 16; pad = 1), identity)
+  @test outputsize(m, (10, 10, 3, 1)) == (10, 10, 19, 1)
 end
 
 @testset "activations" begin
