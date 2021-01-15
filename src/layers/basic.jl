@@ -423,27 +423,36 @@ function Base.show(io::IO, m::Parallel)
   print(io, ")")
 end
 
-
-Base.show(io::IO, m::MIME"text/plain", c::Chain) = _big_show(io, c)
-
-function _big_show(io::IO, obj, indent=0)
-  children = Flux.trainable(obj)
-  if all(c -> isleaf(c) || isa(c,Tuple), children)  # need isa(c,Tuple) to get Conv right
-    return _layer_show(io, obj, indent)
-  end
-  println(io, " "^indent, nameof(typeof(obj)), "(")
-  for c in children
-    _big_show(io, c, indent+2)
-  end
-  print(io, " "^indent, ")")
-  indent == 0 ? _big_finale(io, params(obj)) : println(io, ",")
+for T in [
+    :Chain, :Parallel, :SkipConnection,
+    :Conv, :ConvTranspose, :CrossCor, :Dense,
+    :BatchNorm, :LayerNorm,
+  ]
+  @eval Base.show(io::IO, m::MIME"text/plain", x::$T) = _big_show(io, x)
 end
 
-function _layer_show(io::IO, layer, indent=0)
-  str = sprint(show, layer, context=nothing)
-  print(io, " "^indent, str, ",")
+function _big_show(io::IO, obj, indent=0, toclose=0)
+  children = Flux.trainable(obj)
+  if all(c -> isleaf(c) || isa(c,Tuple), children)  # need isa(c,Tuple) to get Conv right
+    return _layer_show(io, obj, indent, toclose)
+  end
+  println(io, " "^indent, nameof(typeof(obj)), "(")
+  for (i,c) in enumerate(children)
+    close = i==length(children) && indent>0
+    _big_show(io, c, indent+2, close ? toclose+1 : 0)
+  end
+  if indent == 0
+    print(io, ")")
+    _big_finale(io, params(obj))
+  end
+end
+
+function _layer_show(io::IO, layer, indent=0, toclose=0)
+  str = sprint(show, layer, context=nothing) * ",)"^toclose
+  print(io, " "^indent, str, indent==0 ? "" : ",")
+  tab = indent==0 ? 20 : 39  # when inside Chain, move all parameter counts out to 40
   if !isempty(params(layer))
-    print(" "^max(2, 39 - indent - length(str)))
+    print(" "^max(2, tab - indent - length(str)))
     pars = underscorise(sum(length, params(layer)))
     printstyled(io, "# ", pars, " parameters", color=:light_black)
     if !all(x -> all(isfinite, x), params(layer))
