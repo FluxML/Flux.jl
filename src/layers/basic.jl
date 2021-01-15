@@ -467,3 +467,58 @@ end
 
 underscorise(n::Integer) =
   join(reverse(join.(reverse.(Iterators.partition(digits(n), 3)))), '_')
+
+Base.show(io::IO, m::MIME"text/plain", p::Zygote.Params) = _param_show(io, p, "Params", true)
+
+function _param_show(io::IO, p, name::String, iter::Bool)
+  println(io, name, "(")
+  spad = maximum(length∘summary, p)
+  ipad = length(string(length(p))) + 2
+  for (i,x) in enumerate(p)
+    if iter
+        printstyled(io, "  ", lpad(string("[",i,"]"), ipad), color=:light_black)
+    end
+    str = sprint(show, x)
+    str = length(str) < 32 ? str : str[1:32] * "…"
+    print(io, "  ", rpad(summary(x), spad), "  ", str)
+    if any(isnan, x)
+      printstyled(io, "  (some NaN)", color=:red)
+    elseif any(isinf, x)
+      printstyled(io, "  (some Inf)", color=:red)
+    elseif !isempty(x) && all(iszero, x)
+      printstyled(io, "  (all zero)", color=:light_black)
+    end
+    println(io)
+  end
+  print(io, ")")
+  pars = underscorise(sum(length, p))
+  bytes = sum(sizeof, p)
+  printstyled(io, " "^15, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
+end
+
+function Base.show(io::IO, m::MIME"text/plain", g::Zygote.Grads)
+  println(io, "Zygote.Grads(")
+  pars, bytes, spad = 0, 0, 0
+  for k in keys(g.grads)
+    x =
+    pars += length(g[k])
+    bytes += sizeof(g[k])
+    spad = max(spad, length(summary(g[k])))
+  end
+  for k in keys(g.grads)
+    x = g[k]
+    str = sprint(show, x)
+    str = length(str) < 32 ? str : str[1:32] * "…"
+    print(io, "  ", rpad(summary(x), spad), "  ", str)
+    if any(isnan, x)
+      printstyled(io, "  (some NaN)", color=:red)
+    elseif any(isinf, x)
+      printstyled(io, "  (some Inf)", color=:red)
+    elseif !isempty(x) && all(iszero, x)
+      printstyled(io, "  (all zero)", color=:light_black)
+    end
+    println(io)
+  end
+  print(io, ")")
+  printstyled(io, " "^15, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
+end
