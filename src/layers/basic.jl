@@ -422,3 +422,48 @@ function Base.show(io::IO, m::Parallel)
   join(io, m.layers, ", ")
   print(io, ")")
 end
+
+Base.show(io::IO, m::MIME"text/plain", c::Chain) = _big_show(io, c)
+
+function _big_show(io::IO, c::Union{Chain, Parallel, SkipConnection}, indent=0)
+  print(io, " "^indent, nameof(typeof(c)), "(")
+  c isa Chain ? println(io) : println(io, c.connection, ",")
+  if c.layers isa Tuple
+    for x in c.layers
+      _big_show(io, x, indent+2)
+    end
+  else
+    _big_show(io, c.layers, indent+2)
+  end
+  print(io, " "^indent, ")")
+  indent == 0 ? _big_finale(io, params(c)) : println(io, ",")
+end
+
+function _big_show(io::IO, layer, indent=0)
+  str = sprint(show, layer, context=nothing)
+  print(io, " "^indent, str, ",")
+  if !isempty(params(layer))
+    print(" "^(31 - indent - length(str)))
+    pars = underscorise(sum(length, params(layer)))
+    printstyled(io, "# ", pars, " parameters", color=:light_black)
+    if !all(x -> all(isfinite, x), params(layer))
+      printstyled(io, " (some NaN or Inf)", color=:red)
+    elseif all(x -> all(iszero, x), params(layer))
+      printstyled(io, " (all zero)", color=:light_black)
+    end
+  end
+  println(io)
+end
+
+function _big_finale(io::IO, ps)
+  num = length(ps)
+  num < 3 && return println(io)
+  pars = underscorise(sum(length, ps))
+  bytes = sum(sizeof, ps)
+  print(io, " "^15)
+  printstyled(io, "# Total: ", num, " arrays, "; color=:light_black)
+  printstyled(io, pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
+end
+
+underscorise(n::Integer) =
+  join(reverse(join.(reverse.(Iterators.partition(digits(n), 3)))), '_')
