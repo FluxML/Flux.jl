@@ -121,9 +121,8 @@ end
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  # reshape to handle dims > 1 as batch dimensions
   sz = size(x)
-  x = reshape(x, sz[1], :) 
+  x = reshape(x, sz[1], :) # reshape to handle dims > 1 as batch dimensions 
   x = σ.(W*x .+ b)
   return reshape(x, :, sz[2:end]...)
 end
@@ -133,14 +132,6 @@ function Base.show(io::IO, l::Dense)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
-
-# Try to avoid hitting generic matmul in some simple cases
-# Base's matmul is so slow that it's worth the extra conversion to hit BLAS
-(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
-
-(a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
 
 """
     Diagonal(in::Integer)
