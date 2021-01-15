@@ -423,17 +423,19 @@ function Base.show(io::IO, m::Parallel)
   print(io, ")")
 end
 
+
 Base.show(io::IO, m::MIME"text/plain", c::Chain) = _big_show(io, c)
 
 function _big_show(io::IO, c::Union{Chain, Parallel, SkipConnection}, indent=0)
   print(io, " "^indent, nameof(typeof(c)), "(")
-  c isa Chain ? println(io) : println(io, c.connection, ",")
-  if c.layers isa Tuple
+  c isa Parallel ? println(io, c.connection, ",") : println(io) # Parallel's connection is 1st arg
+  if c isa SkipConnection
+    _big_show(io, c.layers, indent+2)
+    _big_show(io, c.connection, indent+2) # SkipConnection's connection is 2nd arg
+  else
     for x in c.layers
       _big_show(io, x, indent+2)
     end
-  else
-    _big_show(io, c.layers, indent+2)
   end
   print(io, " "^indent, ")")
   indent == 0 ? _big_finale(io, params(c)) : println(io, ",")
@@ -443,7 +445,7 @@ function _big_show(io::IO, layer, indent=0)
   str = sprint(show, layer, context=nothing)
   print(io, " "^indent, str, ",")
   if !isempty(params(layer))
-    print(" "^(31 - indent - length(str)))
+    print(" "^max(2, 39 - indent - length(str)))
     pars = underscorise(sum(length, params(layer)))
     printstyled(io, "# ", pars, " parameters", color=:light_black)
     if !all(x -> all(isfinite, x), params(layer))
@@ -460,7 +462,7 @@ function _big_finale(io::IO, ps)
   num < 3 && return println(io)
   pars = underscorise(sum(length, ps))
   bytes = sum(sizeof, ps)
-  print(io, " "^15)
+  print(io, " "^19)
   printstyled(io, "# Total: ", num, " arrays, "; color=:light_black)
   printstyled(io, pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
 end
@@ -471,29 +473,32 @@ underscorise(n::Integer) =
 Base.show(io::IO, m::MIME"text/plain", p::Zygote.Params) = _param_show(io, p, "Params", true)
 
 function _param_show(io::IO, p, name::String, iter::Bool)
+  length(p) == 0 && return print(io, name, "([])")
   println(io, name, "(")
-  spad = maximum(length∘summary, p)
   ipad = length(string(length(p))) + 2
-  for (i,x) in enumerate(p)
+  spad = min(40-6-ipad, maximum(length∘summary, p))
+  wid = get(io, :displaysize, displaysize())[2]
+    for (i,x) in enumerate(p)
     if iter
         printstyled(io, "  ", lpad(string("[",i,"]"), ipad), color=:light_black)
     end
-    str = sprint(show, x)
-    str = length(str) < 32 ? str : str[1:32] * "…"
-    print(io, "  ", rpad(summary(x), spad), "  ", str)
+    desc = Base._truncate_at_width_or_chars(summary(x), spad)
+    data = sprint(show, x, context=IOContext(io, :compact => true, :limit => true, :typeinfo => eltype(x)), sizehint=0)
+    str = Base._truncate_at_width_or_chars(data, min(30, wid-40-14))
+    print(io, "  ", rpad(desc, spad), "  ", str)
     if any(isnan, x)
       printstyled(io, "  (some NaN)", color=:red)
     elseif any(isinf, x)
       printstyled(io, "  (some Inf)", color=:red)
     elseif !isempty(x) && all(iszero, x)
-      printstyled(io, "  (all zero)", color=:light_black)
+      printstyled(io, "  (all zero)", color=:cyan)
     end
     println(io)
   end
   print(io, ")")
   pars = underscorise(sum(length, p))
   bytes = sum(sizeof, p)
-  printstyled(io, " "^15, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
+  printstyled(io, " "^19, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
 end
 
 function Base.show(io::IO, m::MIME"text/plain", g::Zygote.Grads)
@@ -515,10 +520,14 @@ function Base.show(io::IO, m::MIME"text/plain", g::Zygote.Grads)
     elseif any(isinf, x)
       printstyled(io, "  (some Inf)", color=:red)
     elseif !isempty(x) && all(iszero, x)
-      printstyled(io, "  (all zero)", color=:light_black)
+      printstyled(io, "  (all zero)", color=:cyan)
     end
     println(io)
   end
   print(io, ")")
-  printstyled(io, " "^15, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
+  printstyled(io, " "^19, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
 end
+
+
+
+
