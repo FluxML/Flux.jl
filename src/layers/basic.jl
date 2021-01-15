@@ -426,22 +426,20 @@ end
 
 Base.show(io::IO, m::MIME"text/plain", c::Chain) = _big_show(io, c)
 
-function _big_show(io::IO, c::Union{Chain, Parallel, SkipConnection}, indent=0)
-  print(io, " "^indent, nameof(typeof(c)), "(")
-  c isa Parallel ? println(io, c.connection, ",") : println(io) # Parallel's connection is 1st arg
-  if c isa SkipConnection
-    _big_show(io, c.layers, indent+2)
-    _big_show(io, c.connection, indent+2) # SkipConnection's connection is 2nd arg
-  else
-    for x in c.layers
-      _big_show(io, x, indent+2)
-    end
+function _big_show(io::IO, obj, indent=0)
+  children = Flux.trainable(obj)
+  if all(c -> isleaf(c) || isa(c,Tuple), children)  # need isa(c,Tuple) to get Conv right
+    return _layer_show(io, obj, indent)
+  end
+  println(io, " "^indent, nameof(typeof(obj)), "(")
+  for c in children
+    _big_show(io, c, indent+2)
   end
   print(io, " "^indent, ")")
-  indent == 0 ? _big_finale(io, params(c)) : println(io, ",")
+  indent == 0 ? _big_finale(io, params(obj)) : println(io, ",")
 end
 
-function _big_show(io::IO, layer, indent=0)
+function _layer_show(io::IO, layer, indent=0)
   str = sprint(show, layer, context=nothing)
   print(io, " "^indent, str, ",")
   if !isempty(params(layer))
@@ -451,7 +449,7 @@ function _big_show(io::IO, layer, indent=0)
     if !all(x -> all(isfinite, x), params(layer))
       printstyled(io, " (some NaN or Inf)", color=:red)
     elseif all(x -> all(iszero, x), params(layer))
-      printstyled(io, " (all zero)", color=:light_black)
+      printstyled(io, " (all zero)", color=:cyan)
     end
   end
   println(io)
@@ -527,7 +525,5 @@ function Base.show(io::IO, m::MIME"text/plain", g::Zygote.Grads)
   print(io, ")")
   printstyled(io, " "^19, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
 end
-
-
 
 
