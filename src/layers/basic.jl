@@ -417,6 +417,8 @@ Parallel(connection, layers...) = Parallel(connection, layers)
 Base.getindex(m::Parallel, i::Integer) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
 
+trainable(m::Parallel) = (m.connection, m.layers...)
+
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
   join(io, m.layers, ", ")
