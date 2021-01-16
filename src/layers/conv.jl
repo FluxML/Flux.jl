@@ -160,10 +160,17 @@ end
 function Base.show(io::IO, l::Conv)
   print(io, "Conv(", size(l.weight)[1:ndims(l.weight)-2])
   print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
-  l.σ == identity || print(io, ", ", l.σ)
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
+function _print_conv_opt(io::IO, l)
+  l.σ == identity || print(io, ", ", l.σ)
+  all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
+  all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
+  all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
+  l.bias == Zeros() && print(io, ", bias=false")
+end
 
 """
     ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
@@ -256,7 +263,7 @@ end
 function Base.show(io::IO, l::ConvTranspose)
   print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
   print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
-  l.σ == identity || print(io, ", ", l.σ)
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
@@ -349,7 +356,7 @@ end
 function Base.show(io::IO, l::DepthwiseConv)
   print(io, "DepthwiseConv(", size(l.weight)[1:end-2])
   print(io, ", ", size(l.weight)[end], "=>", prod(size(l.weight)[end-1:end]))
-  l.σ == identity || print(io, ", ", l.σ)
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
@@ -430,7 +437,7 @@ end
 function Base.show(io::IO, l::CrossCor)
   print(io, "CrossCor(", size(l.weight)[1:ndims(l.weight)-2])
   print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
-  l.σ == identity || print(io, ", ", l.σ)
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
