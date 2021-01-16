@@ -7,19 +7,20 @@ for T in [
   @eval Base.show(io::IO, m::MIME"text/plain", x::$T) = _big_show(io, x)
 end
 
-function _big_show(io::IO, obj, indent::Int=0, toclose::Int=0)
+function _big_show(io::IO, obj, indent::Int=0)
   children = trainable(obj)
   if all(c -> isleaf(c) || _show_leaflike(c), children)
-    return _layer_show(io, obj, indent, toclose)
+    return _layer_show(io, obj, indent)
   end
   println(io, " "^indent, nameof(typeof(obj)), "(")
   for (i,c) in enumerate(children)
-    close = i==length(children) && indent>0
-    _big_show(io, c, indent+2, close ? toclose+1 : 0)
+    _big_show(io, c, indent+2)
   end
   if indent == 0
     print(io, ")")
     _big_finale(io, params(obj))
+  else
+    println(io, " "^indent, "),")
   end
 end
 
@@ -29,8 +30,9 @@ _show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # parameters of LSTMcel
 _show_leaflike(::Diagonal) = true  # appears inside LayerNorm
 
 # used both within Chain printing, and alone at top level.
-function _layer_show(io::IO, layer, indent::Int=0, toclose::Int=0)
-  str = sprint(show, layer, context=nothing) * ",)"^toclose
+function _layer_show(io::IO, layer, indent::Int=0)
+  # str = sprint(show, layer, context=io)
+  str = string(layer)
   print(io, " "^indent, str, indent==0 ? "" : ",")
   if !isempty(params(layer))
     print(" "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
