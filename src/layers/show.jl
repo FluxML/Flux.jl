@@ -4,7 +4,15 @@ for T in [
     :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense,
     :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
   ]
-  @eval Base.show(io::IO, m::MIME"text/plain", x::$T) = _big_show(io, x)
+  @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
+    if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
+      _big_show(io, x)
+    elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
+      _layer_show(io, x)
+    else
+      show(io, x)
+    end
+  end
 end
 
 function _big_show(io::IO, obj, indent::Int=0)
@@ -25,18 +33,17 @@ function _big_show(io::IO, obj, indent::Int=0)
 end
 
 _show_leaflike(::Any) = false
-_show_leaflike(::Tuple{Vararg{<:Number}}) = true  # stride of Conv
-_show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # parameters of LSTMcell
-_show_leaflike(::Diagonal) = true  # appears inside LayerNorm
+_show_leaflike(::Tuple{Vararg{<:Number}}) = true  # e.g. stride of Conv
+_show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # e.g. parameters of LSTMcell
+_show_leaflike(::Diagonal) = true  # appears inside LayerNorm, but let's collapse that.
 
-# used both within Chain printing, and alone at top level.
 function _layer_show(io::IO, layer, indent::Int=0)
   # str = sprint(show, layer, context=io)
   str = string(layer)
   print(io, " "^indent, str, indent==0 ? "" : ",")
   if !isempty(params(layer))
-    print(" "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
-    printstyled(io, "# ", underscorise(sum(length, params(layer))), " parameters", color=:light_black)
+    print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
+    printstyled(io, "# ", underscorise(sum(length, params(layer))), " parameters"; color=:light_black)
     _nan_show(io, params(layer))
   end
   indent==0 || println(io)
@@ -51,13 +58,15 @@ end
 
 # Zygote's containers
 
-Base.show(io::IO, m::MIME"text/plain", p::Zygote.Params) = _param_show(io, p)
+function Base.show(io::IO, m::MIME"text/plain", p::Zygote.Params)
+  get(io, :typeinfo, nothing) === nothing ? _param_show(io, p) : show(io, p)
+end
 
 function _param_show(io::IO, p)
   length(p) == 0 && return print(io, typeof(p), "([])")
   println(io, typeof(p), "([")
   ipad = length(string(length(p))) + 2
-  spad = min(40-6-ipad, maximum(length∘summary, p))
+  spad = min(50-6-ipad, maximum(length∘summary, p))
   wid = get(io, :displaysize, (0,100))[2] # not certain this is working
   for (i,x) in enumerate(p)
     printstyled(io, "  ", lpad(string("[",i,"]"), ipad), color=:light_black)
@@ -75,6 +84,10 @@ function _param_show(io::IO, p)
 end
 
 function Base.show(io::IO, m::MIME"text/plain", g::Zygote.Grads)
+  get(io, :typeinfo, nothing) === nothing ? _grad_show(io, g) : show(io, g)
+end
+
+function _grad_show(io::IO, g)
   println(io, "Zygote.Grads(")
   pars, bytes, spad = 0, 0, 0
   for k in keys(g.grads)
