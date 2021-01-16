@@ -425,8 +425,8 @@ end
 
 for T in [
     :Chain, :Parallel, :SkipConnection,
-    :Conv, :ConvTranspose, :CrossCor, :Dense,
-    :BatchNorm, :LayerNorm,
+    :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense,
+    :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
   ]
   @eval Base.show(io::IO, m::MIME"text/plain", x::$T) = _big_show(io, x)
 end
@@ -447,6 +447,9 @@ function _big_show(io::IO, obj, indent=0, toclose=0)
   end
 end
 
+# Opt out of being printed as a container:
+_big_show(io::IO, l::LayerNorm, i=0, t=0) = _layer_show(io, l, i, t)
+
 function _layer_show(io::IO, layer, indent=0, toclose=0)
   str = sprint(show, layer, context=nothing) * ",)"^toclose
   print(io, " "^indent, str, indent==0 ? "" : ",")
@@ -461,7 +464,7 @@ function _layer_show(io::IO, layer, indent=0, toclose=0)
       printstyled(io, " (all zero)", color=:cyan)
     end
   end
-  println(io)
+  indent==0 || println(io)
 end
 
 function _big_finale(io::IO, ps)
@@ -477,21 +480,21 @@ end
 underscorise(n::Integer) =
   join(reverse(join.(reverse.(Iterators.partition(digits(n), 3)))), '_')
 
-Base.show(io::IO, m::MIME"text/plain", p::Zygote.Params) = _param_show(io, p, "Params", true)
+Base.show(io::IO, m::MIME"text/plain", p::Zygote.Params) = _param_show(io, p, true)
 
-function _param_show(io::IO, p, name::String, iter::Bool)
-  length(p) == 0 && return print(io, name, "([])")
-  println(io, name, "(")
+function _param_show(io::IO, p, iter::Bool)
+  length(p) == 0 && return print(io, typeof(p), "([])")
+  println(io, typeof(p), "([")
   ipad = length(string(length(p))) + 2
   spad = min(40-6-ipad, maximum(length∘summary, p))
-  wid = get(io, :displaysize, displaysize())[2]
+  wid = get(io, :displaysize, (0,100))[2]
     for (i,x) in enumerate(p)
     if iter
         printstyled(io, "  ", lpad(string("[",i,"]"), ipad), color=:light_black)
     end
     desc = Base._truncate_at_width_or_chars(summary(x), spad)
     data = sprint(show, x, context=IOContext(io, :compact => true, :limit => true, :typeinfo => eltype(x)), sizehint=0)
-    str = Base._truncate_at_width_or_chars(data, min(30, wid-40-14))
+    str = Base._truncate_at_width_or_chars(data, min(30, wid-40-12))
     print(io, "  ", rpad(desc, spad), "  ", str)
     if any(isnan, x)
       printstyled(io, "  (some NaN)", color=:red)
@@ -502,10 +505,10 @@ function _param_show(io::IO, p, name::String, iter::Bool)
     end
     println(io)
   end
-  print(io, ")")
+  print(io, "])")
   pars = underscorise(sum(length, p))
-  bytes = sum(sizeof, p)
-  printstyled(io, " "^19, "# Total: ", pars, " parameters, ", Base.format_bytes(bytes); color=:light_black)
+  bytes = Base.format_bytes(sum(sizeof, p))
+  printstyled(io, " "^18, "# Total: ", pars, " parameters, ", bytes; color=:light_black)
 end
 
 function Base.show(io::IO, m::MIME"text/plain", g::Zygote.Grads)
