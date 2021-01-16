@@ -1,5 +1,5 @@
 @testset "bilinear upsample" begin
-  m = Upsample(scale_factor=(2, 3), mode=:bilinear)
+  m = Upsample(scale=(2, 3), mode=:bilinear)
   y = m((rand(Float32, 3, 4, 2, 3)))
   @test y isa Array{Float32, 4} 
   @test size(y) == (6, 12, 2, 3)
