@@ -118,7 +118,7 @@ represents a class and each column represents a time step.
 Additionally, the `logsoftmax` function will be applied to `ŷ`, so
 `ŷ` must be the raw activation values from the neural network and
 not, for example, the activations after being passed through a
-`softmax` activation function. `y` must be a 1D `Array` of the labels
+`softmax` activation function. `y` must be a 1D array of the labels
 associated with `ŷ`. The blank label is assumed to be the last label
 category in `ŷ`, so it is equivalent to `size(ŷ, 1)`.
 
