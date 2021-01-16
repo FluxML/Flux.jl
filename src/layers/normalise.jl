@@ -278,8 +278,8 @@ testmode!(m::BatchNorm, mode=true) =
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
-  l.λ == identity || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false")
+  (l.λ == identity) || print(io, ", $(l.λ)")
+  hasaffine(l) || print(io,  ", affine=false") # ??
   print(io, ")")
 end
 
@@ -443,8 +443,9 @@ testmode!(m::GroupNorm, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
+  # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
   print(io, "GroupNorm($(l.chs), $(l.G)")
-  l.λ == identity || print(io, ", $(l.λ)")
+  l.λ == identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
