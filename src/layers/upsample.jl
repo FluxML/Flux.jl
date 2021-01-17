@@ -26,10 +26,10 @@ struct Upsample{Mode,T}
 end
 
 function Upsample(; scale::Union{Int, NTuple{N,Int}}, mode::Symbol) where N
-  mode in [:linear, :bilinear] || 
-    throw(ArgumentError("only sampling is currently supported"))
+  mode in [:bilinear] || 
+    throw(ArgumentError("only `:bilinear` upsampling is currently supported"))
   scale isa Int  || N == 2 ||
-    throw(ArgumentError("only two-dimensional scaling  is supported"))
+    throw(ArgumentError("only two-dimensional upsampling  is supported"))
   return Upsample{mode, typeof(scale)}(scale)
 end
 
