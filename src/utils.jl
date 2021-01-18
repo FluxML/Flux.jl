@@ -289,9 +289,7 @@ julia> rand(Float32, 10, 10) |> m |> size
 """
 unsqueeze(dim::Integer) = Base.Fix2(unsqueeze, dim)
 
-Base.show(io::IO, u::Base.Fix2{typeof(unsqueeze)}) = print(io, "unsqueeze(", u.x, ")")
-Base.show(io::IO, ::MIME"text/plain", u::Base.Fix2{typeof(unsqueeze)}) = show(io, u) # at top level
-Base.show_function(io::IO, u::Base.Fix2{typeof(unsqueeze)}, ::Bool) = show(io, u) # within Chain etc.
+Base.show_function(io::IO, u::Base.Fix2{typeof(unsqueeze)}, ::Bool) = print(io, "unsqueeze(", u.x, ")")
 
 """
     stack(xs, dim)
