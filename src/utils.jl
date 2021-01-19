@@ -241,21 +241,13 @@ create_bias(x, ::Any...) = x
 """
     unsqueeze(xs, dim)
 
-Return `xs` reshaped into an `Array` one dimensionality higher than `xs`,
+Return `xs` reshaped into an array one dimensionality higher than `xs`,
 where `dim` indicates in which dimension `xs` is extended.
+
+See also [`flatten`](@ref), [`stack`](@ref).
 
 # Examples
 ```jldoctest
-julia> xs = [[1, 2], [3, 4], [5, 6]]
-3-element Array{Array{Int64,1},1}:
- [1, 2]
- [3, 4]
- [5, 6]
-
-julia> Flux.unsqueeze(xs, 1)
-1×3 Array{Array{Int64,1},2}:
- [1, 2]  [3, 4]  [5, 6]
-
 julia> Flux.unsqueeze([1 2; 3 4], 2)
 2×1×2 Array{Int64,3}:
 [:, :, 1] =
@@ -265,9 +257,39 @@ julia> Flux.unsqueeze([1 2; 3 4], 2)
 [:, :, 2] =
  2
  4
+
+julia> xs = [[1, 2], [3, 4], [5, 6]]
+3-element Array{Array{Int64,1},1}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+
+julia> Flux.unsqueeze(xs, 1)
+1×3 Array{Array{Int64,1},2}:
+ [1, 2]  [3, 4]  [5, 6]
 ```
 """
-unsqueeze(xs, dim) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
+unsqueeze(xs::AbstractArray, dim::Integer) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
+
+"""
+    unsqueeze(dim)
+
+Returns a function which, acting on an array, inserts a dimension of size 1 at `dim`.
+
+# Examples
+```jldoctest
+julia> rand(21, 22, 23) |> Flux.unsqueeze(2) |> size
+(21, 1, 22, 23)
+
+julia> m = Chain(Flux.unsqueeze(3), Flux.unsqueeze(4), Conv((3,3), 1=>7, pad=SamePad()));
+
+julia> rand(Float32, 10, 10) |> m |> size
+(10, 10, 7, 1)
+```
+"""
+unsqueeze(dim::Integer) = Base.Fix2(unsqueeze, dim)
+
+Base.show_function(io::IO, u::Base.Fix2{typeof(unsqueeze)}, ::Bool) = print(io, "unsqueeze(", u.x, ")")
 
 """
     stack(xs, dim)
