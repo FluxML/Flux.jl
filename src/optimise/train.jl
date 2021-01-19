@@ -1,5 +1,5 @@
 using Juno
-import Zygote: Params, gradient
+import Zygote: Params, gradient, pullback
 
 """
     update!(x, x̄)
@@ -77,6 +77,8 @@ end
 batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
+train_prehook(args...) = true
+
 """
     train!(loss, params, data, opt; cb)
 
@@ -94,16 +96,18 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> ())
+function train!(loss, ps, data, opt; cb = (x...) -> (), prehooks = (x...) -> true)
   ps = Params(ps)
   cb = runall(cb)
+  train_prehooks = runall(prehooks)
   @progress for d in data
     try
-      gs = gradient(ps) do
+      l, back = pullback(ps) do
         loss(batchmemaybe(d)...)
       end
-      update!(opt, ps, gs)
-      cb()
+      gs = back(l)
+      all(train_prehooks(l, ps, gs, d, opt)) && update!(opt, ps, gs)
+      cb(l, ps, gs, d, opt)
     catch ex
       if ex isa StopException
         break
