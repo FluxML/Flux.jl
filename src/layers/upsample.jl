@@ -1,12 +1,14 @@
 """
-    Upsample(; scale, mode)
+  Upsample(scale; mode=:nearest)  
+  Upsample(; scale, mode=:nearest)
 
-An upsampling layer. `scale` is an integer or a tuple of integerers 
+An upsampling layer. `scale` is a number or a tuple of numbers 
 representing  the output rescaling factor along each spatial dimension.
-The only currently supported upsampling `mode` is 
-`:bilinear`.
+Currently supported upsampling `mode`s are:
+  - `:nearest`
+  - `:bilinear`
 
-See [`NNlib.upsample_bilinear`](@ref).
+See [`NNlib.upsample_nearest`](@ref), [`NNlib.upsample_bilinear`](@ref).
 
 # Examples
 
@@ -25,15 +27,23 @@ struct Upsample{Mode,T}
   scale::T
 end
 
-function Upsample(; scale::Union{Int, NTuple{N,Int}}, mode::Symbol) where N
-  mode in [:bilinear] || 
-    throw(ArgumentError("only `:bilinear` upsampling is currently supported"))
-  scale isa Int  || N == 2 ||
-    throw(ArgumentError("only two-dimensional upsampling  is supported"))
+Upsample(; scale, mode::Symbol=:nearest) = Upsample(scale; mode)
+
+function Upsample(scale; mode::Symbol=:nearest)
+  mode in [:nearest, :bilinear] || 
+    throw(ArgumentError("`:$mode` mode is not supported."))
   return Upsample{mode, typeof(scale)}(scale)
 end
 
-(m::Upsample{:bilinear})(x) = NNlib.upsample_bilinear(x, m.scale isa Tuple ? m.scale : (m.scale, m.scale))
+(m::Upsample{:nearest,<:Number})(x::AbstractArray{T,N}) where {T,N} =
+  NNlib.upsample_nearest(x, ntuple(_ -> m.scale, N-2))
+(m::Upsample{:nearest,<:Tuple})(x::AbstractArray) =
+  NNlib.upsample_nearest(x, m.scale)
+
+(m::Upsample{:bilinear,<:Number})(x::AbstractArray{T,N}) where {T,N} =
+  NNlib.upsample_bilinear(x, ntuple(_ -> m.scale, N-2))
+(m::Upsample{:bilinear,<:Tuple})(x::AbstractArray) =
+  NNlib.upsample_bilinear(x, m.scale)
 
 function Base.show(io::IO, u::Upsample{mode}) where {mode}
   print(io, "Upsample(scale=", u.scale)
