@@ -31,7 +31,7 @@ Upsample(; scale, mode::Symbol=:nearest) = Upsample(scale; mode)
 
 function Upsample(scale; mode::Symbol=:nearest)
   mode in [:nearest, :bilinear] || 
-    throw(ArgumentError("`:$mode` mode is not supported."))
+    throw(ArgumentError("mode=:$mode is not supported, allowed values are :nearest, :bilinear"))
   return Upsample{mode, typeof(scale)}(scale)
 end
 

@@ -169,3 +169,26 @@ end
   gs = gradient(() -> sum(l(ip)), Flux.params(l))
   @test l.b ∉ gs.params 
 end
+
+@testset "upsample bilinear" begin
+  m = Upsample(3, mode=:bilinear)
+  x = rand(Float32, 3, 4, 2, 3)
+  gy = m(x |> gpu)
+  @test gy isa CuArray{Float32, 4}
+  @test collect(gy) ≈ m(x)
+end
+
+@testset "upsample nearest" begin
+  x = rand(Float32, 3, 4, 2, 3)
+  gy = m(x |> gpu)
+  @test gy isa CuArray{Float32, 4}
+  @test collect(gy) ≈ m(x)
+end
+
+@testset "PixelShuffle" begin
+  m = PixelShuffle(3)
+  x = rand(Float32, 3, 4, 18, 3)
+  gy = m(x |> gpu)
+  @test gy isa CuArray{Float32, 4}
+  @test collect(gy) ≈ m(x)
+end

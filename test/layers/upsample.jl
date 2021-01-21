@@ -13,6 +13,12 @@
 end
 
 @testset "upsample nearest" begin
+  x = rand(Float32, 3, 2, 3)
+  m = Upsample(2, mode=:nearest)
+  y = m(x)
+  @test y isa Array{Float32, 3} 
+  @test size(y) == (6, 2, 3)
+
   x = rand(Float32, 3, 4, 2, 3)
   m = Upsample(scale=(2, 3), mode=:nearest)
   y = m(x)
@@ -24,12 +30,6 @@ end
   y = m(x)
   @test y isa Array{Float32, 4} 
   @test size(y) == (6, 8, 2, 3)
-
-  x = rand(Float32, 3, 2, 3)
-  m = Upsample(2, mode=:nearest)
-  y = m(x)
-  @test y isa Array{Float32, 3} 
-  @test size(y) == (6, 2, 3)
 end
 
 @testset "PixelShuffle" begin
