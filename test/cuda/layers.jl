@@ -26,7 +26,7 @@ function gradtest(name::String, layers::Vector, x_cpu=nothing, args...; test_cpu
   isnothing(x_cpu) && error("Missing input to test the layers against.")
   @testset "$name GPU grad tests" begin
     for layer in layers
-      @testset "$layer GPU grad test" begin
+      @testset "$layer Layer GPU grad test" begin
 
         # compute output and grad of parameters
         l_cpu = layer(args...)
@@ -67,29 +67,28 @@ function gradtest(name::String, layers::Vector, x_cpu=nothing, args...; test_cpu
 end
 
 # Just to give testset in gradtest meaningful labels
-ConvNoBias(args...) = Conv(args...; bias=false)
-ConvTransposeNoBias(args...) = ConvTranspose(args...; bias=false)
-CrossCorNoBias(args...) = CrossCor(args...; bias=false)
-DepthwiseConvNoBias(args...) = DepthwiseConv(args...;bias=false)
+ConvNoBias(args...) = Conv(args...; bias = false)
+ConvTransposeNoBias(args...) = ConvTranspose(args...; bias = false)
+CrossCorNoBias(args...) = CrossCor(args...; bias = false)
+DepthwiseConvNoBias(args...) = DepthwiseConv(args...; bias = false)
 
 for act in ACTIVATIONS
   r = rand(Float32, 28, 28, 1, 1)
-  conv_layers = [Conv, ConvNoBias, ConvTranspose, ConvTransposeNoBias, CrossCor, CrossCorNoBias, DepthwiseConv, DepthwiseConvNoBias]
-  gradtest("Conv", conv_layers, r, (2,2), 1=>3, act)
-  
-  layer_norm = [LayerNorm]
-  gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu=false) #TODO fix errors
-  gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
+  conv_layers = [Conv, ConvNoBias,
+                 ConvTranspose, ConvTransposeNoBias,
+                 CrossCor, CrossCorNoBias,
+                 DepthwiseConv, DepthwiseConvNoBias]
+  gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act)
   
   batch_norm = [BatchNorm]
-  gradtest("BatchNorm 1", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu=false) #TODO fix errors
-  gradtest("BatchNorm 2", batch_norm, rand(Float32, 5,4), 5, act)
+  gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu=false) #TODO fix errors
+  gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act)
   
   instancenorm = [InstanceNorm]
-  gradtest("InstanceNorm", instancenorm, r, 1, act)
+  gradtest("InstanceNorm with $act", instancenorm, r, 1, act)
   
   groupnorm = [GroupNorm]
-  gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act)
+  gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act)
 end
 
 r = rand(Float32, 28, 28, 1, 1)
@@ -103,8 +102,9 @@ gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 dropout_layers = [Dropout, AlphaDropout]
 gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
 
-dropout_layers = [Dropout, AlphaDropout]
-gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
+layer_norm = [LayerNorm]
+gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu=false) #TODO fix errors
+gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
 
 @testset "function layers" begin
   x = rand(3,3)
