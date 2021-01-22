@@ -13,14 +13,15 @@ end
 # TODO: These layers get into scalar indexing
 # `AlphaDropout` throws a compilation error on GPUs,
 # whereas, the rest are scalar indexing issues.
-const BROKEN_LAYERS = Union{DepthwiseConv,
+const BROKEN_LAYERS = [DepthwiseConv,
                             AlphaDropout,
                             InstanceNorm,
-                            GroupNorm}
+                            GroupNorm,
+                            AdaptiveMaxPool]
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
-                     elu, selu] 
+                     elu, selu]
 
 function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true)
   isnothing(x_cpu) && error("Missing input to test the layers against.")
@@ -38,7 +39,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
         l_gpu = l_cpu |> gpu
         ps_gpu = Flux.params(l_gpu)
 
-        if l_gpu isa BROKEN_LAYERS
+        if l_gpu in BROKEN_LAYERS
           @test_broken gradient(() -> sum(l_gpu(x_gpu)), ps_gpu) isa Flux.Zygote.Grads
         else
           y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
@@ -82,7 +83,7 @@ for act in ACTIVATIONS
   
   batch_norm = [BatchNorm]
   gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
-  gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act)
+  gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = false)
   
   instancenorm = [InstanceNorm]
   gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act)
