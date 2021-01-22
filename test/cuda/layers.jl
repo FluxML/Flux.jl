@@ -82,23 +82,23 @@ for act in ACTIVATIONS
   gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
   
   batch_norm = [BatchNorm]
-  gradtest("BatchNorm 1", batch_norm, rand(Float32, 28,28,3,4), 3, test_cpu=false) #TODO fix errors
-  gradtest("BatchNorm 2", batch_norm, rand(Float32, 5,4), 5)
+  gradtest("BatchNorm 1", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu=false) #TODO fix errors
+  gradtest("BatchNorm 2", batch_norm, rand(Float32, 5,4), 5, act)
   
   instancenorm = [InstanceNorm]
-  gradtest("InstanceNorm", instancenorm, r, 1)
+  gradtest("InstanceNorm", instancenorm, r, 1, act)
   
   groupnorm = [GroupNorm]
-  gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1)
+  gradtest("GroupNorm", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act)
 end
 
 r = rand(Float32, 28, 28, 1, 1)
 
 pooling_layers = [MaxPool, MeanPool]
-gradtest("Pooling", pooling_layers, r, (2,2), act)
+gradtest("Pooling", pooling_layers, r, (2,2))
 
 adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
-gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7), act)
+gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 
 dropout_layers = [Dropout, AlphaDropout]
 gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
