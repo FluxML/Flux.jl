@@ -22,7 +22,7 @@ const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
                      elu, selu] 
 
-function gpu_gradtest(name::String, layers::Vector, x_cpu=nothing, args...; test_cpu=true)
+function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true)
   isnothing(x_cpu) && error("Missing input to test the layers against.")
   @testset "$name GPU grad tests" begin
     for layer in layers
@@ -50,14 +50,14 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu=nothing, args...; test
 
           # test 
           if test_cpu
-            @test y_gpu ≈ y_cpu   rtol=1e-4 atol=1e-4
-            @test Array(xg_gpu) ≈ xg_cpu   rtol=1e-4 atol=1e-4
+            @test y_gpu ≈ y_cpu rtol=1e-4 atol=1e-4
+            @test Array(xg_gpu) ≈ xg_cpu rtol=1e-4 atol=1e-4
           end
           @test gs_gpu isa Flux.Zygote.Grads
           for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
             @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
             if test_cpu
-              @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu]   rtol=1e-4 atol=1e-4
+              @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1e-4 atol=1e-4
             end
           end
         end
@@ -78,10 +78,10 @@ for act in ACTIVATIONS
                  ConvTranspose, ConvTransposeNoBias,
                  CrossCor, CrossCorNoBias,
                  DepthwiseConv, DepthwiseConvNoBias]
-  gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act)
+  gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
   
   batch_norm = [BatchNorm]
-  gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu=false) #TODO fix errors
+  gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
   gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act)
   
   instancenorm = [InstanceNorm]
@@ -100,10 +100,10 @@ adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
 gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 
 dropout_layers = [Dropout, AlphaDropout]
-gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
+gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu = false) # dropout is not deterministic
 
 layer_norm = [LayerNorm]
-gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu=false) #TODO fix errors
+gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu = false) #TODO fix errors
 gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
 
 @testset "function layers" begin
@@ -132,5 +132,5 @@ end
 
   @test sum(l(ip)) ≈ 0.f0  
   gs = gradient(() -> sum(l(ip)), Flux.params(l))
-  @test l.b ∉ gs.params 
+  @test l.b ∉ gs.params
 end
