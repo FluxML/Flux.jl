@@ -77,15 +77,6 @@ for act in ACTIVATIONS
   conv_layers = [Conv, ConvNoBias, ConvTranspose, ConvTransposeNoBias, CrossCor, CrossCorNoBias, DepthwiseConv, DepthwiseConvNoBias]
   gradtest("Conv", conv_layers, r, (2,2), 1=>3, act)
   
-  pooling_layers = [MaxPool, MeanPool]
-  gradtest("Pooling", pooling_layers, r, (2,2), act)
-  
-  adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
-  gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7), act)
-
-  dropout_layers = [Dropout, AlphaDropout]
-  gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
-  
   layer_norm = [LayerNorm]
   gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu=false) #TODO fix errors
   gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
@@ -102,6 +93,16 @@ for act in ACTIVATIONS
 end
 
 r = rand(Float32, 28, 28, 1, 1)
+
+pooling_layers = [MaxPool, MeanPool]
+gradtest("Pooling", pooling_layers, r, (2,2), act)
+
+adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
+gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7), act)
+
+dropout_layers = [Dropout, AlphaDropout]
+gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
+
 dropout_layers = [Dropout, AlphaDropout]
 gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu=false) # dropout is not deterministic
 
