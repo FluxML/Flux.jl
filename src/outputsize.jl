@@ -79,6 +79,8 @@ julia> outputsize(m, (10, 10, 3, 64))
 (6, 6, 32, 64)
 
 julia> try outputsize(m, (10, 10, 7, 64)) catch e println(e) end
+┌ Error: layer Conv((3, 3), 3=>16), index 1 in Chain, gave an error with input of size (10, 10, 7, 64)
+└ @ Flux ~/.julia/dev/Flux/src/outputsize.jl:114
 DimensionMismatch("Input channels must match! (7 vs. 3)")
 
 julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1))
@@ -103,6 +105,20 @@ end
 nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s...,1)) : fill(nil, s)
 nil_input(pad::Bool, multi::Tuple{Vararg{Integer}}...) = nil_input.(pad, multi)
 nil_input(pad::Bool, tup::Tuple{Vararg{Tuple}}) = nil_input(pad, tup...)
+
+function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch=false)
+  x = nil_input(padbatch, inputsizes...)
+  for (i,lay) in enumerate(m.layers)
+    try
+      x = lay(x)
+    catch err
+      str = x isa AbstractArray ? "with input of size $(size(x))" : ""
+      @error "layer $lay, index $i in Chain, gave an error $str"
+      rethrow(err)
+    end
+  end
+  return size(x)
+end
 
 """
     outputsize(m, x_size, y_size, ...; padbatch=false)
