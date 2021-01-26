@@ -1,5 +1,5 @@
 using Juno
-import Zygote: Params, gradient
+import Zygote: Params, pullback, gradient, sensitivity
 
 # """
 #     update!(x, x̄)
@@ -33,7 +33,7 @@ import Zygote: Params, gradient
 # Callback niceties
 call(f, xs...) = f(xs...)
 runall(f) = f
-runall(fs::AbstractVector) = () -> foreach(call, fs)
+runall(fs::AbstractVector) = (x...) -> foreach(f -> call(f, x...), fs)
 
 struct SkipException <: Exception end
 
@@ -94,30 +94,30 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> ())
-  ps = Params(ps)
-  cb = runall(cb)
-  st = Optimisers.init(opt, ps)
-  @progress for d in data
-    try
-      gs = gradient(ps) do
-        loss(batchmemaybe(d)...)
-      end
-      update!(opt, ps, gs)
-      cb()
-    catch ex
-      if ex isa StopException
-        break
-      elseif ex isa SkipException
-        continue
-      else
-        rethrow(ex)
-      end
-    end
-  end
-end
+# function train!(loss, ps, data, opt; cb = () -> ())
+#   ps = Params(ps)
+#   cb = runall(cb)
+#   st = Optimisers.init(opt, ps)
+#   @progress for d in data
+#     try
+#       gs = gradient(ps) do
+#         loss(batchmemaybe(d)...)
+#       end
+#       update!(opt, ps, gs)
+#       cb()
+#     catch ex
+#       if ex isa StopException
+#         break
+#       elseif ex isa SkipException
+#         continue
+#       else
+#         rethrow(ex)
+#       end
+#     end
+#   end
+# end
 
-function train!(m, loss, data, opt; cb = (x...) -> ()
+function train(m, loss, data, opt; cb = (x...) -> (),
                                     prehook = (x...) -> (),
                                     posthook = (x...) -> ())
   st = [Optimisers.init(opt, p) for p in Flux.params(m)]
@@ -138,7 +138,7 @@ function train!(m, loss, data, opt; cb = (x...) -> ()
         loss(m, batchmemaybe(d)...)
       end
       prehook(ŷ)
-      m̂, = back(Zygote.sensitivity(ŷ))
+      m̂, = back(sensitivity(ŷ))
       posthook(ŷ, m, m̂)
       m, st = opt(m, m̂, st)
       cb(ŷ, m, m̂)
@@ -152,6 +152,8 @@ function train!(m, loss, data, opt; cb = (x...) -> ()
       end
     end
   end
+
+  m
 end
 
 """
@@ -176,10 +178,10 @@ macro epochs(n, ex)
     end)
 end
 
-macro epochs(n, f, ex)
-  :(@progress for i = 1:$(esc(n))
-      @info "Epoch $i"
-      $(esc(ex))
-      $(esc(f($i)))
-    end)
-end
+# macro epochs(n, f, ex)
+#   :(@progress for i = 1:$(esc(n))
+#       @info "Epoch $i"
+#       $(esc(ex))
+#       $(esc(f($i)))
+#     end)
+# end
