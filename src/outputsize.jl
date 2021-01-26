@@ -52,11 +52,12 @@ using .NilNumber: Nil, nil
 
 Calculate the size of the output from model `m`, given the size of the input.
 Obeys `outputsize(m, size(x)) == size(m(x))` for valid input `x`.
+
 Keyword `padbatch=true` is equivalent to using `(inputsize..., 1)`, and
 returns the final size including this extra batch dimension.
 
 This should be faster than calling `size(m(x))`. It uses a trivial number type,
-and thus should work out of the box for custom layers.
+which should work out of the box for custom layers.
 
 If `m` is a `Tuple` or `Vector`, its elements are applied in sequence, like `Chain(m...)`.
 
@@ -83,7 +84,7 @@ julia> try outputsize(m, (10, 10, 7, 64)) catch e println(e) end
 └ @ Flux ~/.julia/dev/Flux/src/outputsize.jl:114
 DimensionMismatch("Input channels must match! (7 vs. 3)")
 
-julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1))
+julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1)) # Vector of layers becomes a Chain
 (2, 1)
 
 julia> using LinearAlgebra: norm
@@ -145,7 +146,7 @@ true
 ```
 Notice that `Chain` only accepts multiple arrays as a tuple,
 while `Parallel` also accepts them as multiple arguments;
-`outsize` always supplies the tuple.
+`outputsize` always supplies the tuple.
 """
 outputsize
 
