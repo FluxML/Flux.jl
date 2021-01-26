@@ -86,16 +86,6 @@ DimensionMismatch("Input channels must match! (7 vs. 3)")
 
 julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1)) # Vector of layers becomes a Chain
 (2, 1)
-
-julia> using LinearAlgebra: norm
-
-julia> f(x) = x ./ norm.(eachcol(x));
-
-julia> outputsize(f, (10, 1)) # manually specify batch size as 1
-(10, 1)
-
-julia> outputsize(f, (10,); padbatch=true) # no need to mention batch size
-(10, 1)
 ```
 """
 function outputsize(m, inputsizes::Tuple...; padbatch=false)
