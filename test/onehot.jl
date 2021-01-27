@@ -35,7 +35,7 @@ end
 end
 
 @testset "OneHotArray" begin
-  using Flux: OneHotArray, OneHotVector, OneHotMatrix
+  using Flux: OneHotArray, OneHotVector, OneHotMatrix, OneHotLike
   
   ov = OneHotVector(rand(1:10), 10)
   om = OneHotMatrix(rand(1:10, 5), 10)
@@ -89,12 +89,12 @@ end
 
   @testset "Base.reshape" begin
     # reshape test
-    @test reshape(oa, 10, 25) isa OneHotArray
-    @test reshape(oa, 10, :) isa OneHotArray
-    @test reshape(oa, :, 25) isa OneHotArray
-    @test reshape(oa, 50, :) isa Array
-    @test reshape(oa, 5, 10, 5) isa Array
-    @test reshape(oa, (10, 25)) isa OneHotArray
+    @test reshape(oa, 10, 25) isa OneHotLike
+    @test reshape(oa, 10, :) isa OneHotLike
+    @test reshape(oa, :, 25) isa OneHotLike
+    @test reshape(oa, 50, :) isa Base.ReshapedArray{<:Any, <:Any, <:Array}
+    @test reshape(oa, 5, 10, 5) isa Base.ReshapedArray{<:Any, <:Any, <:Array}
+    @test reshape(oa, (10, 25)) isa OneHotLike
   end
 
   @testset "Base.argmax" begin
