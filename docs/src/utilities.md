@@ -84,7 +84,7 @@ end
 ```
 
 ```@meta
-DocTestFilters = [r"\\@ Flux .+\n"]
+DocTestFilters = [r"@ Flux .+\n"]
 ```
 ```@docs
 Flux.outputsize
