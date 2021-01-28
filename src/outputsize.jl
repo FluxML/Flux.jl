@@ -62,7 +62,7 @@ which should work out of the box for custom layers.
 If `m` is a `Tuple` or `Vector`, its elements are applied in sequence, like `Chain(m...)`.
 
 # Examples
-```jldoctest
+```julia-repl
 julia> using Flux: outputsize
 
 julia> outputsize(Dense(10, 4), (10,); padbatch=true)
@@ -81,7 +81,8 @@ julia> outputsize(m, (10, 10, 3, 64))
 
 julia> try outputsize(m, (10, 10, 7, 64)) catch e println(e) end
 ┌ Error: layer Conv((3, 3), 3=>16), index 1 in Chain, gave an error with input of size (10, 10, 7, 64)
-[...]
+└ @ Flux ~/.julia/dev/Flux/src/outputsize.jl:114
+DimensionMismatch("Input channels must match! (7 vs. 3)")
 
 julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1)) # Vector of layers becomes a Chain
 (2, 1)
