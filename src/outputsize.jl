@@ -5,7 +5,7 @@ import Random
 
 # Doctests should ignore line numbers from @info etc:
 ```@meta
-DocTestFilters = [r"└.+\n"]
+DocTestFilters = [r"@ Flux .+\n"]
 ```
 
 """
