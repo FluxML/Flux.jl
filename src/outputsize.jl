@@ -3,9 +3,9 @@ module NilNumber
 using NNlib
 import Random
 
-# Doctests should ignore line numbers from @info etc:
+# Doctests should ignore line numbers from @info etc, in this file:
 ```@meta
-DocTestFilters = [r"@ Flux .+\n"]
+DocTestFilters = [r"\@ Flux .+\n"]
 ```
 
 """
@@ -173,3 +173,7 @@ for (fn, Dims) in ((:conv, DenseConvDims), (:depthwiseconv, DepthwiseConvDims))
     end
   end
 end
+
+```@meta
+DocTestFilters = nothing
+```
