@@ -83,14 +83,8 @@ function make_model(width, height, inchannels, nclasses;
 end
 ```
 
-```@meta
-DocTestFilters = [r"@ Flux .+\n"]
-```
 ```@docs
 Flux.outputsize
-```
-```@meta
-DocTestFilters = nothing
 ```
 
 ## Model Abstraction
