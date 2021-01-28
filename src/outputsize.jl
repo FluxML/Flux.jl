@@ -3,6 +3,11 @@ module NilNumber
 using NNlib
 import Random
 
+# Doctests should ignore line numbers from @info etc:
+```@meta
+DocTestFilters = r"└.+\n"
+```
+
 """
     Nil <: Number
 
