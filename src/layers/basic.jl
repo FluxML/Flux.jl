@@ -121,9 +121,8 @@ end
 
 function (a::Dense)(x::AbstractArray)
   W, b, σ = a.W, a.b, a.σ
-  # reshape to handle dims > 1 as batch dimensions
   sz = size(x)
-  x = reshape(x, sz[1], :) 
+  x = reshape(x, sz[1], :) # reshape to handle dims > 1 as batch dimensions 
   x = σ.(W*x .+ b)
   return reshape(x, :, sz[2:end]...)
 end
@@ -133,14 +132,6 @@ function Base.show(io::IO, l::Dense)
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
-
-# Try to avoid hitting generic matmul in some simple cases
-# Base's matmul is so slow that it's worth the extra conversion to hit BLAS
-(a::Dense{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
-
-(a::Dense{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
 
 """
     Diagonal(in::Integer)
@@ -327,5 +318,53 @@ end
 function Base.show(io::IO, l::Bilinear)
   print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
   l.σ == identity || print(io, ", ", l.σ)
+  print(io, ")")
+end
+
+"""
+Parallel(connection, layers...)
+
+Create a 'Parallel' layer that passes an input array to each path in
+`layers`, reducing the output with `connection`.
+
+Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
+If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+
+# Examples
+
+```jldoctest
+julia> model = Chain(Dense(3, 5),
+                     Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
+                     Dense(8, 17));
+
+julia> size(model(rand(3)))
+(17,)
+
+julia> model = Parallel(+, Dense(10, 2), Dense(5, 2))
+Parallel(+, Dense(10, 2), Dense(5, 2))
+
+julia> size(model(rand(10), rand(5)))
+(2,)
+```
+"""
+struct Parallel{F, T}
+  connection::F
+  layers::T
+end
+
+Parallel(connection, layers...) = Parallel(connection, layers)
+
+@functor Parallel
+
+(m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
+(m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
+(m::Parallel)(xs::Tuple) = m(xs...)
+
+Base.getindex(m::Parallel, i::Integer) = m.layers[i]
+Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+
+function Base.show(io::IO, m::Parallel)
+  print(io, "Parallel(", m.connection, ", ")
+  join(io, m.layers, ", ")
   print(io, ")")
 end

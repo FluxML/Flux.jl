@@ -56,7 +56,9 @@ reset!(m) = foreach(reset!, functor(m)[1])
 # TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
   if sym === :init
-    @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    Zygote.ignore() do
+      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    end
     return getfield(m.cell, :state0)
   else
     return getfield(m, sym)
@@ -104,7 +106,9 @@ Recur(m::RNNCell) = Recur(m, m.state0)
 # TODO remove in v0.13
 function Base.getproperty(m::RNNCell, sym::Symbol)
   if sym === :h
-    @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    Zygote.ignore() do
+      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    end
     return getfield(m, :state0)
   else
     return getfield(m, sym)
@@ -163,11 +167,15 @@ Recur(m::LSTMCell) = Recur(m, m.state0)
 # TODO remove in v0.13
 function Base.getproperty(m::LSTMCell, sym::Symbol)
   if sym === :h
-    @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    Zygote.ignore() do
+      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    end
     return getfield(m, :state0)[1]
   elseif sym === :c
+    Zygote.ignore() do
       @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
-      return getfield(m, :state0)[2]
+    end  
+    return getfield(m, :state0)[2]
   else
     return getfield(m, sym)
   end
@@ -215,7 +223,9 @@ Recur(m::GRUCell) = Recur(m, m.state0)
 # TODO remove in v0.13
 function Base.getproperty(m::GRUCell, sym::Symbol)
   if sym === :h
-    @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    Zygote.ignore() do
+      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    end
     return getfield(m, :state0)
   else
     return getfield(m, sym)
