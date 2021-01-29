@@ -1,12 +1,20 @@
 module Optimise
 
 using LinearAlgebra
+using Reexport
 
-export train!, update!,
-	Descent, ADAM, Momentum, Nesterov, RMSProp,
-	ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW,RADAM, OADAM, AdaBelief,
-	InvDecay, ExpDecay, WeightDecay, stop, skip, Optimiser,
-	ClipValue, ClipNorm
+@reexport using Optimisers
+
+export train!, stop, skip, Schedule
+	# ClipValue, ClipNorm,
+
+module Schedule
+	using ..Optimise
+	using ParameterSchedulers
+	import ParameterSchedulers: AbstractSchedule
+
+	include("schedulers.jl")
+end
 
 include("optimisers.jl")
 include("train.jl")

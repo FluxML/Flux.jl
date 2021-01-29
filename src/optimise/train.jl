@@ -1,34 +1,5 @@
 using Juno
-import Zygote: Params, gradient
-
-"""
-    update!(x, x̄)
-
-Update the array `x` according to `x .-= x̄`.
-"""
-function update!(x::AbstractArray, x̄)
-  x .-= x̄
-end
-
-"""
-    update!(opt, p, g)
-    update!(opt, ps::Params, gs)
-
-Perform an update step of the parameters `ps` (or the single parameter `p`)
-according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
-
-As a result, the parameters are mutated and the optimizer's internal state may change.
-"""
-function update!(opt, x, x̄)
-  x .-= apply!(opt, x, x̄)
-end
-
-function update!(opt, xs::Params, gs)
-  for x in xs
-    gs[x] == nothing && continue
-    update!(opt, x, gs[x])
-  end
-end
+import Zygote: gradient
 
 # Callback niceties
 call(f, xs...) = f(xs...)
@@ -97,12 +68,13 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, ps, data, opt; cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
+  st = init(opt, ps)
   @progress for d in data
     try
       gs = gradient(ps) do
         loss(batchmemaybe(d)...)
       end
-      update!(opt, ps, gs)
+      ps, st = update!(opt, ps, gs, st)
       cb()
     catch ex
       if ex isa StopException

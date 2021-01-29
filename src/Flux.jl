@@ -26,7 +26,7 @@ using .Optimise: skip
 export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
   ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
-  WeightDecay, ClipValue, ClipNorm
+  WeightDecay#, ClipValue, ClipNorm
 
 
 using CUDA

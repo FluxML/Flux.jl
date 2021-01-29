@@ -256,10 +256,25 @@ git-tree-sha1 = "9db77584158d0ab52307f8c04f8e7c08ca76b5b3"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.3+4"
 
+[[Optimisers]]
+deps = ["Functors", "Random", "Requires", "Statistics"]
+git-tree-sha1 = "87cb22d07ba9b96bab0b74f135b5a8aa127381f1"
+repo-rev = "darsnack/initial-impl"
+repo-url = "https://github.com/darsnack/Optimisers.jl"
+uuid = "3bd65402-5787-11e9-1adc-39752487f4e2"
+version = "0.1.0"
+
 [[OrderedCollections]]
 git-tree-sha1 = "cf59cfed2e2c12e8a2ff0a4f1e9b2cd8650da6db"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.3.2"
+
+[[ParameterSchedulers]]
+git-tree-sha1 = "ab80539e1061e586a49300813039f5c11d3ba8e8"
+repo-rev = "darsnack/rm-optim"
+repo-url = "https://github.com/darsnack/ParameterSchedulers.jl"
+uuid = "d7d3b36b-41b8-4d0d-a2bf-768c6151755e"
+version = "0.2.0"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]

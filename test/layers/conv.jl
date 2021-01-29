@@ -56,12 +56,13 @@ end
   ip = zeros(Float32, 28,28,1,1)
   op = zeros(Float32, 27,27,3,1) .+ 2.f0
   opt = Descent()
+  st = init(opt, params(bias))
 
   for _ = 1:10^3
     gs = gradient(params(bias)) do
       Flux.Losses.mse(bias(ip), op)
     end
-    Flux.Optimise.update!(opt, params(bias), gs)
+    _, st = Flux.Optimise.update!(opt, params(bias), gs, st)
   end
 
   @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
