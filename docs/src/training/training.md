@@ -7,13 +7,36 @@ To actually train a model we need four things:
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
-With these we can call `train!`:
+Training a model is typically an iterative process, where we go over the data set,
+calculate the objective function over the datapoints, and optimise that.
+This can be visualised in the form of a simple loop.
+
+```julia
+for d in datapoints
+
+  # `d` should produce a collection of arguments
+  # to the loss function
+
+  # Calculate the gradients of the parameters
+  # with respect to the loss function
+  grads = Flux.gradient(parameters) do
+    loss(d...)
+  end
+
+  # Update the parameters based on the chosen
+  # optimiser (opt)
+  Flux.Optimise.update!(opt, parameters, grads)
+end
+```
+
+To make it easy, Flux defines `train!`:
 
 ```@docs
 Flux.Optimise.train!
 ```
 
-There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
+There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo), and
+more information can be found on [Custom Training Loops](../models/advanced.md).
 
 ## Loss Functions
 
