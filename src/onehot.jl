@@ -62,7 +62,7 @@ Base.BroadcastStyle(::Type{<:OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}}) wh
 Base.argmax(x::OneHotLike; dims = Colon()) =
   (_isonehot(x) && dims == 1) ?
     reshape(CartesianIndex.(_indices(x), CartesianIndices(_indices(x))), 1, size(_indices(x))...) :
-    argmax(convert(_onehot_bool_type(x), x); dims = dims)
+    invoke(argmax, Tuple{AbstractArray}, x; dims = dims)
 
 """
     onehot(l, labels[, unk])
@@ -153,6 +153,7 @@ end
 @nograd OneHotArray, onecold, onehot, onehotbatch
 
 function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
+  _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
   return A[:, onecold(B)]
 end
