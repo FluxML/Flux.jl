@@ -92,9 +92,21 @@ end
     @test reshape(oa, 10, 25) isa OneHotLike
     @test reshape(oa, 10, :) isa OneHotLike
     @test reshape(oa, :, 25) isa OneHotLike
-    @test reshape(oa, 50, :) isa Base.ReshapedArray{<:Any, <:Any, <:Array}
-    @test reshape(oa, 5, 10, 5) isa Base.ReshapedArray{<:Any, <:Any, <:Array}
+    @test reshape(oa, 50, :) isa OneHotLike
+    @test reshape(oa, 5, 10, 5) isa OneHotLike
     @test reshape(oa, (10, 25)) isa OneHotLike
+
+    @testset "w/ cat" begin
+      r = reshape(oa, 10, :)
+      @test hcat(r, r) isa OneHotArray
+      @test vcat(r, r) isa Array{Bool}
+    end
+
+    @testset "w/ argmax" begin
+      r = reshape(oa, 10, :)
+      @test argmax(r) == argmax(OneHotMatrix(reshape(oa.indices, :), 10))
+      @test Flux._fast_argmax(r) == collect(reshape(oa.indices, :))
+    end
   end
 
   @testset "Base.argmax" begin

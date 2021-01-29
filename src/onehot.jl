@@ -22,16 +22,10 @@ OneHotMatrix(indices, L) = OneHotArray(indices, L)
 # e.g. argmax
 const OneHotLike{T, L, N, var"N+1", I} =
   Union{OneHotArray{T, L, N, var"N+1", I},
-        Base.ReshapedArray{Bool, var"N+1", <:OneHotArray{T, L}}}
+        Base.ReshapedArray{Bool, var"N+1", <:OneHotArray{T, L, <:Any, <:Any, I}}}
 
-# when reshaping a OneHotArray and first(dims) != L
-# convert the parent array to Array{Bool}
-# so that the ReshapedArray does not hit fast paths
-function Base.ReshapedArray(parent::OneHotArray{<:Any, L}, dims::NTuple{N,Int}, mi) where {L, N}
-  parent = (first(dims) != L) ? convert(_onehot_bool_type(parent), parent) : parent
-  
-  Base.ReshapedArray{Bool,N,typeof(parent),typeof(mi)}(parent, dims, mi)
-end
+_isonehot(x::OneHotArray) = true
+_isonehot(x::Base.ReshapedArray{<:Any, <:Any, <:OneHotArray{<:Any, L}}) where L = (size(x, 1) == L)
 
 Base.size(x::OneHotArray{<:Any, L}) where L = (Int(L), size(x.indices)...)
 
@@ -41,7 +35,7 @@ Base.getindex(x::OneHotVector, i::Integer) = _onehotindex(x.indices, i)
 Base.getindex(x::OneHotVector{T, L}, ::Colon) where {T, L} = x
 
 Base.getindex(x::OneHotArray, i::Integer, I...) = _onehotindex.(x.indices[I...], i)
-Base.getindex(x::OneHotLike{<:Any, L}, ::Colon, I...) where L = OneHotArray(_indices(x)[I...], L)
+Base.getindex(x::OneHotArray{<:Any, L}, ::Colon, I...) where L = OneHotArray(x.indices[I...], L)
 Base.getindex(x::OneHotArray{<:Any, <:Any, <:Any, N}, ::Vararg{Colon, N}) where N = x
 Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2:N]...]
 
@@ -49,7 +43,7 @@ _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, Abstrac
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
 
 function Base.cat(xs::OneHotLike{<:Any, L}...; dims::Int) where L
-  if isone(dims)
+  if isone(dims) || any(x -> !_isonehot(x), xs)
     return cat(map(x -> convert(_onehot_bool_type(x), x), xs)...; dims = dims)
   else
     return OneHotArray(cat(_indices.(xs)...; dims = dims - 1), L)
@@ -61,13 +55,14 @@ Base.vcat(xs::OneHotLike...) = cat(xs...; dims = 1)
 
 batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
 
-Adapt.adapt_structure(T, x::OneHotLike{<:Any, L}) where L = OneHotArray(adapt(T, _indices(x)), L)
+Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(adapt(T, _indices(x)), L)
 
-Base.BroadcastStyle(::Type{<:OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}}) where N = CUDA.CuArrayStyle{N}()
+Base.BroadcastStyle(::Type{<:OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}}) where N = CUDA.CuArrayStyle{N}()
 
 Base.argmax(x::OneHotLike; dims = Colon()) =
-  (dims == 1) ? reshape(CartesianIndex.(_indices(x), CartesianIndices(_indices(x))), 1, size(_indices(x))...) :
-                argmax(convert(_onehot_bool_type(x), x); dims = dims)
+  (_isonehot(x) && dims == 1) ?
+    reshape(CartesianIndex.(_indices(x), CartesianIndices(_indices(x))), 1, size(_indices(x))...) :
+    argmax(convert(_onehot_bool_type(x), x); dims = dims)
 
 """
     onehot(l, labels[, unk])
@@ -147,7 +142,13 @@ function onecold(y::AbstractArray, labels = 1:size(y, 1))
 end
 
 _fast_argmax(x::AbstractArray) = dropdims(argmax(x; dims = 1); dims = 1)
-_fast_argmax(x::OneHotLike) = _indices(x)
+function _fast_argmax(x::OneHotLike)
+  if _isonehot(x)
+    return _indices(x)
+  else
+    return _fast_argmax(convert(_onehot_bool_type(x), x))
+  end
+end
 
 @nograd OneHotArray, onecold, onehot, onehotbatch
 
