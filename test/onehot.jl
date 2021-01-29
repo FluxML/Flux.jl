@@ -35,7 +35,7 @@ end
 end
 
 @testset "OneHotArray" begin
-  using Flux: OneHotArray, OneHotVector, OneHotMatrix
+  using Flux: OneHotArray, OneHotVector, OneHotMatrix, OneHotLike
   
   ov = OneHotVector(rand(1:10), 10)
   om = OneHotMatrix(rand(1:10, 5), 10)
@@ -74,27 +74,39 @@ end
   @testset "Concatenating" begin
     # vector cat
     @test hcat(ov, ov) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
-    @test_throws ArgumentError vcat(ov, ov)
+    @test vcat(ov, ov) == vcat(collect(ov), collect(ov))
     @test cat(ov, ov; dims = 3) == OneHotArray(cat(ov.indices, ov.indices; dims = 2), 10)
 
     # matrix cat
     @test hcat(om, om) == OneHotMatrix(vcat(om.indices, om.indices), 10)
-    @test_throws ArgumentError vcat(om, om)
+    @test vcat(om, om) == vcat(collect(om), collect(om))
     @test cat(om, om; dims = 3) == OneHotArray(cat(om.indices, om.indices; dims = 2), 10)
 
     # array cat
     @test cat(oa, oa; dims = 3) == OneHotArray(cat(oa.indices, oa.indices; dims = 2), 10)
-    @test_throws ArgumentError cat(oa, oa; dims = 1)
+    @test cat(oa, oa; dims = 1) == cat(collect(oa), collect(oa); dims = 1)
   end
 
   @testset "Base.reshape" begin
     # reshape test
-    @test reshape(oa, 10, 25) isa OneHotArray
-    @test reshape(oa, 10, :) isa OneHotArray
-    @test reshape(oa, :, 25) isa OneHotArray
-    @test_throws ArgumentError reshape(oa, 50, :)
-    @test_throws ArgumentError reshape(oa, 5, 10, 5)
-    @test reshape(oa, (10, 25)) isa OneHotArray
+    @test reshape(oa, 10, 25) isa OneHotLike
+    @test reshape(oa, 10, :) isa OneHotLike
+    @test reshape(oa, :, 25) isa OneHotLike
+    @test reshape(oa, 50, :) isa OneHotLike
+    @test reshape(oa, 5, 10, 5) isa OneHotLike
+    @test reshape(oa, (10, 25)) isa OneHotLike
+
+    @testset "w/ cat" begin
+      r = reshape(oa, 10, :)
+      @test hcat(r, r) isa OneHotArray
+      @test vcat(r, r) isa Array{Bool}
+    end
+
+    @testset "w/ argmax" begin
+      r = reshape(oa, 10, :)
+      @test argmax(r) == argmax(OneHotMatrix(reshape(oa.indices, :), 10))
+      @test Flux._fast_argmax(r) == collect(reshape(oa.indices, :))
+    end
   end
 
   @testset "Base.argmax" begin
