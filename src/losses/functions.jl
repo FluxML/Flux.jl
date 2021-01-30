@@ -429,6 +429,23 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
     1 - num / den
 end
 
+"""
+    focal_loss(yhat, y; dims=1, agg=mean, gamma=2.0, eps = eps(eltype(yhat))
+
+         𝛄: modulating factor.
+
+Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+Extremely useful for classification when you have highly imbalanced classes. It down-weights
+well-classified examples and focuses on hard examples. Loss is much high for misclassified points as compared to well-classified points. Used in single-shot detectors.
+"""
+function focal_loss(ŷ, y; dims=1, agg=mean, 𝛄=2.0, eps = eps(eltype(ŷ)))
+    ŷ = ŷ .+ eps
+    p_t = [y==1 ? ŷ : 1-ŷ for (ŷ, y) in zip(ŷ, y)]
+    ce = -log.(p_t)
+    weight = (1 .- p_t) .^ 𝛄
+    loss = weight .* ce
+    agg(sum(loss, dims=dims))
+end
 
 ```@meta
 DocTestFilters = nothing
