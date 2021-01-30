@@ -205,5 +205,3 @@ end
     @test Flux.categorical_focal_loss(ŷ, y) ≈ 1.0668209889165343
     @test Flux.categorical_focal_loss(ŷ1, y1) ≈ 0.011366240888043638
 end
-
-
