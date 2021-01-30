@@ -175,15 +175,35 @@ end
   end
 end
 
-y = [0 1 1]
-ŷ = [0.1 0.7 0.9]
-y1 = [1 0
-      0 0
-      0 1]
-ŷ1 = [0.6 0.3
-      0.3 0.1
-      0.1 0.6]
-@testset "focal_loss" begin
-    @test Flux.focal_loss(ŷ, y) ≈ 0.011402651755880793
-    @test Flux.focal_loss(ŷ1, y1) ≈ 0.11488644991362265
+@testset "binary_focal_loss" begin
+    y = [0 1 1]
+    ŷ = [0.1 0.7 0.9]
+    y1 = [1 0
+          0 0
+          0 1]
+    ŷ1 = [0.6 0.3
+          0.3 0.1
+          0.1 0.6]
+    @test Flux.binary_focal_loss(ŷ, y) ≈ 0.011402651755880793
+    @test Flux.binary_focal_loss(ŷ1, y1) ≈ 0.11488644991362265
 end
+
+@testset "categorical_focal_loss" begin
+    y = [1  0  0  1  0  1  1
+         0  1  0  0  1  0  0
+         0  0  1  0  0  0  0]
+
+    ŷ = [-9.0  -6.0  -3.0  0.0  2.0  5.0  8.0
+         -8.0  -5.0  -2.0  0.0  3.0  6.0  9.0
+         -7.0  -4.0  -1.0  1.0  4.0  7.0  7.5]
+    y1 = [1 0
+          0 0
+          0 1]
+    ŷ1 = [5.0 1.0
+          2.3 2.0
+          3.8 9.0]
+    @test Flux.categorical_focal_loss(ŷ, y) ≈ 1.0668209889165343
+    @test Flux.categorical_focal_loss(ŷ1, y1) ≈ 0.011366240888043638
+end
+
+
