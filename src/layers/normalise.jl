@@ -51,8 +51,8 @@ end
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
-For N-D dropout layers (e.g. `Dropout2d` or `Dropout3d` in PyTorch),
-specify the `dims` keyword (i.e. `Dropout(p; dims = 3)` is a 2D dropout layer).
+To apply dropout along an certain dimension (e.g. zeroing out an entire channel's feature map),
+specify the `dims` keyword (i.e. `Dropout(p; dims = 3)` is a 2D dropout layer on WHCN input).
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
