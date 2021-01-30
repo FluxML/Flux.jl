@@ -174,3 +174,16 @@ end
     end
   end
 end
+
+y = [0 1 1]
+ŷ = [0.1 0.7 0.9]
+y1 = [1 0
+      0 0
+      0 1]
+ŷ1 = [0.6 0.3
+      0.3 0.1
+      0.1 0.6]
+@testset "focal_loss" begin
+    @test Flux.focal_loss(ŷ, y) ≈ 0.011402651755880793
+    @test Flux.focal_loss(ŷ1, y1) ≈ 0.11488644991362265
+end
