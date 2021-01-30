@@ -51,6 +51,9 @@ end
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
+For N-D dropout layers (e.g. `Dropout2d` or `Dropout3d` in PyTorch),
+specify the `dims` keyword (i.e. `Dropout(p; dims = 2)` is a 2D dropout layer).
+
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
 mutable struct Dropout{F,D}
