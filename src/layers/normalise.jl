@@ -51,6 +51,10 @@ end
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
+To apply dropout along certain dimension(s), specify the `dims` keyword.
+e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
+(also called 2D dropout).
+
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
 mutable struct Dropout{F,D}
