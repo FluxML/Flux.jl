@@ -430,33 +430,39 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
 end
 
 """
-    binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, eps = epseltype(ŷ))
+    binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, ϵ=epseltype(ŷ))
 
-    γ: modulating factor.
+Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+Can be used in classification tasks in the presence of highly imbalanced classes. 
+It down-weights well-classified examples and focuses on hard examples.
+
+γ(default=2.0) is a number called modulating factor. 
+For γ=0, the loss is mathematically equivalent to binarycrossentropy(ŷ, y)
+
+See also: ['focal_loss'](@ref)
 
 """
-function binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, eps = epseltype(ŷ))
-    ŷ = ŷ .+ eps
-    p_t = y .*ŷ  + (1 .- y) .* (1 .- ŷ)
+function binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
+    ŷ = ŷ .+ ϵ
+    p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
     ce = -log.(p_t)
     weight = (1 .- p_t) .^ γ
     loss = weight .* ce
-    agg(sum(loss, dims=dims))
+    agg(loss)
 end
 
 """
-    categorical_focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, eps = epseltype(ŷ))
-    Softmax version of Focal Loss
-    γ: modulating factor.
+    focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, ϵ=epseltype(ŷ))
+
+Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+For γ=0, the loss is mathematically equivalent to crossentropy(ŷ, y)
+
+See also: [`binary_focal_loss`](@ref)
 
 """
-function categorical_focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, eps = epseltype(ŷ))
-    ŷ = softmax(ŷ; dims=dims)
-    ŷ = ŷ .+ eps
-    ce = -y .* log.(ŷ)
-    weight = (1 .- ŷ) .^ γ
-    loss = weight .* ce
-    agg(sum(loss, dims=dims))
+function focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
+    ŷ = ŷ .+ ϵ
+    agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=1))
 end
 ```@meta
 DocTestFilters = nothing
