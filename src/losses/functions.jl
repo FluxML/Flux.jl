@@ -251,7 +251,7 @@ Return the binary cross-entropy loss, computed as
     agg(@.(-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)))
 
 Where typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
-The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
+The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recommended
 over `binarycrossentropy` for numerical stability.
 
 Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
@@ -324,6 +324,100 @@ end
 # Re-definition to fix interaction with CuArrays.
 # CUDA.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
 
+"""
+    sparsecrossentropy(ŷ, y; agg=mean)
+
+Return the binary cross-entropy loss, computed as
+
+    agg(.-log.(ŷ[CartesianIndex.(y, 1:length(y))]))
+
+Similar to [`crossentropy`](@ref), sparse cross-entropy is also used in multi
+label classification tasks, except that the labels of `y` are expected to be
+integers of size `(batch_size,)`. The prediction of `ŷ` is expected to be of
+size `(n_classes, batch_size)`. Using [`logitsparsecrossentropy`](@ref) is
+recommended over `sparsecrossentropy` for numerical stability.
+
+!!! warning
+  You should manually ensure that each element in `ŷ` is within `(0, 1)`, which
+  is implicitly done for you in tensorflow.
+
+# Examples
+
+```jldoctest
+julia> ŷ = [0.05 0.1; 0.95 0.8; 0.0 0.1;]
+3×2 Array{Float64,2}:
+ 0.05  0.1
+ 0.95  0.8
+ 0.0   0.1
+
+julia> y = [2, 3]
+2-element Array{Int64,1}:
+ 2
+ 3
+
+julia> sparsecrossentropy(ŷ, y)
+1.176939193690798
+
+julia> sparsecrossentropy(ŷ, y;agg=sum)
+2.353878387381596
+
+julia> sparsecrossentropy(ŷ, y;agg=identity)
+2-element Array{Float64,1}:
+ 0.05129329438755058
+ 2.3025850929940455
+```
+"""
+function sparsecrossentropy(ŷ, y; agg=mean)
+    agg(.-log.(ŷ[CartesianIndex.(y, 1:length(y))]))
+end
+
+"""
+    logitsparsecrossentropy(ŷ, y; agg=mean)
+
+Mathematically equivalent to
+[`sparsecrossentropy(softmax(ŷ), y)`](@ref) but is more numerically stable.
+
+!!! warning
+    `ŷ` is expected to be a logits matrix. So do not apply softmax in the last
+    layer of your network if you use `logitsparsecrossentropy`.
+
+# Example
+
+```jldoctest
+julia> ŷ = [8. 0. 2.; 1. 9. 3.; 1. 1. 5.]
+3×3 Array{Float64,2}:
+ 8.0  0.0  2.0
+ 1.0  9.0  3.0
+ 1.0  1.0  5.0
+
+julia> y = [1, 2, 3]
+3-element Array{Int64,1}:
+ 1
+ 2
+ 3
+
+julia> logitsparsecrossentropy(ŷ, y)
+0.05737562987714726
+
+julia> ŷ = [10. 0. 0.; 0. 10. 0.; 0. 0. 10.]
+3×3 Array{Float64,2}:
+ 10.0   0.0   0.0
+  0.0  10.0   0.0
+  0.0   0.0  10.0
+
+julia> y = [1, 2, 3]
+3-element Array{Int64,1}:
+ 1
+ 2
+ 3
+
+julia> logitsparsecrossentropy(ŷ, y)  # almost zero
+9.079573746725622e-5
+```
+"""
+function logitsparsecrossentropy(ŷ, y; agg=mean)
+    agg(.-logsoftmax(ŷ)[CartesianIndex.(y, 1:length(y))])
+end
 
 """
     kldivergence(ŷ, y; agg=mean, ϵ=eps(ŷ))

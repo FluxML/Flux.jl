@@ -110,6 +110,40 @@ end
   @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(σ.(logŷ), y; ϵ=0)
 end
 
+@testset "sparsecrossentropy" begin
+  @testset "case 1" begin
+    ŷ = [1. 0. 0.; 0. 1. 0.; 0. 0. 1.]
+    y = [1, 2, 3]
+    @test sparsecrossentropy(ŷ, y) ≈ 0.
+  end
+  @testset "case 2" begin
+    # !!! note the result is different from the test case in tensorflow
+    # https://github.com/tensorflow/tensorflow/blob/97f03285682d0bf459ee19e5f3ba1f84ff388a1e/tensorflow/python/keras/losses_test.py#L1008
+    # it seems in tf, each column will be rescaled implicitly to sum to 1.0
+    ŷ = [0.9 0.05 0.05; 0.05 0.89 0.01; 0.05 0.06 0.94]
+    y = [1, 2, 3]
+    @test isapprox(sparsecrossentropy(ŷ, y), 0.09459; atol=1e-5)
+  end
+end
+
+@testset "logitsparsecrossentropy" begin
+  @testset "case 1" begin
+    ŷ = [10. 0. 0.; 0. 10. 0.; 0. 0. 10.]
+    y = [1, 2, 3]
+    @test isapprox(logitsparsecrossentropy(ŷ, y), 0., atol=1e-4)
+  end
+  @testset "case 2" begin
+    ŷ = [8. 0. 2.;1. 9. 3.;1. 1. 5.]
+    y = [1, 2, 3]
+    @test isapprox(logitsparsecrossentropy(ŷ, y), 0.0573, atol=1e-4)
+  end
+  @testset "case 3" begin
+    ŷ = [8. 0. 2.;1. 9. 3.;1. 1. 5.]
+    y = [1, 2, 3]
+    @test isapprox(logitsparsecrossentropy(ŷ, y;agg=identity), [0.001822, 0.000459, 0.169846], atol=1e-5)
+  end
+end
+
 y = onehotbatch([1], 0:1)
 yls = [0.1 0.9]'
 @testset "label_smoothing" begin
