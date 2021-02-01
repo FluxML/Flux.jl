@@ -430,16 +430,17 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
 end
 
 """
-    binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, ϵ=epseltype(ŷ))
+    binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
 
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
-Can be used in classification tasks in the presence of highly imbalanced classes. 
+which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
+The input, 'ŷ', is expected to be unnormalized.
 
-γ(default=2.0) is a number called modulating factor. 
-For γ=0, the loss is mathematically equivalent to binarycrossentropy(ŷ, y)
+The modulating factor, `γ`, controls the down-weighting strength.
+For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
 
-See also: ['focal_loss'](@ref)
+See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
 """
 function binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
@@ -452,12 +453,17 @@ function binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=e
 end
 
 """
-    focal_loss(ŷ, y; dims=1, agg=mean, γ=2.0, ϵ=epseltype(ŷ))
+    focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
 
 Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
-For γ=0, the loss is mathematically equivalent to crossentropy(ŷ, y)
+which can be used in classification tasks with highly imbalanced classes.
+It down-weights well-classified examples and focuses on hard examples.
+The input, `ŷ`, is expected to be unnormalized.
 
-See also: [`binary_focal_loss`](@ref)
+The modulating factor, `γ`, controls the down-weighting strength.
+For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
+
+See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
 function focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))

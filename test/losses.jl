@@ -178,7 +178,7 @@ end
 @testset "binary_focal_loss" begin
     y = [0  1  0
          1  0  1]
-    yhat = [0.268941  0.5  0.268941
+    ŷ = [0.268941  0.5  0.268941
             0.731059  0.5  0.731059]
 
     y1 = [1 0
@@ -201,10 +201,10 @@ end
     y1 = [1 0
           0 0
           0 1]
-    ŷ1 = [5.0 1.0
-          2.3 2.0
-          3.8 9.0]
+    ŷ1 = [0.4 0.2
+          0.5 0.5
+          0.1 0.3]
     @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
-    @test Flux.focal_loss(ŷ1, y1) ≈ 0.011366240888043638
+    @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
     @test Flux.focal_loss(ŷ, y; γ=0.0) == Flux.crossentropy(ŷ, y)
 end
