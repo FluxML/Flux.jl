@@ -24,6 +24,8 @@ end
 
 @testset "Losses" begin
   include("losses.jl")
+  include("ctc.jl")
+  if Flux.use_cuda[] include("ctc-gpu.jl") end
 end
 
 @testset "Layers" begin

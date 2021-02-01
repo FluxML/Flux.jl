@@ -17,4 +17,4 @@ machine learning and deep learning workflows:
 - [ProgressMeters.jl](https://github.com/timholy/ProgressMeter.jl): progress meters for long-running computations
 - [TensorBoardLogger.jl](https://github.com/PhilipVinc/TensorBoardLogger.jl): easy peasy logging to [tensorboard](https://www.tensorflow.org/tensorboard) in Julia
 
-This tight integration among Julia pakages is shown in some of the examples in the [model-zoo](https://github.com/FluxML/model-zoo) repository.
+This tight integration among Julia packages is shown in some of the examples in the [model-zoo](https://github.com/FluxML/model-zoo) repository.
