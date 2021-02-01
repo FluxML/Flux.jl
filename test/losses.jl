@@ -1,7 +1,7 @@
 using Test
 using Flux: onehotbatch, σ
 
-using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
+using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy, sparsecrossentropy, logitsparsecrossentropy
 using Flux.Losses: xlogx, xlogy
 
 # group here all losses, used in tests
