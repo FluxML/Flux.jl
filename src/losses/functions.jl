@@ -4,7 +4,7 @@ DocTestFilters = r"[0-9\.]+f0"
 ```
 
 """
-    mae(ŷ, y; agg=mean)
+    mae(ŷ, y; agg = mean)
 
 Return the loss corresponding to mean absolute error:
 
@@ -18,14 +18,14 @@ julia> Flux.mae(y_model, 1:3)
 0.10000000000000009
 ```
 """
-mae(ŷ, y; agg=mean) = agg(abs.(ŷ .- y))
+mae(ŷ, y; agg = mean) = agg(abs.(ŷ .- y))
 
 """
-    mse(ŷ, y; agg=mean)
+    mse(ŷ, y; agg = mean)
 
 Return the loss corresponding to mean square error:
 
-    agg((ŷ .- y).^2)
+    agg((ŷ .- y) .^ 2)
 
 See also: [`mae`](@ref), [`msle`](@ref), [`crossentropy`](@ref).
 
@@ -39,14 +39,14 @@ julia> Flux.mse(y_model, y_true)
 0.010000000000000018
 ```
 """
-mse(ŷ, y; agg=mean) = agg((ŷ .- y).^2)
+mse(ŷ, y; agg = mean) = agg((ŷ .- y) .^ 2)
 
 """
-    msle(ŷ, y; agg=mean, ϵ=eps(ŷ))
+    msle(ŷ, y; agg = mean, ϵ = eps(ŷ))
 
 The loss corresponding to mean squared logarithmic errors, calculated as
 
-    agg((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)).^2)
+    agg((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)) .^ 2)
 
 The `ϵ` term provides numerical stability.
 Penalizes an under-estimation more than an over-estimatation.
@@ -60,10 +60,11 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 0.011100831f0
 ```
 """
-msle(ŷ, y; agg=mean, ϵ=epseltype(ŷ)) = agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))).^2)
+msle(ŷ, y; agg = mean, ϵ = epseltype(ŷ)) =
+  agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
 
 """
-    huber_loss(ŷ, y; δ=1, agg=mean)
+    huber_loss(ŷ, y; δ = 1, agg = mean)
 
 Return the mean of the [Huber loss](https://en.wikipedia.org/wiki/Huber_loss)
 given the prediction `ŷ` and true values `y`.
@@ -72,12 +73,12 @@ given the prediction `ŷ` and true values `y`.
     Huber loss = |
                  |  δ * (|ŷ - y| - 0.5 * δ), otherwise
 """
-function huber_loss(ŷ, y; agg=mean, δ=ofeltype(ŷ, 1))
+function huber_loss(ŷ, y; agg = mean, δ = ofeltype(ŷ, 1))
    abs_error = abs.(ŷ .- y)
    #TODO: remove dropgrad when Zygote can handle this function with CuArrays
    temp = Zygote.dropgrad(abs_error .<  δ)
    x = ofeltype(ŷ, 0.5)
-   agg(((abs_error.^2) .* temp) .* x .+ δ*(abs_error .- x*δ) .* (1 .- temp))
+   agg(((abs_error .^ 2) .* temp) .* x .+ δ * (abs_error .- x * δ) .* (1 .- temp))
 end
 
 """
@@ -131,7 +132,7 @@ julia> Flux.crossentropy(y_dis, y) > Flux.crossentropy(y_dis, y_smoothed)
 true
 ```
 """
-function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int=1)
+function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int = 1)
     if !(0 < α < 1)
         throw(ArgumentError("α must be between 0 and 1"))
     end
@@ -146,7 +147,7 @@ function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int=1
 end
 
 """
-    crossentropy(ŷ, y; dims=1, ϵ=eps(ŷ), agg=mean)
+    crossentropy(ŷ, y; dims = 1, ϵ = eps(ŷ), agg = mean)
 
 Return the cross entropy between the given probability distributions;
 calculated as
@@ -201,12 +202,12 @@ julia> Flux.crossentropy(y_model, y_smooth)
 1.5776052f0
 ```
 """
-function crossentropy(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ))
-    agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims=dims))
+function crossentropy(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
+    agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
 end
 
 """
-    logitcrossentropy(ŷ, y; dims=1, agg=mean)
+    logitcrossentropy(ŷ, y; dims = 1, agg = mean)
 
 Return the cross entropy calculated by
 
@@ -239,16 +240,16 @@ julia> Flux.crossentropy(softmax(y_model), y_label)
 1.5791197f0
 ```
 """
-function logitcrossentropy(ŷ, y; dims=1, agg=mean)
-    agg(.-sum(y .* logsoftmax(ŷ; dims=dims); dims=dims))
+function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
+    agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end
 
 """
-    binarycrossentropy(ŷ, y; agg=mean, ϵ=eps(ŷ))
+    binarycrossentropy(ŷ, y; agg = mean, ϵ = eps(ŷ))
 
 Return the binary cross-entropy loss, computed as
 
-    agg(@.(-y*log(ŷ + ϵ) - (1-y)*log(1-ŷ + ϵ)))
+    agg(@.(-y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)))
 
 Where typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
 The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
@@ -287,14 +288,14 @@ julia> Flux.crossentropy(y_prob, y_hot)
 0.43989f0
 ```
 """
-function binarycrossentropy(ŷ, y; agg=mean, ϵ=epseltype(ŷ))
-    agg(@.(-xlogy(y, ŷ+ϵ) - xlogy(1-y, 1-ŷ+ϵ)))
+function binarycrossentropy(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
+    agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
 end
 # Re-definition to fix interaction with CuArrays.
-# CUDA.@cufunc binarycrossentropy(ŷ, y; ϵ=eps(ŷ)) = -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+# CUDA.@cufunc binarycrossentropy(ŷ, y; ϵ = eps(ŷ)) = -y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)
 
 """
-    logitbinarycrossentropy(ŷ, y; agg=mean)
+    logitbinarycrossentropy(ŷ, y; agg = mean)
 
 Mathematically equivalent to
 [`binarycrossentropy(σ(ŷ), y)`](@ref) but is more numerically stable.
@@ -318,15 +319,15 @@ julia> Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
 0.16083185f0
 ```
 """
-function logitbinarycrossentropy(ŷ, y; agg=mean)
-    agg(@.((1-y)*ŷ - logσ(ŷ)))
+function logitbinarycrossentropy(ŷ, y; agg = mean)
+    agg(@.((1 - y) * ŷ - logσ(ŷ)))
 end
 # Re-definition to fix interaction with CuArrays.
-# CUDA.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y)*ŷ - logσ(ŷ)
+# CUDA.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y) * ŷ - logσ(ŷ)
 
 
 """
-    kldivergence(ŷ, y; agg=mean, ϵ=eps(ŷ))
+    kldivergence(ŷ, y; agg = mean, ϵ = eps(ŷ))
 
 Return the
 [Kullback-Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence)
@@ -350,19 +351,19 @@ julia> p2 = fill(0.5, 2, 2)
 julia> Flux.kldivergence(p2, p1) ≈ log(2)
 true
 
-julia> Flux.kldivergence(p2, p1; agg=sum) ≈ 2log(2)
+julia> Flux.kldivergence(p2, p1; agg = sum) ≈ 2log(2)
 true
 
-julia> Flux.kldivergence(p2, p2; ϵ=0)  # about -2e-16 with the regulator
+julia> Flux.kldivergence(p2, p2; ϵ = 0)  # about -2e-16 with the regulator
 0.0
 
-julia> Flux.kldivergence(p1, p2; ϵ=0)  # about 17.3 with the regulator
+julia> Flux.kldivergence(p1, p2; ϵ = 0)  # about 17.3 with the regulator
 Inf
 ```
 """
-function kldivergence(ŷ, y; dims=1, agg=mean, ϵ=epseltype(ŷ))
-  entropy = agg(sum(xlogx.(y), dims=dims))
-  cross_entropy = crossentropy(ŷ, y; dims=dims, agg=agg, ϵ=ϵ)
+function kldivergence(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
+  entropy = agg(sum(xlogx.(y), dims = dims))
+  cross_entropy = crossentropy(ŷ, y; dims = dims, agg = agg, ϵ = ϵ)
   return entropy + cross_entropy
 end
 
@@ -374,10 +375,10 @@ end
 
 [More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
-poisson_loss(ŷ, y; agg=mean) = agg(ŷ .- xlogy.(y, ŷ))
+poisson_loss(ŷ, y; agg = mean) = agg(ŷ .- xlogy.(y, ŷ))
 
 """
-    hinge_loss(ŷ, y; agg=mean)
+    hinge_loss(ŷ, y; agg = mean)
 
 Return the [hinge_loss loss](https://en.wikipedia.org/wiki/Hinge_loss) given the
 prediction `ŷ` and true labels `y` (containing 1 or -1); calculated as
@@ -385,7 +386,8 @@ prediction `ŷ` and true labels `y` (containing 1 or -1); calculated as
 
 See also: [`squared_hinge_loss`](@ref)
 """
-hinge_loss(ŷ, y; agg=mean) = agg(max.(0, 1 .-  ŷ .* y))
+hinge_loss(ŷ, y; agg = mean) =
+  agg(max.(0, 1 .- ŷ .* y))
 
 """
     squared_hinge_loss(ŷ, y)
@@ -395,10 +397,11 @@ Return the squared hinge_loss loss given the prediction `ŷ` and true labels `y
 
 See also: [`hinge_loss`](@ref)
 """
-squared_hinge_loss(ŷ, y; agg=mean) = agg((max.(0, 1 .- ŷ .* y)).^2)
+squared_hinge_loss(ŷ, y; agg = mean) =
+  agg((max.(0, 1 .- ŷ .* y)) .^ 2)
 
 """
-    dice_coeff_loss(ŷ, y; smooth=1)
+    dice_coeff_loss(ŷ, y; smooth = 1)
 
 Return a loss based on the dice coefficient.
 Used in the [V-Net](https://arxiv.org/abs/1606.04797) image segmentation
@@ -407,10 +410,11 @@ Similar to the F1_score. Calculated as:
 
     1 - 2*sum(|ŷ .* y| + smooth) / (sum(ŷ.^2) + sum(y.^2) + smooth)
 """
-dice_coeff_loss(ŷ, y; smooth=ofeltype(ŷ, 1.0)) = 1 - (2*sum(y .* ŷ) + smooth) / (sum(y.^2) + sum(ŷ.^2) + smooth) #TODO agg
+dice_coeff_loss(ŷ, y; smooth = ofeltype(ŷ, 1.0)) =
+  1 - (2 * sum(y .* ŷ) + smooth) / (sum(y .^ 2) + sum(ŷ .^ 2) + smooth) #TODO agg
 
 """
-    tversky_loss(ŷ, y; β=0.7)
+    tversky_loss(ŷ, y; β = 0.7)
 
 Return the [Tversky loss](https://arxiv.org/abs/1706.05721).
 Used with imbalanced data to give more weight to false negatives.
@@ -418,10 +422,10 @@ Larger β weigh recall more than precision (by placing more emphasis on false ne
 Calculated as:
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
 """
-function tversky_loss(ŷ, y; β=ofeltype(ŷ, 0.7))
+function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
     #TODO add agg
     num = sum(y .* ŷ) + 1
-    den = sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1
+    den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
     1 - num / den
 end
 
