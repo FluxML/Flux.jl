@@ -188,13 +188,13 @@ function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T
 end
 @nograd track_stats
 
-function affine(l, x, μ, σ², affine_shape)
+function affine(affine, l, x, μ, σ², affine_shape)
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
   l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
 end
 
-affine(l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+affine(affine, l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 
 """
     BatchNorm(channels::Integer, λ=identity;
@@ -267,8 +267,8 @@ trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
+  affine_shape = BN.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
+  return _norm_layer_forward(BN, x; reduce_dims = reduce_dims, affine_shape = affine_shape)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -344,7 +344,7 @@ function (l::InstanceNorm)(x)
   @assert size(x, ndims(x)-1) == l.chs
   N = ndims(x)
   reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
+  affine_shape = in.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
   return _norm_layer_forward(l, x; reduce_dims, affine_shape)
 end
 
@@ -430,7 +430,7 @@ function (gn::GroupNorm)(x)
   x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
   N = ndims(x)
   reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
+  affine_shape = gn.affine ? ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N) : nothing
   x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
   return reshape(x, sz)
 end
