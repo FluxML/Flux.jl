@@ -168,18 +168,11 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
-    μ = mean(x; dims=reduce_dims)
-    σ² = mean((x .- μ).^2; dims=reduce_dims)
+    μ = mean(x; dims = reduce_dims)
+    σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
     if l.track_stats
       ## update moving mean/std
-      Zygote.ignore() do
-        mtm = l.momentum
-        m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
-        μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
-        σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
-        l.μ = (1-mtm) .* l.μ .+ mtm .* μnew
-        l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
-      end
+      l.μ, l.σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
     end
   end
   if hasaffine(l)
@@ -191,6 +184,15 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
   end
 end
 
+function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T,N}
+  m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
+  μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims = N))
+  σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims = N))
+  μ = (1 - mtm) .* μ .+ mtm .* μnew
+  σ² = (1 - mtm) .* σ² .+ mtm .* (m / (m - one(T))) .* σ²new
+  μ, σ²
+end
+@nograd track_stats
 
 """
     BatchNorm(channels::Integer, λ=identity;
@@ -260,9 +262,8 @@ end
 @functor BatchNorm
 trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 
-function (BN::BatchNorm)(x)
-  @assert size(x, ndims(x)-1) == BN.chs
-  N = ndims(x)
+function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
+  @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
