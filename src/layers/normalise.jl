@@ -131,11 +131,11 @@ as in the [`Diagonal`](@ref) layer.
 
 Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """
-struct LayerNorm{F,D,T,N}
+struct LayerNorm{F,D,T,S}
   λ::F
   diag::D
   ϵ::T
-  sz::NTuple{N,Int}
+  sz::S
   affine::Bool
 end
 
