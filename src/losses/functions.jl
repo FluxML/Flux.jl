@@ -430,7 +430,7 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
 end
 
 """
-    binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
+    binary_focal_loss(ŷ, y; agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
 
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
