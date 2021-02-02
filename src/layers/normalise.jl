@@ -188,13 +188,13 @@ function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T
 end
 @nograd track_stats
 
-function affine(affine, l, x, μ, σ², affine_shape)
+function affine(l, x, μ, σ², affine_shape)
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
   l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
 end
 
-affine(affine, l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+affine(l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 
 """
     BatchNorm(channels::Integer, λ=identity;
