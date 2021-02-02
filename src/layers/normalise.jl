@@ -172,7 +172,10 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
     σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
     if l.track_stats
       ## update moving mean/std
-      l.μ, l.σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
+
+      μ, σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
+      l.μ .= μ
+      l.σ² .= σ²
     end
   end
   affine(l, x, μ, σ², affine_shape)
