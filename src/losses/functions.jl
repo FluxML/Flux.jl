@@ -435,7 +435,7 @@ end
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
-The input, 'ŷ', is expected to be unnormalized.
+The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
 
 The modulating factor, `γ`, controls the down-weighting strength.
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
@@ -443,7 +443,7 @@ For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentr
 See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
 """
-function binary_focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
+function binary_focal_loss(ŷ, y; agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
     ŷ = ŷ .+ ϵ
     p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
     ce = -log.(p_t)
@@ -458,7 +458,7 @@ end
 Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
-The input, `ŷ`, is expected to be unnormalized.
+The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
 
 The modulating factor, `γ`, controls the down-weighting strength.
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
@@ -468,7 +468,7 @@ See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 """
 function focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
     ŷ = ŷ .+ ϵ
-    agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=1))
+    agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
 ```@meta
 DocTestFilters = nothing
