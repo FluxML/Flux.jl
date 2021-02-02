@@ -197,9 +197,9 @@ end
 affine(l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 
 """
-    BatchNorm(channels::Integer, λ=identity;
-              initβ=zeros, initγ=ones,
-              ϵ=1f-5, momentum= 0.1f0)
+    BatchNorm(channels::Integer, λ = identity;
+              initβ = zeros, initγ = ones,
+              ϵ = 1f-5, momentum = 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -211,12 +211,12 @@ it's the usual channel dimension.
 `BatchNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×D_N` 
 input slice and normalises the input accordingly.
 
-If `affine=true`, it also applies  a shift and a rescale to the input 
+If `affine = true`, it also applies  a shift and a rescale to the input 
 through to learnable per-channel bias β and scale γ parameters.
 
 After normalisation, elementwise activation `λ` is applied.  
 
-If `track_stats=true`, accumulates mean and var statistics in training phase 
+If `track_stats = true`, accumulates mean and var statistics in training phase 
 that will be used to renormalize the input in test phase.
 
 Use [`testmode!`](@ref) during inference.
@@ -345,7 +345,7 @@ function (l::InstanceNorm)(x)
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = in.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  return _norm_layer_forward(l, x; reduce_dims, affine_shape)
+  return _norm_layer_forward(l, x; reduce_dims = reduce_dims, affine_shape = reduce_dims)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
@@ -431,7 +431,7 @@ function (gn::GroupNorm)(x)
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = gn.affine ? ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N) : nothing
-  x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
+  x = _norm_layer_forward(gn, x; reduce_dims = reduce_dims, affine_shape = affine_shape)
   return reshape(x, sz)
 end
 
