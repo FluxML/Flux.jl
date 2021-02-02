@@ -1,34 +1,34 @@
 using Juno
 import Zygote: Params, gradient
 
-"""
-    update!(x, x̄)
-
-Update the array `x` according to `x .-= x̄`.
-"""
-function update!(x::AbstractArray, x̄)
-  x .-= x̄
-end
-
-"""
-    update!(opt, p, g)
-    update!(opt, ps::Params, gs)
-
-Perform an update step of the parameters `ps` (or the single parameter `p`)
-according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
-
-As a result, the parameters are mutated and the optimizer's internal state may change.
-"""
-function update!(opt, x, x̄)
-  x .-= apply!(opt, x, x̄)
-end
-
-function update!(opt, xs::Params, gs)
-  for x in xs
-    gs[x] == nothing && continue
-    update!(opt, x, gs[x])
-  end
-end
+# """
+#     update!(x, x̄)
+# 
+# Update the array `x` according to `x .-= x̄`.
+# """
+# function update!(x::AbstractArray, x̄)
+#   x .-= x̄
+# end
+# 
+# """
+#     update!(opt, p, g)
+#     update!(opt, ps::Params, gs)
+# 
+# Perform an update step of the parameters `ps` (or the single parameter `p`)
+# according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
+# 
+# As a result, the parameters are mutated and the optimizer's internal state may change.
+# """
+# function update!(opt, x, x̄)
+#   x .-= apply!(opt, x, x̄)
+# end
+# 
+# function update!(opt, xs::Params, gs)
+#   for x in xs
+#     gs[x] == nothing && continue
+#     update!(opt, x, gs[x])
+#   end
+# end
 
 # Callback niceties
 call(f, xs...) = f(xs...)
@@ -97,6 +97,7 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, ps, data, opt; cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
+  st = Optimisers.init(opt, ps)
   @progress for d in data
     try
       gs = gradient(ps) do
@@ -104,6 +105,43 @@ function train!(loss, ps, data, opt; cb = () -> ())
       end
       update!(opt, ps, gs)
       cb()
+    catch ex
+      if ex isa StopException
+        break
+      elseif ex isa SkipException
+        continue
+      else
+        rethrow(ex)
+      end
+    end
+  end
+end
+
+function train!(m, loss, data, opt; cb = (x...) -> ()
+                                    prehook = (x...) -> (),
+                                    posthook = (x...) -> ())
+  st = [Optimisers.init(opt, p) for p in Flux.params(m)]
+  prehook = runall(prehook)
+  posthook = runall(posthook)
+  cb = runall(cb)
+
+  dlen = try
+    length(data)
+  catch e
+    @warn "Dataset length unkown"
+    0
+  end
+
+  for d in data
+    try
+      ŷ, back = pullback(m) do m
+        loss(m, batchmemaybe(d)...)
+      end
+      prehook(ŷ)
+      m̂, = back(Zygote.sensitivity(ŷ))
+      posthook(ŷ, m, m̂)
+      m, st = opt(m, m̂, st)
+      cb(ŷ, m, m̂)
     catch ex
       if ex isa StopException
         break
@@ -135,5 +173,13 @@ macro epochs(n, ex)
   :(@progress for i = 1:$(esc(n))
       @info "Epoch $i"
       $(esc(ex))
+    end)
+end
+
+macro epochs(n, f, ex)
+  :(@progress for i = 1:$(esc(n))
+      @info "Epoch $i"
+      $(esc(ex))
+      $(esc(f($i)))
     end)
 end

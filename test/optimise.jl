@@ -9,40 +9,55 @@ using Random
   # so that w and w' are different
   Random.seed!(84)
   w = randn(10, 10)
-  @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), AdaBelief(),
-                       Nesterov(), RMSProp(), Momentum()]
-    Random.seed!(42)
-    w′ = randn(10, 10)
-    b = Flux.Zeros()
-    loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
-    for t = 1: 10^5
-      θ = params([w′, b])
-      x = rand(10)
-      θ̄ = gradient(() -> loss(x), θ)
-      Optimise.update!(opt, θ, θ̄)
+  # @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
+  #                      NADAM(), RADAM(), Descent(), ADAM(), OADAM(), AdaBelief(),
+  #                      Nesterov(), RMSProp(), Momentum()]
+  #   Random.seed!(42)
+  #   w′ = randn(10, 10)
+  #   b = Flux.Zeros()
+  #   loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
+  #   for t = 1: 10^5
+  #     θ = params([w′, b])
+  #     x = rand(10)
+  #     θ̄ = gradient(() -> loss(x), θ)
+  #     Optimise.update!(opt, θ, θ̄)
+  #   end
+  #   @test loss(rand(10, 10)) < 0.01
+  # end
+
+  Random.seed!(84)
+  w′ = rand(3,3)
+  @testset for o in (Descent(0.1), Momentum(0.01, 0.9), Nesterov(0.001, 0.9), RMSProp(0.001, 0.9),
+                     ADAM(0.001, (0.9, 0.99)))
+    w = rand(3,3)
+    st = Optimisers.init(o,w)
+    loss(x, y) = mean((x .- y) .^ 2)
+    l = loss(w, w′)
+    for i = 1:10^4
+      gs = gradient(x -> loss(x,w′), w)
+      w, st = o(w, gs..., st)
     end
-    @test loss(rand(10, 10)) < 0.01
+    @test loss(w, w′) < 0.01
   end
 end
 
-@testset "Optimiser" begin
-  Random.seed!(84)
-  w = randn(10, 10)
-  @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
-    Random.seed!(42)
-    w′ = randn(10, 10)
-    loss(x) = Flux.Losses.mse(w*x, w′*x)
-    opt = Optimiser(Opt(), ADAM(0.001))
-    for t = 1:10^5
-      θ = Params([w′])
-      x = rand(10)
-      θ̄ = gradient(() -> loss(x), θ)
-      Optimise.update!(opt, θ, θ̄)
-    end
-    @test loss(rand(10, 10)) < 0.01
-  end
-end
+# @testset "Optimiser" begin
+#   Random.seed!(84)
+#   w = randn(10, 10)
+#   @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
+#     Random.seed!(42)
+#     w′ = randn(10, 10)
+#     loss(x) = Flux.Losses.mse(w*x, w′*x)
+#     opt = Optimiser(Opt(), ADAM(0.001))
+#     for t = 1:10^5
+#       θ = Params([w′])
+#       x = rand(10)
+#       θ̄ = gradient(() -> loss(x), θ)
+#       Optimise.update!(opt, θ, θ̄)
+#     end
+#     @test loss(rand(10, 10)) < 0.01
+#   end
+# end
 
 @testset "Training Loop" begin
   i = 0
@@ -121,7 +136,8 @@ end
     end
   end
   @test flag == 1
-  # Test to check if decay happens at decay steps. Eta reaches clip value (1e-4) after 4000 steps (decay by 0.1 every 1000 steps starting at 0.1).
+  # Test to check if decay happens at decay steps. Eta reaches
+  # clip value (1e-4) after 4000 steps (decay by 0.1 every 1000 steps starting at 0.1).
   ground_truth = []
   for i in 1:4
     push!(ground_truth, 1000*i)  # Expected decay steps for this example.

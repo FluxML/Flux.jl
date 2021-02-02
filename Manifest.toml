@@ -251,6 +251,14 @@ git-tree-sha1 = "9db77584158d0ab52307f8c04f8e7c08ca76b5b3"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.3+4"
 
+[[Optimisers]]
+deps = ["Functors", "Random", "Requires", "Statistics"]
+git-tree-sha1 = "3130cebce66aed0943bdd8f3d61c641e44d7ea0e"
+repo-rev = "master"
+repo-url = "https://github.com/FluxML/Optimisers.jl.git"
+uuid = "3bd65402-5787-11e9-1adc-39752487f4e2"
+version = "0.1.0"
+
 [[OrderedCollections]]
 git-tree-sha1 = "cf59cfed2e2c12e8a2ff0a4f1e9b2cd8650da6db"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
