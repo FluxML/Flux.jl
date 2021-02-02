@@ -162,7 +162,7 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
+function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape = nothing) where {T, N}
   if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
@@ -175,17 +175,11 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
       l.μ, l.σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
     end
   end
-  if hasaffine(l)
-    γ = reshape(l.γ, affine_shape)
-    β = reshape(l.β, affine_shape)
-    return l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
-  else
-    return l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
-  end
+  affine(l, x, μ, σ², affine_shape)
 end
 
 function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T,N}
-  m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
+  m = prod(size(x)[reduce_dims])
   μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims = N))
   σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims = N))
   μ = (1 - mtm) .* μ .+ mtm .* μnew
@@ -193,6 +187,14 @@ function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T
   μ, σ²
 end
 @nograd track_stats
+
+function affine(l, x, μ, σ², affine_shape)
+  γ = reshape(l.γ, affine_shape)
+  β = reshape(l.β, affine_shape)
+  l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
+end
+
+affine(l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 
 """
     BatchNorm(channels::Integer, λ=identity;
