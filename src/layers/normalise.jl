@@ -135,21 +135,20 @@ struct LayerNorm{F,D,T,N}
   λ::F
   diag::D
   ϵ::T
-  size::NTuple{N,Int}
+  sz::NTuple{N,Int}
   affine::Bool
 end
 
-function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
-  sz = sz isa Integer ? (sz,) : sz
-  diag = affine ? Diagonal(sz...) : nothing
+function LayerNorm(sz, λ = identity; affine = true, ϵ = 1f-5)
+  diag = affine ? Diagonal(sz...) : identity
   return LayerNorm(λ, diag, ϵ, sz, affine)
 end
 
 @functor LayerNorm
 
 function (a::LayerNorm)(x)
-  x = normalise(x, dims=1:length(a.size), ϵ=a.ϵ)
-  a.diag === nothing ? a.λ.(x) : a.λ.(a.diag(x))
+  x = normalise(x, dims = 1:length(a.sz), ϵ = a.ϵ)
+  a.λ.(a.diag(x))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -191,6 +190,7 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
     return l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
   end
 end
+
 
 """
     BatchNorm(channels::Integer, λ=identity;
@@ -242,10 +242,10 @@ mutable struct BatchNorm{F,V,N,W}
 end
 
 function BatchNorm(chs::Int, λ=identity;
-          initβ = i -> zeros(Float32, i), 
-          initγ = i -> ones(Float32, i), 
-          affine=true, track_stats=true,
-          ϵ=1f-5, momentum=0.1f0)
+                   initβ = i -> zeros(Float32, i), 
+                   initγ = i -> ones(Float32, i), 
+                   affine = true, track_stats = true,
+                   ϵ = 1f-5, momentum = 0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
