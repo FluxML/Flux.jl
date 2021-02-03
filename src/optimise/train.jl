@@ -22,6 +22,7 @@ import Zygote: Params, pullback, gradient, sensitivity
 # function update!(opt, x, x̄, st)
 #   Δ, st = x .- apply(opt, x, x̄, st)
 #   update!(x, Δ)
+#   Δ, st
 # end
 # 
 # function update!(opt, xs::Params, gs, st)
