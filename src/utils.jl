@@ -183,13 +183,29 @@ The input tensor must have at least 2 dimensions.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.orthogonal(5,4)
-5×4 Array{Float64,2}:
- -0.205376  -0.0212576   0.304391   0.0927362
- -0.684365   0.403613   -0.394419   0.457953
-  0.283074  -0.550965   -0.649911   0.377888
- -0.60495   -0.536835   -0.151796  -0.566756
- -0.208255  -0.494864    0.553493   0.56362
+julia> W = Flux.orthogonal(5, 7);
+
+julia> summary(W)
+"5×7 Array{Float32,2}"
+
+julia> W * W'
+5×5 Array{Float32,2}:
+  1.0         -2.42898f-8  6.32759f-8  -1.37195f-7  -2.19659f-8
+ -2.42898f-8   1.0         4.03295f-8  -1.34284f-7   1.06978f-7
+  6.32759f-8   4.03295f-8  1.0          7.93047f-8   2.6339f-7
+ -1.37195f-7  -1.34284f-7  7.93047f-8   1.0          6.60169f-8
+ -2.19659f-8   1.06978f-7  2.6339f-7    6.60169f-8   1.0
+ 
+julia> W * W' ≈ I(5)
+true
+
+julia> W2 = orthogonal(7, 5);
+
+julia> W2 * W2' ≈ I(7)
+false
+
+julia> W2' * W2 ≈ I(5)
+true
 ```
 
 # References
