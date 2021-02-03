@@ -19,14 +19,15 @@ import Zygote: Params, pullback, gradient, sensitivity
 # 
 # As a result, the parameters are mutated and the optimizer's internal state may change.
 # """
-# function update!(opt, x, x̄)
-#   x .-= apply!(opt, x, x̄)
+# function update!(opt, x, x̄, st)
+#   Δ, st = x .- apply(opt, x, x̄, st)
+#   update!(x, Δ)
 # end
 # 
-# function update!(opt, xs::Params, gs)
+# function update!(opt, xs::Params, gs, st)
 #   for x in xs
 #     gs[x] == nothing && continue
-#     update!(opt, x, gs[x])
+#     _, st = update!(opt, x, gs[x], st)
 #   end
 # end
 
