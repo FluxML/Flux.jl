@@ -99,7 +99,7 @@ end
   @testset "orthogonal" begin
     # A matrix of dim = (m,n) with m > n should produce a QR decomposition. In the other case, the transpose should be taken to compute the QR decomposition.
     for (rows,cols) in [(5,3),(3,5)]
-      v = randn(Float32, rows, cols)
+      v = orthogonal(rows, cols)
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
   end
