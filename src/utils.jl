@@ -182,7 +182,7 @@ Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as describ
 The input tensor must have at least 2 dimensions. 
 
 # Examples
-```jldoctest; setup = :(using Random; Random.seed!(0)); using LinearAlgebra
+```jldoctest; setup = :(using Random; Random.seed!(0));
 julia> W = Flux.orthogonal(5, 7);
 
 julia> summary(W)
