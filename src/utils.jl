@@ -183,6 +183,8 @@ The input tensor must have at least 2 dimensions.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0));
+julia> using LinearAlgebra
+
 julia> W = Flux.orthogonal(5, 7);
 
 julia> summary(W)
