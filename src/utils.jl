@@ -175,6 +175,54 @@ kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; 
 kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
 
 """
+    orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
+
+Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in *Exact solutions to the nonlinear dynamics of learning in deep linear neural networks - Saxe, A. et al. (2013)*. 
+
+The input tensor must have at least 2 dimensions. 
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.orthogonal(5,4)
+5×4 Array{Float64,2}:
+ -0.205376  -0.0212576   0.304391   0.0927362
+ -0.684365   0.403613   -0.394419   0.457953
+  0.283074  -0.550965   -0.649911   0.377888
+ -0.60495   -0.536835   -0.151796  -0.566756
+ -0.208255  -0.494864    0.553493   0.56362
+```
+
+# References
+[1] Saxe, A. et al. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks" * International Conference on Learning Representations* 2014
+
+"""
+function orthogonal(rng::AbstractRNG, dims...; gain = 1)
+  if length(dims) < 2
+    throw(error("Only Arrays with 2 or more dimensions are supported"))
+  end
+
+  rows = dims[1]
+  cols = mapreduce(x->x,*, dims; init=1) ÷ rows
+  flattened = randn(rows,cols)
+  if rows < cols
+    flattened = transpose(flattened)
+  end
+
+  Q,R = LinearAlgebra.qr(flattened)
+  d = LinearAlgebra.Diagonal(R)
+  ph = @. sign(d)
+  Q = (Array(Q)) * ph
+  if rows < cols
+    Q = transpose(Q)
+  end
+
+  return gain*reshape(Q,dims)
+end
+
+orthogonal(dims...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
+orthogonal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) ->orthogonal(rng, dims...; kwargs...)
+
+"""
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
 
 Return an `Array` of size `dims` where each column contains a fixed fraction of
