@@ -218,9 +218,9 @@ function orthogonal(rng::AbstractRNG, dims...; gain = 1)
   end
 
   rows = dims[1]
-  cols = mapreduce(x->x, *, dims; init=1) ÷ rows
+  cols = div(prod(dims),rows)
   flattened = randn(Float32, rows, cols)
-  
+
   rows < cols && (flattened = transpose(flattened))
 
   Q, R = LinearAlgebra.qr(flattened)
