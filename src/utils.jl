@@ -198,12 +198,12 @@ julia> Flux.orthogonal(5,4)
 """
 function orthogonal(rng::AbstractRNG, dims...; gain = 1)
   if length(dims) < 2
-    throw(error("Only Arrays with 2 or more dimensions are supported"))
+    throw(ArgumentError("Only Arrays with 2 or more dimensions are supported"))
   end
 
   rows = dims[1]
   cols = mapreduce(x->x,*, dims; init=1) ÷ rows
-  flattened = randn(rows,cols)
+  flattened = randn(Float32, rows, cols)
   if rows < cols
     flattened = transpose(flattened)
   end
