@@ -182,7 +182,7 @@ Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as describ
 The input tensor must have at least 2 dimensions. 
 
 # Examples
-```jldoctest; setup = :(using Random; Random.seed!(0))
+```jldoctest; setup = :(using Random; Random.seed!(0)); using LinearAlgebra
 julia> W = Flux.orthogonal(5, 7);
 
 julia> summary(W)
@@ -219,11 +219,9 @@ function orthogonal(rng::AbstractRNG, dims...; gain = 1)
 
   rows = dims[1]
   cols = div(prod(dims),rows)
-  flattened = randn(Float32, rows, cols)
+  mat = rows > cols ? randn(Float32, rows, cols) : randn(Float32, cols, rows)
 
-  rows < cols && (flattened = transpose(flattened))
-
-  Q, R = LinearAlgebra.qr(flattened)
+  Q, R = LinearAlgebra.qr(mat)
   Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
   if rows < cols
     Q = transpose(Q)
