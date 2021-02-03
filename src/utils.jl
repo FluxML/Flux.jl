@@ -177,7 +177,7 @@ kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_no
 """
     orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
 
-Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in *Exact solutions to the nonlinear dynamics of learning in deep linear neural networks - Saxe, A. et al. (2013)*. 
+Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in Ref. [1]. 
 
 The input tensor must have at least 2 dimensions. 
 
