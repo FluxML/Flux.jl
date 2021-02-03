@@ -202,25 +202,22 @@ function orthogonal(rng::AbstractRNG, dims...; gain = 1)
   end
 
   rows = dims[1]
-  cols = mapreduce(x->x,*, dims; init=1) ÷ rows
+  cols = mapreduce(x->x, *, dims; init=1) ÷ rows
   flattened = randn(Float32, rows, cols)
-  if rows < cols
-    flattened = transpose(flattened)
-  end
+  
+  rows < cols && (flattened = transpose(flattened))
 
-  Q,R = LinearAlgebra.qr(flattened)
-  d = LinearAlgebra.Diagonal(R)
-  ph = @. sign(d)
-  Q = (Array(Q)) * ph
+  Q, R = LinearAlgebra.qr(flattened)
+  Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
   if rows < cols
     Q = transpose(Q)
   end
 
-  return gain*reshape(Q,dims)
+  return gain * reshape(Q, dims)
 end
 
 orthogonal(dims...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
-orthogonal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) ->orthogonal(rng, dims...; kwargs...)
+orthogonal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> orthogonal(rng, dims...; kwargs...)
 
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
