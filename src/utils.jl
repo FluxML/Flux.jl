@@ -224,8 +224,8 @@ function orthogonal(rng::AbstractRNG, dims...; gain = 1)
   return gain * reshape(Q, dims)
 end
 
-orthogonal(dims...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
-orthogonal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> orthogonal(rng, dims...; kwargs...)
+orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
+orthogonal(rng::AbstractRNG; kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; kwargs...)
 
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
