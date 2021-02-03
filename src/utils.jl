@@ -209,7 +209,7 @@ true
 ```
 
 # References
-[1] Saxe, A. et al. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks" * International Conference on Learning Representations* 2014
+[1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
 function orthogonal(rng::AbstractRNG, dims...; gain = 1)
