@@ -199,7 +199,7 @@ julia> W * W'
 julia> W * W' ≈ I(5)
 true
 
-julia> W2 = orthogonal(7, 5);
+julia> W2 = Flux.orthogonal(7, 5);
 
 julia> W2 * W2' ≈ I(7)
 false
