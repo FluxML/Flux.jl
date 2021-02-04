@@ -177,14 +177,12 @@ kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_no
 """
     orthogonal_init([rng=GLOBAL_RNG], dims...; gain = 1)
 
-Return an `Array` of size `dims` which is a (semi) orthogonal_init matrix, as described in Ref. [1]. 
+Return an `Array` of size `dims` which is a (semi) orthogonal_init matrix, as described in [1]. 
 
 The input must have at least 2 dimensions. 
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0));
-julia> using LinearAlgebra
-
 julia> W = Flux.orthogonal_init(5, 7);
 
 julia> summary(W)
