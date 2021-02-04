@@ -182,7 +182,7 @@ Return an `Array` of size `dims` which is a (semi) orthogonal_init matrix, as de
 The input must have at least 2 dimensions. 
 
 # Examples
-```jldoctest; setup = :(using Random; Random.seed!(0));
+```jldoctest;
 julia> W = Flux.orthogonal_init(5, 7);
 
 julia> summary(W)
