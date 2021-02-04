@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, orthogonal, sparse_init, stack, unstack, Zeros
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, orthogonal_init, sparse_init, stack, unstack, Zeros
 using StatsBase: var, std
 using Random
 using Test
@@ -96,10 +96,10 @@ end
     end
   end
 
-  @testset "orthogonal" begin
+  @testset "orthogonal_init" begin
     # A matrix of dim = (m,n) with m > n should produce a QR decomposition. In the other case, the transpose should be taken to compute the QR decomposition.
     for (rows,cols) in [(5,3),(3,5)]
-      v = orthogonal(rows, cols)
+      v = orthogonal_init(rows, cols)
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
   end

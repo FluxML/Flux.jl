@@ -175,9 +175,9 @@ kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; 
 kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
 
 """
-    orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
+    orthogonal_init([rng=GLOBAL_RNG], dims...; gain = 1)
 
-Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in Ref. [1]. 
+Return an `Array` of size `dims` which is a (semi) orthogonal_init matrix, as described in Ref. [1]. 
 
 The input must have at least 2 dimensions. 
 
@@ -185,7 +185,7 @@ The input must have at least 2 dimensions.
 ```jldoctest; setup = :(using Random; Random.seed!(0));
 julia> using LinearAlgebra
 
-julia> W = Flux.orthogonal(5, 7);
+julia> W = Flux.orthogonal_init(5, 7);
 
 julia> summary(W)
 "5×7 Array{Float32,2}"
@@ -193,7 +193,7 @@ julia> summary(W)
 julia> W * W' ≈ I(5)
 true
 
-julia> W2 = Flux.orthogonal(7, 5);
+julia> W2 = Flux.orthogonal_init(7, 5);
 
 julia> W2 * W2' ≈ I(7)
 false
@@ -206,7 +206,7 @@ true
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
-function orthogonal(rng::AbstractRNG, dims...; gain = 1)
+function orthogonal_init(rng::AbstractRNG, dims...; gain = 1)
   if length(dims) < 2
     throw(ArgumentError("Only Arrays with 2 or more dimensions are supported"))
   end
@@ -224,8 +224,8 @@ function orthogonal(rng::AbstractRNG, dims...; gain = 1)
   return gain * reshape(Q, dims)
 end
 
-orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
-orthogonal(rng::AbstractRNG; kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; kwargs...)
+orthogonal_init(dims::Integer...; kwargs...) = orthogonal_init(Random.GLOBAL_RNG, dims...; kwargs...)
+orthogonal_init(rng::AbstractRNG; kwargs...) = (dims::Integer...; kwargs...) -> orthogonal_init(rng, dims...; kwargs...)
 
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
