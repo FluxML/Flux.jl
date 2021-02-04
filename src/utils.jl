@@ -179,7 +179,7 @@ kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_no
 
 Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in Ref. [1]. 
 
-The input tensor must have at least 2 dimensions. 
+The input must have at least 2 dimensions. 
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0));
