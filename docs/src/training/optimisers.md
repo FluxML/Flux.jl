@@ -35,7 +35,7 @@ Running this will alter the parameters `W` and `b` and our loss should go down. 
 opt = Descent(0.1) # Gradient descent with learning rate 0.1
 
 for p in (W, b)
-  update!(opt, p, grads[p])
+  opt(p, grads[p])
 end
 ```
 
@@ -70,23 +70,25 @@ Flux's optimisers are built around a `struct` that holds all the optimiser param
 In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
 
 ```julia
-mutable struct Momentum
+struct Momentum
   eta
   rho
   velocity
 end
 
-Momentum(eta::Real, rho::Real) = Momentum(eta, rho, IdDict())
+Momentum(eta::Real, rho::Real) = Momentum(eta, rho)
+Optimisers.init(opt::Momentum, x) = (zero(x),)
 ```
 
 The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state dictionary. Each parameter in our models will get an entry in there. We can now define the rule applied when this optimiser is invoked.
 
 ```julia
-function Flux.Optimise.apply!(o::Momentum, x, Δ)
+function Flux.Optimise.apply(o::Momentum, x, Δ, st)
   η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
-  @. v = ρ * v - η * Δ
-  @. Δ = -v
+  v, = st
+  v = @. ρ * v - η * Δ
+  Δ = @. -v
+  Δ, (v,)
 end
 ```
 
@@ -97,9 +99,9 @@ v = ρ * v - η * Δ
 w = w - v
 ```
 
-The `apply!` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
+The `apply` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients. Here, every parameter `x` is retrieved from the running state `v` and returns the new state of the optimizer.
 
-Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully.
+Flux internally calls on this function via the `update!` function. It shares the API with `apply` but ensures that multiple parameters are handled gracefully.
 
 ## Composing Optimisers
 
