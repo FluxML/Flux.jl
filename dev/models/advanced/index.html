@@ -36,16 +36,12 @@ end
 # allow Join(op, m1, m2, ...) as a constructor
 Join(combine, paths...) = Join(combine, paths)</code></pre><p>Notice that we parameterized the type of the <code>paths</code> field. This is necessary for fast Julia code; in general, <code>T</code> might be a <code>Tuple</code> or <code>Vector</code>, but we don&#39;t need to pay attention to what it specifically is. The same goes for the <code>combine</code> field.</p><p>The next step is to use <a href="models/@ref"><code>Flux.@functor</code></a> to make our struct behave like a Flux layer. This is important so that calling <code>params</code> on a <code>Join</code> returns the underlying weight arrays on each path.</p><pre><code class="language-julia">Flux.@functor Join</code></pre><p>Finally, we define the forward pass. For <code>Join</code>, this means applying each <code>path</code> in <code>paths</code> to each input array, then using <code>combine</code> to merge the results.</p><pre><code class="language-julia">(m::Join)(xs::Tuple) = m.combine(map((f, x) -&gt; f(x), m.paths, xs))
 (m::Join)(xs...) = m(xs)</code></pre><p>Lastly, we can test our new layer. Thanks to the proper abstractions in Julia, our layer works on GPU arrays out of the box!</p><pre><code class="language-julia">model = Chain(
-          Join(vcat,
-            Chain(
-              Dense(1, 5),
-              Dense(5, 1)
-            ),
-            Dense(1, 2),
-            Dense(1, 1),
-          ),
-          Dense(4, 1)
-        ) |&gt; gpu
+              Join(vcat,
+                   Chain(Dense(1, 5),Dense(5, 1)), # branch 1
+                   Dense(1, 2),                    # branch 2
+                   Dense(1, 1)),                   # branch 3
+              Dense(4, 1)
+             ) |&gt; gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
 
@@ -55,16 +51,13 @@ Join(combine, paths...) = Join(combine, paths)
 
 # use vararg/tuple version of Parallel forward pass
 model = Chain(
-          Join(vcat,
-            Chain(
-              Dense(1, 5),
-              Dense(5, 1)
-            ),
-            Dense(1, 2),
-            Dense(1, 1),
-          ),
-          Dense(4, 1)
-        ) |&gt; gpu
+              Join(vcat,
+                   Chain(Dense(1, 5),Dense(5, 1)),
+                   Dense(1, 2),
+                   Dense(1, 1)
+                  ),
+              Dense(4, 1)
+             ) |&gt; gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
 
@@ -82,13 +75,9 @@ Split(paths...) = Split(paths)
 Flux.@functor Split
 
 (m::Split)(x::AbstractArray) = tuple(map(f -&gt; f(x), m.paths))</code></pre><p>Now we can test to see that our <code>Split</code> does indeed produce multiple outputs.</p><pre><code class="language-julia">model = Chain(
-          Dense(10, 5),
-          CustomSplit(
-            Dense(5, 1),
-            Dense(5, 3),
-            Dense(5, 2)
-          )
-        ) |&gt; gpu
+              Dense(10, 5),
+              CustomSplit(Dense(5, 1),Dense(5, 3),Dense(5, 2))
+             ) |&gt; gpu
 
 model(gpu(rand(10)))
 # returns a tuple with three float vectors</code></pre><p>A custom loss function for the multiple outputs may look like this:</p><pre><code class="language-julia">using Statistics
@@ -100,4 +89,4 @@ function loss(x, ys, model)
   # rms over all the mse
   ŷs = model(x)
   return sqrt(mean(Flux.mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
-end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../regularisation/">« Regularisation</a><a class="docs-footer-nextpage" href="../nnlib/">NNlib »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 2 February 2021 10:00">Tuesday 2 February 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../regularisation/">« Regularisation</a><a class="docs-footer-nextpage" href="../nnlib/">NNlib »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 4 February 2021 14:03">Thursday 4 February 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
