@@ -73,7 +73,6 @@ In this manner Flux also allows one to create custom optimisers to be used seaml
 struct Momentum
   eta
   rho
-  velocity
 end
 
 Momentum(eta::Real, rho::Real) = Momentum(eta, rho)
@@ -123,11 +122,12 @@ ps = Params([w, w1])
 loss(x) = Flux.Losses.mse(w * x, w1 * x)
 
 loss(rand(10)) # around 9
+st = Optimisers.init(opt, [w, w1])
 
 for t = 1:10^5
-  θ = Params([w, w1])
+  θ = ps
   θ̄ = gradient(() -> loss(rand(10)), θ)
-  Flux.Optimise.update!(opt, θ, θ̄)
+  ps, st = Flux.Optimise.update!(opt, θ, θ̄, st)
 end
 
 loss(rand(10)) # around 0.9
