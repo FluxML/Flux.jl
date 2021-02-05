@@ -144,7 +144,7 @@ struct LayerNorm{F,D,T,S}
   affine::Bool
 end
 
-function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
+function LayerNorm(sz, λ = identity; affine = true, ϵ = 1f-5)
   diag = affine ? Diagonal(sz...) : nothing
   return LayerNorm(λ, diag, ϵ, sz, affine)
 end
@@ -158,8 +158,8 @@ end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")
-  a.λ == identity || print(io, ", $(a.λ)")
-  hasaffine(l) || print(io, ", affine=false")
+  print(io, ", $(l.λ)")
+  print(io, ", affine = $(l.affine)")
   print(io, ")")
 end
 
