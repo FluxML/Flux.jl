@@ -182,9 +182,7 @@ Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as describ
 The input must have at least 2 dimensions. 
 
 # Examples
-```jldoctest
-julia> using LinearAlgebra
-
+```jldoctest; setup = :(using LinearAlgebra)
 julia> W = Flux.orthogonal_init(5, 7);
 
 julia> summary(W)
