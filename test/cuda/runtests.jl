@@ -4,7 +4,6 @@ using Zygote: pullback
 @info "Testing GPU Support"
 CUDA.allowscalar(false)
 
-include("test_utils.jl")
 include("cuda.jl")
 include("losses.jl")
 include("layers.jl")
