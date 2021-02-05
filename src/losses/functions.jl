@@ -458,7 +458,7 @@ true
 See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
 """
-function binary_focal_loss(ŷ, y; agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
+function binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=epseltype(ŷ))
     ŷ = ŷ .+ ϵ
     p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
     ce = -log.(p_t)
@@ -501,11 +501,10 @@ true
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, γ=ofeltype(ŷ, 2.0), ϵ=epseltype(ŷ))
+function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
     ŷ = ŷ .+ ϵ
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
 ```@meta
 DocTestFilters = nothing
 ```
-
