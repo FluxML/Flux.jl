@@ -16,23 +16,20 @@ end
 const BROKEN_LAYERS = Union{DepthwiseConv,
                             AlphaDropout}
 
-function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; 
-            setmode=false, test_cpu=true, rtol=1e-5, atol=1e-5)
+function gpu_gradtest(name::String, layers::Vector, x_cpu, args...) 
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer GPU grad test" begin
         l_cpu = layer(args...)
+        l_gpu, x_gpu = gpu(l_cpu), gpu(x_cpu)
         if l_cpu isa BROKEN_LAYERS
-          l_gpu, x_gpu = l_cpu |> gpu, x_cpu |> gpu
           @test_broken gradient(() -> sum(l_gpu(x_gpu)), Flux.params(l_gpu)) isa Flux.Zygote.Grads
         else
-          gpu_autodiff_test(l_cpu, x_cpu, 
-              test_equal=test_cpu, rtol=rtol, atol=atol)
-          if setmode
-            testmode!(l_cpu)
-            gpu_autodiff_test(l_cpu, x_cpu, 
-              test_equal=test_cpu, rtol=rtol, atol=atol)
-          end  
+          ps_gpu = Flux.params(l_gpu)
+          ps_cpu = Flux.params(l_cpu)
+          y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
+          gs_gpu = back_gpu(1.f0)
+          @test gs isa Flux.Zygote.Grads
         end
       end
     end
