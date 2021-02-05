@@ -248,9 +248,9 @@ mutable struct BatchNorm{F,V,N,W}
   σ²::W    # moving var
   ϵ::N
   momentum::N
-  affine::Bool
-  track_stats::Bool
-  active::Union{Bool, Nothing}
+  # affine::Bool
+  # track_stats::Bool
+  # active::Union{Bool, Nothing}
 end
 
 function BatchNorm(chs::Int, λ=identity;
@@ -284,8 +284,8 @@ testmode!(m::BatchNorm, mode=true) =
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
-  l.λ == identity || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false")
+  print(io, ", $(l.λ)")
+  print(io,  ", affine = ")
   print(io, ")")
 end
 
@@ -323,9 +323,9 @@ mutable struct InstanceNorm{F,V,N,W}
   σ²::W  # moving var
   ϵ::N
   momentum::N
-  affine::Bool
-  track_stats::Bool
-  active::Union{Bool, Nothing}
+  # affine::Bool
+  # track_stats::Bool
+  # active::Union{Bool, Nothing}
 end
 
 function InstanceNorm(chs::Int, λ = identity;
@@ -360,8 +360,8 @@ testmode!(m::InstanceNorm, mode=true) =
 
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(l.chs)")
-  l.λ == identity || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false")
+  print(io, ", $(l.λ)")
+  print(io, ", affine = ")
   print(io, ")")
 end
 
@@ -401,9 +401,9 @@ mutable struct GroupNorm{F,V,N,W}
   σ²::W    # moving std
   ϵ::N
   momentum::N
-  affine::Bool
-  track_stats::Bool
-  active::Union{Bool, Nothing}
+  # affine::Bool
+  # track_stats::Bool
+  # active::Union{Bool, Nothing}
 end
 
 @functor GroupNorm
@@ -447,8 +447,8 @@ testmode!(m::GroupNorm, mode = true) =
 
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(l.chs), $(l.G)")
-  l.λ == identity || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false")
+  print(io, ", $(l.λ)")
+  print(io, ", affine = ")
   print(io, ")")
 end
 
