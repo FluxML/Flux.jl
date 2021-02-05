@@ -1,4 +1,4 @@
-using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy
+using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy, binary_focal_loss, focal_loss
 
 
 @testset "Losses" begin
@@ -14,6 +14,17 @@ y = [1, 1, 0.]
 @test binarycrossentropy(σ.(x), y) ≈ binarycrossentropy(gpu(σ.(x)), gpu(y))
 @test logitbinarycrossentropy(x, y) ≈ logitbinarycrossentropy(gpu(x), gpu(y))
 
+x = [0.268941  0.5  0.268941
+     0.731059  0.5  0.731059]
+y = [0  1  0
+     1  0  1]
+@test binary_focal_loss(x, y) ≈ binary_focal_loss(gpu(x), gpu(y))
+
+x = softmax(reshape(-7:7, 3, 5) .* 1f0)
+y = [1  0  0  0  1
+     0  1  0  1  0
+     0  0  1  0  0]
+@test focal_loss(x, y) ≈ focal_loss(gpu(x), gpu(y))
 
 @testset "GPU grad tests" begin
   x = rand(Float32, 3,3)
