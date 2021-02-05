@@ -52,6 +52,11 @@ end
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is set to `true`.
+To apply dropout along certain dimension(s), specify the `dims` keyword.
+e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
+(also called 2D dropout).
+
+Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
 mutable struct Dropout{F,D}
   p::F
@@ -139,8 +144,9 @@ struct LayerNorm{F,D,T,S}
   affine::Bool
 end
 
-function LayerNorm(sz, λ = identity; affine = true, ϵ = 1f-5)
-  diag = affine ? Diagonal(sz...) : identity
+function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
+  sz = sz isa Integer ? (sz,) : sz
+  diag = affine ? Diagonal(sz...) : nothing
   return LayerNorm(λ, diag, ϵ, sz, affine)
 end
 
@@ -254,10 +260,10 @@ function BatchNorm(chs::Int, λ=identity;
                    affine = true, track_stats = true,
                    ϵ = 1f-5, momentum = 0.1f0)
 
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  β = initβ(chs)
+  γ = initγ(chs)
+  μ = zeros(Float32, chs)
+  σ² = ones(Float32, chs)
 
   return BatchNorm(chs, λ, β, γ,
             μ, σ², ϵ, momentum, 
@@ -323,18 +329,17 @@ mutable struct InstanceNorm{F,V,N,W}
   active::Union{Bool, Nothing}
 end
 
-function InstanceNorm(chs::Int, λ=identity;
+function InstanceNorm(chs::Int, λ = identity;
                     initβ = i -> zeros(Float32, i), 
                     initγ = i -> ones(Float32, i), 
-                    affine=false, track_stats=false,
-                    ϵ=1f-5, momentum=0.1f0)
+                    affine = false, track_stats = false,
+                    ϵ = 1f-5, momentum = 0.1f0)
 
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
-
-  return InstanceNorm(chs, λ, β, γ,
+  β = initβ(chs)
+  γ = initγ(chs)
+  μ = zeros(Float32, chs)
+  σ² = ones(Float32, chs)
+  InstanceNorm(chs, λ, β, γ,
             μ, σ², ϵ, momentum, 
             affine, track_stats, nothing)
 end
@@ -347,7 +352,7 @@ function (l::InstanceNorm)(x)
   @assert size(x, ndims(x)-1) == l.chs
   N = ndims(x)
   reduce_dims = 1:N-2
-  affine_shape = in.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
+  affine_shape = l.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
   return _norm_layer_forward(l, x; reduce_dims = reduce_dims, affine_shape = reduce_dims)
 end
 
@@ -405,18 +410,18 @@ end
 @functor GroupNorm
 trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
-function GroupNorm(chs::Int, G::Int, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i), 
-              affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0) 
+function GroupNorm(chs::Int, G::Int, λ = identity;
+              initβ = i -> zeros(Float32, i), 
+              initγ = i -> ones(Float32, i), 
+              affine = true, track_stats = false,
+              ϵ = 1f-5, momentum = 0.1f0) 
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, G) : nothing
-  σ² = track_stats ? ones(Float32, G) : nothing
+  β = initβ(chs)
+  γ = initγ(chs)
+  μ = zeros(Float32, G)
+  σ² = ones(Float32, G)
 
   return GroupNorm(chs, G, λ, 
             β, γ,
@@ -448,12 +453,12 @@ function Base.show(io::IO, l::GroupNorm)
   print(io, ")")
 end
 
-"""
-  hasaffine(l)
-
-Return `true` if a normalisation layer has trainable shift and 
-scale parameters, `false` otherwise.
-
-See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
-"""
-hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
+# """
+#   hasaffine(l)
+# 
+# Return `true` if a normalisation layer has trainable shift and 
+# scale parameters, `false` otherwise.
+# 
+# See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
+# """
+# hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
