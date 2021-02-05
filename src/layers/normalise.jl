@@ -119,7 +119,7 @@ testmode!(m::AlphaDropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
-    LayerNorm(sz, λ=identity; affine=true, ϵ=1fe-5)
+    LayerNorm(sz, λ = identity; affine = true, ϵ = 1fe-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states. 
@@ -130,7 +130,7 @@ The input is normalised along the first `length(sz)` dimensions
 for tuple `sz`, along the first dimension for integer `sz`.
 The input  is expected to have first dimensions' size equal to `sz`. 
 
-If `affine=true` also applies a learnable shift and rescaling
+If `affine = true` also applies a learnable shift and rescaling
 as in the [`Diagonal`](@ref) layer.
 
 
@@ -141,12 +141,11 @@ struct LayerNorm{F,D,T,S}
   diag::D
   ϵ::T
   sz::S
-  affine::Bool
 end
 
 function LayerNorm(sz, λ = identity; affine = true, ϵ = 1f-5)
-  diag = affine ? Diagonal(sz...) : nothing
-  return LayerNorm(λ, diag, ϵ, sz, affine)
+  diag = affine ? Diagonal(sz...) : identity
+  return LayerNorm(λ, diag, ϵ, sz)
 end
 
 @functor LayerNorm
@@ -159,7 +158,7 @@ end
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")
   print(io, ", $(l.λ)")
-  print(io, ", affine = $(l.affine)")
+  print(io, ", affine = $(l.diag)")
   print(io, ")")
 end
 
@@ -167,7 +166,7 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape = nothing) where {T, N}
+function norm_forward(l, x::AbstractArray{T,N}; reduce_dims) where {T, N}
   if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
@@ -183,7 +182,8 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
       l.σ² .= σ²
     end
   end
-  affine(l, x, μ, σ², affine_shape)
+  μ, σ²
+  # affine(l, x, μ, σ², affine_shape)
 end
 
 function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T,N}
@@ -276,7 +276,9 @@ function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
   affine_shape = BN.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  return _norm_layer_forward(BN, x; reduce_dims = reduce_dims, affine_shape = affine_shape)
+  μ, σ² = norm_forward(BN, x;
+                       reduce_dims = reduce_dims)
+  affine(l, x, μ, σ², affine_shape)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -348,11 +350,12 @@ trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == l.chs
+  # @assert size(x, ndims(x)-1) == l.chs
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = l.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  return _norm_layer_forward(l, x; reduce_dims = reduce_dims, affine_shape = reduce_dims)
+  μ, σ² = norm_forward(l, x; reduce_dims = reduce_dims)
+  affine(l, x, μ, σ², affine_shape)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
@@ -429,17 +432,18 @@ function GroupNorm(chs::Int, G::Int, λ = identity;
             affine, track_stats, nothing)
 end
 
-function (gn::GroupNorm)(x)
+function (gn::GroupNorm)(x::AbstractArray{T,N}) where {T,N}
   @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == gn.chs
-  N = ndims(x)
+  # @assert size(x, ndims(x) - 1) == gn.chs
   sz = size(x)
-  x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
+  x = reshape(x, sz[1:N-2]..., sz[N-1] ÷ gn.G, gn.G, sz[N])
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = gn.affine ? ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N) : nothing
-  x = _norm_layer_forward(gn, x; reduce_dims = reduce_dims, affine_shape = affine_shape)
-  return reshape(x, sz)
+  μ, σ² = norm_forward(gn, x;
+                       reduce_dims = reduce_dims)
+  res = affine(l, x, μ, σ², affine_shape)
+  return reshape(res, sz)
 end
 
 testmode!(m::GroupNorm, mode = true) =
