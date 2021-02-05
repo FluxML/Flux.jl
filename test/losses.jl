@@ -13,7 +13,8 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.tversky_loss,
                     Flux.Losses.dice_coeff_loss,
                     Flux.Losses.poisson_loss,
-                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss]
+                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss]
 
 
 @testset "xlogx & xlogy" begin
@@ -179,7 +180,7 @@ end
     y = [0  1  0
          1  0  1]
     ŷ = [0.268941  0.5  0.268941
-            0.731059  0.5  0.731059]
+         0.731059  0.5  0.731059]
 
     y1 = [1 0
           0 1]
@@ -194,10 +195,7 @@ end
     y = [1  0  0  0  1
          0  1  0  1  0
          0  0  1  0  0]
-
-    ŷ = [0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
-        0.244728   0.244728   0.244728   0.244728   0.244728
-        0.665241   0.665241   0.665241   0.665241   0.665241]
+    ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
     y1 = [1 0
           0 0
           0 1]
