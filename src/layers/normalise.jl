@@ -145,7 +145,6 @@ struct LayerNorm{F,D,T,S}
 end
 
 function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
-  sz = sz isa Integer ? (sz,) : sz
   diag = affine ? Diagonal(sz...) : nothing
   return LayerNorm(λ, diag, ϵ, sz, affine)
 end
