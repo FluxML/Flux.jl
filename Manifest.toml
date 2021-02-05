@@ -46,17 +46,6 @@ version = "2.4.1"
 
 [[ChainRules]]
 deps = ["ChainRulesCore", "Compat", "LinearAlgebra", "Random", "Reexport", "Requires", "Statistics"]
-<<<<<<< HEAD
-git-tree-sha1 = "011631a8b309f5ad49a53f6353d90cf2dd569a04"
-uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-version = "0.7.47"
-
-[[ChainRulesCore]]
-deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "89a0b14325d0f02f9caed7c8ba91181a5d254874"
-uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "0.9.26"
-=======
 git-tree-sha1 = "6ba8100fa9356807f1d0df6468ae463c67627c30"
 uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
 version = "0.7.49"
@@ -66,7 +55,6 @@ deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "53fed426c9af1eb68e63b3999e96454c2db79757"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 version = "0.9.27"
->>>>>>> master
 
 [[CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
