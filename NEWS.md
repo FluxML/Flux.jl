@@ -3,6 +3,7 @@
 ## v0.12.0
 
 * Add [Orthogonal Matrix initialization](https://github.com/FluxML/Flux.jl/pull/1496) as described in [Exact solutions to the nonlinear dynamics of learning in deep linear neural networks](https://arxiv.org/abs/1312.6120).
+* Added [Focal Loss function](https://github.com/FluxML/Flux.jl/pull/1489) to Losses module
 * The Dense layer now supports inputs with [multiple batch dimensions](https://github.com/FluxML/Flux.jl/pull/1405).
 * Dense and Conv layers no longer perform  [implicit type conversion](https://github.com/FluxML/Flux.jl/pull/1394).
 * Excise datasets in favour of other providers in the julia ecosystem.
@@ -12,7 +13,7 @@
 * Add [sparse initialization](https://github.com/FluxML/Flux.jl/pull/1454) as described in [Deep learning via Hessian-free optimization](https://dl.acm.org/doi/abs/10.5555/3104322.3104416).
 * Moved GPU CI to use buildkite instead of GitLab
 * New [`Parallel` layer](https://github.com/FluxML/Flux.jl/pull/1462) adds inception module-like building blocks.
-
+* Feature additions and bug fixes for BatchNorm, LayerNorm, InstanceNorm, and GroupNorm [normalization layers](https://github.com/FluxML/Flux.jl/pull/1397)
 
 ## v0.11.2
 
