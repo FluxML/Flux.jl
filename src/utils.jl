@@ -208,8 +208,11 @@ function orthogonal_init(rng::AbstractRNG, dims...; gain = 1)
   if length(dims) < 2
     throw(ArgumentError("Only Arrays with 2 or more dimensions are supported"))
   end
-
-  rows = dims[1]
+  if length(dims) == 2
+    rows = dims[1]
+  else
+    rows = dims[end]
+  end
   cols = div(prod(dims),rows)
   mat = rows > cols ? randn(Float32, rows, cols) : randn(Float32, cols, rows)
 
