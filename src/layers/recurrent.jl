@@ -27,11 +27,11 @@ rnn.state   # 60
 """
 mutable struct Recur{T,S}
   cell::T
-  state::S
+  state::Tuple{Vararg{S}}
 end
 
-function (m::Recur)(xs...)
-  m.state, y = m.cell(m.state, xs...)
+function (m::Recur)(x)
+  m.state, y = m.cell(m.state, x)
   return y
 end
 
@@ -74,16 +74,16 @@ struct RNNCell{F,A,V,S}
   Wi::A
   Wh::A
   b::V
-  state0::S
+  state0::Tuple{Vararg{S}}
 end
 
 RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
-  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
+  RNNCell(σ, init(out, in), init(out, out), initb(out), (init_state(out,1),))
 
-function (m::RNNCell)(h, x)
+function (m::RNNCell{F,A,V,S})((h,), x) where {F,A,V,S}
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
-  return h, h
+  return (h,), h
 end
 
 @functor RNNCell
@@ -121,7 +121,7 @@ struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state0::S
+  state0::Tuple{Vararg{S}}
 end
 
 function LSTMCell(in::Integer, out::Integer;
@@ -133,7 +133,7 @@ function LSTMCell(in::Integer, out::Integer;
   return cell
 end
 
-function (m::LSTMCell)((h, c), x)
+function (m::LSTMCell{A,V,S})((h, c), x) where {A,V,S}
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
@@ -160,8 +160,6 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
-# Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
-#   (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
 Recur(m::LSTMCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -187,20 +185,20 @@ struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state0::S
+  state0::Tuple{Vararg{S}}
 end
 
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
-  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), (init_state(out,1),))
 
-function (m::GRUCell)(h, x)
+function (m::GRUCell{A,V,S})((h,), x) where {A,V,S}
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
-  return h′, h′
+  return (h′,), h′
 end
 
 @functor GRUCell
