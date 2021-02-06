@@ -175,15 +175,17 @@ kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; 
 kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
 
 """
-    orthogonal_init([rng=GLOBAL_RNG], dims...; gain = 1)
+    orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
 
 Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1]. 
 
 The input must have at least 2 dimensions. 
 
+For input dimensions > 2, the array is flattened with respect to the last dimension, and then an orthogonal matrix is computed before reshaping it to original dimensions.
+
 # Examples
 ```jldoctest; setup = :(using LinearAlgebra)
-julia> W = Flux.orthogonal_init(5, 7);
+julia> W = Flux.orthogonal(5, 7);
 
 julia> summary(W)
 "5×7 Array{Float32,2}"
@@ -191,7 +193,7 @@ julia> summary(W)
 julia> W * W' ≈ I(5)
 true
 
-julia> W2 = Flux.orthogonal_init(7, 5);
+julia> W2 = Flux.orthogonal(7, 5);
 
 julia> W2 * W2' ≈ I(7)
 false
@@ -204,16 +206,8 @@ true
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
-function orthogonal_init(rng::AbstractRNG, dims...; gain = 1)
-  if length(dims) < 2
-    throw(ArgumentError("Only Arrays with 2 or more dimensions are supported"))
-  end
-  if length(dims) == 2
-    rows = dims[1]
-  else
-    rows = dims[end]
-  end
-  cols = div(prod(dims),rows)
+function orthogonal(rng::AbstractRNG, rows, cols; gain = 1)
+  cols = div(rows*cols,rows)
   mat = rows > cols ? randn(Float32, rows, cols) : randn(Float32, cols, rows)
 
   Q, R = LinearAlgebra.qr(mat)
@@ -222,11 +216,22 @@ function orthogonal_init(rng::AbstractRNG, dims...; gain = 1)
     Q = transpose(Q)
   end
 
-  return gain * reshape(Q, dims)
+  return gain * reshape(Q, (rows, cols))
 end
 
-orthogonal_init(dims::Integer...; kwargs...) = orthogonal_init(Random.GLOBAL_RNG, dims...; kwargs...)
-orthogonal_init(rng::AbstractRNG; kwargs...) = (dims::Integer...; kwargs...) -> orthogonal_init(rng, dims...; kwargs...)
+function orthogonal(rng::AbstractRNG, dims...; kwargs)
+  if length(dims) < 2
+    throw(ArgumentError("Only Arrays with 2 or more dimensions are supported"))
+  end
+
+  @assert length(dims) > 2
+  rows = dims[end]
+  cols = div(prod(dims),rows)
+  return reshape(orthogonal(rng, rows, cols; kwargs), dims)
+end
+
+orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
+orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
