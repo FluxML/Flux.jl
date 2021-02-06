@@ -102,6 +102,13 @@ end
       v = orthogonal_init(rows, cols)
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
+    for mat in [(3,4,5),(2,2,5)]
+      v = orthogonal_init(mat...)
+      rows = mat[end]
+      cols = div(prod(mat),rows)
+      v = reshape(v, (rows,cols))
+      rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
+    end
   end
 
   @testset "sparse_init" begin
