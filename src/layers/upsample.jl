@@ -1,25 +1,27 @@
 """
   Upsample(scale; mode=:nearest)  
-  Upsample(; size, mode=:bilinear)
+  Upsample(; size, mode=:nearest)
 
-An upsampling layer. `scale` is a number or a tuple of numbers 
+An upsampling layer. 
+
+`scale` is a number or a tuple of numbers 
 representing  the output rescaling factor along each spatial dimension.
+For integer `scale`, all but the last 2 dimensions (channel and batch)
+will rescaled by the same factor. 
 
-Currently supported upsampling `mode`s are:
-  - `:nearest`
-  - `:bilinear`
+It is also possible to directly specify the output spatial `size`,
+as an alternative to using `scale`.
 
-For some `mode`s it is possible
-to directly specify the output spatial `size`,
-as an alternative to `scale`,   
-
-See [`NNlib.upsample_nearest`](@ref), [`NNlib.upsample_bilinear`](@ref).
+Currently supported upsampling `mode`s 
+and corresponding NNlib's methods are:
+  - `:nearest` -> [`NNlib.upsample_nearest`](@ref) 
+  - `:bilinear` -> [`NNlib.upsample_bilinear`](@ref)
 
 # Examples
 
 ```juliarepl
 julia> m = Upsample((2,3), mode=:bilinear)
-Upsample((2, 3), mode=bilinear)
+Upsample((2, 3), mode=:bilinear)
 
 julia> m(ones(1,1,1,1))
 2×3×1×1 Array{Float64,4}:
@@ -33,20 +35,25 @@ struct Upsample{Mode,S,T}
   size::T
 end
 
-function Upsample(scale; mode::Symbol=:nearest)
+function Upsample(scale::S; mode::Symbol=:nearest) where S
   mode in [:nearest, :bilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
-  return Upsample(scale, nothing)
+  return Upsample{mode,S,Nothing}(scale, nothing)
 end
 
-function Upsample(; size, mode::Symbol=:bilinear)
+function Upsample(; size::T, mode::Symbol=:nearest) where T
   mode in [:nearest, :bilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
-  return Upsample(nothing, size)
+  return Upsample{mode, Nothing, T}(nothing, size)
 end
 
 (m::Upsample{:nearest})(x::AbstractArray) =
   NNlib.upsample_nearest(x, m.scale)
+function (m::Upsample{:nearest, Int})(x::AbstractArray{T, N}) where {T, N} 
+  NNlib.upsample_nearest(x, ntuple(i -> m.scale, N-2))
+end
+(m::Upsample{:nearest, Nothing})(x::AbstractArray) =
+  NNlib.upsample_nearest(x; size=m.size)
 
 (m::Upsample{:bilinear})(x::AbstractArray) =
   NNlib.upsample_bilinear(x, m.scale)

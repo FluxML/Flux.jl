@@ -79,6 +79,15 @@ gpu_gradtest("GroupNorm 3d", groupnorm, rand(Float32, 8, 8, 8, 12, 4), 12, 3, se
 gpu_gradtest("GroupNorm 2d", groupnorm, rand(Float32, 8, 8, 12, 4), 12, 3, setmode=true)
 gpu_gradtest("GroupNorm 1d", groupnorm, rand(Float32, 8, 3, 12, 4), 12, 3, setmode=true)
 
+upsample = [Upsample]
+gpu_gradtest("Upsample 2d", upsample, rand(Float32, 3, 4, 2, 3), (2,2))
+gpu_gradtest("Upsample 1d", upsample, rand(Float32, 3, 4, 2, 3), (2,))
+
+pixelshuffle = [PixelShuffle]
+gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
+gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
+
+
 @testset "function layers" begin
   x = rand(Float32, 3,3)
   gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
@@ -168,27 +177,4 @@ end
   @test sum(l(ip)) ≈ 0.f0  
   gs = gradient(() -> sum(l(ip)), Flux.params(l))
   @test l.b ∉ gs.params 
-end
-
-@testset "upsample bilinear" begin
-  m = Upsample(3, mode=:bilinear)
-  x = rand(Float32, 3, 4, 2, 3)
-  gy = m(x |> gpu)
-  @test gy isa CuArray{Float32, 4}
-  @test collect(gy) ≈ m(x)
-end
-
-@testset "upsample nearest" begin
-  x = rand(Float32, 3, 4, 2, 3)
-  gy = m(x |> gpu)
-  @test gy isa CuArray{Float32, 4}
-  @test collect(gy) ≈ m(x)
-end
-
-@testset "PixelShuffle" begin
-  m = PixelShuffle(3)
-  x = rand(Float32, 3, 4, 18, 3)
-  gy = m(x |> gpu)
-  @test gy isa CuArray{Float32, 4}
-  @test collect(gy) ≈ m(x)
 end
