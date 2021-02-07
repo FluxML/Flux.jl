@@ -123,3 +123,14 @@ end
   gs = gradient(() -> sum(l(ip)), Flux.params(l))
   @test l.b ∉ gs.params 
 end
+
+@testset "Two-streams Bilinear" begin
+  x = zeros(Float32,10,9) |> gpu
+  y = zeros(Float32,2,9) |> gpu
+  b = Flux.Bilinear(10, 2, 3) |> gpu
+  @test size(b(x,y)) == (3,9)
+  @test sum(abs2, b(x,y)) ≈ 0f0
+  @test_nowarn gs_gpu = gradient(() -> sum(abs2.(b(x,y))), params(b))
+  gs_cpu = gradient(() -> sum(abs2.(b(x |> cpu,y |> cpu) |> cpu)), params(b))
+  @test gs_cpu ≈ gs_gpu
+end
