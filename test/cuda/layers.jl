@@ -132,6 +132,6 @@ end
   @test sum(abs2, b(x,y)) ≈ 0f0
   @test_nowarn gs_gpu = gradient(() -> sum(abs2.(b(x,y))), params(b))
   b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
-  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu)), params(b_cpu))
+  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
   @test gs_cpu ≈ Array(gs_gpu)
 end
