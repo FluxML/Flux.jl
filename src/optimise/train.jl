@@ -16,14 +16,16 @@ Perform an update step of the parameters `ps` (or the single parameter `p`)
 according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
 As a result, the parameters are mutated and the optimizer's internal state may change.
 """
-function update!(opt, x, x̄)
-  x .-= apply!(opt, x, x̄)
+function update!(opt, x, x̄, st)
+  x̄, st = apply(opt, x, x̄, st)
+  x .-= x̄
+  x̄, st
 end
 
-function update!(opt, xs::Params, gs)
+function update!(opt, xs::Params, gs, st)
   for x in xs
     gs[x] == nothing && continue
-    update!(opt, x, gs[x])
+    _, st = update!(opt, x, gs[x], st)
   end
 end
 
@@ -84,12 +86,13 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, ps, data, opt; cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
+  st = [Optimisers.init(opt, p) for p in ps]
   @progress for d in data
     try
       gs = gradient(ps) do
         loss(batchmemaybe(d)...)
       end
-      update!(opt, ps, gs)
+      _, st = update!(opt, ps, gs, st)
       cb()
     catch ex
       if ex isa StopException
