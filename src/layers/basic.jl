@@ -134,32 +134,35 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(in::Integer)
+    Diagonal(α, β)
+    Diagonal(sz::Integer...; initα=ones, initβ=zeros)
 
-Create an element-wise linear transformation layer with learnable
-vectors `α` and `β`:
+Create an element-wise linear layer with learnable
+arrays `α` and `β` of size `sz`. The layer performs
 
     y = α .* x .+ β
 
-The input `x` must be a array where `size(x, 1) == in`.
+The input `x` must have size broadcast-compatible with `α` and `β`.
+The parameters will be created with the calls 
+`α = initα(sz)` and `β = initβ(sz)`.
 """
 struct Diagonal{T}
   α::T
   β::T
 end
 
-Diagonal(in::Integer; initα = ones, initβ = zeros) =
-  Diagonal(initα(in), initβ(in))
+function Diagonal(sz::Integer...; 
+      initα = i -> ones(Float32, i), 
+      initβ = i -> zeros(Float32, i))
+  Diagonal(initα(sz), initβ(sz))
+end
 
 @functor Diagonal
 
-function (a::Diagonal)(x)
-  α, β = a.α, a.β
-  α.*x .+ β
-end
+(a::Diagonal)(x) = a.α .* x .+ a.β
 
 function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", length(l.α), ")")
+  print(io, "Diagonal(", size(l.α), ")")
 end
 
 """

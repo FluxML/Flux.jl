@@ -111,16 +111,12 @@ Finally, we define the forward pass. For `Join`, this means applying each `path`
 Lastly, we can test our new layer. Thanks to the proper abstractions in Julia, our layer works on GPU arrays out of the box!
 ```julia
 model = Chain(
-          Join(vcat,
-            Chain(
-              Dense(1, 5),
-              Dense(5, 1)
-            ),
-            Dense(1, 2),
-            Dense(1, 1),
-          ),
-          Dense(4, 1)
-        ) |> gpu
+              Join(vcat,
+                   Chain(Dense(1, 5),Dense(5, 1)), # branch 1
+                   Dense(1, 2),                    # branch 2
+                   Dense(1, 1)),                   # branch 3
+              Dense(4, 1)
+             ) |> gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
 
@@ -137,16 +133,13 @@ Join(combine, paths...) = Join(combine, paths)
 
 # use vararg/tuple version of Parallel forward pass
 model = Chain(
-          Join(vcat,
-            Chain(
-              Dense(1, 5),
-              Dense(5, 1)
-            ),
-            Dense(1, 2),
-            Dense(1, 1),
-          ),
-          Dense(4, 1)
-        ) |> gpu
+              Join(vcat,
+                   Chain(Dense(1, 5),Dense(5, 1)),
+                   Dense(1, 2),
+                   Dense(1, 1)
+                  ),
+              Dense(4, 1)
+             ) |> gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
 
@@ -178,13 +171,9 @@ Flux.@functor Split
 Now we can test to see that our `Split` does indeed produce multiple outputs.
 ```julia
 model = Chain(
-          Dense(10, 5),
-          CustomSplit(
-            Dense(5, 1),
-            Dense(5, 3),
-            Dense(5, 2)
-          )
-        ) |> gpu
+              Dense(10, 5),
+              CustomSplit(Dense(5, 1),Dense(5, 3),Dense(5, 2))
+             ) |> gpu
 
 model(gpu(rand(10)))
 # returns a tuple with three float vectors
