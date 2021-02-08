@@ -51,14 +51,14 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
           # test 
           if test_cpu
-            @test y_gpu ≈ y_cpu rtol=1e-4 atol=1e-4
-            @test Array(xg_gpu) ≈ xg_cpu rtol=1e-4 atol=1e-4
+            @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
+            @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
           end
           @test gs_gpu isa Flux.Zygote.Grads
           for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
             @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
             if test_cpu
-              @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1e-4 atol=1e-4
+              @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
             end
           end
         end
