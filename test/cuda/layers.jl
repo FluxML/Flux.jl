@@ -133,5 +133,7 @@ end
   gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
   b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
   gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
-  @test gs_cpu ≈ Array(gs_gpu)
+  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
+    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
+  end
 end
