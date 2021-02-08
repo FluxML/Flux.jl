@@ -179,9 +179,9 @@ kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaimi
 
 Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1]. 
 
-The input must have at least 2 dimensions. 
-
-For input dimensions > 2, the array is flattened with respect to the last dimension, and then an orthogonal matrix is computed before reshaping it to original dimensions.
+The input must have at least 2 dimensions.
+For `length(dims) > 2`, a `prod(dims[1:(end - 1)])` by `dims[end]` orthogonal matrix 
+is computed before reshaping it to the original dimensions.
 
 # Examples
 ```jldoctest; setup = :(using LinearAlgebra)
