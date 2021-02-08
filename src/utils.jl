@@ -207,7 +207,6 @@ true
 
 """
 function orthogonal(rng::AbstractRNG, rows, cols; gain = 1)
-  cols = div(rows*cols,rows)
   mat = rows > cols ? randn(Float32, rows, cols) : randn(Float32, cols, rows)
 
   Q, R = LinearAlgebra.qr(mat)
@@ -216,18 +215,14 @@ function orthogonal(rng::AbstractRNG, rows, cols; gain = 1)
     Q = transpose(Q)
   end
 
-  return gain * reshape(Q, (rows, cols))
+  return gain * Q
 end
 
-function orthogonal(rng::AbstractRNG, dims...; kwargs)
-  if length(dims) < 2
-    throw(ArgumentError("Only Arrays with 2 or more dimensions are supported"))
-  end
-
-  @assert length(dims) > 2
+function orthogonal(rng::AbstractRNG, d1, ds...; kwargs...)
+  dims = (d1, ds...)
   rows = dims[end]
-  cols = div(prod(dims),rows)
-  return reshape(orthogonal(rng, rows, cols; kwargs), dims)
+  cols = div(prod(dims), rows)
+  return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
 end
 
 orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
