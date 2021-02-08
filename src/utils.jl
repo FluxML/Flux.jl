@@ -200,6 +200,11 @@ false
 
 julia> W2' * W2 ≈ I(5)
 true
+
+julia> W3 = Flux.orthogonal(3, 3, 2, 4);
+
+julia> transpose(reshape(W3, :, 4)) * reshape(W3, :, 4) ≈ I(4)
+true
 ```
 
 # See also
