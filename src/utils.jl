@@ -135,7 +135,7 @@ function kaiming_uniform(rng::AbstractRNG, dims...; gain = √2)
 end
 
 kaiming_uniform(dims...; kwargs...) = kaiming_uniform(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; kwargs...)
+kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 """
     kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
@@ -172,7 +172,7 @@ function kaiming_normal(rng::AbstractRNG, dims...; gain = √2f0)
 end
 
 kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
+kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
 
 """
     orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
@@ -275,7 +275,7 @@ function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
 end
 
 sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs...)
-sparse_init(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; kwargs...)
+sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)

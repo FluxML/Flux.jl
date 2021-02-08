@@ -134,6 +134,22 @@ end
       @test eltype(v) == Float32
     end
   end
+
+  @testset "partial_application" begin
+    big = 1e9
+
+    partial_ku = kaiming_uniform(gain=big)
+    @test maximum(partial_ku(8, 8)) > big / 2
+    @test maximum(partial_ku(8, 8, gain=1)) < big / 2
+
+    partial_kn = kaiming_normal(gain=big)
+    @test maximum(partial_kn(8, 8)) > big / 2
+    @test maximum(partial_kn(8, 8, gain=1)) < big / 2
+
+    partial_si = sparse_init(sparsity=1)
+    @test maximum(partial_si(8, 8)) == 0
+    @test maximum(partial_si(8, 8, sparsity=0)) > 0
+  end
 end
 
 @testset "Params" begin
