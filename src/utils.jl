@@ -203,7 +203,7 @@ true
 
 julia> W3 = Flux.orthogonal(3, 3, 2, 4);
 
-julia> transpose(reshape(W3, :, 4)) * reshape(W3, :, 4) ≈ I(4)
+julia> reshape(W3, :, 4) * transpose(reshape(W3, :, 4)) ≈ I(18)
 true
 ```
 
