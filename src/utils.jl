@@ -202,6 +202,13 @@ julia> W2' * W2 ≈ I(5)
 true
 ```
 
+# See also
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
+
 # References
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
