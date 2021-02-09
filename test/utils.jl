@@ -104,8 +104,8 @@ end
     end
     for mat in [(3,4,5),(2,2,5)]
       v = orthogonal(mat...)
-      rows = mat[end]
-      cols = div(prod(mat),rows)
+      rows = div(prod(mat),rows)
+      cols = mat[end]
       v = reshape(v, (rows,cols))
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
