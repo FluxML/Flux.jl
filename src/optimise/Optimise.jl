@@ -8,7 +8,6 @@ export train!,
        InvDecay, ExpDecay, WeightDecay, stop, skip, Optimiser,
        ClipValue, ClipNorm
 
-include("optimisers.jl")
 include("train.jl")
 
 end
