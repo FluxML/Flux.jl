@@ -218,8 +218,8 @@ true
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
-function orthogonal(rng::AbstractRNG, rows, cols; gain = 1)
-  mat = rows > cols ? randn(Float32, rows, cols) : randn(Float32, cols, rows)
+function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain = 1)
+  mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
 
   Q, R = LinearAlgebra.qr(mat)
   Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
