@@ -9,21 +9,21 @@ using Random
   # so that w and w' are different
   Random.seed!(84)
   w = randn(10, 10)
-  # @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-  #                      NADAM(), RADAM(), Descent(), ADAM(), OADAM(), AdaBelief(),
-  #                      Nesterov(), RMSProp(), Momentum()]
-  #   Random.seed!(42)
-  #   w′ = randn(10, 10)
-  #   b = Flux.Zeros()
-  #   loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
-  #   for t = 1: 10^5
-  #     θ = params([w′, b])
-  #     x = rand(10)
-  #     θ̄ = gradient(() -> loss(x), θ)
-  #     Optimise.update!(opt, θ, θ̄)
-  #   end
-  #   @test loss(rand(10, 10)) < 0.01
-  # end
+  @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(), AMSGrad(),
+                       NADAM(), RADAM(), Descent(), ADAM(), OADAM(), AdaBelief(),
+                       Nesterov(), RMSProp(), Momentum()]
+    Random.seed!(42)
+    w′ = randn(10, 10)
+    b = Flux.Zeros()
+    loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
+    for t = 1: 10^5
+      θ = params([w′, b])
+      x = rand(10)
+      θ̄ = gradient(() -> loss(x), θ)
+      Flux.Optimise.update!(opt, θ, θ̄)
+    end
+    @test loss(rand(10, 10)) < 0.01
+  end
 
   Random.seed!(84)
   w′ = rand(3,3)
