@@ -230,10 +230,10 @@ function orthogonal(rng::AbstractRNG, rows, cols; gain = 1)
   return gain * Q
 end
 
-function orthogonal(rng::AbstractRNG, d1, ds...; kwargs...)
+function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
   dims = (d1, ds...)
-  rows = dims[end]
-  cols = div(prod(dims), rows)
+  rows = prod(dims[1:end-1])
+  cols = dims[end]
   return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
 end
 
