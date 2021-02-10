@@ -1,15 +1,11 @@
 """
-  Upsample(mode = :nearest; scale = nothing, size = nothing)  
+  Upsample(mode = :nearest; [scale, size])  
 
-An upsampling layer. 
+An upsampling layer. One of two keywords must be given:
 
-`scale` is a number or a tuple of numbers 
-representing  the output rescaling factor along each spatial dimension.
-For integer `scale`, all but the last 2 dimensions (channel and batch)
-will be rescaled by the same factor. 
-
-It is also possible to directly specify the output spatial `size`,
-as an alternative to using `scale`.
+If `scale` is a number, this applies to all but the last two dimensions (channel and batch) of the input. 
+It may also be a tuple, to control dimensions individually. Alternatively, keyword 
+`size` accepts a tuple, to directly specify the leading dimensions of the output.
 
 Currently supported upsampling `mode`s 
 and corresponding NNlib's methods are:
@@ -78,4 +74,3 @@ struct PixelShuffle
 end
 
 (m::PixelShuffle)(x) = NNlib.pixel_shuffle(x, m.r)
-
