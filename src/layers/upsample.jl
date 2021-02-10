@@ -1,12 +1,12 @@
 """
-  Upsample(mode=:nearest; scale=nothing, size=nothing)  
+  Upsample(mode = :nearest; scale = nothing, size = nothing)  
 
 An upsampling layer. 
 
 `scale` is a number or a tuple of numbers 
 representing  the output rescaling factor along each spatial dimension.
 For integer `scale`, all but the last 2 dimensions (channel and batch)
-will rescaled by the same factor. 
+will be rescaled by the same factor. 
 
 It is also possible to directly specify the output spatial `size`,
 as an alternative to using `scale`.
@@ -19,13 +19,13 @@ and corresponding NNlib's methods are:
 # Examples
 
 ```juliarepl
-julia> m = Upsample(scale=(2, 3))
+julia> m = Upsample(scale = (2, 3))
 Upsample(:nearest, scale=(2, 3))
 
 julia> m(ones(2, 2, 1, 1)) |> size
 (4, 6, 1, 1)
 
-julia> m = Upsample(:bilinear, size=(4, 5))
+julia> m = Upsample(:bilinear, size = (4, 5))
 Upsample(:bilinear, size=(4, 5))
 
 julia> m(ones(2, 2, 1, 1)) |> size
@@ -36,7 +36,7 @@ struct Upsample{Mode,S,T}
   size::T
 end
 
-function Upsample(mode::Symbol=:nearest; scale=nothing, size=nothing)
+function Upsample(mode = :nearest; scale = nothing, size = nothing)
   mode in [:nearest, :bilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
   if ~((scale === nothing) ⊻ (size === nothing))
@@ -61,8 +61,8 @@ end
 function Base.show(io::IO, u::Upsample{mode}) where {mode}
   print(io, "Upsample(")
   print(io, ":", mode)
-  u.scale !== nothing && print(io, ", scale=$(u.scale)")
-  u.size !== nothing && print(io, ", size=$(u.size)")
+  u.scale !== nothing && print(io, ", scale = $(u.scale)")
+  u.size !== nothing && print(io, ", size = $(u.size)")
   println(io, ")")
 end
 
@@ -78,5 +78,4 @@ struct PixelShuffle
 end
 
 (m::PixelShuffle)(x) = NNlib.pixel_shuffle(x, m.r)
-
 
