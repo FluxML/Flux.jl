@@ -42,6 +42,9 @@ end
   @test y isa Array{Float32, 4} 
   @test size(y) == (6, 8, 2, 3)
 
+  m = Upsample(2)
+  @test y2 ≈ y 
+
   m = Upsample(:nearest, size=(6,8))
   y = m(x)
   @test y isa Array{Float32, 4} 
