@@ -37,7 +37,7 @@ function Upsample(mode::Symbol = :nearest; scale = nothing, size = nothing)
   mode in [:nearest, :bilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
   if !(isnothing(scale) ⊻ isnothing(size))
-      throw(ArgumentError("Either scale or size should be specified (but not both)."))
+    throw(ArgumentError("Either scale or size should be specified (but not both)."))
   end
   return Upsample{mode,typeof(scale),typeof(size)}(scale, size)
 end
