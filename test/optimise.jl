@@ -30,7 +30,7 @@ using Random
   @testset for o in (Descent(0.1), Momentum(0.01, 0.9), Nesterov(0.001, 0.9), RMSProp(0.001, 0.9),
                      ADAM(0.001, (0.9, 0.99)))
     w = rand(3,3)
-    st = Optimisers.init(o,w)
+    st = Flux.Optimise.Optimisers.init(o,w)
     loss(x, y) = mean((x .- y) .^ 2)
     l = loss(w, w′)
     for i = 1:10^4
