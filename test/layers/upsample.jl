@@ -43,6 +43,7 @@ end
   @test size(y) == (6, 8, 2, 3)
 
   m = Upsample(2)
+  y2 = m(x)
   @test y2 ≈ y 
 
   m = Upsample(:nearest, size=(6,8))
