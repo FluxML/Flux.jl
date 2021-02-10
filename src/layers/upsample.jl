@@ -1,6 +1,5 @@
 """
-  Upsample(scale; mode=:nearest)  
-  Upsample(; size, mode=:nearest)
+  Upsample(mode=:nearest; scale=nothing, size=nothing)  
 
 An upsampling layer. 
 
@@ -20,31 +19,30 @@ and corresponding NNlib's methods are:
 # Examples
 
 ```juliarepl
-julia> m = Upsample((2,3), mode=:bilinear)
-Upsample((2, 3), mode=:bilinear)
+julia> m = Upsample(scale=(2, 3))
+Upsample(:nearest, scale=(2, 3))
 
-julia> m(ones(1,1,1,1))
-2×3×1×1 Array{Float64,4}:
-[:, :, 1, 1] =
- 1.0  1.0  1.0
- 1.0  1.0  1.0
-```
+julia> m(ones(2, 2, 1, 1)) |> size
+(4, 6, 1, 1)
+
+julia> m = Upsample(:bilinear, size=(4, 5))
+Upsample(:bilinear, size=(4, 5))
+
+julia> m(ones(2, 2, 1, 1)) |> size
+(4, 5, 1, 1)
 """
 struct Upsample{Mode,S,T}
   scale::S
   size::T
 end
 
-function Upsample(scale::S; mode::Symbol=:nearest) where S
+function Upsample(mode::Symbol=:nearest; scale=nothing, size=nothing)
   mode in [:nearest, :bilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
-  return Upsample{mode,S,Nothing}(scale, nothing)
-end
-
-function Upsample(; size::T, mode::Symbol=:nearest) where T
-  mode in [:nearest, :bilinear] || 
-    throw(ArgumentError("mode=:$mode is not supported."))
-  return Upsample{mode, Nothing, T}(nothing, size)
+  if ~((scale === nothing) ⊻ (size === nothing))
+    throw(ArgumentError("Either scale or size should be specified."))
+  end
+  return Upsample{mode,typeof(scale),typeof(size)}(scale, size)
 end
 
 (m::Upsample{:nearest})(x::AbstractArray) =
@@ -62,9 +60,9 @@ end
 
 function Base.show(io::IO, u::Upsample{mode}) where {mode}
   print(io, "Upsample(")
-  u.scale !== nothing && print(io, "$(u.scale), ")
-  u.size !== nothing && print(io, "size=$(u.size), ")
-  print(io, "mode=:", mode)
+  print(io, ":", mode)
+  u.scale !== nothing && print(io, ", scale=$(u.scale)")
+  u.size !== nothing && print(io, ", size=$(u.size)")
   println(io, ")")
 end
 

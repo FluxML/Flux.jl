@@ -100,7 +100,7 @@ nil_input(pad::Bool, tup::Tuple{Vararg{Tuple}}) = nil_input(pad, tup...)
 function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch=false)
   x = nil_input(padbatch, inputsizes...)
   for (i,lay) in enumerate(m.layers)
-    try 
+    try
       x = lay(x)
     catch err
       str = x isa AbstractArray ? "with input of size $(size(x))" : ""
