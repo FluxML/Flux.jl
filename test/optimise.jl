@@ -16,11 +16,12 @@ using Random
     w′ = randn(10, 10)
     b = Flux.Zeros()
     loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
+    st = [Flux.Optimisers.init(opt, p) for p in [w′, b]]
     for t = 1: 10^5
       θ = params([w′, b])
       x = rand(10)
       θ̄ = gradient(() -> loss(x), θ)
-      Flux.Optimise.update!(opt, θ, θ̄)
+      _, st = Flux.Optimise.update!(opt, θ, θ̄, st)
     end
     @test loss(rand(10, 10)) < 0.01
   end

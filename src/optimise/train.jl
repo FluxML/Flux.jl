@@ -26,10 +26,13 @@ function update!(opt, x, x̄, st)
 end
 
 function update!(opt, xs::Params, gs, st)
-  for x in xs
+  st_ = []
+  for (x,s) in zip(xs,st)
     gs[x] == nothing && continue
-    _, st = update!(opt, x, gs[x], st)
+    _, s = update!(opt, x, gs[x], s)
+    append!(st_, s)
   end
+  nothing, st_
 end
 
 # Callback niceties
