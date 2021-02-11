@@ -18,6 +18,7 @@ jobs:
       matrix:
         version:
           - '1.5' # Replace this with the minimum Julia version that your package supports.
+          - 1.6
           # - '1'   # automatically expands to the latest stable 1.x release of Julia
           - 'nightly'
         os:
