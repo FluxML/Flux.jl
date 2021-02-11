@@ -57,6 +57,7 @@ But in contrast to the layers described in the other sections are not readily gr
 Maxout
 SkipConnection
 Parallel
+Bilinear
 ```
 
 ## Normalisation & Regularisation

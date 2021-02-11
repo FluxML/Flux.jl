@@ -112,6 +112,31 @@ import Flux: activations
     end
   end
 
+  @testset "Bilinear" begin
+    @testset "SkipConnection recombinator" begin
+      d = Dense(10, 10)
+      b = Flux.Bilinear(10, 10, 5)
+      x = randn(Float32,10,9)
+      sc = SkipConnection(d, b)
+      @test size(sc(x)) == (5,9)
+    end
+
+    @testset "Two-streams zero sum" begin
+      x = zeros(Float32,10,9)
+      y = zeros(Float32,2,9)
+      b = Flux.Bilinear(10, 2, 3)
+      @test size(b(x,y)) == (3,9)
+      @test sum(abs2, b(x,y)) == 0f0
+    end
+
+    @testset "Inner interactions" begin
+      x = randn(Float32,11,7)
+      b = Flux.Bilinear(11, 11, 3)
+      @test size(b(x)) == (3,7)
+      @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
+    end
+  end
+      
   @testset "Parallel" begin
     @testset "zero sum" begin
       input = randn(10, 10, 10, 10)
