@@ -175,6 +175,72 @@ kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; 
 kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
 
 """
+    orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
+
+Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1]. 
+
+The input must have at least 2 dimensions.
+For `length(dims) > 2`, a `prod(dims[1:(end - 1)])` by `dims[end]` orthogonal matrix 
+is computed before reshaping it to the original dimensions.
+
+# Examples
+```jldoctest; setup = :(using LinearAlgebra)
+julia> W = Flux.orthogonal(5, 7);
+
+julia> summary(W)
+"5×7 Array{Float32,2}"
+
+julia> W * W' ≈ I(5)
+true
+
+julia> W2 = Flux.orthogonal(7, 5);
+
+julia> W2 * W2' ≈ I(7)
+false
+
+julia> W2' * W2 ≈ I(5)
+true
+
+julia> W3 = Flux.orthogonal(3, 3, 2, 4);
+
+julia> transpose(reshape(W3, :, 4)) * reshape(W3, :, 4) ≈ I(4)
+true
+```
+
+# See also
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
+
+# References
+[1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
+
+"""
+function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain = 1)
+  mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
+
+  Q, R = LinearAlgebra.qr(mat)
+  Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
+  if rows < cols
+    Q = transpose(Q)
+  end
+
+  return gain * Q
+end
+
+function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
+  dims = (d1, ds...)
+  rows = prod(dims[1:end-1])
+  cols = dims[end]
+  return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
+end
+
+orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
+orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+
+"""
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
 
 Return an `Array` of size `dims` where each column contains a fixed fraction of

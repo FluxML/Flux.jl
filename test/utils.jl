@@ -1,5 +1,5 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, sparse_init, stack, unstack, Zeros
+using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, orthogonal, sparse_init, stack, unstack, Zeros
 using StatsBase: var, std
 using Random
 using Test
@@ -93,6 +93,21 @@ end
       σ2 = sqrt(2/n_out)
       @test 0.9σ2 < std(v) < 1.1σ2
       @test eltype(v) == Float32
+    end
+  end
+
+  @testset "orthogonal" begin
+    # A matrix of dim = (m,n) with m > n should produce a QR decomposition. In the other case, the transpose should be taken to compute the QR decomposition.
+    for (rows,cols) in [(5,3),(3,5)]
+      v = orthogonal(rows, cols)
+      rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
+    end
+    for mat in [(3,4,5),(2,2,5)]
+      v = orthogonal(mat...)
+      cols = mat[end]
+      rows = div(prod(mat),cols)
+      v = reshape(v, (rows,cols))
+      rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
   end
 
