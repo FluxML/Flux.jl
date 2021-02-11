@@ -79,6 +79,15 @@ gpu_gradtest("GroupNorm 3d", groupnorm, rand(Float32, 8, 8, 8, 12, 4), 12, 3, se
 gpu_gradtest("GroupNorm 2d", groupnorm, rand(Float32, 8, 8, 12, 4), 12, 3, setmode=true)
 gpu_gradtest("GroupNorm 1d", groupnorm, rand(Float32, 8, 3, 12, 4), 12, 3, setmode=true)
 
+upsample = [x -> Upsample(scale=x)]
+gpu_gradtest("Upsample 2d", upsample, rand(Float32, 3, 4, 2, 3), (2,2))
+gpu_gradtest("Upsample 1d", upsample, rand(Float32, 3, 4, 2, 3), (2,))
+
+pixelshuffle = [PixelShuffle]
+gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
+gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
+
+
 @testset "function layers" begin
   x = rand(Float32, 3,3)
   gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)

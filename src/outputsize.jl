@@ -35,7 +35,7 @@ Base.isless(::Nil, ::Number) = true
 Base.isless(::Number, ::Nil) = true
 
 Base.isnan(::Nil) = false
-
+Base.isfinite(::Nil) = true
 Base.typemin(::Type{Nil}) = nil
 Base.typemax(::Type{Nil}) = nil
 

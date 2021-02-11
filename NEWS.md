@@ -13,6 +13,7 @@
 * Moved GPU CI to use buildkite instead of GitLab
 * New [`Parallel` layer](https://github.com/FluxML/Flux.jl/pull/1462) adds inception module-like building blocks.
 * Feature additions and bug fixes for BatchNorm, LayerNorm, InstanceNorm, and GroupNorm [normalization layers](https://github.com/FluxML/Flux.jl/pull/1397)
+* Added [Upsample and PixelShuffle layers](https://github.com/FluxML/Flux.jl/pull/1468)
 
 ## v0.11.2
 

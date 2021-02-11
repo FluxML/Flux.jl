@@ -146,9 +146,7 @@ end
   @test outputsize(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
   @test outputsize(m, (32, 32, 3); padbatch=true) == (32, 32, 3, 1)
 
-  if VERSION >= v"1.1"
-    m = GroupNorm(16, 4)
-    @test outputsize(m, (32, 32, 16, 16)) == (32, 32, 16, 16)
-    @test outputsize(m, (32, 32, 16); padbatch=true) == (32, 32, 16, 1)
-  end
+  m = GroupNorm(16, 4)
+  @test outputsize(m, (32, 32, 16, 16)) == (32, 32, 16, 16)
+  @test outputsize(m, (32, 32, 16); padbatch=true) == (32, 32, 16, 1)
 end
