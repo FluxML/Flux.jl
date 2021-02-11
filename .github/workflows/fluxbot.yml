@@ -6,6 +6,7 @@ on:
 
 jobs:
   build:
+    if: contains(github.event.comment.body, '@ModelZookeeper')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

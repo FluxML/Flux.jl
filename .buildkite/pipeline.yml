@@ -1,9 +1,9 @@
 steps:
   - label: "GPU integration"
     plugins:
-      - JuliaCI/julia#v0.5:
+      - JuliaCI/julia#v1:
           version: '1.5'
-      - JuliaCI/julia-test#v0.3: ~
+      - JuliaCI/julia-test#v1: ~
     agents:
       queue: "juliagpu"
       cuda: "*"

@@ -29,6 +29,13 @@ Flux.convfilter
 Flux.depthwiseconvfilter
 ```
 
+## Upsampling Layers
+
+```@docs
+Upsample
+PixelShuffle
+```
+
 ## Recurrent Layers
 
 Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).

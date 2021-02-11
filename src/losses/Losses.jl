@@ -18,7 +18,8 @@ export mse, mae, msle,
     dice_coeff_loss,
     poisson_loss,
     hinge_loss, squared_hinge_loss,
-    ctc_loss
+    ctc_loss,
+    binary_focal_loss, focal_loss
 
 include("utils.jl")
 include("functions.jl")
