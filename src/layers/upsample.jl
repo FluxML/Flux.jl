@@ -62,7 +62,7 @@ function Base.show(io::IO, u::Upsample{mode}) where {mode}
   print(io, ":", mode)
   u.scale !== nothing && print(io, ", scale = $(u.scale)")
   u.size !== nothing && print(io, ", size = $(u.size)")
-  println(io, ")")
+  print(io, ")")
 end
 
 """
