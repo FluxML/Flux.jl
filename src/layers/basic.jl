@@ -94,10 +94,10 @@ Dense(5, 2)
 julia> d(rand(Float32, 5, 64)) |> size
 (2, 64)
 
-julia> d(rand(Float32, 5, 1, 1, 64)) |> size
+julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimensions
 (2, 1, 1, 64)
 
-julia> d1 = Dense(ones(2, 5), false, tanh)
+julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5, 2, tanh; bias=false)
 
 julia> d1(ones(5))
@@ -284,13 +284,13 @@ end
 
 """
     Bilinear(in1, in2, out, σ=identity; bias=true, init=glorot_uniform)
-    Bilinear(weight::AbstractArray, [bias, σ])
+    Bilinear(W::AbstractArray, [bias, σ])
 
 Creates a Bilinear layer, which operates on two inputs at the same time.
-It has parameters `weight` and `bias`, and its output given vectors `x`, `y` is
-another vector `z` with, for `i ∈ 1:out`:
+It its output, given vectors `x`, `y` is another vector `z` with,
+for all `i ∈ 1:out`:
 
-    z[i] = σ(dot(x' * weight[i,:,:] * y + bias[i])
+    z[i] = σ(x' * W[i,:,:] * y + bias[i])
 
 If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form,
 with `B` a Bilinear layer.
@@ -299,7 +299,9 @@ If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
 
-Keywords `init` and `bias` work as for [`Dense`](@ref) layer.
+The initialisation works as for [`Dense`](@ref) layer, with `W = init(out, in1, in2)`.
+By default the bias vector is `zeros(Float32, out)`, option `bias=false` will switch off
+trainable bias. Either of these may be provided explicitly.
 
 # Examples
 
@@ -370,7 +372,7 @@ function Base.show(io::IO, l::Bilinear)
 end
 
 """
-Parallel(connection, layers...)
+    Parallel(connection, layers...)
 
 Create a 'Parallel' layer that passes an input array to each path in
 `layers`, reducing the output with `connection`.
