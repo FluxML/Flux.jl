@@ -256,6 +256,13 @@ git-tree-sha1 = "d45739abcfc03b51f6a42712894a593f74c80a23"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.3.3"
 
+[[ParameterSchedulers]]
+git-tree-sha1 = "ab80539e1061e586a49300813039f5c11d3ba8e8"
+repo-rev = "darsnack/rm-optim"
+repo-url = "https://github.com/darsnack/ParameterSchedulers.jl.git"
+uuid = "d7d3b36b-41b8-4d0d-a2bf-768c6151755e"
+version = "0.2.0"
+
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
