@@ -192,3 +192,28 @@ end
     @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
   end
 end
+
+@testset "Parallel" begin
+  @testset "zero sum" begin
+    input = randn(10, 10, 10, 10) |> gpu
+    @test gpu(Parallel(+, x -> zero(x), identity)(input)) == input
+  end
+
+  @testset "vararg input" begin
+    inputs = (randn(10), randn(5), randn(4)) .|> gpu
+    layer = Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2)) |> gpu
+    @test size(layer(inputs)) == (2,)
+  end
+
+  @testset "gradient" begin
+    input_cpu = randn(10, 10, 10, 10)
+    input_gpu = input_cpu |> gpu
+    layer_cpu = Parallel(+, x -> zero(x), identity)
+    layer_gpu = layer_cpu |> gpu
+    gs_cpu = gradient(() -> sum(abs2.(layer_cpu(input_cpu))), params(layer_cpu))
+    gs_gpu = gradient(() -> sum(abs2.(layer_gpu(input_gpu))), params(layer_gpu))
+    for (pgpu, pcpu) in zip(params(layer_cpu), params(layer_gpu))
+      @test gs_cpu[pcpu] ≈ gs_gpu[pgpu]
+    end
+  end
+end
