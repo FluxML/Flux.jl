@@ -17,19 +17,21 @@ A `Scheduler` can be used anywhere a Flux optimizer is used.
 ```jldoctest
 julia> opt = Momentum();
 
-julia> schedule = Schedule.Exp(λ = 0.01, γ = 0.5);
+julia> schedule = Schedule.Exp(λ = 0.01, γ = 0.5)
+ParameterSchedulers.Exp{Float64}(0.01, 0.5)
 
-julia> sopt = Schedule.Scheduler(schedule, opt)
-
+julia> scheduler = Schedule.Scheduler(schedule, opt)
+Scheduler(ParameterSchedulers.Exp{Float64}(0.01, 0.5), Momentum(0.01, 0.9, IdDict{Any,Any}()))
 """
-mutable struct Scheduler{T<:AbstractSchedule, O}
+struct Scheduler{T<:AbstractSchedule, O}
   schedule::T
   optimiser::O
   iter::IdDict{Any, Int}
-
-  Scheduler{T, O}(schedule::T, optimiser::O) where {T, O} =
-    new{T, O}(schedule, optimiser, IdDict())
 end
+Scheduler(schedule, optimiser) = Scheduler(schedule, optimiser, IdDict{Any, Int}())
+
+Base.show(io::IO, o::Scheduler) =
+  print(io, "Scheduler(", o.schedule, ", ", o.optimiser, ")")
 
 function Optimise.apply!(opt::Scheduler, x, dx)
   # set param
