@@ -25,9 +25,9 @@ When a function has many parameters, we can get gradients of each one at the sam
 ```jldoctest basics
 julia> f(x, y) = sum((x .- y).^2) # sum squared error (element-wise)
 
-julia> x = [2,1,3]
+julia> x = [2,1,3];
 
-julia> y = [2,0,2]
+julia> y = [2,0,2];
 
 julia> gradient(f, x, y) # returns the vectors ([δfx],[δfy])
 ([0, 2, 2], [0, -2, -2])
