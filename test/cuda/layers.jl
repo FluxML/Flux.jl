@@ -196,7 +196,9 @@ end
 @testset "Parallel" begin
   @testset "zero sum" begin
     input = randn(10, 10, 10, 10) |> gpu
-    @test gpu(Parallel(+, x -> zero(x), identity)(input)) == input
+    layer_gpu = Parallel(+, zero, identity) |> gpu
+    @test layer_gpu(input) == input
+    @test layer_gpu(input) isa Flux.CUDA.CuArray
   end
 
   @testset "vararg input" begin
