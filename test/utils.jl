@@ -282,8 +282,8 @@ end
 end
 
 @testset "Param remapping" begin
-  ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...)
-  dl(nin, nout, bias) = Dense(ls(nin, nout), bias(nout))
+  ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...) # accepts dims in reverse order to Dense
+  dl(nin, nout, bias) = Dense(ls(nout, nin), bias(nout))
   dm(bias) = Chain(
     dl(3, 5, bias),
     dl(5, 4, bias),
@@ -299,21 +299,22 @@ end
 
   @testset "loadparams!" begin
     import Flux: loadparams!
-    pars(w, b::Zeros) = [w, zeros(size(w,2))]
     pars(w, b) = [w, b]
+    import Flux: loadparams!, Zeros
+    pars(w, b::Zeros) = [w, Flux.zeros(size(w,1))]
     pars(l) = pars(l.W, l.b)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.W], vcat, m)
-    @testset "Bias type $bt" for bt in (zeros, nobias)
+    @testset "Bias type $bt" for bt in (Flux.zeros, nobias)
       m = dm(bt)
       loadparams!(m, params(m))
       testdense(m, bt)
     end
 
     @testset "$b1 to $b2" for (b1, b2, be) in (
-      (zeros, ones, ones),           # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (ones, nobias, zeros),         # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, ones, nobias),        # Load ones as bias to a model with Zeros as bias-> model bias does not change
+      (Flux.zeros, ones, ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+      (ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+      (nobias, ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
     )
       m1 = dm(b1)
       m2 = dm(b2)

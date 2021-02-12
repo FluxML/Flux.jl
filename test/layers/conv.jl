@@ -183,3 +183,8 @@ end
   l = ltype(k, pad=SamePad())
   @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
 end
+
+@testset "bugs fixed" begin
+  # https://github.com/FluxML/Flux.jl/issues/1421
+  @test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64}
+end

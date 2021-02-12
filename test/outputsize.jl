@@ -25,6 +25,10 @@
   m = Flux.unsqueeze(3)
   @test outputsize(m, (5, 7, 13)) == (5, 7, 1, 13)
 
+  m = Flux.Bilinear(10, 10, 7)
+  @test outputsize(m, (10,)) == (7,)
+  @test outputsize(m, (10, 32)) == (7, 32)
+
   m = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), flatten, Dense(1024, 10))
   @test outputsize(m, (10, 10, 3, 50)) == (10, 50)
   @test outputsize(m, (10, 10, 3, 2)) == (10, 2)

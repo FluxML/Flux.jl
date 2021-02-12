@@ -30,7 +30,7 @@ function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,
 end
 
 """
-    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -122,7 +122,7 @@ function Conv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, �
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
+  bias = create_bias(w, b, size(w, N))
   return Conv(σ, w, bias, stride, pad, dilation)
 end
 
@@ -166,7 +166,7 @@ end
 
 
 """
-    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -216,7 +216,7 @@ function ConvTranspose(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVect
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N-1)) 
+  bias = create_bias(w, b, size(w, N-1))
   return ConvTranspose(σ, w, bias, stride, pad, dilation)
 end
 
@@ -266,7 +266,7 @@ function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilat
 end
 
 """
-    DepthwiseConv(filter, in=>out, σ=identity; stride=1, pad=0, dilation=1)
+    DepthwiseConv(filter, in=>out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Depthwise convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -313,7 +313,7 @@ function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVect
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(DepthwiseConv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, prod(size(w)[N-1:end]))
+  bias = create_bias(w, b, prod(size(w)[N-1:end]))
   return DepthwiseConv(σ, w, bias, stride, pad, dilation)
 end
 
@@ -355,7 +355,7 @@ end
 
 
 """
-    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard cross convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -401,7 +401,7 @@ function CrossCor(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
+  bias = create_bias(w, b, size(w, N))
   return CrossCor(σ, w, bias, stride, pad, dilation)
 end
 
