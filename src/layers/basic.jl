@@ -143,11 +143,11 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractArray)
-  W, b, σ = getfield(a, :weight), getfield(a, :bias), getfield(a, :σ)
+  W, b, σ = a.weight, a.bias, a.σ
   sz = size(x)
-  x = reshape(x, sz[1], :) # reshape to handle dims > 1 as batch dimensions
-  x = σ.(W*x .+ b)
-  return reshape(x, :, sz[2:end]...)
+  y = reshape(x, sz[1], :)  # reshape to handle dims > 1 as batch dimensions
+  z = σ.(W*y .+ b)
+  return reshape(z, :, sz[2:end]...)
 end
 
 function Base.show(io::IO, l::Dense)
