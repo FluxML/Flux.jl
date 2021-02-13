@@ -161,12 +161,17 @@ import Flux: activations
       b2 = Flux.Bilinear(randn(3,4,5), false)
       @test b2.bias == Flux.Zeros()
 
-      b3 = Flux.Bilinear(randn(3,4,5), true, tanh)
+      b3 = Flux.Bilinear(randn(Float16, 3,4,5), true, tanh)
       @test b3.σ == tanh
+      @test b2.bias isa Vector{Float16}
       @test size(b3(rand(4), rand(5))) == (3,)
 
       b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros)
       @test  b4.bias isa Vector{Float32}
+
+      @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array
+      @test_throws ArgumentError Flux.Bilinear(rand(3,4), false, tanh)
+      @test_throws DimensionMismatch Flux.Bilinear(rand(3,4,5), rand(6), tanh) # wrong length bias
     end
   end
 

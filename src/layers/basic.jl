@@ -287,7 +287,7 @@ end
     Bilinear(W::AbstractArray, [bias, σ])
 
 Creates a Bilinear layer, which operates on two inputs at the same time.
-It its output, given vectors `x`, `y` is another vector `z` with,
+Its output, given vectors `x` & `y`, is another vector `z` with,
 for all `i ∈ 1:out`:
 
     z[i] = σ(x' * W[i,:,:] * y + bias[i])
@@ -323,23 +323,27 @@ julia> sc = SkipConnection(
 
 julia> sc(x) |> size
 (3, 32)
+
+julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
+Bilinear(8, 16, 4, tanh, bias=false)
 ```
 """
-struct Bilinear{A,B,S}
+struct Bilinear{F,A,B}
   weight::A
   bias::B
-  σ::S
+  σ::F
+  function Bilinear(W::A, bias = true, σ::F = identity) where {A<:AbstractArray, F}
+    ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
+    b = create_bias(W, bias, size(W,1))
+    new{F,A,typeof(b)}(W, b, σ)
+  end
 end
 
 @functor Bilinear
 
-Bilinear(weight::AbstractArray, bias = true) = Bilinear(weight, create_bias(weight, bias, size(weight,1)), identity)
-
 function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
-  init = glorot_uniform, bias = true)
-  W = init(out, in1, in2)
-  b = create_bias(W, bias, out)
-  return Bilinear(W, b, σ)
+                  init = glorot_uniform, bias = true)
+  Bilinear(init(out, in1, in2), bias, σ)
 end
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
