@@ -1,18 +1,18 @@
 # Adapted from Knet's src/data.jl (author: Deniz Yuret)
 using Random
 
-struct DataLoader{D}
+struct DataLoader{D, S}
     data::D
     batchsize::Int
     nobs::Int
     partial::Bool
     imax::Int
     indices::Vector{Int}
-    shuffle
+    shuffle::S
 end
 
 """
-    DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle(Random.GLOBAL_RNG, x), partial = true)
+    DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle!(Random.GLOBAL_RNG, x), partial = true)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one).
@@ -21,7 +21,7 @@ Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is considered to be the observation dimension.
 
 By default, the dataloader shuffles the observations each time iterations are re-started.
-To not shuffle the data, pass `shuffle = identity`.
+To not shuffle the data, pass `shuffle = identity` or shuffle = false.
 
 If `partial = false`, drops the last mini-batch if it is smaller than the batchsize.
 
@@ -68,7 +68,7 @@ Usage example:
         @assert size(datum.labels) == (2,)
     end
 """
-function DataLoader(data; batchsize = 1, shuffle = identity, partial = true)
+function DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle!(Random.GLOBAL_RNG, x), partial = true)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
 
     n = _nobs(data)
@@ -77,6 +77,9 @@ function DataLoader(data; batchsize = 1, shuffle = identity, partial = true)
         batchsize = n
     end
     imax = partial ? n : n - batchsize + 1
+    shuffle = if isa(shuffle, Bool)
+      shuffle ? x -> Random.shuffle!(Random.GLOBAL_RNG, x) : identity
+    end
     DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle)
 end
 
