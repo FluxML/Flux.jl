@@ -7,11 +7,11 @@ struct DataLoader{D}
     partial::Bool
     imax::Int
     indices::Vector{Int}
-    shuffle::Bool
+    shuffle
 end
 
 """
-    DataLoader(data; batchsize=1, shuffle=false, partial=true)
+    DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle(Random.GLOBAL_RNG, x), partial = true)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one).
@@ -19,8 +19,10 @@ An object that iterates over mini-batches of `data`, each mini-batch containing 
 Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is considered to be the observation dimension.
 
-If `shuffle=true`, shuffles the observations each time iterations are re-started.
-If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
+By default, the dataloader shuffles the observations each time iterations are re-started.
+To not shuffle the data, pass `shuffle = identity`.
+
+If `partial = false`, drops the last mini-batch if it is smaller than the batchsize.
 
 The original data is preserved in the `data` field of the DataLoader.
 
@@ -65,7 +67,7 @@ Usage example:
         @assert size(datum.labels) == (2,)
     end
 """
-function DataLoader(data; batchsize=1, shuffle=false, partial=true)
+function DataLoader(data; batchsize = 1, shuffle = identity, partial = true)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
 
     n = _nobs(data)
@@ -77,11 +79,9 @@ function DataLoader(data; batchsize=1, shuffle=false, partial=true)
     DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle)
 end
 
-@propagate_inbounds function Base.iterate(d::DataLoader, i=0)     # returns data in d.indices[i+1:i+batchsize]
+@propagate_inbounds function Base.iterate(d::DataLoader, i = 0)     # returns data in d.indices[i+1:i+batchsize]
     i >= d.imax && return nothing
-    if d.shuffle && i == 0
-        shuffle!(d.indices)
-    end
+    d.shuffle(d.indices)
     nexti = min(i + d.batchsize, d.nobs)
     ids = d.indices[i+1:nexti]
     batch = _getobs(d.data, ids)
