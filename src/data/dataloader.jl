@@ -117,12 +117,13 @@
 
 using Random: shuffle
 
-struct DataLoader{F,D,L}
-  iterator::F
+struct DataLoader{F,S,D,L}
+  aug::F
   data::D
+  # args::D
   # labels::L
   batchsize::Int
-  # batch
+  batchdim::Int
 end
 
 getobs(data::AbstractArray, n, i) = data
@@ -132,24 +133,24 @@ getobs(x, n, i) = getobs(Base.tail(x), n, i)
 function DataLoader(f
                     args...;
                     batchsize = 1, shuffle = true,
-                    partial = true, batchdim = ndims)
-  
+                    partial = true, batchdim = nothing)
+  DataLoader(f, shuffle(args), batchsize, batchdim)
 end
 
 # `f` is an augmentation on the data/ labels
 function DataLoader(f,
                     args::Vararg{AbstractArray};
-                    batchsize = 1, shuffle = true,
+                    batchsize = 1, shuffle = identity,
                     partial = true, batchdim = ndims)
 
   feats = first(args)
   ix = shuffle ? shuffle(1:size(feats, batchdim(feats))) : 1:size(feats, batchdim(feats))
-  feats = foreach(feat -> getindex(feat, ntuple(Colon(), size(feat) - 1)..., ix), args)
-  DataLoader(f, feats, batchsize)  
+  fs = foreach(feat -> getindex(feat, ntuple(Colon(), size(feat) - 1)..., ix), args)
+  DataLoader(f, fs, batchsize, batchdim(feats))  
 end
 
 function DataLoader(args::Vararg{AbstractArray};
-                    batchsize = 1, shuffle = true,
+                    batchsize = 1, shuffle = identity,
                     partial = true, batchdim = ndims)
 
   DataLoader(identity, args...,
@@ -159,10 +160,21 @@ function DataLoader(args::Vararg{AbstractArray};
              batchdim = batchdim)
 end
 
-# Base.length(dl::DataLoader) = size(dl.data) ÷ dl.batchsize
+Base.length(dl::DataLoader) = size(first(dl.data)) ÷ dl.batchsize
 
-(dl::DataLoader){typeof(getobs)}(i) = getobs(dl, i)
+# (dl::DataLoader){typeof(getobs)}(i) = getobs(dl, i)
 
-function Base.iterate(dl::DataLoader, i)
-  dl.iterator(dl, i)
+function getobs(data::NTuple{N,AbstractArray}, ix, bd) where N
+  foreach(d -> getindex(d, ntuple(i -> i == bd ? ix : Colon(), ndims(d)),), data)
+end
+
+function Base.iterate(dl::DataLoader, i = 0)
+  Base.iterate.(dl.data, i)
+end
+
+function Base.iterate(dl::DataLoader{f, <:NTuple{N, AbstractArray}}, i) where {N,f}
+  total = 
+  ix = 
+  args = getobs(dl.data, ix, bd)
+  dl.aug.(args), i + 1
 end
