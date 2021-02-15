@@ -21,6 +21,8 @@ Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is considered to be the observation dimension.
 
 By default, the dataloader shuffles the observations each time iterations are re-started.
+The data is shuffled using the `GLOBAL_RNG`. To pass a different RNG, pass `shuffle` as
+an anonymous function as shown in the API reference.
 To not shuffle the data, pass `shuffle = identity` or shuffle = false.
 
 If `partial = false`, drops the last mini-batch if it is smaller than the batchsize.
