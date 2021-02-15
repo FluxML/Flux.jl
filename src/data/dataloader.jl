@@ -12,7 +12,7 @@ struct DataLoader{D, S}
 end
 
 """
-    DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle!(Random.GLOBAL_RNG, x), partial = true)
+    DataLoader(data; batchsize = 1, shuffle = false, partial = true)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one).
@@ -70,7 +70,7 @@ Usage example:
         @assert size(datum.labels) == (2,)
     end
 """
-function DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle!(Random.GLOBAL_RNG, x), partial = true)
+function DataLoader(data; batchsize = 1, shuffle = false, partial = true)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
 
     n = _nobs(data)
