@@ -79,8 +79,8 @@ function DataLoader(data; batchsize = 1, shuffle = x -> Random.shuffle!(Random.G
         batchsize = n
     end
     imax = partial ? n : n - batchsize + 1
-    shuffle = if isa(shuffle, Bool)
-      shuffle ? x -> Random.shuffle!(Random.GLOBAL_RNG, x) : identity
+    if isa(shuffle, Bool)
+      shuffle = shuffle ? x -> Random.shuffle!(Random.GLOBAL_RNG, x) : identity
     end
     DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle)
 end
