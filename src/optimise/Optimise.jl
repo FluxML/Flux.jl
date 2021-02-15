@@ -9,15 +9,10 @@ export train!, update!,
 	ClipValue, ClipNorm
 
 include("optimisers.jl")
+include("train.jl")
 
 module Schedule
-	using ..Optimise
 	using ParameterSchedulers
-	import ParameterSchedulers: AbstractSchedule
-
-	include("schedulers.jl")
 end
-
-include("train.jl")
 
 end
