@@ -1,4 +1,5 @@
 # Adapted from Knet's src/data.jl (author: Deniz Yuret)
+using Random
 
 struct DataLoader{D}
     data::D
