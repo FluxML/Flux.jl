@@ -76,11 +76,19 @@ gpu_gradtest("GroupNorm 3d", groupnorm, rand(Float32, 8, 8, 8, 12, 4), 12, 3, se
 gpu_gradtest("GroupNorm 2d", groupnorm, rand(Float32, 8, 8, 12, 4), 12, 3, setmode=true)
 gpu_gradtest("GroupNorm 1d", groupnorm, rand(Float32, 8, 3, 12, 4), 12, 3, setmode=true)
 
+upsample = [x -> Upsample(scale=x)]
+ gpu_gradtest("Upsample 2d", upsample, rand(Float32, 3, 4, 2, 3), (2,2))
+ gpu_gradtest("Upsample 1d", upsample, rand(Float32, 3, 4, 2, 3), (2,))
+
+ pixelshuffle = [PixelShuffle]
+ gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
+ gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
+
 @testset "function layers" begin
   x = rand(Float32, 3,3)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=2)), x)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
+  gpu_gradtest(x -> sum(Flux.normalise(x; dims=1)), x)
+  gpu_gradtest(x -> sum(Flux.normalise(x; dims=2)), x)
+  gpu_gradtest(x -> sum(Flux.normalise(x)), x)
 end
 
 @testset "BatchNorm mix stuff" begin
@@ -167,3 +175,43 @@ end
   @test l.b ∉ gs.params 
 end
 
+@testset "Two-streams Bilinear" begin
+  x = zeros(Float32,10,9) |> gpu
+  y = zeros(Float32,2,9) |> gpu
+  b = Flux.Bilinear(10, 2, 3) |> gpu
+  @test size(b(x,y)) == (3,9)
+  @test sum(abs2, b(x,y)) ≈ 0f0
+  gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
+  b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
+  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
+  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
+    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
+  end
+end
+
+@testset "Parallel" begin
+  @testset "zero sum" begin
+    input = randn(10, 10, 10, 10) |> gpu
+    layer_gpu = Parallel(+, zero, identity) |> gpu
+    @test layer_gpu(input) == input
+    @test layer_gpu(input) isa Flux.CUDA.CuArray
+  end
+
+  @testset "vararg input" begin
+    inputs = (randn(10), randn(5), randn(4)) .|> gpu
+    layer = Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2)) |> gpu
+    @test size(layer(inputs)) == (2,)
+  end
+
+  @testset "gradient" begin
+    input_cpu = randn(10, 10, 10, 10)
+    input_gpu = input_cpu |> gpu
+    layer_cpu = Parallel(+, x -> zero(x), identity)
+    layer_gpu = layer_cpu |> gpu
+    gs_cpu = gradient(() -> sum(abs2.(layer_cpu(input_cpu))), params(layer_cpu))
+    gs_gpu = gradient(() -> sum(abs2.(layer_gpu(input_gpu))), params(layer_gpu))
+    for (pgpu, pcpu) in zip(params(layer_cpu), params(layer_gpu))
+      @test gs_cpu[pcpu] ≈ gs_gpu[pgpu]
+    end
+  end
+end
