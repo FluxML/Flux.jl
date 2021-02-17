@@ -145,21 +145,24 @@ First, we import ParameterSchedulers.jl and initalize a cosine annealing schedul
 ```julia
 using ParameterSchedulers
 
-schedule = Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10)
+schedule = ScheduleIterator(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
 opt = Momentum()
 ```
 
-Next, you can use your schedule directly in a `for`-loop like any iterator:
+Next, you can use your schedule directly in a `for`-loop:
+```julia
+for epoch in 1:100
+  opt.eta = next!(schedule)
+  # your training code here
+end
+```
+
+`schedule` can also be indexed (e.g. `schedule[100]`) or iterated like any iterator in Julia:
 ```julia
 for (eta, epoch) in zip(schedule, 1:100)
   opt.eta = eta
   # your training code here
 end
-```
-
-Alternatively, use `ScheduledOptim` from ParameterSchedulers.jl to wrap the optimiser and schedule into a single object that behaves like any Flux optimiser.
-```julia
-@epochs 100 Flux.train!(loss, ps, data, ScheduledOptim(schedule, opt))
 ```
 
 ParameterSchedulers.jl allows for many more scheduling policies including arbitrary functions, looping any function with a given period, or sequences of many schedules. See the ParameterSchedulers.jl documentation for more info.
