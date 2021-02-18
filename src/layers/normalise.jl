@@ -166,24 +166,25 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function norm_forward(l, x::AbstractArray{T,N}; reduce_dims) where {T, N}
-  if !_isactive(l) && l.track_stats # testmode with tracked stats
+function norm_forward(l, ts, x::AbstractArray{T,N}; reduce_dims) where {T, N}
+  if !_isactive(l) # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
     μ = mean(x; dims = reduce_dims)
     σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
-    if l.track_stats
-      ## update moving mean/std
-
-      μ, σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
-      l.μ .= μ
-      l.σ² .= σ²
-    end
+    μ, σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
+    l.μ .= μ
+    l.σ² .= σ²
   end
   μ, σ²
-  # affine(l, x, μ, σ², affine_shape)
+end
+
+function norm_forward(l, ::Nothing, x::AbstractArray{T,N}; reduce_dims) where {T, N}
+  μ = mean(x; dims = reduce_dims)
+  σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
+  μ, σ²
 end
 
 function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T,N}
@@ -253,9 +254,9 @@ mutable struct BatchNorm{F,V,N,W}
   σ²::W    # moving var
   ϵ::N
   momentum::N
-  # affine::Bool
-  # track_stats::Bool
-  # active::Union{Bool, Nothing}
+  affine::Bool
+  track_stats::Bool
+  active::Union{Bool, Nothing}
 end
 
 function BatchNorm(chs::Int, λ = identity;
@@ -270,19 +271,20 @@ function BatchNorm(chs::Int, λ = identity;
   σ² = ones(Float32, chs)
 
   return BatchNorm(chs, λ, β, γ,
-            μ, σ², ϵ, momentum)
-#             affine, track_stats, nothing)
+            μ, σ², ϵ, momentum,
+            affine, track_stats, nothing)
 end
 
 @functor BatchNorm
-trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
+# trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 
 function (BN::BatchNorm)(x)
   N = ndims(x)
   @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
   affine_shape = BN.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  μ, σ² = norm_forward(BN, x;
+  ts = BN.track_stats ? BN.track_stats : nothing
+  μ, σ² = norm_forward(BN, ts, x;
                        reduce_dims = reduce_dims)
   affine(l, x, μ, σ², affine_shape)
 end
@@ -331,9 +333,9 @@ mutable struct InstanceNorm{F,V,N,W}
   σ²::W  # moving var
   ϵ::N
   momentum::N
-  # affine::Bool
-  # track_stats::Bool
-  # active::Union{Bool, Nothing}
+  affine::Bool
+  track_stats::Bool
+  active::Union{Bool, Nothing}
 end
 
 function InstanceNorm(chs::Int, λ = identity;
@@ -352,15 +354,16 @@ function InstanceNorm(chs::Int, λ = identity;
 end
 
 @functor InstanceNorm
-trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
+# trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
-  # @assert size(x, ndims(x)-1) == l.chs
+  @assert size(x, ndims(x)-1) == l.chs
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = l.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  μ, σ² = norm_forward(l, x; reduce_dims = reduce_dims)
+  ts = BN.track_stats ? BN.track_stats : nothing
+  μ, σ² = norm_forward(l, ts, x; reduce_dims = reduce_dims)
   affine(l, x, μ, σ², affine_shape)
 end
 
@@ -410,13 +413,13 @@ mutable struct GroupNorm{F,V,N,W}
   σ²::W    # moving std
   ϵ::N
   momentum::N
-  # affine::Bool
-  # track_stats::Bool
-  # active::Union{Bool, Nothing}
+  affine::Bool
+  track_stats::Bool
+  active::Union{Bool, Nothing}
 end
 
 @functor GroupNorm
-trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
+# trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
 function GroupNorm(chs::Int, G::Int, λ = identity;
               initβ = i -> zeros(Float32, i), 
@@ -440,13 +443,14 @@ end
 
 function (gn::GroupNorm)(x)
   @assert ndims(x) > 2
-  # @assert size(x, ndims(x) - 1) == gn.chs
+  @assert size(x, ndims(x) - 1) == gn.chs
   sz = size(x)
   x = reshape(x, sz[1:N-2]..., sz[N-1] ÷ gn.G, gn.G, sz[N])
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = gn.affine ? ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N) : nothing
-  μ, σ² = norm_forward(gn, x;
+  ts = BN.track_stats ? BN.track_stats : nothing
+  μ, σ² = norm_forward(gn, ts, x;
                        reduce_dims = reduce_dims)
   res = affine(l, x, μ, σ², affine_shape)
   return reshape(res, sz)
