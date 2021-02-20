@@ -11,22 +11,22 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 
   x = rand(100)
   m = Dropout(0.9)
-  y = evalwgrad(m, x)
+  y = m(x)
   @test count(a->a==0, y) > 50
   testmode!(m, true)
-  y = evalwgrad(m, x) # should override istraining
+  y = m(x) # should override istraining
   @test count(a->a==0, y) == 0
   testmode!(m, false)
-  y = evalwgrad(m, x)
+  y = m(x)
   @test count(a->a==0, y) > 50
 
   x = rand(Float32, 100)
   m = Chain(Dense(100,100),
             Dropout(0.9))
-  y = evalwgrad(m, x)
+  y = m(x)
   @test count(a->a == 0, y) > 50
   testmode!(m, true)
-  y = evalwgrad(m, x) # should override istraining
+  y = m(x) # should override istraining
   @test count(a->a == 0, y) == 0
 
   x = rand(100, 50)
@@ -69,7 +69,7 @@ end
     # initial m.σ is 1
     # initial m.μ is 0
 
-    y = evalwgrad(m, x)
+    y = m(x)
     @test isapprox(y, [-1.22474 0 1.22474; -1.22474 0 1.22474], atol = 1.0e-5)
     # julia> x
     #  2×3 Array{Float64,2}:
@@ -139,7 +139,7 @@ end
       x = Float32.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
-      y = evalwgrad(m, x)
+      y = m(x)
 
       #julia> x
       #[:, :, 1] =
@@ -182,7 +182,7 @@ end
     affine_shape = collect(sizes)
     affine_shape[[1,3]] .= 1
 
-    y = evalwgrad(m, x)
+    y = m(x)
     y = m(x) # inference time after a training step    
     μ = reshape(m.μ, affine_shape...)
     σ² = reshape(m.σ², affine_shape...)
@@ -225,7 +225,7 @@ end
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = InstanceNorm(2; affine=true,track_stats=true), sizes = (5, 5, 3, 4, 2, 6),
       x = reshape(Float32.(collect(1:prod(sizes))), sizes)
-    y = evalwgrad(m, x)
+    y = m(x)
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
     @test size(y) == sizes
@@ -282,7 +282,7 @@ end
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
 
-      y = evalwgrad(m, x)
+      y = m(x)
 
       #julia> x
       #[:, :, 1]  =
@@ -351,7 +351,7 @@ end
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = GroupNorm(4,2, track_stats=true), sizes = (5, 5, 3, 4, 4, 6),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
-    y = evalwgrad(m, x)
+    y = m(x)
     @test size(m.μ) == (m.G,)
     @test size(m.σ²) == (m.G,)
     @test size(y) == sizes
