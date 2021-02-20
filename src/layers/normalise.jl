@@ -362,7 +362,7 @@ function (l::InstanceNorm)(x)
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = l.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  ts = BN.track_stats ? BN.track_stats : nothing
+  ts = l.track_stats ? l.track_stats : nothing
   μ, σ² = norm_forward(l, ts, x; reduce_dims = reduce_dims)
   affine(l, x, μ, σ², affine_shape)
 end
@@ -449,7 +449,7 @@ function (gn::GroupNorm)(x)
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = gn.affine ? ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N) : nothing
-  ts = BN.track_stats ? BN.track_stats : nothing
+  ts = gn.track_stats ? gn.track_stats : nothing
   μ, σ² = norm_forward(gn, ts, x;
                        reduce_dims = reduce_dims)
   res = affine(l, x, μ, σ², affine_shape)
