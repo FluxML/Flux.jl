@@ -189,8 +189,8 @@ end
 
 function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T,N}
   m = prod(size(x)[reduce_dims])
-  μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims = N))
-  σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims = N))
+  μnew = vec(N == last(reduce_dims) ? μ : mean(μ, dims = N))
+  σ²new = vec(N == last(reduce_dims) ? σ² : mean(σ², dims = N))
   μ = (1 - mtm) .* μ .+ mtm .* μnew
   σ² = (1 - mtm) .* σ² .+ mtm .* (m / (m - one(T))) .* σ²new
   μ, σ²
@@ -286,7 +286,7 @@ function (BN::BatchNorm)(x)
   ts = BN.track_stats ? BN.track_stats : nothing
   μ, σ² = norm_forward(BN, ts, x;
                        reduce_dims = reduce_dims)
-  affine(l, x, μ, σ², affine_shape)
+  affine(BN, x, μ, σ², affine_shape)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -452,7 +452,7 @@ function (gn::GroupNorm)(x)
   ts = gn.track_stats ? gn.track_stats : nothing
   μ, σ² = norm_forward(gn, ts, x;
                        reduce_dims = reduce_dims)
-  res = affine(l, x, μ, σ², affine_shape)
+  res = affine(gn, x, μ, σ², affine_shape)
   return reshape(res, sz)
 end
 
