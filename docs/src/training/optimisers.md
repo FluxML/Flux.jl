@@ -144,8 +144,9 @@ In practice, it is fairly common to schedule the learning rate of an optimiser t
 First, we import ParameterSchedulers.jl and initalize a cosine annealing schedule to varying the learning rate between `1e-4` and `1e-2` every 10 steps. We also create a new [`Momentum`](@ref) optimiser.
 ```julia
 using ParameterSchedulers
+using ParameterSchedulers: Stateful, next!
 
-schedule = ScheduleIterator(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
+schedule = Stateful(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
 opt = Momentum()
 ```
 
@@ -157,8 +158,9 @@ for epoch in 1:100
 end
 ```
 
-`schedule` can also be indexed (e.g. `schedule[100]`) or iterated like any iterator in Julia:
+`schedule` can also be indexed (e.g. `schedule(100)`) or iterated like any iterator in Julia:
 ```julia
+schedule = Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10)
 for (eta, epoch) in zip(schedule, 1:100)
   opt.eta = eta
   # your training code here
