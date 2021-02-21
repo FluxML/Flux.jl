@@ -373,10 +373,9 @@ function (l::InstanceNorm)(x)
   @assert size(x, ndims(x)-1) == l.chs
   N = ndims(x)
   reduce_dims = 1:N-2
-  affine_shape = l.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  ts = l.track_stats ? l.track_stats : nothing
-  μ, σ² = norm_forward(l, ts, x; reduce_dims = reduce_dims)
-  affine(l, x, μ, σ², affine_shape)
+  nc = NormConfig(l.affine, l.track_stats, reduce_dims)
+  μ, σ² = norm_forward(l, x, nc)
+  affine(l, x, μ, σ², nc)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
@@ -457,14 +456,12 @@ function (gn::GroupNorm)(x)
   @assert ndims(x) > 2
   @assert size(x, ndims(x) - 1) == gn.chs
   sz = size(x)
-  x = reshape(x, sz[1:N-2]..., sz[N-1] ÷ gn.G, gn.G, sz[N])
   N = ndims(x)
+  x = reshape(x, sz[1:N-2]..., sz[N-1] ÷ gn.G, gn.G, sz[N])
   reduce_dims = 1:N-2
-  affine_shape = gn.affine ? ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N) : nothing
-  ts = gn.track_stats ? gn.track_stats : nothing
-  μ, σ² = norm_forward(gn, ts, x;
-                       reduce_dims = reduce_dims)
-  res = affine(gn, x, μ, σ², affine_shape)
+  nc = NormConfig(gn.affine, gn.track_stats, reduce_dims)
+  μ, σ² = norm_forward(gn, x, nc)
+  res = affine(gn, x, μ, σ², nc)
   return reshape(res, sz)
 end
 
