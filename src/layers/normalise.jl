@@ -162,28 +162,41 @@ function Base.show(io::IO, l::LayerNorm)
   print(io, ")")
 end
 
+struct NormConfig{A,T}
+  dims::Vector{Int}
+end
+
+NormConfig(affine, track_stats, reduce_dims) = NormConfig{affine, track_stats}(reduce_dims)
+
+function getaffine(nc::NormConfig{true}, sz_x) where N
+  n = length(sz_x)
+  ntuple(i -> i == n-1 ? sz_x[n-1] : 1, n)
+end
+
+getaffine(nc::NormConfig{false}, args...) = ()
+
 # For InstanceNorm, GroupNorm, and BatchNorm.
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function norm_forward(l, ts, x::AbstractArray{T,N}; reduce_dims) where {T, N}
+function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, true}) where {A, T, N}
   if !_isactive(l) # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
-    μ = mean(x; dims = reduce_dims)
-    σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
-    μ, σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = reduce_dims)
+    μ = mean(x; dims = nc.dims)
+    σ² = mean((x .- μ) .^ 2; dims = nc.dims)
+    μ, σ² = track_stats(x, μ, σ², l.momentum, reduce_dims = nc.dims)
     l.μ .= μ
     l.σ² .= σ²
   end
   μ, σ²
 end
 
-function norm_forward(l, ::Nothing, x::AbstractArray{T,N}; reduce_dims) where {T, N}
-  μ = mean(x; dims = reduce_dims)
-  σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
+function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, false}) where {A, T, N}
+  μ = mean(x; dims = nc.dims)
+  σ² = mean((x .- μ) .^ 2; dims = nc.dims)
   μ, σ²
 end
 
@@ -197,13 +210,14 @@ function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T
 end
 @nograd track_stats
 
-function affine(l, x, μ, σ², affine_shape)
+function affine(l, x, μ, σ², nc::NormConfig{true})
+  affine_shape = getaffine(nc, size(x))
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
   l.λ.((γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ)) .+ β)
 end
 
-affine(l, x, μ, σ², affine_shape::Nothing) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+affine(l, x, μ, σ², nc::NormConfig{false}) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 
 # function affine(l, x, μ, σ², affine_shape)
 #   res = (x .- μ) ./ sqrt.(σ² .+ l.ϵ)
@@ -279,14 +293,12 @@ end
 # trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 
 function (BN::BatchNorm)(x)
-  N = ndims(x)
+  N = ndims(x)::Int
   @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
-  affine_shape = BN.affine ? ntuple(i -> i == N-1 ? size(x, N-1) : 1, N) : nothing
-  ts = BN.track_stats ? BN.track_stats : nothing
-  μ, σ² = norm_forward(BN, ts, x;
-                       reduce_dims = reduce_dims)
-  affine(BN, x, μ, σ², affine_shape)
+  nc = NormConfig(BN.affine, BN.track_stats, reduce_dims)
+  μ, σ² = norm_forward(BN, x, nc)
+  affine(BN, x, μ, σ², nc)
 end
 
 testmode!(m::BatchNorm, mode=true) =
