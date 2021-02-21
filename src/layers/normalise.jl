@@ -168,7 +168,7 @@ end
 
 NormConfig(affine, track_stats, reduce_dims) = NormConfig{affine, track_stats}(reduce_dims)
 
-function getaffine(nc::NormConfig{true}, sz_x) where N
+function getaffine(nc::NormConfig{true}, sz_x)
   n = length(sz_x)
   ntuple(i -> i == n-1 ? sz_x[n-1] : 1, n)
 end
