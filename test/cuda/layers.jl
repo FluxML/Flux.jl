@@ -259,3 +259,18 @@ end
     end
   end
 end
+
+@testset "Embedding" begin
+  vocab_size, embed_size = 10, 4
+  m = Embedding(vocab_size, embed_size)
+  x = rand(1:vocab_size, 3)
+  y = m(x)
+  m_g = m |> gpu
+  x_g = x |> gpu
+  y_g = m_g(x_g)
+  @test collect(y_g) == y
+  gs = gradient(() -> sum(tanh.(m(x))), params(m))
+  gs_g = gradient(() -> sum(tanh.(m_g(x_g))), params(m_g))
+  @test collect(gs_g[m_g.weight]) ≈ gs[m.weight]
+end
+

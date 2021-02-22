@@ -8,6 +8,7 @@ on a given input.
 `m[1:3](x)` will calculate the output of the first three layers.
 
 # Examples
+
 ```jldoctest
 julia> m = Chain(x -> x^2, x -> x+1);
 
@@ -427,4 +428,56 @@ function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
   join(io, m.layers, ", ")
   print(io, ")")
+end
+
+"""
+    Embedding(in, out; init=randn)
+
+A lookup table that stores embeddings of dimension `out` 
+for a vocabulary of size `in`. 
+
+This layers is often used to store word embeddings and retrieve them using indices. 
+The input to the layer can be either a vector of indexes
+or the corresponding [onehot encoding](@ref Flux.OneHotArray). 
+
+# Examples
+
+```julia-repl
+julia> vocab_size, embed_size = 1000, 4;
+
+julia> model = Embedding(vocab_size, embed_size)
+Embedding(1000, 4)
+
+julia> vocab_idxs = [1, 722, 53, 220, 3]
+
+julia> x = OneHotMatrix(vocab_idxs, vocab_size);
+
+julia> model(x)
+4×5 Matrix{Float32}:
+  0.91139    0.670462    0.463217   0.670462    0.110932
+  0.247225  -0.0823874   0.698694  -0.0823874   0.945958
+ -0.393626  -0.590136   -0.545422  -0.590136    0.77743
+ -0.497621   0.87595    -0.870251   0.87595    -0.772696
+```
+
+julia> model(vocab_idxs) == model(x)
+true
+"""
+struct Embedding{W}
+  weight::W
+end
+
+@functor Embedding
+
+function Embedding(in::Integer, out::Integer;
+               init = (i...) -> randn(Float32, i...))
+  return Embedding(init(out, in))
+end
+
+(m::Embedding)(x::Union{OneHotVector, OneHotMatrix}) = m.weight * x # equivalent to m.weight[:,onecold(x)]
+(m::Embedding)(x::Union{Int,AbstractVector}) = m.weight[:, x]
+(m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
+
+function Base.show(io::IO, m::Embedding)
+  print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
 end
