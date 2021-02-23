@@ -77,8 +77,6 @@ end
 batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
-train_prehook(args...) = true
-
 """
     train!(loss, params, data, opt; cb)
 
@@ -106,8 +104,8 @@ function train!(loss, ps, data, opt; cb = (x...) -> (), prehooks = (x...) -> tru
         loss(batchmemaybe(d)...)
       end
       gs = back(l)
-      all(train_prehooks(l, ps, gs, d, opt)) && update!(opt, ps, gs)
-      cb(l, ps, gs, d, opt)
+      all(train_prehooks(l, gs, d)) && update!(opt, ps, gs)
+      cb(l, gs, d)
     catch ex
       if ex isa StopException
         break
