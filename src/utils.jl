@@ -734,17 +734,6 @@ julia> Flux.modules(m2)
 julia> L2(model) = sum(sum(abs2, m.weight) for m in Flux.modules(model) if m isa Dense)
 ```
 """
-modules(m) = [x for x in traverse_trainables(m) if !isleaflike(x)]
-
-function traverse_trainables(x, cache=[])
-  x in cache && return cache
-  push!(cache, x)
-  foreach(y -> traverse_trainables(y, cache), trainable(x))
-  return cache
-end
-
-isleaflike(x) = trainable(x) === ()
-isleaflike(::Tuple{Vararg{<:Number}}) = true
-isleaflike(::Tuple{Vararg{<:AbstractArray}}) = true
+modules(m) = [x for x in traverse_functor(m) if !isleaflike(x)]
 
 @nograd modules

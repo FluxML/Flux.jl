@@ -2,6 +2,7 @@ import Adapt: adapt, adapt_storage
 using  LinearAlgebra: Cholesky
 using Zygote: IdSet
 import Functors: @functor, functor, fmap
+import Functors
 
 trainable(m) = functor(m)[1]
 
@@ -79,3 +80,20 @@ f64(m) = paramtype(Float64, m)
 # Functors for certain Julia data structures
 @functor Cholesky
 trainable(c::Cholesky) = ()
+
+"""
+    traverse_functor(x)
+
+Traverse `x` recursevely going through the children defined by [`functor`](@ref)
+and return each node encountered.
+"""
+function traverse_functor(x, cache=[])
+  x in cache && return cache
+  push!(cache, x)
+  foreach(y -> traverse_functor(y, cache), functor(x)[1])
+  return cache
+end
+
+isleaflike(x) = Functors.isleaf(x)
+isleaflike(::Tuple{Vararg{<:Number}}) = true
+isleaflike(::Tuple{Vararg{<:AbstractArray}}) = true
