@@ -145,22 +145,22 @@ First, we import ParameterSchedulers.jl and initalize a cosine annealing schedul
 ```julia
 using ParameterSchedulers
 
-schedule = ScheduleIterator(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
 opt = Momentum()
-```
-
-Next, you can use your schedule directly in a `for`-loop:
-```julia
-for epoch in 1:100
-  opt.eta = next!(schedule)
+schedule = Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10)
+for (eta, epoch) in zip(schedule, 1:100)
+  opt.eta = eta
   # your training code here
 end
 ```
+`schedule` can also be indexed (e.g. `schedule(100)`) or iterated like any iterator in Julia.
 
-`schedule` can also be indexed (e.g. `schedule[100]`) or iterated like any iterator in Julia:
+ParameterSchedulers.jl schedules are stateless (they don't store their iteration state). If you want a _stateful_ schedule, you can use `ParameterSchedulers.Stateful`:
 ```julia
-for (eta, epoch) in zip(schedule, 1:100)
-  opt.eta = eta
+using ParameterSchedulers: Stateful, next!
+
+schedule = Stateful(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
+for epoch in 1:100
+  opt.eta = next!(schedule)
   # your training code here
 end
 ```
