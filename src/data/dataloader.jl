@@ -115,66 +115,94 @@
 # Base.eltype(::DataLoader{F, D}) where {F,D} = D
 # 
 
-using Random: shuffle
+using Random
 
-struct DataLoader{F,S,D,L}
+struct DataLoader{F,D,S,L}
   aug::F
   data::D
-  # args::D
-  # labels::L
+  iterator::S
   batchsize::Int
-  batchdim::Int
+  batchdim::L
+  partial::Bool
 end
-
-getobs(data::AbstractArray, n, i) = data
-getobs(x, n, i) = getobs(Base.tail(x), n, i)
 
 # X :: tuple of args to loss
-function DataLoader(f
+function DataLoader(f,
                     args...;
                     batchsize = 1, shuffle = true,
-                    partial = true, batchdim = nothing)
-  DataLoader(f, shuffle(args), batchsize, batchdim)
+                    partial = true, batchdim = ndims)
+
+  # find_arrs = findall(a -> typeof(a) <: AbstractArray, args)
+  # TODO: find all arrays and apply the same tricks as other constructor
+  dataset_size = 1
+  shuffle, batchsize = validate_kwargs(shuffle, dataset_size, batchsize)
+  ix = shuffle(1:dataset_size)
+  iterator = Iterators.partition(ix, batchsize)
+  DataLoader(f, args, iterator, batchsize, batchdim, partial)
 end
 
-# `f` is an augmentation on the data/ labels
+function validate_kwargs(shuffle, dataset_size, batchsize)
+  shuffle = shuffle isa Bool ? shuffle ? Random.shuffle : identity : shuffle
+  if dataset_size < batchsize
+    @warn "Batch Size $batchsize greater than dataset size $dataset_size - reducing batch size to dataset size"
+    bs = dataset_size
+  else
+    bs = batchsize
+  end
+  shuffle, bs 
+end
+
+# `f` is an augmentation/ validation on the "minibatches"
+# It can be used to act as a sampling function where there is no data
+# batchdim is a function to suggest which dim is the actual
+# batch dimension - saying `4` isn't helpful if you have a
+# 4 dimensional feature but a matrix label set
 function DataLoader(f,
-                    args::Vararg{AbstractArray};
-                    batchsize = 1, shuffle = identity,
-                    partial = true, batchdim = ndims)
+                    args::NTuple{N,AbstractArray};
+                    batchsize = 1, shuffle = true,
+                    partial = true, batchdim = ndims) where N
 
   feats = first(args)
-  ix = shuffle ? shuffle(1:size(feats, batchdim(feats))) : 1:size(feats, batchdim(feats))
-  fs = foreach(feat -> getindex(feat, ntuple(Colon(), size(feat) - 1)..., ix), args)
-  DataLoader(f, fs, batchsize, batchdim(feats))  
+  bd = batchdim(feats)
+  dataset_size = size(first(args), bd)
+  shuffle, batchsize = validate_kwargs(shuffle, dataset_size, batchsize)
+  ix = shuffle(1:dataset_size)
+  fs = (getindex(feat,
+                 ntuple(i -> i == batchdim(feat) ? ix : Colon(), length(size(feat)))...)
+       for feat in args)
+  iterator = Iterators.partition(ix, batchsize)
+  # partial = false -> drop the last iteration of iterator
+  DataLoader(f, fs, iterator, batchsize, batchdim, partial)
 end
 
-function DataLoader(args::Vararg{AbstractArray};
-                    batchsize = 1, shuffle = identity,
-                    partial = true, batchdim = ndims)
+function DataLoader(args::NTuple{N,AbstractArray};
+                    batchsize = 1, shuffle = true,
+                    partial = true, batchdim = ndims) where N
 
-  DataLoader(identity, args...,
+  DataLoader(identity, args,
              batchsize = batchsize,
              shuffle = shuffle,
              partial = partial,
              batchdim = batchdim)
 end
 
-Base.length(dl::DataLoader) = size(first(dl.data)) ÷ dl.batchsize
+function getobs(data::AbstractArray, ix, bd)
+  getindex(data,
+           ntuple(i -> i == bd(data) ? ix : Colon(), ndims(data))...)
+end
+getobs(data::Vector, ix, bd) = (d[ix] for d in data)
 
-# (dl::DataLoader){typeof(getobs)}(i) = getobs(dl, i)
-
-function getobs(data::NTuple{N,AbstractArray}, ix, bd) where N
-  foreach(d -> getindex(d, ntuple(i -> i == bd ? ix : Colon(), ndims(d)),), data)
+Base.@propagate_inbounds function Base.iterate(dl::DataLoader, i = 1)
+  res = Base.iterate(dl.iterator, i)
+  isnothing(res) && return nothing
+  ix, st = res
+  fullbatch = st - i == dl.batchsize
+  if fullbatch || dl.partial
+    # regular
+    d = getobs.(dl.data, Ref(ix), dl.batchdim)
+    dl.aug(d), st
+  else
+    return nothing
+  end
 end
 
-function Base.iterate(dl::DataLoader, i = 0)
-  Base.iterate.(dl.data, i)
-end
-
-function Base.iterate(dl::DataLoader{f, <:NTuple{N, AbstractArray}}, i) where {N,f}
-  total = 
-  ix = 
-  args = getobs(dl.data, ix, bd)
-  dl.aug.(args), i + 1
-end
