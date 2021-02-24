@@ -128,8 +128,8 @@ end
 
 # X :: tuple of args to loss
 function DataLoader(f,
-                    args...;
-                    batchsize = 1, shuffle = true,
+                    args::Tuple;
+                    batchsize = 1, shuffle = false,
                     partial = true, batchdim = ndims)
 
   # find_arrs = findall(a -> typeof(a) <: AbstractArray, args)
@@ -156,7 +156,7 @@ end
 # It can be used to act as a sampling function where there is no data
 # batchdim is a function to suggest which dim is the actual
 # batch dimension - saying `4` isn't helpful if you have a
-# 4 dimensional feature but a matrix label set
+# 4 dimensional feature array but a matrix label set
 function DataLoader(f,
                     args::NTuple{N,AbstractArray};
                     batchsize = 1, shuffle = true,
@@ -175,10 +175,10 @@ function DataLoader(f,
   DataLoader(f, fs, iterator, batchsize, batchdim, partial)
 end
 
-function DataLoader(args::NTuple{N,AbstractArray};
+function DataLoader(args::Tuple;
                     batchsize = 1, shuffle = true,
                     partial = true, batchdim = ndims) where N
-
+  @show typeof(args)
   DataLoader(identity, args,
              batchsize = batchsize,
              shuffle = shuffle,
@@ -190,6 +190,7 @@ function getobs(data::AbstractArray, ix, bd)
   getindex(data,
            ntuple(i -> i == bd(data) ? ix : Colon(), ndims(data))...)
 end
+getobs(data, ix, bd) = getobs.(data, Ref(ix), bd)
 getobs(data::Vector, ix, bd) = (d[ix] for d in data)
 
 Base.@propagate_inbounds function Base.iterate(dl::DataLoader, i = 1)
@@ -199,8 +200,8 @@ Base.@propagate_inbounds function Base.iterate(dl::DataLoader, i = 1)
   fullbatch = st - i == dl.batchsize
   if fullbatch || dl.partial
     # regular
-    d = getobs.(dl.data, Ref(ix), dl.batchdim)
-    dl.aug(d), st
+    d = getobs(dl.data, ix, dl.batchdim)
+    dl.aug(d...), st
   else
     return nothing
   end
