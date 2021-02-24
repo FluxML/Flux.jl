@@ -79,6 +79,8 @@ function stop()
   throw(StopException())
 end
 
+Optimisers.init(o, ps::Params) = [Optimisers.init(o,p) for p in ps]
+
 batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
@@ -102,7 +104,7 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, ps, data, opt; cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
-  st = [Optimisers.init(opt, p) for p in ps]
+  st = Optimisers.init(opt, ps)
   @progress for d in data
     try
       gs = gradient(ps) do
