@@ -1,6 +1,7 @@
 using Flux.Optimise
 using Flux.Optimise: runall
 using Flux: Params, gradient
+using Flux.Optimise: Optimisers
 using Test
 using Random
 
