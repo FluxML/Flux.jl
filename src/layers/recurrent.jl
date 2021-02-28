@@ -27,7 +27,7 @@ rnn.state   # 60
 """
 mutable struct Recur{T,S}
   cell::T
-  state::Tuple{Vararg{S}}
+  state::S
 end
 
 function (m::Recur)(x)
@@ -74,16 +74,17 @@ struct RNNCell{F,A,V,S}
   Wi::A
   Wh::A
   b::V
-  state0::Tuple{Vararg{S}}
+  state0::S
 end
 
 RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
-  RNNCell(σ, init(out, in), init(out, out), initb(out), (init_state(out,1),))
+  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell{F,A,V,S})((h,), x) where {F,A,V,S}
+function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat{T}) where {F,A,V,T}
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
-  return (h,), h
+  sz = size(x)
+  return h, reshape(h, :, sz[2:end]...)
 end
 
 @functor RNNCell
@@ -121,7 +122,7 @@ struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state0::Tuple{Vararg{S}}
+  state0::S
 end
 
 function LSTMCell(in::Integer, out::Integer;
@@ -133,7 +134,7 @@ function LSTMCell(in::Integer, out::Integer;
   return cell
 end
 
-function (m::LSTMCell{A,V,S})((h, c), x) where {A,V,S}
+function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::AbstractVecOrMat{T}) where {A,V,T}
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
@@ -142,7 +143,8 @@ function (m::LSTMCell{A,V,S})((h, c), x) where {A,V,S}
   output = σ.(gate(g, o, 4))
   c = forget .* c .+ input .* cell
   h′ = output .* tanh.(c)
-  return (h′, c), h′
+  sz = size(x)
+  return (h′, c), reshape(h′, :, sz[2:end]...)
 end
 
 @functor LSTMCell
@@ -185,20 +187,21 @@ struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  state0::Tuple{Vararg{S}}
+  state0::S
 end
 
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
-  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), (init_state(out,1),))
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1),)
 
-function (m::GRUCell{A,V,S})((h,), x) where {A,V,S}
+function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat{T}) where {A,V,T}
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
-  return (h′,), h′
+  sz = size(x)
+  return h′, reshape(h′, :, sz[2:end]...)
 end
 
 @functor GRUCell

@@ -19,7 +19,7 @@ b   = randn(5)
 
 function rnn(h, x)
   h = tanh.(Wxh * x .+ Whh * h .+ b)
-  return (h,), h
+  return h, h
 end
 
 x = rand(2) # dummy data

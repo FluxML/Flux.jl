@@ -1,32 +1,5 @@
 using Flux, CUDA, Test
 
-Wxh = randn(5, 2)
-Whh = randn(5, 5)
-b   = randn(5)
-
-function rnn2((h,), x)
-  h = tanh.(Wxh * x .+ Whh * h .+ b)
-  return (h,), h
-end
-
-x = rand(2) # dummy data
-h = (rand(5),)  # initial hidden state
-
-h, y = rnn2(h, x)
-
-rnn3 = Flux.RNNCell(2, 5)
-
-x = rand(Float32, 2) # dummy data
-h = (rand(Float32, 5),)  # initial hidden state
-h, y = rnn3(h, x)
-@code_warntype rnn3(h, x)
-
-rnn4 = RNN(2,5)
-h, y = rnn4(x)
-@code_warntype rnn4(x)
-
-
-
 @testset for R in [RNN, GRU, LSTM]
   m = R(10, 5) |> gpu
   x = gpu(rand(10))
