@@ -69,7 +69,7 @@ Recur(RNNCell(2, 5, tanh))
 
 Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also available. 
 
-Using these tools, we can now build the model in the above diagram with: 
+Using these tools, we can now build the model shown in the above diagram with: 
 
 ```julia
 m = Chain(RNN(2, 5), Dense(5, 1), x -> reshape(x, :))
