@@ -69,7 +69,7 @@ Recur(RNNCell(2, 5, tanh))
 
 Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also available. 
 
-Using these tools, we can now build the model is the above diagram with: 
+Using these tools, we can now build the model in the above diagram with: 
 
 ```julia
 m = Chain(RNN(2, 5), Dense(5, 1), x -> reshape(x, :))
@@ -77,7 +77,7 @@ m = Chain(RNN(2, 5), Dense(5, 1), x -> reshape(x, :))
 
 ## Working with sequences
 
-Using the previously defined `m` recurrent model, we can the apply it to a single step from our sequence:
+Using the previously defined `m` recurrent model, we can now apply it to a single step from our sequence:
 
 ```julia
 x = rand(Float32, 2)
@@ -86,7 +86,7 @@ julia> m(x)
  0.028398542
 ```
 
-The m(x) operation would be represented by `x1 -> A -> y1` in our diagram.
+The `m(x)` operation would be represented by `x1 -> A -> y1` in our diagram.
 If we perform this operation a second time, it will be equivalent to `x2 -> A -> y2` since the model `m` has stored the state resulting from the `x1` step:
 
 ```julia
@@ -98,7 +98,7 @@ julia> m(x)
 
 Now, instead of computing a single step at a time, we can get the full `y1` to `y3` sequence in a single pass by broadcasting the model on a sequence of data. 
 
-To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of length = `seq_length` and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
+To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of length = seq_length and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
 
 ```julia
 x = [rand(Float32, 2) for i = 1:3]
@@ -170,4 +170,4 @@ function loss(x, y)
 end
 ```
 
-A potential source of ambiguity of RNN in Flux can come from the different data layout compared to some common frameworks where data is typically a 3 dimensional array: `(features, seq length, samples)`. In Flux, those 3 dimensions are provided through a vector of seq length containing a matrix `(features, samples)`.
+A potential source of ambiguity with RNN in Flux can come from the different data layout compared to some common frameworks where data is typically a 3 dimensional array: `(features, seq length, samples)`. In Flux, those 3 dimensions are provided through a vector of seq length containing a matrix `(features, samples)`.

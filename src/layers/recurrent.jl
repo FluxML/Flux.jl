@@ -191,7 +191,7 @@ struct GRUCell{A,V,S}
 end
 
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
-  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1),)
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
 function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat{T}) where {A,V,T}
   b, o = m.b, size(h, 1)
