@@ -80,7 +80,7 @@ end
 RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat{T}) where {F,A,V,T}
+function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
   sz = size(x)
@@ -134,7 +134,7 @@ function LSTMCell(in::Integer, out::Integer;
   return cell
 end
 
-function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::AbstractVecOrMat{T}) where {A,V,T}
+function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
@@ -193,7 +193,7 @@ end
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
-function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat{T}) where {A,V,T}
+function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
