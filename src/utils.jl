@@ -294,7 +294,7 @@ Often useful in the context of transfer learning, i.e when one wants to add more
 Has the following behaviour
 *  1D: A `Vector` of `zeros` (assumes bias)
 *  2D: An identity matrix (assumes matrix multiplication)
-* >2D: A diagnoal matrix of identity kernels (assumes convolution) 
+*  More than 2D: A diagnoal matrix of identity kernels (assumes convolution) 
 
 ```jldoctest;
 julia> Flux.init_identity(3,3)
