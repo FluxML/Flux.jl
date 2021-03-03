@@ -296,7 +296,7 @@ Has the following behaviour
 *  2D: An identity matrix (assumes matrix multiplication)
 *  More than 2D: A diagnoal matrix of identity kernels (assumes convolution) 
 
-```jldoctest;
+```jldoctest
 julia> Flux.identity_init(3,3)
 3×3 Matrix{Float32}:
  1.0  0.0  0.0
