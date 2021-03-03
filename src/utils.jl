@@ -298,20 +298,20 @@ Has the following behaviour
 
 ```jldoctest
 julia> Flux.identity_init(3,3)
-3×3 Matrix{Float32}:
+3×3 Array{Float32,2}:
  1.0  0.0  0.0
  0.0  1.0  0.0
  0.0  0.0  1.0
 
  julia> Flux.identity_init(3,1,1)
- 3×1×1 Array{Float32, 3}:
+ 3×1×1 Array{Float32,3}:
  [:, :, 1] =
   0.0
   1.0
   0.0
 
   julia> Flux.identity_init(1,3,3,3)
-  1×3×3×3 Array{Float32, 4}:
+  1×3×3×3 Array{Float32,4}:
   [:, :, 1, 1] =
    0.0  1.0  0.0
   
