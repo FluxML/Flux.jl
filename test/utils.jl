@@ -154,11 +154,19 @@ end
   @testset "identity_init" begin
     import Flux: identity_init
 
-    @testset "Warnings" begin
-      @test @test_logs (:warn, r"Identity mapping not possible with rows != cols!") size(identity_init(2,3)) == (2,3)
-      @test @test_logs (:warn, r"Identity mapping not possible with nin != nout!") size(identity_init(1,1,3,4)) == (1,1,3,4)
-      @test @test_logs (:warn, r"Identity mapping requires odd kernel sizes!") size(identity_init(2,1,3,3)) == (2,1,3,3)
-      @test @test_logs (:warn, r"Identity mapping requires odd kernel sizes!") size(identity_init(1,2,3,3)) == (1,2,3,3)
+    @testset "Checks" begin
+      @test_throws ArgumentError identity_init(2,3)
+      @test_throws ArgumentError identity_init(1,1,3,4)
+      @test_throws ArgumentError identity_init(2,1,3,3)
+      @test_throws ArgumentError identity_init(1,2,3,3)
+    end
+
+    @testset "No check" begin
+      import Flux: identity_init_nocheck
+        @test size(identity_init_nocheck(2,3)) == (2,3)
+        @test size(identity_init_nocheck(1,1,3,4)) == (1,1,3,4)
+        @test size(identity_init_nocheck(2,1,3,3)) == (2,1,3,3)
+        @test size(identity_init_nocheck(1,2,3,3)) == (1,2,3,3)
     end
 
     @testset "Dense ID mapping" begin

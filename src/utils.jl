@@ -345,21 +345,21 @@ identity_init(::AbstractRNG, dims...) = identity_init(dims...)
 identity_init(cols) = zeros(cols)
 # Assume matrix multiplication
 function identity_init(rows, cols)
-  rows == cols || @warn "Identity mapping not possible with rows != cols! Got rows=$rows, rows=$cols."
-  return identity_init_nowarn(rows,cols)
+  rows == cols || throw(ArgumentError("Identity mapping not possible with rows != cols! Got rows=$rows, rows=$cols. Use identity_init_nocheck to bypass this check."))
+  return identity_init_nocheck(rows,cols)
 end
-identity_init_nowarn(rows, cols) = Matrix{Float32}(I, rows,cols)
+identity_init_nocheck(rows, cols) = Matrix{Float32}(I, rows,cols)
 # Assume convolution
 function identity_init(dims...)
   nin, nout = dims[end-1], dims[end]
-  nin == nout || @warn "Identity mapping not possible with nin != nout! Got nin=$nin, nout=$nout."
-  all(isodd, dims[1:end-2]) || @warn "Identity mapping requires odd kernel sizes! Got $(dims[1:end-2])."
-  return identity_init_nowarn(dims...)
+  nin == nout || throw(ArgumentError("Identity mapping not possible with nin != nout! Got nin=$nin, nout=$nout. Use identity_init_nocheck to bypass this check."))
+  all(isodd, dims[1:end-2]) || throw(ArgumentError("Identity mapping requires odd kernel sizes! Got $(dims[1:end-2]). Use identity_init_nocheck to bypass this check."))
+  return identity_init_nocheck(dims...)
 end
 
 # This can still be useful if one e.g is creating an inception-like block which as a whole shall be an identity mapping
 # Requires a bit of circshifting but it is fully doable
-function identity_init_nowarn(dims...)
+function identity_init_nocheck(dims...)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros(dims)
