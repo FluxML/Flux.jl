@@ -285,7 +285,7 @@ sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 """
-    init_identity([rng=GLOBAL_RNG], dims...)
+    identity_init([rng=GLOBAL_RNG], dims...)
 
 Return an `Array` of size `dims` which yields an identity mapping when used as parameters in most Flux layers.
 
@@ -297,20 +297,20 @@ Has the following behaviour
 *  More than 2D: A diagnoal matrix of identity kernels (assumes convolution) 
 
 ```jldoctest;
-julia> Flux.init_identity(3,3)
+julia> Flux.identity_init(3,3)
 3×3 Matrix{Float32}:
  1.0  0.0  0.0
  0.0  1.0  0.0
  0.0  0.0  1.0
 
- julia> Flux.init_identity(3,1,1)
+ julia> Flux.identity_init(3,1,1)
  3×1×1 Array{Float32, 3}:
  [:, :, 1] =
   0.0
   1.0
   0.0
 
-  julia> Flux.init_identity(1,3,3,3)
+  julia> Flux.identity_init(1,3,3,3)
   1×3×3×3 Array{Float32, 4}:
   [:, :, 1, 1] =
    0.0  1.0  0.0
@@ -340,26 +340,26 @@ julia> Flux.init_identity(3,3)
    0.0  1.0  0.0
 ```
 """
-init_identity(::AbstractRNG, dims...) = init_identity(dims...)
+identity_init(::AbstractRNG, dims...) = identity_init(dims...)
 # Assume bias
-init_identity(cols) = zeros(cols)
+identity_init(cols) = zeros(cols)
 # Assume matrix multiplication
-function init_identity(rows, cols)
+function identity_init(rows, cols)
   rows == cols || @warn "Identity mapping not possible with rows != cols! Got rows=$rows, rows=$cols."
-  return init_identity_nowarn(rows,cols)
+  return identity_init_nowarn(rows,cols)
 end
-init_identity_nowarn(rows, cols) = Matrix{Float32}(I, rows,cols)
+identity_init_nowarn(rows, cols) = Matrix{Float32}(I, rows,cols)
 # Assume convolution
-function init_identity(dims...)
+function identity_init(dims...)
   nin, nout = dims[end-1], dims[end]
   nin == nout || @warn "Identity mapping not possible with nin != nout! Got nin=$nin, nout=$nout."
   all(isodd, dims[1:end-2]) || @warn "Identity mapping requires odd kernel sizes! Got $(dims[1:end-2])."
-  return init_identity_nowarn(dims...)
+  return identity_init_nowarn(dims...)
 end
 
 # This can still be useful if one e.g is creating an inception-like block which as a whole shall be an identity mapping
 # Requires a bit of circshifting but it is fully doable
-function init_identity_nowarn(dims...)
+function identity_init_nowarn(dims...)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros(dims)

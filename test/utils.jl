@@ -151,18 +151,18 @@ end
     @test maximum(partial_si(8, 8, sparsity=0)) > 0
   end
 
-  @testset "init_identity" begin
-    import Flux: init_identity
-    
+  @testset "identity_init" begin
+    import Flux: identity_init
+
     @testset "Warnings" begin
-      @test @test_logs (:warn, r"Identity mapping not possible with rows != cols!") size(init_identity(2,3)) == (2,3)
-      @test @test_logs (:warn, r"Identity mapping not possible with nin != nout!") size(init_identity(1,1,3,4)) == (1,1,3,4)
-      @test @test_logs (:warn, r"Identity mapping requires odd kernel sizes!") size(init_identity(2,1,3,3)) == (2,1,3,3)
-      @test @test_logs (:warn, r"Identity mapping requires odd kernel sizes!") size(init_identity(1,2,3,3)) == (1,2,3,3)
+      @test @test_logs (:warn, r"Identity mapping not possible with rows != cols!") size(identity_init(2,3)) == (2,3)
+      @test @test_logs (:warn, r"Identity mapping not possible with nin != nout!") size(identity_init(1,1,3,4)) == (1,1,3,4)
+      @test @test_logs (:warn, r"Identity mapping requires odd kernel sizes!") size(identity_init(2,1,3,3)) == (2,1,3,3)
+      @test @test_logs (:warn, r"Identity mapping requires odd kernel sizes!") size(identity_init(1,2,3,3)) == (1,2,3,3)
     end
 
     @testset "Dense ID mapping" begin
-        l = Dense(3,3, initW = init_identity)
+        l = Dense(3,3, initW = identity_init)
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
     end
@@ -171,7 +171,7 @@ end
         nch = 3
         indata = randn(Float32, kernelsize..., nch, nch)
 
-        l = layer(kernelsize, nch=>nch, init=init_identity, pad=SamePad())
+        l = layer(kernelsize, nch=>nch, init=identity_init, pad=SamePad())
         @test l(indata) == indata
     end
   end
