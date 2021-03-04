@@ -292,9 +292,9 @@ Return an `Array` of size `dims` which yields an identity mapping when used as p
 Often useful in the context of transfer learning, i.e when one wants to add more capacity to a model but start from the same mapping.
 
 Has the following behaviour
-*  1D: A `Vector` of `zeros` (assumes bias)
-*  2D: An identity matrix (assumes matrix multiplication)
-*  More than 2D: A diagnoal matrix of identity kernels (assumes convolution) 
+*  1D: A `Vector` of `zeros` (useful for an identity bias)
+*  2D: An identity matrix (useful for an identity matrix multiplication)
+*  More than 2D: A diagnoal matrix of identity kernels (useful for an identity convolution) 
 
 ```jldoctest
 julia> Flux.identity_init(3,3)
