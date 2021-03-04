@@ -285,16 +285,28 @@ sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 """
-    identity_init([rng=GLOBAL_RNG], dims...)
+    identity_init([rng=GLOBAL_RNG], dims...;gain=1)
 
-Return an `Array` of size `dims` which yields an identity mapping when used as parameters in most Flux layers.
+Return an `Array` of size `dims` which yields an identity mapping when used as parameters in 
+most Flux layers.
 
-Often useful in the context of transfer learning, i.e when one wants to add more capacity to a model but start from the same mapping.
+Often useful in the context of transfer learning, i.e when one wants to add more capacity to
+a model but start from the same mapping.
+
+Some caveats: Not all layers will be identity mapping when used with this init. Exceptions
+include recurrent layers, `DepthwiseConv` and normalization layers.
+
+Also note that layers must have `input_size == output_size` for identity mapping to be 
+possible.
+
+For convolutional layers, in addition to the above, the kernel sizes must also be odd and 
+padding must be applied so that output feature maps have the same size as input feature maps,
+e.g by using `SamePad`.
 
 Has the following behaviour
 *  1D: A `Vector` of `zeros` (useful for an identity bias)
 *  2D: An identity matrix (useful for an identity matrix multiplication)
-*  More than 2D: A diagnoal matrix of identity kernels (useful for an identity convolution) 
+*  More than 2D: A dense block array of center tap spatial filters (useful for an identity convolution)
 
 ```jldoctest
 julia> Flux.identity_init(3,3)
@@ -303,71 +315,55 @@ julia> Flux.identity_init(3,3)
  0.0  1.0  0.0
  0.0  0.0  1.0
 
- julia> Flux.identity_init(3,1,1)
- 3×1×1 Array{Float32,3}:
- [:, :, 1] =
-  0.0
-  1.0
-  0.0
+julia> Flux.identity_init(3,5)
+3×5 Array{Float32,2}:
+ 1.0  0.0  0.0  0.0  0.0
+ 0.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  1.0  0.0  0.0
 
-  julia> Flux.identity_init(1,3,3,3)
-  1×3×3×3 Array{Float32,4}:
-  [:, :, 1, 1] =
-   0.0  1.0  0.0
-  
-  [:, :, 2, 1] =
-   0.0  0.0  0.0
-  
-  [:, :, 3, 1] =
-   0.0  0.0  0.0
-  
-  [:, :, 1, 2] =
-   0.0  0.0  0.0
-  
-  [:, :, 2, 2] =
-   0.0  1.0  0.0
-  
-  [:, :, 3, 2] =
-   0.0  0.0  0.0
-  
-  [:, :, 1, 3] =
-   0.0  0.0  0.0
-  
-  [:, :, 2, 3] =
-   0.0  0.0  0.0
-  
-  [:, :, 3, 3] =
-   0.0  1.0  0.0
+julia> Flux.identity_init(3,3,2,2)
+3×3×2×2 Array{Float32,4}:
+[:, :, 1, 1] =
+ 0.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.0
+
+[:, :, 2, 1] =
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+
+[:, :, 1, 2] =
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+
+[:, :, 2, 2] =
+ 0.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.0
 ```
 """
-identity_init(::AbstractRNG, dims...) = identity_init(dims...)
 # Assume bias
-identity_init(cols) = zeros(cols)
-# Assume matrix multiplication
-function identity_init(rows, cols)
-  rows == cols || throw(ArgumentError("Identity mapping not possible with rows != cols! Got rows=$rows, rows=$cols. Use identity_init_nocheck to bypass this check."))
-  return identity_init_nocheck(rows,cols)
-end
-identity_init_nocheck(rows, cols) = Matrix{Float32}(I, rows,cols)
-# Assume convolution
-function identity_init(dims...)
-  nin, nout = dims[end-1], dims[end]
-  nin == nout || throw(ArgumentError("Identity mapping not possible with nin != nout! Got nin=$nin, nout=$nout. Use identity_init_nocheck to bypass this check."))
-  all(isodd, dims[1:end-2]) || throw(ArgumentError("Identity mapping requires odd kernel sizes! Got $(dims[1:end-2]). Use identity_init_nocheck to bypass this check."))
-  return identity_init_nocheck(dims...)
-end
+identity_init(cols;gain=1) = zeros(cols)
 
-# This can still be useful if one e.g is creating an inception-like block which as a whole shall be an identity mapping
-# Requires a bit of circshifting but it is fully doable
-function identity_init_nocheck(dims...)
+# Assume matrix multiplication
+identity_init(rows, cols;gain=1) = Matrix{Float32}(I * gain, rows,cols)
+
+# Assume convolution
+function identity_init(dims...;gain=1)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros(dims)
   for i in 1:min(nin,nout)
-      weights[centers..., i, i] = 1
+      weights[centers..., i, i] = gain
   end
   return weights
 end
+
+identity_init(::AbstractRNG, dims...;kwargs...) = identity_init(dims...;kwargs...)
+identity_init(;init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
+identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
