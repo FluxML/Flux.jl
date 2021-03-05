@@ -285,19 +285,21 @@ sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 """
-    identity_init([rng=GLOBAL_RNG], dims...; gain=1)
+    identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
 
 Return an `Array` of size `dims` which yields an identity mapping when used as parameters in 
-most Flux layers.
+most Flux layers. Use `gain` to get other scalings.  
 
 Often useful in the context of transfer learning, i.e when one wants to add more capacity to
 a model but start from the same mapping.
+
+Use `shift` (integer or tuple) to apply circular shift to the output.
 
 Some caveats: Not all layers will be identity mapping when used with this init. Exceptions
 include recurrent layers, `DepthwiseConv` and normalization layers.
 
 Also note that layers must have `input_size == output_size` for identity mapping to be 
-possible. When this is not the case, the "identity array" is padded with zeros.
+possible. When this is not the case, extra dimensions of the array are padded with zeros.
 
 For convolutional layers, in addition to the above, the kernel sizes must also be odd and 
 padding must be applied so that output feature maps have the same size as input feature maps,
@@ -345,20 +347,20 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols; gain=1) = zeros(Float32, cols)
+identity_init(cols; gain=1, shift=0) = zeros(Float32, cols)
 
 # Assume matrix multiplication
-identity_init(rows, cols; gain=1) = Matrix{Float32}(I * gain, rows,cols)
+identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
 
 # Assume convolution
-function identity_init(dims...; gain=1)
+function identity_init(dims...; gain=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros(Float32, dims)
   for i in 1:min(nin,nout)
     weights[centers..., i, i] = gain
   end
-  return weights
+  return circshift(weights, shift)
 end
 
 identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs...)
