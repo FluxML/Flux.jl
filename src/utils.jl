@@ -356,7 +356,7 @@ function identity_init(dims...; gain=1)
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros(dims)
   for i in 1:min(nin,nout)
-      weights[centers..., i, i] = gain
+    weights[centers..., i, i] = gain
   end
   return weights
 end
