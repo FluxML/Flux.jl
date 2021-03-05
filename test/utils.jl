@@ -160,23 +160,24 @@ end
     end
 
     @testset "Non-identity sizes" begin
-        @test size(identity_init(2,3)) == (2,3)
-        @test size(identity_init(1,1,3,4)) == (1,1,3,4)
-        @test size(identity_init(2,1,3,3)) == (2,1,3,3)
-        @test size(identity_init(1,2,3,3)) == (1,2,3,3)
+        @test identity_init(2, 3)[:, end] == zeros(Float32, 2)
+        @test identity_init(1, 1, 3, 4)[:, :, :, end] == zeros(Float32, 1, 1, 3)
+        @test identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
+        @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
 
     @testset "Dense ID mapping" begin
         l = Dense(3,3, initW = identity_init)
+
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
     end
 
     @testset "$layer ID mapping with kernelsize $kernelsize" for layer in (Conv, ConvTranspose, CrossCor), kernelsize in ((1,), (3,), (1,3), (3,5), (3,5,7))   
         nch = 3
-        indata = randn(Float32, kernelsize..., nch, nch)
-
         l = layer(kernelsize, nch=>nch, init=identity_init, pad=SamePad())
+
+        indata = randn(Float32, kernelsize..., nch, nch)
         @test l(indata) == indata
     end
 
