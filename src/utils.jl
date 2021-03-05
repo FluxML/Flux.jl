@@ -351,7 +351,7 @@ identity_init(cols;gain=1) = zeros(cols)
 identity_init(rows, cols; gain=1) = Matrix{Float32}(I * gain, rows,cols)
 
 # Assume convolution
-function identity_init(dims...;gain=1)
+function identity_init(dims...; gain=1)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros(dims)
