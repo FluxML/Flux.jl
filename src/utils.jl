@@ -285,7 +285,7 @@ sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 """
-    identity_init([rng=GLOBAL_RNG], dims...;gain=1)
+    identity_init([rng=GLOBAL_RNG], dims...; gain=1)
 
 Return an `Array` of size `dims` which yields an identity mapping when used as parameters in 
 most Flux layers.
