@@ -301,7 +301,7 @@ possible. When this is not the case, the "identity array" is padded with zeros.
 
 For convolutional layers, in addition to the above, the kernel sizes must also be odd and 
 padding must be applied so that output feature maps have the same size as input feature maps,
-e.g by using `SamePad`.
+e.g by using [`SamePad`](@ref).
 
 Has the following behaviour
 *  1D: A `Vector` of `zeros` (useful for an identity bias)
