@@ -345,7 +345,7 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols;gain=1) = zeros(cols)
+identity_init(cols; gain=1) = zeros(Float32, cols)
 
 # Assume matrix multiplication
 identity_init(rows, cols; gain=1) = Matrix{Float32}(I * gain, rows,cols)
