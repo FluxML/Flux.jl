@@ -361,8 +361,8 @@ function identity_init(dims...; gain=1)
   return weights
 end
 
-identity_init(::AbstractRNG, dims...;kwargs...) = identity_init(dims...;kwargs...)
-identity_init(;init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
+identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs...)
+identity_init(; init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
 identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 
