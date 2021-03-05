@@ -348,7 +348,7 @@ julia> Flux.identity_init(3,3,2,2)
 identity_init(cols;gain=1) = zeros(cols)
 
 # Assume matrix multiplication
-identity_init(rows, cols;gain=1) = Matrix{Float32}(I * gain, rows,cols)
+identity_init(rows, cols; gain=1) = Matrix{Float32}(I * gain, rows,cols)
 
 # Assume convolution
 function identity_init(dims...;gain=1)
