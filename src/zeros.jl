@@ -47,3 +47,6 @@ broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = -b
 @adjoint broadcasted(::typeof(*), a::AbstractArray, b::Zeros) = zero(a), _ -> (nothing, zero(a), nothing)
 @adjoint broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = zero(b), _ -> (nothing, nothing, zero(b))
 @adjoint broadcasted(::typeof(/), a::Zeros, b::AbstractArray) = zero(b), _ -> (nothing, nothing, zero(b))
+
+# Pass-through for layer constructors
+create_bias(weights::AbstractArray, bias::Flux.Zeros, dims::Integer...) = bias

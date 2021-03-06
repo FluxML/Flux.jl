@@ -6,6 +6,7 @@
 * Added [Focal Loss function](https://github.com/FluxML/Flux.jl/pull/1489) to Losses module
 * The Dense layer now supports inputs with [multiple batch dimensions](https://github.com/FluxML/Flux.jl/pull/1405).
 * Dense and Conv layers no longer perform  [implicit type conversion](https://github.com/FluxML/Flux.jl/pull/1394).
+* The keyword `initW` is of Dense layers is now `init`, to agree with convolutional layers.
 * Excise datasets in favour of other providers in the julia ecosystem.
 * Added option to set `bias` to [false](https://github.com/FluxML/Flux.jl/pull/1379) to eliminating `bias` from being trained.
 * Add [CTC loss function](https://github.com/FluxML/Flux.jl/pull/1287) to Losses module

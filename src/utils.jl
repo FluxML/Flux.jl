@@ -177,10 +177,10 @@ kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaimi
 """
     orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
 
-Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1]. 
+Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1].
 
 The input must have at least 2 dimensions.
-For `length(dims) > 2`, a `prod(dims[1:(end - 1)])` by `dims[end]` orthogonal matrix 
+For `length(dims) > 2`, a `prod(dims[1:(end - 1)])` by `dims[end]` orthogonal matrix
 is computed before reshaping it to the original dimensions.
 
 # Examples
@@ -291,18 +291,27 @@ ones(dims...) = Base.ones(Float32, dims...)
 zeros(dims...) = Base.zeros(Float32, dims...)
 
 """
-    create_bias(shallcreate::Bool, iftrue, dims...)
-    create_bias(x, ::Any...)
+    create_bias(weights, bias, length)
 
-Return a bias parameter for a layer.
+Return a bias parameter for a layer, based on the value given
+to the constructor's keyword `bias=bias`.
 
-Essentially handles the allowed input options for the `bias` keyword:
-    If `false`: Return the `Zeros` type which turns bias off.
-    If `true` : Return the result of `iftrue(dims)`.
-    If not a boolean, return self to handle the case of bias=somearray.
+* `bias == true` creates a zero vector, of the same type as weights.
+* `bias == false` returns `Zeros()`, a special struct which exists only to encode the absence of bias.
+* `bias::AbstractArray` uses the array provided, provided it has the correct size and eltype. If the type is wrong, it will be converted.
 """
-create_bias(shallcreate::Bool, iftrue, dims...) = shallcreate ? iftrue(dims...) : Zeros()
-create_bias(x, ::Any...) = x
+function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
+  bias ? fill!(similar(weights, dims...), 0) : Zeros()
+end
+function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
+  size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
+  if eltype(bias) == eltype(weights)
+    return bias
+  else
+    @warn "converting bias to match element type of weights" typeof(weights) typeof(bias) maxlog=3 _id=hash(dims)
+    return broadcast(eltype(weights), bias)
+  end
+end
 
 """
     unsqueeze(xs, dim)

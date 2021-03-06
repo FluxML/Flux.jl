@@ -69,92 +69,126 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ=identity; initW=glorot_uniform, initb=zeros, bias=true)
-    Dense(W, b, σ=identity)
+    Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
+    Dense(W::AbstractMatrix, [bias, σ])
 
-Create a traditional `Dense` layer with in×out weight matrix `W` and 
-bias vector  `b` of length `out`. The forward pass is given by:
+Create a traditional `Dense` layer, whose forward pass is given by:
 
-    y = σ.(W * x .+ b)
+    y = σ.(W * x .+ bias)
 
-The input `x` must be a vector of length `in`, a batch of vectors represented
-as an `in × N` matrix, or a higher order tensor where all dimensions
-after the first one will be treated as batch dimensions.
+The input `x` should be a vector of length `in`, or batch of vectors represented
+as an `in × N` matrix, or any array with `size(x,1) == in`.
+The out `y` will be a vector  of length `out`, or a batch with
+`size(y) == (out, size(x)[2:end]...)`
 
-The out `y` will be a vector  of length `out` or a batch whose first
-dimension is `out` and the remaining dimensions are the same as in the input.
-
-Setting `bias` to `false` will switch the bias  off for the layer.
-
-`initW` and `initb` are callables used to initialize weights and biases respectively,
-through the calls `initW(out, in)` and `initb(out)`.
+Keyword `bias=false` will switch off trainable bias for the layer.
+The initialisation of the weight matrix is `W = init(out, in)`, calling the function
+given to keyword `init`, with default [`glorot_uniform`](@doc Flux.glorot_uniform).
+The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
 
 # Examples
-
-```julia-repl
+```jldoctest
 julia> d = Dense(5, 2)
 Dense(5, 2)
 
-julia> d(rand(Float32, 5))
-2-element Array{Float32,1}:
- -0.16210233
-  0.123119034
+julia> d(rand(Float32, 5, 64)) |> size
+(2, 64)
 
-julia> d = Dense(5, 2; bias=false)
-Dense(5, 2)
+julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimensions
+(2, 1, 1, 64)
+
+julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
+Dense(5, 2, tanh; bias=false)
+
+julia> d1(ones(5))
+2-element Array{Float64,1}:
+ 0.9999092042625951
+ 0.9999092042625951
+
+julia> Flux.params(d1)  # no trainable bias
+Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{F,S<:AbstractArray,T<:Union{Zeros, AbstractVector}}
-  W::S
-  b::T
+struct Dense{F, M<:AbstractMatrix, B}
+  weight::M
+  bias::B
   σ::F
+  function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix, F}
+    b = create_bias(W, bias, size(W,1))
+    new{F,M,typeof(b)}(W, b, σ)
+  end
 end
 
-Dense(W, b) = Dense(W, b, identity)
-
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros, bias=true)
-  return Dense(initW(out, in), create_bias(bias, initb, out), σ)
+               initW = nothing, initb = nothing,
+               init = glorot_uniform, bias=true)
+
+  W = if initW !== nothing
+    Base.depwarn("keyword initW is deprecated, please use init (which similarly accepts a funtion like randn)", :Dense)
+    initW(out, in)
+  else
+    init(out, in)
+  end
+
+  b = if bias === true && initb !== nothing
+    Base.depwarn("keyword initb is deprecated, please simply supply the bias vector, bias=initb(out)", :Dense)
+    initb(out)
+  else
+    bias
+  end
+
+  return Dense(W, b, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractArray)
-  W, b, σ = a.W, a.b, a.σ
+  W, b, σ = a.weight, a.bias, a.σ
   sz = size(x)
-  x = reshape(x, sz[1], :) # reshape to handle dims > 1 as batch dimensions 
-  x = σ.(W*x .+ b)
-  return reshape(x, :, sz[2:end]...)
+  y = reshape(x, sz[1], :)  # reshape to handle dims > 1 as batch dimensions
+  z = σ.(W*y .+ b)
+  return reshape(z, :, sz[2:end]...)
 end
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
+  print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
+  l.bias == Zeros() && print(io, "; bias=false")
   print(io, ")")
 end
 
 """
     Diagonal(α, β)
-    Diagonal(sz::Integer...; initα=ones, initβ=zeros)
+    Diagonal(size::Integer...)
 
-Create an element-wise linear layer with learnable
-arrays `α` and `β` of size `sz`. The layer performs
+Create an element-wise linear layer, which performs
 
     y = α .* x .+ β
 
-The input `x` must have size broadcast-compatible with `α` and `β`.
-The parameters will be created with the calls 
-`α = initα(sz)` and `β = initβ(sz)`.
+The learnable arrays are initialised `α = ones(Float32, size)` and
+`β = zeros(Float32, size)`.
+
+Used by [`LayerNorm`](@ref).
 """
 struct Diagonal{T}
   α::T
   β::T
 end
 
-function Diagonal(sz::Integer...; 
-      initα = i -> ones(Float32, i), 
-      initβ = i -> zeros(Float32, i))
-  Diagonal(initα(sz), initβ(sz))
+function Diagonal(sz::Integer...; initα = nothing, initβ = nothing)
+  α = if initα !== nothing
+    Base.depwarn("keyword initα is deprecated, please simply supply the desired vectors", :Diagonal)
+    initα(sz...)
+  else
+    ones(sz...)
+  end
+  β = if initβ !== nothing
+    Base.depwarn("keyword initβ is deprecated, please simply supply the desired vectors", :Diagonal)
+    initβ(sz...)
+  else
+    zeros(sz...)
+  end
+  Diagonal(α, β)
 end
 
 @functor Diagonal
@@ -162,7 +196,7 @@ end
 (a::Diagonal)(x) = a.α .* x .+ a.β
 
 function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", size(l.α), ")")
+  print(io, "Diagonal(", join(size(l.α), ", "), ")")
 end
 
 """
@@ -249,55 +283,71 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    Bilinear(in1, in2, out)
+    Bilinear(in1, in2, out, σ=identity; bias=true, init=glorot_uniform)
+    Bilinear(W::AbstractArray, [bias, σ])
 
 Creates a Bilinear layer, which operates on two inputs at the same time.
-It has parameters `W` and `b`, and its output given vectors `x`, `y` is of the form 
+Its output, given vectors `x` & `y`, is another vector `z` with,
+for all `i ∈ 1:out`:
 
-    z[i] = σ.(x' * W[i,:,:] * y .+ b[i])
+    z[i] = σ(x' * W[i,:,:] * y + bias[i])
 
 If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form,
-given that `B` is a Bilinear layer of appropriate size.
+with `B` a Bilinear layer.
 
 If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
 
-```julia
-# using Bilinear to generate interactions, on one input
-x = randn(Float32, 11, 7)
-B = Bilinear(11, 11, 3)
-size(B(x)) == (3, 7)
+The initialisation works as for [`Dense`](@ref) layer, with `W = init(out, in1, in2)`.
+By default the bias vector is `zeros(Float32, out)`, option `bias=false` will switch off
+trainable bias. Either of these may be provided explicitly.
 
-# using Bilinear on two data streams at once, as a tuple
-x = randn(Float32, 10, 9)
-y = randn(Float32, 2, 9)
-m = Chain(Bilinear(10, 2, 3), Dense(3, 1))
-size(m((x, y))) == (1, 9)
+# Examples
 
-# using Bilinear as the recombinator in a SkipConnection
-x = randn(Float32, 10, 9)
-sc = SkipConnection(Dense(10, 10), Bilinear(10, 10, 5))
-size(sc(x)) == (5, 9)
+```jldoctest
+julia> x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
+
+julia> B = Flux.Bilinear(5, 5, 7);
+
+julia> B(x) |> size  # interactions based on one input
+(7, 32)
+
+julia> B(x,y) == B((x,y))  # two inputs, may be given as a tuple
+true
+
+julia> sc = SkipConnection(
+                Chain(Dense(5, 20, tanh), Dense(20, 9, tanh)),
+                Flux.Bilinear(9, 5, 3, bias=false),
+            );  # used as the recombinator, with skip as the second input
+
+julia> sc(x) |> size
+(3, 32)
+
+julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
+Bilinear(8, 16, 4, tanh, bias=false)
 ```
 """
-struct Bilinear{A,B,S}
-  W::A
-  b::B
-  σ::S
+struct Bilinear{F,A,B}
+  weight::A
+  bias::B
+  σ::F
+  function Bilinear(W::A, bias = true, σ::F = identity) where {A<:AbstractArray, F}
+    ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
+    b = create_bias(W, bias, size(W,1))
+    new{F,A,typeof(b)}(W, b, σ)
+  end
 end
 
 @functor Bilinear
 
-Bilinear(W, b) = Bilinear(W, b, identity)
-
 function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
-  initW = glorot_uniform, initb = zeros)
-  return Bilinear(initW(out, in1, in2), initb(out), σ)
+                  init = glorot_uniform, bias = true)
+  Bilinear(init(out, in1, in2), bias, σ)
 end
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
-  W, b, σ = a.W, a.b, a.σ
+  W, b, σ = a.weight, a.bias, a.σ
 
   d_z, d_x, d_y = size(W)
   d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
@@ -319,13 +369,14 @@ end
 (a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x[1], x[2])
 
 function Base.show(io::IO, l::Bilinear)
-  print(io, "Bilinear(", size(l.W, 2), ", ", size(l.W, 3), ", ", size(l.W, 1))
+  print(io, "Bilinear(", size(l.weight, 2), ", ", size(l.weight, 3), ", ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
+  l.bias == Flux.Zeros() && print(io, ", bias=false")
   print(io, ")")
 end
 
 """
-Parallel(connection, layers...)
+    Parallel(connection, layers...)
 
 Create a 'Parallel' layer that passes an input array to each path in
 `layers`, reducing the output with `connection`.
