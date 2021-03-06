@@ -288,7 +288,7 @@ sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_i
     identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
 
 Return an `Array` of size `dims` which yields an identity mapping when used as parameters in 
-most Flux layers. Use `gain` to get other scalings.  
+most Flux layers. Use `gain` to scale the identity by a constant.
 
 Often useful in the context of transfer learning, i.e when one wants to add more capacity to
 a model but start from the same mapping.
