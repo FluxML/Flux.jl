@@ -294,6 +294,7 @@ Often useful in the context of transfer learning, i.e when one wants to add more
 a model but start from the same mapping.
 
 Use `shift` (integer or tuple) to apply circular shift to the output.
+Equivalent to `Base.circshift(identity(dims...), shift)`.
 
 Some caveats: Not all layers will be identity mapping when used with this init. Exceptions
 include recurrent layers, `DepthwiseConv` and normalization layers.
