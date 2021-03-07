@@ -706,3 +706,8 @@ function Base.show(io::IO, m::MeanPool)
   m.stride == m.k || print(io, ", stride=", _maybetuple_string(m.stride))
   print(io, ")")
 end
+
+# define equality comparison for the layers
+function Base.:(==)(x::T, y::T) where {T <: Union{Conv, ConvTranspose, DepthwiseConv, CrossCor}}
+  params(x) == params(y)
+end

@@ -422,3 +422,9 @@ function Base.show(io::IO, m::Parallel)
   join(io, m.layers, ", ")
   print(io, ")")
 end
+
+
+# define equality comparison for the layers
+function Base.:(==)(x::T, y::T) where {T <: Union{Chain, Dense}}
+  params(x) == params(y)
+end

@@ -40,6 +40,8 @@ trainable(a::Recur) = (a.cell,)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
+Base.:(==)(x::Recur, y::Recur) = params(x) == params(y)
+
 """
     reset!(rnn)
 
