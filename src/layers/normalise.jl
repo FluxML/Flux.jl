@@ -302,7 +302,6 @@ function (BN::BatchNorm)(x)
   @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
   nc = NormConfig(BN.affine, BN.track_stats, reduce_dims)
-  @show nc
   μ, σ² = norm_forward(BN, x, nc)
   affine(BN, x, μ, σ², nc)
 end
