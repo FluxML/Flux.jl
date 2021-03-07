@@ -150,6 +150,54 @@ end
     @test maximum(partial_si(8, 8)) == 0
     @test maximum(partial_si(8, 8, sparsity=0)) > 0
   end
+
+  @testset "identity_init" begin
+    import Flux: identity_init
+
+    @testset "Basic" begin
+      partial = identity_init(gain=3)
+      @test partial(3, 3) == identity_init(3, 3; gain=3) == [3 0 0; 0 3 0; 0 0 3]
+    end
+
+    @testset "Non-identity sizes" begin
+        @test identity_init(2, 3)[:, end] == zeros(Float32, 2)
+        @test identity_init(3, 2; shift=1)[1, :] == zeros(Float32, 2)
+        @test identity_init(1, 1, 3, 4)[:, :, :, end] == zeros(Float32, 1, 1, 3)
+        @test identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
+        @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
+    end
+
+    @testset "Dense ID mapping" begin
+        l = Dense(3,3, initW = identity_init)
+
+        indata = reshape(collect(Float32, 1:9), 3, 3)
+        @test l(indata) == indata
+    end
+
+    @testset "$layer ID mapping with kernelsize $kernelsize" for layer in (Conv, ConvTranspose, CrossCor), kernelsize in (
+        (1,),
+        (3,), 
+        (1, 3), 
+        (3, 5), 
+        (3, 5, 7))   
+        nch = 3
+        l = layer(kernelsize, nch=>nch, init=identity_init, pad=SamePad())
+
+        indata = randn(Float32, kernelsize..., nch, nch)
+        @test l(indata) == indata
+    end
+
+    @testset "Inception identity" begin
+      insize = 7
+      path1 = Conv((1, 3), insize=>2; init=identity_init, pad=SamePad())
+      path2 = Conv((3, 5), insize=>3; init=identity_init(shift=(0, 0, 2, 0)), pad=SamePad())
+      path3 = Conv((5, 7), insize=>2; init=identity_init(shift=(0, 0, 5, 0)), pad=SamePad())
+      block = Parallel((xs...) -> cat(xs...;dims=3), path1, path2, path3)
+
+      indata = randn(Float32, 9, 9, 7, 2)
+      @test block(indata) == indata
+    end
+  end
 end
 
 @testset "Params" begin
@@ -282,8 +330,8 @@ end
 end
 
 @testset "Param remapping" begin
-  ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...)
-  dl(nin, nout, bias) = Dense(ls(nin, nout), bias(nout))
+  ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...) # accepts dims in reverse order to Dense
+  dl(nin, nout, bias) = Dense(ls(nout, nin), bias(nout))
   dm(bias) = Chain(
     dl(3, 5, bias),
     dl(5, 4, bias),
@@ -299,21 +347,22 @@ end
 
   @testset "loadparams!" begin
     import Flux: loadparams!
-    pars(w, b::Zeros) = [w, zeros(size(w,2))]
     pars(w, b) = [w, b]
+    import Flux: loadparams!, Zeros
+    pars(w, b::Zeros) = [w, Flux.zeros(size(w,1))]
     pars(l) = pars(l.W, l.b)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.W], vcat, m)
-    @testset "Bias type $bt" for bt in (zeros, nobias)
+    @testset "Bias type $bt" for bt in (Flux.zeros, nobias)
       m = dm(bt)
       loadparams!(m, params(m))
       testdense(m, bt)
     end
 
     @testset "$b1 to $b2" for (b1, b2, be) in (
-      (zeros, ones, ones),           # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (ones, nobias, zeros),         # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, ones, nobias),        # Load ones as bias to a model with Zeros as bias-> model bias does not change
+      (Flux.zeros, ones, ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+      (ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+      (nobias, ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
     )
       m1 = dm(b1)
       m2 = dm(b2)
