@@ -158,7 +158,7 @@ end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")
-  a.λ == identity || print(io, ", $(a.λ)")
+  l.λ == identity || print(io, ", $(l.λ)")
   hasaffine(l) || print(io, ", affine=false")
   print(io, ")")
 end
