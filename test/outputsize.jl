@@ -25,6 +25,10 @@
   m = Flux.unsqueeze(3)
   @test outputsize(m, (5, 7, 13)) == (5, 7, 1, 13)
 
+  m = Flux.Bilinear(10, 10, 7)
+  @test outputsize(m, (10,)) == (7,)
+  @test outputsize(m, (10, 32)) == (7, 32)
+
   m = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), flatten, Dense(1024, 10))
   @test outputsize(m, (10, 10, 3, 50)) == (10, 50)
   @test outputsize(m, (10, 10, 3, 2)) == (10, 2)
@@ -146,9 +150,7 @@ end
   @test outputsize(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
   @test outputsize(m, (32, 32, 3); padbatch=true) == (32, 32, 3, 1)
 
-  if VERSION >= v"1.1"
-    m = GroupNorm(16, 4)
-    @test outputsize(m, (32, 32, 16, 16)) == (32, 32, 16, 16)
-    @test outputsize(m, (32, 32, 16); padbatch=true) == (32, 32, 16, 1)
-  end
+  m = GroupNorm(16, 4)
+  @test outputsize(m, (32, 32, 16, 16)) == (32, 32, 16, 16)
+  @test outputsize(m, (32, 32, 16); padbatch=true) == (32, 32, 16, 1)
 end

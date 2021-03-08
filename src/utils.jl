@@ -135,7 +135,7 @@ function kaiming_uniform(rng::AbstractRNG, dims...; gain = √2)
 end
 
 kaiming_uniform(dims...; kwargs...) = kaiming_uniform(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; kwargs...)
+kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 """
     kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
@@ -172,7 +172,73 @@ function kaiming_normal(rng::AbstractRNG, dims...; gain = √2f0)
 end
 
 kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_normal(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; kwargs...)
+kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
+
+"""
+    orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
+
+Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1].
+
+The input must have at least 2 dimensions.
+For `length(dims) > 2`, a `prod(dims[1:(end - 1)])` by `dims[end]` orthogonal matrix
+is computed before reshaping it to the original dimensions.
+
+# Examples
+```jldoctest; setup = :(using LinearAlgebra)
+julia> W = Flux.orthogonal(5, 7);
+
+julia> summary(W)
+"5×7 Array{Float32,2}"
+
+julia> W * W' ≈ I(5)
+true
+
+julia> W2 = Flux.orthogonal(7, 5);
+
+julia> W2 * W2' ≈ I(7)
+false
+
+julia> W2' * W2 ≈ I(5)
+true
+
+julia> W3 = Flux.orthogonal(3, 3, 2, 4);
+
+julia> transpose(reshape(W3, :, 4)) * reshape(W3, :, 4) ≈ I(4)
+true
+```
+
+# See also
+* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
+* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
+* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
+* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
+* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
+
+# References
+[1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
+
+"""
+function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain = 1)
+  mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
+
+  Q, R = LinearAlgebra.qr(mat)
+  Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
+  if rows < cols
+    Q = transpose(Q)
+  end
+
+  return gain * Q
+end
+
+function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
+  dims = (d1, ds...)
+  rows = prod(dims[1:end-1])
+  cols = dims[end]
+  return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
+end
+
+orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
+orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
@@ -216,7 +282,92 @@ function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
 end
 
 sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs...)
-sparse_init(rng::AbstractRNG; kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; kwargs...)
+sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+
+"""
+    identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
+
+Return an `Array` of size `dims` which yields an identity mapping when used as parameters in 
+most Flux layers. Use `gain` to scale the identity by a constant.
+
+Often useful in the context of transfer learning, i.e when one wants to add more capacity to
+a model but start from the same mapping.
+
+Use `shift` (integer or tuple) to apply circular shift to the output.
+Equivalent to `Base.circshift(identity(dims...), shift)`.
+
+Some caveats: Not all layers will be identity mapping when used with this init. Exceptions
+include recurrent layers, `DepthwiseConv` and normalization layers.
+
+Also note that layers must have `input_size == output_size` for identity mapping to be 
+possible. When this is not the case, extra dimensions of the array are padded with zeros.
+
+For convolutional layers, in addition to the above, the kernel sizes must also be odd and 
+padding must be applied so that output feature maps have the same size as input feature maps,
+e.g by using [`SamePad`](@ref).
+
+Has the following behaviour
+*  1D: A `Vector` of `zeros` (useful for an identity bias)
+*  2D: An identity matrix (useful for an identity matrix multiplication)
+*  More than 2D: A dense block array of center tap spatial filters (useful for an identity convolution)
+
+```jldoctest
+julia> Flux.identity_init(3,3)
+3×3 Array{Float32,2}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+
+julia> Flux.identity_init(3,5)
+3×5 Array{Float32,2}:
+ 1.0  0.0  0.0  0.0  0.0
+ 0.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  1.0  0.0  0.0
+
+julia> Flux.identity_init(3,3,2,2)
+3×3×2×2 Array{Float32,4}:
+[:, :, 1, 1] =
+ 0.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.0
+
+[:, :, 2, 1] =
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+
+[:, :, 1, 2] =
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+
+[:, :, 2, 2] =
+ 0.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  0.0
+```
+"""
+# Assume bias
+identity_init(cols; gain=1, shift=0) = zeros(Float32, cols)
+
+# Assume matrix multiplication
+identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
+
+# Assume convolution
+function identity_init(dims...; gain=1, shift=0)
+  nin, nout = dims[end-1], dims[end]
+  centers = map(d -> cld(d, 2), dims[1:end-2])
+  weights = zeros(Float32, dims)
+  for i in 1:min(nin,nout)
+    weights[centers..., i, i] = gain
+  end
+  return circshift(weights, shift)
+end
+
+identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs...)
+identity_init(; init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
+identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+
 
 ones(T::Type, dims...) = Base.ones(T, dims...)
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
@@ -225,18 +376,27 @@ ones(dims...) = Base.ones(Float32, dims...)
 zeros(dims...) = Base.zeros(Float32, dims...)
 
 """
-    create_bias(shallcreate::Bool, iftrue, dims...)
-    create_bias(x, ::Any...)
+    create_bias(weights, bias, length)
 
-Return a bias parameter for a layer.
+Return a bias parameter for a layer, based on the value given
+to the constructor's keyword `bias=bias`.
 
-Essentially handles the allowed input options for the `bias` keyword:
-    If `false`: Return the `Zeros` type which turns bias off.
-    If `true` : Return the result of `iftrue(dims)`.
-    If not a boolean, return self to handle the case of bias=somearray.
+* `bias == true` creates a zero vector, of the same type as weights.
+* `bias == false` returns `Zeros()`, a special struct which exists only to encode the absence of bias.
+* `bias::AbstractArray` uses the array provided, provided it has the correct size and eltype. If the type is wrong, it will be converted.
 """
-create_bias(shallcreate::Bool, iftrue, dims...) = shallcreate ? iftrue(dims...) : Zeros()
-create_bias(x, ::Any...) = x
+function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
+  bias ? fill!(similar(weights, dims...), 0) : Zeros()
+end
+function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
+  size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
+  if eltype(bias) == eltype(weights)
+    return bias
+  else
+    @warn "converting bias to match element type of weights" typeof(weights) typeof(bias) maxlog=3 _id=hash(dims)
+    return broadcast(eltype(weights), bias)
+  end
+end
 
 """
     unsqueeze(xs, dim)

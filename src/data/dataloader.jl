@@ -1,7 +1,7 @@
 using Random
 
 """
-    DataLoader(data; batchsize=1, shuffle=false, partial=true)
+    DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one).
@@ -57,7 +57,7 @@ Usage example:
 """
 struct DataLoader{F, T, D,S,L}
   channel::F
-  task::T
+  # task::T
   data::D
   iterator::S
   batchsize::Int
@@ -90,7 +90,6 @@ function DataLoader(
       else
         close(ch)
       end
-    end
   end)
   schedule(t)
   DataLoader(ch, args, iterator, batchsize, batchdim, partial)
