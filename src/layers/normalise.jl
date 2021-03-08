@@ -185,9 +185,11 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, true}) where {
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
-    μ = mean(x; dims = getaffine(nc, size(x)))
-    σ² = sum((x .- μ) .^ 2; dims = getaffine(nc, size(x))) ./ l.chs
-    μ, σ² = track_stats(x, l.μ, l.σ², l.momentum, reduce_dims = nc.dims)
+    μ = mean(x; dims = nc.dims)
+    σ² = sum((x .- μ) .^ 2; dims = nc.dims) ./ l.chs
+    μ, σ² = track_stats(x, (l.μ, l.σ²), (reshape(μ, size(l.μ)...), 
+                        reshape(σ², size(l.σ²)...)),
+                        l.momentum, reduce_dims = nc.dims)
     Zygote.ignore() do
       l.μ = reshape(μ, :)
       l.σ² = reshape(σ², :)
@@ -202,13 +204,13 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, false}) where 
   μ, σ²
 end
 
-function track_stats(x::AbstractArray{T,N}, μ, σ², mtm; reduce_dims) where {T,N}
+function track_stats(x::AbstractArray{T,N}, (μprev, σ²prev), (μ, σ²), mtm; reduce_dims) where {T,N}
   m = prod(size(x)[collect(reduce_dims)])
-  μnew = vec(N == last(reduce_dims) ? μ : mean(μ, dims = N))
-  σ²new = vec(N == last(reduce_dims) ? σ² : mean(σ², dims = N))
-  μ = (1 - mtm) .* μ .+ mtm .* μnew
-  σ² = (1 - mtm) .* σ² .+ mtm .* (m / (m - one(T))) .* σ²new
-  μ, σ²
+  μnew = vec((N in reduce_dims) ? μ : mean(μ, dims = N))
+  σ²new = vec((N in reduce_dims) ? σ² : mean(σ², dims = N))
+  μ_ = (1 - mtm) .* μprev .+ mtm .* μnew
+  σ²_ = (1 - mtm) .* σ²prev .+ mtm .* (m / (m - one(T))) .* σ²new
+  μ_, σ²_
 end
 @nograd track_stats
 
@@ -302,7 +304,6 @@ function (BN::BatchNorm)(x)
   @assert size(x, N - 1) == BN.chs
   reduce_dims = [1:N-2; N]
   nc = NormConfig(BN.affine, BN.track_stats, reduce_dims)
-  @show nc
   μ, σ² = norm_forward(BN, x, nc)
   affine(BN, x, μ, σ², nc)
 end
