@@ -60,7 +60,7 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 end
 
 @testset "BatchNorm" begin
-  let m = BatchNorm(2), x = reshape(1:6, 1,1,2,3)
+  let m = BatchNorm(2, track_stats = false), x = reshape(1:6, 1,1,2,3)
 
     @test m.β == [0, 0]  # initβ(2)
     @test m.γ == [1, 1]  # initγ(2)
@@ -81,13 +81,15 @@ end
     # ∴ update rule with momentum:
     #  .1 * 3 + 0 = .3
     #  .1 * 4 + 0 = .4
+    m = BatchNorm(2, track_stats = true)
+    gs = gradient((m,x) -> sum(m(x)), m, x)
     @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
 
     # julia> .1 .* var(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
     # 2×1 Array{Float64,2}:
     #  1.3
     #  1.3
-    @test m.σ² ≈ .1 .* var(x, dims=2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    @test m.σ² ≈ .1 .* var(x, dimsi = 4, corrected = false) .* (3 / 2).+ .9 .* [1., 1.]
     
     x′ = m(x)
     @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
