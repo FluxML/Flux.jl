@@ -1,124 +1,63 @@
-# # Adapted from Knet's src/data.jl (author: Deniz Yuret)
-# 
-# struct DataLoader{F, D}
-#     iterator::F
-#     data::D
-#     batchsize::Int
-#     nobs::Int
-#     partial::Bool
-#     imax::Int
-#     indices::Vector{Int}
-#     shuffle::Bool
-# end
-# 
-# """
-#     DataLoader(data; batchsize=1, shuffle=false, partial=true)
-# 
-# An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
-# (except possibly the last one).
-# 
-# Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
-# The last dimension in each tensor is considered to be the observation dimension.
-# 
-# If `shuffle=true`, shuffles the observations each time iterations are re-started.
-# If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
-# 
-# The original data is preserved in the `data` field of the DataLoader.
-# 
-# Usage example:
-# 
-#     Xtrain = rand(10, 100)
-#     train_loader = DataLoader(Xtrain, batchsize=2)
-#     # iterate over 50 mini-batches of size 2
-#     for x in train_loader
-#         @assert size(x) == (10, 2)
-#         ...
-#     end
-# 
-#     train_loader.data   # original dataset
-# 
-#     # similar, but yielding tuples
-#     train_loader = DataLoader((Xtrain,), batchsize=2)
-#     for (x,) in train_loader
-#         @assert size(x) == (10, 2)
-#         ...
-#     end
-# 
-#     Xtrain = rand(10, 100)
-#     Ytrain = rand(100)
-#     train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true)
-#     for epoch in 1:100
-#         for (x, y) in train_loader
-#             @assert size(x) == (10, 2)
-#             @assert size(y) == (2,)
-#             ...
-#         end
-#     end
-# 
-#     # train for 10 epochs
-#     using IterTools: ncycle
-#     Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
-# 
-#     # can use NamedTuple to name tensors
-#     train_loader = DataLoader((images=Xtrain, labels=Ytrain), batchsize=2, shuffle=true)
-#     for datum in train_loader
-#         @assert size(datum.images) == (10, 2)
-#         @assert size(datum.labels) == (2,)
-#     end
-# """
-# function DataLoader(data; batchsize=1, shuffle=false, partial=true, f = dataloader_iterate)
-#     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
-# 
-#     n = _nobs(data)
-#     if n < batchsize
-#         @warn "Number of observations less than batchsize, decreasing the batchsize to $n"
-#         batchsize = n
-#     end
-#     imax = partial ? n : n - batchsize + 1
-#     DataLoader(f, data, batchsize, n, partial, imax, [1:n;], shuffle)
-# end
-# 
-# function getobs(d, i, args...)
-#   i >= d.imax && return nothing
-#     if d.shuffle && i == 0
-#         shuffle!(d.indices)
-#     end
-#     nexti = min(i + d.batchsize, d.nobs)
-#     ids = d.indices[i+1:nexti]
-#     batch = _getobs(d.data, ids)
-#     return (batch, nexti)
-# end
-# 
-# @propagate_inbounds function Base.iterate(d::DataLoader, i = 0)     # returns data in d.indices[i+1:i+batchsize]
-#   d.iterator(d, i)
-# end
-# 
-# function Base.length(d::DataLoader)
-#     n = d.nobs / d.batchsize
-#     d.partial ? ceil(Int,n) : floor(Int,n)
-# end
-# 
-# _nobs(data::AbstractArray) = size(data)[end]
-# 
-# function _nobs(data::Union{Tuple, NamedTuple})
-#     length(data) > 0 || throw(ArgumentError("Need at least one data input"))
-#     n = _nobs(data[1])
-#     if !all(x -> _nobs(x) == n, Base.tail(data))
-#         throw(DimensionMismatch("All data should contain same number of observations"))
-#     end
-#     return n
-# end
-# 
-# _getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
-# _getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(_getobs, i), data)
-# 
-# Base.eltype(::DataLoader{F, D}) where {F,D} = D
-# 
-
 using Random
 
-struct DataLoader{F,D,S,L}
-  aug::F
+"""
+    DataLoader(data; batchsize=1, shuffle=false, partial=true)
+
+An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
+(except possibly the last one).
+
+Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
+The last dimension in each tensor is considered to be the observation dimension.
+
+If `shuffle=true`, shuffles the observations each time iterations are re-started.
+If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
+
+The original data is preserved in the `data` field of the DataLoader.
+
+Usage example:
+
+    Xtrain = rand(10, 100)
+    train_loader = DataLoader(Xtrain, batchsize=2)
+    # iterate over 50 mini-batches of size 2
+    for x in train_loader
+        @assert size(x) == (10, 2)
+        ...
+    end
+
+    train_loader.data   # original dataset
+
+    # similar, but yielding tuples
+    train_loader = DataLoader((Xtrain,), batchsize=2)
+    for (x,) in train_loader
+        @assert size(x) == (10, 2)
+        ...
+    end
+
+    Xtrain = rand(10, 100)
+    Ytrain = rand(100)
+    train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true)
+    for epoch in 1:100
+        for (x, y) in train_loader
+            @assert size(x) == (10, 2)
+            @assert size(y) == (2,)
+            ...
+        end
+    end
+
+    # train for 10 epochs
+    using IterTools: ncycle
+    Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
+
+    # can use NamedTuple to name tensors
+    train_loader = DataLoader((images=Xtrain, labels=Ytrain), batchsize=2, shuffle=true)
+    for datum in train_loader
+        @assert size(datum.images) == (10, 2)
+        @assert size(datum.labels) == (2,)
+    end
+"""
+struct DataLoader{F, T, D,S,L}
+  channel::F
+  task::T
   data::D
   iterator::S
   batchsize::Int
@@ -127,10 +66,11 @@ struct DataLoader{F,D,S,L}
 end
 
 # X :: tuple of args to loss
-function DataLoader(f,
+function DataLoader(
                     args::Tuple;
                     batchsize = 1, shuffle = false,
-                    partial = true, batchdim = ndims)
+                    partial = true, batchdim = ndims,
+                    buffersize = 10)
 
   # find_arrs = findall(a -> typeof(a) <: AbstractArray, args)
   # TODO: find all arrays and apply the same tricks as other constructor
@@ -138,7 +78,22 @@ function DataLoader(f,
   shuffle, batchsize = validate_kwargs(shuffle, dataset_size, batchsize)
   ix = shuffle(1:dataset_size)
   iterator = Iterators.partition(ix, batchsize)
-  DataLoader(f, args, iterator, batchsize, batchdim, partial)
+  ch = Channel(10)
+  t = Task(() -> begin
+    for i in iterator
+      fullbatch = length(i) == batchsize
+      if fullbatch
+        put!(ch, getobs(fs, i, batchdim))
+      elseif partial
+        put!(ch, getobs(fs, i, batchdim))
+        close(ch)
+      else
+        close(ch)
+      end
+    end
+  end)
+  schedule(t)
+  DataLoader(ch, args, iterator, batchsize, batchdim, partial)
 end
 
 function validate_kwargs(shuffle, dataset_size, batchsize)
@@ -157,53 +112,60 @@ end
 # batchdim is a function to suggest which dim is the actual
 # batch dimension - saying `4` isn't helpful if you have a
 # 4 dimensional feature array but a matrix label set
-function DataLoader(f,
+function DataLoader(
                     args::NTuple{N,AbstractArray};
                     batchsize = 1, shuffle = true,
-                    partial = true, batchdim = ndims) where N
+                    partial = true, batchdim = ndims,
+                    buffersize = 10) where N
 
   feats = first(args)
   bd = batchdim(feats)
   dataset_size = size(first(args), bd)
   shuffle, batchsize = validate_kwargs(shuffle, dataset_size, batchsize)
   ix = shuffle(1:dataset_size)
-  fs = (getindex(feat,
-                 ntuple(i -> i == batchdim(feat) ? ix : Colon(), length(size(feat)))...)
-       for feat in args)
+  fs = map(feat -> getindex(feat,
+                 ntuple(i -> i == batchdim(feat) ? ix : Colon(), length(size(feat)))...), args)
   iterator = Iterators.partition(ix, batchsize)
+  ch = Channel{typeof(args)}(buffersize)
+  t = Task(() -> begin
+    for i in iterator
+      # sleep(1)
+      fullbatch = length(i) == batchsize
+      if fullbatch
+        put!(ch, getobs(fs, i, batchdim))
+      elseif partial
+        put!(ch, getobs(fs, i, batchdim))
+        close(ch)
+      else
+        close(ch)
+      end
+    end
+  end)
+  schedule(t)
   # partial = false -> drop the last iteration of iterator
-  DataLoader(f, fs, iterator, batchsize, batchdim, partial)
+  DataLoader(ch, t, fs, iterator, batchsize, batchdim, partial)
 end
 
-function DataLoader(args::Tuple;
-                    batchsize = 1, shuffle = true,
-                    partial = true, batchdim = ndims) where N
-  @show typeof(args)
-  DataLoader(identity, args,
-             batchsize = batchsize,
-             shuffle = shuffle,
-             partial = partial,
-             batchdim = batchdim)
-end
+# function DataLoader(args::Tuple;
+#                     batchsize = 1, shuffle = true,
+#                     partial = true, batchdim = ndims,
+#                     epochs = 1) where N
+#   DataLoader(args,
+#              batchsize = batchsize,
+#              shuffle = shuffle,
+#              partial = partial,
+#              batchdim = batchdim)
+# end
 
 function getobs(data::AbstractArray, ix, bd)
   getindex(data,
            ntuple(i -> i == bd(data) ? ix : Colon(), ndims(data))...)
 end
 getobs(data, ix, bd) = getobs.(data, Ref(ix), bd)
-getobs(data::Vector, ix, bd) = (d[ix] for d in data)
+# getobs(data::Vector, ix, bd) = (d[ix] for d in data)
 
-Base.@propagate_inbounds function Base.iterate(dl::DataLoader, i = 1)
-  res = Base.iterate(dl.iterator, i)
-  isnothing(res) && return nothing
-  ix, st = res
-  fullbatch = st - i == dl.batchsize
-  if fullbatch || dl.partial
-    # regular
-    d = getobs(dl.data, ix, dl.batchdim)
-    dl.aug(d...), st
-  else
-    return nothing
-  end
-end
+Base.iterate(dl::DataLoader) = iterate(dl.channel)
+Base.iterate(dl::DataLoader, i) = iterate(dl.channel, i)
 
+Base.length(dl::DataLoader) = dl.partial ? length(dl.iterator) : length(dl.iterator) - 1
+Base.eltype(dl::DataLoader) = eltype(dl.channel)
