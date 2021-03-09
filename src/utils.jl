@@ -707,8 +707,8 @@ end
     modules(m)
 
 Return an iterator over non-leaf objects
-that can be reached from `m` through recursion
-on the children given by [`functor`](@ref).
+that can be reached by recursing `m` over
+the children given by [`functor`](@ref).
 
 Useful for applying a function (e.g. a regularizer)
 over specific modules or subsets of the parameters
@@ -724,7 +724,7 @@ julia> m2 = Chain(m1, Dense(64, 10))
 Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
 
 julia> Flux.modules(m2)
-5-element Vector{Any}:
+5-element Array{Any,1}:
  Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
  Chain(Dense(784, 64), BatchNorm(64, relu))
  Dense(784, 64)
