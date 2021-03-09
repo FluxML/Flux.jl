@@ -55,7 +55,8 @@ Usage example:
         @assert size(datum.labels) == (2,)
     end
 """
-struct DataLoader{F, T, D,S,L}
+struct DataLoader{P, F, T, D,S,L}
+  f::P
   channel::F
   # task::T
   data::D
@@ -66,7 +67,7 @@ struct DataLoader{F, T, D,S,L}
 end
 
 # X :: tuple of args to loss
-function DataLoader(
+function DataLoader(f,
                     args::Tuple;
                     batchsize = 1, shuffle = false,
                     partial = true, batchdim = ndims,
@@ -83,16 +84,16 @@ function DataLoader(
     for i in iterator
       fullbatch = length(i) == batchsize
       if fullbatch
-        put!(ch, getobs(fs, i, batchdim))
+        put!(ch, f(getobs(fs, i, batchdim)))
       elseif partial
-        put!(ch, getobs(fs, i, batchdim))
+        put!(ch, f(getobs(fs, i, batchdim)))
         close(ch)
       else
         close(ch)
       end
   end)
   schedule(t)
-  DataLoader(ch, args, iterator, batchsize, batchdim, partial)
+  DataLoader(f, ch, args, iterator, batchsize, batchdim, partial)
 end
 
 function validate_kwargs(shuffle, dataset_size, batchsize)
@@ -111,7 +112,7 @@ end
 # batchdim is a function to suggest which dim is the actual
 # batch dimension - saying `4` isn't helpful if you have a
 # 4 dimensional feature array but a matrix label set
-function DataLoader(
+function DataLoader(f,
                     args::NTuple{N,AbstractArray};
                     batchsize = 1, shuffle = true,
                     partial = true, batchdim = ndims,
@@ -131,9 +132,9 @@ function DataLoader(
       # sleep(1)
       fullbatch = length(i) == batchsize
       if fullbatch
-        put!(ch, getobs(fs, i, batchdim))
+        put!(ch, f(getobs(fs, i, batchdim)))
       elseif partial
-        put!(ch, getobs(fs, i, batchdim))
+        put!(ch, f(getobs(fs, i, batchdim)))
         close(ch)
       else
         close(ch)
@@ -142,19 +143,20 @@ function DataLoader(
   end)
   schedule(t)
   # partial = false -> drop the last iteration of iterator
-  DataLoader(ch, t, fs, iterator, batchsize, batchdim, partial)
+  DataLoader(f, ch, t, fs, iterator, batchsize, batchdim, partial)
 end
+DataLoader(args::NTuple{N,AbstractArray}; kwargs...) = DataLoader(x -> identity.(x), args; kwargs...)
 
-# function DataLoader(args::Tuple;
-#                     batchsize = 1, shuffle = true,
-#                     partial = true, batchdim = ndims,
-#                     epochs = 1) where N
-#   DataLoader(args,
-#              batchsize = batchsize,
-#              shuffle = shuffle,
-#              partial = partial,
-#              batchdim = batchdim)
-# end
+function DataLoader(args;
+                    batchsize = 1, shuffle = true,
+                    partial = true, batchdim = ndims,
+                    epochs = 1) where N
+  DataLoader(x -> identity.(x), args,
+             batchsize = batchsize,
+             shuffle = shuffle,
+             partial = partial,
+             batchdim = batchdim)
+end
 
 function getobs(data::AbstractArray, ix, bd)
   getindex(data,
