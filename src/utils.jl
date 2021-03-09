@@ -710,9 +710,9 @@ Return an iterator over non-leaf objects
 that can be reached from `m` through recursion
 on the children given by [`functor`](@ref).
 
-It can be used to apply a regularization
-over certain specific modules or subsets of
-the parameters (e.g. the weights but not the biases).
+Useful for applying a function (e.g. a regularizer)
+over specific modules or subsets of the parameters
+(e.g. the weights but not the biases).
 
 # Examples
 
