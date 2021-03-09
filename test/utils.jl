@@ -408,4 +408,13 @@ end
   @test modules[3] === m1
   @test modules[4] === m2
   @test modules[5] === m3
+
+  modules = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  @test length(modules) == 5
+
+  modules = Flux.modules(Chain(SkipConnection(
+                                  Conv((2,3), 4=>5; pad=6, stride=7),
+                                  +), 
+                                LayerNorm(8)))
+  @test length(modules) == 5
 end

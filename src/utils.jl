@@ -708,7 +708,7 @@ end
 
 Return an iterator over non-leaf objects
 that can be reached from `m` through recursion
-on the children given by [`trainable`](@ref).
+on the children given by [`functor`](@ref).
 
 It can be used to apply a regularization
 over certain specific modules or subsets of
@@ -720,7 +720,7 @@ the parameters (e.g. the weights but not the biases).
 julia> m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu))
 Chain(Dense(784, 64), BatchNorm(64, relu))
 
-julia> m2 = Chain(model1, Dense(64, 10))
+julia> m2 = Chain(m1, Dense(64, 10))
 Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
 
 julia> Flux.modules(m2)
@@ -731,9 +731,15 @@ julia> Flux.modules(m2)
  BatchNorm(64, relu)
  Dense(64, 10)
 
-julia> L2(model) = sum(sum(abs2, m.weight) for m in Flux.modules(model) if m isa Dense)
+## L2 regularization applied only on dense layers' weights 
+julia> L2(m) = sum(sum(abs2, l.weight) for l in Flux.modules(m) if l isa Dense)
+L2 (generic function with 1 method)
 ```
 """
-modules(m) = [x for x in traverse_functor(m) if !isleaflike(x)]
+modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 
 @nograd modules
+
+isleaflike(x) = Functors.isleaf(x)
+isleaflike(::Tuple{Vararg{<:Number}}) = true
+isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
