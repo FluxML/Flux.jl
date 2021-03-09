@@ -731,7 +731,6 @@ julia> Flux.modules(m2)
  BatchNorm(64, relu)
  Dense(64, 10)
 
-## L2 regularization applied only on dense layers' weights 
 julia> L2(m) = sum(sum(abs2, l.weight) for l in Flux.modules(m) if l isa Dense)
 L2 (generic function with 1 method)
 ```
