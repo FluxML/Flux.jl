@@ -128,8 +128,8 @@ function Conv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, �
 end
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-            init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-            weight = convfilter(k, (ch[1] ÷ groups => ch[2]); init), bias = true, groups = 1) where N
+            init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groups = 1,
+            weight = convfilter(k, (ch[1] ÷ groups => ch[2]); init), bias = true) where N
 
   Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
