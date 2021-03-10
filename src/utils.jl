@@ -701,3 +701,44 @@ function throttle(f, timeout; leading=true, trailing=false)
     return result
   end
 end
+
+
+"""
+    modules(m)
+
+Return an iterator over non-leaf objects
+that can be reached by recursing `m` over
+the children given by [`functor`](@ref).
+
+Useful for applying a function (e.g. a regularizer)
+over specific modules or subsets of the parameters
+(e.g. the weights but not the biases).
+
+# Examples
+
+```jldoctest
+julia> m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu))
+Chain(Dense(784, 64), BatchNorm(64, relu))
+
+julia> m2 = Chain(m1, Dense(64, 10))
+Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
+
+julia> Flux.modules(m2)
+5-element Array{Any,1}:
+ Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
+ Chain(Dense(784, 64), BatchNorm(64, relu))
+ Dense(784, 64)
+ BatchNorm(64, relu)
+ Dense(64, 10)
+
+julia> L2(m) = sum(sum(abs2, l.weight) for l in Flux.modules(m) if l isa Dense)
+L2 (generic function with 1 method)
+```
+"""
+modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
+
+@nograd modules
+
+isleaflike(x) = Functors.isleaf(x)
+isleaflike(::Tuple{Vararg{<:Number}}) = true
+isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
