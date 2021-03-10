@@ -92,6 +92,7 @@ struct Conv{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
+  groups::Int
 end
 
 """
@@ -118,19 +119,19 @@ julia> params(c1) |> length
 ```
 """
 function Conv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
-              stride = 1, pad = 0, dilation = 1) where {T,N}
+              stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
   bias = create_bias(b, zeros, size(w, N))
-  return Conv(σ, w, bias, stride, pad, dilation)
+  return Conv(σ, w, bias, stride, pad, dilation, groups)
 end
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
             init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-            weight = convfilter(k, ch; init), bias = true) where N
+            weight = convfilter(k, (ch[1] ÷ groups => ch[2]); init), bias = true, groups = 1) where N
 
-  Conv(weight, bias, σ; stride, pad, dilation)
+  Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
 
 """
