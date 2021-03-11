@@ -25,7 +25,7 @@ function _show_elements(x::OneHotArray)
   return xrepr
 end
 
-function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{L, <:Any, N, I}) where {L, N, I}
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
   join(io, string.(size(x)), "×")
   print(io, " Flux.OneHotArray{")
   join(io, string.([L, N, I]), ",")
