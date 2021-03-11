@@ -11,4 +11,9 @@ export train!, update!,
 include("optimisers.jl")
 include("train.jl")
 
+module Schedule
+using ParameterSchedulers
+using ParameterSchedulers : next!
+end
+
 end

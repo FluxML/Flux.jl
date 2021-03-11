@@ -44,6 +44,19 @@ end
   end
 end
 
+@testset "Scheduler" begin
+  schedule = Schedule.Exp(λ = 0.1, γ = 0.5)
+  opt = Descent()
+  scheduler = Schedule.Scheduler(schedule, opt)
+  m = Chain(Dense(10, 5), Dense(5, 2, tanh))
+  ps = params(m)
+  for t in 1:10
+    gs = gradient(() -> sum(m(rand(10))), ps)
+    Optimise.update!(scheduler, ps, gs)
+    @test opt.eta ≈ schedule[t]
+  end
+end
+
 @testset "Training Loop" begin
   i = 0
   l = 1
