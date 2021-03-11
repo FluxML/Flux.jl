@@ -19,23 +19,23 @@ OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
 function _show_elements(x::OneHotArray)
-  xbool = convert(Array{Bool}, x)
+  xbool = convert(Array{Bool}, cpu(x))
   xrepr = join(split(repr(MIME("text/plain"), xbool), "\n")[2:end], "\n")
 
   return xrepr
 end
 
-function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{T, L, N}) where {T, L, N}
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{L, <:Any, N, I}) where {L, N, I}
   join(io, string.(size(x)), "×")
   print(io, " Flux.OneHotArray{")
-  join(io, string.([T, L, N+1]), ",")
+  join(io, string.([L, N, I]), ",")
   println(io, "}")
   print(io, _show_elements(x))
 end
 function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
   print(io, string.(length(x)))
   print(io, "-element Flux.OneHotVector{")
-  join(io, string.([T, L]), ",")
+  join(io, string.([L, T]), ",")
   println(io, "}")
   print(io, _show_elements(x))
 end
