@@ -18,6 +18,28 @@ const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
+function _show_elements(x::OneHotArray)
+  xbool = convert(_onehot_bool_type(x), x)
+  xrepr = join(split(repr(MIME("text/plain"), xbool), "\n")[2:end], "\n")
+
+  return xrepr
+end
+
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{T, L, N}) where {T, L, N}
+  join(io, string.(size(x)), "×")
+  print(io, " Flux.OneHotArray{")
+  join(io, string.([T, L, N+1]), ",")
+  println(io, "}")
+  print(io, _show_elements(x))
+end
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
+  print(io, string.(length(x)))
+  print(io, "-element Flux.OneHotVector{")
+  join(io, string.([T, L]), ",")
+  println(io, "}")
+  print(io, _show_elements(x))
+end
+
 # use this type so reshaped arrays hit fast paths
 # e.g. argmax
 const OneHotLike{T, L, N, var"N+1", I} =
