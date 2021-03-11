@@ -19,7 +19,7 @@ OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
 function _show_elements(x::OneHotArray)
-  xbool = convert(_onehot_bool_type(x), x)
+  xbool = convert(Array{Bool}, x)
   xrepr = join(split(repr(MIME("text/plain"), xbool), "\n")[2:end], "\n")
 
   return xrepr
