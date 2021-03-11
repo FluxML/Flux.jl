@@ -142,7 +142,7 @@ end
 
 @functor Dense
 
-function (a::Dense)(x::VecOrMat)
+function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.weight, a.bias, a.σ
   return σ.(W*x .+ b)
 end
