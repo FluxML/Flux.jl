@@ -142,13 +142,13 @@ end
 
 @functor Dense
 
-function (a::Dense)(x::AbstractArray)
+function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.weight, a.bias, a.σ
-  sz = size(x)
-  y = reshape(x, sz[1], :)  # reshape to handle dims > 1 as batch dimensions
-  z = σ.(W*y .+ b)
-  return reshape(z, :, sz[2:end]...)
+  return σ.(W*x .+ b)
 end
+
+(a::Dense)(x::AbstractArray) = 
+  reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
