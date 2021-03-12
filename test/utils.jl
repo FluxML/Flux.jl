@@ -168,7 +168,7 @@ end
     end
 
     @testset "Dense ID mapping" begin
-        l = Dense(3,3, initW = identity_init)
+        l = Dense(3,3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata

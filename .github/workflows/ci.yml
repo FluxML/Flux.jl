@@ -18,7 +18,7 @@ jobs:
       matrix:
         version:
           - '1.5' # Replace this with the minimum Julia version that your package supports.
-          # - '1'   # automatically expands to the latest stable 1.x release of Julia
+          - '1.6-nightly'   # change to '1' when v1.6 is out
           - 'nightly'
         os:
           - ubuntu-latest
@@ -36,13 +36,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
-        # `allow-failure` not available yet https://github.com/actions/toolkit/issues/399
-        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: actions/cache@v1
-        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
         env:
           cache-name: cache-artifacts
         with:
@@ -53,11 +50,8 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
-        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
       - uses: julia-actions/julia-runtest@v1
-        continue-on-error: ${{ matrix.julia-version == 'nightly' }}
       - uses: codecov/codecov-action@v1
-        continue-on-error: ${{ matrix.version == 'nightly' }}
         with:
           file: lcov.info
 

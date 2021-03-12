@@ -1,10 +1,30 @@
 steps:
-  - label: "GPU integration"
+  - label: "GPU v1.5"
     plugins:
       - JuliaCI/julia#v1:
-          version: '1.5'
+          version: "1.5"
       - JuliaCI/julia-test#v1: ~
     agents:
       queue: "juliagpu"
       cuda: "*"
     timeout_in_minutes: 60
+    
+  - label: "GPU v1.6-nightly"       # change to "v1" when 1.6 is out
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "1.6-nightly"      # change to "1" when 1.6 is out 
+      - JuliaCI/julia-test#v1: ~
+    agents:
+      queue: "juliagpu"
+      cuda: "*"
+    timeout_in_minutes: 60
+
+  # - label: "GPU nightly"
+  #   plugins:
+  #     - JuliaCI/julia#v1:
+  #         version: "nightly"
+  #     - JuliaCI/julia-test#v1: ~
+  #   agents:
+  #     queue: "juliagpu"
+  #     cuda: "*"
+  #   timeout_in_minutes: 60
