@@ -98,13 +98,13 @@ If `l` is not found in labels and  `unk` is present, the function returns
 # Examples
 ```jldoctest
 julia> Flux.onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  1
  0
 
 julia> Flux.onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  0
  1
@@ -133,7 +133,7 @@ return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an erro
 # Examples
 ```jldoctest
 julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
+3×3 Flux.OneHotArray{3,2,Array{UInt32,1}}:
  0  1  0
  1  0  1
  0  0  0
