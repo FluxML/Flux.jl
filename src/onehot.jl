@@ -29,14 +29,14 @@ function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N
   join(io, string.(size(x)), "×")
   print(io, " Flux.OneHotArray{")
   join(io, string.([L, N, I]), ",")
-  println(io, "}")
+  println(io, "}:")
   print(io, _show_elements(x))
 end
 function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
   print(io, string.(length(x)))
   print(io, "-element Flux.OneHotVector{")
   join(io, string.([L, T]), ",")
-  println(io, "}")
+  println(io, "}:")
   print(io, _show_elements(x))
 end
 
