@@ -3,177 +3,177 @@ using Zygote: pullback
 
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
-# @testset "Dropout" begin
-#   x = [1.,2.,3.]
-#   @test x == Dropout(0.1)(x)
-#   @test x == evalwgrad(Dropout(0), x)
-#   @test zero(x) == evalwgrad(Dropout(1), x)
-# 
-#   x = rand(100)
-#   m = Dropout(0.9)
-#   y = m(x)
-#   # By default no dropout is performed outside training
-#   # @test count(a -> a == 0, y) > 50
-#   testmode!(m, true)
-#   y = m(x) # should override istraining
-#   @test count(a -> a == 0, y) == 0
-#   testmode!(m, false)
-#   y = m(x)
-#   @test count(a -> a == 0, y) > 50
-# 
-#   x = rand(Float32, 100)
-#   m = Chain(Dense(100,100),
-#             Dropout(0.9))
-#   y = m(x)
-#   # by default no dropout is performed outside training
-#   # @test count(a -> a == 0, y) > 50
-#   testmode!(m, true)
-#   y = m(x) # should override istraining
-#   @test count(a -> a == 0, y) == 0
-# 
-#   x = rand(100, 50)
-#   m = Dropout(0.5, dims = 2)
-#   y = m(x)
-#   c = map(i -> count(a -> a == 0, @view y[i, :]), 1:100)
-#   @test minimum(c) == maximum(c)
-#   m = Dropout(0.5, dims = 1)
-#   y = m(x)
-#   c = map(i -> count(a -> a==0, @view y[:, i]), 1:50)
-#   @test minimum(c) == maximum(c)
-# 
-#   # issue #1084
-#   m = Dropout(0.9)
-#   x = rand(100)
-# 
-#   testmode!(m)
-#   y = m(x)
-#   @test count(a -> a == 0, y) == 0
-#   trainmode!(m)
-#   y = m(x)
-#   @test count(a -> a == 0, y) > 50
-# 
-#   y = Flux.dropout(x, 0.9, active = true)
-#   @test count(a -> a == 0, y) > 50
-# 
-#   y = Flux.dropout(x, 0.9, active = false)
-#   @test count(a -> a == 0, y) == 0
-# end
-# 
-# @testset "BatchNorm" begin
-#   let m = BatchNorm(2, track_stats = false), x = reshape(1:6, 1,1,2,3)
-# 
-#     @test m.β == [0, 0]  # initβ(2)
-#     @test m.γ == [1, 1]  # initγ(2)
-#     # initial m.σ is 1
-#     # initial m.μ is 0
-# 
-#     y = m(x)
-#     @test isapprox(y, reshape([-1.22474 0 1.22474; -1.22474 0 1.22474], 1, 1, 2, 3), atol = 1.0e-5)
-#     # julia> x
-#     #  2×3 Array{Float64,2}:
-#     #  1.0  3.0  5.0
-#     #  2.0  4.0  6.0
-#     #
-#     # μ of batch will be
-#     #  (1. + 3. + 5.) / 3 = 3
-#     #  (2. + 4. + 6.) / 3 = 4
-#     #
-#     # ∴ update rule with momentum:
-#     #  .1 * 3 + 0 = .3
-#     #  .1 * 4 + 0 = .4
-#     m = BatchNorm(2, track_stats = true)
-#     gs = gradient((m,x) -> sum(m(x)), m, x)
-#     @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
-# 
-#     # julia> .1 .* var(x, dims = 4, corrected = true) .* (3 / 2).+ .9 .* [1., 1.]
-#     # 2×1 Array{Float64,2}:
-#     #  1.5
-#     #  1.5
-#     v = mean((0.1 .* var(x, dims = 4, corrected = true)) .* (3 / 2) .+ 0.9 .* [1.0, 1.0], dims = 3) |> x -> dropdims(x, dims = (3,4))
-#     @test m.σ² ≈ v
-#    
-#     x′ = m(x)
-#     @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.5), atol = 1.0e-5)
-#   end
-# 
-#   # with activation function
-#   let m = trainmode!(BatchNorm(3, sigmoid)), x = reshape(1:6, 1,1,3,2)
-#     y = m(x)
-#     @test_broken isapprox(y, mean(sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), dims = 1), atol = 1.0e-7)
-#   end
-# 
-#   let m = BatchNorm(2), x = reshape(Float32.(1:6), 3, 2, 1)
-#     y = reshape(permutedims(x, [2, 1, 3]), 2, :)
-#     y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
-#     @test m(x) ≈ y
-#   end
-# 
-#   let m = BatchNorm(2), x = reshape(Float32.(1:12), 2, 3, 2, 1)
-#     y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
-#     y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
-#     @test m(x) ≈ y
-#   end
-# 
-#   let m = BatchNorm(2), x = reshape(Float32.(1:24), 2, 2, 3, 2, 1)
-#     y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
-#     y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
-#     @test m(x) ≈ y
-#   end
-# 
-#   # let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
-#   #   m(x)
-#   #   @test (@allocated m(x)) <  100_000_000
-#   # end
-# 
-#   # @test length(Flux.params(BatchNorm(10))) == 2
-#   # @test length(Flux.params(BatchNorm(10, affine=true))) == 2
-#   # @test length(Flux.params(BatchNorm(10, affine=false))) == 0
-# end
+@testset "Dropout" begin
+  x = [1.,2.,3.]
+  @test x == Dropout(0.1)(x)
+  @test x == evalwgrad(Dropout(0), x)
+  @test zero(x) == evalwgrad(Dropout(1), x)
+
+  x = rand(100)
+  m = Dropout(0.9)
+  y = m(x)
+  # By default no dropout is performed outside training
+  # @test count(a -> a == 0, y) > 50
+  testmode!(m, true)
+  y = m(x) # should override istraining
+  @test count(a -> a == 0, y) == 0
+  testmode!(m, false)
+  y = m(x)
+  @test count(a -> a == 0, y) > 50
+
+  x = rand(Float32, 100)
+  m = Chain(Dense(100,100),
+            Dropout(0.9))
+  y = m(x)
+  # by default no dropout is performed outside training
+  # @test count(a -> a == 0, y) > 50
+  testmode!(m, true)
+  y = m(x) # should override istraining
+  @test count(a -> a == 0, y) == 0
+
+  x = rand(100, 50)
+  m = Dropout(0.5, dims = 2)
+  y = m(x)
+  c = map(i -> count(a -> a == 0, @view y[i, :]), 1:100)
+  @test minimum(c) == maximum(c)
+  m = Dropout(0.5, dims = 1)
+  y = m(x)
+  c = map(i -> count(a -> a==0, @view y[:, i]), 1:50)
+  @test minimum(c) == maximum(c)
+
+  # issue #1084
+  m = Dropout(0.9)
+  x = rand(100)
+
+  testmode!(m)
+  y = m(x)
+  @test count(a -> a == 0, y) == 0
+  trainmode!(m)
+  y = m(x)
+  @test count(a -> a == 0, y) > 50
+
+  y = Flux.dropout(x, 0.9, active = true)
+  @test count(a -> a == 0, y) > 50
+
+  y = Flux.dropout(x, 0.9, active = false)
+  @test count(a -> a == 0, y) == 0
+end
+
+@testset "BatchNorm" begin
+  let m = BatchNorm(2, track_stats = false), x = reshape(1:6, 1,1,2,3)
+
+    @test m.β == [0, 0]  # initβ(2)
+    @test m.γ == [1, 1]  # initγ(2)
+    # initial m.σ is 1
+    # initial m.μ is 0
+
+    y = m(x)
+    @test isapprox(y, reshape([-1.22474 0 1.22474; -1.22474 0 1.22474], 1, 1, 2, 3), atol = 1.0e-5)
+    # julia> x
+    #  2×3 Array{Float64,2}:
+    #  1.0  3.0  5.0
+    #  2.0  4.0  6.0
+    #
+    # μ of batch will be
+    #  (1. + 3. + 5.) / 3 = 3
+    #  (2. + 4. + 6.) / 3 = 4
+    #
+    # ∴ update rule with momentum:
+    #  .1 * 3 + 0 = .3
+    #  .1 * 4 + 0 = .4
+    m = BatchNorm(2, track_stats = true)
+    gs = gradient((m,x) -> sum(m(x)), m, x)
+    @test m.μ ≈ reshape([0.3, 0.4], 2, 1)
+
+    # julia> .1 .* var(x, dims = 4, corrected = true) .* (3 / 2).+ .9 .* [1., 1.]
+    # 2×1 Array{Float64,2}:
+    #  1.5
+    #  1.5
+    v = mean((0.1 .* var(x, dims = 4, corrected = true)) .* (3 / 2) .+ 0.9 .* [1.0, 1.0], dims = 3) |> x -> dropdims(x, dims = (3,4))
+    @test m.σ² ≈ v
+   
+    x′ = m(x)
+    @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.5), atol = 1.0e-5)
+  end
+
+  # with activation function
+  let m = trainmode!(BatchNorm(3, sigmoid)), x = reshape(1:6, 1,1,3,2)
+    y = m(x)
+    @test_broken isapprox(y, mean(sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), dims = 1), atol = 1.0e-7)
+  end
+
+  let m = BatchNorm(2), x = reshape(Float32.(1:6), 3, 2, 1)
+    y = reshape(permutedims(x, [2, 1, 3]), 2, :)
+    y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
+    @test m(x) ≈ y
+  end
+
+  let m = BatchNorm(2), x = reshape(Float32.(1:12), 2, 3, 2, 1)
+    y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
+    y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
+    @test m(x) ≈ y
+  end
+
+  let m = BatchNorm(2), x = reshape(Float32.(1:24), 2, 2, 3, 2, 1)
+    y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
+    y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
+    @test m(x) ≈ y
+  end
+
+  # let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
+  #   m(x)
+  #   @test (@allocated m(x)) <  100_000_000
+  # end
+
+  # @test length(Flux.params(BatchNorm(10))) == 2
+  # @test length(Flux.params(BatchNorm(10, affine=true))) == 2
+  # @test length(Flux.params(BatchNorm(10, affine=false))) == 0
+end
 
 @testset "InstanceNorm" begin
   # begin tests
-  let m = InstanceNorm(2; affine = true, track_stats = true), sizes = (3, 2, 2),
-        x = reshape(collect(1:prod(sizes)), sizes)
+  m = InstanceNorm(2; affine = true, track_stats = true)
+  sizes = (3, 2, 2)
+  x = reshape(1:prod(sizes), sizes)
 
-      # @test length(params(m)) == 2
-      x = Float32.(x)
-      @test m.β == [0, 0]  # initβ(2)
-      @test m.γ == [1, 1]  # initγ(2)
-      y = m(x)
+  # @test length(params(m)) == 2
+  x = Float32.(x)
+  @test m.β == [0, 0]  # initβ(2)
+  @test m.γ == [1, 1]  # initγ(2)
+  y, back = pullback((m,x) -> m(x), m, x)
 
-      #julia> x
-      #[:, :, 1] =
-      # 1.0  4.0
-      # 2.0  5.0
-      # 3.0  6.0
-      #
-      #[:, :, 2] =
-      # 7.0  10.0
-      # 8.0  11.0
-      # 9.0  12.0
-      #
-      # μ will be
-      # (1. + 2. + 3.) / 3 = 2.
-      # (4. + 5. + 6.) / 3 = 5.
-      #
-      # (7. + 8. + 9.) / 3 = 8.
-      # (10. + 11. + 12.) / 3 = 11.
-      #
-      # ∴ update rule with momentum:
-      # (1. - .1) * 0 + .1 * (2. + 8.) / 2 = .5
-      # (1. - .1) * 0 + .1 * (5. + 11.) / 2 = .8
-      N = ndims(x)
-      @test m.μ ≈ [0.5, 0.8]
-      n = prod(size(x,i) for i in 1:N-2)
-      corr = n / (n-1)
-      σ² = var(x, dims=1:N-2, corrected=false)
-      @test m.σ² ≈ 0.1*corr*vec(mean(σ², dims=N)) .+ 0.9 * 1
+  #julia> x
+  #[:, :, 1] =
+  # 1.0  4.0
+  # 2.0  5.0
+  # 3.0  6.0
+  #
+  #[:, :, 2] =
+  # 7.0  10.0
+  # 8.0  11.0
+  # 9.0  12.0
+  #
+  # μ will be
+  # (1. + 2. + 3.) / 3 = 2.
+  # (4. + 5. + 6.) / 3 = 5.
+  #
+  # (7. + 8. + 9.) / 3 = 8.
+  # (10. + 11. + 12.) / 3 = 11.
+  #
+  # ∴ update rule with momentum:
+  # (1. - .1) * 0 + .1 * (2. + 8.) / 2 = .5
+  # (1. - .1) * 0 + .1 * (5. + 11.) / 2 = .8
+  N = ndims(x)
+  @test m.μ ≈ [0.5, 0.8]
+  n = prod(size(x,i) for i in 1:N-2)
+  corr = n / (n-1)
+  σ² = var(x, dims = 1:N-2, corrected = false)
+  @test m.σ² ≈ 0.1 * corr * vec(mean(σ², dims = N)) .+ 0.9 * 1
 
-      y = m(x)
-      @test length(m.μ) == 2
-      @test length(m.σ²) == 2
-      @test y ≈ (x .- reshape(m.μ, 1,2,1)) ./ sqrt.(reshape(m.σ², 1,2,1) .+ 1f-5)   atol=1.0e-5
-  end
+  y = m(x)
+  @test length(m.μ) == 2
+  @test length(m.σ²) == 2
+  @test y ≈ (x .- reshape(m.μ, 1,2,1)) ./ sqrt.(reshape(m.σ², 1,2,1) .+ 1f-5)   atol=1.0e-5
 
   # with activation function
   let m = InstanceNorm(2, sigmoid; affine = true, track_stats = true), sizes = (3, 2, 2),
@@ -205,12 +205,12 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     
     x = Float64.(x)
     y = m(x)
-    μ = mean(x, dims=1)
-    σ² = var(x, dims=1, corrected=false)
+    μ = mean(x, dims = 1)
+    σ² = var(x, dims = 1, corrected = false)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
   end
 
-
+  # check trainmode!
   let m = trainmode!(InstanceNorm(2; affine = true)), sizes = (2, 4, 1, 2, 3),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
@@ -233,14 +233,9 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     @test m_inorm(x) == reshape(m_bnorm(reshape(x, (sizes[1:end - 2]..., :, 1))), sizes)
   end
 
-  let m = InstanceNorm(32), x = randn(Float32, 416, 416, 32, 1);
-    m(x)
-    @test (@allocated m(x)) <  100_000_000
-  end
-
-  @test length(Flux.params(InstanceNorm(10))) == 0
-  @test length(Flux.params(InstanceNorm(10, affine = true))) == 2
-  @test length(Flux.params(InstanceNorm(10, affine =false))) == 0
+  # @test length(Flux.params(InstanceNorm(10))) == 0
+  # @test length(Flux.params(InstanceNorm(10, affine = true))) == 2
+  # @test length(Flux.params(InstanceNorm(10, affine =false))) == 0
 end
 
 @testset "LayerNorm" begin
