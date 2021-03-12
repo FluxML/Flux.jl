@@ -187,9 +187,10 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, true}) where {
   else  # trainmode or testmode without tracked stats
     μ = mean(x; dims = nc.dims)
     σ² = sum((x .- μ) .^ 2; dims = nc.dims) ./ l.chs
-    μ, σ² = track_stats(x, (l.μ, l.σ²), (reshape(μ, size(l.μ)...), 
-                        reshape(σ², size(l.σ²)...)),
+
+    μ, σ² = track_stats(x, (l.μ, l.σ²), (μ,σ²),
                         l.momentum, reduce_dims = nc.dims)
+
     Zygote.ignore() do
       l.μ = reshape(μ, :)
       l.σ² = reshape(σ², :)
