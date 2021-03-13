@@ -3,7 +3,7 @@ using Flux
 include("bench_utils.jl")
 
 @info "Benchmark Dense"
-include("dense.jl")
+# include("dense.jl")
 
 @info "Benchmark Conv"
 include("conv.jl")
