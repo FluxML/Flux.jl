@@ -1,5 +1,6 @@
 using Flux
 
+versioninfo()
 include("bench_utils.jl")
 
 @info "Benchmark Dense"
