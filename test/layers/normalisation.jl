@@ -93,7 +93,7 @@ end
     @test m.σ² ≈ v
    
     x′ = m(x)
-    @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.5), atol = 1.0e-5)
+    @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
   end
 
   # with activation function
@@ -220,7 +220,7 @@ end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
   let m = InstanceNorm(2; affine = true, track_stats = true), sizes = (5, 5, 3, 4, 2, 6),
-      x = reshape(Float32.(collect(1:prod(sizes))), sizes)
+      x = reshape(Float32.(1:prod(sizes)), sizes)
     y = m(x)
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
