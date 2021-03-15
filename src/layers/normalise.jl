@@ -186,14 +186,15 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, true}) where {
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
     μ = mean(x; dims = nc.dims)
-    σ² = sum((x .- μ) .^ 2; dims = nc.dims) ./ l.chs
+    σ² = mean((x .- μ) .^ 2; dims = nc.dims) # ./ l.chs
 
-    μ, σ² = track_stats(x, (l.μ, l.σ²), (μ,σ²),
+
+    μnew, σ²new = track_stats(x, (l.μ, l.σ²), (μ,σ²),
                         l.momentum, reduce_dims = nc.dims)
 
     Zygote.ignore() do
-      l.μ = reshape(μ, :)
-      l.σ² = reshape(σ², :)
+      l.μ = reshape(μnew, :)
+      l.σ² = reshape(σ²new, :)
     end
   end
   μ, σ²
@@ -219,13 +220,14 @@ function affine(l, x, μ, σ², nc::NormConfig{true})
   affine_shape = getaffine(nc, size(x))
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
-  μ = reshape(μ, affine_shape)
-  σ² = reshape(σ², affine_shape)
   x̂ = (x .- μ) ./ sqrt.(σ² .+ l.ϵ)
   l.λ.(γ .* x̂ .+ β)
 end
 
-affine(l, x, μ, σ², nc::NormConfig{false}) = l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+function affine(l, x, μ, σ², nc::NormConfig{false}) 
+  affine_shape = getaffine(nc, size(x))
+  l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+end
 
 # function affine(l, x, μ, σ², affine_shape)
 #   res = (x .- μ) ./ sqrt.(σ² .+ l.ϵ)
