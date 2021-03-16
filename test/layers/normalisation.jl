@@ -204,7 +204,7 @@ end
       x = reshape(collect(1:prod(sizes)), sizes)
     
     x = Float64.(x)
-    y = m(x)
+    y, back = pullback((m,x) -> m(x), m, x)
     μ = mean(x, dims = 1)
     σ² = var(x, dims = 1, corrected = false)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
