@@ -168,12 +168,12 @@ end
 
 NormConfig(affine, track_stats, reduce_dims) = NormConfig{affine, track_stats}(reduce_dims)
 
-function getaffine(nc::NormConfig{true}, sz_x)
+function getaffine(nc::NormConfig{true}, sz_x; dims = length(sz_x) - 1)
   n = length(sz_x)
-  ntuple(i -> i == n-1 ? sz_x[n-1] : 1, n)
+  ntuple(i -> i in dims ? sz_x[i] : 1, length(sz_x))
 end
 
-getaffine(nc::NormConfig{false}, args...) = ()
+getaffine(nc::NormConfig{false}, args...; kwargs...) = ()
 
 # For InstanceNorm, GroupNorm, and BatchNorm.
 # Compute the statistics on the slices specified by reduce_dims.
@@ -216,16 +216,16 @@ function track_stats(x::AbstractArray{T,N}, (μprev, σ²prev), (μ, σ²), mtm;
 end
 @nograd track_stats
 
-function affine(l, x, μ, σ², nc::NormConfig{true})
-  affine_shape = getaffine(nc, size(x))
+function affine(l, x::AbstractArray{T,N}, μ, σ², nc::NormConfig{true}; dims = N - 1) where {T,N}
+  affine_shape = getaffine(nc, size(x), dims = dims)
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
   x̂ = (x .- μ) ./ sqrt.(σ² .+ l.ϵ)
   l.λ.(γ .* x̂ .+ β)
 end
 
-function affine(l, x, μ, σ², nc::NormConfig{false}) 
-  affine_shape = getaffine(nc, size(x))
+function affine(l, x, μ, σ², nc::NormConfig{false}; dims = :) 
+  # affine_shape = getaffine(nc, size(x))
   l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 end
 
@@ -468,10 +468,11 @@ function (gn::GroupNorm)(x)
   sz = size(x)
   N = ndims(x)
   x = reshape(x, sz[1:N-2]..., sz[N-1] ÷ gn.G, gn.G, sz[N])
+  n = ndims(x)
   reduce_dims = 1:N-2
   nc = NormConfig(gn.affine, gn.track_stats, reduce_dims)
   μ, σ² = norm_forward(gn, x, nc)
-  res = affine(gn, x, μ, σ², nc)
+  res = affine(gn, x, μ, σ², nc, dims = (n - 1, n - 2))
   return reshape(res, sz)
 end
 
