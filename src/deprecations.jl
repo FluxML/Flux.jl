@@ -1,8 +1,8 @@
 # v0.12 deprecations
 @deprecate Dropout(p, dims) Dropout(p; dims=dims)
-@deprecate InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, active=nothing) InstanceNorm(length(β), λ, β, γ, μ, σ², ϵ, momentum, true, true, active)
-@deprecate BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, active=nothing) BatchNorm(length(β), λ, β, γ, μ, σ², ϵ, momentum, true, true, active)
-@deprecate GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, active=nothing) GroupNorm(length(β), G, λ, β, γ, μ, σ², ϵ, momentum, true, true, active)
+@deprecate InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, active=nothing) InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, true, true, active, length(β))
+@deprecate BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, active=nothing) BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, true, true, active, length(β))
+@deprecate GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, active=nothing) GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, true, true, active, length(β))
 @deprecate outdims(f, inputsize) outputsize(f, inputsize)
 @deprecate Conv(; weight,  bias, activation=identity, kws...) Conv(weight, bias, activation; kws...) 
 @deprecate ConvTranspose(; weight, bias, activation=identity, kws...) ConvTranspose(weight, bias, activation; kws...) 
