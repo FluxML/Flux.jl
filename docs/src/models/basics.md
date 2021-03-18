@@ -23,32 +23,34 @@ julia> d2f(2)
 When a function has many parameters, we can get gradients of each one at the same time:
 
 ```jldoctest basics
-julia> f(x, y) = sum((x .- y).^2);
+julia> f(x, y) = sum((x .- y).^2) # sum squared error (element-wise)
 
-julia> gradient(f, [2, 1], [2, 0])
-([0, 2], [0, -2])
+julia> x = [2,1,3];
+
+julia> y = [2,0,2];
+
+julia> gradient(f, x, y) # returns the vectors ([δfx],[δfy])
+([0, 2, 2], [0, -2, -2])
 ```
 
 But machine learning models can have *hundreds* of parameters! To handle this, Flux lets you work with collections of parameters, via `params`. You can get the gradient of all parameters used in a program without explicitly passing them in.
 
 ```jldoctest basics
-julia> x = [2, 1];
-
-julia> y = [2, 0];
-
 julia> gs = gradient(params(x, y)) do
          f(x, y)
        end
 Grads(...)
 
 julia> gs[x]
-2-element Array{Int64,1}:
+3-element Array{Int64,1}:
  0
+ 2
  2
 
 julia> gs[y]
-2-element Array{Int64,1}:
+3-element Array{Int64,1}:
   0
+ -2
  -2
 ```
 
