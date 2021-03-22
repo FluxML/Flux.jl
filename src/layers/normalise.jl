@@ -188,7 +188,6 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, true}) where {
     μ = mean(x; dims = nc.dims)
     σ² = mean((x .- μ) .^ 2; dims = nc.dims) # ./ l.chs
 
-
     μnew, σ²new = track_stats(x, (l.μ, l.σ²), (μ,σ²),
                         l.momentum, reduce_dims = nc.dims)
 
@@ -207,6 +206,7 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, false}) where 
 end
 
 function track_stats(x::AbstractArray{T,N}, (μprev, σ²prev), (μ, σ²), mtm; reduce_dims) where {T,N}
+  reduce_dims = (1,2)
   m = prod(size(x)[collect(reduce_dims)])
   μnew = vec((N in reduce_dims) ? μ : mean(μ, dims = N))
   σ²new = vec((N in reduce_dims) ? σ² : mean(σ², dims = N))
@@ -469,7 +469,7 @@ function (gn::GroupNorm)(x)
   N = ndims(x)
   x = reshape(x, sz[1:N-2]..., sz[N-1] ÷ gn.G, gn.G, sz[N])
   n = ndims(x)
-  reduce_dims = 1:N-2
+  reduce_dims = 1:n-2
   nc = NormConfig(gn.affine, gn.track_stats, reduce_dims)
   μ, σ² = norm_forward(gn, x, nc)
   res = affine(gn, x, μ, σ², nc, dims = (n - 1, n - 2))
