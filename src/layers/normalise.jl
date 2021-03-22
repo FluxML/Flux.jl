@@ -206,7 +206,6 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, false}) where 
 end
 
 function track_stats(x::AbstractArray{T,N}, (μprev, σ²prev), (μ, σ²), mtm; reduce_dims) where {T,N}
-  reduce_dims = (1,2)
   m = prod(size(x)[collect(reduce_dims)])
   μnew = vec((N in reduce_dims) ? μ : mean(μ, dims = N))
   σ²new = vec((N in reduce_dims) ? σ² : mean(σ², dims = N))
