@@ -269,7 +269,7 @@ end
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
 
-      y = m(x)
+      y, back = pullback((m,x) -> m(x), m, x)
 
       #julia> x
       #[:, :, 1]  =
