@@ -220,6 +220,20 @@ end
   end
 end
 
+@testset "Two-streams Bilinear" begin
+  x = zeros(Float32,10,9) |> gpu
+  y = zeros(Float32,2,9) |> gpu
+  b = Flux.Bilinear(10, 2, 3) |> gpu
+  @test size(b(x,y)) == (3,9)
+  @test sum(abs2, b(x,y)) ≈ 0f0
+  gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
+  b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
+  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
+  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
+    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
+  end
+end
+
 @testset "Parallel" begin
   @testset "zero sum" begin
     input = randn(10, 10, 10, 10) |> gpu

@@ -2,6 +2,7 @@ import Adapt: adapt, adapt_storage
 using  LinearAlgebra: Cholesky
 using Zygote: IdSet
 import Functors: @functor, functor, fmap
+import Functors
 
 trainable(m) = functor(m)[1]
 

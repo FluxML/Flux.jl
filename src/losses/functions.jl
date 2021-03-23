@@ -106,7 +106,7 @@ of label smoothing to binary distributions encoded in a single number.
 # Example
 ```jldoctest
 julia> y = Flux.onehotbatch([1, 1, 1, 0, 1, 0], 0:1)
-2×6 Flux.OneHotArray{UInt32,2,1,2,Array{UInt32,1}}:
+2×6 Flux.OneHotArray{2,2,Array{UInt32,1}}:
  0  0  0  1  0  1
  1  1  1  0  1  0
 
@@ -171,7 +171,7 @@ See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbina
 # Example
 ```jldoctest
 julia> y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
-3×5 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
+3×5 Flux.OneHotArray{3,2,Array{UInt32,1}}:
  1  0  0  0  1
  0  1  0  1  0
  0  0  1  0  0
@@ -222,7 +222,7 @@ See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`lab
 # Example
 ```jldoctest
 julia> y_label = Flux.onehotbatch(collect("abcabaa"), 'a':'c')
-3×7 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
+3×7 Flux.OneHotArray{3,2,Array{UInt32,1}}:
  1  0  0  1  0  1  1
  0  1  0  0  1  0  0
  0  0  1  0  0  0  0
@@ -280,7 +280,7 @@ julia> all(p -> 0<p<1, y_prob[2,:])  # else DomainError
 true
 
 julia> y_hot = Flux.onehotbatch(y_bin, 0:1)
-2×3 Flux.OneHotArray{UInt32,2,1,2,Array{UInt32,1}}:
+2×3 Flux.OneHotArray{2,2,Array{UInt32,1}}:
  0  1  0
  1  0  1
 
@@ -429,7 +429,82 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
     1 - num / den
 end
 
+"""
+    binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=eps(ŷ))
 
+Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
+
+For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
+
+# Example
+```jldoctest
+julia> y = [0  1  0
+            1  0  1]
+2×3 Array{Int64,2}:
+ 0  1  0
+ 1  0  1
+
+julia> ŷ = [0.268941  0.5  0.268941
+            0.731059  0.5  0.731059]
+2×3 Array{Float64,2}:
+ 0.268941  0.5  0.268941
+ 0.731059  0.5  0.731059
+
+julia> Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
+true
+```
+
+See also: [`Losses.focal_loss`](@ref) for multi-class setting
+
+"""
+function binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=epseltype(ŷ))
+    ŷ = ŷ .+ ϵ
+    p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
+    ce = -log.(p_t)
+    weight = (1 .- p_t) .^ γ
+    loss = weight .* ce
+    agg(loss)
+end
+
+"""
+    focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=eps(ŷ))
+
+Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+which can be used in classification tasks with highly imbalanced classes.
+It down-weights well-classified examples and focuses on hard examples.
+The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
+
+The modulating factor, `γ`, controls the down-weighting strength.
+For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
+
+# Example
+```jldoctest
+julia> y = [1  0  0  0  1
+            0  1  0  1  0
+            0  0  1  0  0]
+3×5 Array{Int64,2}:
+ 1  0  0  0  1
+ 0  1  0  1  0
+ 0  0  1  0  0
+
+julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+3×5 Array{Float32,2}:
+ 0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
+ 0.244728   0.244728   0.244728   0.244728   0.244728
+ 0.665241   0.665241   0.665241   0.665241   0.665241
+
+julia> Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
+true
+```
+
+See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
+
+"""
+function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
+    ŷ = ŷ .+ ϵ
+    agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
+end
 ```@meta
 DocTestFilters = nothing
 ```
