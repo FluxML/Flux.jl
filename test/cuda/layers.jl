@@ -116,9 +116,9 @@ gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
 
 @testset "function layers" begin
   x = rand(3,3)
-  gpu_gradtest(x -> sum(Flux.normalise(x; dims=1)), x)
-  gpu_gradtest(x -> sum(Flux.normalise(x; dims=2)), x)
-  gpu_gradtest(x -> sum(Flux.normalise(x)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=2)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
 end
 
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
