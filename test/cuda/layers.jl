@@ -13,9 +13,10 @@ end
 # TODO: These layers get into scalar indexing
 # `AlphaDropout` throws a compilation error on GPUs,
 # whereas, the rest are scalar indexing issues.
+# The norm layers behave differently on the CPU and
+# the GPU too.
 const BROKEN_LAYERS = Union{DepthwiseConv,
-                            AlphaDropout,
-                            AdaptiveMaxPool}
+                            AlphaDropout}
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
