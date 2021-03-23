@@ -15,8 +15,6 @@ end
 # whereas, the rest are scalar indexing issues.
 const BROKEN_LAYERS = Union{DepthwiseConv,
                             AlphaDropout,
-                            InstanceNorm,
-                            GroupNorm,
                             AdaptiveMaxPool}
 
 const ACTIVATIONS = [identity, relu, tanh,
