@@ -125,7 +125,7 @@ end
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
   l = cl((2,2), 1=>3, bias = false) |> gpu
   ip = zeros(Float32, 28,28,1,1) |> gpu
-  if l in BROKEN_LAYERS
+  if typeof(l) <: BROKEN_LAYERS
     @test_broken sum(l(ip)) ≈ 0.f0
     @test_broken gradient(() -> sum(l(ip)), Flux.params(l)) isa Flux.Zygote.Grads
   else
