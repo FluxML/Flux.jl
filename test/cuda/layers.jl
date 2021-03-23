@@ -97,7 +97,7 @@ pooling_layers = [MaxPool, MeanPool]
 gpu_gradtest("Pooling", pooling_layers, r, (2,2))
 
 adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
-gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
+gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7), test_cpu = false)
 
 dropout_layers = [Dropout, AlphaDropout]
 gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu = false) # dropout is not deterministic
