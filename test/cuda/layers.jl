@@ -84,10 +84,10 @@ for act in ACTIVATIONS
   gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = false)
   
   instancenorm = [InstanceNorm]
-  gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act)
+  gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act, test_cpu = false)
   
   groupnorm = [GroupNorm]
-  gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act)
+  gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act, test_cpu = false)
 end
 
 r = rand(Float32, 28, 28, 1, 1)
