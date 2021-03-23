@@ -13,11 +13,11 @@ end
 # TODO: These layers get into scalar indexing
 # `AlphaDropout` throws a compilation error on GPUs,
 # whereas, the rest are scalar indexing issues.
-const BROKEN_LAYERS = [DepthwiseConv,
+const BROKEN_LAYERS = Union{DepthwiseConv,
                             AlphaDropout,
                             InstanceNorm,
                             GroupNorm,
-                            AdaptiveMaxPool]
+                            AdaptiveMaxPool}
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
@@ -39,7 +39,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
         l_gpu = l_cpu |> gpu
         ps_gpu = Flux.params(l_gpu)
 
-        if l_gpu in BROKEN_LAYERS
+        if typeof(l_gpu) <: BROKEN_LAYERS
           @test_broken gradient(() -> sum(l_gpu(x_gpu)), ps_gpu) isa Flux.Zygote.Grads
         else
           y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
