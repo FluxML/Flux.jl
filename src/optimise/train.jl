@@ -3,6 +3,7 @@ import Zygote: Params, gradient
 
 """
     update!(x, x̄)
+
 Update the array `x` according to `x .-= x̄`.
 """
 function update!(x::AbstractArray, x̄)
@@ -12,8 +13,10 @@ end
 """
     update!(opt, p, g)
     update!(opt, ps::Params, gs)
+
 Perform an update step of the parameters `ps` (or the single parameter `p`)
 according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
+
 As a result, the parameters are mutated and the optimizer's internal state may change.
 """
 function update!(opt, x, x̄)
@@ -36,8 +39,10 @@ struct SkipException <: Exception end
 
 """
     skip()
+
 Call `Flux.skip()` in a callback to indicate when a callback condition is met.
 This will trigger the train loop to skip the current data point and not update with the calculated gradient.
+
 # Examples
 ```julia
 cb = function ()
@@ -54,8 +59,10 @@ struct StopException <: Exception end
 
 """
     stop()
+
 Call `Flux.stop()` in a callback to indicate when a callback condition is met.
 This will trigger the train loop to stop and exit.
+
 # Examples
 ```julia
 cb = function ()
@@ -72,13 +79,18 @@ batchmemaybe(x::Tuple) = x
 
 """
     train!(loss, params, data, opt; cb)
+
 For each datapoint `d` in `data`, compute the gradient of  `loss` with
 respect to `params` through backpropagation and call the optimizer `opt`.
+
 If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
+
 A callback is given with the keyword argument `cb`. For example, this will print
 "training" every 10 seconds (using [`Flux.throttle`](@ref)):
     train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
+
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
+
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, ps, data, opt; cb = () -> ())
@@ -105,8 +117,10 @@ end
 
 """
     @epochs N body
+
 Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
 training in a REPL.
+
 # Examples
 ```jldoctest
 julia> Flux.@epochs 2 println("hello")
