@@ -158,7 +158,6 @@ end
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")
   print(io, ", $(l.λ)")
-  print(io, ", affine = $(l.diag)")
   print(io, ")")
 end
 
@@ -168,10 +167,8 @@ end
 
 NormConfig(affine, track_stats, reduce_dims) = NormConfig{affine, track_stats}(reduce_dims)
 
-function getaffine(nc::NormConfig{true}, sz_x; dims = length(sz_x) - 1)
-  n = length(sz_x)
+getaffine(nc::NormConfig{true}, sz_x; dims = length(sz_x) - 1) =
   ntuple(i -> i in dims ? sz_x[i] : 1, length(sz_x))
-end
 
 getaffine(nc::NormConfig{false}, args...; kwargs...) = ()
 
@@ -224,7 +221,6 @@ function affine(l, x::AbstractArray{T,N}, μ, σ², nc::NormConfig{true}; dims =
 end
 
 function affine(l, x, μ, σ², nc::NormConfig{false}; dims = :) 
-  # affine_shape = getaffine(nc, size(x))
   l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
 end
 
@@ -316,16 +312,15 @@ testmode!(m::BatchNorm, mode=true) =
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
   print(io, ", $(l.λ)")
-  print(io,  ", affine = ")
   print(io, ")")
 end
 
 
 """
-    InstanceNorm(channels::Integer, λ=identity;
-                 initβ=zeros, initγ=ones,
-                 affine=false, track_stats=false,
-                 ϵ=1f-5, momentum=0.1f0)
+    InstanceNorm(channels::Integer, λ = identity;
+                 initβ = zeros, initγ = ones,
+                 affine = false, track_stats = false,
+                 ϵ = 1f-5, momentum = 0.1f0)
 
 [Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -393,7 +388,6 @@ testmode!(m::InstanceNorm, mode=true) =
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(l.chs)")
   print(io, ", $(l.λ)")
-  print(io, ", affine = ")
   print(io, ")")
 end
 
@@ -481,16 +475,5 @@ testmode!(m::GroupNorm, mode = true) =
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(l.chs), $(l.G)")
   print(io, ", $(l.λ)")
-  print(io, ", affine = ")
   print(io, ")")
 end
-
-# """
-#   hasaffine(l)
-# 
-# Return `true` if a normalisation layer has trainable shift and 
-# scale parameters, `false` otherwise.
-# 
-# See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
-# """
-# hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
