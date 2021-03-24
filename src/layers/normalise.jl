@@ -295,7 +295,7 @@ function BatchNorm(chs::Int, λ = identity;
 end
 
 @functor BatchNorm
-# trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
+trainable(bn::BatchNorm) = (bn.β, bn.γ)
 
 function (BN::BatchNorm)(x)
   N = ndims(x)::Int
@@ -370,7 +370,7 @@ function InstanceNorm(chs::Int, λ = identity;
 end
 
 @functor InstanceNorm
-# trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
+trainable(in::InstanceNorm) = (in.β, in.γ)
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
@@ -433,7 +433,7 @@ mutable struct GroupNorm{F,V,N,W}
 end
 
 @functor GroupNorm
-# trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
+trainable(gn::GroupNorm) = (gn.β, gn.γ)
 
 function GroupNorm(chs::Int, G::Int, λ = identity;
               initβ = i -> zeros(Float32, i), 
