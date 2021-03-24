@@ -742,3 +742,15 @@ modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
+
+function early_stopping(f; min_delta=0, patience=3)
+  min_metric = Inf
+  count = 0
+
+  return function ()
+      metric = f()
+      count = min_metric - metric < min_delta ? count + 1 : 0
+      min_metric = min(min_metric, metric)
+      return count < patience
+  end
+end
