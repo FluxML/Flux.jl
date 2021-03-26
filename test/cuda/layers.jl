@@ -86,9 +86,9 @@ upsample = [x -> Upsample(scale=x)]
 
 @testset "function layers" begin
   x = rand(Float32, 3,3)
-  gpu_gradtest(x -> sum(Flux.normalise(x; dims=1)), x)
-  gpu_gradtest(x -> sum(Flux.normalise(x; dims=2)), x)
-  gpu_gradtest(x -> sum(Flux.normalise(x)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=2)), x)
+  gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
 end
 
 @testset "BatchNorm mix stuff" begin
