@@ -84,7 +84,7 @@ f32(m) = paramtype(Float32, m)
 """
     f64(m)
 
-Convert the datatype of model's bias and weights to Float32.
+Convert the datatype of model's bias and weights to Float64.
 """
 f64(m) = paramtype(Float64, m)
 
