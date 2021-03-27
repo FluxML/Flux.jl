@@ -40,6 +40,15 @@ Flux.orthogonal
 Flux.sparse_init
 ```
 
+## Changing the type of model parameters
+
+```@docs
+Flux.f64
+Flux.f32
+```
+
+The default `eltype` for models is `Float32` since models often are trained/run on GPUs. The eltype of model `m` can be changed to `Float64` by `f64(m)`, or to `Float32` by `f32(m)`.
+
 ## Model Building
 
 Flux provides some utility functions to help you generate models in an automated fashion.
