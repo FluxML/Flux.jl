@@ -47,7 +47,7 @@ Flux.f64
 Flux.f32
 ```
 
-The default `eltype` for models is `Float32` since models often are trained/run on GPUs. The eltype of model `m` can be changed to `Float64` by `f64(m)`, or to `Float32` by `f32(m)`.
+The default `eltype` for models is `Float32` since models are often trained/run on GPUs. The eltype of model `m` can be changed to `Float64` by `f64(m)`, or to `Float32` by `f32(m)`.
 
 ## Model Building
 
