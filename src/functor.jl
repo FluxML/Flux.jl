@@ -74,7 +74,18 @@ adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs)
 
 paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
+"""
+    f32(m)
+
+Convert the datatype of model's bias and weights to Float32.
+"""
 f32(m) = paramtype(Float32, m)
+
+"""
+    f64(m)
+
+Convert the datatype of model's bias and weights to Float32.
+"""
 f64(m) = paramtype(Float64, m)
 
 # Functors for certain Julia data structures
