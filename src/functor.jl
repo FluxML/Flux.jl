@@ -77,14 +77,14 @@ paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 """
     f32(m)
 
-Convert the datatype of model's bias and weights to Float32.
+Convert the `eltype` of model's parameters to `Float32`.
 """
 f32(m) = paramtype(Float32, m)
 
 """
     f64(m)
 
-Convert the datatype of model's bias and weights to Float64.
+Convert the `eltype` of model's parameters to `Float64`.
 """
 f64(m) = paramtype(Float64, m)
 
