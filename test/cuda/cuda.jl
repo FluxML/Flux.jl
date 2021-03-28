@@ -38,6 +38,11 @@ using LinearAlgebra: I, cholesky, Cholesky
 
 end
 
+@testset "onehot gpu" begin
+  y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
+  @test show(stdout, y)
+end
+
 @testset "onecold gpu" begin
   y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
   l = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
