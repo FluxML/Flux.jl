@@ -44,13 +44,13 @@ Flux.onecold
 julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotArray{3,2,Array{UInt32,1}}:
+3×3 Flux.OneHotArray{3,2,Vector{UInt32}}:
  0  1  0
  1  0  1
  0  0  0
 
 julia> onecold(ans, [:a, :b, :c])	
-3-element Array{Symbol,1}:	
+3-element Vector{Symbol}:	
  :b	
  :a	
  :b   

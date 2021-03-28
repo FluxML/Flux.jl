@@ -42,12 +42,12 @@ julia> gs = gradient(params(x, y)) do
 Grads(...)
 
 julia> gs[x]
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
  0
  2
 
 julia> gs[y]
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
   0
  -2
 ```

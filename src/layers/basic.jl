@@ -101,7 +101,7 @@ julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5, 2, tanh; bias=false)
 
 julia> d1(ones(5))
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  0.9999092042625951
  0.9999092042625951
 
