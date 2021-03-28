@@ -262,8 +262,9 @@ See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
 ```jldoctest
+
 julia> y_bin = Bool[1,0,1]
-3-element Array{Bool,1}:
+3-element Vector{Bool}:
  1
  0
  1
@@ -304,10 +305,11 @@ See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
 ```jldoctest
+
 julia> y_bin = Bool[1,0,1];
 
 julia> y_model = Float32[2, -1, pi]
-3-element Array{Float32,1}:
+3-element Vector{Float32}:
   2.0
  -1.0
   3.1415927
