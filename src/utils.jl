@@ -460,19 +460,19 @@ given dimension `dim`.
 # Examples
 ```jldoctest
 julia> xs = [[1, 2], [3, 4], [5, 6]]
-3-element Array{Vector{Int64},1}:
+3-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
 
 julia> Flux.stack(xs, 1)
-3×2 Array{Int64,2}:
+3×2 Matrix{Int64}:
  1  2
  3  4
  5  6
 
 julia> cat(xs, dims=1)
-3-element Array{Vector{Int64},1}:
+3-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
@@ -488,7 +488,7 @@ Unroll the given `xs` into an `Array` of `Array`s along the given dimension `dim
 # Examples
 ```jldoctest
 julia> Flux.unstack([1 3 5 7; 2 4 6 8], 2)
-4-element Array{Vector{Int64},1}:
+4-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
@@ -505,13 +505,13 @@ Split `xs` into `n` parts.
 # Examples
 ```jldoctest
 julia> Flux.chunk(1:10, 3)
-3-element Array{UnitRange{Int64},1}:
+3-element Vector{UnitRange{Int64}}:
  1:4
  5:8
  9:10
 
 julia> Flux.chunk(collect(1:10), 3)
-3-element Array{SubArray{Int64,1,Vector{Int64},Tuple{UnitRange{Int64}},true},1}:
+3-element Vector{SubArray{Int64,1,Vector{Int64},Tuple{UnitRange{Int64}},true}}:
  [1, 2, 3, 4]
  [5, 6, 7, 8]
  [9, 10]
@@ -554,7 +554,7 @@ Batch the arrays in `xs` into a single array.
 # Examples
 ```jldoctest
 julia> Flux.batch([[1,2,3],[4,5,6]])
-3×2 Array{Int64,2}:
+3×2 Matrix{Int64}:
  1  4
  2  5
  3  6
@@ -600,7 +600,7 @@ item is a batch of `N`. Short sequences will be padded by `pad`.
 # Examples
 ```jldoctest
 julia> Flux.batchseq([[1, 2, 3], [4, 5]], 0)
-3-element Array{Vector{Int64},1}:
+3-element Vector{Vector{Int64}}:
  [1, 4]
  [2, 5]
  [3, 0]
