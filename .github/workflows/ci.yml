@@ -1,6 +1,5 @@
 name: CI
-# env:
-#   JULIA_NUM_THREADS: 2
+
 on:
   pull_request:
     branches:
@@ -9,6 +8,7 @@ on:
     branches:
       - master
     tags: '*'
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -17,20 +17,17 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.5' # Replace this with the minimum Julia version that your package supports.
-          - '1.6-nightly'   # change to '1' when v1.6 is out
+          - '1.5'
+          - '1.6'
           - 'nightly'
         os:
           - ubuntu-latest
-          # - macOS-latest
+          - macOS-latest
           # - windows-latest
         arch:
           - x64
         include:
           - os: windows-latest
-            version: '1'
-            arch: x64
-          - os: macOS-latest
             version: '1'
             arch: x64
     steps:
@@ -51,9 +48,6 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
-      - uses: codecov/codecov-action@v1
-        with:
-          file: lcov.info
 
   docs:
     name: Documentation
