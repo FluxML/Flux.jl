@@ -36,8 +36,18 @@ Flux.glorot_uniform
 Flux.glorot_normal
 Flux.kaiming_uniform
 Flux.kaiming_normal
+Flux.orthogonal
 Flux.sparse_init
 ```
+
+## Changing the type of model parameters
+
+```@docs
+Flux.f64
+Flux.f32
+```
+
+The default `eltype` for models is `Float32` since models are often trained/run on GPUs. The `eltype` of model `m` can be changed to `Float64` by `f64(m)`, or to `Float32` by `f32(m)`.
 
 ## Model Building
 
@@ -90,6 +100,7 @@ Flux.outputsize
 ## Model Abstraction
 
 ```@docs
+Flux.modules
 Flux.destructure
 Flux.nfan
 ```

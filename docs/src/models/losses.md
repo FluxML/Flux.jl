@@ -39,4 +39,6 @@ Flux.Losses.hinge_loss
 Flux.Losses.squared_hinge_loss
 Flux.Losses.dice_coeff_loss
 Flux.Losses.tversky_loss
+Flux.Losses.binary_focal_loss
+Flux.Losses.focal_loss
 ```

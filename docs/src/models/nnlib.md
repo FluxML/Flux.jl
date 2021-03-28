@@ -51,6 +51,14 @@ NNlib.conv
 NNlib.depthwiseconv
 ```
 
+## Upsampling
+
+```@docs
+NNlib.upsample_nearest
+NNlib.upsample_bilinear
+NNlib.pixel_shuffle
+```
+
 ## Batched Operations
 
 ```@docs
