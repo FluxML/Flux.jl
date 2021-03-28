@@ -511,7 +511,7 @@ julia> Flux.chunk(1:10, 3)
  9:10
 
 julia> Flux.chunk(collect(1:10), 3)
-3-element Vector{SubArray{Int64,1,Vector{Int64},Tuple{UnitRange{Int64}},true}}:
+3-element Vector{SubArray{Int64, 1, Vector{Int64}, Tuple{UnitRange{Int64}}, true}}: 
  [1, 2, 3, 4]
  [5, 6, 7, 8]
  [9, 10]
