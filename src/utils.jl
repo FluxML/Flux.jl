@@ -419,13 +419,13 @@ julia> Flux.unsqueeze([1 2; 3 4], 2)
  4
 
 julia> xs = [[1, 2], [3, 4], [5, 6]]
-3-element Array{Vector{Int64},1}:
+3-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
 
 julia> Flux.unsqueeze(xs, 1)
-1×3 Array{Vector{Int64},2}:
+1×3 Matrix{Vector{Int64}}:
  [1, 2]  [3, 4]  [5, 6]
 ```
 """
