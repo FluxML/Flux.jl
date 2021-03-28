@@ -30,7 +30,7 @@ function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,
 end
 
 """
-    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -95,8 +95,8 @@ struct Conv{N,M,F,A,V}
 end
 
 """
-    Conv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
 Constructs a convolutional layer with the given weight and bias.
 Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3=>7, relu)`
 method.
@@ -117,13 +117,13 @@ julia> params(c1) |> length
 2
 ```
 """
-function Conv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function Conv(w::AbstractArray{T,N}, bias = true, σ = identity;
               stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
-  return Conv(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, size(w, N))
+  return Conv(σ, w, b, stride, pad, dilation)
 end
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
@@ -166,7 +166,7 @@ end
 
 
 """
-    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -206,18 +206,18 @@ struct ConvTranspose{N,M,F,A,V}
 end
 
 """
-    ConvTranspose(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
 Constructs a layer with the given weight and bias arrays.
 Accepts the same keywords as the `ConvTranspose((4,4), 3=>7, relu)` method.
 """
-function ConvTranspose(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N-1)) 
-  return ConvTranspose(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, size(w, N-1))
+  return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
@@ -266,7 +266,7 @@ function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilat
 end
 
 """
-    DepthwiseConv(filter, in=>out, σ=identity; stride=1, pad=0, dilation=1)
+    DepthwiseConv(filter, in=>out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Depthwise convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -304,17 +304,17 @@ end
 
 """
     DepthwiseConv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+
 Constructs a layer with the given weight and bias arrays.
 Accepts the same keywords as the `DepthwiseConv((4,4), 3=>6, relu)` method.
 """
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function DepthwiseConv(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(DepthwiseConv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, prod(size(w)[N-1:end]))
-  return DepthwiseConv(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, prod(size(w)[N-1:end]))
+  return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
@@ -355,7 +355,7 @@ end
 
 
 """
-    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard cross convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -391,18 +391,18 @@ struct CrossCor{N,M,F,A,V}
 end
 
 """
-    CrossCor(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
 Constructs a layer with the given weight and bias arrays.
 Accepts the same keywords as the `CrossCor((4,4), 3=>7, relu)` method.
 """
-function CrossCor(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
-  return CrossCor(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, size(w, N))
+  return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;

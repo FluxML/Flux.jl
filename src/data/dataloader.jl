@@ -1,6 +1,7 @@
 # Adapted from Knet's src/data.jl (author: Deniz Yuret)
+using Random: AbstractRNG, shuffle!, GLOBAL_RNG
 
-struct DataLoader{D}
+struct DataLoader{D,R<:AbstractRNG}
     data::D
     batchsize::Int
     nobs::Int
@@ -8,10 +9,11 @@ struct DataLoader{D}
     imax::Int
     indices::Vector{Int}
     shuffle::Bool
+    rng::R
 end
 
 """
-    DataLoader(data; batchsize=1, shuffle=false, partial=true)
+    DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
 
 An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
 (except possibly the last one).
@@ -65,7 +67,7 @@ Usage example:
         @assert size(datum.labels) == (2,)
     end
 """
-function DataLoader(data; batchsize=1, shuffle=false, partial=true)
+function DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
 
     n = _nobs(data)
@@ -74,13 +76,13 @@ function DataLoader(data; batchsize=1, shuffle=false, partial=true)
         batchsize = n
     end
     imax = partial ? n : n - batchsize + 1
-    DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle)
+    DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle, rng)
 end
 
 @propagate_inbounds function Base.iterate(d::DataLoader, i=0)     # returns data in d.indices[i+1:i+batchsize]
     i >= d.imax && return nothing
     if d.shuffle && i == 0
-        shuffle!(d.indices)
+        shuffle!(d.rng, d.indices)
     end
     nexti = min(i + d.batchsize, d.nobs)
     ids = d.indices[i+1:nexti]

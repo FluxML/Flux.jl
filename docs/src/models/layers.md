@@ -5,7 +5,6 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
-Flux.Diagonal
 ```
 
 ## Convolution and Pooling Layers
@@ -29,6 +28,13 @@ Flux.convfilter
 Flux.depthwiseconvfilter
 ```
 
+## Upsampling Layers
+
+```@docs
+Upsample
+PixelShuffle
+```
+
 ## Recurrent Layers
 
 Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).
@@ -50,6 +56,8 @@ But in contrast to the layers described in the other sections are not readily gr
 Maxout
 SkipConnection
 Parallel
+Flux.Bilinear
+Flux.Diagonal
 ```
 
 ## Normalisation & Regularisation

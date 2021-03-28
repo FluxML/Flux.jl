@@ -183,3 +183,20 @@ end
   l = ltype(k, pad=SamePad())
   @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
 end
+
+@testset "bugs fixed" begin
+  # https://github.com/FluxML/Flux.jl/issues/1421
+  @test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64}
+end
+
+@testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
+  @test fun(rand(2,3,4)).bias isa Vector{Float64}
+  @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
+  if fun == Conv
+    @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
+    @test fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
+  elseif fun == DepthwiseConv
+    @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
+  end
+  @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
+end
