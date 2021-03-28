@@ -409,7 +409,7 @@ See also [`flatten`](@ref), [`stack`](@ref).
 # Examples
 ```jldoctest
 julia> Flux.unsqueeze([1 2; 3 4], 2)
-2×1×2 Array{Int64,3}:
+2×1×2 Array{Int64, 3}:
 [:, :, 1] =
  1
  3
