@@ -25,14 +25,14 @@ function _show_elements(x::OneHotArray)
   return xrepr
 end
 
-function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
+function Base.show(io::IO, x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
   join(io, string.(size(x)), "×")
   print(io, " Flux.OneHotArray{")
   join(io, string.([L, N, I]), ",")
   println(io, "}:")
   print(io, _show_elements(x))
 end
-function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
+function Base.show(io::IO, x::OneHotVector{T, L}) where {T, L}
   print(io, string.(length(x)))
   print(io, "-element Flux.OneHotVector{")
   join(io, string.([L, T]), ",")
