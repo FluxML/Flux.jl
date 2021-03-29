@@ -743,6 +743,33 @@ isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
+"""
+    early_stopping(f; min_delta=0, patience=3)
+
+Return a function that evaluates the metric `f` and compares its value
+against that of last invokation. When the difference has been less
+than `min_delta` for at least `patience` times, `true` is returned;
+otherwise `false` is returned.
+
+# Examples
+```jldoctest
+julia> function loss()
+       l = 1
+       return () -> l += 1
+       end
+loss (generic function with 1 method)
+
+julia> es = Flux.early_stopping(loss());
+
+julia> Flux.@epochs 10 begin
+       es() || break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+[ Info: Epoch 4
+```
+"""
 function early_stopping(f; min_delta = 0, patience = 3)
   min_metric = Inf
   count = 0

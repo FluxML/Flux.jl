@@ -418,3 +418,32 @@ end
                                 LayerNorm(8)))
   @test length(modules) == 5
 end
+
+@testset "Early stopping" begin
+  function metric(; step = 1)
+    l = 0
+    return () -> l += step
+  end
+
+  @testset "min delta" begin
+    es = Flux.early_stopping(metric(step=-2); min_delta=1)
+
+    n_iter = 0
+    while n_iter < 99
+      es() ? n_iter += 1 : break
+    end
+
+    @test n_iter == 99
+  end
+
+  @testset "patience" begin
+    es = Flux.early_stopping(metric(); patience=10)
+
+    n_iter = 0
+    while true
+      es() ? n_iter += 1 : break
+    end
+
+    @test n_iter == 10
+  end
+end

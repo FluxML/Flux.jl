@@ -102,4 +102,5 @@ Flux.nfan
 Flux.throttle
 Flux.stop
 Flux.skip
+Flux.early_stopping
 ```
