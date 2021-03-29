@@ -743,7 +743,7 @@ isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
-function early_stopping(f; min_delta=0, patience=3)
+function early_stopping(f; min_delta = 0, patience = 3)
   min_metric = Inf
   count = 0
 
