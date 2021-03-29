@@ -425,6 +425,17 @@ end
     return () -> l += step
   end
 
+  @testset "delta" begin
+    es = Flux.early_stopping(metric(); delta=(best_score, score) -> score - best_score)
+
+    n_iter = 0
+    while n_iter < 99
+      es() ? n_iter += 1 : break
+    end
+
+    @test n_iter == 99
+  end
+
   @testset "min delta" begin
     es = Flux.early_stopping(metric(step=-2); min_delta=1)
 
@@ -440,10 +451,10 @@ end
     es = Flux.early_stopping(metric(); patience=10)
 
     n_iter = 0
-    while true
+    while n_iter < 99
       es() ? n_iter += 1 : break
     end
 
-    @test n_iter == 10
+    @test n_iter == 9
   end
 end

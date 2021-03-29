@@ -744,22 +744,27 @@ isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
 """
-    early_stopping(f; min_delta=0, patience=3)
+    early_stopping(f; delta=-, min_delta=0, patience=3)
 
 Return a function that evaluates the metric `f` and compares its value
-against that of last invokation. When the difference has been less
-than `min_delta` for at least `patience` times, `true` is returned;
+against its value on last invocation. When the difference has been less
+than `min_delta` for at least `patience` times, `true` is returned,
 otherwise `false` is returned.
+
+By default, `early_stopping` expects the metric `f` to be minimized.
+However, if you are using some increasing metric, accuracy for example,
+you can change `early_stopping`'s behaviour by customizing the `delta`
+function: `(best_score, score) -> score - best_score`.
 
 # Examples
 ```jldoctest
 julia> function loss()
-       l = 1
+       l = 0
        return () -> l += 1
-       end
+       end # pseudo loss function that returns increasing values
 loss (generic function with 1 method)
 
-julia> es = Flux.early_stopping(loss());
+julia> es = Flux.early_stopping(loss(); patience=3);
 
 julia> Flux.@epochs 10 begin
        es() || break
@@ -770,14 +775,15 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 4
 ```
 """
-function early_stopping(f; min_delta = 0, patience = 3)
-  min_metric = Inf
+function early_stopping(f; delta = -, min_delta = 0, patience = 3)
+  best_score = f()
   count = 0
 
   return function ()
-      metric = f()
-      count = min_metric - metric < min_delta ? count + 1 : 0
-      min_metric = min(min_metric, metric)
-      return count < patience
+    score = f()
+    Δ = delta(best_score, score)
+    count = Δ < min_delta ? count + 1 : 0
+    best_score = Δ < 0 ? best_score : score
+    return count < patience
   end
 end
