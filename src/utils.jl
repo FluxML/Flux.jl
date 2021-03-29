@@ -772,7 +772,6 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 1
 [ Info: Epoch 2
 [ Info: Epoch 3
-[ Info: Epoch 4
 ```
 """
 function early_stopping(f; delta = -, min_delta = 0, patience = 3)
