@@ -748,13 +748,14 @@ isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
 Return a function that evaluates the metric `f` and compares its value
 against its value on last invocation. When the difference has been less
-than `min_delta` for at least `patience` times, `true` is returned,
+than `min_delta` at least `patience` times, `true` is returned,
 otherwise `false` is returned.
 
+The difference is measured by keyword argument, `delta`.
 By default, `early_stopping` expects the metric `f` to be minimized.
-However, if you are using some increasing metric, accuracy for example,
-you can change `early_stopping`'s behaviour by customizing the `delta`
-function: `(best_score, score) -> score - best_score`.
+If you are using some increasing metric (e.g. accuracy),
+you can customize the `delta` function:
+`(best_score, score) -> score - best_score` (for increasing metrics).
 
 # Examples
 ```jldoctest
@@ -767,7 +768,7 @@ loss (generic function with 1 method)
 julia> es = Flux.early_stopping(loss(); patience=3);
 
 julia> Flux.@epochs 10 begin
-       es() || break
+       es() && break
        end
 [ Info: Epoch 1
 [ Info: Epoch 2
@@ -783,6 +784,6 @@ function early_stopping(f; delta = -, min_delta = 0, patience = 3)
     Δ = delta(best_score, score)
     count = Δ < min_delta ? count + 1 : 0
     best_score = Δ < 0 ? best_score : score
-    return count < patience
+    return count >= patience
   end
 end

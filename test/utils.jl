@@ -430,7 +430,7 @@ end
 
     n_iter = 0
     while n_iter < 99
-      es() ? n_iter += 1 : break
+      es() ? break : n_iter += 1
     end
 
     @test n_iter == 99
@@ -441,7 +441,7 @@ end
 
     n_iter = 0
     while n_iter < 99
-      es() ? n_iter += 1 : break
+      es() ? break : n_iter += 1
     end
 
     @test n_iter == 99
@@ -452,7 +452,7 @@ end
 
     n_iter = 0
     while n_iter < 99
-      es() ? n_iter += 1 : break
+      es() ? break : n_iter += 1
     end
 
     @test n_iter == 9
