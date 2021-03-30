@@ -63,13 +63,14 @@ Flux.params(m[1], m[3:end])
 ```
 
 Sometimes, a more fine-tuned control is needed.
-We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`,
-by simply deleting it from `ps`:
+We can freeze a specific layer which already entered a `Params` object `ps`,
+by simply deleting it from `ps`: 
 
 ```julia
 ps = params(m)
 delete!(ps, m[2].b) 
 ```
+Note that we cannot freeze a single parameter in our network.
 
 ## Custom multiple input or output layer
 
