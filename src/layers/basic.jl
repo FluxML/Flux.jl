@@ -69,7 +69,7 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
+    Dense(in, out, σ = identity; bias = true, init = glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
 Create a traditional `Dense` layer, whose forward pass is given by:
@@ -81,7 +81,7 @@ as an `in × N` matrix, or any array with `size(x,1) == in`.
 The out `y` will be a vector  of length `out`, or a batch with
 `size(y) == (out, size(x)[2:end]...)`
 
-Keyword `bias=false` will switch off trainable bias for the layer.
+Keyword `bias = false` will switch off trainable bias for the layer.
 The initialisation of the weight matrix is `W = init(out, in)`, calling the function
 given to keyword `init`, with default [`glorot_uniform`](@doc Flux.glorot_uniform).
 The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
@@ -144,7 +144,6 @@ end
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
-  print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
   l.σ == identity || print(io, ", ", l.σ)
   l.bias == Zeros() && print(io, "; bias=false")
   print(io, ")")
