@@ -38,10 +38,11 @@ import Flux: activations
       @test Dense(rand(100,10), false, tanh).σ == tanh
       @test Dense(rand(100,10), rand(100)).σ == identity
       @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
-      # @test Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
+      @test_skip Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
-      # @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
-      # @test Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
+      @test_skip Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      @test_skip Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
+
 
       @test_throws MethodError Dense(10, 10.5)
       @test_throws MethodError Dense(10, 10.5, tanh)
@@ -167,7 +168,7 @@ import Flux: activations
       @test size(b3(rand(4), rand(5))) == (3,)
 
       b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros)
-      # @test  b4.bias isa Vector{Float32}
+      @test_skip  b4.bias isa Vector{Float32}
 
       @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array
       @test_throws ArgumentError Flux.Bilinear(rand(3,4), false, tanh)

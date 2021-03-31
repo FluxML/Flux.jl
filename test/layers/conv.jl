@@ -194,7 +194,7 @@ end
   @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
   if fun == Conv
     @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
-    # @test fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
+    @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
   elseif fun == DepthwiseConv
     @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
   end

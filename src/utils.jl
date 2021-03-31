@@ -388,6 +388,7 @@ to the constructor's keyword `bias=bias`.
 function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
   bias ? fill!(similar(weights, dims...), 0) : Zeros()
 end
+
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
   bias
