@@ -117,14 +117,17 @@ end
 
 Dense(W, b) = Dense(W, b, identity)
 
+Dense(W, b::Bool, σ) =
+  Dense(W, create_bias(W, b, size(W,1)), σ)
+
 function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
                init = glorot_uniform, initb = nothing, bias::Bool = true)
-  if initW !=== nothing
+  if initW !== nothing
     depwarn("initW is deprecated, please use the `init` keyword instead")
     init = initW
   end
 
-  if initb !=== nothing
+  if initb !== nothing
     depwarn("initb is deprecated, please use the array based constructors instead")
     initb = initb
   else
@@ -135,11 +138,12 @@ end
 
 @functor Dense
 
-function (a::Dense)(x)
+(a::Dense)(x) = 
+   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+
+function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.weight, a.bias, a.σ
-  x_reshaped = reshape(x, size(x, 1), :)
-  x_out = σ.(W * x_reshaped .+ b) 
-  reshape(x_out, :, size(x)[2:end]...)
+  σ.(W * x .+ b) 
 end
 
 function Base.show(io::IO, l::Dense)
