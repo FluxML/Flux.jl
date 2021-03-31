@@ -133,7 +133,10 @@ function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
   else
     initb = zeros
   end
-  Dense(init(out, in), bias ? initb(out) : Zeros(), σ)
+
+  W = init(out, in)
+  b = create_bias(W, bias, size(W, 1))
+  Dense(W, b, σ)
 end
 
 @functor Dense

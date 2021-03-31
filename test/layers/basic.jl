@@ -40,7 +40,7 @@ import Flux: activations
       @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
       @test_skip Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
-      @test_skip Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
       @test_skip Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
 
 
