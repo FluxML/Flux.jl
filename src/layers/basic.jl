@@ -117,7 +117,7 @@ end
 
 Dense(W, b) = Dense(W, b, identity)
 
-Dense(W, b::Bool, σ) =
+Dense(W, b::Bool, σ = identity) =
   Dense(W, create_bias(W, b, size(W,1)), σ)
 
 function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
@@ -144,7 +144,7 @@ function (a::Dense)(x::AbstractVecOrMat)
 end
 
 (a::Dense)(x) =
-   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+  reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
