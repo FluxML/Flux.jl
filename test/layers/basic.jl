@@ -40,14 +40,14 @@ import Flux: activations
       @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
       # @test Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
-      @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      # @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
       # @test Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
 
       @test_throws MethodError Dense(10, 10.5)
       @test_throws MethodError Dense(10, 10.5, tanh)
       # @test_throws DimensionMismatch Dense(3,4; bias=rand(5))
       # @test_throws DimensionMismatch Dense(rand(4,3), rand(5))
-      @test_throws MethodError Dense(rand(5))
+      # @test_throws MethodError Dense(rand(5))
       # @test_throws MethodError Dense(rand(5), rand(5))
       # @test_throws MethodError Dense(rand(5), rand(5), tanh)
     end
