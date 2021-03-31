@@ -117,7 +117,7 @@ end
 
 Dense(W, b) = Dense(W, b, identity)
 
-Dense(W, b::Bool, σ = identity) =
+Dense(W::AbstractArray, b::Bool, σ = identity) =
   Dense(W, create_bias(W, b, size(W,1)), σ)
 
 function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
