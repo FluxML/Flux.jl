@@ -390,12 +390,7 @@ function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
-  if eltype(bias) == eltype(weights)
-    return bias
-  else
-    @warn "converting bias to match element type of weights" typeof(weights) typeof(bias) maxlog=3 _id=hash(dims)
-    return broadcast(eltype(weights), bias)
-  end
+  bias
 end
 
 """
