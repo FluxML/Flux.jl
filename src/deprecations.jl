@@ -8,13 +8,13 @@
 @deprecate ConvTranspose(; weight, bias, activation=identity, kws...) ConvTranspose(weight, bias, activation; kws...) 
 @deprecate DepthwiseConv(; weight, bias, activation=identity, kws...) DepthwiseConv(weight, bias, activation; kws...) 
 
-function Base.getproperty(a::Dense, s::Symbol)
-  if s === :W
-    Base.depwarn("field name dense.W is deprecated in favour of dense.weight", :Dense)
-    return getfield(a, :weight)
-  elseif s === :b
-    Base.depwarn("field name dense.b is deprecated in favour of dense.bias", :Dense)
-    return getfield(a, :bias)
-  end
-  return getfield(a, s)
-end
+# function Base.getproperty(a::Dense, s::Symbol)
+#   if s === :W
+#     Base.depwarn("field name dense.W is deprecated in favour of dense.weight", :Dense)
+#     return getfield(a, :weight)
+#   elseif s === :b
+#     Base.depwarn("field name dense.b is deprecated in favour of dense.bias", :Dense)
+#     return getfield(a, :bias)
+#   end
+#   return getfield(a, s)
+# end
