@@ -360,9 +360,9 @@ end
     end
 
     @testset "$b1 to $b2" for (b1, b2, be) in (
-      (Flux.zeros, ones, ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
+      (Flux.zeros, Flux.ones, Flux.ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+      (Flux.ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+      (nobias, Flux.ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
     )
       m1 = dm(b1)
       m2 = dm(b2)
