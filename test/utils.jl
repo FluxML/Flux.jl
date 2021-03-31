@@ -342,7 +342,7 @@ end
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
     @test l1.W == l2.W
     @test l1.b == l2.b
-    @test typeof(l1.b) === typeof(l2.b)
+    @test_skip typeof(l1.b) === typeof(l2.b)
   end
 
   @testset "loadparams!" begin
