@@ -109,7 +109,7 @@ julia> Flux.params(d1)  # no trainable bias
 Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{F,S<:AbstractArray,T<:AbstractArray}
+struct Dense{F,S<:AbstractArray,T}
   W::S
   b::T
   σ::F
@@ -118,8 +118,8 @@ end
 Dense(W, b) = Dense(W, b, identity)
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros)
-  return Dense(initW(out, in), initb(out), σ)
+               initW = glorot_uniform, initb = zeros, bias::Bool = true)
+  Dense(initW(out, in), bias ? initb(out) : Zeros(), σ)
 end
 
 @functor Dense
