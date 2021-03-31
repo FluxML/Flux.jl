@@ -110,30 +110,43 @@ Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
 struct Dense{F,S<:AbstractArray,T}
-  W::S
-  b::T
+  weight::S
+  bias::T
   σ::F
 end
 
 Dense(W, b) = Dense(W, b, identity)
 
-function Dense(in::Integer, out::Integer, σ = identity;
-               initW = glorot_uniform, initb = zeros, bias::Bool = true)
-  Dense(initW(out, in), bias ? initb(out) : Zeros(), σ)
+function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
+               init = glorot_uniform, initb = nothing, bias::Bool = true)
+  if initW !=== nothing
+    depwarn("initW is deprecated, please use the `init` keyword instead")
+    init = initW
+  end
+
+  if initb !=== nothing
+    depwarn("initb is deprecated, please use the array based constructors instead")
+    initb = initb
+  else
+    initb = zeros
+  end
+  Dense(init(out, in), bias ? initb(out) : Zeros(), σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x)
-  W, b, σ = a.W, a.b, a.σ
+  W, b, σ = a.weight, a.bias, a.σ
   x_reshaped = reshape(x, size(x, 1), :)
   x_out = σ.(W * x_reshaped .+ b) 
   reshape(x_out, :, size(x)[2:end]...)
 end
 
 function Base.show(io::IO, l::Dense)
+  print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
   print(io, "Dense(", size(l.W, 2), ", ", size(l.W, 1))
   l.σ == identity || print(io, ", ", l.σ)
+  l.bias == Zeros() && print(io, "; bias=false")
   print(io, ")")
 end
 
