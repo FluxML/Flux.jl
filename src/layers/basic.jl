@@ -123,12 +123,12 @@ Dense(W, b::Bool, σ) =
 function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
                init = glorot_uniform, initb = nothing, bias::Bool = true)
   if initW !== nothing
-    depwarn("initW is deprecated, please use the `init` keyword instead")
+    Base.depwarn("initW is deprecated, please use the `init` keyword instead", :Dense)
     init = initW
   end
 
   if initb !== nothing
-    depwarn("initb is deprecated, please use the array based constructors instead")
+    Base.depwarn("initb is deprecated, please use the array based constructors instead", :Dense)
     initb = initb
   else
     initb = zeros
