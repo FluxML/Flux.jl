@@ -138,13 +138,13 @@ end
 
 @functor Dense
 
-(a::Dense)(x) = 
-   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
-
 function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.weight, a.bias, a.σ
   σ.(W * x .+ b) 
 end
+
+(a::Dense)(x) =
+   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
