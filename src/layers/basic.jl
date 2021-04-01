@@ -69,7 +69,7 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ = identity; bias = true, init = glorot_uniform)
+    Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
 Create a traditional `Dense` layer, whose forward pass is given by:
@@ -81,7 +81,7 @@ as an `in × N` matrix, or any array with `size(x,1) == in`.
 The out `y` will be a vector  of length `out`, or a batch with
 `size(y) == (out, size(x)[2:end]...)`
 
-Keyword `bias = false` will switch off trainable bias for the layer.
+Keyword `bias=false` will switch off trainable bias for the layer.
 The initialisation of the weight matrix is `W = init(out, in)`, calling the function
 given to keyword `init`, with default [`glorot_uniform`](@doc Flux.glorot_uniform).
 The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
@@ -109,41 +109,45 @@ julia> Flux.params(d1)  # no trainable bias
 Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{F,S<:AbstractArray,T}
-  weight::S
-  bias::T
+struct Dense{F, M<:AbstractMatrix, B}
+  weight::M
+  bias::B
   σ::F
+  function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix, F}
+    b = create_bias(W, bias, size(W,1))
+    new{F,M,typeof(b)}(W, b, σ)
+  end
 end
 
-Dense(W, b) = Dense(W, b, identity)
+function Dense(in::Integer, out::Integer, σ = identity;
+               initW = nothing, initb = nothing,
+               init = glorot_uniform, bias=true)
 
-Dense(W::AbstractArray, b::Bool = true, σ = identity) =
-  Dense(W, create_bias(W, b, size(W,1)), σ)
-
-function Dense(in::Integer, out::Integer, σ = identity; initW = nothing,
-               init = glorot_uniform, initb = nothing, bias::Bool = true)
-  if initW !== nothing
-    Base.depwarn("initW is deprecated, please use the `init` keyword instead", :Dense)
-    init = initW
-  end
-
-  if initb !== nothing
-    Base.depwarn("initb is deprecated, please use the array based constructors instead", :Dense)
-    initb = initb
+  W = if initW !== nothing
+    Base.depwarn("keyword initW is deprecated, please use init (which similarly accepts a funtion like randn)", :Dense)
+    initW(out, in)
   else
-    initb = zeros
+    init(out, in)
   end
-  Dense(init(out, in), bias ? initb(out) : Zeros(), σ)
+
+  b = if bias === true && initb !== nothing
+    Base.depwarn("keyword initb is deprecated, please simply supply the bias vector, bias=initb(out)", :Dense)
+    initb(out)
+  else
+    bias
+  end
+
+  return Dense(W, b, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.weight, a.bias, a.σ
-  σ.(W * x .+ b) 
+  return σ.(W*x .+ b)
 end
 
-(a::Dense)(x) =
+(a::Dense)(x::AbstractArray) = 
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
@@ -292,6 +296,7 @@ If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of 
 with `B` a Bilinear layer.
 
 If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
+
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
 
@@ -300,7 +305,6 @@ By default the bias vector is `zeros(Float32, out)`, option `bias=false` will sw
 trainable bias. Either of these may be provided explicitly.
 
 # Examples
-
 ```jldoctest
 julia> x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
 
