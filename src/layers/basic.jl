@@ -52,6 +52,7 @@ end
 # only slightly changed to better handle interaction with Zygote @dsweber2
 """
     activations(c::Chain, input)
+
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
 function activations(c::Chain, input)
@@ -100,7 +101,7 @@ julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5, 2, tanh; bias=false)
 
 julia> d1(ones(5))
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  0.9999092042625951
  0.9999092042625951
 
@@ -384,6 +385,7 @@ Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l
 If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 # Examples
+
 ```jldoctest
 julia> model = Chain(Dense(3, 5),
                      Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
@@ -394,6 +396,7 @@ julia> size(model(rand(3)))
 
 julia> model = Parallel(+, Dense(10, 2), Dense(5, 2))
 Parallel(+, Dense(10, 2), Dense(5, 2))
+
 julia> size(model(rand(10), rand(5)))
 (2,)
 ```
