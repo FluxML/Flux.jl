@@ -32,6 +32,7 @@ export Descent, ADAM, Momentum, Nesterov, RMSProp,
 
 using CUDA
 const use_cuda = Ref(false)
+const default_gpu_converter = Ref{Function}(identity)
 
 include("utils.jl")
 include("zeros.jl")
