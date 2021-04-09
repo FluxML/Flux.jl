@@ -452,7 +452,8 @@ end
 
     n_iter = 0
     while n_iter < 99
-      es() ? break : n_iter += 1
+      es() && break
+      n_iter += 1
     end
 
     @test n_iter == 9
