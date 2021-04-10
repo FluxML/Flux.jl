@@ -1,6 +1,6 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, orthogonal, sparse_init, stack, unstack, Zeros
-using StatsBase: var, std
+using Statistics: var, std
 using Random
 using Test
 
