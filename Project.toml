@@ -28,8 +28,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 AbstractTrees = "0.3"
-Adapt = "2.0, 3.0"
-CUDA = "2.1"
+Adapt = "3.0"
 CodecZlib = "0.7"
 Colors = "0.12"
 Functors = "0.2.1"
@@ -40,7 +39,7 @@ Reexport = "0.2, 1.0"
 StatsBase = "0.33"
 ZipFile = "0.9"
 Zygote = "0.6"
-julia = "1.5"
+julia = "1.6"
 
 [extras]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
