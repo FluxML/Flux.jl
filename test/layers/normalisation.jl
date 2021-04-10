@@ -4,7 +4,7 @@ using Zygote: pullback
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
-  x = [1.+0im,2.+1im,3.+3im]
+  x = [1.0+0im,2.0+1im,3.0+3im]
   @test x == Dropout(0.1)(x)
   @test x == evalwgrad(Dropout(0), x)
   @test zero(x) == evalwgrad(Dropout(1), x)
