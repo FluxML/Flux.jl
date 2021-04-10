@@ -17,8 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         version:
+<<<<<<< HEAD
           - '1.5'
           - '1.6'
+=======
+          - '1.5' # Replace this with the minimum Julia version that your package supports.
+          - '1'
+>>>>>>> a60e6b07 (update compat)
           - 'nightly'
         os:
           - ubuntu-latest
