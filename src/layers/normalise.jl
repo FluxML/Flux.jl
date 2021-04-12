@@ -173,8 +173,10 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
+    # @show size(μ), size(σ²)
     μ = mean(x; dims=reduce_dims)
     σ² = mean((x .- μ).^2; dims=reduce_dims)
+    @show size(μ), size(σ²)
     if l.track_stats
       ## update moving mean/std
       Zygote.ignore() do
@@ -182,14 +184,18 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
         m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
         μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
         σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
+        @show reduce_dims, N
+        @show size(μnew), size(σ²new)
         l.μ = (1-mtm) .* l.μ .+ mtm .* μnew
         l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
       end
     end
   end
   if hasaffine(l)
+    @show affine_shape
     γ = reshape(l.γ, affine_shape)
     β = reshape(l.β, affine_shape)
+    @show size.((μ,σ²,x, γ, β))
     return l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
   else
     return l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
@@ -431,6 +437,7 @@ function (gn::GroupNorm)(x)
   x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
   N = ndims(x)
   reduce_dims = 1:N-2
+  @show reduce_dims
   affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
   x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
   return reshape(x, sz)
