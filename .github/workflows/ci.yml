@@ -17,22 +17,14 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.5' # Replace this with the minimum Julia version that your package supports.
-          - '1.6-nightly'   # change to '1' when v1.6 is out
+          - '1' # Replace this with the minimum Julia version that your package supports.
           - 'nightly'
         os:
           - ubuntu-latest
-          # - macOS-latest
-          # - windows-latest
+          - macOS-latest
+          - windows-latest
         arch:
           - x64
-        include:
-          - os: windows-latest
-            version: '1'
-            arch: x64
-          - os: macOS-latest
-            version: '1'
-            arch: x64
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
