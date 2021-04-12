@@ -21,7 +21,7 @@ function log_plus_f(p1, p2)
   if p1 < p2
     p1, p2 = p2, p1
   end
-  return p1 + CUDA.log(1+CUDA.exp(p2 - p1))
+  return p1 + log(1+exp(p2 - p1))
 end
 
 function count_repeats(A)
@@ -139,7 +139,7 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
     end
     
     # ∂L/∂a (where a is activation before logsoftmax)
-    grad[idx, T] = CUDA.exp(probs[idx, T]) - CUDA.exp(accum[idx, T] - s)
+    grad[idx, T] = exp(probs[idx, T]) - exp(accum[idx, T] - s)
     idx += blockDim().x
   end
   sync_threads()
@@ -191,7 +191,7 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
     while idx <= size(grad, 1)
       
       # ∂L/∂a (where a is activation before logsoftmax)
-      grad[idx, t] = CUDA.exp(probs[idx, t]) - CUDA.exp(accum[idx, t] + loss)
+      grad[idx, t] = exp(probs[idx, t]) - exp(accum[idx, t] + loss)
       idx += blockDim().x
     end
     sync_threads()
