@@ -1,6 +1,134 @@
-# Model-Building Basics
+# Flux Basics
 
-## Taking Gradients
+Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
+
+- Provide training and test data
+- Build a model with configurable *parameters* to make predictions
+- Iteratively train the model by tweaking the parameters to improve predictions
+- Verify your model
+
+Under the hood, Flux uses a technique called AutoDiff to take gradients that help improve predictions. Flux is also fully written in Julia so you can easily replace any layer of Flux with your own code to improve your understanding or satisfy special requirements.
+
+Here's how you'd use Flux to build and train the most basic of models, step by step.
+
+## Predict a Line
+
+This example will predict the output of the function `4x + 2`. First, import `Flux` and define the function we want to simulate:
+
+```jldoctest basics
+julia> using Flux
+
+julia> actual(x) = 4x + 2
+actual (generic function with 1 method)
+```
+
+This example will build a model to approximate the `actual` function.
+
+### Provide Training and Test Data
+
+Use the `actual` function to build sets of data for training and verification:
+
+```jldoctest basics
+julia> x_train, y_train = hcat(0:5...), hcat(6:10...)
+([0 1 … 4 5], [6 7 … 9 10])
+
+julia> y_train, y_test = actual.(x_train), actual.(y_train)
+([2 6 … 18 22], [26 30 … 38 42])
+```
+
+Normally, your training and test data come from real world observations, but this function will simulate real-world observations.
+
+### Build a Model to Make Predictions
+
+Now, build a model to make predictions with `1` input and `1` output:
+
+```jldoctest basics
+julia> predict = Dense(1, 1)
+Dense(1, 1)
+```
+
+A dense layer implements the function `σ(Wx+b)`, where `W` represents a weight, `b` represents a bias, and `σ` is an activation function (more on activations later). Our model has one weight and one bias, but typical models will have many more. Think of weights and biases as knobs and levers Flux can use to tune predictions. Activation functions are transformations that tailor models to your needs.
+
+This model will already make predictions, though not accurate ones yet:
+
+```jldoctest basics
+julia> predict(x_train)
+1×6 Array{Float32,2}:
+ 0.0  -0.990091  -1.98018  -2.97027  -3.96036  -4.95045
+```
+
+In order to make better predictions, you'll need to provide a function to tell Flux how to objectively *evaluate* the quality of a prediction:
+
+```jldoctest basics
+julia> loss(x, y) = Flux.Losses.mse(predict(x), y)
+loss (generic function with 1 method)
+
+julia> loss(x_train, y_train)
+282.1601f0
+```
+
+More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called *mean squared error*. Over several iterations, training will reduce this loss.
+
+### Train the Model
+
+Under the hood, the Flux [`train!`](../training/training.md) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
+
+```jldoctest basics
+julia> using Flux: train!
+
+julia> opt = Descent()
+Descent(0.1)
+
+julia> parameters = params(predict)
+Params([Float32[-0.99009055], Float32[0.0]])
+
+julia> data = [(x_train, y_train)]
+1-element Array{Tuple{Array{Int64,2},Array{Int64,2}},1}:
+ ([0 1 … 4 5], [2 6 … 18 22])
+```
+
+This optimiser implements the iconic gradient descent strategy. The `predict` model has two parameters: a weight and a bias. A typical ML problem will have many more. Now improve the parameters of the model with a call to `train!` like this:
+
+```jldoctest basics
+julia> train!(loss, parameters, data, opt)
+```
+
+And check the loss:
+
+```jldoctest basics
+julia> loss(x_train, y_train)
+267.8037f0
+```
+
+It went down. Let's run it a few more times:
+
+```jldoctest basics
+julia> for epoch in 1:200
+         train!(loss, parameters, data, opt)
+       end
+
+julia> loss(x_train, y_train)
+0.0518891f0
+```
+
+After 200 training steps, the loss went down. Now, let's verify the predictions:
+
+```
+julia> loss(x_test, y_test)
+0.0518891f0
+
+julia> predict(y_test)
+1×5 Array{Float32,2}:
+ 106.713  122.821  138.929  155.038  171.146
+
+julia> actual.(y_test)
+1×5 Array{Int64,2}:
+ 106  122  138  154  170
+```
+
+The predictions are good. Let's drill down a bit to understand what's going on inside the individual layers of Flux.
+
+## A Linear Regression With Gradients
 
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
@@ -29,7 +157,10 @@ julia> gradient(f, [2, 1], [2, 0])
 ([0, 2], [0, -2])
 ```
 
-But machine learning models can have *hundreds* of parameters! To handle this, Flux lets you work with collections of parameters, via `params`. You can get the gradient of all parameters used in a program without explicitly passing them in.
+These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
+
+
+Machine learning often can have *hundreds* of parameters, so Flux lets you work with collections of parameters, via the `params` functions. You can get the gradient of all parameters used in a program without explicitly passing them in.
 
 ```jldoctest basics
 julia> x = [2, 1];
