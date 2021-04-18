@@ -87,7 +87,6 @@ If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
 
 A callback is given with the keyword argument `cb`. For example, this will print
 "training" every 10 seconds (using [`Flux.throttle`](@ref)):
-
     train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
 
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
