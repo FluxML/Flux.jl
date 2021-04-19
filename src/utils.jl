@@ -46,7 +46,7 @@ This method is described in [1] and also known as Xavier initialization.
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> Flux.glorot_uniform(2, 3)
-2×3 Array{Float32,2}:
+2×3 Matrix{Float32}:
  0.601094  -0.57414   -0.814925
  0.900868   0.805994   0.057514
 ```
@@ -78,7 +78,7 @@ This method is described in [1] and also known as Xavier initialization.
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> Flux.glorot_normal(3, 2)
-3×2 Array{Float32,2}:
+3×2 Matrix{Float32}:
   0.429505  -0.0852891
   0.523935   0.371009
  -0.223261   0.188052
@@ -111,7 +111,7 @@ This method is described in [1] and also known as He initialization.
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> Flux.kaiming_uniform(3, 2)
-3×2 Array{Float32,2}:
+3×2 Matrix{Float32}:
   0.950413   1.27439
   1.4244    -1.28851
  -0.907795   0.0909376
@@ -148,7 +148,7 @@ This method is described in [1] and also known as He initialization.
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> Flux.kaiming_normal(3, 2)
-3×2 Array{Float32,2}:
+3×2 Matrix{Float32}:
   0.679107  -0.134854
   0.828413   0.586617
  -0.353007   0.297336
@@ -188,7 +188,7 @@ is computed before reshaping it to the original dimensions.
 julia> W = Flux.orthogonal(5, 7);
 
 julia> summary(W)
-"5×7 Array{Float32,2}"
+"5×7 Matrix{Float32}"
 
 julia> W * W' ≈ I(5)
 true
@@ -252,7 +252,7 @@ This method is described in [1].
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> Flux.sparse_init(3, 2, sparsity=0.1)
-3×2 Array{Float32,2}:
+3×2 Matrix{Float32}:
   0.00828413  0.0
  -0.00353007  0.00297336
   0.0         0.00586617
@@ -313,13 +313,13 @@ Has the following behaviour
 
 ```jldoctest
 julia> Flux.identity_init(3,3)
-3×3 Array{Float32,2}:
+3×3 Matrix{Float32}:
  1.0  0.0  0.0
  0.0  1.0  0.0
  0.0  0.0  1.0
 
 julia> Flux.identity_init(3,5)
-3×5 Array{Float32,2}:
+3×5 Matrix{Float32}:
  1.0  0.0  0.0  0.0  0.0
  0.0  1.0  0.0  0.0  0.0
  0.0  0.0  1.0  0.0  0.0
@@ -390,12 +390,7 @@ function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
-  if eltype(bias) == eltype(weights)
-    return bias
-  else
-    @warn "converting bias to match element type of weights" typeof(weights) typeof(bias) maxlog=3 _id=hash(dims)
-    return broadcast(eltype(weights), bias)
-  end
+  bias
 end
 
 """
@@ -409,7 +404,7 @@ See also [`flatten`](@ref), [`stack`](@ref).
 # Examples
 ```jldoctest
 julia> Flux.unsqueeze([1 2; 3 4], 2)
-2×1×2 Array{Int64,3}:
+2×1×2 Array{Int64, 3}:
 [:, :, 1] =
  1
  3
@@ -419,13 +414,13 @@ julia> Flux.unsqueeze([1 2; 3 4], 2)
  4
 
 julia> xs = [[1, 2], [3, 4], [5, 6]]
-3-element Array{Array{Int64,1},1}:
+3-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
 
 julia> Flux.unsqueeze(xs, 1)
-1×3 Array{Array{Int64,1},2}:
+1×3 Matrix{Vector{Int64}}:
  [1, 2]  [3, 4]  [5, 6]
 ```
 """
@@ -460,19 +455,19 @@ given dimension `dim`.
 # Examples
 ```jldoctest
 julia> xs = [[1, 2], [3, 4], [5, 6]]
-3-element Array{Array{Int64,1},1}:
+3-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
 
 julia> Flux.stack(xs, 1)
-3×2 Array{Int64,2}:
+3×2 Matrix{Int64}:
  1  2
  3  4
  5  6
 
 julia> cat(xs, dims=1)
-3-element Array{Array{Int64,1},1}:
+3-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
@@ -488,7 +483,7 @@ Unroll the given `xs` into an `Array` of `Array`s along the given dimension `dim
 # Examples
 ```jldoctest
 julia> Flux.unstack([1 3 5 7; 2 4 6 8], 2)
-4-element Array{Array{Int64,1},1}:
+4-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
  [5, 6]
@@ -505,13 +500,13 @@ Split `xs` into `n` parts.
 # Examples
 ```jldoctest
 julia> Flux.chunk(1:10, 3)
-3-element Array{UnitRange{Int64},1}:
+3-element Vector{UnitRange{Int64}}:
  1:4
  5:8
  9:10
 
 julia> Flux.chunk(collect(1:10), 3)
-3-element Array{SubArray{Int64,1,Array{Int64,1},Tuple{UnitRange{Int64}},true},1}:
+3-element Vector{SubArray{Int64, 1, Vector{Int64}, Tuple{UnitRange{Int64}}, true}}: 
  [1, 2, 3, 4]
  [5, 6, 7, 8]
  [9, 10]
@@ -529,7 +524,7 @@ Count the number of times that each element of `xs` appears.
 # Examples
 ```jldoctest
 julia> Flux.frequencies(['a','b','b'])
-Dict{Char,Int64} with 2 entries:
+Dict{Char, Int64} with 2 entries:
   'a' => 1
   'b' => 2
 ```
@@ -554,7 +549,7 @@ Batch the arrays in `xs` into a single array.
 # Examples
 ```jldoctest
 julia> Flux.batch([[1,2,3],[4,5,6]])
-3×2 Array{Int64,2}:
+3×2 Matrix{Int64}:
  1  4
  2  5
  3  6
@@ -576,14 +571,14 @@ Return the given sequence padded with `p` up to a maximum length of `n`.
 # Examples
 ```jldoctest
 julia> rpad([1, 2], 4, 0)
-4-element Array{Int64,1}:
+4-element Vector{Int64}:
  1
  2
  0
  0
 
 julia> rpad([1, 2, 3], 2, 0)
-3-element Array{Int64,1}:
+3-element Vector{Int64}:
  1
  2
  3
@@ -600,7 +595,7 @@ item is a batch of `N`. Short sequences will be padded by `pad`.
 # Examples
 ```jldoctest
 julia> Flux.batchseq([[1, 2, 3], [4, 5]], 0)
-3-element Array{Array{Int64,1},1}:
+3-element Vector{Vector{Int64}}:
  [1, 4]
  [2, 5]
  [3, 0]
@@ -638,7 +633,7 @@ Flatten a model's parameters into a single weight vector.
     julia> θ, re = destructure(m);
 
     julia> θ
-    67-element Array{Float32,1}:
+    67-element Vector{Float32}:
     -0.1407104
     ...
 
@@ -724,7 +719,7 @@ julia> m2 = Chain(m1, Dense(64, 10))
 Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
 
 julia> Flux.modules(m2)
-5-element Array{Any,1}:
+5-element Vector{Any}:
  Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
  Chain(Dense(784, 64), BatchNorm(64, relu))
  Dense(784, 64)
