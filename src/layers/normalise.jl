@@ -289,9 +289,10 @@ function BatchNorm(chs::Int, λ = identity;
   μ = zeros(Float32, chs)
   σ² = ones(Float32, chs)
 
-  return BatchNorm(chs, λ, β, γ,
-            μ, σ², ϵ, momentum,
-            affine, track_stats, nothing)
+  BatchNorm(λ, β, γ,
+            μ, σ², ϵ, momentum, 
+            affine, track_stats, 
+            nothing, chs)
 end
 
 @functor BatchNorm
@@ -364,9 +365,10 @@ function InstanceNorm(chs::Int, λ = identity;
   γ = initγ(chs)
   μ = zeros(Float32, chs)
   σ² = ones(Float32, chs)
-  InstanceNorm(chs, λ, β, γ,
-            μ, σ², ϵ, momentum, 
-            affine, track_stats, nothing)
+  InstanceNorm(λ, β, γ,
+               μ, σ², ϵ, momentum, 
+               affine, track_stats,
+               nothing, chs)
 end
 
 @functor InstanceNorm
