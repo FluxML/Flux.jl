@@ -18,6 +18,28 @@ const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
+function _show_elements(x::OneHotArray)
+  xbool = convert(Array{Bool}, cpu(x))
+  xrepr = join(split(repr(MIME("text/plain"), xbool), "\n")[2:end], "\n")
+
+  return xrepr
+end
+
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
+  join(io, string.(size(x)), "×")
+  print(io, " Flux.OneHotArray{")
+  join(io, string.([L, N, I]), ",")
+  println(io, "}:")
+  print(io, _show_elements(x))
+end
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
+  print(io, string.(length(x)))
+  print(io, "-element Flux.OneHotVector{")
+  join(io, string.([L, T]), ",")
+  println(io, "}:")
+  print(io, _show_elements(x))
+end
+
 # use this type so reshaped arrays hit fast paths
 # e.g. argmax
 const OneHotLike{T, L, N, var"N+1", I} =
@@ -76,13 +98,13 @@ If `l` is not found in labels and  `unk` is present, the function returns
 # Examples
 ```jldoctest
 julia> Flux.onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  1
  0
 
 julia> Flux.onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  0
  1
@@ -111,7 +133,7 @@ return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an erro
 # Examples
 ```jldoctest
 julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
+3×3 Flux.OneHotArray{3,2,Vector{UInt32}}:
  0  1  0
  1  0  1
  0  0  0
