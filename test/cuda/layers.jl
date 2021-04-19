@@ -107,16 +107,13 @@ gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu = 
 gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
 
 upsample = [x -> Upsample(scale=x)]
- gpu_gradtest("Upsample 2d", upsample, rand(Float32, 3, 4, 2, 3), (2,2))
- gpu_gradtest("Upsample 1d", upsample, rand(Float32, 3, 4, 2, 3), (2,))
+gpu_gradtest("Upsample 2d", upsample, rand(Float32, 3, 4, 2, 3), (2,2))
+gpu_gradtest("Upsample 1d", upsample, rand(Float32, 3, 4, 2, 3), (2,))
 
-<<<<<<< HEAD
- pixelshuffle = [PixelShuffle]
- gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
- gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
+pixelshuffle = [PixelShuffle]
+gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
+gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
 
-=======
->>>>>>> origin/master
 @testset "function layers" begin
   x = rand(Float32, 3,3)
   gpu_gradtest(x -> sum(Flux.normalise(x; dims=1)), x)
