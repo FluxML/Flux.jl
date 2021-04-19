@@ -1,7 +1,6 @@
 module CUDAint
 
 using ..CUDA
-# using CUDA: CUDNN
 
 import ..Flux: Flux
 import Zygote
