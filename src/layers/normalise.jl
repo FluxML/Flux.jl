@@ -289,11 +289,7 @@ function BatchNorm(chs::Int, λ = identity;
   μ = zeros(Float32, chs)
   σ² = ones(Float32, chs)
 
-<<<<<<< HEAD
   BatchNorm(λ, β, γ,
-=======
-  return BatchNorm(λ, β, γ,
->>>>>>> origin/master
             μ, σ², ϵ, momentum, 
             affine, track_stats, 
             nothing, chs)
@@ -362,7 +358,6 @@ end
 function InstanceNorm(chs::Int, λ = identity;
                     initβ = i -> zeros(Float32, i), 
                     initγ = i -> ones(Float32, i), 
-<<<<<<< HEAD
                     affine = true, track_stats = true,
                     ϵ = 1f-5, momentum = 0.1f0)
 
@@ -374,20 +369,6 @@ function InstanceNorm(chs::Int, λ = identity;
                μ, σ², ϵ, momentum, 
                affine, track_stats,
                nothing, chs)
-=======
-                    affine=false, track_stats=false,
-                    ϵ=1f-5, momentum=0.1f0)
-
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
-
-  return InstanceNorm(λ, β, γ,
-            μ, σ², ϵ, momentum, 
-            affine, track_stats,
-            nothing, chs)
->>>>>>> origin/master
 end
 
 @functor InstanceNorm
