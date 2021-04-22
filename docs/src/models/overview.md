@@ -129,7 +129,7 @@ The parameters have changed. This single step is the essence of machine learning
 
 ## Iteratively Train the Model
 
-Let's run it a few more times:
+In the previous section, we made a single call to `train!` which iterates over the data we passed in just once. An *epoch* refers to one pass over the dataset. Typically, we will run the training for multiple epochs to drive the loss down even further. Let's run it a few more times:
 
 ```julia>
 julia> for epoch in 1:200
