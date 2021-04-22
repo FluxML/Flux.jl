@@ -54,7 +54,7 @@ This model will already make predictions, though not accurate ones yet:
 ```julia>
 julia> predict(x_train)
 1×6 Array{Float32,2}:
- 0.0  -0.990091  -1.98018  -2.97027  -3.96036  -4.95045
+ -1.98018  -5.94054  -9.90091  -13.8613  -17.8216  -21.782
 ```
 
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
@@ -64,7 +64,7 @@ julia> loss(x, y) = Flux.Losses.mse(predict(x), y)
 loss (generic function with 1 method)
 
 julia> loss(x_train, y_train)
-282.1601f0
+282.16010605766024
 ```
 
 More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/). Flux works by iteratively reducing the loss through *training*.
@@ -100,7 +100,7 @@ The dimensions of these model parameters depend on the number of inputs and outp
 
 ```julia>
 julia> parameters = params(predict)
-Params([Float32[-0.99009055], Float32[0.0]])
+Params([[-0.99009055], [0.0]])
 ```
 
 These are the parameters Flux will change, one step at a time, to improve predictions. The first parameter is the weight and the second is the bias. Flux will shape predictions by iteratively changing these parameters.
@@ -118,7 +118,14 @@ julia> loss(x_train, y_train)
 267.8037f0
 ```
 
-It went down. 
+It went down. Why? 
+
+```julia>
+julia> parameters
+Params([[9.158408791666668], [2.895045275]])
+```
+
+The parameters have changed. This single step is the essence of machine learning.
 
 ## Iteratively Train the Model
 
@@ -130,22 +137,22 @@ julia> for epoch in 1:200
        end
 
 julia> loss(x_train, y_train)
-0.0518891f0
+0.007433314787010791
+
+julia> parameters
+Params([[3.9735880692372345], [1.9925541368157165]])
 ```
 
-After 200 training steps, the loss went down. 
+After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.
 
 ## Verify the Results
 
 Now, let's verify the predictions:
 
 ```julia>
-julia> loss(x_test, y_test)
-0.0518891f0
-
 julia> predict(y_test)
-1×5 Array{Float32,2}:
- 106.713  122.821  138.929  155.038  171.146
+1×5 Array{Float64,2}:
+ 105.306  121.2  137.095  152.989  168.883
 
 julia> actual.(y_test)
 1×5 Array{Int64,2}:
