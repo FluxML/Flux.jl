@@ -291,8 +291,6 @@ julia> Flux.crossentropy(y_prob, y_hot)
 function binarycrossentropy(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
     agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
 end
-# Re-definition to fix interaction with CuArrays.
-# CUDA.@cufunc binarycrossentropy(ŷ, y; ϵ = eps(ŷ)) = -y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)
 
 """
     logitbinarycrossentropy(ŷ, y; agg = mean)
@@ -322,9 +320,6 @@ julia> Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
 function logitbinarycrossentropy(ŷ, y; agg = mean)
     agg(@.((1 - y) * ŷ - logσ(ŷ)))
 end
-# Re-definition to fix interaction with CuArrays.
-# CUDA.@cufunc logitbinarycrossentropy(ŷ, y) = (1 - y) * ŷ - logσ(ŷ)
-
 
 """
     kldivergence(ŷ, y; agg = mean, ϵ = eps(ŷ))
