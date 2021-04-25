@@ -9,7 +9,7 @@ OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, T}
 OneHotArray(indices::AbstractArray{T, N}, L::Integer) where {T, N} = OneHotArray{T, L, N, typeof(indices)}(indices)
 
 _indices(x::OneHotArray) = x.indices
-_indices(x::Base.ReshapedArray{<:Any, <:Any, <:OneHotArray}) =
+_indices(x::Base.ReshapedArray{<: Any, <: Any, <: OneHotArray}) =
   reshape(parent(x).indices, x.dims[2:end])
 
 const OneHotVector{T, L} = OneHotArray{T, L, 0, 1, T}
@@ -64,9 +64,9 @@ Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
 
-function Base.cat(x::OneHotLike, xs::OneHotLike{<:Any, L}...; dims::Int) where L
+function Base.cat(x::OneHotLike{<:Any, L}, xs::OneHotLike{<:Any, L}...; dims::Int) where L
   if isone(dims) || any(x -> !_isonehot(x), (x, xs...))
-    return cat(map(x -> convert(_onehot_bool_type(x), x), x, xs...)...; dims = dims)
+    return cat(map(x -> convert(_onehot_bool_type(x), x), (x, xs...))...; dims = dims)
   else
     return OneHotArray(cat(_indices(x), _indices.(xs)...; dims = dims - 1), L)
   end
