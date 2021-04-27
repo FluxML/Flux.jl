@@ -167,6 +167,6 @@ Then, we built a predictive model with Flux `Dense(1, 1)`. This built a predicti
 
 After building the model, we trained it with `train!(loss, parameters, data, opt)`. The loss function is first, followed by the `parameters` holding the weights and biases of the model, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
 
-After we had trained the model, we verified it with the test data to verify the results. 
+After we trained the model, we verified it with the test data to verify the results. 
 
 This overall flow represents how Flux works. Let's drill down a bit to understand what's going on inside the individual layers of Flux.
