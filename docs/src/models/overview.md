@@ -15,7 +15,7 @@ Here's how you'd use Flux to build and train the most basic of models, step by s
 
 This example will predict the output of the function `4x + 2`. First, import `Flux` and define the function we want to simulate:
 
-```julia
+```
 julia> using Flux
 
 julia> actual(x) = 4x + 2
@@ -28,7 +28,7 @@ This example will build a model to approximate the `actual` function.
 
 Use the `actual` function to build sets of data for training and verification:
 
-```julia
+```
 julia> x_train, x_test = hcat(0:5...), hcat(6:10...)
 ([0 1 … 4 5], [6 7 … 9 10])
 
@@ -42,7 +42,7 @@ Normally, your training and test data come from real world observations, but thi
 
 Now, build a model to make predictions with `1` input and `1` output:
 
-```julia
+```
 julia> predict = Dense(1, 1)
 Dense(1, 1)
 ```
@@ -51,7 +51,7 @@ A dense layer implements the function `σ(Wx+b)`, where `W` represents a weight,
 
 This model will already make predictions, though not accurate ones yet:
 
-```julia
+```
 julia> predict(x_train)
 1×6 Array{Float32,2}:
  -1.98018  -5.94054  -9.90091  -13.8613  -17.8216  -21.782
@@ -59,7 +59,7 @@ julia> predict(x_train)
 
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
-```julia
+```
 julia> loss(x, y) = Flux.Losses.mse(predict(x), y)
 loss (generic function with 1 method)
 
@@ -73,7 +73,7 @@ More accurate predictions will yield a lower loss. You can write your own loss f
 
 Under the hood, the Flux [`train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
 
-```julia
+```
 julia> using Flux: train!
 
 julia> opt = Descent()
@@ -86,7 +86,7 @@ julia> data = [(x_train, y_train)]
 
 Now, we have the optimiser and data we'll pass to `train!`. All that remains are the parameters of the model. Each model is a Julia struct with a function and configurable parameters. Remember, the dense layer has weights and biases that depend on the dimensions of the inputs and outputs: 
 
-```julia
+```
 julia> predict.W
 1-element Array{Float64,1}:
  -0.99009055
@@ -98,7 +98,7 @@ julia> predict.b
 
 The dimensions of these model parameters depend on the number of inputs and outputs. Since models can have hundreds of inputs and several layers, it helps to have a function to collect the parameters into the data structure Flux expects:
 
-```julia
+```
 julia> parameters = params(predict)
 Params([[-0.99009055], [0.0]])
 ```
@@ -107,20 +107,20 @@ These are the parameters Flux will change, one step at a time, to improve predic
 
 This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`train!`](@ref) like this:
 
-```julia
+```
 julia> train!(loss, parameters, data, opt)
 ```
 
 And check the loss:
 
-```julia
+```
 julia> loss(x_train, y_train)
 267.8037f0
 ```
 
 It went down. Why? 
 
-```julia
+```
 julia> parameters
 Params([[9.158408791666668], [2.895045275]])
 ```
@@ -131,7 +131,7 @@ The parameters have changed. This single step is the essence of machine learning
 
 In the previous section, we made a single call to `train!` which iterates over the data we passed in just once. An *epoch* refers to one pass over the dataset. Typically, we will run the training for multiple epochs to drive the loss down even further. Let's run it a few more times:
 
-```julia
+```
 julia> for epoch in 1:200
          train!(loss, parameters, data, opt)
        end
@@ -149,7 +149,7 @@ After 200 training steps, the loss went down, and the parameters are getting clo
 
 Now, let's verify the predictions:
 
-```julia
+```
 julia> predict(y_test)
 1×5 Array{Float64,2}:
  105.306  121.2  137.095  152.989  168.883
