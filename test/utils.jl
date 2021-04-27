@@ -419,14 +419,14 @@ end
   @test length(modules) == 5
 end
 
-@testset "Early stopping" begin
+@testset "Patience counter" begin
   function metric(; step = 1)
     l = 0
     return () -> l += step
   end
 
   @testset "delta" begin
-    es = Flux.early_stopping(metric(); delta=(best_score, score) -> score - best_score)
+    es = Flux.patience_counter(metric(); delta=(best_score, score) -> score - best_score)
 
     n_iter = 0
     while n_iter < 99
@@ -438,7 +438,7 @@ end
   end
 
   @testset "min delta" begin
-    es = Flux.early_stopping(metric(step=-2); min_delta=1)
+    es = Flux.patience_counter(metric(step=-2); min_delta=1)
 
     n_iter = 0
     while n_iter < 99
@@ -450,7 +450,7 @@ end
   end
 
   @testset "patience" begin
-    es = Flux.early_stopping(metric(); patience=10)
+    es = Flux.patience_counter(metric(); patience=10)
 
     n_iter = 0
     while n_iter < 99

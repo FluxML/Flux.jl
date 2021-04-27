@@ -744,7 +744,7 @@ isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
 """
-    early_stopping(f; delta=-, min_delta=0, patience=3)
+    patience_counter(f; delta=-, min_delta=0, patience=3)
 
 Return a function that evaluates the metric `f` and compares its value
 against its value on last invocation. When the difference has been less
@@ -757,13 +757,17 @@ If you are using some increasing metric (e.g. accuracy),
 you can customize the `delta` function:
 `(best_score, score) -> score - best_score` (for increasing metrics).
 
+A common use case of `patience_counter` is early stopping. For this,
+we have added `early_stopping` as an alias to `patience_counter`. But
+please note that you can do more generic things with `patience_counter`,
+for example reducing the learning rate when the training loss plateaus.
+
 # Examples
 ```jldoctest
 julia> function loss()
        l = 0
        return () -> l += 1
-       end # pseudo loss function that returns increasing values
-loss (generic function with 1 method)
+       end; # pseudo loss function that returns increasing values
 
 julia> es = Flux.early_stopping(loss(); patience=3);
 
@@ -775,7 +779,7 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 3
 ```
 """
-function early_stopping(f; delta = -, min_delta = 0, patience = 3)
+function patience_counter(f; delta = -, min_delta = 0, patience = 3)
   best_score = f()
   count = 0
 
@@ -787,3 +791,5 @@ function early_stopping(f; delta = -, min_delta = 0, patience = 3)
     return count >= patience
   end
 end
+
+early_stopping = patience_counter
