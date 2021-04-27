@@ -159,4 +159,14 @@ julia> actual.(y_test)
  106  122  138  154  170
 ```
 
-The predictions are good. Let's drill down a bit to understand what's going on inside the individual layers of Flux.
+The predictions are good. Here's how we got there. 
+
+First, we gathered real-world data into the variables `x_train`, `y_train`, `x_test`, and `y_test`. The `x_*` data defines inputs, and the `y_*` data defines outputs. The `*_train` data is for training the model, and the `*_test` data is for verifying the model. Our data was based on the function `4x + 2`.
+
+Then, we built a predictive model with Flux `Dense(1, 1)`. This built a predictive model called `predict` with one input and one output. The predictions weren't yet accurate because we had not trained the model yet. 
+
+After building the model, we trained it with `train!(loss, parameters, data, opt)`. The loss function is first, followed by the `parameters` holding the weights and biases of the model, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
+
+After we had trained the model, we verified it with the test data to verify the results. 
+
+This overall flow represents how Flux works. Let's drill down a bit to understand what's going on inside the individual layers of Flux.
