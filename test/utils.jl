@@ -425,6 +425,18 @@ end
     return () -> l += step
   end
 
+  @testset "args & kwargs" begin
+    es = Flux.patience_counter((x; y = 1) -> x + y; min_delta=2)
+
+    n_iter = 0
+    while n_iter < 99
+      es(-n_iter; y=-n_iter) && break
+      n_iter += 1
+    end
+
+    @test n_iter == 99
+  end
+
   @testset "delta" begin
     es = Flux.patience_counter(metric(); delta=(best_score, score) -> score - best_score)
 
@@ -458,6 +470,6 @@ end
       n_iter += 1
     end
 
-    @test n_iter == 9
+    @test n_iter == 10
   end
 end

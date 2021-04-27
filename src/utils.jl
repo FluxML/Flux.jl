@@ -749,7 +749,9 @@ isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 Return a function that evaluates the metric `f` and compares its value
 against its value on last invocation. When the difference has been less
 than `min_delta` at least `patience` times, `true` is returned,
-otherwise `false` is returned.
+otherwise `false` is returned. The function returned by `patience_counter`
+accepts a variable number of arguments and keyword arguments, which will then
+be passed to the metric function `f`  when being evaluated.
 
 The difference is measured by keyword argument, `delta`.
 By default, `early_stopping` expects the metric `f` to be minimized.
@@ -777,14 +779,19 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 1
 [ Info: Epoch 2
 [ Info: Epoch 3
+[ Info: Epoch 4
 ```
 """
 function patience_counter(f; delta = -, min_delta = 0, patience = 3)
-  best_score = f()
+  best_score = NaN
   count = 0
 
-  return function ()
-    score = f()
+  return function (args...; kwargs...)
+    if isnan(best_score)
+      best_score = f(args...; kwargs...)
+      return false
+    end
+    score = f(args...; kwargs...)
     Δ = delta(best_score, score)
     count = Δ < min_delta ? count + 1 : 0
     best_score = Δ < 0 ? best_score : score
