@@ -749,19 +749,18 @@ isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 Return a function that evaluates the metric `f` and compares its value
 against its value on last invocation. When the difference has been less
 than `min_delta` at least `patience` times, `true` is returned,
-otherwise `false` is returned. The function returned by `patience_counter`
-accepts a variable number of arguments and keyword arguments, which will then
-be passed to the metric function `f`  when being evaluated.
+otherwise `false` is returned. If `f` accepts arguments,
+then the returned function respects that.
 
 The difference is measured by keyword argument, `delta`.
-By default, `early_stopping` expects the metric `f` to be minimized.
+By default, `patience_counter` expects the metric `f` to be minimized.
 If you are using some increasing metric (e.g. accuracy),
 you can customize the `delta` function:
 `(best_score, score) -> score - best_score` (for increasing metrics).
 
 A common use case of `patience_counter` is early stopping. For this,
-we have added `early_stopping` as an alias to `patience_counter`. But
-please note that you can do more generic things with `patience_counter`,
+we have added `early_stopping` as an alias to `patience_counter`.
+Note that you can do more generic things with `patience_counter`,
 for example reducing the learning rate when the training loss plateaus.
 
 # Examples
@@ -779,18 +778,13 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 1
 [ Info: Epoch 2
 [ Info: Epoch 3
-[ Info: Epoch 4
 ```
 """
-function patience_counter(f; delta = -, min_delta = 0, patience = 3)
-  best_score = NaN
+function patience_counter(f; delta = -, init_score = 0, min_delta = 0, patience = 3)
+  best_score = init_score
   count = 0
 
   return function (args...; kwargs...)
-    if isnan(best_score)
-      best_score = f(args...; kwargs...)
-      return false
-    end
     score = f(args...; kwargs...)
     Δ = delta(best_score, score)
     count = Δ < min_delta ? count + 1 : 0
@@ -799,4 +793,4 @@ function patience_counter(f; delta = -, min_delta = 0, patience = 3)
   end
 end
 
-early_stopping = patience_counter
+early_stopping(args...; kwargs...) = patience_counter(args...; kwargs...)

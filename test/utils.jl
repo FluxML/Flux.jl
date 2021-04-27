@@ -449,6 +449,18 @@ end
     @test n_iter == 99
   end
 
+  @testset "init score" begin
+    es = Flux.patience_counter(metric(); init_score=10)
+
+    n_iter = 0
+    while n_iter < 99
+      es() && break
+      n_iter += 1
+    end
+
+    @test n_iter == 3
+  end
+
   @testset "min delta" begin
     es = Flux.patience_counter(metric(step=-2); min_delta=1)
 
@@ -470,6 +482,6 @@ end
       n_iter += 1
     end
 
-    @test n_iter == 10
+    @test n_iter == 9
   end
 end
