@@ -71,7 +71,7 @@ More accurate predictions will yield a lower loss. You can write your own loss f
 
 ## Improve the Prediction
 
-Under the hood, the Flux [`train!`](../training/training.md) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
+Under the hood, the Flux [`train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
 
 ```julia
 julia> using Flux: train!
@@ -105,7 +105,7 @@ Params([[-0.99009055], [0.0]])
 
 These are the parameters Flux will change, one step at a time, to improve predictions. The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
 
-This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`train!`](https://fluxml.ai/Flux.jl/stable/training/training/#Flux.Optimise.train!) like this:
+This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`train!`](@ref) like this:
 
 ```julia
 julia> train!(loss, parameters, data, opt)

@@ -63,7 +63,7 @@ This will come in really handy when dealing with big, complicated models. For no
 
 Consider a simple linear regression, which tries to predict an output array `y` from an input `x`.
 
-```julia>
+```julia
 W = rand(2, 5)
 b = rand(2)
 
