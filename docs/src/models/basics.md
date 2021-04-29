@@ -1,4 +1,4 @@
-# Model-Building Basics
+# Flux Basics
 
 ## Taking Gradients
 
@@ -29,7 +29,10 @@ julia> gradient(f, [2, 1], [2, 0])
 ([0, 2], [0, -2])
 ```
 
-But machine learning models can have *hundreds* of parameters! To handle this, Flux lets you work with collections of parameters, via `params`. You can get the gradient of all parameters used in a program without explicitly passing them in.
+These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
+
+
+Machine learning often can have *hundreds* of parameters, so Flux lets you work with collections of parameters, via the `params` functions. You can get the gradient of all parameters used in a program without explicitly passing them in.
 
 ```jldoctest basics
 julia> x = [2, 1];
@@ -56,7 +59,7 @@ Here, `gradient` takes a zero-argument function; no arguments are necessary beca
 
 This will come in really handy when dealing with big, complicated models. For now, though, let's start with something simple.
 
-## Simple Models
+## Building Simple Models
 
 Consider a simple linear regression, which tries to predict an output array `y` from an input `x`.
 
