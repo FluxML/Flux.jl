@@ -103,7 +103,15 @@ julia> parameters = params(predict)
 Params([[-0.99009055], [0.0]])
 ```
 
-These are the parameters Flux will change, one step at a time, to improve predictions. The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
+These are the parameters Flux will change, one step at a time, to improve predictions. Each of the parameters comes from the `predict` model: 
+
+```
+julia> predict.W in parameters, predict.b in parameters
+(true, true)
+
+```
+
+The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
 
 This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`train!`](@ref) like this:
 
