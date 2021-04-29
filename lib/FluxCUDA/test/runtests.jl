@@ -4,7 +4,9 @@ using FluxCUDA
 using FluxCUDA: Flux, CUDA
 
 using .CUDA
-CUDA.allowscalar(false)
+# XXX: allowscalar is currently not inherited by child tasks, so set it globally
+#CUDA.allowscalar(false)
+ENV["JULIA_GPU_ALLOWSCALAR"] = "false"
 
 using .Flux
 Flux.default_gpu_converter[] = cu
