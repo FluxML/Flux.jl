@@ -1,9 +1,12 @@
 using Test
 
-using CUDA
+using FluxCUDA
+using FluxCUDA: Flux, CUDA
+
+using .CUDA
 CUDA.allowscalar(false)
 
-using Flux, FluxCUDA
+using .Flux
 Flux.default_gpu_converter[] = cu
 
 using Zygote
