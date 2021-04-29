@@ -8,8 +8,7 @@ steps:
 
                 println("--- :julia: Instantiating project");
                 Pkg.develop(PackageSpec(path=pwd()));
-                Pkg.add(PackageSpec(url="https://github.com/FluxML/FluxCUDA.jl", rev="main"));
-                Pkg.instantiate();
+                Pkg.develop(PackageSpec(path=joinpath(pwd(), "lib/FluxCUDA")));
 
                 println("+++ :julia: Running tests");
                 Pkg.test("FluxCUDA"; coverage=true);'
