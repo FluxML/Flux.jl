@@ -43,11 +43,25 @@ Normally, your training and test data come from real world observations, but thi
 Now, build a model to make predictions with `1` input and `1` output:
 
 ```
-julia> predict = Dense(1, 1)
+julia> model = Dense(1, 1)
 Dense(1, 1)
+
+julia> model.W
+1-element Array{Float64,1}:
+ -0.99009055
+
+julia> model.b
+1-element Array{Float64,1}:
+ 0.0
 ```
 
-A dense layer implements the function `σ(Wx+b)`, where `W` represents a weight, `b` represents a bias, and `σ` is an activation function (more on activations later). Our model has one weight and one bias, but typical models will have many more. Think of weights and biases as knobs and levers Flux can use to tune predictions. Activation functions are transformations that tailor models to your needs.
+Under the hood, a dense layer is a struct with fields `W` and `b`. `W` represents a weight and `b` represents a bias. There's another way to think about a model. In Flux, *models are conceptually predictive functions*: 
+
+```
+julia> predict = Dense(1, 1)
+```
+
+`Dense(1, 1)` also implements the function `σ(Wx+b)` where `W` and `b` are the weights and biases. `σ` is an activation function (more on activations later). Our model has one weight and one bias, but typical models will have many more. Think of weights and biases as knobs and levers Flux can use to tune predictions. Activation functions are transformations that tailor models to your needs. 
 
 This model will already make predictions, though not accurate ones yet:
 
@@ -84,7 +98,7 @@ julia> data = [(x_train, y_train)]
  ([0 1 … 4 5], [2 6 … 18 22])
 ```
 
-Now, we have the optimiser and data we'll pass to `train!`. All that remains are the parameters of the model. Each model is a Julia struct with a function and configurable parameters. Remember, the dense layer has weights and biases that depend on the dimensions of the inputs and outputs: 
+Now, we have the optimiser and data we'll pass to `train!`. All that remains are the parameters of the model. Remember, each model is a Julia struct with a function and configurable parameters. Remember, the dense layer has weights and biases that depend on the dimensions of the inputs and outputs: 
 
 ```
 julia> predict.W
