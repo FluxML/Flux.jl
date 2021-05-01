@@ -770,7 +770,7 @@ julia> function loss()
        return () -> l += 1
        end; # pseudo loss function that returns increasing values
 
-julia> es = Flux.early_stopping(loss(); patience=3);
+julia> es = Flux.early_stopping(loss(), 3);
 
 julia> Flux.@epochs 10 begin
        es() && break
@@ -780,7 +780,7 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 3
 ```
 """
-function patience_counter(f; delta = -, init_score = 0, min_delta = 0, patience = 3)
+function patience_counter(f, patience; delta = -, init_score = 0, min_delta = 0)
   best_score = init_score
   count = 0
 
