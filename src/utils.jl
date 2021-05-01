@@ -780,7 +780,7 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 3
 ```
 """
-function patience_counter(f, patience; delta = -, init_score = 0, min_delta = 0)
+function plateau(f, patience; delta = -, init_score = 0, min_delta = 0)
   best_score = init_score
   count = 0
 
@@ -793,4 +793,4 @@ function patience_counter(f, patience; delta = -, init_score = 0, min_delta = 0)
   end
 end
 
-early_stopping(args...; kwargs...) = patience_counter(args...; kwargs...)
+const early_stopping(args...; kwargs...) = plateau(args...; kwargs...)

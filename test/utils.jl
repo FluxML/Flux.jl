@@ -419,14 +419,14 @@ end
   @test length(modules) == 5
 end
 
-@testset "Patience counter" begin
+@testset "Plateau" begin
   function metric(; step = 1)
     l = 0
     return () -> l += step
   end
 
   @testset "args & kwargs" begin
-    es = Flux.patience_counter((x; y = 1) -> x + y, 10; min_delta=2)
+    es = Flux.plateau((x; y = 1) -> x + y, 10; min_delta=2)
 
     n_iter = 0
     while n_iter < 99
@@ -438,7 +438,7 @@ end
   end
 
   @testset "delta" begin
-    es = Flux.patience_counter(metric(), 10; delta=(best_score, score) -> score - best_score)
+    es = Flux.plateau(metric(), 10; delta=(best_score, score) -> score - best_score)
 
     n_iter = 0
     while n_iter < 99
@@ -450,7 +450,7 @@ end
   end
 
   @testset "init score" begin
-    es = Flux.patience_counter(metric(), 10; init_score=10)
+    es = Flux.plateau(metric(), 10; init_score=10)
 
     n_iter = 0
     while n_iter < 99
@@ -462,7 +462,7 @@ end
   end
 
   @testset "min delta" begin
-    es = Flux.patience_counter(metric(step=-2), 10; min_delta=1)
+    es = Flux.plateau(metric(step=-2), 10; min_delta=1)
 
     n_iter = 0
     while n_iter < 99
@@ -474,7 +474,7 @@ end
   end
 
   @testset "patience" begin
-    es = Flux.patience_counter(metric(), 10)
+    es = Flux.plateau(metric(), 10)
 
     n_iter = 0
     while n_iter < 99
