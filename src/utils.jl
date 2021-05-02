@@ -744,33 +744,35 @@ isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
 """
-    patience_counter(f; delta=-, min_delta=0, patience=3)
+    plateau(f, patience; delta = -, min_delta = 0)
 
-Return a function that evaluates the metric `f` and compares its value
-against its value on last invocation. When the difference has been less
-than `min_delta` at least `patience` times, `true` is returned,
-otherwise `false` is returned. If `f` accepts arguments,
-then the returned function respects that.
+Return a function that internally counts by one when
+`delta(best_score, f(...)) <= min_delta` where
+`best_score` is the last seen best value of `f(...)`.
+If the count is greater than or equal to `patience`,
+the function returns `true`, otherwise it returns `false`.
+The count is reset when `delta(best_score, f(...)) > min_delta`.
 
-The difference is measured by keyword argument, `delta`.
-By default, `patience_counter` expects the metric `f` to be minimized.
+The keyword argument `delta` is a function of the form
+`delta(best_score, current_score)`.
 If you are using some increasing metric (e.g. accuracy),
 you can customize the `delta` function:
-`(best_score, score) -> score - best_score` (for increasing metrics).
+`(best_score, score) -> score - best_score`.
 
-A common use case of `patience_counter` is early stopping. For this,
-we have added `early_stopping` as an alias to `patience_counter`.
-Note that you can do more generic things with `patience_counter`,
+A common use case of `plateau` is early stopping. For this,
+we have added `early_stopping` as an alias to `plateau`.
+Note that you can do more generic things with `plateau`,
 for example reducing the learning rate when the training loss plateaus.
 
 # Examples
 ```jldoctest
+julia> l = 0;
+
 julia> function loss()
-       l = 0
-       return () -> l += 1
+       global l += 1
        end; # pseudo loss function that returns increasing values
 
-julia> es = Flux.early_stopping(loss(), 3);
+julia> es = Flux.early_stopping(loss, 3);
 
 julia> Flux.@epochs 10 begin
        es() && break
@@ -784,13 +786,15 @@ function plateau(f, patience; delta = -, init_score = 0, min_delta = 0)
   best_score = init_score
   count = 0
 
-  return function (args...; kwargs...)
-    score = f(args...; kwargs...)
-    Δ = delta(best_score, score)
-    count = Δ < min_delta ? count + 1 : 0
-    best_score = Δ < 0 ? best_score : score
-    return count >= patience
+  let best_score = best_score, count = count
+    function on_plateau(args...; kwargs...)
+      score = f(args...; kwargs...)
+      Δ = delta(best_score, score)
+      count = Δ < min_delta ? count + 1 : 0
+      best_score = Δ < 0 ? best_score : score
+      return count >= patience
+    end
   end
 end
 
-const early_stopping(args...; kwargs...) = plateau(args...; kwargs...)
+const early_stopping = plateau
