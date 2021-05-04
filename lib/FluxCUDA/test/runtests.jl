@@ -9,7 +9,7 @@ using .CUDA
 ENV["JULIA_GPU_ALLOWSCALAR"] = "false"
 
 using .Flux
-Flux.default_gpu_converter[] = cu
+@assert Flux.default_gpu_converter[] == cu
 
 using Zygote
 using Zygote: pullback

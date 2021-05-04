@@ -9,7 +9,7 @@ using .AMDGPU
 ENV["JULIA_GPU_ALLOWSCALAR"] = "false"
 
 using .Flux
-Flux.default_gpu_converter[] = AMDGPU.roc
+@assert Flux.default_gpu_converter[] == roc
 
 using Zygote
 using Zygote: pullback
