@@ -102,5 +102,6 @@ Flux.nfan
 Flux.throttle
 Flux.stop
 Flux.skip
+Flux.patience
 Flux.plateau
 ```

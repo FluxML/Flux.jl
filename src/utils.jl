@@ -744,7 +744,26 @@ isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
 """
-    plateau(f, patience; delta = -, min_delta = 0)
+    patience(predicate, patience)
+
+Return a function that internally counts by one when
+`predicate(...) == true`, otherwise the count is reset
+to zero. If the count is greater than or equal to `patience`,
+the function returns `true`, otherwise it returns `false`.
+"""
+function patience(predicate, patience)
+  on_trigger = let count = 0
+    (args...; kwargs...) -> begin
+      count = predicate(args...; kwargs...) ? count + 1 : 0
+
+      return count >= patience
+    end
+  end
+end
+
+
+"""
+    plateau(f, p; delta = -, init_score = 0, min_delta = 0)
 
 Return a function that internally counts by one when
 `delta(best_score, f(...)) <= min_delta` where
@@ -782,19 +801,18 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 3
 ```
 """
-function plateau(f, patience; delta = -, init_score = 0, min_delta = 0)
-  best_score = init_score
-  count = 0
-
-  let best_score = best_score, count = count
-    function on_plateau(args...; kwargs...)
+function plateau(f, p; delta = -, init_score = 0, min_delta = 0)
+  is_plateau = let best_score = init_score
+    (args...; kwargs...) -> begin
       score = f(args...; kwargs...)
       Δ = delta(best_score, score)
-      count = Δ < min_delta ? count + 1 : 0
       best_score = Δ < 0 ? best_score : score
-      return count >= patience
+
+      return Δ < min_delta
     end
   end
+
+  return patience(is_plateau, p)
 end
 
 const early_stopping = plateau
