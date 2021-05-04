@@ -419,14 +419,17 @@ end
   @test length(modules) == 5
 end
 
-@testset "Plateau" begin
-  function metric(; step = 1)
-    l = 0
-    return () -> l += step
+@testset "Patience" begin
+  @testset "patience" begin
+    trigger = Flux.patience(() -> true, 3)
+
+    @test trigger() == false
+    @test trigger() == false
+    @test trigger() == true
   end
 
   @testset "args & kwargs" begin
-    es = Flux.plateau((x; y = 1) -> x + y, 10; min_delta=2)
+    es = Flux.plateau((x; y = 1) -> x + y, 10; min_delta=3)
 
     n_iter = 0
     while n_iter < 99
@@ -434,15 +437,15 @@ end
       n_iter += 1
     end
 
-    @test n_iter == 99
+    @test n_iter == 9
   end
 
   @testset "delta" begin
-    es = Flux.plateau(metric(), 10; delta=(best_score, score) -> score - best_score)
+    es = Flux.plateau(identity, 10; delta=(best_score, score) -> score - best_score)
 
     n_iter = 0
     while n_iter < 99
-      es() && break
+      es(n_iter) && break
       n_iter += 1
     end
 
@@ -450,11 +453,11 @@ end
   end
 
   @testset "init score" begin
-    es = Flux.plateau(metric(), 10; init_score=10)
+    es = Flux.plateau(identity, 10; init_score=10)
 
     n_iter = 0
     while n_iter < 99
-      es() && break
+      es(n_iter) && break
       n_iter += 1
     end
 
@@ -462,23 +465,11 @@ end
   end
 
   @testset "min delta" begin
-    es = Flux.plateau(metric(step=-2), 10; min_delta=1)
+    es = Flux.plateau(identity, 10; min_delta=2)
 
     n_iter = 0
     while n_iter < 99
-      es() && break
-      n_iter += 1
-    end
-
-    @test n_iter == 99
-  end
-
-  @testset "patience" begin
-    es = Flux.plateau(metric(), 10)
-
-    n_iter = 0
-    while n_iter < 99
-      es() && break
+      es(-n_iter) && break
       n_iter += 1
     end
 
