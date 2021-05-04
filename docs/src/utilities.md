@@ -105,3 +105,41 @@ Flux.skip
 Flux.patience
 Flux.plateau
 ```
+
+The keyword argument `delta` of [`plateau`](@ref) is a function of the form `delta(best_score, current_score)`. By default `delta` is `-`, which implies that the metric `f` is expected to be decreasing and mimimized. If you use some increasing metric (e.g. accuracy), you can customize the `delta` function: `(best_score, score) -> score - best_score`.
+
+```julia
+acc = let v = 0
+  () -> v = max(1, v + 0.01)
+end
+
+es = Flux.early_stopping(acc, 3; delta = (best_score, score) -> score - best_score)
+
+# This will iterate until the 10th epoch
+Flux.@epochs 10 begin
+  es() && break
+end
+
+es = Flux.early_stopping(acc, 3)
+
+# This will stop at the 3rd epoch
+Flux.@epochs 10 begin
+  es() && break
+end
+```
+
+Both `predicate` in [`patience`](@ref) and `f` in [`plateau`](@ref) can accept extra arguments. You can pass such extra arguments to `predicate` or `f` through the returned function:
+
+```julia
+trigger = Flux.patience((a; b) -> a > b, 3)
+
+# This will iterate until the 10th epoch
+Flux.@epochs 10 begin
+  trigger(1; b=2) && break
+end
+
+# This will stop at the 3rd epoch
+Flux.@epochs 10 begin
+  trigger(3; b=2) && break
+end
+```

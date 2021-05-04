@@ -750,6 +750,20 @@ Return a function that internally counts by one when
 `predicate(...) == true`, otherwise the count is reset
 to zero. If the count is greater than or equal to `patience`,
 the function returns `true`, otherwise it returns `false`.
+
+# Examples
+```jldoctest
+julia> loss = () -> rand();
+
+julia> trigger = Flux.patience(() -> loss() < 1, 3);
+
+julia> Flux.@epochs 10 begin
+       trigger() && break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+```
 """
 function patience(predicate, patience)
   on_trigger = let count = 0
@@ -766,17 +780,11 @@ end
     plateau(f, p; delta = -, init_score = 0, min_delta = 0)
 
 Return a function that internally counts by one when
-`delta(best_score, f(...)) <= min_delta` where
+`delta(best_score, f(...)) <= min_delta`, where
 `best_score` is the last seen best value of `f(...)`.
-If the count is greater than or equal to `patience`,
+If the count is greater than or equal to the maximum patience `p`,
 the function returns `true`, otherwise it returns `false`.
 The count is reset when `delta(best_score, f(...)) > min_delta`.
-
-The keyword argument `delta` is a function of the form
-`delta(best_score, current_score)`.
-If you are using some increasing metric (e.g. accuracy),
-you can customize the `delta` function:
-`(best_score, score) -> score - best_score`.
 
 A common use case of `plateau` is early stopping. For this,
 we have added `early_stopping` as an alias to `plateau`.
@@ -785,10 +793,8 @@ for example reducing the learning rate when the training loss plateaus.
 
 # Examples
 ```jldoctest
-julia> l = 0;
-
-julia> function loss()
-       global l += 1
+julia> loss = let l = 0
+       () -> l += 1
        end; # pseudo loss function that returns increasing values
 
 julia> es = Flux.early_stopping(loss, 3);
