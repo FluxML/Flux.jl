@@ -744,11 +744,11 @@ isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
 
 """
-    patience(predicate, patience)
+    patience(predicate, wait)
 
 Return a function that internally counts by one when
 `predicate(...) == true`, otherwise the count is reset to zero.
-If the count is greater than or equal to `patience`,
+If the count is greater than or equal to `wait`,
 the function returns `true`, otherwise it returns `false`.
 
 # Examples
@@ -765,12 +765,12 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 3
 ```
 """
-function patience(predicate, patience)
+function patience(predicate, wait)
   on_trigger = let count = 0
     (args...; kwargs...) -> begin
       count = predicate(args...; kwargs...) ? count + 1 : 0
 
-      return count >= patience
+      return count >= wait
     end
   end
 end

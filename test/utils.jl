@@ -419,13 +419,26 @@ end
   @test length(modules) == 5
 end
 
-@testset "Patience" begin
+@testset "Patience triggers" begin
   @testset "patience" begin
     trigger = Flux.patience(() -> true, 3)
 
     @test trigger() == false
     @test trigger() == false
     @test trigger() == true
+
+    v = [false, true, false, true, true, true]
+    trigger = let v = v
+      Flux.patience(i -> v[i], 3)
+    end
+
+    n_iter = 0
+    for i in 1:length(v)
+      trigger(i) && break
+      n_iter += 1
+    end
+
+    @test n_iter == 5
   end
 
   @testset "early stopping" begin
