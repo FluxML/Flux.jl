@@ -747,13 +747,13 @@ isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
     patience(predicate, patience)
 
 Return a function that internally counts by one when
-`predicate(...) == true`, otherwise the count is reset
-to zero. If the count is greater than or equal to `patience`,
+`predicate(...) == true`, otherwise the count is reset to zero.
+If the count is greater than or equal to `patience`,
 the function returns `true`, otherwise it returns `false`.
 
 # Examples
 ```jldoctest
-julia> loss = () -> rand();
+julia> loss() = rand();
 
 julia> trigger = Flux.patience(() -> loss() < 1, 3);
 
@@ -775,21 +775,15 @@ function patience(predicate, patience)
   end
 end
 
-
 """
-    plateau(f, p; delta = -, init_score = 0, min_delta = 0)
+    early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
 
 Return a function that internally counts by one when
-`delta(best_score, f(...)) <= min_delta`, where
+`distance(best_score, f(...)) <= min_dist`, where
 `best_score` is the last seen best value of `f(...)`.
-If the count is greater than or equal to the maximum patience `p`,
+If the count is greater than or equal to `delay`,
 the function returns `true`, otherwise it returns `false`.
-The count is reset when `delta(best_score, f(...)) > min_delta`.
-
-A common use case of `plateau` is early stopping. For this,
-we have added `early_stopping` as an alias to `plateau`.
-Note that you can do more generic things with `plateau`,
-for example reducing the learning rate when the training loss plateaus.
+The count is reset when `distance(best_score, f(...)) > min_dist`.
 
 # Examples
 ```jldoctest
@@ -807,18 +801,57 @@ julia> Flux.@epochs 10 begin
 [ Info: Epoch 3
 ```
 """
-function plateau(f, p; delta = -, init_score = 0, min_delta = 0)
-  is_plateau = let best_score = init_score
+function early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
+  trigger = let best_score = init_score
     (args...; kwargs...) -> begin
       score = f(args...; kwargs...)
-      Δ = delta(best_score, score)
+      Δ = distance(best_score, score)
       best_score = Δ < 0 ? best_score : score
 
-      return Δ < min_delta
+      return Δ < min_dist
     end
   end
 
-  return patience(is_plateau, p)
+  return patience(trigger, delay)
 end
 
-const early_stopping = plateau
+"""
+    plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
+
+Return a function that internally counts by one when
+`abs(distance(last_score, f(...))) <= min_dist`, where
+`last_score` holds the last value of `f(...)`.
+If the count is greater than or equal to `width`,
+the function returns `true`, otherwise it returns `false`.
+The count is reset when `abs(distance(last_score, f(...))) > min_dist`.
+
+# Examples
+```jldoctest
+julia> f = let v = 10
+       () -> v = v / abs(v) - v
+       end; # -9, 8, -7, 6, ...
+
+julia> trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
+
+julia> Flux.@epochs 10 begin
+       trigger() && break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+[ Info: Epoch 4
+```
+"""
+function plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
+  is_plateau = let last_score = init_score
+    (args...; kwargs...) -> begin
+      score = f(args...; kwargs...)
+      Δ = abs(distance(last_score, score))
+      last_score = score
+
+      return Δ < min_dist
+    end
+  end
+
+  return patience(is_plateau, width)
+end

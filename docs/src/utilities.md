@@ -102,11 +102,13 @@ Flux.nfan
 Flux.throttle
 Flux.stop
 Flux.skip
-Flux.patience
-Flux.plateau
 ```
 
-The keyword argument `delta` of [`plateau`](@ref) is a function of the form `delta(best_score, current_score)`. By default `delta` is `-`, which implies that the metric `f` is expected to be decreasing and mimimized. If you use some increasing metric (e.g. accuracy), you can customize the `delta` function: `(best_score, score) -> score - best_score`.
+## Patience Helpers
+
+Flux provide utilities for scheduling your workflow according to some monitored condition and a maximum `patience`. For example, you can use `early_stopping` to stop training when the model is converging or deteriorating, or you can use `plateau` to check if the model is stagnating.
+
+The keyword argument `distance` of `early_stopping` is a function of the form `distance(best_score, score)`. By default `distance` is `-`, which implies that the monitored metric `f` is expected to be decreasing and mimimized. If you use some increasing metric (e.g. accuracy), you can customize the `distance` function: `(best_score, score) -> score - best_score`.
 
 ```julia
 acc = let v = 0
@@ -128,7 +130,7 @@ Flux.@epochs 10 begin
 end
 ```
 
-Both `predicate` in [`patience`](@ref) and `f` in [`plateau`](@ref) can accept extra arguments. You can pass such extra arguments to `predicate` or `f` through the returned function:
+Both `predicate` in `patience` and `f` in `early_stopping` / `plateau` can accept extra arguments. You can pass such extra arguments to `predicate` or `f` through the returned function:
 
 ```julia
 trigger = Flux.patience((a; b) -> a > b, 3)
@@ -142,4 +144,10 @@ end
 Flux.@epochs 10 begin
   trigger(3; b=2) && break
 end
+```
+
+```@docs
+Flux.patience
+Flux.early_stopping
+Flux.plateau
 ```

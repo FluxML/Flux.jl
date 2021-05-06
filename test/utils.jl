@@ -428,51 +428,57 @@ end
     @test trigger() == true
   end
 
-  @testset "args & kwargs" begin
-    es = Flux.plateau((x; y = 1) -> x + y, 10; min_delta=3)
-
-    n_iter = 0
-    while n_iter < 99
-      es(-n_iter; y=-n_iter) && break
-      n_iter += 1
+  @testset "early stopping" begin
+    @testset "args & kwargs" begin
+      es = Flux.early_stopping((x; y = 1) -> x + y, 10; min_dist=3)
+  
+      n_iter = 0
+      while n_iter < 99
+        es(-n_iter; y=-n_iter) && break
+        n_iter += 1
+      end
+  
+      @test n_iter == 9
     end
+  
+    @testset "distance" begin
+      es = Flux.early_stopping(identity, 10; distance=(best_score, score) -> score - best_score)
 
-    @test n_iter == 9
+      n_iter = 0
+      while n_iter < 99
+        es(n_iter) && break
+        n_iter += 1
+      end
+
+      @test n_iter == 99
+    end
+  
+    @testset "init_score" begin
+      es = Flux.early_stopping(identity, 10; init_score=10)
+
+      n_iter = 0
+      while n_iter < 99
+        es(n_iter) && break
+        n_iter += 1
+      end
+
+      @test n_iter == 10
+    end
   end
 
-  @testset "delta" begin
-    es = Flux.plateau(identity, 10; delta=(best_score, score) -> score - best_score)
+  @testset "plateau" begin
+    f = let v = 10
+      () -> v = v / abs(v) - v
+    end
+
+    trigger = Flux.plateau(f, 3, init_score=10, min_dist=18)
 
     n_iter = 0
     while n_iter < 99
-      es(n_iter) && break
+      trigger() && break
       n_iter += 1
     end
 
-    @test n_iter == 99
-  end
-
-  @testset "init score" begin
-    es = Flux.plateau(identity, 10; init_score=10)
-
-    n_iter = 0
-    while n_iter < 99
-      es(n_iter) && break
-      n_iter += 1
-    end
-
-    @test n_iter == 10
-  end
-
-  @testset "min delta" begin
-    es = Flux.plateau(identity, 10; min_delta=2)
-
-    n_iter = 0
-    while n_iter < 99
-      es(-n_iter) && break
-      n_iter += 1
-    end
-
-    @test n_iter == 9
+    @test n_iter == 3
   end
 end
