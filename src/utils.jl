@@ -758,7 +758,7 @@ julia> loss() = rand();
 julia> trigger = Flux.patience(() -> loss() < 1, 3);
 
 julia> Flux.@epochs 10 begin
-       trigger() && break
+         trigger() && break
        end
 [ Info: Epoch 1
 [ Info: Epoch 2
@@ -766,8 +766,8 @@ julia> Flux.@epochs 10 begin
 ```
 """
 function patience(predicate, wait)
-  on_trigger = let count = 0
-    (args...; kwargs...) -> begin
+  let count = 0
+    function on_trigger(args...; kwargs...)
       count = predicate(args...; kwargs...) ? count + 1 : 0
 
       return count >= wait
@@ -788,13 +788,13 @@ The count is reset when `distance(best_score, f(...)) > min_dist`.
 # Examples
 ```jldoctest
 julia> loss = let l = 0
-       () -> l += 1
+         () -> l += 1
        end; # pseudo loss function that returns increasing values
 
 julia> es = Flux.early_stopping(loss, 3);
 
 julia> Flux.@epochs 10 begin
-       es() && break
+         es() && break
        end
 [ Info: Epoch 1
 [ Info: Epoch 2
@@ -828,13 +828,13 @@ The count is reset when `abs(distance(last_score, f(...))) > min_dist`.
 # Examples
 ```jldoctest
 julia> f = let v = 10
-       () -> v = v / abs(v) - v
+         () -> v = v / abs(v) - v
        end; # -9, 8, -7, 6, ...
 
 julia> trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
 
 julia> Flux.@epochs 10 begin
-       trigger() && break
+         trigger() && break
        end
 [ Info: Epoch 1
 [ Info: Epoch 2

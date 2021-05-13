@@ -121,10 +121,10 @@ end
 
 # create an early stopping trigger
 # returns true when the loss increases for two consecutive steps
-es = Flux.early_stopping(loss, 2; init_score=9)
+es = early_stopping(loss, 2; init_score = 9)
 
 # this will stop at the 6th (4 decreasing + 2 increasing calls) epoch
-Flux.@epochs 10 begin
+@epochs 10 begin
   es() && break
 end
 ```
@@ -138,33 +138,33 @@ acc = let v = 0
 end
 
 # create an early stopping trigger for accuracy
-es = Flux.early_stopping(acc, 3; delta = (best_score, score) -> score - best_score)
+es = early_stopping(acc, 3; delta = (best_score, score) -> score - best_score)
 
 # this will iterate until the 10th epoch
-Flux.@epochs 10 begin
+@epochs 10 begin
   es() && break
 end
 ```
 
 `early_stopping` and `plateau` are both built on top of `patience`. You can use `patience` to build your own triggers that use a patient counter. For example, if you want to trigger when the loss is below a threshold for several consecutive iterations:
 ```julia
-threshold(f, thresh, delay) = Flux.patience(delay) do
+threshold(f, thresh, delay) = patience(delay) do
   f() < thresh
 end
 ```
 
 Both `predicate` in `patience` and `f` in `early_stopping` / `plateau` can accept extra arguments. You can pass such extra arguments to `predicate` or `f` through the returned function:
 ```julia
-trigger = Flux.patience((a; b) -> a > b, 3)
+trigger = patience((a; b) -> a > b, 3)
 
 # this will iterate until the 10th epoch
-Flux.@epochs 10 begin
-  trigger(1; b=2) && break
+@epochs 10 begin
+  trigger(1; b = 2) && break
 end
 
 # this will stop at the 3rd epoch
-Flux.@epochs 10 begin
-  trigger(3; b=2) && break
+@epochs 10 begin
+  trigger(3; b = 2) && break
 end
 ```
 
