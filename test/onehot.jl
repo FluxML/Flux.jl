@@ -76,17 +76,13 @@ end
   @testset "Concatenating" begin
     # vector cat
     @test hcat(ov, ov) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
-    @test reduce(hcat, [ov, ov]) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
     @test hcat(ov, ov) isa OneHotMatrix
-    @test reduce(hcat, [ov, ov]) isa OneHotMatrix
     @test vcat(ov, ov) == vcat(collect(ov), collect(ov))
     @test cat(ov, ov; dims = 3) == OneHotArray(cat(ov.indices, ov.indices; dims = 2), 10)
 
     # matrix cat
     @test hcat(om, om) == OneHotMatrix(vcat(om.indices, om.indices), 10)
-    @test reduce(hcat, [om, om]) == OneHotMatrix(vcat(om.indices, om.indices), 10)
     @test hcat(om, om) isa OneHotMatrix
-    @test reduce(hcat, [om, om]) isa OneHotMatrix
     @test vcat(om, om) == vcat(collect(om), collect(om))
     @test cat(om, om; dims = 3) == OneHotArray(cat(om.indices, om.indices; dims = 2), 10)
 
