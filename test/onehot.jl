@@ -88,6 +88,7 @@ end
 
     # array cat
     @test cat(oa, oa; dims = 3) == OneHotArray(cat(oa.indices, oa.indices; dims = 2), 10)
+    @test cat(oa, oa; dims = 3) isa OneHotArray
     @test cat(oa, oa; dims = 1) == cat(collect(oa), collect(oa); dims = 1)
 
     # proper error handling of inconsistent sizes
