@@ -78,10 +78,8 @@ Base.vcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 1)
 # optimized concatenation for matrices and vectors of same parameters
 Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 2}} =
   OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
-Base.reduce(::typeof(hcat), xs::Vector{T}) where T <: OneHotMatrix = T(reduce(vcat, _indices.(xs)))
 Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 1}} =
   OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
-Base.reduce(::typeof(hcat), xs::Vector{OneHotVector{T,L}}) where {T,L} = OneHotArray{T,L,1,Vector{T}}(reduce(vcat, _indices.(xs)))
 
 batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
 
