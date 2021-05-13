@@ -5,8 +5,8 @@ struct OneHotArray{T<:Integer, L, N, var"N+1", I<:Union{T, AbstractArray{T, N}}}
   indices::I
 end
 OneHotArray{T, L, N, I}(indices) where {T, L, N, I} = OneHotArray{T, L, N, N+1, I}(indices)
-OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, T}(indices)
-OneHotArray(indices::AbstractArray{T, N}, L::Integer) where {T, N} = OneHotArray{T, L, N, typeof(indices)}(indices)
+OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, 1, T}(indices)
+OneHotArray(indices::I, L::Integer) where {T, N, I<:AbstractArray{T, N}} = OneHotArray{T, L, N, N+1, I}(indices)
 
 _indices(x::OneHotArray) = x.indices
 _indices(x::Base.ReshapedArray{<: Any, <: Any, <: OneHotArray}) =
@@ -74,6 +74,12 @@ end
 
 Base.hcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 2)
 Base.vcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 1)
+
+# optimized concatenation for matrices and vectors of same parameters
+Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 2}} =
+  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
+Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 1}} =
+  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
 
 batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
 
