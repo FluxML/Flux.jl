@@ -737,3 +737,116 @@ modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true
 isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
+
+"""
+    patience(predicate, wait)
+
+Return a function that internally counts by one when
+`predicate(...) == true`, otherwise the count is reset to zero.
+If the count is greater than or equal to `wait`,
+the function returns `true`, otherwise it returns `false`.
+
+# Examples
+```jldoctest
+julia> loss() = rand();
+
+julia> trigger = Flux.patience(() -> loss() < 1, 3);
+
+julia> Flux.@epochs 10 begin
+         trigger() && break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+```
+"""
+function patience(predicate, wait)
+  let count = 0
+    function on_trigger(args...; kwargs...)
+      count = predicate(args...; kwargs...) ? count + 1 : 0
+
+      return count >= wait
+    end
+  end
+end
+
+"""
+    early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
+
+Return a function that internally counts by one when
+`distance(best_score, f(...)) <= min_dist`, where
+`best_score` is the last seen best value of `f(...)`.
+If the count is greater than or equal to `delay`,
+the function returns `true`, otherwise it returns `false`.
+The count is reset when `distance(best_score, f(...)) > min_dist`.
+
+# Examples
+```jldoctest
+julia> loss = let l = 0
+         () -> l += 1
+       end; # pseudo loss function that returns increasing values
+
+julia> es = Flux.early_stopping(loss, 3);
+
+julia> Flux.@epochs 10 begin
+         es() && break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+```
+"""
+function early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
+  trigger = let best_score = init_score
+    (args...; kwargs...) -> begin
+      score = f(args...; kwargs...)
+      Δ = distance(best_score, score)
+      best_score = Δ < 0 ? best_score : score
+
+      return Δ < min_dist
+    end
+  end
+
+  return patience(trigger, delay)
+end
+
+"""
+    plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
+
+Return a function that internally counts by one when
+`abs(distance(last_score, f(...))) <= min_dist`, where
+`last_score` holds the last value of `f(...)`.
+If the count is greater than or equal to `width`,
+the function returns `true`, otherwise it returns `false`.
+The count is reset when `abs(distance(last_score, f(...))) > min_dist`.
+
+# Examples
+```jldoctest
+julia> f = let v = 10
+         () -> v = v / abs(v) - v
+       end; # -9, 8, -7, 6, ...
+
+julia> trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
+
+julia> Flux.@epochs 10 begin
+         trigger() && break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+[ Info: Epoch 4
+```
+"""
+function plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
+  is_plateau = let last_score = init_score
+    (args...; kwargs...) -> begin
+      score = f(args...; kwargs...)
+      Δ = abs(distance(last_score, score))
+      last_score = score
+
+      return Δ < min_dist
+    end
+  end
+
+  return patience(is_plateau, width)
+end
