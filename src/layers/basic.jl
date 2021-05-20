@@ -24,7 +24,11 @@ true
 """
 struct Chain{T<:Tuple}
   layers::T
-  Chain(xs...) = new{typeof(xs)}(xs)
+
+  function Chain(xs...)
+    layers = filter(!isnothing, xs)
+    return new{typeof(layers)}(layers)
+  end
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
