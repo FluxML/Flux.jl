@@ -1,8 +1,6 @@
 
 for T in [
-    :Chain, :Parallel, :SkipConnection, :Recur,  # container types, as entry points for _big_show
-    :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense,  # others really sent to _layer_show
-    :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
+    :Chain, :Parallel, :SkipConnection, :Recur  # container types
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
     if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
@@ -17,25 +15,39 @@ end
 
 function _big_show(io::IO, obj, indent::Int=0)
   children = trainable(obj)
-  if all(c -> isleaf(c) || _show_leaflike(c), children)
-    return _layer_show(io, obj, indent)
-  end
-  println(io, " "^indent, nameof(typeof(obj)), "(")
-  for (i,c) in enumerate(children)
-    _big_show(io, c, indent+2)
-  end
-  if indent == 0
-    print(io, ")")
-    _big_finale(io, params(obj))
+  if all(_show_leaflike, children)
+    _layer_show(io, obj, indent)
   else
-    println(io, " "^indent, "),")
+    println(io, " "^indent, nameof(typeof(obj)), "(")
+    for c in children
+      _big_show(io, c, indent+2)
+    end
+    if indent == 0
+      print(io, ")")
+      _big_finale(io, params(obj))
+    else
+      println(io, " "^indent, "),")
+    end
   end
 end
 
-_show_leaflike(::Any) = false
-_show_leaflike(::Tuple{Vararg{<:Number}}) = true  # e.g. stride of Conv
+_show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
+_show_leaflike(::Tuple{Vararg{<:Number}}) = true         # e.g. stride of Conv
 _show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # e.g. parameters of LSTMcell
-_show_leaflike(::Diagonal) = true  # appears inside LayerNorm, but let's collapse that.
+_show_leaflike(::Diagonal) = true                        # appears inside LayerNorm
+
+for T in [
+    :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense,
+    :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
+  ]
+  @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
+    if !get(io, :compact, false)
+      _layer_show(io, x)
+    else
+      show(io, x)
+    end
+  end
+end
 
 function _layer_show(io::IO, layer, indent::Int=0)
   str = sprint(show, layer, context=io)
@@ -49,10 +61,11 @@ function _layer_show(io::IO, layer, indent::Int=0)
 end
 
 function _big_finale(io::IO, ps)
-  length(ps) < 3 && return
-  pars = underscorise(sum(length, ps))
-  bytes = Base.format_bytes(sum(sizeof, ps))
-  printstyled(io, " "^19, "# Total: ", length(ps), " arrays, ", pars, " parameters, ", bytes; color=:light_black)
+  if length(ps) > 2
+    pars = underscorise(sum(length, ps))
+    bytes = Base.format_bytes(sum(sizeof, ps))
+    printstyled(io, " "^19, "# Total: ", length(ps), " arrays, ", pars, " parameters, ", bytes; color=:light_black)
+  end
 end
 
 # utility functions
@@ -71,8 +84,9 @@ function _nan_show(io::IO, x)
 end
 
 _any(f, xs::AbstractArray{<:Number}) = any(f, xs)
-_any(f, xs::Union{Tuple,NamedTuple,Zygote.Params}) = any(x -> _any(f, x), xs)
+# _any(f, xs::Union{Tuple,NamedTuple,Zygote.Params}) = any(x -> _any(f, x), xs)
+_any(f, xs) = any(x -> _any(f, x), xs)
 _any(f, x::Number) = f(x)
-_any(f, x) = false
+# _any(f, x) = false
 
 _all(f, xs) = !_any(!f, xs)
