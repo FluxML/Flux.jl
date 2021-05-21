@@ -20,7 +20,7 @@ OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
 function _show_elements(x::OneHotArray)
   xbool = convert(Array{Bool}, cpu(x))
-  xrepr = join(split(repr(MIME("text/plain"), xbool; context=:limit => true), "\n")[2:end], "\n")
+  xrepr = join(split(repr(MIME("text/plain"), xbool; context= :limit => true), "\n")[2:end], "\n")
 
   return xrepr
 end
