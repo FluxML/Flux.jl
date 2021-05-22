@@ -146,7 +146,7 @@ function DataLoader(f,
   # partial = false -> drop the last iteration of iterator
   DataLoader(f, ch, t, fs, iterator, batchsize, batchdim, partial)
 end
-DataLoader(args::NTuple{N,AbstractArray}; kwargs...) = DataLoader(x -> identity.(x), args; kwargs...)
+DataLoader(args::NTuple{N,AbstractArray}; kwargs...) where N = DataLoader(x -> identity.(x), args; kwargs...)
 
 function DataLoader(args;
                     batchsize = 1, shuffle = true,
