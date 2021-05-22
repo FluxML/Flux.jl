@@ -91,6 +91,7 @@ function DataLoader(f,
       else
         close(ch)
       end
+    end
   end)
   schedule(t)
   DataLoader(f, ch, args, iterator, batchsize, batchdim, partial)
