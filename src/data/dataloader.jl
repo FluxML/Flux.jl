@@ -55,7 +55,7 @@ Usage example:
         @assert size(datum.labels) == (2,)
     end
 """
-struct DataLoader{P, F, T, D,S,L}
+struct DataLoader{P, F, D,S,L}
   f::P
   channel::F
   # task::T
@@ -144,7 +144,7 @@ function DataLoader(f,
   end)
   schedule(t)
   # partial = false -> drop the last iteration of iterator
-  DataLoader(f, ch, t, fs, iterator, batchsize, batchdim, partial)
+  DataLoader(f, ch, fs, iterator, batchsize, batchdim, partial)
 end
 DataLoader(args::NTuple{N,AbstractArray}; kwargs...) where N = DataLoader(x -> identity.(x), args; kwargs...)
 
