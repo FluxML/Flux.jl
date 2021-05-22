@@ -15,7 +15,7 @@ and corresponding NNlib's methods are:
 
 # Examples
 
-```juliarepl
+```jldoctest
 julia> m = Upsample(scale = (2, 3))
 Upsample(:nearest, scale = (2, 3))
 
@@ -27,6 +27,7 @@ Upsample(:bilinear, size = (4, 5))
 
 julia> m(ones(2, 2, 1, 1)) |> size
 (4, 5, 1, 1)
+```
 """
 struct Upsample{mode, S, T}
   scale::S

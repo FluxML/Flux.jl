@@ -17,6 +17,8 @@
 * New [`Parallel` layer](https://github.com/FluxML/Flux.jl/pull/1462) adds inception module-like building blocks.
 * Feature additions and bug fixes for BatchNorm, LayerNorm, InstanceNorm, and GroupNorm [normalization layers](https://github.com/FluxML/Flux.jl/pull/1397)
 * Added [Upsample and PixelShuffle layers](https://github.com/FluxML/Flux.jl/pull/1468)
+* End of deprecation cycle: loss functions cannot be accessed directly from `Flux` anymore, they live in the `Flux.Losses` module. 
+ All loss functions perform `mean` aggregation by default. 
 
 ## v0.11.2
 

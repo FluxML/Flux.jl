@@ -168,7 +168,7 @@ end
     end
 
     @testset "Dense ID mapping" begin
-        l = Dense(3,3, initW = identity_init)
+        l = Dense(3,3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
@@ -342,7 +342,7 @@ end
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
     @test l1.W == l2.W
     @test l1.b == l2.b
-    @test typeof(l1.b) === typeof(l2.b)
+    @test_skip typeof(l1.b) === typeof(l2.b)
   end
 
   @testset "loadparams!" begin
@@ -360,9 +360,9 @@ end
     end
 
     @testset "$b1 to $b2" for (b1, b2, be) in (
-      (Flux.zeros, ones, ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
+      (Flux.zeros, Flux.ones, Flux.ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+      (Flux.ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+      (nobias, Flux.ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
     )
       m1 = dm(b1)
       m2 = dm(b2)
@@ -392,4 +392,106 @@ end
   @test c[1].testing
   trainmode!(c)
   @test !c[1].testing
+end
+
+@testset "modules" begin
+  m1 = Conv((2,3), 4=>5; pad=6, stride=7)
+  m2 = LayerNorm(8)
+  m3 = m2.diag
+  m4 = SkipConnection(m1, +)
+  m5 =  Chain(m4, m2)
+  modules = Flux.modules(m5)
+  # Depth-first descent
+  @test length(modules) == 5
+  @test modules[1] === m5
+  @test modules[2] === m4
+  @test modules[3] === m1
+  @test modules[4] === m2
+  @test modules[5] === m3
+
+  modules = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  @test length(modules) == 5
+
+  modules = Flux.modules(Chain(SkipConnection(
+                                  Conv((2,3), 4=>5; pad=6, stride=7),
+                                  +), 
+                                LayerNorm(8)))
+  @test length(modules) == 5
+end
+
+@testset "Patience triggers" begin
+  @testset "patience" begin
+    trigger = Flux.patience(() -> true, 3)
+
+    @test trigger() == false
+    @test trigger() == false
+    @test trigger() == true
+
+    v = [false, true, false, true, true, true]
+    trigger = let v = v
+      Flux.patience(i -> v[i], 3)
+    end
+
+    n_iter = 0
+    for i in 1:length(v)
+      trigger(i) && break
+      n_iter += 1
+    end
+
+    @test n_iter == 5
+  end
+
+  @testset "early stopping" begin
+    @testset "args & kwargs" begin
+      es = Flux.early_stopping((x; y = 1) -> x + y, 10; min_dist=3)
+  
+      n_iter = 0
+      while n_iter < 99
+        es(-n_iter; y=-n_iter) && break
+        n_iter += 1
+      end
+  
+      @test n_iter == 9
+    end
+  
+    @testset "distance" begin
+      es = Flux.early_stopping(identity, 10; distance=(best_score, score) -> score - best_score)
+
+      n_iter = 0
+      while n_iter < 99
+        es(n_iter) && break
+        n_iter += 1
+      end
+
+      @test n_iter == 99
+    end
+  
+    @testset "init_score" begin
+      es = Flux.early_stopping(identity, 10; init_score=10)
+
+      n_iter = 0
+      while n_iter < 99
+        es(n_iter) && break
+        n_iter += 1
+      end
+
+      @test n_iter == 10
+    end
+  end
+
+  @testset "plateau" begin
+    f = let v = 10
+      () -> v = v / abs(v) - v
+    end
+
+    trigger = Flux.plateau(f, 3, init_score=10, min_dist=18)
+
+    n_iter = 0
+    while n_iter < 99
+      trigger() && break
+      n_iter += 1
+    end
+
+    @test n_iter == 3
+  end
 end

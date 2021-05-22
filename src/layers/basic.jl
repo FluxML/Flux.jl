@@ -101,7 +101,7 @@ julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5, 2, tanh; bias=false)
 
 julia> d1(ones(5))
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  0.9999092042625951
  0.9999092042625951
 
@@ -142,13 +142,13 @@ end
 
 @functor Dense
 
-function (a::Dense)(x::AbstractArray)
+function (a::Dense)(x::AbstractVecOrMat)
   W, b, σ = a.weight, a.bias, a.σ
-  sz = size(x)
-  y = reshape(x, sz[1], :)  # reshape to handle dims > 1 as batch dimensions
-  z = σ.(W*y .+ b)
-  return reshape(z, :, sz[2:end]...)
+  return σ.(W*x .+ b)
 end
+
+(a::Dense)(x::AbstractArray) = 
+  reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
@@ -296,6 +296,7 @@ If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of 
 with `B` a Bilinear layer.
 
 If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
+
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
 
@@ -304,7 +305,6 @@ By default the bias vector is `zeros(Float32, out)`, option `bias=false` will sw
 trainable bias. Either of these may be provided explicitly.
 
 # Examples
-
 ```jldoctest
 julia> x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
 
