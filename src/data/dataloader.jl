@@ -117,7 +117,7 @@ function DataLoader(f,
                     args::NTuple{N,AbstractArray};
                     batchsize = 1, shuffle = true,
                     partial = true, batchdim = ndims,
-                    buffersize = 10) where N
+                    buffersize = 10, epochs = 1) where N
 
   feats = first(args)
   bd = batchdim(feats)
@@ -126,8 +126,8 @@ function DataLoader(f,
   ix = shuffle(1:dataset_size)
   fs = map(feat -> getindex(feat,
                  ntuple(i -> i == batchdim(feat) ? ix : Colon(), length(size(feat)))...), args)
-  iterator = Iterators.partition(ix, batchsize)
-  ch = Channel{typeof(args)}(buffersize)
+  iterator = Iterators.flatten(Iterators.repeated(Iterators.partition(ix, batchsize), epochs))
+  ch = Channel{Any}(buffersize)
   t = Task(() -> begin
     for i in iterator
       # sleep(1)
@@ -142,6 +142,7 @@ function DataLoader(f,
       end
     end
   end)
+  bind(ch, t)
   schedule(t)
   # partial = false -> drop the last iteration of iterator
   DataLoader(f, ch, fs, iterator, batchsize, batchdim, partial)
