@@ -174,11 +174,11 @@ Now, let's verify the predictions:
 ```
 julia> predict(x_test)
 1×5 Array{Float64,2}:
- 105.306  121.2  137.095  152.989  168.883
+ 25.8442  29.8194  33.7946  37.7698  41.745
 
 julia> y_test
 1×5 Array{Int64,2}:
- 106  122  138  154  170
+ 26  30  34  38  42
 ```
 
 The predictions are good. Here's how we got there. 
