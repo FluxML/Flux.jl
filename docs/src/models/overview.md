@@ -32,7 +32,7 @@ Use the `actual` function to build sets of data for training and verification:
 julia> x_train, x_test = hcat(0:5...), hcat(6:10...)
 ([0 1 … 4 5], [6 7 … 9 10])
 
-julia> y_train, y_test = actual.(x_train), actual.(y_train)
+julia> y_train, y_test = actual.(x_train), actual.(x_test)
 ([2 6 … 18 22], [26 30 … 38 42])
 ```
 
@@ -172,13 +172,13 @@ After 200 training steps, the loss went down, and the parameters are getting clo
 Now, let's verify the predictions:
 
 ```
-julia> predict(y_test)
+julia> predict(x_test)
 1×5 Array{Float64,2}:
- 105.306  121.2  137.095  152.989  168.883
+ 25.8442  29.8194  33.7946  37.7698  41.745
 
-julia> actual.(y_test)
+julia> y_test
 1×5 Array{Int64,2}:
- 106  122  138  154  170
+ 26  30  34  38  42
 ```
 
 The predictions are good. Here's how we got there. 
