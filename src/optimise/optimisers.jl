@@ -569,7 +569,7 @@ for more general scheduling techniques.
 
 # Examples
 
-`InvDecay` is tipically composed  with other optimizers 
+`InvDecay` is typically composed  with other optimizers 
 as the last transformation of the gradient:
 
 ```julia
