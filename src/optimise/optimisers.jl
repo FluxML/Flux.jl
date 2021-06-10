@@ -491,7 +491,7 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(η, β), WeightDecay(decay))
+  Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
 
 """
     AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999))
@@ -627,12 +627,18 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-    WeightDecay(wd = 0)
+    WeightDecay(λ = 0)
 
-Decay weights by `wd`.
+Decay weights by ``λ``. 
+Tipically composed  with other optimizers as the first transformation to the gradient,
+making it equivalent to adding ``L_2`` regularization 
+with coefficient  ``λ`` to the loss.
 
-# Parameters
-- Weight decay (`wd`)
+# Examples
+
+```julia
+opt = Optimiser(WeigthDecay(1f-4), ADAM())
+```
 """
 mutable struct WeightDecay <: AbstractOptimiser
   wd::Real
