@@ -491,7 +491,7 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(η, β), WeightDecay(decay))
+  Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
 
 """
     AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999))
@@ -564,9 +564,18 @@ Apply inverse time decay to an optimiser, so that the effective step size at
 iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size.
 The wrapped optimiser's step size is not modified.
 
+See also the [Scheduling Optimisers](@ref) section of the docs
+for more general scheduling techniques.
+
 # Examples
+
+`InvDecay` is typically composed  with other optimizers 
+as the last transformation of the gradient:
+
 ```julia
-Optimiser(InvDecay(..), Opt(..))
+# Inverse decay of the learning rate
+# with starting value 0.001 and decay coefficient 0.01.
+opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 ```
 """
 mutable struct InvDecay <: AbstractOptimiser
@@ -598,12 +607,16 @@ a minimum of `clip`.
                 two decay operations.
 - `clip`: Minimum value of learning rate.
 
-# Examples
-To apply exponential decay to an optimiser:
-```julia
-Optimiser(ExpDecay(..), Opt(..))
 
-opt = Optimiser(ExpDecay(), ADAM())
+See also the [Scheduling Optimisers](@ref) section of the docs
+for more general scheduling techniques.
+
+# Examples
+
+`ExpDecay` is typically composed  with other optimizers 
+as the last transformation of the gradient:
+```julia
+opt = Optimiser(ADAM(), ExpDecay())
 ```
 """
 mutable struct ExpDecay <: AbstractOptimiser
@@ -614,7 +627,8 @@ mutable struct ExpDecay <: AbstractOptimiser
   current::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = 
+  ExpDecay(opt, decay, decay_step, clip, IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
@@ -627,12 +641,18 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-    WeightDecay(wd = 0)
+    WeightDecay(λ = 0)
 
-Decay weights by `wd`.
+Decay weights by ``λ``. 
+Typically composed  with other optimizers as the first transformation to the gradient,
+making it equivalent to adding ``L_2`` regularization 
+with coefficient  ``λ`` to the loss.
 
-# Parameters
-- Weight decay (`wd`)
+# Examples
+
+```julia
+opt = Optimiser(WeigthDecay(1f-4), ADAM())
+```
 """
 mutable struct WeightDecay <: AbstractOptimiser
   wd::Real
