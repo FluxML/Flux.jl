@@ -564,9 +564,15 @@ Apply inverse time decay to an optimiser, so that the effective step size at
 iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size.
 The wrapped optimiser's step size is not modified.
 
+See also the [Scheduling Optimisers](@ref) section of the docs
+for more general scheduling techniques.
+
 # Examples
+
 ```julia
-Optimiser(InvDecay(..), Opt(..))
+# Inverse decay of the learning rate
+# with starting value 0.001 and decay coefficient 0.01.
+opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 ```
 """
 mutable struct InvDecay <: AbstractOptimiser
