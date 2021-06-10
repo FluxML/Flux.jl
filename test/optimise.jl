@@ -151,12 +151,21 @@ end
   Flux.update!(opt, w, g)
   @test w ≈ wold .- 0.1 
 
+  w = randn(3)
+  wold = copy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> w[1], θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w[1] ≈ wold[1] .- 0.1
+  @test w[2:3] ≈ wold[2:3] 
+
   ## Issue #1550
   w = randn(10,10)
   wold = copy(w)
   θ = Flux.params([w])
   gs = gradient(() -> sum(w), θ)
   opt = Descent(0.1)
-  Flux.update!(opt, w, g)
+  Flux.update!(opt, θ, gs)
   @test w ≈ wold .- 0.1 
 end
