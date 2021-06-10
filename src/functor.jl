@@ -56,7 +56,7 @@ end
 
 @adjoint function params(m...)
   params_pullback(Δ::Nothing) = nothing
-  params_pullback(Δ) = (println(Δ); error("derivations through params not supported yet"))
+  params_pullback(Δ) = (println(Δ); error("derivation through `params` not supported yet"))
   params(m...), params_pullback
 end
 
