@@ -160,7 +160,7 @@ end
   @test w[1] ≈ wold[1] .- 0.1
   @test w[2:3] ≈ wold[2:3] 
 
-  ## Issue #1550
+  ## Issue #1510
   w = randn(10,10)
   wold = copy(w)
   θ = Flux.params([w])
