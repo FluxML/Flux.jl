@@ -95,6 +95,12 @@ version = "3.30.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
+[[ComponentArrays]]
+deps = ["ArrayInterface", "LinearAlgebra", "Requires"]
+git-tree-sha1 = "76495e7a7e47abc3771d70c782d5f6e66f114d36"
+uuid = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+version = "0.10.5"
+
 [[DataAPI]]
 git-tree-sha1 = "dfb3b7e89e395be1e25c2ad6d7690dc29cc53b1d"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"

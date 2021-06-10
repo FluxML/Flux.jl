@@ -1,7 +1,7 @@
 using Flux.Optimise
 using Flux.Optimise: runall
 using Flux: Params, gradient
-import FillArrays
+import FillArrays, ComponentArrays
 using Test
 using Random
 
@@ -143,7 +143,7 @@ end
   @test norm(w̄_norm) <= 1
 end
 
-@testset "handle Fills from Zygote" begin
+@testset "update!: handle Fills from Zygote" begin
   w = randn(10,10)
   wold = copy(w)
   g = FillArrays.Ones(size(w))
@@ -168,4 +168,17 @@ end
   opt = Descent(0.1)
   Flux.update!(opt, θ, gs)
   @test w ≈ wold .- 0.1 
+end
+
+@testset "update!: handle ComponentArrays" begin
+  w = ComponentArrays.ComponentArray(a=1.0, b=[2, 1, 4], c=(a=2, b=[1, 2]))
+  wold = deepcopy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> sum(w.a) + sum(w.c.b), θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w.a ≈ wold.a .- 0.1
+  @test w.b ≈ wold.b
+  @test w.c.b ≈ wold.c.b .- 0.1
+  @test w.c.a ≈ wold.c.a
 end
