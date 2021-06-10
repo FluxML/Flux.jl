@@ -613,7 +613,7 @@ for more general scheduling techniques.
 
 # Examples
 
-`ExpDecay` is tipically composed  with other optimizers 
+`ExpDecay` is typically composed  with other optimizers 
 as the last transformation of the gradient:
 ```julia
 opt = Optimiser(ADAM(), ExpDecay())
