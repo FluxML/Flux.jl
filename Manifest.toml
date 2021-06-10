@@ -95,12 +95,6 @@ version = "3.30.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
-[[ComponentArrays]]
-deps = ["ArrayInterface", "LinearAlgebra", "Requires"]
-git-tree-sha1 = "76495e7a7e47abc3771d70c782d5f6e66f114d36"
-uuid = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
-version = "0.10.5"
-
 [[DataAPI]]
 git-tree-sha1 = "dfb3b7e89e395be1e25c2ad6d7690dc29cc53b1d"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
@@ -302,9 +296,9 @@ version = "0.7.21"
 
 [[NNlibCUDA]]
 deps = ["CUDA", "LinearAlgebra", "NNlib", "Random", "Statistics"]
-git-tree-sha1 = "86d4d75e1091fe89d56422044be0dcc83766d2b4"
+git-tree-sha1 = "bd8b29bf75be7a6c2b288b4b9a4e8903d0376ac1"
 uuid = "a00861dc-f156-4864-bf3c-e6376f28a68d"
-version = "0.1.2"
+version = "0.1.3"
 
 [[NaNMath]]
 git-tree-sha1 = "bfe47e760d60b82b66b61d2d44128b62e3a369fb"
