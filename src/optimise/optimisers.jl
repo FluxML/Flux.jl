@@ -644,7 +644,7 @@ end
     WeightDecay(λ = 0)
 
 Decay weights by ``λ``. 
-Tipically composed  with other optimizers as the first transformation to the gradient,
+Typically composed  with other optimizers as the first transformation to the gradient,
 making it equivalent to adding ``L_2`` regularization 
 with coefficient  ``λ`` to the loss.
 
