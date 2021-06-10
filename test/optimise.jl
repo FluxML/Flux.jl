@@ -181,4 +181,12 @@ end
   @test w.b ≈ wold.b
   @test w.c.b ≈ wold.c.b .- 0.1
   @test w.c.a ≈ wold.c.a
+
+  w = ComponentArrays.ComponentArray(a=1.0, b=[2, 1, 4], c=(a=2, b=[1, 2]))
+  wold = deepcopy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> sum(w), θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w ≈ wold .- 0.1
 end
