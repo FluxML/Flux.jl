@@ -569,6 +569,9 @@ for more general scheduling techniques.
 
 # Examples
 
+`InvDecay` is tipically composed  with other optimizers 
+as the last transformation of the gradient:
+
 ```julia
 # Inverse decay of the learning rate
 # with starting value 0.001 and decay coefficient 0.01.
@@ -604,12 +607,16 @@ a minimum of `clip`.
                 two decay operations.
 - `clip`: Minimum value of learning rate.
 
-# Examples
-To apply exponential decay to an optimiser:
-```julia
-Optimiser(ExpDecay(..), Opt(..))
 
-opt = Optimiser(ExpDecay(), ADAM())
+See also the [Scheduling Optimisers](@ref) section of the docs
+for more general scheduling techniques.
+
+# Examples
+
+`ExpDecay` is tipically composed  with other optimizers 
+as the last transformation of the gradient:
+```julia
+opt = Optimiser(ADAM(), ExpDecay())
 ```
 """
 mutable struct ExpDecay <: AbstractOptimiser
@@ -620,7 +627,8 @@ mutable struct ExpDecay <: AbstractOptimiser
   current::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = 
+  ExpDecay(opt, decay, decay_step, clip, IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
