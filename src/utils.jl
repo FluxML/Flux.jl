@@ -610,12 +610,15 @@ end
 
 function _restructure(m, xs)
   i = 0
-  fmap(m) do x
+  m̄ = fmap(m) do x
     x isa AbstractArray || return x
     x = reshape(xs[i.+(1:length(x))], size(x))
     i += length(x)
     return x
   end
+
+  length(xs) == i || @warn "Expected $(i) params, got $(length(xs))"
+  return m̄
 end
 
 @adjoint function _restructure(m, xs)
