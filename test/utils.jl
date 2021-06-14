@@ -378,6 +378,15 @@ end
       p, re = destructure(m)
       testdense(re(p), bt)
     end
+
+    @testset "restructure in gradient" begin
+      x = rand(Float32, 3, 1)
+      m = dm(zeros)
+      ∇m = gradient(m -> sum(m(x)), m)[1]
+      p, re = destructure(m)
+      ∇p = gradient(θ -> sum(re(θ)(x)), p)[1]
+      @test ∇p ≈ destructure(∇m)[1]
+    end
   end
 end
 
