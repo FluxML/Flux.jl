@@ -608,18 +608,18 @@ end
 
 # Flattening models to weight vectors, and back
 
-function _restructure(m, xs)
+function _restructure(m, xs; cache = IdDict())
   i = 0
   fmap(m) do x
-    x isa AbstractArray || return x
+    x isa AbstractArray || return cache[x]
     x = reshape(xs[i.+(1:length(x))], size(x))
     i += length(x)
     return x
   end
 end
 
-@adjoint function _restructure(m, xs)
-  _restructure(m, xs), dm -> (nothing,destructure(dm)[1])
+@adjoint function _restructure(m, xs; cache = IdDict())
+  _restructure(m, xs, cache = cache), dm -> (nothing,destructure(dm, cache = cache)[1])
 end
 
 """
@@ -643,13 +643,13 @@ modifications to the weight vector (for example, with a hypernetwork).
     julia> re(θ .* 2)
     Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
 """
-function destructure(m)
+function destructure(m; cache = IdDict())
   xs = Zygote.Buffer([])
   fmap(m) do x
-    x isa AbstractArray && push!(xs, x)
+    x isa AbstractArray ? push!(xs, x) : (cache[x] = x)
     return x
   end
-  return vcat(vec.(copy(xs))...), p -> _restructure(m, p)
+  return vcat(vec.(copy(xs))...), p -> _restructure(m, p, cache = cache)
 end
 
 # Other
