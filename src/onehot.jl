@@ -87,6 +87,8 @@ Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(adapt(T
 
 Base.BroadcastStyle(::Type{<:OneHotArray{<: Any, <: Any, <: Any, N, <: CuArray}}) where N = CUDA.CuArrayStyle{N}()
 
+Base.map(f, x::OneHotLike) = Base.broadcast(f, x)
+
 Base.argmax(x::OneHotLike; dims = Colon()) =
   (_isonehot(x) && dims == 1) ?
     reshape(CartesianIndex.(_indices(x), CartesianIndices(_indices(x))), 1, size(_indices(x))...) :

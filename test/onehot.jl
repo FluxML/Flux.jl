@@ -127,4 +127,9 @@ end
     @test argmax(oa; dims = 1) == argmax(convert(Array{Bool}, oa); dims = 1)
     @test argmax(oa; dims = 3) == argmax(convert(Array{Bool}, oa); dims = 3)
   end
+
+  @testset "Forward map to broadcast" begin
+    @test map(identity, oa) == oa
+    @test map(x -> 2 * x, oa) == 2 .* oa
+  end
 end
