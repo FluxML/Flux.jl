@@ -73,4 +73,14 @@ end
     Q_cpu = Q_gpu |> cpu
     @test Q_cpu == cholesky(eltype(Q_gpu).(M))
   end
+
+  @testset "isbits array types" begin
+    struct SimpleBits
+      field::Int32
+    end
+    
+    @test gpu((;a=ones(1))).a isa CuVector{Float32}
+    @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
+    @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
+  end
 end
