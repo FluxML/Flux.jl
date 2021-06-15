@@ -616,13 +616,18 @@ function _restructure(m, xs)
     i += length(x)
     return x
   end
-
   length(xs) == i || @warn "Expected $(i) params, got $(length(xs))"
   return m̄
 end
 
 @adjoint function _restructure(m, xs)
-  _restructure(m, xs), dm -> (nothing,destructure(dm)[1])
+  m̄, numel = _restructure(m, xs), length(xs)
+  function _restructure_pullback(dm)
+    xs′ = destructure(dm)[1]
+    numel == length(xs′) || @warn "Expected $(numel) params, got $(length(xs′))"
+    return (nothing, xs′)
+  end
+  return m̄, _restructure_pullback
 end
 
 """
