@@ -187,19 +187,19 @@ function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
   return A[:, onecold(B)]
 end
-for math_op in [:Adjoint, :Transpose]
+for wrapper in [:Adjoint, :Transpose]
   @eval begin
-    function Base.:*(A::$math_op{T1,<:AbstractArray{T,2}}, b::OneHotVector) where {T1,T}
-      if size(A, 2) != b.of
-        throw(DimensionMismatch("Second element of Adjoint matrix size $(size(A)) must correspond with OneHotVector size $(size(b))"))
-      end
+    function Base.:*(A::$wrapper{<:Any, <:AbstractMatrix}, b::OneHotVector{<:Any, L}) where L
+      size(A, 2) != L ||
+        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+
       return A[:, b.ix]
     end
 
-    function Base.:*(A::$math_op{T1,<:AbstractArray{T,1}}, b::OneHotVector) where {T1<:Number,T}
-      if size(A, 2) != b.of
-        throw(DimensionMismatch("Second element of Adjoint matrix size $(size(A)) must correspond with OneHotVector size $(size(b))"))
-      end
+    function Base.:*(A::$wrapper{<:Number, <:AbstractVector}, b::OneHotVector{<:Any, L}) where L
+      size(A, 2) != L ||
+        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+
       return A[b.ix]
     end
   end
