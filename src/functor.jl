@@ -66,7 +66,10 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-gpu(x) = use_cuda[] ? fmap(CUDA.cu, x) : x
+_isbitsarray(::AbstractArray{<:Number}) = true
+_isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
+_isbitsarray(x) = false
+gpu(x) = use_cuda[] ? fmap(CUDA.cu, x; exclude = _isbitsarray) : x
 
 # Precision
 
