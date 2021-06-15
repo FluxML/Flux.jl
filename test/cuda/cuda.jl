@@ -40,7 +40,7 @@ end
 
 @testset "onehot gpu" begin
   y = Flux.onehotbatch(ones(3), 1:2) |> gpu;
-  @test (show("text/plain", y); true)
+  @test (repr("text/plain", y); true)
 end
 
 @testset "onecold gpu" begin
