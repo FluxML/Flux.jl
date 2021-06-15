@@ -46,6 +46,12 @@ end
   @test Flux.onecold(y, l) == ['a', 'a', 'a']
 end
 
+@testset "onehot forward map to broadcast" begin
+  oa = OneHotArray(rand(1:10, 5, 5), 10) |> gpu
+  @test map(identity, oa) == oa
+  @test map(x -> 2 * x, oa) == 2 .* oa
+end
+
 @testset "restructure gpu" begin
   dudt = Dense(1,1) |> gpu
   p,re = Flux.destructure(dudt)
