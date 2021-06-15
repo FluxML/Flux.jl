@@ -193,14 +193,14 @@ for wrapper in [:Adjoint, :Transpose]
       size(A, 2) == L ||
         throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
 
-      return A[:, b.ix]
+      return A[:, onecold(b)]
     end
 
     function Base.:*(A::$wrapper{<:Number, <:AbstractVector{T}}, b::OneHotVector{<:Any, L}) where {L, T}
       size(A, 2) == L ||
         throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
 
-      return A[b.ix]
+      return A[onecold(b)]
     end
   end
 end
