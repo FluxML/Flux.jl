@@ -28,26 +28,26 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(x, p; dims=:, active::Bool=true)
+function dropout(rng::AbstractRNG, x, p; dims=:, active::Bool=true)
   active || return x
-  y = dropout_mask(x, p, dims=dims)
+  y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
 
-@adjoint function dropout(x, p; dims=:, active::Bool=true)
+@adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(x, p, dims=dims)
-  return x .* y, Δ -> (Δ .* y, nothing)
+  y = dropout_mask(rng, x, p, dims=dims)
+  return x .* y, Δ -> (nothing, Δ .* y, nothing)
 end
 
-function dropout_mask(x, p; dims=:)
-  y = rand!(similar(x, _dropout_shape(x, dims)))
+function dropout_mask(rng::AbstractRNG, x, p; dims=:)
+  y = rand!(rng, similar(x, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
   return y
 end
 
 """
-    Dropout(p; dims=:)
+    Dropout([rng = GLOBAL_RNG], p; dims=:)
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
@@ -60,20 +60,26 @@ Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 mutable struct Dropout{F,D}
   p::F
   dims::D
+  rng::AbstractRNG
   active::Union{Bool, Nothing}
 end
 
 function Dropout(p; dims=:)
   @assert 0 ≤ p ≤ 1
-  Dropout(p, dims, nothing)
+  Dropout(Random.GLOBAL_RNG, p; dims)
+end
+
+function Dropout(rng, p; dims = :)
+  @assert 0 ≤ p ≤ 1
+  Dropout(p, dims, rng, nothing)
 end
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims=a.dims, active=true)
+  return dropout(a.rng, x, a.p; dims=a.dims, active=true)
 end
 
-testmode!(m::Dropout, mode=true) =
+testmode!(m::Dropout, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, d::Dropout)
