@@ -1,3 +1,5 @@
+using Random: GLOBAL_RNG
+
 istraining() = false
 
 @adjoint istraining() = true, _ -> nothing
@@ -10,7 +12,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout(x, p; dims=:, active=true)
+    dropout([rng = GLOBAL_RNG], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -28,15 +30,19 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(rng::AbstractRNG, x, p; dims=:, active::Bool=true)
+function dropout(rng::AbstractRNG, x, p; dims = :, active::Bool = true)
   active || return x
   y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
 
-@adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
+function dropout(x, p; dims = :, active::Bool = true)
+  dropout(GLOBAL_RNG, x, p, dims = dims, active = active)
+end
+
+@adjoint function dropout(rng, x, p; dims = :, active::Bool = true)
   active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(rng, x, p, dims=dims)
+  y = dropout_mask(rng, x, p, dims = dims)
   return x .* y, Δ -> (nothing, Δ .* y, nothing)
 end
 
@@ -66,7 +72,7 @@ end
 
 function Dropout(p; dims=:)
   @assert 0 ≤ p ≤ 1
-  Dropout(Random.GLOBAL_RNG, p; dims)
+  Dropout(GLOBAL_RNG, p; dims)
 end
 
 function Dropout(rng, p; dims = :)
