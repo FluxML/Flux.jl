@@ -1,61 +1,60 @@
 using Flux, Test
-using Flux.CuArrays
-using Flux: gpu
+using Flux.CUDA
+using Flux: cpu, gpu
+using Statistics: mean
+using LinearAlgebra: I, cholesky, Cholesky
 
-@info "Testing GPU Support"
+@testset "CUDA" begin
+  x = randn(5, 5)
+  cx = gpu(x)
+  @test cx isa CuArray
 
-@testset "CuArrays" begin
+  @test Flux.onecold(gpu([1.0, 2.0, 3.0])) == 3
 
-CuArrays.allowscalar(false)
+  x = Flux.onehotbatch([1, 2, 3], 1:3)
+  cx = gpu(x)
+  @test cx isa Flux.OneHotMatrix && cx.indices isa CuArray
+  @test (cx .+ 1) isa CuArray
 
-x = randn(5, 5)
-cx = gpu(x)
-@test cx isa CuArray
+  m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
+  cm = gpu(m)
 
-@test Flux.onecold(gpu([1.0, 2.0, 3.0])) == 3
+  @test all(p isa CuArray for p in params(cm))
+  @test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
-x = Flux.onehotbatch([1, 2, 3], 1:3)
-cx = gpu(x)
-@test cx isa Flux.OneHotMatrix && cx.data isa CuArray
-@test (cx .+ 1) isa CuArray
+  xs = rand(5, 5)
+  ys = Flux.onehotbatch(1:5,1:5)
+  @test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
 
-m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
-cm = gpu(m)
+  c = gpu(Conv((2,2),3=>4))
+  x = gpu(rand(10, 10, 3, 2))
+  l = c(gpu(rand(10,10,3,2)))
+  @test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
-@test all(p isa CuArray for p in params(cm))
-@test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
+  c = gpu(CrossCor((2,2),3=>4))
+  x = gpu(rand(10, 10, 3, 2))
+  l = c(gpu(rand(10,10,3,2)))
+  @test gradient(x -> sum(c(x)), x)[1] isa CuArray
 
-x = [1.,2.,3.]
-cx = gpu(x)
-@test Flux.crossentropy(x,x) ≈ Flux.crossentropy(cx,cx)
-@test Flux.crossentropy(x,x, weight=1.0) ≈ Flux.crossentropy(cx,cx, weight=1.0)
-@test Flux.crossentropy(x,x, weight=[1.0;2.0;3.0]) ≈ Flux.crossentropy(cx,cx, weight=cu([1.0;2.0;3.0]))
+end
 
-x = [-1.1491, 0.8619, 0.3127]
-y = [1, 1, 0.]
-@test Flux.binarycrossentropy.(σ.(x),y) ≈ Array(Flux.binarycrossentropy.(cu(σ.(x)),cu(y)))
-@test Flux.logitbinarycrossentropy.(x,y) ≈ Array(Flux.logitbinarycrossentropy.(cu(x),cu(y)))
-
-xs = rand(5, 5)
-ys = Flux.onehotbatch(1:5,1:5)
-@test collect(cu(xs) .+ cu(ys)) ≈ collect(xs .+ ys)
-
-c = gpu(Conv((2,2),3=>4))
-x = gpu(rand(10, 10, 3, 2))
-l = c(gpu(rand(10,10,3,2)))
-@test gradient(x -> sum(c(x)), x)[1] isa CuArray
-
-c = gpu(CrossCor((2,2),3=>4))
-x = gpu(rand(10, 10, 3, 2))
-l = c(gpu(rand(10,10,3,2)))
-@test gradient(x -> sum(c(x)), x)[1] isa CuArray
-
+@testset "onehot gpu" begin
+  y = Flux.onehotbatch(ones(3), 1:2) |> gpu;
+  @test (repr("text/plain", y); true)
 end
 
 @testset "onecold gpu" begin
   y = Flux.onehotbatch(ones(3), 1:10) |> gpu;
+  l = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
   @test Flux.onecold(y) isa CuArray
   @test y[3,:] isa CuArray
+  @test Flux.onecold(y, l) == ['a', 'a', 'a']
+end
+
+@testset "onehot forward map to broadcast" begin
+  oa = OneHotArray(rand(1:10, 5, 5), 10) |> gpu
+  @test all(map(identity, oa) .== oa)
+  @test all(map(x -> 2 * x, oa) .== 2 .* oa)
 end
 
 @testset "restructure gpu" begin
@@ -65,10 +64,23 @@ end
   @test gradient(foo, cu(rand(1)))[1] isa CuArray
 end
 
-if CuArrays.has_cudnn()
-  @info "Testing Flux/CUDNN"
-  include("cudnn.jl")
-  include("curnn.jl")
-else
-  @warn "CUDNN unavailable, not testing GPU DNN support"
+@testset "GPU functors" begin
+  @testset "Cholesky" begin
+    M = 2.0*I(10) |> collect
+    Q = cholesky(M)
+    Q_gpu = Q |> gpu
+    @test Q_gpu isa Cholesky{<:Any,<:CuArray}
+    Q_cpu = Q_gpu |> cpu
+    @test Q_cpu == cholesky(eltype(Q_gpu).(M))
+  end
+
+  @testset "isbits array types" begin
+    struct SimpleBits
+      field::Int32
+    end
+    
+    @test gpu((;a=ones(1))).a isa CuVector{Float32}
+    @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
+    @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
+  end
 end

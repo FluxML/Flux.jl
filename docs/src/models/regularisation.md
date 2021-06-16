@@ -1,36 +1,37 @@
 # Regularisation
 
 Applying regularisation to model parameters is straightforward. We just need to
-apply an appropriate regulariser, such as `norm`, to each model parameter and
+apply an appropriate regulariser to each model parameter and
 add the result to the overall loss.
 
 For example, say we have a simple regression.
 
 ```julia
-using Flux: crossentropy
+using Flux
+using Flux.Losses: logitcrossentropy
 m = Dense(10, 5)
-loss(x, y) = crossentropy(softmax(m(x)), y)
+loss(x, y) = logitcrossentropy(m(x), y)
 ```
 
-We can regularise this by taking the (L2) norm of the parameters, `m.W` and `m.b`.
+We can apply L2 regularisation by taking the squared norm of the parameters , `m.W` and `m.b`.
 
 ```julia
-using LinearAlgebra
-
-penalty() = norm(m.W) + norm(m.b)
-loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()
+penalty() = sum(abs2, m.W) + sum(abs2, m.b)
+loss(x, y) = logitcrossentropy(m(x), y) + penalty()
 ```
 
 When working with layers, Flux provides the `params` function to grab all
-parameters at once. We can easily penalise everything with `sum(norm, params)`.
+parameters at once. We can easily penalise everything with `sum`:
 
 ```julia
-julia> params(m)
+julia> Flux.params(m)
 2-element Array{Any,1}:
  param([0.355408 0.533092; … 0.430459 0.171498])
  param([0.0, 0.0, 0.0, 0.0, 0.0])
 
-julia> sum(norm, params(m))
+julia> sqnorm(x) = sum(abs2, x)
+
+julia> sum(sqnorm, Flux.params(m))
 26.01749952921026
 ```
 
@@ -40,9 +41,11 @@ Here's a larger example with a multi-layer perceptron.
 m = Chain(
   Dense(28^2, 128, relu),
   Dense(128, 32, relu),
-  Dense(32, 10), softmax)
+  Dense(32, 10))
 
-loss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))
+sqnorm(x) = sum(abs2, x)
+
+loss(x, y) = logitcrossentropy(m(x), y) + sum(sqnorm, Flux.params(m))
 
 loss(rand(28^2), rand(10))
 ```
@@ -61,6 +64,10 @@ julia> activations(c, rand(10))
  Float32[0.1501253, 0.073269576]                                 
  Float32[0.5192045, 0.48079553]                                  
 
-julia> sum(norm, ans)
-2.1166067f0
+julia> sum(sqnorm, ans)
+2.0710278f0
+```
+
+```@docs
+Flux.activations
 ```

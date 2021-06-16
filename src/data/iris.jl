@@ -1,19 +1,15 @@
 """
 Fisher's classic iris dataset.
-
 Measurements from 3 different species of iris: setosa, versicolor and
-virginica.  There are 50 examples of each species.
-
-There are 4 measurements for each example: sepal length, sepal width, petal
-length and petal width.  The measurements are in centimeters.
-
+virginica. There are 50 examples of each species.
+There are 4 measurements for each example: sepal length, sepal width,
+petal length and petal width. The measurements are in centimeters.
 The module retrieves the data from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/iris).
-
 """
 module Iris
 
 using DelimitedFiles
-using ..Data: deps, download_and_verify
+using ..Data: deps, download_and_verify, deprecation_message
 
 # Uncomment if the iris.data file is cached to cache.julialang.org.
 const cache_prefix = "https://cache.julialang.org/"
@@ -29,23 +25,18 @@ end
 
 """
     labels()
-
 Get the labels of the iris dataset, a 150 element array of strings listing the
 species of each example.
-
-```jldoctest
-julia> using Flux
-
+```julia
 julia> labels = Flux.Data.Iris.labels();
-
 julia> summary(labels)
 "150-element Array{String,1}"
-
 julia> labels[1]
 "Iris-setosa"
 ```
 """
 function labels()
+    deprecation_message()
     load()
     iris = readdlm(deps("iris.data"), ',')
     Vector{String}(iris[1:end, end])
@@ -53,19 +44,13 @@ end
 
 """
     features()
-
-Get the features of the iris dataset.  This is a 4x150 matrix of Float64
-elements.  It has a row for each feature (sepal length, sepal width,
+Get the features of the iris dataset. This is a 4x150 matrix of Float64
+elements. It has a row for each feature (sepal length, sepal width,
 petal length, petal width) and a column for each example.
-
-```jldoctest
-julia> using Flux
-
+```julia
 julia> features = Flux.Data.Iris.features();
-
 julia> summary(features)
 "4×150 Array{Float64,2}"
-
 julia> features[:, 1]
 4-element Array{Float64,1}:
  5.1
@@ -75,6 +60,7 @@ julia> features[:, 1]
 ```
 """
 function features()
+    deprecation_message()
     load()
     iris = readdlm(deps("iris.data"), ',')
     Matrix{Float64}(iris[1:end, 1:4]')

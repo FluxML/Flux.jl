@@ -1,4 +1,4 @@
-# Model-Building Basics
+# Flux Basics
 
 ## Taking Gradients
 
@@ -29,11 +29,12 @@ julia> gradient(f, [2, 1], [2, 0])
 ([0, 2], [0, -2])
 ```
 
-But machine learning models can have *hundreds* of parameters! To handle this, Flux lets you work with collections of parameters, via `params`. You can get the gradient of all parameters used in a program without explicitly passing them in.
+These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
+
+
+Machine learning often can have *hundreds* of parameters, so Flux lets you work with collections of parameters, via the `params` functions. You can get the gradient of all parameters used in a program without explicitly passing them in.
 
 ```jldoctest basics
-julia> using Flux
-
 julia> x = [2, 1];
 
 julia> y = [2, 0];
@@ -44,12 +45,12 @@ julia> gs = gradient(params(x, y)) do
 Grads(...)
 
 julia> gs[x]
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
  0
  2
 
 julia> gs[y]
-2-element Array{Int64,1}:
+2-element Vector{Int64}:
   0
  -2
 ```
@@ -58,7 +59,7 @@ Here, `gradient` takes a zero-argument function; no arguments are necessary beca
 
 This will come in really handy when dealing with big, complicated models. For now, though, let's start with something simple.
 
-## Simple Models
+## Building Simple Models
 
 Consider a simple linear regression, which tries to predict an output array `y` from an input `x`.
 
@@ -77,7 +78,7 @@ x, y = rand(5), rand(2) # Dummy data
 loss(x, y) # ~ 3
 ```
 
-To improve the prediction we can take the gradients of `W` and `b` with respect to the loss and perform gradient descent.
+To improve the prediction we can take the gradients of the loss with respect to `W` and `b` and perform gradient descent.
 
 ```julia
 using Flux
@@ -220,25 +221,4 @@ Flux.@functor Affine
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
 
-For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advacned.md).
-
-## Utility functions
-
-Flux provides some utility functions to help you generate models in an automated fashion.
-
-`outdims` enables you to calculate the spatial output dimensions of layers like `Conv` when applied to input images of a given size.
-Currently limited to the following layers:
-- `Chain`
-- `Dense`
-- `Conv`
-- `Diagonal`
-- `Maxout`
-- `ConvTranspose`
-- `DepthwiseConv`
-- `CrossCor`
-- `MaxPool`
-- `MeanPool`
-
-```@docs
-outdims
-```
+For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).

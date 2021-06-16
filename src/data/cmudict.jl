@@ -2,7 +2,7 @@ module CMUDict
 
 export cmudict
 
-using ..Data: deps, download_and_verify
+using ..Data: deps, download_and_verify, deprecation_message
 
 const version = "0.7b"
 const cache_prefix = "https://cache.julialang.org"
@@ -24,19 +24,36 @@ function load()
   end
 end
 
+"""
+    phones()
+Return a `Vector` containing the phones used in the CMU Pronouncing Dictionary.
+"""
 function phones()
+  deprecation_message()
   load()
   Symbol.(first.(split.(split(read(deps("cmudict", "cmudict.phones"),String),
                         "\n", keepempty = false), "\t")))
 end
 
+"""
+    symbols()
+Return a `Vector` containing the symbols used in the CMU Pronouncing Dictionary.
+A symbol is a phone with optional auxiliary symbols, indicating for example the
+amount of stress on the phone.
+"""
 function symbols()
+  deprecation_message()
   load()
   Symbol.(split(read(deps("cmudict", "cmudict.symbols"),String),
                 "\n", keepempty = false))
 end
 
+"""
+    rawdict()
+Return the unfiltered CMU Pronouncing Dictionary.
+"""
 function rawdict()
+  deprecation_message()
   load()
   Dict(String(xs[1]) => Symbol.(xs[2:end]) for xs in
        filter(!isempty, split.(split(read(deps("cmudict", "cmudict"),String), "\n"))))
@@ -44,7 +61,16 @@ end
 
 validword(s) = isascii(s) && occursin(r"^[\w\-\.]+$", s)
 
-cmudict() = filter(p -> validword(p.first), rawdict())
+"""
+    cmudict()
+Return a filtered CMU Pronouncing Dictionary.
+It is filtered so each word contains only ASCII characters and a combination of
+word characters (as determined by the regex engine using `\\w`), '-' and '.'.
+"""
+function cmudict()
+  deprecation_message()
+  filter(p -> validword(p.first), rawdict())
+end
 
 alphabet() = ['A':'Z'..., '0':'9'..., '_', '-', '.']
 

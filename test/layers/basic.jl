@@ -28,16 +28,47 @@ import Flux: activations
   end
 
   @testset "Dense" begin
-    @test  length(Dense(10, 5)(randn(10))) == 5
-    @test_throws DimensionMismatch Dense(10, 5)(randn(1))
-    @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
-    @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+    @testset "constructors" begin
+      @test size(Dense(10, 100).weight) == (100, 10)
+      @test size(Dense(10, 100).bias) == (100,)
+      @test Dense(rand(100,10), rand(100)).σ == identity
+      @test Dense(rand(100,10)).σ == identity
 
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
-    @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
-    @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(rand(100,10), false).σ == identity
+      @test Dense(rand(100,10), false, tanh).σ == tanh
+      @test Dense(rand(100,10), rand(100)).σ == identity
+      @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
+      @test_skip Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
+      @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      @test_skip Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
+
+      @test_throws MethodError Dense(10, 10.5)
+      @test_throws MethodError Dense(10, 10.5, tanh)
+      @test_throws DimensionMismatch Dense(3,4; bias=rand(5))
+      @test_throws DimensionMismatch Dense(rand(4,3), rand(5))
+      @test_throws MethodError Dense(rand(5))
+      @test_throws MethodError Dense(rand(5), rand(5))
+      @test_throws MethodError Dense(rand(5), rand(5), tanh)
+    end
+    @testset "dimensions" begin
+      @test  length(Dense(10, 5)(randn(10))) == 5
+      @test_throws DimensionMismatch Dense(10, 5)(randn(1))
+      @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
+      @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+      @test size(Dense(10, 5)(randn(10))) == (5,)
+      @test size(Dense(10, 5)(randn(10,2))) == (5,2)
+      @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
+      @test size(Dense(10, 5)(randn(10,2,3,4))) == (5,2,3,4)
+      @test_throws DimensionMismatch Dense(10, 5)(randn(11,2,3))
+    end
+    @testset "zeros" begin
+      @test Dense(10, 1, identity, init = ones)(ones(10,1)) == 10*ones(1, 1)
+      @test Dense(10, 1, identity, init = ones)(ones(10,2)) == 10*ones(1, 2)
+      @test Dense(10, 2, identity, init = ones)(ones(10,1)) == 10*ones(2, 1)
+      @test Dense(10, 2, identity, init = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 2, identity, init = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+    end
   end
 
   @testset "Diagonal" begin
@@ -49,6 +80,11 @@ import Flux: activations
     @test Flux.Diagonal(2)([1 2]) == [1 2; 1 2]
     @test Flux.Diagonal(2)([1,2]) == [1,2]
     @test Flux.Diagonal(2)([1 2; 3 4]) == [1 2; 3 4]
+
+    @test Flux.Diagonal(2)(rand(2,3,4)) |> size == (2, 3, 4)
+    @test Flux.Diagonal(2,3)(rand(2,3,4)) |> size == (2, 3, 4)
+    @test Flux.Diagonal(2,3,4)(rand(2,3,4)) |> size == (2, 3, 4)
+    @test Flux.Diagonal(2,3)(rand(2,1,4)) |> size == (2, 3, 4)
   end
 
   @testset "Maxout" begin
@@ -93,18 +129,66 @@ import Flux: activations
     end
   end
 
-  @testset "output dimensions" begin
-    m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
-    @test Flux.outdims(m, (10, 10)) == (6, 6)
+  @testset "Bilinear" begin
+    @testset "SkipConnection recombinator" begin
+      d = Dense(10, 10)
+      b = Flux.Bilinear(10, 10, 5)
+      x = randn(Float32,10,9)
+      sc = SkipConnection(d, b)
+      @test size(sc(x)) == (5,9)
+    end
 
-    m = Dense(10, 5)
-    @test Flux.outdims(m, (5, 2)) == (5,)
-    @test Flux.outdims(m, (10,)) == (5,)
+    @testset "Two-streams zero sum" begin
+      x = zeros(Float32,10,9)
+      y = zeros(Float32,2,9)
+      b = Flux.Bilinear(10, 2, 3)
+      @test size(b(x,y)) == (3,9)
+      @test sum(abs2, b(x,y)) == 0f0
+    end
 
-    m = Flux.Diagonal(10)
-    @test Flux.outdims(m, (10,)) == (10,)
+    @testset "Inner interactions" begin
+      x = randn(Float32,11,7)
+      b = Flux.Bilinear(11, 11, 3)
+      @test size(b(x)) == (3,7)
+      @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
+    end
 
-    m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
-    @test Flux.outdims(m, (10, 10)) == (8, 8)
+    @testset "constructors" begin
+      b1 = Flux.Bilinear(randn(3,4,5))
+      @test b1.bias isa Vector{Float64}
+      @test b1.σ == identity
+
+      b2 = Flux.Bilinear(randn(3,4,5), false)
+      @test b2.bias == Flux.Zeros()
+
+      b3 = Flux.Bilinear(randn(Float16, 3,4,5), true, tanh)
+      @test b3.σ == tanh
+      @test b3.bias isa Vector{Float16}
+      @test size(b3(rand(4), rand(5))) == (3,)
+
+      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros)
+      @test_skip  b4.bias isa Vector{Float32}
+
+      @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array
+      @test_throws ArgumentError Flux.Bilinear(rand(3,4), false, tanh)
+      @test_throws DimensionMismatch Flux.Bilinear(rand(3,4,5), rand(6), tanh) # wrong length bias
+    end
+  end
+
+  @testset "Parallel" begin
+    @testset "zero sum" begin
+      input = randn(10, 10, 10, 10)
+      @test Parallel(+, x -> zeros(size(x)), identity)(input) == input
+    end
+
+    @testset "concat size" begin
+      input = randn(10, 2)
+      @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
+    end
+
+    @testset "vararg input" begin
+      inputs = randn(10), randn(5), randn(4)
+      @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
+    end
   end
 end

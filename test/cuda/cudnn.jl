@@ -1,44 +1,44 @@
-using Flux, CuArrays, Test
+using Flux, CUDA, Test
 using Flux: pullback
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input" begin
-        x = Float64.(collect(reshape(1:12, 2, 2, 3, 1)))
+        x = rand(Float32, 2, 2, 3, 4)
         m = BatchNorm(3)
-        cx = gpu(x)
-        cm = gpu(m)
+        gx = gpu(x)
+        gm = gpu(m)
 
         y, back = pullback((m, x) -> m(x), m, x)
-        cy, cback = pullback((m, x) -> m(x), cm, cx)
+        gy, gback = pullback((m, x) -> m(x), gm, gx)
 
-        @test cpu(cy) ≈ y
+        @test cpu(gy) ≈ y
 
-        Δ = randn(size(y))
+        Δ = randn(Float32, size(y))
         dm, dx = back(Δ)
-        cdm, cdx = cback(gpu(Δ))
+        gdm, gdx = gback(gpu(Δ))
 
-        @test dm[].γ ≈ cpu(cdm[].γ)
-        @test dm[].β ≈ cpu(cdm[].β)
-        @test dx ≈ cpu(cdx)
+        @test dm[].γ ≈ cpu(gdm[].γ)
+        @test dm[].β ≈ cpu(gdm[].β)
+        @test dx ≈ cpu(gdx)
     end
 
     @testset "2D Input" begin
-        x = Float64.(collect(reshape(1:12, 3, 4)))
+        x = rand(Float32, 3, 4)
         m = BatchNorm(3)
-        cx = gpu(x)
-        cm = gpu(m)
+        gx = gpu(x)
+        gm = gpu(m)
 
         y, back = pullback((m, x) -> m(x), m, x)
-        cy, cback = pullback((m, x) -> m(x), cm, cx)
+        gy, gback = pullback((m, x) -> m(x), gm, gx)
 
-        @test cpu(cy) ≈ y
+        @test cpu(gy) ≈ y
 
-        Δ = randn(size(y))
+        Δ = randn(Float32, size(y))
         dm, dx = back(Δ)
-        cdm, cdx = cback(gpu(Δ))
+        gdm, gdx = gback(gpu(Δ))
 
-        @test dm[].γ ≈ cpu(cdm[].γ)
-        @test dm[].β ≈ cpu(cdm[].β)
-        @test dx ≈ cpu(cdx)
+        @test dm[].γ ≈ cpu(gdm[].γ)
+        @test dm[].β ≈ cpu(gdm[].β)
+        @test dx ≈ cpu(gdx)
     end
 end
