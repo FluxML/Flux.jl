@@ -1,4 +1,4 @@
-using Random: default_rng, GLOBAL_RNG
+using Random: default_rng
 
 istraining() = false
 
