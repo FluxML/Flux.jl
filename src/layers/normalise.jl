@@ -1,4 +1,4 @@
-using Random: GLOBAL_RNG
+using Random: default_rng, GLOBAL_RNG
 
 istraining() = false
 
@@ -12,7 +12,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout([rng = GLOBAL_RNG], x, p; dims=:, active=true)
+    dropout([rng = default_rng()], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -37,7 +37,7 @@ function dropout(rng::AbstractRNG, x, p; dims = :, active::Bool = true)
 end
 
 function dropout(x, p; dims = :, active::Bool = true)
-  dropout(GLOBAL_RNG, x, p, dims = dims, active = active)
+  dropout(default_rng(), x, p, dims = dims, active = active)
 end
 
 @adjoint function dropout(rng, x, p; dims = :, active::Bool = true)
@@ -53,7 +53,7 @@ function dropout_mask(rng::AbstractRNG, x, p; dims=:)
 end
 
 """
-    Dropout([rng = GLOBAL_RNG], p; dims=:)
+    Dropout([rng = default_rng()], p; dims=:)
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
@@ -72,7 +72,7 @@ end
 
 function Dropout(p; dims=:)
   @assert 0 ≤ p ≤ 1
-  Dropout(GLOBAL_RNG, p; dims)
+  Dropout(default_rng(), p; dims)
 end
 
 function Dropout(rng, p; dims = :)
