@@ -1,7 +1,8 @@
+"Stanford Sentiment Treebank dataset."
 module Sentiment
 
 using ZipFile
-using ..Data: deps, download_and_verify
+using ..Data: deps, download_and_verify, deprecation_message
 
 function load()
   isfile(deps("sentiment.zip")) && return
@@ -39,8 +40,34 @@ function gettrees(name)
   return parsetree.(ss)
 end
 
-train() = gettrees("train")
-test() = gettrees("test")
-dev() = gettrees("dev")
+"""
+    train()
+Return the train split of the Stanford Sentiment Treebank.
+The data is in [treebank](https://en.wikipedia.org/wiki/Treebank) format.
+"""
+function train()
+  deprecation_message()
+  gettrees("train")
+end
+
+"""
+    test()
+Return the test split of the Stanford Sentiment Treebank.
+The data is in [treebank](https://en.wikipedia.org/wiki/Treebank) format.
+"""
+function test()
+  deprecation_message()
+  gettrees("test")
+end
+
+"""
+    dev()
+Return the dev split of the Stanford Sentiment Treebank.
+The data is in [treebank](https://en.wikipedia.org/wiki/Treebank) format.
+"""
+function dev()
+  deprecation_message()
+  gettrees("dev")
+end
 
 end

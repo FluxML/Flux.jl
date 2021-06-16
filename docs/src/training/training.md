@@ -7,24 +7,50 @@ To actually train a model we need four things:
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
-With these we can call `train!`:
+Training a model is typically an iterative process, where we go over the data set,
+calculate the objective function over the datapoints, and optimise that.
+This can be visualised in the form of a simple loop.
+
+```julia
+for d in datapoints
+
+  # `d` should produce a collection of arguments
+  # to the loss function
+
+  # Calculate the gradients of the parameters
+  # with respect to the loss function
+  grads = Flux.gradient(parameters) do
+    loss(d...)
+  end
+
+  # Update the parameters based on the chosen
+  # optimiser (opt)
+  Flux.Optimise.update!(opt, parameters, grads)
+end
+```
+
+To make it easy, Flux defines `train!`:
 
 ```@docs
 Flux.Optimise.train!
 ```
 
-There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
+There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo), and
+more information can be found on [Custom Training Loops](../models/advanced.md).
 
 ## Loss Functions
 
-The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective. We can also define an objective in terms of some model:
+The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective.
+In addition to custom losses, model can be trained in conjuction with
+the commonly used losses that are grouped under the `Flux.Losses` module.
+We can also define an objective in terms of some model:
 
 ```julia
 m = Chain(
   Dense(784, 32, σ),
   Dense(32, 10), softmax)
 
-loss(x, y) = Flux.mse(m(x), y)
+loss(x, y) = Flux.Losses.mse(m(x), y)
 ps = Flux.params(m)
 
 # later
@@ -32,6 +58,7 @@ Flux.train!(loss, ps, data, opt)
 ```
 
 The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
+For a list of all built-in loss functions, check out the [losses reference](../models/losses.md).
 
 At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
 
@@ -45,7 +72,7 @@ Handling all the parameters on a layer by layer basis is explained in the [Layer
 
 ## Datasets
 
-The `data` argument provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy data set with only one data point:
+The `data` argument of `train!` provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy dataset with only one data point:
 
 ```julia
 x = rand(784)
@@ -94,6 +121,10 @@ julia> @epochs 2 Flux.train!(...)
 # Train for two epochs
 ```
 
+```@docs
+Flux.@epochs
+```
+
 ## Callbacks
 
 `train!` takes an additional argument, `cb`, that's used for callbacks so that you can observe the training process. For example:
@@ -109,9 +140,8 @@ A more typical callback might look like this:
 ```julia
 test_x, test_y = # ... create single batch of test data ...
 evalcb() = @show(loss(test_x, test_y))
-
-Flux.train!(objective, ps, data, opt,
-            cb = throttle(evalcb, 5))
+throttled_cb = throttle(evalcb, 5)
+Flux.@epochs 20 Flux.train!(objective, ps, data, opt, cb = throttled_cb)
 ```
 
 Calling `Flux.stop()` in a callback will exit the training loop early.
@@ -133,18 +163,45 @@ E.g. in the places marked with comments.
 
 ```julia
 function my_custom_train!(loss, ps, data, opt)
+  # training_loss is declared local so it will be available for logging outside the gradient calculation.
+  local training_loss
   ps = Params(ps)
   for d in data
     gs = gradient(ps) do
       training_loss = loss(d...)
-      # Insert what ever code you want here that needs Training loss, e.g. logging
+      # Code inserted here will be differentiated, unless you need that gradient information
+      # it is better to do the work outside this block.
       return training_loss
     end
-    # insert what ever code you want here that needs gradient
-    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge
+    # Insert whatever code you want here that needs training_loss, e.g. logging.
+    # logging_callback(training_loss)
+    # Insert what ever code you want here that needs gradient.
+    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge.
     update!(opt, ps, gs)
-    # Here you might like to check validation set accuracy, and break out to do early stopping
+    # Here you might like to check validation set accuracy, and break out to do early stopping.
   end
 end
 ```
+
 You could simplify this further, for example by hard-coding in the loss function.
+
+Another possibility is to use [`Zygote.pullback`](https://fluxml.ai/Zygote.jl/dev/adjoints/#Pullbacks-1)
+to access the training loss and the gradient simultaneously.
+
+```julia
+function my_custom_train!(loss, ps, data, opt)
+  ps = Params(ps)
+  for d in data
+    # back is a method that computes the product of the gradient so far with its argument.
+    train_loss, back = Zygote.pullback(() -> loss(d...), ps)
+    # Insert whatever code you want here that needs training_loss, e.g. logging.
+    # logging_callback(training_loss)
+    # Apply back() to the correct type of 1.0 to get the gradient of loss.
+    gs = back(one(train_loss))
+    # Insert what ever code you want here that needs gradient.
+    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge.
+    update!(opt, ps, gs)
+    # Here you might like to check validation set accuracy, and break out to do early stopping.
+  end
+end
+```

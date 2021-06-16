@@ -1,11 +1,15 @@
 module MNIST
 
 using CodecZlib, Colors
-using ..Data: download_and_verify
+using ..Data: download_and_verify, deprecation_message
 
 const Gray = Colors.Gray{Colors.N0f8}
 
-const dir = joinpath(@__DIR__, "../../deps/mnist")
+const dir = if isnothing(@__DIR__)
+    joinpath("deps", "mnist")
+  else
+    joinpath(@__DIR__, "../../deps/mnist")
+end
 
 function gzopen(f, file)
   open(file) do io
@@ -80,15 +84,14 @@ getfeatures(io::IO, index::Integer) = vec(getimage(io, index))
 """
     images()
     images(:test)
-
 Load the MNIST images.
-
-Each image is a 28×28 array of `Gray` colour values (see Colors.jl).
-
-Returns the 60,000 training images by default; pass `:test` to retreive the
+Each image is a 28×28 array of `Gray` colour values
+(see [Colors.jl](https://github.com/JuliaGraphics/Colors.jl)).
+Return the 60,000 training images by default; pass `:test` to retrieve the
 10,000 test images.
 """
 function images(set = :train)
+  deprecation_message()
   load()
   io = IOBuffer(read(set == :train ? TRAINIMAGES : TESTIMAGES))
   _, N, nrows, ncols = imageheader(io)
@@ -98,14 +101,13 @@ end
 """
     labels()
     labels(:test)
-
-Load the labels corresponding to each of the images returned from `images()`.
+Load the labels corresponding to each of the images returned from [`images()`](@ref).
 Each label is a number from 0-9.
-
-Returns the 60,000 training labels by default; pass `:test` to retreive the
+Return the 60,000 training labels by default; pass `:test` to retrieve the
 10,000 test labels.
 """
 function labels(set = :train)
+  deprecation_message()
   load()
   io = IOBuffer(read(set == :train ? TRAINLABELS : TESTLABELS))
   _, N = labelheader(io)

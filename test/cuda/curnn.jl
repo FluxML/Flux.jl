@@ -1,5 +1,4 @@
-using Flux, CuArrays, Test
-using Flux: pullback
+using Flux, CUDA, Test
 
 @testset for R in [RNN, GRU, LSTM]
   m = R(10, 5) |> gpu
@@ -7,7 +6,9 @@ using Flux: pullback
   (m̄,) = gradient(m -> sum(m(x)), m)
   Flux.reset!(m)
   θ = gradient(() -> sum(m(x)), params(m))
-  @test collect(m̄[].cell[].Wi) == collect(θ[m.cell.Wi])
+  @test x isa CuArray
+  @test θ[m.cell.Wi] isa CuArray
+  @test collect(m̄[].cell.Wi) == collect(θ[m.cell.Wi])
 end
 
 @testset "RNN" begin
@@ -18,29 +19,23 @@ end
     Flux.reset!(rnn)
     Flux.reset!(curnn)
     x = batch_size == 1 ?
-      rand(10) :
-      rand(10, batch_size)
+      rand(Float32, 10) :
+      rand(Float32, 10, batch_size)
     cux = gpu(x)
 
     y, back = pullback((r, x) -> r(x), rnn, x)
     cuy, cuback = pullback((r, x) -> r(x), curnn, cux)
 
     @test y ≈ collect(cuy)
-    @test haskey(Flux.CUDA.descs, curnn.cell)
 
     ȳ = randn(size(y))
     m̄, x̄ = back(ȳ)
     cum̄, cux̄ = cuback(gpu(ȳ))
 
-    m̄[].cell[].Wi
-
-    m̄[].state
-    cum̄[].state
-
     @test x̄ ≈ collect(cux̄)
-    @test m̄[].cell[].Wi ≈ collect(cum̄[].cell[].Wi)
-    @test m̄[].cell[].Wh ≈ collect(cum̄[].cell[].Wh)
-    @test m̄[].cell[].b ≈ collect(cum̄[].cell[].b)
+    @test m̄[].cell.Wi ≈ collect(cum̄[].cell.Wi)
+    @test m̄[].cell.Wh ≈ collect(cum̄[].cell.Wh)
+    @test m̄[].cell.b ≈ collect(cum̄[].cell.b)
     if m̄[].state isa Tuple
       for (x, cx) in zip(m̄[].state, cum̄[].state)
         @test x ≈ collect(cx)
@@ -56,8 +51,8 @@ end
       Flux.onehotbatch(rand(1:10, batch_size), 1:10)
     cuohx = gpu(ohx)
     y = (rnn(ohx); rnn(ohx))
-    cuy = (curnn(cuohx); curnn(cuohx))
 
-    @test y ≈ collect(cuy)
+    cuy = (curnn(cuohx); curnn(cuohx))
+    @test y ≈ collect(cuy)  
   end
 end

@@ -6,16 +6,8 @@ on:
 
 jobs:
   CompatHelper:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        julia-version: [1.3]
-        julia-arch: [x64]
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
-      - uses: julia-actions/setup-julia@latest
-        with:
-          version: ${{ matrix.julia-version }}
       - name: Pkg.add("CompatHelper")
         run: julia -e 'using Pkg; Pkg.add("CompatHelper")'
       - name: CompatHelper.main()
