@@ -40,6 +40,12 @@ function dropout(x, p; dims = :, active::Bool = true)
   dropout(default_rng(), x, p, dims = dims, active = active)
 end
 
+# CUDA currently needs a manual dispatch to avoid
+# calling a non-GPU RNG with a CuArray
+function dropout(x::CUDA.CuArray, p; dims = :, active::Bool = true)
+  dropout(CUDA.CURAND.default_rng(), x, p, dims = dims, active = active)
+end
+
 @adjoint function dropout(rng, x, p; dims = :, active::Bool = true)
   active || return x, Δ -> (Δ, nothing)
   y = dropout_mask(rng, x, p, dims = dims)
@@ -70,8 +76,7 @@ mutable struct Dropout{F,D}
   active::Union{Bool, Nothing}
 end
 
-function Dropout(p; dims=:)
-  @assert 0 ≤ p ≤ 1
+function Dropout(p; dims = :)
   Dropout(default_rng(), p; dims)
 end
 
@@ -82,7 +87,7 @@ end
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(a.rng, x, a.p; dims=a.dims, active=true)
+  return dropout(x, a.p; dims = a.dims, active = true)
 end
 
 testmode!(m::Dropout, mode = true) =
