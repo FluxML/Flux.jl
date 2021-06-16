@@ -87,7 +87,7 @@ end
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims = a.dims, active = true)
+  return dropout(a.rng, x, a.p; dims = a.dims, active = true)
 end
 
 testmode!(m::Dropout, mode = true) =
