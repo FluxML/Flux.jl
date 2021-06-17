@@ -47,7 +47,7 @@ function dropout(x::CUDA.CuArray, p; dims = :, active::Bool = true)
 end
 
 @adjoint function dropout(rng, x, p; dims = :, active::Bool = true)
-  active || return x, Δ -> (Δ, nothing)
+  active || return x, Δ -> (nothing, Δ, nothing)
   y = dropout_mask(rng, x, p, dims = dims)
   return x .* y, Δ -> (nothing, Δ .* y, nothing)
 end
