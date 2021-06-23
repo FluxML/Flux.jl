@@ -365,10 +365,10 @@ function InstanceNorm(chs::Int, λ = identity;
   γ = initγ(chs)
   μ = zeros(Float32, chs)
   σ² = ones(Float32, chs)
-  InstanceNorm(chs, λ, β, γ,
-            μ, σ², ϵ, momentum, 
-            affine, track_stats,
-            nothing, chs)
+  InstanceNorm(λ, β, γ,
+               μ, σ², ϵ, momentum, 
+               affine, track_stats,
+               nothing, chs)
 end
 
 @functor InstanceNorm
