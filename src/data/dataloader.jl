@@ -79,19 +79,12 @@ function DataLoader(f,
   shuffle, batchsize = validate_kwargs(shuffle, dataset_size, batchsize)
   ix = shuffle(1:dataset_size)
   iterator = Iterators.partition(ix, batchsize)
-  ch = Channel(10)
+  ch = Channel(buffersize)
   t = Task(() -> begin
-    for i in iterator
-      fullbatch = length(i) == batchsize
-      if fullbatch
-        put!(ch, f(getobs(fs, i, batchdim)))
-      elseif partial
-        put!(ch, f(getobs(fs, i, batchdim)))
-        close(ch)
-      else
-        close(ch)
-      end
+    for i in zip(args...)
+      put!(ch, f(i...)) # f(getobs(fs, i, batchdim)))
     end
+    close(ch)
   end)
   schedule(t)
   DataLoader(f, ch, args, iterator, batchsize, batchdim, partial)
