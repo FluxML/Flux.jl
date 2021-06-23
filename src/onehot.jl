@@ -5,11 +5,11 @@ struct OneHotArray{T<:Integer, L, N, var"N+1", I<:Union{T, AbstractArray{T, N}}}
   indices::I
 end
 OneHotArray{T, L, N, I}(indices) where {T, L, N, I} = OneHotArray{T, L, N, N+1, I}(indices)
-OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, T}(indices)
-OneHotArray(indices::AbstractArray{T, N}, L::Integer) where {T, N} = OneHotArray{T, L, N, typeof(indices)}(indices)
+OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, 1, T}(indices)
+OneHotArray(indices::I, L::Integer) where {T, N, I<:AbstractArray{T, N}} = OneHotArray{T, L, N, N+1, I}(indices)
 
 _indices(x::OneHotArray) = x.indices
-_indices(x::Base.ReshapedArray{<:Any, <:Any, <:OneHotArray}) =
+_indices(x::Base.ReshapedArray{<: Any, <: Any, <: OneHotArray}) =
   reshape(parent(x).indices, x.dims[2:end])
 
 const OneHotVector{T, L} = OneHotArray{T, L, 0, 1, T}
@@ -17,6 +17,28 @@ const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 
 OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
+
+function _show_elements(x::OneHotArray)
+  xbool = convert(Array{Bool}, cpu(x))
+  xrepr = join(split(repr(MIME("text/plain"), xbool; context= :limit => true), "\n")[2:end], "\n")
+
+  return xrepr
+end
+
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
+  join(io, string.(size(x)), "×")
+  print(io, " Flux.OneHotArray{")
+  join(io, string.([L, N, I]), ",")
+  println(io, "}:")
+  print(io, _show_elements(x))
+end
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
+  print(io, string.(length(x)))
+  print(io, "-element Flux.OneHotVector{")
+  join(io, string.([L, T]), ",")
+  println(io, "}:")
+  print(io, _show_elements(x))
+end
 
 # use this type so reshaped arrays hit fast paths
 # e.g. argmax
@@ -42,22 +64,30 @@ Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
 
-function Base.cat(xs::OneHotLike{<:Any, L}...; dims::Int) where L
-  if isone(dims) || any(x -> !_isonehot(x), xs)
-    return cat(map(x -> convert(_onehot_bool_type(x), x), xs)...; dims = dims)
+function Base.cat(x::OneHotLike{<:Any, L}, xs::OneHotLike{<:Any, L}...; dims::Int) where L
+  if isone(dims) || any(x -> !_isonehot(x), (x, xs...))
+    return cat(map(x -> convert(_onehot_bool_type(x), x), (x, xs...))...; dims = dims)
   else
-    return OneHotArray(cat(_indices.(xs)...; dims = dims - 1), L)
+    return OneHotArray(cat(_indices(x), _indices.(xs)...; dims = dims - 1), L)
   end
 end
 
-Base.hcat(xs::OneHotLike...) = cat(xs...; dims = 2)
-Base.vcat(xs::OneHotLike...) = cat(xs...; dims = 1)
+Base.hcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 2)
+Base.vcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 1)
+
+# optimized concatenation for matrices and vectors of same parameters
+Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 2}} =
+  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
+Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 1}} =
+  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
 
 batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
 
 Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(adapt(T, _indices(x)), L)
 
-Base.BroadcastStyle(::Type{<:OneHotArray{<:Any, <:Any, <:Any, N, <:CuArray}}) where N = CUDA.CuArrayStyle{N}()
+Base.BroadcastStyle(::Type{<:OneHotArray{<: Any, <: Any, <: Any, N, <: CuArray}}) where N = CUDA.CuArrayStyle{N}()
+
+Base.map(f, x::OneHotLike) = Base.broadcast(f, x)
 
 Base.argmax(x::OneHotLike; dims = Colon()) =
   (_isonehot(x) && dims == 1) ?
@@ -76,13 +106,13 @@ If `l` is not found in labels and  `unk` is present, the function returns
 # Examples
 ```jldoctest
 julia> Flux.onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  1
  0
 
 julia> Flux.onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotArray{UInt32,3,0,1,UInt32}:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  0
  1
@@ -111,7 +141,7 @@ return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an erro
 # Examples
 ```jldoctest
 julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotArray{UInt32,3,1,2,Array{UInt32,1}}:
+3×3 Flux.OneHotArray{3,2,Vector{UInt32}}:
  0  1  0
  1  0  1
  0  0  0
@@ -156,4 +186,21 @@ function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
   return A[:, onecold(B)]
+end
+for wrapper in [:Adjoint, :Transpose]
+  @eval begin
+    function Base.:*(A::$wrapper{<:Any, <:AbstractMatrix{T}}, b::OneHotVector{<:Any, L}) where {L, T}
+      size(A, 2) == L ||
+        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+
+      return A[:, onecold(b)]
+    end
+
+    function Base.:*(A::$wrapper{<:Number, <:AbstractVector{T}}, b::OneHotVector{<:Any, L}) where {L, T}
+      size(A, 2) == L ||
+        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+
+      return A[onecold(b)]
+    end
+  end
 end

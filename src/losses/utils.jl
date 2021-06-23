@@ -8,22 +8,12 @@ function xlogx(x)
   ifelse(iszero(x), zero(result), result)
 end
 
-CUDA.@cufunc function xlogx(x)
-  result = x * log(x)
-  ifelse(iszero(x), zero(result), result)
-end
-
 """
 xlogy(x, y)
 
 Return `x * log(y)` for `y > 0` with correct limit at `x = 0`.
 """
 function xlogy(x, y)
-  result = x * log(y)
-  ifelse(iszero(x), zero(result), result)
-end
-
-CUDA.@cufunc function xlogy(x, y)
   result = x * log(y)
   ifelse(iszero(x), zero(result), result)
 end

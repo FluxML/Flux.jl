@@ -1,3 +1,5 @@
+using Random
+
 @testset "DataLoader" begin
     X = reshape([1:10;], (2, 5))
     Y = [1:5;]
@@ -74,4 +76,7 @@
     d  = DataLoader((X, Y))
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ .- 1) < 1e-10
+
+    # specify the rng
+    d = map(identity, DataLoader(X, batchsize=2; shuffle=true, rng=Random.seed!(Random.default_rng(), 5)))
 end

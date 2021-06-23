@@ -1,6 +1,7 @@
 module Optimise
 
 using LinearAlgebra
+import ArrayInterface
 
 export train!, update!,
 	Descent, ADAM, Momentum, Nesterov, RMSProp,

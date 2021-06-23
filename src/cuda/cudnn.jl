@@ -1,4 +1,4 @@
-import CUDA.CUDNN: batchnorm, ∇batchnorm
+import NNlibCUDA: batchnorm, ∇batchnorm
 
 function (BN::Flux.BatchNorm)(x::CuArray{T},
                               cache = nothing) where T<:Union{Float32, Float64}

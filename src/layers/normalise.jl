@@ -265,7 +265,6 @@ m = Chain(
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
-  chs::Int # number of channels
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -276,6 +275,7 @@ mutable struct BatchNorm{F,V,N,W}
   affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
+  chs::Int # number of channels
 end
 
 function BatchNorm(chs::Int, λ = identity;
@@ -289,9 +289,10 @@ function BatchNorm(chs::Int, λ = identity;
   μ = zeros(Float32, chs)
   σ² = ones(Float32, chs)
 
-  return BatchNorm(chs, λ, β, γ,
-            μ, σ², ϵ, momentum,
-            affine, track_stats, nothing)
+  BatchNorm(λ, β, γ,
+            μ, σ², ϵ, momentum, 
+            affine, track_stats, 
+            nothing, chs)
 end
 
 @functor BatchNorm
@@ -341,7 +342,6 @@ that will be used to renormalize the input in test phase.
 in previous Flux versions (< v0.12).
 """
 mutable struct InstanceNorm{F,V,N,W}
-  chs::Int # number of channels
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -352,6 +352,7 @@ mutable struct InstanceNorm{F,V,N,W}
   affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
+  chs::Int # number of channels
 end
 
 function InstanceNorm(chs::Int, λ = identity;
@@ -366,7 +367,8 @@ function InstanceNorm(chs::Int, λ = identity;
   σ² = ones(Float32, chs)
   InstanceNorm(chs, λ, β, γ,
             μ, σ², ϵ, momentum, 
-            affine, track_stats, nothing)
+            affine, track_stats,
+            nothing, chs)
 end
 
 @functor InstanceNorm
@@ -418,7 +420,6 @@ If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 """
 mutable struct GroupNorm{F,V,N,W}
-  chs::Int # number of channels
   G::Int  # number of groups
   λ::F  # activation function
   β::V  # bias
@@ -430,6 +431,7 @@ mutable struct GroupNorm{F,V,N,W}
   affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
+  chs::Int # number of channels
 end
 
 @functor GroupNorm
@@ -448,11 +450,12 @@ function GroupNorm(chs::Int, G::Int, λ = identity;
   μ = zeros(Float32, G)
   σ² = ones(Float32, G)
 
-  return GroupNorm(chs, G, λ, 
+  return GroupNorm(G, λ, 
             β, γ,
             μ, σ², 
             ϵ, momentum, 
-            affine, track_stats, nothing)
+            affine, track_stats, 
+            nothing, chs)
 end
 
 function (gn::GroupNorm)(x)
