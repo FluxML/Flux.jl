@@ -188,7 +188,7 @@ function norm_forward(l, x::AbstractArray{T,N}, nc::NormConfig{A, true}) where {
     σ² = mean((x .- μ) .^ 2; dims = nc.dims) # ./ l.chs
 
     μnew, σ²new = track_stats(x, (l.μ, l.σ²), (μ,σ²),
-                        l.momentum, reduce_dims = nc.dims)
+                              l.momentum, reduce_dims = nc.dims)
 
     Zygote.ignore() do
       l.μ = reshape(μnew, :)
