@@ -313,6 +313,7 @@ testmode!(m::BatchNorm, mode=true) =
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
   print(io, ", $(l.λ)")
+  print(io, ", affine = $(l.affine)")
   print(io, ")")
 end
 
@@ -390,6 +391,7 @@ testmode!(m::InstanceNorm, mode=true) =
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(l.chs)")
   print(io, ", $(l.λ)")
+  print(io, ", affine = $(l.affine)")
   print(io, ")")
 end
 
@@ -438,10 +440,10 @@ end
 trainable(gn::GroupNorm) = gn.affine ? (gn.β, gn.γ) : ()
 
 function GroupNorm(chs::Int, G::Int, λ = identity;
-              initβ = i -> zeros(Float32, i), 
-              initγ = i -> ones(Float32, i), 
-              affine = true, track_stats = false,
-              ϵ = 1f-5, momentum = 0.1f0) 
+                   initβ = i -> zeros(Float32, i), 
+                   initγ = i -> ones(Float32, i), 
+                   affine = true, track_stats = false,
+                   ϵ = 1f-5, momentum = 0.1f0) 
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
@@ -450,7 +452,7 @@ function GroupNorm(chs::Int, G::Int, λ = identity;
   μ = zeros(Float32, G)
   σ² = ones(Float32, G)
 
-  return GroupNorm(G, λ, 
+  GroupNorm(G, λ, 
             β, γ,
             μ, σ², 
             ϵ, momentum, 
@@ -478,5 +480,6 @@ testmode!(m::GroupNorm, mode = true) =
 function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(l.chs), $(l.G)")
   print(io, ", $(l.λ)")
+  print(io, ", affine = $(l.affine)")
   print(io, ")")
 end
