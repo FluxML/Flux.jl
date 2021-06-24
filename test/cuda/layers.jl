@@ -146,7 +146,7 @@ end
 @testset "Extended BatchNorm" begin
   m_cpu = BatchNorm(2)
   m_gpu = m_cpu |> gpu
-  x_cpu = rand(Float32, 3, 2, 2)
+  x_cpu = rand(Float32, 3, 1, 2, 2)
   x_gpu = x_cpu |> gpu
 
   ## In :auto mode, track statistics only in gradient contest
