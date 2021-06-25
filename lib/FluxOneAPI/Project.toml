@@ -1,0 +1,10 @@
+name = "FluxOneAPI"
+uuid = "71a558b2-ada5-41b7-bb4b-aca4e46ab144"
+authors = ["Tim Besard <tim.besard@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
