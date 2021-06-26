@@ -66,7 +66,7 @@ end
 """
     cpu(m)
 
-Moves a paticular resource from where it is, onto the CPU.
+Moves a particular resource from where it is, onto the CPU.
 """
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
