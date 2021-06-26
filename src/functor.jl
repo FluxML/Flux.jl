@@ -75,7 +75,7 @@ _isbitsarray(x) = false
 
 """
     gpu(x)
-Moves a paticular resource from where it is, onto the GPU.
+Moves a particular resource from where it is, onto the GPU, if available. It is a no-op otherwise.
 """
 gpu(x) = use_cuda[] ? fmap(CUDA.cu, x; exclude = _isbitsarray) : x
 
