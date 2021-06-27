@@ -13,17 +13,17 @@ An aspect to recognize is that in such model, the recurrent cells `A` all refer 
 In the most basic RNN case, cell A could be defined by the following: 
 
 ```julia
-Wxh = randn(5, 2)
-Whh = randn(5, 5)
-b   = randn(5)
+Wxh = randn(Float32, 5, 2)
+Whh = randn(Float32, 5, 5)
+b   = randn(Float32, 5)
 
 function rnn(h, x)
   h = tanh.(Wxh * x .+ Whh * h .+ b)
   return h, h
 end
 
-x = rand(2) # dummy data
-h = rand(5)  # initial hidden state
+x = rand(Float32, 2) # dummy data
+h = rand(Float32, 5)  # initial hidden state
 
 h, y = rnn(h, x)
 ```
