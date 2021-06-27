@@ -47,6 +47,7 @@ include("layers/upsample.jl")
 include("outputsize.jl")
 
 include("data/Data.jl")
+using .Data
 
 include("losses/Losses.jl")
 using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
