@@ -132,6 +132,7 @@ for mathematical details.
 ctc_loss(ŷ::AbstractArray, y) = ctc_alpha(ŷ, y).loss
 
 @adjoint function ctc_loss(ŷ, y)
+  match_sizes(ŷ, y)
   out = ctc_alpha(ŷ, y)
   ctc_loss_pullback(Δ) = (Δ .* ∇ctc_loss(ŷ, y, out), nothing)
   return out.loss, ctc_loss_pullback
