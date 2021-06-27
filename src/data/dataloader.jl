@@ -13,59 +13,68 @@ struct DataLoader{D,R<:AbstractRNG}
 end
 
 """
-    DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
+    Flux.DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
 
-An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
+An object that iterates over mini-batches of `data`, 
+each mini-batch containing `batchsize` observations
 (except possibly the last one).
 
 Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
-The last dimension in each tensor is considered to be the observation dimension.
+The last dimension in each tensor is the observation dimension, i.e. the one
+divided into mini-batches.
 
 If `shuffle=true`, shuffles the observations each time iterations are re-started.
 If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
 
 The original data is preserved in the `data` field of the DataLoader.
 
-Usage example:
+# Examples
+```jldoctest
+julia> Xtrain = rand(10, 100);
 
-    Xtrain = rand(10, 100)
-    train_loader = DataLoader(Xtrain, batchsize=2)
-    # iterate over 50 mini-batches of size 2
-    for x in train_loader
-        @assert size(x) == (10, 2)
-        ...
-    end
+julia> array_loader = Flux.DataLoader(Xtrain, batchsize=2);
 
-    train_loader.data   # original dataset
+julia> for x in array_loader
+         @assert size(x) == (10, 2)
+         # do something with x, 50 times
+       end
 
-    # similar, but yielding tuples
-    train_loader = DataLoader((Xtrain,), batchsize=2)
-    for (x,) in train_loader
-        @assert size(x) == (10, 2)
-        ...
-    end
+julia> array_loader.data === Xtrain
+true
 
-    Xtrain = rand(10, 100)
-    Ytrain = rand(100)
-    train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true)
-    for epoch in 1:100
-        for (x, y) in train_loader
-            @assert size(x) == (10, 2)
-            @assert size(y) == (2,)
-            ...
-        end
-    end
+julia> tuple_loader = Flux.DataLoader((Xtrain,), batchsize=2);  # similar, but yielding 1-element tuples
 
-    # train for 10 epochs
-    using IterTools: ncycle
-    Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
+julia> for x in tuple_loader
+         @assert x isa Tuple{Matrix}
+         @assert size(x[1]) == (10, 2)
+       end
 
-    # can use NamedTuple to name tensors
-    train_loader = DataLoader((images=Xtrain, labels=Ytrain), batchsize=2, shuffle=true)
-    for datum in train_loader
-        @assert size(datum.images) == (10, 2)
-        @assert size(datum.labels) == (2,)
-    end
+julia> Ytrain = rand('a':'z', 100);  # now make a DataLoader returning 2-element named tuples
+
+julia> train_loader = Flux.DataLoader((data=Xtrain, label=Ytrain), batchsize=5, shuffle=true);
+
+julia> for epoch in 1:100
+         for (x, y) in train_loader  # access via tuple destructuring
+           @assert size(x) == (10, 5)
+           @assert size(y) == (5,)
+           # loss += f(x, y) # etc, runs 100 * 20 times
+         end
+       end
+
+julia> first(train_loader) isa NamedTuple{(:data, :label)}
+true
+
+julia> first(train_loader).label isa Vector{Char}  # acces via property name
+true
+
+julia> first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
+false
+
+julia> foreach(println∘size, Flux.DataLoader(rand(10, 64), batchsize=30))
+(10, 30)
+(10, 30)
+(10, 4)   # partial=false would omit this
+```
 """
 function DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
