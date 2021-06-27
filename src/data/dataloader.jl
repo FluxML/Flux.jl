@@ -49,7 +49,7 @@ julia> for x in tuple_loader
          @assert size(x[1]) == (10, 2)
        end
 
-julia> Ytrain = rand('a':'z', 100);  # now make a DataLoader returning 2-element named tuples
+julia> Ytrain = rand('a':'z', 100);  # now make a DataLoader yielding 2-element named tuples
 
 julia> train_loader = Flux.DataLoader((data=Xtrain, label=Ytrain), batchsize=5, shuffle=true);
 
@@ -70,10 +70,10 @@ true
 julia> first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
 false
 
-julia> foreach(println∘size, Flux.DataLoader(rand(10, 64), batchsize=30))
+julia> foreach(println∘size, Flux.DataLoader(rand(10, 64), batchsize=30))  # partial=false would omit last
 (10, 30)
 (10, 30)
-(10, 4)   # partial=false would omit this
+(10, 4)
 ```
 """
 function DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
