@@ -108,6 +108,20 @@ julia> [m(x[i]) for i = 1:3]
  [-0.34613007, -0.54565114]
 ```
 
+!!! warning "Use of map and broadcast"
+    Mapping and broadcasting operations with stateful layers such as the one we are considering are discouraged,
+    since the julia language doesn't guarantee a specific execution order.
+    Therefore, avoid  
+    ```julia
+    y = m.(x)
+    # or 
+    y = map(m, x)
+    ```
+    and use explicit loops 
+    ```julia
+    y = [m(x) for x in x]
+    ```
+  
 If for some reason one wants to exclude the first step of the RNN chain for the computation of the loss, that can be handled with:
 
 ```julia
