@@ -23,8 +23,9 @@ Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is the observation dimension, i.e. the one
 divided into mini-batches.
 
-If `shuffle=true`, shuffles the observations each time iterations are re-started.
-If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
+If `shuffle=true`, it shuffles the observations each time iterations are re-started.
+If `partial=false` and the number of observations is not divisible by the batchsize, 
+then the last mini-batch is dropped.
 
 The original data is preserved in the `data` field of the DataLoader.
 
@@ -70,10 +71,10 @@ true
 julia> first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
 false
 
-julia> foreach(println∘size, Flux.DataLoader(rand(10, 64), batchsize=30))  # partial=false would omit last
-(10, 30)
-(10, 30)
-(10, 4)
+julia> foreach(println∘summary, Flux.DataLoader(rand(Int8, 10, 64), batchsize=30))  # partial=false would omit last
+10×30 Matrix{Int8}
+10×30 Matrix{Int8}
+10×4 Matrix{Int8}
 ```
 """
 function DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
