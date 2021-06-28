@@ -18,14 +18,17 @@ Perform an update step of the parameters `ps` (or the single parameter `p`)
 according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
 
 As a result, the parameters are mutated and the optimizer's internal state may change.
+The gradient could be mutated as well.
 """
 function update!(opt, x, x̄)
-  x .-= apply!(opt, x, x̄)
+  x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
+                                          # output are not mutable, see #1510 
+  x .-= apply!(opt, x, x̄r)
 end
 
 function update!(opt, xs::Params, gs)
   for x in xs
-    gs[x] == nothing && continue
+    isnothing(gs[x]) && continue
     update!(opt, x, gs[x])
   end
 end
@@ -87,7 +90,6 @@ If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
 
 A callback is given with the keyword argument `cb`. For example, this will print
 "training" every 10 seconds (using [`Flux.throttle`](@ref)):
-
     train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
 
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.

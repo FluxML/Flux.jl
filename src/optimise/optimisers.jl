@@ -1,6 +1,8 @@
 using Flux
 using MacroTools: @forward
 
+abstract type AbstractOptimiser end
+
 const ϵ = 1e-8
 
 # TODO: should use weak refs
@@ -30,7 +32,7 @@ end
 Flux.Optimise.update!(opt, ps, gs)
 ```
 """
-mutable struct Descent
+mutable struct Descent <: AbstractOptimiser
   eta::Float64
 end
 
@@ -58,7 +60,7 @@ opt = Momentum()
 opt = Momentum(0.01, 0.99)
 ```
 """
-mutable struct Momentum
+mutable struct Momentum <: AbstractOptimiser
   eta::Float64
   rho::Float64
   velocity::IdDict
@@ -91,7 +93,7 @@ opt = Nesterov()
 opt = Nesterov(0.003, 0.95)
 ```
 """
-mutable struct Nesterov
+mutable struct Nesterov <: AbstractOptimiser
   eta::Float64
   rho::Float64
   velocity::IdDict
@@ -128,7 +130,7 @@ opt = RMSProp()
 opt = RMSProp(0.002, 0.95)
 ```
 """
-mutable struct RMSProp
+mutable struct RMSProp <: AbstractOptimiser
   eta::Float64
   rho::Float64
   acc::IdDict
@@ -161,7 +163,7 @@ opt = ADAM()
 opt = ADAM(0.001, (0.9, 0.8))
 ```
 """
-mutable struct ADAM
+mutable struct ADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   state::IdDict
@@ -202,7 +204,7 @@ opt = RADAM()
 opt = RADAM(0.001, (0.9, 0.8))
 ```
 """
-mutable struct RADAM
+mutable struct RADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   state::IdDict
@@ -251,7 +253,7 @@ opt = AdaMax()
 opt = AdaMax(0.001, (0.9, 0.995))
 ```
 """
-mutable struct AdaMax
+mutable struct AdaMax <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   state::IdDict
@@ -293,7 +295,7 @@ opt = OADAM()
 opt = OADAM(0.001, (0.9, 0.995))
 ```
 """
-mutable struct OADAM
+mutable struct OADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   state::IdDict
@@ -336,7 +338,7 @@ opt = ADAGrad()
 opt = ADAGrad(0.001)
 ```
 """
-mutable struct ADAGrad
+mutable struct ADAGrad <: AbstractOptimiser
   eta::Float64
   acc::IdDict
 end
@@ -367,7 +369,7 @@ opt = ADADelta()
 opt = ADADelta(0.89)
 ```
 """
-mutable struct ADADelta
+mutable struct ADADelta <: AbstractOptimiser
   rho::Float64
   state::IdDict
 end
@@ -404,7 +406,7 @@ opt = AMSGrad()
 opt = AMSGrad(0.001, (0.89, 0.995))
 ```
 """
-mutable struct AMSGrad
+mutable struct AMSGrad <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
   state::IdDict
@@ -444,7 +446,7 @@ opt = NADAM()
 opt = NADAM(0.002, (0.89, 0.995))
 ```
 """
-mutable struct NADAM
+mutable struct NADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
   state::IdDict
@@ -489,7 +491,7 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(η, β), WeightDecay(decay))
+  Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
 
 """
     AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999))
@@ -537,7 +539,7 @@ Combine several optimisers into one; each optimiser produces a modified gradient
 that will be fed into the next, and this is finally applied to the parameter as
 usual.
 """
-mutable struct Optimiser
+mutable struct Optimiser <: AbstractOptimiser
   os::Vector{Any}
 end
 
@@ -562,12 +564,21 @@ Apply inverse time decay to an optimiser, so that the effective step size at
 iteration `n` is `eta / (1 + γ * n)` where `eta` is the initial step size.
 The wrapped optimiser's step size is not modified.
 
+See also the [Scheduling Optimisers](@ref) section of the docs
+for more general scheduling techniques.
+
 # Examples
+
+`InvDecay` is typically composed  with other optimizers 
+as the last transformation of the gradient:
+
 ```julia
-Optimiser(InvDecay(..), Opt(..))
+# Inverse decay of the learning rate
+# with starting value 0.001 and decay coefficient 0.01.
+opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 ```
 """
-mutable struct InvDecay
+mutable struct InvDecay <: AbstractOptimiser
   gamma::Float64
   state::IdDict
 end
@@ -596,15 +607,19 @@ a minimum of `clip`.
                 two decay operations.
 - `clip`: Minimum value of learning rate.
 
-# Examples
-To apply exponential decay to an optimiser:
-```julia
-Optimiser(ExpDecay(..), Opt(..))
 
-opt = Optimiser(ExpDecay(), ADAM())
+See also the [Scheduling Optimisers](@ref) section of the docs
+for more general scheduling techniques.
+
+# Examples
+
+`ExpDecay` is typically composed  with other optimizers 
+as the last transformation of the gradient:
+```julia
+opt = Optimiser(ADAM(), ExpDecay())
 ```
 """
-mutable struct ExpDecay
+mutable struct ExpDecay <: AbstractOptimiser
   eta::Float64
   decay::Float64
   step::Int64
@@ -612,7 +627,8 @@ mutable struct ExpDecay
   current::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = 
+  ExpDecay(opt, decay, decay_step, clip, IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
   η, s, decay = o.eta, o.step, o.decay
@@ -625,14 +641,20 @@ function apply!(o::ExpDecay, x, Δ)
 end
 
 """
-    WeightDecay(wd = 0)
+    WeightDecay(λ = 0)
 
-Decay weights by `wd`.
+Decay weights by ``λ``. 
+Typically composed  with other optimizers as the first transformation to the gradient,
+making it equivalent to adding ``L_2`` regularization 
+with coefficient  ``λ`` to the loss.
 
-# Parameters
-- Weight decay (`wd`)
+# Examples
+
+```julia
+opt = Optimiser(WeigthDecay(1f-4), ADAM())
+```
 """
-mutable struct WeightDecay
+mutable struct WeightDecay <: AbstractOptimiser
   wd::Real
 end
 
@@ -648,7 +670,7 @@ end
 
 Clip gradients when their absolute value exceeds `thresh`.
 """
-mutable struct ClipValue{T}
+mutable struct ClipValue{T} <: AbstractOptimiser
     thresh::T
 end
 
@@ -659,7 +681,7 @@ apply!(o::ClipValue, x, Δ) = clamp!(Δ, -o.thresh, o.thresh)
 
 Clip gradients when their L2 norm exceeds `thresh`.
 """
-mutable struct ClipNorm{T}
+mutable struct ClipNorm{T} <: AbstractOptimiser
     thresh::T
 end
 

@@ -160,58 +160,6 @@ end
   end
 end
 
-@testset "conv output dimensions" begin
-  m = Conv((3, 3), 3 => 16)
-  @test Flux.outdims(m, (10, 10)) == (8, 8)
-  m = Conv((3, 3), 3 => 16; stride = 2)
-  @test Flux.outdims(m, (5, 5)) == (2, 2)
-  m = Conv((3, 3), 3 => 16; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = Conv((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-
-  m = ConvTranspose((3, 3), 3 => 16)
-  @test Flux.outdims(m, (8, 8)) == (10, 10)
-  m = ConvTranspose((3, 3), 3 => 16; stride = 2)
-  @test Flux.outdims(m, (2, 2)) == (5, 5)
-  m = ConvTranspose((3, 3), 3 => 16; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = ConvTranspose((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (4, 4)) == (5, 5)
-
-  m = DepthwiseConv((3, 3), 3 => 6)
-  @test Flux.outdims(m, (10, 10)) == (8, 8)
-  m = DepthwiseConv((3, 3), 3 => 6; stride = 2)
-  @test Flux.outdims(m, (5, 5)) == (2, 2)
-  m = DepthwiseConv((3, 3), 3 => 6; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = DepthwiseConv((3, 3), 3 => 6; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-
-  m = CrossCor((3, 3), 3 => 16)
-  @test Flux.outdims(m, (10, 10)) == (8, 8)
-  m = CrossCor((3, 3), 3 => 16; stride = 2)
-  @test Flux.outdims(m, (5, 5)) == (2, 2)
-  m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-
-  m = MaxPool((2, 2))
-  @test Flux.outdims(m, (10, 10)) == (5, 5)
-  m = MaxPool((2, 2); stride = 1)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-  m = MaxPool((2, 2); stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-
-  m = MeanPool((2, 2))
-  @test Flux.outdims(m, (10, 10)) == (5, 5)
-  m = MeanPool((2, 2); stride = 1)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-  m = MeanPool((2, 2); stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-end
-
 @testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
   data = ones(Float32, (k .+ 3)..., 1,1)
   l = ltype(k, 1=>1, pad=SamePad())
@@ -234,4 +182,21 @@ end
 
   l = ltype(k, pad=SamePad())
   @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
+end
+
+@testset "bugs fixed" begin
+  # https://github.com/FluxML/Flux.jl/issues/1421
+  @test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64}
+end
+
+@testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
+  @test fun(rand(2,3,4)).bias isa Vector{Float64}
+  @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
+  if fun == Conv
+    @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
+    @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
+  elseif fun == DepthwiseConv
+    @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
+  end
+  @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
 end

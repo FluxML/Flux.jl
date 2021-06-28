@@ -24,6 +24,8 @@ end
 
 @testset "Losses" begin
   include("losses.jl")
+  include("ctc.jl")
+  if Flux.use_cuda[] include("ctc-gpu.jl") end
 end
 
 @testset "Layers" begin
@@ -32,6 +34,12 @@ end
   include("layers/stateless.jl")
   include("layers/recurrent.jl")
   include("layers/conv.jl")
+  include("layers/upsample.jl")
+end
+
+@testset "outputsize" begin
+  using Flux: outputsize
+  include("outputsize.jl")
 end
 
 @testset "CUDA" begin

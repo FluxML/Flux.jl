@@ -1,6 +1,7 @@
 using Flux.Optimise
 using Flux.Optimise: runall
 using Flux: Params, gradient
+import FillArrays, ComponentArrays
 using Test
 using Random
 
@@ -131,13 +132,61 @@ end
 end
 
 @testset "Clipping" begin
-    w = randn(10, 10)
-    loss(x) = sum(w * x)
-    θ = Params([w])
-    x = 1000 * randn(10)
-    w̄ = gradient(() -> loss(x), θ)[w]
-    w̄_value = Optimise.apply!(ClipValue(1.0), w, copy(w̄))
-    @test all(w̄_value .<= 1)
-    w̄_norm = Optimise.apply!(ClipNorm(1.0), w, copy(w̄))
-    @test norm(w̄_norm) <= 1
+  w = randn(10, 10)
+  loss(x) = sum(w * x)
+  θ = Params([w])
+  x = 1000 * randn(10)
+  w̄ = gradient(() -> loss(x), θ)[w]
+  w̄_value = Optimise.apply!(ClipValue(1.0), w, copy(w̄))
+  @test all(w̄_value .<= 1)
+  w̄_norm = Optimise.apply!(ClipNorm(1.0), w, copy(w̄))
+  @test norm(w̄_norm) <= 1
+end
+
+@testset "update!: handle Fills from Zygote" begin
+  w = randn(10,10)
+  wold = copy(w)
+  g = FillArrays.Ones(size(w))
+  opt = Descent(0.1)
+  Flux.update!(opt, w, g)
+  @test w ≈ wold .- 0.1 
+
+  w = randn(3)
+  wold = copy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> w[1], θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w[1] ≈ wold[1] .- 0.1
+  @test w[2:3] ≈ wold[2:3] 
+
+  ## Issue #1510
+  w = randn(10,10)
+  wold = copy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> sum(w), θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w ≈ wold .- 0.1 
+end
+
+@testset "update!: handle ComponentArrays" begin
+  w = ComponentArrays.ComponentArray(a=1.0, b=[2, 1, 4], c=(a=2, b=[1, 2]))
+  wold = deepcopy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> sum(w.a) + sum(w.c.b), θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w.a ≈ wold.a .- 0.1
+  @test w.b ≈ wold.b
+  @test w.c.b ≈ wold.c.b .- 0.1
+  @test w.c.a ≈ wold.c.a
+
+  w = ComponentArrays.ComponentArray(a=1.0, b=[2, 1, 4], c=(a=2, b=[1, 2]))
+  wold = deepcopy(w)
+  θ = Flux.params([w])
+  gs = gradient(() -> sum(w), θ)
+  opt = Descent(0.1)
+  Flux.update!(opt, θ, gs)
+  @test w ≈ wold .- 0.1
 end

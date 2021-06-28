@@ -1,4 +1,4 @@
-## Basic Layers
+# Basic Layers
 
 These core layers form the foundation of almost all neural networks.
 
@@ -28,6 +28,13 @@ Flux.convfilter
 Flux.depthwiseconvfilter
 ```
 
+## Upsampling Layers
+
+```@docs
+Upsample
+PixelShuffle
+```
+
 ## Recurrent Layers
 
 Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).
@@ -41,14 +48,17 @@ Flux.reset!
 ```
 
 ## Other General Purpose Layers
+
 These are marginally more obscure than the Basic Layers.
 But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).
 
 ```@docs
 Maxout
 SkipConnection
+Parallel
+Flux.Bilinear
+Flux.Diagonal
 ```
-
 
 ## Normalisation & Regularisation
 
