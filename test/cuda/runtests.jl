@@ -26,7 +26,6 @@ end
   @test z2 === gpu(z2)
 end
 
-
 include("test_utils.jl")
 include("cuda.jl")
 include("losses.jl")
