@@ -1,52 +1,98 @@
-import Base: *
+import Adapt
+import .CUDA
 
-struct OneHotVector <: AbstractVector{Bool}
-  ix::UInt32
-  of::UInt32
+struct OneHotArray{T<:Integer, L, N, var"N+1", I<:Union{T, AbstractArray{T, N}}} <: AbstractArray{Bool, var"N+1"}
+  indices::I
+end
+OneHotArray{T, L, N, I}(indices) where {T, L, N, I} = OneHotArray{T, L, N, N+1, I}(indices)
+OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, 1, T}(indices)
+OneHotArray(indices::I, L::Integer) where {T, N, I<:AbstractArray{T, N}} = OneHotArray{T, L, N, N+1, I}(indices)
+
+_indices(x::OneHotArray) = x.indices
+_indices(x::Base.ReshapedArray{<: Any, <: Any, <: OneHotArray}) =
+  reshape(parent(x).indices, x.dims[2:end])
+
+const OneHotVector{T, L} = OneHotArray{T, L, 0, 1, T}
+const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
+
+OneHotVector(idx, L) = OneHotArray(idx, L)
+OneHotMatrix(indices, L) = OneHotArray(indices, L)
+
+function _show_elements(x::OneHotArray)
+  xbool = convert(Array{Bool}, cpu(x))
+  xrepr = join(split(repr(MIME("text/plain"), xbool; context= :limit => true), "\n")[2:end], "\n")
+
+  return xrepr
 end
 
-Base.size(xs::OneHotVector) = (Int64(xs.of),)
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
+  join(io, string.(size(x)), "×")
+  print(io, " Flux.OneHotArray{")
+  join(io, string.([L, N, I]), ",")
+  println(io, "}:")
+  print(io, _show_elements(x))
+end
+function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
+  print(io, string.(length(x)))
+  print(io, "-element Flux.OneHotVector{")
+  join(io, string.([L, T]), ",")
+  println(io, "}:")
+  print(io, _show_elements(x))
+end
 
-Base.getindex(xs::OneHotVector, i::Integer) = i == xs.ix
+# use this type so reshaped arrays hit fast paths
+# e.g. argmax
+const OneHotLike{T, L, N, var"N+1", I} =
+  Union{OneHotArray{T, L, N, var"N+1", I},
+        Base.ReshapedArray{Bool, var"N+1", <:OneHotArray{T, L, <:Any, <:Any, I}}}
 
-Base.getindex(xs::OneHotVector, ::Colon) = OneHotVector(xs.ix, xs.of)
+_isonehot(x::OneHotArray) = true
+_isonehot(x::Base.ReshapedArray{<:Any, <:Any, <:OneHotArray{<:Any, L}}) where L = (size(x, 1) == L)
 
-function Base.:*(A::AbstractMatrix, b::OneHotVector)
-  if size(A, 2) != b.of
-    throw(DimensionMismatch("Matrix column must correspond with OneHotVector size"))
+Base.size(x::OneHotArray{<:Any, L}) where L = (Int(L), size(x.indices)...)
+
+_onehotindex(x, i) = (x == i)
+
+Base.getindex(x::OneHotVector, i::Integer) = _onehotindex(x.indices, i)
+Base.getindex(x::OneHotVector{T, L}, ::Colon) where {T, L} = x
+
+Base.getindex(x::OneHotArray, i::Integer, I...) = _onehotindex.(x.indices[I...], i)
+Base.getindex(x::OneHotArray{<:Any, L}, ::Colon, I...) where L = OneHotArray(x.indices[I...], L)
+Base.getindex(x::OneHotArray{<:Any, <:Any, <:Any, N}, ::Vararg{Colon, N}) where N = x
+Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2:N]...]
+
+_onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
+_onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
+
+function Base.cat(x::OneHotLike{<:Any, L}, xs::OneHotLike{<:Any, L}...; dims::Int) where L
+  if isone(dims) || any(x -> !_isonehot(x), (x, xs...))
+    return cat(map(x -> convert(_onehot_bool_type(x), x), (x, xs...))...; dims = dims)
+  else
+    return OneHotArray(cat(_indices(x), _indices.(xs)...; dims = dims - 1), L)
   end
-  return A[:, b.ix]
 end
 
-struct OneHotMatrix{A<:AbstractVector{OneHotVector}} <: AbstractMatrix{Bool}
-  height::Int
-  data::A
-end
+Base.hcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 2)
+Base.vcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 1)
 
-Base.size(xs::OneHotMatrix) = (Int64(xs.height),length(xs.data))
+# optimized concatenation for matrices and vectors of same parameters
+Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 2}} =
+  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
+Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 1}} =
+  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
 
-Base.getindex(xs::OneHotMatrix, i::Union{Integer, AbstractVector}, j::Integer) = xs.data[j][i]
-Base.getindex(xs::OneHotMatrix, ::Colon, i::Integer) = xs.data[i]
-Base.getindex(xs::OneHotMatrix, ::Colon, i::AbstractArray) = OneHotMatrix(xs.height, xs.data[i])
-Base.getindex(xs::OneHotMatrix, ::Colon, ::Colon) = OneHotMatrix(xs.height, copy(xs.data))
+batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
 
-Base.getindex(xs::OneHotMatrix, i::Integer, ::Colon) = map(x -> x[i], xs.data)
+Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(adapt(T, _indices(x)), L)
 
-# remove workaround when https://github.com/JuliaGPU/CuArrays.jl/issues/676 is fixed
-A::AbstractMatrix * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
+Base.BroadcastStyle(::Type{<:OneHotArray{<: Any, <: Any, <: Any, N, <: CuArray}}) where N = CUDA.CuArrayStyle{N}()
 
-Base.hcat(x::OneHotVector, xs::OneHotVector...) = OneHotMatrix(length(x), [x, xs...])
+Base.map(f, x::OneHotLike) = Base.broadcast(f, x)
 
-batch(xs::AbstractArray{<:OneHotVector}) = OneHotMatrix(length(first(xs)), xs)
-
-import Adapt: adapt, adapt_structure
-
-adapt_structure(T, xs::OneHotMatrix) = OneHotMatrix(xs.height, adapt(T, xs.data))
-
-import .CUDA: CuArray, CuArrayStyle, cudaconvert
-import Base.Broadcast: BroadcastStyle, ArrayStyle
-BroadcastStyle(::Type{<:OneHotMatrix{<:CuArray}}) = CuArrayStyle{2}()
-cudaconvert(x::OneHotMatrix{<:CuArray}) = OneHotMatrix(x.height, cudaconvert(x.data))
+Base.argmax(x::OneHotLike; dims = Colon()) =
+  (_isonehot(x) && dims == 1) ?
+    reshape(CartesianIndex.(_indices(x), CartesianIndices(_indices(x))), 1, size(_indices(x))...) :
+    invoke(argmax, Tuple{AbstractArray}, x; dims = dims)
 
 """
     onehot(l, labels[, unk])
@@ -60,13 +106,13 @@ If `l` is not found in labels and  `unk` is present, the function returns
 # Examples
 ```jldoctest
 julia> Flux.onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotVector:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  1
  0
 
 julia> Flux.onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotVector:
+3-element Flux.OneHotVector{3,UInt32}:
  0
  0
  1
@@ -75,13 +121,13 @@ julia> Flux.onehot(:c, [:a, :b, :c])
 function onehot(l, labels)
   i = something(findfirst(isequal(l), labels), 0)
   i > 0 || error("Value $l is not in labels")
-  OneHotVector(i, length(labels))
+  OneHotVector{UInt32, length(labels)}(i)
 end
 
 function onehot(l, labels, unk)
   i = something(findfirst(isequal(l), labels), 0)
   i > 0 || return onehot(unk, labels)
-  OneHotVector(i, length(labels))
+  OneHotVector{UInt32, length(labels)}(i)
 end
 
 """
@@ -95,16 +141,13 @@ return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an erro
 # Examples
 ```jldoctest
 julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
+3×3 Flux.OneHotArray{3,2,Vector{UInt32}}:
  0  1  0
  1  0  1
  0  0  0
 ```
 """
-onehotbatch(ls, labels, unk...) =
-  OneHotMatrix(length(labels), [onehot(l, labels, unk...) for l in ls])
-
-Base.argmax(xs::OneHotVector) = xs.ix
+onehotbatch(ls, labels, unk...) = batch([onehot(l, labels, unk...) for l in ls])
 
 """
     onecold(y[, labels = 1:length(y)])
@@ -120,11 +163,44 @@ julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
 ```
 """
-onecold(y::AbstractVector, labels = 1:length(y)) = labels[Base.argmax(y)]
+onecold(y::AbstractVector, labels = 1:length(y)) = labels[argmax(y)]
+function onecold(y::AbstractArray, labels = 1:size(y, 1))
+  indices = _fast_argmax(y)
+  xs = isbits(labels) ? indices : collect(indices) # non-bit type cannot be handled by CUDA
 
-onecold(y::AbstractMatrix, labels...) =
-  dropdims(mapslices(y -> onecold(y, labels...), y, dims=1), dims=1)
+  return map(xi -> labels[xi[1]], xs)
+end
 
-onecold(y::OneHotMatrix, labels...) = map(x -> Flux.onecold(x, labels...), y.data)
+_fast_argmax(x::AbstractArray) = dropdims(argmax(x; dims = 1); dims = 1)
+function _fast_argmax(x::OneHotLike)
+  if _isonehot(x)
+    return _indices(x)
+  else
+    return _fast_argmax(convert(_onehot_bool_type(x), x))
+  end
+end
 
-@nograd onecold, onehot, onehotbatch
+@nograd OneHotArray, onecold, onehot, onehotbatch
+
+function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
+  _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
+  size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+  return A[:, onecold(B)]
+end
+for wrapper in [:Adjoint, :Transpose]
+  @eval begin
+    function Base.:*(A::$wrapper{<:Any, <:AbstractMatrix{T}}, b::OneHotVector{<:Any, L}) where {L, T}
+      size(A, 2) == L ||
+        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+
+      return A[:, onecold(b)]
+    end
+
+    function Base.:*(A::$wrapper{<:Number, <:AbstractVector{T}}, b::OneHotVector{<:Any, L}) where {L, T}
+      size(A, 2) == L ||
+        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+
+      return A[onecold(b)]
+    end
+  end
+end

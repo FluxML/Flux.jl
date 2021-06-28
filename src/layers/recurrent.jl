@@ -30,8 +30,8 @@ mutable struct Recur{T,S}
   state::S
 end
 
-function (m::Recur)(xs...)
-  m.state, y = m.cell(m.state, xs...)
+function (m::Recur)(x)
+  m.state, y = m.cell(m.state, x)
   return y
 end
 
@@ -56,7 +56,9 @@ reset!(m) = foreach(reset!, functor(m)[1])
 # TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
   if sym === :init
-    @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    Zygote.ignore() do
+      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    end
     return getfield(m.cell, :state0)
   else
     return getfield(m, sym)
@@ -78,10 +80,11 @@ end
 RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros, init_state=zeros) = 
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell)(h, x)
+function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
-  return h, h
+  sz = size(x)
+  return h, reshape(h, :, sz[2:end]...)
 end
 
 @functor RNNCell
@@ -98,13 +101,15 @@ end
 The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 """
-Recur(m::RNNCell) = Recur(m, m.state0)
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
+Recur(m::RNNCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::RNNCell, sym::Symbol)
   if sym === :h
-    @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    Zygote.ignore() do
+      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    end
     return getfield(m, :state0)
   else
     return getfield(m, sym)
@@ -129,7 +134,7 @@ function LSTMCell(in::Integer, out::Integer;
   return cell
 end
 
-function (m::LSTMCell)((h, c), x)
+function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
@@ -138,7 +143,8 @@ function (m::LSTMCell)((h, c), x)
   output = σ.(gate(g, o, 4))
   c = forget .* c .+ input .* cell
   h′ = output .* tanh.(c)
-  return (h′, c), h′
+  sz = size(x)
+  return (h′, c), reshape(h′, :, sz[2:end]...)
 end
 
 @functor LSTMCell
@@ -155,19 +161,21 @@ recurrent layer. Behaves like an RNN but generally exhibits a longer memory span
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
-# Recur(m::LSTMCell) = Recur(m, (zeros(length(m.b)÷4), zeros(length(m.b)÷4)),
-#   (zeros(length(m.b)÷4), zeros(length(m.b)÷4)))
-Recur(m::LSTMCell) = Recur(m, m.state0)
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
+Recur(m::LSTMCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::LSTMCell, sym::Symbol)
   if sym === :h
-    @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    Zygote.ignore() do
+      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    end
     return getfield(m, :state0)[1]
   elseif sym === :c
+    Zygote.ignore() do
       @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
-      return getfield(m, :state0)[2]
+    end  
+    return getfield(m, :state0)[2]
   else
     return getfield(m, sym)
   end
@@ -185,14 +193,15 @@ end
 GRUCell(in, out; init = glorot_uniform, initb = zeros, init_state = zeros) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
-function (m::GRUCell)(h, x)
+function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
   gx, gh = m.Wi*x, m.Wh*h
   r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
   z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
-  return h′, h′
+  sz = size(x)
+  return h′, reshape(h′, :, sz[2:end]...)
 end
 
 @functor GRUCell
@@ -209,13 +218,15 @@ RNN but generally exhibits a longer memory span over sequences.
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
-Recur(m::GRUCell) = Recur(m, m.state0)
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+Recur(m::GRUCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::GRUCell, sym::Symbol)
   if sym === :h
-    @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    Zygote.ignore() do
+      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    end
     return getfield(m, :state0)
   else
     return getfield(m, sym)

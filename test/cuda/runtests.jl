@@ -1,9 +1,9 @@
 using Flux, Test, CUDA
+using Zygote
 using Zygote: pullback
 
 @info "Testing GPU Support"
 CUDA.allowscalar(false)
-
 
 function gpu_gradtest(f, args...)
   args_gpu = gpu.(args)
@@ -17,14 +17,16 @@ function gpu_gradtest(f, args...)
   @test l_cpu ≈ l_gpu   rtol=1e-4 atol=1e-4
   @test g_gpu isa CuArray
   @test g_cpu ≈ collect(g_gpu)   rtol=1e-4 atol=1e-4
+end
 
+@testset "Moving Zeros to GPU" begin
   z = Flux.Zeros()
   z2 = Flux.Zeros(3,3)
   @test z === gpu(z)
   @test z2 === gpu(z2)
 end
 
-
+include("test_utils.jl")
 include("cuda.jl")
 include("losses.jl")
 include("layers.jl")

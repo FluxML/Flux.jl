@@ -8,13 +8,15 @@ using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
-
 export gradient
 
-export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTranspose,
-       AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool,
-       MeanPool, flatten, DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm,
-       InstanceNorm, GroupNorm, SkipConnection, params, fmap, cpu, gpu, f32, f64,
+export Chain, Dense, Maxout, SkipConnection, Parallel, flatten,
+       RNN, LSTM, GRU,
+       SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
+       AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
+       Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
+       Upsample, PixelShuffle,
+       params, fmap, cpu, gpu, f32, f64,
        testmode!, trainmode!
 
 include("optimise/Optimise.jl")
@@ -40,6 +42,9 @@ include("layers/basic.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
+include("layers/upsample.jl")
+
+include("outputsize.jl")
 
 include("data/Data.jl")
 

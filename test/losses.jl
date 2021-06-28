@@ -1,7 +1,7 @@
 using Test
 using Flux: onehotbatch, σ
 
-using Flux.Losses: mse, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
+using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
 using Flux.Losses: xlogx, xlogy
 
 # group here all losses, used in tests
@@ -13,7 +13,8 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.tversky_loss,
                     Flux.Losses.dice_coeff_loss,
                     Flux.Losses.poisson_loss,
-                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss]
+                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss]
 
 
 @testset "xlogx & xlogy" begin
@@ -56,29 +57,67 @@ end
 
 # Now onehot y's
 y = onehotbatch([1, 1, 0, 0], 0:1)
+y_smoothed = label_smoothing(y, 0.1)
 ŷ = [.1 .9; .9 .1; .9 .1; .1 .9]'
 v = log(.1 / .9)
 logŷ = [v 0.0; 0.0 v; 0.0 v; v 0.0]'
 lossvalue = 1.203972804325936
+lossvalue_smoothed = 1.2039728043259348
+yl = onehotbatch([1], 0:1)
+sf = 0.1
+yls = [sf (1-sf)]'  # Effective y after label smoothing
+ylp = [0.9 0.1]'
+logylp = [0.0 v]'
+
+# Construct `sim`ilar and `dis`imilar versions of the dataset so we can test effect of smoothing
+# smoothing should decrease loss on disimilar and increase the loss on similar, compared to
+# the loss without smoothing
+ya = onehotbatch([1, 1, 1, 0, 0], 0:1)
+ya_smoothed = label_smoothing(ya, 2sf)
+y_same = Float32.(ya)
+y_sim = y_same .* (1-2*sf) .+ sf
+y_dis = copy(y_sim)
+y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
 
 @testset "crossentropy" begin
   @test crossentropy([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ crossentropy([0.1,0.9], [0.1,0.9])
   @test crossentropy(ŷ, y) ≈ lossvalue
+  @test crossentropy(ŷ, y_smoothed) ≈ lossvalue_smoothed
+  @test crossentropy(ylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*log.(ylp))
+  @test crossentropy(ylp, yl) ≈ -sum(yl.*log.(ylp))
+  @test iszero(crossentropy(y_same, ya, ϵ=0))
+  @test iszero(crossentropy(ya, ya, ϵ=0))
+  @test crossentropy(y_sim, ya) < crossentropy(y_sim, ya_smoothed)
+  @test crossentropy(y_dis, ya) > crossentropy(y_dis, ya_smoothed)
 end
 
 @testset "logitcrossentropy" begin
   @test logitcrossentropy(logŷ, y) ≈ lossvalue
+  @test logitcrossentropy(logylp, yl) ≈ -sum(yl.*logsoftmax(logylp))
+  @test logitcrossentropy(logylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*logsoftmax(logylp))
 end
 
 logŷ, y = randn(3), rand(3)
+yls = y.*(1-2sf).+sf
 
 @testset "binarycrossentropy" begin
+  @test binarycrossentropy.(σ.(logŷ), label_smoothing(y, 2sf; dims=0); ϵ=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
   @test binarycrossentropy(σ.(logŷ), y; ϵ=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
   @test binarycrossentropy(σ.(logŷ), y) ≈ mean(-y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ))))
 end
 
 @testset "logitbinarycrossentropy" begin
+  @test logitbinarycrossentropy.(logŷ, label_smoothing(y, 0.2)) ≈ binarycrossentropy.(σ.(logŷ), label_smoothing(y, 0.2); ϵ=0)
   @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(σ.(logŷ), y; ϵ=0)
+end
+
+y = onehotbatch([1], 0:1)
+yls = [0.1 0.9]'
+@testset "label_smoothing" begin
+  @test label_smoothing(y, 0.2) == yls
+  @test label_smoothing(y, 0.2; dims=0) == label_smoothing.(y, 0.2; dims=0)
+  @test_throws ArgumentError label_smoothing([0., 0., 1., 0.], 1.2)
+  @test_throws ArgumentError label_smoothing([0., 0., 1., 0.], 0.)
 end
 
 y = [1 2 3]
@@ -135,4 +174,35 @@ end
       @test eltype(back(one(T))[1]) == T
     end
   end
+end
+
+@testset "binary_focal_loss" begin
+    y = [0  1  0
+         1  0  1]
+    ŷ = [0.268941  0.5  0.268941
+         0.731059  0.5  0.731059]
+
+    y1 = [1 0
+          0 1]
+    ŷ1 = [0.6 0.3
+          0.4 0.7]
+    @test Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
+    @test Flux.binary_focal_loss(ŷ1, y1) ≈ 0.05691642237852222
+    @test Flux.binary_focal_loss(ŷ, y; γ=0.0) ≈ Flux.binarycrossentropy(ŷ, y)
+end
+
+@testset "focal_loss" begin
+    y = [1  0  0  0  1
+         0  1  0  1  0
+         0  0  1  0  0]
+    ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+    y1 = [1 0
+          0 0
+          0 1]
+    ŷ1 = [0.4 0.2
+          0.5 0.5
+          0.1 0.3]
+    @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
+    @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
+    @test Flux.focal_loss(ŷ, y; γ=0.0) ≈ Flux.crossentropy(ŷ, y)
 end

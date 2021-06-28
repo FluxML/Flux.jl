@@ -59,6 +59,8 @@ ADADelta
 AMSGrad
 NADAM
 ADAMW
+OADAM
+AdaBelief
 ```
 
 ## Optimiser Interface
@@ -105,7 +107,7 @@ Flux defines a special kind of optimiser simply called `Optimiser` which takes i
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
 ```julia
-opt = Optimiser(ExpDecay(0.001, 0.1, 1000, 1e-4), Descent())
+opt = Optimiser(ExpDecay(1, 0.1, 1000, 1e-4), Descent())
 ```
 
 Here we apply exponential decay to the `Descent` optimiser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
@@ -130,6 +132,40 @@ loss(rand(10)) # around 0.9
 ```
 
 In this manner it is possible to compose optimisers for some added flexibility.
+
+```@docs
+Flux.Optimise.Optimiser
+```
+
+## Scheduling Optimisers
+
+In practice, it is fairly common to schedule the learning rate of an optimiser to obtain faster convergence. There are a variety of popular scheduling policies, and you can find implementations of them in [ParameterSchedulers.jl](https://darsnack.github.io/ParameterSchedulers.jl/dev/README.html). The documentation for ParameterSchedulers.jl provides a more detailed overview of the different scheduling policies, and how to use them with Flux optimizers. Below, we provide a brief snippet illustrating a [cosine annealing](https://arxiv.org/pdf/1608.03983.pdf) schedule with a momentum optimiser.
+
+First, we import ParameterSchedulers.jl and initalize a cosine annealing schedule to varying the learning rate between `1e-4` and `1e-2` every 10 steps. We also create a new [`Momentum`](@ref) optimiser.
+```julia
+using ParameterSchedulers
+
+opt = Momentum()
+schedule = Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10)
+for (eta, epoch) in zip(schedule, 1:100)
+  opt.eta = eta
+  # your training code here
+end
+```
+`schedule` can also be indexed (e.g. `schedule(100)`) or iterated like any iterator in Julia.
+
+ParameterSchedulers.jl schedules are stateless (they don't store their iteration state). If you want a _stateful_ schedule, you can use `ParameterSchedulers.Stateful`:
+```julia
+using ParameterSchedulers: Stateful, next!
+
+schedule = Stateful(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
+for epoch in 1:100
+  opt.eta = next!(schedule)
+  # your training code here
+end
+```
+
+ParameterSchedulers.jl allows for many more scheduling policies including arbitrary functions, looping any function with a given period, or sequences of many schedules. See the ParameterSchedulers.jl documentation for more info.
 
 ## Decays
 
