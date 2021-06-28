@@ -98,6 +98,11 @@ end
     @test cat(oa, oa; dims = 3) isa OneHotArray
     @test cat(oa, oa; dims = 1) == cat(collect(oa), collect(oa); dims = 1)
 
+    # reduce hcat 
+    @test reduce(hcat, [ov, ov]) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
+    @test reduce(hcat, [om, om]) == OneHotMatrix(vcat(om.indices, om.indices), 10)
+    @test reduce(hcat, [ov, om]) == OneHotMatrix(vcat(ov.indices, om.indices), 10)
+
     # proper error handling of inconsistent sizes
     @test_throws DimensionMismatch hcat(ov, ov2)
     @test_throws DimensionMismatch hcat(om, om2)
