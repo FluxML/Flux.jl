@@ -119,7 +119,7 @@ testmode!(m::AlphaDropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
-    LayerNorm(sz, λ = identity; affine = true, ϵ = 1fe-5)
+    LayerNorm(sz, λ = identity; affine = Diagonal(sz...), ϵ = 1fe-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states. 
@@ -130,8 +130,8 @@ The input is normalised along the first `length(sz)` dimensions
 for tuple `sz`, along the first dimension for integer `sz`.
 The input  is expected to have first dimensions' size equal to `sz`. 
 
-If `affine = true` also applies a learnable shift and rescaling
-as in the [`Diagonal`](@ref) layer.
+By default, LayerNorm also applies a learnable shift and rescaling
+as in the [`Diagonal`](@ref) layer. To disable this, pass `affine = identity`.
 
 
 Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
@@ -143,9 +143,9 @@ struct LayerNorm{F,D,T,S}
   sz::S
 end
 
-function LayerNorm(sz, λ = identity; affine = true, ϵ = 1f-5)
-  diag = affine ? Diagonal(sz...) : identity
-  return LayerNorm(λ, diag, ϵ, sz)
+function LayerNorm(sz, λ = identity; affine = Diagonal(sz...), ϵ = 1f-5)
+  # diag = affine ? Diagonal(sz...) : identity
+  return LayerNorm(λ, affine, ϵ, sz)
 end
 
 @functor LayerNorm
