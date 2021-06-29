@@ -12,7 +12,7 @@ julia&gt; actual(x) = 4x + 2
 actual (generic function with 1 method)</code></pre><p>This example will build a model to approximate the <code>actual</code> function.</p><h2 id="Provide-Training-and-Test-Data"><a class="docs-heading-anchor" href="#Provide-Training-and-Test-Data">Provide Training and Test Data</a><a id="Provide-Training-and-Test-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Provide-Training-and-Test-Data" title="Permalink"></a></h2><p>Use the <code>actual</code> function to build sets of data for training and verification:</p><pre><code class="language-none">julia&gt; x_train, x_test = hcat(0:5...), hcat(6:10...)
 ([0 1 … 4 5], [6 7 … 9 10])
 
-julia&gt; y_train, y_test = actual.(x_train), actual.(y_train)
+julia&gt; y_train, y_test = actual.(x_train), actual.(x_text)
 ([2 6 … 18 22], [26 30 … 38 42])</code></pre><p>Normally, your training and test data come from real world observations, but this function will simulate real-world observations.</p><h2 id="Build-a-Model-to-Make-Predictions"><a class="docs-heading-anchor" href="#Build-a-Model-to-Make-Predictions">Build a Model to Make Predictions</a><a id="Build-a-Model-to-Make-Predictions-1"></a><a class="docs-heading-anchor-permalink" href="#Build-a-Model-to-Make-Predictions" title="Permalink"></a></h2><p>Now, build a model to make predictions with <code>1</code> input and <code>1</code> output:</p><pre><code class="language-none">julia&gt; model = Dense(1, 1)
 Dense(1, 1)
 
