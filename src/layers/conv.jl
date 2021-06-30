@@ -41,7 +41,7 @@ In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
 This has `N=2` spatial dimensions, and needs a kernel size like `(5,5)`,
 a 2-tuple of integers. For different `N`, data should be `N_1 x N_2 x ... x N_n x channels x batch`,
-i.e. `spatial/temporal dimensions x channels x batch`.
+i.e. `spatial/temporal dimensions x channels x batch` (notice that the batch is the last dimension).
 
 For `N` spatial dimensions, this layer expects as input an array
 with `ndims(x) == N+2`, where `size(x,N+1) == in` is the number of channels.
