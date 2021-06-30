@@ -99,6 +99,10 @@ for op in (:+, :-, :*)
       (Δ, nothing)
     end
   end
+
+  @eval @adjoint function $op(a::Zeros, b::AbstractArray)
+    $op(a, b), Δ -> (nothing, Δ)
+  end
 end
 
 # Some opportunities to avoid scalar indexing, intermediaries
