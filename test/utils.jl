@@ -243,7 +243,7 @@ end
   @testset "Gradients for broadcasted $op with sizes $s" for op in (+, -, *), s in ((1,), (2,3))
     o = ones(s)
     z = zeros(s)
-    Z = Zeros(s)
+    Z = Zeros(s...)
     a = ones(3,3)
     b = zeros(3,3)
     b′ = Zeros(3,3)
