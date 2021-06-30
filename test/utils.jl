@@ -270,7 +270,7 @@ end
       bz = Zeros(3,3,3)
 
       for op in (+, -)
-        @test broadcast(op, a,b) == broadcast(op, a, bz)
+        @test broadcast(op, a, b) == broadcast(op, a, bz)
       end
 
       for op in (+, -)
@@ -308,7 +308,7 @@ end
   @testset "Gradients for broadcasted / with sizes $s" for s in ((1,), (2,3))
     o = ones(s)
     z = zeros(s)
-    Z = Zeros() # Only defined for 0-dim
+    Z = Zeros(s...) # Only defined for 0-dim
 
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(x ./ y), args...)
@@ -329,7 +329,7 @@ end
   @testset "Gradients for $op with sizes $s" for op in (+, -), s in (tuple(), (1,), (2,3))
     o = ones(s)
     z = zeros(s)
-    Z = Zeros()
+    Z = Zeros(s...)
 
 
     @testset "Explicit" begin
@@ -374,7 +374,7 @@ end
     dl(4, 3, bias)
   )
 
-  nobias(n) = Zeros()
+  nobias(n) = Zeros(n)
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
     @test l1.W == l2.W
     @test l1.b == l2.b
