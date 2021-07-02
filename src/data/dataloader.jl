@@ -62,10 +62,7 @@ julia> for epoch in 1:100
          end
        end
 
-julia> first(train_loader) isa NamedTuple{(:data, :label)}
-true
-
-julia> first(train_loader).label isa Vector{Char}  # acces via property name
+julia> first(train_loader).label isa Vector{Char}  # access via property name
 true
 
 julia> first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
