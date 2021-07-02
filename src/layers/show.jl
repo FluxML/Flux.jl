@@ -24,7 +24,7 @@ function _big_show(io::IO, obj, indent::Int=0)
     end
     if indent == 0
       print(io, ")")
-      _big_finale(io, params(obj))
+      _big_finale(io, obj)
     else
       println(io, " "^indent, "),")
     end
@@ -60,10 +60,11 @@ function _layer_show(io::IO, layer, indent::Int=0)
   indent==0 || println(io)
 end
 
-function _big_finale(io::IO, ps)
+function _big_finale(io::IO, m)
+  ps = params(m)
   if length(ps) > 2
     pars = underscorise(sum(length, ps))
-    bytes = Base.format_bytes(sum(sizeof, ps))
+    bytes = Base.format_bytes(Base.summarysize(m))
     printstyled(io, " "^19, "# Total: ", length(ps), " arrays, ", pars, " parameters, ", bytes; color=:light_black)
   end
 end
