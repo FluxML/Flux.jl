@@ -25,8 +25,10 @@ end
 
 # This can be made an error in Flux v0.13, for now just a warning
 function match_sizes(ŷ, y)
-  if size(ŷ) != size(y)
-    @error "size mismatch in loss function! In future this will be an error; in Flux 0.12 broadcasting acceps some mismatches" summary(ŷ) summary(y) maxlog=3 _id=hash(size(y))
+  for d in 1:max(ndims(ŷ), ndims(y)) 
+    if size(ŷ,d) != size(y,d)
+      @error "size mismatch in loss function! In future this will be an error; in Flux 0.12 broadcasting acceps some mismatches" summary(ŷ) summary(y) maxlog=3 _id=hash(size(y))
+    end
   end
 end
 
