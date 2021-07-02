@@ -118,7 +118,7 @@ end
   w = rand(Float32, 2,2,1,1)
   y = CrossCor(w, [0.0])
 
-  @test isapprox(sum(w .* x[1:2, 1:2, :, :]), y(x)[1, 1, 1, 1], rtol=1e-7)
+  @test sum(w .* x[1:2, 1:2, :, :]) ≈ y(x)[1, 1, 1, 1]  rtol=1e-7
 
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
@@ -131,7 +131,7 @@ end
 
   @test size(m(r)) == (10, 5)
   @test y(x) != Conv(w, [0.0])(x)
-  @test isapprox(CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x), Conv(w, [0.0])(x), rtol=1e-7)
+  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) ≈ Conv(w, [0.0])(x)  rtol=1e-7
 end
 
 @testset "Conv with non quadratic window #700" begin
