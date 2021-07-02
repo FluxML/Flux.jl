@@ -1,7 +1,7 @@
 """
-xlogx(x)
+    xlogx(x)
 
-Return `x * log(x)` for `x ≥ 0`, handling `x = 0` by taking the downward limit.
+Return `x * log(x)` for `x ≥ 0`, handling `x == 0` by taking the limit from above, to get zero.
 """
 function xlogx(x)
   result = x * log(x)
@@ -9,9 +9,9 @@ function xlogx(x)
 end
 
 """
-xlogy(x, y)
+    xlogy(x, y)
 
-Return `x * log(y)` for `y > 0` with correct limit at `x = 0`.
+Return `x * log(y)` for `y > 0`, and zero when `x == 0`.
 """
 function xlogy(x, y)
   result = x * log(y)
