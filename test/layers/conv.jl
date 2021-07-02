@@ -6,21 +6,21 @@ using Flux: gradient
   x = randn(Float32, 10, 10, 3, 2)
   y = randn(Float32, 20, 20, 3, 2)
   ampx = AdaptiveMaxPool((5,5))
-  @test ampx(x) == maxpool(x, PoolDims(x, 2))
+  @test ampx(x) ≈ maxpool(x, PoolDims(x, 2))
   ampx = AdaptiveMeanPool((5,5))
-  @test ampx(x) == meanpool(x, PoolDims(x, 2))
+  @test ampx(x) ≈ meanpool(x, PoolDims(x, 2))
   ampy = AdaptiveMaxPool((10, 5))
-  @test ampy(y) == maxpool(y, PoolDims(y, (2, 4)))
+  @test ampy(y) ≈ maxpool(y, PoolDims(y, (2, 4)))
   ampy = AdaptiveMeanPool((10, 5))
-  @test ampy(y) == meanpool(y, PoolDims(y, (2, 4)))
+  @test ampy(y) ≈ meanpool(y, PoolDims(y, (2, 4)))
   gmp = GlobalMaxPool()
-  @test size(gmp(x)) == (1, 1, 3, 2)
+  @test size(gmp(x)) ≈ (1, 1, 3, 2)
   gmp = GlobalMeanPool()
-  @test size(gmp(x)) == (1, 1, 3, 2)
+  @test size(gmp(x)) ≈ (1, 1, 3, 2)
   mp = MaxPool((2, 2))
-  @test mp(x) == maxpool(x, PoolDims(x, 2))
+  @test mp(x) ≈ maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
-  @test mp(x) == meanpool(x, PoolDims(x, 2))
+  @test mp(x) ≈ meanpool(x, PoolDims(x, 2))
 end
 
 @testset "CNN" begin
@@ -33,14 +33,14 @@ end
     x -> reshape(x, :, size(x, 4)),
     Dense(288, 10), softmax)
 
-  @test size(m(r)) == (10, 5)
+  @test size(m(r)) ≈ (10, 5)
 
   # Test bias switch
   bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
   ip = zeros(Float32, 28,28,1,1)
 
   op = bias(ip)
-  @test sum(op) == prod(size(op))
+  @test sum(op) ≈ prod(size(op))
 
   @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
     bias = Conv((2,2), 1=>3, bias = false) |> lmap
@@ -70,10 +70,10 @@ end
 @testset "asymmetric padding" begin
   r = ones(Float32, 28, 28, 1, 1)
   m = Conv((3, 3), 1=>1, relu; pad=(0,1,1,2))
-  m.weight[:] .= 1.0
-  m.bias[:] .= 0.0
+  m.weight[:] .= 1.0f0
+  m.bias[:] .= 0.0f0
   y_hat = m(r)[:,:,1,1]
-  @test size(y_hat) == (27, 29)
+  @test size(y_hat) ≈ (27, 29)
   @test y_hat[1, 1] ≈ 6.0
   @test y_hat[2, 2] ≈ 9.0
   @test y_hat[end, 1] ≈ 4.0
@@ -85,13 +85,13 @@ end
 @testset "Depthwise Conv" begin
   r = zeros(Float32, 28, 28, 3, 5)
   m1 = DepthwiseConv((2, 2), 3=>15)
-  @test size(m1(r), 3) == 15
+  @test size(m1(r), 3) ≈ 15
 
   m2 = DepthwiseConv((2, 3), 3=>9)
-  @test size(m2(r), 3) == 9
+  @test size(m2(r), 3) ≈ 9
 
   m3 = DepthwiseConv((2, 3), 3=>9; bias=false)
-  @test size(m2(r), 3) == 9
+  @test size(m2(r), 3) ≈ 9
 
   # Test that we cannot ask for non-integer multiplication factors
   @test_throws AssertionError DepthwiseConv((2,2), 3=>10)
@@ -102,7 +102,7 @@ end
   y = Conv((3,3), 1 => 1)(x)
   x_hat1 = ConvTranspose((3, 3), 1 => 1)(y)
   x_hat2 = ConvTranspose((3, 3), 1 => 1, bias=false)(y)
-  @test size(x_hat1) == size(x_hat2) == size(x)
+  @test size(x_hat1) ≈ size(x_hat2) ≈ size(x)
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
@@ -129,9 +129,9 @@ end
     x -> reshape(x, :, size(x, 4)),
     Dense(288, 10), softmax)
 
-  @test size(m(r)) == (10, 5)
+  @test size(m(r)) ≈ (10, 5)
   @test y(x) != Conv(w, [0.0])(x)
-  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) == Conv(w, [0.0])(x)
+  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) ≈ Conv(w, [0.0])(x)
 end
 
 @testset "Conv with non quadratic window #700" begin
@@ -163,17 +163,17 @@ end
 @testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
   data = ones(Float32, (k .+ 3)..., 1,1)
   l = ltype(k, 1=>1, pad=SamePad())
-  @test size(l(data)) == size(data)
+  @test size(l(data)) ≈ size(data)
 
   l = ltype(k, 1=>1, pad=SamePad(), dilation = k .÷ 2)
-  @test size(l(data)) == size(data)
+  @test size(l(data)) ≈ size(data)
 
   stride = 3
   l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
-  if ltype == ConvTranspose
-    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2]
+  if ltype ≈ ConvTranspose
+    @test size(l(data))[1:end-2] ≈ stride .* size(data)[1:end-2]
   else
-    @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], stride)
+    @test size(l(data))[1:end-2] ≈ cld.(size(data)[1:end-2], stride)
   end
 end
 
@@ -181,7 +181,7 @@ end
   data = ones(Float32, (k .+ 3)..., 1,1)
 
   l = ltype(k, pad=SamePad())
-  @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
+  @test size(l(data))[1:end-2] ≈ cld.(size(data)[1:end-2], k)
 end
 
 @testset "bugs fixed" begin
@@ -192,10 +192,10 @@ end
 @testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
   @test fun(rand(2,3,4)).bias isa Vector{Float64}
   @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
-  if fun == Conv
+  if fun ≈ Conv
     @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
     @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
-  elseif fun == DepthwiseConv
+  elseif fun ≈ DepthwiseConv
     @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
   end
   @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
