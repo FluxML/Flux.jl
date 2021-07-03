@@ -279,7 +279,7 @@ testmode!(m::BatchNorm, mode=true) =
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
   (l.λ == identity) || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false") # ??
+  hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
 
