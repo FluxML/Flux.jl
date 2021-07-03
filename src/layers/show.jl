@@ -68,15 +68,15 @@ function _big_finale(io::IO, m)
     noncnt = _childarray_sum(_->1, m) - length(ps)
     if noncnt > 0
       nonparam = underscorise(_childarray_sum(length, m) - sum(length, ps))
-      printstyled(io, " "^19, "# Total: ", length(ps), " trainable arrays, ", pars, " parameters,\n"; color=:light_black)
-      printstyled(io, " "^20, "# plus ", noncnt, " non-trainable, ", nonparam, " parameters, total size ", bytes; color=:light_black)
+      printstyled(io, " "^09, "# Total: ", length(ps), " trainable arrays, with ", pars, " parameters,\n"; color=:light_black)
+      printstyled(io, " "^10, "# plus ", noncnt, " non-trainable, ", nonparam, " parameters, total size ", bytes; color=:light_black)
     else
       printstyled(io, " "^19, "# Total: ", length(ps), " arrays, ", pars, " parameters, ", bytes; color=:light_black)
     end
   end
 end
 
-_childarray_sum(f, x::AbstractArray) = f(x)  # count includes non-trainable arrays excluded from params
+_childarray_sum(f, x::AbstractArray) = f(x)
 _childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x))
 
 # utility functions
