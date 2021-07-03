@@ -55,6 +55,10 @@ function _layer_show(io::IO, layer, indent::Int=0)
   if !isempty(params(layer))
     print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
     printstyled(io, "# ", underscorise(sum(length, params(layer))), " parameters"; color=:light_black)
+    nonparam = _childarray_sum(length, layer) - sum(length, params(layer))
+    if nonparam > 0
+      printstyled(io, ", plus ", underscorise(nonparam); color=:light_black)
+    end
     _nan_show(io, params(layer))
   end
   indent==0 || println(io)
