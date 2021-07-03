@@ -57,7 +57,7 @@ function _layer_show(io::IO, layer, indent::Int=0)
     printstyled(io, "# ", underscorise(sum(length, params(layer))), " parameters"; color=:light_black)
     nonparam = _childarray_sum(length, layer) - sum(length, params(layer))
     if nonparam > 0
-      printstyled(io, ", plus ", underscorise(nonparam); color=:light_black)
+      printstyled(io, ", plus ", underscorise(nonparam), indent==0 ? " non-trainable" : ""; color=:light_black)
     end
     _nan_show(io, params(layer))
   end
