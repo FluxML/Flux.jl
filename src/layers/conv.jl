@@ -67,7 +67,7 @@ See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 julia> xs = rand(Float32, 100, 100, 3, 50); # a batch of images
 
 julia> lay = Conv((5,5), 3 => 7, relu; bias=false)
-Conv((5, 5), 3 => 7, relu)  # 525 parameters
+Conv((5, 5), 3 => 7, relu, bias=false)  # 525 parameters
 
 julia> lay(xs) |> size
 (96, 96, 7, 50)
@@ -291,7 +291,7 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> lay = DepthwiseConv((5,5), 3 => 6, relu; bias=false)
-DepthwiseConv((5, 5), 3 => 6, relu)  # 150 parameters
+DepthwiseConv((5, 5), 3 => 6, relu, bias=false)  # 150 parameters
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
@@ -379,7 +379,7 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> lay = CrossCor((5,5), 3 => 6, relu; bias=false)
-CrossCor((5, 5), 3 => 6, relu)  # 450 parameters
+CrossCor((5, 5), 3 => 6, relu, bias=false)  # 450 parameters
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
@@ -618,7 +618,7 @@ julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
 julia> m = Chain(Conv((5, 5), 3 => 7, pad=SamePad()), MaxPool((5, 5), pad=SamePad()))
 Chain(
-  Conv((5, 5), 3 => 7, pad=2),            # 532 parameters
+  Conv((5, 5), 3 => 7, pad=2),          # 532 parameters
   MaxPool((5, 5), pad=2),
 )
 
@@ -683,7 +683,7 @@ julia> xs = rand(Float32, 100, 100, 3, 50);
 
 julia> m = Chain(Conv((5,5), 3 => 7), MeanPool((5,5), pad=SamePad()))
 Chain(
-  Conv((5, 5), 3 => 7),                   # 532 parameters
+  Conv((5, 5), 3 => 7),                 # 532 parameters
   MeanPool((5, 5), pad=2),
 )
 
