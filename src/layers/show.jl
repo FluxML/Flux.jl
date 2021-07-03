@@ -72,10 +72,13 @@ function _big_finale(io::IO, m)
     noncnt = _childarray_sum(_->1, m) - length(ps)
     if noncnt > 0
       nonparam = underscorise(_childarray_sum(length, m) - sum(length, ps))
-      printstyled(io, " "^09, "# Total: ", length(ps), " trainable arrays, with ", pars, " parameters,\n"; color=:light_black)
-      printstyled(io, " "^10, "# plus ", noncnt, " non-trainable, ", nonparam, " parameters, total size ", bytes; color=:light_black)
+      printstyled(io, " "^09, "# Total: ", length(ps), " trainable arrays, with "; color=:light_black)
+      println(io, pars, " parameters")
+      printstyled(io, " "^10, "# plus ", noncnt, " non-trainable, ", nonparam, " parameters, summarysize "; color=:light_black)
+      print(io, bytes)
     else
-      printstyled(io, " "^19, "# Total: ", length(ps), " arrays, ", pars, " parameters, ", bytes; color=:light_black)
+      printstyled(io, " "^19, "# Total: ", length(ps), " arrays, "; color=:light_black)
+      print(io, pars, " parameters, ", bytes)
     end
   end
 end
