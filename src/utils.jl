@@ -727,8 +727,8 @@ Chain(
     BatchNorm(64, relu),                # 128 parameters, plus 128
   ),
   Dense(64, 10),                        # 650 parameters
-)         # Total: 6 trainable arrays, with 51_018 parameters
-          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB
+)         # Total: 6 trainable arrays, 51_018 parameters,
+          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB.
 
 julia> Flux.modules(m2)
 5-element Vector{Any}:
