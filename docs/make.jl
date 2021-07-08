@@ -1,7 +1,7 @@
 using Documenter, Flux, NNlib
 
-DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
-makedocs(modules=[Flux, NNlib],
+DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
+makedocs(modules = [Flux, NNlib, Functors],
          doctest = VERSION == v"1.5",
          sitename = "Flux",
          pages = ["Home" => "index.md",
@@ -13,7 +13,8 @@ makedocs(modules=[Flux, NNlib],
                      "Loss Functions" => "models/losses.md",
                      "Regularisation" => "models/regularisation.md",
                      "Advanced Model Building" => "models/advanced.md",
-                     "NNlib" => "models/nnlib.md"],
+                     "NNlib" => "models/nnlib.md",
+                     "Functors" => "models/functors.md"],
                   "Handling Data" =>
                     ["One-Hot Encoding" => "data/onehot.md",
                      "DataLoader" => "data/dataloader.md"],
