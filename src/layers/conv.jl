@@ -42,8 +42,9 @@ and a batch of 50 would be a `100×100×3×50` array.
 This has `N=2` spatial dimensions, and needs a kernel size like `(5,5)`,
 a 2-tuple of integers.
 
-For `N` spatial dimensions, this layer expects as input an array
-with `ndims(x) == N+2`, where `size(x,N+1) == in` is the number of channels.
+To take convolutions along `N` feature dimensions, this layer expects as input an array
+with `ndims(x) == N+2`, where `size(x, N+1) == in` is the number of input channels,
+and `size(x, ndims(x))` is (as always) the number of observations in a batch.
 Then:
 * `filter` should be a tuple of `N` integers.
 * Keywords `stride` and `dilation` should each be either single integer,
