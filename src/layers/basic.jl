@@ -98,7 +98,7 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
+    Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
 Create a traditional `Dense` layer, whose forward pass is given by:
@@ -118,7 +118,7 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 # Examples
 ```jldoctest
 julia> d = Dense(5, 2)
-Dense(5, 2)         # 12 parameters
+Dense(5 => 2)       # 12 parameters
 
 julia> d(rand(Float32, 5, 64)) |> size
 (2, 64)
@@ -127,7 +127,7 @@ julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimension
 (2, 1, 1, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
-Dense(5, 2, tanh; bias=false)  # 10 parameters
+Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
 julia> d1(ones(5))
 2-element Vector{Float64}:
@@ -148,9 +148,11 @@ struct Dense{F, M<:AbstractMatrix, B}
   end
 end
 
-function Dense(in::Integer, out::Integer, σ = identity;
-               init = glorot_uniform, bias=true)
+Dense(in::Integer, out::Integer, σ = identity; kw...) = Dense(in => out, σ; kw...)
 
+function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
+               initW = nothing, initb = nothing,
+               init = glorot_uniform, bias=true)
   Dense(init(out, in), bias, σ)
 end
 
@@ -166,7 +168,7 @@ end
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
+  print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
   l.bias == Zeros() && print(io, "; bias=false")
   print(io, ")")
@@ -410,9 +412,9 @@ and [`Maxout`](@ref) which reduces by broadcasting `max`.
 # Examples
 
 ```jldoctest
-julia> model = Chain(Dense(3, 5),
-                     Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
-                     Dense(8, 17));
+julia> model = Chain(Dense(3 => 5),
+                     Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
+                     Dense(8 => 17));
 
 julia> model(rand(3)) |> size
 (17,)
@@ -420,8 +422,8 @@ julia> model(rand(3)) |> size
 julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
 Parallel(
   +,
-  α = Dense(10, 2, tanh),               # 22 parameters
-  β = Dense(5, 2),                      # 12 parameters
+  α = Dense(10 => 2, tanh),             # 22 parameters
+  β = Dense(5 => 2),                    # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
 julia> model2(rand(10), rand(5)) |> size
