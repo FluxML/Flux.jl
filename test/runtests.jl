@@ -1,5 +1,6 @@
 using Flux
 using Flux.Data
+using Flux: OneHotArray, OneHotMatrix, OneHotVector
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
@@ -51,7 +52,7 @@ end
   end
 end
 
-@static if VERSION == v"1.5"
+@static if VERSION == v"1.6"
   using Documenter
   @testset "Docs" begin
     DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
