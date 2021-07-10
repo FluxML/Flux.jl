@@ -19,7 +19,7 @@ julia> Flux.mae(y_model, 1:3)
 ```
 """
 function mae(ŷ, y; agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(abs.(ŷ .- y))
 end
 
@@ -43,7 +43,7 @@ julia> Flux.mse(y_model, y_true)
 ```
 """
 function mse(ŷ, y; agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg((ŷ .- y) .^ 2)
 end
 
@@ -67,7 +67,7 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 ```
 """
 function msle(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
 end
 
@@ -82,7 +82,7 @@ given the prediction `ŷ` and true values `y`.
                  |  δ * (|ŷ - y| - 0.5 * δ), otherwise
 """
 function huber_loss(ŷ, y; agg = mean, δ = ofeltype(ŷ, 1))
-   match_sizes(ŷ, y)
+   _check_sizes(ŷ, y)
    abs_error = abs.(ŷ .- y)
    #TODO: remove dropgrad when Zygote can handle this function with CuArrays
    temp = Zygote.dropgrad(abs_error .<  δ)
@@ -212,7 +212,7 @@ julia> Flux.crossentropy(y_model, y_smooth)
 ```
 """
 function crossentropy(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
 end
 
@@ -251,7 +251,7 @@ julia> Flux.crossentropy(softmax(y_model), y_label)
 ```
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end
 
@@ -300,7 +300,7 @@ julia> Flux.crossentropy(y_prob, y_hot)
 ```
 """
 function binarycrossentropy(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
 end
 
@@ -330,7 +330,7 @@ julia> Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
 ```
 """
 function logitbinarycrossentropy(ŷ, y; agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(@.((1 - y) * ŷ - logσ(ŷ)))
 end
 
@@ -370,7 +370,7 @@ Inf
 ```
 """
 function kldivergence(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   entropy = agg(sum(xlogx.(y), dims = dims))
   cross_entropy = crossentropy(ŷ, y; dims = dims, agg = agg, ϵ = ϵ)
   return entropy + cross_entropy
@@ -385,7 +385,7 @@ end
 [More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
 function poisson_loss(ŷ, y; agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(ŷ .- xlogy.(y, ŷ))
 end
 
@@ -399,7 +399,7 @@ prediction `ŷ` and true labels `y` (containing 1 or -1); calculated as
 See also: [`squared_hinge_loss`](@ref)
 """
 function hinge_loss(ŷ, y; agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg(max.(0, 1 .- ŷ .* y))
 end
 
@@ -412,7 +412,7 @@ Return the squared hinge_loss loss given the prediction `ŷ` and true labels `y
 See also: [`hinge_loss`](@ref)
 """
 function squared_hinge_loss(ŷ, y; agg = mean)
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   agg((max.(0, 1 .- ŷ .* y)) .^ 2)
 end
 
@@ -427,7 +427,7 @@ Similar to the F1_score. Calculated as:
     1 - 2*sum(|ŷ .* y| + smooth) / (sum(ŷ.^2) + sum(y.^2) + smooth)
 """
 function dice_coeff_loss(ŷ, y; smooth = ofeltype(ŷ, 1.0))
-  match_sizes(ŷ, y)
+  _check_sizes(ŷ, y)
   1 - (2 * sum(y .* ŷ) + smooth) / (sum(y .^ 2) + sum(ŷ .^ 2) + smooth) #TODO agg
 end
 
@@ -441,7 +441,7 @@ Calculated as:
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
 """
 function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
-    match_sizes(ŷ, y)
+    _check_sizes(ŷ, y)
     #TODO add agg
     num = sum(y .* ŷ) + 1
     den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
@@ -478,7 +478,7 @@ See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
 """
 function binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=epseltype(ŷ))
-    match_sizes(ŷ, y)
+    _check_sizes(ŷ, y)
     ŷ = ŷ .+ ϵ
     p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
     ce = -log.(p_t)
@@ -522,7 +522,7 @@ See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
 function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
-    match_sizes(ŷ, y)
+    _check_sizes(ŷ, y)
     ŷ = ŷ .+ ϵ
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
