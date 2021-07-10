@@ -475,7 +475,8 @@ function Embedding(in::Integer, out::Integer;
 end
 
 (m::Embedding)(x::Union{OneHotVector, OneHotMatrix}) = m.weight * x # equivalent to m.weight[:,onecold(x)]
-(m::Embedding)(x::Union{Int,AbstractVector}) = m.weight[:, x]
+(m::Embedding)(x::Integer) = m([x])
+(m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
 function Base.show(io::IO, m::Embedding)

@@ -226,19 +226,19 @@ end
   m = Chain(Dense(10, 5, relu), Dense(5, 2))
   x64 = rand(Float64, 10)
   x32 = rand(Float32, 10)
-  @test eltype(m[1].W) == Float32
+  @test eltype(m[1].weight) == Float32
   @test eltype(m(x32)) == Float32
   @test eltype(m(x64)) == Float64
   @test eltype(f64(m)(x32)) == Float64
   @test eltype(f64(m)(x64)) == Float64
-  @test eltype(f64(m)[1].W) == Float64
-  @test eltype(f32(f64(m))[1].W) == Float32
+  @test eltype(f64(m)[1].weight) == Float64
+  @test eltype(f32(f64(m))[1].weight) == Float32
 end
 
 @testset "Zeros" begin
   m = Dense(3,2; bias=false)
-  @test f64(m).b === m.b === Zeros()
-  @test f32(m).b === m.b === Zeros()
+  @test f64(m).bias === m.bias === Zeros()
+  @test f32(m).bias === m.bias === Zeros()
 
   @testset "Gradients for broadcasted $op with sizes $s" for op in (+,-,*), s in ((1,), (2,3))
     o = ones(s)
@@ -340,19 +340,20 @@ end
 
   nobias(n) = Zeros()
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
-    @test l1.W == l2.W
-    @test l1.b == l2.b
-    @test_skip typeof(l1.b) === typeof(l2.b)
+    @test l1.weight == l2.weight
+    @test l1.bias == l2.bias
+    @test_skip typeof(l1.bias) === typeof(l2.bias)
   end
 
   @testset "loadparams!" begin
     import Flux: loadparams!
     pars(w, b) = [w, b]
     import Flux: loadparams!, Zeros
+
     pars(w, b::Zeros) = [w, Flux.zeros32(size(w,1))]
-    pars(l) = pars(l.W, l.b)
+    pars(l) = pars(l.weight, l.bias)
     pararray(m) = mapreduce(pars, vcat, m)
-    weights(m) = mapreduce(l -> [l.W], vcat, m)
+    weights(m) = mapreduce(l -> [l.weight], vcat, m)
     @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
       m = dm(bt)
       loadparams!(m, params(m))

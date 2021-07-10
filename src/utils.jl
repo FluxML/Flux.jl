@@ -15,7 +15,7 @@ This function is mainly used by weight initializers, e.g., [`kaiming_normal`](@r
 ```jldoctest
 julia> layer = Dense(10, 20);
 
-julia> Flux.nfan(size(layer.W))
+julia> Flux.nfan(size(layer.weight))
 (10, 20)
 
 julia> layer = Conv((3, 3), 2=>10);

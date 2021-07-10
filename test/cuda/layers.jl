@@ -140,7 +140,7 @@ end
 
   @test sum(l(ip)) ≈ 0.f0
   gs = gradient(() -> sum(l(ip)), Flux.params(l))
-  @test l.b ∉ gs.params
+  @test l.bias ∉ gs.params
 end
 
 @testset "Extended BatchNorm" begin

@@ -15,7 +15,7 @@ Here's how you'd use Flux to build and train the most basic of models, step by s
 
 This example will predict the output of the function `4x + 2`. First, import `Flux` and define the function we want to simulate:
 
-```
+```julia
 julia> using Flux
 
 julia> actual(x) = 4x + 2
@@ -28,7 +28,7 @@ This example will build a model to approximate the `actual` function.
 
 Use the `actual` function to build sets of data for training and verification:
 
-```
+```julia
 julia> x_train, x_test = hcat(0:5...), hcat(6:10...)
 ([0 1 … 4 5], [6 7 … 9 10])
 
@@ -42,22 +42,22 @@ Normally, your training and test data come from real world observations, but thi
 
 Now, build a model to make predictions with `1` input and `1` output:
 
-```
+```julia
 julia> model = Dense(1, 1)
 Dense(1, 1)
 
-julia> model.W
-1-element Array{Float64,1}:
- -0.99009055
+julia> model.weight
+1×1 Matrix{Float32}:
+ -1.4925033
 
-julia> model.b
-1-element Array{Float64,1}:
+julia> model.bias
+1-element Vector{Float32}:
  0.0
 ```
 
-Under the hood, a dense layer is a struct with fields `W` and `b`. `W` represents a weight and `b` represents a bias. There's another way to think about a model. In Flux, *models are conceptually predictive functions*: 
+Under the hood, a dense layer is a struct with fields `weight` and `bias`. `weight` represents a weights' matrix and `bias` represents a bias vector. There's another way to think about a model. In Flux, *models are conceptually predictive functions*: 
 
-```
+```julia
 julia> predict = Dense(1, 1)
 ```
 
@@ -65,15 +65,15 @@ julia> predict = Dense(1, 1)
 
 This model will already make predictions, though not accurate ones yet:
 
-```
+```julia
 julia> predict(x_train)
-1×6 Array{Float32,2}:
- -1.98018  -5.94054  -9.90091  -13.8613  -17.8216  -21.782
+1×6 Matrix{Float32}:
+ 0.0  -1.4925  -2.98501  -4.47751  -5.97001  -7.46252
 ```
 
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
-```
+```julia
 julia> loss(x, y) = Flux.Losses.mse(predict(x), y)
 loss (generic function with 1 method)
 
@@ -87,7 +87,7 @@ More accurate predictions will yield a lower loss. You can write your own loss f
 
 Under the hood, the Flux [`train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
 
-```
+```julia
 julia> using Flux: train!
 
 julia> opt = Descent()
@@ -100,12 +100,12 @@ julia> data = [(x_train, y_train)]
 
 Now, we have the optimiser and data we'll pass to `train!`. All that remains are the parameters of the model. Remember, each model is a Julia struct with a function and configurable parameters. Remember, the dense layer has weights and biases that depend on the dimensions of the inputs and outputs: 
 
-```
-julia> predict.W
+```julia
+julia> predict.weight
 1-element Array{Float64,1}:
  -0.99009055
 
-julia> predict.b
+julia> predict.bias
 1-element Array{Float64,1}:
  0.0
 ```
@@ -120,7 +120,7 @@ Params([[-0.99009055], [0.0]])
 These are the parameters Flux will change, one step at a time, to improve predictions. Each of the parameters comes from the `predict` model: 
 
 ```
-julia> predict.W in parameters, predict.b in parameters
+julia> predict.weight in parameters, predict.bias in parameters
 (true, true)
 
 ```
