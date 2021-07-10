@@ -89,7 +89,7 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 # Examples
 ```jldoctest
 julia> d = Dense(5, 2)
-Dense(5, 2)
+Dense(5, 2)         # 12 parameters
 
 julia> d(rand(Float32, 5, 64)) |> size
 (2, 64)
@@ -98,7 +98,7 @@ julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimension
 (2, 1, 1, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
-Dense(5, 2, tanh; bias=false)
+Dense(5, 2, tanh; bias=false)  # 10 parameters
 
 julia> d1(ones(5))
 2-element Vector{Float64}:
@@ -395,7 +395,11 @@ julia> size(model(rand(3)))
 (17,)
 
 julia> model = Parallel(+, Dense(10, 2), Dense(5, 2))
-Parallel(+, Dense(10, 2), Dense(5, 2))
+Parallel(
+  +,
+  Dense(10, 2),                         # 22 parameters
+  Dense(5, 2),                          # 12 parameters
+)                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
 julia> size(model(rand(10), rand(5)))
 (2,)
@@ -416,6 +420,8 @@ Parallel(connection, layers...) = Parallel(connection, layers)
 
 Base.getindex(m::Parallel, i::Integer) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+
+trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
