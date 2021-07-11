@@ -74,7 +74,7 @@ Using these tools, we can now build the model shown in the above diagram with:
 ```julia
 m = Chain(RNN(2, 5), Dense(5, 1))
 ```
-In this example, each output has two components.
+In this example, each output has only one component.
 
 ## Working with sequences
 
