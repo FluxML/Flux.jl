@@ -443,6 +443,8 @@ or the corresponding [onehot encoding](@ref Flux.OneHotArray).
 # Examples
 
 ```julia-repl
+julia> using Flux: Embedding
+
 julia> vocab_size, embed_size = 1000, 4;
 
 julia> model = Embedding(vocab_size, embed_size)

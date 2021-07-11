@@ -262,7 +262,7 @@ end
 
 @testset "Embedding" begin
   vocab_size, embed_size = 5, 2
-  m = Embedding(vocab_size, embed_size)
+  m = Flux.Embedding(vocab_size, embed_size)
 
   x = [1, 3, 5]
   y = m(x)
@@ -281,7 +281,7 @@ end
 
   @testset "repeated indexes" begin
     vocab_size, embed_size = 5, 2
-    m = Embedding(vocab_size, embed_size)
+    m = Flux.Embedding(vocab_size, embed_size)
 
     x = [1, 3, 5, 3] # repeated indexes
     y = m(x)
