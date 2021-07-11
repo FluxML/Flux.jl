@@ -8,5 +8,6 @@ Functors.jl is a collection of tools designed to represent a [functor](https://e
 Functors.isleaf
 Functors.children
 Functors.fcollect
+Functors.functor
 Functors.fmap
 ```
