@@ -72,9 +72,9 @@ Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also availabl
 Using these tools, we can now build the model shown in the above diagram with: 
 
 ```julia
-m = Chain(RNN(2, 5), Dense(5, 2))
+m = Chain(RNN(2, 5), Dense(5, 1))
 ```
-In this example, each output has to components.
+In this example, each output has two components.
 
 ## Working with sequences
 
@@ -129,15 +129,14 @@ using Flux.Losses: mse
 
 function loss(x, y)
   m(x[1]) # ignores the output but updates the hidden states
-  l = sum(mse(m(xi), yi) for (xi, yi) in zip(x[2:end], y))
-  return l
+  sum(mse(m(xi), yi) for (xi, yi) in zip(x[2:end], y))
 end
 
-y = [rand(Float32, 2) for i=1:2]
+y = [rand(Float32, 1) for i=1:2]
 loss(x, y)
 ```
 
-In such model, only the last two outputs are used to compute the loss, hence the target `y` being of length 2. This is a strategy that can be used to easily handle a `seq-to-one` kind of structure, compared to the `seq-to-seq` assumed so far.   
+In such a model, only the last two outputs are used to compute the loss, hence the target `y` being of length 2. This is a strategy that can be used to easily handle a `seq-to-one` kind of structure, compared to the `seq-to-seq` assumed so far.   
 
 Alternatively, if one wants to perform some warmup of the sequence, it could be performed once, followed with a regular training where all the steps of the sequence would be considered for the gradient update:
 
@@ -150,8 +149,8 @@ seq_init = [rand(Float32, 2)]
 seq_1 = [rand(Float32, 2) for i = 1:3]
 seq_2 = [rand(Float32, 2) for i = 1:3]
 
-y1 = [rand(Float32, 2) for i = 1:3]
-y2 = [rand(Float32, 2) for i = 1:3]
+y1 = [rand(Float32, 1) for i = 1:3]
+y2 = [rand(Float32, 1) for i = 1:3]
 
 X = [seq_1, seq_2]
 Y = [y1, y2]
@@ -172,7 +171,8 @@ In this scenario, it is important to note that a single continuous sequence is c
 Batch size would be 1 here as there's only a single sequence within each batch. If the model was to be trained on multiple independent sequences, then these sequences could be added to the input data as a second dimension. For example, in a language model, each batch would contain multiple independent sentences. In such scenario, if we set the batch size to 4, a single batch would be of the shape:
 
 ```julia
-batch = [rand(Float32, 2, 4) for i = 1:3]
+x = [rand(Float32, 2, 4) for i = 1:3]
+y = [rand(Float32, 1, 4) for i = 1:3]
 ```
 
 That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix).
