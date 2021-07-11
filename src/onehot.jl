@@ -57,16 +57,15 @@ end
 
 # this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
 function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
-    # CUDA.@allowscalar(x[i,j]) ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
     x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
 end
 function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
-    CUDA.@allowscalar(x[i,j]) ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
+    x[i,j] ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
 end
 
-# Base.show(io::IO, x::OneHotLike) = show(io, convert(Array{Bool}, cpu(x))) # helps string(cu(y))
-
 Base.print_array(io::IO, X::OneHotLike{T, L, N, var"N+1", <:CuArray}) where {T, L, N, var"N+1"} = 
+  Base.print_array(io, cpu(X))
+Base.print_array(io::IO, X::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike{T, L, N, var"N+1", <:CuArray}}) where {T, L, N, var"N+1"} = 
   Base.print_array(io, cpu(X))
 
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
