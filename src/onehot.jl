@@ -19,7 +19,7 @@ OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
 function Base.showarg(io::IO, x::OneHotArray, toplevel)
-    print(io, ndims(x) == 1 ? "onehot(" : "onehotbatch(")
+    print(io, ndims(x) == 1 ? "OneHotVector(" : ndims(x) == 2 ? "OneHotMatrix(" : "OneHotArray(")
     Base.showarg(io, x.indices, false)
     print(io, ')')
     toplevel && print(io, " with eltype Bool")
@@ -27,11 +27,11 @@ function Base.showarg(io::IO, x::OneHotArray, toplevel)
 end
 
 # this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
-function Base.replace_in_print_matrix(x::OneHotArray, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : Base.replace_with_centered_mark(s)
+function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
+    x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
 end
-function Base.replace_in_print_matrix(x::Adjoint{Bool, <:OneHotArray}, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : Base.replace_with_centered_mark(s)
+function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
+    x[i,j] ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
 end
 
 # use this type so reshaped arrays hit fast paths
@@ -103,13 +103,13 @@ and [`onecold`](@ref) for a `labels`-aware `argmax`.
 # Examples
 ```jldoctest
 julia> Flux.onehot(:b, [:a, :b, :c])
-3-element onehot(::UInt32) with eltype Bool:
+3-element OneHotVector(::UInt32) with eltype Bool:
  ⋅
  1
  ⋅
 
 julia> Flux.onehot(-33, 0:19, 0)'  # uses default
-1×20 adjoint(onehot(::UInt32)) with eltype Bool:
+1×20 adjoint(OneHotVector(::UInt32)) with eltype Bool:
  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
 ```
 """
@@ -143,7 +143,7 @@ the first dimension, i.e. `result[:, k...] == onehot(xs[k...], labels)`.
 # Examples
 ```jldoctest
 julia> oh = Flux.onehotbatch(collect("abracadabra"), 'a':'e', 'e')
-5×11 onehotbatch(::Vector{UInt32}) with eltype Bool:
+5×11 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  1  ⋅  ⋅  1  ⋅  1  ⋅  1  ⋅  ⋅  1
  ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅
  ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
