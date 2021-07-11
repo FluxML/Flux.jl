@@ -1,6 +1,12 @@
 import Adapt
 import .CUDA
 
+"""
+    OneHotArray{T,L,N,M,I} <: AbstractArray{Bool,M}
+
+These are constructed by [`onehot`](@ref) and [`onehotbatch`](@ref).
+Parameter `I` is the type of the underlying storage, and `T` its eltype.
+"""
 struct OneHotArray{T<:Integer, L, N, var"N+1", I<:Union{T, AbstractArray{T, N}}} <: AbstractArray{Bool, var"N+1"}
   indices::I
 end
@@ -15,7 +21,9 @@ _indices(x::Base.ReshapedArray{<: Any, <: Any, <: OneHotArray}) =
 const OneHotVector{T, L} = OneHotArray{T, L, 0, 1, T}
 const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 
+@doc @doc(OneHotArray)
 OneHotVector(idx, L) = OneHotArray(idx, L)
+@doc @doc(OneHotArray)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
 # use this type so reshaped arrays hit fast paths
@@ -49,11 +57,17 @@ end
 
 # this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
 function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
-    CUDA.@allowscalar(x[i,j]) ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
+    # CUDA.@allowscalar(x[i,j]) ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
+    x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
 end
 function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
     CUDA.@allowscalar(x[i,j]) ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
 end
+
+# Base.show(io::IO, x::OneHotLike) = show(io, convert(Array{Bool}, cpu(x))) # helps string(cu(y))
+
+Base.print_array(io::IO, X::OneHotLike{T, L, N, var"N+1", <:CuArray}) where {T, L, N, var"N+1"} = 
+  Base.print_array(io, cpu(X))
 
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
@@ -102,26 +116,31 @@ and [`onecold`](@ref) for a `labels`-aware `argmax`.
 
 # Examples
 ```jldoctest
-julia> Flux.onehot(:b, [:a, :b, :c])
+julia> β = Flux.onehot(:b, [:a, :b, :c])
 3-element OneHotVector(::UInt32) with eltype Bool:
  ⋅
  1
  ⋅
 
-julia> Flux.onehot(-33, 0:19, 0)'  # uses default
-1×20 adjoint(OneHotVector(::UInt32)) with eltype Bool:
- 1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
+julia> αβγ = (Flux.onehot(0, 0:2), β, Flux.onehot(:z, [:a, :b, :c], :c))  # uses default
+(Bool[1, 0, 0], Bool[0, 1, 0], Bool[0, 0, 1])
+
+julia> hcat(αβγ...)  # preserves sparsity
+3×3 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
+ 1  ⋅  ⋅
+ ⋅  1  ⋅
+ ⋅  ⋅  1
 ```
 """
-function onehot(l, labels)
-  i = something(findfirst(isequal(l), labels), 0)
-  i > 0 || error("Value $l is not in labels")
+function onehot(x, labels)
+  i = something(findfirst(isequal(x), labels), 0)
+  i > 0 || error("Value $x is not in labels")
   OneHotVector{UInt32, length(labels)}(i)
 end
 
-function onehot(l, labels, unk)
-  i = something(findfirst(isequal(l), labels), 0)
-  i > 0 || return onehot(unk, labels)
+function onehot(x, labels, default)
+  i = something(findfirst(isequal(x), labels), 0)
+  i > 0 || return onehot(default, labels)
   OneHotVector{UInt32, length(labels)}(i)
 end
 
@@ -163,7 +182,7 @@ onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l
 """
     onecold(y, [labels])
 
-Roughly the inverse operations of [`onehot`](@ref): finds the index of
+Roughly the inverse operation of [`onehot`](@ref): finds the index of
 the largest element of `y`, or each column of `y`, and looks them up in `labels`.
 
 If `labels` are not specified, the default is integers `1:size(y,1)`,
@@ -171,8 +190,8 @@ similar to `argmax(y, dims=1)`.
 
 # Examples
 ```jldoctest
-julia> Flux.onecold([true, false, false], [:a, :b, :c])
-:a
+julia> Flux.onecold([false, true, false])
+2
 
 julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
