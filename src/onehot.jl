@@ -18,26 +18,20 @@ const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
-function _show_elements(x::OneHotArray)
-  xbool = convert(Array{Bool}, cpu(x))
-  xrepr = join(split(repr(MIME("text/plain"), xbool; context= :limit => true), "\n")[2:end], "\n")
-
-  return xrepr
+function Base.showarg(io::IO, x::OneHotArray, toplevel)
+    print(io, ndims(x) == 1 ? "onehot(" : "onehotbatch(")
+    Base.showarg(io, x.indices, false)
+    print(io, ')')
+    toplevel && print(io, " with eltype Bool")
+    return nothing
 end
 
-function Base.show(io::IO, ::MIME"text/plain", x::OneHotArray{<:Any, L, <:Any, N, I}) where {L, N, I}
-  join(io, string.(size(x)), "×")
-  print(io, " Flux.OneHotArray{")
-  join(io, string.([L, N, I]), ",")
-  println(io, "}:")
-  print(io, _show_elements(x))
+# this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
+function Base.replace_in_print_matrix(x::OneHotArray, i::Integer, j::Integer, s::AbstractString)
+    x[i,j] ? s : Base.replace_with_centered_mark(s)
 end
-function Base.show(io::IO, ::MIME"text/plain", x::OneHotVector{T, L}) where {T, L}
-  print(io, string.(length(x)))
-  print(io, "-element Flux.OneHotVector{")
-  join(io, string.([L, T]), ",")
-  println(io, "}:")
-  print(io, _show_elements(x))
+function Base.replace_in_print_matrix(x::Adjoint{Bool, <:OneHotArray}, i::Integer, j::Integer, s::AbstractString)
+    x[i,j] ? s : Base.replace_with_centered_mark(s)
 end
 
 # use this type so reshaped arrays hit fast paths
