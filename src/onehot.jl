@@ -89,27 +89,28 @@ Base.argmax(x::OneHotLike; dims = Colon()) =
     invoke(argmax, Tuple{AbstractArray}, x; dims = dims)
 
 """
-    onehot(l, labels[, unk])
+    onehot(x, labels, [default])
 
-Return a `OneHotVector` where only first occourence of `l` in `labels` is `1` and
-all other elements are `0`.
+Return a `OneHotVector` which is roughly a sparse representation of `x .== labels`.
 
-If `l` is not found in labels and  `unk` is present, the function returns
-`onehot(unk, labels)`; otherwise the function raises an error.
+Instead of storing say `Vector{Bool}`, it stores the index of the first occourence 
+of `x` in `labels`. If `x` is not found in labels, then it either returns `onehot(default, labels)`,
+or gives an error if no default is given.
+
+See also [`onehotbatch`](@ref) to apply this to many `x`s, 
+and [`onecold`](@ref) for a `labels`-aware `argmax`.
 
 # Examples
 ```jldoctest
 julia> Flux.onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotVector{3,UInt32}:
- 0
+3-element onehot(::UInt32) with eltype Bool:
+ ⋅
  1
- 0
+ ⋅
 
-julia> Flux.onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotVector{3,UInt32}:
- 0
- 0
- 1
+julia> Flux.onehot(-33, 0:19, 0)'  # uses default
+1×20 adjoint(onehot(::UInt32)) with eltype Bool:
+ 1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
 ```
 """
 function onehot(l, labels)
@@ -125,28 +126,47 @@ function onehot(l, labels, unk)
 end
 
 """
-    onehotbatch(ls, labels[, unk...])
+    onehotbatch(xs, labels, [default])
 
-Return a `OneHotMatrix` where `k`th column of the matrix is `onehot(ls[k], labels)`.
+Returns a `OneHotMatrix` where `k`th column of the matrix is [`onehot(ls[k], labels)`](@ref onehot),
+for vector `xs`. This is a sparse matrix, which stores just `Vector{UInt32}` containing the indices.
 
-If one of the input labels `ls` is not found in `labels` and `unk` is given,
-return [`onehot(unk, labels)`](@ref) ; otherwise the function will raise an error.
+If one of the inputs in `xs` is not found in `labels`, that column is `onehot(default, labels)`
+if `default` is given, else an error.
+
+Matrix multiplication `M * onehotbatch(...)` is performed efficiently, by simply getting
+one element from every row of `M`.
+
+If `xs` is a matrix, then the result is an `AbstractArray{Bool, 3}` which is one-hot along
+the first dimension, i.e. `result[:, k...] == onehot(xs[k...], labels)`.
 
 # Examples
 ```jldoctest
-julia> Flux.onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotArray{3,2,Vector{UInt32}}:
- 0  1  0
- 1  0  1
- 0  0  0
+julia> oh = Flux.onehotbatch(collect("abracadabra"), 'a':'e', 'e')
+5×11 onehotbatch(::Vector{UInt32}) with eltype Bool:
+ 1  ⋅  ⋅  1  ⋅  1  ⋅  1  ⋅  ⋅  1
+ ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅
+ ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
+ ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅  ⋅  ⋅
+ ⋅  ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅
+
+julia> reshape(1:15, 3, 5) * oh
+3×11 Matrix{Int64}:
+ 1  4  13  1  7  1  10  1  4  13  1
+ 2  5  14  2  8  2  11  2  5  14  2
+ 3  6  15  3  9  3  12  3  6  15  3
 ```
 """
-onehotbatch(ls, labels, unk...) = batch([onehot(l, labels, unk...) for l in ls])
+onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
 
 """
-    onecold(y[, labels = 1:length(y)])
+    onecold(y, [labels])
 
-Inverse operations of [`onehot`](@ref).
+Roughly the inverse operations of [`onehot`](@ref): finds the index of
+the largest element of `y`, or each column of `y`, and looks them up in `labels`.
+
+If `labels` are not specified, the default is integers `1:size(y,1)`,
+similar to `argmax(y, dims=1)`.
 
 # Examples
 ```jldoctest
@@ -155,6 +175,13 @@ julia> Flux.onecold([true, false, false], [:a, :b, :c])
 
 julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
 :c
+
+julia> Flux.onecold([ 1  0  0  1  0  1  0  1  0  0  1
+                      0  1  0  0  0  0  0  0  1  0  0
+                      0  0  0  0  1  0  0  0  0  0  0
+                      0  0  0  0  0  0  1  0  0  0  0
+                      0  0  1  0  0  0  0  0  0  1  0 ], 'a':'e') |> String
+"abeacadabea"
 ```
 """
 onecold(y::AbstractVector, labels = 1:length(y)) = labels[argmax(y)]
