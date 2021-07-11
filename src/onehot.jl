@@ -18,22 +18,6 @@ const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
 OneHotVector(idx, L) = OneHotArray(idx, L)
 OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
-function Base.showarg(io::IO, x::OneHotArray, toplevel)
-    print(io, ndims(x) == 1 ? "OneHotVector(" : ndims(x) == 2 ? "OneHotMatrix(" : "OneHotArray(")
-    Base.showarg(io, x.indices, false)
-    print(io, ')')
-    toplevel && print(io, " with eltype Bool")
-    return nothing
-end
-
-# this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
-function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
-end
-function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
-end
-
 # use this type so reshaped arrays hit fast paths
 # e.g. argmax
 const OneHotLike{T, L, N, var"N+1", I} =
@@ -54,6 +38,22 @@ Base.getindex(x::OneHotArray, i::Integer, I...) = _onehotindex.(x.indices[I...],
 Base.getindex(x::OneHotArray{<:Any, L}, ::Colon, I...) where L = OneHotArray(x.indices[I...], L)
 Base.getindex(x::OneHotArray{<:Any, <:Any, <:Any, N}, ::Vararg{Colon, N}) where N = x
 Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2:N]...]
+
+function Base.showarg(io::IO, x::OneHotArray, toplevel)
+    print(io, ndims(x) == 1 ? "OneHotVector(" : ndims(x) == 2 ? "OneHotMatrix(" : "OneHotArray(")
+    Base.showarg(io, x.indices, false)
+    print(io, ')')
+    toplevel && print(io, " with eltype Bool")
+    return nothing
+end
+
+# this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
+function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
+    x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
+end
+function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
+    x[i,j] ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
+end
 
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
