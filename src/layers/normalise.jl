@@ -265,9 +265,9 @@ Use [`testmode!`](@ref) during inference.
 # Examples
 ```julia
 m = Chain(
-  Dense(28^2, 64),
+  Dense(28^2 => 64),
   BatchNorm(64, relu),
-  Dense(64, 10),
+  Dense(64 => 10),
   BatchNorm(10),
   softmax)
 ```

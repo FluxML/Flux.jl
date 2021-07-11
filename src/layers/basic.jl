@@ -14,15 +14,15 @@ julia> m = Chain(x -> x^2, x -> x+1);
 julia> m(5) == 26
 true
 
-julia> m = Chain(Dense(10, 5, tanh), Dense(5, 2));
+julia> m = Chain(Dense(10 => 5, tanh), Dense(5 => 2));
 
 julia> x = rand(10, 32);
 
 julia> m(x) == m[2](m[1](x))
 true
 
-julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)), 
-                  dec = Dense(5, 2));
+julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10 => 5, tanh)), 
+                  dec = Dense(5 => 2));
 
 julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
@@ -339,7 +339,7 @@ julia> B(x,y) == B((x,y))  # two inputs, may be given as a tuple
 true
 
 julia> sc = SkipConnection(
-                Chain(Dense(5 => 20, tanh), Dense(20, 9, tanh)),
+                Chain(Dense(5 => 20, tanh), Dense(20 => 9, tanh)),
                 Flux.Bilinear((9, 5) => 3, bias=false),
             );  # used as the recombinator, with skip as the second input
 
