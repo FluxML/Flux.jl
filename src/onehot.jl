@@ -184,7 +184,10 @@ julia> Flux.onecold([ 1  0  0  1  0  1  0  1  0  0  1
 "abeacadabea"
 ```
 """
-onecold(y::AbstractVector, labels = 1:length(y)) = labels[argmax(y)]
+function onecold(y::AbstractVector, labels = 1:length(y))
+  length(labels) == length(y) || throw(DimensionMismatch("expected as many labels as the length of the vector"))
+  labels[argmax(y)]
+end
 function onecold(y::AbstractArray, labels = 1:size(y, 1))
   indices = _fast_argmax(y)
   xs = isbits(labels) ? indices : collect(indices) # non-bit type cannot be handled by CUDA
