@@ -27,7 +27,7 @@ end
 function _check_sizes(ŷ::AbstractArray, y::AbstractArray)
   for d in 1:max(ndims(ŷ), ndims(y)) 
     if size(ŷ,d) != size(y,d)
-      @warn "size mismatch in loss function! In future this will be an error. In Flux <= 0.12 broadcasting acceps this, but may not give sensible results" summary(ŷ) summary(y) maxlog=3 _id=hash(size(y))
+      @warn "Size mismatch in loss function! In future this will be an error. In Flux <= 0.12 broadcasting accepts this, but may not give sensible results" summary(ŷ) summary(y) maxlog=3 _id=hash(size(y))
     end
   end
 end
