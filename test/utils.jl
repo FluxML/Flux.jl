@@ -349,20 +349,20 @@ end
     import Flux: loadparams!
     pars(w, b) = [w, b]
     import Flux: loadparams!, Zeros
-    pars(w, b::Zeros) = [w, Flux.zeros(size(w,1))]
+    pars(w, b::Zeros) = [w, Flux.zeros32(size(w,1))]
     pars(l) = pars(l.W, l.b)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.W], vcat, m)
-    @testset "Bias type $bt" for bt in (Flux.zeros, nobias)
+    @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
       m = dm(bt)
       loadparams!(m, params(m))
       testdense(m, bt)
     end
 
     @testset "$b1 to $b2" for (b1, b2, be) in (
-      (Flux.zeros, Flux.ones, Flux.ones),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (Flux.ones, nobias, Flux.zeros), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, Flux.ones, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
+      (Flux.zeros32, Flux.ones32, Flux.ones32),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
+      (Flux.ones32, nobias, Flux.zeros32), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
+      (nobias, Flux.ones32, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
     )
       m1 = dm(b1)
       m2 = dm(b2)
