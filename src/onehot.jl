@@ -146,8 +146,8 @@ end
 """
     onehotbatch(xs, labels, [default])
 
-Returns a `OneHotMatrix` where `k`th column of the matrix is [`onehot(ls[k], labels)`](@ref onehot),
-for vector `xs`. This is a sparse matrix, which stores just `Vector{UInt32}` containing the indices.
+Returns a `OneHotMatrix` where `k`th column of the matrix is [`onehot(xs[k], labels)`](@ref onehot).
+This is a sparse matrix, which stores just a `Vector{UInt32}` containing the indices.
 
 If one of the inputs in `xs` is not found in `labels`, that column is `onehot(default, labels)`
 if `default` is given, else an error.
