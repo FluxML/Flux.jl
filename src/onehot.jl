@@ -59,10 +59,8 @@ end
 function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
     x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
 end
-function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
-end
 
+# copy CuArray versions back before trying to print them:
 Base.print_array(io::IO, X::OneHotLike{T, L, N, var"N+1", <:CuArray}) where {T, L, N, var"N+1"} = 
   Base.print_array(io, cpu(X))
 Base.print_array(io::IO, X::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike{T, L, N, var"N+1", <:CuArray}}) where {T, L, N, var"N+1"} = 
@@ -152,12 +150,9 @@ This is a sparse matrix, which stores just a `Vector{UInt32}` containing the ind
 If one of the inputs in `xs` is not found in `labels`, that column is `onehot(default, labels)`
 if `default` is given, else an error.
 
-If `xs` is a matrix, then the result is an `AbstractArray{Bool, 3}` which is one-hot along
-the first dimension, i.e. `result[:, k...] == onehot(xs[k...], labels)`.
-
-Matrix multiplication `M * onehotbatch(...)` is performed efficiently, by simply getting
-one element from every row of `M`. Some concatenation and reshape operations preserve onehot-ness.
-`OneHotArray`s can be moved to the GPU, to get for instance `OneHotMatrix(::CuArray{UInt32, 1})`.
+If `xs` has more dimensions, `M = ndims(xs) > 1`, then the result is an 
+`AbstractArray{Bool, N+1}` which is one-hot along the first dimension, 
+i.e. `result[:, k...] == onehot(xs[k...], labels)`.
 
 # Examples
 ```jldoctest
@@ -169,7 +164,7 @@ julia> oh = Flux.onehotbatch(collect("abracadabra"), 'a':'e', 'e')
  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅  ⋅  ⋅
  ⋅  ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅
 
-julia> reshape(1:15, 3, 5) * oh
+julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficiently
 3×11 Matrix{Int64}:
  1  4  13  1  7  1  10  1  4  13  1
  2  5  14  2  8  2  11  2  5  14  2
@@ -181,11 +176,11 @@ onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l
 """
     onecold(y, [labels])
 
-Roughly the inverse operation of [`onehot`](@ref): finds the index of
+Roughly the inverse operation of [`onehot`](@ref): Finds the index of
 the largest element of `y`, or each column of `y`, and looks them up in `labels`.
 
-If `labels` are not specified, the default is integers `1:size(y,1)`,
-similar to `argmax(y, dims=1)`.
+If `labels` are not specified, the default is integers `1:size(y,1)` --
+the same as `argmax(y, dims=1)` but a different return type.
 
 # Examples
 ```jldoctest
