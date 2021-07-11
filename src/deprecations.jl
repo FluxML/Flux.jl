@@ -18,3 +18,6 @@ function Base.getproperty(a::Dense, s::Symbol)
   end
   return getfield(a, s)
 end
+
+@deprecate zeros(arg...) zeros32(arg...) false  # don't export these
+@deprecate ones(arg...) ones32(arg...) false
