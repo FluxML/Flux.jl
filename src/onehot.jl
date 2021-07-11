@@ -104,7 +104,7 @@ Base.argmax(x::OneHotLike; dims = Colon()) =
 
 Return a `OneHotVector` which is roughly a sparse representation of `x .== labels`.
 
-Instead of storing say `Vector{Bool}`, it stores the index of the first occourence 
+Instead of storing say `Vector{Bool}`, it stores the index of the first occurrence 
 of `x` in `labels`. If `x` is not found in labels, then it either returns `onehot(default, labels)`,
 or gives an error if no default is given.
 
@@ -145,13 +145,14 @@ end
     onehotbatch(xs, labels, [default])
 
 Returns a `OneHotMatrix` where `k`th column of the matrix is [`onehot(xs[k], labels)`](@ref onehot).
-This is a sparse matrix, which stores just a `Vector{UInt32}` containing the indices.
+This is a sparse matrix, which stores just a `Vector{UInt32}` containing the indices of the
+nonzero elements.
 
 If one of the inputs in `xs` is not found in `labels`, that column is `onehot(default, labels)`
 if `default` is given, else an error.
 
 If `xs` has more dimensions, `M = ndims(xs) > 1`, then the result is an 
-`AbstractArray{Bool, N+1}` which is one-hot along the first dimension, 
+`AbstractArray{Bool, M+1}` which is one-hot along the first dimension, 
 i.e. `result[:, k...] == onehot(xs[k...], labels)`.
 
 # Examples
@@ -176,11 +177,12 @@ onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l
 """
     onecold(y, [labels])
 
-Roughly the inverse operation of [`onehot`](@ref): Finds the index of
-the largest element of `y`, or each column of `y`, and looks them up in `labels`.
+Roughly the inverse operation of [`onehot`](@ref) or [`onehotbatch`](@ref): 
+This finds the index of the largest element of `y`, or each column of `y`, 
+and looks them up in `labels`.
 
 If `labels` are not specified, the default is integers `1:size(y,1)` --
-the same as `argmax(y, dims=1)` but a different return type.
+the same operation as `argmax(y, dims=1)` but sometimes a different return type.
 
 # Examples
 ```jldoctest
