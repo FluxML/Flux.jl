@@ -366,10 +366,6 @@ identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs
 identity_init(; init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
 identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
-
-ones32(T::Type, dims...) = Base.ones(T, dims...)
-zeros32(T::Type, dims...) = Base.zeros(T, dims...)
-
 ones32(dims...) = Base.ones(Float32, dims...)
 zeros32(dims...) = Base.zeros(Float32, dims...)
 

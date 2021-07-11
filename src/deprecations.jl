@@ -19,5 +19,12 @@ function Base.getproperty(a::Dense, s::Symbol)
   return getfield(a, s)
 end
 
-@deprecate zeros(arg...) zeros32(arg...) false  # don't export these
-@deprecate ones(arg...) ones32(arg...) false
+function ones(dims...)
+  Base.depwarn("Flux.ones(size...) is deprecated, please use Flux.ones32(size...) or Base.ones(Float32, size...)", :ones)
+end
+ones(T::Type, dims...) = Base.ones(T, dims...) # no need for a message
+
+function zeros(dims...)
+  Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :ones)
+end
+zeros(T::Type, dims...) = Base.zeros(T, dims...)
