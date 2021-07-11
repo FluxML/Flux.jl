@@ -99,6 +99,7 @@ extraChain(::Tuple{}, x) = ()
 
 """
     Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
+    Dense(in, out, [σ; keywords...])
     Dense(W::AbstractMatrix, [bias, σ])
 
 Create a traditional `Dense` layer, whose forward pass is given by:
@@ -117,7 +118,7 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 
 # Examples
 ```jldoctest
-julia> d = Dense(5, 2)
+julia> d = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
 
 julia> d(rand(Float32, 5, 64)) |> size
