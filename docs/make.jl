@@ -1,4 +1,4 @@
-using Documenter, Flux, NNlib
+using Documenter, Flux, NNlib, Functors
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 makedocs(modules = [Flux, NNlib, Functors],
