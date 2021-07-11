@@ -13,7 +13,7 @@ An aspect to recognize is that in such model, the recurrent cells `A` all refer 
 In the most basic RNN case, cell A could be defined by the following: 
 
 ```julia
-Wxh = randn(Float32, 5, 4)
+Wxh = randn(Float32, 5, 2)
 Whh = randn(Float32, 5, 5)
 b   = randn(Float32, 5)
 
@@ -22,7 +22,7 @@ function rnn_cell(h, x)
     return h, h
 end
 
-x = rand(Float32, 4) # dummy data
+x = rand(Float32, 2) # dummy data
 h = rand(Float32, 5)  # initial hidden state
 
 h, y = rnn_cell(h, x)
@@ -37,9 +37,9 @@ There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCel
 ```julia
 using Flux
 
-rnn = Flux.RNNCell(4, 5)
+rnn = Flux.RNNCell(2, 5)
 
-x = rand(Float32, 4) # dummy data
+x = rand(Float32, 2) # dummy data
 h = rand(Float32, 5)  # initial hidden state
 
 h, y = rnn(h, x)
@@ -50,7 +50,7 @@ h, y = rnn(h, x)
 For the most part, we don't want to manage hidden states ourselves, but to treat our models as being stateful. Flux provides the `Recur` wrapper to do this.
 
 ```julia
-x = rand(Float32, 4)
+x = rand(Float32, 2)
 h = rand(Float32, 5)
 
 m = Flux.Recur(rnn, h)
@@ -60,11 +60,11 @@ y = m(x)
 
 The `Recur` wrapper stores the state between runs in the `m.state` field.
 
-If we use the `RNN(4, 5)` constructor – as opposed to `RNNCell` – you'll see that it's simply a wrapped cell.
+If we use the `RNN(2, 5)` constructor – as opposed to `RNNCell` – you'll see that it's simply a wrapped cell.
 
 ```julia
-julia> RNN(4, 5)
-Recur(RNNCell(4, 5, tanh))
+julia> RNN(2, 5)
+Recur(RNNCell(2, 5, tanh))
 ```
 
 Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also available. 
@@ -72,7 +72,7 @@ Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also availabl
 Using these tools, we can now build the model shown in the above diagram with: 
 
 ```julia
-m = Chain(RNN(4, 5), Dense(5, 2))
+m = Chain(RNN(2, 5), Dense(5, 2))
 ```
 In this example, each output has to components.
 
@@ -81,7 +81,7 @@ In this example, each output has to components.
 Using the previously defined `m` recurrent model, we can now apply it to a single step from our sequence:
 
 ```julia
-julia> x = rand(Float32, 4);
+julia> x = rand(Float32, 2);
 
 julia> m(x)
 2-element Vector{Float32}:
@@ -99,9 +99,9 @@ iterating the model on a sequence of data.
 To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of `length = seq_length` and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
 
 ```julia
-julia> x = [rand(Float32, 4) for i = 1:3];
+julia> x = [rand(Float32, 2) for i = 1:3];
 
-julia> [m(x[i]) for i = 1:3]
+julia> [m(xi) for xi in x]
 3-element Vector{Vector{Float32}}:
  [-0.018976994, 0.61098206]
  [-0.8924057, -0.7512169]
@@ -109,7 +109,7 @@ julia> [m(x[i]) for i = 1:3]
 ```
 
 !!! warning "Use of map and broadcast"
-    Mapping and broadcasting operations with stateful layers such as the one we are considering are discouraged,
+    Mapping and broadcasting operations with stateful layers such are discouraged,
     since the julia language doesn't guarantee a specific execution order.
     Therefore, avoid  
     ```julia
@@ -125,12 +125,11 @@ julia> [m(x[i]) for i = 1:3]
 If for some reason one wants to exclude the first step of the RNN chain for the computation of the loss, that can be handled with:
 
 ```julia
+using Flux.Losses: mse
+
 function loss(x, y)
   m(x[1]) # ignores the output but updates the hidden states
-  l = 0f0
-  for i in 2:length(x)
-    l += sum((m(x[i]) .- y[i-1]).^2)
-  end
+  l = sum(mse(m(xi), yi) for (xi, yi) in zip(x[2:end], y))
   return l
 end
 
@@ -144,12 +143,12 @@ Alternatively, if one wants to perform some warmup of the sequence, it could be 
 
 ```julia
 function loss(x, y)
-  sum(sum((m(x[i]) .- y[i]).^2) for i=1:length(x))
+  sum(mse(m(xi), yi) for (xi, yi) in zip(x, y))
 end
 
-seq_init = [rand(Float32, 4) for i = 1:1]
-seq_1 = [rand(Float32, 4) for i = 1:3]
-seq_2 = [rand(Float32, 4) for i = 1:3]
+seq_init = [rand(Float32, 2)]
+seq_1 = [rand(Float32, 2) for i = 1:3]
+seq_2 = [rand(Float32, 2) for i = 1:3]
 
 y1 = [rand(Float32, 2) for i = 1:3]
 y2 = [rand(Float32, 2) for i = 1:3]
@@ -173,17 +172,17 @@ In this scenario, it is important to note that a single continuous sequence is c
 Batch size would be 1 here as there's only a single sequence within each batch. If the model was to be trained on multiple independent sequences, then these sequences could be added to the input data as a second dimension. For example, in a language model, each batch would contain multiple independent sentences. In such scenario, if we set the batch size to 4, a single batch would be of the shape:
 
 ```julia
-batch = [rand(Float32, 4, 4) for i = 1:3]
+batch = [rand(Float32, 2, 4) for i = 1:3]
 ```
 
-That would mean that we have 4 sentences (or samples), each with 4 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix).
+That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix).
 
 In many situations, such as when dealing with a language model, each batch typically contains independent sentences, so we cannot handle the model as if each batch was the direct continuation of the previous one. To handle such situation, we need to reset the state of the model between each batch, which can be conveniently performed within the loss function:
 
 ```julia
 function loss(x, y)
   Flux.reset!(m)
-  sum(sum((m(x[i]) .- y[i]).^2) for i=1:length(x))
+  sum(mse(m(xi), yi) for (xi, yi) in zip(x, y))
 end
 ```
 
