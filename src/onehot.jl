@@ -49,10 +49,10 @@ end
 
 # this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
 function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
+    CUDA.@allowscalar(x[i,j]) ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
 end
 function Base.replace_in_print_matrix(x::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike}, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
+    CUDA.@allowscalar(x[i,j]) ? s : _isonehot(parent(x)) ? Base.replace_with_centered_mark(s) : s
 end
 
 _onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
@@ -134,11 +134,12 @@ for vector `xs`. This is a sparse matrix, which stores just `Vector{UInt32}` con
 If one of the inputs in `xs` is not found in `labels`, that column is `onehot(default, labels)`
 if `default` is given, else an error.
 
-Matrix multiplication `M * onehotbatch(...)` is performed efficiently, by simply getting
-one element from every row of `M`.
-
 If `xs` is a matrix, then the result is an `AbstractArray{Bool, 3}` which is one-hot along
 the first dimension, i.e. `result[:, k...] == onehot(xs[k...], labels)`.
+
+Matrix multiplication `M * onehotbatch(...)` is performed efficiently, by simply getting
+one element from every row of `M`. Some concatenation and reshape operations preserve onehot-ness.
+`OneHotArray`s can be moved to the GPU, to get for instance `OneHotMatrix(::CuArray{UInt32, 1})`.
 
 # Examples
 ```jldoctest
