@@ -166,7 +166,7 @@ import Flux: activations
       @test b3.bias isa Vector{Float16}
       @test size(b3(rand(4), rand(5))) == (3,)
 
-      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros)
+      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros32)
       @test_skip  b4.bias isa Vector{Float32}
 
       @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array

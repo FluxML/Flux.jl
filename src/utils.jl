@@ -346,7 +346,7 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols; gain=1, shift=0) = zeros(Float32, cols)
+identity_init(cols; gain=1, shift=0) = zeros32(cols)
 
 # Assume matrix multiplication
 identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
@@ -355,7 +355,7 @@ identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain,
 function identity_init(dims...; gain=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
-  weights = zeros(Float32, dims)
+  weights = zeros32(dims)
   for i in 1:min(nin,nout)
     weights[centers..., i, i] = gain
   end
@@ -366,12 +366,8 @@ identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs
 identity_init(; init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
 identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
-
-ones(T::Type, dims...) = Base.ones(T, dims...)
-zeros(T::Type, dims...) = Base.zeros(T, dims...)
-
-ones(dims...) = Base.ones(Float32, dims...)
-zeros(dims...) = Base.zeros(Float32, dims...)
+ones32(dims...) = Base.ones(Float32, dims...)
+zeros32(dims...) = Base.zeros(Float32, dims...)
 
 """
     create_bias(weights, bias, length)

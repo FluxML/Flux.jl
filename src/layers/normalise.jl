@@ -198,7 +198,7 @@ end
 
 """
     BatchNorm(channels::Integer, λ=identity;
-              initβ=zeros, initγ=ones,
+              initβ=zeros32, initγ=ones32,
               ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
@@ -246,15 +246,14 @@ mutable struct BatchNorm{F,V,N,W}
 end
 
 function BatchNorm(chs::Int, λ=identity;
-          initβ = i -> zeros(Float32, i), 
-          initγ = i -> ones(Float32, i), 
+          initβ=zeros32, initγ=ones32, 
           affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  μ = track_stats ? zeros32(chs) : nothing
+  σ² = track_stats ? ones32(chs) : nothing
 
   return BatchNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
@@ -286,7 +285,7 @@ end
 
 """
     InstanceNorm(channels::Integer, λ=identity;
-                 initβ=zeros, initγ=ones,
+                 initβ=zeros32, initγ=ones32,
                  affine=false, track_stats=false,
                  ϵ=1f-5, momentum=0.1f0)
 
@@ -323,15 +322,14 @@ mutable struct InstanceNorm{F,V,N,W}
 end
 
 function InstanceNorm(chs::Int, λ=identity;
-                    initβ = i -> zeros(Float32, i), 
-                    initγ = i -> ones(Float32, i), 
+                    initβ=zeros32, initγ=ones32,
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  μ = track_stats ? zeros32(chs) : nothing
+  σ² = track_stats ? ones32(chs) : nothing
 
   return InstanceNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
@@ -363,8 +361,7 @@ end
 
 """
     GroupNorm(channels::Integer, G::Integer, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i),
+              initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
@@ -406,17 +403,16 @@ end
 trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i), 
+              initβ=zeros32, initγ=ones32, 
               affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0) 
+              ϵ=1f-5, momentum=0.1f0)
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, G) : nothing
-  σ² = track_stats ? ones(Float32, G) : nothing
+  μ = track_stats ? zeros32(G) : nothing
+  σ² = track_stats ? ones32(G) : nothing
 
   return GroupNorm(G, λ, 
             β, γ,

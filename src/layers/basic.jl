@@ -180,13 +180,13 @@ function Diagonal(sz::Integer...; initα = nothing, initβ = nothing)
     Base.depwarn("keyword initα is deprecated, please simply supply the desired vectors", :Diagonal)
     initα(sz...)
   else
-    ones(sz...)
+    ones32(sz...)
   end
   β = if initβ !== nothing
     Base.depwarn("keyword initβ is deprecated, please simply supply the desired vectors", :Diagonal)
     initβ(sz...)
   else
-    zeros(sz...)
+    zeros32(sz...)
   end
   Diagonal(α, β)
 end
