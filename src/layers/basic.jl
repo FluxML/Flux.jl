@@ -471,11 +471,8 @@ end
 
 @functor Embedding
 
-function Embedding(in::Integer, out::Integer;
-               init = (i...) -> randn(Float32, i...))
-  return Embedding(init(out, in))
-end
-
+Embedding(in::Integer, out::Integer; init = randn32) = Embedding(init(out, in))
+  
 (m::Embedding)(x::Union{OneHotVector, OneHotMatrix}) = m.weight * x # equivalent to m.weight[:,onecold(x)]
 (m::Embedding)(x::Integer) = m([x])
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)

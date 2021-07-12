@@ -368,6 +368,8 @@ identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identit
 
 ones32(dims...) = Base.ones(Float32, dims...)
 zeros32(dims...) = Base.zeros(Float32, dims...)
+rand32(dims...) = Base.rand(Float32, dims...)
+randn32(dims...) = Base.randn(Float32, dims...)
 
 """
     create_bias(weights, bias, length)
