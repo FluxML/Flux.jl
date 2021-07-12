@@ -109,7 +109,7 @@ of `x` in `labels`. If `x` is not found in labels, then it either returns `oneho
 or gives an error if no default is given.
 
 See also [`onehotbatch`](@ref) to apply this to many `x`s, 
-and [`onecold`](@ref) for a `labels`-aware `argmax`.
+and [`onecold`](@ref) to reverse either of these, as well as to generalise `argmax`.
 
 # Examples
 ```jldoctest
@@ -175,7 +175,7 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
 onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
 
 """
-    onecold(y, [labels])
+    onecold(y::AbstractArray, labels = 1:size(y,1))
 
 Roughly the inverse operation of [`onehot`](@ref) or [`onehotbatch`](@ref): 
 This finds the index of the largest element of `y`, or each column of `y`, 
