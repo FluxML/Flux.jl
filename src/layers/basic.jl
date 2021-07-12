@@ -518,7 +518,7 @@ end
 
 @functor Embedding
 
-Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
+Embedding(dims::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(last(dims), first(dims)))
   
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
