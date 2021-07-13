@@ -279,7 +279,7 @@ end
   gs_g = gradient(() -> sum(tanh.(m_g(x_g))), params(m_g))
   @test collect(gs_g[m_g.weight]) ≈ gs[m.weight]
 
-  @testset "repeated indexes" begin
+  @testset "repeated indices" begin
     vocab_size, embed_size = 5, 2
     m = Flux.Embedding(vocab_size, embed_size)
 
@@ -294,4 +294,3 @@ end
     @test collect(gs_g[m_g.weight]) ≈ gs[m.weight]
   end
 end
-
