@@ -2,7 +2,7 @@
 
 ## v0.12.4
 * Implemented an [`Embedding layer`](https://github.com/FluxML/Flux.jl/pull/1516) 
-  based on recently added  `NNlib.gather` and `NNlib.scatter`.
+  based on `NNlib.gather` and `NNlib.scatter`.
 
 ## v0.12.1 - v0.12.3
 
