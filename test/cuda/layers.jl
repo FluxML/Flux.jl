@@ -288,7 +288,7 @@ end
     m_g = m |> gpu
     x_g = x |> gpu
     y_g = m_g(x_g)
-    @test collect(y_g) == y
+    @test Array(y_g) == y
     gs = gradient(() -> sum(m(x)), params(m))
     gs_g = gradient(() -> sum(m_g(x_g)), params(m_g))
     @test collect(gs_g[m_g.weight]) ≈ gs[m.weight]
