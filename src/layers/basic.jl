@@ -473,11 +473,16 @@ end
 
 Embedding(in::Integer, out::Integer; init = randn32) = Embedding(init(out, in))
   
-(m::Embedding)(x::Union{OneHotVector, OneHotMatrix}) = m.weight * x # equivalent to m.weight[:,onecold(x)]
-(m::Embedding)(x::Integer) = m([x])
+
+(m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
+function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
+    size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
+  return m(onecold(x))
+end
+ 
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
 end
