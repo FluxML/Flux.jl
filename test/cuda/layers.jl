@@ -291,6 +291,6 @@ end
     @test Array(y_g) == y
     gs = gradient(() -> sum(m(x)), params(m))
     gs_g = gradient(() -> sum(m_g(x_g)), params(m_g))
-    @test collect(gs_g[m_g.weight]) ≈ gs[m.weight]
+    @test Array(gs_g[m_g.weight]) ≈ gs[m.weight]
   end
 end
