@@ -210,7 +210,7 @@ import Flux: activations
     x = rand(1:vocab_size, 3, 4)
     y = m(x)
     @test y isa Array{Float32, 3}
-    @test size(y) ==  (embed_size, 3, 4)
+    @test size(y) == (embed_size, 3, 4)
 
     @test m(2) ≈ m.weight[:,2]
     @test m(OneHotVector(3, vocab_size)) ≈ m.weight[:,3]
