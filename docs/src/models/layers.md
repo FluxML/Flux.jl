@@ -58,6 +58,7 @@ SkipConnection
 Parallel
 Flux.Bilinear
 Flux.Diagonal
+Flux.Embedding
 ```
 
 ## Normalisation & Regularisation

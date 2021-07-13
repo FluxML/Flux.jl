@@ -15,7 +15,7 @@ This function is mainly used by weight initializers, e.g., [`kaiming_normal`](@r
 ```jldoctest
 julia> layer = Dense(10, 20);
 
-julia> Flux.nfan(size(layer.W))
+julia> Flux.nfan(size(layer.weight))
 (10, 20)
 
 julia> layer = Conv((3, 3), 2=>10);
@@ -368,6 +368,8 @@ identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identit
 
 ones32(dims...) = Base.ones(Float32, dims...)
 zeros32(dims...) = Base.zeros(Float32, dims...)
+rand32(dims...) = Base.rand(Float32, dims...)
+randn32(dims...) = Base.randn(Float32, dims...)
 
 """
     create_bias(weights, bias, length)
