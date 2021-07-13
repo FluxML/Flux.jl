@@ -59,8 +59,8 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
           end
           @test gs_gpu isa Flux.Zygote.Grads
           for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
-            if isnothing(xg_cpu)
-              @test isnothing(xg_gpu)
+            if isnothing(gs_cpu[p_cpu])
+              @test isnothing(gs_gpu[p_gpu])
             else
               @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
               if test_cpu
