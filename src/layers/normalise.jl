@@ -167,9 +167,11 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
+function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape, dim=nothing) where {T, N}
+  # todo:change
+  isnothing(dim) ? dim = N-1 : nothing
   if !_isactive(l) && l.track_stats # testmode with tracked stats
-    stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
+    stats_shape = ntuple(i -> i == dim ? size(x,dim) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
@@ -198,14 +200,16 @@ end
 
 """
     BatchNorm(channels::Integer, λ=identity;
+              dim = nothing,
               initβ=zeros32, initγ=ones32,
               ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
 
-Given an array with `N` dimensions, call the `N-1`th the channel dimension. For
-a batch of feature vectors this is just the data dimension, for `WHCN` images
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. 
+If `dim` specificied, call `dim` the channel dimenesion. For a batch of feature vectors 
+this is just the data dimension, for `WHCN` images
 it's the usual channel dimension.
 
 `BatchNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×D_N` 
@@ -243,9 +247,11 @@ mutable struct BatchNorm{F,V,N,W}
   track_stats::Bool
   active::Union{Bool, Nothing}
   chs::Int # number of channels
+  dim::Int # channel dimension
 end
 
 function BatchNorm(chs::Int, λ=identity;
+          dim = nothing,
           initβ=zeros32, initγ=ones32, 
           affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
@@ -258,18 +264,19 @@ function BatchNorm(chs::Int, λ=identity;
   return BatchNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
             affine, track_stats, 
-            nothing, chs)
+            nothing, chs, dim)
 end
 
 @functor BatchNorm
 trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 
 function (BN::BatchNorm)(x)
-  @assert size(x, ndims(x)-1) == BN.chs
   N = ndims(x)
-  reduce_dims = [1:N-2; N]
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
+  isnothing(BN.dim) ? dim = N-1 : dim = BN.dim
+  @assert size(x, dim) == BN.chs
+  reduce_dims = [1:dim-1;dim+1:N]
+  affine_shape = ntuple(i -> i == dim ? size(x, dim) : 1, N)
+  return _norm_layer_forward(BN, x; reduce_dims, affine_shape, dim)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -346,7 +353,7 @@ function (l::InstanceNorm)(x)
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(l, x; reduce_dims, affine_shape)
+  return _norm_layer_forward(l, x; reduce_dims, affine_shape, N-1)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
