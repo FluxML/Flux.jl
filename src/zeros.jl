@@ -26,8 +26,12 @@ Zeros(::Type{T}, dims...) where T = Zeros{T,length(dims)}(dims)
 Zeros(dims...) = Zeros(Bool, dims...)
 
 Base.reshape(x::Zeros{T}, dims::Union{Colon,Int}...) where T = Zeros(T, Base._reshape_uncolon(x, dims)...)
-Base.getindex(z::Zeros, args...) = error("Calling getindex on Zeros object, materialize to normal array or check for correctness")
-# Base.getindex(z::Zeros{T}, args...) where T = zero(T)
+
+function Base.getindex(z::Zeros{T}, args...) where T
+  Base.checkbounds(z, args...)
+  zero(T)
+end
+
 Base.collect(x::Zeros{T}) where T = zeros(T, x.dims...)
 
 Base.size(xs::Zeros) = xs.dims
@@ -39,8 +43,6 @@ Flux.CUDA.Adapt.adapt(to, x::Zeros) = x
 
 @adjoint reshape(xs::Zeros{T}, dims...) where T =
                 reshape(xs, dims...), _ -> nothing
-
-# @adjoint Zeros(args...) = Zeros(args...), _ -> nothing
 
 # Define basic ops
 for f in (:+, :-)
@@ -63,6 +65,17 @@ for op in (:+, :-)
     sz .= a
   end
 end
+broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
+broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
+
+# a * b
+function *(a::Flux.Zeros, b::AbstractMatrix{<: Number})
+  sa = size(a)
+  sb = size(b)
+  @assert sa[2] == sb[1] throw(DimensionMismatch("dimensions must match"))
+  zero(b)
+end
+*(a::AbstractMatrix{<: Number}, b::Zeros) = b * a
 
 function broadcasted(::typeof(*), a::AbstractArray{T}, b::Zeros) where {T}
   bs = Broadcast.broadcast_shape(size(a), size(b))
@@ -70,29 +83,9 @@ function broadcasted(::typeof(*), a::AbstractArray{T}, b::Zeros) where {T}
 end
 broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = b .* a
 
-broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = broadcasted(+, b, a)
-broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = broadcasted(+, -b, a)
+# Adjoints
 
-for op in (:+, :-, :*)
-  @eval @adjoint function Base.broadcasted(::typeof($op), a::AbstractArray{T,N}, b::Zeros{S,M}) where {T <: Number, S <: Number, N,M}
-    Base.broadcasted($op, a, b), Δ -> begin
-      dims = M > N ? tuple(setdiff(1:M, 1:N)...) : tuple(setdiff(1:N, 1:M)...)
-      da = dims == Tuple(1:N) ? Δ : dropdims(sum(Δ, dims = dims), dims = dims)
-      (nothing, da, nothing)
-    end
-  end
-
-  @eval @adjoint function Base.broadcasted(::typeof($op), a::Zeros{<:Any, N}, b::AbstractArray{<: Number, M}) where {M, N}
-    a .* b, Δ -> begin
-      dims = M > N ? tuple(setdiff(1:M, 1:N)...) : tuple(setdiff(1:N, 1:M)...)
-      da = dims == Tuple(1:N) ? Δ : dropdims(sum(Δ, dims = dims), dims = dims)
-      (nothing, nothing, da)
-    end
-  end
-end
-
-Base.sum(z::Zeros{T}) where T = zero(T)
-
+# grad( a $op b )
 for op in (:+, :-, :*)
   @eval @adjoint function $op(a::AbstractArray{T,N}, b::Zeros{S,M}) where {T <: Number, S <: Number, N,M}
     $op(a, b), Δ -> begin
@@ -100,12 +93,98 @@ for op in (:+, :-, :*)
     end
   end
 
+  if op === :-
+    continue
+  end
   @eval @adjoint function $op(a::Zeros, b::AbstractArray)
-    $op(a, b), Δ -> (nothing, Δ)
+    $op(a, b), Δ -> begin
+      @show size(a), size(b)
+      (nothing, Δ)
+    end
+  end
+end
+@adjoint function -(a::Zeros, b::AbstractArray)
+  a - b, Δ -> (nothing, -Δ)
+end
+
+
+# grad( broadcast($op, a, b) )
+for op in (:+, :-, :*)
+  @eval @adjoint function Base.broadcasted(::typeof($op), a::AbstractArray{T,N}, b::Zeros{S,M}) where {T <: Number, S <: Number, N,M}
+    Base.broadcasted($op, a, b), Δ -> begin
+      dims = M > N ? tuple(setdiff(1:M, 1:N)...) : tuple(setdiff(1:N, 1:M)...)
+      da = dims == Tuple(1:N) ? Δ : M == N ? broadcast($op, Δ, b) : dropdims(sum(Δ, dims = dims), dims = dims)
+      (nothing, da, nothing)
+    end
+  end
+
+  if op === :-
+    continue
+  end
+  @eval @adjoint function Base.broadcasted(::typeof($op), a::Zeros{T, N}, b::AbstractArray{S, M}) where {T <: Number, S <: Number, M, N}
+  Base.broadcasted($op, a, b), Δ -> begin
+    dims = N > M ? tuple(setdiff(1:N, 1:M)...) : tuple(setdiff(1:M, 1:N)...)
+    db = dims == Tuple(1:M) ? (Δ .* a) : M == N ? broadcast($op, a, Δ) : dropdims(sum(Δ .* a, dims = dims), dims = dims)
+    (nothing, nothing, db)
+    end
   end
 end
 
-# Some opportunities to avoid scalar indexing, intermediaries
+
+@adjoint function Base.broadcasted(::typeof(-), a::Zeros{T, N}, b::AbstractArray{S, M}) where {T <: Number, S <: Number, M, N}
+  a .- b, Δ -> begin
+    dims = N > M ? tuple(setdiff(1:N, 1:M)...) : tuple(setdiff(1:M, 1:N)...)
+    da = dims == Tuple(1:M) ? Δ : M == N ? Δ .- a : dropdims(sum(Δ, dims = dims), dims = dims)
+    (nothing, nothing, -da)
+  end
+end
+
+# /
+_div(a, sa, f) = fill!(similar(a, sa), f)
+function /(a::Zeros, b::AbstractMatrix{T}) where T
+  sa = size(a)
+  sb = size(b)
+  @assert sa[end] == sb[end] throw(DimensionMismatch())
+  _div(b, size(b), zero(T))
+end
+function /(a::AbstractMatrix, b::Zeros)
+  sa = size(a)
+  sb = size(b)
+  @assert sa[end] == sb[end] throw(DimensionMismatch())
+  _div(a, size(a), Inf)
+end
+function broadcasted(::typeof(/), a::Zeros, b::AbstractArray{T}) where T
+  bs = Broadcast.broadcast_shape(size(a), size(b))
+  _div(b, bs, zero(T))
+end
+function broadcasted(::typeof(/), a::AbstractArray, b::Zeros)
+  bs = Broadcast.broadcast_shape(size(a), size(b))
+  _div(a, bs, Inf)
+end
+
+# grad( a / b)
+@adjoint function /(a::Zeros, b::AbstractArray)
+  a / b, Δ -> (nothing, zero(Δ))
+end
+@adjoint function /(a::AbstractArray, b::Zeros)
+  a / b, Δ -> (zero(Δ), nothing)
+end
+
+# grad( broadcast(/, a, b) )
+@adjoint function broadcasted(::typeof(/), a::Zeros{<: Number}, b::AbstractArray{<: Number}) # where T <: Number
+  sa, sb = size(a), size(b)
+  T = eltype(b)
+  a ./ b, Δ -> (nothing, nothing, _div(b, Broadcast.broadcast_shape(sa, sb), zero(T)))
+end
+@adjoint function broadcasted(::typeof(/), a::AbstractArray{<: Number}, b::Zeros{<: Number})
+  sa, sb = size(a), size(b)
+  T = eltype(b)
+  a ./ b, Δ -> (nothing, _div(a, sa, Inf), nothing)
+end
+
+Base.sum(z::Zeros{T}) where T = zero(T)
+
+# Some opportunities to avoid scalar indexing/ intermediaries
 # Since it replicates a little of what we expect Base to do,
 # it should be possible to remove in the future, but for now,
 # these help with performance.
@@ -113,9 +192,5 @@ broadcasted(::typeof(+), a::AbstractArray, b::Zeros{T,0}) where T = a
 broadcasted(::typeof(+), a::Zeros{T,0}, b::AbstractArray) where T = b
 broadcasted(::typeof(-), a::AbstractArray, b::Zeros{T,0}) where T = a
 broadcasted(::typeof(-), a::Zeros{T,0}, b::AbstractArray) where T = -b
-# broadcasted(::typeof(*), a::Zeros{T,0}, b::AbstractArray) where T = zero(b)
-# broadcasted(::typeof(*), a::AbstractArray, b::Zeros{T,0}) where T = zero(b)
 
 broadcasted(::typeof(conj), z::Zeros) = z
-
-@adjoint broadcasted(::typeof(*), a::Zeros{S,0}, b::AbstractArray{T}) where {S, T <: Number} = a .* b, Δ -> (nothing, nothing, Δ)
