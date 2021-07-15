@@ -14,7 +14,7 @@ using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 using ChainRulesCore
 
-export Chain, Dense, Maxout, SkipConnection, Parallel,
+export Chain, Dense, Maxout, SkipConnection, Parallel, Embedding,
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
