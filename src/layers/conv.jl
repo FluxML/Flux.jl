@@ -67,10 +67,10 @@ See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50); # a batch of images
 
-julia> lay = Conv((5,5), 3 => 7, relu; bias=false)
+julia> layer = Conv((5,5), 3 => 7, relu; bias=false)
 Conv((5, 5), 3 => 7, relu, bias=false)  # 525 parameters
 
-julia> lay(xs) |> size
+julia> layer(xs) |> size
 (96, 96, 7, 50)
 
 julia> Conv((5,5), 3 => 7; stride=2)(xs) |> size
@@ -124,7 +124,7 @@ function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
+  bias = create_bias(w, b, size(w, N))
   return Conv(σ, w, bias, stride, pad, dilation, groups)
 end
 
