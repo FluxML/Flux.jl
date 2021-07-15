@@ -386,8 +386,9 @@ to the constructor's keyword `bias=bias`.
 * `bias::AbstractArray` uses the array provided, provided it has the correct size and eltype. If the type is wrong, it will be converted.
 """
 function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
-  bias ? fill!(similar(weights, dims...), 0) : Zeros()
+  bias ? fill!(similar(weights, dims...), 0) : Zeros(dims...)
 end
+
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
   bias
