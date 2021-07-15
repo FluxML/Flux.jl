@@ -5,7 +5,6 @@ These core layers form the foundation of almost all neural networks.
 ```@docs
 Chain
 Dense
-Flux.Diagonal
 ```
 
 ## Convolution and Pooling Layers
@@ -57,7 +56,9 @@ But in contrast to the layers described in the other sections are not readily gr
 Maxout
 SkipConnection
 Parallel
-Bilinear
+Flux.Bilinear
+Flux.Diagonal
+Flux.Embedding
 ```
 
 ## Normalisation & Regularisation

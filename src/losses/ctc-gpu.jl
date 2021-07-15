@@ -21,7 +21,7 @@ function log_plus_f(p1, p2)
   if p1 < p2
     p1, p2 = p2, p1
   end
-  return p1 + CUDA.log(1+CUDA.exp(p2 - p1))
+  return p1 + log(1+exp(p2 - p1))
 end
 
 function count_repeats(A)
@@ -139,7 +139,7 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
     end
     
     # ∂L/∂a (where a is activation before logsoftmax)
-    grad[idx, T] = CUDA.exp(probs[idx, T]) - CUDA.exp(accum[idx, T] - s)
+    grad[idx, T] = exp(probs[idx, T]) - exp(accum[idx, T] - s)
     idx += blockDim().x
   end
   sync_threads()
@@ -191,7 +191,7 @@ function compute_beta_and_grad_kernel(probs, labelSize, uttLength,
     while idx <= size(grad, 1)
       
       # ∂L/∂a (where a is activation before logsoftmax)
-      grad[idx, t] = CUDA.exp(probs[idx, t]) - CUDA.exp(accum[idx, t] + loss)
+      grad[idx, t] = exp(probs[idx, t]) - exp(accum[idx, t] + loss)
       idx += blockDim().x
     end
     sync_threads()
@@ -204,14 +204,15 @@ end
 function ctc_alpha(ŷ::CuArray, y)
   ŷ = logsoftmax(ŷ)
   blank = size(ŷ, 1)
-  z′ = fill(blank, 2 * length(y) + 1)
-  z′[eachindex(y) .* 2] = y
+  ycu = cu(y) 
+  z′ = CUDA.fill(blank, 2 * length(y) + 1)
+  z′[eachindex(y) .* 2] .= ycu
   T = size(ŷ, 2)
   U′ = 2*length(y) + 1
-  alphas = CUDA.fill(log(zero(ŷ[1])), U′,T)
-  nRepeats = count_repeats(y)
+  alphas = CUDA.fill(log(zero(eltype(ŷ))), U′,T)
+  nRepeats = count_repeats(cpu(y))
   nThreads = min(U′, MAX_THREADS)
-  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(y), T, nRepeats, CuArray(y), CuArray(z′), alphas, blank)
+  @cuda blocks=1 threads=nThreads compute_alpha_kernel(ŷ, length(y), T, nRepeats, ycu, z′, alphas, blank)
   return (loss=-1 * logsumexp(alphas[end-1:end]), alpha=alphas, z′=z′, yhat=ŷ, nRepeats=nRepeats)
 end
 
@@ -221,7 +222,7 @@ function ∇ctc_loss(ŷ::CuArray, y, out)
   loss, alphas, z′, ŷ, nRepeats = out
   U′, T = size(alphas)
   blank = size(ŷ, 1)
-  typed_zero = zero(first(ŷ))
+  typed_zero = zero(eltype(ŷ))
   betas = CUDA.fill(log(typed_zero), U′, T)
   output = CUDA.fill(log(typed_zero), U′, T)
   nThreads = min(U′, MAX_THREADS)

@@ -1,10 +1,11 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.12.0-dev"
+version = "0.12.5"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
@@ -14,6 +15,7 @@ Juno = "e5e0dc1b-0480-54bc-9374-aad01c23163d"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
+NNlibCUDA = "a00861dc-f156-4864-bf3c-e6376f28a68d"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -27,25 +29,29 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 AbstractTrees = "0.3"
-Adapt = "2.0, 3.0"
-CUDA = "2.1"
+Adapt = "3.0"
+ArrayInterface = "3.1"
+CUDA = "3"
 CodecZlib = "0.7"
 Colors = "0.12"
-Functors = "0.1, 0.2"
+Functors = "0.2.1"
 Juno = "0.8"
 MacroTools = "0.5"
-NNlib = "0.7.14"
+NNlib = "0.7.24"
+NNlibCUDA = "0.1"
 Reexport = "0.2, 1.0"
 StatsBase = "0.33"
 ZipFile = "0.9"
 Zygote = "0.6"
-julia = "1.5"
+julia = "1.6"
 
 [extras]
+ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra"]
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]

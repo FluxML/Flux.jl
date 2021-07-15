@@ -27,10 +27,17 @@ end
 
 @testset "abstractmatrix onehotvector multiplication" begin
   A = [1 3 5; 2 4 6; 3 6 9]
+  v = [1, 2, 3, 4, 5]
+  X = reshape(v, (5, 1))
   b1 = Flux.OneHotVector(1, 3)
   b2 = Flux.OneHotVector(3, 5)
 
   @test A*b1 == A[:,1]
+  @test b1' * A == Array(b1') * A
+  @test A' * b1 == A' * Array(b1)
+  @test v' * b2 == v' * Array(b2)
+  @test transpose(X) * b2 == transpose(X) * Array(b2)
+  @test transpose(v) * b2 == transpose(v) * Array(b2)
   @test_throws DimensionMismatch A*b2
 end
 
@@ -38,7 +45,9 @@ end
   using Flux: OneHotArray, OneHotVector, OneHotMatrix, OneHotLike
   
   ov = OneHotVector(rand(1:10), 10)
+  ov2 = OneHotVector(rand(1:11), 11)
   om = OneHotMatrix(rand(1:10, 5), 10)
+  om2 = OneHotMatrix(rand(1:11, 5), 11)
   oa = OneHotArray(rand(1:10, 5, 5), 10)
 
   # sizes
@@ -74,17 +83,24 @@ end
   @testset "Concatenating" begin
     # vector cat
     @test hcat(ov, ov) == OneHotMatrix(vcat(ov.indices, ov.indices), 10)
+    @test hcat(ov, ov) isa OneHotMatrix
     @test vcat(ov, ov) == vcat(collect(ov), collect(ov))
     @test cat(ov, ov; dims = 3) == OneHotArray(cat(ov.indices, ov.indices; dims = 2), 10)
 
     # matrix cat
     @test hcat(om, om) == OneHotMatrix(vcat(om.indices, om.indices), 10)
+    @test hcat(om, om) isa OneHotMatrix
     @test vcat(om, om) == vcat(collect(om), collect(om))
     @test cat(om, om; dims = 3) == OneHotArray(cat(om.indices, om.indices; dims = 2), 10)
 
     # array cat
     @test cat(oa, oa; dims = 3) == OneHotArray(cat(oa.indices, oa.indices; dims = 2), 10)
+    @test cat(oa, oa; dims = 3) isa OneHotArray
     @test cat(oa, oa; dims = 1) == cat(collect(oa), collect(oa); dims = 1)
+
+    # proper error handling of inconsistent sizes
+    @test_throws DimensionMismatch hcat(ov, ov2)
+    @test_throws DimensionMismatch hcat(om, om2)
   end
 
   @testset "Base.reshape" begin
@@ -117,5 +133,10 @@ end
     @test argmax(om; dims = 2) == argmax(convert(Array{Bool}, om); dims = 2)
     @test argmax(oa; dims = 1) == argmax(convert(Array{Bool}, oa); dims = 1)
     @test argmax(oa; dims = 3) == argmax(convert(Array{Bool}, oa); dims = 3)
+  end
+
+  @testset "Forward map to broadcast" begin
+    @test map(identity, oa) == oa
+    @test map(x -> 2 * x, oa) == 2 .* oa
   end
 end

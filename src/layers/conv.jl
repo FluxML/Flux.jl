@@ -30,7 +30,7 @@ function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,
 end
 
 """
-    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    Conv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -42,8 +42,9 @@ and a batch of 50 would be a `100×100×3×50` array.
 This has `N=2` spatial dimensions, and needs a kernel size like `(5,5)`,
 a 2-tuple of integers.
 
-For `N` spatial dimensions, this layer expects as input an array
-with `ndims(x) == N+2`, where `size(x,N+1) == in` is the number of channels.
+To take convolutions along `N` feature dimensions, this layer expects as input an array
+with `ndims(x) == N+2`, where `size(x, N+1) == in` is the number of input channels,
+and `size(x, ndims(x))` is (as always) the number of observations in a batch.
 Then:
 * `filter` should be a tuple of `N` integers.
 * Keywords `stride` and `dilation` should each be either single integer,
@@ -67,7 +68,7 @@ See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 julia> xs = rand(Float32, 100, 100, 3, 50); # a batch of images
 
 julia> lay = Conv((5,5), 3 => 7, relu; bias=false)
-Conv((5, 5), 3=>7, relu)
+Conv((5, 5), 3 => 7, relu, bias=false)  # 525 parameters
 
 julia> lay(xs) |> size
 (96, 96, 7, 50)
@@ -96,10 +97,10 @@ struct Conv{N,M,F,A,V}
 end
 
 """
-    Conv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
 Constructs a convolutional layer with the given weight and bias.
-Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3=>7, relu)`
+Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)`
 method.
 
 # Examples
@@ -109,7 +110,7 @@ julia> weight = rand(3, 4, 5);
 julia> bias = zeros(5);
 
 julia> c1 = Conv(weight, bias, sigmoid)  # expects 1 spatial dimension
-Conv((3,), 4=>5, σ)
+Conv((3,), 4 => 5, σ)  # 65 parameters
 
 julia> c1(randn(100, 4, 64)) |> size
 (98, 5, 64)
@@ -118,7 +119,7 @@ julia> params(c1) |> length
 2
 ```
 """
-function Conv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
               stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
@@ -135,7 +136,7 @@ function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity
 end
 
 """
-    convfilter(filter::Tuple, in=>out)
+    convfilter(filter::Tuple, in => out)
 
 Constructs a standard convolutional weight matrix with given `filter` and
 channels from `in` to `out`.
@@ -160,14 +161,21 @@ end
 
 function Base.show(io::IO, l::Conv)
   print(io, "Conv(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
-  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ", ", size(l.weight, ndims(l.weight)-1), " => ", size(l.weight, ndims(l.weight)))
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
+function _print_conv_opt(io::IO, l)
+  l.σ == identity || print(io, ", ", l.σ)
+  all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
+  all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
+  all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
+  l.bias == Zeros() && print(io, ", bias=false")
+end
 
 """
-    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -185,15 +193,15 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> lay = ConvTranspose((5,5), 3 => 7, relu)
-ConvTranspose((5, 5), 3=>7, relu)
+ConvTranspose((5, 5), 3 => 7, relu)  # 532 parameters
 
 julia> lay(xs) |> size
 (104, 104, 7, 50)
 
-julia> ConvTranspose((5,5), 3=>7, stride=2)(xs) |> size
+julia> ConvTranspose((5,5), 3 => 7, stride=2)(xs) |> size
 (203, 203, 7, 50)
 
-julia> ConvTranspose((5,5), 3=>7, stride=3, pad=SamePad())(xs) |> size
+julia> ConvTranspose((5,5), 3 => 7, stride=3, pad=SamePad())(xs) |> size
 (300, 300, 7, 50)
 ```
 """
@@ -207,18 +215,18 @@ struct ConvTranspose{N,M,F,A,V}
 end
 
 """
-    ConvTranspose(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
 Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `ConvTranspose((4,4), 3=>7, relu)` method.
+Accepts the same keywords as the `ConvTranspose((4,4), 3 => 7, relu)` method.
 """
-function ConvTranspose(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N-1)) 
-  return ConvTranspose(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, size(w, N-1))
+  return ConvTranspose(σ, w, b, stride, pad, dilation)
 end
 
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
@@ -256,8 +264,8 @@ end
 
 function Base.show(io::IO, l::ConvTranspose)
   print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", size(l.weight, ndims(l.weight)), "=>", size(l.weight, ndims(l.weight)-1))
-  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ", ", size(l.weight, ndims(l.weight)), " => ", size(l.weight, ndims(l.weight)-1))
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
@@ -267,7 +275,7 @@ function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilat
 end
 
 """
-    DepthwiseConv(filter, in=>out, σ=identity; stride=1, pad=0, dilation=1)
+    DepthwiseConv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Depthwise convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -285,7 +293,7 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> lay = DepthwiseConv((5,5), 3 => 6, relu; bias=false)
-DepthwiseConv((5, 5), 3=>6, relu)
+DepthwiseConv((5, 5), 3 => 6, relu, bias=false)  # 150 parameters
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
@@ -305,17 +313,17 @@ end
 
 """
     DepthwiseConv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+
 Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `DepthwiseConv((4,4), 3=>6, relu)` method.
+Accepts the same keywords as the `DepthwiseConv((4,4), 3 => 6, relu)` method.
 """
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function DepthwiseConv(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(DepthwiseConv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, prod(size(w)[N-1:end]))
-  return DepthwiseConv(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, prod(size(w)[N-1:end]))
+  return DepthwiseConv(σ, w, b, stride, pad, dilation)
 end
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
@@ -328,7 +336,7 @@ end
 @functor DepthwiseConv
 
 """
-    depthwiseconvfilter(filter::Tuple, in=>out)
+    depthwiseconvfilter(filter::Tuple, in => out)
 
 Constructs a depthwise convolutional weight array defined by `filter` and channels
 from `in` to `out`.
@@ -349,14 +357,14 @@ end
 
 function Base.show(io::IO, l::DepthwiseConv)
   print(io, "DepthwiseConv(", size(l.weight)[1:end-2])
-  print(io, ", ", size(l.weight)[end], "=>", prod(size(l.weight)[end-1:end]))
-  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ", ", size(l.weight)[end], " => ", prod(size(l.weight)[end-1:end]))
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
 
 """
-    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1)
+    CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
 Standard cross convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -373,12 +381,12 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> lay = CrossCor((5,5), 3 => 6, relu; bias=false)
-CrossCor((5, 5), 3=>6, relu)
+CrossCor((5, 5), 3 => 6, relu, bias=false)  # 450 parameters
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
 
-julia> CrossCor((5,5), 3=>7, stride=3, pad=(2,0))(xs) |> size
+julia> CrossCor((5,5), 3 => 7, stride=3, pad=(2,0))(xs) |> size
 (34, 32, 7, 50)
 ```
 """
@@ -392,18 +400,18 @@ struct CrossCor{N,M,F,A,V}
 end
 
 """
-    CrossCor(weight::AbstractArray, bias, [activation; stride, pad, dilation])
-    
+    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
 Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `CrossCor((4,4), 3=>7, relu)` method.
+Accepts the same keywords as the `CrossCor((4,4), 3 => 7, relu)` method.
 """
-function CrossCor(w::AbstractArray{T,N}, b::Union{Bool, Zeros, AbstractVector{T}}, σ = identity;
+function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(b, zeros, size(w, N))
-  return CrossCor(σ, w, bias, stride, pad, dilation)
+  b = create_bias(w, bias, size(w, N))
+  return CrossCor(σ, w, b, stride, pad, dilation)
 end
 
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
@@ -430,8 +438,8 @@ end
 
 function Base.show(io::IO, l::CrossCor)
   print(io, "CrossCor(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", size(l.weight, ndims(l.weight)-1), "=>", size(l.weight, ndims(l.weight)))
-  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ", ", size(l.weight, ndims(l.weight)-1), " => ", size(l.weight, ndims(l.weight)))
+  _print_conv_opt(io, l)
   print(io, ")")
 end
 
@@ -530,8 +538,7 @@ See also [`MaxPool`](@ref), [`GlobalMeanPool`](@ref).
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
-julia> m = Chain(Conv((3,3), 3=>7), GlobalMaxPool())
-Chain(Conv((3, 3), 3=>7), GlobalMaxPool())
+julia> m = Chain(Conv((3,3), 3 => 7), GlobalMaxPool());
 
 julia> m(xs) |> size
 (1, 1, 7, 50)
@@ -568,8 +575,7 @@ by performing mean pooling on the complete (w,h)-shaped feature maps.
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
-julia> m = Chain(Conv((3,3), 3=>7), GlobalMeanPool())
-Chain(Conv((3, 3), 3=>7), GlobalMeanPool())
+julia> m = Chain(Conv((3,3), 3 => 7), GlobalMeanPool());
 
 julia> m(xs) |> size
 (1, 1, 7, 50)
@@ -612,8 +618,11 @@ See also [`Conv`](@ref), [`MeanPool`](@ref), [`AdaptiveMaxPool`](@ref), [`Global
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
-julia> m = Chain(Conv((5, 5), 3=>7, pad=SamePad()), MaxPool((5, 5), pad=SamePad()))
-Chain(Conv((5, 5), 3=>7), MaxPool((5, 5), pad=2))
+julia> m = Chain(Conv((5, 5), 3 => 7, pad=SamePad()), MaxPool((5, 5), pad=SamePad()))
+Chain(
+  Conv((5, 5), 3 => 7, pad=2),          # 532 parameters
+  MaxPool((5, 5), pad=2),
+)
 
 julia> m[1](xs) |> size
 (100, 100, 7, 50)
@@ -675,7 +684,10 @@ See also [`Conv`](@ref), [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
 julia> m = Chain(Conv((5,5), 3 => 7), MeanPool((5,5), pad=SamePad()))
-Chain(Conv((5, 5), 3=>7), MeanPool((5, 5), pad=2))
+Chain(
+  Conv((5, 5), 3 => 7),                 # 532 parameters
+  MeanPool((5, 5), pad=2),
+)
 
 julia> m[1](xs) |> size
 (96, 96, 7, 50)

@@ -1,6 +1,7 @@
 # Adapted from Knet's src/data.jl (author: Deniz Yuret)
+using Random: AbstractRNG, shuffle!, GLOBAL_RNG
 
-struct DataLoader{D}
+struct DataLoader{D,R<:AbstractRNG}
     data::D
     batchsize::Int
     nobs::Int
@@ -8,64 +9,72 @@ struct DataLoader{D}
     imax::Int
     indices::Vector{Int}
     shuffle::Bool
+    rng::R
 end
 
 """
-    DataLoader(data; batchsize=1, shuffle=false, partial=true)
+    Flux.DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
 
-An object that iterates over mini-batches of `data`, each mini-batch containing `batchsize` observations
+An object that iterates over mini-batches of `data`, 
+each mini-batch containing `batchsize` observations
 (except possibly the last one).
 
 Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
-The last dimension in each tensor is considered to be the observation dimension.
+The last dimension in each tensor is the observation dimension, i.e. the one
+divided into mini-batches.
 
-If `shuffle=true`, shuffles the observations each time iterations are re-started.
-If `partial=false`, drops the last mini-batch if it is smaller than the batchsize.
+If `shuffle=true`, it shuffles the observations each time iterations are re-started.
+If `partial=false` and the number of observations is not divisible by the batchsize, 
+then the last mini-batch is dropped.
 
 The original data is preserved in the `data` field of the DataLoader.
 
-Usage example:
+# Examples
+```jldoctest
+julia> Xtrain = rand(10, 100);
 
-    Xtrain = rand(10, 100)
-    train_loader = DataLoader(Xtrain, batchsize=2)
-    # iterate over 50 mini-batches of size 2
-    for x in train_loader
-        @assert size(x) == (10, 2)
-        ...
-    end
+julia> array_loader = Flux.DataLoader(Xtrain, batchsize=2);
 
-    train_loader.data   # original dataset
+julia> for x in array_loader
+         @assert size(x) == (10, 2)
+         # do something with x, 50 times
+       end
 
-    # similar, but yielding tuples
-    train_loader = DataLoader((Xtrain,), batchsize=2)
-    for (x,) in train_loader
-        @assert size(x) == (10, 2)
-        ...
-    end
+julia> array_loader.data === Xtrain
+true
 
-    Xtrain = rand(10, 100)
-    Ytrain = rand(100)
-    train_loader = DataLoader((Xtrain, Ytrain), batchsize=2, shuffle=true)
-    for epoch in 1:100
-        for (x, y) in train_loader
-            @assert size(x) == (10, 2)
-            @assert size(y) == (2,)
-            ...
-        end
-    end
+julia> tuple_loader = Flux.DataLoader((Xtrain,), batchsize=2);  # similar, but yielding 1-element tuples
 
-    # train for 10 epochs
-    using IterTools: ncycle
-    Flux.train!(loss, ps, ncycle(train_loader, 10), opt)
+julia> for x in tuple_loader
+         @assert x isa Tuple{Matrix}
+         @assert size(x[1]) == (10, 2)
+       end
 
-    # can use NamedTuple to name tensors
-    train_loader = DataLoader((images=Xtrain, labels=Ytrain), batchsize=2, shuffle=true)
-    for datum in train_loader
-        @assert size(datum.images) == (10, 2)
-        @assert size(datum.labels) == (2,)
-    end
+julia> Ytrain = rand('a':'z', 100);  # now make a DataLoader yielding 2-element named tuples
+
+julia> train_loader = Flux.DataLoader((data=Xtrain, label=Ytrain), batchsize=5, shuffle=true);
+
+julia> for epoch in 1:100
+         for (x, y) in train_loader  # access via tuple destructuring
+           @assert size(x) == (10, 5)
+           @assert size(y) == (5,)
+           # loss += f(x, y) # etc, runs 100 * 20 times
+         end
+       end
+
+julia> first(train_loader).label isa Vector{Char}  # access via property name
+true
+
+julia> first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
+false
+
+julia> foreach(println∘summary, Flux.DataLoader(rand(Int8, 10, 64), batchsize=30))  # partial=false would omit last
+10×30 Matrix{Int8}
+10×30 Matrix{Int8}
+10×4 Matrix{Int8}
+```
 """
-function DataLoader(data; batchsize=1, shuffle=false, partial=true)
+function DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
 
     n = _nobs(data)
@@ -74,13 +83,13 @@ function DataLoader(data; batchsize=1, shuffle=false, partial=true)
         batchsize = n
     end
     imax = partial ? n : n - batchsize + 1
-    DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle)
+    DataLoader(data, batchsize, n, partial, imax, [1:n;], shuffle, rng)
 end
 
 @propagate_inbounds function Base.iterate(d::DataLoader, i=0)     # returns data in d.indices[i+1:i+batchsize]
     i >= d.imax && return nothing
     if d.shuffle && i == 0
-        shuffle!(d.indices)
+        shuffle!(d.rng, d.indices)
     end
     nexti = min(i + d.batchsize, d.nobs)
     ids = d.indices[i+1:nexti]
@@ -98,8 +107,10 @@ _nobs(data::AbstractArray) = size(data)[end]
 function _nobs(data::Union{Tuple, NamedTuple})
     length(data) > 0 || throw(ArgumentError("Need at least one data input"))
     n = _nobs(data[1])
-    if !all(x -> _nobs(x) == n, Base.tail(data))
-        throw(DimensionMismatch("All data should contain same number of observations"))
+    for i in keys(data)
+        ni = _nobs(data[i])
+        n == ni || throw(DimensionMismatch("All data inputs should have the same number of observations, i.e. size in the last dimension. " * 
+            "But data[$(repr(first(keys(data))))] ($(summary(data[1]))) has $n, while data[$(repr(i))] ($(summary(data[i]))) has $ni."))
     end
     return n
 end

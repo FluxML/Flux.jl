@@ -9,7 +9,7 @@ machine learning and deep learning workflows:
 - [ArgParse.jl](https://github.com/carlobaldassi/ArgParse.jl): package for parsing command-line arguments to Julia programs.
 - [Augmentor.jl](https://github.com/Evizero/Augmentor.jl): a fast image augmentation library in Julia for machine learning.
 - [BSON.jl](https://github.com/JuliaIO/BSON.jl): package for working with the Binary JSON serialisation format
-- [DataFrames.jl](https://github.com/joshday/OnlineStats.jl): in-memory tabular data in Julia
+- [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl): in-memory tabular data in Julia
 - [DrWatson.jl](https://github.com/JuliaDynamics/DrWatson.jl):  a scientific project assistant software
 - [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl): utility package for accessing common machine learning datasets
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl): single-pass algorithms for statistics

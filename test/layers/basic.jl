@@ -29,11 +29,27 @@ import Flux: activations
 
   @testset "Dense" begin
     @testset "constructors" begin
-      @test size(Dense(10, 100).W) == (100, 10)
-      @test Dense(rand(100,10), rand(10)).σ == identity
+      @test size(Dense(10, 100).weight) == (100, 10)
+      @test size(Dense(10, 100).bias) == (100,)
+      @test Dense(rand(100,10), rand(100)).σ == identity
+      @test Dense(rand(100,10)).σ == identity
+
+      @test Dense(rand(100,10), false).σ == identity
+      @test Dense(rand(100,10), false, tanh).σ == tanh
+      @test Dense(rand(100,10), rand(100)).σ == identity
+      @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
+      @test_skip Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
+
+      @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      @test_skip Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
 
       @test_throws MethodError Dense(10, 10.5)
       @test_throws MethodError Dense(10, 10.5, tanh)
+      @test_throws DimensionMismatch Dense(3,4; bias=rand(5))
+      @test_throws DimensionMismatch Dense(rand(4,3), rand(5))
+      @test_throws MethodError Dense(rand(5))
+      @test_throws MethodError Dense(rand(5), rand(5))
+      @test_throws MethodError Dense(rand(5), rand(5), tanh)
     end
     @testset "dimensions" begin
       @test  length(Dense(10, 5)(randn(10))) == 5
@@ -44,13 +60,14 @@ import Flux: activations
       @test size(Dense(10, 5)(randn(10,2))) == (5,2)
       @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
       @test size(Dense(10, 5)(randn(10,2,3,4))) == (5,2,3,4)
+      @test_throws DimensionMismatch Dense(10, 5)(randn(11,2,3))
     end
     @testset "zeros" begin
-      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(1, 1)
-      @test Dense(10, 1, identity, initW = ones, initb = zeros)(ones(10,2)) == 10*ones(1, 2)
-      @test Dense(10, 2, identity, initW = ones, initb = zeros)(ones(10,1)) == 10*ones(2, 1)
-      @test Dense(10, 2, identity, initW = ones, initb = zeros)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
-      @test Dense(10, 2, identity, initW = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 1, identity, init = ones)(ones(10,1)) == 10*ones(1, 1)
+      @test Dense(10, 1, identity, init = ones)(ones(10,2)) == 10*ones(1, 2)
+      @test Dense(10, 2, identity, init = ones)(ones(10,1)) == 10*ones(2, 1)
+      @test Dense(10, 2, identity, init = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10, 2, identity, init = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
     end
   end
 
@@ -135,8 +152,29 @@ import Flux: activations
       @test size(b(x)) == (3,7)
       @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
     end
+
+    @testset "constructors" begin
+      b1 = Flux.Bilinear(randn(3,4,5))
+      @test b1.bias isa Vector{Float64}
+      @test b1.σ == identity
+
+      b2 = Flux.Bilinear(randn(3,4,5), false)
+      @test b2.bias == Flux.Zeros()
+
+      b3 = Flux.Bilinear(randn(Float16, 3,4,5), true, tanh)
+      @test b3.σ == tanh
+      @test b3.bias isa Vector{Float16}
+      @test size(b3(rand(4), rand(5))) == (3,)
+
+      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros32)
+      @test_skip  b4.bias isa Vector{Float32}
+
+      @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array
+      @test_throws ArgumentError Flux.Bilinear(rand(3,4), false, tanh)
+      @test_throws DimensionMismatch Flux.Bilinear(rand(3,4,5), rand(6), tanh) # wrong length bias
+    end
   end
-      
+
   @testset "Parallel" begin
     @testset "zero sum" begin
       input = randn(10, 10, 10, 10)
@@ -152,5 +190,30 @@ import Flux: activations
       inputs = randn(10), randn(5), randn(4)
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
     end
+  end
+
+  @testset "Embedding" begin
+    vocab_size, embed_size = 10, 4
+    m = Flux.Embedding(vocab_size, embed_size)
+    @test size(m.weight) == (embed_size, vocab_size)
+    
+    x = rand(1:vocab_size, 3)
+    y = m(x)
+    @test y isa Matrix{Float32}
+    @test y ≈ m.weight[:,x]
+    x2 = OneHotMatrix(x, vocab_size)
+    y2 = m(x2)
+    @test y2 isa Matrix{Float32}
+    @test y2 ≈ y
+    @test_throws DimensionMismatch m(OneHotMatrix(x, 1000))
+
+    x = rand(1:vocab_size, 3, 4)
+    y = m(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (embed_size, 3, 4)
+
+    @test m(2) ≈ m.weight[:,2]
+    @test m(OneHotVector(3, vocab_size)) ≈ m.weight[:,3]
+    @test_throws DimensionMismatch m(OneHotVector(3, 1000))
   end
 end

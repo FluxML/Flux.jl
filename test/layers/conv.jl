@@ -115,10 +115,10 @@ end
 
 @testset "CrossCor" begin
   x = rand(Float32, 28, 28, 1, 1)
-  w = rand(2,2,1,1)
+  w = rand(Float32, 2,2,1,1)
   y = CrossCor(w, [0.0])
 
-  @test isapprox(sum(w .* x[1:2, 1:2, :, :]), y(x)[1, 1, 1, 1], rtol=1e-7)
+  @test sum(w .* x[1:2, 1:2, :, :]) ≈ y(x)[1, 1, 1, 1]  rtol=1e-7
 
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
@@ -131,7 +131,7 @@ end
 
   @test size(m(r)) == (10, 5)
   @test y(x) != Conv(w, [0.0])(x)
-  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) == Conv(w, [0.0])(x)
+  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) ≈ Conv(w, [0.0])(x)  rtol=1e-7
 end
 
 @testset "Conv with non quadratic window #700" begin
@@ -182,4 +182,21 @@ end
 
   l = ltype(k, pad=SamePad())
   @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
+end
+
+@testset "bugs fixed" begin
+  # https://github.com/FluxML/Flux.jl/issues/1421
+  @test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64}
+end
+
+@testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
+  @test fun(rand(2,3,4)).bias isa Vector{Float64}
+  @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
+  if fun == Conv
+    @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
+    @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
+  elseif fun == DepthwiseConv
+    @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
+  end
+  @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
 end

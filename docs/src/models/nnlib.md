@@ -67,3 +67,10 @@ NNlib.batched_mul!
 NNlib.batched_adjoint
 NNlib.batched_transpose
 ```
+
+## Gather and Scatter
+
+```@docs
+NNlib.gather
+NNlib.scatter
+```

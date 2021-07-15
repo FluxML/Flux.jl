@@ -158,7 +158,7 @@ end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")
-  a.λ == identity || print(io, ", $(a.λ)")
+  l.λ == identity || print(io, ", $(l.λ)")
   hasaffine(l) || print(io, ", affine=false")
   print(io, ")")
 end
@@ -198,7 +198,7 @@ end
 
 """
     BatchNorm(channels::Integer, λ=identity;
-              initβ=zeros, initγ=ones,
+              initβ=zeros32, initγ=ones32,
               ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
@@ -232,7 +232,6 @@ m = Chain(
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
-  chs::Int # number of channels
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -243,22 +242,23 @@ mutable struct BatchNorm{F,V,N,W}
   affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
+  chs::Int # number of channels
 end
 
 function BatchNorm(chs::Int, λ=identity;
-          initβ = i -> zeros(Float32, i), 
-          initγ = i -> ones(Float32, i), 
+          initβ=zeros32, initγ=ones32, 
           affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  μ = track_stats ? zeros32(chs) : nothing
+  σ² = track_stats ? ones32(chs) : nothing
 
-  return BatchNorm(chs, λ, β, γ,
+  return BatchNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
-            affine, track_stats, nothing)
+            affine, track_stats, 
+            nothing, chs)
 end
 
 @functor BatchNorm
@@ -277,7 +277,7 @@ testmode!(m::BatchNorm, mode=true) =
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
-  l.λ == identity || print(io, ", $(l.λ)")
+  (l.λ == identity) || print(io, ", $(l.λ)")
   hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
@@ -285,7 +285,7 @@ end
 
 """
     InstanceNorm(channels::Integer, λ=identity;
-                 initβ=zeros, initγ=ones,
+                 initβ=zeros32, initγ=ones32,
                  affine=false, track_stats=false,
                  ϵ=1f-5, momentum=0.1f0)
 
@@ -308,7 +308,6 @@ that will be used to renormalize the input in test phase.
 in previous Flux versions (< v0.12).
 """
 mutable struct InstanceNorm{F,V,N,W}
-  chs::Int # number of channels
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -319,22 +318,23 @@ mutable struct InstanceNorm{F,V,N,W}
   affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
+  chs::Int # number of channels
 end
 
 function InstanceNorm(chs::Int, λ=identity;
-                    initβ = i -> zeros(Float32, i), 
-                    initγ = i -> ones(Float32, i), 
+                    initβ=zeros32, initγ=ones32,
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  μ = track_stats ? zeros32(chs) : nothing
+  σ² = track_stats ? ones32(chs) : nothing
 
-  return InstanceNorm(chs, λ, β, γ,
+  return InstanceNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
-            affine, track_stats, nothing)
+            affine, track_stats,
+            nothing, chs)
 end
 
 @functor InstanceNorm
@@ -361,8 +361,7 @@ end
 
 """
     GroupNorm(channels::Integer, G::Integer, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i),
+              initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
@@ -386,7 +385,6 @@ If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 """
 mutable struct GroupNorm{F,V,N,W}
-  chs::Int # number of channels
   G::Int  # number of groups
   λ::F  # activation function
   β::V  # bias
@@ -398,29 +396,30 @@ mutable struct GroupNorm{F,V,N,W}
   affine::Bool
   track_stats::Bool
   active::Union{Bool, Nothing}
+  chs::Int # number of channels
 end
 
 @functor GroupNorm
 trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i), 
+              initβ=zeros32, initγ=ones32, 
               affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0) 
+              ϵ=1f-5, momentum=0.1f0)
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, G) : nothing
-  σ² = track_stats ? ones(Float32, G) : nothing
+  μ = track_stats ? zeros32(G) : nothing
+  σ² = track_stats ? ones32(G) : nothing
 
-  return GroupNorm(chs, G, λ, 
+  return GroupNorm(G, λ, 
             β, γ,
             μ, σ², 
             ϵ, momentum, 
-            affine, track_stats, nothing)
+            affine, track_stats, 
+            nothing, chs)
 end
 
 function (gn::GroupNorm)(x)
@@ -440,8 +439,9 @@ testmode!(m::GroupNorm, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
+  # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
   print(io, "GroupNorm($(l.chs), $(l.G)")
-  l.λ == identity || print(io, ", $(l.λ)")
+  l.λ == identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
