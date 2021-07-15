@@ -276,7 +276,7 @@ function (BN::BatchNorm)(x)
   @assert size(x, dim) == BN.chs
   reduce_dims = [1:dim-1;dim+1:N]
   affine_shape = ntuple(i -> i == dim ? size(x, dim) : 1, N)
-  return _norm_layer_forward(BN, x; reduce_dims, affine_shape, dim)
+  return _norm_layer_forward(BN, x; reduce_dims, affine_shape, dim=dim)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -353,7 +353,7 @@ function (l::InstanceNorm)(x)
   N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(l, x; reduce_dims, affine_shape, N-1)
+  return _norm_layer_forward(l, x; reduce_dims, affine_shape, dim=N-1)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
