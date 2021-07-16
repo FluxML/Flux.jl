@@ -167,9 +167,8 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape, dim=nothing) where {T, N}
-  # todo:change
-  isnothing(dim) ? dim = N-1 : nothing
+function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
+  isnothing(l.dim) ? dim = N-1 : dim = l.dim
   if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == dim ? size(x,dim) : 1, N)
     μ = reshape(l.μ, stats_shape)
@@ -247,7 +246,7 @@ mutable struct BatchNorm{F,V,N,W}
   track_stats::Bool
   active::Union{Bool, Nothing}
   chs::Int # number of channels
-  dim::Int # channel dimension
+  dim::Union{Int, Nothing} # channel dimension
 end
 
 function BatchNorm(chs::Int, λ=identity;
@@ -273,10 +272,11 @@ trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 function (BN::BatchNorm)(x)
   N = ndims(x)
   isnothing(BN.dim) ? dim = N-1 : dim = BN.dim
+  @assert dim < N 
   @assert size(x, dim) == BN.chs
   reduce_dims = [1:dim-1;dim+1:N]
   affine_shape = ntuple(i -> i == dim ? size(x, dim) : 1, N)
-  return _norm_layer_forward(BN, x; reduce_dims, affine_shape, dim=dim)
+  return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -326,9 +326,11 @@ mutable struct InstanceNorm{F,V,N,W}
   track_stats::Bool
   active::Union{Bool, Nothing}
   chs::Int # number of channels
+  dim::Union{Int, Nothing} # channel dimension
 end
 
 function InstanceNorm(chs::Int, λ=identity;
+                    dim = nothing,
                     initβ=zeros32, initγ=ones32,
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
@@ -341,19 +343,21 @@ function InstanceNorm(chs::Int, λ=identity;
   return InstanceNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
             affine, track_stats,
-            nothing, chs)
+            nothing, chs, dim)
 end
 
 @functor InstanceNorm
 trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
 
 function (l::InstanceNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == l.chs
   N = ndims(x)
-  reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(l, x; reduce_dims, affine_shape, dim=N-1)
+  @assert N > 2
+  isnothing(l.dim) ? dim = N-1 : dim = l.dim
+  @assert dim < N 
+  @assert size(x, dim) == l.chs
+  reduce_dims = [1:dim-1;dim+2:N];
+  affine_shape = ntuple(i -> i == dim ? size(x,dim) : 1, N)
+  return _norm_layer_forward(l, x; reduce_dims, affine_shape)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
@@ -404,12 +408,14 @@ mutable struct GroupNorm{F,V,N,W}
   track_stats::Bool
   active::Union{Bool, Nothing}
   chs::Int # number of channels
+  dim::Union{Int, Nothing} # channel dimension
 end
 
 @functor GroupNorm
 trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
+              dim = nothing,
               initβ=zeros32, initγ=ones32, 
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
@@ -426,18 +432,19 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
             μ, σ², 
             ϵ, momentum, 
             affine, track_stats, 
-            nothing, chs)
+            nothing, chs, dim)
 end
 
 function (gn::GroupNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == gn.chs
   N = ndims(x)
+  @assert N > 2
+  isnothing(gn.dim) ? dim = N-1 : dim = gn.dim
+  @assert dim < N 
+  @assert size(x, dim) == gn.chs
   sz = size(x)
-  x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
-  N = ndims(x)
-  reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
+  x = reshape(x, sz[1:dim-1]..., sz[dim]÷gn.G, gn.G, sz[N], sz[dim+2:N]...,)
+  reduce_dims = [1:dim-1;dim+2:N];
+  affine_shape = ntuple(i -> i ∈ (dim, dim-1) ? size(x, i) : 1, N)
   x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
   return reshape(x, sz)
 end
