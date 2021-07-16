@@ -181,8 +181,8 @@ function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape
       Zygote.ignore() do
         mtm = l.momentum
         m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
-        μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
-        σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
+        μnew = vec(dim+1 ∈ reduce_dims ? μ : mean(μ, dims=dim+1))
+        σ²new = vec(dim+1 ∈ reduce_dims ? σ² : mean(σ², dims=dim+1))
         l.μ = (1-mtm) .* l.μ .+ mtm .* μnew
         l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
       end
@@ -206,10 +206,9 @@ end
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
 
-Given an array with `N` dimensions, call the `N-1`th the channel dimension. 
-If `dim` specificied, call `dim` the channel dimenesion. For a batch of feature vectors 
-this is just the data dimension, for `WHCN` images
-it's the usual channel dimension.
+Given an array with `N` dimensions, call the `N-1`th the channel dimension. For
+a batch of feature vectors this is just the data dimension, for `WHCN` images
+it's the usual channel dimension. Use `dim=dim` to change the channel dimension to `dim`.
 
 `BatchNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×D_N` 
 input slice and normalises the input accordingly.
@@ -301,6 +300,7 @@ end
 
 Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension. 
 For `WHCN` images it's the usual channel dimension.
+Use `dim=dim` to change the channel dimension to `dim`.
 
 `InstanceNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×1` 
 input slice and normalises the input accordingly.
@@ -372,6 +372,7 @@ end
 
 """
     GroupNorm(channels::Integer, G::Integer, λ=identity;
+              dim = nothing
               initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
@@ -388,6 +389,7 @@ The number of channels must be an integer multiple of the number of groups.
 
 Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension. 
 For `WHCN` images it's the usual channel dimension.
+Use `dim=dim` to change the channel dimension to `dim`.
 
 If `affine=true`, it also applies  a shift and a rescale to the input 
 through to learnable per-channel bias `β` and scale `γ` parameters.
@@ -443,8 +445,9 @@ function (gn::GroupNorm)(x)
   @assert size(x, dim) == gn.chs
   sz = size(x)
   x = reshape(x, sz[1:dim-1]..., sz[dim]÷gn.G, gn.G, sz[dim+1:N]...)
-  reduce_dims = [1:dim-1;dim+2:N];
-  affine_shape = ntuple(i -> i ∈ (dim, dim-1) ? size(x, i) : 1, N)
+  N = ndims(x)
+  reduce_dims = [1:dim;dim+3:N];
+  affine_shape = ntuple(i -> i ∈ (dim+1, dim) ? size(x, i) : 1, N)
   x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
   return reshape(x, sz)
 end
