@@ -170,7 +170,7 @@ end
 function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
   isnothing(l.dim) ? dim = N-1 : dim = l.dim
   if !_isactive(l) && l.track_stats # testmode with tracked stats
-    stats_shape = ntuple(i -> i == dim ? size(x,dim) : 1, N)
+    stats_shape = ntuple(i -> i == dim ? size(x, dim) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
   else  # trainmode or testmode without tracked stats
@@ -356,7 +356,7 @@ function (l::InstanceNorm)(x)
   @assert dim < N 
   @assert size(x, dim) == l.chs
   reduce_dims = [1:dim-1;dim+2:N];
-  affine_shape = ntuple(i -> i == dim ? size(x,dim) : 1, N)
+  affine_shape = ntuple(i -> i == dim ? size(x, dim) : 1, N)
   return _norm_layer_forward(l, x; reduce_dims, affine_shape)
 end
 
@@ -442,7 +442,7 @@ function (gn::GroupNorm)(x)
   @assert dim < N 
   @assert size(x, dim) == gn.chs
   sz = size(x)
-  x = reshape(x, sz[1:dim-1]..., sz[dim]÷gn.G, gn.G, sz[N], sz[dim+2:N]...,)
+  x = reshape(x, sz[1:dim-1]..., sz[dim]÷gn.G, gn.G, sz[dim+1:N]...)
   reduce_dims = [1:dim-1;dim+2:N];
   affine_shape = ntuple(i -> i ∈ (dim, dim-1) ? size(x, i) : 1, N)
   x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
