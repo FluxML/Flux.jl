@@ -25,6 +25,7 @@ jobs:
           - {user: FluxML, repo: Metalhead.jl, group: All}
           - {user: FluxML, repo: AtomicGraphNets.jl, group: All}
 
+    if: contains(github.event.pull_request.labels.*.name, 'run downstream test')
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
