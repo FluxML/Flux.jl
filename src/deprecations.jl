@@ -26,6 +26,7 @@ ones(T::Type, dims...) = Base.ones(T, dims...) # no need for a message
 
 function zeros(dims...)
   Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :ones)
+  Base.zeros(Float32, dims...)
 end
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
 
