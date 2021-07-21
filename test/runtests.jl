@@ -15,9 +15,9 @@ end
   include("onehot.jl")
 end
 
-# @testset "Optimise" begin
-#   include("optimise.jl")
-# end
+@testset "Optimise" begin
+  include("optimise.jl")
+end
 
 @testset "Data" begin
   include("data.jl")
