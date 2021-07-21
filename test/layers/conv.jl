@@ -69,6 +69,7 @@ end
   @testset "Grouped Conv" begin
     ip = rand(Float32, 28, 28, 100, 2)
     c = Conv((3,3), 100 => 25, groups = 5)
+    @test size(c.weight) == (3, 3, 20, 25)
     @test size(c(ip)) == (26, 26, 25, 2)
   end
 end
