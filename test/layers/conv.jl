@@ -26,9 +26,9 @@ end
 @testset "CNN" begin
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
-    Conv((2, 2), 1=>16, relu),
+    Conv((2, 2), 1 => 16, relu),
     MaxPool((2,2)),
-    Conv((2, 2), 16=>8, relu),
+    Conv((2, 2), 16 => 8, relu),
     MaxPool((2,2)),
     x -> reshape(x, :, size(x, 4)),
     Dense(288, 10), softmax)
@@ -65,6 +65,13 @@ end
   end
 
   @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
+
+  @testset "Grouped Conv" begin
+    ip = rand(Float32, 28, 28, 100, 2)
+    c = Conv((3,3), 100 => 25, groups = 5)
+    @test size(c.weight) == (3, 3, 20, 25)
+    @test size(c(ip)) == (26, 26, 25, 2)
+  end
 end
 
 @testset "asymmetric padding" begin
