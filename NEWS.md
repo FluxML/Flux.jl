@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.12.5
+* Added option to configure [`groups`](https://github.com/FluxML/Flux.jl/pull/1531) in `Conv`.
+
 ## v0.12.4
 * Implemented an [`Embedding layer`](https://github.com/FluxML/Flux.jl/pull/1516) 
   based on `NNlib.gather` and `NNlib.scatter`.
