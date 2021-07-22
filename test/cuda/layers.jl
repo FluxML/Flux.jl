@@ -79,6 +79,7 @@ ConvNoBias(args...) = Conv(args...; bias = false)
 ConvTransposeNoBias(args...) = ConvTranspose(args...; bias = false)
 CrossCorNoBias(args...) = CrossCor(args...; bias = false)
 DepthwiseConvNoBias(args...) = DepthwiseConv(args...; bias = false)
+GroupedConv(args...) = Conv(args..., groups = 5)
 
 for act in ACTIVATIONS
   r = rand(Float32, 28, 28, 1, 1)
@@ -87,7 +88,8 @@ for act in ACTIVATIONS
                  CrossCor, CrossCorNoBias,
                  DepthwiseConv, DepthwiseConvNoBias]
   gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
-  
+  gpu_gradtest("Convolution with groups and $act", [GroupedConv,], rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = false)
+
   batch_norm = [BatchNorm]
   gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
   gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = false)
