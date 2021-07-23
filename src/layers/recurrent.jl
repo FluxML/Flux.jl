@@ -213,7 +213,8 @@ Base.show(io::IO, l::GRUCell) =
     GRU(in::Integer, out::Integer)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
-RNN but generally exhibits a longer memory span over sequences.
+RNN but generally exhibits a longer memory span over sequences. This implements
+the cell proposed in v1 of the above paper.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
@@ -268,7 +269,8 @@ Base.show(io::IO, l::GRUv3Cell) =
     GRUv3(in::Integer, out::Integer)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
-RNN but generally exhibits a longer memory span over sequences.
+RNN but generally exhibits a longer memory span over sequences. This implements
+the version proposed in v3 of the above arxiv paper.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
