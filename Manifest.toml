@@ -57,9 +57,9 @@ version = "1.0.1"
 
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "05d553f8ceece52752bc19304303138e10c1a7bb"
+git-tree-sha1 = "ad613c934ec3a3aa0ff19b91f15a16d56ed404b5"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.0.1"
+version = "1.0.2"
 
 [[CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
