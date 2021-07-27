@@ -95,6 +95,14 @@ version = "3.31.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
+[[ComponentArrays]]
+deps = ["ArrayInterface", "ChainRulesCore", "LinearAlgebra", "Requires"]
+git-tree-sha1 = "a6f2d2dbf55e2d5e6d6f67a88357a70a1f6e93bf"
+repo-rev = "patch-1"
+repo-url = "https://github.com/oxinabox/ComponentArrays.jl.git"
+uuid = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+version = "0.11.2"
+
 [[DataAPI]]
 git-tree-sha1 = "ee400abb2298bd13bfc3df1c412ed228061a2385"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
