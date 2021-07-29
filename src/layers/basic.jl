@@ -47,7 +47,7 @@ Base.getproperty(c::Chain, s::Symbol) = s === :layers ? getfield(c, :layers) : g
 functor(::Type{<:Chain}, c) = getfield(c, :layers), ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
-applychain(fs, x) = applychain(tail(fs), first(fs)(x))
+applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 (c::Chain)(x) = applychain(Tuple(getfield(c, :layers)), x)
 
@@ -60,7 +60,6 @@ function Base.show(io::IO, c::Chain)
   _show_layers(io, c.layers)
   print(io, ")")
 end
-
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
 
@@ -443,8 +442,7 @@ end
 (m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
 (m::Parallel)(xs::Tuple) = m(xs...)
 
-Base.getindex(m::Parallel, i::Integer) = m.layers[i]
-Base.getindex(m::Parallel, s::Symbol) = m.layers[s]
+Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
 
 Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
