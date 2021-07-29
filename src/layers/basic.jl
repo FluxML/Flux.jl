@@ -38,25 +38,24 @@ struct Chain{T}
   end
 end
 
-Base.parent(c::Chain) = getfield(c, :layers)
-Base.propertynames(c::Chain) = (Base.keys(parent(c))..., :layers)
-Base.getproperty(c::Chain, s::Symbol) = s === :layers ? parent(c) : getproperty(parent(c), s)
+Base.propertynames(c::Chain) = (Base.keys(c)..., :layers)
+Base.getproperty(c::Chain, s::Symbol) = s === :layers ? getfield(c, :layers) : getproperty(getfield(c, :layers), s)
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys
 
-functor(::Type{<:Chain}, c) = parent(c), ls -> Chain(ls...)
+functor(::Type{<:Chain}, c) = getfield(c, :layers), ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
-applychain(fs, x) = applychain(tail(Tuple(fs)), first(fs)(x))
+applychain(fs, x) = applychain(tail(fs), first(fs)(x))
 
-(c::Chain)(x) = applychain(parent(c), x)
+(c::Chain)(x) = applychain(Tuple(getfield(c, :layers)), x)
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(parent(c)[i]...)
+Base.getindex(c::Chain, i::AbstractArray) = Chain(getfield(c, :layers)[i]...)
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain")
-  show(io, parent(c))
+  show(io, c.layers)  # allows NamedTuple, but prints a trailing comma sometimes
 end
 
 # This is a temporary and naive implementation
@@ -69,7 +68,7 @@ end
 
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
-activations(c::Chain, input) = extraChain(parent(c), input)
+activations(c::Chain, input) = extraChain(Tuple(c.layers), input)
 
 function extraChain(fs::Tuple, x)
   res = first(fs)(x)
@@ -442,11 +441,10 @@ Base.getindex(m::Parallel, i::Integer) = m.layers[i]
 Base.getindex(m::Parallel, s::Symbol) = m.layers[s]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
 
-Base.parent(m::Parallel) = getfield(m, :layers)
 Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
 Base.propertynames(m::Parallel) = (Base.keys(getfield(m, :layers))..., :connection, :layers)
 Base.getproperty(m::Parallel, s::Symbol) = s === :connection ? getfield(m, :connection) : 
-  s === :layers ? parent(m) : getproperty(parent(m), s)
+  s === :layers ? getfield(m, :layers) : getproperty(getfield(m, :layers), s)
 
 trainable(m::Parallel) = (m.connection, m.layers...)
 
