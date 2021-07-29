@@ -23,9 +23,10 @@ julia> m(x) == m[2](m[1](x))
 true
 ```
 """
-struct Chain{T<:Tuple}
+struct Chain{T}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
+  Chain(xs::NamedTuple) = new{typeof(xs)}(xs) # Chain(xs...)
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
@@ -34,7 +35,8 @@ end
 functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
-applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
+applychain(::NamedTuple{(), Tuple{}}, x) = x
+applychain(fs::Union{NamedTuple,Tuple}, x) = applychain(tail(fs), first(fs)(x))
 
 (c::Chain)(x) = applychain(c.layers, x)
 
