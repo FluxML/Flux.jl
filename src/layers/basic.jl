@@ -394,10 +394,13 @@ end
     Parallel(connection; name = layer, ...)
 
 Create a 'Parallel' layer that passes an input array to each path in
-`layers`, reducing the output with `connection`.
+`layers`, before reducing the output with `connection`.
 
 Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
 If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+
+Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
+These can be accessed by indexing or with a dot: `m[1] == m[:name] == m.name` is the first layer.
 
 # Examples
 
@@ -406,18 +409,24 @@ julia> model = Chain(Dense(3, 5),
                      Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
                      Dense(8, 17));
 
-julia> size(model(rand(3)))
+julia> model(rand(3)) |> size
 (17,)
 
-julia> model = Parallel(+, Dense(10, 2), Dense(5, 2))
+julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
 Parallel(
   +,
-  Dense(10, 2),                         # 22 parameters
-  Dense(5, 2),                          # 12 parameters
+  α = Dense(10, 2, tanh),               # 22 parameters
+  β = Dense(5, 2),                      # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
-julia> size(model(rand(10), rand(5)))
+julia> model2(rand(10), rand(5)) |> size
 (2,)
+
+julia> model2.α(rand(10)) |> size
+(2,)
+
+julia> model2.β == model2[2]
+true
 ```
 """
 struct Parallel{F, T}
