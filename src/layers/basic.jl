@@ -387,6 +387,7 @@ end
 
 """
     Parallel(connection, layers...)
+    Parallel(connection; name = layer, ...)
 
 Create a 'Parallel' layer that passes an input array to each path in
 `layers`, reducing the output with `connection`.
@@ -421,21 +422,38 @@ struct Parallel{F, T}
 end
 
 Parallel(connection, layers...) = Parallel(connection, layers)
+function Parallel(connection; kw...)
+  layers = NamedTuple(kw)
+  if :layers in Base.keys(layers) || :layers in Base.keys(layers)
+    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `layers`"))
+  elseif isempty(layers)
+    throw(ArgumentError("can't construct a Parallel layer with no paths"))
+  end
+  Parallel(connection, layers)
+end
 
 @functor Parallel
 
-(m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
-(m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
+(m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
+(m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
 (m::Parallel)(xs::Tuple) = m(xs...)
 
 Base.getindex(m::Parallel, i::Integer) = m.layers[i]
+Base.getindex(m::Parallel, s::Symbol) = m.layers[s]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+
+Base.parent(m::Parallel) = getfield(m, :layers)
+Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
+Base.propertynames(m::Parallel) = (Base.keys(getfield(m, :layers))..., :connection, :layers)
+Base.getproperty(m::Parallel, s::Symbol) = s === :connection ? getfield(m, :connection) : 
+  s === :layers ? parent(m) : getproperty(parent(m), s)
 
 trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
-  join(io, m.layers, ", ")
+  # join(io, m.layers, ", ")
+  show(io, m.layers) # this is a bit ugly, but should parse. Can trim the brackets with a bit more effort.
   print(io, ")")
 end
 
