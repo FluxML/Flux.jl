@@ -42,6 +42,14 @@ applychain(fs::Union{NamedTuple,Tuple}, x) = applychain(tail(fs), first(fs)(x))
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 
+function Base.getproperty(c::Chain, k::Symbol)
+  if k === :layers
+    Base.getfield(c, :layers)
+  else
+    Base.getproperty(Base.getfield(c, :layers), k)
+  end
+end
+
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   join(io, c.layers, ", ")
