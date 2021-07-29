@@ -2,7 +2,7 @@
 @testset "layer printing" begin # 2-arg show, defined with layes
 
   @test repr(Dense(2,3)) == "Dense(2, 3)"
-  @test repr(Chain(Dense(2,3))) == "Chain(Dense(2, 3))"
+  @test repr(Chain(Dense(2,3))) == "Chain(Dense(2, 3),)"
 
 end
 @testset "nested model printing" begin # 3-arg show, defined in show.jl
@@ -35,12 +35,12 @@ end
   @test !occursin("# Total:", toplevel_chain)
 
   vector_chain = repr("text/plain", [Chain(Dense(2,3)), Chain(Dense(2,3))])
-  @test occursin("Chain(Dense(2, 3))", vector_chain)
+  @test occursin("Chain(Dense(2, 3)", vector_chain)
   @test occursin("# 9 parameters", vector_chain)
   @test !occursin("# Total:", vector_chain)
 
   matrix_chain = repr("text/plain", fill(Chain(Dense(2,3)), 3,3))
-  @test occursin("Chain(Dense(2, 3))", matrix_chain)
+  @test occursin("Chain(Dense(2, 3)", matrix_chain)
   @test !occursin("# 9 parameters", matrix_chain)
   @test !occursin("# Total:", matrix_chain)
 
