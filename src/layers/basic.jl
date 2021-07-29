@@ -1,11 +1,10 @@
 """
     Chain(layers...)
+    Chain(name = layer, ...)
 
-Chain multiple layers / functions together, so that they are called in sequence
-on a given input.
-
-`Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
-`m[1:3](x)` will calculate the output of the first three layers.
+Collects multiple layers / functions to be called in sequence
+on a given input. Supports indexing and slicing, `m[2]` or `m[1:end-1]`,
+and if names are given, `m.name == m[1]` etc.
 
 # Examples
 
@@ -15,35 +14,43 @@ julia> m = Chain(x -> x^2, x -> x+1);
 julia> m(5) == 26
 true
 
-julia> m = Chain(Dense(10, 5), Dense(5, 2));
+julia> m = Chain(Dense(10, 5, tanh), Dense(5, 2));
 
-julia> x = rand(10);
+julia> x = rand(10, 32);
 
 julia> m(x) == m[2](m[1](x))
 true
+
+julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)), 
+                  dec = Dense(5, 2));
+
+julia> m2(x) == (m2.dec ∘ m2.enc)(x)
+true
 ```
 """
-struct Chain{T<:Tuple}
+struct Chain{T}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
+  Chain(; kw...) = new{typeof(values(kw))}(values(kw))
 end
 
-@forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
-  Base.iterate, Base.lastindex
+Base.getproperty(c::Chain, s::Symbol) = getproperty(getfield(c, :layers), s)
+for fun in (:getindex, :length, :first, :last, :iterate, :lastindex, :propertynames, :keys)
+  @eval Base.$fun(c::Chain, args...) = Base.$fun(getfield(c, :layers), args...)
+end
 
-functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
+functor(::Type{<:Chain}, c) = getfield(c, :layers), ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
-applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
+applychain(fs, x) = applychain(tail(Tuple(fs)), first(fs)(x))
 
-(c::Chain)(x) = applychain(c.layers, x)
+(c::Chain)(x) = applychain(getfield(c, :layers), x)
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
+Base.getindex(c::Chain, i::AbstractArray) = Chain(getfield(c, :layers)[i]...)
 
 function Base.show(io::IO, c::Chain)
-  print(io, "Chain(")
-  join(io, c.layers, ", ")
-  print(io, ")")
+  print(io, "Chain")
+  show(io, getfield(c, :layers))
 end
 
 # This is a temporary and naive implementation
@@ -56,24 +63,20 @@ end
 
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
-function activations(c::Chain, input)
-    extraChain(c.layers, input)
-end
+activations(c::Chain, input) = extraChain(getfield(c, :layers), input)
 
 function extraChain(fs::Tuple, x)
-    res = first(fs)(x)
-    return (res, extraChain(Base.tail(fs), res)...)
+  res = first(fs)(x)
+  return (res, extraChain(Base.tail(Tuple(fs)), res)...)
 end
-
 extraChain(::Tuple{}, x) = ()
-
 
 
 """
     Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
-Create a traditional `Dense` layer, whose forward pass is given by:
+Create a traditional fully-connected layer, whose forward pass is given by:
 
     y = σ.(W * x .+ bias)
 
