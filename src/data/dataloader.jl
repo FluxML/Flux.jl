@@ -19,8 +19,10 @@ An object that iterates over mini-batches of `data`,
 each mini-batch containing `batchsize` observations
 (except possibly the last one).
 
-Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
-The last dimension in each tensor is the observation dimension, i.e. the one
+Takes as input a single `data` array, a tuple / named tuple / dictionary of array,
+or more generally any type implementing the [`LearnBase.nobs`](@ref) 
+and [`LearnBase.getobs`](@ref) interface.
+The last dimension in each array is the observation dimension, i.e. the one
 divided into mini-batches.
 
 If `shuffle=true`, it shuffles the observations each time iterations are re-started.
