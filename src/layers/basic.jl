@@ -56,9 +56,13 @@ Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(getfield(c, :layers))[i])...)
 
 function Base.show(io::IO, c::Chain)
-  print(io, "Chain")
-  show(io, c.layers)  # allows NamedTuple, but prints a trailing comma sometimes
+  print(io, "Chain(")
+  _show_layers(io, c.layers)
+  print(io, ")")
 end
+
+_show_layers(io, layers::Tuple) = join(io, layers, ", ")
+_show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -452,8 +456,7 @@ trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
-  # join(io, m.layers, ", ")
-  show(io, m.layers) # this is a bit ugly, but should parse. Can trim the brackets with a bit more effort.
+  _show_layers(io, m.layers)
   print(io, ")")
 end
 
