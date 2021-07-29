@@ -31,26 +31,31 @@ true
 struct Chain{T}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
-  Chain(; kw...) = new{typeof(values(kw))}(values(kw))
+  function Chain(; kw...)
+    :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+    isempty(kw) && return new{Tuple{}}(())
+    new{typeof(values(kw))}(values(kw))
+  end
 end
 
-Base.getproperty(c::Chain, s::Symbol) = getproperty(getfield(c, :layers), s)
+Base.parent(c::Chain) = getfield(c, :layers)
+Base.getproperty(c::Chain, s::Symbol) = s === :layers ? parent(c) : getproperty(parent(c), s)
 for fun in (:getindex, :length, :first, :last, :iterate, :lastindex, :propertynames, :keys)
-  @eval Base.$fun(c::Chain, args...) = Base.$fun(getfield(c, :layers), args...)
+  @eval Base.$fun(c::Chain, args...) = Base.$fun(parent(c), args...)
 end
 
-functor(::Type{<:Chain}, c) = getfield(c, :layers), ls -> Chain(ls...)
+functor(::Type{<:Chain}, c) = parent(c), ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
 applychain(fs, x) = applychain(tail(Tuple(fs)), first(fs)(x))
 
-(c::Chain)(x) = applychain(getfield(c, :layers), x)
+(c::Chain)(x) = applychain(parent(c), x)
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(getfield(c, :layers)[i]...)
+Base.getindex(c::Chain, i::AbstractArray) = Chain(parent(c)[i]...)
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain")
-  show(io, getfield(c, :layers))
+  show(io, parent(c))
 end
 
 # This is a temporary and naive implementation
@@ -63,11 +68,11 @@ end
 
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
-activations(c::Chain, input) = extraChain(getfield(c, :layers), input)
+activations(c::Chain, input) = extraChain(parent(c), input)
 
 function extraChain(fs::Tuple, x)
   res = first(fs)(x)
-  return (res, extraChain(Base.tail(Tuple(fs)), res)...)
+  return (res, extraChain(Base.tail(fs), res)...)
 end
 extraChain(::Tuple{}, x) = ()
 
