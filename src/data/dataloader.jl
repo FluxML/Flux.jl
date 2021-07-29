@@ -19,9 +19,9 @@ An object that iterates over mini-batches of `data`,
 each mini-batch containing `batchsize` observations
 (except possibly the last one).
 
-Takes as input a single `data` array, a tuple / named tuple / dictionary of array,
+Takes as input a single `data` array, a tuple/namedtuple/dictionary of arrays,
 or more generally any type implementing the [`LearnBase.nobs`](@ref) 
-and [`LearnBase.getobs`](@ref) interface.
+and [`LearnBase.getobs`](@ref) interfaces.
 The last dimension in each array is the observation dimension, i.e. the one
 divided into mini-batches.
 
