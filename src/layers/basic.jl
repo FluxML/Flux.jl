@@ -52,6 +52,8 @@ applychain(fs, x) = applychain(tail(fs), first(fs)(x))
 (c::Chain)(x) = applychain(Tuple(getfield(c, :layers)), x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(getfield(c, :layers)[i]...)
+Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
+  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(getfield(c, :layers))[i])...)
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain")
