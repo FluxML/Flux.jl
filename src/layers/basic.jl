@@ -429,10 +429,10 @@ end
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
   layers = NamedTuple(kw)
-  if :layers in Base.keys(layers) || :layers in Base.keys(layers)
-    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `layers`"))
+  if :layers in Base.keys(layers) || :connection in Base.keys(layers)
+    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
   elseif isempty(layers)
-    throw(ArgumentError("can't construct a Parallel layer with no paths"))
+    Parallel(connection, ())
   end
   Parallel(connection, layers)
 end
