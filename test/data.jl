@@ -79,4 +79,27 @@ using Random
 
     # specify the rng
     d = map(identity, DataLoader(X, batchsize=2; shuffle=true, rng=Random.seed!(Random.default_rng(), 5)))
+
+    @testset "dict" begin
+        data = Dict("x" => rand(2,4), "y" => rand(4))
+        dloader = DataLoader(data, batchsize=2)
+        c = collect(dloader)
+        @test c[1] == Dict("x" => data["x"][:,1:2], "y" => data["y"][1:2])
+        @test c[2] == Dict("x" => data["x"][:,3:4], "y" => data["y"][3:4])
+    end
+
+    @testset "dataset interface" begin
+        struct MyDataset
+            x
+            y
+        end
+        LearnBase.getobs(data::MyDataset, i) = (data.x[:,i], data.y[i])
+        LearnBase.nobs(data::MyDataset) = length(data.y)
+
+        data = MyDataset(rand(2,4), rand(4))
+        dloader = DataLoader(data, batchsize=2)
+        c = collect(dloader)
+        @test c[1] == LearnBase.getobs(data, 1:2)
+        @test c[2] == LearnBase.getobs(data, 3:4)
+    end
 end

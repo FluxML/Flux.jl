@@ -2,6 +2,7 @@ using Flux
 using Flux.Data
 using Flux: OneHotArray, OneHotMatrix, OneHotVector
 using Test
+using LearnBase
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 

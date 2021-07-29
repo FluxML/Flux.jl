@@ -77,7 +77,7 @@ julia> foreach(println∘summary, Flux.DataLoader(rand(Int8, 10, 64), batchsize=
 function DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
     batchsize > 0 || throw(ArgumentError("Need positive batchsize"))
 
-    n = _nobs(data)
+    n = nobs(data)
     if n < batchsize
         @warn "Number of observations less than batchsize, decreasing the batchsize to $n"
         batchsize = n
@@ -93,7 +93,7 @@ end
     end
     nexti = min(i + d.batchsize, d.nobs)
     ids = d.indices[i+1:nexti]
-    batch = _getobs(d.data, ids)
+    batch = getobs(d.data, ids)
     return (batch, nexti)
 end
 
@@ -102,20 +102,19 @@ function Base.length(d::DataLoader)
     d.partial ? ceil(Int,n) : floor(Int,n)
 end
 
-_nobs(data::AbstractArray) = size(data)[end]
+LearnBase.nobs(data::AbstractArray) = size(data)[end]
 
-function _nobs(data::Union{Tuple, NamedTuple})
+function LearnBase.nobs(data::Union{Tuple, NamedTuple, AbstractDict})
     length(data) > 0 || throw(ArgumentError("Need at least one data input"))
-    n = _nobs(data[1])
+    n = LearnBase.nobs(data[first(keys(data))])
     for i in keys(data)
-        ni = _nobs(data[i])
-        n == ni || throw(DimensionMismatch("All data inputs should have the same number of observations, i.e. size in the last dimension. " * 
-            "But data[$(repr(first(keys(data))))] ($(summary(data[1]))) has $n, while data[$(repr(i))] ($(summary(data[i]))) has $ni."))
+        ni = LearnBase.nobs(data[i])
+        n == ni || throw(DimensionMismatch("All data inputs should have the same number of observations, i.e. size in the last dimension. "))
     end
     return n
 end
 
-_getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
-_getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(_getobs, i), data)
-
-Base.eltype(::DataLoader{D}) where D = D
+LearnBase.getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
+LearnBase.getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(getobs, i), data)
+LearnBase.getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
+LearnBase.getobs(data::D, i) where {D<:AbstractDict} = D(k => getobs(v, i) for (k, v) in pairs(data))

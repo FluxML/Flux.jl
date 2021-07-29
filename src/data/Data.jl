@@ -2,6 +2,8 @@ module Data
 
 using Random: shuffle!
 using Base: @propagate_inbounds
+using LearnBase
+using LearnBase: nobs, getobs
 
 include("dataloader.jl")
 export DataLoader
