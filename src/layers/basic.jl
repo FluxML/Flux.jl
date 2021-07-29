@@ -39,10 +39,11 @@ struct Chain{T}
 end
 
 Base.parent(c::Chain) = getfield(c, :layers)
+Base.propertynames(c::Chain) = (Base.keys(parent(c))..., :layers)
 Base.getproperty(c::Chain, s::Symbol) = s === :layers ? parent(c) : getproperty(parent(c), s)
-for fun in (:getindex, :length, :first, :last, :iterate, :lastindex, :propertynames, :keys)
-  @eval Base.$fun(c::Chain, args...) = Base.$fun(parent(c), args...)
-end
+
+@forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
+  Base.iterate, Base.lastindex, Base.keys
 
 functor(::Type{<:Chain}, c) = parent(c), ls -> Chain(ls...)
 
