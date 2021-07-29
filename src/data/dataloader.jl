@@ -116,7 +116,13 @@ function LearnBase.nobs(data::Union{Tuple, NamedTuple, AbstractDict})
     return n
 end
 
+const WithSameEltype = Union{AbstractArray, 
+                            Tuple{Vararg{AbstractArray}}, 
+                            NamedTuple{<:Any,<:Tuple{Vararg{AbstractArray}}}, 
+                            AbstractDict{<:Any,<:AbstractArray}}
+
+Base.eltype(::DataLoader{D}) where {D <: WithSameEltype} = D
+
 LearnBase.getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
 LearnBase.getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(getobs, i), data)
-LearnBase.getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
 LearnBase.getobs(data::D, i) where {D<:AbstractDict} = D(k => getobs(v, i) for (k, v) in pairs(data))
