@@ -4,7 +4,7 @@
 
 Collects multiple layers / functions to be called in sequence
 on a given input. Supports indexing and slicing, `m[2]` or `m[1:end-1]`,
-and if names are given, `m.name == m[1]` etc.
+and if names are given, `m[:name] == m[1]` etc. (but not yet `m.name`).
 
 # Examples
 
@@ -24,7 +24,7 @@ true
 julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)), 
                   dec = Dense(5, 2));
 
-julia> m2(x) == (m2.dec ∘ m2.enc)(x)
+julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
 """
@@ -38,22 +38,19 @@ struct Chain{T}
   end
 end
 
-Base.propertynames(c::Chain) = (Base.keys(c)..., :layers)
-Base.getproperty(c::Chain, s::Symbol) = s === :layers ? getfield(c, :layers) : getproperty(getfield(c, :layers), s)
-
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys
 
-functor(::Type{<:Chain}, c) = getfield(c, :layers), ls -> Chain(ls...)
+functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
-(c::Chain)(x) = applychain(Tuple(getfield(c, :layers)), x)
+(c::Chain)(x) = applychain(Tuple(c.layers), x)
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(getfield(c, :layers)[i]...)
+Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
-  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(getfield(c, :layers))[i])...)
+  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
@@ -400,7 +397,7 @@ Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l
 If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
-These can be accessed by indexing or with a dot: `m[1] == m[:name] == m.name` is the first layer.
+These can be accessed by indexing or with a dot: `m[1] == m[:name]` is the first layer.
 
 # Examples
 
@@ -422,10 +419,10 @@ Parallel(
 julia> model2(rand(10), rand(5)) |> size
 (2,)
 
-julia> model2.α(rand(10)) |> size
+julia> model2[:α](rand(10)) |> size
 (2,)
 
-julia> model2.β == model2[2]
+julia> model2[:β] == model2[2]
 true
 ```
 """
@@ -455,9 +452,6 @@ Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
 
 Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
-Base.propertynames(m::Parallel) = (Base.keys(getfield(m, :layers))..., :connection, :layers)
-Base.getproperty(m::Parallel, s::Symbol) = s === :connection ? getfield(m, :connection) : 
-  s === :layers ? getfield(m, :layers) : getproperty(getfield(m, :layers), s)
 
 trainable(m::Parallel) = (m.connection, m.layers...)
 
