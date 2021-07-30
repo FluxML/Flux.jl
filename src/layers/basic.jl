@@ -27,6 +27,7 @@ struct Chain{T}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
   Chain(xs::NamedTuple) = new{typeof(xs)}(xs) # Chain(xs...)
+  Chain(; xs...) = Chain(values(xs))
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
