@@ -13,7 +13,7 @@ struct DataLoader{D,R<:AbstractRNG}
 end
 
 """
-    Flux.DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
+    DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
 
 An object that iterates over mini-batches of `data`, 
 each mini-batch containing `batchsize` observations
@@ -103,26 +103,3 @@ function Base.length(d::DataLoader)
     n = d.nobs / d.batchsize
     d.partial ? ceil(Int,n) : floor(Int,n)
 end
-
-LearnBase.nobs(data::AbstractArray) = size(data)[end]
-
-function LearnBase.nobs(data::Union{Tuple, NamedTuple, AbstractDict})
-    length(data) > 0 || throw(ArgumentError("Need at least one data input"))
-    n = LearnBase.nobs(data[first(keys(data))])
-    for i in keys(data)
-        ni = LearnBase.nobs(data[i])
-        n == ni || throw(DimensionMismatch("All data inputs should have the same number of observations, i.e. size in the last dimension. "))
-    end
-    return n
-end
-
-const WithSameEltype = Union{AbstractArray, 
-                            Tuple{Vararg{AbstractArray}}, 
-                            NamedTuple{<:Any,<:Tuple{Vararg{AbstractArray}}}, 
-                            AbstractDict{<:Any,<:AbstractArray}}
-
-Base.eltype(::DataLoader{D}) where {D <: WithSameEltype} = D
-
-LearnBase.getobs(data::AbstractArray, i) = data[ntuple(i -> Colon(), Val(ndims(data) - 1))..., i]
-LearnBase.getobs(data::Union{Tuple, NamedTuple}, i) = map(Base.Fix2(getobs, i), data)
-LearnBase.getobs(data::D, i) where {D<:AbstractDict} = D(k => getobs(v, i) for (k, v) in pairs(data))
