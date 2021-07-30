@@ -26,7 +26,8 @@ true
 struct Chain{T}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
-  Chain(xs::NamedTuple) = new{typeof(xs)}(xs) # Chain(xs...)
+  Chain(xs::NamedTuple) = new{typeof(xs)}(xs)
+  Chain(; xs...) = Chain(values(xs))
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
@@ -41,14 +42,6 @@ applychain(fs::Union{NamedTuple,Tuple}, x) = applychain(tail(fs), first(fs)(x))
 (c::Chain)(x) = applychain(c.layers, x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
-
-function Base.getproperty(c::Chain, k::Symbol)
-  if k === :layers
-    Base.getfield(c, :layers)
-  else
-    Base.getproperty(Base.getfield(c, :layers), k)
-  end
-end
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
@@ -76,7 +69,7 @@ function extraChain(fs::Tuple, x)
 end
 
 extraChain(::Tuple{}, x) = ()
-
+extraChain(::NamedTuple{(), Tuple{}}, x) = ()
 
 
 """
