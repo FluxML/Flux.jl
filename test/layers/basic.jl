@@ -191,6 +191,7 @@ import Flux: activations
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
     end
     
+    # Ref https://github.com/FluxML/Flux.jl/issues/1673
     @testset "Input domain" begin
       struct Input
         x
