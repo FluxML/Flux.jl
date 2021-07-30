@@ -52,6 +52,7 @@ using Random
     @test length(batches[1]) == 2
     @test length(batches[2]) == 2
     @test length(batches[3]) == 2
+    @test_broken eltype(batches) == eltype(d) == NamedTuple{(:x, :y), Tuple{typeof(X), typeof(Y)}}
     @test batches[1][1] == batches[1].x == X[:,1:2]
     @test batches[1][2] == batches[1].y == Y[1:2]
     @test batches[2][1] == batches[2].x == X[:,3:4]
