@@ -183,6 +183,14 @@ end
 
 # GRU
 
+function _gru_output(Wi, Wh, x, h)
+    gx, gh = Wi*x, Wh*h
+    r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+    z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+
+    return gx, gh, r, z
+end
+
 struct GRUCell{A,V,S}
   Wi::A
   Wh::A
@@ -195,9 +203,7 @@ GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
 
 function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
-  gx, gh = m.Wi*x, m.Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, x, h)
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
   sz = size(x)
@@ -251,9 +257,7 @@ GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32)
 
 function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
-  gx, gh = m.Wi*x, m.Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, x, h)
   h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
   sz = size(x)
@@ -278,17 +282,6 @@ for a good overview of the internals.
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::GRUv3Cell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "GRUv3Cell field :h has been deprecated. Use m::GRUv3Cell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
 
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
   Zygote.∇map(__context__, f, args...)
