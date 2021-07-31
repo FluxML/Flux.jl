@@ -212,7 +212,7 @@ Base.show(io::IO, l::GRUCell) =
 """
     GRU(in::Integer, out::Integer)
 
-[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
 the cell proposed in v1 of the above paper.
 
