@@ -183,7 +183,8 @@ end
 
 # GRU
 
-function _gru_output(Wi, Wh, x, h)
+function _gru_output(Wi, Wh, b, x, h)
+    o = size(h, 1)
     gx, gh = Wi*x, Wh*h
     r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
     z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
@@ -203,7 +204,7 @@ GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
 
 function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
-  gx, gh, r, z = _gru_output(m.Wi, m.Wh, x, h)
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
   sz = size(x)
@@ -257,7 +258,7 @@ GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32)
 
 function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
-  gx, gh, r, z = _gru_output(m.Wi, m.Wh, x, h)
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
   h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
   sz = size(x)
