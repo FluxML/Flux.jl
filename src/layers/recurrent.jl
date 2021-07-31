@@ -270,7 +270,7 @@ Base.show(io::IO, l::GRUv3Cell) =
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
-the version proposed in v3 of the above arxiv paper.
+the variant proposed in v3 of the referenced paper.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
