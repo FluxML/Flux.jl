@@ -53,6 +53,40 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
+"""
+    FoldedRecur
+
+We fold over the second dimension as the time dimension, and return all the new hidden states concatenated on the time dimension.
+"""
+struct FoldedRecur{C}
+    cell::C
+end
+
+Flux.@functor FoldedRecur
+trainable(a::FoldedRecur) = (a.cell,)
+(m::FoldedRecur)(x) = m.cell(m.cell.state0, x)
+
+FoldedRNN(args...; kwargs...) = 
+    FoldedRecur(Flux.RNNCell(args...; kwargs...))
+
+function (m::Flux.RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::AbstractArray{<:Number, 3}) where {F,A,V,T}
+    σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
+
+    # stride across the temporal dimension, i.e. 2
+    h_all = [h]
+    for t in 1:size(x, 2)
+        h = σ.(Wi*x[:, t, :] .+ Wh*h_all[end] .+ b)
+        push!(h_all, h)
+    end
+    sz = size(x)
+    h_ret = cat(reshape.(h_all[2:end], :, 1, sz[3:end]...)..., dims=2)
+
+    # h_ret = h_all[2:end]
+    return h_ret, h_ret
+end
+
+
+
 # TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
   if sym === :init
