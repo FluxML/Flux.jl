@@ -26,11 +26,6 @@ import Flux: activations
     @test m[1:2] == m
 
     @test_throws ArgumentError Chain(layers = Dense(10, 10), two = identity) # reserved name
-
-    mt = Chain((Dense(2,2),)) # constructor accepts Any
-    @test_throws MethodError mt(rand(2)) # but Tuples aren't callable
-    mnt = Chain((; name = Dense(2,2),))
-    @test_throws MethodError mnt(rand(2))
   end
 
   @testset "Activations" begin
