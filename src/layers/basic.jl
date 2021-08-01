@@ -4,7 +4,7 @@
 
 Collects multiple layers / functions to be called in sequence
 on a given input. Supports indexing and slicing, `m[2]` or `m[1:end-1]`,
-and if names are given, `m[:name] == m[1]` etc. (but not `m.name` at present).
+and if names are given, `m[:name] == m[1]` etc.
 
 # Examples
 
