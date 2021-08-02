@@ -89,10 +89,15 @@ function (m::FoldedRecur)(x::AbstractArray{<:Number, 3})
 
   # stride across temporal dimension
   h = m.cell.state0
-  h_all = Vector{typeof(h)}(undef, size(x, 2))
+  h_all = if h isa Tuple
+      Vector{typeof(h[1])}(undef, size(x, 2))
+  else
+      Vector{typeof(h)}(undef, size(x, 2))
+  end
+
   for t in 1:size(x, 2)
       h, h_out = m.cell(h, x[:, t, :])
-      push!(h_all, h_out)
+      h_all[t] = h_out
   end
   sz = size(x)
   h_ret = cat(reshape.(h_all, :, 1, sz[3])..., dims=2)
