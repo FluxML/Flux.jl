@@ -151,7 +151,7 @@ julia> y_test
 
 As expected, the predictions are very accurate since the underlying function was simple and observed without noise. Later on we will see `Flux` in action on substantially more challenging applications.
 
-In summary, Flux builds and evaluates a predictive model through the following steps:
+In summary, building and evaluating a predictive model in Flux follows the following steps:
 
 1. Setup training and test data.
 2. Build a predictive model with initialized parameters.
