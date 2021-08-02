@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.12.7
+* Added support for [`GRUv3`](https://github.com/FluxML/Flux.jl/pull/1675)
+
 ## v0.12.5
 * Added option to configure [`groups`](https://github.com/FluxML/Flux.jl/pull/1531) in `Conv`.
 
