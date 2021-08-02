@@ -79,7 +79,7 @@ julia> loss(x_train, y_train)
 
 More accurate predictions will yield a lower loss. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/). You can write your own loss functions or rely on those already provided by Flux. Flux works by iteratively reducing the loss through *training*.
 
-The Flux [`train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on an [`optimiser`](../training/optimisers.md). We use the gradient `Descent` optimiser:
+The Flux [`train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on an [`optimiser`](../training/optimisers.md). Here, we use basic gradient descent:
 
 ```julia
 julia> using Flux: train!
