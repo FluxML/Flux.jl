@@ -91,7 +91,7 @@ function (m::FoldedRecur)(x::AbstractArray{<:Number, 3})
       push!(h_all, h_out)
   end
   sz = size(x)
-  h_ret = cat(reshape.(h_all[2:end], :, 1, sz[3:end]...)..., dims=2)
+  h_ret = cat(reshape.(h_all, :, 1, sz[3:end]...)..., dims=2)
   return h_ret
 
 end
