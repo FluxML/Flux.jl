@@ -217,6 +217,15 @@ end
 
 # GRU
 
+function _gru_output(Wi, Wh, b, x, h)
+  o = size(h, 1)
+  gx, gh = Wi*x, Wh*h
+  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+
+  return gx, gh, r, z
+end
+
 struct GRUCell{A,V,S}
   Wi::A
   Wh::A
@@ -229,9 +238,7 @@ GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
 
 function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
-  gx, gh = m.Wi*x, m.Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
   h′ = (1 .- z) .* h̃ .+ z .* h
   sz = size(x)
@@ -246,8 +253,9 @@ Base.show(io::IO, l::GRUCell) =
 """
     GRU(in::Integer, out::Integer)
 
-[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
-RNN but generally exhibits a longer memory span over sequences.
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
+RNN but generally exhibits a longer memory span over sequences. This implements
+the variant proposed in v1 of the referenced paper.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
@@ -266,6 +274,49 @@ function Base.getproperty(m::GRUCell, sym::Symbol)
     return getfield(m, sym)
   end
 end
+
+
+# GRU v3
+
+struct GRUv3Cell{A,V,S}
+  Wi::A
+  Wh::A
+  b::V
+  Wh_h̃::A
+  state0::S
+end
+
+GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
+  GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3), 
+            init(out, out), init_state(out,1))
+
+function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
+  b, o = m.b, size(h, 1)
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
+  h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
+  h′ = (1 .- z) .* h̃ .+ z .* h
+  sz = size(x)
+  return h′, reshape(h′, :, sz[2:end]...)
+end
+
+@functor GRUv3Cell
+
+Base.show(io::IO, l::GRUv3Cell) =
+  print(io, "GRUv3Cell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+
+"""
+    GRUv3(in::Integer, out::Integer)
+
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v3) layer. Behaves like an
+RNN but generally exhibits a longer memory span over sequences. This implements
+the variant proposed in v3 of the referenced paper.
+
+See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+for a good overview of the internals.
+"""
+GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
+Recur(m::GRUv3Cell) = Recur(m, m.state0)
+
 
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
   Zygote.∇map(__context__, f, args...)
