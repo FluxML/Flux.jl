@@ -184,12 +184,12 @@ end
 # GRU
 
 function _gru_output(Wi, Wh, b, x, h)
-    o = size(h, 1)
-    gx, gh = Wi*x, Wh*h
-    r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-    z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  o = size(h, 1)
+  gx, gh = Wi*x, Wh*h
+  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
 
-    return gx, gh, r, z
+  return gx, gh, r, z
 end
 
 struct GRUCell{A,V,S}
@@ -253,8 +253,8 @@ struct GRUv3Cell{A,V,S}
 end
 
 GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
-    GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3), 
-              init(out, out), init_state(out,1))
+  GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3), 
+            init(out, out), init_state(out,1))
 
 function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
