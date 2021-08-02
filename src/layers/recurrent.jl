@@ -95,10 +95,11 @@ function (m::FoldedRecur)(x::AbstractArray{<:Number, 3})
       Vector{typeof(h)}(undef, size(x, 2))
   end
 
-  for t in 1:size(x, 2)
+  for t in axes(x, 2)
       h, h_out = m.cell(h, x[:, t, :])
       h_all[t] = h_out
   end
+
   sz = size(x)
   h_ret = cat(reshape.(h_all, :, 1, sz[3])..., dims=2)
   return h_ret
