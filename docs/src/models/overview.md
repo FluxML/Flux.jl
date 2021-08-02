@@ -53,7 +53,7 @@ julia> model.bias
  0.0
 ```
 
-A `Dense` layer is a struct with fields `weight` and `bias`. `weight` is a matrix of model weights and `bias` represents a bias vector. These model parameters are initialized randomly here, and will later be learned from data by optimization. 
+Under the hood, a `Dense` layer is a struct with fields `weight` and `bias`. `weight` is a matrix of model weights and `bias` represents a bias vector. By default, these model parameters are initialized randomly.
 
 `Dense(1, 1)` also implements the function `σ(Wx+b)` where `W` and `b` are the weights and biases. `σ` is an activation function that makes the mapping from inputs to output nonlinear. Our model has one weight and one bias, but typical models will have many more. Think of weights and biases as knobs and levers Flux can use to tune predictions.
 
