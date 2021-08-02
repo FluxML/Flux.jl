@@ -155,7 +155,7 @@ In summary, building and evaluating a predictive model in Flux follows the follo
 
 1. Setup training and test data.
 2. Build a predictive model with initialized parameters.
-3. Find better parameters by optimizing a loss function that penalizes poor predictions.
+3. Find better parameters by optimizing a loss function.
 4. Evaluate the learned model by assessing performance on test data.
 
 Let's drill down a bit to understand what's going on inside the individual layers of Flux.
