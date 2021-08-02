@@ -53,39 +53,6 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
-"""
-    FoldedRecur
-
-We fold over the second dimension as the time dimension, and return all the new hidden states concatenated on the time dimension.
-"""
-struct FoldedRecur{C}
-    cell::C
-end
-
-Flux.@functor FoldedRecur
-trainable(a::FoldedRecur) = (a.cell,)
-(m::FoldedRecur)(x) = m.cell(m.cell.state0, x)
-
-FoldedRNN(args...; kwargs...) = 
-    FoldedRecur(Flux.RNNCell(args...; kwargs...))
-
-function (m::Flux.RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::AbstractArray{<:Number, 3}) where {F,A,V,T}
-    σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
-
-    # stride across the temporal dimension, i.e. 2
-    h_all = [h]
-    for t in 1:size(x, 2)
-        h = σ.(Wi*x[:, t, :] .+ Wh*h_all[end] .+ b)
-        push!(h_all, h)
-    end
-    sz = size(x)
-    h_ret = cat(reshape.(h_all[2:end], :, 1, sz[3:end]...)..., dims=2)
-
-    # h_ret = h_all[2:end]
-    return h_ret, h_ret
-end
-
-
 
 # TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
@@ -100,6 +67,35 @@ function Base.getproperty(m::Recur, sym::Symbol)
 end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
+
+
+"""
+    FoldedRecur
+
+We fold over the second dimension as the time dimension, and return all the new hidden states concatenated on the time dimension.
+"""
+struct FoldedRecur{C}
+  cell::C
+end
+
+Flux.@functor FoldedRecur
+trainable(a::FoldedRecur) = (a.cell,)
+
+function (m::FoldedRecur)(x::AbstractArray{<:Number, 3})
+  # stride across temporal dimension
+
+  h = m.cell.state0
+  h_all = Vector{typeof(h)}(undef, size(x, 2))
+  for t in 1:size(x, 2)
+      h, h_out = m.cell(h, x[:, t, :])
+      push!(h_all, h_out)
+  end
+  sz = size(x)
+  h_ret = cat(reshape.(h_all[2:end], :, 1, sz[3:end]...)..., dims=2)
+  return h_ret
+
+end
+
 
 # Vanilla RNN
 
@@ -136,6 +132,7 @@ The most basic recurrent layer; essentially acts as a `Dense` layer, but with th
 output fed back into the input each time step.
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
+FoldedRNN(args...; kwargs...) = FoldedRecur(Flux.RNNCell(args...; kwargs...))
 Recur(m::RNNCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -196,6 +193,7 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
+FoldedLSTM(args...; kwargs...) = FoldedRecur(Flux.LSTMCell(args...; kwargs...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -261,6 +259,7 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+FoldedGRU(args...; kwargs...) = FoldedRecur(Flux.GRUCell(args...; kwargs...))
 Recur(m::GRUCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -315,6 +314,7 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
+FoldedGRUv3(args...; kwargs...) = FoldedRecur(Flux.GRUv3Cell(args...; kwargs...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
 
 
