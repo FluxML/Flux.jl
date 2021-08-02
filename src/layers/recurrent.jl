@@ -73,17 +73,21 @@ flip(f, xs) = reverse(f.(reverse(xs)))
     FoldedRecur
 
 We fold over the second dimension as the time dimension, and return all the new hidden states concatenated on the time dimension.
+
+TODO: Figure out how to use CuDNN for RNN, GRU, LSTM.
+
 """
 struct FoldedRecur{C}
-  cell::C
+    cell::C
 end
 
 Flux.@functor FoldedRecur
 trainable(a::FoldedRecur) = (a.cell,)
 
+# currently RNNs are only usable with 3-d arrays.
 function (m::FoldedRecur)(x::AbstractArray{<:Number, 3})
-  # stride across temporal dimension
 
+  # stride across temporal dimension
   h = m.cell.state0
   h_all = Vector{typeof(h)}(undef, size(x, 2))
   for t in 1:size(x, 2)
@@ -91,7 +95,7 @@ function (m::FoldedRecur)(x::AbstractArray{<:Number, 3})
       push!(h_all, h_out)
   end
   sz = size(x)
-  h_ret = cat(reshape.(h_all, :, 1, sz[3:end]...)..., dims=2)
+  h_ret = cat(reshape.(h_all, :, 1, sz[3])..., dims=2)
   return h_ret
 
 end
