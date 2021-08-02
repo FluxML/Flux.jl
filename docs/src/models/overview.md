@@ -112,7 +112,7 @@ julia> loss(x_train, y_train)
 186.32362365722656
 ```
 
-as the parameters were changed by the algorithm:
+And the parameters were changed by the optimizer:
 
 ```
 julia> parameters
