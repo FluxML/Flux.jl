@@ -83,7 +83,7 @@ extraChain(::Tuple{}, x) = ()
     Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
-Create a traditional fully-connected layer, whose forward pass is given by:
+Create a traditional `Dense` layer, whose forward pass is given by:
 
     y = σ.(W * x .+ bias)
 
