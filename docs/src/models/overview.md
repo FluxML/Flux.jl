@@ -62,7 +62,7 @@ julia> model(x_train)
 
 ## Step 3 - Learn the model parameters on training data 
 
-In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the average distance between actual values and predictions so that more accurate predictions will yield a lower loss. Here is an example with the [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/) loss function:
+In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Generally, loss functions compute the average distance between actual values and predictions so that more accurate predictions will yield a lower loss. Here is an example with the [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/) loss function:
 
 ```julia
 julia> loss(x, y) = Flux.Losses.mse(model(x), y)
@@ -101,7 +101,7 @@ julia> model.weight in parameters, model.bias in parameters
 (true, true)
 ```
 
-The [`train!`](@ref) function in Flux will use the optimizer to iteratively adjust the weights and biases in `parameters` to minimize the loss function. Calling `train!` once makes the optimizer take a single step toward the minimum: 
+The [`train!`](@ref) function in Flux will use the optimizer to iteratively adjust the weights and biases in `parameters` to minimize the loss function. Calling `train!` once makes the optimizer take a single step toward the minimum of our loss function:
 
 ```
 julia> train!(loss, parameters, data, opt)
@@ -141,7 +141,7 @@ After 200 training steps, the loss went down, and the parameters are getting clo
 
 ## Step 4 - Evaluate the model on test data
 
-Now, let's verify the predictions:
+Now, let's evaluate the predictions by comparing them to the true outputs in `y_test`:
 
 ```
 julia> model(x_test)
@@ -157,7 +157,8 @@ As expected, the predictions are very accurate since the underlying function was
 
 This was a short demo of how Flux can be easily used to:
 - set up a machine learning model using the `Dense` function in Flux
-- learn the model parameters from training data by iteratively minimizing a loss function
-- make predictions by calling the model on input test data.
+- learn the model parameters from training data, `x_train` and `y_train`, using gradient `Descent` to iteratively minimize the mean squared error loss function `Flux.Losses.mse`
+- make predictions by calling the model on test input data `x_test`.
+- evaluate the model by comparing its predictions to the actual test outputs `y_test`
 
 Let's now drill down a bit to understand what's going on inside the individual layers of Flux.
