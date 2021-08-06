@@ -399,8 +399,7 @@ end
 
 """
     GroupNorm(channels::Integer, G::Integer, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i),
+              initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
@@ -480,6 +479,7 @@ testmode!(m::GroupNorm, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
+  # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
   print(io, "GroupNorm($(l.chs), $(l.G)")
   print(io, ", $(l.λ)")
   print(io, ", affine = $(l.affine)")

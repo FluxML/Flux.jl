@@ -1,6 +1,6 @@
 using Flux, CUDA, Test
 
-@testset for R in [RNN, GRU, LSTM]
+@testset for R in [RNN, GRU, LSTM, GRUv3]
   m = R(10, 5) |> gpu
   x = gpu(rand(10))
   (m̄,) = gradient(m -> sum(m(x)), m)
@@ -12,7 +12,7 @@ using Flux, CUDA, Test
 end
 
 @testset "RNN" begin
-  @testset for R in [RNN, GRU, LSTM], batch_size in (1, 5)
+  @testset for R in [RNN, GRU, LSTM, GRUv3], batch_size in (1, 5)
     rnn = R(10, 5)
     curnn = fmap(gpu, rnn)
 

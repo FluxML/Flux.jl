@@ -13,14 +13,12 @@ This function is mainly used by weight initializers, e.g., [`kaiming_normal`](@r
 # Examples
 
 ```jldoctest
-julia> layer = Dense(10, 20)
-Dense(10, 20)
+julia> layer = Dense(10, 20);
 
-julia> Flux.nfan(size(layer.W))
+julia> Flux.nfan(size(layer.weight))
 (10, 20)
 
-julia> layer = Conv((3, 3), 2=>10)
-Conv((3, 3), 2=>10)
+julia> layer = Conv((3, 3), 2=>10);
 
 julia> Flux.nfan(size(layer.weight))
 (18, 90)
@@ -348,7 +346,7 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols; gain=1, shift=0) = zeros(Float32, cols)
+identity_init(cols; gain=1, shift=0) = zeros32(cols)
 
 # Assume matrix multiplication
 identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
@@ -357,7 +355,7 @@ identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain,
 function identity_init(dims...; gain=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
-  weights = zeros(Float32, dims)
+  weights = zeros32(dims)
   for i in 1:min(nin,nout)
     weights[centers..., i, i] = gain
   end
@@ -368,12 +366,10 @@ identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs
 identity_init(; init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
 identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
-
-ones(T::Type, dims...) = Base.ones(T, dims...)
-zeros(T::Type, dims...) = Base.zeros(T, dims...)
-
-ones(dims...) = Base.ones(Float32, dims...)
-zeros(dims...) = Base.zeros(Float32, dims...)
+ones32(dims...) = Base.ones(Float32, dims...)
+zeros32(dims...) = Base.zeros(Float32, dims...)
+rand32(dims...) = Base.rand(Float32, dims...)
+randn32(dims...) = Base.randn(Float32, dims...)
 
 """
     create_bias(weights, bias, length)
@@ -506,7 +502,7 @@ julia> Flux.chunk(1:10, 3)
  9:10
 
 julia> Flux.chunk(collect(1:10), 3)
-3-element Vector{SubArray{Int64, 1, Vector{Int64}, Tuple{UnitRange{Int64}}, true}}: 
+3-element Vector{SubArray{Int64, 1, Vector{Int64}, Tuple{UnitRange{Int64}}, true}}:
  [1, 2, 3, 4]
  [5, 6, 7, 8]
  [9, 10]
@@ -720,19 +716,25 @@ over specific modules or subsets of the parameters
 # Examples
 
 ```jldoctest
-julia> m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu))
-Chain(Dense(784, 64), BatchNorm(64, relu))
+julia> m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu));
 
 julia> m2 = Chain(m1, Dense(64, 10))
-Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
+Chain(
+  Chain(
+    Dense(784, 64),                     # 50_240 parameters
+    BatchNorm(64, relu),                # 128 parameters, plus 128
+  ),
+  Dense(64, 10),                        # 650 parameters
+)         # Total: 6 trainable arrays, 51_018 parameters,
+          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB.
 
 julia> Flux.modules(m2)
 5-element Vector{Any}:
- Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))
- Chain(Dense(784, 64), BatchNorm(64, relu))
- Dense(784, 64)
- BatchNorm(64, relu)
- Dense(64, 10)
+ Chain(Chain(Dense(784, 64), BatchNorm(64, relu)), Dense(64, 10))  # 51_018 parameters, plus 128 non-trainable
+ Chain(Dense(784, 64), BatchNorm(64, relu))  # 50_368 parameters, plus 128 non-trainable
+ Dense(784, 64)      # 50_240 parameters
+ BatchNorm(64, relu)  # 128 parameters, plus 128 non-trainable
+ Dense(64, 10)       # 650 parameters
 
 julia> L2(m) = sum(sum(abs2, l.weight) for l in Flux.modules(m) if l isa Dense)
 L2 (generic function with 1 method)
@@ -759,6 +761,7 @@ the function returns `true`, otherwise it returns `false`.
 julia> loss() = rand();
 
 julia> trigger = Flux.patience(() -> loss() < 1, 3);
+
 
 julia> Flux.@epochs 10 begin
          trigger() && break
@@ -795,6 +798,7 @@ julia> loss = let l = 0
        end; # pseudo loss function that returns increasing values
 
 julia> es = Flux.early_stopping(loss, 3);
+
 
 julia> Flux.@epochs 10 begin
          es() && break
@@ -835,6 +839,7 @@ julia> f = let v = 10
        end; # -9, 8, -7, 6, ...
 
 julia> trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
+
 
 julia> Flux.@epochs 10 begin
          trigger() && break

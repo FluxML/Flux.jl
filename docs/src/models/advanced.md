@@ -68,7 +68,7 @@ by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
-delete!(ps, m[2].b) 
+delete!(ps, m[2].bias) 
 ```
 
 ## Custom multiple input or output layer
