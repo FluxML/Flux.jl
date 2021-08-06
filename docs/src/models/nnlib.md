@@ -72,5 +72,7 @@ NNlib.batched_transpose
 
 ```@docs
 NNlib.gather
+NNlib.gather!
 NNlib.scatter
+NNlib.scatter!
 ```
