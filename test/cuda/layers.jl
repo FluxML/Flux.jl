@@ -51,13 +51,21 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
           # test 
           if test_cpu
             @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
+            if isnothing(xg_cpu)
+              @test isnothing(xg_gpu)
+            else
+              @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
+            end
           end
           @test gs_gpu isa Flux.Zygote.Grads
           for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
-            @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
-            if test_cpu
-              @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
+            if isnothing(gs_cpu[p_cpu])
+              @test isnothing(gs_gpu[p_gpu])
+            else
+              @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
+              if test_cpu
+                @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
+              end
             end
           end
         end
@@ -71,6 +79,7 @@ ConvNoBias(args...) = Conv(args...; bias = false)
 ConvTransposeNoBias(args...) = ConvTranspose(args...; bias = false)
 CrossCorNoBias(args...) = CrossCor(args...; bias = false)
 DepthwiseConvNoBias(args...) = DepthwiseConv(args...; bias = false)
+GroupedConv(args...) = Conv(args..., groups = 5)
 
 for act in ACTIVATIONS
   r = rand(Float32, 28, 28, 1, 1)
@@ -79,7 +88,10 @@ for act in ACTIVATIONS
                  CrossCor, CrossCorNoBias,
                  DepthwiseConv, DepthwiseConvNoBias]
   gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
-  
+
+  groupedconv = [GroupedConv]
+  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = true)
+
   batch_norm = [BatchNorm]
   gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
   gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = false)
@@ -114,6 +126,15 @@ pixelshuffle = [PixelShuffle]
 gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
 gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
 
+embedding = [Flux.Embedding]
+gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2)
+gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2)
+gpu_gradtest("Embedding integer index", embedding, 1, 5, 2)
+gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2)
+gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2)
+gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2)
+gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
+
 @testset "function layers" begin
   x = rand(Float32, 3,3)
   gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
@@ -135,12 +156,12 @@ end
 end
 
 @testset "Dense with Zeros bias" begin
-  l = Dense(ones(Float32, 4,3), Flux.Zeros()) |> gpu
+  l = Dense(ones(Float32, 4, 3), Flux.Zeros()) |> gpu
   ip = zeros(Float32, 3, 7) |> gpu
 
   @test sum(l(ip)) ≈ 0.f0
   gs = gradient(() -> sum(l(ip)), Flux.params(l))
-  @test l.b ∉ gs.params
+  @test l.bias ∉ gs.params
 end
 
 @testset "Extended BatchNorm" begin

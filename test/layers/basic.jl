@@ -19,12 +19,23 @@ import Flux: activations
     @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn(10))
     @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn(10))
     # numeric test should be put into testset of corresponding layer
+
+    @test_nowarn Chain(first = Dense(10, 5, σ), second = Dense(5, 2))(randn(10))
+    m = Chain(first = Dense(10, 5, σ), second = Dense(5, 2))
+    @test m[:first] == m[1]
+    @test m[1:2] == m
+
+    @test_throws ArgumentError Chain(layers = Dense(10, 10), two = identity) # reserved name
   end
 
   @testset "Activations" begin
     c = Chain(Dense(3,5,relu), Dense(5,1,relu))
     X = Float32.([1.0; 1.0; 1.0])
     @test_nowarn gradient(()->Flux.activations(c, X)[2][1], params(c))
+
+    c2 = Chain(enc = c[1], dec = c[2])
+    @test Flux.activations(c, X) == Flux.activations(c2, X)
+    @test_nowarn gradient(()->Flux.activations(c2, X)[2][1], params(c2))
   end
 
   @testset "Dense" begin
@@ -166,7 +177,7 @@ import Flux: activations
       @test b3.bias isa Vector{Float16}
       @test size(b3(rand(4), rand(5))) == (3,)
 
-      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros)
+      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros32)
       @test_skip  b4.bias isa Vector{Float32}
 
       @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array
@@ -184,11 +195,46 @@ import Flux: activations
     @testset "concat size" begin
       input = randn(10, 2)
       @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
+      @test size(Parallel(hcat, one = Dense(10, 10), two = identity)(input)) == (10, 4)
     end
 
     @testset "vararg input" begin
       inputs = randn(10), randn(5), randn(4)
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
+      @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
     end
+
+    @testset "named access" begin
+      m = Parallel(hcat, one = Dense(10, 10), two = identity)
+      @test m[1] == m[:one]
+
+      @test_throws ArgumentError Parallel(hcat, layers = Dense(10, 10), two = identity) # reserved names
+      @test_throws ArgumentError Parallel(hcat, connection = Dense(10, 10), two = identity)
+    end
+  end
+
+  @testset "Embedding" begin
+    vocab_size, embed_size = 10, 4
+    m = Flux.Embedding(vocab_size, embed_size)
+    @test size(m.weight) == (embed_size, vocab_size)
+    
+    x = rand(1:vocab_size, 3)
+    y = m(x)
+    @test y isa Matrix{Float32}
+    @test y ≈ m.weight[:,x]
+    x2 = OneHotMatrix(x, vocab_size)
+    y2 = m(x2)
+    @test y2 isa Matrix{Float32}
+    @test y2 ≈ y
+    @test_throws DimensionMismatch m(OneHotMatrix(x, 1000))
+
+    x = rand(1:vocab_size, 3, 4)
+    y = m(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (embed_size, 3, 4)
+
+    @test m(2) ≈ m.weight[:,2]
+    @test m(OneHotVector(3, vocab_size)) ≈ m.weight[:,3]
+    @test_throws DimensionMismatch m(OneHotVector(3, 1000))
   end
 end

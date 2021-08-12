@@ -43,7 +43,7 @@ end
 end
 
 @testset "RNN-shapes" begin
-    @testset for R in [RNN, GRU, LSTM]
+    @testset for R in [RNN, GRU, LSTM, GRUv3]
         m1 = R(3, 5)
         m2 = R(3, 5)
         x1 = rand(Float32, 3)
@@ -58,7 +58,7 @@ end
 end
 
 @testset "RNN-input-state-eltypes" begin
-  @testset for R in [RNN, GRU, LSTM]
+  @testset for R in [RNN, GRU, LSTM, GRUv3]
       m = R(3, 5)
       x = rand(Float64, 3, 1)
       Flux.reset!(m)

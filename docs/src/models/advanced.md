@@ -68,7 +68,7 @@ by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
-delete!(ps, m[2].b) 
+delete!(ps, m[2].bias) 
 ```
 
 ## Custom multiple input or output layer
@@ -104,7 +104,7 @@ Flux.@functor Join
 
 Finally, we define the forward pass. For `Join`, this means applying each `path` in `paths` to each input array, then using `combine` to merge the results.
 ```julia
-(m::Join)(xs::Tuple) = m.combine(map((f, x) -> f(x), m.paths, xs))
+(m::Join)(xs::Tuple) = m.combine(map((f, x) -> f(x), m.paths, xs)...)
 (m::Join)(xs...) = m(xs)
 ```
 
@@ -172,7 +172,7 @@ Now we can test to see that our `Split` does indeed produce multiple outputs.
 ```julia
 model = Chain(
               Dense(10, 5),
-              CustomSplit(Dense(5, 1),Dense(5, 3),Dense(5, 2))
+              Split(Dense(5, 1),Dense(5, 3),Dense(5, 2))
              ) |> gpu
 
 model(gpu(rand(10)))

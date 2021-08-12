@@ -107,7 +107,7 @@ Flux defines a special kind of optimiser simply called `Optimiser` which takes i
 that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
 
 ```julia
-opt = Optimiser(ExpDecay(0.001, 0.1, 1000, 1e-4), Descent())
+opt = Optimiser(ExpDecay(1, 0.1, 1000, 1e-4), Descent())
 ```
 
 Here we apply exponential decay to the `Descent` optimiser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.

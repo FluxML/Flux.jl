@@ -1,8 +1,7 @@
 import Adapt: adapt, adapt_storage
 using  LinearAlgebra: Cholesky
 using Zygote: IdSet
-import Functors: @functor, functor, fmap
-import Functors
+import Functors: Functors, @functor, functor, fmap, isleaf
 
 trainable(m) = functor(m)[1]
 
@@ -66,7 +65,10 @@ end
 
 cpu(m) = fmap(x -> adapt(Array, x), m)
 
-gpu(x) = use_cuda[] ? fmap(CUDA.cu, x) : x
+_isbitsarray(::AbstractArray{<:Number}) = true
+_isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
+_isbitsarray(x) = false
+gpu(x) = use_cuda[] ? fmap(CUDA.cu, x; exclude = _isbitsarray) : x
 
 # Precision
 

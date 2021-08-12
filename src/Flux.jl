@@ -8,11 +8,10 @@ using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
-
 export gradient
 
 export Chain, Dense, Maxout, SkipConnection, Parallel, flatten,
-       RNN, LSTM, GRU,
+       RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
@@ -44,10 +43,12 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
+include("layers/show.jl")
 
 include("outputsize.jl")
 
 include("data/Data.jl")
+using .Data
 
 include("losses/Losses.jl")
 using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
