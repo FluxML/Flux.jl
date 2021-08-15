@@ -444,8 +444,8 @@ end
 
 @functor Parallel
 
-(m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
-(m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
+(m::Parallel)(x) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
+(m::Parallel)(xs...) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
 (m::Parallel)(xs::Tuple) = m(xs...)
 
 Base.getindex(m::Parallel, i) = m.layers[i]

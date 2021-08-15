@@ -211,6 +211,37 @@ import Flux: activations
       @test_throws ArgumentError Parallel(hcat, layers = Dense(10, 10), two = identity) # reserved names
       @test_throws ArgumentError Parallel(hcat, connection = Dense(10, 10), two = identity)
     end
+    
+    # Ref https://github.com/FluxML/Flux.jl/issues/1673
+    @testset "Input domain" begin
+      struct Input
+        x
+      end
+
+      struct L1
+        x
+      end
+      (l::L1)(x) = l.x * x
+      Flux.@functor L1
+      Base.:*(a::AbstractArray, b::Input) = a * b.x
+
+      par = Parallel(+, L1(rand(Float32, 3,3)), L1(rand(Float32, 3,3)))
+      ip = Input(rand(Float32, 3,3))
+      ip2 = Input(rand(Float32, 3,3))
+
+      @test par(ip) ≈ par.layers[1](ip.x) + par.layers[2](ip.x)
+      @test par(ip, ip2) ≈ par.layers[1](ip.x) + par.layers[2](ip2.x)
+      gs = gradient((par, x...) -> sum(par(x...)), par, ip, ip2)
+      gs_reg = gradient(par, ip, ip2) do par, x, y
+        sum(par.layers[1](x.x) + par.layers[2](y.x))
+      end
+
+      for (a,b) in zip(gs[1].layers, gs_reg[1].layers)
+        @test a.x ≈ b.x
+      end
+      @test gs[2].x ≈ gs_reg[2].x
+      @test gs[3].x ≈ gs_reg[3].x
+    end
   end
 
   @testset "Embedding" begin
