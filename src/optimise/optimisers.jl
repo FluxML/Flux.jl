@@ -651,7 +651,7 @@ with coefficient  ``λ`` to the loss.
 # Examples
 
 ```julia
-opt = Optimiser(WeigthDecay(1f-4), ADAM())
+opt = Optimiser(WeightDecay(1f-4), ADAM())
 ```
 """
 mutable struct WeightDecay <: AbstractOptimiser

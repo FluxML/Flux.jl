@@ -1,11 +1,10 @@
 """
     Chain(layers...)
+    Chain(name = layer, ...)
 
-Chain multiple layers / functions together, so that they are called in sequence
-on a given input.
-
-`Chain` also supports indexing and slicing, e.g. `m[2]` or `m[1:end-1]`.
-`m[1:3](x)` will calculate the output of the first three layers.
+Collects multiple layers / functions to be called in sequence
+on a given input. Supports indexing and slicing, `m[2]` or `m[1:end-1]`,
+and if names are given, `m[:name] == m[1]` etc.
 
 # Examples
 
@@ -15,11 +14,17 @@ julia> m = Chain(x -> x^2, x -> x+1);
 julia> m(5) == 26
 true
 
-julia> m = Chain(Dense(10, 5), Dense(5, 2));
+julia> m = Chain(Dense(10, 5, tanh), Dense(5, 2));
 
-julia> x = rand(10);
+julia> x = rand(10, 32);
 
 julia> m(x) == m[2](m[1](x))
+true
+
+julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)), 
+                  dec = Dense(5, 2));
+
+julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
 """
@@ -27,11 +32,14 @@ struct Chain{T}
   layers::T
   Chain(xs...) = new{typeof(xs)}(xs)
   Chain(xs::NamedTuple) = new{typeof(xs)}(xs)
-  Chain(; xs...) = Chain(values(xs))
+  function Chain(; xs...)
+    :layers in Base.keys(xs) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+    Chain(values(xs))
+  end
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
-  Base.iterate, Base.lastindex
+  Base.iterate, Base.lastindex, Base.keys
 
 functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
 
@@ -39,15 +47,19 @@ applychain(::Tuple{}, x) = x
 applychain(::NamedTuple{(), Tuple{}}, x) = x
 applychain(fs::Union{NamedTuple,Tuple}, x) = applychain(tail(fs), first(fs)(x))
 
-(c::Chain)(x) = applychain(c.layers, x)
+(c::Chain)(x) = applychain(Tuple(c.layers), x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
+Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
+  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
-  join(io, c.layers, ", ")
+  _show_layers(io, c.layers)
   print(io, ")")
 end
+_show_layers(io, layers::Tuple) = join(io, layers, ", ")
+_show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -59,18 +71,14 @@ end
 
 Calculate the forward results of each layers in Chain `c` with `input` as model input.
 """
-function activations(c::Chain, input)
-    extraChain(c.layers, input)
-end
+activations(c::Chain, input) = extraChain(Tuple(c.layers), input)
 
 function extraChain(fs::Tuple, x)
-    res = first(fs)(x)
-    return (res, extraChain(Base.tail(fs), res)...)
+  res = first(fs)(x)
+  return (res, extraChain(Base.tail(fs), res)...)
 end
-
 extraChain(::Tuple{}, x) = ()
 extraChain(::NamedTuple{(), Tuple{}}, x) = ()
-
 
 """
     Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
@@ -381,12 +389,16 @@ end
 
 """
     Parallel(connection, layers...)
+    Parallel(connection; name = layer, ...)
 
 Create a 'Parallel' layer that passes an input array to each path in
-`layers`, reducing the output with `connection`.
+`layers`, before reducing the output with `connection`.
 
 Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
 If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+
+Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
+These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
 
 # Examples
 
@@ -395,18 +407,24 @@ julia> model = Chain(Dense(3, 5),
                      Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
                      Dense(8, 17));
 
-julia> size(model(rand(3)))
+julia> model(rand(3)) |> size
 (17,)
 
-julia> model = Parallel(+, Dense(10, 2), Dense(5, 2))
+julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
 Parallel(
   +,
-  Dense(10, 2),                         # 22 parameters
-  Dense(5, 2),                          # 12 parameters
+  α = Dense(10, 2, tanh),               # 22 parameters
+  β = Dense(5, 2),                      # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
-julia> size(model(rand(10), rand(5)))
+julia> model2(rand(10), rand(5)) |> size
 (2,)
+
+julia> model2[:α](rand(10)) |> size
+(2,)
+
+julia> model2[:β] == model2[2]
+true
 ```
 """
 struct Parallel{F, T}
@@ -415,21 +433,32 @@ struct Parallel{F, T}
 end
 
 Parallel(connection, layers...) = Parallel(connection, layers)
+function Parallel(connection; kw...)
+  layers = NamedTuple(kw)
+  if :layers in Base.keys(layers) || :connection in Base.keys(layers)
+    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
+  elseif isempty(layers)
+    Parallel(connection, ())
+  end
+  Parallel(connection, layers)
+end
 
 @functor Parallel
 
-(m::Parallel)(x::AbstractArray) = mapreduce(f -> f(x), m.connection, m.layers)
-(m::Parallel)(xs::Vararg{<:AbstractArray}) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
+(m::Parallel)(x) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
+(m::Parallel)(xs...) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
 (m::Parallel)(xs::Tuple) = m(xs...)
 
-Base.getindex(m::Parallel, i::Integer) = m.layers[i]
+Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+
+Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
 
 trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
-  join(io, m.layers, ", ")
+  _show_layers(io, m.layers)
   print(io, ")")
 end
 
