@@ -69,11 +69,8 @@ end
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h_ret = mapslices(m, x, dims = (1, 3))
-  sz = size(x)
-  return h_ret
+    stack([m(x[:,:,i]) for i in 1:size(x, 3)], 3)
 end
-
 
 # Vanilla RNN
 
@@ -110,7 +107,6 @@ The most basic recurrent layer; essentially acts as a `Dense` layer, but with th
 output fed back into the input each time step.
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
-FoldedRNN(args...; kwargs...) = FoldedRecur(Flux.RNNCell(args...; kwargs...))
 Recur(m::RNNCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -171,7 +167,6 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
-FoldedLSTM(args...; kwargs...) = FoldedRecur(Flux.LSTMCell(args...; kwargs...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -237,7 +232,6 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
-FoldedGRU(args...; kwargs...) = FoldedRecur(Flux.GRUCell(args...; kwargs...))
 Recur(m::GRUCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
@@ -292,7 +286,6 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
-FoldedGRUv3(args...; kwargs...) = FoldedRecur(Flux.GRUv3Cell(args...; kwargs...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
 
 
