@@ -20,6 +20,12 @@ version = "3.3.1"
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
+[[ArrayInterface]]
+deps = ["IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
+git-tree-sha1 = "cdb00a6fb50762255021e5571cf95df3e1797a51"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "3.1.23"
+
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
@@ -180,6 +186,11 @@ deps = ["InteractiveUtils", "MacroTools", "Test"]
 git-tree-sha1 = "95215cd0076a150ef46ff7928892bc341864c73c"
 uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
 version = "0.4.3"
+
+[[IfElse]]
+git-tree-sha1 = "28e837ff3e7a6c3cdb252ce49fb412c8eb3caeef"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.0"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -385,6 +396,12 @@ deps = ["ChainRulesCore", "LogExpFunctions", "OpenSpecFun_jll"]
 git-tree-sha1 = "508822dca004bf62e210609148511ad03ce8f1d8"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "1.6.0"
+
+[[Static]]
+deps = ["IfElse"]
+git-tree-sha1 = "62701892d172a2fa41a1f829f66d2b0db94a9a63"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "0.3.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]

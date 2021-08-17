@@ -1,5 +1,22 @@
 # Flux Release Notes
 
+## v0.12.7
+* Added support for [`GRUv3`](https://github.com/FluxML/Flux.jl/pull/1675)
+* The layers within `Chain` and `Parallel` may now [have names](https://github.com/FluxML/Flux.jl/issues/1680).
+
+## v0.12.5
+* Added option to configure [`groups`](https://github.com/FluxML/Flux.jl/pull/1531) in `Conv`.
+* REPL printing via [`show`](https://github.com/FluxML/Flux.jl/pull/1467) displays parameter counts.
+
+## v0.12.4
+* Implemented an [`Embedding layer`](https://github.com/FluxML/Flux.jl/pull/1516) 
+  based on `NNlib.gather` and `NNlib.scatter`.
+
+## v0.12.1 - v0.12.3
+
+* CUDA.jl 3.0 support
+* Bug fixes and optimizations.
+
 ## v0.12.0
 
 * Add [identity_init](https://github.com/FluxML/Flux.jl/pull/1524).

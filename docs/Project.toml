@@ -1,5 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 
 [compat]

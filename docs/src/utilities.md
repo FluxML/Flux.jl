@@ -28,7 +28,7 @@ To change the default on an applicable layer, pass the desired function with the
 
 ```jldoctest; setup = :(using Flux)
 julia> conv = Conv((3, 3), 1 => 8, relu; init=Flux.glorot_normal)
-Conv((3, 3), 1=>8, relu)
+Conv((3, 3), 1 => 8, relu)  # 80 parameters
 ```
 
 ```@docs

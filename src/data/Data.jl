@@ -6,7 +6,6 @@ using Base: @propagate_inbounds
 include("dataloader.jl")
 export DataLoader
 
-
 ## TODO for v0.13: remove everything below ##############
 ## Also remove the following deps:
 ## AbstractTrees, ZipFiles, CodecZLib
