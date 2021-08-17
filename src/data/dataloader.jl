@@ -108,18 +108,18 @@ end
 # 4 dimensional feature array but a matrix label set
 function DataLoader(f,
                     args::NTuple{N,AbstractArray};
-                    batchsize = 1, shuffle = true,
+                    batchsize = 1, shuffle = false,
                     partial = true, batchdim = ndims,
-                    buffersize = 10, epochs = 1) where N
+                    buffersize = 10, epochs = 1) where {N, T <: AbstractArray}
 
   feats = first(args)
   bd = batchdim(feats)
-  dataset_size = size(first(args), bd)
+  dataset_size = size(feats, bd)
   shuffle, batchsize = validate_kwargs(shuffle, dataset_size, batchsize)
-  ix = shuffle(1:dataset_size)
+  ix = shuffle(collect(1:dataset_size))
   fs = map(feat -> getindex(feat,
                  ntuple(i -> i == batchdim(feat) ? ix : Colon(), length(size(feat)))...), args)
-  iterator = Iterators.flatten(Iterators.repeated(Iterators.partition(ix, batchsize), epochs))
+  iterator = Iterators.partition(ix, batchsize)
   ch = Channel{Any}(buffersize)
   t = Task(() -> begin
     for i in iterator
@@ -164,4 +164,4 @@ Base.iterate(dl::DataLoader) = iterate(dl.channel)
 Base.iterate(dl::DataLoader, i) = iterate(dl.channel, i)
 
 Base.length(dl::DataLoader) = dl.partial ? length(dl.iterator) : length(dl.iterator) - 1
-Base.eltype(dl::DataLoader) = eltype(dl.channel)
+Base.eltype(dl::DataLoader{P,F,D})  where {P,F,D} = D # eltype(dl.channel)
