@@ -68,8 +68,8 @@ end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
-function (m::Recur)(x::AbstractArray{<:Number, 3})
-  h_ret = mapslices(m, x, dims=[1, 3])
+function (m::Recur)(x::AbstractArray{T, 3}) where T
+  h_ret = mapslices(m, x, dims = (1, 3))
   sz = size(x)
   return h_ret
 end
