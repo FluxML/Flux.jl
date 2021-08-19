@@ -1,6 +1,7 @@
-using Flux 
+using Flux
 using Flux.Data
-using Test 
+using Flux: OneHotArray, OneHotMatrix, OneHotVector
+using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 
@@ -24,13 +25,23 @@ end
 
 @testset "Losses" begin
   include("losses.jl")
+  include("ctc.jl")
+  if Flux.use_cuda[] include("ctc-gpu.jl") end
 end
 
 @testset "Layers" begin
   include("layers/basic.jl")
   include("layers/normalisation.jl")
   include("layers/stateless.jl")
+  include("layers/recurrent.jl")
   include("layers/conv.jl")
+  include("layers/upsample.jl")
+  include("layers/show.jl")
+end
+
+@testset "outputsize" begin
+  using Flux: outputsize
+  include("outputsize.jl")
 end
 
 @testset "CUDA" begin
@@ -41,7 +52,7 @@ end
   end
 end
 
-@static if VERSION >= v"1.4"
+@static if VERSION == v"1.6"
   using Documenter
   @testset "Docs" begin
     DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)

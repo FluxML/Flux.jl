@@ -62,12 +62,133 @@ During training, the gradients will only be computed for (and applied to) the la
 Flux.params(m[1], m[3:end])
 ```
 
-Sometimes, a more fine-tuned control is needed. 
-We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`, 
+Sometimes, a more fine-tuned control is needed.
+We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`,
 by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
-delete!(ps, m[2].b) 
+delete!(ps, m[2].bias) 
 ```
 
+## Custom multiple input or output layer
+
+Sometimes a model needs to receive several separate inputs at once or produce several separate outputs at once. In other words, there multiple paths within this high-level layer, each processing a different input or producing a different output. A simple example of this in machine learning literature is the [inception module](https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Szegedy_Rethinking_the_Inception_CVPR_2016_paper.pdf).
+
+Naively, we could have a struct that stores the weights of along each path and implement the joining/splitting in the forward pass function. But that would mean a new struct any time the operations along each path changes. Instead, this guide will show you how to construct a high-level layer (like [`Chain`](@ref)) that is made of multiple sub-layers for each path.
+
+### Multiple inputs: a custom `Join` layer
+
+Our custom `Join` layer will accept multiple inputs at once, pass each input through a separate path, then combine the results together. Note that this layer can already be constructed using [`Parallel`](@ref), but we will first walk through how do this manually.
+
+We start by defining a new struct, `Join`, that stores the different paths and a combine operation as its fields.
+```julia
+using Flux
+using CUDA
+
+# custom join layer
+struct Join{T, F}
+  combine::F
+  paths::T
+end
+
+# allow Join(op, m1, m2, ...) as a constructor
+Join(combine, paths...) = Join(combine, paths)
+```
+Notice that we parameterized the type of the `paths` field. This is necessary for fast Julia code; in general, `T` might be a `Tuple` or `Vector`, but we don't need to pay attention to what it specifically is. The same goes for the `combine` field.
+
+The next step is to use [`Flux.@functor`](@ref) to make our struct behave like a Flux layer. This is important so that calling `params` on a `Join` returns the underlying weight arrays on each path.
+```julia
+Flux.@functor Join
+```
+
+Finally, we define the forward pass. For `Join`, this means applying each `path` in `paths` to each input array, then using `combine` to merge the results.
+```julia
+(m::Join)(xs::Tuple) = m.combine(map((f, x) -> f(x), m.paths, xs)...)
+(m::Join)(xs...) = m(xs)
+```
+
+Lastly, we can test our new layer. Thanks to the proper abstractions in Julia, our layer works on GPU arrays out of the box!
+```julia
+model = Chain(
+              Join(vcat,
+                   Chain(Dense(1, 5),Dense(5, 1)), # branch 1
+                   Dense(1, 2),                    # branch 2
+                   Dense(1, 1)),                   # branch 3
+              Dense(4, 1)
+             ) |> gpu
+
+xs = map(gpu, (rand(1), rand(1), rand(1)))
+
+model(xs)
+# returns a single float vector with one value
+```
+
+#### Using `Parallel`
+
+Flux already provides [`Parallel`](@ref) that can offer the same functionality. In this case, `Join` is going to just be syntactic sugar for `Parallel`.
+```julia
+Join(combine, paths) = Parallel(combine, paths)
+Join(combine, paths...) = Join(combine, paths)
+
+# use vararg/tuple version of Parallel forward pass
+model = Chain(
+              Join(vcat,
+                   Chain(Dense(1, 5),Dense(5, 1)),
+                   Dense(1, 2),
+                   Dense(1, 1)
+                  ),
+              Dense(4, 1)
+             ) |> gpu
+
+xs = map(gpu, (rand(1), rand(1), rand(1)))
+
+model(xs)
+# returns a single float vector with one value
+```
+
+### Multiple outputs: a custom `Split` layer
+
+Our custom `Split` layer will accept a single input, then pass the input through a separate path to produce multiple outputs.
+
+We start by following the same steps as the `Join` layer: define a struct, use [`Flux.@functor`](@ref), and define the forward pass.
+```julia
+using Flux
+using CUDA
+
+# custom split layer
+struct Split{T}
+  paths::T
+end
+
+Split(paths...) = Split(paths)
+
+Flux.@functor Split
+
+(m::Split)(x::AbstractArray) = tuple(map(f -> f(x), m.paths))
+```
+
+Now we can test to see that our `Split` does indeed produce multiple outputs.
+```julia
+model = Chain(
+              Dense(10, 5),
+              Split(Dense(5, 1),Dense(5, 3),Dense(5, 2))
+             ) |> gpu
+
+model(gpu(rand(10)))
+# returns a tuple with three float vectors
+```
+
+A custom loss function for the multiple outputs may look like this:
+```julia
+using Statistics
+
+# assuming model returns the output of a Split
+# x is a single input
+# ys is a tuple of outputs
+function loss(x, ys, model)
+  # rms over all the mse
+  ŷs = model(x)
+  return sqrt(mean(Flux.mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
+end
+```

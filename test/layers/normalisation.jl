@@ -44,16 +44,16 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
   x = rand(100)
 
   testmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) == 0
   trainmode!(m)
-  y = m(x) 
+  y = m(x)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=true) 
+  y = Flux.dropout(x, 0.9, active=true)
   @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=false) 
+  y = Flux.dropout(x, 0.9, active=false)
   @test count(a->a == 0, y) == 0
 end
 
@@ -61,6 +61,7 @@ end
   let m = BatchNorm(2), x = [1.0 3.0 5.0;
                              2.0 4.0 6.0]
 
+    @test Flux.hasaffine(m) == true
     @test length(params(m)) == 2
 
     @test m.β == [0, 0]  # initβ(2)
@@ -88,8 +89,8 @@ end
     # 2×1 Array{Float64,2}:
     #  1.3
     #  1.3
-    @test m.σ² ≈ .1 .* var(x, dims = 2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
-
+    @test m.σ² ≈ .1 .* var(x, dims=2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
+    
     x′ = m(x)
     @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
   end
@@ -123,17 +124,19 @@ end
     m(x)
     @test (@allocated m(x)) <  100_000_000
   end
+
+  @test length(Flux.params(BatchNorm(10))) == 2
+  @test length(Flux.params(BatchNorm(10, affine=true))) == 2
+  @test length(Flux.params(BatchNorm(10, affine=false))) == 0
 end
 
 @testset "InstanceNorm" begin
-  # helper functions
-  expand_inst = (x, as) -> reshape(repeat(x, outer=[1, as[length(as)]]), as...)
   # begin tests
-  let m = InstanceNorm(2), sizes = (3, 2, 2),
+  let m = InstanceNorm(2; affine=true, track_stats=true), sizes = (3, 2, 2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
       @test length(params(m)) == 2
-      x = Float64.(x)
+      x = Float32.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
       y = evalwgrad(m, x)
@@ -159,29 +162,60 @@ end
       # ∴ update rule with momentum:
       # (1. - .1) * 0 + .1 * (2. + 8.) / 2 = .5
       # (1. - .1) * 0 + .1 * (5. + 11.) / 2 = .8
+      N = ndims(x)
       @test m.μ ≈ [0.5, 0.8]
-      # momentum * var * num_items / (num_items - 1) + (1 - momentum) * sigma_sq
-      # julia> reshape(mean(.1 .* var(x, dims = 1, corrected=false) .* (3 / 2), dims=3), :) .+ .9 .* 1.
-      # 2-element Array{Float64,1}:
-      #  1.
-      #  1.
-      @test m.σ² ≈ reshape(mean(.1 .* var(x, dims = 1, corrected=false) .* (3 / 2), dims=3), :) .+ .9 .* 1.
+      n = prod(size(x,i) for i in 1:N-2)
+      corr = n / (n-1)
+      σ² = var(x, dims=1:N-2, corrected=false)
+      @test m.σ² ≈ 0.1*corr*vec(mean(σ², dims=N)) .+ 0.9 * 1
 
-      x′ = m(x)
-      @test isapprox(x′[1], (1 - 0.5) / sqrt(1. + 1f-5), atol = 1.0e-5)
+      y = m(x)
+      @test length(m.μ) == 2
+      @test length(m.σ²) == 2
+      @test y ≈ (x .- reshape(m.μ, 1,2,1)) ./ sqrt.(reshape(m.σ², 1,2,1) .+ 1f-5)   atol=1.0e-5
   end
+
   # with activation function
-  let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
+  let m = InstanceNorm(2, sigmoid; affine=true, track_stats=true), sizes = (3, 2, 2),
       x = reshape(collect(1:prod(sizes)), sizes)
     x = Float64.(x)
     affine_shape = collect(sizes)
-    affine_shape[1] = 1
+    affine_shape[[1,3]] .= 1
 
-    y = m(x)
-    @test isapprox(y, sigmoid.((x .- expand_inst(m.μ, affine_shape)) ./ sqrt.(expand_inst(m.σ², affine_shape) .+ m.ϵ)), atol = 1.0e-7)
+    y = evalwgrad(m, x)
+    y = m(x) # inference time after a training step    
+    μ = reshape(m.μ, affine_shape...)
+    σ² = reshape(m.σ², affine_shape...)
+    @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
   end
 
-  let m = trainmode!(InstanceNorm(2)), sizes = (2, 4, 1, 2, 3),
+  # with activation function
+  let m = InstanceNorm(2, sigmoid; affine=true, track_stats=false), sizes = (3, 2, 2),
+      x = reshape(collect(1:prod(sizes)), sizes)
+
+    @test Flux.hasaffine(m) == true
+    @test length(params(m)) == 2  
+    x = Float64.(x)
+    y = m(x)
+    μ = mean(x, dims=1)
+    σ² = var(x, dims=1, corrected=false)
+    @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+  end
+
+  let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
+      x = reshape(collect(1:prod(sizes)), sizes)
+    @test Flux.hasaffine(m) == false
+    @test length(params(m)) == 0
+    
+    x = Float64.(x)
+    y = m(x)
+    μ = mean(x, dims=1)
+    σ² = var(x, dims=1, corrected=false)
+    @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+  end
+
+
+  let m = trainmode!(InstanceNorm(2; affine=true)), sizes = (2, 4, 1, 2, 3),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
@@ -189,7 +223,7 @@ end
   end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
-  let m = InstanceNorm(2), sizes = (5, 5, 3, 4, 2, 6),
+  let m = InstanceNorm(2; affine=true,track_stats=true), sizes = (5, 5, 3, 4, 2, 6),
       x = reshape(Float32.(collect(1:prod(sizes))), sizes)
     y = evalwgrad(m, x)
     @test size(m.μ) == (sizes[end - 1], )
@@ -198,7 +232,7 @@ end
   end
 
   # show that instance norm is equal to batch norm when channel and batch dims are squashed
-  let m_inorm = trainmode!(InstanceNorm(2)), m_bnorm = trainmode!(BatchNorm(12)), sizes = (5, 5, 3, 4, 2, 6),
+  let m_inorm = trainmode!(InstanceNorm(2; affine=true)), m_bnorm = trainmode!(BatchNorm(12)), sizes = (5, 5, 3, 4, 2, 6),
       x = reshape(Float32.(collect(1:prod(sizes))), sizes)
     @test m_inorm(x) == reshape(m_bnorm(reshape(x, (sizes[1:end - 2]..., :, 1))), sizes)
   end
@@ -208,18 +242,43 @@ end
     @test (@allocated m(x)) <  100_000_000
   end
 
+  @test length(Flux.params(InstanceNorm(10))) == 0
+  @test length(Flux.params(InstanceNorm(10, affine=true))) == 2
+  @test length(Flux.params(InstanceNorm(10, affine=false))) == 0
 end
 
-if VERSION >= v"1.1"
+@testset "LayerNorm" begin
+  x = rand(2,3)
+  @test LayerNorm(2)(x) ≈ Flux.normalise(x, dims=1)
+  x = rand(2,3,4)
+  @test LayerNorm(2)(x) ≈ Flux.normalise(x, dims=1)
+  x = rand(2,3,4,5)
+  @test LayerNorm(2)(x) ≈ Flux.normalise(x, dims=1)
+  x = rand(2)
+  @test LayerNorm(2, tanh)(x) ≈ tanh.(Flux.normalise(x, dims=1))
+
+  x = rand(2,3,4,5)
+  @test LayerNorm((2,3))(x) ≈ Flux.normalise(x, dims=(1,2))
+  x = rand(2,3,4,5)
+  @test LayerNorm((2,3,4))(x) ≈ Flux.normalise(x, dims=1:3)
+
+  m = LayerNorm((2,3,4))
+  @test Flux.hasaffine(m) == true
+  @test length(params(m)) == 2
+  m = LayerNorm((2,3,4), affine=false)
+  @test Flux.hasaffine(m) == false
+  @test length(params(m)) == 0
+end
+
 @testset "GroupNorm" begin
   # begin tests
   squeeze(x) = dropdims(x, dims = tuple(findall(size(x) .== 1)...)) # To remove all singular dimensions
 
-  let m = GroupNorm(4,2), sizes = (3,4,2),
+  let m = GroupNorm(4,2, track_stats=true), sizes = (3,4,2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
       @test length(params(m)) == 2
-      x = Float64.(x)
+      x = Float32.(x)
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
 
@@ -251,20 +310,20 @@ if VERSION >= v"1.1"
       # (1. - .1) * 0 + .1 * (3.5 + 15.5) / 2 = 0.95
       # (1. - .1) * 0 + .1 * (9.5 + 21.5) / 2 = 1.55
       @test m.μ ≈ [0.95, 1.55]
+      n = prod(size(x)) ÷ m.G ÷ size(x)[end]
+      corr = n / (n-1)
+      z = reshape(x,3,2,2,2)
+      σ² = var(z, dims=(1,2), corrected=false)
+      @test m.σ² ≈ 0.1*corr*vec(mean(σ², dims=4)) .+ 0.9 * 1
 
-      # julia> mean(var(reshape(x,3,2,2,2),dims=(1,2)).* .1,dims=2) .+ .9*1.
-      # 2-element Array{Float64,1}:
-      #  1.25
-      #  1.25
-      @test m.σ² ≈ mean(squeeze(var(reshape(x,3,2,2,2),dims=(1,2))).*.1,dims=2) .+ .9*1.
-
-      x′ = m(x)
-      @test isapprox(x′[1], (1 - 0.95) / sqrt(1.25 + 1f-5), atol = 1.0e-5)
+      y = m(x)
+      out = (z .- reshape(m.μ, 1,1,2,1)) ./ sqrt.(reshape(m.σ², 1,1,2,1) .+ 1f-5)
+      @test y ≈ reshape(out, size(x))   atol=1.0e-5
   end
   # with activation function
-  let m = GroupNorm(4,2, sigmoid), sizes = (3, 4, 2),
+  let m = GroupNorm(4,2, sigmoid, track_stats=true), sizes = (3, 4, 2),
       x = reshape(collect(1:prod(sizes)), sizes)
-    x = Float64.(x)
+    x = Float32.(x)
     μ_affine_shape = ones(Int,length(sizes) + 1)
     μ_affine_shape[end-1] = 2 # Number of groups
 
@@ -279,10 +338,10 @@ if VERSION >= v"1.1"
     y = m(x)
     x_ = reshape(x,affine_shape...)
     out = reshape(sigmoid.((x_ .- reshape(m.μ,μ_affine_shape...)) ./ sqrt.(reshape(m.σ²,μ_affine_shape...) .+ m.ϵ)),og_shape)
-    @test isapprox(y, out, atol = 1.0e-7)
+    @test y ≈ out   atol=1e-7
   end
 
-  let m = trainmode!(GroupNorm(2,2)), sizes = (2, 4, 1, 2, 3),
+  let m = trainmode!(GroupNorm(2,2, track_stats=true)), sizes = (2, 4, 1, 2, 3),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
@@ -290,16 +349,16 @@ if VERSION >= v"1.1"
   end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
-  let m = GroupNorm(4,2), sizes = (5, 5, 3, 4, 4, 6),
+  let m = GroupNorm(4,2, track_stats=true), sizes = (5, 5, 3, 4, 4, 6),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = evalwgrad(m, x)
-    @test size(m.μ) == (m.G,1)
-    @test size(m.σ²) == (m.G,1)
+    @test size(m.μ) == (m.G,)
+    @test size(m.σ²) == (m.G,)
     @test size(y) == sizes
   end
 
   # show that group norm is the same as instance norm when the group size is the same as the number of channels
-  let IN = trainmode!(InstanceNorm(4)), GN = trainmode!(GroupNorm(4,4)), sizes = (2,2,3,4,5),
+  let IN = trainmode!(InstanceNorm(4; affine=true)), GN = trainmode!(GroupNorm(4,4)), sizes = (2,2,3,4,5),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test IN(x) ≈ GN(x)
   end
@@ -309,5 +368,4 @@ if VERSION >= v"1.1"
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end
-end
 end

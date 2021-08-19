@@ -26,9 +26,9 @@ end
 @testset "CNN" begin
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
-    Conv((2, 2), 1=>16, relu),
+    Conv((2, 2), 1 => 16, relu),
     MaxPool((2,2)),
-    Conv((2, 2), 16=>8, relu),
+    Conv((2, 2), 16 => 8, relu),
     MaxPool((2,2)),
     x -> reshape(x, :, size(x, 4)),
     Dense(288, 10), softmax)
@@ -42,15 +42,17 @@ end
   op = bias(ip)
   @test sum(op) == prod(size(op))
 
-  bias = Conv((2,2), 1=>3, bias = Flux.Zeros())
-  op = bias(ip)
-  @test sum(op) ≈ 0.f0
-  gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-  @test gs[bias.bias] == nothing
+  @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
+    bias = Conv((2,2), 1=>3, bias = false) |> lmap
+    op = bias(ip)
+    @test sum(op) ≈ 0.f0
+    gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
+    @test bias.bias ∉ gs.params
+  end
 
   # Train w/o bias and make sure no convergence happens
   # when only bias can be converged
-  bias = Conv((2, 2), 1=>3, bias = Flux.Zeros());
+  bias = Conv((2, 2), 1=>3, bias = false);
   ip = zeros(Float32, 28,28,1,1)
   op = zeros(Float32, 27,27,3,1) .+ 2.f0
   opt = Descent()
@@ -63,6 +65,13 @@ end
   end
 
   @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
+
+  @testset "Grouped Conv" begin
+    ip = rand(Float32, 28, 28, 100, 2)
+    c = Conv((3,3), 100 => 25, groups = 5)
+    @test size(c.weight) == (3, 3, 20, 25)
+    @test size(c(ip)) == (26, 26, 25, 2)
+  end
 end
 
 @testset "asymmetric padding" begin
@@ -85,43 +94,51 @@ end
   m1 = DepthwiseConv((2, 2), 3=>15)
   @test size(m1(r), 3) == 15
 
-  m3 = DepthwiseConv((2, 3), 3=>9)
-  @test size(m3(r), 3) == 9
+  m2 = DepthwiseConv((2, 3), 3=>9)
+  @test size(m2(r), 3) == 9
+
+  m3 = DepthwiseConv((2, 3), 3=>9; bias=false)
+  @test size(m2(r), 3) == 9
 
   # Test that we cannot ask for non-integer multiplication factors
   @test_throws AssertionError DepthwiseConv((2,2), 3=>10)
 end
 
 @testset "ConvTranspose" begin
-  x = zeros(Float32, 28, 28, 1, 1)
+  x = zeros(Float32, 5, 5, 1, 1)
   y = Conv((3,3), 1 => 1)(x)
-  x_hat = ConvTranspose((3, 3), 1 => 1)(y)
-  @test size(x_hat) == size(x)
+  x_hat1 = ConvTranspose((3, 3), 1 => 1)(y)
+  x_hat2 = ConvTranspose((3, 3), 1 => 1, bias=false)(y)
+  @test size(x_hat1) == size(x_hat2) == size(x)
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
+  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+
+  x = zeros(Float32, 5, 5, 2, 4)
+  m = ConvTranspose((3,3), 2=>3)
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
 end
 
 @testset "CrossCor" begin
   x = rand(Float32, 28, 28, 1, 1)
-  w = rand(2,2,1,1)
+  w = rand(Float32, 2,2,1,1)
   y = CrossCor(w, [0.0])
 
-  @test isapprox(sum(w .* x[1:2, 1:2, :, :]), y(x)[1, 1, 1, 1], rtol=1e-7)
+  @test sum(w .* x[1:2, 1:2, :, :]) ≈ y(x)[1, 1, 1, 1]  rtol=1e-7
 
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
     CrossCor((2, 2), 1=>16, relu),
     MaxPool((2,2)),
-    CrossCor((2, 2), 16=>8, relu),
+    CrossCor((2, 2), 16=>8, relu; bias=false),
     MaxPool((2,2)),
     x -> reshape(x, :, size(x, 4)),
     Dense(288, 10), softmax)
 
   @test size(m(r)) == (10, 5)
   @test y(x) != Conv(w, [0.0])(x)
-  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) == Conv(w, [0.0])(x)
+  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) ≈ Conv(w, [0.0])(x)  rtol=1e-7
 end
 
 @testset "Conv with non quadratic window #700" begin
@@ -150,58 +167,6 @@ end
   end
 end
 
-@testset "conv output dimensions" begin
-  m = Conv((3, 3), 3 => 16)
-  @test Flux.outdims(m, (10, 10)) == (8, 8)
-  m = Conv((3, 3), 3 => 16; stride = 2)
-  @test Flux.outdims(m, (5, 5)) == (2, 2)
-  m = Conv((3, 3), 3 => 16; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = Conv((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-
-  m = ConvTranspose((3, 3), 3 => 16)
-  @test Flux.outdims(m, (8, 8)) == (10, 10)
-  m = ConvTranspose((3, 3), 3 => 16; stride = 2)
-  @test Flux.outdims(m, (2, 2)) == (5, 5)
-  m = ConvTranspose((3, 3), 3 => 16; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = ConvTranspose((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (4, 4)) == (5, 5)
-
-  m = DepthwiseConv((3, 3), 3 => 6)
-  @test Flux.outdims(m, (10, 10)) == (8, 8)
-  m = DepthwiseConv((3, 3), 3 => 6; stride = 2)
-  @test Flux.outdims(m, (5, 5)) == (2, 2)
-  m = DepthwiseConv((3, 3), 3 => 6; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = DepthwiseConv((3, 3), 3 => 6; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-
-  m = CrossCor((3, 3), 3 => 16)
-  @test Flux.outdims(m, (10, 10)) == (8, 8)
-  m = CrossCor((3, 3), 3 => 16; stride = 2)
-  @test Flux.outdims(m, (5, 5)) == (2, 2)
-  m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-  m = CrossCor((3, 3), 3 => 16; stride = 2, pad = 3, dilation = 2)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-
-  m = MaxPool((2, 2))
-  @test Flux.outdims(m, (10, 10)) == (5, 5)
-  m = MaxPool((2, 2); stride = 1)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-  m = MaxPool((2, 2); stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-
-  m = MeanPool((2, 2))
-  @test Flux.outdims(m, (10, 10)) == (5, 5)
-  m = MeanPool((2, 2); stride = 1)
-  @test Flux.outdims(m, (5, 5)) == (4, 4)
-  m = MeanPool((2, 2); stride = 2, pad = 3)
-  @test Flux.outdims(m, (5, 5)) == (5, 5)
-end
-
 @testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
   data = ones(Float32, (k .+ 3)..., 1,1)
   l = ltype(k, 1=>1, pad=SamePad())
@@ -224,4 +189,21 @@ end
 
   l = ltype(k, pad=SamePad())
   @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
+end
+
+@testset "bugs fixed" begin
+  # https://github.com/FluxML/Flux.jl/issues/1421
+  @test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64}
+end
+
+@testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
+  @test fun(rand(2,3,4)).bias isa Vector{Float64}
+  @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
+  if fun == Conv
+    @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
+    @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
+  elseif fun == DepthwiseConv
+    @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
+  end
+  @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
 end

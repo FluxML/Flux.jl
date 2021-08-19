@@ -1,3 +1,5 @@
+using Random
+
 @testset "DataLoader" begin
     X = reshape([1:10;], (2, 5))
     Y = [1:5;]
@@ -62,7 +64,7 @@
     θ = ones(2)
     X = zeros(2, 10)
     loss(x) = sum((x .- θ).^2)
-    d  = DataLoader(X) 
+    d  = DataLoader(X)
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ) < 1e-4
 
@@ -71,46 +73,10 @@
     X = ones(2, 10)
     Y = fill(2, 10)
     loss(x, y) = sum((y - x'*θ).^2)
-    d  = DataLoader((X, Y)) 
+    d  = DataLoader((X, Y))
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ .- 1) < 1e-10
-end
 
-@testset "CMUDict" begin 
-    @test cmudict()["CATASTROPHE"] == :[K,AH0,T,AE1,S,T,R,AH0,F,IY0].args
-
-    @test length(CMUDict.phones()) == 39
-
-    @test length(CMUDict.symbols()) == 84
-end
-
-@testset "MNIST" begin 
-    @test MNIST.images()[1] isa Matrix
-    @test MNIST.labels() isa Vector{Int64}
-end
-
-@testset "FashionMNIST" begin 
-    @test FashionMNIST.images()[1] isa Matrix
-    @test FashionMNIST.labels() isa Vector{Int64}
-end
-
-@testset "Sentiment" begin 
-    @test Data.Sentiment.train() isa Vector{Data.Tree{Any}}
-end
-
-@testset "Iris" begin 
-    @test Iris.features() isa Matrix
-    @test size(Iris.features()) == (4,150)
-
-    @test Iris.labels() isa Vector{String}
-    @test size(Iris.labels()) == (150,)
-end
-
-
-@testset "Housing" begin
-    @test Housing.features() isa Matrix # test broken due to SSL certifate expiration problem
-    @test size(Housing.features()) == (506, 13)
-
-    @test Housing.targets() isa Array{Float64}
-    @test size(Housing.targets()) == (506, 1)
+    # specify the rng
+    d = map(identity, DataLoader(X, batchsize=2; shuffle=true, rng=Random.seed!(Random.default_rng(), 5)))
 end

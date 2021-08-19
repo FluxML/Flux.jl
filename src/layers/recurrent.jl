@@ -1,3 +1,4 @@
+
 gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
@@ -24,21 +25,18 @@ rnn.(1:10)  # apply to a sequence
 rnn.state   # 60
 ```
 """
-mutable struct Recur{T}
+mutable struct Recur{T,S}
   cell::T
-  init
-  state
+  state::S
 end
 
-Recur(m, h = hidden(m)) = Recur(m, h, h)
-
-function (m::Recur)(xs...)
-  h, y = m.cell(m.state, xs...)
-  m.state = h
+function (m::Recur)(x)
+  m.state, y = m.cell(m.state, x)
   return y
 end
 
-@functor Recur cell, init
+@functor Recur
+trainable(a::Recur) = (a.cell,)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -52,33 +50,42 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
 rnn.state = hidden(rnn.cell)
 ```
 """
-reset!(m::Recur) = (m.state = m.init)
+reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
+
+# TODO remove in v0.13
+function Base.getproperty(m::Recur, sym::Symbol)
+  if sym === :init
+    Zygote.ignore() do
+      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    end
+    return getfield(m.cell, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 # Vanilla RNN
 
-mutable struct RNNCell{F,A,V}
+struct RNNCell{F,A,V,S}
   σ::F
   Wi::A
   Wh::A
   b::V
-  h::V
+  state0::S
 end
 
-RNNCell(in::Integer, out::Integer, σ = tanh;
-        init = glorot_uniform) =
-  RNNCell(σ, init(out, in), init(out, out),
-          init(out), zeros(out))
+RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) = 
+  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell)(h, x)
+function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
-  return h, h
+  sz = size(x)
+  return h, reshape(h, :, sz[2:end]...)
 end
-
-hidden(m::RNNCell) = m.h
 
 @functor RNNCell
 
@@ -95,26 +102,39 @@ The most basic recurrent layer; essentially acts as a `Dense` layer, but with th
 output fed back into the input each time step.
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
+Recur(m::RNNCell) = Recur(m, m.state0)
+
+# TODO remove in v0.13
+function Base.getproperty(m::RNNCell, sym::Symbol)
+  if sym === :h
+    Zygote.ignore() do
+      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    end
+    return getfield(m, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
 
 # LSTM
 
-mutable struct LSTMCell{A,V}
+struct LSTMCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  h::V
-  c::V
+  state0::S
 end
 
 function LSTMCell(in::Integer, out::Integer;
-                  init = glorot_uniform)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), init(out * 4),
-                  zeros(out), zeros(out))
+                  init = glorot_uniform,
+                  initb = zeros32,
+                  init_state = zeros32)
+  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out,1), init_state(out,1)))
   cell.b[gate(out, 2)] .= 1
   return cell
 end
 
-function (m::LSTMCell)((h, c), x)
+function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input = σ.(gate(g, o, 1))
@@ -123,10 +143,9 @@ function (m::LSTMCell)((h, c), x)
   output = σ.(gate(g, o, 4))
   c = forget .* c .+ input .* cell
   h′ = output .* tanh.(c)
-  return (h′, c), h′
+  sz = size(x)
+  return (h′, c), reshape(h′, :, sz[2:end]...)
 end
-
-hidden(m::LSTMCell) = (m.h, m.c)
 
 @functor LSTMCell
 
@@ -143,31 +162,54 @@ See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
+Recur(m::LSTMCell) = Recur(m, m.state0)
+
+# TODO remove in v0.13
+function Base.getproperty(m::LSTMCell, sym::Symbol)
+  if sym === :h
+    Zygote.ignore() do
+      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    end
+    return getfield(m, :state0)[1]
+  elseif sym === :c
+    Zygote.ignore() do
+      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
+    end  
+    return getfield(m, :state0)[2]
+  else
+    return getfield(m, sym)
+  end
+end
 
 # GRU
 
-mutable struct GRUCell{A,V}
+function _gru_output(Wi, Wh, b, x, h)
+  o = size(h, 1)
+  gx, gh = Wi*x, Wh*h
+  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+
+  return gx, gh, r, z
+end
+
+struct GRUCell{A,V,S}
   Wi::A
   Wh::A
   b::V
-  h::V
+  state0::S
 end
 
-GRUCell(in, out; init = glorot_uniform) =
-  GRUCell(init(out * 3, in), init(out * 3, out),
-          init(out * 3), zeros(out))
+GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
+  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
-function (m::GRUCell)(h, x)
+function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
-  gx, gh = m.Wi*x, m.Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
   h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1 .- z).*h̃ .+ z.*h
-  return h′, h′
+  h′ = (1 .- z) .* h̃ .+ z .* h
+  sz = size(x)
+  return h′, reshape(h′, :, sz[2:end]...)
 end
-
-hidden(m::GRUCell) = m.h
 
 @functor GRUCell
 
@@ -177,10 +219,71 @@ Base.show(io::IO, l::GRUCell) =
 """
     GRU(in::Integer, out::Integer)
 
-[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078) layer. Behaves like an
-RNN but generally exhibits a longer memory span over sequences.
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
+RNN but generally exhibits a longer memory span over sequences. This implements
+the variant proposed in v1 of the referenced paper.
 
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
+Recur(m::GRUCell) = Recur(m, m.state0)
+
+# TODO remove in v0.13
+function Base.getproperty(m::GRUCell, sym::Symbol)
+  if sym === :h
+    Zygote.ignore() do
+      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    end
+    return getfield(m, :state0)
+  else
+    return getfield(m, sym)
+  end
+end
+
+
+# GRU v3
+
+struct GRUv3Cell{A,V,S}
+  Wi::A
+  Wh::A
+  b::V
+  Wh_h̃::A
+  state0::S
+end
+
+GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
+  GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3), 
+            init(out, out), init_state(out,1))
+
+function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
+  b, o = m.b, size(h, 1)
+  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
+  h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
+  h′ = (1 .- z) .* h̃ .+ z .* h
+  sz = size(x)
+  return h′, reshape(h′, :, sz[2:end]...)
+end
+
+@functor GRUv3Cell
+
+Base.show(io::IO, l::GRUv3Cell) =
+  print(io, "GRUv3Cell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+
+"""
+    GRUv3(in::Integer, out::Integer)
+
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v3) layer. Behaves like an
+RNN but generally exhibits a longer memory span over sequences. This implements
+the variant proposed in v3 of the referenced paper.
+
+See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+for a good overview of the internals.
+"""
+GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
+Recur(m::GRUv3Cell) = Recur(m, m.state0)
+
+
+@adjoint function Broadcast.broadcasted(f::Recur, args...)
+  Zygote.∇map(__context__, f, args...)
+end

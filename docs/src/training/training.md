@@ -7,13 +7,36 @@ To actually train a model we need four things:
 * A collection of data points that will be provided to the objective function.
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
-With these we can call `train!`:
+Training a model is typically an iterative process, where we go over the data set,
+calculate the objective function over the datapoints, and optimise that.
+This can be visualised in the form of a simple loop.
+
+```julia
+for d in datapoints
+
+  # `d` should produce a collection of arguments
+  # to the loss function
+
+  # Calculate the gradients of the parameters
+  # with respect to the loss function
+  grads = Flux.gradient(parameters) do
+    loss(d...)
+  end
+
+  # Update the parameters based on the chosen
+  # optimiser (opt)
+  Flux.Optimise.update!(opt, parameters, grads)
+end
+```
+
+To make it easy, Flux defines `train!`:
 
 ```@docs
 Flux.Optimise.train!
 ```
 
-There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo).
+There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo), and
+more information can be found on [Custom Training Loops](../models/advanced.md).
 
 ## Loss Functions
 
@@ -49,7 +72,7 @@ Handling all the parameters on a layer by layer basis is explained in the [Layer
 
 ## Datasets
 
-The `data` argument provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy data set with only one data point:
+The `data` argument of `train!` provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy dataset with only one data point:
 
 ```julia
 x = rand(784)
@@ -117,9 +140,8 @@ A more typical callback might look like this:
 ```julia
 test_x, test_y = # ... create single batch of test data ...
 evalcb() = @show(loss(test_x, test_y))
-
-Flux.train!(objective, ps, data, opt,
-            cb = throttle(evalcb, 5))
+throttled_cb = throttle(evalcb, 5)
+Flux.@epochs 20 Flux.train!(objective, ps, data, opt, cb = throttled_cb)
 ```
 
 Calling `Flux.stop()` in a callback will exit the training loop early.

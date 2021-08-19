@@ -1,14 +1,27 @@
 module Data
 
-import ..Flux
-import SHA
-
 using Random: shuffle!
 using Base: @propagate_inbounds
 
-export CMUDict, cmudict
+include("dataloader.jl")
+export DataLoader
 
-deps(path...) = joinpath(@__DIR__, "..", "..", "deps", path...)
+## TODO for v0.13: remove everything below ##############
+## Also remove the following deps:
+## AbstractTrees, ZipFiles, CodecZLib
+
+import ..Flux
+import SHA
+
+deprecation_message() = @warn("Flux's datasets are deprecated, please use the package MLDatasets.jl")
+
+function deps(path...)
+  if isnothing(@__DIR__) # sysimages
+    joinpath("deps", path...)
+  else
+    joinpath(@__DIR__, "..", "..", "deps", path...)
+  end
+end
 
 function download_and_verify(url, path, hash)
     tmppath = tempname()
@@ -29,9 +42,6 @@ function __init__()
   mkpath(deps())
 end
 
-include("dataloader.jl")
-export DataLoader
-
 include("mnist.jl")
 export MNIST
 
@@ -39,11 +49,12 @@ include("fashion-mnist.jl")
 export FashionMNIST
 
 include("cmudict.jl")
-using .CMUDict
+export CMUDict
+using .CMUDict; export cmudict
 
 include("tree.jl")
 include("sentiment.jl")
-using .Sentiment
+export Sentiment
 
 include("iris.jl")
 export Iris
@@ -51,6 +62,6 @@ export Iris
 include("housing.jl")
 export Housing
 
-@deprecate DataLoader(x...; kws...) DataLoader(x; kws...)
+#########################################
 
-end
+end#module

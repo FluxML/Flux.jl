@@ -6,15 +6,15 @@ It's common to encode categorical variables (like `true`, `false` or `cat`, `dog
 julia> using Flux: onehot, onecold
 
 julia> onehot(:b, [:a, :b, :c])
-3-element Flux.OneHotVector:
- 0
+3-element OneHotVector(::UInt32) with eltype Bool:
+ ⋅
  1
- 0
+ ⋅
 
 julia> onehot(:c, [:a, :b, :c])
-3-element Flux.OneHotVector:
- 0
- 0
+3-element OneHotVector(::UInt32) with eltype Bool:
+ ⋅
+ ⋅
  1
 ```
 
@@ -44,16 +44,16 @@ Flux.onecold
 julia> using Flux: onehotbatch
 
 julia> onehotbatch([:b, :a, :b], [:a, :b, :c])
-3×3 Flux.OneHotMatrix{Array{Flux.OneHotVector,1}}:
- 0  1  0
- 1  0  1
- 0  0  0
+3×3 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
+ ⋅  1  ⋅
+ 1  ⋅  1
+ ⋅  ⋅  ⋅
 
-julia> onecold(ans, [:a, :b, :c])	
-3-element Array{Symbol,1}:	
- :b	
- :a	
- :b   
+julia> onecold(ans, [:a, :b, :c])
+3-element Vector{Symbol}:
+ :b
+ :a
+ :b
 ```
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.
