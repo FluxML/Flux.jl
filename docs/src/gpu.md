@@ -4,14 +4,14 @@ NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN ins
 
 ## Checking GPU Availability
 
-By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing `Flux.use_cuda[]` which is the internal flag Flux uses. You can also run:
+By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
 
 ```julia
 julia> using CUDA
 
 julia> CUDA.functional()
 ```
-which is part of the internal code that Flux is running to set the `Flux.use_cuda[]` flag.
+which is part of the internal code that Flux is running to set the `Flux.use_cuda[]` flag (note this flag is not stable and you should use the code above to check for GPU availability).
 
 ## GPU Usage
 
