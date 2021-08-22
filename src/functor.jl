@@ -66,7 +66,10 @@ end
 """
     cpu(m)
 
-Moves a particular resource from where it is, onto the CPU.
+Moves `m` onto the CPU.
+
+This works for functions and 
+any struct with [`@functor`](@ref) defined.
 
 ```julia-repl
 julia> m = Dense(1,2)
