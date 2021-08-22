@@ -160,9 +160,9 @@ convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
 function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
-  σ, b = c.σ, reshape(c.bias, ntuple(_ -> 1, length(c.stride))..., :, 1)
+  σ, b = c.σ, reshape(c.bias, ntuple(_->1, length(c.stride))..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
-  σ.(conv(x, c.weight, cdims) .+ b)
+  conv_bias_act(x, c.weight, cdims, b, σ)
 end
 
 function Base.show(io::IO, l::Conv)
