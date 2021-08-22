@@ -97,7 +97,12 @@ _isbitsarray(x) = false
 """
     gpu(x)
 
-Moves a particular resource from where it is, onto the GPU, if available. It is a no-op otherwise.
+Moves `m` to the current GPU device, if available. It is a no-op otherwise.
+See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
+to help identify the current device.
+
+This works for functions and 
+any struct with [`@functor`](@ref) defined.
 
 ```julia-repl
 julia> m = Dense(1,2)
