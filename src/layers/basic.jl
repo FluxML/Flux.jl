@@ -426,7 +426,7 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T}
+struct Parallel{F, T<:Union{NamedTuple,Tuple}}
   connection::F
   layers::T
 end
