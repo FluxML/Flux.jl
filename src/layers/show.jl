@@ -13,16 +13,28 @@ for T in [
   end
 end
 
-function _big_show(io::IO, obj, indent::Int=0)
+function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   children = trainable(obj)
   if all(_show_leaflike, children)
-    _layer_show(io, obj, indent)
+    _layer_show(io, obj, indent, name)
   else
-    println(io, " "^indent, nameof(typeof(obj)), "(")
-    for c in children
-      _big_show(io, c, indent+2)
+    println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), "(")
+    if obj isa Chain{<:NamedTuple} && children == getfield(obj, :layers)
+      # then we insert names -- can this be done more generically? 
+      for k in Base.keys(obj)
+        _big_show(io, obj[k], indent+2, k)
+      end
+    elseif obj isa Parallel{<:Any, <:NamedTuple}
+      _big_show(io, obj.connection, indent+2)
+      for k in Base.keys(obj)
+        _big_show(io, obj[k], indent+2, k)
+      end
+    else
+      for c in children
+        _big_show(io, c, indent+2)
+      end
     end
-    if indent == 0
+    if indent == 0  # i.e. this is the outermost container
       print(io, ")")
       _big_finale(io, obj)
     else
@@ -49,8 +61,9 @@ for T in [
   end
 end
 
-function _layer_show(io::IO, layer, indent::Int=0)
-  str = sprint(show, layer, context=io)
+function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
+  _str = isnothing(name) ? "" : "$name = "
+  str = _str * sprint(show, layer, context=io)
   print(io, " "^indent, str, indent==0 ? "" : ",")
   if !isempty(params(layer))
     print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
