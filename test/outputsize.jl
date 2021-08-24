@@ -45,13 +45,13 @@ end
   m = Parallel(vcat, Dense(2, 4, relu), Dense(3, 6, relu))
   @test outputsize(m, (2,), (3,)) == (10,)
   @test outputsize(m, ((2,), (3,))) == (10,)
-  @test outputsize(m, (2,), (3,); padbatch=true) == (10, 1)
+  @test outputsize(m, (2,), (3,); padbatch = true) == (10, 1)
   @test outputsize(m, (2,7), (3,7)) == (10, 7)
 
   m = Chain(m, Dense(10, 13, tanh), softmax)
   @test outputsize(m, (2,), (3,)) == (13,)
   @test outputsize(m, ((2,), (3,))) == (13,)
-  @test outputsize(m, (2,), (3,); padbatch=true) == (13, 1)
+  @test outputsize(m, (2,), (3,); padbatch = true) == (13, 1)
   @test outputsize(m, (2,7), (3,7)) == (13, 7)
 end
 

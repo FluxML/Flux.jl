@@ -258,7 +258,7 @@ import Flux: activations
 
       (m::MIMO)(x::Tuple) = m(x...)
       mimo_output1 = p(x, x)
-      mimo_output2 = p(x) # to check for N layers 1 input case
+      @test_broken all(p(((x,),)) .== mimo_output1) # to check for N layers 1 input case
       @test length(mimo_output1) == 2
       @test all(x -> length(x) == 3, mimo_output1)
     end
