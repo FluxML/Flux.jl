@@ -200,8 +200,8 @@ import Flux: activations
 
     @testset "vararg input" begin
       inputs = randn(10), randn(5), randn(4)
-      @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
-      @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
+      @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs...)) == (2,)
+      @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs...)) == (2,)
     end
 
     @testset "named access" begin
