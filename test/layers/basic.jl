@@ -242,6 +242,27 @@ import Flux: activations
       @test gs[2].x ≈ gs_reg[2].x
       @test gs[3].x ≈ gs_reg[3].x
     end
+
+    @testset "Multiple Inputs/ Multiple Outputs" begin
+
+      struct MIMO{T}
+        W::T
+      end
+
+      (m::MIMO)(x, y) = m.W * x, m.W * y, x * y
+      x = (rand(3,3), rand(3,3))
+
+      p = Parallel((x...) -> identity.(x),
+                   MIMO(rand(3,3)),
+                   MIMO(rand(3,3)))
+
+      (m::MIMO)(x::Tuple) = m(x...)
+      mimo_output1 = p(x, x)
+      mimo_ouput2 = p(x) # to check for N layers 1 input case
+      @test mimo_output1 ≈ mimo_output2
+      @test length(mimo_output1) == 2
+      @test all(x -> length(x) == 3, mimo_output1)
+    end
   end
 
   @testset "Embedding" begin
