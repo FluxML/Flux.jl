@@ -446,7 +446,7 @@ end
 
 (m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs...) = m.connection(map((f, x) -> f(x), Tuple(m.layers), xs)...)
-(m::Parallel)(xs::Tuple) = m(xs...)
+# (m::Parallel)(xs::Tuple) = m(xs...)
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
