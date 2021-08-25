@@ -69,17 +69,17 @@ end
     m2 = R(3, 5)
     m3 = R(3, 5)
     x1 = rand(Float32, 3)
-    x2 = rand(Float32,3,1)
-    x3 = rand(Float32,3,1,2)
+    x2 = rand(Float32, 3, 1)
+    x3 = rand(Float32, 3, 1, 2)
     Flux.reset!(m1)
     Flux.reset!(m2)
     Flux.reset!(m3)
     @test size(m1(x1)) == (5,)
     @test size(m1(x1)) == (5,) # repeat in case of effect from change in state shape
-    @test size(m2(x2)) == (5,1)
-    @test size(m2(x2)) == (5,1)
-    @test size(m3(x3)) == (5,1,2)
-    @test size(m3(x3)) == (5,1,2)
+    @test size(m2(x2)) == (5, 1)
+    @test size(m2(x2)) == (5, 1)
+    @test size(m3(x3)) == (5, 1, 2)
+    @test size(m3(x3)) == (5, 1, 2)
   end
 end
 

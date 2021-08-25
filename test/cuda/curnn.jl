@@ -63,7 +63,5 @@ end
 
     cufy = (curnn(cufx); curnn(cufx))
     @test fy ≈ collect(cufy)
-
-      
   end
 end
