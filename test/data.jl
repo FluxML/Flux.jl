@@ -5,24 +5,24 @@ using Random
     Y = [1:5;]
 
     d = DataLoader((X,), batchsize=2)
-    @inferred first(d)
+    # @inferred first(d)
     batches = collect(d)
-    # @test eltype(batches) == eltype(d) == typeof(X)
+    @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
     @test length(batches) == 3
-    @test batches[1] == X[:,1:2]
-    @test batches[2] == X[:,3:4]
-    @test batches[3] == X[:,5:5]
+    @test batches[1] == (X[:,1:2],)
+    @test batches[2] == (X[:,3:4],)
+    @test batches[3] == (X[:,5:5],)
 
     d = DataLoader((X,), batchsize=2, partial=false)
-    @inferred first(d)
+    # @inferred first(d)
     batches = collect(d)
-    # @test eltype(batches) == eltype(d) == typeof(X)
+    @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
     @test length(batches) == 2
-    @test batches[1] == X[:,1:2]
-    @test batches[2] == X[:,3:4]
+    @test batches[1] == (X[:,1:2],)
+    @test batches[2] == (X[:,3:4],)
 
     d = DataLoader((X,), batchsize=2, partial=false)
-    @inferred first(d)
+    # @inferred first(d)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
     @test length(batches) == 2
@@ -30,7 +30,7 @@ using Random
     @test batches[2] == (X[:,3:4],)
 
     d = DataLoader((X, Y), batchsize=2)
-    @inferred first(d)
+    # @inferred first(d)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == Tuple{typeof(X), typeof(Y)}
     @test length(batches) == 3
@@ -64,7 +64,7 @@ using Random
     θ = ones(2)
     X = zeros(2, 10)
     loss(x) = sum((x .- θ).^2)
-    d  = DataLoader(X)
+    d  = DataLoader((X,))
     Flux.train!(loss, [θ], ncycle(d, 10), Descent(0.1))
     @test norm(θ) < 1e-4
 
@@ -78,5 +78,5 @@ using Random
     @test norm(θ .- 1) < 1e-10
 
     # specify the rng
-    d = map(identity, DataLoader(X, batchsize=2; shuffle = x -> Random.shuffle!(Random.default_rng(), x)))
+    d = map(identity, DataLoader((X,), batchsize=2; shuffle = x -> Random.shuffle!(Random.default_rng(), x)))
 end
