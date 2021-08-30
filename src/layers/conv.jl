@@ -158,8 +158,6 @@ convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
 @functor Conv
 
 function (c::Conv)(x::AbstractArray)
-  # TODO: breaks gpu broadcast :(
-  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, ntuple(_ -> 1, length(c.stride))..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
   σ.(conv(x, c.weight, cdims) .+ b)
@@ -262,7 +260,6 @@ end
 @nograd conv_transpose_dims
 
 function (c::ConvTranspose)(x::AbstractArray)
-  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = conv_transpose_dims(c, x)
   σ.(∇conv_data(x, c.weight, cdims) .+ b)
@@ -435,8 +432,6 @@ function crosscor(x, w, ddims::DenseConvDims)
 end
 
 function (c::CrossCor)(x::AbstractArray)
-  # TODO: breaks gpu broadcast :(
-  # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(crosscor(x, c.weight, cdims) .+ b)
