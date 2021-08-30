@@ -12,7 +12,6 @@ julia> using CUDA
 julia> CUDA.functional()
 true
 ```
-which is part of the internal code that Flux is running to set the `Flux.use_cuda[]` flag (note this flag is not stable and you should use the code above to check for GPU availability).
 
 ## GPU Usage
 
