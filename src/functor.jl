@@ -90,10 +90,10 @@ cpu(m) = fmap(_cpu_array, x; exclude = _isbitsarray)
 
 _cpu_array(x::AbstractArray) = adapt(Array, x)
 
-function ChainRules.rrule(::typeof(_cpu_array), x::CUDA.CuArray)
+function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::CUDA.CuArray)
     _cpu_array(x), dy -> (NoTangent(), _gpu_array(dy))
 end
-function ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
+function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
     # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
     _cpu_array(x), dy -> (NoTangent(), dy)
 end
@@ -131,17 +131,17 @@ _gpu_array(x::AbstractArray) = CUDA.cu(x)
 
 # While `cu` moves Arrays to the GPU, we also want to move some structured arrays
 # https://github.com/FluxML/Zygote.jl/issues/1005
-_gpu_array(x::FillArrays.AbstractFill) = CUDA.fill(first(x), size(x))  # gradient of sum
+_gpu_array(x::Zygote.FillArrays.AbstractFill) = CUDA.fill(first(x), size(x))  # gradient of sum
 function _gpu_array(x::Zygote.OneElement)  # gradient of getindex
     y = CUDA.zeros(eltype(x), size(x))
     CUDA.@allowscalar y[x.ind...] = x.val
     y
 end
 
-function ChainRules.rrule(::typeof(_gpu_array), x::AbstractArray)
+function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::AbstractArray)
     _gpu_array(x), dy -> (NoTangent(), _cpu_array(dy))
 end
-function ChainRules.rrule(::typeof(_gpu_array), x::CuArray)
+function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::CuArray)
     _gpu_array(x), dy -> (NoTangent(), dy)
 end
 
