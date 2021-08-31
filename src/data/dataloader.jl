@@ -131,7 +131,6 @@ function DataLoader(f,
   ch = Channel{typeof(args)}(buffersize)
   t = Task(() -> begin
     for i in iterator
-      # sleep(1)
       fullbatch = length(i) == batchsize
       if fullbatch
         put!(ch, f(getobs(fs, i, batchdim)))
@@ -151,7 +150,7 @@ function DataLoader(f,
 end
 DataLoader(args::NTuple{N,AbstractArray}; kwargs...) where N = DataLoader(x -> identity.(x), args; kwargs...)
 
-function DataLoader(args;
+function DataLoader(args...;
                     batchsize = 1, shuffle = true,
                     partial = true, batchdim = ndims,
                     epochs = 1) where N
@@ -169,8 +168,7 @@ end
 getobs(data, ix, bd) = getobs.(data, Ref(ix), bd)
 # getobs(data::Vector, ix, bd) = (d[ix] for d in data)
 
-Base.iterate(dl::DataLoader) = iterate(dl.channel)
-Base.iterate(dl::DataLoader, i) = iterate(dl.channel, i)
+Base.iterate(dl::DataLoader, i...) = iterate(dl.channel, i...)
 
 Base.length(dl::DataLoader) = dl.partial ? length(dl.iterator) : length(dl.iterator) - 1
-Base.eltype(dl::DataLoader{P,F,D})  where {P,F,D} = D # eltype(dl.channel)
+Base.eltype(dl::DataLoader{P,F,D}) where {P,F,D} = D
