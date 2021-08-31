@@ -94,7 +94,7 @@ function ChainRules.rrule(::typeof(_cpu_array), x::CUDA.CuArray)
     _cpu_array(x), dy -> (NoTangent(), _gpu_array(dy))
 end
 function ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
-    # Trivial use: gpu(x::Array) shouldn't push gradient to GPU
+    # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
     _cpu_array(x), dy -> (NoTangent(), dy)
 end
 

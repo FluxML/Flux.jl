@@ -110,7 +110,9 @@ end
   @test gradient(x -> cpu(2 .* gpu(x))[1], Float32[1,2,3]) == ([2,0,0],)
   @test gradient(x -> cpu(gpu(x) * gpu(x))[1,2], Float32[1 2 3; 4 5 6; 7 8 9]) == ([2 6 8; 0 2 0; 0 3 0],)
 
-  # Explicit pieces
+  # Explicit pieces. It's not entirely clear that it's desirable to move these if they appear alone,
+  # but it's necessary to move them if they appear in gradient of cpu(::CuArray), as in the
+  # examples above. Those must not break, but a re-design could perhaps change these:
   g1 = Zygote.OneElement(1, (2,3), axes(ones(4,5)))
   @test gpu(g1) isa CuArray
   @test gpu(g1) ≈ cu(Matrix(g1))
