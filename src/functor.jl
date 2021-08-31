@@ -86,7 +86,7 @@ julia> typeof(m_cpu.W)
 Matrix{Float32}
 ```
 """
-cpu(m) = fmap(_cpu_array, x; exclude = _isbitsarray)
+cpu(x) = fmap(_cpu_array, x; exclude = _isbitsarray)
 
 _cpu_array(x::AbstractArray) = adapt(Array, x)
 
