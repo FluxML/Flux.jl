@@ -17,7 +17,9 @@ makedocs(modules = [Flux, NNlib, Functors],
                      "Functors" => "models/functors.md"],
                   "Handling Data" =>
                     ["One-Hot Encoding" => "data/onehot.md",
-                     "DataLoader" => "data/dataloader.md"],
+                     "DataLoader" => "data/dataloader.md",
+                     "Image layouts" => "data/image_layouts.md",
+                    ],
                   "Training Models" =>
                     ["Optimisers" => "training/optimisers.md",
                      "Training" => "training/training.md"],
