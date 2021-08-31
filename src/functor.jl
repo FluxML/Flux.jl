@@ -90,12 +90,15 @@ cpu(x) = fmap(_cpu_array, x; exclude = _isbitsarray)
 
 _cpu_array(x::AbstractArray) = adapt(Array, x)
 
-function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::CUDA.CuArray)
-    _cpu_array(x), dy -> (NoTangent(), _gpu_array(dy))
-end
 function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
-    # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
-    _cpu_array(x), dy -> (NoTangent(), dy)
+    y = _cpu_array(x)
+    if x === y
+        # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
+        return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
+    else
+        # Allows both cpu(x::CuArray) and cpu(x::Adjoint{T,CuArray}):
+        return y, dy -> (Zygote.ChainRules.NoTangent(), _gpu_array(dy))
+    end
 end
 
 _isbitsarray(::AbstractArray{<:Number}) = true
@@ -139,10 +142,12 @@ function _gpu_array(x::Zygote.OneElement)  # gradient of getindex
 end
 
 function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::AbstractArray)
-    _gpu_array(x), dy -> (NoTangent(), _cpu_array(dy))
-end
-function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::CuArray)
-    _gpu_array(x), dy -> (NoTangent(), dy)
+    y = _gpu_array(x)
+    if x === y  # trivial case, e.g. gpu(x::Adjoint{T,CuArray})
+        return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
+    else
+        return y, dy -> (Zygote.ChainRules.NoTangent(), _cpu_array(dy))
+    end
 end
 
 # Precision

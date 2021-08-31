@@ -92,13 +92,17 @@ end
   # Trivial functions
   @test gradient(x -> sum(abs, gpu(x)), a)[1] isa Matrix
   @test gradient(x -> sum(gpu(x)), a)[1] isa Matrix
+  @test gradient(x -> sum(gpu(x)), a')[1] isa Matrix
   @test gradient(x -> sum(abs, cpu(x)), ca)[1] isa CuArray
   @test gradient(x -> sum(cpu(x)), ca)[1] isa CuArray  # This involves FillArray
+  @test gradient(x -> sum(cpu(x)), ca')[1] isa CuArray 
 
   # Even more trivial: no movement
   @test gradient(x -> sum(abs, cpu(x)), a)[1] isa Matrix
+  @test gradient(x -> sum(abs, cpu(x)), a')[1] isa Matrix
   @test gradient(x -> sum(cpu(x)), a)[1] isa FillArrays.Fill
   @test gradient(x -> sum(abs, gpu(x)), ca)[1] isa CuArray
+  @test_skip gradient(x -> sum(abs, gpu(x)), ca')[1] isa CuArray
 
   # More complicated, Array * CuArray is an error
   g0 = gradient(x -> sum(abs, (a * (a * x))), a)[1]
