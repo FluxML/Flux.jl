@@ -4,7 +4,7 @@ using Random
     X = reshape([1:10;], (2, 5))
     Y = [1:5;]
 
-    d = DataLoader((X,), batchsize=2)
+    d = DataLoader(X, batchsize = 2)
     # @inferred first(d)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
@@ -13,7 +13,7 @@ using Random
     @test batches[2] == (X[:,3:4],)
     @test batches[3] == (X[:,5:5],)
 
-    d = DataLoader((X,), batchsize=2, partial=false)
+    d = DataLoader(X, batchsize = 2, partial = false)
     # @inferred first(d)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
@@ -21,7 +21,7 @@ using Random
     @test batches[1] == (X[:,1:2],)
     @test batches[2] == (X[:,3:4],)
 
-    d = DataLoader((X,), batchsize=2, partial=false)
+    d = DataLoader(X, batchsize = 2, partial = false)
     # @inferred first(d)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == Tuple{typeof(X)}
@@ -29,7 +29,7 @@ using Random
     @test batches[1] == (X[:,1:2],)
     @test batches[2] == (X[:,3:4],)
 
-    d = DataLoader((X, Y), batchsize=2)
+    d = DataLoader((X, Y), batchsize = 2)
     # @inferred first(d)
     batches = collect(d)
     @test eltype(batches) == eltype(d) == Tuple{typeof(X), typeof(Y)}
@@ -78,5 +78,5 @@ using Random
     @test norm(θ .- 1) < 1e-10
 
     # specify the rng
-    d = map(identity, DataLoader((X,), batchsize=2; shuffle = x -> Random.shuffle!(Random.default_rng(), x)))
+    d = map(identity, DataLoader(X, batchsize = 2; shuffle = x -> Random.shuffle!(Random.default_rng(), x)))
 end

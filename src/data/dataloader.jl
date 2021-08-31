@@ -151,7 +151,7 @@ end
 DataLoader(args::NTuple{N,AbstractArray}; kwargs...) where N = DataLoader(x -> identity.(x), args; kwargs...)
 
 function DataLoader(args...;
-                    batchsize = 1, shuffle = true,
+                    batchsize = 1, shuffle = false,
                     partial = true, batchdim = ndims,
                     epochs = 1) where N
   DataLoader(x -> identity.(x), args,
