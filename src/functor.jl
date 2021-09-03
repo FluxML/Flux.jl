@@ -94,14 +94,14 @@ _cpu_array(x::Zygote.FillArrays.AbstractFill) = x
 _cpu_array(x::Zygote.OneElement) = x
 
 function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
-    y = _cpu_array(x)
-    if x === y
-        # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
-        return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
-    else
-        # Allows both cpu(x::CuArray) and cpu(x::Adjoint{T,CuArray}):
-        return y, dy -> (Zygote.ChainRules.NoTangent(), _gpu_array(dy))
-    end
+  y = _cpu_array(x)
+  if x === y
+    # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
+    return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
+  else
+    # Allows both cpu(x::CuArray) and cpu(x::Adjoint{T,CuArray}):
+    return y, dy -> (Zygote.ChainRules.NoTangent(), _gpu_array(dy))
+  end
 end
 
 _isbitsarray(::AbstractArray{<:Number}) = true
@@ -139,18 +139,18 @@ _gpu_array(x::AbstractArray) = CUDA.cu(x)
 # https://github.com/FluxML/Zygote.jl/issues/1005
 _gpu_array(x::Zygote.FillArrays.AbstractFill) = CUDA.fill(first(x), size(x))  # gradient of sum
 function _gpu_array(x::Zygote.OneElement)  # gradient of getindex
-    y = CUDA.zeros(eltype(x), size(x))
-    CUDA.@allowscalar y[x.ind...] = x.val
-    y
+  y = CUDA.zeros(eltype(x), size(x))
+  CUDA.@allowscalar y[x.ind...] = x.val
+  y
 end
 
 function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::AbstractArray)
-    y = _gpu_array(x)
-    if x === y  # trivial case, e.g. gpu(x::Adjoint{T,CuArray})
-        return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
-    else
-        return y, dy -> (Zygote.ChainRules.NoTangent(), _cpu_array(dy))
-    end
+  y = _gpu_array(x)
+  if x === y  # trivial case, e.g. gpu(x::Adjoint{T,CuArray})
+    return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
+  else
+    return y, dy -> (Zygote.ChainRules.NoTangent(), _cpu_array(dy))
+  end
 end
 
 # Precision
