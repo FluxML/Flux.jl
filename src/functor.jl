@@ -65,9 +65,8 @@ end
 """
     cpu(m)
 
-Moves `m` onto the CPU.
-
-This utility uses [`@functor`](@ref) to properly move structures to the CPU.
+Moves `m` onto the CPU, the opposite of [`gpu`](@ref).
+Recurses into structs marked [`@functor`](@ref).
 
 ```julia-repl
 julia> m = Dense(1,2)
@@ -89,6 +88,10 @@ Matrix{Float32}
 cpu(x) = fmap(_cpu_array, x; exclude = _isbitsarray)
 
 _cpu_array(x::AbstractArray) = adapt(Array, x)
+# adapt(Array, x) materialises some lazy arrays, on which cpu() should do nothing:
+_cpu_array(x::AbstractRange) = x
+_cpu_array(x::Zygote.FillArrays.AbstractFill) = x
+_cpu_array(x::Zygote.OneElement) = x
 
 function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
     y = _cpu_array(x)
@@ -152,7 +155,7 @@ end
 
 # Precision
 
-adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs)
+adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # piracy
 
 paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
