@@ -125,8 +125,8 @@ end
   @test cpu(range(1,3,length=4)) isa AbstractRange
   g1 = Zygote.OneElement(1, (2,3), axes(ones(4,5)))
   @test cpu(g1) isa Zygote.OneElement
-  g2 = Fill(1f0,2)
-  @test cpu(g2) isa Fill
+  g2 = Zygote.Fill(1f0,2)
+  @test cpu(g2) isa Zygote.Fill
   g3 = transpose(Float32[1 2; 3 4])
   @test parent(cpu(g3)) isa Matrix
 
