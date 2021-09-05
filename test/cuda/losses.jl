@@ -42,8 +42,8 @@ end
      y = 1
    
      @test Flux.margin_ranking_loss(x1, x2, y) ≈ Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y)) |> cpu
-     @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0) ≈ 
-          Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y), margin=gpu(1.0)) |> cpu atol=1e-6
+     @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=identity) ≈ 
+          Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y), margin=gpu(1.0), agg=identity) |> cpu atol=1e-6
      @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=sum) ≈
           Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y), margin=gpu(1.0), agg=sum)
 end

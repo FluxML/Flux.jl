@@ -212,8 +212,8 @@ end
   x2 = [9.8 8.7 7.6]
   y = 1
 
-  @test Flux.margin_ranking_loss(x1, x2, y) ≈ [8.6 6.4 4.2]
-  @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0) ≈ [9.6 7.4 5.2]
+  @test Flux.margin_ranking_loss(x1, x2, y) ≈ 6.4
+  @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=identity) ≈ [9.6 7.4 5.2]
   @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=sum) ≈ 22.2
 end
 
