@@ -525,9 +525,9 @@ julia> Flux.margin_ranking_loss(x1, x2, y, margin=1.0, mode=sum) ≈ 22.2
 true
 ```
 """
-function margin_ranking_loss(x1, x2, y; margin=zero(eltype(x1)), mode=identity)
-  y ∈ (1, -1) || error("Rank can be either 1 or -1, got $y")
-  return (max.(zero(eltype(x1)), mode(((-y) .* (x1 .- x2)) .+ margin)))
+function margin_ranking_loss(x1, x2, y; margin=zero(eltype(x1)), agg=mean)
+  any(∈((1, -1)), y) || error("Rank can be either 1 or -1, got $y")
+  agg(max.(zero(eltype(x1)), -y .* (x1 .- x2) .+ margin))
 end
 ```@meta
 DocTestFilters = nothing
