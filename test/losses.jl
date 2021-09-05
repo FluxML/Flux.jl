@@ -214,7 +214,7 @@ end
 
   @test Flux.margin_ranking_loss(x1, x2, y) ≈ [8.6 6.4 4.2]
   @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0) ≈ [9.6 7.4 5.2]
-  @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, mode=sum) ≈ 22.2
+  @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=sum) ≈ 22.2
 end
 
 @testset "no spurious promotions for margin_ranking_loss" begin
