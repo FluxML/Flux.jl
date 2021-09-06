@@ -221,9 +221,12 @@ layout is the simplest solution. But the reality is that we don't have a Julia v
 has competitive performance. Thus for quite a long time in the future, we have to live with the
 ambiguous `Array{Float32, 4}` layout.
 
-> Disclamer: I know there are many tricks in CUDA kernel programming to reduce the data transferring
-> waiting time and to increase the concurrency, but I'm not a CUDA expert and I don't know how those
-> tricks apply to `Vector{Array{Float32, 3}}` and `Array{Float32, 4}` layouts.
+!!! warning Disclaimer
+    There are many tricks in CUDA kernel programming to reduce the data transferring
+    waiting time and to increase the concurrency. These techniques can affect your data format
+    (e.g. whether to use `Vector{Array{Float32, 3}}` or `Array{Float32, 4}`).
+    This tutorial does not cover these tricks, so the recommendations above may change when
+    working with a GPU.
 
 ## References
 
