@@ -65,9 +65,8 @@ end
 """
     cpu(m)
 
-Moves `m` onto the CPU.
-
-This utility uses [`@functor`](@ref) to properly move structures to the CPU.
+Moves `m` onto the CPU, the opposite of [`gpu`](@ref).
+Recurses into structs marked [`@functor`](@ref).
 
 ```julia-repl
 julia> m = Dense(1,2)
@@ -86,7 +85,24 @@ julia> typeof(m_cpu.W)
 Matrix{Float32}
 ```
 """
-cpu(m) = fmap(x -> adapt(Array, x), m)
+cpu(x) = fmap(_cpu_array, x; exclude = _isbitsarray)
+
+_cpu_array(x::AbstractArray) = adapt(Array, x)
+# adapt(Array, x) materialises some lazy arrays, on which cpu() should do nothing:
+_cpu_array(x::AbstractRange) = x
+_cpu_array(x::Zygote.FillArrays.AbstractFill) = x
+_cpu_array(x::Zygote.OneElement) = x
+
+function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
+  y = _cpu_array(x)
+  if x === y
+    # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
+    return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
+  else
+    # Allows both cpu(x::CuArray) and cpu(x::Adjoint{T,CuArray}):
+    return y, dy -> (Zygote.ChainRules.NoTangent(), _gpu_array(dy))
+  end
+end
 
 _isbitsarray(::AbstractArray{<:Number}) = true
 _isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
@@ -99,8 +115,7 @@ Moves `m` to the current GPU device, if available. It is a no-op otherwise.
 See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
 to help identify the current device.
 
-This works for functions and 
-any struct with [`@functor`](@ref) defined.
+This works for functions, and any struct marked with [`@functor`](@ref).
 
 ```julia-repl
 julia> m = Dense(1,2)
@@ -116,11 +131,31 @@ julia> typeof(m_gpu.W) # notice the type of the array changed to a CuArray
 CuArray{Float32, 2}
 ```
 """
-gpu(x) = use_cuda[] ? fmap(CUDA.cu, x; exclude = _isbitsarray) : x
+gpu(x) = use_cuda[] ? fmap(_gpu_array, x; exclude = _isbitsarray) : x
+
+_gpu_array(x::AbstractArray) = CUDA.cu(x)
+
+# While `cu` moves Arrays to the GPU, we also want to move some structured arrays
+# https://github.com/FluxML/Zygote.jl/issues/1005
+_gpu_array(x::Zygote.FillArrays.AbstractFill) = CUDA.fill(first(x), size(x))  # gradient of sum
+function _gpu_array(x::Zygote.OneElement)  # gradient of getindex
+  y = CUDA.zeros(eltype(x), size(x))
+  CUDA.@allowscalar y[x.ind...] = x.val
+  y
+end
+
+function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::AbstractArray)
+  y = _gpu_array(x)
+  if x === y  # trivial case, e.g. gpu(x::Adjoint{T,CuArray})
+    return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
+  else
+    return y, dy -> (Zygote.ChainRules.NoTangent(), _cpu_array(dy))
+  end
+end
 
 # Precision
 
-adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs)
+adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # piracy
 
 paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
