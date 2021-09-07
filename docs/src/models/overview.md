@@ -113,7 +113,7 @@ julia> predict.bias
 The dimensions of these model parameters depend on the number of inputs and outputs. Since models can have hundreds of inputs and several layers, it helps to have a function to collect the parameters into the data structure Flux expects:
 
 ```
-julia> parameters = params(predict)
+julia> parameters = Flux.params(predict)
 Params([[-0.99009055], [0.0]])
 ```
 
