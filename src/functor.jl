@@ -61,7 +61,15 @@ function loadparams!(m, xs)
   end
 end
 
+struct FluxCUDAAdaptor end
+Adapt.adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
+Adapt.adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.Fill) = CUDA.cu(collect(x))
+
+struct FluxCPUAdaptor end
+Adapt.adapt_storage(to::FluxCPUAdaptor, x) = Array(x)
+
 # CPU/GPU movement conveniences
+
 """
     cpu(m)
 
@@ -85,24 +93,7 @@ julia> typeof(m_cpu.W)
 Matrix{Float32}
 ```
 """
-cpu(x) = fmap(_cpu_array, x; exclude = _isbitsarray)
-
-_cpu_array(x::AbstractArray) = adapt(Array, x)
-# adapt(Array, x) materialises some lazy arrays, on which cpu() should do nothing:
-_cpu_array(x::AbstractRange) = x
-_cpu_array(x::Zygote.FillArrays.AbstractFill) = x
-_cpu_array(x::Zygote.OneElement) = x
-
-function Zygote.ChainRules.rrule(::typeof(_cpu_array), x::AbstractArray)
-  y = _cpu_array(x)
-  if x === y
-    # Trivial use: cpu(x::Array) shouldn't push its gradient to GPU
-    return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
-  else
-    # Allows both cpu(x::CuArray) and cpu(x::Adjoint{T,CuArray}):
-    return y, dy -> (Zygote.ChainRules.NoTangent(), _gpu_array(dy))
-  end
-end
+cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x)
 
 _isbitsarray(::AbstractArray{<:Number}) = true
 _isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
@@ -131,27 +122,7 @@ julia> typeof(m_gpu.W) # notice the type of the array changed to a CuArray
 CuArray{Float32, 2}
 ```
 """
-gpu(x) = use_cuda[] ? fmap(_gpu_array, x; exclude = _isbitsarray) : x
-
-_gpu_array(x::AbstractArray) = CUDA.cu(x)
-
-# While `cu` moves Arrays to the GPU, we also want to move some structured arrays
-# https://github.com/FluxML/Zygote.jl/issues/1005
-_gpu_array(x::Zygote.FillArrays.AbstractFill) = CUDA.fill(first(x), size(x))  # gradient of sum
-function _gpu_array(x::Zygote.OneElement)  # gradient of getindex
-  y = CUDA.zeros(eltype(x), size(x))
-  CUDA.@allowscalar y[x.ind...] = x.val
-  y
-end
-
-function Zygote.ChainRules.rrule(::typeof(_gpu_array), x::AbstractArray)
-  y = _gpu_array(x)
-  if x === y  # trivial case, e.g. gpu(x::Adjoint{T,CuArray})
-    return y, dy -> (Zygote.ChainRules.NoTangent(), dy)
-  else
-    return y, dy -> (Zygote.ChainRules.NoTangent(), _cpu_array(dy))
-  end
-end
+gpu(x) = use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray) : x
 
 # Precision
 
