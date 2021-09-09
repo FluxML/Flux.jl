@@ -93,13 +93,13 @@ end
   @test gradient(x -> sum(abs, gpu(x)), a)[1] isa Matrix
   @test gradient(x -> sum(gpu(x)), a)[1] isa Matrix
   @test_skip gradient(x -> sum(gpu(x)), a')[1] isa Matrix  # sum(::Adjoint{T,CuArray}) makes a Fill
-  @test gradient(x -> sum(abs, cpu(x)), ca)[1] isa CuArray
-  @test gradient(x -> sum(cpu(x)), ca)[1] isa CuArray  # This involves FillArray, moved to GPU
-  @test gradient(x -> sum(cpu(x)), ca')[1] isa CuArray 
+  @test gradient(x -> sum(abs, cpu(x)), ca)[1] isa Matrix # CuArray
+  @test gradient(x -> sum(cpu(x)), ca)[1] isa Fill  # This involves FillArray, moved to GPU
+  @test gradient(x -> sum(cpu(x)), ca')[1] isa LinearAlgebra.Adjoint
 
   # Even more trivial: no movement
   @test gradient(x -> sum(abs, cpu(x)), a)[1] isa Matrix
-  @test gradient(x -> sum(abs, cpu(x)), a')[1] isa Matrix
+  @test gradient(x -> sum(abs, cpu(x)), a')[1] isa LinearAlgebra.Adjoint
   @test gradient(x -> sum(cpu(x)), a)[1] isa typeof(gradient(sum, a)[1]) # FillArray
   @test gradient(x -> sum(abs, gpu(x)), ca)[1] isa CuArray
   @test_skip gradient(x -> sum(abs, gpu(x)), ca')[1] isa CuArray # KernelError: passing and using non-bitstype argument
@@ -117,21 +117,25 @@ end
   # https://github.com/FluxML/Zygote.jl/issues/1005
   @test gradient(x -> cpu(2 .* gpu(x))[1], Float32[1,2,3]) == ([2,0,0],)
   @test gradient(x -> cpu(gpu(x) * gpu(x))[1,2], Float32[1 2 3; 4 5 6; 7 8 9]) == ([2 6 8; 0 2 0; 0 3 0],)
-
 end
+
 @testset "gpu(x) and cpu(x) on structured arrays" begin
   # Check first that cpu() is a no-op on these, which adapt(Array, x) presently is not:
-  @test cpu(1:3) isa UnitRange
-  @test cpu(range(1,3,length=4)) isa AbstractRange
+  @test cpu(1:3) isa Vector
+  @test cpu(range(1, 3, length = 4)) isa Vector
+  # OneElement isn't GPU compatible
   g1 = Zygote.OneElement(1, (2,3), axes(ones(4,5)))
-  @test cpu(g1) isa Zygote.OneElement
-  g2 = Zygote.Fill(1f0,2)
-  @test cpu(g2) isa Zygote.Fill
+
+  @test cpu(g1) isa Matrix
+  g2 = Zygote.Fill(1f0, 2)
+  @test cpu(g2) isa Vector
   g3 = transpose(Float32[1 2; 3 4])
-  @test parent(cpu(g3)) isa Matrix
+
+  @test parent(cpu(g3)) isa Matrix{Float32}
+
 
   # Check that gpu() converts these to CuArrays. This a side-effect of using the same functions
-  # in gpu() as in the gradient of cpu(). A different design could avoid having gpu() used alone 
+  # in gpu() as in the gradient of cpu(). A different design could avoid having gpu() used alone
   # move these, if that turns out to be desirable.
   @test gpu(g1) isa CuArray
   @test gpu(g1) ≈ cu(Matrix(g1))
