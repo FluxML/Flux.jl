@@ -24,6 +24,19 @@ rnn.state   # 5
 rnn.(1:10)  # apply to a sequence
 rnn.state   # 60
 ```
+
+Folding over a 3d Array of dimensions `(features, batch, time)` is also supported:
+
+```julia
+accum(h, x) = (h .+ x, x)
+rnn = Flux.Recur(accum, zeros(Int, 1, 1))
+rnn([2])                    # 2
+rnn([3])                    # 3
+rnn.state                   # 5
+rnn(reshape(1:10, 1, 1, :)) # apply to a sequence of (features, batch, time)
+rnn.state                   # 60
+```
+
 """
 mutable struct Recur{T,S}
   cell::T
@@ -53,6 +66,7 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
+
 # TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
   if sym === :init
@@ -66,6 +80,12 @@ function Base.getproperty(m::Recur, sym::Symbol)
 end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
+
+function (m::Recur)(x::AbstractArray{T, 3}) where T
+  h = [m(view(x, :, :, i)) for i in 1:size(x, 3)]
+  sze = size(h[1])
+  reshape(reduce(hcat, h), sze[1], sze[2], length(h))
+end
 
 # Vanilla RNN
 

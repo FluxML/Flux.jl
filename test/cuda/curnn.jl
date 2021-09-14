@@ -53,6 +53,15 @@ end
     y = (rnn(ohx); rnn(ohx))
 
     cuy = (curnn(cuohx); curnn(cuohx))
-    @test y ≈ collect(cuy)  
+    @test y ≈ collect(cuy)
+
+    Flux.reset!(rnn)
+    Flux.reset!(curnn)
+    fx = rand(Float32, 10, batch_size, 3)
+    cufx = gpu(fx)
+    fy = (rnn(fx); rnn(fx))
+
+    cufy = (curnn(cufx); curnn(cufx))
+    @test fy ≈ collect(cufy)
   end
 end
