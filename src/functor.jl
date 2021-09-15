@@ -131,7 +131,16 @@ julia> typeof(m_gpu.W) # notice the type of the array changed to a CuArray
 CuArray{Float32, 2}
 ```
 """
-gpu(x) = use_cuda[] ? fmap(_gpu_array, x; exclude = _isbitsarray) : x
+function gpu(x)
+  if use_cuda[] === nothing
+    use_cuda[] = CUDA.functional()
+    if use_cuda[] && !CUDA.has_cudnn()
+      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
+    end
+  end
+
+  use_cuda[] ? fmap(_gpu_array, x; exclude = _isbitsarray) : x
+end
 
 _gpu_array(x::AbstractArray) = CUDA.cu(x)
 

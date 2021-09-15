@@ -30,7 +30,7 @@ export Descent, ADAM, Momentum, Nesterov, RMSProp,
 
 
 using CUDA
-const use_cuda = Ref(false)
+const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
 include("utils.jl")
 include("zeros.jl")
@@ -56,14 +56,5 @@ using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
 include("deprecations.jl")
 
 include("cuda/cuda.jl")
-
-function __init__()
-  use_cuda[] = CUDA.functional() # Can be overridden after load with `Flux.use_cuda[] = false`
-  if CUDA.functional()
-    if !CUDA.has_cudnn()
-      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
-    end
-  end
-end
 
 end # module

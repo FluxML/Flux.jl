@@ -4,6 +4,7 @@ using Flux: OneHotArray, OneHotMatrix, OneHotVector
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
+using CUDA
 
 Random.seed!(0)
 
@@ -26,7 +27,7 @@ end
 @testset "Losses" begin
   include("losses.jl")
   include("ctc.jl")
-  if Flux.use_cuda[] include("ctc-gpu.jl") end
+  CUDA.functional() && include("ctc-gpu.jl")
 end
 
 @testset "Layers" begin
@@ -45,7 +46,7 @@ end
 end
 
 @testset "CUDA" begin
-  if Flux.use_cuda[]
+  if CUDA.functional()
     include("cuda/runtests.jl")
   else
     @warn "CUDA unavailable, not testing GPU support"
