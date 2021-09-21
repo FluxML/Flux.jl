@@ -24,6 +24,5 @@ export mse, mae, msle,
 include("utils.jl")
 include("functions.jl")
 include("ctc.jl")
-if CUDA.functional() include("ctc-gpu.jl") end
 
 end #module
