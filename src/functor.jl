@@ -62,11 +62,11 @@ function loadparams!(m, xs)
 end
 
 struct FluxCUDAAdaptor end
-Adapt.adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
-Adapt.adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.Fill) = CUDA.cu(x)
+adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
+adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
 
 struct FluxCPUAdaptor end
-Adapt.adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
+adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
 
 # CPU/GPU movement conveniences
 
@@ -123,15 +123,19 @@ CuArray{Float32, 2}
 ```
 """
 function gpu(x)
+  check_use_cuda()
+  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray) : x
+end
+
+function check_use_cuda()
   if use_cuda[] === nothing
     use_cuda[] = CUDA.functional()
     if use_cuda[] && !CUDA.has_cudnn()
       @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
   end
-
-  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray) : x
 end
+Zygote.@nograd check_use_cuda
 
 # Precision
 
