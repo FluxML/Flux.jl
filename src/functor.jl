@@ -68,6 +68,10 @@ adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(
 struct FluxCPUAdaptor end
 adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
 
+Zygote.@adjoint function Adapt.adapt_storage(to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
+  adapt_storage(to, x), d -> (nothing, adapt_storage(FluxCUDAAdaptor(), d),)
+end
+
 # CPU/GPU movement conveniences
 
 """
