@@ -63,10 +63,10 @@ end
 
 struct FluxCUDAAdaptor end
 Adapt.adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
-Adapt.adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.Fill) = CUDA.cu(collect(x))
+Adapt.adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.Fill) = CUDA.cu(x)
 
 struct FluxCPUAdaptor end
-Adapt.adapt_storage(to::FluxCPUAdaptor, x) = Array(x)
+Adapt.adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
 
 # CPU/GPU movement conveniences
 
