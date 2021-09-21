@@ -106,10 +106,10 @@ end
 
   # More complicated, Array * CuArray is an error
   g0 = gradient(x -> sum(abs, (a * (a * x))), a)[1]
-  # @test g0 ≈ gradient(x -> sum(abs, cpu(ca * gpu(a * x))), a)[1]
-  # @test cu(g0) ≈ gradient(x -> sum(abs, gpu(a * cpu(ca * x))), ca)[1]
+  @test g0 ≈ gradient(x -> sum(abs, cpu(ca * gpu(a * x))), a)[1]
+  @test cu(g0) ≈ gradient(x -> sum(abs, gpu(a * cpu(ca * x))), ca)[1]
   @test gradient(x -> sum(gpu(cpu(x))), a)[1] isa AbstractMatrix
-  @test_broken gradient(x -> sum(gpu(cpu(x))), ga)[1] isa CuArray
+  @test gradient(x -> sum(gpu(cpu(x))), ga)[1] isa CuArray
 
   g4 = gradient(x -> sum(a * (a' * x)), a)[1]  # no abs, one adjoint
   @test g4 ≈ gradient(x -> sum(cpu(ca * gpu(a' * x))), a)[1]
