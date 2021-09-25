@@ -109,7 +109,7 @@ end
   @test g0 ≈ gradient(x -> sum(abs, cpu(ca * gpu(a * x))), a)[1]
   @test cu(g0) ≈ gradient(x -> sum(abs, gpu(a * cpu(ca * x))), ca)[1]
   @test gradient(x -> sum(gpu(cpu(x))), a)[1] isa AbstractMatrix
-  @test gradient(x -> sum(gpu(cpu(x))), ga)[1] isa CuArray
+  @test gradient(x -> sum(gpu(cpu(x))), ca)[1] isa CuArray
 
   g4 = gradient(x -> sum(a * (a' * x)), a)[1]  # no abs, one adjoint
   @test g4 ≈ gradient(x -> sum(cpu(ca * gpu(a' * x))), a)[1]
@@ -130,7 +130,7 @@ end
 
   @test cpu(g1) isa Matrix
   g2 = Zygote.Fill(1f0, 2)
-  @test cpu(g2) isa Vector
+  @test cpu(g2) isa Zygote.FillArrays.AbstractFill
   g3 = transpose(Float32[1 2; 3 4])
 
   @test parent(cpu(g3)) isa Matrix{Float32}
