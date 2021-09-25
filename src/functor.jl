@@ -66,7 +66,14 @@ adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
 
 struct FluxCPUAdaptor end
+
+# define rules for handling structured arrays
 adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
+adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
+adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
+Zygote.@adjoint function Array(x::CUDA.CuArray)
+  Array(x), d -> CUDA.cu(d)
+end
 
 Zygote.@adjoint function Adapt.adapt_storage(to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
   adapt_storage(to, x), d -> (nothing, adapt_storage(FluxCUDAAdaptor(), d),)
