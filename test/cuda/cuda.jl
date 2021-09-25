@@ -94,7 +94,9 @@ end
   @test gradient(x -> sum(gpu(x)), a)[1] isa Matrix
   @test_skip gradient(x -> sum(gpu(x)), a')[1] isa Matrix  # sum(::Adjoint{T,CuArray}) makes a Fill
   @test gradient(x -> sum(abs, cpu(x)), ca)[1] isa CuArray
-  @test gradient(x -> sum(cpu(x)), ca)[1] isa Zygote.FillArrays.Fill  # This involves FillArray, which should be GPU compatible
+  # This test should really not go through indirections and pull out Fills for efficiency
+  # but we forcefully materialise. TODO: remove materialising CuArray here
+  @test gradient(x -> sum(cpu(x)), ca)[1] isa CuArray # This involves FillArray, which should be GPU compatible
   @test gradient(x -> sum(cpu(x)), ca')[1] isa LinearAlgebra.Adjoint
 
   # Even more trivial: no movement
