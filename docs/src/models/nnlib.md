@@ -75,4 +75,7 @@ NNlib.gather
 NNlib.gather!
 NNlib.scatter
 NNlib.scatter!
+
+## Utilities
+NNlib.logsumexp
 ```
