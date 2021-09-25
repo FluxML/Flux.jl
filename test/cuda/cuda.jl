@@ -123,8 +123,8 @@ end
 
 @testset "gpu(x) and cpu(x) on structured arrays" begin
   # Check first that cpu() is a no-op on these, which adapt(Array, x) presently is not:
-  @test cpu(1:3) isa Vector
-  @test cpu(range(1, 3, length = 4)) isa Vector
+  @test cpu(1:3) isa UnitRange
+  @test cpu(range(1, 3, length = 4)) isa AbstractRange
   # OneElement isn't GPU compatible
   g1 = Zygote.OneElement(1, (2,3), axes(ones(4,5)))
 
