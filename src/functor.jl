@@ -72,10 +72,10 @@ adapt_storage(to::FluxCUDAAdaptor, x::Zygote.OneElement) = CUDA.cu(collect(x))
 struct FluxCPUAdaptor end
 
 # define rules for handling structured arrays
-adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
+adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
-adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
+adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
 
 Zygote.@adjoint function Array(x::CUDA.CuArray)
   Array(x), d -> (CUDA.cu(d),)
