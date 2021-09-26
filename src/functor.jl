@@ -2,6 +2,7 @@ import Adapt: adapt, adapt_storage
 using  LinearAlgebra: Cholesky
 using Zygote: IdSet
 import Functors: Functors, @functor, functor, fmap, isleaf
+using SparseArrays: AbstractSparseArray
 
 trainable(m) = functor(m)[1]
 
@@ -74,6 +75,8 @@ struct FluxCPUAdaptor end
 adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = Array(x)
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
+adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
+
 Zygote.@adjoint function Array(x::CUDA.CuArray)
   Array(x), d -> (CUDA.cu(d),)
 end

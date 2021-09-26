@@ -3,6 +3,7 @@ using Flux.CUDA
 using Flux: cpu, gpu
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky
+using SparseArrays: sparse, AbstractSparseArray
 
 @testset "CUDA" begin
   x = randn(5, 5)
@@ -137,6 +138,9 @@ end
 
   @test parent(cpu(g3)) isa Matrix{Float32}
 
+
+  @test cpu(sparse(rand(3,3))) isa AbstractSparseArray
+  @test gpu(sparse(rand(3,3))) isa AbstractSparseArray
 
   # Check that gpu() converts these to CuArrays. This a side-effect of using the same functions
   # in gpu() as in the gradient of cpu(). A different design could avoid having gpu() used alone
