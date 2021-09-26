@@ -76,6 +76,7 @@ adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
 adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
+adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
 
 Zygote.@adjoint function Array(x::CUDA.CuArray)
   Array(x), d -> (CUDA.cu(d),)
