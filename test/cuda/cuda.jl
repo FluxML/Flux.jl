@@ -111,7 +111,7 @@ end
   g0 = gradient(x -> sum(abs, (a * (a * x))), a)[1]
   @test g0 ≈ gradient(x -> sum(abs, cpu(ca * gpu(a * x))), a)[1]
   @test cu(g0) ≈ gradient(x -> sum(abs, gpu(a * cpu(ca * x))), ca)[1]
-  @test gradient(x -> sum(gpu(cpu(x))), a)[1] isa AbstractMatrix
+  @test gradient(x -> sum(gpu(cpu(x))), a)[1] isa Matrix
   @test gradient(x -> sum(gpu(cpu(x))), ca)[1] isa CuArray
 
   g4 = gradient(x -> sum(a * (a' * x)), a)[1]  # no abs, one adjoint
