@@ -139,8 +139,10 @@ end
   @test parent(cpu(g3)) isa Matrix{Float32}
 
 
-  @test cpu(sparse(rand(3,3))) isa AbstractSparseArray
-  @test gpu(sparse(rand(3,3))) isa AbstractSparseArray
+  @test cpu(sparse(rand(3,3))) isa SparseMatrixCSC
+  a = sparse(rand(3,3))
+  @test cpu(a) === a
+  @test gpu(sparse(rand(3,3))) isa CUDA.CUSPARSE.CuSparseMatrixCSC
 
   # Check that gpu() converts these to CuArrays. This a side-effect of using the same functions
   # in gpu() as in the gradient of cpu(). A different design could avoid having gpu() used alone
