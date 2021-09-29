@@ -542,6 +542,8 @@ squeezebatch(x) = reshape(x, head(size(x)))
 
 Batch the arrays in `xs` into a single array.
 
+See also [`unbatch`](@ref)
+
 # Examples
 ```jldoctest
 julia> Flux.batch([[1,2,3],[4,5,6]])
@@ -560,6 +562,27 @@ function batch(xs)
   end
   return data
 end
+
+"""
+  unbatch(x)
+
+Reverse of the [`batch`](@ref) operation,
+unstacking the last dimension of the array `x`.
+
+See also [`unstack`](@ref).
+
+# Examples
+
+```jldoctest
+julia> Flux.unbatch([1 3 5 7; 
+                     2 4 6 8])
+4-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+ [7, 8]
+"""
+unbatch(x::AbstractArray) = unstack(x, ndims(x))
 
 """
 Return the given sequence padded with `p` up to a maximum length of `n`.
