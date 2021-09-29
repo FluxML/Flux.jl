@@ -12,12 +12,12 @@ julia> f(x) = 3x^2 + 2x + 1;
 julia> df(x) = gradient(f, x)[1]; # df/dx = 6x + 2
 
 julia> df(2)
-14
+14.0
 
 julia> d2f(x) = gradient(df, x)[1]; # d²f/dx² = 6
 
 julia> d2f(2)
-6
+6.0
 ```
 
 When a function has many parameters, we can get gradients of each one at the same time:
