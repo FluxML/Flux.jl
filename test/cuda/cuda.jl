@@ -125,24 +125,25 @@ end
 end
 
 @testset "gpu(x) and cpu(x) on structured arrays" begin
-  # Check first that cpu() is a no-op on these, which adapt(Array, x) presently is not:
   @test cpu(1:3) isa UnitRange
   @test cpu(range(1, 3, length = 4)) isa AbstractRange
+
   # OneElement isn't GPU compatible
   g1 = Zygote.OneElement(1, (2,3), axes(ones(4,5)))
+  @test cpu(g1) isa Zygote.OneElement
 
-  @test cpu(g1) isa Matrix
   g2 = Zygote.Fill(1f0, 2)
   @test cpu(g2) isa Zygote.FillArrays.AbstractFill
-  g3 = transpose(Float32[1 2; 3 4])
 
+  g3 = transpose(Float32[1 2; 3 4])
   @test parent(cpu(g3)) isa Matrix{Float32}
 
-
-  @test cpu(sparse(rand(3,3))) isa SparseMatrixCSC
-  a = sparse(rand(3,3))
-  @test cpu(a) === a
-  @test gpu(sparse(rand(3,3))) isa CUDA.CUSPARSE.CuSparseMatrixCSC
+  @testset "Sparse Arrays" begin
+    @test cpu(sparse(rand(3,3))) isa SparseMatrixCSC
+    a = sparse(rand(3,3))
+    @test cpu(a) === a
+    @test gpu(sparse(rand(3,3))) isa CUDA.CUSPARSE.CuSparseMatrixCSC
+  end
 
   # Check that gpu() converts these to CuArrays. This a side-effect of using the same functions
   # in gpu() as in the gradient of cpu(). A different design could avoid having gpu() used alone
