@@ -199,6 +199,7 @@ end
 """
     BatchNorm(channels::Integer, λ=identity;
               initβ=zeros32, initγ=ones32,
+              affine=true, track_stats=true,
               ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
