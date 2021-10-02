@@ -214,6 +214,9 @@ end
   r = Any[nothing,m]
   r[1] = r
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+
+  # try to push scalar onto params
+  @test_logs ErrorException params([1f0, 2f0], 3f0)
 end
 
 @testset "Basic Stacking" begin
