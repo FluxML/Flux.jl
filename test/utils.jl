@@ -216,7 +216,7 @@ end
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # try to push scalar onto params
-  @test_logs ErrorException params([1f0, 2f0], 3f0)
+  @test_logs (:warn, "Tried to create params with a scalar (try wrapping it as a 1D array).") params([1f0, 2f0], 3f0)
 end
 
 @testset "Basic Stacking" begin
