@@ -39,7 +39,7 @@ Possible values include:
 trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
 
 params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
-params!(::Params, ::Number, seen) = error("Tried to create params with a scalar (try wrapping it as a 1D array).")
+params!(::Params, ::Real, seen) = error("Tried to create params with a scalar (try wrapping it as a 1D array).")
 
 function params!(p::Params, x, seen = IdSet())
   x in seen && return
