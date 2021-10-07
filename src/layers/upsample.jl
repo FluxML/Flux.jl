@@ -1,6 +1,6 @@
 """
-  Upsample(mode = :nearest; [scale, size]) 
-  Upsample(scale, mode = :nearest)  
+    Upsample(mode = :nearest; [scale, size]) 
+    Upsample(scale, mode = :nearest)  
 
 An upsampling layer. One of two keywords must be given:
 
