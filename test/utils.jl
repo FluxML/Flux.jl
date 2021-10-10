@@ -1,5 +1,7 @@
 using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal, kaiming_normal, kaiming_uniform, orthogonal, sparse_init, stack, unstack, Zeros
+using Flux: throttle, nfan, glorot_uniform, glorot_normal,
+             kaiming_normal, kaiming_uniform, orthogonal, 
+             sparse_init, stack, unstack, Zeros, batch, unbatch
 using StatsBase: var, std
 using Random
 using Test
@@ -327,6 +329,25 @@ end
   @test unstack(stacked_array, 2) == unstacked_array
   @test stack(unstacked_array, 2) == stacked_array
   @test stack(unstack(stacked_array, 1), 1) == stacked_array
+end
+
+
+@testset "Batching" begin
+  stacked_array=[ 8 9 3 5 
+                  9 6 6 9 
+                  9 1 7 2 
+                  7 4 10 6 ]
+  unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
+  @test unbatch(stacked_array) == unstacked_array
+  @test batch(unstacked_array) == stacked_array
+
+  # no-op for vector of non-arrays
+  @test batch([1,2,3]) == [1,2,3]
+  @test unbatch([1,2,3]) == [1,2,3]
+
+  # generic iterable
+  @test batch(ones(2) for i=1:3) == ones(2, 3)
+  @test unbatch(ones(2, 3)) == [ones(2) for i=1:3]
 end
 
 @testset "Param remapping" begin
