@@ -583,6 +583,7 @@ julia> Flux.unbatch([1 3 5 7;
  [7, 8]
 """
 unbatch(x::AbstractArray) = unstack(x, ndims(x))
+unbatch(x::AbstractVector) = x
 
 """
 Return the given sequence padded with `p` up to a maximum length of `n`.
