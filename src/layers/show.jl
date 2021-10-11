@@ -43,7 +43,7 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   end
 end
 
-_show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
+_show_leaflike(x) = Functors.isleaf(x)  # mostly follow Functors, except for:
 _show_leaflike(::Tuple{Vararg{<:Number}}) = true         # e.g. stride of Conv
 _show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # e.g. parameters of LSTMcell
 _show_leaflike(::Diagonal) = true                        # appears inside LayerNorm
@@ -97,7 +97,7 @@ function _big_finale(io::IO, m)
 end
 
 _childarray_sum(f, x::AbstractArray) = f(x)
-_childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x))
+_childarray_sum(f, x) = Functors.isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x))
 
 # utility functions
 

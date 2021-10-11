@@ -8,6 +8,7 @@ using Zygote, MacroTools, Juno, Reexport
 using MacroTools: @forward
 @reexport using NNlib
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
+using Functors: Functors, @functor, functor, fmap
 export gradient
 
 export Chain, Dense, Maxout, SkipConnection, Parallel, flatten,

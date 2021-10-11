@@ -12,6 +12,10 @@ Random.seed!(0)
   include("utils.jl")
 end
 
+@testset "Functor" begin
+  include("functor.jl")
+end
+
 @testset "Onehot" begin
   include("onehot.jl")
 end

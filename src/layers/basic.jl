@@ -41,7 +41,7 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys
 
-functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
+Functors.functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
 
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))

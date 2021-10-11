@@ -1,7 +1,6 @@
 import Adapt: adapt, adapt_storage
 using  LinearAlgebra: Cholesky
 using Zygote: IdSet
-import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
 trainable(m) = functor(m)[1]
@@ -37,6 +36,124 @@ Possible values include:
 - `:auto` or `nothing` for Flux to detect the mode automatically
 """
 trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
+
+
+# Flattening models to weight vectors, and back
+
+function _restructure(m, xs)
+  i = 0
+  filter = (x, c) -> any(y -> c === y, trainable(x))
+  walk = filtered_walk(filter)
+  m̄ = fmap(m; walk) do x
+    x isa AbstractArray{<:Number} || return x
+    x = reshape(xs[i .+ (1:length(x))], size(x))
+    i += length(x)
+    return x
+  end
+  length(xs) == i || @warn "Expected $(i) params, got $(length(xs))"
+  return m̄
+end
+
+@adjoint function _restructure(m, xs)
+  m̄, numel = _restructure(m, xs), length(xs)
+  function _restructure_pullback(dm)
+    xs′ = destructure(dm)[1]
+    numel == length(xs′) || @warn "Expected $(numel) params, got $(length(xs′))"
+    return (nothing, xs′)
+  end
+  return m̄, _restructure_pullback
+end
+
+"""
+    destructure(m)
+Flatten a model's parameters into a single weight vector.
+    julia> m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+    julia> θ, re = destructure(m);
+    julia> θ
+    67-element Vector{Float32}:
+    -0.1407104
+    ...
+The second return value `re` allows you to reconstruct the original network after making
+modifications to the weight vector (for example, with a hypernetwork).
+    julia> re(θ .* 2)
+    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+"""
+function destructure(m)
+  xs = Zygote.Buffer([])
+  collect_params!(xs, m)
+  return vcat(vec.(copy(xs))...), p -> _restructure(m, p)
+end
+
+function collect_params!(xs, m)
+  filter = (x, c) -> any(y -> c === y, trainable(x))
+  walk = filtered_walk(filter)
+  fmap(m; walk) do x
+    x isa AbstractArray{<:Number} && push!(xs, x)
+    return x
+  end
+end
+
+function filtered_walk(filter)
+  seen = IdSet()
+
+  function walk(f, x)
+    x in seen && return x
+    push!(seen, x)
+
+    children, reconstruct = functor(x)
+    mappedchildren = map(children) do c
+      filter(x, c) ? f(c) : c
+    end
+    reconstruct(mappedchildren)
+  end
+
+  return walk
+end
+
+
+"""
+  params(m...)
+
+Collect trainable parameters (a.k.a. numerical arrays)
+from the input model(s) `m` into a [`Zygote.Params`](@ref) object. 
+
+Only the parameters that can be reached by recursion 
+on the [`trainable`](@ref) children of
+the tree with root `m` are collected.
+
+# Usage
+
+```julia-repl 
+julia> m = Dense(ones(2, 3), zeros(2))
+Dense(3, 2)         # 8 parameters
+
+julia> ps = Flux.params(m)
+Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
+
+julia> x = ones(3)
+3-element Vector{Float64}:
+ 1.0
+ 1.0
+ 1.0
+
+julia> gs = gradient(() -> sum(2 .* m(x)), ps)
+Grads(...)
+
+julia> gs[m.weight]
+2×3 Matrix{Float64}:
+ 2.0  2.0  2.0
+ 2.0  2.0  2.0
+```
+"""
+function params end
+
+## TODO This causes some test regressions. Why?
+# function params(m...)
+#   ps = Params()
+#   collect_params!(ps, m)
+#   return ps
+# end
 
 params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 
