@@ -249,7 +249,7 @@ end
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
                       groups=1,
-                      weight = convfilter(k, ch[2]÷groups=>ch[1], init = init),
+                      weight = convfilter(k, reverse(ch); init, groups),
                       bias = true,
                       ) where N
 
