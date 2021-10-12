@@ -118,6 +118,19 @@ end
   x = zeros(Float32, 5, 5, 2, 4)
   m = ConvTranspose((3,3), 2=>3)
   @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+
+  # test ConvTranspose supports groups argument
+  x = randn(Float32, 10, 10, 2, 3)
+  m1 = ConvTranspose((3,3), 2=>4, pad=SamePad())
+  @test size(m1.weight) == (3,3,4,2)
+  @test size(m1(x)) == (10,10,4,3)
+  m2 = ConvTranspose((3,3), 2=>4, groups=2, pad=SamePad())
+  @test size(m2.weight) == (3,3,2,2)
+  @test size(m1(x)) == size(m2(x))
+  @test gradient(()->sum(m2(x)), params(m2)) isa Flux.Zygote.Grads
+
+  @test occursin("groups=2", sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
+  @test occursin("2 => 4"  , sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
 end
 
 @testset "CrossCor" begin
