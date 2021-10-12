@@ -48,7 +48,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
           xg_cpu = gradient(x -> sum(l_cpu(x)), x_cpu)[1]
           xg_gpu = gradient(x -> sum(l_gpu(x)), x_gpu)[1]
 
-          # test 
+          # test
           if test_cpu
             @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             if isnothing(xg_cpu)
@@ -80,6 +80,7 @@ ConvTransposeNoBias(args...) = ConvTranspose(args...; bias = false)
 CrossCorNoBias(args...) = CrossCor(args...; bias = false)
 DepthwiseConvNoBias(args...) = DepthwiseConv(args...; bias = false)
 GroupedConv(args...) = Conv(args..., groups = 5)
+GroupedConvTranspose(args...) = ConvTranspose(args..., groups = 5)
 
 for act in ACTIVATIONS
   r = rand(Float32, 28, 28, 1, 1)
@@ -89,16 +90,16 @@ for act in ACTIVATIONS
                  DepthwiseConv, DepthwiseConvNoBias]
   gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
 
-  groupedconv = [GroupedConv]
+  groupedconv = [GroupedConv, GroupedConvTranspose]
   gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = true)
 
   batch_norm = [BatchNorm]
   gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
   gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = false)
-  
+
   instancenorm = [InstanceNorm]
   gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act, test_cpu = false)
-  
+
   groupnorm = [GroupNorm]
   gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act, test_cpu = false)
 end
@@ -151,7 +152,7 @@ end
   else
     @test sum(l(ip)) ≈ 0.f0
     gs = gradient(() -> sum(l(ip)), Flux.params(l))
-    @test l.bias ∉ gs.params 
+    @test l.bias ∉ gs.params
   end
 end
 

@@ -166,12 +166,12 @@ function (c::Conv)(x::AbstractArray)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
-channels_in(l ::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
-channels_out(l::Conv) = size(l.weight, ndims(l.weight))
+_channels_in(l ::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
+_channels_out(l::Conv) = size(l.weight, ndims(l.weight))
 
 function Base.show(io::IO, l::Conv)
   print(io, "Conv(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", channels_in(l), " => ", channels_out(l))
+  print(io, ", ", _channels_in(l), " => ", _channels_out(l))
   _print_conv_opt(io, l)
   print(io, ")")
 end
@@ -228,8 +228,8 @@ struct ConvTranspose{N,M,F,A,V}
   groups::Int
 end
 
-channels_in(l::ConvTranspose)  = size(l.weight)[end]
-channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
+_channels_in(l::ConvTranspose)  = size(l.weight)[end]
+_channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
 
 """
     ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
@@ -285,7 +285,7 @@ end
 
 function Base.show(io::IO, l::ConvTranspose)
   print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", channels_in(l), " => ", channels_out(l))
+  print(io, ", ", _channels_in(l), " => ", _channels_out(l))
   _print_conv_opt(io, l)
   print(io, ")")
 end
