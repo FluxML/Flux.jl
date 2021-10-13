@@ -9,7 +9,7 @@ Save a model:
 ```julia
 julia> using Flux
 
-julia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)
+julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
 Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
 
 julia> using BSON: @save
