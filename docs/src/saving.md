@@ -10,7 +10,11 @@ Save a model:
 julia> using Flux
 
 julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
+Chain(
+  Dense(10, 5, relu),                   # 55 parameters
+  Dense(5, 2),                          # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
 julia> using BSON: @save
 
@@ -27,7 +31,12 @@ julia> using BSON: @load
 julia> @load "mymodel.bson" model
 
 julia> model
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
+Chain(
+  Dense(10, 5, relu),                   # 55 parameters
+  Dense(5, 2),                          # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+
 ```
 
 Models are just normal Julia structs, so it's fine to use any Julia storage
