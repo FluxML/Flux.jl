@@ -8,7 +8,7 @@ using Flux, CUDA, Test
   θ = gradient(() -> sum(m(x)), params(m))
   @test x isa CuArray
   @test θ[m.cell.Wi] isa CuArray
-  @test collect(m̄[].cell.Wi) == collect(θ[m.cell.Wi])
+  @test collect(m̄.cell.Wi) == collect(θ[m.cell.Wi])
 end
 
 @testset "RNN" begin
