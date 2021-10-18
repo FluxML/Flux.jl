@@ -154,8 +154,8 @@ See also: [`depthwiseconvfilter`](@ref)
 """
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups=1) where N
-    cin, cout = ch
-    init(filter..., cin÷groups, cout)
+  cin, cout = ch
+  init(filter..., cin÷groups, cout)
 end
 
 @functor Conv
@@ -182,7 +182,7 @@ function _print_conv_opt(io::IO, l)
   all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
   all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
   if hasproperty(l, :groups)
-      (l.groups == 1) || print(io, ", groups=", l.groups)
+    (l.groups == 1) || print(io, ", groups=", l.groups)
   end
   (l.bias isa Zeros) && print(io, ", bias=false")
 end
@@ -259,19 +259,19 @@ end
 @functor ConvTranspose
 
 function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
-    # Calculate size of "input", from ∇conv_data()'s perspective...
-    combined_pad = (c.pad[1:2:end] .+ c.pad[2:2:end])
-    I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
-    C_in = size(c.weight)[end-1] * c.groups
-    batch_size = size(x)[end]
-    # Create DenseConvDims() that looks like the corresponding conv()
-    w_size = size(c.weight)
-    return DenseConvDims((I..., C_in, batch_size), w_size;
-                        stride=c.stride,
-                        padding=c.pad,
-                        dilation=c.dilation,
-                        groups=c.groups,
-    )
+  # Calculate size of "input", from ∇conv_data()'s perspective...
+  combined_pad = (c.pad[1:2:end] .+ c.pad[2:2:end])
+  I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
+  C_in = size(c.weight)[end-1] * c.groups
+  batch_size = size(x)[end]
+  # Create DenseConvDims() that looks like the corresponding conv()
+  w_size = size(c.weight)
+  return DenseConvDims((I..., C_in, batch_size), w_size;
+                      stride=c.stride,
+                      padding=c.pad,
+                      dilation=c.dilation,
+                      groups=c.groups,
+  )
 end
 
 # TODO: Find proper fix for https://github.com/FluxML/Flux.jl/issues/900
