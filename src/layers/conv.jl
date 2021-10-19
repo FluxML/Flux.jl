@@ -153,7 +153,7 @@ distribution.
 See also: [`depthwiseconvfilter`](@ref)
 """
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
-          init = glorot_uniform, groups=1) where N
+          init = glorot_uniform, groups = 1) where N
   cin, cout = ch
   init(filter..., cin÷groups, cout)
 end
