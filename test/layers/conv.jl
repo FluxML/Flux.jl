@@ -67,10 +67,20 @@ end
   @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
 
   @testset "Grouped Conv" begin
+    ip = rand(Float32, 28, 100, 2)
+    c = Conv((3,), 100 => 25, groups = 5)
+    @test size(c.weight) == (3, 20, 25)
+    @test size(c(ip)) == (26, 25, 2)
+
     ip = rand(Float32, 28, 28, 100, 2)
     c = Conv((3,3), 100 => 25, groups = 5)
     @test size(c.weight) == (3, 3, 20, 25)
     @test size(c(ip)) == (26, 26, 25, 2)
+
+    ip = rand(Float32, 10, 11, 12, 100, 2)
+    c = Conv((3,4,5), 100 => 25, groups = 5)
+    @test size(c.weight) == (3,4,5, 20, 25)
+    @test size(c(ip)) == (8,8,8, 25, 2)
   end
 end
 
@@ -129,6 +139,21 @@ end
   @test size(m1(x)) == size(m2(x))
   @test gradient(()->sum(m2(x)), params(m2)) isa Flux.Zygote.Grads
 
+  x = randn(Float32, 10, 2,1)
+  m = ConvTranspose((3,), 2=>4, pad=SamePad(), groups=2)
+  @test size(m(x)) === (10,4,1)
+  @test length(m.weight) == (3)*(2*4) / 2
+
+  x = randn(Float32, 10, 11, 4,2)
+  m = ConvTranspose((3,5), 4=>4, pad=SamePad(), groups=4)
+  @test size(m(x)) === (10,11, 4,2)
+  @test length(m.weight) == (3*5)*(4*4)/4
+
+  x = randn(Float32, 10, 11, 12, 3,2)
+  m = ConvTranspose((3,5,3), 3=>6, pad=SamePad(), groups=3)
+  @test size(m(x)) === (10,11, 12, 6,2)
+  @test length(m.weight) == (3*5*3) * (3*6) / 3
+
   @test occursin("groups=2", sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
   @test occursin("2 => 4"  , sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
 end
@@ -138,7 +163,7 @@ end
   w = rand(Float32, 2,2,1,1)
   y = CrossCor(w, [0.0])
 
-  @test sum(w .* x[1:2, 1:2, :, :]) ≈ y(x)[1, 1, 1, 1]  rtol=1e-7
+  @test sum(w .* x[1:2, 1:2, :, :]) ≈ y(x)[1, 1, 1, 1]  rtol=2e-7
 
   r = zeros(Float32, 28, 28, 1, 5)
   m = Chain(
