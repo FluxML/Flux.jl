@@ -84,6 +84,43 @@ end
   end
 end
 
+@testset "_channels_in, _channels_out" begin
+    _channels_in = Flux._channels_in
+    _channels_out = Flux._channels_out
+    @test _channels_in(Conv((3,)   , 2=>4)) == 2
+    @test _channels_in(Conv((5,6,) , 2=>4)) == 2
+    @test _channels_in(Conv((1,2,3), 2=>4)) == 2
+    @test _channels_out(Conv((3,)   , 2=>4)) == 4
+    @test _channels_out(Conv((5,6,) , 2=>4)) == 4
+    @test _channels_out(Conv((1,2,3), 2=>4)) == 4
+
+    @test _channels_in( ConvTranspose((3,)   , 1=>4)) == 1
+    @test _channels_in( ConvTranspose((5,6,) , 2=>4)) == 2
+    @test _channels_in( ConvTranspose((1,2,3), 3=>4)) == 3
+    @test _channels_out(ConvTranspose((3,)   , 2=>1)) == 1
+    @test _channels_out(ConvTranspose((5,6,) , 2=>2)) == 2
+    @test _channels_out(ConvTranspose((1,2,3), 2=>3)) == 3
+
+    @test _channels_in( ConvTranspose((6,)   , 8=>4, groups=4)) == 8
+    @test _channels_in( ConvTranspose((5,6,) , 2=>4, groups=2)) == 2
+    @test _channels_in( ConvTranspose((1,2,3), 3=>6, groups=3)) == 3
+
+    @test _channels_out(ConvTranspose((1,)   , 10=>15, groups=5)) == 15
+    @test _channels_out(ConvTranspose((3,2)   , 10=>15, groups=5)) == 15
+    @test _channels_out(ConvTranspose((5,6,) , 2=>2, groups=2)) == 2
+
+    for Layer in [Conv, ConvTranspose]
+        for _ in 1:10
+            groups = rand(1:10)
+            kernel_size = Tuple(rand(1:5) for _ in rand(1:3))
+            cin = rand(1:5) * groups
+            cout = rand(1:5) * groups
+            @test _channels_in(Layer(kernel_size, cin=>cout; groups)) == cin
+            @test _channels_out(Layer(kernel_size, cin=>cout; groups)) == cout
+        end
+    end
+end
+
 @testset "asymmetric padding" begin
   r = ones(Float32, 28, 28, 1, 1)
   m = Conv((3, 3), 1=>1, relu; pad=(0,1,1,2))
