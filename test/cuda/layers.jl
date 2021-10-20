@@ -64,7 +64,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
             if isnothing(xg_cpu)
               @test isnothing(xg_gpu)
             else
-              test_approx(Array(xg_gpu), xg_cpu, rtol=2f-3, atol=1f-3)
+              test_approx(Array(xg_gpu), xg_cpu, rtol=2f-2, atol=1f-3)
               # @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
             end
           end
