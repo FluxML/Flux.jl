@@ -117,7 +117,7 @@ julia> parameters = Flux.params(predict)
 Params([[-0.99009055], [0.0]])
 ```
 
-These are the parameters Flux will change, one step at a time, to improve predictions. Each time a parameter in your model changes, the `parameters` variable updates automatically. Each of the parameters comes from the `predict` model: 
+These are the parameters Flux will change, one step at a time, to improve predictions. At each step, the contents of this `Params` object changes too, since it is just a collection of references to the mutable arrays inside the model: 
 
 ```
 julia> predict.weight in parameters, predict.bias in parameters
