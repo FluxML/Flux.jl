@@ -22,15 +22,6 @@ const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
                      elu, selu]
 
-function test_approx(x,y; kw...)
-  pass = isapprox(x,y; kw...)
-  if !pass
-    kw = (;kw...)
-      @show norm(x) norm(y) norm(x-y) kw
-  end
-  @test pass
-end
-
 function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true)
   isnothing(x_cpu) && error("Missing input to test the layers against.")
   @testset "$name GPU grad tests" begin
@@ -59,13 +50,11 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
           # test
           if test_cpu
-            test_approx(y_gpu, y_cpu, rtol=1f-3, atol=1f-3)
             @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             if isnothing(xg_cpu)
               @test isnothing(xg_gpu)
             else
-              test_approx(Array(xg_gpu), xg_cpu, rtol=2f-2, atol=1f-3)
-              # @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
+              @test Array(xg_gpu) ≈ xg_cpu rtol=2f-2 atol=1f-3
             end
           end
           @test gs_gpu isa Flux.Zygote.Grads
@@ -75,7 +64,6 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
             else
               @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
               if test_cpu
-                test_approx(Array(gs_gpu[p_gpu]), gs_cpu[p_cpu], rtol=1f-3, atol=1f-3)
                 @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
               end
             end
