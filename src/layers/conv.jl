@@ -136,7 +136,7 @@ end
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
             init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groups = 1,
-            weight = convfilter(k, (ch[1] ÷ groups => ch[2]); init), bias = true) where N
+            weight = convfilter(k, ch; init, groups), bias = true) where N
 
   Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
@@ -152,8 +152,11 @@ distribution.
 
 See also: [`depthwiseconvfilter`](@ref)
 """
-convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
-          init = glorot_uniform) where N = init(filter..., ch...)
+function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
+          init = glorot_uniform, groups = 1) where N
+  cin, cout = ch
+  init(filter..., cin÷groups, cout)
+end
 
 @functor Conv
 
@@ -163,9 +166,12 @@ function (c::Conv)(x::AbstractArray)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
+_channels_in(l ::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
+_channels_out(l::Conv) = size(l.weight, ndims(l.weight))
+
 function Base.show(io::IO, l::Conv)
   print(io, "Conv(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", size(l.weight, ndims(l.weight)-1), " => ", size(l.weight, ndims(l.weight)))
+  print(io, ", ", _channels_in(l), " => ", _channels_out(l))
   _print_conv_opt(io, l)
   print(io, ")")
 end
@@ -175,7 +181,10 @@ function _print_conv_opt(io::IO, l)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
   all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
   all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
-  l.bias == Zeros() && print(io, ", bias=false")
+  if hasproperty(l, :groups)
+    (l.groups == 1) || print(io, ", groups=", l.groups)
+  end
+  (l.bias isa Zeros) && print(io, ", bias=false")
 end
 
 """
@@ -216,44 +225,53 @@ struct ConvTranspose{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
+  groups::Int
 end
 
+_channels_in(l::ConvTranspose)  = size(l.weight)[end]
+_channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
+
 """
-    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
 
 Constructs a layer with the given weight and bias arrays.
 Accepts the same keywords as the `ConvTranspose((4,4), 3 => 7, relu)` method.
 """
 function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
-                      stride = 1, pad = 0, dilation = 1) where {T,N}
+                      stride = 1, pad = 0, dilation = 1, groups=1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  b = create_bias(w, bias, size(w, N-1))
-  return ConvTranspose(σ, w, b, stride, pad, dilation)
+  b = create_bias(w, bias, size(w, N-1) * groups)
+  return ConvTranspose(σ, w, b, stride, pad, dilation, groups)
 end
 
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                      weight = convfilter(k, reverse(ch), init = init), bias = true) where N
+                      groups = 1,
+                      weight = convfilter(k, reverse(ch); init, groups),
+                      bias = true,
+                      ) where N
 
-  ConvTranspose(weight, bias, σ; stride, pad, dilation)
+  ConvTranspose(weight, bias, σ; stride, pad, dilation, groups)
 end
 
 @functor ConvTranspose
 
 function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
-    # Calculate size of "input", from ∇conv_data()'s perspective...
-    combined_pad = (c.pad[1:2:end] .+ c.pad[2:2:end])
-    I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
-    C_in = size(c.weight)[end-1]
-    batch_size = size(x)[end]
-    # Create DenseConvDims() that looks like the corresponding conv()
-    return DenseConvDims((I..., C_in, batch_size), size(c.weight);
-                        stride=c.stride,
-                        padding=c.pad,
-                        dilation=c.dilation,
-    )
+  # Calculate size of "input", from ∇conv_data()'s perspective...
+  combined_pad = (c.pad[1:2:end] .+ c.pad[2:2:end])
+  I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
+  C_in = size(c.weight)[end-1] * c.groups
+  batch_size = size(x)[end]
+  # Create DenseConvDims() that looks like the corresponding conv()
+  w_size = size(c.weight)
+  return DenseConvDims((I..., C_in, batch_size), w_size;
+                      stride=c.stride,
+                      padding=c.pad,
+                      dilation=c.dilation,
+                      groups=c.groups,
+  )
 end
 
 # TODO: Find proper fix for https://github.com/FluxML/Flux.jl/issues/900
@@ -267,7 +285,7 @@ end
 
 function Base.show(io::IO, l::ConvTranspose)
   print(io, "ConvTranspose(", size(l.weight)[1:ndims(l.weight)-2])
-  print(io, ", ", size(l.weight, ndims(l.weight)), " => ", size(l.weight, ndims(l.weight)-1))
+  print(io, ", ", _channels_in(l), " => ", _channels_out(l))
   _print_conv_opt(io, l)
   print(io, ")")
 end
