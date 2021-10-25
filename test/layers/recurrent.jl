@@ -93,6 +93,6 @@ end
     m = R(3, 5)
     x = rand(Float64, 3, 1)
     Flux.reset!(m)
-    @test_throws MethodError m(x)
+    @test size(m(x)) == (5, 1)
   end
 end

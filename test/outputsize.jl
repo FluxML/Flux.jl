@@ -130,6 +130,22 @@ end
   @test outputsize(m, (5, 5, 2, 1)) == (5, 5, 2, 1)
 end
 
+@testset "recurrent" begin
+    @testset for R in [RNN, GRU, LSTM, GRUv3]
+        m = R(10, 5)
+        @test_throws DimensionMismatch outputsize(m, (5, 2)) == (5, 1)
+        @test outputsize(m, (10,)) == (5,)
+        @test outputsize(m, (10,); padbatch=true) == (5, 1)
+        @test outputsize(m, (10, 2)) == (5, 2)
+        @test outputsize(m, (10, 2); padbatch=true) == (5, 2, 1)
+    end
+    m = Chain(Dense(5, 10), RNN(10, 8), GRU(8, 6), LSTM(6, 4), GRUv3(4, 2), Dense(2, 3))
+    @test outputsize(m, (5,)) == (3,)
+    @test outputsize(m, (5,); padbatch=true) == (3, 1)
+    @test outputsize(m, (5, 2)) == (3, 2)
+    @test outputsize(m, (5, 2); padbatch=true) == (3, 2, 1)
+end
+
 @testset "normalisation" begin
   m = Dropout(0.1)
   @test outputsize(m, (10, 10)) == (10, 10)
