@@ -6,9 +6,6 @@ include("bench_utils.jl")
 @info "Benchmark Dense"
 include("dense.jl")
 
-@info "Benchmark Sparse input"
-include("sparse_input.jl")
-
 @info "Benchmark Conv"
 include("conv.jl")
 
