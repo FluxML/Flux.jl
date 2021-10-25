@@ -9,8 +9,8 @@ include("dense.jl")
 @info "Benchmark Sparse input"
 include("sparse_input.jl")
 
-#@info "Benchmark Conv"
-#include("conv.jl")
+@info "Benchmark Conv"
+include("conv.jl")
 
-#@info "Benchmark VGG"
-#include("vgg.jl")
+@info "Benchmark VGG"
+include("vgg.jl")
