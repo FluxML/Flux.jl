@@ -14,8 +14,10 @@ struct Nil <: Number end
 const nil = Nil()
 
 Nil(::T) where T<:Number = nil
-(::Type{T})(::Nil) where T<:Number = nil
-Base.convert(::Type{Nil}, ::Number) = nil
+Nil(::Nil) = nil
+(::Type{T})(::Nil) where T<:Number = T(NaN)
+Base.convert(::Type{Nil}, ::Type{T}) where T<:Number = T(NaN)
+
 
 Base.float(::Type{Nil}) = Nil
 
