@@ -44,7 +44,7 @@ end
   @test (repr("text/plain", y); true)
 
   gA = rand(3, 3) |> gpu;
-  @test gradient(A -> sum(mul2(A, goh)), gA)[1] isa CuArray
+  @test gradient(A -> sum(A * goh), gA)[1] isa CuArray
 end
 
 @testset "onecold gpu" begin

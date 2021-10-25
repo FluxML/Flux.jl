@@ -1,5 +1,5 @@
 using Flux
-using InteractiveUtils # because versioninfo is defined there
+
 versioninfo()
 include("bench_utils.jl")
 
