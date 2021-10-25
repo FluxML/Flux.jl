@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.12.8
+* Optimized inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1755)
+
 ## v0.12.7
 * Added support for [`GRUv3`](https://github.com/FluxML/Flux.jl/pull/1675)
 * The layers within `Chain` and `Parallel` may now [have names](https://github.com/FluxML/Flux.jl/issues/1680).

@@ -1,5 +1,6 @@
 import Adapt
 import .CUDA
+using LinearAlgebra
 
 """
     OneHotArray{T,L,N,M,I} <: AbstractArray{Bool,M}
@@ -241,3 +242,30 @@ for wrapper in [:Adjoint, :Transpose]
     end
   end
 end
+
+## choosing fastest combination for each of (array, cuarray), (onehotmatrix, adjoinmatrix)
+#A::CuArray * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
+#A::CuArray * B::Adjoint{Bool,<: OneHotMatrix} = cpu(A)*B
+#
+#function Base.:*(A::AbstractMatrix, B::OneHotMatrix)
+#	m = size(A,1)
+#	Y = similar(A, m, size(B,2))
+#	for (j, ix) in enumerate(B.indices)
+#		for i in 1:m
+#			@inbounds Y[i, j] = A[i, ix]
+#		end
+#	end
+#	Y
+#end
+#function Base.:*(A::AbstractMatrix, B::Adjoint{Bool,<: OneHotMatrix})
+#	m = size(A,1)
+#	Y = similar(A, m, size(B,2))
+#	Y .= 0
+#	BT = B'
+#	for (j, ix) in enumerate(BT.indices)
+#		for i in 1:m
+#			@inbounds Y[i, ix] += A[i, j]
+#		end
+#	end
+#	Y
+#end
