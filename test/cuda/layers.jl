@@ -54,7 +54,11 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
             if isnothing(xg_cpu)
               @test isnothing(xg_gpu)
             else
-              @test Array(xg_gpu) ≈ xg_cpu rtol=2f-2 atol=1f-3
+              if layer === GroupedConvTranspose
+                @test Array(xg_gpu) ≈ xg_cpu rtol=2f-2 atol=1f-3
+              else
+                @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
+              end
             end
           end
           @test gs_gpu isa Flux.Zygote.Grads
