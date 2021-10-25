@@ -41,7 +41,7 @@ end
   @test_throws DimensionMismatch A*b2
 end
 
-@testset "abstractmatrix onehotmatrix multiplication" begin
+@testset "AbstractMatrix-OneHotMatrix multiplication" begin
   A = [1 3 5; 2 4 6; 3 6 9]
   v = [1, 2, 3, 4, 5]
   X = reshape(v, (5, 1))
