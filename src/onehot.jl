@@ -1,6 +1,6 @@
 import Adapt
 import .CUDA
-using LinearAlgebra
+using LinearAlgebra, NNlib
 
 """
     OneHotArray{T,L,N,M,I} <: AbstractArray{Bool,M}
@@ -223,7 +223,7 @@ end
 function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
-  return A[:, onecold(B)]
+  return NNlib.gather(A, B.indices)
 end
 for wrapper in [:Adjoint, :Transpose]
   @eval begin
@@ -242,30 +242,3 @@ for wrapper in [:Adjoint, :Transpose]
     end
   end
 end
-
-## choosing fastest combination for each of (array, cuarray), (onehotmatrix, adjoinmatrix)
-#A::CuArray * B::OneHotMatrix = A[:, cpu(map(x->x.ix, B.data))]
-#A::CuArray * B::Adjoint{Bool,<: OneHotMatrix} = cpu(A)*B
-#
-#function Base.:*(A::AbstractMatrix, B::OneHotMatrix)
-#	m = size(A,1)
-#	Y = similar(A, m, size(B,2))
-#	for (j, ix) in enumerate(B.indices)
-#		for i in 1:m
-#			@inbounds Y[i, j] = A[i, ix]
-#		end
-#	end
-#	Y
-#end
-#function Base.:*(A::AbstractMatrix, B::Adjoint{Bool,<: OneHotMatrix})
-#	m = size(A,1)
-#	Y = similar(A, m, size(B,2))
-#	Y .= 0
-#	BT = B'
-#	for (j, ix) in enumerate(BT.indices)
-#		for i in 1:m
-#			@inbounds Y[i, ix] += A[i, j]
-#		end
-#	end
-#	Y
-#end
