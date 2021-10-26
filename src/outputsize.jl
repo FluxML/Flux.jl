@@ -17,8 +17,10 @@ Nil(::T) where T<:Number = nil
 Nil(::Nil) = nil
 (::Type{T})(::Nil) where T<:Number = T(NaN)
 Base.convert(::Type{T}, ::Nil) where T<:Number = T(NaN)
+Base.convert(::Nil, ::Type{T}) where T<:Number = nil
 
 Base.float(::Type{Nil}) = Float64
+Base.float(::Nil) = NaN
 
 for f in [:copy, :zero, :one, :oneunit,
           :+, :-, :abs, :abs2, :inv,
