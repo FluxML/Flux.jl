@@ -16,10 +16,9 @@ const nil = Nil()
 Nil(::T) where T<:Number = nil
 Nil(::Nil) = nil
 (::Type{T})(::Nil) where T<:Number = T(NaN)
-Base.convert(::Type{Nil}, ::Type{T}) where T<:Number = T(NaN)
+Base.convert(::Type{T}, ::Nil) where T<:Number = T(NaN)
 
-
-Base.float(::Type{Nil}) = Nil
+Base.float(::Type{Nil}) = Float64
 
 for f in [:copy, :zero, :one, :oneunit,
           :+, :-, :abs, :abs2, :inv,
