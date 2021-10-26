@@ -43,7 +43,7 @@ end
   y = Flux.onehotbatch(ones(3), 1:2) |> gpu;
   @test (repr("text/plain", y); true)
 
-  gA = rand(3, 3) |> gpu;
+  gA = rand(3, 2) |> gpu;
   @test gradient(A -> sum(A * y), gA)[1] isa CuArray
 end
 
