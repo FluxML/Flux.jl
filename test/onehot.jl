@@ -32,7 +32,7 @@ end
   b1 = Flux.OneHotVector(1, 3)
   b2 = Flux.OneHotVector(3, 5)
 
-  @test A*b1 == A[:,1]
+  @test A * b1 == A[:,1]
   @test b1' * A == Array(b1') * A
   @test A' * b1 == A' * Array(b1)
   @test v' * b2 == v' * Array(b2)
@@ -49,7 +49,7 @@ end
   b2 = Flux.OneHotMatrix([2, 4, 1, 3], 5)
   b3 = Flux.OneHotMatrix([1, 1, 2], 4)
 
-  @test A*b1 == A[:,[1, 1, 2, 2]]
+  @test A * b1 == A[:,[1, 1, 2, 2]]
   @test b1' * A == Array(b1') * A
   @test A' * b1 == A' * Array(b1)
   @test A * b3' == A * Array(b3')
