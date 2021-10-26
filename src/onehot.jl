@@ -228,7 +228,7 @@ end
 
 function Base.:(*)(A::AbstractMatrix, B::OneHotMatrix{<:Any, L}) where L
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
-  return NNlib.gather(A, B.indices)
+  return NNlib.gather(A, _indices(B))
 end
 
 function Base.:(*)(A::AbstractMatrix, B::Adjoint{Bool, <:OneHotMatrix})
