@@ -54,6 +54,7 @@ end
   @test A * b1' == A * Array(b1')
   @test transpose(X) * b2 == transpose(X) * Array(b2)
   @test_throws DimensionMismatch A*b2
+  @test_throws DimensionMismatch A*b2'
 end
 
 @testset "OneHotArray" begin

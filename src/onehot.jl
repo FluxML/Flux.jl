@@ -231,6 +231,11 @@ function Base.:(*)(A::AbstractMatrix, B::OneHotMatrix{<:Any, L}) where L
   return NNlib.gather(A, B.indices)
 end
 
+function Base.:(*)(A::AbstractMatrix, B::Adjoint{Bool, <:OneHotMatrix{<:Any, L}}) where L
+  size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+  return NNlib.scatter(+, A, parent(B).indices, dstsize=(size(A,1), size(B,2)))
+end
+
 for wrapper in [:Adjoint, :Transpose]
   @eval begin
     function Base.:*(A::$wrapper{<:Any, <:AbstractMatrix{T}}, b::OneHotVector{<:Any, L}) where {L, T}
