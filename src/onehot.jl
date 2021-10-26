@@ -231,8 +231,9 @@ function Base.:(*)(A::AbstractMatrix, B::OneHotMatrix{<:Any, L}) where L
   return NNlib.gather(A, B.indices)
 end
 
-function Base.:(*)(A::AbstractMatrix, B::Adjoint{Bool, <:OneHotMatrix{<:Any, L}}) where L
-  size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+function Base.:(*)(A::AbstractMatrix, B::Adjoint{Bool, <:OneHotMatrix})
+  B_dim = length(parent(B).indices)
+  size(A, 2) == B_dim || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $B_dim"))
   return NNlib.scatter(+, A, parent(B).indices, dstsize=(size(A,1), size(B,2)))
 end
 
