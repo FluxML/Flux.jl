@@ -48,15 +48,26 @@ end
   b1 = Flux.OneHotMatrix([1, 1, 2, 2], 3)
   b2 = Flux.OneHotMatrix([2, 4, 1, 3], 5)
   b3 = Flux.OneHotMatrix([1, 1, 2], 4)
+  b4 = reshape(Flux.OneHotMatrix([1 2 3; 2 2 1], 3), 3, :)
+  b5 = reshape(b4, 6, :)
+  b6 = reshape(Flux.OneHotMatrix([1 2 2; 2 2 1], 2), 3, :)
+  b7 = reshape(Flux.OneHotMatrix([1 2 3; 1 2 3], 3), 6, :)
 
   @test A * b1 == A[:,[1, 1, 2, 2]]
   @test b1' * A == Array(b1') * A
   @test A' * b1 == A' * Array(b1)
   @test A * b3' == A * Array(b3')
   @test transpose(X) * b2 == transpose(X) * Array(b2)
+  @test A * b4 == A[:,[1, 2, 2, 2, 3, 1]]
+  @test_broken A * b5' == A[:,[1, 2, 2, 2, 3, 1]]
+  @test A * b6 == hcat(A[:,1], 2*A[:,2], A[:,2], A[:,1]+A[:,2])
+  @test_broken A * b7'
+
   @test_throws DimensionMismatch A*b1'
   @test_throws DimensionMismatch A*b2
   @test_throws DimensionMismatch A*b2'
+  @test_throws DimensionMismatch A*b6'
+  @test_throws DimensionMismatch A*b7
 end
 
 @testset "OneHotArray" begin
