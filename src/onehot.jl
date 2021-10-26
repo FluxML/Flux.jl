@@ -223,11 +223,6 @@ end
 function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
   size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
-  return A[:, onecold(B)]
-end
-
-function Base.:(*)(A::AbstractMatrix, B::OneHotMatrix{<:Any, L}) where L
-  size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
   return NNlib.gather(A, _indices(B))
 end
 
