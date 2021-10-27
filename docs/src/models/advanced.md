@@ -12,10 +12,10 @@ struct CustomModel
 end
 
 function (m::CustomModel)(x)
-  return m.chain(x) + x
-
-  # You can put arbitrary code here, but note that everything here will be differentiated.
+  # Arbitrary code can go here, but note that everything will be differentiated.
   # Zygote does not allow some operations, like mutating arrays.
+
+  return m.chain(x) + x
 end
 
 # Call @functor to allow for training. Described below in more detail.
@@ -29,6 +29,8 @@ chain = Chain(Dense(10, 10))
 model = CustomModel(chain)
 model(rand(10))
 ```
+
+For an intro to Flux and automatic differentiation, see this [tutorial](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html)
 
 ## Customising Parameter Collection for a Model
 
