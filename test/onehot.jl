@@ -59,9 +59,9 @@ end
   @test A * b3' == A * Array(b3')
   @test transpose(X) * b2 == transpose(X) * Array(b2)
   @test A * b4 == A[:,[1, 2, 2, 2, 3, 1]]
-  @test_broken A * b5' == A[:,[1, 2, 2, 2, 3, 1]]
+  @test A * b5' == hcat(A[:,[1, 2, 3, 3]], A[:,1]+A[:,2], zeros(Int64, 3))
   @test A * b6 == hcat(A[:,1], 2*A[:,2], A[:,2], A[:,1]+A[:,2])
-  @test_broken A * b7'
+  @test A * b7' == A[:,[1, 2, 3, 1, 2, 3]]
 
   @test_throws DimensionMismatch A*b1'
   @test_throws DimensionMismatch A*b2
