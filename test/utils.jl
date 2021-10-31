@@ -9,10 +9,10 @@ using Test
 
 @testset "unsqueeze" begin
   x = randn(2, 3, 2)
-  @test unsqueeze(x, 1) == reshape(x, 1, 2, 3, 2)
-  @test unsqueeze(x, 2) == reshape(x, 2, 1, 3, 2)
-  @test unsqueeze(x, 3) == reshape(x, 2, 3, 1, 2)
-  @test unsqueeze(x, 4) == reshape(x, 2, 3, 2, 1)
+  @test @inferred(unsqueeze(x, 1)) == reshape(x, 1, 2, 3, 2)
+  @test @inferred(unsqueeze(x, 2)) == reshape(x, 2, 1, 3, 2)
+  @test @inferred(unsqueeze(x, 3)) == reshape(x, 2, 3, 1, 2)
+  @test @inferred(unsqueeze(x, 4)) == reshape(x, 2, 3, 2, 1)
 end
 
 @testset "Throttle" begin

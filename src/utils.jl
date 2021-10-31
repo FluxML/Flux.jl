@@ -420,7 +420,10 @@ julia> Flux.unsqueeze(xs, 1)
  [1, 2]  [3, 4]  [5, 6]
 ```
 """
-unsqueeze(xs::AbstractArray, dim::Integer) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
+function unsqueeze(xs::AbstractArray, dim::Integer)
+    sz = ntuple(i -> i < dim ? size(xs, i) : i == dim ? 1 : size(xs, i - 1), ndims(xs) + 1)
+    return reshape(xs, sz)
+end
 
 """
     unsqueeze(dim)
