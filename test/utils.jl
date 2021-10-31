@@ -1,10 +1,19 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal,
-             sparse_init, stack, unstack, Zeros, batch, unbatch
+             sparse_init, stack, unstack, Zeros, batch, unbatch,
+             unsqueeze
 using StatsBase: var, std
 using Random
 using Test
+
+@testset "unsqueeze" begin
+  x = randn(2, 3, 2)
+  @test unsqueeze(x, 1) == reshape(x, 1, 2, 3, 2)
+  @test unsqueeze(x, 2) == reshape(x, 2, 1, 3, 2)
+  @test unsqueeze(x, 3) == reshape(x, 2, 3, 1, 2)
+  @test unsqueeze(x, 4) == reshape(x, 2, 3, 2, 1)
+end
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
