@@ -118,10 +118,4 @@ revert to an older copy of the model if it starts to overfit.
 @save "model-$(now()).bson" model loss = testloss()
 ```
 
-You can even store optimiser state alongside the model, to resume training
-exactly where you left off.
-
-```julia
-opt = ADAM()
-@save "model-$(now()).bson" model opt
-```
+Note that to resume a model's training, you might need to restore other stateful parts of your training loop. Possible examples are stateful optimizers (which usually utilize an `IdDict` to store their state, which is not automatically handled by `BSON`), and the randomness used to partition the original data into the training and validation sets.
