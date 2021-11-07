@@ -3,6 +3,19 @@ gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = view(x, gate(h,n), :)
 
+multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
+
+@adjoint function multigate(x::AbstractArray, h, c)
+  function multigate_pullback(dy)
+    dx = Zygote._zero(x, eltype(x))
+    map(multigate(dx, h, c), dy) do dxᵢ, dyᵢ
+      dyᵢ !== nothing && (dxᵢ.= Zygote.accum.(dxᵢ, dyᵢ));
+    end
+    return (dx, nothing, nothing)
+  end
+  return multigate(x, h, c), multigate_pullback
+end
+
 # Stateful recurrence
 
 """
@@ -157,12 +170,9 @@ end
 function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
-  input = σ.(gate(g, o, 1))
-  forget = σ.(gate(g, o, 2))
-  cell = tanh.(gate(g, o, 3))
-  output = σ.(gate(g, o, 4))
-  c = forget .* c .+ input .* cell
-  h′ = output .* tanh.(c)
+  input, forget, cell, output = multigate(g, o, Val(4))
+  c = @. σ(forget) * c + σ(input) * tanh(cell)
+  h′ = @. σ(output) * tanh(c)
   sz = size(x)
   return (h′, c), reshape(h′, :, sz[2:end]...)
 end
@@ -203,13 +213,10 @@ end
 
 # GRU
 
-function _gru_output(Wi, Wh, b, x, h)
-  o = size(h, 1)
-  gx, gh = Wi*x, Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
-
-  return gx, gh, r, z
+function _gru_output(gxs, ghs, bs)
+  r = @. σ(gxs[1] + ghs[1] + bs[1])
+  z = @. σ(gxs[2] + ghs[2] + bs[2])
+  return r, z
 end
 
 struct GRUCell{A,V,S}
@@ -223,10 +230,11 @@ GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
 function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
-  b, o = m.b, size(h, 1)
-  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
-  h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1 .- z) .* h̃ .+ z .* h
+  Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
+  gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
+  r, z = _gru_output(gxs, ghs, bs)
+  h̃ = @. tanh(gxs[3] + r * ghs[3] + bs[3])
+  h′ = @. (1 - z) * h̃ + z * h
   sz = size(x)
   return h′, reshape(h′, :, sz[2:end]...)
 end
@@ -277,10 +285,11 @@ GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32)
             init(out, out), init_state(out,1))
 
 function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
-  b, o = m.b, size(h, 1)
-  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
-  h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
-  h′ = (1 .- z) .* h̃ .+ z .* h
+  Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
+  gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
+  r, z = _gru_output(gxs, ghs, bs)
+  h̃ = tanh.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
+  h′ = @. (1 - z) * h̃ + z * h
   sz = size(x)
   return h′, reshape(h′, :, sz[2:end]...)
 end
