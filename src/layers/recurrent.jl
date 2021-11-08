@@ -3,6 +3,7 @@ gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = view(x, gate(h,n), :)
 
+# AD-friendly helper for dividing monolithic RNN params into equally sized gates
 multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
 
 @adjoint function multigate(x::AbstractArray, h, c)
@@ -15,6 +16,8 @@ multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
   end
   return multigate(x, h, c), multigate_pullback
 end
+
+reshape_cell_output(h, x) = reshape(h, :, size(x)[2:end]...)
 
 # Stateful recurrence
 
@@ -116,8 +119,7 @@ RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zero
 function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
   σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
   h = σ.(Wi*x .+ Wh*h .+ b)
-  sz = size(x)
-  return h, reshape(h, :, sz[2:end]...)
+  return h, reshape_cell_output(h, x)
 end
 
 @functor RNNCell
@@ -171,10 +173,9 @@ function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{Abstr
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input, forget, cell, output = multigate(g, o, Val(4))
-  c = @. σ(forget) * c + σ(input) * tanh(cell)
-  h′ = @. σ(output) * tanh(c)
-  sz = size(x)
-  return (h′, c), reshape(h′, :, sz[2:end]...)
+  c′ = @. σ(forget) * c + σ(input) * tanh(cell)
+  h′ = @. σ(output) * tanh(c′)
+  return (h′, c′), reshape_cell_output(h′, x)
 end
 
 @functor LSTMCell
@@ -235,8 +236,7 @@ function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},O
   r, z = _gru_output(gxs, ghs, bs)
   h̃ = @. tanh(gxs[3] + r * ghs[3] + bs[3])
   h′ = @. (1 - z) * h̃ + z * h
-  sz = size(x)
-  return h′, reshape(h′, :, sz[2:end]...)
+  return h′, reshape_cell_output(h′, x)
 end
 
 @functor GRUCell
@@ -290,8 +290,7 @@ function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T}
   r, z = _gru_output(gxs, ghs, bs)
   h̃ = tanh.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
   h′ = @. (1 - z) * h̃ + z * h
-  sz = size(x)
-  return h′, reshape(h′, :, sz[2:end]...)
+  return h′, reshape_cell_output(h′, x)
 end
 
 @functor GRUv3Cell
