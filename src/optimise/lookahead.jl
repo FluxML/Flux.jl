@@ -36,16 +36,13 @@ const MomentumOptim = Union{Momentum, RMSProp, Nesterov, ADAM, RADAM, AdaMax, AD
 
 return `true` if the optimiser has momentum.
 """
-has_momentum(o) = false
-has_momentum(o::MomentumOptim) = true
+has_momentum(o::O) where O= any(x->x<:IdDict, fieldtypes(O))
 has_momentum(o::Optimiser) = any(has_momentum, o.os)
 has_momentum(o::Lookahead) = has_momentum(o.opt)
 
 _reset!(x::AbstractArray{T}) where T = (x .= zero(T))
 
-@inline get_state(o::Union{Momentum, Nesterov}) = o.velocity
-@inline get_state(o::Union{RMSProp, ADAGrad}) = o.acc
-@inline get_state(o::Union{ADAM, RADAM, AdaMax, ADADelta, AMSGrad, NADAM}) = o.state
+@inline get_state(o::O) where O = getfield(o, findfirst(x->x<:IdDict, fieldtypes(O)))
 @inline get_state(o, x) = get_state(o)[x]
 
 @inline _new_state!(o::Union{Momentum, Nesterov, RMSProp}, x) = _reset!(get_state(o, x))
