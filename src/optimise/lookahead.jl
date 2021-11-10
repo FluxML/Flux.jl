@@ -21,7 +21,7 @@ For using with custom Optimiser, overload the corresponding methods. see also [`
 ## References
 [Lookahead](https://arxiv.org/pdf/1907.08610.pdf) optimiser.
 """
-mutable struct Lookahead{O, MH <: Function}
+mutable struct Lookahead{O, MH <: Function} <: AbstractOptimiser
   opt::O
   momentum_handler::MH
   alpha::Float64
@@ -29,30 +29,26 @@ mutable struct Lookahead{O, MH <: Function}
   state::IdDict
 end
 
-const MomentumOptim = Union{Momentum, RMSProp, Nesterov, ADAM, RADAM, AdaMax, ADAGrad, ADADelta, AMSGrad, NADAM}
-
 """
   has_momentum(o)
 
 return `true` if the optimiser has momentum.
 """
-has_momentum(o::O) where O= any(x->x<:IdDict, fieldtypes(O))
+has_momentum(o::O) where O<:AbstractOptimiser = any(x->x<:IdDict, fieldtypes(O))
 has_momentum(o::Optimiser) = any(has_momentum, o.os)
 has_momentum(o::Lookahead) = has_momentum(o.opt)
 
-_reset!(x::AbstractArray{T}) where T = (x .= zero(T))
+get_state(o::O) where O<:AbstractOptimiser = getfield(o, findfirst(x->x<:IdDict, fieldtypes(O)))
+get_state(o, x) = get_state(o)[x]
 
-@inline get_state(o::O) where O = getfield(o, findfirst(x->x<:IdDict, fieldtypes(O)))
-@inline get_state(o, x) = get_state(o)[x]
+reset_state!(o::Union{Momentum, Nesterov, RMSProp}, x) = (s = fill!(get_state(o, x), 0); s)
+reset_state!(o::Union{ADAM, AdaMax, OADAM, NADAM}, x) = (s = get_state(o, x); fill!.(s[1:2], 0); s[3] .= o.beta; s)
+reset_state!(o::RADAM, x) = (s = get_state(o, x); fill!.(s[1:2], 0); s[3] .= o.beta; s[4][] = 1; s)
+reset_state!(o::ADAGrad, x) = (s = fill!(get_state(o, x), ϵ); s)
+reset_state!(o::Union{ADADelta, AdaBelief}, x) = (s = fill!.(get_state(o, x), 0); s)
+reset_state!(o::AMSGrad, x) = (s = fill!.(get_state(o, x), ϵ); s)
+reset_state!(o::Union{InvDecay, ExpDecay}, x) = get_state(o)[x] = 1
 
-@inline _new_state!(o::Union{Momentum, Nesterov, RMSProp}, x) = _reset!(get_state(o, x))
-@inline _new_state!(o::Union{ADAM, AdaMax, NADAM}, x) = (s = get_state(o, x); (_reset!(s[1]), _reset!(s[2]), o.beta))
-@inline _new_state!(o::RADAM, x) = (s = get_state(o, x); (_reset!(s[1]), _reset!(s[2]), o.beta, 1))
-@inline _new_state!(o::ADAGrad, x) = fill!(get_state(o, x), ϵ)
-@inline _new_state!(o::ADADelta, x) = _reset!.(get_state(o, x))
-@inline _new_state!(o::AMSGrad, x) = fill!.(get_state(o, x), ϵ)
-
-reset_state!(o, x) = (get_state(o)[x] = _new_state!(o, x); nothing)
 function reset_state!(o::Optimiser, x)
   for oi in o
     if has_momentum(oi)
@@ -70,9 +66,12 @@ default_momentum_handler!(o::Lookahead, x) = nothing
 reset_momentum_handler!(o::Lookahead, x) = reset_state!(o.opt, x)
 
 "return the momentum arrays in `Tuple`"
-@inline momentum_buffer(o, x) = (s = get_state(o, x); s isa Tuple ? s : (s,))
-@inline momentum_buffer(o::Union{ADAM, RADAM, AdaMax, NADAM}, x) = get_state(o, x)[1:2]
-@inline function momentum_buffer(o::Optimiser, x)
+momentum_buffer(o, x) = ()
+momentum_buffer(o::Union{Momentum, Nesterov, RMSProp, ADAGrad}, x) = (get_state(o, x),)
+momentum_buffer(o::Union{ADAM, AdaMax, OADAM, RADAM, NADAM}, x) = get_state(o, x)[1:2]
+momentum_buffer(o::Union{ADADelta, AdaBelief, AMSGrad}, x) = get_state(o, x)
+
+function momentum_buffer(o::Optimiser, x)
   mapreduce(Base.Fix2(momentum_buffer, x), (init, x)->(init..., x...), filter(has_momentum, o); init=());
 end
 
