@@ -140,8 +140,11 @@ julia> Flux.reset!(r);
 
 julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
+```
 
-# A demonstration of not using `reset!` when the batch size changes.
+The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
+
+```julia
 julia> r = RNN(3, 5)
 Recur(
   RNNCell(3, 5, tanh),                  # 50 parameters
@@ -163,7 +166,7 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 julia> r.state |> size # state shape has changed
 (5, 10)
 
-julia> r(rand(Float32, 3)) |> size # outputs a length 5*10 = 50 vector.
+julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
 (50,)
 ```
 """
@@ -246,8 +249,11 @@ julia> Flux.reset!(l);
 
 julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
+```
 
-# A demonstration of not using `reset!` when the batch size changes.
+The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
+
+```julia
 julia> l = LSTM(3, 5)
 Recur(
   LSTMCell(3, 5),                       # 190 parameters
@@ -266,7 +272,7 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 julia> l.state .|> size # state shape has changed
 ((5, 10), (5, 10))
 
-julia> l(rand(Float32, 3)) |> size # outputs a length 5*10 = 50 vector.
+julia> l(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
 (50,)
 ```
 """
@@ -354,8 +360,11 @@ julia> Flux.reset!(g);
 
 julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
+```
 
-# A demonstration of not using `reset!` when the batch size changes.
+The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
+
+```julia
 julia> g = GRU(3, 5)
 Recur(
   GRUCell(3, 5),                        # 140 parameters
@@ -374,7 +383,7 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 julia> g.state |> size # state shape has changed
 (5, 10)
 
-julia> g(rand(Float32, 3)) |> size # outputs a length 5*10 = 50 vector.
+julia> g(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
 (50,)
 ```
 """
@@ -451,8 +460,11 @@ julia> Flux.reset!(g);
 
 julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
+```
 
-# A demonstration of not using `reset!` when the batch size changes.
+The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
+
+```julia
 julia> g = GRUv3(3, 5)
 Recur(
   GRUv3Cell(3, 5),                      # 140 parameters
@@ -471,7 +483,7 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 julia> g.state |> size # state shape has changed
 (5, 10)
 
-julia> g(rand(Float32, 3)) |> size # outputs a length 5*10 = 50 vector.
+julia> g(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
 (50,)
 ```
 """
