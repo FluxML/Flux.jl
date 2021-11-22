@@ -51,7 +51,7 @@ julia> gs[x]
 
 julia> gs[y]
 2-element Vector{Float64}:
-  0.0
+ -0.0
  -2.0
 ```
 
