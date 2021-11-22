@@ -26,7 +26,7 @@ When a function has many parameters, we can get gradients of each one at the sam
 julia> f(x, y) = sum((x .- y).^2);
 
 julia> gradient(f, [2, 1], [2, 0])
-([0, 2], [0, -2])
+([0.0, 2.0], [-0.0, -2.0])
 ```
 
 These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
