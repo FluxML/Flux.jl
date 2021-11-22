@@ -45,14 +45,14 @@ julia> gs = gradient(params(x, y)) do
 Grads(...)
 
 julia> gs[x]
-2-element Vector{Int64}:
- 0
- 2
+2-element Vector{Float64}:
+ 0.0
+ 2.0
 
 julia> gs[y]
-2-element Vector{Int64}:
-  0
- -2
+2-element Vector{Float64}:
+  0.0
+ -2.0
 ```
 
 Here, `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.
