@@ -142,33 +142,35 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the following example:
+!!! warning "Batch size changes"
+  
+    Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the following example:
 
-  ```julia
-  julia> r = RNN(3, 5)
-  Recur(
-    RNNCell(3, 5, tanh),                  # 50 parameters
-  )         # Total: 4 trainable arrays, 50 parameters,
-            # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
+    ```julia
+    julia> r = RNN(3, 5)
+    Recur(
+      RNNCell(3, 5, tanh),                  # 50 parameters
+    )         # Total: 4 trainable arrays, 50 parameters,
+              # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
 
-  julia> r.state |> size
-  (5, 1)
+    julia> r.state |> size
+    (5, 1)
 
-  julia> r(rand(Float32, 3)) |> size
-  (5,)
+    julia> r(rand(Float32, 3)) |> size
+    (5,)
 
-  julia> r.state |> size
-  (5, 1)
+    julia> r.state |> size
+    (5, 1)
 
-  julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
-  (5, 10)
+    julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
+    (5, 10)
 
-  julia> r.state |> size # state shape has changed
-  (5, 10)
+    julia> r.state |> size # state shape has changed
+    (5, 10)
 
-  julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
-  (50,)
-  ```
+    julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
+    (50,)
+    ```
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
@@ -251,7 +253,8 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
+!!! warning "Batch size changes"
+    Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
@@ -339,7 +342,8 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
+!!! warning "Batch size changes"
+    Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 Recur(m::GRUCell) = Recur(m, m.state0)
@@ -416,7 +420,8 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
+!!! warning "Batch size changes"
+    Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
