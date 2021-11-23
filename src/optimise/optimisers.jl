@@ -110,7 +110,7 @@ function apply!(o::Nesterov, x, Δ)
 end
 
 """
-    RMSProp(η = 0.001, ρ = 0.9, centered = False)
+    RMSProp(η = 0.001, ρ = 0.9, centered = false)
 
 Optimizer using the
 [RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
