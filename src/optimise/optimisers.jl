@@ -110,39 +110,51 @@ function apply!(o::Nesterov, x, Δ)
 end
 
 """
-    RMSProp(η = 0.001, ρ = 0.9)
+    RMSProp(η = 0.001, ρ = 0.9, centered = False)
 
 Optimizer using the
 [RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
 algorithm. Often a good choice for recurrent networks. Parameters other than learning rate
 generally don't need tuning.
 
+The [centerd version](https://arxiv.org/pdf/1308.0850v5.pdf) of RMSProp maintains a moving
+average of the gradient to center the second order moment used for normalization.
+
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
 - Momentum (`ρ`): Controls the acceleration of gradient descent in the
                   prominent direction, in effect dampening oscillations.
+- Centered (`centered`): Whether to use the centered version of RMSProp.
 
 # Examples
 ```julia
 opt = RMSProp()
 
-opt = RMSProp(0.002, 0.95)
+opt = RMSProp(0.002, 0.95, True)
 ```
 """
 mutable struct RMSProp <: AbstractOptimiser
   eta::Float64
   rho::Float64
-  acc::IdDict
+  centered::Bool
+  state::IdDict
 end
 
-RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
+RMSProp(η = 0.001, ρ = 0.9, centered = false) = RMSProp(η, ρ, centered, IdDict())
 
 function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
-  acc = get!(() -> zero(x), o.acc, x)::typeof(x)
+
+  acc, Δ_ave = get!(o.state, x) do
+    (zero(x), zero(x))
+  end :: Tuple{typeof(x),typeof(x)}
+
   @. acc = ρ * acc + (1 - ρ) * Δ^2
-  @. Δ *= η / (√acc + ϵ)
+  if o.centered
+    @. Δ_ave = ρ * Δ_ave + (1 - ρ) * Δ
+  end
+  @. Δ *= η / (√(acc - Δ_ave^2) + ϵ)
 end
 
 """
