@@ -13,7 +13,6 @@ This can be visualised in the form of a simple loop.
 
 ```julia
 for d in datapoints
-
   # `d` should produce a collection of arguments
   # to the loss function
 
