@@ -142,33 +142,33 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
+!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the following example:
 
-```julia
-julia> r = RNN(3, 5)
-Recur(
-  RNNCell(3, 5, tanh),                  # 50 parameters
-)         # Total: 4 trainable arrays, 50 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
+  ```julia
+  julia> r = RNN(3, 5)
+  Recur(
+    RNNCell(3, 5, tanh),                  # 50 parameters
+  )         # Total: 4 trainable arrays, 50 parameters,
+            # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
 
-julia> r.state |> size
-(5, 1)
+  julia> r.state |> size
+  (5, 1)
 
-julia> r(rand(Float32, 3)) |> size
-(5,)
+  julia> r(rand(Float32, 3)) |> size
+  (5,)
 
-julia> r.state |> size
-(5, 1)
+  julia> r.state |> size
+  (5, 1)
 
-julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
-(5, 10)
+  julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
+  (5, 10)
 
-julia> r.state |> size # state shape has changed
-(5, 10)
+  julia> r.state |> size # state shape has changed
+  (5, 10)
 
-julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
-(50,)
-```
+  julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
+  (50,)
+  ```
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
