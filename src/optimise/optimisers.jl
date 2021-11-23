@@ -131,7 +131,7 @@ average of the gradient to center the second order moment used for normalization
 ```julia
 opt = RMSProp()
 
-opt = RMSProp(0.002, 0.95, True)
+opt = RMSProp(0.002, 0.95, true)
 ```
 """
 mutable struct RMSProp <: AbstractOptimiser
