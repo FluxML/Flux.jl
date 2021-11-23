@@ -251,30 +251,7 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
-
-```julia
-julia> l = LSTM(3, 5)
-Recur(
-  LSTMCell(3, 5),                       # 190 parameters
-)         # Total: 5 trainable arrays, 190 parameters,
-          # plus 2 non-trainable, 10 parameters, summarysize 1.062 KiB.
-
-julia> l.state .|> size 
-((5, 1), (5, 1))
-
-julia> l(rand(Float32, 3)) |> size
-(5,)
-
-julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
-(5, 10)
-
-julia> l.state .|> size # state shape has changed
-((5, 10), (5, 10))
-
-julia> l(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
-(50,)
-```
+!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
@@ -362,30 +339,7 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
-
-```julia
-julia> g = GRU(3, 5)
-Recur(
-  GRUCell(3, 5),                        # 140 parameters
-)         # Total: 4 trainable arrays, 140 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 792 bytes.
-
-julia> g.state |> size
-(5, 1)
-
-julia> g(rand(Float32, 3)) |> size
-(5,)
-
-julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
-(5, 10)
-
-julia> g.state |> size # state shape has changed
-(5, 10)
-
-julia> g(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
-(50,)
-```
+!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 Recur(m::GRUCell) = Recur(m, m.state0)
@@ -462,30 +416,7 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 (5, 10)
 ```
 
-The following is a demonstration of when failing to call `reset!` between batch size changes can cause erroneous outputs.
-
-```julia
-julia> g = GRUv3(3, 5)
-Recur(
-  GRUv3Cell(3, 5),                      # 140 parameters
-)         # Total: 5 trainable arrays, 140 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 848 bytes.
-
-julia> g.state |> size
-(5, 1)
-
-julia> g(rand(Float32, 3)) |> size
-(5,)
-
-julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
-(5, 10)
-
-julia> g.state |> size # state shape has changed
-(5, 10)
-
-julia> g(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
-(50,)
-```
+!!! warning Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
