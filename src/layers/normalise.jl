@@ -101,17 +101,20 @@ mutable struct AlphaDropout{F}
   end
 end
 
-function (a::AlphaDropout)(x)
+function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
-  λ = eltype(x)(1.0507009873554804934193349852946)
-  α = eltype(x)(1.6732632423543772848170429916717)
-  α1 = eltype(x)(-λ*α)
-  noise = randn(eltype(x), size(x))
-  x = @. x*(noise > (1 - a.p)) + α1 * (noise < (1 - a.p))
-  A = sqrt(a.p + a.p * (1 - a.p) * α1^2)
-  B = -A * α1 * (1 - a.p)
-  x = @. A * x + B
-  return x
+  p = a.p
+  iszero(p) && return x
+  isone(p) && return sign.(x) .* T(0)
+
+  λ = T(1.0507009873554804934193349852946)
+  α = T(1.6732632423543772848170429916717)
+  α1 = T(-λ * α)
+  A = inv(sqrt((1 - p) * (1 + p * α1^2)))
+  B = -A * α1 * p
+
+  noise = rand!(similar(x))
+  return A .* ifelse.(noise .> p, x, α1) .+ B
 end
 
 testmode!(m::AlphaDropout, mode=true) =
