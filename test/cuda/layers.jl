@@ -10,13 +10,8 @@
   @test gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
 end
 
-# TODO: These layers get into scalar indexing
-# `AlphaDropout` throws a compilation error on GPUs,
-# whereas, the rest are scalar indexing issues.
-# The norm layers behave differently on the CPU and
-# the GPU too.
-const BROKEN_LAYERS = Union{DepthwiseConv,
-                            AlphaDropout}
+# TODO: These layers get into scalar indexing issues.
+const BROKEN_LAYERS = Union{DepthwiseConv}
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,

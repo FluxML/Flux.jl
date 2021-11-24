@@ -107,14 +107,12 @@ function (a::AlphaDropout)(x::AbstractArray{T}) where T
   iszero(p) && return x
   isone(p) && return sign.(x) .* T(0)
 
-  λ = T(1.0507009873554804934193349852946)
-  α = T(1.6732632423543772848170429916717)
-  α1 = T(-λ * α)
-  A = inv(sqrt((1 - p) * (1 + p * α1^2)))
-  B = -A * α1 * p
+  α′ = T(-1.7580993408473766) # selu(-Inf) == -λα
+  A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
+  B = T(-A * α′ * p)
 
   noise = rand!(similar(x))
-  return A .* ifelse.(noise .> p, x, α1) .+ B
+  return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
 testmode!(m::AlphaDropout, mode=true) =
