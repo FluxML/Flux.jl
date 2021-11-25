@@ -102,7 +102,7 @@ Training data can be conveniently  partitioned for mini-batch training using the
 ```julia
 X = rand(28, 28, 60000)
 Y = rand(0:9, 60000)
-data = DataLoader(X, Y, batchsize=128) 
+data = DataLoader((X, Y), batchsize=128) 
 ```
 
 Note that, by default, `train!` only loops over the data once (a single "epoch").
