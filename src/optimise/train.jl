@@ -82,11 +82,17 @@ batchmemaybe(x::Tuple) = x
 
 """
     train!(loss, params, data, opt; cb)
-
+        
+`train!` uses a loss function (`loss`) and training data (`data`) to improve the 
+parameters (`params`) of your model based on a pluggable optimiser `opt`.
+        
 For each datapoint `d` in `data`, compute the gradient of  `loss` with
 respect to `params` through backpropagation and call the optimizer `opt`.
-
+        
 If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
+        
+To get the trainable parameters, generally you pass the model to the [`Flux.params`](@ref)
+function (the just the layers you want to train) like `train!(loss, params(model), ...)`.
 
 A callback is given with the keyword argument `cb`. For example, this will print
 "training" every 10 seconds (using [`Flux.throttle`](@ref)):
