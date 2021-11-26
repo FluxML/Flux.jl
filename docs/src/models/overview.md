@@ -127,7 +127,7 @@ julia> predict.weight in parameters, predict.bias in parameters
 
 The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
 
-This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`train!`](@ref) like this:
+This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`Flux.train!`](@ref) like this:
 
 ```
 julia> train!(loss, parameters, data, opt)
