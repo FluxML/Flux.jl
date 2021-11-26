@@ -51,8 +51,18 @@ end
 """
     params(model)
 
-Given a model or specific layers from a model, return the trainable parameters
-such that they can be used as input to the `train!` function.
+Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
+
+This can be used with [`gradient`](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
+
+# Examples
+```jldoctest
+julia> params(Chain(Dense(ones(2,3))), softmax)
+Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
+
+julia> params(BatchNorm(2, relu))
+Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
+```
 """
 function params(m...)
   ps = Params()
