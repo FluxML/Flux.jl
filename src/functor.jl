@@ -55,6 +55,8 @@ Given a model or specific layers from a model, create a `Params` object pointing
 
 This can be used with [`gradient`](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
 
+The behaviour of `params` on custom types can be customized using [`Functor.@functor`](@ref) or [`Flux.trainable`](@ref).
+
 # Examples
 ```jldoctest
 julia> params(Chain(Dense(ones(2,3))), softmax)
