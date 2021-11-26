@@ -346,13 +346,13 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols; gain=1, shift=0) = zeros32(cols)
+identity_init(cols; gain = 1, shift = 0) = zeros32(cols)
 
 # Assume matrix multiplication
-identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
+identity_init(rows, cols; gain = 1, shift = 0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
 
 # Assume convolution
-function identity_init(dims...; gain=1, shift=0)
+function identity_init(dims...; gain = 1, shift = 0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros32(dims)
@@ -696,7 +696,7 @@ going more than once per `wait` duration; but if you'd like to disable the
 execution on the leading edge, pass `leading=false`. To enable execution on
 the trailing edge, pass `trailing=true`.
 """
-function throttle(f, timeout; leading=true, trailing=false)
+function throttle(f, timeout; leading = true, trailing = false)
   cooldown = true
   later = nothing
   result = nothing
