@@ -91,8 +91,7 @@ respect to `params` through backpropagation and call the optimizer `opt`.
         
 If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
         
-To get the trainable parameters, generally you pass the model to the [`Flux.params`](@ref)
-function (the just the layers you want to train) like `train!(loss, params(model), ...)`.
+To pass trainable parameters, call [`Flux.params`](@ref) with your model or just the layers you want to train, like `train!(loss, params(model), ...)`.
 
 A callback is given with the keyword argument `cb`. For example, this will print
 "training" every 10 seconds (using [`Flux.throttle`](@ref)):
