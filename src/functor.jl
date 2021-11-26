@@ -48,6 +48,12 @@ function params!(p::Params, x, seen = IdSet())
   end
 end
 
+"""
+    params(model)
+
+Given a model or specific layers from a model, return the trainable parameters
+such that they can be used as input to the `train!` function.
+"""
 function params(m...)
   ps = Params()
   params!(ps, m)
