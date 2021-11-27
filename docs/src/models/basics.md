@@ -5,7 +5,7 @@
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
 ```@docs
-Flux.gradient
+Flux.Zygote.gradient
 ```
 
 ```jldoctest basics
