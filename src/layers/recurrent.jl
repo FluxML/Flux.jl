@@ -439,9 +439,8 @@ A wrapper layer that allows bidirectional recurrent layers.
 
 
 # Examples
-```julia
-BLSTM = Bidirectional(LSTM, 3, 5)
-
+```jldoctest
+julia> BLSTM = Bidirectional(LSTM, 3, 5)
 Bidirectional(
   Recur(
     LSTMCell(3, 5),                     # 190 parameters
@@ -451,22 +450,12 @@ Bidirectional(
   ),
 )         # Total: 10 trainable arrays, 380 parameters,
           # plus 4 non-trainable, 20 parameters, summarysize 2.141 KiB.
-```
 
-```julia 
-BLSTM(rand(Float32, 3)) |> size
+julia> BLSTM(rand(Float32, 3)) |> size
 
 (10,)
-```
 
-```julia 
-model = Chain(
-  Embedding(10000, 200),
-  Bidirectional(LSTM, 200, 128),
-  Dense(256, 5),
-  softmax
-)
-
+julia> model = Chain(Embedding(10000, 200), Bidirectional(LSTM, 200, 128), Dense(256, 5), softmax)
 Chain(
   Embedding(10000, 200),                # 2_000_000 parameters
   Bidirectional(
@@ -497,7 +486,6 @@ Bidirectional(forward, backward, in::Integer, out::Integer) = Bidirectional(forw
 # Constructor to add the same cell as forward and backward with given input and output sizes
 Bidirectional(rnn, in::Integer, out::Integer) = Bidirectional(rnn, in, out, rnn, in, out)
 
-
 # Concatenate the forward and reversed backward weights
 function (m::Bidirectional)(x::Union{AbstractVecOrMat{T},OneHotArray}) where {T}
   return vcat(m.forward(x), reverse(m.backward(reverse(x; dims=1)); dims=1))
@@ -506,8 +494,7 @@ end
 Flux.@functor Bidirectional
 
 # Show adaptations
-function _big_show(io::IO, obj::Bidirectional, indent::Int=0, name=nothing)
-    
+function _big_show(io::IO, obj::Bidirectional, indent::Int=0, name=nothing)  
   println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), "(")
   # then we insert names -- can this be done more generically? 
   for k in propertynames(obj)
