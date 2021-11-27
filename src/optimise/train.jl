@@ -83,8 +83,8 @@ batchmemaybe(x::Tuple) = x
 """
     train!(loss, params, data, opt; cb)
         
-`train!` uses a [`loss function`](@ref Loss Functions) (`loss`) and training [`data`](@ref Datasets) (`data`) to improve the 
-[`patameters`](@ref Model parameters) (`params`) of your model based on a pluggable [`optimisers`](@ref Optimisers) (`opt`).
+`train!` uses a [Loss Functions](@ref) (`loss`) and training [Datasets](@ref) (`data`) to improve the 
+[Model parameters](@ref) (`params`) based on a pluggable [Optimisers](@ref) (`opt`).
         
 For each datapoint `d` in `data`, compute the gradient of  `loss` with
 respect to `params` through backpropagation and call the optimizer `opt`.
