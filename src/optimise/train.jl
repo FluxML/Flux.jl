@@ -83,8 +83,8 @@ batchmemaybe(x::Tuple) = x
 """
     train!(loss, params, data, opt; cb)
         
-`train!` uses a [`loss function`](@ref Flux.Training.Loss-Functions) (`loss`) and training [`data`](@ref Flux.Training.Datasets) (`data`) to improve the 
-[`patameters`](@ref Flux.Training.Model-parameters) (`params`) of your model based on a pluggable [`optimisers`](@ref Flux.Training.Optimisers) (`opt`).
+`train!` uses a [`loss function`](@ref Loss Functions) (`loss`) and training [`data`](@ref Datasets) (`data`) to improve the 
+[`patameters`](@ref Model parameters) (`params`) of your model based on a pluggable [`optimisers`](@ref Optimisers) (`opt`).
         
 For each datapoint `d` in `data`, compute the gradient of  `loss` with
 respect to `params` through backpropagation and call the optimizer `opt`.
