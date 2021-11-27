@@ -50,6 +50,7 @@ end
 
 """
     params(model)
+    params(layers...)
 
 Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
 
