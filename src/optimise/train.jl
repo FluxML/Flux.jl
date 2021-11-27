@@ -93,7 +93,7 @@ If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
 To pass trainable parameters, call [`Flux.params`](@ref) with your model or just the 
 layers you want to train, like `train!(loss, params(model), ...)` or `train!(loss, params(model[1:end-2), ...)` respectively.
 
-[Callbacks]@ref) are given with the keyword argument `cb`. For example, this will print "training" 
+[Callbacks](@ref) are given with the keyword argument `cb`. For example, this will print "training" 
 every 10 seconds (using [`Flux.throttle`](@ref)):
 ```julia
 train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
