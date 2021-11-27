@@ -83,8 +83,8 @@ batchmemaybe(x::Tuple) = x
 """
     train!(loss, params, data, opt; cb)
         
-`train!` uses a [Loss-Functions](@ref) (`loss`) and training [Datasets](@ref) (`data`) to improve the 
-[Model-parameters](@ref) (`params`) of your model based on a pluggable [Optimisers](@ref) (`opt`).
+`train!` uses a [`loss function`](@ref Flux.Training.Loss-Functions) (`loss`) and training [`data`](@ref Flux.Training.Datasets) (`data`) to improve the 
+[`patameters`](@ref Flux.Training.Model-parameters) (`params`) of your model based on a pluggable [`optimisers`](@ref Flux.Training.Optimisers) (`opt`).
         
 For each datapoint `d` in `data`, compute the gradient of  `loss` with
 respect to `params` through backpropagation and call the optimizer `opt`.
@@ -95,9 +95,8 @@ layers you want to train, like `train!(loss, params(model), ...)` or `train!(los
 
 [Callbacks](@ref) are given with the keyword argument `cb`. For example, this will print "training" 
 every 10 seconds (using [`Flux.throttle`](@ref)):
-```julia
-train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
-```
+`train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))`
+        
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
