@@ -88,7 +88,6 @@ parameters (`params`) of your model based on a pluggable optimiser (`opt`).
         
 For each datapoint `d` in `data`, compute the gradient of  `loss` with
 respect to `params` through backpropagation and call the optimizer `opt`.
-        
 If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
         
 To pass trainable parameters, call [`Flux.params`](@ref) with your model or just the layers you want to train, like `train!(loss, params(model), ...)`.
