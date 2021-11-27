@@ -430,3 +430,89 @@ Recur(m::GRUv3Cell) = Recur(m, m.state0)
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
   Zygote.∇map(__context__, f, args...)
 end
+
+
+"""
+    Bidirectional{A,B} 
+
+A wrapper layer that allows bidirectional recurrent layers. 
+
+
+# Examples
+```julia
+BLSTM = Bidirectional(LSTM, 3, 5)
+
+Bidirectional(
+  Recur(
+    LSTMCell(3, 5),                     # 190 parameters
+  ),
+  Recur(
+    LSTMCell(3, 5),                     # 190 parameters
+  ),
+)         # Total: 10 trainable arrays, 380 parameters,
+          # plus 4 non-trainable, 20 parameters, summarysize 2.141 KiB.
+```
+
+```julia 
+BLSTM(rand(Float32, 3)) |> size
+
+(10,)
+```
+
+```julia 
+model = Chain(
+  Embedding(10000, 200),
+  Bidirectional(LSTM, 200, 128),
+  Dense(256, 5),
+  softmax
+)
+
+Chain(
+  Embedding(10000, 200),                # 2_000_000 parameters
+  Bidirectional(
+    Recur(
+      LSTMCell(200, 128),               # 168_704 parameters
+    ),
+    Recur(
+      LSTMCell(200, 128),               # 168_704 parameters
+    ),
+  ),
+  Dense(256, 5),                        # 1_285 parameters
+  NNlib.softmax,
+)         # Total: 13 trainable arrays, 2_338_693 parameters,
+          # plus 4 non-trainable, 512 parameters, summarysize 8.922 MiB.
+```
+"""
+struct Bidirectional{A,B} 
+  forward::A
+  backward::B
+end
+
+# Generic constructor for every case
+Bidirectional(forward, f_in::Integer, f_out::Integer, backward, b_in::Integer, b_out::Integer) = Bidirectional(forward(f_in, f_out), backward(b_in, b_out))
+
+# Constructor for forward and backward having the same size
+Bidirectional(forward, backward, in::Integer, out::Integer) = Bidirectional(forward, in, out, backward, in, out)
+
+# Constructor to add the same cell as forward and backward with given input and output sizes
+Bidirectional(rnn, in::Integer, out::Integer) = Bidirectional(rnn, in, out, rnn, in, out)
+
+
+# Concatenate the forward and reversed backward weights
+function (m::Bidirectional)(x::Union{AbstractVecOrMat{T},OneHotArray}) where {T}
+  return vcat(m.forward(x), reverse(m.backward(reverse(x; dims=1)); dims=1))
+end
+
+Flux.@functor Bidirectional
+
+# Show adaptations
+function _big_show(io::IO, obj::Bidirectional, indent::Int=0, name=nothing)
+    
+  println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), "(")
+  # then we insert names -- can this be done more generically? 
+  for k in propertynames(obj)
+      Flux._big_show(io, getfield(obj, k), indent+2, k)
+  end
+end
+
+Base.show(io::IO, m::Bidirectional) = _big_show(io, m)
