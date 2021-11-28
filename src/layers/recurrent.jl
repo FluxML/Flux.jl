@@ -1,3 +1,4 @@
+
 gate(h, n) = (1:h) .+ h*(n-1)
 gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
 gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
@@ -433,7 +434,13 @@ end
 
 """
     Bidirectional{A,B} 
-A wrapper layer that allows bidirectional recurrent layers. 
+
+A wrapper layer that allows the use of [bidirectional](https://ieeexplore.ieee.org/document/650093) layers. It contains two parts that are Flux layers: `forward` and `backward` where 
+the forward layer weights are concatenated with the reversed order of the backward layer weights.
+
+It is intended to be used with recurrent layers such as `LSTM`, `GRU` or `RNN` to benefit from the sequential information that recurrent 
+layers have, but it will not raise an error if used with a different layer such as `Dense`, as long as the layer is compatible with the concatenation function `vcat`.
+
 # Examples
 ```jldoctest
 julia> BLSTM = Bidirectional(LSTM, 3, 5)
@@ -446,8 +453,22 @@ Bidirectional(
   ),
 )         # Total: 10 trainable arrays, 380 parameters,
           # plus 4 non-trainable, 20 parameters, summarysize 2.141 KiB.
-julia> BLSTM(rand(Float32, 3)) |> size
+julia> Bidirectional(LSTM, 3, 5)(rand(Float32, 3)) |> size
 (10,)
+
+julia> Bidirectional(LSTM, 3, 5)(rand(Float32, 3))
+10-element Vector{Float32}:
+  0.009660141
+ -0.011628074
+ -0.017348368
+ -0.002131971
+  0.0152327195
+ -0.024785668
+  0.021315152
+ -0.015476399
+  0.01589005
+ -0.002576883
+
 julia> model = Chain(Embedding(10000, 200), Bidirectional(LSTM, 200, 128), Dense(256, 5), softmax)
 Chain(
   Embedding(10000, 200),                # 2_000_000 parameters
