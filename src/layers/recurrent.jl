@@ -456,19 +456,6 @@ Bidirectional(
 julia> Bidirectional(LSTM, 3, 5)(rand(Float32, 3)) |> size
 (10,)
 
-julia> Bidirectional(LSTM, 3, 5)(rand(Float32, 3))
-10-element Vector{Float32}:
-  0.009660141
- -0.011628074
- -0.017348368
- -0.002131971
-  0.0152327195
- -0.024785668
-  0.021315152
- -0.015476399
-  0.01589005
- -0.002576883
-
 julia> model = Chain(Embedding(10000, 200), Bidirectional(LSTM, 200, 128), Dense(256, 5), softmax)
 Chain(
   Embedding(10000, 200),                # 2_000_000 parameters
