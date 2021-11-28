@@ -491,14 +491,8 @@ struct Bidirectional{A,B}
   backward::B
 end
 
-# Generic constructor for every case
-Bidirectional(forward, f_in::Integer, f_out::Integer, backward, b_in::Integer, b_out::Integer) = Bidirectional(forward(f_in, f_out), backward(b_in, b_out))
-
-# Constructor for forward and backward having the same size
-Bidirectional(forward, backward, in::Integer, out::Integer) = Bidirectional(forward(in, out), backward(in, out))
-
-# Constructor to add the same cell as forward and backward with given input and output sizes
-Bidirectional(rnn, in::Integer, out::Integer) = Bidirectional(rnn(in, out), rnn(in, out))
+# Constructor that creates a bidirectional with the same layer for forward and backward
+Bidirectional(rnn, a...; ka...) = Bidirectional(rnn(a...; ka...), rnn(a...; ka...))
 
 
 # Concatenate the forward and reversed backward weights
@@ -507,15 +501,3 @@ function (m::Bidirectional)(x::Union{AbstractVecOrMat{T},OneHotArray}) where {T}
 end
 
 @functor Bidirectional
-Base.getproperty(m::Bidirectional, sym::Symbol) = getfield(m, sym)
-
-# Show adaptations
-function _big_show(io::IO, obj::Bidirectional, indent::Int=0, name=nothing)  
-  println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), "(")
-  # then we insert names -- can this be done more generically? 
-  for k in propertynames(obj)
-      _big_show(io, getfield(obj, k), indent+2, k)
-  end
-end
-
-Base.show(io::IO, m::MIME"text/plain", x::Bidirectional) = _big_show(io, x)
