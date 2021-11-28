@@ -5,7 +5,7 @@ istraining() = false
 _isactive(m) = isnothing(m.active) ? istraining() : m.active
 
 _dropout_shape(s, ::Colon) = size(s)
-_dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
+_dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) in enumerate(size(s)))...)
 
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
@@ -28,22 +28,22 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(x, p; dims=:, active::Bool=true)
-  active || return x
-  y = dropout_mask(x, p, dims=dims)
-  return x .* y
+function dropout(x, p; dims = :, active::Bool = true)
+    active || return x
+    y = dropout_mask(x, p; dims = dims)
+    return x .* y
 end
 
-@adjoint function dropout(x, p; dims=:, active::Bool=true)
-  active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(x, p, dims=dims)
-  return x .* y, Δ -> (Δ .* y, nothing)
+@adjoint function dropout(x, p; dims = :, active::Bool = true)
+    active || return x, Δ -> (Δ, nothing)
+    y = dropout_mask(x, p; dims = dims)
+    return x .* y, Δ -> (Δ .* y, nothing)
 end
 
-function dropout_mask(x, p; dims=:)
-  y = rand!(similar(x, _dropout_shape(x, dims)))
-  y .= _dropout_kernel.(y, p, 1 - p)
-  return y
+function dropout_mask(x, p; dims = :)
+    y = rand!(similar(x, _dropout_shape(x, dims)))
+    y .= _dropout_kernel.(y, p, 1 - p)
+    return y
 end
 
 """
@@ -58,28 +58,29 @@ e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
 mutable struct Dropout{F,D}
-  p::F
-  dims::D
-  active::Union{Bool, Nothing}
+    p::F
+    dims::D
+    active::Union{Bool,Nothing}
 end
 
-function Dropout(p; dims=:)
-  @assert 0 ≤ p ≤ 1
-  Dropout(p, dims, nothing)
+function Dropout(p; dims = :)
+    @assert 0 ≤ p ≤ 1
+    return Dropout(p, dims, nothing)
 end
 
 function (a::Dropout)(x)
-  _isactive(a) || return x
-  return dropout(x, a.p; dims=a.dims, active=true)
+    _isactive(a) || return x
+    return dropout(x, a.p; dims = a.dims, active = true)
 end
 
-testmode!(m::Dropout, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+function testmode!(m::Dropout, mode = true)
+    (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+end
 
 function Base.show(io::IO, d::Dropout)
-  print(io, "Dropout(", d.p)
-  d.dims != (:) && print(io, ", dims = $(repr(d.dims))")
-  print(io, ")")
+    print(io, "Dropout(", d.p)
+    d.dims != (:) && print(io, ", dims = $(repr(d.dims))")
+    return print(io, ")")
 end
 
 """
@@ -93,30 +94,31 @@ remain the same as before.
 Does nothing to the input once [`testmode!`](@ref) is true.
 """
 mutable struct AlphaDropout{F}
-  p::F
-  active::Union{Bool, Nothing}
-  function AlphaDropout(p, active = nothing)
-    @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p, active)
-  end
+    p::F
+    active::Union{Bool,Nothing}
+    function AlphaDropout(p, active = nothing)
+        @assert 0 ≤ p ≤ 1
+        return new{typeof(p)}(p, active)
+    end
 end
 
-function (a::AlphaDropout)(x::AbstractArray{T}) where T
-  _isactive(a) || return x
-  p = a.p
-  iszero(p) && return x
-  isone(p) && return sign.(x) .* T(0)
+function (a::AlphaDropout)(x::AbstractArray{T}) where {T}
+    _isactive(a) || return x
+    p = a.p
+    iszero(p) && return x
+    isone(p) && return sign.(x) .* T(0)
 
-  α′ = T(-1.7580993408473766) # selu(-Inf) == -λα
-  A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
-  B = T(-A * α′ * p)
+    α′ = T(-1.7580993408473766) # selu(-Inf) == -λα
+    A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
+    B = T(-A * α′ * p)
 
-  noise = rand!(similar(x))
-  return A .* ifelse.(noise .> p, x, α′) .+ B
+    noise = rand!(similar(x))
+    return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
-testmode!(m::AlphaDropout, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+function testmode!(m::AlphaDropout, mode = true)
+    (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+end
 
 """
     LayerNorm(sz, λ=identity; affine=true, ϵ=1fe-5)
@@ -137,64 +139,66 @@ as in the [`Diagonal`](@ref) layer.
 Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """
 struct LayerNorm{F,D,T,N}
-  λ::F
-  diag::D
-  ϵ::T
-  size::NTuple{N,Int}
-  affine::Bool
+    λ::F
+    diag::D
+    ϵ::T
+    size::NTuple{N,Int}
+    affine::Bool
 end
 
-function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
-  sz = sz isa Integer ? (sz,) : sz
-  diag = affine ? Diagonal(sz...) : nothing
-  return LayerNorm(λ, diag, ϵ, sz, affine)
+function LayerNorm(sz, λ = identity; affine = true, ϵ = 1f-5)
+    sz = sz isa Integer ? (sz,) : sz
+    diag = affine ? Diagonal(sz...) : nothing
+    return LayerNorm(λ, diag, ϵ, sz, affine)
 end
 
 @functor LayerNorm
 
 function (a::LayerNorm)(x)
-  x = normalise(x, dims=1:length(a.size), ϵ=a.ϵ)
-  a.diag === nothing ? a.λ.(x) : a.λ.(a.diag(x))
+    x = normalise(x; dims = 1:length(a.size), ϵ = a.ϵ)
+    return a.diag === nothing ? a.λ.(x) : a.λ.(a.diag(x))
 end
 
 function Base.show(io::IO, l::LayerNorm)
-  print(io, "LayerNorm($(l.size)")
-  l.λ == identity || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io, ", affine=false")
-  print(io, ")")
+    print(io, "LayerNorm($(l.size)")
+    l.λ == identity || print(io, ", $(l.λ)")
+    hasaffine(l) || print(io, ", affine=false")
+    return print(io, ")")
 end
 
 # For InstanceNorm, GroupNorm, and BatchNorm.
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
-  if !_isactive(l) && l.track_stats # testmode with tracked stats
-    stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-    μ = reshape(l.μ, stats_shape)
-    σ² = reshape(l.σ², stats_shape)
-  else  # trainmode or testmode without tracked stats
-    μ = mean(x; dims=reduce_dims)
-    σ² = mean((x .- μ).^2; dims=reduce_dims)
-    if l.track_stats
-      ## update moving mean/std
-      Zygote.ignore() do
-        mtm = l.momentum
-        m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
-        μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
-        σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
-        l.μ = (1-mtm) .* l.μ .+ mtm .* μnew
-        l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
-      end
+function _norm_layer_forward(
+    l, x::AbstractArray{T,N}; reduce_dims, affine_shape
+) where {T,N}
+    if !_isactive(l) && l.track_stats # testmode with tracked stats
+        stats_shape = ntuple(i -> i == N - 1 ? size(x, N - 1) : 1, N)
+        μ = reshape(l.μ, stats_shape)
+        σ² = reshape(l.σ², stats_shape)
+    else  # trainmode or testmode without tracked stats
+        μ = mean(x; dims = reduce_dims)
+        σ² = mean((x .- μ) .^ 2; dims = reduce_dims)
+        if l.track_stats
+            ## update moving mean/std
+            Zygote.ignore() do
+                mtm = l.momentum
+                m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
+                μnew = vec(N ∈ reduce_dims ? μ : mean(μ; dims = N))
+                σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ²; dims = N))
+                l.μ = (1 - mtm) .* l.μ .+ mtm .* μnew
+                l.σ² = (1 - mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
+            end
+        end
     end
-  end
-  if hasaffine(l)
-    γ = reshape(l.γ, affine_shape)
-    β = reshape(l.β, affine_shape)
-    return l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
-  else
-    return l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
-  end
+    if hasaffine(l)
+        γ = reshape(l.γ, affine_shape)
+        β = reshape(l.β, affine_shape)
+        return l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
+    else
+        return l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+    end
 end
 
 """
@@ -234,56 +238,58 @@ m = Chain(
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
-  λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
-  μ::W     # moving mean
-  σ²::W    # moving var
-  ϵ::N
-  momentum::N
-  affine::Bool
-  track_stats::Bool
-  active::Union{Bool, Nothing}
-  chs::Int # number of channels
+    λ::F  # activation function
+    β::V  # bias
+    γ::V  # scale
+    μ::W     # moving mean
+    σ²::W    # moving var
+    ϵ::N
+    momentum::N
+    affine::Bool
+    track_stats::Bool
+    active::Union{Bool,Nothing}
+    chs::Int # number of channels
 end
 
-function BatchNorm(chs::Int, λ=identity;
-          initβ=zeros32, initγ=ones32, 
-          affine=true, track_stats=true,
-          ϵ=1f-5, momentum=0.1f0)
+function BatchNorm(
+    chs::Int,
+    λ = identity;
+    initβ = zeros32,
+    initγ = ones32,
+    affine = true,
+    track_stats = true,
+    ϵ = 1f-5,
+    momentum = 0.1f0,
+)
+    β = affine ? initβ(chs) : nothing
+    γ = affine ? initγ(chs) : nothing
+    μ = track_stats ? zeros32(chs) : nothing
+    σ² = track_stats ? ones32(chs) : nothing
 
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros32(chs) : nothing
-  σ² = track_stats ? ones32(chs) : nothing
-
-  return BatchNorm(λ, β, γ,
-            μ, σ², ϵ, momentum, 
-            affine, track_stats, 
-            nothing, chs)
+    return BatchNorm(λ, β, γ, μ, σ², ϵ, momentum, affine, track_stats, nothing, chs)
 end
 
 @functor BatchNorm
 trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
 
 function (BN::BatchNorm)(x)
-  @assert size(x, ndims(x)-1) == BN.chs
-  N = ndims(x)
-  reduce_dims = [1:N-2; N]
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
+    @assert size(x, ndims(x) - 1) == BN.chs
+    N = ndims(x)
+    reduce_dims = [1:(N - 2); N]
+    affine_shape = ntuple(i -> i == N - 1 ? size(x, N - 1) : 1, N)
+    return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
 end
 
-testmode!(m::BatchNorm, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+function testmode!(m::BatchNorm, mode = true)
+    (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+end
 
 function Base.show(io::IO, l::BatchNorm)
-  print(io, "BatchNorm($(l.chs)")
-  (l.λ == identity) || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false")
-  print(io, ")")
+    print(io, "BatchNorm($(l.chs)")
+    (l.λ == identity) || print(io, ", $(l.λ)")
+    hasaffine(l) || print(io, ", affine=false")
+    return print(io, ")")
 end
-
 
 """
     InstanceNorm(channels::Integer, λ=identity;
@@ -310,55 +316,58 @@ that will be used to renormalize the input in test phase.
 in previous Flux versions (< v0.12).
 """
 mutable struct InstanceNorm{F,V,N,W}
-  λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
-  μ::W  # moving mean
-  σ²::W  # moving var
-  ϵ::N
-  momentum::N
-  affine::Bool
-  track_stats::Bool
-  active::Union{Bool, Nothing}
-  chs::Int # number of channels
+    λ::F  # activation function
+    β::V  # bias
+    γ::V  # scale
+    μ::W  # moving mean
+    σ²::W  # moving var
+    ϵ::N
+    momentum::N
+    affine::Bool
+    track_stats::Bool
+    active::Union{Bool,Nothing}
+    chs::Int # number of channels
 end
 
-function InstanceNorm(chs::Int, λ=identity;
-                    initβ=zeros32, initγ=ones32,
-                    affine=false, track_stats=false,
-                    ϵ=1f-5, momentum=0.1f0)
+function InstanceNorm(
+    chs::Int,
+    λ = identity;
+    initβ = zeros32,
+    initγ = ones32,
+    affine = false,
+    track_stats = false,
+    ϵ = 1f-5,
+    momentum = 0.1f0,
+)
+    β = affine ? initβ(chs) : nothing
+    γ = affine ? initγ(chs) : nothing
+    μ = track_stats ? zeros32(chs) : nothing
+    σ² = track_stats ? ones32(chs) : nothing
 
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros32(chs) : nothing
-  σ² = track_stats ? ones32(chs) : nothing
-
-  return InstanceNorm(λ, β, γ,
-            μ, σ², ϵ, momentum, 
-            affine, track_stats,
-            nothing, chs)
+    return InstanceNorm(λ, β, γ, μ, σ², ϵ, momentum, affine, track_stats, nothing, chs)
 end
 
 @functor InstanceNorm
 trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
 
 function (l::InstanceNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == l.chs
-  N = ndims(x)
-  reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  return _norm_layer_forward(l, x; reduce_dims, affine_shape)
+    @assert ndims(x) > 2
+    @assert size(x, ndims(x) - 1) == l.chs
+    N = ndims(x)
+    reduce_dims = 1:(N - 2)
+    affine_shape = ntuple(i -> i == N - 1 ? size(x, N - 1) : 1, N)
+    return _norm_layer_forward(l, x; reduce_dims, affine_shape)
 end
 
-testmode!(m::InstanceNorm, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+function testmode!(m::InstanceNorm, mode = true)
+    (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+end
 
 function Base.show(io::IO, l::InstanceNorm)
-  print(io, "InstanceNorm($(l.chs)")
-  l.λ == identity || print(io, ", $(l.λ)")
-  hasaffine(l) || print(io,  ", affine=false")
-  print(io, ")")
+    print(io, "InstanceNorm($(l.chs)")
+    l.λ == identity || print(io, ", $(l.λ)")
+    hasaffine(l) || print(io, ", affine=false")
+    return print(io, ")")
 end
 
 """
@@ -387,65 +396,68 @@ If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 """
 mutable struct GroupNorm{F,V,N,W}
-  G::Int  # number of groups
-  λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
-  μ::W     # moving mean
-  σ²::W    # moving std
-  ϵ::N
-  momentum::N
-  affine::Bool
-  track_stats::Bool
-  active::Union{Bool, Nothing}
-  chs::Int # number of channels
+    G::Int  # number of groups
+    λ::F  # activation function
+    β::V  # bias
+    γ::V  # scale
+    μ::W     # moving mean
+    σ²::W    # moving std
+    ϵ::N
+    momentum::N
+    affine::Bool
+    track_stats::Bool
+    active::Union{Bool,Nothing}
+    chs::Int # number of channels
 end
 
 @functor GroupNorm
 trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
-function GroupNorm(chs::Int, G::Int, λ=identity;
-              initβ=zeros32, initγ=ones32, 
-              affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0)
+function GroupNorm(
+    chs::Int,
+    G::Int,
+    λ = identity;
+    initβ = zeros32,
+    initγ = ones32,
+    affine = true,
+    track_stats = false,
+    ϵ = 1f-5,
+    momentum = 0.1f0,
+)
+    chs % G == 0 ||
+        error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
-  chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
+    β = affine ? initβ(chs) : nothing
+    γ = affine ? initγ(chs) : nothing
+    μ = track_stats ? zeros32(G) : nothing
+    σ² = track_stats ? ones32(G) : nothing
 
-  β = affine ? initβ(chs) : nothing
-  γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros32(G) : nothing
-  σ² = track_stats ? ones32(G) : nothing
-
-  return GroupNorm(G, λ, 
-            β, γ,
-            μ, σ², 
-            ϵ, momentum, 
-            affine, track_stats, 
-            nothing, chs)
+    return GroupNorm(G, λ, β, γ, μ, σ², ϵ, momentum, affine, track_stats, nothing, chs)
 end
 
 function (gn::GroupNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == gn.chs
-  N = ndims(x)
-  sz = size(x)
-  x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
-  N = ndims(x)
-  reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
-  x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
-  return reshape(x, sz)
+    @assert ndims(x) > 2
+    @assert size(x, ndims(x) - 1) == gn.chs
+    N = ndims(x)
+    sz = size(x)
+    x = reshape(x, sz[1:(N - 2)]..., sz[N - 1] ÷ gn.G, gn.G, sz[N])
+    N = ndims(x)
+    reduce_dims = 1:(N - 2)
+    affine_shape = ntuple(i -> i ∈ (N - 1, N - 2) ? size(x, i) : 1, N)
+    x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
+    return reshape(x, sz)
 end
 
-testmode!(m::GroupNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+function testmode!(m::GroupNorm, mode = true)
+    (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+end
 
 function Base.show(io::IO, l::GroupNorm)
-  # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
-  print(io, "GroupNorm($(l.chs), $(l.G)")
-  l.λ == identity || print(io, ", ", l.λ)
-  hasaffine(l) || print(io,  ", affine=false")
-  print(io, ")")
+    # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
+    print(io, "GroupNorm($(l.chs), $(l.G)")
+    l.λ == identity || print(io, ", ", l.λ)
+    hasaffine(l) || print(io, ", affine=false")
+    return print(io, ")")
 end
 
 """
@@ -456,4 +468,4 @@ scale parameters, `false` otherwise.
 
 See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
 """
-hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
+hasaffine(l::Union{BatchNorm,InstanceNorm,LayerNorm,GroupNorm}) = l.affine

@@ -29,41 +29,38 @@ julia> m(ones(2, 2, 1, 1)) |> size
 (4, 5, 1, 1)
 ```
 """
-struct Upsample{mode, S, T}
-  scale::S
-  size::T
+struct Upsample{mode,S,T}
+    scale::S
+    size::T
 end
 
 function Upsample(mode::Symbol = :nearest; scale = nothing, size = nothing)
-  mode in [:nearest, :bilinear] || 
-    throw(ArgumentError("mode=:$mode is not supported."))
-  if !(isnothing(scale) ⊻ isnothing(size))
-    throw(ArgumentError("Either scale or size should be specified (but not both)."))
-  end
-  return Upsample{mode,typeof(scale),typeof(size)}(scale, size)
+    mode in [:nearest, :bilinear] || throw(ArgumentError("mode=:$mode is not supported."))
+    if !(isnothing(scale) ⊻ isnothing(size))
+        throw(ArgumentError("Either scale or size should be specified (but not both)."))
+    end
+    return Upsample{mode,typeof(scale),typeof(size)}(scale, size)
 end
 
 Upsample(scale, mode::Symbol = :nearest) = Upsample(mode; scale)
 
-(m::Upsample{:nearest})(x::AbstractArray) =
-  NNlib.upsample_nearest(x, m.scale)
-function (m::Upsample{:nearest, Int})(x::AbstractArray{T, N}) where {T, N} 
-  NNlib.upsample_nearest(x, ntuple(i -> m.scale, N-2))
+(m::Upsample{:nearest})(x::AbstractArray) = NNlib.upsample_nearest(x, m.scale)
+function (m::Upsample{:nearest,Int})(x::AbstractArray{T,N}) where {T,N}
+    return NNlib.upsample_nearest(x, ntuple(i -> m.scale, N - 2))
 end
-(m::Upsample{:nearest, Nothing})(x::AbstractArray) =
-  NNlib.upsample_nearest(x; size=m.size)
+(m::Upsample{:nearest,Nothing})(x::AbstractArray) = NNlib.upsample_nearest(x; size = m.size)
 
-(m::Upsample{:bilinear})(x::AbstractArray) =
-  NNlib.upsample_bilinear(x, m.scale)
-(m::Upsample{:bilinear, Nothing})(x::AbstractArray) = 
-  NNlib.upsample_bilinear(x; size=m.size)
+(m::Upsample{:bilinear})(x::AbstractArray) = NNlib.upsample_bilinear(x, m.scale)
+function (m::Upsample{:bilinear,Nothing})(x::AbstractArray)
+    return NNlib.upsample_bilinear(x; size = m.size)
+end
 
 function Base.show(io::IO, u::Upsample{mode}) where {mode}
-  print(io, "Upsample(")
-  print(io, ":", mode)
-  u.scale !== nothing && print(io, ", scale = $(u.scale)")
-  u.size !== nothing && print(io, ", size = $(u.size)")
-  print(io, ")")
+    print(io, "Upsample(")
+    print(io, ":", mode)
+    u.scale !== nothing && print(io, ", scale = $(u.scale)")
+    u.size !== nothing && print(io, ", size = $(u.size)")
+    return print(io, ")")
 end
 
 """
@@ -73,8 +70,8 @@ Pixel shuffling layer with upscale factor `r`.
  
 See [`NNlib.pixel_shuffle`](@ref).
 """
-struct PixelShuffle 
-  r::Int
+struct PixelShuffle
+    r::Int
 end
 
 (m::PixelShuffle)(x) = NNlib.pixel_shuffle(x, m.r)

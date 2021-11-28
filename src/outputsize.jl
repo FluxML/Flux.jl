@@ -1,7 +1,7 @@
 module NilNumber
 
 using NNlib
-import Random
+using Random: Random
 
 """
     Nil <: Number
@@ -13,21 +13,36 @@ struct Nil <: Number end
 
 const nil = Nil()
 
-Nil(::T) where T<:Number = nil
-(::Type{T})(::Nil) where T<:Number = nil
+Nil(::T) where {T<:Number} = nil
+(::Type{T})(::Nil) where {T<:Number} = nil
 Base.convert(::Type{Nil}, ::Number) = nil
 
 Base.float(::Type{Nil}) = Nil
 
-for f in [:copy, :zero, :one, :oneunit,
-          :+, :-, :abs, :abs2, :inv,
-          :exp, :log, :log1p, :log2, :log10,
-          :sqrt, :tanh, :conj]
-  @eval Base.$f(::Nil) = nil
+for f in [
+    :copy,
+    :zero,
+    :one,
+    :oneunit,
+    :+,
+    :-,
+    :abs,
+    :abs2,
+    :inv,
+    :exp,
+    :log,
+    :log1p,
+    :log2,
+    :log10,
+    :sqrt,
+    :tanh,
+    :conj,
+]
+    @eval Base.$f(::Nil) = nil
 end
 
 for f in [:+, :-, :*, :/, :^, :mod, :div, :rem]
-  @eval Base.$f(::Nil, ::Nil) = nil
+    @eval Base.$f(::Nil, ::Nil) = nil
 end
 
 Base.isless(::Nil, ::Nil) = true
@@ -88,27 +103,27 @@ julia> outputsize([Dense(10, 4), Dense(4, 2)], (10, 1)) # Vector of layers becom
 (2, 1)
 ```
 """
-function outputsize(m, inputsizes::Tuple...; padbatch=false)
-  x = nil_input(padbatch, inputsizes...)
-  return size(m(x))
+function outputsize(m, inputsizes::Tuple...; padbatch = false)
+    x = nil_input(padbatch, inputsizes...)
+    return size(m(x))
 end
 
-nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s...,1)) : fill(nil, s)
+nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s..., 1)) : fill(nil, s)
 nil_input(pad::Bool, multi::Tuple{Vararg{Integer}}...) = nil_input.(pad, multi)
 nil_input(pad::Bool, tup::Tuple{Vararg{Tuple}}) = nil_input(pad, tup...)
 
-function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch=false)
-  x = nil_input(padbatch, inputsizes...)
-  for (i,lay) in enumerate(m.layers)
-    try
-      x = lay(x)
-    catch err
-      str = x isa AbstractArray ? "with input of size $(size(x))" : ""
-      @error "layer $lay, index $i in Chain, gave an error $str"
-      rethrow(err)
+function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch = false)
+    x = nil_input(padbatch, inputsizes...)
+    for (i, lay) in enumerate(m.layers)
+        try
+            x = lay(x)
+        catch err
+            str = x isa AbstractArray ? "with input of size $(size(x))" : ""
+            @error "layer $lay, index $i in Chain, gave an error $str"
+            rethrow(err)
+        end
     end
-  end
-  return size(x)
+    return size(x)
 end
 
 """
@@ -142,29 +157,35 @@ outputsize
 
 ## make tuples and vectors be like Chains
 
-outputsize(m::Tuple, input::Tuple...; padbatch=false) = outputsize(Chain(m...), input...; padbatch=padbatch)
-outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chain(m...), input...; padbatch=padbatch)
+function outputsize(m::Tuple, input::Tuple...; padbatch = false)
+    return outputsize(Chain(m...), input...; padbatch = padbatch)
+end
+function outputsize(m::AbstractVector, input::Tuple...; padbatch = false)
+    return outputsize(Chain(m...), input...; padbatch = padbatch)
+end
 
 ## bypass statistics in normalization layers
 
 for layer in (:LayerNorm, :BatchNorm, :InstanceNorm, :GroupNorm)
-  @eval (l::$layer)(x::AbstractArray{Nil}) = x
+    @eval (l::$layer)(x::AbstractArray{Nil}) = x
 end
 
 ## fixes for layers that don't work out of the box
 
 for (fn, Dims) in ((:conv, DenseConvDims), (:depthwiseconv, DepthwiseConvDims))
-  @eval begin
-    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
-      fill(nil, NNlib.output_size(dims)..., NNlib.channels_out(dims), size(a)[end])
-    end
+    @eval begin
+        function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
+            return fill(
+                nil, NNlib.output_size(dims)..., NNlib.channels_out(dims), size(a)[end]
+            )
+        end
 
-    function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims)
-      NNlib.$fn(fill(nil, size(a)), b, dims)
-    end
+        function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims)
+            return NNlib.$fn(fill(nil, size(a)), b, dims)
+        end
 
-    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims)
-      NNlib.$fn(a, fill(nil, size(b)), dims)
+        function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims)
+            return NNlib.$fn(a, fill(nil, size(b)), dims)
+        end
     end
-  end
 end

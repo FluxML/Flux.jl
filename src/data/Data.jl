@@ -10,17 +10,19 @@ export DataLoader
 ## Also remove the following deps:
 ## AbstractTrees, ZipFiles, CodecZLib
 
-import ..Flux
-import SHA
+using ..Flux: Flux
+using SHA: SHA
 
-deprecation_message() = @warn("Flux's datasets are deprecated, please use the package MLDatasets.jl")
+function deprecation_message()
+    @warn("Flux's datasets are deprecated, please use the package MLDatasets.jl")
+end
 
 function deps(path...)
-  if isnothing(@__DIR__) # sysimages
-    joinpath("deps", path...)
-  else
-    joinpath(@__DIR__, "..", "..", "deps", path...)
-  end
+    if isnothing(@__DIR__) # sysimages
+        joinpath("deps", path...)
+    else
+        joinpath(@__DIR__, "..", "..", "deps", path...)
+    end
 end
 
 function download_and_verify(url, path, hash)
@@ -30,16 +32,16 @@ function download_and_verify(url, path, hash)
         bytes2hex(SHA.sha256(f))
     end
     if hash_download !== hash
-        msg  = "Hash Mismatch!\n"
+        msg = "Hash Mismatch!\n"
         msg *= "  Expected sha256:   $hash\n"
         msg *= "  Calculated sha256: $hash_download"
         error(msg)
     end
-    mv(tmppath, path; force=true)
+    return mv(tmppath, path; force = true)
 end
 
 function __init__()
-  mkpath(deps())
+    return mkpath(deps())
 end
 
 include("mnist.jl")
@@ -50,7 +52,8 @@ export FashionMNIST
 
 include("cmudict.jl")
 export CMUDict
-using .CMUDict; export cmudict
+using .CMUDict
+export cmudict
 
 include("tree.jl")
 include("sentiment.jl")

@@ -8,48 +8,54 @@ using LinearAlgebra, NNlib
 These are constructed by [`onehot`](@ref) and [`onehotbatch`](@ref).
 Parameter `I` is the type of the underlying storage, and `T` its eltype.
 """
-struct OneHotArray{T<:Integer, L, N, var"N+1", I<:Union{T, AbstractArray{T, N}}} <: AbstractArray{Bool, var"N+1"}
-  indices::I
+struct OneHotArray{T<:Integer,L,N,var"N+1",I<:Union{T,AbstractArray{T,N}}} <:
+       AbstractArray{Bool,var"N+1"}
+    indices::I
 end
-OneHotArray{T, L, N, I}(indices) where {T, L, N, I} = OneHotArray{T, L, N, N+1, I}(indices)
-OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T, L, 0, 1, T}(indices)
-OneHotArray(indices::I, L::Integer) where {T, N, I<:AbstractArray{T, N}} = OneHotArray{T, L, N, N+1, I}(indices)
+OneHotArray{T,L,N,I}(indices) where {T,L,N,I} = OneHotArray{T,L,N,N + 1,I}(indices)
+OneHotArray(indices::T, L::Integer) where {T<:Integer} = OneHotArray{T,L,0,1,T}(indices)
+OneHotArray(indices::I, L::Integer) where {T,N,I<:AbstractArray{T,N}} =
+    OneHotArray{T,L,N,N + 1,I}(indices)
 
 _indices(x::OneHotArray) = x.indices
-_indices(x::Base.ReshapedArray{<: Any, <: Any, <: OneHotArray}) =
-  reshape(parent(x).indices, x.dims[2:end])
+_indices(x::Base.ReshapedArray{<:Any,<:Any,<:OneHotArray}) =
+    reshape(parent(x).indices, x.dims[2:end])
 
-const OneHotVector{T, L} = OneHotArray{T, L, 0, 1, T}
-const OneHotMatrix{T, L, I} = OneHotArray{T, L, 1, 2, I}
+const OneHotVector{T,L} = OneHotArray{T,L,0,1,T}
+const OneHotMatrix{T,L,I} = OneHotArray{T,L,1,2,I}
 
-@doc @doc(OneHotArray)
-OneHotVector(idx, L) = OneHotArray(idx, L)
-@doc @doc(OneHotArray)
-OneHotMatrix(indices, L) = OneHotArray(indices, L)
+@doc @doc(OneHotArray) OneHotVector(idx, L) = OneHotArray(idx, L)
+@doc @doc(OneHotArray) OneHotMatrix(indices, L) = OneHotArray(indices, L)
 
 # use this type so reshaped arrays hit fast paths
 # e.g. argmax
-const OneHotLike{T, L, N, var"N+1", I} =
-  Union{OneHotArray{T, L, N, var"N+1", I},
-        Base.ReshapedArray{Bool, var"N+1", <:OneHotArray{T, L, <:Any, <:Any, I}}}
+const OneHotLike{T,L,N,var"N+1",I} = Union{
+    OneHotArray{T,L,N,var"N+1",I},
+    Base.ReshapedArray{Bool,var"N+1",<:OneHotArray{T,L,<:Any,<:Any,I}},
+}
 
 _isonehot(x::OneHotArray) = true
-_isonehot(x::Base.ReshapedArray{<:Any, <:Any, <:OneHotArray{<:Any, L}}) where L = (size(x, 1) == L)
+_isonehot(x::Base.ReshapedArray{<:Any,<:Any,<:OneHotArray{<:Any,L}}) where {L} =
+    (size(x, 1) == L)
 
-Base.size(x::OneHotArray{<:Any, L}) where L = (Int(L), size(x.indices)...)
+Base.size(x::OneHotArray{<:Any,L}) where {L} = (Int(L), size(x.indices)...)
 
 _onehotindex(x, i) = (x == i)
 
 Base.getindex(x::OneHotVector, i::Integer) = _onehotindex(x.indices, i)
-Base.getindex(x::OneHotVector{T, L}, ::Colon) where {T, L} = x
+Base.getindex(x::OneHotVector{T,L}, ::Colon) where {T,L} = x
 
 Base.getindex(x::OneHotArray, i::Integer, I...) = _onehotindex.(x.indices[I...], i)
-Base.getindex(x::OneHotArray{<:Any, L}, ::Colon, I...) where L = OneHotArray(x.indices[I...], L)
-Base.getindex(x::OneHotArray{<:Any, <:Any, <:Any, N}, ::Vararg{Colon, N}) where N = x
-Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where N = x[I[1], Tuple(I)[2:N]...]
+Base.getindex(x::OneHotArray{<:Any,L}, ::Colon, I...) where {L} =
+    OneHotArray(x.indices[I...], L)
+Base.getindex(x::OneHotArray{<:Any,<:Any,<:Any,N}, ::Vararg{Colon,N}) where {N} = x
+Base.getindex(x::OneHotArray, I::CartesianIndex{N}) where {N} = x[I[1], Tuple(I)[2:N]...]
 
 function Base.showarg(io::IO, x::OneHotArray, toplevel)
-    print(io, ndims(x) == 1 ? "OneHotVector(" : ndims(x) == 2 ? "OneHotMatrix(" : "OneHotArray(")
+    print(
+        io,
+        ndims(x) == 1 ? "OneHotVector(" : ndims(x) == 2 ? "OneHotMatrix(" : "OneHotArray(",
+    )
     Base.showarg(io, x.indices, false)
     print(io, ')')
     toplevel && print(io, " with eltype Bool")
@@ -57,48 +63,62 @@ function Base.showarg(io::IO, x::OneHotArray, toplevel)
 end
 
 # this is from /LinearAlgebra/src/diagonal.jl, official way to print the dots:
-function Base.replace_in_print_matrix(x::OneHotLike, i::Integer, j::Integer, s::AbstractString)
-    x[i,j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
+function Base.replace_in_print_matrix(
+    x::OneHotLike,
+    i::Integer,
+    j::Integer,
+    s::AbstractString,
+)
+    x[i, j] ? s : _isonehot(x) ? Base.replace_with_centered_mark(s) : s
 end
 
 # copy CuArray versions back before trying to print them:
-Base.print_array(io::IO, X::OneHotLike{T, L, N, var"N+1", <:CuArray}) where {T, L, N, var"N+1"} = 
-  Base.print_array(io, cpu(X))
-Base.print_array(io::IO, X::LinearAlgebra.AdjOrTrans{Bool, <:OneHotLike{T, L, N, var"N+1", <:CuArray}}) where {T, L, N, var"N+1"} = 
-  Base.print_array(io, cpu(X))
+Base.print_array(io::IO, X::OneHotLike{T,L,N,var"N+1",<:CuArray}) where {T,L,N,var"N+1"} =
+    Base.print_array(io, cpu(X))
+Base.print_array(
+    io::IO,
+    X::LinearAlgebra.AdjOrTrans{Bool,<:OneHotLike{T,L,N,var"N+1",<:CuArray}},
+) where {T,L,N,var"N+1"} = Base.print_array(io, cpu(X))
 
-_onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:Union{Integer, AbstractArray}}) where N = Array{Bool, N}
-_onehot_bool_type(x::OneHotLike{<:Any, <:Any, <:Any, N, <:CuArray}) where N = CuArray{Bool, N}
+_onehot_bool_type(
+    x::OneHotLike{<:Any,<:Any,<:Any,N,<:Union{Integer,AbstractArray}},
+) where {N} = Array{Bool,N}
+_onehot_bool_type(x::OneHotLike{<:Any,<:Any,<:Any,N,<:CuArray}) where {N} = CuArray{Bool,N}
 
-function Base.cat(x::OneHotLike{<:Any, L}, xs::OneHotLike{<:Any, L}...; dims::Int) where L
-  if isone(dims) || any(x -> !_isonehot(x), (x, xs...))
-    return cat(map(x -> convert(_onehot_bool_type(x), x), (x, xs...))...; dims = dims)
-  else
-    return OneHotArray(cat(_indices(x), _indices.(xs)...; dims = dims - 1), L)
-  end
+function Base.cat(x::OneHotLike{<:Any,L}, xs::OneHotLike{<:Any,L}...; dims::Int) where {L}
+    if isone(dims) || any(x -> !_isonehot(x), (x, xs...))
+        return cat(map(x -> convert(_onehot_bool_type(x), x), (x, xs...))...; dims = dims)
+    else
+        return OneHotArray(cat(_indices(x), _indices.(xs)...; dims = dims - 1), L)
+    end
 end
 
 Base.hcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 2)
 Base.vcat(x::OneHotLike, xs::OneHotLike...) = cat(x, xs...; dims = 1)
 
 # optimized concatenation for matrices and vectors of same parameters
-Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 2}} =
-  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
-Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 1}} =
-  OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
+Base.hcat(x::T, xs::T...) where {L,T<:OneHotLike{<:Any,L,<:Any,2}} =
+    OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
+Base.hcat(x::T, xs::T...) where {L,T<:OneHotLike{<:Any,L,<:Any,1}} =
+    OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
 
-batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
+batch(xs::AbstractArray{<:OneHotVector{<:Any,L}}) where {L} = OneHotArray(_indices.(xs), L)
 
-Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(adapt(T, _indices(x)), L)
+Adapt.adapt_structure(T, x::OneHotArray{<:Any,L}) where {L} =
+    OneHotArray(adapt(T, _indices(x)), L)
 
-Base.BroadcastStyle(::Type{<:OneHotArray{<: Any, <: Any, <: Any, N, <: CuArray}}) where N = CUDA.CuArrayStyle{N}()
+Base.BroadcastStyle(::Type{<:OneHotArray{<:Any,<:Any,<:Any,N,<:CuArray}}) where {N} =
+    CUDA.CuArrayStyle{N}()
 
 Base.map(f, x::OneHotLike) = Base.broadcast(f, x)
 
 Base.argmax(x::OneHotLike; dims = Colon()) =
-  (_isonehot(x) && dims == 1) ?
-    reshape(CartesianIndex.(_indices(x), CartesianIndices(_indices(x))), 1, size(_indices(x))...) :
-    invoke(argmax, Tuple{AbstractArray}, x; dims = dims)
+    (_isonehot(x) && dims == 1) ?
+    reshape(
+        CartesianIndex.(_indices(x), CartesianIndices(_indices(x))),
+        1,
+        size(_indices(x))...,
+    ) : invoke(argmax, Tuple{AbstractArray}, x; dims = dims)
 
 """
     onehot(x, labels, [default])
@@ -131,15 +151,15 @@ julia> hcat(αβγ...)  # preserves sparsity
 ```
 """
 function onehot(x, labels)
-  i = something(findfirst(isequal(x), labels), 0)
-  i > 0 || error("Value $x is not in labels")
-  OneHotVector{UInt32, length(labels)}(i)
+    i = something(findfirst(isequal(x), labels), 0)
+    i > 0 || error("Value $x is not in labels")
+    OneHotVector{UInt32,length(labels)}(i)
 end
 
 function onehot(x, labels, default)
-  i = something(findfirst(isequal(x), labels), 0)
-  i > 0 || return onehot(default, labels)
-  OneHotVector{UInt32, length(labels)}(i)
+    i = something(findfirst(isequal(x), labels), 0)
+    i > 0 || return onehot(default, labels)
+    OneHotVector{UInt32,length(labels)}(i)
 end
 
 """
@@ -203,55 +223,79 @@ julia> Flux.onecold([ 1  0  0  1  0  1  0  1  0  0  1
 """
 onecold(y::AbstractVector, labels = 1:length(y)) = labels[argmax(y)]
 function onecold(y::AbstractArray, labels = 1:size(y, 1))
-  indices = _fast_argmax(y)
-  xs = isbits(labels) ? indices : collect(indices) # non-bit type cannot be handled by CUDA
+    indices = _fast_argmax(y)
+    xs = isbits(labels) ? indices : collect(indices) # non-bit type cannot be handled by CUDA
 
-  return map(xi -> labels[xi[1]], xs)
+    return map(xi -> labels[xi[1]], xs)
 end
 
 _fast_argmax(x::AbstractArray) = dropdims(argmax(x; dims = 1); dims = 1)
 function _fast_argmax(x::OneHotLike)
-  if _isonehot(x)
-    return _indices(x)
-  else
-    return _fast_argmax(convert(_onehot_bool_type(x), x))
-  end
+    if _isonehot(x)
+        return _indices(x)
+    else
+        return _fast_argmax(convert(_onehot_bool_type(x), x))
+    end
 end
 
 @nograd OneHotArray, onecold, onehot, onehotbatch
 
-function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
-  _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
-  size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
-  return A[:, onecold(B)]
+function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any,L}) where {L}
+    _isonehot(B) || return invoke(*, Tuple{AbstractMatrix,AbstractMatrix}, A, B)
+    size(A, 2) == L || throw(
+        DimensionMismatch(
+            "Matrix column must correspond with OneHot size: $(size(A, 2)) != $L",
+        ),
+    )
+    return A[:, onecold(B)]
 end
 
-function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L, 1}) where L
-  _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
-  size(A, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
-  return NNlib.gather(A, _indices(B))
+function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any,L,1}) where {L}
+    _isonehot(B) || return invoke(*, Tuple{AbstractMatrix,AbstractMatrix}, A, B)
+    size(A, 2) == L || throw(
+        DimensionMismatch(
+            "Matrix column must correspond with OneHot size: $(size(A, 2)) != $L",
+        ),
+    )
+    return NNlib.gather(A, _indices(B))
 end
 
-function Base.:(*)(A::AbstractMatrix, B::Adjoint{Bool, <:OneHotMatrix})
-  B_dim = length(_indices(parent(B)))
-  size(A, 2) == B_dim || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $B_dim"))
-  return NNlib.scatter(+, A, _indices(parent(B)), dstsize=(size(A,1), size(B,2)))
+function Base.:(*)(A::AbstractMatrix, B::Adjoint{Bool,<:OneHotMatrix})
+    B_dim = length(_indices(parent(B)))
+    size(A, 2) == B_dim || throw(
+        DimensionMismatch(
+            "Matrix column must correspond with OneHot size: $(size(A, 2)) != $B_dim",
+        ),
+    )
+    return NNlib.scatter(+, A, _indices(parent(B)), dstsize = (size(A, 1), size(B, 2)))
 end
 
 for wrapper in [:Adjoint, :Transpose]
-  @eval begin
-    function Base.:*(A::$wrapper{<:Any, <:AbstractMatrix{T}}, b::OneHotVector{<:Any, L}) where {L, T}
-      size(A, 2) == L ||
-        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
+    @eval begin
+        function Base.:*(
+            A::$wrapper{<:Any,<:AbstractMatrix{T}},
+            b::OneHotVector{<:Any,L},
+        ) where {L,T}
+            size(A, 2) == L || throw(
+                DimensionMismatch(
+                    "Matrix column must correspond with OneHot size: $(size(A, 2)) != $L",
+                ),
+            )
 
-      return A[:, onecold(b)]
+            return A[:, onecold(b)]
+        end
+
+        function Base.:*(
+            A::$wrapper{<:Number,<:AbstractVector{T}},
+            b::OneHotVector{<:Any,L},
+        ) where {L,T}
+            size(A, 2) == L || throw(
+                DimensionMismatch(
+                    "Matrix column must correspond with OneHot size: $(size(A, 2)) != $L",
+                ),
+            )
+
+            return A[onecold(b)]
+        end
     end
-
-    function Base.:*(A::$wrapper{<:Number, <:AbstractVector{T}}, b::OneHotVector{<:Any, L}) where {L, T}
-      size(A, 2) == L ||
-        throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(A, 2)) != $L"))
-
-      return A[onecold(b)]
-    end
-  end
 end
