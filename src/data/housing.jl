@@ -40,12 +40,14 @@ using ..Data: deps, download_and_verify, deprecation_message
 const cache_prefix = ""
 
 function load()
-    isfile(deps("housing.data")) && return
+    isfile(deps("housing.data")) && return nothing
 
     @info "Downloading the Boston housing Dataset"
-    download_and_verify("$(cache_prefix)http://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data",
-                        deps("housing.data"),
-                        "baadf72995725d76efe787b664e1f083388c79ba21ef9a7990d87f774184735a")
+    download_and_verify(
+        "$(cache_prefix)http://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data",
+        deps("housing.data"),
+        "baadf72995725d76efe787b664e1f083388c79ba21ef9a7990d87f774184735a",
+    )
 
     #@info "Download complete. Working on the files"
     path = deps()
@@ -58,7 +60,7 @@ function load()
             end
         end
     end
-    mv(joinpath(path, "tempfile.data"), deps("housing.data"), force=true)
+    return mv(joinpath(path, "tempfile.data"), deps("housing.data"); force = true)
 end
 
 """
@@ -75,17 +77,29 @@ function targets()
     deprecation_message()
     load()
     housing = readdlm(deps("housing.data"), ',')
-    reshape(Vector{Float64}(housing[1:end,end]), (506, 1))
+    return reshape(Vector{Float64}(housing[1:end, end]), (506, 1))
 end
-
 
 """
 Gets the names of the features provided in the dataset
 """
 function feature_names()
-    ["crim","zn","indus","chas","nox","rm","age","dis","rad","tax","ptratio","b","lstat"]
+    return [
+        "crim",
+        "zn",
+        "indus",
+        "chas",
+        "nox",
+        "rm",
+        "age",
+        "dis",
+        "rad",
+        "tax",
+        "ptratio",
+        "b",
+        "lstat",
+    ]
 end
-
 
 """
 Gets the features of the Boston Housing Dataset. This is a 506x13 Matrix of Float64 datatypes.
@@ -113,8 +127,7 @@ function features()
     deprecation_message()
     load()
     housing = readdlm(deps("housing.data"), ',')
-    Matrix{Float64}(housing[1:end, 1:13])
+    return Matrix{Float64}(housing[1:end, 1:13])
 end
-
 
 end

@@ -1,4 +1,4 @@
-import Base: +, -, *,/, reshape, broadcasted
+import Base: +, -, *, /, reshape, broadcasted
 
 """
     Zeros()
@@ -44,9 +44,12 @@ broadcasted(::typeof(+), a::Zeros, b::AbstractArray) = b
 broadcasted(::typeof(-), a::AbstractArray, b::Zeros) = a
 broadcasted(::typeof(-), a::Zeros, b::AbstractArray) = -b
 # Need adjoints for these or else the gradient w.r.t to the non-Zeros arg will be nothing as well
-@adjoint broadcasted(::typeof(*), a::AbstractArray, b::Zeros) = zero(a), _ -> (nothing, zero(a), nothing)
-@adjoint broadcasted(::typeof(*), a::Zeros, b::AbstractArray) = zero(b), _ -> (nothing, nothing, zero(b))
-@adjoint broadcasted(::typeof(/), a::Zeros, b::AbstractArray) = zero(b), _ -> (nothing, nothing, zero(b))
+@adjoint broadcasted(::typeof(*), a::AbstractArray, b::Zeros) =
+    zero(a), _ -> (nothing, zero(a), nothing)
+@adjoint broadcasted(::typeof(*), a::Zeros, b::AbstractArray) =
+    zero(b), _ -> (nothing, nothing, zero(b))
+@adjoint broadcasted(::typeof(/), a::Zeros, b::AbstractArray) =
+    zero(b), _ -> (nothing, nothing, zero(b))
 
 # Pass-through for layer constructors
 create_bias(weights::AbstractArray, bias::Flux.Zeros, dims::Integer...) = bias

@@ -28,7 +28,7 @@ nfan() = 1, 1 # fan_in, fan_out
 nfan(n) = 1, n # A vector is treated as a n×1 matrix
 nfan(n_out, n_in) = n_in, n_out # In case of Dense kernels: arranged as matrices
 nfan(dims::Tuple) = nfan(dims...)
-nfan(dims...) = prod(dims[1:end-2]) .* (dims[end-1], dims[end]) # In case of convolution kernels
+nfan(dims...) = prod(dims[1:(end - 2)]) .* (dims[end - 1], dims[end]) # In case of convolution kernels
 
 ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
@@ -61,7 +61,9 @@ julia> Flux.glorot_uniform(2, 3)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_uniform(rng::AbstractRNG, dims...) = (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+function glorot_uniform(rng::AbstractRNG, dims...)
+    return (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+end
 glorot_uniform(dims...) = glorot_uniform(Random.GLOBAL_RNG, dims...)
 glorot_uniform(rng::AbstractRNG) = (dims...) -> glorot_uniform(rng, dims...)
 
@@ -94,7 +96,9 @@ julia> Flux.glorot_normal(3, 2)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_normal(rng::AbstractRNG, dims...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+function glorot_normal(rng::AbstractRNG, dims...)
+    return randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+end
 glorot_normal(dims...) = glorot_normal(Random.GLOBAL_RNG, dims...)
 glorot_normal(rng::AbstractRNG) = (dims...) -> glorot_normal(rng, dims...)
 
@@ -128,12 +132,14 @@ julia> Flux.kaiming_uniform(3, 2)
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
 function kaiming_uniform(rng::AbstractRNG, dims...; gain = √2)
-  bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
-  return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
+    bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
+    return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
 kaiming_uniform(dims...; kwargs...) = kaiming_uniform(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+function kaiming_uniform(rng::AbstractRNG; init_kwargs...)
+    return (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+end
 
 """
     kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
@@ -164,13 +170,15 @@ julia> Flux.kaiming_normal(3, 2)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_normal(rng::AbstractRNG, dims...; gain = √2f0)
-  std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
-  return randn(rng, Float32, dims...) .* std
+function kaiming_normal(rng::AbstractRNG, dims...; gain = √2.0f0)
+    std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
+    return randn(rng, Float32, dims...) .* std
 end
 
 kaiming_normal(dims...; kwargs...) = kaiming_normal(Random.GLOBAL_RNG, dims...; kwargs...)
-kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
+function kaiming_normal(rng::AbstractRNG; init_kwargs...)
+    return (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
+end
 
 """
     orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
@@ -217,26 +225,29 @@ true
 
 """
 function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain = 1)
-  mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
+    mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
 
-  Q, R = LinearAlgebra.qr(mat)
-  Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
-  if rows < cols
-    Q = transpose(Q)
-  end
+    Q, R = LinearAlgebra.qr(mat)
+    Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
+    if rows < cols
+        Q = transpose(Q)
+    end
 
-  return gain * Q
+    return gain * Q
 end
 
 function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
-  dims = (d1, ds...)
-  rows = prod(dims[1:end-1])
-  cols = dims[end]
-  return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
+    dims = (d1, ds...)
+    rows = prod(dims[1:(end - 1)])
+    cols = dims[end]
+    return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
 end
 
 orthogonal(dims::Integer...; kwargs...) = orthogonal(Random.GLOBAL_RNG, dims...; kwargs...)
-orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+function orthogonal(rng::AbstractRNG; init_kwargs...)
+    return (dims::Integer...; kwargs...) ->
+        orthogonal(rng, dims...; init_kwargs..., kwargs...)
+end
 
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
@@ -268,19 +279,25 @@ julia> Flux.sparse_init(3, 2, sparsity=0.1)
 [1] Martens, J, "Deep learning via Hessian-free optimization" _Proceedings of the 27th International Conference on International Conference on Machine Learning_. 2010.
 """
 function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
-  if length(dims) != 2
-    throw(ArgumentError("Only 2-dimensional outputs are supported for sparse initialization."))
-  end
-  rows, cols = dims
-  prop_zero = min(1.0, sparsity)
-  num_zeros = ceil(Integer, prop_zero * rows)
-  sparse_array = randn(rng, Float32, dims...) .* Float32(std)
-  sparse_array[1:num_zeros, :] .= 0f0
-  return mapslices(shuffle, sparse_array, dims=1)
+    if length(dims) != 2
+        throw(
+            ArgumentError(
+                "Only 2-dimensional outputs are supported for sparse initialization."
+            ),
+        )
+    end
+    rows, cols = dims
+    prop_zero = min(1.0, sparsity)
+    num_zeros = ceil(Integer, prop_zero * rows)
+    sparse_array = randn(rng, Float32, dims...) .* Float32(std)
+    sparse_array[1:num_zeros, :] .= 0.0f0
+    return mapslices(shuffle, sparse_array; dims = 1)
 end
 
 sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs...)
-sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+function sparse_init(rng::AbstractRNG; init_kwargs...)
+    return (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+end
 
 """
     identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
@@ -346,25 +363,29 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols; gain=1, shift=0) = zeros32(cols)
+identity_init(cols; gain = 1, shift = 0) = zeros32(cols)
 
 # Assume matrix multiplication
-identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
+function identity_init(rows, cols; gain = 1, shift = 0)
+    return circshift(Matrix{Float32}(I * gain, rows, cols), shift)
+end
 
 # Assume convolution
-function identity_init(dims...; gain=1, shift=0)
-  nin, nout = dims[end-1], dims[end]
-  centers = map(d -> cld(d, 2), dims[1:end-2])
-  weights = zeros32(dims)
-  for i in 1:min(nin,nout)
-    weights[centers..., i, i] = gain
-  end
-  return circshift(weights, shift)
+function identity_init(dims...; gain = 1, shift = 0)
+    nin, nout = dims[end - 1], dims[end]
+    centers = map(d -> cld(d, 2), dims[1:(end - 2)])
+    weights = zeros32(dims)
+    for i in 1:min(nin, nout)
+        weights[centers..., i, i] = gain
+    end
+    return circshift(weights, shift)
 end
 
 identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs...)
 identity_init(; init_kwargs...) = identity_init(Random.GLOBAL_RNG; init_kwargs...)
-identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+function identity_init(rng::AbstractRNG; init_kwargs...)
+    return (args...; kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+end
 
 ones32(dims...) = Base.ones(Float32, dims...)
 zeros32(dims...) = Base.zeros(Float32, dims...)
@@ -382,11 +403,12 @@ to the constructor's keyword `bias=bias`.
 * `bias::AbstractArray` uses the array provided, provided it has the correct size and eltype. If the type is wrong, it will be converted.
 """
 function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
-  bias ? fill!(similar(weights, dims...), 0) : Zeros()
+    return bias ? fill!(similar(weights, dims...), 0) : Zeros()
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
-  size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
-  bias
+    size(bias) == dims ||
+        throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
+    return bias
 end
 
 """
@@ -421,7 +443,13 @@ julia> Flux.unsqueeze(xs, 1)
 ```
 """
 function unsqueeze(xs::AbstractArray, dim::Integer)
-    sz = ntuple(i -> i < dim ? size(xs, i) : i == dim ? 1 : size(xs, i - 1), ndims(xs) + 1)
+    sz = ntuple(i -> if i < dim
+        size(xs, i)
+    elseif i == dim
+        1
+    else
+        size(xs, i - 1)
+    end, ndims(xs) + 1)
     return reshape(xs, sz)
 end
 
@@ -443,7 +471,9 @@ julia> rand(Float32, 10, 10) |> m |> size
 """
 unsqueeze(dim::Integer) = Base.Fix2(unsqueeze, dim)
 
-Base.show_function(io::IO, u::Base.Fix2{typeof(unsqueeze)}, ::Bool) = print(io, "unsqueeze(", u.x, ")")
+function Base.show_function(io::IO, u::Base.Fix2{typeof(unsqueeze)}, ::Bool)
+    return print(io, "unsqueeze(", u.x, ")")
+end
 
 """
     stack(xs, dim)
@@ -472,7 +502,7 @@ julia> cat(xs, dims=1)
  [5, 6]
 ```
 """
-stack(xs, dim) = cat(unsqueeze.(xs, dim)..., dims=dim)
+stack(xs, dim) = cat(unsqueeze.(xs, dim)...; dims = dim)
 
 """
     unstack(xs, dim)
@@ -511,7 +541,7 @@ julia> Flux.chunk(collect(1:10), 3)
  [9, 10]
 ```
 """
-chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs)/n)))
+chunk(xs, n) = collect(Iterators.partition(xs, ceil(Int, length(xs) / n)))
 
 batchindex(xs, i) = (reverse(Base.tail(reverse(axes(xs))))..., i)
 
@@ -529,11 +559,11 @@ Dict{Char, Int64} with 2 entries:
 ```
 """
 function frequencies(xs)
-  fs = Dict{eltype(xs),Int}()
-  for x in xs
-    fs[x] = get(fs, x, 0) + 1
-  end
-  return fs
+    fs = Dict{eltype(xs),Int}()
+    for x in xs
+        fs[x] = get(fs, x, 0) + 1
+    end
+    return fs
 end
 
 head(x::Tuple) = reverse(Base.tail(reverse(x)))
@@ -557,13 +587,15 @@ julia> Flux.batch([[1,2,3],[4,5,6]])
 ```
 """
 function batch(xs)
-  data = first(xs) isa AbstractArray ?
-    similar(first(xs), size(first(xs))..., length(xs)) :
-    Vector{eltype(xs)}(undef, length(xs))
-  for (i, x) in enumerate(xs)
-    data[batchindex(data, i)...] = x
-  end
-  return data
+    data = if first(xs) isa AbstractArray
+        similar(first(xs), size(first(xs))..., length(xs))
+    else
+        Vector{eltype(xs)}(undef, length(xs))
+    end
+    for (i, x) in enumerate(xs)
+        data[batchindex(data, i)...] = x
+    end
+    return data
 end
 
 """
@@ -625,32 +657,32 @@ julia> Flux.batchseq([[1, 2, 3], [4, 5]], 0)
 ```
 """
 function batchseq(xs, pad = nothing, n = maximum(length(x) for x in xs))
-  xs_ = [rpad(x, n, pad) for x in xs]
-  [batch([xs_[j][i] for j = 1:length(xs_)]) for i = 1:n]
+    xs_ = [rpad(x, n, pad) for x in xs]
+    return [batch([xs_[j][i] for j in 1:length(xs_)]) for i in 1:n]
 end
 
 # Flattening models to weight vectors, and back
 
 function _restructure(m, xs)
-  i = 0
-  m̄ = fmap(m) do x
-    x isa AbstractArray || return x
-    x = reshape(xs[i.+(1:length(x))], size(x))
-    i += length(x)
-    return x
-  end
-  length(xs) == i || @warn "Expected $(i) params, got $(length(xs))"
-  return m̄
+    i = 0
+    m̄ = fmap(m) do x
+        x isa AbstractArray || return x
+        x = reshape(xs[i .+ (1:length(x))], size(x))
+        i += length(x)
+        return x
+    end
+    length(xs) == i || @warn "Expected $(i) params, got $(length(xs))"
+    return m̄
 end
 
 @adjoint function _restructure(m, xs)
-  m̄, numel = _restructure(m, xs), length(xs)
-  function _restructure_pullback(dm)
-    xs′ = destructure(dm)[1]
-    numel == length(xs′) || @warn "Expected $(numel) params, got $(length(xs′))"
-    return (nothing, xs′)
-  end
-  return m̄, _restructure_pullback
+    m̄, numel = _restructure(m, xs), length(xs)
+    function _restructure_pullback(dm)
+        xs′ = destructure(dm)[1]
+        numel == length(xs′) || @warn "Expected $(numel) params, got $(length(xs′))"
+        return (nothing, xs′)
+    end
+    return m̄, _restructure_pullback
 end
 
 """
@@ -675,12 +707,12 @@ modifications to the weight vector (for example, with a hypernetwork).
     Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
 """
 function destructure(m)
-  xs = Zygote.Buffer([])
-  fmap(m) do x
-    x isa AbstractArray && push!(xs, x)
-    return x
-  end
-  return vcat(vec.(copy(xs))...), p -> _restructure(m, p)
+    xs = Zygote.Buffer([])
+    fmap(m) do x
+        x isa AbstractArray && push!(xs, x)
+        return x
+    end
+    return vcat(vec.(copy(xs))...), p -> _restructure(m, p)
 end
 
 # Other
@@ -696,38 +728,37 @@ going more than once per `wait` duration; but if you'd like to disable the
 execution on the leading edge, pass `leading=false`. To enable execution on
 the trailing edge, pass `trailing=true`.
 """
-function throttle(f, timeout; leading=true, trailing=false)
-  cooldown = true
-  later = nothing
-  result = nothing
+function throttle(f, timeout; leading = true, trailing = false)
+    cooldown = true
+    later = nothing
+    result = nothing
 
-  function throttled(args...; kwargs...)
-    yield()
+    return function throttled(args...; kwargs...)
+        yield()
 
-    if cooldown
-      if leading
-        result = f(args...; kwargs...)
-      else
-        later = () -> f(args...; kwargs...)
-      end
+        if cooldown
+            if leading
+                result = f(args...; kwargs...)
+            else
+                later = () -> f(args...; kwargs...)
+            end
 
-      cooldown = false
-      @async try
-        while (sleep(timeout); later != nothing)
-          later()
-          later = nothing
+            cooldown = false
+            @async try
+                while (sleep(timeout); later != nothing)
+                    later()
+                    later = nothing
+                end
+            finally
+                cooldown = true
+            end
+        elseif trailing
+            later = () -> (result = f(args...; kwargs...))
         end
-      finally
-        cooldown = true
-      end
-    elseif trailing
-      later = () -> (result = f(args...; kwargs...))
+
+        return result
     end
-
-    return result
-  end
 end
-
 
 """
     modules(m)
@@ -799,13 +830,13 @@ julia> Flux.@epochs 10 begin
 ```
 """
 function patience(predicate, wait)
-  let count = 0
-    function on_trigger(args...; kwargs...)
-      count = predicate(args...; kwargs...) ? count + 1 : 0
+    let count = 0
+        function on_trigger(args...; kwargs...)
+            count = predicate(args...; kwargs...) ? count + 1 : 0
 
-      return count >= wait
+            return count >= wait
+        end
     end
-  end
 end
 
 """
@@ -836,17 +867,17 @@ julia> Flux.@epochs 10 begin
 ```
 """
 function early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
-  trigger = let best_score = init_score
-    (args...; kwargs...) -> begin
-      score = f(args...; kwargs...)
-      Δ = distance(best_score, score)
-      best_score = Δ < 0 ? best_score : score
+    trigger = let best_score = init_score
+        (args...; kwargs...) -> begin
+            score = f(args...; kwargs...)
+            Δ = distance(best_score, score)
+            best_score = Δ < 0 ? best_score : score
 
-      return Δ < min_dist
+            return Δ < min_dist
+        end
     end
-  end
 
-  return patience(trigger, delay)
+    return patience(trigger, delay)
 end
 
 """
@@ -878,15 +909,15 @@ julia> Flux.@epochs 10 begin
 ```
 """
 function plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
-  is_plateau = let last_score = init_score
-    (args...; kwargs...) -> begin
-      score = f(args...; kwargs...)
-      Δ = abs(distance(last_score, score))
-      last_score = score
+    is_plateau = let last_score = init_score
+        (args...; kwargs...) -> begin
+            score = f(args...; kwargs...)
+            Δ = abs(distance(last_score, score))
+            last_score = score
 
-      return Δ < min_dist
+            return Δ < min_dist
+        end
     end
-  end
 
-  return patience(is_plateau, width)
+    return patience(is_plateau, width)
 end

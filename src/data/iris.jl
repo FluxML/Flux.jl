@@ -15,12 +15,14 @@ using ..Data: deps, download_and_verify, deprecation_message
 const cache_prefix = "https://cache.julialang.org/"
 
 function load()
-    isfile(deps("iris.data")) && return
+    isfile(deps("iris.data")) && return nothing
 
     @info "Downloading iris dataset."
-    download_and_verify("$(cache_prefix)https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
-                        deps("iris.data"),
-                        "6f608b71a7317216319b4d27b4d9bc84e6abd734eda7872b71a458569e2656c0")
+    return download_and_verify(
+        "$(cache_prefix)https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
+        deps("iris.data"),
+        "6f608b71a7317216319b4d27b4d9bc84e6abd734eda7872b71a458569e2656c0",
+    )
 end
 
 """
@@ -39,7 +41,7 @@ function labels()
     deprecation_message()
     load()
     iris = readdlm(deps("iris.data"), ',')
-    Vector{String}(iris[1:end, end])
+    return Vector{String}(iris[1:end, end])
 end
 
 """
@@ -63,7 +65,7 @@ function features()
     deprecation_message()
     load()
     iris = readdlm(deps("iris.data"), ',')
-    Matrix{Float64}(iris[1:end, 1:4]')
+    return Matrix{Float64}(iris[1:end, 1:4]')
 end
 
 end

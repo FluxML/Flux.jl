@@ -5,25 +5,43 @@ using ..Data: download_and_verify, deprecation_message
 
 const dir = if isnothing(@__DIR__)
     joinpath("deps", "fashion-mnist")
-  else
+else
     joinpath(@__DIR__, "../../deps/fashion-mnist")
 end
 
 function load()
-  mkpath(dir)
-  cd(dir) do
-    for (file, hash) in [("train-images-idx3-ubyte", "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84"),
-                         ("train-labels-idx1-ubyte", "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845"),
-                         ("t10k-images-idx3-ubyte" , "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073"),
-                         ("t10k-labels-idx1-ubyte" , "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5")]
-      isfile(file) && continue
-      @info "Downloading Fashion-MNIST dataset"
-      download_and_verify("http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/$file.gz", "$file.gz", hash)
-      open(file, "w") do io
-        write(io, gzopen(read, "$file.gz"))
-      end
+    mkpath(dir)
+    cd(dir) do
+        for (file, hash) in [
+            (
+                "train-images-idx3-ubyte",
+                "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84",
+            ),
+            (
+                "train-labels-idx1-ubyte",
+                "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845",
+            ),
+            (
+                "t10k-images-idx3-ubyte",
+                "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073",
+            ),
+            (
+                "t10k-labels-idx1-ubyte",
+                "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5",
+            ),
+        ]
+            isfile(file) && continue
+            @info "Downloading Fashion-MNIST dataset"
+            download_and_verify(
+                "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/$file.gz",
+                "$file.gz",
+                hash,
+            )
+            open(file, "w") do io
+                write(io, gzopen(read, "$file.gz"))
+            end
+        end
     end
-  end
 end
 
 const TRAINIMAGES = joinpath(dir, "train-images-idx3-ubyte")
@@ -41,11 +59,11 @@ Return the 60,000 training images by default; pass `:test` to retrieve the
 10,000 test images.
 """
 function images(set = :train)
-  deprecation_message()
-  load()
-  io = IOBuffer(read(set == :train ? TRAINIMAGES : TESTIMAGES))
-  _, N, nrows, ncols = imageheader(io)
-  [rawimage(io) for _ in 1:N]
+    deprecation_message()
+    load()
+    io = IOBuffer(read(set == :train ? TRAINIMAGES : TESTIMAGES))
+    _, N, nrows, ncols = imageheader(io)
+    return [rawimage(io) for _ in 1:N]
 end
 
 """
@@ -57,11 +75,11 @@ Return the 60,000 training labels by default; pass `:test` to retrieve the
 10,000 test labels.
 """
 function labels(set = :train)
-  deprecation_message()
-  load()
-  io = IOBuffer(read(set == :train ? TRAINLABELS : TESTLABELS))
-  _, N = labelheader(io)
-  [rawlabel(io) for _ = 1:N]
+    deprecation_message()
+    load()
+    io = IOBuffer(read(set == :train ? TRAINLABELS : TESTLABELS))
+    _, N = labelheader(io)
+    return [rawlabel(io) for _ in 1:N]
 end
 
 end

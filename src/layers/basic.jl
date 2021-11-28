@@ -29,17 +29,19 @@ true
 ```
 """
 struct Chain{T}
-  layers::T
-  Chain(xs...) = new{typeof(xs)}(xs)
-  function Chain(; kw...)
-    :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
-    isempty(kw) && return new{Tuple{}}(())
-    new{typeof(values(kw))}(values(kw))
-  end
+    layers::T
+    Chain(xs...) = new{typeof(xs)}(xs)
+    function Chain(; kw...)
+        :layers in Base.keys(kw) &&
+            throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+        isempty(kw) && return new{Tuple{}}(())
+        return new{typeof(values(kw))}(values(kw))
+    end
 end
 
-@forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
-  Base.iterate, Base.lastindex, Base.keys
+@forward Chain.layers Base.getindex,
+Base.length, Base.first, Base.last, Base.iterate, Base.lastindex,
+Base.keys
 
 functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
 
@@ -49,16 +51,19 @@ applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 (c::Chain)(x) = applychain(Tuple(c.layers), x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
-Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
-  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
+function Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray)
+    return Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
+end
 
 function Base.show(io::IO, c::Chain)
-  print(io, "Chain(")
-  _show_layers(io, c.layers)
-  print(io, ")")
+    print(io, "Chain(")
+    _show_layers(io, c.layers)
+    return print(io, ")")
 end
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
-_show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+function _show_layers(io, layers::NamedTuple)
+    return join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+end
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -73,11 +78,10 @@ Calculate the forward results of each layers in Chain `c` with `input` as model 
 activations(c::Chain, input) = extraChain(Tuple(c.layers), input)
 
 function extraChain(fs::Tuple, x)
-  res = first(fs)(x)
-  return (res, extraChain(Base.tail(fs), res)...)
+    res = first(fs)(x)
+    return (res, extraChain(Base.tail(fs), res)...)
 end
 extraChain(::Tuple{}, x) = ()
-
 
 """
     Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
@@ -120,52 +124,62 @@ julia> Flux.params(d1)  # no trainable bias
 Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{F, M<:AbstractMatrix, B}
-  weight::M
-  bias::B
-  σ::F
-  function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix, F}
-    b = create_bias(W, bias, size(W,1))
-    new{F,M,typeof(b)}(W, b, σ)
-  end
+struct Dense{F,M<:AbstractMatrix,B}
+    weight::M
+    bias::B
+    σ::F
+    function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix,F}
+        b = create_bias(W, bias, size(W, 1))
+        return new{F,M,typeof(b)}(W, b, σ)
+    end
 end
 
-function Dense(in::Integer, out::Integer, σ = identity;
-               initW = nothing, initb = nothing,
-               init = glorot_uniform, bias=true)
+function Dense(
+    in::Integer,
+    out::Integer,
+    σ = identity;
+    initW = nothing,
+    initb = nothing,
+    init = glorot_uniform,
+    bias = true,
+)
+    W = if initW !== nothing
+        Base.depwarn(
+            "keyword initW is deprecated, please use init (which similarly accepts a funtion like randn)",
+            :Dense,
+        )
+        initW(out, in)
+    else
+        init(out, in)
+    end
 
-  W = if initW !== nothing
-    Base.depwarn("keyword initW is deprecated, please use init (which similarly accepts a funtion like randn)", :Dense)
-    initW(out, in)
-  else
-    init(out, in)
-  end
+    b = if bias === true && initb !== nothing
+        Base.depwarn(
+            "keyword initb is deprecated, please simply supply the bias vector, bias=initb(out)",
+            :Dense,
+        )
+        initb(out)
+    else
+        bias
+    end
 
-  b = if bias === true && initb !== nothing
-    Base.depwarn("keyword initb is deprecated, please simply supply the bias vector, bias=initb(out)", :Dense)
-    initb(out)
-  else
-    bias
-  end
-
-  return Dense(W, b, σ)
+    return Dense(W, b, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b, σ = a.weight, a.bias, a.σ
-  return σ.(W*x .+ b)
+    W, b, σ = a.weight, a.bias, a.σ
+    return σ.(W * x .+ b)
 end
 
-(a::Dense)(x::AbstractArray) = 
-  reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+(a::Dense)(x::AbstractArray) = reshape(a(reshape(x, size(x, 1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
-  l.σ == identity || print(io, ", ", l.σ)
-  l.bias == Zeros() && print(io, "; bias=false")
-  print(io, ")")
+    print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
+    l.σ == identity || print(io, ", ", l.σ)
+    l.bias == Zeros() && print(io, "; bias=false")
+    return print(io, ")")
 end
 
 """
@@ -182,24 +196,30 @@ The learnable arrays are initialised `α = ones(Float32, size)` and
 Used by [`LayerNorm`](@ref).
 """
 struct Diagonal{T}
-  α::T
-  β::T
+    α::T
+    β::T
 end
 
 function Diagonal(sz::Integer...; initα = nothing, initβ = nothing)
-  α = if initα !== nothing
-    Base.depwarn("keyword initα is deprecated, please simply supply the desired vectors", :Diagonal)
-    initα(sz...)
-  else
-    ones32(sz...)
-  end
-  β = if initβ !== nothing
-    Base.depwarn("keyword initβ is deprecated, please simply supply the desired vectors", :Diagonal)
-    initβ(sz...)
-  else
-    zeros32(sz...)
-  end
-  Diagonal(α, β)
+    α = if initα !== nothing
+        Base.depwarn(
+            "keyword initα is deprecated, please simply supply the desired vectors",
+            :Diagonal,
+        )
+        initα(sz...)
+    else
+        ones32(sz...)
+    end
+    β = if initβ !== nothing
+        Base.depwarn(
+            "keyword initβ is deprecated, please simply supply the desired vectors",
+            :Diagonal,
+        )
+        initβ(sz...)
+    else
+        zeros32(sz...)
+    end
+    return Diagonal(α, β)
 end
 
 @functor Diagonal
@@ -207,7 +227,7 @@ end
 (a::Diagonal)(x) = a.α .* x .+ a.β
 
 function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", join(size(l.α), ", "), ")")
+    return print(io, "Diagonal(", join(size(l.α), ", "), ")")
 end
 
 """
@@ -243,14 +263,14 @@ julia> Maxout(()->Dense(insize, outsize), 4);
 ```
 """
 function Maxout(f, n_alts)
-  over = Tuple(f() for _ in 1:n_alts)
-  return Maxout(over)
+    over = Tuple(f() for _ in 1:n_alts)
+    return Maxout(over)
 end
 
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
-    mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+    return mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
 
 """
@@ -279,18 +299,18 @@ true
 ```
 """
 struct SkipConnection{T,F}
-  layers::T
-  connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
+    layers::T
+    connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
 @functor SkipConnection
 
 function (skip::SkipConnection)(input)
-  skip.connection(skip.layers(input), input)
+    return skip.connection(skip.layers(input), input)
 end
 
 function Base.show(io::IO, b::SkipConnection)
-  print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
+    return print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
 
 """
@@ -340,50 +360,65 @@ Bilinear(8, 16, 4, tanh, bias=false)
 ```
 """
 struct Bilinear{F,A,B}
-  weight::A
-  bias::B
-  σ::F
-  function Bilinear(W::A, bias = true, σ::F = identity) where {A<:AbstractArray, F}
-    ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
-    b = create_bias(W, bias, size(W,1))
-    new{F,A,typeof(b)}(W, b, σ)
-  end
+    weight::A
+    bias::B
+    σ::F
+    function Bilinear(W::A, bias = true, σ::F = identity) where {A<:AbstractArray,F}
+        ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
+        b = create_bias(W, bias, size(W, 1))
+        return new{F,A,typeof(b)}(W, b, σ)
+    end
 end
 
 @functor Bilinear
 
-function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
-                  init = glorot_uniform, bias = true)
-  Bilinear(init(out, in1, in2), bias, σ)
+function Bilinear(
+    in1::Integer,
+    in2::Integer,
+    out::Integer,
+    σ = identity;
+    init = glorot_uniform,
+    bias = true,
+)
+    return Bilinear(init(out, in1, in2), bias, σ)
 end
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
-  W, b, σ = a.weight, a.bias, a.σ
+    W, b, σ = a.weight, a.bias, a.σ
 
-  d_z, d_x, d_y = size(W)
-  d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
-  size(x,2) == size(y,2) || throw(DimensionMismatch("Data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
+    d_z, d_x, d_y = size(W)
+    d_x == size(x, 1) && d_y == size(y, 1) ||
+        throw(DimensionMismatch("number of rows in data must match W"))
+    size(x, 2) == size(y, 2) || throw(
+        DimensionMismatch(
+            "Data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))",
+        ),
+    )
 
-  # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
-  Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
+    # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
+    Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
 
-  # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
-  Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
-  Z = reshape(Wyx, (d_z, :))
+    # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
+    Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
+    Z = reshape(Wyx, (d_z, :))
 
-  # @einsum out[o,s] := σ(Z[o,i] + b[o])
-  σ.(Z .+ b)
+    # @einsum out[o,s] := σ(Z[o,i] + b[o])
+    return σ.(Z .+ b)
 end
 
 (a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
-(a::Bilinear)(x::AbstractVector, y::AbstractVector) = vec(a(reshape(x, :,1), reshape(y, :,1)))
-(a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x[1], x[2])
+function (a::Bilinear)(x::AbstractVector, y::AbstractVector)
+    return vec(a(reshape(x, :, 1), reshape(y, :, 1)))
+end
+(a::Bilinear)(x::NTuple{2,AbstractArray}) = a(x[1], x[2])
 
 function Base.show(io::IO, l::Bilinear)
-  print(io, "Bilinear(", size(l.weight, 2), ", ", size(l.weight, 3), ", ", size(l.weight, 1))
-  l.σ == identity || print(io, ", ", l.σ)
-  l.bias == Flux.Zeros() && print(io, ", bias=false")
-  print(io, ")")
+    print(
+        io, "Bilinear(", size(l.weight, 2), ", ", size(l.weight, 3), ", ", size(l.weight, 1)
+    )
+    l.σ == identity || print(io, ", ", l.σ)
+    l.bias == Flux.Zeros() && print(io, ", bias=false")
+    return print(io, ")")
 end
 
 """
@@ -426,20 +461,24 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T}
-  connection::F
-  layers::T
+struct Parallel{F,T}
+    connection::F
+    layers::T
 end
 
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
-  layers = NamedTuple(kw)
-  if :layers in Base.keys(layers) || :connection in Base.keys(layers)
-    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
-  elseif isempty(layers)
-    Parallel(connection, ())
-  end
-  Parallel(connection, layers)
+    layers = NamedTuple(kw)
+    if :layers in Base.keys(layers) || :connection in Base.keys(layers)
+        throw(
+            ArgumentError(
+                "a Parallel layer cannot have a named sub-layer called `connection` or `layers`",
+            ),
+        )
+    elseif isempty(layers)
+        Parallel(connection, ())
+    end
+    return Parallel(connection, layers)
 end
 
 @functor Parallel
@@ -456,9 +495,9 @@ Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
 trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
-  print(io, "Parallel(", m.connection, ", ")
-  _show_layers(io, m.layers)
-  print(io, ")")
+    print(io, "Parallel(", m.connection, ", ")
+    _show_layers(io, m.layers)
+    return print(io, ")")
 end
 
 """
@@ -497,23 +536,26 @@ julia> model(vocab_idxs) == model(x)
 true
 """
 struct Embedding{W}
-  weight::W
+    weight::W
 end
 
 @functor Embedding
 
 Embedding(in::Integer, out::Integer; init = randn32) = Embedding(init(out, in))
-  
 
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
-function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-    size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
-  return m(onecold(x))
+function (m::Embedding)(x::Union{OneHotVector{T,L},OneHotMatrix{T,L}}) where {T,L}
+    size(m.weight, 2) == L || throw(
+        DimensionMismatch(
+            "Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"
+        ),
+    )
+    return m(onecold(x))
 end
- 
+
 function Base.show(io::IO, m::Embedding)
-  print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
+    return print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
 end

@@ -3,9 +3,10 @@ module CUDAint
 using ..CUDA
 
 import ..Flux: Flux
-import Zygote
+using Zygote: Zygote
 using Zygote: @adjoint
-import NNlib, NNlibCUDA
+using NNlib: NNlib
+using NNlibCUDA: NNlibCUDA
 
 include("cudnn.jl")
 

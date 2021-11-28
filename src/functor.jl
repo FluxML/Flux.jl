@@ -1,5 +1,5 @@
 import Adapt: adapt, adapt_storage
-using  LinearAlgebra: Cholesky
+using LinearAlgebra: Cholesky
 using Zygote: IdSet
 import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
@@ -41,25 +41,24 @@ trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, 
 params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
 
 function params!(p::Params, x, seen = IdSet())
-  x in seen && return
-  push!(seen, x)
-  for child in trainable(x)
-    params!(p, child, seen)
-  end
+    x in seen && return nothing
+    push!(seen, x)
+    for child in trainable(x)
+        params!(p, child, seen)
+    end
 end
 
 function params(m...)
-  ps = Params()
-  params!(ps, m)
-  return ps
+    ps = Params()
+    params!(ps, m)
+    return ps
 end
 
 function loadparams!(m, xs)
-  for (p, x) in zip(params(m), xs)
-    size(p) == size(x) ||
-      error("Expected param size $(size(p)), got $(size(x))")
-    copyto!(p, x)
-  end
+    for (p, x) in zip(params(m), xs)
+        size(p) == size(x) || error("Expected param size $(size(p)), got $(size(x))")
+        copyto!(p, x)
+    end
 end
 
 struct FluxCUDAAdaptor end
@@ -75,16 +74,20 @@ struct FluxCPUAdaptor end
 adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
-adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
+function adapt_storage(
+    to::FluxCPUAdaptor, x::T
+) where {T<:CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix}
+    return adapt(Array, x)
+end
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.OneElement) = x
 adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
 
 Zygote.@adjoint function Array(x::CUDA.CuArray)
-  Array(x), d -> (CUDA.cu(d),)
+    return Array(x), d -> (CUDA.cu(d),)
 end
 
 Zygote.@adjoint function Adapt.adapt_storage(to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), d -> (nothing, adapt_storage(FluxCUDAAdaptor(), d),)
+    return adapt_storage(to, x), d -> (nothing, adapt_storage(FluxCUDAAdaptor(), d))
 end
 
 # CPU/GPU movement conveniences
@@ -115,7 +118,7 @@ Matrix{Float32}
 cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x)
 
 _isbitsarray(::AbstractArray{<:Number}) = true
-_isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
+_isbitsarray(::AbstractArray{T}) where {T} = isbitstype(T)
 _isbitsarray(x) = false
 
 """
@@ -142,17 +145,21 @@ CuArray{Float32, 2}
 ```
 """
 function gpu(x)
-  check_use_cuda()
-  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray) : x
+    check_use_cuda()
+    return if use_cuda[]
+        fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray)
+    else
+        x
+    end
 end
 
 function check_use_cuda()
-  if use_cuda[] === nothing
-    use_cuda[] = CUDA.functional()
-    if use_cuda[] && !CUDA.has_cudnn()
-      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
+    if use_cuda[] === nothing
+        use_cuda[] = CUDA.functional()
+        if use_cuda[] && !CUDA.has_cudnn()
+            @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
+        end
     end
-  end
 end
 Zygote.@nograd check_use_cuda
 

@@ -1,7 +1,7 @@
 
-gate(h, n) = (1:h) .+ h*(n-1)
-gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
-gate(x::AbstractMatrix, h, n) = x[gate(h,n),:]
+gate(h, n) = (1:h) .+ h * (n - 1)
+gate(x::AbstractVector, h, n) = @view x[gate(h, n)]
+gate(x::AbstractMatrix, h, n) = x[gate(h, n), :]
 
 # Stateful recurrence
 
@@ -39,13 +39,13 @@ rnn.state                   # 60
 
 """
 mutable struct Recur{T,S}
-  cell::T
-  state::S
+    cell::T
+    state::S
 end
 
 function (m::Recur)(x)
-  m.state, y = m.cell(m.state, x)
-  return y
+    m.state, y = m.cell(m.state, x)
+    return y
 end
 
 @functor Recur
@@ -66,53 +66,62 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
-
 # TODO remove in v0.13
 function Base.getproperty(m::Recur, sym::Symbol)
-  if sym === :init
-    Zygote.ignore() do
-      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+    if sym === :init
+        Zygote.ignore() do
+            @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
+        end
+        return getfield(m.cell, :state0)
+    else
+        return getfield(m, sym)
     end
-    return getfield(m.cell, :state0)
-  else
-    return getfield(m, sym)
-  end
 end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
-function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(view(x, :, :, i)) for i in 1:size(x, 3)]
-  sze = size(h[1])
-  reshape(reduce(hcat, h), sze[1], sze[2], length(h))
+function (m::Recur)(x::AbstractArray{T,3}) where {T}
+    h = [m(view(x, :, :, i)) for i in 1:size(x, 3)]
+    sze = size(h[1])
+    return reshape(reduce(hcat, h), sze[1], sze[2], length(h))
 end
 
 # Vanilla RNN
 
 struct RNNCell{F,A,V,S}
-  σ::F
-  Wi::A
-  Wh::A
-  b::V
-  state0::S
+    σ::F
+    Wi::A
+    Wh::A
+    b::V
+    state0::S
 end
 
-RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) = 
-  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
+function RNNCell(
+    in::Integer,
+    out::Integer,
+    σ = tanh;
+    init = Flux.glorot_uniform,
+    initb = zeros32,
+    init_state = zeros32,
+)
+    return RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out, 1))
+end
 
-function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
-  σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
-  h = σ.(Wi*x .+ Wh*h .+ b)
-  sz = size(x)
-  return h, reshape(h, :, sz[2:end]...)
+function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(
+    h, x::Union{AbstractVecOrMat{T},OneHotArray}
+) where {F,A,V,T}
+    σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
+    h = σ.(Wi * x .+ Wh * h .+ b)
+    sz = size(x)
+    return h, reshape(h, :, sz[2:end]...)
 end
 
 @functor RNNCell
 
 function Base.show(io::IO, l::RNNCell)
-  print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
-  l.σ == identity || print(io, ", ", l.σ)
-  print(io, ")")
+    print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
+    l.σ == identity || print(io, ", ", l.σ)
+    return print(io, ")")
 end
 
 """
@@ -177,51 +186,58 @@ Recur(m::RNNCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::RNNCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+    if sym === :h
+        Zygote.ignore() do
+            @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
+        end
+        return getfield(m, :state0)
+    else
+        return getfield(m, sym)
     end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
 end
 
 # LSTM
 
 struct LSTMCell{A,V,S}
-  Wi::A
-  Wh::A
-  b::V
-  state0::S
+    Wi::A
+    Wh::A
+    b::V
+    state0::S
 end
 
-function LSTMCell(in::Integer, out::Integer;
-                  init = glorot_uniform,
-                  initb = zeros32,
-                  init_state = zeros32)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out,1), init_state(out,1)))
-  cell.b[gate(out, 2)] .= 1
-  return cell
+function LSTMCell(
+    in::Integer, out::Integer; init = glorot_uniform, initb = zeros32, init_state = zeros32
+)
+    cell = LSTMCell(
+        init(out * 4, in),
+        init(out * 4, out),
+        initb(out * 4),
+        (init_state(out, 1), init_state(out, 1)),
+    )
+    cell.b[gate(out, 2)] .= 1
+    return cell
 end
 
-function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
-  b, o = m.b, size(h, 1)
-  g = m.Wi*x .+ m.Wh*h .+ b
-  input = σ.(gate(g, o, 1))
-  forget = σ.(gate(g, o, 2))
-  cell = tanh.(gate(g, o, 3))
-  output = σ.(gate(g, o, 4))
-  c = forget .* c .+ input .* cell
-  h′ = output .* tanh.(c)
-  sz = size(x)
-  return (h′, c), reshape(h′, :, sz[2:end]...)
+function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})(
+    (h, c), x::Union{AbstractVecOrMat{T},OneHotArray}
+) where {A,V,T}
+    b, o = m.b, size(h, 1)
+    g = m.Wi * x .+ m.Wh * h .+ b
+    input = σ.(gate(g, o, 1))
+    forget = σ.(gate(g, o, 2))
+    cell = tanh.(gate(g, o, 3))
+    output = σ.(gate(g, o, 4))
+    c = forget .* c .+ input .* cell
+    h′ = output .* tanh.(c)
+    sz = size(x)
+    return (h′, c), reshape(h′, :, sz[2:end]...)
 end
 
 @functor LSTMCell
 
-Base.show(io::IO, l::LSTMCell) =
-  print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
+function Base.show(io::IO, l::LSTMCell)
+    return print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1) ÷ 4, ")")
+end
 
 """
     LSTM(in::Integer, out::Integer)
@@ -261,55 +277,61 @@ Recur(m::LSTMCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::LSTMCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+    if sym === :h
+        Zygote.ignore() do
+            @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
+        end
+        return getfield(m, :state0)[1]
+    elseif sym === :c
+        Zygote.ignore() do
+            @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
+        end
+        return getfield(m, :state0)[2]
+    else
+        return getfield(m, sym)
     end
-    return getfield(m, :state0)[1]
-  elseif sym === :c
-    Zygote.ignore() do
-      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
-    end  
-    return getfield(m, :state0)[2]
-  else
-    return getfield(m, sym)
-  end
 end
 
 # GRU
 
 function _gru_output(Wi, Wh, b, x, h)
-  o = size(h, 1)
-  gx, gh = Wi*x, Wh*h
-  r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
-  z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
+    o = size(h, 1)
+    gx, gh = Wi * x, Wh * h
+    r = σ.(gate(gx, o, 1) .+ gate(gh, o, 1) .+ gate(b, o, 1))
+    z = σ.(gate(gx, o, 2) .+ gate(gh, o, 2) .+ gate(b, o, 2))
 
-  return gx, gh, r, z
+    return gx, gh, r, z
 end
 
 struct GRUCell{A,V,S}
-  Wi::A
-  Wh::A
-  b::V
-  state0::S
+    Wi::A
+    Wh::A
+    b::V
+    state0::S
 end
 
-GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
-  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
+function GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32)
+    return GRUCell(
+        init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out, 1)
+    )
+end
 
-function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
-  b, o = m.b, size(h, 1)
-  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
-  h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
-  h′ = (1 .- z) .* h̃ .+ z .* h
-  sz = size(x)
-  return h′, reshape(h′, :, sz[2:end]...)
+function (m::GRUCell{A,V,<:AbstractMatrix{T}})(
+    h, x::Union{AbstractVecOrMat{T},OneHotArray}
+) where {A,V,T}
+    b, o = m.b, size(h, 1)
+    gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
+    h̃ = tanh.(gate(gx, o, 3) .+ r .* gate(gh, o, 3) .+ gate(b, o, 3))
+    h′ = (1 .- z) .* h̃ .+ z .* h
+    sz = size(x)
+    return h′, reshape(h′, :, sz[2:end]...)
 end
 
 @functor GRUCell
 
-Base.show(io::IO, l::GRUCell) =
-  print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+function Base.show(io::IO, l::GRUCell)
+    return print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1) ÷ 3, ")")
+end
 
 """
     GRU(in::Integer, out::Integer)
@@ -350,44 +372,52 @@ Recur(m::GRUCell) = Recur(m, m.state0)
 
 # TODO remove in v0.13
 function Base.getproperty(m::GRUCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+    if sym === :h
+        Zygote.ignore() do
+            @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
+        end
+        return getfield(m, :state0)
+    else
+        return getfield(m, sym)
     end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
 end
-
 
 # GRU v3
 
 struct GRUv3Cell{A,V,S}
-  Wi::A
-  Wh::A
-  b::V
-  Wh_h̃::A
-  state0::S
+    Wi::A
+    Wh::A
+    b::V
+    Wh_h̃::A
+    state0::S
 end
 
-GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
-  GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3), 
-            init(out, out), init_state(out,1))
+function GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32)
+    return GRUv3Cell(
+        init(out * 3, in),
+        init(out * 2, out),
+        initb(out * 3),
+        init(out, out),
+        init_state(out, 1),
+    )
+end
 
-function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
-  b, o = m.b, size(h, 1)
-  gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
-  h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
-  h′ = (1 .- z) .* h̃ .+ z .* h
-  sz = size(x)
-  return h′, reshape(h′, :, sz[2:end]...)
+function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(
+    h, x::Union{AbstractVecOrMat{T},OneHotArray}
+) where {A,V,T}
+    b, o = m.b, size(h, 1)
+    gx, gh, r, z = _gru_output(m.Wi, m.Wh, b, x, h)
+    h̃ = tanh.(gate(gx, o, 3) .+ (m.Wh_h̃ * (r .* h)) .+ gate(b, o, 3))
+    h′ = (1 .- z) .* h̃ .+ z .* h
+    sz = size(x)
+    return h′, reshape(h′, :, sz[2:end]...)
 end
 
 @functor GRUv3Cell
 
-Base.show(io::IO, l::GRUv3Cell) =
-  print(io, "GRUv3Cell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+function Base.show(io::IO, l::GRUv3Cell)
+    return print(io, "GRUv3Cell(", size(l.Wi, 2), ", ", size(l.Wi, 1) ÷ 3, ")")
+end
 
 """
     GRUv3(in::Integer, out::Integer)
@@ -426,7 +456,6 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
 
-
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
-  Zygote.∇map(__context__, f, args...)
+    return Zygote.∇map(__context__, f, args...)
 end

@@ -33,13 +33,13 @@ Flux.Optimise.update!(opt, ps, gs)
 ```
 """
 mutable struct Descent <: AbstractOptimiser
-  eta::Float64
+    eta::Float64
 end
 
 Descent() = Descent(0.1)
 
 function apply!(o::Descent, x, Δ)
-  Δ .*= o.eta
+    Δ .*= o.eta
 end
 
 """
@@ -61,18 +61,18 @@ opt = Momentum(0.01, 0.99)
 ```
 """
 mutable struct Momentum <: AbstractOptimiser
-  eta::Float64
-  rho::Float64
-  velocity::IdDict
+    eta::Float64
+    rho::Float64
+    velocity::IdDict
 end
 
 Momentum(η = 0.01, ρ = 0.9) = Momentum(η, ρ, IdDict())
 
 function apply!(o::Momentum, x, Δ)
-  η, ρ = o.eta, o.rho
-  v = get!(() -> zero(x), o.velocity, x)::typeof(x)
-  @. v = ρ * v - η * Δ
-  @. Δ = -v
+    η, ρ = o.eta, o.rho
+    v = get!(() -> zero(x), o.velocity, x)::typeof(x)
+    @. v = ρ * v - η * Δ
+    @. Δ = -v
 end
 
 """
@@ -94,19 +94,19 @@ opt = Nesterov(0.003, 0.95)
 ```
 """
 mutable struct Nesterov <: AbstractOptimiser
-  eta::Float64
-  rho::Float64
-  velocity::IdDict
+    eta::Float64
+    rho::Float64
+    velocity::IdDict
 end
 
 Nesterov(η = 0.001, ρ = 0.9) = Nesterov(η, ρ, IdDict())
 
 function apply!(o::Nesterov, x, Δ)
-  η, ρ = o.eta, o.rho
-  v = get!(() -> zero(x), o.velocity, x)::typeof(x)
-  d = @. ρ^2 * v - (1+ρ) * η * Δ
-  @. v = ρ*v - η*Δ
-  @. Δ = -d
+    η, ρ = o.eta, o.rho
+    v = get!(() -> zero(x), o.velocity, x)::typeof(x)
+    d = @. ρ^2 * v - (1 + ρ) * η * Δ
+    @. v = ρ * v - η * Δ
+    @. Δ = -d
 end
 
 """
@@ -131,18 +131,18 @@ opt = RMSProp(0.002, 0.95)
 ```
 """
 mutable struct RMSProp <: AbstractOptimiser
-  eta::Float64
-  rho::Float64
-  acc::IdDict
+    eta::Float64
+    rho::Float64
+    acc::IdDict
 end
 
 RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 
 function apply!(o::RMSProp, x, Δ)
-  η, ρ = o.eta, o.rho
-  acc = get!(() -> zero(x), o.acc, x)::typeof(x)
-  @. acc = ρ * acc + (1 - ρ) * Δ^2
-  @. Δ *= η / (√acc + ϵ)
+    η, ρ = o.eta, o.rho
+    acc = get!(() -> zero(x), o.acc, x)::typeof(x)
+    @. acc = ρ * acc + (1 - ρ) * Δ^2
+    @. Δ *= η / (√acc + ϵ)
 end
 
 """
@@ -164,26 +164,26 @@ opt = ADAM(0.001, (0.9, 0.8))
 ```
 """
 mutable struct ADAM <: AbstractOptimiser
-  eta::Float64
-  beta::Tuple{Float64,Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
 
 function apply!(o::ADAM, x, Δ)
-  η, β = o.eta, o.beta
+    η, β = o.eta, o.beta
 
-  mt, vt, βp = get!(o.state, x) do
-      (zero(x), zero(x), Float64[β[1], β[2]])
-  end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
+    mt, vt, βp = get!(o.state, x) do
+        (zero(x), zero(x), Float64[β[1], β[2]])
+    end::Tuple{typeof(x),typeof(x),Vector{Float64}}
 
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
-  βp .= βp .* β
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+    @. Δ = mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
+    βp .= βp .* β
 
-  return Δ
+    return Δ
 end
 
 """
@@ -205,34 +205,39 @@ opt = RADAM(0.001, (0.9, 0.8))
 ```
 """
 mutable struct RADAM <: AbstractOptimiser
-  eta::Float64
-  beta::Tuple{Float64,Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict())
 
 function apply!(o::RADAM, x, Δ)
-  η, β = o.eta, o.beta
-  ρ∞ = 2/(1-β[2])-1
+    η, β = o.eta, o.beta
+    ρ∞ = 2 / (1 - β[2]) - 1
 
-  mt, vt, βp, t = get!(o.state, x) do
-      (zero(x), zero(x), Float64[β[1], β[2]], Ref(1))
-  end :: Tuple{typeof(x),typeof(x),Vector{Float64},Ref{Int}}
+    mt, vt, βp, t = get!(o.state, x) do
+        (
+            zero(x),
+            zero(x),
+            Float64[β[1], β[2]],
+            Ref(1),
+        )
+    end::Tuple{typeof(x),typeof(x),Vector{Float64},Ref{Int}}
 
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  ρ = ρ∞ - 2t[] * βp[2] / (1 - βp[2])
-  if ρ > 4
-    r = sqrt((ρ-4)*(ρ-2)*ρ∞/((ρ∞-4)*(ρ∞-2)*ρ))
-    @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η * r
-  else
-    @. Δ =  mt / (1 - βp[1]) * η
-  end
-  βp .= βp .* β
-  t[] += 1
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+    ρ = ρ∞ - 2t[] * βp[2] / (1 - βp[2])
+    if ρ > 4
+        r = sqrt((ρ - 4) * (ρ - 2) * ρ∞ / ((ρ∞ - 4) * (ρ∞ - 2) * ρ))
+        @. Δ = mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η * r
+    else
+        @. Δ = mt / (1 - βp[1]) * η
+    end
+    βp .= βp .* β
+    t[] += 1
 
-  return Δ
+    return Δ
 end
 
 """
@@ -254,26 +259,26 @@ opt = AdaMax(0.001, (0.9, 0.995))
 ```
 """
 mutable struct AdaMax <: AbstractOptimiser
-  eta::Float64
-  beta::Tuple{Float64,Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 AdaMax(η = 0.001, β = (0.9, 0.999)) = AdaMax(η, β, IdDict())
 
 function apply!(o::AdaMax, x, Δ)
-  η, β = o.eta, o.beta
+    η, β = o.eta, o.beta
 
-  mt, ut, βp = get!(o.state, x) do
-      (zero(x), zero(x), Float64[β[1], β[2]])
-  end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
+    mt, ut, βp = get!(o.state, x) do
+        (zero(x), zero(x), Float64[β[1], β[2]])
+    end::Tuple{typeof(x),typeof(x),Vector{Float64}}
 
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. ut = max(β[2] * ut, abs(Δ))
-  @. Δ = (η/(1 - βp[1])) * mt/(ut + ϵ)
-  βp .= βp .* β
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. ut = max(β[2] * ut, abs(Δ))
+    @. Δ = (η / (1 - βp[1])) * mt / (ut + ϵ)
+    βp .= βp .* β
 
-  return Δ
+    return Δ
 end
 
 """
@@ -296,28 +301,33 @@ opt = OADAM(0.001, (0.9, 0.995))
 ```
 """
 mutable struct OADAM <: AbstractOptimiser
-  eta::Float64
-  beta::Tuple{Float64,Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 OADAM(η = 0.001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
 
 function apply!(o::OADAM, x, Δ)
-  η, β = o.eta, o.beta
+    η, β = o.eta, o.beta
 
-  mt, vt, Δ_, βp = get!(o.state, x) do
-      (zero(x), zero(x), zero(x), Float64[β[1], β[2]])
-  end :: Tuple{typeof(x),typeof(x),typeof(x),Vector{Float64}}
+    mt, vt, Δ_, βp = get!(o.state, x) do
+        (
+            zero(x),
+            zero(x),
+            zero(x),
+            Float64[β[1], β[2]],
+        )
+    end::Tuple{typeof(x),typeof(x),typeof(x),Vector{Float64}}
 
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  @. Δ = -Δ_
-  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
-  @. Δ += 2Δ_
-  βp .= βp .* β
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+    @. Δ = -Δ_
+    @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+    @. Δ += 2Δ_
+    βp .= βp .* β
 
-  return Δ
+    return Δ
 end
 
 """
@@ -339,17 +349,17 @@ opt = ADAGrad(0.001)
 ```
 """
 mutable struct ADAGrad <: AbstractOptimiser
-  eta::Float64
-  acc::IdDict
+    eta::Float64
+    acc::IdDict
 end
 
 ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 
 function apply!(o::ADAGrad, x, Δ)
-  η = o.eta
-  acc = get!(() -> fill!(similar(x), ϵ), o.acc, x)::typeof(x)
-  @. acc += Δ^2
-  @. Δ *= η / (√acc + ϵ)
+    η = o.eta
+    acc = get!(() -> fill!(similar(x), ϵ), o.acc, x)::typeof(x)
+    @. acc += Δ^2
+    @. Δ *= η / (√acc + ϵ)
 end
 
 """
@@ -370,21 +380,21 @@ opt = ADADelta(0.89)
 ```
 """
 mutable struct ADADelta <: AbstractOptimiser
-  rho::Float64
-  state::IdDict
+    rho::Float64
+    state::IdDict
 end
 
 ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
 
 function apply!(o::ADADelta, x, Δ)
-  ρ = o.rho
-  acc, Δacc = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
-  @. acc = ρ * acc + (1 - ρ) * Δ^2
-  # DON'T remove epsilon from numerator
-  # or even out of the square roots
-  @. Δ *= √(Δacc + ϵ) / √(acc + ϵ)
-  @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
-  return Δ
+    ρ = o.rho
+    acc, Δacc = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
+    @. acc = ρ * acc + (1 - ρ) * Δ^2
+    # DON'T remove epsilon from numerator
+    # or even out of the square roots
+    @. Δ *= √(Δacc + ϵ) / √(acc + ϵ)
+    @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
+    return Δ
 end
 
 """
@@ -407,24 +417,24 @@ opt = AMSGrad(0.001, (0.89, 0.995))
 ```
 """
 mutable struct AMSGrad <: AbstractOptimiser
-  eta::Float64
-  beta::Tuple{Float64, Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
 
 function apply!(o::AMSGrad, x, Δ)
-  η, β = o.eta, o.beta
+    η, β = o.eta, o.beta
 
-  mt, vt, v̂t = get!(o.state, x) do
-    (fill!(similar(x), ϵ), fill!(similar(x), ϵ), fill!(similar(x), ϵ))
-  end :: NTuple{3,typeof(x)}
+    mt, vt, v̂t = get!(o.state, x) do
+        (fill!(similar(x), ϵ), fill!(similar(x), ϵ), fill!(similar(x), ϵ))
+    end::NTuple{3,typeof(x)}
 
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ ^ 2
-  @. v̂t = max(v̂t, vt)
-  @. Δ = η * mt / (√v̂t + ϵ)
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+    @. v̂t = max(v̂t, vt)
+    @. Δ = η * mt / (√v̂t + ϵ)
 end
 
 """
@@ -447,27 +457,33 @@ opt = NADAM(0.002, (0.89, 0.995))
 ```
 """
 mutable struct NADAM <: AbstractOptimiser
-  eta::Float64
-  beta::Tuple{Float64, Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
 
 function apply!(o::NADAM, x, Δ)
-  η, β = o.eta, o.beta
+    η, β = o.eta, o.beta
 
-  mt, vt, βp = get!(o.state, x) do
-    (zero(x), zero(x), Float64[o.beta[1], o.beta[2]])
-  end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
-  β1p, β2p = βp
+    mt, vt, βp = get!(o.state, x) do
+        (
+            zero(x),
+            zero(x),
+            Float64[o.beta[1], o.beta[2]],
+        )
+    end::Tuple{typeof(x),typeof(x),Vector{Float64}}
+    β1p, β2p = βp
 
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  @. Δ = (β[1] * mt / (1 - β[1] * β1p) + (1 - β[1]) * Δ / (1 - β1p)) / (√(vt * β[2] / (1 - β2p)) + ϵ) * η
-  βp .= βp .* β
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+    @. Δ =
+        (β[1] * mt / (1 - β[1] * β1p) + (1 - β[1]) * Δ / (1 - β1p)) /
+        (√(vt * β[2] / (1 - β2p)) + ϵ) * η
+    βp .= βp .* β
 
-  return Δ
+    return Δ
 end
 
 """
@@ -491,7 +507,7 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
+    Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
 
 """
     AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999))
@@ -513,20 +529,20 @@ opt = AdaBelief(0.001, (0.9, 0.8))
 ```
 """
 mutable struct AdaBelief
-  eta::Float64
-  beta::Tuple{Float64,Float64}
-  state::IdDict
+    eta::Float64
+    beta::Tuple{Float64,Float64}
+    state::IdDict
 end
 
 AdaBelief(η = 0.001, β = (0.9, 0.999)) = AdaBelief(η, β, IdDict())
 
 function apply!(o::AdaBelief, x, Δ)
-  η, β = o.eta, o.beta
-  mt, st = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
-  @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. st = β[2] * st + (1 - β[2]) * (Δ - mt)^2
-  @. Δ =  η * mt / (√(st) + ϵ)
-  return Δ
+    η, β = o.eta, o.beta
+    mt, st = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
+    @. mt = β[1] * mt + (1 - β[1]) * Δ
+    @. st = β[2] * st + (1 - β[2]) * (Δ - mt)^2
+    @. Δ = η * mt / (√(st) + ϵ)
+    return Δ
 end
 
 
@@ -540,21 +556,26 @@ that will be fed into the next, and this is finally applied to the parameter as
 usual.
 """
 mutable struct Optimiser <: AbstractOptimiser
-  os::Vector{Any}
+    os::Vector{Any}
 end
 
 Optimiser(o...) = Optimiser(Any[o...])
 
-@forward Optimiser.os Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.setindex!
+@forward Optimiser.os Base.getindex,
+Base.first,
+Base.last,
+Base.lastindex,
+Base.push!,
+Base.setindex!
 @forward Optimiser.os Base.iterate
 
 Base.getindex(c::Optimiser, i::AbstractArray) = Optimiser(c.os[i]...)
 
 function apply!(o::Optimiser, x, Δ)
-  for opt in o.os
-    Δ = apply!(opt, x, Δ)
-  end
-  return Δ
+    for opt in o.os
+        Δ = apply!(opt, x, Δ)
+    end
+    return Δ
 end
 
 """
@@ -579,18 +600,18 @@ opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 ```
 """
 mutable struct InvDecay <: AbstractOptimiser
-  gamma::Float64
-  state::IdDict
+    gamma::Float64
+    state::IdDict
 end
 
 InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
 
 function apply!(o::InvDecay, x, Δ)
-  γ = o.gamma
-  n = get!(o.state, x, 1)
-  Δ .*= 1 / (1 + γ * n)
-  o.state[x] = n + 1
-  return Δ
+    γ = o.gamma
+    n = get!(o.state, x, 1)
+    Δ .*= 1 / (1 + γ * n)
+    o.state[x] = n + 1
+    return Δ
 end
 
 """
@@ -620,24 +641,24 @@ opt = Optimiser(ADAM(), ExpDecay())
 ```
 """
 mutable struct ExpDecay <: AbstractOptimiser
-  eta::Float64
-  decay::Float64
-  step::Int64
-  clip::Float64
-  current::IdDict
+    eta::Float64
+    decay::Float64
+    step::Int64
+    clip::Float64
+    current::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = 
-  ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) =
+    ExpDecay(opt, decay, decay_step, clip, IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
-  η, s, decay = o.eta, o.step, o.decay
-  n = o.current[x] = get(o.current, x, 0) + 1
-  if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
-    η = max(η * decay, o.clip)
-    o.eta = η
-  end
-  @. Δ *= η
+    η, s, decay = o.eta, o.step, o.decay
+    n = o.current[x] = get(o.current, x, 0) + 1
+    if o.current[x] % s == 0 && count(x -> x % s == 0, values(o.current)) == 1
+        η = max(η * decay, o.clip)
+        o.eta = η
+    end
+    @. Δ *= η
 end
 
 """
@@ -655,14 +676,14 @@ opt = Optimiser(WeightDecay(1f-4), ADAM())
 ```
 """
 mutable struct WeightDecay <: AbstractOptimiser
-  wd::Real
+    wd::Real
 end
 
 WeightDecay() = WeightDecay(0)
 
 function apply!(o::WeightDecay, x, Δ)
-  wd = o.wd
-  @. Δ += wd * x
+    wd = o.wd
+    @. Δ += wd * x
 end
 
 """

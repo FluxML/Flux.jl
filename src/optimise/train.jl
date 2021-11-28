@@ -7,7 +7,7 @@ import Zygote: Params, gradient
 Update the array `x` according to `x .-= x̄`.
 """
 function update!(x::AbstractArray, x̄)
-  x .-= x̄
+    x .-= x̄
 end
 
 """
@@ -21,16 +21,16 @@ As a result, the parameters are mutated and the optimizer's internal state may c
 The gradient could be mutated as well.
 """
 function update!(opt, x, x̄)
-  x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
-                                          # output are not mutable, see #1510 
-  x .-= apply!(opt, x, x̄r)
+    x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
+    # output are not mutable, see #1510 
+    x .-= apply!(opt, x, x̄r)
 end
 
 function update!(opt, xs::Params, gs)
-  for x in xs
-    isnothing(gs[x]) && continue
-    update!(opt, x, gs[x])
-  end
+    for x in xs
+        isnothing(gs[x]) && continue
+        update!(opt, x, gs[x])
+    end
 end
 
 # Callback niceties
@@ -54,7 +54,7 @@ end
 ```
 """
 function skip()
-  throw(SkipException())
+    throw(SkipException())
 end
 
 
@@ -74,7 +74,7 @@ end
 ```
 """
 function stop()
-  throw(StopException())
+    throw(StopException())
 end
 
 batchmemaybe(x) = tuple(x)
@@ -97,25 +97,25 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
 function train!(loss, ps, data, opt; cb = () -> ())
-  ps = Params(ps)
-  cb = runall(cb)
-  @progress for d in data
-    try
-      gs = gradient(ps) do
-        loss(batchmemaybe(d)...)
-      end
-      update!(opt, ps, gs)
-      cb()
-    catch ex
-      if ex isa StopException
-        break
-      elseif ex isa SkipException
-        continue
-      else
-        rethrow(ex)
-      end
+    ps = Params(ps)
+    cb = runall(cb)
+    @progress for d in data
+        try
+            gs = gradient(ps) do
+                loss(batchmemaybe(d)...)
+            end
+            update!(opt, ps, gs)
+            cb()
+        catch ex
+            if ex isa StopException
+                break
+            elseif ex isa SkipException
+                continue
+            else
+                rethrow(ex)
+            end
+        end
     end
-  end
 end
 
 """
@@ -134,8 +134,8 @@ hello
 ```
 """
 macro epochs(n, ex)
-  :(@progress for i = 1:$(esc(n))
-      @info "Epoch $i"
-      $(esc(ex))
+    :(@progress for i = 1:$(esc(n))
+        @info "Epoch $i"
+        $(esc(ex))
     end)
 end
