@@ -31,7 +31,7 @@ The [`Dropout`](@ref) layer is what you should use in most scenarios.
 function dropout(x, p; dims=:, active::Bool=true)
   active || return x
   y = rand!(similar(x, _dropout_shape(x, dims)))
-  @. y = x * _dropout_kernel(y, p, 1-p)
+  x .* _dropout_kernel.(y, p, 1-p)
 end
 
 @adjoint function dropout(x, p; dims=:, active::Bool=true)
