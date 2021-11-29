@@ -18,6 +18,26 @@
   @test size(y) == (4, 6, 2, 3)
 end
 
+@testset "upsample trilinear" begin
+  m = Upsample(:trilinear, scale=(2, 3, 2))
+  x = rand(Float32, 3, 4, 2, 3, 4)
+  y = m(x)
+  @test y isa Array{Float32, 5} 
+  @test size(y) == (6, 12, 4, 3, 4)
+
+  m = Upsample(:trilinear, scale=3)
+  x = rand(Float32, 3, 4, 2, 3, 4)
+  y = m(x)
+  @test y isa Array{Float32, 5} 
+  @test size(y) == (9, 12, 6, 3, 4)
+
+  m = Upsample(:trilinear, size=(4, 6, 4))
+  x = rand(Float32, 3, 4, 2, 3, 4)
+  y = m(x)
+  @test y isa Array{Float32, 5} 
+  @test size(y) == (4, 6, 4, 3, 4)
+end
+
 @testset "upsample nearest" begin
   x = rand(Float32, 3, 2, 3)
   m = Upsample(:nearest, scale=(2,))
