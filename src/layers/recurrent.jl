@@ -526,3 +526,11 @@ function (m::Bidirectional)(x::Union{AbstractVecOrMat{T},OneHotArray}) where {T}
 end
 
 @functor Bidirectional
+
+function Base.show(io::IO, b::Bidirectional)
+  print(io, "Bidirectional(")
+  show(io, b.forward.cell)
+  print(io, ", ")
+  show(io, b.backward.cell)
+  print(io, ")")
+end;
