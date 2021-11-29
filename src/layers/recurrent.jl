@@ -441,9 +441,14 @@ the forward layer weights are concatenated with the reversed order of the backwa
 It is intended to be used with recurrent layers such as `LSTM`, `GRU` or `RNN` to benefit from the sequential information that recurrent 
 layers have, but it will not raise an error if used with a different layer such as `Dense`, as long as the layer is compatible with the concatenation function `vcat`.
 
+For flexibility, it is possible to use the contructor `Bidirectional(rnn, in::Int, out::Int, a...; ka...)` by passing the input and output dimensions 
+together with the desired recurrent layers (one of `LSTM`, `GRU`, or `RNN`). Check the examples below for more details.
+
 # Examples
+
+1. Using the flexible constructor to create a bidirectional LSTM layer (BiLSTM):
 ```jldoctest
-julia> BLSTM = Bidirectional(LSTM, 3, 5)
+julia> BLSTM = Bidirectional(LSTM, 3, 5) 
 Bidirectional(
   Recur(
     LSTMCell(3, 5),                     # 190 parameters
@@ -453,9 +458,15 @@ Bidirectional(
   ),
 )         # Total: 10 trainable arrays, 380 parameters,
           # plus 4 non-trainable, 20 parameters, summarysize 2.141 KiB.
+```
+2. Checking the dimension after running the bidirectional layer on an input vector. Shows that the 
+dimension of the output is twice the dimension of the input:
+```jldoctest
 julia> Bidirectional(LSTM, 3, 5)(rand(Float32, 3)) |> size
 (10,)
-
+```
+3. It is possible to use the bidirectional layer inside the `Chain` container:
+```
 julia> model = Chain(Embedding(10000, 200), Bidirectional(LSTM, 200, 128), Dense(256, 5), softmax)
 Chain(
   Embedding(10000, 200),                # 2_000_000 parameters
@@ -472,6 +483,32 @@ Chain(
 )         # Total: 13 trainable arrays, 2_338_693 parameters,
           # plus 4 non-trainable, 512 parameters, summarysize 8.922 MiB.
 ```
+4. It is also possible to use the default constructor
+```jldoctest
+julia> BiLSTM = Bidirectional(GRU(3, 5), GRU(3, 5))
+Bidirectional(
+  Recur(
+    GRUCell(3, 5),                      # 140 parameters
+  ),
+  Recur(
+    GRUCell(3, 5),                      # 140 parameters
+  ),
+)         # Total: 8 trainable arrays, 280 parameters,
+          # plus 2 non-trainable, 10 parameters, summarysize 1.562 KiB.
+```
+5. And use other parameters available on the recurrent layers
+```jldoctest
+julia> BiLSTM = Bidirectional(RNN(3, 5, tanh; init=glorot_normal), LSTM(3, 5; initb=zeros32, init_state=zeros32))
+Bidirectional(
+  Recur(
+    RNNCell(3, 5, tanh),                # 50 parameters
+  ),
+  Recur(
+    LSTMCell(3, 5),                     # 190 parameters
+  ),
+)         # Total: 9 trainable arrays, 240 parameters,
+          # plus 3 non-trainable, 15 parameters, summarysize 1.500 KiB.
+```
 """
 struct Bidirectional{A,B} 
   forward::A
@@ -479,7 +516,8 @@ struct Bidirectional{A,B}
 end
 
 # Constructor that creates a bidirectional with the same layer for forward and backward
-Bidirectional(rnn, a...; ka...) = Bidirectional(rnn(a...; ka...), rnn(a...; ka...))
+# Needs to have `in` and `out` explicitly declared to avoid conflicts with the default construtor
+Bidirectional(rnn, in::Int, out::Int, a...; ka...) = Bidirectional(rnn(in, out, a...; ka...), rnn(in, out, a...; ka...))
 
 
 # Concatenate the forward and reversed backward weights
