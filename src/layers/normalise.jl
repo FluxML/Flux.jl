@@ -34,7 +34,7 @@ function dropout(x, p; dims=:, active::Bool=true)
   @inbounds @. y = x * _dropout_kernel(y, p, 1-p)
 end
 
-Flux.@adjoint function dropout(x, p; dims=:, active::Bool=true)
+@adjoint function dropout(x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
   y = rand!(similar(x, _dropout_shape(x, dims)))
   return x .* _dropout_kernel.(y, p, 1-p), Δ -> (Δ .* _dropout_kernel.(y, p, 1-p), nothing)
@@ -56,7 +56,7 @@ e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
 (also called 2D dropout).
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
-"""
+"""`
 mutable struct Dropout{F,D}
   p::F
   dims::D
