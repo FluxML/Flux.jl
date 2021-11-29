@@ -516,9 +516,8 @@ struct Bidirectional{A,B}
 end
 
 # Constructor that creates a bidirectional with the same layer for forward and backward
-# Needs to have `in` and `out` explicitly declared to avoid conflicts with the default construtor
-Bidirectional(rnn, in::Int, out::Int, a...; ka...) = Bidirectional(rnn(in, out, a...; ka...), rnn(in, out, a...; ka...))
-
+# Needs to have `in` explicitly declared to avoid conflicts with the default construtor
+Bidirectional(rnn, in::Integer, args...; ka...) = Bidirectional(rnn(in, args...; ka...), rnn(in, args...; ka...))
 
 # Concatenate the forward and reversed backward weights
 function (m::Bidirectional)(x::Union{AbstractVecOrMat{T},OneHotArray}) where {T}
