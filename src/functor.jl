@@ -60,11 +60,23 @@ The behaviour of `params` on custom types can be customized using [`Functor.@fun
 
 # Examples
 ```jldoctest
-julia> params(Chain(Dense(ones(2,3))), softmax)
+julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
 Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
 
-julia> params(BatchNorm(2, relu))
+julia> bn = BatchNorm(2, relu)
+BatchNorm(2, relu)  # 4 parameters, plus 4 non-trainable
+
+julia> params(bn)  # only the trainable parameters
 Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
+
+julia> params([1, 2, 3], [4.0])  # one or more arrays of numbers
+Params([[1, 2, 3], [4.0]])
+
+julia> params([[1, 2, 3], [4.0]])  # unpacks array of arrays
+Params([[1, 2, 3], [4.0]])
+
+julia> params(1, [2 2], (alpha=[3,3,3], beta=Ref(4), gamma=sin))  # ignores scalars, unpacks NamedTuples
+Params([[2 2], [3, 3, 3]])
 ```
 """
 function params(m...)
