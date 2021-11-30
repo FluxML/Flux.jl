@@ -211,47 +211,65 @@ function Base.show(io::IO, l::Diagonal)
 end
 
 """
-    Maxout(over)
-
-The [Maxout](https://arxiv.org/abs/1302.4389) layer has a number of
-internal layers which all receive the same input. It returns the elementwise
-maximum of the internal layers' outputs.
-
-Maxout over linear dense layers satisfies the univeral approximation theorem.
-"""
-struct Maxout{FS<:Tuple}
-    over::FS
-end
-
-"""
+    Maxout(layers...)
     Maxout(f, n_alts)
 
-Construct a Maxout layer over `n_alts` instances of the layer given by `f`.
-The function takes no arguments and should return some callable layer.
-Conventionally, this is a linear dense layer.
+This contains a number of internal layes, each of which receives the same input.
+Its output is the elementwise maximum of the the internal layers' outputs.
+
+Instead of defining layers individually, you can provide a zero-argument function
+which constructs them, and the number to construct.
+
+Maxout over linear dense layers satisfies the univeral approximation theorem.
+See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks" 
+[https://arxiv.org/abs/1302.4389](1302.4389).
+
+See also [`Parallel`](@ref) to reduce with other operators.
 
 # Examples
+```
+julia> m = Maxout(Dense([1;;], false, abs2), Dense([3;;]));
 
-This constructs a `Maxout` layer over 4 internal dense linear layers, each
-identical in structure (784 inputs, 128 outputs):
-```jldoctest
-julia> insize = 784;
+julia> m([-2 -1 0 1 2])
+1×5 Matrix{Int64}:
+ 4  1  0  3  6
 
-julia> outsize = 128;
+julia> m3 = Maxout(() -> Dense(5, 7, tanh), 3)
+Maxout(
+  Dense(5, 7, tanh),                    # 42 parameters
+  Dense(5, 7, tanh),                    # 42 parameters
+  Dense(5, 7, tanh),                    # 42 parameters
+)                   # Total: 6 arrays, 126 parameters, 888 bytes.
 
-julia> Maxout(()->Dense(insize, outsize), 4);
+julia> Flux.outputsize(m3, (5, 11))
+(7, 11)
 ```
 """
-function Maxout(f, n_alts)
+struct Maxout{FS<:Tuple}
+  over::FS
+  Maxout(layers...) = new{typeof(layers)}(layers)
+end
+
+function Maxout(f::Function, n_alts::Integer)
   over = Tuple(f() for _ in 1:n_alts)
-  return Maxout(over)
+  return Maxout(over...)
 end
 
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
-    mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+  outs = map(lay -> lay(input), mo.over)
+  return max.(outs...)
 end
+
+trainable(mo::Maxout) = mo.over
+
+function Base.show(io::IO, mo::Maxout)
+  print(io, "Maxout(")
+  _show_layers(io, mo.over)
+  print(io, ")")
+end
+
 
 """
     SkipConnection(layer, connection)
@@ -277,6 +295,8 @@ julia> sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3));
 julia> size(sm(x)) == (5, 5, 11, 10)
 true
 ```
+
+See also [`Parallel`](@ref), [`Maxout`](@ref).
 """
 struct SkipConnection{T,F}
   layers::T
@@ -390,7 +410,7 @@ end
     Parallel(connection, layers...)
     Parallel(connection; name = layer, ...)
 
-Create a 'Parallel' layer that passes an input array to each path in
+Create a `Parallel` layer that passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
 Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
@@ -398,6 +418,9 @@ If called with multiple inputs, they are `zip`ped with the layers, thus `Paralle
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
+
+See also [`SkipConnection`](@ref) which is `Parallel` with one `identity`,
+and [`Maxout`](@ref) which reduces by broadcasting `max`.
 
 # Examples
 

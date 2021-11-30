@@ -1,6 +1,6 @@
 
 for T in [
-    :Chain, :Parallel, :SkipConnection, :Recur  # container types
+    :Chain, :Parallel, :SkipConnection, :Recur, :Maxout  # container types
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
     if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
