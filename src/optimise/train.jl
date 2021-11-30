@@ -78,7 +78,7 @@ function stop()
 end
 
 batchmemaybe(x) = tuple(x)
-batchmemaybe(x::Tuple) = x
+batchmemaybe(x::Union{NamedTuple,Tuple}) = x
 
 """
     train!(loss, params, data, opt; cb)

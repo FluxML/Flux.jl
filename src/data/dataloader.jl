@@ -13,7 +13,7 @@ struct DataLoader{D,R<:AbstractRNG}
 end
 
 """
-    Flux.DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)
+    Flux.DataLoader(data; batchsize = 1, shuffle = false, partial = true, rng = GLOBAL_RNG)
 
 An object that iterates over mini-batches of `data`, 
 each mini-batch containing `batchsize` observations
@@ -23,8 +23,8 @@ Takes as input a single data tensor, or a tuple (or a named tuple) of tensors.
 The last dimension in each tensor is the observation dimension, i.e. the one
 divided into mini-batches.
 
-If `shuffle=true`, it shuffles the observations each time iterations are re-started.
-If `partial=false` and the number of observations is not divisible by the batchsize, 
+If `shuffle = true`, it shuffles the observations each time iterations are re-started.
+If `partial = false` and the number of observations is not divisible by the batchsize, 
 then the last mini-batch is dropped.
 
 The original data is preserved in the `data` field of the DataLoader.
