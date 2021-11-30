@@ -70,6 +70,10 @@ Such an object contains a reference to the model's parameters, not a copy, such 
 
 Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../models/basics.md) section. Also, for freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
 
+```@docs
+Flux.params
+```
+
 ## Datasets
 
 The `data` argument of `train!` provides a collection of data to train with (usually a set of inputs `x` and target outputs `y`). For example, here's a dummy dataset with only one data point:
