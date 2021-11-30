@@ -141,7 +141,7 @@ RMSProp(η = 0.001, ρ = 0.9) = RMSProp(η, ρ, IdDict())
 function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
   acc = get!(() -> zero(x), o.acc, x)::typeof(x)
-  @. acc = ρ * acc + (1 - ρ) * Δ^2
+  @. acc = ρ * acc + (1 - ρ) * Δ * conj(Δ)
   @. Δ *= η / (√acc + ϵ)
 end
 
@@ -179,7 +179,7 @@ function apply!(o::ADAM, x, Δ)
   end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
   @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
   βp .= βp .* β
 
@@ -221,7 +221,7 @@ function apply!(o::RADAM, x, Δ)
   end :: Tuple{typeof(x),typeof(x),Vector{Float64},Ref{Int}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
   ρ = ρ∞ - 2t[] * βp[2] / (1 - βp[2])
   if ρ > 4
     r = sqrt((ρ-4)*(ρ-2)*ρ∞/((ρ∞-4)*(ρ∞-2)*ρ))
@@ -311,7 +311,7 @@ function apply!(o::OADAM, x, Δ)
   end :: Tuple{typeof(x),typeof(x),typeof(x),Vector{Float64}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
   @. Δ = -Δ_
   @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
   @. Δ += 2Δ_
@@ -348,7 +348,7 @@ ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
   acc = get!(() -> fill!(similar(x), ϵ), o.acc, x)::typeof(x)
-  @. acc += Δ^2
+  @. acc += Δ * conj(Δ)
   @. Δ *= η / (√acc + ϵ)
 end
 
@@ -379,11 +379,11 @@ ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
 function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
-  @. acc = ρ * acc + (1 - ρ) * Δ^2
+  @. acc = ρ * acc + (1 - ρ) * Δ * conj(Δ)
   # DON'T remove epsilon from numerator
   # or even out of the square roots
   @. Δ *= √(Δacc + ϵ) / √(acc + ϵ)
-  @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
+  @. Δacc = ρ * Δacc + (1 - ρ) * Δ * conj(Δ)
   return Δ
 end
 
@@ -463,7 +463,7 @@ function apply!(o::NADAM, x, Δ)
   β1p, β2p = βp
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
   @. Δ = (β[1] * mt / (1 - β[1] * β1p) + (1 - β[1]) * Δ / (1 - β1p)) / (√(vt * β[2] / (1 - β2p)) + ϵ) * η
   βp .= βp .* β
 
@@ -524,7 +524,7 @@ function apply!(o::AdaBelief, x, Δ)
   η, β = o.eta, o.beta
   mt, st = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. st = β[2] * st + (1 - β[2]) * (Δ - mt)^2
+  @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt)
   @. Δ =  η * mt / (√(st) + ϵ)
   return Δ
 end
