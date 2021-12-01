@@ -128,7 +128,7 @@ function DataLoader(f,
   fs = map(feat -> getindex(feat,
                  ntuple(i -> i == batchdim(feat) ? ix : Colon(), length(size(feat)))...), args)
   iterator = Iterators.partition(ix, batchsize)
-  ch = Channel{typeof(args)}(buffersize)
+  ch = Channel(buffersize)
   t = Task(() -> begin
     for i in iterator
       fullbatch = length(i) == batchsize
