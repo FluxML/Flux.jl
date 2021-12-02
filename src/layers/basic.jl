@@ -258,8 +258,11 @@ end
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
-  outs = map(lay -> lay(input), mo.over)
-  return max.(outs...)
+  # outs = map(lay -> lay(input), mo.over)
+  # return max.(outs...)
+  # Perhaps surprisingly, pairwise max broadcast is often faster,
+  # even with Zygote. See #698 and #1794
+  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
 end
 
 trainable(mo::Maxout) = mo.over
