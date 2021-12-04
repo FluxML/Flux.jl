@@ -183,6 +183,9 @@ function check_use_cuda()
     if use_cuda[] && !CUDA.has_cudnn()
       @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
+    if use_cuda[] == false
+      @warn "The GPU function is being called despite the GPU not being accessible. Defaulting back to the CPU." maxlog=1
+    end
   end
 end
 Zygote.@nograd check_use_cuda
