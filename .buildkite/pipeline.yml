@@ -1,5 +1,5 @@
 steps:
-  - label: "GPU integration with julia v1.6"       # change to "v1" when 1.6 is out
+  - label: "GPU integration with julia v1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
