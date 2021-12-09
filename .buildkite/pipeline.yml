@@ -2,12 +2,24 @@ steps:
   - label: "GPU integeration with julia v1.6"       # change to "v1" when 1.6 is out
     plugins:
       - JuliaCI/julia#v1:
-          version: "1"
+          version: "1.6"
       - JuliaCI/julia-test#v1: ~
     agents:
       queue: "juliagpu"
       cuda: "*"
     timeout_in_minutes: 60
+
+  # - label: "GPU integeration with julia v1"
+  #   soft_fail:
+  #     - exit_status: 1
+  #   plugins:
+  #     - JuliaCI/julia#v1:
+  #         version: "1"
+  #     - JuliaCI/julia-test#v1: ~
+  #   agents:
+  #     queue: "juliagpu"
+  #     cuda: "*"
+  #   timeout_in_minutes: 60
 
   # - label: "GPU nightly"
   #   plugins:
