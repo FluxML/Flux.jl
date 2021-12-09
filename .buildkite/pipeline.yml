@@ -9,17 +9,15 @@ steps:
       cuda: "*"
     timeout_in_minutes: 60
 
-  # - label: "GPU integeration with julia v1"
-  #   soft_fail:
-  #     - exit_status: 1
-  #   plugins:
-  #     - JuliaCI/julia#v1:
-  #         version: "1"
-  #     - JuliaCI/julia-test#v1: ~
-  #   agents:
-  #     queue: "juliagpu"
-  #     cuda: "*"
-  #   timeout_in_minutes: 60
+  - label: "GPU integeration with julia v1"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "1"
+      - JuliaCI/julia-test#v1: ~
+    agents:
+      queue: "juliagpu"
+      cuda: "*"
+    timeout_in_minutes: 60
 
   # - label: "GPU nightly"
   #   plugins:
