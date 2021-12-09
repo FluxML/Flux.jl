@@ -285,7 +285,7 @@ sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_i
 """
     identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
 
-Return an `Array` of size `dims` which yields an identity mapping when used as parameters in 
+Return an `Array` of size `dims` which yields an identity mapping when used as parameters in
 most Flux layers. Use `gain` to scale the identity by a constant.
 
 Often useful in the context of transfer learning, i.e when one wants to add more capacity to
@@ -297,10 +297,10 @@ Equivalent to `Base.circshift(identity(dims...), shift)`.
 Some caveats: Not all layers will be identity mapping when used with this init. Exceptions
 include recurrent layers, `DepthwiseConv` and normalization layers.
 
-Also note that layers must have `input_size == output_size` for identity mapping to be 
+Also note that layers must have `input_size == output_size` for identity mapping to be
 possible. When this is not the case, extra dimensions of the array are padded with zeros.
 
-For convolutional layers, in addition to the above, the kernel sizes must also be odd and 
+For convolutional layers, in addition to the above, the kernel sizes must also be odd and
 padding must be applied so that output feature maps have the same size as input feature maps,
 e.g by using [`SamePad`](@ref).
 
@@ -420,7 +420,10 @@ julia> Flux.unsqueeze(xs, 1)
  [1, 2]  [3, 4]  [5, 6]
 ```
 """
-unsqueeze(xs::AbstractArray, dim::Integer) = reshape(xs, (size(xs)[1:dim-1]..., 1, size(xs)[dim:end]...))
+function unsqueeze(xs::AbstractArray, dim::Integer)
+    sz = ntuple(i -> i < dim ? size(xs, i) : i == dim ? 1 : size(xs, i - 1), ndims(xs) + 1)
+    return reshape(xs, sz)
+end
 
 """
     unsqueeze(dim)
@@ -542,6 +545,8 @@ squeezebatch(x) = reshape(x, head(size(x)))
 
 Batch the arrays in `xs` into a single array.
 
+See also [`unbatch`](@ref)
+
 # Examples
 ```jldoctest
 julia> Flux.batch([[1,2,3],[4,5,6]])
@@ -560,6 +565,28 @@ function batch(xs)
   end
   return data
 end
+
+"""
+  unbatch(x)
+
+Reverse of the [`batch`](@ref) operation,
+unstacking the last dimension of the array `x`.
+
+See also [`unstack`](@ref).
+
+# Examples
+
+```jldoctest
+julia> Flux.unbatch([1 3 5 7;
+                     2 4 6 8])
+4-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+ [7, 8]
+"""
+unbatch(x::AbstractArray) = unstack(x, ndims(x))
+unbatch(x::AbstractVector) = x
 
 """
 Return the given sequence padded with `p` up to a maximum length of `n`.

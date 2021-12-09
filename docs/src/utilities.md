@@ -14,6 +14,7 @@ Flux.unstack
 Flux.chunk
 Flux.frequencies
 Flux.batch
+Flux.unbatch
 Flux.batchseq
 Base.rpad(v::AbstractVector, n::Integer, p)
 ```

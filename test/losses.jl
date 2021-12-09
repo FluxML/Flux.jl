@@ -39,6 +39,9 @@ y = [1, 1, 0, 0]
 
 @testset "mse" begin
   @test mse(ŷ, y) ≈ (.1^2 + .9^2)/2
+
+  # Test that mse() loss works on complex values:
+  @test mse(0 + 0im, 1 + 1im) == 2
 end
 
 @testset "mae" begin

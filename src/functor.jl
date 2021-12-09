@@ -48,6 +48,37 @@ function params!(p::Params, x, seen = IdSet())
   end
 end
 
+"""
+    params(model)
+    params(layers...)
+
+Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
+
+This can be used with the `gradient` function, see [Taking Gradients](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
+
+The behaviour of `params` on custom types can be customized using [`Functor.@functor`](@ref) or [`Flux.trainable`](@ref).
+
+# Examples
+```jldoctest
+julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
+Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
+
+julia> bn = BatchNorm(2, relu)
+BatchNorm(2, relu)  # 4 parameters, plus 4 non-trainable
+
+julia> params(bn)  # only the trainable parameters
+Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
+
+julia> params([1, 2, 3], [4.0])  # one or more arrays of numbers
+Params([[1, 2, 3], [4.0]])
+
+julia> params([[1, 2, 3], [4.0]])  # unpacks array of arrays
+Params([[1, 2, 3], [4.0]])
+
+julia> params(1, [2 2], (alpha=[3,3,3], beta=Ref(4), gamma=sin))  # ignores scalars, unpacks NamedTuples
+Params([[2 2], [3, 3, 3]])
+```
+"""
 function params(m...)
   ps = Params()
   params!(ps, m)

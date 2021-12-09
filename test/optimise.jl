@@ -190,3 +190,40 @@ end
   Flux.update!(opt, θ, gs)
   @test w ≈ wold .- 0.1
 end
+
+# Flux PR #1776
+# We need to test that optimisers like ADAM that maintain an internal momentum
+# estimate properly calculate the second-order statistics on the gradients as
+# the flow backward through the model.  Previously, we would calculate second-
+# order statistics via `Δ^2` rather than the complex-aware `Δ * conj(Δ)`, which
+# wreaks all sorts of havoc on our training loops.  This test ensures that
+# a simple optimization is montonically decreasing (up to learning step effects)
+@testset "Momentum Optimisers and complex values" begin
+  # Test every optimizer that has momentum internally
+  for opt_ctor in [ADAM, RMSProp, RADAM, OADAM, ADAGrad, ADADelta, NADAM, AdaBelief]
+    # Our "model" is just a complex number
+    w = zeros(ComplexF32, 1)
+
+    # Our model attempts to learn `f(x) = conj(x)` where `f(x) = w*x`
+    function loss()
+        # Deterministic training data is the best training data
+        x = ones(1, 1) + 1im*ones(1, 1)
+
+        # Manually implement `mse()` to allow demonstration of brokenness
+        # on older Flux builds that don't have a fixed `mse()`
+        return sum(abs2.(w * x .- conj(x)))
+    end
+
+    params = Flux.Params([w])
+    opt = opt_ctor(1e-2)
+
+    # Train for 10 iterations, enforcing that loss is monotonically decreasing
+    last_loss = Inf
+    for idx in 1:10
+        grads = Flux.gradient(loss, params)
+        @test loss() < last_loss
+        last_loss = loss()
+        Flux.update!(opt, params, grads)
+    end
+  end
+end
