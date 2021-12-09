@@ -416,7 +416,7 @@ end
       ∇m = gradient(m -> sum(m(x)), m)[1]
       p, re = destructure(m)
       ∇p = gradient(θ -> sum(re(θ)(x)), p)[1]
-      if VERSION > v"1.6"
+      if VERSION >= v"1.7"
         @test_broken ∇p ≈ destructure(∇m)[1]
       else
         @test ∇p ≈ destructure(∇m)[1]
