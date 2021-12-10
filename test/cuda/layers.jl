@@ -45,14 +45,18 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
           # test
           if test_cpu
-            @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
+            if VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
+              @test_broken y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
+            else
+              @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
+            end
             if isnothing(xg_cpu)
               @test isnothing(xg_gpu)
             else
               if layer === GroupedConvTranspose
-                @test Array(xg_gpu) ≈ xg_cpu rtol=2f-2 atol=1f-3
+                @test Array(xg_gpu) ≈ xg_cpu rtol = 2f-2 atol = 1f-3
               else
-                @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
+                @test Array(xg_gpu) ≈ xg_cpu rtol = 1f-3 atol = 1f-3
               end
             end
           end
