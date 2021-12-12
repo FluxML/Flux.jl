@@ -46,6 +46,9 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
           # test
           if test_cpu
             if VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
+              print(x_cpu)
+              print(l_cpu.weight)
+              print(l_cpu.bias)
               @test_broken y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             else
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
