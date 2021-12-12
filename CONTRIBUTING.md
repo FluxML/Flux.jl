@@ -8,7 +8,7 @@ One of the best ways to contribute is by looking at issues labeled ["help wanted
 
 ## Good First Issues
 
-While there are not many right now, we do have a section for ["good for issues"](https://github.com/FluxML/Flux.jl/labels/good%20first%20issue). As mentioned above, if any of these seem interesting but there is no clear next step in your mind, please feel free to ask for a suggested step. Often times in open source, issues labeled as "good first issue" actually take some back and forth between maintainers and contributors before the issues is ready to be tackled by a new contributor.
+While there are not many right now, we do have a section for ["good first issues"](https://github.com/FluxML/Flux.jl/labels/good%20first%20issue). As mentioned above, if any of these seem interesting but there is no clear next step in your mind, please feel free to ask for a suggested step. Often times in open source, issues labeled as "good first issue" actually take some back and forth between maintainers and contributors before the issues is ready to be tackled by a new contributor.
 
 ## Model Zoo
 
