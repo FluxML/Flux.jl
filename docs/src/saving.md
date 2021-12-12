@@ -121,7 +121,7 @@ revert to an older copy of the model if it starts to overfit.
 Note that to resume a model's training, you might need to restore other stateful parts of your training loop. Possible examples are stateful optimizers (which usually utilize an `IdDict` to store their state), and the randomness used to partition the original data into the training and validation sets.
 
 You can store the optimiser state alongside the model, to resume training
-exactly where you left off; BSON is smart enough to cache values and insert links when saving, but only if it knows everything to be saved up front. (See [here](https://github.com/JuliaIO/BSON.jl/blob/3b4a2cebda0afae11aab310f0a4d12b6a5234160/src/write.jl#L71).) So models and optimizers must be saved together to have the latter work when restoring.
+exactly where you left off. BSON is smart enough to [cache values](https://github.com/JuliaIO/BSON.jl/blob/v0.3.4/src/write.jl#L71) and insert links when saving, but only if it knows everything to be saved up front. Thus models and optimizers must be saved together to have the latter work after restoring.
 
 ```julia
 opt = ADAM()
