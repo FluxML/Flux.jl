@@ -99,10 +99,9 @@ extraChain(::Tuple{}, x) = ()
 
 """
     Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
-    Dense(in, out, [σ; keywords...])
     Dense(W::AbstractMatrix, [bias, σ])
 
-Create a traditional `Dense` layer, whose forward pass is given by:
+Create a traditional fully connected layer, whose forward pass is given by:
 
     y = σ.(W * x .+ bias)
 
@@ -148,8 +147,6 @@ struct Dense{F, M<:AbstractMatrix, B}
     new{F,M,typeof(b)}(W, b, σ)
   end
 end
-
-Dense(in::Integer, out::Integer, σ = identity; kw...) = Dense(in => out, σ; kw...)
 
 function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
                initW = nothing, initb = nothing,
@@ -227,11 +224,11 @@ julia> m([-2 -1 0 1 2])
 1×5 Matrix{Int64}:
  4  1  0  3  6
 
-julia> m3 = Maxout(() -> Dense(5, 7, tanh), 3)
+julia> m3 = Maxout(() -> Dense(5 => 7, tanh), 3)
 Maxout(
-  Dense(5, 7, tanh),                    # 42 parameters
-  Dense(5, 7, tanh),                    # 42 parameters
-  Dense(5, 7, tanh),                    # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
 )                   # Total: 6 arrays, 126 parameters, 888 bytes.
 
 julia> Flux.outputsize(m3, (5, 11))
@@ -305,7 +302,7 @@ end
     Bilinear((in1, in2) => out, σ=identity; bias=true, init=glorot_uniform)
     Bilinear(W::AbstractArray, [bias, σ])
 
-Creates a Bilinear layer, which operates on two inputs at the same time.
+Creates a bilinear layer, which operates on two inputs at the same time.
 Its output, given vectors `x` & `y`, is another vector `z` with,
 for all `i ∈ 1:out`:
 
@@ -363,11 +360,6 @@ end
 
 @functor Bilinear
 
-function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
-                  init = glorot_uniform, bias = true)
-  Bilinear(init(out, in1, in2), bias, σ)
-end
-
 Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity; kw...) = Bilinear(in1, in2, out, σ; kw...)
 Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear(in12, in12, out, σ; kw...)
 
@@ -408,7 +400,7 @@ end
     Parallel(connection, layers...)
     Parallel(connection; name = layer, ...)
 
-Create a `Parallel` layer that passes an input array to each path in
+Create a layer which passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
 Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
@@ -489,39 +481,33 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-    Embedding(in, out; init=randn)
+    Embedding(in => out; init=randn)
 
 A lookup table that stores embeddings of dimension `out` 
-for a vocabulary of size `in`. 
+for a vocabulary of size `in`.
 
-This layers is often used to store word embeddings and retrieve them using indices. 
+This layer is often used to store word embeddings and retrieve them using indices. 
 The input to the layer can be either a vector of indexes
 or the corresponding [onehot encoding](@ref Flux.OneHotArray). 
 
 # Examples
-
-```julia-repl
-julia> using Flux: Embedding
-
+```jldoctest
 julia> vocab_size, embed_size = 1000, 4;
 
-julia> model = Embedding(vocab_size, embed_size)
-Embedding(1000, 4)
+julia> model = Flux.Embedding(vocab_size => embed_size)
+Embedding(1000 => 4)  # 4_000 parameters
 
-julia> vocab_idxs = [1, 722, 53, 220, 3]
+julia> vocab_idxs = [1, 722, 53, 220, 3];
 
-julia> x = OneHotMatrix(vocab_idxs, vocab_size);
+julia> x = Flux.OneHotMatrix(vocab_idxs, vocab_size); summary(x)
+"1000×5 OneHotMatrix(::Vector{Int64}) with eltype Bool"
 
-julia> model(x)
-4×5 Matrix{Float32}:
-  0.91139    0.670462    0.463217   0.670462    0.110932
-  0.247225  -0.0823874   0.698694  -0.0823874   0.945958
- -0.393626  -0.590136   -0.545422  -0.590136    0.77743
- -0.497621   0.87595    -0.870251   0.87595    -0.772696
-```
+julia> model(x) |> summary
+"4×5 Matrix{Float32}"
 
 julia> model(vocab_idxs) == model(x)
 true
+```
 """
 struct Embedding{W}
   weight::W
@@ -529,9 +515,8 @@ end
 
 @functor Embedding
 
-Embedding(in::Integer, out::Integer; init = randn32) = Embedding(init(out, in))
+Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
   
-
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
@@ -542,5 +527,5 @@ function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T
 end
  
 function Base.show(io::IO, m::Embedding)
-  print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
+  print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
