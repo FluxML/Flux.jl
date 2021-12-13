@@ -39,12 +39,12 @@ Note that we convert both the parameters (`W`, `b`) and the data set (`x`, `y`) 
 If you define a structured model, like a `Dense` layer or `Chain`, you just need to convert the internal parameters. Flux provides `fmap`, which allows you to alter all parameters of a model at once.
 
 ```julia
-d = Dense(10, 5, σ)
+d = Dense(10 => 5, σ)
 d = fmap(cu, d)
 d.weight # CuArray
 d(cu(rand(10))) # CuArray output
 
-m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+m = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)
 m = fmap(cu, m)
 d(cu(rand(10)))
 ```
@@ -54,8 +54,8 @@ As a convenience, Flux provides the `gpu` function to convert models and data to
 ```julia
 julia> using Flux, CUDA
 
-julia> m = Dense(10,5) |> gpu
-Dense(10, 5)
+julia> m = Dense(10, 5) |> gpu
+Dense(10 => 5)
 
 julia> x = rand(10) |> gpu
 10-element CuArray{Float32,1}:

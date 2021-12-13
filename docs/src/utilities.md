@@ -92,7 +92,7 @@ function make_model(width, height, inchannels, nclasses;
 
   # the input dimension to Dense is programatically calculated from
   #  width, height, and nchannels
-  return Chain(conv_layers..., Dense(prod(conv_outsize), nclasses))
+  return Chain(conv_layers..., Dense(prod(conv_outsize) => nclasses))
 end
 ```
 
