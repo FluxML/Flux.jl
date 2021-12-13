@@ -44,8 +44,7 @@ julia> Flux.mse(y_model, y_true)
 """
 function mse(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
-  error = ŷ .- y
-  real(agg(error .* conj(error)))
+  agg(abs2.(ŷ .- y))
 end
 
 """
