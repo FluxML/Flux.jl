@@ -360,8 +360,11 @@ end
 
 @functor Bilinear
 
-Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity; kw...) = Bilinear(in1, in2, out, σ; kw...)
-Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear(in12, in12, out, σ; kw...)
+function Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity;
+                  bias = true, init = glorot_uniform)
+  Bilinear(init(out, in1, in2), bias, σ)
+end
+Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear((in12, in12) => out, σ; kw...)
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   W, b, σ = a.weight, a.bias, a.σ
