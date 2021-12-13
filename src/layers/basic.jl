@@ -44,10 +44,7 @@ end
 
 @functor Chain
 
-applychain(::Tuple{}, x) = x
-applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
-
-(c::Chain)(x) = applychain(Tuple(c.layers), x)
+(c::Chain)(x) = foldl((y,f) -> f(y), (x, c.layers...))
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
