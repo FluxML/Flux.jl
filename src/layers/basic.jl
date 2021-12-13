@@ -228,7 +228,7 @@ See also [`Parallel`](@ref) to reduce with other operators.
 
 # Examples
 ```
-julia> m = Maxout(Dense([1;;], false, abs2), Dense([3;;]));
+julia> m = Maxout(x -> abs2.(x), x -> x .* 3);
 
 julia> m([-2 -1 0 1 2])
 1×5 Matrix{Int64}:
