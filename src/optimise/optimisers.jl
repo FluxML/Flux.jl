@@ -594,7 +594,7 @@ function apply!(o::InvDecay, x, Δ)
 end
 
 """
-    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4)
+    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4, start = 1)
 
 Discount the learning rate `η` by the factor `decay` every `decay_step` steps till
 a minimum of `clip`.
@@ -606,6 +606,7 @@ a minimum of `clip`.
 - `decay_step`: Schedule decay operations by setting the number of steps between
                 two decay operations.
 - `clip`: Minimum value of learning rate.
+- 'start': Step at which the decay starts.
 
 
 See also the [Scheduling Optimisers](@ref) section of the docs
@@ -624,16 +625,17 @@ mutable struct ExpDecay <: AbstractOptimiser
   decay::Float64
   step::Int64
   clip::Float64
+  start::Int64
   current::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = 
-  ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4, start = 0) =
+  ExpDecay(opt, decay, decay_step, clip, start, IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
-  η, s, decay = o.eta, o.step, o.decay
+  η, s, decay, start = o.eta, o.step, o.decay, o.start
   n = o.current[x] = get(o.current, x, 0) + 1
-  if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
+  if n > start && n % s == 0 && count(x -> x > start && x % s == 0, values(o.current)) == 1
     η = max(η * decay, o.clip)
     o.eta = η
   end

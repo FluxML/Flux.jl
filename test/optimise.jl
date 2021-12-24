@@ -98,6 +98,16 @@ end
     @test eta_actual == eta_expected
   end
 
+  @testset "starting step" begin
+    start = 4
+    o = ExpDecay(0.2, 0.5, 1, 1e-3, start)
+    p = [0.0]
+    steps = 1:8
+    eta_expected = @. max(o.eta * 0.5 ^ max(steps - start, 0), o.clip)
+    eta_actual = [Optimise.apply!(o, p, [1.0])[1] for _ in steps]
+    @test eta_actual == eta_expected
+  end
+
   w = randn(10, 10)
   o = ExpDecay(0.1, 0.1, 1000, 1e-4)
   w1 = randn(10,10)
