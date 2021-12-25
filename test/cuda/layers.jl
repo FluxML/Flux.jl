@@ -13,9 +13,9 @@ end
 # TODO: These layers get into scalar indexing issues.
 const BROKEN_LAYERS = Union{DepthwiseConv}
 
-const ACTIVATIONS = [selu, identity, relu, tanh,
+const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
-                     elu]
+                     elu, selu]
 
 function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true)
   isnothing(x_cpu) && error("Missing input to test the layers against.")
@@ -24,9 +24,25 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
       @testset "$layer Layer GPU grad test" begin
 
         # compute output and grad of parameters
+        bad_test = VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
+        if bad_test
+          args = (args[1:end-1]..., identity)
+        end
         l_cpu = layer(args...)
         ps_cpu = Flux.params(l_cpu)
-        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
+        y_cpu, back_cpu = pullback(ps_cpu) do
+          x_no_act = l_cpu(x_cpu)
+          Zygote.ignore() do
+            println("pre_act=", x_no_act)
+          end
+          if bad_test
+            x_no_act = selu.(x_no_act)
+            Zygote.ignore() do
+              println("post_act=", x_no_act)
+            end
+          end
+          sum(x_no_act)
+        end
         gs_cpu = back_cpu(1f0)
 
         x_gpu = gpu(x_cpu)
@@ -45,10 +61,10 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
           # test
           if test_cpu
-            if VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
-              #println("x_cpu=", x_cpu)
-              #println("weight_cpu=", l_cpu.weight)
-              #println("bias_cpu=", l_cpu.bias)
+            if bad_test
+              println("x_cpu=", x_cpu)
+              println("weight_cpu=", l_cpu.weight)
+              println("bias_cpu=", l_cpu.bias)
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             else
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
