@@ -46,9 +46,9 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
           # test
           if test_cpu
             if VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
-              println("x_cpu=", x_cpu)
-              println("weight_cpu=", l_cpu.weight)
-              println("bias_cpu=", l_cpu.bias)
+              #println("x_cpu=", x_cpu)
+              #println("weight_cpu=", l_cpu.weight)
+              #println("bias_cpu=", l_cpu.bias)
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             else
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
@@ -96,6 +96,8 @@ for act in ACTIVATIONS
                  DepthwiseConv, DepthwiseConvNoBias]
   gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
 
+  
+  using LinearAlgebra; BLAS.set_num_threads(8)
   groupedconv = [GroupedConv, GroupedConvTranspose]
   gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = true)
 
