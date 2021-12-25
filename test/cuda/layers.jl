@@ -97,7 +97,7 @@ for act in ACTIVATIONS
   gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
 
   
-  using LinearAlgebra; BLAS.set_num_threads(8)
+  using LinearAlgebra; BLAS.set_num_threads(1)
   groupedconv = [GroupedConv, GroupedConvTranspose]
   gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = true)
 
