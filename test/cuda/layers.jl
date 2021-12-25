@@ -13,9 +13,9 @@ end
 # TODO: These layers get into scalar indexing issues.
 const BROKEN_LAYERS = Union{DepthwiseConv}
 
-const ACTIVATIONS = [identity, relu, tanh,
+const ACTIVATIONS = [selu, identity, relu, tanh,
                      sigmoid, exp, softplus,
-                     elu, selu]
+                     elu]
 
 function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true)
   isnothing(x_cpu) && error("Missing input to test the layers against.")
