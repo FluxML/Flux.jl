@@ -30,19 +30,23 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
         end
         l_cpu = layer(args...)
         ps_cpu = Flux.params(l_cpu)
-        y_cpu, back_cpu = pullback(ps_cpu) do
-          x_no_act = l_cpu(x_cpu)
-          Zygote.ignore() do
-            println("pre_act=", x_no_act)
+        
+        if bad_test
+          println("x_cpu=Float32", x_cpu)
+          println("weight_cpu=Float32", l_cpu.weight)
+          println("bias_cpu=", l_cpu.bias)
+          y_cpu, back_cpu = pullback(ps_cpu) do
+            x1 = l_cpu(x_cpu)
+            x2 = selu.(x_no_act)
+            Zygote.@ignore println("pre_act=Float32", x1)
+            Zygote.@ignore println("post_act=Float32", x2)
+            sum(x2)
           end
-          if bad_test
-            x_no_act = selu.(x_no_act)
-            Zygote.ignore() do
-              println("post_act=", x_no_act)
-            end
-          end
-          sum(x_no_act)
+          println("y_cpu=", y_cpu)
+        else
+          y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
         end
+        
         gs_cpu = back_cpu(1f0)
 
         x_gpu = gpu(x_cpu)
@@ -61,14 +65,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
           # test
           if test_cpu
-            if bad_test
-              println("x_cpu=", x_cpu)
-              println("weight_cpu=", l_cpu.weight)
-              println("bias_cpu=", l_cpu.bias)
-              @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            else
-              @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            end
+            @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             if isnothing(xg_cpu)
               @test isnothing(xg_gpu)
             else
