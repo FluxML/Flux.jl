@@ -22,44 +22,42 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer Layer GPU grad test" begin
-
         # compute output and grad of parameters
         bad_test = VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
-        if layer === GroupedConvTranspose && args[end] == selu
-          CUDA.versioninfo()
-        end
         l_cpu = layer(args...)
-        ps_cpu = Flux.params(l_cpu)        
-        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
+        ps_cpu = Flux.params(l_cpu)
         
-#         if bad_test
-#           local x1
-#           local x2
-#           y_cpu, back_cpu = pullback(ps_cpu) do
-#             x1 = l_cpu(x_cpu)
-#             x2 = selu.(x1)
-#             sum(x2)
-#           end
-#           println("x_cpu=Float32", x_cpu)
-#           println("weight_cpu=Float32", l_cpu.weight)
-#           println("bias_cpu=", l_cpu.bias)
-#           println("pre_act=Float32", x1)
-#           println("post_act=Float32", x2)
-#           println("y_cpu=", y_cpu)
-#         else
-#           y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
-#         end
-        
-        gs_cpu = back_cpu(1f0)
-
         x_gpu = gpu(x_cpu)
         l_gpu = l_cpu |> gpu
+        if bad_test
+          l_gpu = ConvTranspose(l_gpu.weight, l_gpu.bias, identity, groups=l_gpu.groups)
+        end
         ps_gpu = Flux.params(l_gpu)
+        
+        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)        
+        gs_cpu = back_cpu(1f0)
 
         if typeof(l_gpu) <: BROKEN_LAYERS
           @test_broken gradient(() -> sum(l_gpu(x_gpu)), ps_gpu) isa Flux.Zygote.Grads
-        else
-          y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
+        else                             
+          if bad_test
+            local x1
+            local x2
+            y_gpu, back_gpu = pullback(ps_gpu) do
+              x1 = l_gpu(x_gpu)
+              x2 = selu.(x1)
+              sum(x2)
+            end
+            println("x_cpu=Float32", x_cpu)
+            println("weight_cpu=Float32", cpu(l_gpu.weight))
+            println("bias_cpu=", cpu(l_gpu.bias))
+            println("pre_act=Float32", cpu(x1))
+            println("post_act=Float32", cpu(x2))
+            println("y_gpu=", y_gpu)
+          else
+            y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
+          end
+          
           gs_gpu = back_gpu(1f0) # TODO many layers error out when backprop int 1, should fix
 
           # compute grad of input
