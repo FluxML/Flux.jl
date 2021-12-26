@@ -26,28 +26,30 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
         # compute output and grad of parameters
         bad_test = VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
         if bad_test
+          CUDA.versioninfo()
           args = (args[1:end-1]..., identity)
         end
         l_cpu = layer(args...)
-        ps_cpu = Flux.params(l_cpu)
+        ps_cpu = Flux.params(l_cpu)        
+        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
         
-        if bad_test
-          local x1
-          local x2
-          y_cpu, back_cpu = pullback(ps_cpu) do
-            x1 = l_cpu(x_cpu)
-            x2 = selu.(x1)
-            sum(x2)
-          end
-          println("x_cpu=Float32", x_cpu)
-          println("weight_cpu=Float32", l_cpu.weight)
-          println("bias_cpu=", l_cpu.bias)
-          println("pre_act=Float32", x1)
-          println("post_act=Float32", x2)
-          println("y_cpu=", y_cpu)
-        else
-          y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
-        end
+#         if bad_test
+#           local x1
+#           local x2
+#           y_cpu, back_cpu = pullback(ps_cpu) do
+#             x1 = l_cpu(x_cpu)
+#             x2 = selu.(x1)
+#             sum(x2)
+#           end
+#           println("x_cpu=Float32", x_cpu)
+#           println("weight_cpu=Float32", l_cpu.weight)
+#           println("bias_cpu=", l_cpu.bias)
+#           println("pre_act=Float32", x1)
+#           println("post_act=Float32", x2)
+#           println("y_cpu=", y_cpu)
+#         else
+#           y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
+#         end
         
         gs_cpu = back_cpu(1f0)
 
