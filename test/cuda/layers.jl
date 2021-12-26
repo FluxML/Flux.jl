@@ -25,9 +25,8 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
         # compute output and grad of parameters
         bad_test = VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
-        if bad_test
+        if layer === GroupedConvTranspose && args[end] == selu
           CUDA.versioninfo()
-          args = (args[1:end-1]..., identity)
         end
         l_cpu = layer(args...)
         ps_cpu = Flux.params(l_cpu)        
