@@ -486,6 +486,29 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
+    Split(layers...)
+
+Create a `Split` layer that passes an input array to each path in `layers`.
+The output is a tuple of the multiple outputs from each path.
+
+Equivalent to `Parallel(tuple, layers...)`.
+
+```jldoctest
+julia> model = Split(Dense(4, 2), Dense(4, 1))
+Parallel(
+  tuple,
+  Dense(4, 2),                          # 10 parameters
+  Dense(4, 1),                          # 5 parameters
+)                   # Total: 4 arrays, 15 parameters, 316 bytes.
+julia> y1, y2 = model(rand(4, 5));
+
+julia> size(y1), size(y2)
+((2, 5), (1, 5))
+```
+"""
+Split(layers...) = Parallel(tuple, layers...)
+
+"""
     Embedding(in, out; init=randn)
 
 A lookup table that stores embeddings of dimension `out` 

@@ -242,6 +242,16 @@ import Flux: activations
       @test gs[2].x ≈ gs_reg[2].x
       @test gs[3].x ≈ gs_reg[3].x
     end
+
+    @testset "Split" begin
+      x = rand(4, 5)
+      split = Split(Dense(4, 2), Dense(4, 1))
+      par = Parallel(tuple, split.layers...)
+
+      @test split(x) == par(x)
+      @test length(split(x)) == length(split.layers)
+      @test size.(split(x)) == ((2, 5), (1, 5))
+    end
   end
 
   @testset "Embedding" begin
