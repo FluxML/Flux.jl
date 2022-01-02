@@ -914,3 +914,31 @@ function plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
 
   return patience(is_plateau, width)
 end
+
+
+"""
+    order()
+
+Returns `1` inside a call to `Zygote.gradient`, `2` inside nested such calls.
+
+# Examples
+```jldoctest; setup = :(using Flux, Zygote)
+julia> Flux.order()
+0
+
+julia> gradient(x -> (@show(Flux.order()); x^3), 1)
+Flux.order() = 1
+(3.0,)
+
+julia> gradient(y -> gradient(x -> (@show(Flux.order()); x^3), y)[1], 1)
+Flux.order() = 2
+(6.0,)
+
+julia> Zygote.hessian(x -> (@show(Flux.order()); x^3), 1)  # uses ForwardDiff over Zygote
+Flux.order() = 1
+6
+```
+"""
+order(::Val{n} = Val(0)) where {n} = n
+
+Zygote.@adjoint order(::Val{n}) where {n} = order(Val(n+1)), Returns(nothing)

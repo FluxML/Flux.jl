@@ -44,7 +44,17 @@ end
 
 @functor Chain
 
-(c::Chain)(x) = foldl((y,f) -> f(y), (x, c.layers...))
+function (c::Chain)(x)
+  if order() < 2
+    foldl((y,f) -> f(y), (x, c.layers...))
+  else
+    # This hand-written foldl causes high latency
+    applychain(Tuple(c.layers), x)
+  end
+end
+
+applychain(::Tuple{}, x) = x
+applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
