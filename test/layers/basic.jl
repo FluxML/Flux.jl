@@ -297,3 +297,18 @@ import Flux: activations
     @test_throws DimensionMismatch m(OneHotVector(3, 1000))
   end
 end
+
+@testset "second derivatives" begin
+  m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
+  @test Zygote.hessian_dual(sum∘m1, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1, [1,2,3])
+
+  # NNlib's softmax gradient writes in-place
+  m2 = Chain(Dense(3,4,tanh), Dense(4,2), softmax)
+  @test_broken Zygote.hessian_dual(sum∘m2, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m2, [1,2,3])
+
+  # https://github.com/FluxML/NNlib.jl/issues/362
+  m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2,2))
+  x3 = cat(Float32[1 2; 3 4; 5 6; 7 8]; dims=3)
+  @test_broken Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
+end
+

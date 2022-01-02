@@ -4,6 +4,7 @@ using Flux: OneHotArray, OneHotMatrix, OneHotVector
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
+using Zygote
 using CUDA
 
 Random.seed!(0)
