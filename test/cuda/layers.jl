@@ -46,7 +46,20 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
           # test
           if test_cpu
             if VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
-              # FIXME revisit this after CUDA deps on CI are updated
+              # FIXME revisit this after CUDA deps on CI are updated. Here's a snapshot from 2021-12-25:
+              # CUDA toolkit 11.4, local installation
+              # NVIDIA driver 495.29.5, for CUDA 11.5
+              # CUDA driver 11.5
+              # Libraries:
+              # - CUBLAS: 11.6.1
+              # - CURAND: 10.2.5
+              # - CUFFT: 10.5.2
+              # - CUSOLVER: 11.2.0
+              # - CUSPARSE: 11.6.0
+              # - CUPTI: 14.0.0
+              # - NVML: 11.0.0+495.29.5
+              # - CUDNN: 8.20.4 (for CUDA 11.4.0)
+              # - CUTENSOR: missing
               @test y_gpu ≈ y_cpu rtol=2 atol=2
             else
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
