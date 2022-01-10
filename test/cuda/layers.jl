@@ -60,7 +60,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
               # - NVML: 11.0.0+495.29.5
               # - CUDNN: 8.20.4 (for CUDA 11.4.0)
               # - CUTENSOR: missing
-              @test y_gpu ≈ y_cpu rtol=2 atol=2
+              @test_skip y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             else
               @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             end
