@@ -29,6 +29,8 @@ import Flux: activations
     @test m == fmap(identity, m)  # does not forget names
 
     @test_throws ArgumentError Chain(layers = Dense(10, 10), two = identity) # reserved name
+
+    @test_nowarn Chain([Dense(10, 5, σ), Dense(5, 2)])(randn(Float32, 10))  # vector of layers
   end
 
   @testset "Activations" begin
@@ -302,6 +304,10 @@ end
   m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
   @test Zygote.hessian_dual(sum∘m1, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1, [1,2,3])
 
+  m1v = Chain([m1[1], m1[2]])  # vector of layers
+  @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_dual(sum∘m1, [1,2,3])
+  @test_broken Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1v, [1,2,3])
+
   # NNlib's softmax gradient writes in-place
   m2 = Chain(Dense(3,4,tanh), Dense(4,2), softmax)
   @test_broken Zygote.hessian_dual(sum∘m2, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m2, [1,2,3])
@@ -312,3 +318,22 @@ end
   @test_broken Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
 end
 
+@testset "gradients of Chain{Vector}" begin
+  m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
+  m1v = Chain([m1[1], m1[2]])
+  @test sum(length, params(m1)) == sum(length, params(m1v))
+
+  x1 = randn(Float32,3,5)
+  @test m1(x1) ≈ m1v(x1)
+
+  y1 = rand(Bool,2,5)
+  g1 = gradient(() -> Flux.Losses.logitcrossentropy(m1(x1), y1), params(m1))
+  g1v = gradient(() -> Flux.Losses.logitcrossentropy(m1v(x1), y1), params(m1v))
+  @test g1[m1[1].weight] ≈ g1v[m1v[1].weight]
+  @test g1[m1[2].bias] ≈ g1v[m1v[2].bias]
+
+  @test Flux.destructure(m1)[1] ≈ Flux.destructure(m1v)[1]
+  z1 = rand(22);
+  @test Flux.destructure(m1)[2](z1)[1].weight ≈ Flux.destructure(m1v)[2](z1)[1].weight
+  # Note that Flux.destructure(m1v)[2](z) has a Chain{Tuple}, as does m1v[1:2]
+end
