@@ -44,7 +44,15 @@ end
 
 @functor Chain
 
-(c::Chain)(x) = foldl((y,f) -> f(y), (x, c.layers...))
+(c::Chain)(x) = applychain(c.layers, x)
+
+@generated function applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+  symbols = vcat(:x, [gensym() for _ in 1:N])
+  calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
+  Expr(:block, calls...)
+end
+
+applychain(layers::NamedTuple, x) = applychain(Tuple(layers), x)
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
