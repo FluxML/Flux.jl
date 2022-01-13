@@ -32,6 +32,7 @@ for f in [:+, :-, :*, :/, :^, :mod, :div, :rem]
 end
 
 Base.:<(::Nil, ::Nil) = true
+Base.:<=(::Nil, ::Nil) = true
 
 Base.isnan(::Nil) = false
 Base.isfinite(::Nil) = true
