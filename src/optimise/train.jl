@@ -81,6 +81,32 @@ batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
 """
+    step!(loss, params, opt)
+
+`step!` uses a `loss` function (with no inputs) to improve the [Model parameters](@ref) (`params`)
+based on a pluggable [Optimisers](@ref) (`opt`). It represents a single step in
+the training loop `train!`. While there is a default implementation for
+optimisers which are based on the `update!` function and only require gradient
+information, this `step!` has to be overloaded for more general optimisers.
+
+While the loss function of `train!` still accepts data as input, the loss function
+of `step!` accepts no input. `train!` cycles through the data in a loop
+roughly like this
+
+```julia
+for d in data
+  step!(ps, opt) do
+    loss(d)
+  end
+```
+
+"""
+function step!(loss, params, opt)
+  gs = gradient(loss, params)
+  update!(opt, params, gs)
+end
+
+"""
     train!(loss, params, data, opt; cb)
         
 `train!` uses a `loss` function and training `data` to improve the 
@@ -106,10 +132,9 @@ function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   @progress for d in data
     try
-      gs = gradient(ps) do
+      step!(ps, opt) do
         loss(batchmemaybe(d)...)
       end
-      update!(opt, ps, gs)
       cb()
     catch ex
       if ex isa StopException
