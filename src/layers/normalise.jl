@@ -101,17 +101,18 @@ mutable struct AlphaDropout{F}
   end
 end
 
-function (a::AlphaDropout)(x)
+function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
-  λ = eltype(x)(1.0507009873554804934193349852946)
-  α = eltype(x)(1.6732632423543772848170429916717)
-  α1 = eltype(x)(-λ*α)
-  noise = randn(eltype(x), size(x))
-  x = @. x*(noise > (1 - a.p)) + α1 * (noise < (1 - a.p))
-  A = sqrt(a.p + a.p * (1 - a.p) * α1^2)
-  B = -A * α1 * (1 - a.p)
-  x = @. A * x + B
-  return x
+  p = a.p
+  iszero(p) && return x
+  isone(p) && return sign.(x) .* T(0)
+
+  α′ = T(-1.7580993408473766) # selu(-Inf) == -λα
+  A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
+  B = T(-A * α′ * p)
+
+  noise = rand!(similar(x))
+  return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
 testmode!(m::AlphaDropout, mode=true) =
@@ -198,7 +199,8 @@ end
 
 """
     BatchNorm(channels::Integer, λ=identity;
-              initβ=zeros, initγ=ones,
+              initβ=zeros32, initγ=ones32,
+              affine = true, track_stats = true,
               ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
@@ -246,15 +248,14 @@ mutable struct BatchNorm{F,V,N,W}
 end
 
 function BatchNorm(chs::Int, λ=identity;
-          initβ = i -> zeros(Float32, i), 
-          initγ = i -> ones(Float32, i), 
+          initβ=zeros32, initγ=ones32, 
           affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  μ = track_stats ? zeros32(chs) : nothing
+  σ² = track_stats ? ones32(chs) : nothing
 
   return BatchNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
@@ -278,7 +279,7 @@ testmode!(m::BatchNorm, mode=true) =
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
-  l.λ == identity || print(io, ", $(l.λ)")
+  (l.λ == identity) || print(io, ", $(l.λ)")
   hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end
@@ -286,7 +287,7 @@ end
 
 """
     InstanceNorm(channels::Integer, λ=identity;
-                 initβ=zeros, initγ=ones,
+                 initβ=zeros32, initγ=ones32,
                  affine=false, track_stats=false,
                  ϵ=1f-5, momentum=0.1f0)
 
@@ -323,15 +324,14 @@ mutable struct InstanceNorm{F,V,N,W}
 end
 
 function InstanceNorm(chs::Int, λ=identity;
-                    initβ = i -> zeros(Float32, i), 
-                    initγ = i -> ones(Float32, i), 
+                    initβ=zeros32, initγ=ones32,
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, chs) : nothing
-  σ² = track_stats ? ones(Float32, chs) : nothing
+  μ = track_stats ? zeros32(chs) : nothing
+  σ² = track_stats ? ones32(chs) : nothing
 
   return InstanceNorm(λ, β, γ,
             μ, σ², ϵ, momentum, 
@@ -363,8 +363,7 @@ end
 
 """
     GroupNorm(channels::Integer, G::Integer, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i),
+              initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
@@ -406,17 +405,16 @@ end
 trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
-              initβ = (i) -> zeros(Float32, i), 
-              initγ = (i) -> ones(Float32, i), 
+              initβ=zeros32, initγ=ones32, 
               affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0) 
+              ϵ=1f-5, momentum=0.1f0)
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros(Float32, G) : nothing
-  σ² = track_stats ? ones(Float32, G) : nothing
+  μ = track_stats ? zeros32(G) : nothing
+  σ² = track_stats ? ones32(G) : nothing
 
   return GroupNorm(G, λ, 
             β, γ,
@@ -443,8 +441,9 @@ testmode!(m::GroupNorm, mode = true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
+  # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
   print(io, "GroupNorm($(l.chs), $(l.G)")
-  l.λ == identity || print(io, ", $(l.λ)")
+  l.λ == identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io,  ", affine=false")
   print(io, ")")
 end

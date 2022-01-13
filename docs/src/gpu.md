@@ -2,6 +2,17 @@
 
 NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CUDA](https://github.com/JuliaGPU/CUDA.jl) readme.
 
+## Checking GPU Availability
+
+By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
+
+```julia
+julia> using CUDA
+
+julia> CUDA.functional()
+true
+```
+
 ## GPU Usage
 
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA](https://github.com/JuliaGPU/CUDA.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
@@ -30,7 +41,7 @@ If you define a structured model, like a `Dense` layer or `Chain`, you just need
 ```julia
 d = Dense(10, 5, σ)
 d = fmap(cu, d)
-d.W # CuArray
+d.weight # CuArray
 d(cu(rand(10))) # CuArray output
 
 m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
@@ -38,7 +49,7 @@ m = fmap(cu, m)
 d(cu(rand(10)))
 ```
 
-As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing, but loading `CUDA` will cause it to move data to the GPU instead.
+As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing. So, you can safely call `gpu` on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If the GPU library (CUDA.jl) loads successfully, `gpu` will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a `CuArray`.
 
 ```julia
 julia> using Flux, CUDA

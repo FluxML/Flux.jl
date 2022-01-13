@@ -14,7 +14,7 @@ machine learning and deep learning workflows:
 - [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl): utility package for accessing common machine learning datasets
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl): single-pass algorithms for statistics
 - [Parameters.jl](https://github.com/mauro3/Parameters.jl): types with default field values, keyword constructors and (un-)pack macros
-- [ProgressMeters.jl](https://github.com/timholy/ProgressMeter.jl): progress meters for long-running computations
+- [ProgressMeter.jl](https://github.com/timholy/ProgressMeter.jl): progress meters for long-running computations
 - [TensorBoardLogger.jl](https://github.com/PhilipVinc/TensorBoardLogger.jl): easy peasy logging to [tensorboard](https://www.tensorflow.org/tensorboard) in Julia
 - [ParameterSchedulers.jl](https://github.com/darsnack/ParameterSchedulers.jl): standard scheduling policies for machine learning
 

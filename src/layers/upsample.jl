@@ -1,6 +1,6 @@
 """
-  Upsample(mode = :nearest; [scale, size]) 
-  Upsample(scale, mode = :nearest)  
+    Upsample(mode = :nearest; [scale, size]) 
+    Upsample(scale, mode = :nearest)  
 
 An upsampling layer. One of two keywords must be given:
 
@@ -12,6 +12,7 @@ Currently supported upsampling `mode`s
 and corresponding NNlib's methods are:
   - `:nearest` -> [`NNlib.upsample_nearest`](@ref) 
   - `:bilinear` -> [`NNlib.upsample_bilinear`](@ref)
+  - `:trilinear` -> [`NNlib.upsample_trilinear`](@ref)
 
 # Examples
 
@@ -35,7 +36,7 @@ struct Upsample{mode, S, T}
 end
 
 function Upsample(mode::Symbol = :nearest; scale = nothing, size = nothing)
-  mode in [:nearest, :bilinear] || 
+  mode in [:nearest, :bilinear, :trilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
   if !(isnothing(scale) ⊻ isnothing(size))
     throw(ArgumentError("Either scale or size should be specified (but not both)."))
@@ -57,6 +58,11 @@ end
   NNlib.upsample_bilinear(x, m.scale)
 (m::Upsample{:bilinear, Nothing})(x::AbstractArray) = 
   NNlib.upsample_bilinear(x; size=m.size)
+
+(m::Upsample{:trilinear})(x::AbstractArray) =
+  NNlib.upsample_trilinear(x, m.scale)
+(m::Upsample{:trilinear, Nothing})(x::AbstractArray) = 
+  NNlib.upsample_trilinear(x; size=m.size)
 
 function Base.show(io::IO, u::Upsample{mode}) where {mode}
   print(io, "Upsample(")

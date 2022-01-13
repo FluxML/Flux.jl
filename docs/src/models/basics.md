@@ -12,12 +12,12 @@ julia> f(x) = 3x^2 + 2x + 1;
 julia> df(x) = gradient(f, x)[1]; # df/dx = 6x + 2
 
 julia> df(2)
-14
+14.0
 
 julia> d2f(x) = gradient(df, x)[1]; # d²f/dx² = 6
 
 julia> d2f(2)
-6
+6.0
 ```
 
 When a function has many parameters, we can get gradients of each one at the same time:
@@ -26,7 +26,7 @@ When a function has many parameters, we can get gradients of each one at the sam
 julia> f(x, y) = sum((x .- y).^2);
 
 julia> gradient(f, [2, 1], [2, 0])
-([0, 2], [0, -2])
+([0.0, 2.0], [-0.0, -2.0])
 ```
 
 These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
@@ -45,14 +45,14 @@ julia> gs = gradient(params(x, y)) do
 Grads(...)
 
 julia> gs[x]
-2-element Vector{Int64}:
- 0
- 2
+2-element Vector{Float64}:
+ 0.0
+ 2.0
 
 julia> gs[y]
-2-element Vector{Int64}:
-  0
- -2
+2-element Vector{Float64}:
+ -0.0
+ -2.0
 ```
 
 Here, `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.

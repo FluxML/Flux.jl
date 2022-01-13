@@ -3,6 +3,7 @@ using Flux.CUDA
 using Flux: cpu, gpu
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky
+using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray
 
 @testset "CUDA" begin
   x = randn(5, 5)
@@ -41,6 +42,9 @@ end
 @testset "onehot gpu" begin
   y = Flux.onehotbatch(ones(3), 1:2) |> gpu;
   @test (repr("text/plain", y); true)
+
+  gA = rand(3, 2) |> gpu;
+  @test gradient(A -> sum(A * y), gA)[1] isa CuArray
 end
 
 @testset "onecold gpu" begin
@@ -83,4 +87,73 @@ end
     @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
     @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
   end
+end
+
+@testset "gpu(cpu(x)) inside gradient" begin
+  a = randn(Float32, 4, 4)
+  ca = cu(a)
+
+  # Trivial functions
+  @test gradient(x -> sum(abs, gpu(x)), a)[1] isa Matrix
+  @test gradient(x -> sum(gpu(x)), a)[1] isa Matrix
+  @test_skip gradient(x -> sum(gpu(x)), a')[1] isa Matrix  # sum(::Adjoint{T,CuArray}) makes a Fill
+  @test gradient(x -> sum(abs, cpu(x)), ca)[1] isa CuArray
+  # This test should really not go through indirections and pull out Fills for efficiency
+  # but we forcefully materialise. TODO: remove materialising CuArray here
+  @test gradient(x -> sum(cpu(x)), ca)[1] isa CuArray # This involves FillArray, which should be GPU compatible
+  @test gradient(x -> sum(cpu(x)), ca')[1] isa LinearAlgebra.Adjoint
+
+  # Even more trivial: no movement
+  @test gradient(x -> sum(abs, cpu(x)), a)[1] isa Matrix
+  @test gradient(x -> sum(abs, cpu(x)), a')[1] isa LinearAlgebra.Adjoint
+  @test gradient(x -> sum(cpu(x)), a)[1] isa typeof(gradient(sum, a)[1]) # FillArray
+  @test gradient(x -> sum(abs, gpu(x)), ca)[1] isa CuArray
+  @test_skip gradient(x -> sum(abs, gpu(x)), ca')[1] isa CuArray # KernelError: passing and using non-bitstype argument
+
+  # More complicated, Array * CuArray is an error
+  g0 = gradient(x -> sum(abs, (a * (a * x))), a)[1]
+  @test g0 ≈ gradient(x -> sum(abs, cpu(ca * gpu(a * x))), a)[1]
+  @test cu(g0) ≈ gradient(x -> sum(abs, gpu(a * cpu(ca * x))), ca)[1]
+  @test gradient(x -> sum(gpu(cpu(x))), a)[1] isa Matrix
+  @test gradient(x -> sum(gpu(cpu(x))), ca)[1] isa CuArray
+
+  g4 = gradient(x -> sum(a * (a' * x)), a)[1]  # no abs, one adjoint
+  @test g4 ≈ gradient(x -> sum(cpu(ca * gpu(a' * x))), a)[1]
+  @test cu(g4) ≈ gradient(x -> sum(gpu(a * cpu(ca' * x))), ca)[1]
+
+  # Scalar indexing of an array, needs OneElement to transfer to GPU
+  # https://github.com/FluxML/Zygote.jl/issues/1005
+  @test gradient(x -> cpu(2 .* gpu(x))[1], Float32[1,2,3]) == ([2,0,0],)
+  @test gradient(x -> cpu(gpu(x) * gpu(x))[1,2], Float32[1 2 3; 4 5 6; 7 8 9]) == ([2 6 8; 0 2 0; 0 3 0],)
+end
+
+@testset "gpu(x) and cpu(x) on structured arrays" begin
+  @test cpu(1:3) isa UnitRange
+  @test cpu(range(1, 3, length = 4)) isa AbstractRange
+
+  # OneElement isn't GPU compatible
+  g1 = Zygote.OneElement(1, (2,3), axes(ones(4,5)))
+  @test cpu(g1) isa Zygote.OneElement
+
+  g2 = Zygote.Fill(1f0, 2)
+  @test cpu(g2) isa Zygote.FillArrays.AbstractFill
+
+  g3 = transpose(Float32[1 2; 3 4])
+  @test parent(cpu(g3)) isa Matrix{Float32}
+
+  @testset "Sparse Arrays" begin
+    @test cpu(sparse(rand(3,3))) isa SparseMatrixCSC
+    a = sparse(rand(3,3))
+    @test cpu(a) === a
+    @test gpu(sparse(rand(3,3))) isa CUDA.CUSPARSE.CuSparseMatrixCSC
+  end
+
+  # Check that gpu() converts these to CuArrays. This a side-effect of using the same functions
+  # in gpu() as in the gradient of cpu(). A different design could avoid having gpu() used alone
+  # move these, if that turns out to be desirable.
+  @test gpu(g1) isa CuArray
+  @test gpu(g1) ≈ cu(Matrix(g1))
+  @test gpu(g2) isa CuArray
+  @test gpu(g2) ≈ cu(Vector(g2))
+  @test parent(gpu(g3)) isa CuArray
 end

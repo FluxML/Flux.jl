@@ -13,10 +13,10 @@ m = Dense(10, 5)
 loss(x, y) = logitcrossentropy(m(x), y)
 ```
 
-We can apply L2 regularisation by taking the squared norm of the parameters , `m.W` and `m.b`.
+We can apply L2 regularisation by taking the squared norm of the parameters , `m.weight` and `m.bias`.
 
 ```julia
-penalty() = sum(abs2, m.W) + sum(abs2, m.b)
+penalty() = sum(abs2, m.weight) + sum(abs2, m.bias)
 loss(x, y) = logitcrossentropy(m(x), y) + penalty()
 ```
 

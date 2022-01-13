@@ -1,5 +1,15 @@
 steps:
-  - label: "GPU integeration with julia v1.6"       # change to "v1" when 1.6 is out
+  - label: "GPU integration with julia v1.6"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "1.6"
+      - JuliaCI/julia-test#v1: ~
+    agents:
+      queue: "juliagpu"
+      cuda: "*"
+    timeout_in_minutes: 60
+
+  - label: "GPU integration with julia v1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"

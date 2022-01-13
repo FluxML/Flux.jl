@@ -68,7 +68,7 @@ by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
-delete!(ps, m[2].b) 
+delete!(ps, m[2].bias) 
 ```
 
 ## Custom multiple input or output layer
@@ -97,7 +97,7 @@ Join(combine, paths...) = Join(combine, paths)
 ```
 Notice that we parameterized the type of the `paths` field. This is necessary for fast Julia code; in general, `T` might be a `Tuple` or `Vector`, but we don't need to pay attention to what it specifically is. The same goes for the `combine` field.
 
-The next step is to use [`Flux.@functor`](@ref) to make our struct behave like a Flux layer. This is important so that calling `params` on a `Join` returns the underlying weight arrays on each path.
+The next step is to use [`Functors.@functor`](@ref) to make our struct behave like a Flux layer. This is important so that calling `params` on a `Join` returns the underlying weight arrays on each path.
 ```julia
 Flux.@functor Join
 ```
@@ -151,7 +151,7 @@ model(xs)
 
 Our custom `Split` layer will accept a single input, then pass the input through a separate path to produce multiple outputs.
 
-We start by following the same steps as the `Join` layer: define a struct, use [`Flux.@functor`](@ref), and define the forward pass.
+We start by following the same steps as the `Join` layer: define a struct, use [`Functors.@functor`](@ref), and define the forward pass.
 ```julia
 using Flux
 using CUDA
