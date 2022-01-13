@@ -166,6 +166,7 @@ function (c::Conv)(x::AbstractArray)
 end
 
 _conv_bias_act(x, w, cdims, b, σ) = NNlib.conv_bias_act(x, w, cdims, b, σ)
+_conv_bias_act(x, w, cdims, ::Zeros, σ) = σ.(conv(x, w, cdims))
 _conv_bias_act(x::CuArray, w::CuArray, cdims, b::Zeros, σ) =
   _conv_bias_act(x, w, cdims, CUDA.zeros(size(b)...), σ)
 
