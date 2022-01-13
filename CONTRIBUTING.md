@@ -4,7 +4,7 @@ Welcome to the Flux community!
 
 **Flux.jl** is the de facto machine learning library in the **Julia ecosystem** and one of the foundational Julia packages. It is written in *pure Julia*. This is very different from most other state-of-the-art machine learning libraries which typically leverage languages like C or C++ under the hood.
 
-Flux has always had the mission of being a simple, hackable and performant approach to machine learning, which is extended to a number of domains in science by means of differentiable programming. 
+Flux has always had the mission of being a simple, hackable and performant approach to machine learning, which is extended to a number of scientific domains by means of differentiable programming. 
 
 Julia provides features that Machine Learning researchers and practitioners need. However, the ecosystem is not yet mature enough so that developers can rewrite it in Julia. This provides a great opportunity for you to contribute to the [future of Machine Learning and the Julia language in general](https://towardsdatascience.com/the-future-of-machine-learning-and-why-it-looks-a-lot-like-julia-a0e26b51f6a6). 
 
@@ -41,11 +41,11 @@ Before you start contributing to Flux, you need the following tools:
 
 If you need to learn about Julia and Flux, then you can check out the following resources:
 
-* [JuliaAcademy](https://juliaacademy.com/) introductory courses to Julia and Flux.
-* Flux’s official [Getting Started](https://fluxml.ai/getting_started.html) tutorial.
-* [Deep Learning with Flux - A 60 Minute Blitz](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html). This is a quick intro to Flux loosely based on PyTorch’s tutorial.
-* [Flux Model Zoo](https://github.com/FluxML/model-zoo) showcases various demonstrations of models that you can reuse with your own data.
-* [Flux’s official documentation](https://fluxml.ai/Flux.jl/stable/).
+* [JuliaAcademy](https://juliaacademy.com/) introductory courses to Julia and Flux
+* Flux’s official [Getting Started](https://fluxml.ai/getting_started.html) tutorial
+* [Deep Learning with Flux - A 60 Minute Blitz](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html): a quick intro to Flux loosely based on PyTorch’s tutorial
+* [Flux Model Zoo](https://github.com/FluxML/model-zoo) showcases various demonstrations of models that you can reuse with your own data
+* [Flux’s official documentation](https://fluxml.ai/Flux.jl/stable/)
 
 ## Get help
 
