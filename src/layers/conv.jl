@@ -50,7 +50,7 @@ Then:
 * `filter` should be a tuple of `N` integers.
 * Keywords `stride` and `dilation` should each be either single integer,
   or a tuple with `N` integers.
-* Keyword `pad` specifies the number of elements added to the image borders. It can be
+* Keyword `pad` specifies the number of elements added to the borders of the data array. It can be
   - a single integer for equal padding all around,
   - a tuple of `N` integers, to apply the same padding at begin/end of each spatial dimension,
   - a tuple of `2*N` integers, for asymmetric padding, or
