@@ -179,6 +179,11 @@ end
 
 function check_use_cuda()
   if use_cuda[] === nothing
+    if get(ENV, "FLUX_DISALLOW_CUDA", "false") in ("1", "true")
+      use_cuda[] = false
+      @debug "Flux: CUDA disallowed" ENV["FLUX_DISALLOW_CUDA"]
+      return
+    end
     use_cuda[] = CUDA.functional()
     if use_cuda[] && !CUDA.has_cudnn()
       @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
