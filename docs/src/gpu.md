@@ -86,7 +86,7 @@ julia> x |> cpu
  0.192538
 ```
 
-## Disable CUDA (or choose which GPUs are visible to Flux)
+## Disabling CUDA or choosing which GPUs are visible to Flux
 
 Sometimes we need to control which GPUs are visible to `julia` on a system with multiple GPUs or disable GPUs entirely. This can be achieved with an environment variable `CUDA_VISIBLE_DEVICES`.
 
