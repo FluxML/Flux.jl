@@ -101,6 +101,9 @@ Chain(
 )         # Total: 6 trainable arrays, 77 parameters,
           # plus 2 non-trainable, 10 parameters, summarysize 836 bytes.
 ```
+
+Only numerical arrays are collected by `destructe`. Moreover, if the same array is nested multiple times in the same model (e.g. shared by some layers)
+it will be collected only once. 
 """
 function destructure(m)
   xs = Zygote.Buffer([])
