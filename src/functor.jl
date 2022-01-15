@@ -67,21 +67,24 @@ end
 """
     destructure(m)
 
-Flatten a model's parameters into a single vector.
+Flatten a model's trainable parameters into a single vector.
 
 ```julia-repl
-julia> m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+julia> m = Chain(Dense(10, 5, relu), BatchNorm(5), Dense(5, 2), softmax)
 Chain(
-  Dense(10, 5, σ),                      # 55 parameters
+  Dense(10, 5, relu),                   # 55 parameters
+  BatchNorm(5),                         # 10 parameters, plus 10
   Dense(5, 2),                          # 12 parameters
   NNlib.softmax,
-)                   # Total: 4 arrays, 67 parameters, 524 bytes
+)         # Total: 6 trainable arrays, 77 parameters,
+          # plus 2 non-trainable, 10 parameters, summarysize 836 bytes.
 
 julia> θ, re = Flux.destructure(m);
 
 julia> θ
-67-element Vector{Float32}:
- -0.1407104
+77-element Vector{Float32}:
+ -0.23847938
+ -0.3672024
  ...
 ```
 
@@ -89,12 +92,14 @@ The second returned value `re` allows you to reconstruct the original network af
 modifications to the weight vector (for example, with a hypernetwork).
 
 ```julia-repl
-julia> re(θ .* 2)
+julia> re(θ)
 Chain(
-  Dense(10, 5, σ),                      # 55 parameters
+  Dense(10, 5, relu),                   # 55 parameters
+  BatchNorm(5),                         # 10 parameters, plus 10
   Dense(5, 2),                          # 12 parameters
   NNlib.softmax,
-)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+)         # Total: 6 trainable arrays, 77 parameters,
+          # plus 2 non-trainable, 10 parameters, summarysize 836 bytes.
 ```
 """
 function destructure(m)
@@ -130,7 +135,7 @@ function filtered_walk(cond::Function)
 
     children, reconstruct = functor(x)
     mappedchildren = map(children) do c
-      filter(x, c) ? f(c) : c
+      cond(x, c) ? f(c) : c
     end
     reconstruct(mappedchildren)
   end
