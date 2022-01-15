@@ -42,8 +42,8 @@ trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, 
 
 function _restructure(m, xs)
   i = 0
-  filter = (x, c) -> any(y -> c === y, trainable(x))
-  walk = filtered_walk(filter)
+  cond = (x, c) -> any(y -> c === y, trainable(x))
+  walk = filtered_walk(cond)
   m̄ = fmap(m; walk) do x
     x isa AbstractArray{<:Number} || return x
     x = reshape(xs[i .+ (1:length(x))], size(x))
@@ -106,10 +106,10 @@ end
 function collect_params!(xs, m)
   # Filtering function for the traversal of the functor. 
   # We walk from node x to children c only if c is one of the trainable children of x. 
-  filter = (x, c) -> any(y -> c === y, trainable(x))
+  cond = (x, c) -> any(y -> c === y, trainable(x))
   
-  # Get the walk function corrisponding to the given filter. 
-  walk = filtered_walk(filter)
+  # Get the walk function corrisponding to the given condition. 
+  walk = filtered_walk(cond)
   
   fmap(m; walk) do x
     x isa AbstractArray{<:Number} && push!(xs, x)
@@ -121,7 +121,7 @@ end
 Return a `walk` function to be passed to `fmap` that applies the function
 `f` to be mapped only on the children selected by `filter`.
 """
-function filtered_walk(filter)
+function filtered_walk(cond::Function)
   seen = IdSet()
 
   function walk(f, x)
