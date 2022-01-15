@@ -1,19 +1,19 @@
 using Flux: loadparams!, Zeros, destructure
     
-ls(dims...) = reshape(collect(Float32, 1:prod(dims)), dims...) # accepts dims in reverse order to Dense
+function build_test_chain(fbias)
+  ls(dims...) = reshape(collect(Float32, 1:prod(dims)), reverse(dims)...)
   
-dl(nin, nout, bias) = Dense(ls(nout, nin), bias(nout))
-
-dm(bias) = Chain(
-          dl(3, 5, bias),
-          dl(5, 4, bias),
-          dl(4, 3, bias)
-          )
+  Chain(
+      Dense(ls(3, 5), fbias(5)),
+      Dense(ls(5, 4), fbias(4)),
+      Dense(ls(4, 3), fbias(3))
+      )
+end
 
 nobias(n) = Zeros()
 
-function testdense(m, bt)
-  @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
+function test_chains_equal(m1, m2)
+  @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m1, m2))
     @test l1.weight == l2.weight
     @test l1.bias == l2.bias
     @test typeof(l1.bias) === typeof(l2.bias)
@@ -101,9 +101,9 @@ end
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.weight], vcat, m)
     @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
-      m = dm(bt)
+      m = build_test_chain(bt)
       loadparams!(m, params(m))
-      testdense(m, bt)
+      test_chains_equal(m, build_test_chain(bt))
     end
     
     @testset "$b1 to $b2" for (b1, b2, be) in (
@@ -111,24 +111,24 @@ end
       (Flux.ones32, nobias, Flux.zeros32), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
       (nobias, Flux.ones32, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
       )
-      m1 = dm(b1)
-      m2 = dm(b2)
+      m1 = build_test_chain(b1)
+      m2 = build_test_chain(b2)
       loadparams!(m1, b1 == nobias ? weights(m2) : pararray(m2))
-      testdense(m1, be)
+      test_chains_equal(m1, build_test_chain(be))
     end
   end
 end
 
 @testset "Destructure" begin
   @testset "Bias type $bt" for bt in (zeros, nobias)
-    m = dm(bt)
+    m = build_test_chain(bt)
     p, re = destructure(m)
-    testdense(re(p), bt)
+    test_chains_equal(re(p), build_test_chain(bt))
   end
   
   @testset "restructure in gradient" begin
     x = rand(Float32, 3, 1)
-    m = dm(zeros)
+    m = build_test_chain(zeros)
     ∇m = gradient(m -> sum(m(x)), m)[1]
     p, re = destructure(m)
     ∇p = gradient(θ -> sum(re(θ)(x)), p)[1]

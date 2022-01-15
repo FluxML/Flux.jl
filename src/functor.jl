@@ -66,18 +66,36 @@ end
 
 """
     destructure(m)
-Flatten a model's parameters into a single weight vector.
-    julia> m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-    julia> θ, re = destructure(m);
-    julia> θ
-    67-element Vector{Float32}:
-    -0.1407104
-    ...
-The second return value `re` allows you to reconstruct the original network after making
+
+Flatten a model's parameters into a single vector.
+
+```julia-repl
+julia> m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+Chain(
+  Dense(10, 5, σ),                      # 55 parameters
+  Dense(5, 2),                          # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes
+
+julia> θ, re = Flux.destructure(m);
+
+julia> θ
+67-element Vector{Float32}:
+ -0.1407104
+ ...
+```
+
+The second returned value `re` allows you to reconstruct the original network after making
 modifications to the weight vector (for example, with a hypernetwork).
-    julia> re(θ .* 2)
-    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+
+```julia-repl
+julia> re(θ .* 2)
+Chain(
+  Dense(10, 5, σ),                      # 55 parameters
+  Dense(5, 2),                          # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+```
 """
 function destructure(m)
   xs = Zygote.Buffer([])
@@ -86,14 +104,23 @@ function destructure(m)
 end
 
 function collect_params!(xs, m)
+  # Filtering function for the traversal of the functor. 
+  # We walk from node x to children c only if c is one of the trainable children of x. 
   filter = (x, c) -> any(y -> c === y, trainable(x))
+  
+  # Get the walk function corrisponding to the given filter. 
   walk = filtered_walk(filter)
+  
   fmap(m; walk) do x
     x isa AbstractArray{<:Number} && push!(xs, x)
     return x
   end
 end
 
+"""
+Return a `walk` function to be passed to `fmap` that applies the function
+`f` to be mapped only on the children selected by `filter`.
+"""
 function filtered_walk(filter)
   seen = IdSet()
 
@@ -112,17 +139,39 @@ function filtered_walk(filter)
 end
 
 
+
 """
-  params(m...)
+    params(m...)
+    
+Collect trainable parameters  from the input model(s) `m` into a [`Zygote.Params`](@ref) object. 
+    
+Only the parameters that can be reached by recursion on the [`trainable`](@ref) children of the tree with root `m` are collected.
+If `trainable` is not defined for a specific node's type in `m`, it will fall back to [`Functor.@functor`](@ref).
 
-Collect trainable parameters (a.k.a. numerical arrays)
-from the input model(s) `m` into a [`Zygote.Params`](@ref) object. 
+Users are recommended to define `trainable` for their custom types to control the trainable parameters' selection.
 
-Only the parameters that can be reached by recursion 
-on the [`trainable`](@ref) children of
-the tree with root `m` are collected.
+# Examples
+```jldoctest
+julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
+Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
 
-# Usage
+julia> bn = BatchNorm(2, relu)
+BatchNorm(2, relu)  # 4 parameters, plus 4 non-trainable
+
+julia> params(bn)  # only the trainable parameters
+Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
+
+julia> params([1, 2, 3], [4])  # one or more arrays of numbers
+Params([[1, 2, 3], [4]])
+
+julia> params([[1, 2, 3], [4]])  # unpacks array of arrays
+Params([[1, 2, 3], [4]])
+
+julia> params(1, [2 2], (alpha=[3,3,3], beta=Ref(4), gamma=sin))  # ignores scalars, unpacks NamedTuples
+Params([[2 2], [3, 3, 3]])
+```
+
+A `Params` object can be used with the `gradient` function, see [Taking Gradients](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
 
 ```julia-repl 
 julia> m = Dense(ones(2, 3), zeros(2))
@@ -146,7 +195,11 @@ julia> gs[m.weight]
  2.0  2.0  2.0
 ```
 """
-function params end
+function params(m...)
+  ps = Params()
+  params!(ps, m)
+  return ps
+end
 
 ## TODO This causes some test regressions. Why?
 # function params(m...)
@@ -163,43 +216,6 @@ function params!(p::Params, x, seen = IdSet())
   for child in trainable(x)
     params!(p, child, seen)
   end
-end
-
-"""
-    params(model)
-    params(layers...)
-
-Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
-
-This can be used with the `gradient` function, see [Taking Gradients](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
-
-The behaviour of `params` on custom types can be customized using [`Functor.@functor`](@ref) or [`Flux.trainable`](@ref).
-
-# Examples
-```jldoctest
-julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
-Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
-
-julia> bn = BatchNorm(2, relu)
-BatchNorm(2, relu)  # 4 parameters, plus 4 non-trainable
-
-julia> params(bn)  # only the trainable parameters
-Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
-
-julia> params([1, 2, 3], [4])  # one or more arrays of numbers
-Params([[1, 2, 3], [4]])
-
-julia> params([[1, 2, 3], [4]])  # unpacks array of arrays
-Params([[1, 2, 3], [4]])
-
-julia> params(1, [2 2], (alpha=[3,3,3], beta=Ref(4), gamma=sin))  # ignores scalars, unpacks NamedTuples
-Params([[2 2], [3, 3, 3]])
-```
-"""
-function params(m...)
-  ps = Params()
-  params!(ps, m)
-  return ps
 end
 
 function loadparams!(m, xs)
