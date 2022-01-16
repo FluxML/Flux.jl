@@ -32,7 +32,7 @@ function update!(opt, xs::Params, gs, st)
     _, s = update!(opt, x, gs[x], s)
     append!(st_, s)
   end
-  nothing, st_
+  xs, st_
 end
 
 # Callback niceties

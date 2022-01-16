@@ -98,7 +98,7 @@ v = ρ * v - η * Δ
 w = w - v
 ```
 
-The `apply` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients. Here, every parameter `x` is retrieved from the running state `v` and returns the new state of the optimizer.
+The `apply` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients and optimizer state.
 
 Flux internally calls on this function via the `update!` function. It shares the API with `apply` but ensures that multiple parameters are handled gracefully.
 
