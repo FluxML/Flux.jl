@@ -3,6 +3,10 @@
 ## v0.12.9
 * Fixed incorrect output and added GPU compatibility for [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781).
 * Add trilinear [Upsample layer](https://github.com/FluxML/Flux.jl/pull/1792).
+* Improved [performance of RNNs](https://github.com/FluxML/Flux.jl/pull/1761)
+* Optimisers now accept an `ϵ` keyword argument
+* [Improved handling of complex values inputs](https://github.com/FluxML/Flux.jl/pull/1776) while training
+* Fixed [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781)
 
 ## v0.12.8
 * Optimized inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1756)
