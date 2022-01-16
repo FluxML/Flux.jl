@@ -96,3 +96,13 @@ end
     @test_throws MethodError m(x)
   end
 end
+
+@testset "multigate" begin
+  x = rand(6, 5)
+  res, (dx,) = Flux.withgradient(x) do x
+    x1, _, x3 = Flux.multigate(x, 2, Val(3))
+    sum(x1) + sum(x3 .* 2)
+  end
+  @test res == sum(x[1:2, :]) + 2sum(x[5:6, :])
+  @test dx == [ones(2, 5); zeros(2, 5); fill(2, 2, 5)]
+end
