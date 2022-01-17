@@ -133,11 +133,11 @@ opt = RMSProp(0.002, 0.95)
 mutable struct RMSProp <: AbstractOptimiser
   eta::Float64
   rho::Float64
-  epsilon::Float64
   acc::IdDict
+  epsilon::Float64
 end
 
-RMSProp(η = 0.001, ρ = 0.9, ϵ = ϵ) = RMSProp(η, ρ, ϵ, IdDict())
+RMSProp(η = 0.001, ρ = 0.9; ϵ = ϵ) = RMSProp(η, ρ, IdDict(), ϵ)
 
 function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
@@ -167,11 +167,11 @@ opt = ADAM(0.001, (0.9, 0.8))
 mutable struct ADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-ADAM(η = 0.001, β = (0.9, 0.999), ϵ = ϵ) = ADAM(η, β, ϵ, IdDict())
+ADAM(η = 0.001, β = (0.9, 0.999); ϵ = ϵ) = ADAM(η, β, IdDict(), ϵ)
 
 function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -209,11 +209,11 @@ opt = RADAM(0.001, (0.9, 0.8))
 mutable struct RADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-RADAM(η = 0.001, β = (0.9, 0.999), ϵ = ϵ) = RADAM(η, β, ϵ, IdDict())
+RADAM(η = 0.001, β = (0.9, 0.999); ϵ = ϵ) = RADAM(η, β, IdDict(), ϵ)
 
 function apply!(o::RADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -259,11 +259,11 @@ opt = AdaMax(0.001, (0.9, 0.995))
 mutable struct AdaMax <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-AdaMax(η = 0.001, β = (0.9, 0.999), ϵ = ϵ) = AdaMax(η, β, ϵ, IdDict())
+AdaMax(η = 0.001, β = (0.9, 0.999); ϵ = ϵ) = AdaMax(η, β, IdDict(), ϵ)
 
 function apply!(o::AdaMax, x, Δ)
   η, β = o.eta, o.beta
@@ -302,11 +302,11 @@ opt = OADAM(0.001, (0.9, 0.995))
 mutable struct OADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-OADAM(η = 0.001, β = (0.5, 0.9), ϵ = ϵ) = OADAM(η, β, ϵ, IdDict())
+OADAM(η = 0.001, β = (0.5, 0.9); ϵ = ϵ) = OADAM(η, β, IdDict(), ϵ)
 
 function apply!(o::OADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -345,11 +345,11 @@ opt = ADAGrad(0.001)
 """
 mutable struct ADAGrad <: AbstractOptimiser
   eta::Float64
-  epsilon::Float64
   acc::IdDict
+  epsilon::Float64
 end
 
-ADAGrad(η = 0.1, ϵ = ϵ) = ADAGrad(η, ϵ, IdDict())
+ADAGrad(η = 0.1; ϵ = ϵ) = ADAGrad(η, IdDict(), ϵ)
 
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
@@ -377,11 +377,11 @@ opt = ADADelta(0.89)
 """
 mutable struct ADADelta <: AbstractOptimiser
   rho::Float64
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-ADADelta(ρ = 0.9, ϵ = ϵ) = ADADelta(ρ, ϵ, IdDict())
+ADADelta(ρ = 0.9; ϵ = ϵ) = ADADelta(ρ, IdDict(), ϵ)
 
 function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
@@ -416,11 +416,11 @@ opt = AMSGrad(0.001, (0.89, 0.995))
 mutable struct AMSGrad <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-AMSGrad(η = 0.001, β = (0.9, 0.999), ϵ = ϵ) = AMSGrad(η, β, ϵ, IdDict())
+AMSGrad(η = 0.001, β = (0.9, 0.999); ϵ = ϵ) = AMSGrad(η, β, IdDict(), ϵ)
 
 function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
@@ -457,11 +457,11 @@ opt = NADAM(0.002, (0.89, 0.995))
 mutable struct NADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-NADAM(η = 0.001, β = (0.9, 0.999), ϵ = ϵ) = NADAM(η, β, ϵ, IdDict())
+NADAM(η = 0.001, β = (0.9, 0.999); ϵ = ϵ) = NADAM(η, β, IdDict(), ϵ)
 
 function apply!(o::NADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -524,11 +524,11 @@ opt = AdaBelief(0.001, (0.9, 0.8))
 mutable struct AdaBelief
   eta::Float64
   beta::Tuple{Float64,Float64}
-  epsilon::Float64
   state::IdDict
+  epsilon::Float64
 end
 
-AdaBelief(η = 0.001, β = (0.9, 0.999), ϵ = ϵ) = AdaBelief(η, β, ϵ, IdDict())
+AdaBelief(η = 0.001, β = (0.9, 0.999); ϵ = ϵ) = AdaBelief(η, β, IdDict(), ϵ)
 
 function apply!(o::AdaBelief, x, Δ)
   η, β = o.eta, o.beta
