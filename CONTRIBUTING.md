@@ -51,12 +51,12 @@ If you need to learn about Julia and Flux, then you can check out the following 
 
 The Flux community is more than happy to help you with any questions that you might have related to your contribution. You can get in touch with the community in any of the following channels:
 
-* **Stack Overflow:** Search for [Flux/ ML](https://stackoverflow.com/questions/tagged/flux.jl) tags.
-* **Discourse forum:** Go to [Machine Learning in Julia community](https://discourse.julialang.org/c/domain/ml/24).
-* **Events:** Attend the [ML bi-weekly calls](https://julialang.org/community/#events).
-* **Community team:** Join the group of [community maintainers](https://github.com/FluxML/ML-Coordination-Tracker) supporting the FluxML ecosystem.
-* **Slack:** Join the [Official Julia Slack](https://julialang.org/slack/) for casual conversation.
-* **Zulip:** Join the [Zulip Server for the Julia programming language](https://julialang.zulipchat.com/login/) community.
+* **Discourse forum:** Go to [Machine Learning in Julia community](https://discourse.julialang.org/c/domain/ml/24)
+* **Community team:** Join the group of [community maintainers](https://github.com/FluxML/ML-Coordination-Tracker) supporting the FluxML ecosystem (see the [Zulip stream](https://julialang.zulipchat.com/#narrow/stream/237432-ml-ecosystem-coordination) as well)
+* **Slack:** Join the [Official Julia Slack](https://julialang.org/slack/) for casual conversation (see `#flux-bridged` and `#machine-learning`)
+* **Zulip:** Join the [Zulip Server for the Julia programming language](https://julialang.zulipchat.com/login/) community
+* **Stack Overflow:** Search for [Flux/ ML](https://stackoverflow.com/questions/tagged/flux.jl) tags
+* **Events:** Attend the [ML bi-weekly calls](https://julialang.org/community/#events)
 
 ## How to contribute to Flux
 In this section, you can find a step by step guide to make your first Flux contribution. These are the suggested steps for a complete beginner but feel free to adapt them to your own style and journey.
