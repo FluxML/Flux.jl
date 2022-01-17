@@ -6,7 +6,7 @@ Welcome to the Flux community!
 
 Flux has always had the mission of being a simple, hackable and performant approach to machine learning, which is extended to a number of scientific domains by means of differentiable programming. 
 
-Julia provides features that Machine Learning researchers and practitioners need. However, the ecosystem is not yet mature enough so that developers can rewrite it in Julia. This provides a great opportunity for you to contribute to the [future of Machine Learning and the Julia language in general](https://towardsdatascience.com/the-future-of-machine-learning-and-why-it-looks-a-lot-like-julia-a0e26b51f6a6). 
+Julia already provides many of the features that machine learning researchers and practitioners need; however, the ecosystem is still rapidly growing. This provides a great opportunity for you to contribute to the [future of machine learning and the Julia language in general](https://towardsdatascience.com/the-future-of-machine-learning-and-why-it-looks-a-lot-like-julia-a0e26b51f6a6). 
 
 In this guide, you can find information on how to make your first contribution to Flux, some ideas for getting started, and some guidelines on how to submit a contribution. 
 
