@@ -16,12 +16,12 @@ You can make a difference to one of the most quickly growing deep learning frame
 
 Contributing to Flux brings several benefits to you and the community such as:
 
-* Contribute to the cause of open and reproducible science.
-* Help grow the adoption of the FluxML ecosystem.
-* Become a member of a community that’s excited about open source and sharing knowledge.
-* Polish your teaching skills by helping others get started using Flux.
-* Showcase your work by creating examples that others can use in their projects.
-* Build a track record of public contributions which will help build your career.
+* Contribute to the cause of open and reproducible science
+* Help grow the adoption of the FluxML ecosystem
+* Become a member of a community that’s excited about open source and sharing knowledge
+* Polish your teaching skills by helping others get started using Flux
+* Showcase your work by creating examples that others can use in their projects
+* Build a track record of public contributions which will help build your career
 
 ## Tools
 
