@@ -12,7 +12,7 @@ In this guide, you can find information on how to make your first contribution t
 
 ## Why contribute to Flux?
 
-You can make a difference to one of the most quickly growing Deep Learning frameworks, the Julia Language, and the future of open-source software as a whole. Open source projects rely on contributions from volunteers. Contributions enable both the project and volunteers to grow and develop. No matter how you contribute to Flux, it will be a great experience for you.
+You can make a difference to one of the most quickly growing deep learning frameworks, the Julia Language, and the future of open-source software as a whole. Open source projects rely on contributions from volunteers. Contributions enable both the project and volunteers to grow and develop. No matter how you contribute to Flux, our community is dedicated to ensuring it will be a great experience for you!
 
 Contributing to Flux brings several benefits to you and the community such as:
 
