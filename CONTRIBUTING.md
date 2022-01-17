@@ -6,7 +6,7 @@ Welcome to the Flux community!
 
 Flux has always had the mission of being a simple, hackable and performant approach to machine learning, which is extended to a number of scientific domains by means of differentiable programming. 
 
-Julia already provides many of the features that machine learning researchers and practitioners need; however, the ecosystem is still rapidly growing. This provides a great opportunity for you to contribute to the [future of machine learning and the Julia language in general](https://towardsdatascience.com/the-future-of-machine-learning-and-why-it-looks-a-lot-like-julia-a0e26b51f6a6). 
+Julia already provides many of the features that machine learning researchers and practitioners need. However, the ecosystem is still rapidly growing. This provides a great opportunity for you to contribute to the future of machine learning and the Julia language in general.
 
 In this guide, you can find information on how to make your first contribution to Flux, some ideas for getting started, and some guidelines on how to submit a contribution. 
 
@@ -119,9 +119,9 @@ We also suggest taking a look at the [Julia Ecosystem Contributor’s Guide](htt
 
 In this section, you can find information on the following:
 
-* [How to file a bug report]()
-* [How to submit a contribution]()
-* [Flux source code organisation]()
+* [How to file a bug report](#how-to-file-a-bug-report)
+* [How to submit a contribution](#how-to-submit-a-contribution)
+* [Flux source code organisation](#flux-source-code-organisation)
 
 ### How to file a bug report
 
