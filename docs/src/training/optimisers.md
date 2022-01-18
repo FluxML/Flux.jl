@@ -66,8 +66,8 @@ AdaBelief
 ## Optimiser Interface
 
 Flux's optimisers are built around a `struct` that holds all the optimiser
-parameters along with a definition (`optimstep!`) of how to apply the update
-rule associated with it. The default implementation of `optimstep!`
+parameters along with a definition of how to apply the update
+rule associated with it (`optimstep!`). The default implementation of `optimstep!`
 looks like this
 
 ```julia 
