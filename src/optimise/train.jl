@@ -81,29 +81,29 @@ batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
 """
-    step!(loss, params, opt)
+    optimstep!(loss, params, opt)
 
-`step!` uses a `loss` function (with no inputs) to improve the [Model parameters](@ref) (`params`)
+`optimstep!` uses a `loss` function (with no inputs) to improve the [Model parameters](@ref) (`params`)
 based on a pluggable [Optimisers](@ref) (`opt`). It represents a single step in
 the training loop `train!`.
 
-The default implementation for `step!` is takes the gradient of `loss`
+The default implementation for `optimstep!` is takes the gradient of `loss`
 and calls `Flux.Optimise.update!` to adjust the parameters, but you can overload
-`step!` for specific types of `opt`. This can be useful if your optimization routine
+`optimstep!` for specific types of `opt`. This can be useful if your optimization routine
 has does not follow the standard gradient descent procedure (e.g. gradient-free optimizers).
 
-Unlike `train!`, the loss function of `step!` accepts no input.
-Instead, `train!` cycles through the data in a loop and calls `step!`:
+Unlike `train!`, the loss function of `optimstep!` accepts no input.
+Instead, `train!` cycles through the data in a loop and calls `optimstep!`:
 ```julia
 for d in data
-  step!(ps, opt) do
+  optimstep!(ps, opt) do
     loss(d)
   end
 end
 ```
 If you are writing [Custom Training loops](@ref), then you should follow this pattern.
 """
-function step!(loss, params, opt)
+function optimstep!(loss, params, opt)
   val, gs = withgradient(loss, params)
   update!(opt, params, gs)
   return val, gs
@@ -135,7 +135,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   @progress for d in data
     try
-      step!(ps, opt) do
+      optimstep!(ps, opt) do
         loss(batchmemaybe(d)...)
       end
       cb()
