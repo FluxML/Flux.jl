@@ -93,7 +93,7 @@ In the following subsection we define a simple Momentum optimiser which fits the
 ### Gradient Based Optimiser
 
 To obtain an `update!` method applicable to your custom optimiser type, we
-need to overload the `apply!` function. Flux internally calls on this function via the update! function. It shares the API with apply! but ensures that multiple parameters are handled gracefully. It takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
+need to overload the `apply!` function. Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully. It takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
 
 In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
 
