@@ -92,17 +92,16 @@ and calls `Flux.Optimise.update!` to adjust the parameters, but you can overload
 `step!` for specific types of `opt`. This can be useful if your optimization routine
 has does not follow the standard gradient descent procedure (e.g. gradient-free optimizers).
 
-While the loss function of `train!` still accepts data as input, the loss function
-of `step!` accepts no input. `train!` cycles through the data in a loop
-roughly like this
-
+Unlike `train!`, the loss function of `step!` accepts no input.
+Instead, `train!` cycles through the data in a loop and calls `step!`:
 ```julia
 for d in data
   step!(ps, opt) do
     loss(d)
   end
+end
 ```
-
+If you are writing [Custom Training loops](@ref), then you should follow this pattern.
 """
 function step!(loss, params, opt)
   val, gs = withgradient(loss, params)
