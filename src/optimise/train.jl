@@ -85,9 +85,12 @@ batchmemaybe(x::Tuple) = x
 
 `step!` uses a `loss` function (with no inputs) to improve the [Model parameters](@ref) (`params`)
 based on a pluggable [Optimisers](@ref) (`opt`). It represents a single step in
-the training loop `train!`. While there is a default implementation for
-optimisers which are based on the `update!` function and only require gradient
-information, this `step!` has to be overloaded for more general optimisers.
+the training loop `train!`.
+
+The default implementation for `step!` is takes the gradient of `loss`
+and calls `Flux.Optimise.update!` to adjust the parameters, but you can overload
+`step!` for specific types of `opt`. This can be useful if your optimization routine
+has does not follow the standard gradient descent procedure (e.g. gradient-free optimizers).
 
 While the loss function of `train!` still accepts data as input, the loss function
 of `step!` accepts no input. `train!` cycles through the data in a loop
