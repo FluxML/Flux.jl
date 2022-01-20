@@ -145,9 +145,9 @@ When filing the bug report, provide the following information (if applicable):
 
 You can use [this template](https://github.com/FluxML/Flux.jl/blob/master/.github/pull_request_template.md) as a starting point when creating a new pull request. 
 
-### Flux source code organisation
+### Flux source code organization
 
-The following table shows how the Flux code is organised:
+The following table shows how the Flux code is organized:
 
 | Directory  | Contents |
 | ------------- | ------------- |
