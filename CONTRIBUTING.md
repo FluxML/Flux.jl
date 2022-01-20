@@ -151,5 +151,8 @@ The following table shows how the Flux code is organised:
 
 | Directory  | Contents |
 | ------------- | ------------- |
-| src  |   |
-| docs  |  |
+| docs  | Documentation site  |
+| paper  | Paper that describes Flux |
+| perf  |    |
+| src    |  Source for Flux  |
+| test   |  Test suites  |
