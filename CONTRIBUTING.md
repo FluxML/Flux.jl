@@ -69,7 +69,7 @@ To make your first contribution to Flux:
 2. Read the [Contribution ideas](#contribution-ideas) section to get inspiration.
 3. Set up your local environment. Depending on your contribution, fork and clone the Flux, Model Zoo or Flux website GitHub repositories. 
 4. Build Flux locally.
-5. Familiarise yourself with the Flux source code. For more information on the source code organisation, see section….
+5. Familiarise yourself with the Flux source code. See [Flux source code organization](#flux-source-code-organization) for more information.
 6. Read the Contribution guidelines section. Familiarise yourself with the guidelines for filing a bug report and submitting a contribution.
 
 After you make your first contribution, try to find an issue that is more challenging to you. You can always find a way to help expand the Flux ecosystem by creating extensions and new packages.
