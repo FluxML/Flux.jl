@@ -121,6 +121,7 @@ In this section, you can find information on the following:
 
 * [How to file a bug report](#how-to-file-a-bug-report)
 * [How to submit a contribution](#how-to-submit-a-contribution)
+* [Flux source code organisation](#flux-source-code-organisation)
 
 ### How to file a bug report
 
@@ -143,3 +144,14 @@ When filing the bug report, provide the following information (if applicable):
 ### How to submit a contribution
 
 You can use [this template](https://github.com/FluxML/Flux.jl/blob/master/.github/pull_request_template.md) as a starting point when creating a new pull request. 
+
+### Flux source code organization
+
+The following table shows how the Flux code is organized:
+
+| Directory  | Contents |
+| ------------- | ------------- |
+| docs  | Documentation site  |
+| paper  | Paper that describes Flux |
+| src    |  Source for Flux  |
+| test   |  Test suites  |
