@@ -55,6 +55,13 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 
   y = Flux.dropout(x, 0.9, active=false)
   @test count(a->a == 0, y) == 0
+
+  # Custom RNGs
+  y = Flux.dropout(Random.MersenneTwister(123), x, 0.9, active = true)
+  @test count(a->a == 0, y) > 50
+  m = Dropout(0.9; rng = Random.MersenneTwister(123))
+  y = m(x)
+  @test count(a->a == 0, y) > 50
 end
 
 @testset "AlphaDropout" begin

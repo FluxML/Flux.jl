@@ -96,6 +96,9 @@ end
 struct FluxCUDAAdaptor end
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
+adapt_storage(to::FluxCUDAAdaptor, x::Random.GLOBAL_RNG) = CUDA.CURAND.default_rng()
+adapt_storage(to::FluxCUDAAdaptor, x::AbstractRNG) =
+  error("Cannot map RNG of type $(typeof(x)) to GPU. GPU execution only supports Random.default_rng().")
 
 # TODO: figure out the correct design for OneElement
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.OneElement) = CUDA.cu(collect(x))
@@ -109,6 +112,8 @@ adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
 adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.OneElement) = x
 adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
+adapt_storage(to::FluxCPUAdaptor, x::CUDA.CURAND.RNG) = Random.default_rng()
+adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
 Zygote.@adjoint function Array(x::CUDA.CuArray)
   Array(x), d -> (CUDA.cu(d),)
