@@ -21,7 +21,7 @@ This is used as a regularisation, i.e. it reduces overfitting during training.
 If `active` is `false`, it just returns the input `x`.
 
 Specify `rng` for custom RNGs instead of the default RNG.
-Note that custom RNGs are only support on the CPU.
+Note that custom RNGs are only supported on the CPU.
 
 Warning: when using this function, you have to manually manage the activation
 state. Usually in fact, dropout is used while training
