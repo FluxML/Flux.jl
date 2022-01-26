@@ -67,31 +67,40 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 end
 
 @testset "AlphaDropout" begin
-  x = [1., 2., 3.]
-  @test x == AlphaDropout(0.1)(x)
-  @test x == evalwgrad(AlphaDropout(0), x)
-  @test zero(x) == evalwgrad(AlphaDropout(1), x)
+  @testset for rng_kwargs in ((), (; rng = MersenneTwister(123)))
+    x = [1., 2., 3.]
+    @test x == AlphaDropout(0.1; rng_kwargs...)(x)
+    @test x == evalwgrad(AlphaDropout(0; rng_kwargs...), x)
+    @test zero(x) == evalwgrad(AlphaDropout(1; rng_kwargs...), x)
 
-  x = randn(1000) # large enough to prevent flaky test
-  m = AlphaDropout(0.5)
+    x = randn(1000) # large enough to prevent flaky test
+    m = AlphaDropout(0.5; rng_kwargs...)
 
-  y = evalwgrad(m, x)
-  # Should preserve unit mean and variance
-  @test mean(y) ≈ 0 atol=0.1
-  @test var(y) ≈ 1 atol=0.1
+    y = evalwgrad(m, x)
+    # Should preserve unit mean and variance
+    @test mean(y) ≈ 0 atol=0.1
+    @test var(y) ≈ 1 atol=0.1
 
-  testmode!(m, true) # should override istraining
-  @test evalwgrad(m, x) == x
+    testmode!(m, true) # should override istraining
+    @test evalwgrad(m, x) == x
 
-  testmode!(m, false)
-  y = evalwgrad(m, x)
-  @test mean(y) ≈ 0 atol=0.1
-  @test var(y) ≈ 1 atol=0.1
-  
-  # Known good value ranges
-  # Values taken from https://github.com/pytorch/pytorch/blob/v1.10.0/test/cpp/api/modules.cpp#L1337-L1338
-  x = ones(100)
-  @test 40 < sum(evalwgrad(m, x)) < 130
+    testmode!(m, false)
+    y = evalwgrad(m, x)
+    @test mean(y) ≈ 0 atol=0.1
+    @test var(y) ≈ 1 atol=0.1
+
+    # Known good value ranges
+    # Values taken from https://github.com/pytorch/pytorch/blob/v1.10.0/test/cpp/api/modules.cpp#L1337-L1338
+    x = ones(100)
+    @test 40 < sum(evalwgrad(m, x)) < 130
+
+    # CPU RNGs map onto CPU ok
+    if isempty(rng_kwargs)
+      @test cpu(m).rng === Random.default_rng()
+    else
+      @test cpu(m).rng === only(values(rng_kwargs))
+    end
+  end
 end
 
 @testset "BatchNorm" begin

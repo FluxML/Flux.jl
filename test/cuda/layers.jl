@@ -282,8 +282,10 @@ end
 end
 
 @testset "Dropout RNGs" begin
-  m = Dropout(0.1; rng = MersenneTwister(123))
-  @test_throws ErrorException gpu(m)
-  m = Dropout(0.1; rng = CUDA.default_rng())
-  @test gpu(m).rng === CUDA.default_rng()
+  @testset for layer in (Dropout, AlphaDropout)
+    m = layer(0.1; rng = MersenneTwister(123))
+    @test_throws ErrorException gpu(m)
+    m = layer(0.1; rng = CUDA.default_rng())
+    @test gpu(m).rng === CUDA.default_rng()
+  end
 end

@@ -93,7 +93,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p)
+    AlphaDropout(p; rng = default_rng())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -102,14 +102,16 @@ remain the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
 """
-mutable struct AlphaDropout{F}
+mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
   active::Union{Bool, Nothing}
-  function AlphaDropout(p, active = nothing)
+  rng::R
+  function AlphaDropout(p, active = nothing, rng = Random.default_rng())
     @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p, active)
+    new{typeof(p)}(p, active, rng)
   end
 end
+AlphaDropout(p; rng = Random.default_rng()) = AlphaDropout(p, nothing, rng)
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
@@ -121,7 +123,7 @@ function (a::AlphaDropout)(x::AbstractArray{T}) where T
   A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
   B = T(-A * α′ * p)
 
-  noise = rand!(similar(x))
+  noise = rand!(a.rng, similar(x))
   return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
