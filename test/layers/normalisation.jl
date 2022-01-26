@@ -56,6 +56,13 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 
     y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=false)
     @test count(a->a == 0, y) == 0
+
+    # CPU RNGs map onto CPU ok
+    if isempty(rng_kwargs)
+      @test cpu(m).rng === Random.default_rng()
+    else
+      @test cpu(m).rng === only(values(rng_kwargs))
+    end
   end
 end
 
