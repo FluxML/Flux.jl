@@ -78,6 +78,10 @@ function Dropout(p; dims=:, rng = Random.default_rng())
   Dropout(p, dims, nothing, rng)
 end
 
+@functor Dropout
+
+trainable(a::Dropout) = ()
+
 function (a::Dropout)(x)
   _isactive(a) || return x
   return dropout(a.rng, x, a.p; dims=a.dims, active=true)
@@ -113,6 +117,10 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
 end
 AlphaDropout(p, active) = AlphaDropout(p, active, Random.default_rng())
 AlphaDropout(p; rng = Random.default_rng()) = AlphaDropout(p, nothing, rng)
+
+@functor AlphaDropout
+
+trainable(a::AlphaDropout) = ()
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
