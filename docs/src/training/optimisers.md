@@ -65,7 +65,35 @@ AdaBelief
 
 ## Optimiser Interface
 
-Flux's optimisers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
+Flux's optimisers are built around a `struct` that holds all the optimiser
+parameters along with a definition of how to apply the update
+rule associated with it (`optimstep!`). The default implementation of `optimstep!`
+looks like this
+
+```julia 
+function optimstep!(loss, params, opt)
+  # Calculate the gradients of the parameters
+  # with respect to the loss function
+  val, grads = Flux.withgradient(loss, parameters)
+  # Update the parameters based on the chosen
+  # optimiser (opt)
+  Flux.Optimise.update!(opt, parameters, grads)
+  return val, grads
+end
+```
+
+and therefore assumes that its update rule only requires the optimisers internal
+state `opt`, the `parameters` themselves and the gradients `grads`. For
+optimisers which do not fit this pattern, you want to overload `optimstep!`
+itself.
+
+In the following subsection we define a simple Momentum optimiser which fits the
+`update!` pattern and therefore does not have to override `optimstep!` itself.
+
+### Gradient Based Optimiser
+
+To obtain an `update!` method applicable to your custom optimiser type, we
+need to overload the `apply!` function. Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully. It takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
 
 In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
 
@@ -98,8 +126,6 @@ w = w - v
 ```
 
 The `apply!` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
-
-Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully.
 
 ## Composing Optimisers
 

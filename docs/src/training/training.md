@@ -17,15 +17,27 @@ for d in datapoints
   # `d` should produce a collection of arguments
   # to the loss function
 
-  # Calculate the gradients of the parameters
-  # with respect to the loss function
-  grads = Flux.gradient(parameters) do
+  # Update the parameters based on the chosen
+  # optimiser (opt)
+  loss, grads = optimstep!(params, opt) do
     loss(d...)
   end
+end
+```
 
+`optimstep!` is the optimiser implementation and thus dispatches depending on
+the optimizer type. As an example, the default `optimstep!` for optimiser who
+use the gradient to update the parameters (e.g. gradient descent, momentum, ADAM, etc.) looks like this
+
+```julia
+function optimstep!(loss, params, opt)
+  # Calculate the gradients of the parameters
+  # with respect to the loss function
+  val, grads = Flux.withgradient(loss, parameters)
   # Update the parameters based on the chosen
   # optimiser (opt)
   Flux.Optimise.update!(opt, parameters, grads)
+  return val, grads
 end
 ```
 

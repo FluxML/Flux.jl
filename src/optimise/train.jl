@@ -1,5 +1,5 @@
 using Juno
-import Zygote: Params, gradient
+import Zygote: Params, withgradient
 
 """
     update!(x, x̄)
@@ -81,6 +81,35 @@ batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
 """
+    optimstep!(loss, params, opt)
+
+`optimstep!` uses a `loss` function (with no inputs) to improve the [Model parameters](@ref) (`params`)
+based on a pluggable [Optimisers](@ref) (`opt`). It represents a single step in
+the training loop `train!`.
+
+The default implementation for `optimstep!` is takes the gradient of `loss`
+and calls `Flux.Optimise.update!` to adjust the parameters, but you can overload
+`optimstep!` for specific types of `opt`. This can be useful if your optimization routine
+has does not follow the standard gradient descent procedure (e.g. gradient-free optimizers).
+
+Unlike `train!`, the loss function of `optimstep!` accepts no input.
+Instead, `train!` cycles through the data in a loop and calls `optimstep!`:
+```julia
+for d in data
+  optimstep!(ps, opt) do
+    loss(d)
+  end
+end
+```
+If you are writing [Custom Training loops](@ref), then you should follow this pattern.
+"""
+function optimstep!(loss, params, opt)
+  val, gs = withgradient(loss, params)
+  update!(opt, params, gs)
+  return val, gs
+end
+
+"""
     train!(loss, params, data, opt; cb)
         
 `train!` uses a `loss` function and training `data` to improve the 
@@ -106,10 +135,9 @@ function train!(loss, ps, data, opt; cb = () -> ())
   cb = runall(cb)
   @progress for d in data
     try
-      gs = gradient(ps) do
+      optimstep!(ps, opt) do
         loss(batchmemaybe(d)...)
       end
-      update!(opt, ps, gs)
       cb()
     catch ex
       if ex isa StopException
