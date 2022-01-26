@@ -4,67 +4,59 @@ using Zygote: pullback
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
-  x = [1.,2.,3.]
-  @test x == Dropout(0.1)(x)
-  @test x == evalwgrad(Dropout(0), x)
-  @test zero(x) == evalwgrad(Dropout(1), x)
+  @testset for rng_kwargs in ((), (; rng = MersenneTwister(123)))
+    x = [1.,2.,3.]
+    @test x == Dropout(0.1; rng_kwargs...)(x)
+    @test x == evalwgrad(Dropout(0; rng_kwargs...), x)
+    @test zero(x) == evalwgrad(Dropout(1; rng_kwargs...), x)
 
-  x = rand(100)
-  m = Dropout(0.9)
-  y = evalwgrad(m, x)
-  @test count(a->a==0, y) > 50
-  testmode!(m, true)
-  y = evalwgrad(m, x) # should override istraining
-  @test count(a->a==0, y) == 0
-  testmode!(m, false)
-  y = evalwgrad(m, x)
-  @test count(a->a==0, y) > 50
+    x = rand(100)
+    m = Dropout(0.9; rng_kwargs...)
+    y = evalwgrad(m, x)
+    @test count(a->a==0, y) > 50
+    testmode!(m, true)
+    y = evalwgrad(m, x) # should override istraining
+    @test count(a->a==0, y) == 0
+    testmode!(m, false)
+    y = evalwgrad(m, x)
+    @test count(a->a==0, y) > 50
 
-  x = rand(Float32, 100)
-  m = Chain(Dense(100,100),
-            Dropout(0.9))
-  y = evalwgrad(m, x)
-  @test count(a->a == 0, y) > 50
-  testmode!(m, true)
-  y = evalwgrad(m, x) # should override istraining
-  @test count(a->a == 0, y) == 0
+    x = rand(Float32, 100)
+    m = Chain(Dense(100,100),
+              Dropout(0.9; rng_kwargs...))
+    y = evalwgrad(m, x)
+    @test count(a->a == 0, y) > 50
+    testmode!(m, true)
+    y = evalwgrad(m, x) # should override istraining
+    @test count(a->a == 0, y) == 0
 
-  x = rand(100, 50)
-  m = Dropout(0.5, dims = 2)
-  y = m(x)
-  c = map(i->count(a->a==0, @view y[i, :]), 1:100)
-  @test minimum(c) == maximum(c)
-  m = Dropout(0.5, dims = 1)
-  y = m(x)
-  c = map(i->count(a->a==0, @view y[:, i]), 1:50)
-  @test minimum(c) == maximum(c)
+    x = rand(100, 50)
+    m = Dropout(0.5; dims = 2, rng_kwargs...)
+    y = m(x)
+    c = map(i->count(a->a==0, @view y[i, :]), 1:100)
+    @test minimum(c) == maximum(c)
+    m = Dropout(0.5; dims = 1, rng_kwargs...)
+    y = m(x)
+    c = map(i->count(a->a==0, @view y[:, i]), 1:50)
+    @test minimum(c) == maximum(c)
 
-  # issue #1084
-  m = Dropout(0.9)
-  x = rand(100)
+    # issue #1084
+    m = Dropout(0.9; rng_kwargs...)
+    x = rand(100)
 
-  testmode!(m)
-  y = m(x)
-  @test count(a->a == 0, y) == 0
-  trainmode!(m)
-  y = m(x)
-  @test count(a->a == 0, y) > 50
+    testmode!(m)
+    y = m(x)
+    @test count(a->a == 0, y) == 0
+    trainmode!(m)
+    y = m(x)
+    @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=true)
-  @test count(a->a == 0, y) > 50
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=true)
+    @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=false)
-  @test count(a->a == 0, y) == 0
-
-  # Custom RNGs
-  y = Flux.dropout(Random.MersenneTwister(123), x, 0.9, active = true)
-  @test count(a->a == 0, y) > 50
-  m = trainmode!(Dropout(0.9; rng = Random.MersenneTwister(123)))
-  y = m(x)
-  @test count(a->a == 0, y) > 50
-  testmode!(m)
-  y = m(x)
-  @test count(a->a == 0, y) == 0
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=false)
+    @test count(a->a == 0, y) == 0
+  end
 end
 
 @testset "AlphaDropout" begin
