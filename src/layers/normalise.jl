@@ -37,7 +37,7 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
   return x .* y
 end
 dropout(x, p; kwargs...) = dropout(Random.default_rng(), x, p; kwargs...)
-dropout(x::CuArray, p; kwargs...) = dropout(CUDA.CURAND.default_rng(), x, p; kwargs...)
+dropout(x::CuArray, p; kwargs...) = dropout(CUDA.default_rng(), x, p; kwargs...)
 
 @adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
@@ -106,11 +106,12 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
   active::Union{Bool, Nothing}
   rng::R
-  function AlphaDropout(p, active = nothing, rng = Random.default_rng())
+  function AlphaDropout(p, active, rng)
     @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p, active, rng)
+    new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
+AlphaDropout(p, active) = AlphaDropout(p, active, Random.default_rng())
 AlphaDropout(p; rng = Random.default_rng()) = AlphaDropout(p, nothing, rng)
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
