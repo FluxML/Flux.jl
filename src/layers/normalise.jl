@@ -39,10 +39,10 @@ end
 dropout(x, p; kwargs...) = dropout(Random.default_rng(), x, p; kwargs...)
 dropout(x::CuArray, p; kwargs...) = dropout(CUDA.CURAND.default_rng(), x, p; kwargs...)
 
-@adjoint function dropout(x, p; dims=:, active::Bool=true)
+@adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(x, p, dims=dims)
-  return x .* y, Δ -> (Δ .* y, nothing)
+  y = dropout_mask(rng, x, p, dims=dims)
+  return x .* y, Δ -> (nothing, Δ .* y, nothing)
 end
 
 function dropout_mask(rng::AbstractRNG, x, p; dims=:)
