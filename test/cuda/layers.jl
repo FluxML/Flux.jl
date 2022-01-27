@@ -287,6 +287,6 @@ end
     m = layer(0.1; rng = MersenneTwister(123))
     @test_throws ErrorException gpu(m)
     m = layer(0.1; rng = CUDA.default_rng())
-    @test gpu(m).rng === CUDA.default_rng()
+    @test gpu(m).rng isa CUDA.RNG
   end
 end
