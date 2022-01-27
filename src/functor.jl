@@ -159,6 +159,9 @@ _isbitsarray(::AbstractArray{<:Number}) = true
 _isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
 _isbitsarray(x) = false
 
+_isleaf(::AbstractRNG) = true
+_isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
+
 """
     gpu(x)
 
@@ -184,7 +187,7 @@ CuArray{Float32, 2}
 """
 function gpu(x)
   check_use_cuda()
-  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray) : x
+  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
 end
 
 function check_use_cuda()
