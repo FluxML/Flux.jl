@@ -55,7 +55,7 @@ function _dropout_mask(rng, x, p; dims=:)
 end
 
 """
-    Dropout(p; dims=:, rng = default_rng())
+    Dropout(p; dims=:, rng = rng_from_array())
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
@@ -100,7 +100,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p; rng = default_rng())
+    AlphaDropout(p; rng = rng_from_array())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
