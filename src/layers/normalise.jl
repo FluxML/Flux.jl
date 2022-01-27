@@ -37,7 +37,6 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
   return x .* y
 end
 dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
-dropout(x::CuArray, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
 @adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
