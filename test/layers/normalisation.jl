@@ -4,7 +4,7 @@ using Zygote: pullback
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
-  @testset for rng_kwargs in ((), (; rng = MersenneTwister(123)))
+  @testset for rng_kwargs in ((), (; rng = MersenneTwister()))
     x = [1.,2.,3.]
     @test x == Dropout(0.1; rng_kwargs...)(x)
     @test x == evalwgrad(Dropout(0; rng_kwargs...), x)
@@ -67,7 +67,7 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 end
 
 @testset "AlphaDropout" begin
-  @testset for rng_kwargs in ((), (; rng = MersenneTwister(123)))
+  @testset for rng_kwargs in ((), (; rng = MersenneTwister()))
     x = [1., 2., 3.]
     @test x == AlphaDropout(0.1; rng_kwargs...)(x)
     @test x == evalwgrad(AlphaDropout(0; rng_kwargs...), x)
