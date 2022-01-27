@@ -1,6 +1,6 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.12.8"
+version = "0.12.9"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
