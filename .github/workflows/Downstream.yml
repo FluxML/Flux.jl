@@ -16,8 +16,8 @@ jobs:
         julia-version: [1]
         os: [ubuntu-latest]
         package:
-          - {user: FluxML, repo: ObjectDetector.jl, group: All}
-          - {user: FluxML, repo: Transformers.jl, group: All}
+          - {user: r3tex, repo: ObjectDetector.jl, group: All}
+          - {user: chengchingwen, repo: Transformers.jl, group: All}
           - {user: FluxML, repo: GeometricFlux.jl, group: All}
           - {user: FluxML, repo: FastAI.jl, group: All}
           - {user: FluxML, repo: Flux3D.jl, group: All}
