@@ -10,7 +10,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout([rng = default_rng()], x, p; dims=:, active=true)
+    dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -36,8 +36,8 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
   y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
-dropout(x, p; kwargs...) = dropout(Random.default_rng(), x, p; kwargs...)
-dropout(x::CuArray, p; kwargs...) = dropout(CUDA.default_rng(), x, p; kwargs...)
+dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
+dropout(x::CuArray, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
 @adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
@@ -45,7 +45,11 @@ dropout(x::CuArray, p; kwargs...) = dropout(CUDA.default_rng(), x, p; kwargs...)
   return x .* y, Δ -> (nothing, Δ .* y, nothing)
 end
 
-function dropout_mask(rng::AbstractRNG, x, p; dims=:)
+dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
+dropout_mask(rng, x::CuArray, p; kwargs...) =
+  ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays.")
+dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
+function _dropout_mask(rng, x, p; dims=:)
   y = rand!(rng, similar(x, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
   return y
@@ -71,9 +75,9 @@ mutable struct Dropout{F,D,R<:AbstractRNG}
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p, dims, active) = Dropout(p, dims, active, Random.default_rng())
+Dropout(p, dims, active) = Dropout(p, dims, active, rng_from_array())
 
-function Dropout(p; dims=:, rng = Random.default_rng())
+function Dropout(p; dims=:, rng = rng_from_array())
   @assert 0 ≤ p ≤ 1
   Dropout(p, dims, nothing, rng)
 end
@@ -115,8 +119,8 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
     new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
-AlphaDropout(p, active) = AlphaDropout(p, active, Random.default_rng())
-AlphaDropout(p; rng = Random.default_rng()) = AlphaDropout(p, nothing, rng)
+AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
+AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
 
