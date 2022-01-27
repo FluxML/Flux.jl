@@ -96,6 +96,14 @@ end
 struct FluxCUDAAdaptor end
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
+if VERSION >= v"1.7"
+  adapt_storage(to::FluxCUDAAdaptor, x::Random.TaskLocalRNG) = CUDA.default_rng()
+else
+  adapt_storage(to::FluxCUDAAdaptor, x::Random._GLOBAL_RNG) = CUDA.default_rng()
+end
+adapt_storage(to::FluxCUDAAdaptor, x::CUDA.RNG) = x
+adapt_storage(to::FluxCUDAAdaptor, x::AbstractRNG) =
+  error("Cannot map RNG of type $(typeof(x)) to GPU. GPU execution only supports Random.default_rng().")
 
 # TODO: figure out the correct design for OneElement
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.OneElement) = CUDA.cu(collect(x))
@@ -109,6 +117,8 @@ adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
 adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.OneElement) = x
 adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
+adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
+adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
 Zygote.@adjoint function Array(x::CUDA.CuArray)
   Array(x), d -> (CUDA.cu(d),)
@@ -149,6 +159,9 @@ _isbitsarray(::AbstractArray{<:Number}) = true
 _isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
 _isbitsarray(x) = false
 
+_isleaf(::AbstractRNG) = true
+_isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
+
 """
     gpu(x)
 
@@ -174,7 +187,7 @@ CuArray{Float32, 2}
 """
 function gpu(x)
   check_use_cuda()
-  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isbitsarray) : x
+  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
 end
 
 function check_use_cuda()

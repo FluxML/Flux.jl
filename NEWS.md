@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.12.10
+* `Dropout`/`AlphaDropout` now supports [user-specified RNGs](https://github.com/FluxML/Flux.jl/pull/1838)
+
 ## v0.12.9
 * Fixed incorrect output and added GPU compatibility for [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781).
 * Add trilinear [Upsample layer](https://github.com/FluxML/Flux.jl/pull/1792).

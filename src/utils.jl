@@ -34,6 +34,25 @@ ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
 
 """
+    rng_from_array([x])
+
+Create an instance of the RNG most appropriate for `x`.
+The current defaults are:
+- `x isa AbstractArray`
+  - Julia version is < 1.7: `Random.GLOBAL_RNG`
+  - Julia version is >= 1.7: `Random.default_rng()`
+- `x isa CuArray`: `CUDA.default_rng()`
+When `x` is unspecified, it is assumed to be a `AbstractArray`.
+"""
+rng_from_array(::AbstractArray) = rng_from_array()
+rng_from_array(::CuArray) = CUDA.default_rng()
+if VERSION >= v"1.7"
+  rng_from_array() = Random.default_rng()
+else
+  rng_from_array() = Random.GLOBAL_RNG
+end
+
+"""
     glorot_uniform([rng=GLOBAL_RNG], dims...)
 
 Return an `Array` of size `dims` containing random variables taken from a uniform

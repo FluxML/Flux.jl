@@ -10,7 +10,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout(x, p; dims=:, active=true)
+    dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -20,6 +20,9 @@ This is used as a regularisation, i.e. it reduces overfitting during training.
 
 If `active` is `false`, it just returns the input `x`.
 
+Specify `rng` for custom RNGs instead of the default RNG.
+Note that custom RNGs are only supported on the CPU.
+
 Warning: when using this function, you have to manually manage the activation
 state. Usually in fact, dropout is used while training
 but is deactivated in the inference phase. This can be
@@ -28,26 +31,31 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(x, p; dims=:, active::Bool=true)
+function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x
-  y = dropout_mask(x, p, dims=dims)
+  y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
+dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
-@adjoint function dropout(x, p; dims=:, active::Bool=true)
+@adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(x, p, dims=dims)
-  return x .* y, Δ -> (Δ .* y, nothing)
+  y = dropout_mask(rng, x, p, dims=dims)
+  return x .* y, Δ -> (nothing, Δ .* y, nothing)
 end
 
-function dropout_mask(x, p; dims=:)
-  y = rand!(similar(x, _dropout_shape(x, dims)))
+dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
+dropout_mask(rng, x::CuArray, p; kwargs...) =
+  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
+dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
+function _dropout_mask(rng, x, p; dims=:)
+  y = rand!(rng, similar(x, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
   return y
 end
 
 """
-    Dropout(p; dims=:)
+    Dropout(p; dims=:, rng = rng_from_array())
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
@@ -55,22 +63,31 @@ To apply dropout along certain dimension(s), specify the `dims` keyword.
 e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
 (also called 2D dropout).
 
+Specify `rng` to use a custom RNG instead of the default.
+Custom RNGs are only supported on the CPU.
+
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
-mutable struct Dropout{F,D}
+mutable struct Dropout{F,D,R<:AbstractRNG}
   p::F
   dims::D
   active::Union{Bool, Nothing}
+  rng::R
+end
+Dropout(p, dims, active) = Dropout(p, dims, active, rng_from_array())
+
+function Dropout(p; dims=:, rng = rng_from_array())
+  @assert 0 ≤ p ≤ 1
+  Dropout(p, dims, nothing, rng)
 end
 
-function Dropout(p; dims=:)
-  @assert 0 ≤ p ≤ 1
-  Dropout(p, dims, nothing)
-end
+@functor Dropout
+
+trainable(a::Dropout) = ()
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims=a.dims, active=true)
+  return dropout(a.rng, x, a.p; dims=a.dims, active=true)
 end
 
 testmode!(m::Dropout, mode=true) =
@@ -83,7 +100,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p)
+    AlphaDropout(p; rng = rng_from_array())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -92,14 +109,21 @@ remain the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
 """
-mutable struct AlphaDropout{F}
+mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
   active::Union{Bool, Nothing}
-  function AlphaDropout(p, active = nothing)
+  rng::R
+  function AlphaDropout(p, active, rng)
     @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p, active)
+    new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
+AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
+AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
+
+@functor AlphaDropout
+
+trainable(a::AlphaDropout) = ()
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
@@ -111,7 +135,7 @@ function (a::AlphaDropout)(x::AbstractArray{T}) where T
   A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
   B = T(-A * α′ * p)
 
-  noise = rand!(similar(x))
+  noise = rand!(a.rng, similar(x))
   return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
