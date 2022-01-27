@@ -46,7 +46,7 @@ end
 
 dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 dropout_mask(rng, x::CuArray, p; kwargs...) =
-  ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays.")
+  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
 dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 function _dropout_mask(rng, x, p; dims=:)
   y = rand!(rng, similar(x, _dropout_shape(x, dims)))
