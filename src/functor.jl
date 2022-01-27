@@ -96,7 +96,11 @@ end
 struct FluxCUDAAdaptor end
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
-adapt_storage(to::FluxCUDAAdaptor, x::Random.TaskLocalRNG) = CUDA.default_rng()
+if VERSION >= v"1.7"
+  adapt_storage(to::FluxCUDAAdaptor, x::Random.TaskLocalRNG) = CUDA.default_rng()
+else
+  adapt_storage(to::FluxCUDAAdaptor, x::Random._GLOBAL_RNG) = CUDA.default_rng()
+end
 adapt_storage(to::FluxCUDAAdaptor, x::CUDA.RNG) = x
 adapt_storage(to::FluxCUDAAdaptor, x::AbstractRNG) =
   error("Cannot map RNG of type $(typeof(x)) to GPU. GPU execution only supports Random.default_rng().")
