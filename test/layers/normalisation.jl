@@ -78,7 +78,7 @@ end
   y = evalwgrad(m, x)
   @test mean(y) ≈ 0 atol=0.1
   @test var(y) ≈ 1 atol=0.1
-  
+
   # Known good value ranges
   # Values taken from https://github.com/pytorch/pytorch/blob/v1.10.0/test/cpp/api/modules.cpp#L1337-L1338
   x = ones(100)
@@ -118,9 +118,15 @@ end
     #  1.3
     #  1.3
     @test m.σ² ≈ .1 .* var(x, dims=2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
-    
+
     x′ = m(x)
     @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
+
+    @inferred m(x)
+  end
+
+  let m = BatchNorm(2; track_stats=false), x = [1.0 3.0 5.0; 2.0 4.0 6.0]
+    @inferred m(x)
   end
 
   # with activation function
@@ -128,29 +134,34 @@ end
                                       2.0 4.0 6.0]
     y = m(x)
     @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
+    @inferred m(x)
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)
     y = reshape(permutedims(x, [2, 1, 3]), 2, :)
     y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
     @test m(x) == y
+    @inferred m(x)
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:12), 2, 3, 2, 1)
     y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
     @test m(x) == y
+    @inferred m(x)
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:24), 2, 2, 3, 2, 1)
     y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
     @test m(x) == y
+    @inferred m(x)
   end
 
   let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
     m(x)
     @test (@allocated m(x)) <  100_000_000
+    @inferred m(x)
   end
 
   @test length(Flux.params(BatchNorm(10))) == 2
@@ -201,6 +212,8 @@ end
       @test length(m.μ) == 2
       @test length(m.σ²) == 2
       @test y ≈ (x .- reshape(m.μ, 1,2,1)) ./ sqrt.(reshape(m.σ², 1,2,1) .+ 1f-5)   atol=1.0e-5
+
+      @inferred m(x)
   end
 
   # with activation function
@@ -211,10 +224,12 @@ end
     affine_shape[[1,3]] .= 1
 
     y = evalwgrad(m, x)
-    y = m(x) # inference time after a training step    
+    y = m(x) # inference time after a training step
     μ = reshape(m.μ, affine_shape...)
     σ² = reshape(m.σ², affine_shape...)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+
+    @inferred m(x)
   end
 
   # with activation function
@@ -222,24 +237,28 @@ end
       x = reshape(collect(1:prod(sizes)), sizes)
 
     @test Flux.hasaffine(m) == true
-    @test length(params(m)) == 2  
+    @test length(params(m)) == 2
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
     σ² = var(x, dims=1, corrected=false)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+
+    @inferred m(x)
   end
 
   let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
       x = reshape(collect(1:prod(sizes)), sizes)
     @test Flux.hasaffine(m) == false
     @test length(params(m)) == 0
-    
+
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
     σ² = var(x, dims=1, corrected=false)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+
+    @inferred m(x)
   end
 
 
@@ -248,6 +267,8 @@ end
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
     @test m(x) == y
+
+    @inferred m(x)
   end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
@@ -257,6 +278,8 @@ end
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
     @test size(y) == sizes
+
+    @inferred m(x)
   end
 
   # show that instance norm is equal to batch norm when channel and batch dims are squashed
@@ -268,6 +291,8 @@ end
   let m = InstanceNorm(32), x = randn(Float32, 416, 416, 32, 1);
     m(x)
     @test (@allocated m(x)) <  100_000_000
+
+    @inferred m(x)
   end
 
   @test length(Flux.params(InstanceNorm(10))) == 0
