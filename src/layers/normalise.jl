@@ -206,16 +206,22 @@ function _promote_to_output(
     _maybe_promote_type(T, Vel), N), Wel)
 end
 
+function _basetype(::Type{T}) where T
+  if T <: Array
+    return Array
+  elseif T <: CuArray
+    return CuArray
+  end
+  throw("Unsupported type $T")
+end
+
 # For InstanceNorm, GroupNorm, and BatchNorm.
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-_norm_layer_forward(l, x; reduce_dims, affine_shape) =
-    _norm_layer_forward(l, x, _promote_to_output(l, x); reduce_dims, affine_shape)
-
 function _norm_layer_forward(
-  l, x::Array{T, N}, ::Type{O}; reduce_dims, affine_shape,
-) where {T, N, O}
+  l, x::AbstractArray{T, N}; reduce_dims, affine_shape,
+) where {T, N}
   if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
@@ -228,7 +234,8 @@ function _norm_layer_forward(
     end
   end
 
-  o::Array{O, N} = ((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+  O = _promote_to_output(l, x)
+  o::_basetype(typeof(x)){O, N} = ((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
   hasaffine(l) || return l.λ.(o)
 
   γ = reshape(l.γ, affine_shape)
