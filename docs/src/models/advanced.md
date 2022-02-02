@@ -2,6 +2,36 @@
 
 Here we will try and describe usage of some more advanced features that Flux provides to give more control over model building.
 
+## Custom Model Example
+
+Here is a basic example of a custom model. It simply adds the input to the result from the neural network.
+
+```julia
+struct CustomModel
+  chain::Chain
+end
+
+function (m::CustomModel)(x)
+  # Arbitrary code can go here, but note that everything will be differentiated.
+  # Zygote does not allow some operations, like mutating arrays.
+
+  return m.chain(x) + x
+end
+
+# Call @functor to allow for training. Described below in more detail.
+Flux.@functor CustomModel
+```
+
+You can then use the model like:
+
+```julia
+chain = Chain(Dense(10, 10))
+model = CustomModel(chain)
+model(rand(10))
+```
+
+For an intro to Flux and automatic differentiation, see this [tutorial](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html).
+
 ## Customising Parameter Collection for a Model
 
 Taking reference from our example `Affine` layer from the [basics](basics.md#Building-Layers-1).
@@ -68,7 +98,7 @@ by simply deleting it from `ps`:
 
 ```julia
 ps = params(m)
-delete!(ps, m[2].bias) 
+delete!(ps, m[2].bias)
 ```
 
 ## Custom multiple input or output layer

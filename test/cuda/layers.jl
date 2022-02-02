@@ -45,11 +45,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
 
           # test
           if test_cpu
-            if VERSION >= v"1.7" && layer === GroupedConvTranspose && args[end] == selu
-              @test_broken y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            else
-              @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            end
+            @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
             if isnothing(xg_cpu)
               @test isnothing(xg_gpu)
             else
@@ -282,5 +278,15 @@ end
     for (pgpu, pcpu) in zip(params(layer_cpu), params(layer_gpu))
       @test gs_cpu[pcpu] ≈ gs_gpu[pgpu]
     end
+  end
+end
+
+@testset "Dropout RNGs" begin
+  @test_throws ArgumentError Flux.dropout(MersenneTwister(), CUDA.rand(Float32, 2, 3), 0.1)
+  @testset for layer in (Dropout, AlphaDropout)
+    m = layer(0.1; rng = MersenneTwister(123))
+    @test_throws ErrorException gpu(m)
+    m = layer(0.1; rng = CUDA.default_rng())
+    @test gpu(m).rng isa CUDA.RNG
   end
 end
