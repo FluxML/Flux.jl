@@ -162,9 +162,7 @@ end
 
 function (c::Conv)(x::AbstractArray)
   σ, b = c.σ, reshape(c.bias, ntuple(_ -> 1, length(c.stride))..., :, 1)
-  cdims = DenseConvDims(
-    x, c.weight; stride=c.stride, padding=c.pad,
-    dilation=c.dilation, groups=c.groups)
+  cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -658,23 +656,19 @@ julia> lay(rand(Float32, 100, 7, 50)) |> size
 (34, 7, 50)
 ```
 """
-struct MaxPool{N, M}
+struct MaxPool{N,M}
   k::NTuple{N,Int}
   pad::NTuple{M,Int}
   stride::NTuple{N,Int}
 end
 
-function MaxPool(k::NTuple{N, Integer}; pad = 0, stride = k) where N
+function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
   pad = calc_padding(MaxPool, pad, k, 1, stride)
   return MaxPool(k, pad, stride)
 end
 
 function (m::MaxPool)(x)
-  # size_x = size(x)
-  # kernel, stride, padding, dilation = NNlib.prepare_pooldims(
-  #   Val(N), size_x, m.k; padding=m.pad, stride=m.stride)
-  # pdims = PoolDims{kernel, stride, padding, dilation}(size_x)
   pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
   return maxpool(x, pdims)
 end
