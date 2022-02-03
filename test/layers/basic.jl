@@ -25,6 +25,9 @@ import Flux: activations
     @test m[:first] == m[1]
     @test m[1:2] == m
 
+    @test m == m
+    @test m == fmap(identity, m)  # does not forget names
+
     @test_throws ArgumentError Chain(layers = Dense(10, 10), two = identity) # reserved name
   end
 

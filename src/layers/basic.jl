@@ -28,29 +28,30 @@ julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
 """
-struct Chain{T}
+struct Chain{T<:Union{Tuple, NamedTuple}}
   layers::T
-  Chain(xs...) = new{typeof(xs)}(xs)
-  function Chain(; kw...)
-    :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
-    isempty(kw) && return new{Tuple{}}(())
-    new{typeof(values(kw))}(values(kw))
-  end
+end
+
+Chain(xs...) = Chain(xs)
+function Chain(; kw...)
+  :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+  isempty(kw) && return Chain(())
+  Chain(values(kw))
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys
 
-functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
+@functor Chain
 
 applychain(::Tuple{}, x) = x
 applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
 
 (c::Chain)(x) = applychain(Tuple(c.layers), x)
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
-Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
-  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
+Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
+Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
+  Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
