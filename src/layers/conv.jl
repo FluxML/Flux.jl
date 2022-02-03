@@ -664,7 +664,7 @@ end
 
 function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
-  pad = calc_padding(MaxPool ,pad, k, 1, stride)
+  pad = calc_padding(MaxPool, pad, k, 1, stride)
   return MaxPool(k, pad, stride)
 end
 
