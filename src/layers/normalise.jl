@@ -188,13 +188,6 @@ function Base.show(io::IO, l::LayerNorm)
   print(io, ")")
 end
 
-_maybe_promote_type(::Type{T1}, ::Type{T2}) where {T1, T2} = promote_type(T1, T2)
-_maybe_promote_type(::Type{Nothing}, ::Type{T2}) where T2 = T2
-_maybe_promote_type(::Type{T1}, ::Type{Nothing}) where T1 = T1
-
-_maybe_eltype(::Type{T}) where T <: AbstractArray = eltype(T)
-_maybe_eltype(::Type{Nothing}) = Nothing
-
 # For InstanceNorm, GroupNorm, and BatchNorm.
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
