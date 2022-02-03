@@ -246,29 +246,23 @@ julia> Flux.outputsize(m3, (5, 11))
 (7, 11)
 ```
 """
-struct Maxout{FS<:Tuple}
-  over::FS
-  Maxout(layers...) = new{typeof(layers)}(layers)
+struct Maxout{T<:Tuple}
+  layers::T
 end
-
-function Maxout(f::Function, n_alts::Integer)
-  over = Tuple(f() for _ in 1:n_alts)
-  return Maxout(over...)
-end
+Maxout(layers...) = Maxout(layers)
+Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
 
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
   # Perhaps surprisingly, pairwise max broadcast is often faster,
   # even with Zygote. See #698 and #1794
-  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.layers)
 end
-
-trainable(mo::Maxout) = mo.over
 
 function Base.show(io::IO, mo::Maxout)
   print(io, "Maxout(")
-  _show_layers(io, mo.over)
+  _show_layers(io, mo.layers)
   print(io, ")")
 end
 
