@@ -195,26 +195,6 @@ _maybe_promote_type(::Type{T1}, ::Type{Nothing}) where T1 = T1
 _maybe_eltype(::Type{T}) where T <: AbstractArray = eltype(T)
 _maybe_eltype(::Type{Nothing}) = Nothing
 
-abstract type Normalization{F, V, N, W} end
-
-function _promote_to_output(
-  ::Normalization{F, V, N, W}, x::AbstractArray{T},
-) where {F, V, N, W, T}
-  Vel = _maybe_eltype(V)
-  Wel = _maybe_eltype(W)
-  _maybe_promote_type(_maybe_promote_type(
-    _maybe_promote_type(T, Vel), N), Wel)
-end
-
-function _basetype(::Type{T}) where T
-  if T <: Array
-    return Array
-  elseif T <: CuArray
-    return CuArray
-  end
-  throw("Unsupported type $T")
-end
-
 # For InstanceNorm, GroupNorm, and BatchNorm.
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
@@ -234,14 +214,15 @@ function _norm_layer_forward(
     end
   end
 
-  O = _promote_to_output(l, x)
-  o::_basetype(typeof(x)){O, N} = ((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
+  o = _norm_layer_forward(x, μ, σ², l.ϵ)
   hasaffine(l) || return l.λ.(o)
 
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
   return l.λ.(γ .* o .+ β)
 end
+
+@inline _norm_layer_forward(x, μ, σ², ϵ) = (x .- μ) ./ sqrt.(σ² .+ ϵ)
 
 function _track_stats!(
   bn, x::AbstractArray{T, N}, μ, σ², reduce_dims,
@@ -256,7 +237,7 @@ function _track_stats!(
 
   bn.μ = res_mtm .* bn.μ .+ mtm .* μnew
   bn.σ² = res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new
-  nothing
+  return nothing
 end
 Zygote.@nograd _track_stats!
 
@@ -296,7 +277,7 @@ m = Chain(
   softmax)
 ```
 """
-mutable struct BatchNorm{F,V,N,W} <: Normalization{F, V, N, W}
+mutable struct BatchNorm{F,V,N,W}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -372,7 +353,7 @@ that will be used to renormalize the input in test phase.
 **Warning**: the defaults for `affine` and `track_stats` used to be `true`
 in previous Flux versions (< v0.12).
 """
-mutable struct InstanceNorm{F,V,N,W} <: Normalization{F, V, N, W}
+mutable struct InstanceNorm{F,V,N,W}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -449,7 +430,7 @@ through to learnable per-channel bias `β` and scale `γ` parameters.
 If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 """
-mutable struct GroupNorm{F,V,N,W} <: Normalization{F, V, N, W}
+mutable struct GroupNorm{F,V,N,W}
   G::Int  # number of groups
   λ::F  # activation function
   β::V  # bias
