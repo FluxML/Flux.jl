@@ -14,7 +14,7 @@ for T in [
 end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
-  children = trainable(obj)
+  children = _show_children(obj)
   if all(_show_leaflike, children)
     _layer_show(io, obj, indent, name)
   else
@@ -47,6 +47,11 @@ _show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
 _show_leaflike(::Tuple{Vararg{<:Number}}) = true         # e.g. stride of Conv
 _show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # e.g. parameters of LSTMcell
 _show_leaflike(::Diagonal) = true                        # appears inside LayerNorm
+
+_show_children(x) = trainable(x)  # except for layers which hide their Tuple:
+_show_children(c::Chain) = c.layers
+_show_children(m::Maxout) = m.layers
+_show_children(p::Parallel) = (p.connection, p.layers...)
 
 for T in [
     :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense,
