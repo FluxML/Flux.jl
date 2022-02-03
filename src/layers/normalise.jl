@@ -82,8 +82,7 @@ function Dropout(p; dims=:, rng = rng_from_array())
 end
 
 @functor Dropout
-
-trainable(a::Dropout) = ()
+trainable(a::Dropout) = (;)
 
 function (a::Dropout)(x)
   _isactive(a) || return x
@@ -122,8 +121,7 @@ AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
 AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
-
-trainable(a::AlphaDropout) = ()
+trainable(a::AlphaDropout) = (;)
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
@@ -288,7 +286,7 @@ function BatchNorm(chs::Int, λ=identity;
 end
 
 @functor BatchNorm
-trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
+trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
 
 function (BN::BatchNorm)(x)
   @assert size(x, ndims(x)-1) == BN.chs
@@ -364,7 +362,7 @@ function InstanceNorm(chs::Int, λ=identity;
 end
 
 @functor InstanceNorm
-trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
+trainable(in::InstanceNorm) = hasaffine(in) ? (β = in.β, γ = in.γ) : (;)
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
@@ -426,7 +424,7 @@ mutable struct GroupNorm{F,V,N,W}
 end
 
 @functor GroupNorm
-trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
+trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32, 
