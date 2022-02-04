@@ -1,4 +1,4 @@
-using ProgressLogging: @withprogress, @logprogress
+using ProgressLogging: @progress, @withprogress, @logprogress
 import Zygote: Params, gradient
 
 """
