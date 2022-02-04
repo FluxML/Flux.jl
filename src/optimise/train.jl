@@ -1,4 +1,4 @@
-using Juno
+using ProgressLogging: @progress, @withprogress, @logprogress
 import Zygote: Params, gradient
 
 """
@@ -104,7 +104,8 @@ Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 function train!(loss, ps, data, opt; cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
-  @progress for d in data
+  n = (Base.IteratorSize(typeof(data)) == Base.HasLength()) ? length(data) : 0
+  @withprogress for (i, d) in enumerate(data)
     try
       gs = gradient(ps) do
         loss(batchmemaybe(d)...)
@@ -120,6 +121,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
         rethrow(ex)
       end
     end
+    @logprogress i / n
   end
 end
 
