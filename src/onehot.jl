@@ -131,16 +131,23 @@ julia> hcat(αβγ...)  # preserves sparsity
 ```
 """
 function onehot(x, labels)
-  i = something(findfirst(isequal(x), labels), 0)
-  i > 0 || error("Value $x is not in labels")
+  i = _findval(x, labels)
+  isnothing(i) && error("Value $x is not in labels")
   OneHotVector{UInt32, length(labels)}(i)
 end
 
 function onehot(x, labels, default)
-  i = something(findfirst(isequal(x), labels), 0)
-  i > 0 || return onehot(default, labels)
+  i = _findval(x, labels)
+  isnothing(i) && return onehot(default, labels)
   OneHotVector{UInt32, length(labels)}(i)
 end
+
+_findval(val, labels) = findfirst(isequal(val), labels)
+# Fast unrolled method for tuples:
+function _findval(val, labels::Tuple, i::Integer=1)
+  ifelse(isequal(val, first(labels)), i, _findval(val, Base.tail(labels), i+1))
+end
+_findval(val, labels::Tuple{}, i::Integer) = nothing
 
 """
     onehotbatch(xs, labels, [default])
@@ -173,7 +180,9 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
  3  6  15  3  9  3  12  3  6  15  3
 ```
 """
-onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
+onehotbatch(ls, labels, default...) = _onehotbatch(ls, length(labels) < 32 ? Tuple(labels) : labels, default...)
+# NB function barier:
+_onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
 
 """
     onecold(y::AbstractArray, labels = 1:size(y,1))
