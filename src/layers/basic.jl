@@ -154,7 +154,7 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b= a.weight, a.bias
+  W, b = a.weight, a.bias
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
   return σ.(W*x .+ b)
 end
