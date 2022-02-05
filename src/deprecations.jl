@@ -17,6 +17,13 @@ zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, 
 
 # v0.13 deprecations
 
+function Broadcast.broadcasted(f::Recur, args...)
+  # This had an explicit @adjoint rule, calling Zygote.∇map(__context__, f, args...), until v0.12
+  Base.depwarn("""Broadcasting is not safe to use with RNNs, as it does not guarantee an iteration order.
+    Re-writing this as a comprehension would be better.""", :broadcasted)
+  map(f, args...)  # map isn't really safe either, but 
+end
+
 @deprecate frequencies(xs) group_counts(xs)
 
 # Channel notation: Changed to match Conv, but very softly deprecated!

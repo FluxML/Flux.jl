@@ -134,8 +134,9 @@ for mathematical details.
 ctc_loss(ŷ::AbstractArray, y) = ctc_alpha(ŷ, y).loss
 
 function ChainRulesCore.rrule(::typeof(ctc_loss), ŷ, y)
-  ctc_loss_pullback(Δ) = (NoTangent(), Δ .* ∇ctc_loss(ŷ, y, out), NoTangent())
-  return ctc_loss(ŷ, y), ctc_loss_pullback
+  tmp = ctc_alpha(ŷ, y)
+  ctc_loss_pullback(Δ) = (NoTangent(), Δ .* ∇ctc_loss(ŷ, y, tmp), NoTangent())
+  return tmp.loss, ctc_loss_pullback
 end
 
 

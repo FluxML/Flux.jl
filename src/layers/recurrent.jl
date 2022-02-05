@@ -380,8 +380,3 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
-
-# TODO move to ChainRulesCore? 
-@adjoint function Broadcast.broadcasted(f::Recur, args...)
-  Zygote.∇map(__context__, f, args...)
-end

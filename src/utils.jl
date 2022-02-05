@@ -603,8 +603,10 @@ true
 """
 modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 
-@nograd modules
-ChainRulesCore.@non_differentiable modules(::Any)  # is this correct?
+@nograd modules # TODO: is this correct? might fail with explicit parameters.
+function ChainRulesCore.rrule(::typeof(modules), m)
+  modules(m), dm -> error("Flux.modules is not at present differentiable, sorry")
+end
 
 isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true

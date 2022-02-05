@@ -23,7 +23,7 @@ end
   res, Δ -> (nothing, Zygote.unbroadcast(x, xlogy.(Δ, y)), Zygote.unbroadcast(y, Δ .* x ./ y))
 end
 
-ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # is this good enough?
+ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # should help Diffractor's broadcasting
 ChainRulesCore.@scalar_rule xlogx(x) (log(y) + true)
 
 # This can be made an error in Flux v0.13, for now just a warning
