@@ -36,4 +36,3 @@ zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, 
 
 
 # v0.13 deprecations
-@deprecate Maxout(layers::Tuple) Maxout(layers...)
