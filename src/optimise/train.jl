@@ -141,7 +141,7 @@ hello
 ```
 """
 macro epochs(n, ex)
-  :(for i = 1:$(esc(n))
+  :(@progress for i = 1:$(esc(n))
       @info "Epoch $i"
       $(esc(ex))
     end)
