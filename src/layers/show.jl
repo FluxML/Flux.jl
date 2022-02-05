@@ -14,7 +14,7 @@ for T in [
 end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
-  pre, post = obj isa Chain{<:AbstractVector} ? ("([", "])") : ("(", ") ")
+  pre, post = obj isa Chain{<:AbstractVector} ? ("([", "])") : ("(", ")")
   children = _show_children(obj)
   if all(_show_leaflike, children)
     _layer_show(io, obj, indent, name)
@@ -36,10 +36,10 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
       end
     end
     if indent == 0  # i.e. this is the outermost container
-      print(io, post)
+      print(io, rpad(post, 2))
       _big_finale(io, obj)
     else
-      println(io, " "^indent, post)
+      println(io, " "^indent, post, ",")
     end
   end
 end
