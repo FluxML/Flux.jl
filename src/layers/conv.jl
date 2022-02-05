@@ -161,7 +161,7 @@ end
 @functor Conv
 
 function (c::Conv)(x::AbstractArray)
-  b = reshape(c.bias, ntuple(_ -> 1, length(c.stride))..., :, 1)
+  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ = NNlib.fast_act(c.σ, x)
   cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
   σ.(conv(x, c.weight, cdims) .+ b)
