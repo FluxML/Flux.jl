@@ -27,8 +27,12 @@ julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)),
 julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
+
+For large models, there is a special type-unstable path which can reduce compilation
+times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
+This feature is somewhat experimental, beware!
 """
-struct Chain{T<:Union{Tuple, NamedTuple}}
+struct Chain{T<:Union{Tuple, NamedTuple, AbstractVector}}
   layers::T
 end
 
@@ -44,10 +48,22 @@ end
 
 @functor Chain
 
-applychain(::Tuple{}, x) = x
-applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
+(c::Chain)(x) = applychain(c.layers, x)
 
-(c::Chain)(x) = applychain(Tuple(c.layers), x)
+@generated function applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+  symbols = vcat(:x, [gensym() for _ in 1:N])
+  calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
+  Expr(:block, calls...)
+end
+
+applychain(layers::NamedTuple, x) = applychain(Tuple(layers), x)
+
+function applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
+  for f in layers
+    x = f(x)
+  end
+  x
+end
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
@@ -60,6 +76,7 @@ function Base.show(io::IO, c::Chain)
 end
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+_show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
