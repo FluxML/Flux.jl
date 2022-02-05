@@ -472,7 +472,7 @@ function _restructure(m, xs)
   return m̄
 end
 
-@adjoint function _restructure(m, xs)
+@adjoint function _restructure(m, xs)  # TODO ChainRulesCore.rrule
   m̄, numel = _restructure(m, xs), length(xs)
   function _restructure_pullback(dm)
     xs′ = destructure(dm)[1]
@@ -604,6 +604,7 @@ true
 modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 
 @nograd modules
+ChainRulesCore.@non_differentiable modules(::Any)  # is this correct?
 
 isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true

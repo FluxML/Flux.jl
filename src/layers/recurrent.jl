@@ -6,13 +6,14 @@ gate(x::AbstractMatrix, h, n) = view(x, gate(h,n), :)
 # AD-friendly helper for dividing monolithic RNN params into equally sized gates
 multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
 
-@adjoint function multigate(x::AbstractArray, h, c)
+function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
   function multigate_pullback(dy)
-    dx = Zygote._zero(x, eltype(x))
-    map(multigate(dx, h, c), dy) do dxᵢ, dyᵢ
-      dyᵢ !== nothing && (dxᵢ.= Zygote.accum.(dxᵢ, dyᵢ));
+    dx = map!(zero, similar(x, float(eltype(x)), axes(x)), x)
+    foreach(multigate(dx, h, c), dy) do dxᵢ, dyᵢ
+      dyᵢ isa AbstractZero && return
+      @. dxᵢ += dyᵢ
     end
-    return (dx, nothing, nothing)
+    return (NoTangent(), dx, NoTangent(), NoTangent())
   end
   return multigate(x, h, c), multigate_pullback
 end
@@ -380,7 +381,7 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
 
-
+# TODO move to ChainRulesCore? 
 @adjoint function Broadcast.broadcasted(f::Recur, args...)
   Zygote.∇map(__context__, f, args...)
 end

@@ -23,6 +23,9 @@ end
   res, Δ -> (nothing, Zygote.unbroadcast(x, xlogy.(Δ, y)), Zygote.unbroadcast(y, Δ .* x ./ y))
 end
 
+ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # is this good enough?
+ChainRulesCore.@scalar_rule xlogx(x) (log(y) + true)
+
 # This can be made an error in Flux v0.13, for now just a warning
 function _check_sizes(ŷ::AbstractArray, y::AbstractArray)
   for d in 1:max(ndims(ŷ), ndims(y)) 
@@ -33,4 +36,4 @@ function _check_sizes(ŷ::AbstractArray, y::AbstractArray)
 end
 _check_sizes(ŷ, y) = nothing  # pass-through, for constant label e.g. y = 1
 
-Zygote.@nograd _check_sizes
+ChainRulesCore.@non_differentiable _check_sizes(ŷ::Any, y::Any)
