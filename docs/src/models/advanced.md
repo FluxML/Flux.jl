@@ -97,8 +97,8 @@ We can freeze a specific parameter of a specific layer which already entered a `
 by simply deleting it from `ps`:
 
 ```julia
-ps = params(m)
-delete!(ps, m[2].bias)
+ps = Flux.params(m)
+delete!(ps, m[2].bias) 
 ```
 
 ## Custom multiple input or output layer

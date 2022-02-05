@@ -82,19 +82,6 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
-
-# TODO remove in v0.13
-function Base.getproperty(m::Recur, sym::Symbol)
-  if sym === :init
-    Zygote.ignore() do
-      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
-    end
-    return getfield(m.cell, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
@@ -191,18 +178,6 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::RNNCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
 # LSTM
 
 struct LSTMCell{A,V,S}
@@ -270,23 +245,6 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
-
-# TODO remove in v0.13
-function Base.getproperty(m::LSTMCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
-    end
-    return getfield(m, :state0)[1]
-  elseif sym === :c
-    Zygote.ignore() do
-      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
-    end
-    return getfield(m, :state0)[2]
-  else
-    return getfield(m, sym)
-  end
-end
 
 # GRU
 
@@ -356,19 +314,6 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 Recur(m::GRUCell) = Recur(m, m.state0)
-
-# TODO remove in v0.13
-function Base.getproperty(m::GRUCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
 
 # GRU v3
 

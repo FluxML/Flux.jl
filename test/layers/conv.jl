@@ -58,7 +58,7 @@ end
   opt = Descent()
 
   for _ = 1:10^3
-    gs = gradient(params(bias)) do
+    gs = gradient(Flux.params(bias)) do
       Flux.Losses.mse(bias(ip), op)
     end
     Flux.Optimise.update!(opt, params(bias), gs)
@@ -160,7 +160,7 @@ end
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
-  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+  @test gradient(()->sum(m(x)), Flux.params(m)) isa Flux.Zygote.Grads
 
   x = zeros(Float32, 5, 5, 2, 4)
   m = ConvTranspose((3,3), 2=>3)
