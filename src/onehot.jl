@@ -163,8 +163,8 @@ If `xs` has more dimensions, `M = ndims(xs) > 1`, then the result is an
 `AbstractArray{Bool, M+1}` which is one-hot along the first dimension, 
 i.e. `result[:, k...] == onehot(xs[k...], labels)`.
 
-Notice that `xs::String` is fine, it does not need to be collected.
-For less than 32 classes, `labels::Tuple` will give best performance.
+Note that `xs` can be any iterable, such as a string. And that using a tuple
+for `labels` will often speed up construction, certainly for less than 32 classes.
 
 # Examples
 ```jldoctest
