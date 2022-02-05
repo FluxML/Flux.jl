@@ -16,5 +16,3 @@ ones32(::Type, dims...) = throw(ArgumentError("Flux.ones32 is always Float32, us
 zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, use Base.zeros to specify the element type"))
 
 # v0.13 deprecations
-
-@deprecate Maxout(layers::Tuple) Maxout(layers...)
