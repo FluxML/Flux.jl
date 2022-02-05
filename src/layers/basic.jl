@@ -149,8 +149,7 @@ struct Dense{F, M<:AbstractMatrix, B}
 end
 
 function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
-               initW = nothing, initb = nothing,
-               init = glorot_uniform, bias=true)
+               init = glorot_uniform, bias = true)
   Dense(init(out, in), bias, σ)
 end
 
@@ -525,7 +524,7 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
 function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-    size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
+  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
   return m(onecold(x))
 end
  
