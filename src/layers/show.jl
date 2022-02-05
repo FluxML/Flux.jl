@@ -102,7 +102,7 @@ function _big_finale(io::IO, m)
   end
 end
 
-_childarray_sum(f, x::AbstractArray) = f(x)
+_childarray_sum(f, x::AbstractArray{<:Number}) = f(x)
 _childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x))
 
 # utility functions
