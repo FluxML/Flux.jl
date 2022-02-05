@@ -2,7 +2,6 @@ using Test
 using Flux: onehotbatch, σ
 
 using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
-using Flux.Losses: xlogx, xlogy
 
 # group here all losses, used in tests
 const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
@@ -16,22 +15,6 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
                     Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss]
 
-
-@testset "xlogx & xlogy" begin
-  @test iszero(xlogx(0))
-  @test isnan(xlogx(NaN))
-  @test xlogx(2) ≈ 2.0 * log(2.0)
-  @inferred xlogx(2)
-  @inferred xlogx(0)
-
-  @test iszero(xlogy(0, 1))
-  @test isnan(xlogy(NaN, 1))
-  @test isnan(xlogy(1, NaN))
-  @test isnan(xlogy(NaN, NaN))
-  @test xlogy(2, 3) ≈ 2.0 * log(3.0)
-  @inferred xlogy(2, 3)
-  @inferred xlogy(0, 1)
-end
 
 # First, regression-style y's
 y = [1, 1, 0, 0]

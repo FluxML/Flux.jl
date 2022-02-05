@@ -5,6 +5,7 @@ using Zygote
 using Zygote: @adjoint
 using ..Flux: ofeltype, epseltype
 using CUDA
+using LogExpFunctions: xlogx, xlogy
 using NNlib: logsoftmax, logσ
 import Base.Broadcast: broadcasted
 
