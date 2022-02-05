@@ -446,21 +446,26 @@ end
   m5 =  Chain(m4, m2)
   modules = Flux.modules(m5)
   # Depth-first descent
-  @test length(modules) == 5
+  @test length(modules) == 6
   @test modules[1] === m5
-  @test modules[2] === m4
-  @test modules[3] === m1
-  @test modules[4] === m2
-  @test modules[5] === m3
+  @test modules[3] === m4
+  @test modules[4] === m1
+  @test modules[5] === m2
+  @test modules[6] === m3
 
-  modules = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
-  @test length(modules) == 5
+  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2,2,abs), Dense(2,2,abs2)))
+  @test length(mod_par) == 5
 
-  modules = Flux.modules(Chain(SkipConnection(
+  mod_rnn = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  @test length(mod_rnn) == 6
+  @test mod_rnn[end] isa Flux.LSTMCell
+
+  mod_skip = Flux.modules(Chain(SkipConnection(
                                   Conv((2,3), 4=>5; pad=6, stride=7),
                                   +),
                                 LayerNorm(8)))
-  @test length(modules) == 5
+  @test length(mod_skip) == 6
+  @test mod_skip[end] isa Flux.Diagonal
 end
 
 @testset "Patience triggers" begin
