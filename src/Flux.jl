@@ -1,12 +1,14 @@
 module Flux
 
-# Zero Flux Given
-
 using Base: tail
 using Statistics, Random, LinearAlgebra
-using Zygote, MacroTools, ProgressLogging, Reexport
+using MacroTools, ProgressLogging, Reexport
 using MacroTools: @forward
+
+import Optimisers: trainable
 @reexport using NNlib
+
+using Zygote
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
@@ -27,7 +29,6 @@ export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
   ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
-
 
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
