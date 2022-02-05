@@ -117,7 +117,8 @@ RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zero
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
 function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
-  σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
+  Wi, Wh, b = m.Wi, m.Wh, m.b
+  σ = NNlib.fast_act(m.σ, x)
   h = σ.(Wi*x .+ Wh*h .+ b)
   return h, reshape_cell_output(h, x)
 end
@@ -224,8 +225,8 @@ function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{Abstr
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input, forget, cell, output = multigate(g, o, Val(4))
-  c′ = @. σ(forget) * c + σ(input) * tanh(cell)
-  h′ = @. σ(output) * tanh(c′)
+  c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
+  h′ = @. sigmoid_fast(output) * tanh_fast(c′)
   return (h′, c′), reshape_cell_output(h′, x)
 end
 
@@ -309,7 +310,7 @@ function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},O
   Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
   gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
-  h̃ = @. tanh(gxs[3] + r * ghs[3] + bs[3])
+  h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
   h′ = @. (1 - z) * h̃ + z * h
   return h′, reshape_cell_output(h′, x)
 end
@@ -387,7 +388,7 @@ function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T}
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
   gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
-  h̃ = tanh.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
+  h̃ = tanh_fast.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
   h′ = @. (1 - z) * h̃ + z * h
   return h′, reshape_cell_output(h′, x)
 end

@@ -161,7 +161,8 @@ end
 @functor Conv
 
 function (c::Conv)(x::AbstractArray)
-  σ, b = c.σ, reshape(c.bias, ntuple(_ -> 1, length(c.stride))..., :, 1)
+  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ = NNlib.fast_act(c.σ, x)
   cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
@@ -278,7 +279,8 @@ end
 @nograd conv_transpose_dims
 
 function (c::ConvTranspose)(x::AbstractArray)
-  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
   σ.(∇conv_data(x, c.weight, cdims) .+ b)
 end
@@ -371,7 +373,8 @@ depthwiseconvfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
                     init = glorot_uniform) where N = init(filter..., div(ch[2], ch[1]), ch[1])
 
 function (c::DepthwiseConv)(x)
-  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ = NNlib.fast_act(c.σ, x)
   cdims = DepthwiseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(depthwiseconv(x, c.weight, cdims) .+ b)
 end
@@ -450,7 +453,8 @@ function crosscor(x, w, ddims::DenseConvDims)
 end
 
 function (c::CrossCor)(x::AbstractArray)
-  σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
+  σ = NNlib.fast_act(c.σ, x)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(crosscor(x, c.weight, cdims) .+ b)
 end
