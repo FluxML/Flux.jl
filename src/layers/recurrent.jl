@@ -65,7 +65,7 @@ function (m::Recur)(x)
 end
 
 @functor Recur
-trainable(a::Recur) = (a.cell,)
+trainable(a::Recur) = (; cell = a.cell)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
