@@ -60,6 +60,8 @@ The behaviour of `params` on custom types can be customized using [`Functor.@fun
 
 # Examples
 ```jldoctest
+julia> using Flux: params
+
 julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
 Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
 

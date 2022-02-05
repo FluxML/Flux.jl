@@ -62,7 +62,7 @@ julia> using Flux
 julia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)
 Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
 
-julia> weights = params(model);
+julia> weights = Flux.params(model);
 
 julia> using BSON: @save
 

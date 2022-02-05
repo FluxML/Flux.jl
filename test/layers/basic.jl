@@ -34,11 +34,11 @@ import Flux: activations
   @testset "Activations" begin
     c = Chain(Dense(3,5,relu), Dense(5,1,relu))
     X = Float32.([1.0; 1.0; 1.0])
-    @test_nowarn gradient(()->Flux.activations(c, X)[2][1], params(c))
+    @test_nowarn gradient(()->Flux.activations(c, X)[2][1], Flux.params(c))
 
     c2 = Chain(enc = c[1], dec = c[2])
     @test Flux.activations(c, X) == Flux.activations(c2, X)
-    @test_nowarn gradient(()->Flux.activations(c2, X)[2][1], params(c2))
+    @test_nowarn gradient(()->Flux.activations(c2, X)[2][1], Flux.params(c2))
   end
 
   @testset "Dense" begin
@@ -126,7 +126,7 @@ import Flux: activations
 
     @testset "params" begin
       mo = Maxout(()->Dense(32, 64), 4)
-      ps = params(mo)
+      ps = Flux.params(mo)
       @test length(ps) == 8  #4 alts, each with weight and bias
     end
   end

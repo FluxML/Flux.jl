@@ -160,7 +160,7 @@ data = zip(X,Y)
 Flux.reset!(m)
 [m(x) for x in seq_init]
 
-ps = params(m)
+ps = Flux.params(m)
 opt= ADAM(1e-3)
 Flux.train!(loss, ps, data, opt)
 ```
