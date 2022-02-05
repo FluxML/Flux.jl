@@ -205,14 +205,39 @@ import Flux: activations
       inputs = randn(10), randn(5), randn(4)
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
       @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
+      @test_throws ArgumentError Parallel(+, sin, cos)(1,2,3)  # wrong number of inputs
+      @test Parallel(+, sin, cos)(pi/2) ≈ 1
     end
 
     @testset "named access" begin
       m = Parallel(hcat, one = Dense(10, 10), two = identity)
       @test m[1] == m[:one]
+      @test m[1:2] == m
 
       @test_throws ArgumentError Parallel(hcat, layers = Dense(10, 10), two = identity) # reserved names
       @test_throws ArgumentError Parallel(hcat, connection = Dense(10, 10), two = identity)
+
+      @test m == fmap(identity, m)  # does not forget names
+
+      @test Parallel(vcat, x = log)(1) == [0]
+      @test Parallel(vcat, log)(1) == [0]
+    end
+
+    @testset "trivial cases" begin
+      @test Parallel(hcat) isa Parallel{typeof(hcat), Tuple{}}  # not a NamedTuple
+      @test Parallel(hcat)(1) == hcat()
+      @test Parallel(hcat, inv)(2) == hcat(1/2)  # still calls connection once.
+    end
+
+    @testset "connection is called once" begin
+      CNT = Ref(0)
+      f_cnt = (x...) -> (CNT[]+=1; +(x...))
+      Parallel(f_cnt, sin, cos, tan)(1)
+      @test CNT[] == 1
+      Parallel(f_cnt, sin, cos, tan)(1,2,3)
+      @test CNT[] == 2
+      Parallel(f_cnt, sin)(1)
+      @test CNT[] == 3
     end
     
     # Ref https://github.com/FluxML/Flux.jl/issues/1673

@@ -409,8 +409,8 @@ end
 Create a `Parallel` layer that passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
-Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
-If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
+If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
@@ -445,7 +445,7 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T}
+struct Parallel{F, T<:Union{Tuple, NamedTuple}}
   connection::F
   layers::T
 end
@@ -455,24 +455,30 @@ function Parallel(connection; kw...)
   layers = NamedTuple(kw)
   if :layers in Base.keys(layers) || :connection in Base.keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
-  elseif isempty(layers)
-    Parallel(connection, ())
   end
+  isempty(layers) && return Parallel(connection, ())
   Parallel(connection, layers)
 end
 
 @functor Parallel
 
-(m::Parallel)(x) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
-(m::Parallel)(xs...) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
+(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs::Tuple) = m(xs...)
+function (m::Parallel)(xs...)
+  nl = length(m.layers)
+  nx = length(xs)
+  if nl != nx
+    throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+  end
+  m.connection(map(|>, xs, Tuple(m.layers))...)
+end
 
 Base.getindex(m::Parallel, i) = m.layers[i]
-Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
+Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector) =
+  Parallel(m.connection, NamedTuple{Base.keys(m)[i]}(Tuple(m.layers)[i]))
 
 Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
-
-trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
