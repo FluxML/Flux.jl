@@ -7,6 +7,7 @@ been removed in favour of MLDatasets.jl.
 * `flatten` is not exported anymore due to clash with Iterators.flatten.
 * Remove Juno.jl progress bar support as it is now obsolete.
 * `Dropout` gained improved compatibility with Int and Complex arrays and is now twice-differentiable.
+* Notation `Dense(2 => 3, σ)` for channels matches `Conv`; the equivalent `Dense(2, 3, σ)` still works.
 * Many utily functions and the `DataLoader` are [now provided by MLUtils.jl](https://github.com/FluxML/Flux.jl/pull/1874).
 * The DataLoader is now compatible with generic dataset types implementing `MLUtils.numobs` and `MLUtils.getobs`.
 * Added [truncated normal initialisation](https://github.com/FluxML/Flux.jl/pull/1877) of weights.

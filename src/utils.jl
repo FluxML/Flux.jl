@@ -587,7 +587,7 @@ Chain(
 julia> Flux.modules(m2)
 7-element Vector{Any}:
  Chain(Chain(Dense(784 => 64), BatchNorm(64, relu)), Dense(64 => 10))  # 51_018 parameters, plus 128 non-trainable
- (Chain(Dense(784 => 64), BatchNorm(64, relu)), Dense(64, 10))
+ (Chain(Dense(784 => 64), BatchNorm(64, relu)), Dense(64 => 10))
  Chain(Dense(784 => 64), BatchNorm(64, relu))  # 50_368 parameters, plus 128 non-trainable
  (Dense(784 => 64), BatchNorm(64, relu))
  Dense(784 => 64)    # 50_240 parameters
