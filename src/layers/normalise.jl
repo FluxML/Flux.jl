@@ -34,7 +34,7 @@ The [`Dropout`](@ref) layer is what you should use in most scenarios.
 function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x
   y = dropout_mask(rng, x, p, dims=dims)
-  return x .* y
+  return x .* iszero.(y)
 end
 dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
