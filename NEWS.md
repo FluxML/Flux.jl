@@ -6,6 +6,7 @@ been removed in favour of MLDatasets.jl.
 * `params` is not exported anymore since it is a common name and is also exported by Distributions.jl 
 * `flatten` is not exported anymore due to clash with Iterators.flatten.
 * Remove Juno.jl progress bar support as it is now obsolete.
+* Improved compatibility of Dropout with Int and Complex types. 
 
 ## v0.12.10
 * `Dropout`/`AlphaDropout` now supports [user-specified RNGs](https://github.com/FluxML/Flux.jl/pull/1838)
