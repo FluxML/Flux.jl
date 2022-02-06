@@ -23,7 +23,7 @@ opt = Descent()
 
 opt = Descent(0.3)
 
-ps = params(model)
+ps = Flux.params(model)
 
 gs = gradient(ps) do
     loss(x, y)

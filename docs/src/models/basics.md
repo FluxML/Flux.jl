@@ -39,7 +39,7 @@ julia> x = [2, 1];
 
 julia> y = [2, 0];
 
-julia> gs = gradient(params(x, y)) do
+julia> gs = gradient(Flux.params(x, y)) do
          f(x, y)
        end
 Grads(...)
@@ -83,7 +83,7 @@ To improve the prediction we can take the gradients of the loss with respect to 
 ```julia
 using Flux
 
-gs = gradient(() -> loss(x, y), params(W, b))
+gs = gradient(() -> loss(x, y), Flux.params(W, b))
 ```
 
 Now that we have gradients, we can pull them out and update `W` to train the model.

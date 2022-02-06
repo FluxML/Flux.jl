@@ -27,30 +27,47 @@ julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)),
 julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
+
+For large models, there is a special type-unstable path which can reduce compilation
+times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
+This feature is somewhat experimental, beware!
 """
-struct Chain{T}
+struct Chain{T<:Union{Tuple, NamedTuple, AbstractVector}}
   layers::T
-  Chain(xs...) = new{typeof(xs)}(xs)
-  function Chain(; kw...)
-    :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
-    isempty(kw) && return new{Tuple{}}(())
-    new{typeof(values(kw))}(values(kw))
-  end
+end
+
+Chain(xs...) = Chain(xs)
+function Chain(; kw...)
+  :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+  isempty(kw) && return Chain(())
+  Chain(values(kw))
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys
 
-functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
+@functor Chain
 
-applychain(::Tuple{}, x) = x
-applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
+(c::Chain)(x) = applychain(c.layers, x)
 
-(c::Chain)(x) = applychain(Tuple(c.layers), x)
+@generated function applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+  symbols = vcat(:x, [gensym() for _ in 1:N])
+  calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
+  Expr(:block, calls...)
+end
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
-Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
-  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
+applychain(layers::NamedTuple, x) = applychain(Tuple(layers), x)
+
+function applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
+  for f in layers
+    x = f(x)
+  end
+  x
+end
+
+Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
+Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
+  Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
 
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
@@ -59,6 +76,7 @@ function Base.show(io::IO, c::Chain)
 end
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+_show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -131,30 +149,16 @@ struct Dense{F, M<:AbstractMatrix, B}
 end
 
 function Dense(in::Integer, out::Integer, σ = identity;
-               initW = nothing, initb = nothing,
                init = glorot_uniform, bias=true)
 
-  W = if initW !== nothing
-    Base.depwarn("keyword initW is deprecated, please use init (which similarly accepts a funtion like randn)", :Dense)
-    initW(out, in)
-  else
-    init(out, in)
-  end
-
-  b = if bias === true && initb !== nothing
-    Base.depwarn("keyword initb is deprecated, please simply supply the bias vector, bias=initb(out)", :Dense)
-    initb(out)
-  else
-    bias
-  end
-
-  return Dense(W, b, σ)
+  Dense(init(out, in), bias, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b, σ = a.weight, a.bias, a.σ
+  W, b = a.weight, a.bias
+  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
   return σ.(W*x .+ b)
 end
 
@@ -186,21 +190,7 @@ struct Diagonal{T}
   β::T
 end
 
-function Diagonal(sz::Integer...; initα = nothing, initβ = nothing)
-  α = if initα !== nothing
-    Base.depwarn("keyword initα is deprecated, please simply supply the desired vectors", :Diagonal)
-    initα(sz...)
-  else
-    ones32(sz...)
-  end
-  β = if initβ !== nothing
-    Base.depwarn("keyword initβ is deprecated, please simply supply the desired vectors", :Diagonal)
-    initβ(sz...)
-  else
-    zeros32(sz...)
-  end
-  Diagonal(α, β)
-end
+Diagonal(sz::Integer...) = Diagonal(ones32(sz...), zeros32(sz...))
 
 @functor Diagonal
 
@@ -245,29 +235,23 @@ julia> Flux.outputsize(m3, (5, 11))
 (7, 11)
 ```
 """
-struct Maxout{FS<:Tuple}
-  over::FS
-  Maxout(layers...) = new{typeof(layers)}(layers)
+struct Maxout{T<:Tuple}
+  layers::T
 end
-
-function Maxout(f::Function, n_alts::Integer)
-  over = Tuple(f() for _ in 1:n_alts)
-  return Maxout(over...)
-end
+Maxout(layers...) = Maxout(layers)
+Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
 
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
   # Perhaps surprisingly, pairwise max broadcast is often faster,
   # even with Zygote. See #698 and #1794
-  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.layers)
 end
-
-trainable(mo::Maxout) = mo.over
 
 function Base.show(io::IO, mo::Maxout)
   print(io, "Maxout(")
-  _show_layers(io, mo.over)
+  _show_layers(io, mo.layers)
   print(io, ")")
 end
 
@@ -414,8 +398,8 @@ end
 Create a `Parallel` layer that passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
-Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
-If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
+If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
@@ -450,7 +434,7 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T}
+struct Parallel{F, T<:Union{Tuple, NamedTuple}}
   connection::F
   layers::T
 end
@@ -460,24 +444,30 @@ function Parallel(connection; kw...)
   layers = NamedTuple(kw)
   if :layers in Base.keys(layers) || :connection in Base.keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
-  elseif isempty(layers)
-    Parallel(connection, ())
   end
+  isempty(layers) && return Parallel(connection, ())
   Parallel(connection, layers)
 end
 
 @functor Parallel
 
-(m::Parallel)(x) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
-(m::Parallel)(xs...) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
+(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs::Tuple) = m(xs...)
+function (m::Parallel)(xs...)
+  nl = length(m.layers)
+  nx = length(xs)
+  if nl != nx
+    throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+  end
+  m.connection(map(|>, xs, Tuple(m.layers))...)
+end
 
 Base.getindex(m::Parallel, i) = m.layers[i]
-Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
+Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector) =
+  Parallel(m.connection, NamedTuple{Base.keys(m)[i]}(Tuple(m.layers)[i]))
 
 Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
-
-trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")

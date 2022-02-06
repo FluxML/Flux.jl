@@ -10,13 +10,13 @@ using MacroTools: @forward
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
-export Chain, Dense, Maxout, SkipConnection, Parallel, flatten,
+export Chain, Dense, Maxout, SkipConnection, Parallel,
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        Upsample, PixelShuffle,
-       params, fmap, cpu, gpu, f32, f64,
+       fmap, cpu, gpu, f32, f64,
        testmode!, trainmode!
 
 include("optimise/Optimise.jl")

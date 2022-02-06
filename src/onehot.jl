@@ -114,7 +114,7 @@ and [`onecold`](@ref) to reverse either of these, as well as to generalise `argm
 
 # Examples
 ```jldoctest
-julia> β = Flux.onehot(:b, [:a, :b, :c])
+julia> β = Flux.onehot(:b, (:a, :b, :c))
 3-element OneHotVector(::UInt32) with eltype Bool:
  ⋅
  1
@@ -131,16 +131,23 @@ julia> hcat(αβγ...)  # preserves sparsity
 ```
 """
 function onehot(x, labels)
-  i = something(findfirst(isequal(x), labels), 0)
-  i > 0 || error("Value $x is not in labels")
+  i = _findval(x, labels)
+  isnothing(i) && error("Value $x is not in labels")
   OneHotVector{UInt32, length(labels)}(i)
 end
 
 function onehot(x, labels, default)
-  i = something(findfirst(isequal(x), labels), 0)
-  i > 0 || return onehot(default, labels)
+  i = _findval(x, labels)
+  isnothing(i) && return onehot(default, labels)
   OneHotVector{UInt32, length(labels)}(i)
 end
+
+_findval(val, labels) = findfirst(isequal(val), labels)
+# Fast unrolled method for tuples:
+function _findval(val, labels::Tuple, i::Integer=1)
+  ifelse(isequal(val, first(labels)), i, _findval(val, Base.tail(labels), i+1))
+end
+_findval(val, labels::Tuple{}, i::Integer) = nothing
 
 """
     onehotbatch(xs, labels, [default])
@@ -156,9 +163,12 @@ If `xs` has more dimensions, `M = ndims(xs) > 1`, then the result is an
 `AbstractArray{Bool, M+1}` which is one-hot along the first dimension, 
 i.e. `result[:, k...] == onehot(xs[k...], labels)`.
 
+Note that `xs` can be any iterable, such as a string. And that using a tuple
+for `labels` will often speed up construction, certainly for less than 32 classes.
+
 # Examples
 ```jldoctest
-julia> oh = Flux.onehotbatch(collect("abracadabra"), 'a':'e', 'e')
+julia> oh = Flux.onehotbatch("abracadabra", 'a':'e', 'e')
 5×11 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  1  ⋅  ⋅  1  ⋅  1  ⋅  1  ⋅  ⋅  1
  ⋅  1  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  1  ⋅  ⋅
@@ -173,7 +183,9 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
  3  6  15  3  9  3  12  3  6  15  3
 ```
 """
-onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
+onehotbatch(ls, labels, default...) = _onehotbatch(ls, length(labels) < 32 ? Tuple(labels) : labels, default...)
+# NB function barier:
+_onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
 
 """
     onecold(y::AbstractArray, labels = 1:size(y,1))
@@ -190,7 +202,7 @@ the same operation as `argmax(y, dims=1)` but sometimes a different return type.
 julia> Flux.onecold([false, true, false])
 2
 
-julia> Flux.onecold([0.3, 0.2, 0.5], [:a, :b, :c])
+julia> Flux.onecold([0.3, 0.2, 0.5], (:a, :b, :c))
 :c
 
 julia> Flux.onecold([ 1  0  0  1  0  1  0  1  0  0  1

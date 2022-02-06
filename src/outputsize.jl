@@ -4,13 +4,14 @@ using NNlib
 import Random
 
 """
-    Nil <: Number
+    nil = Nil()
 
-Nil is a singleton type with a single instance `nil`.
-Unlike `Nothing` and `Missing` it subtypes `Number`.
+`Nil` is a singleton type with a single instance `nil`.
+Unlike `Nothing` and `Missing` it is a number: `Nil <: Real <: Number`.
 """
-struct Nil <: Number end
+struct Nil <: Real end
 
+@doc @doc(Nil)
 const nil = Nil()
 
 Nil(::T) where T<:Number = nil
@@ -30,9 +31,8 @@ for f in [:+, :-, :*, :/, :^, :mod, :div, :rem]
   @eval Base.$f(::Nil, ::Nil) = nil
 end
 
-Base.isless(::Nil, ::Nil) = true
-Base.isless(::Nil, ::Number) = true
-Base.isless(::Number, ::Nil) = true
+Base.:<(::Nil, ::Nil) = true
+Base.:<=(::Nil, ::Nil) = true
 
 Base.isnan(::Nil) = false
 Base.isfinite(::Nil) = true

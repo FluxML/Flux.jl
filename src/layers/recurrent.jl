@@ -65,7 +65,7 @@ function (m::Recur)(x)
 end
 
 @functor Recur
-trainable(a::Recur) = (a.cell,)
+trainable(a::Recur) = (; cell = a.cell)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -81,19 +81,6 @@ rnn.state = hidden(rnn.cell)
 """
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
-
-
-# TODO remove in v0.13
-function Base.getproperty(m::Recur, sym::Symbol)
-  if sym === :init
-    Zygote.ignore() do
-      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
-    end
-    return getfield(m.cell, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
 
 flip(f, xs) = reverse(f.(reverse(xs)))
 
@@ -117,7 +104,8 @@ RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zero
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
 function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
-  σ, Wi, Wh, b = m.σ, m.Wi, m.Wh, m.b
+  Wi, Wh, b = m.Wi, m.Wh, m.b
+  σ = NNlib.fast_act(m.σ, x)
   h = σ.(Wi*x .+ Wh*h .+ b)
   return h, reshape_cell_output(h, x)
 end
@@ -190,18 +178,6 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::RNNCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
 # LSTM
 
 struct LSTMCell{A,V,S}
@@ -224,8 +200,8 @@ function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{Abstr
   b, o = m.b, size(h, 1)
   g = m.Wi*x .+ m.Wh*h .+ b
   input, forget, cell, output = multigate(g, o, Val(4))
-  c′ = @. σ(forget) * c + σ(input) * tanh(cell)
-  h′ = @. σ(output) * tanh(c′)
+  c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
+  h′ = @. sigmoid_fast(output) * tanh_fast(c′)
   return (h′, c′), reshape_cell_output(h′, x)
 end
 
@@ -270,23 +246,6 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::LSTMCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
-    end
-    return getfield(m, :state0)[1]
-  elseif sym === :c
-    Zygote.ignore() do
-      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
-    end
-    return getfield(m, :state0)[2]
-  else
-    return getfield(m, sym)
-  end
-end
-
 # GRU
 
 function _gru_output(gxs, ghs, bs)
@@ -309,7 +268,7 @@ function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},O
   Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
   gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
-  h̃ = @. tanh(gxs[3] + r * ghs[3] + bs[3])
+  h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
   h′ = @. (1 - z) * h̃ + z * h
   return h′, reshape_cell_output(h′, x)
 end
@@ -356,19 +315,6 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 Recur(m::GRUCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::GRUCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
-
 # GRU v3
 
 struct GRUv3Cell{A,V,S}
@@ -387,7 +333,7 @@ function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T}
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
   gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
-  h̃ = tanh.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
+  h̃ = tanh_fast.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
   h′ = @. (1 - z) * h̃ + z * h
   return h′, reshape_cell_output(h′, x)
 end
