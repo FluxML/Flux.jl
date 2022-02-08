@@ -5,6 +5,11 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
   @testset for rng_kwargs in ((), (; rng = MersenneTwister()))
+    x = [1.0+0im,2.0+1im,3.0+3im]
+    @test x == Dropout(0.1; rng_kwargs...)(x)
+    @test x == evalwgrad(Dropout(0; rng_kwargs...), x)
+    @test zero(x) == evalwgrad(Dropout(1; rng_kwargs...), x)
+
     x = [1.,2.,3.]
     @test x == Dropout(0.1; rng_kwargs...)(x)
     @test x == evalwgrad(Dropout(0; rng_kwargs...), x)

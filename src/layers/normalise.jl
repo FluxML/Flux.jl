@@ -49,7 +49,8 @@ dropout_mask(rng, x::CuArray, p; kwargs...) =
   throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
 dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 function _dropout_mask(rng, x, p; dims=:)
-  y = rand!(rng, similar(x, _dropout_shape(x, dims)))
+  realfptype = float(real(eltype(x)))
+  y = rand!(rng, similar(x, realfptype, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
   return y
 end
