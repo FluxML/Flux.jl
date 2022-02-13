@@ -241,7 +241,7 @@ import Flux: activations
       Parallel(f_cnt, sin)(1)
       @test CNT[] == 3
     end
-    
+
     # Ref https://github.com/FluxML/Flux.jl/issues/1673
     @testset "Input domain" begin
       struct Input
@@ -278,7 +278,7 @@ import Flux: activations
     vocab_size, embed_size = 10, 4
     m = Flux.Embedding(vocab_size, embed_size)
     @test size(m.weight) == (embed_size, vocab_size)
-    
+
     x = rand(1:vocab_size, 3)
     y = m(x)
     @test y isa Matrix{Float32}
@@ -315,7 +315,7 @@ end
   # https://github.com/FluxML/NNlib.jl/issues/362
   m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2,2))
   x3 = cat(Float32[1 2; 3 4; 5 6; 7 8]; dims=3)
-  @test_broken Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
+  @test Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
 end
 
 @testset "gradients of Chain{Vector}" begin
