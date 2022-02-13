@@ -521,7 +521,7 @@ end
 Embedding(dims::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(last(dims), first(dims)))
   
 (m::Embedding)(x::Integer) = m.weight[:, x]
-(m::Embedding)(x::AbstractVector{<:Integer}) = NNlib.gather(m.weight, x)
+(m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 (m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x, 1), :)), :, size(x)[2:end]...)
 (m::Embedding)(x::AbstractVecOrMat{Bool}) = m.weight * x  # handles OneHotLikeVector, OneHotLikeMatrix
