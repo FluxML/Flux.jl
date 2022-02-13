@@ -85,7 +85,7 @@ reset!(m) = foreach(reset!, functor(m)[1])
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(view(x, :, :, i)) for i in 1:size(x, 3)]
+  h = [m(x_t) for x_t in eachslice(x, dims=3)]
   sze = size(h[1])
   reshape(reduce(hcat, h), sze[1], sze[2], length(h))
 end
