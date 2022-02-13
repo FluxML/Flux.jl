@@ -28,7 +28,7 @@ function run_benchmark(model, x; cuda=true)
     end
 
     ps = Flux.params(model)
-    y, back = if model isa Flux.Recur
+    y, back = if model isa Flux.Recur && eltype(x) isa AbstractVector
         pullback(() -> sum(sum([model(x_t) for x_t in x])), ps)
     else
         pullback(() -> sum(model(x)), ps)
