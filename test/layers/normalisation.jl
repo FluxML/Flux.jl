@@ -273,7 +273,7 @@ end
       x = reshape(collect(1:prod(sizes)), sizes)
 
     @test Flux.hasaffine(m) == true
-    @test length(Flux.params(m)) == 2  
+    @test length(Flux.params(m)) == 2
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
@@ -287,7 +287,7 @@ end
       x = reshape(collect(1:prod(sizes)), sizes)
     @test Flux.hasaffine(m) == false
     @test length(Flux.params(m)) == 0
-    
+
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
@@ -457,4 +457,9 @@ end
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end
+end
+
+@testset "second derivatives" begin
+  m1 = Dropout(0.5)
+  @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
 end

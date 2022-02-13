@@ -55,6 +55,9 @@ function _dropout_mask(rng, x, p; dims=:)
   return y
 end
 
+# TODO move this to NNlib
+Zygote.ChainRulesCore.@non_differentiable dropout_mask(rng, x, p)
+
 """
     Dropout(p; dims=:, rng = rng_from_array())
 
