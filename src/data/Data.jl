@@ -1,9 +1,6 @@
 module Data
 
-using Random: shuffle!
-using Base: @propagate_inbounds
-
-include("dataloader.jl")
+using MLUtils
 export DataLoader
 
 end#module

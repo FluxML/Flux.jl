@@ -7,15 +7,17 @@ callback functions.
 
 ## Working with Data
 
+Utilities for data processing are re-exported from [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl). Below is a non-exhaustive list.
+
 ```@docs
-Flux.unsqueeze
-Flux.stack
-Flux.unstack
-Flux.chunk
-Flux.frequencies
-Flux.batch
-Flux.unbatch
-Flux.batchseq
+MLUtils.unsqueeze
+MLUtils.stack
+MLUtils.unstack
+MLUtils.chunk
+MLUtils.group_counts
+MLUtils.batch
+MLUtils.unbatch
+MLUtils.batchseq
 Base.rpad(v::AbstractVector, n::Integer, p)
 ```
 
