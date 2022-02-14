@@ -373,9 +373,26 @@ end
     weights(m) = mapreduce(l -> [l.weight], vcat, m)
     @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
       m = dm(bt)
-      loadparams!(m, params(m))
+      loadmodel!(m, params(m))
       testdense(m, bt)
     end
+  end
+
+  @testset "loadmodel!(m, m̄)" begin
+    import Flux: loadmodel!
+
+    m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
+    m2 = Chain(Dense(10, 5), Dense(5, 2))
+    m3 = Chain(Conv((3, 3), 3 => 16), Dense(5, 2))
+    m4 = Chain(Dense(10, 6), Dense(6, 2))
+
+    loadmodel!(m1, m2)
+    @test m1[1].weight == m2[1].weight
+    @test m1[1].bias == m2[1].bias
+    @test m1[2].σ == relu
+
+    @test_throws ArgumentError loadmodel!(m1, m3)
+    @test_throws DimensionMismatch loadmodel!(m1, m4)
   end
 
   @testset "destructure" begin

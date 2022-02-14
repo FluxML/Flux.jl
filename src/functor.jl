@@ -85,14 +85,6 @@ function params(m...)
   return ps
 end
 
-function loadparams!(m, xs)
-  for (p, x) in zip(params(m), xs)
-    size(p) == size(x) ||
-      error("Expected param size $(size(p)), got $(size(x))")
-    copyto!(p, x)
-  end
-end
-
 struct FluxCUDAAdaptor end
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))

@@ -15,6 +15,8 @@ zeros(T::Type, dims...) = Base.zeros(T, dims...)
 ones32(::Type, dims...) = throw(ArgumentError("Flux.ones32 is always Float32, use Base.ones to specify the element type"))
 zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, use Base.zeros to specify the element type"))
 
+@deprecate loadparams!(m, xs) loadmodel!(m, xs)
+
 # v0.13 deprecations
 
 function Broadcast.broadcasted(f::Recur, args...)
