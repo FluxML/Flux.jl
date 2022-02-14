@@ -79,6 +79,7 @@ NNlib.scatter!
 ```
 
 ## Miscellaneous
-```
+
+```@docs
 NNlib.logsumexp
 ```
