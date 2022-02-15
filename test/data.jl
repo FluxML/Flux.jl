@@ -17,7 +17,8 @@ using Random
     d = DataLoader(X, batchsize=2, partial=false)
     # @inferred first(d)
     batches = collect(d)
-    @test eltype(batches) == eltype(d) == typeof(X)
+    # @test eltype(batches) == eltype(d) == typeof(X)
+    @test eltype(batches) == typeof(X)
     @test length(batches) == 2
     @test batches[1] == X[:,1:2]
     @test batches[2] == X[:,3:4]
