@@ -385,7 +385,7 @@ end
     m2 = Chain(Dense(10, 5), Dense(5, 2))
     m3 = Chain(Conv((3, 3), 3 => 16), Dense(5, 2))
     m4 = Chain(Dense(10, 6), Dense(6, 2))
-    m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(5, 2), Zeros()), Dense(5, 2)))
+    m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), Zeros()), Dense(5, 2)))
     m6 = Chain(Dense(10, 5), Parallel(+, Dense(5, 2), Dense(5, 2)))
 
     loadmodel!(m1, m2)
