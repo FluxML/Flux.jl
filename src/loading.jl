@@ -5,6 +5,7 @@ for T in [:Dense, :Diagonal, :Bilinear, :Embedding,
 end
 
 loadto!(x, x̄) = x
+loadto!(x::Zeros, x̄) = x
 loadto!(x::AbstractArray, x̄::AbstractArray) = copyto!(x, x̄)
 for T in [:Dense, :Bilinear, :Conv, :ConvTranspose, :DepthwiseConv, :CrossCor]
   @eval begin

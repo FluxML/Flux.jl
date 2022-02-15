@@ -379,20 +379,27 @@ end
   end
 
   @testset "loadmodel!(m, m̄)" begin
-    import Flux: loadmodel!
+    import Flux: loadmodel!, Zeros
 
     m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
     m2 = Chain(Dense(10, 5), Dense(5, 2))
     m3 = Chain(Conv((3, 3), 3 => 16), Dense(5, 2))
     m4 = Chain(Dense(10, 6), Dense(6, 2))
+    m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(5, 2), Zeros()), Dense(5, 2)))
+    m6 = Chain(Dense(10, 5), Parallel(+, Dense(5, 2), Dense(5, 2)))
 
     loadmodel!(m1, m2)
     @test m1[1].weight == m2[1].weight
     @test m1[1].bias == m2[1].bias
     @test m1[2].σ == relu
+    loadmodel!(m5, m6)
+    @test m5[1].weight == m6[1].weight
+    @test m5[2][1].weight == m6[2][1].weight
+    @test m5[2][1].bias == Zeros()
 
     @test_throws ArgumentError loadmodel!(m1, m3)
     @test_throws DimensionMismatch loadmodel!(m1, m4)
+    @test_throws ArgumentError loadmodel!(m1, m5)
   end
 
   @testset "destructure" begin
