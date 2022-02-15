@@ -7,7 +7,7 @@ callback functions.
 
 ## Working with Data
 
-Utilities for data processing are re-exported from [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl). Below is a non-exhaustive list.
+Utilities for data processing are provided by [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl). Below is a non-exhaustive list.
 
 ```@docs
 MLUtils.unsqueeze
