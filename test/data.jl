@@ -65,6 +65,12 @@ using Random
     @test batches[3][1] == batches[3].x == X[:,5:5]
     @test batches[3][2] == batches[3].y == Y[5:5]
 
+    # Don't mutate state https://github.com/FluxML/Flux.jl/issues/1227
+    d = DataLoader([1:10;], shuffle=true)
+    cd = collect(zip(d, d))
+    # skip the first since it used to be different also before fixing the bug
+    @test [cd[i][1] for i=2:10] != [cd[i][2] for i=2:10] 
+    
     # test interaction with `train!`
     θ = ones(2)
     X = zeros(2, 10)
