@@ -324,18 +324,17 @@ julia> Flux.truncated_normal(3, 2)
 [PDF](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf). 
 Department of Scientific Computing website.
 """
-function truncated_normal(rng::AbstractRNG, dims...; μ = 0., σ = 1., a = -2., b = 2.)
-  norm_cdf(x) = 0.5 * (1 + erf(x/√2))
+function truncated_normal(rng::AbstractRNG, dims...; μ = 0, σ = 1, a = -2, b = 2)
+  norm_cdf(x) = 5f-1 * (1 + erf(x/√2f0))
   if (μ < a - 2σ) || (μ > b + 2σ)
-    @warn "mean is more than 2 std from [a, b] in truncated_normal. The distribution of values 
-           may be incorrect."
+    @warn "Mean is more than 2 std from [a, b] in truncated_normal. The distribution of values may be incorrect." maxlog=1
   end
   l = norm_cdf((a - μ) / σ)
   u = norm_cdf((b - μ) / σ)
-  x = rand(rng, dims...) * 2(u - l) .+ (2l - 1)
+  x = rand(rng, Float32, dims...) * 2(u - l) .+ (2l - 1)
   x = erfinv.(x)
-  x = clamp.(x * σ/√2 .+ μ, a, b)
-  return convert.(Float32, x)
+  x = clamp.(x .* σ/√2f0 .+ μ, a, b)
+  return x
 end
 
 truncated_normal(dims::Integer...; kwargs...) = truncated_normal(Random.GLOBAL_RNG, dims...; kwargs...)
