@@ -232,6 +232,7 @@ true
 * sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
 
 # References
+
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
@@ -300,6 +301,45 @@ end
 
 sparse_init(dims...; kwargs...) = sparse_init(Random.GLOBAL_RNG, dims...; kwargs...)
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+
+"""
+    truncated_normal([rng=GLOBAL_RNG], dims...; μ = 0, σ = 1, a = -2., b = 2.)
+  
+Return an `Array` of size `dims` where each element is drawn from a truncated normal distribution.
+The values are effectively drawn from the normal distribution with mean `μ` and standard deviation
+`σ`, with values outside `[a, b]` redrawn until they are within the bounds. The method used for 
+generating the random values works best when `a ≤ mean ≤ b`.
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.truncated_normal(3, 2)
+3×2 Matrix{Float32}:
+ -0.113785  -0.627307
+ -0.676033   0.198423
+  0.509005  -0.554339
+```
+
+# References
+[1] Burkardt, John. "The Truncated Normal Distribution" 
+[PDF](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf). 
+Department of Scientific Computing website.
+"""
+function truncated_normal(rng::AbstractRNG, dims...; μ = 0., σ = 1., a = -2., b = 2.)
+  norm_cdf(x) = 0.5 * (1 + erf(x/√2))
+  if (μ < a - 2σ) || (μ > b + 2σ)
+    @warn "mean is more than 2 std from [a, b] in truncated_normal. The distribution of values 
+           may be incorrect."
+  end
+  l = norm_cdf((a - μ) / σ)
+  u = norm_cdf((b - μ) / σ)
+  x = rand(rng, dims...) * 2(u - l) .+ (2l - 1)
+  x = erfinv.(x)
+  x = clamp.(x * σ/√2 .+ μ, a, b)
+  return convert.(Float32, x)
+end
+
+truncated_normal(dims::Integer...; kwargs...) = truncated_normal(Random.GLOBAL_RNG, dims...; kwargs...)
+truncated_normal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 """
     identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
