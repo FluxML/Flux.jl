@@ -147,10 +147,12 @@ end
   end
 
   @testset "truncated_normal" begin
-    for sz in [(100,), (100, 100), (2, 3, 32, 64), (2, 3, 4, 32, 64)]
-      v = truncated_normal(sz...)
-      @test -1.0 < minimum(v) < 0.0
-      @test 0.0 < maximum(v) < 1.0
+    size = (100, 100, 100)
+    for (μ, σ, lo, hi) in [(0., 1, -2, 2), (0, 1, -4., 4)]
+      v = truncated_normal(size...; mean = μ, std = σ, lo, hi)
+      @test isapprox(mean(v), μ; atol = 1e-2)
+      @test isapprox(minimum(v), lo; atol = 1e-2)
+      @test isapprox(maximum(v), hi; atol = 1e-2)
       @test eltype(v) == Float32
     end
   end
