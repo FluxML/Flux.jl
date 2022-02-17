@@ -1,6 +1,6 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
-             kaiming_normal, kaiming_uniform, orthogonal,
+             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
              sparse_init, stack, unstack, Zeros, batch, unbatch,
              unsqueeze
 using StatsBase: var, std
@@ -142,6 +142,15 @@ end
       v = sparse_init(n_in, n_out, sparsity=sparsity, std=σ)
       @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
       @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
+      @test eltype(v) == Float32
+    end
+  end
+
+  @testset "truncated_normal" begin
+    for sz in [(100,), (100, 100), (2, 3, 32, 64), (2, 3, 4, 32, 64)]
+      v = truncated_normal(sz...)
+      @test -1.0 < minimum(v) < 0.0
+      @test 0.0 < maximum(v) < 1.0
       @test eltype(v) == Float32
     end
   end
