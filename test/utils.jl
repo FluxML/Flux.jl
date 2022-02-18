@@ -2,8 +2,9 @@ using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
              sparse_init, stack, unstack, Zeros, batch, unbatch,
-             unsqueeze
+             unsqueeze, params
 using StatsBase: var, std
+using Statistics, LinearAlgebra
 using Random
 using Test
 
@@ -149,10 +150,15 @@ end
   @testset "truncated_normal" begin
     size = (100, 100, 100)
     for (μ, σ, lo, hi) in [(0., 1, -2, 2), (0, 1, -4., 4)]
+      v = truncated_normal(size; mean = μ, std = σ, lo, hi)
+      @test isapprox(mean(v), μ; atol = 1f-2)
+      @test isapprox(minimum(v), lo; atol = 1f-2)
+      @test isapprox(maximum(v), hi; atol = 1f-2)
+      @test eltype(v) == Float32
+    end
+    for (μ, σ, lo, hi) in [(6, 2, -100., 100), (7., 10, -100, 100)]
       v = truncated_normal(size...; mean = μ, std = σ, lo, hi)
-      @test isapprox(mean(v), μ; atol = 1e-2)
-      @test isapprox(minimum(v), lo; atol = 1e-2)
-      @test isapprox(maximum(v), hi; atol = 1e-2)
+      @test isapprox(std(v), σ; atol = 1f-2)
       @test eltype(v) == Float32
     end
   end
