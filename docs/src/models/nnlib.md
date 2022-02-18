@@ -76,7 +76,10 @@ NNlib.gather
 NNlib.gather!
 NNlib.scatter
 NNlib.scatter!
+```
 
-## Utilities
+## Miscellaneous
+
+```@docs
 NNlib.logsumexp
 ```

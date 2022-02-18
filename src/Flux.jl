@@ -7,6 +7,9 @@ using Statistics, Random, LinearAlgebra
 using Zygote, MacroTools, ProgressLogging, Reexport
 using MacroTools: @forward
 @reexport using NNlib
+
+using MLUtils
+
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
@@ -49,6 +52,7 @@ include("outputsize.jl")
 
 include("data/Data.jl")
 using .Data
+
 
 include("losses/Losses.jl")
 using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
