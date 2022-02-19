@@ -151,14 +151,14 @@ end
     size = (100, 100, 100)
     for (μ, σ, lo, hi) in [(0., 1, -2, 2), (0, 1, -4., 4)]
       v = truncated_normal(size; mean = μ, std = σ, lo, hi)
-      @test isapprox(mean(v), μ; atol = 1f-2)
-      @test isapprox(minimum(v), lo; atol = 1f-2)
-      @test isapprox(maximum(v), hi; atol = 1f-2)
+      @test isapprox(mean(v), μ; atol = 1f-1)
+      @test isapprox(minimum(v), lo; atol = 1f-1)
+      @test isapprox(maximum(v), hi; atol = 1f-1)
       @test eltype(v) == Float32
     end
     for (μ, σ, lo, hi) in [(6, 2, -100., 100), (7., 10, -100, 100)]
       v = truncated_normal(size...; mean = μ, std = σ, lo, hi)
-      @test isapprox(std(v), σ; atol = 1f-2)
+      @test isapprox(std(v), σ; atol = 1f-1)
       @test eltype(v) == Float32
     end
   end
