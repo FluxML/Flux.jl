@@ -19,6 +19,14 @@ zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, 
 
 @deprecate frequencies(xs) group_counts(xs)
 
+struct Zeros
+  function Zeros()
+    Base.depwarn("Flux.Zeros is no more, has ceased to be, is bereft of life, is an ex-boondoggle... please use bias=false instead", :Zeros)
+    false
+  end
+end
+Zeros(args...) = Zeros()  # was used both Dense(10, 2, initb = Zeros) and Dense(rand(2,10), Zeros())
+
 # Channel notation: Changed to match Conv, but very softly deprecated!
 # Perhaps change to @deprecate for v0.14, but there is no plan to remove these.
 Dense(in::Integer, out::Integer, σ = identity; kw...) =
