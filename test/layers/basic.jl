@@ -91,16 +91,17 @@ import Flux: activations
     @test length(Flux.Diagonal(10)(randn(10))) == 10
     @test length(Flux.Diagonal(10)(1)) == 10
     @test length(Flux.Diagonal(10)(randn(1))) == 10
+    @test length(Flux.Diagonal(10; bias = false)(randn(10))) == 10
     @test_throws DimensionMismatch Flux.Diagonal(10)(randn(2))
 
     @test Flux.Diagonal(2)([1 2]) == [1 2; 1 2]
     @test Flux.Diagonal(2)([1,2]) == [1,2]
-    @test Flux.Diagonal(2)([1 2; 3 4]) == [1 2; 3 4]
+    @test Flux.Diagonal(2; bias = false)([1 2; 3 4]) == [1 2; 3 4]
 
     @test Flux.Diagonal(2)(rand(2,3,4)) |> size == (2, 3, 4)
     @test Flux.Diagonal(2,3)(rand(2,3,4)) |> size == (2, 3, 4)
-    @test Flux.Diagonal(2,3,4)(rand(2,3,4)) |> size == (2, 3, 4)
-    @test Flux.Diagonal(2,3)(rand(2,1,4)) |> size == (2, 3, 4)
+    @test Flux.Diagonal(2, 3, 4; bias = false)(rand(2,3,4)) |> size == (2, 3, 4)
+    @test Flux.Diagonal(2, 3; bias = false)(rand(2,1,4)) |> size == (2, 3, 4)
   end
 
   @testset "Maxout" begin
