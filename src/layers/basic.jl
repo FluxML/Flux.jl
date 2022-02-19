@@ -185,7 +185,8 @@ if `bias` is true, and
 
 otherwise. The learnable arrays are initialised `α = ones(Float32, size)` and
 `β = zeros(Float32, size)`. If `init` is specified, the function given to it is 
-called and used to initialise α.
+called and used to initialise α. The weight matrix and/or the bias vector 
+(with the same size as x) may also be provided explicitly.
 
 Used by [`LayerNorm`](@ref).
 """
