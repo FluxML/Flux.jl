@@ -39,7 +39,7 @@ epseltype(x) = eps(float(eltype(x)))
 Create an instance of the RNG most appropriate for `x`.
 The current defaults are:
 - `x isa AbstractArray`
-  - Julia version is < 1.7: `rng_from_array()`
+  - Julia version is < 1.7: `Random.GLOBAL_RNG`
   - Julia version is >= 1.7: `Random.default_rng()`
 - `x isa CuArray`: `CUDA.default_rng()`
 When `x` is unspecified, it is assumed to be a `AbstractArray`.
