@@ -173,27 +173,39 @@ end
 
 """
     Diagonal(α, β)
-    Diagonal(size::Integer...)
+    Diagonal(size::Integer...; bias = true, init = ones32)
 
 Create an element-wise linear layer, which performs
 
     y = α .* x .+ β
 
-The learnable arrays are initialised `α = ones(Float32, size)` and
-`β = zeros(Float32, size)`.
+if `bias` is true, and
+
+    y = α .* x
+
+otherwise. The learnable arrays are initialised `α = ones(Float32, size)` and
+`β = zeros(Float32, size)`. If `init` is specified, the function given to it is 
+called and used to initialise α.
 
 Used by [`LayerNorm`](@ref).
 """
-struct Diagonal{T}
-  α::T
-  β::T
+struct Diagonal{A, B}
+  α::A
+  β::B
+  function Diagonal(W::M, bias = true) where M<:AbstractArray
+    b = create_bias(W, bias, size(W)...)
+    new{M, typeof(b)}(W, b)
+  end
 end
 
-Diagonal(sz::Integer...) = Diagonal(ones32(sz...), zeros32(sz...))
+Diagonal(sz::Integer...; bias = true, init = ones32) = Diagonal(init(sz...), bias)
 
 @functor Diagonal
 
-(a::Diagonal)(x) = a.α .* x .+ a.β
+function (a::Diagonal)(x)
+  x = a.α .* x
+  x = x .+ a.β
+end
 
 function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", join(size(l.α), ", "), ")")
