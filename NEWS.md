@@ -9,6 +9,7 @@ been removed in favour of MLDatasets.jl.
 * `Dropout` gained improved compatibility with Int and Complex arrays and is now twice-differentiable.
 * Many utily functions and the `DataLoader` are [now provided by MLUtils.jl](https://github.com/FluxML/Flux.jl/pull/1874).
 * The DataLoader is now compatible with generic dataset types implementing `MLUtils.numobs` and `MLUtils.getobs`.
+* Added truncated normal initialisation of weights.
 
 ## v0.12.10
 * `Dropout`/`AlphaDropout` now supports [user-specified RNGs](https://github.com/FluxML/Flux.jl/pull/1838)
