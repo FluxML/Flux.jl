@@ -203,7 +203,9 @@ applying the inverse CDF of the truncated normal distribution
 This method works best when `lo ≤ mean ≤ hi`.
 
 # Examples
-```jldoctest; setup = :(using Statistics)
+```jldoctest
+julia> using Statistics
+
 julia> Flux.truncated_normal(3, 4) |> summary
 "3×4 Matrix{Float32}"
 
