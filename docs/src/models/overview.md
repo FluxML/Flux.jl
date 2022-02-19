@@ -43,8 +43,8 @@ Normally, your training and test data come from real world observations, but thi
 Now, build a model to make predictions with `1` input and `1` output:
 
 ```julia
-julia> model = Dense(1, 1)
-Dense(1, 1)
+julia> model = Dense(1 => 1)
+Dense(1 => 1)
 
 julia> model.weight
 1×1 Matrix{Float32}:
@@ -58,10 +58,10 @@ julia> model.bias
 Under the hood, a dense layer is a struct with fields `weight` and `bias`. `weight` represents a weights' matrix and `bias` represents a bias vector. There's another way to think about a model. In Flux, *models are conceptually predictive functions*: 
 
 ```julia
-julia> predict = Dense(1, 1)
+julia> predict = Dense(1 => 1)
 ```
 
-`Dense(1, 1)` also implements the function `σ(Wx+b)` where `W` and `b` are the weights and biases. `σ` is an activation function (more on activations later). Our model has one weight and one bias, but typical models will have many more. Think of weights and biases as knobs and levers Flux can use to tune predictions. Activation functions are transformations that tailor models to your needs. 
+`Dense(1 => 1)` also implements the function `σ(Wx+b)` where `W` and `b` are the weights and biases. `σ` is an activation function (more on activations later). Our model has one weight and one bias, but typical models will have many more. Think of weights and biases as knobs and levers Flux can use to tune predictions. Activation functions are transformations that tailor models to your needs. 
 
 This model will already make predictions, though not accurate ones yet:
 
@@ -185,7 +185,7 @@ The predictions are good. Here's how we got there.
 
 First, we gathered real-world data into the variables `x_train`, `y_train`, `x_test`, and `y_test`. The `x_*` data defines inputs, and the `y_*` data defines outputs. The `*_train` data is for training the model, and the `*_test` data is for verifying the model. Our data was based on the function `4x + 2`.
 
-Then, we built a single input, single output predictive model, `predict = Dense(1, 1)`. The initial predictions weren't accurate, because we had not trained the model yet.
+Then, we built a single input, single output predictive model, `predict = Dense(1 => 1)`. The initial predictions weren't accurate, because we had not trained the model yet.
 
 After building the model, we trained it with `train!(loss, parameters, data, opt)`. The loss function is first, followed by the `parameters` holding the weights and biases of the model, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
 

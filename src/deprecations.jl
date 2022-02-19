@@ -16,4 +16,14 @@ ones32(::Type, dims...) = throw(ArgumentError("Flux.ones32 is always Float32, us
 zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, use Base.zeros to specify the element type"))
 
 # v0.13 deprecations
+
 @deprecate frequencies(xs) group_counts(xs)
+
+# Channel notation: Changed to match Conv, but very softly deprecated!
+# Perhaps change to @deprecate for v0.14, but there is no plan to remove these.
+Dense(in::Integer, out::Integer, σ = identity; kw...) =
+  Dense(in => out, σ; kw...)
+Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity; kw...) =
+  Bilinear((in1, in2) => out, σ; kw...)
+Embedding(in::Integer, out::Integer; kw...) = Embedding(in => out; kw...)
+

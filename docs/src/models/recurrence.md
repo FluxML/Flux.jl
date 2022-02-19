@@ -74,7 +74,7 @@ Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also availabl
 Using these tools, we can now build the model shown in the above diagram with: 
 
 ```julia
-m = Chain(RNN(2, 5), Dense(5, 1))
+m = Chain(RNN(2, 5), Dense(5 => 1))
 ```
 In this example, each output has only one component.
 

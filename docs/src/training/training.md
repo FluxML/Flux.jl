@@ -47,8 +47,8 @@ We can also define an objective in terms of some model:
 
 ```julia
 m = Chain(
-  Dense(784, 32, σ),
-  Dense(32, 10), softmax)
+  Dense(784 => 32, σ),
+  Dense(32 => 10), softmax)
 
 loss(x, y) = Flux.Losses.mse(m(x), y)
 ps = Flux.params(m)

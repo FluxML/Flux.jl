@@ -14,15 +14,15 @@ julia> m = Chain(x -> x^2, x -> x+1);
 julia> m(5) == 26
 true
 
-julia> m = Chain(Dense(10, 5, tanh), Dense(5, 2));
+julia> m = Chain(Dense(10 => 5, tanh), Dense(5 => 2));
 
 julia> x = rand(10, 32);
 
 julia> m(x) == m[2](m[1](x))
 true
 
-julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)), 
-                  dec = Dense(5, 2));
+julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10 => 5, tanh)), 
+                  dec = Dense(5 => 2));
 
 julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
@@ -98,10 +98,10 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
+    Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
-Create a traditional `Dense` layer, whose forward pass is given by:
+Create a traditional fully connected layer, whose forward pass is given by:
 
     y = σ.(W * x .+ bias)
 
@@ -117,8 +117,8 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 
 # Examples
 ```jldoctest
-julia> d = Dense(5, 2)
-Dense(5, 2)         # 12 parameters
+julia> d = Dense(5 => 2)
+Dense(5 => 2)       # 12 parameters
 
 julia> d(rand(Float32, 5, 64)) |> size
 (2, 64)
@@ -127,7 +127,7 @@ julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimension
 (2, 1, 1, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
-Dense(5, 2, tanh; bias=false)  # 10 parameters
+Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
 julia> d1(ones(5))
 2-element Vector{Float64}:
@@ -148,9 +148,8 @@ struct Dense{F, M<:AbstractMatrix, B}
   end
 end
 
-function Dense(in::Integer, out::Integer, σ = identity;
-               init = glorot_uniform, bias=true)
-
+function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
+               init = glorot_uniform, bias = true)
   Dense(init(out, in), bias, σ)
 end
 
@@ -166,7 +165,7 @@ end
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
+  print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
   l.bias == Zeros() && print(io, "; bias=false")
   print(io, ")")
@@ -224,11 +223,11 @@ julia> m([-2 -1 0 1 2])
 1×5 Matrix{Int64}:
  4  1  0  3  6
 
-julia> m3 = Maxout(() -> Dense(5, 7, tanh), 3)
+julia> m3 = Maxout(() -> Dense(5 => 7, tanh), 3)
 Maxout(
-  Dense(5, 7, tanh),                    # 42 parameters
-  Dense(5, 7, tanh),                    # 42 parameters
-  Dense(5, 7, tanh),                    # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
 )                   # Total: 6 arrays, 126 parameters, 888 bytes.
 
 julia> Flux.outputsize(m3, (5, 11))
@@ -299,22 +298,24 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    Bilinear(in1, in2, out, σ=identity; bias=true, init=glorot_uniform)
+    Bilinear((in1, in2) => out, σ=identity; bias=true, init=glorot_uniform)
     Bilinear(W::AbstractArray, [bias, σ])
 
-Creates a Bilinear layer, which operates on two inputs at the same time.
+Creates a bilinear layer, which operates on two inputs at the same time.
 Its output, given vectors `x` & `y`, is another vector `z` with,
 for all `i ∈ 1:out`:
 
     z[i] = σ(x' * W[i,:,:] * y + bias[i])
 
 If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form,
-with `B` a Bilinear layer.
+with `B` the Bilinear layer.
 
-If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
+If the second input `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
 
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
+
+If the two input sizes are the same, `in1 == in2`, then you may write `Bilinear(in => out, σ)`.
 
 The initialisation works as for [`Dense`](@ref) layer, with `W = init(out, in1, in2)`.
 By default the bias vector is `zeros(Float32, out)`, option `bias=false` will switch off
@@ -324,7 +325,8 @@ trainable bias. Either of these may be provided explicitly.
 ```jldoctest
 julia> x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
 
-julia> B = Flux.Bilinear(5, 5, 7);
+julia> B = Flux.Bilinear((5, 5) => 7)
+Bilinear(5 => 7)    # 182 parameters
 
 julia> B(x) |> size  # interactions based on one input
 (7, 32)
@@ -333,15 +335,15 @@ julia> B(x,y) == B((x,y))  # two inputs, may be given as a tuple
 true
 
 julia> sc = SkipConnection(
-                Chain(Dense(5, 20, tanh), Dense(20, 9, tanh)),
-                Flux.Bilinear(9, 5, 3, bias=false),
+                Chain(Dense(5 => 20, tanh), Dense(20 => 9, tanh)),
+                Flux.Bilinear((9, 5) => 3, bias=false),
             );  # used as the recombinator, with skip as the second input
 
 julia> sc(x) |> size
 (3, 32)
 
 julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
-Bilinear(8, 16, 4, tanh, bias=false)
+Bilinear((8, 16) => 4, tanh; bias=false)  # 512 parameters
 ```
 """
 struct Bilinear{F,A,B}
@@ -357,10 +359,11 @@ end
 
 @functor Bilinear
 
-function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
-                  init = glorot_uniform, bias = true)
+function Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity;
+                  bias = true, init = glorot_uniform)
   Bilinear(init(out, in1, in2), bias, σ)
 end
+Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear((in12, in12) => out, σ; kw...)
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   W, b, σ = a.weight, a.bias, a.σ
@@ -385,9 +388,13 @@ end
 (a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x[1], x[2])
 
 function Base.show(io::IO, l::Bilinear)
-  print(io, "Bilinear(", size(l.weight, 2), ", ", size(l.weight, 3), ", ", size(l.weight, 1))
+  if size(l.weight, 2) == size(l.weight, 3)
+    print(io, "Bilinear(", size(l.weight, 2), " => ", size(l.weight, 1))
+  else
+    print(io, "Bilinear((", size(l.weight, 2), ", ", size(l.weight, 3), ") => ", size(l.weight, 1))
+  end
   l.σ == identity || print(io, ", ", l.σ)
-  l.bias == Flux.Zeros() && print(io, ", bias=false")
+  l.bias == Flux.Zeros() && print(io, "; bias=false")
   print(io, ")")
 end
 
@@ -395,7 +402,7 @@ end
     Parallel(connection, layers...)
     Parallel(connection; name = layer, ...)
 
-Create a `Parallel` layer that passes an input array to each path in
+Create a layer which passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
 Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
@@ -410,9 +417,9 @@ and [`Maxout`](@ref) which reduces by broadcasting `max`.
 # Examples
 
 ```jldoctest
-julia> model = Chain(Dense(3, 5),
-                     Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
-                     Dense(8, 17));
+julia> model = Chain(Dense(3 => 5),
+                     Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
+                     Dense(8 => 17));
 
 julia> model(rand(3)) |> size
 (17,)
@@ -420,8 +427,8 @@ julia> model(rand(3)) |> size
 julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
 Parallel(
   +,
-  α = Dense(10, 2, tanh),               # 22 parameters
-  β = Dense(5, 2),                      # 12 parameters
+  α = Dense(10 => 2, tanh),             # 22 parameters
+  β = Dense(5 => 2),                    # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
 julia> model2(rand(10), rand(5)) |> size
@@ -476,39 +483,33 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-    Embedding(in, out; init=randn)
+    Embedding(in => out; init=randn)
 
 A lookup table that stores embeddings of dimension `out` 
-for a vocabulary of size `in`. 
+for a vocabulary of size `in`.
 
-This layers is often used to store word embeddings and retrieve them using indices. 
+This layer is often used to store word embeddings and retrieve them using indices. 
 The input to the layer can be either a vector of indexes
 or the corresponding [onehot encoding](@ref Flux.OneHotArray). 
 
 # Examples
-
-```julia-repl
-julia> using Flux: Embedding
-
+```jldoctest
 julia> vocab_size, embed_size = 1000, 4;
 
-julia> model = Embedding(vocab_size, embed_size)
-Embedding(1000, 4)
+julia> model = Flux.Embedding(vocab_size => embed_size)
+Embedding(1000 => 4)  # 4_000 parameters
 
-julia> vocab_idxs = [1, 722, 53, 220, 3]
+julia> vocab_idxs = [1, 722, 53, 220, 3];
 
-julia> x = OneHotMatrix(vocab_idxs, vocab_size);
+julia> x = Flux.OneHotMatrix(vocab_idxs, vocab_size); summary(x)
+"1000×5 OneHotMatrix(::Vector{Int64}) with eltype Bool"
 
-julia> model(x)
-4×5 Matrix{Float32}:
-  0.91139    0.670462    0.463217   0.670462    0.110932
-  0.247225  -0.0823874   0.698694  -0.0823874   0.945958
- -0.393626  -0.590136   -0.545422  -0.590136    0.77743
- -0.497621   0.87595    -0.870251   0.87595    -0.772696
-```
+julia> model(x) |> summary
+"4×5 Matrix{Float32}"
 
 julia> model(vocab_idxs) == model(x)
 true
+```
 """
 struct Embedding{W}
   weight::W
@@ -516,18 +517,17 @@ end
 
 @functor Embedding
 
-Embedding(in::Integer, out::Integer; init = randn32) = Embedding(init(out, in))
+Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
   
-
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
 function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-    size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
+  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
   return m(onecold(x))
 end
  
 function Base.show(io::IO, m::Embedding)
-  print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
+  print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
