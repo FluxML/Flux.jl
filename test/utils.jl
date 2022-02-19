@@ -350,17 +350,6 @@ end
       loadparams!(m, params(m))
       testdense(m, bt)
     end
-
-    # @testset "$b1 to $b2" for (b1, b2, be) in (
-    #   (Flux.zeros32, Flux.ones32, Flux.ones32),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-    #   (Flux.ones32, nobias, Flux.zeros32), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-    #   (nobias, Flux.ones32, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
-    # )
-    #   m1 = dm(b1)
-    #   m2 = dm(b2)
-    #   loadparams!(m1, b1 == nobias ? weights(m2) : pararray(m2))
-    #   testdense(m1, be)
-    # end
   end
 
   @testset "destructure" begin
@@ -384,6 +373,26 @@ end
       end
     end
   end
+end
+
+@testset "loadparams! & absent bias" begin
+  m0 = Dense(2,3; bias=false, init = Flux.ones32)
+  m1 = Dense(2,3; bias = Flux.randn32(3))
+  m2 = Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9])
+
+  Flux.loadparams!(m1, Flux.params(m2))
+  @test m1.bias == 7:9
+  @test sum(m1.weight) == 21
+
+  # load from a model without bias:
+  Flux.loadparams!(m1, Flux.params(m0))
+  @test_broken iszero(m1.bias)  # should ideally recognise the false but Params doesn't store it.
+  @test sum(m1.weight) == 6
+
+  # load into a model without bias:
+  Flux.loadparams!(m0, Flux.params(m2))  #  ignore the parameter which has nowhere to go? Or error?
+  @test iszero(m0.bias)  # obviously unchanged
+  @test sum(m0.weight) == 21
 end
 
 @testset "Train and test mode" begin
