@@ -14,7 +14,7 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.dice_coeff_loss,
                     Flux.Losses.poisson_loss,
                     Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss]
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.contrastive_loss]
 
 
 @testset "xlogx & xlogy" begin
@@ -209,4 +209,14 @@ end
     @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
     @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
     @test Flux.focal_loss(ŷ, y; γ=0.0) ≈ Flux.crossentropy(ŷ, y)
+end
+
+@testset "contrastive_loss" begin
+    y1 = [1 0
+          0 0
+          0 1]
+    ŷ1 = [0.4 0.2
+          0.5 0.5
+          0.1 0.3]
+    @test Flux.contrastive_loss(ŷ1, y1,1) ≈ 0.3666666666666667
 end
