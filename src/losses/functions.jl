@@ -527,6 +527,14 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
 
+function contrastive_loss(ŷ, y; agg = mean, margin::Float64)
+    _check_sizes(ŷ, y)
+    square_pred = ŷ .^ 2
+    margin_square = max(margin - ŷ, 0) .^ 2
+    return agg(y .* square_pred + (1 .- y) .* margin_square)
+end
+
+
 ```@meta
 DocTestFilters = nothing
 ```
