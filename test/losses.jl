@@ -210,3 +210,19 @@ end
     @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
     @test Flux.focal_loss(ŷ, y; γ=0.0) ≈ Flux.crossentropy(ŷ, y)
 end
+
+@testset "contrastive_loss" begin
+    y = [1  0  0  0  1
+         0  1  0  1  0
+         0  0  1  0  0]
+    ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+    y1 = [1 0
+          0 0
+          0 1]
+    ŷ1 = [0.4 0.2
+          0.5 0.5
+          0.1 0.3]
+    @test Flux.contrastive_loss(ŷ, y,1) ≈ 1.1277571935622628
+    @test Flux.contrastive_loss(ŷ1, y1,1) ≈ 0.45990566879720157
+    @test Flux.contrastive_loss(ŷ, y; margin=0.0) ≈ Flux.crossentropy(ŷ, y)
+end
