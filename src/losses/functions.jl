@@ -527,6 +527,46 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
 
+"""
+    focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=eps(ŷ))
+                                    
+Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+which can be used in classification tasks with highly imbalanced classes.
+It down-weights well-classified examples and focuses on hard examples.
+The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
+                                    
+The modulating factor, `γ`, controls the down-weighting strength.
+For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
+                                    
+# Example
+```jldoctest
+julia> y = [1  0  0  0  1
+            0  1  0  1  0
+            0  0  1  0  0]
+3×5 Matrix{Int64}:
+ 1  0  0  0  1
+ 0  1  0  1  0
+ 0  0  1  0  0
+                                    
+julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+3×5 Matrix{Float32}:
+ 0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
+ 0.244728   0.244728   0.244728   0.244728   0.244728
+ 0.665241   0.665241   0.665241   0.665241   0.665241
+                                    
+julia> Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
+true
+```
+                                    
+See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
+                                    
+"""
+function contrastive_loss(ŷ, y; agg = mean, margin = epseltype(ŷ))
+    max_val = max(sum(ŷᵢ -> (margin - ŷᵢ), ŷ), 0)
+    max_val > 0 ? margin_square = (margin .- ŷ) .^ 2 : margin_square = 0
+    return agg(y .* (ŷ .^ 2) + (1 .- y) .* margin_square)
+end
+                                    
 ```@meta
 DocTestFilters = nothing
 ```
