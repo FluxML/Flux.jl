@@ -264,7 +264,7 @@ end
 end
 
 @testset "zero bias" begin
-  m = Dense(3,2; bias=false)
+  m = Dense(3 => 2; bias=false)
   @test f64(m).bias === m.bias === false
   @test f32(m).bias === m.bias === false
 
@@ -376,8 +376,8 @@ end
 end
 
 @testset "loadparams! & absent bias" begin
-  m0 = Dense(2,3; bias=false, init = Flux.ones32)
-  m1 = Dense(2,3; bias = Flux.randn32(3))
+  m0 = Dense(2 => 3; bias=false, init = Flux.ones32)
+  m1 = Dense(2 => 3; bias = Flux.randn32(3))
   m2 = Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9])
 
   Flux.loadparams!(m1, Flux.params(m2))

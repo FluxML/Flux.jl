@@ -301,7 +301,7 @@ end
     Bilinear((in1, in2) => out, σ=identity; bias=true, init=glorot_uniform)
     Bilinear(W::AbstractArray, [bias, σ])
 
-Creates a bilinear layer, which operates on two inputs at the same time.
+Creates a fully connected layer which operates on two inputs.
 Its output, given vectors `x` & `y`, is another vector `z` with,
 for all `i ∈ 1:out`:
 
@@ -394,11 +394,7 @@ function Base.show(io::IO, l::Bilinear)
     print(io, "Bilinear((", size(l.weight, 2), ", ", size(l.weight, 3), ") => ", size(l.weight, 1))
   end
   l.σ == identity || print(io, ", ", l.σ)
-<<<<<<< HEAD
-  l.bias == Flux.Zeros() && print(io, "; bias=false")
-=======
-  l.bias === false && print(io, ", bias=false")
->>>>>>> 1ef2cd377 (rm Flux.Zeros, take N+1)
+  l.bias === false && print(io, "; bias=false")
   print(io, ")")
 end
 
