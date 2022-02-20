@@ -527,9 +527,9 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
 
-function contrastive_loss(ŷ, y, margin = epseltype(ŷ),agg=mean)
+function contrastive_loss(ŷ, y, margin = epseltype(ŷ), agg = mean)
     square_pred = ŷ .^ 2
-    max_val = max(sum(margin.-ŷ),0)
+    max_val = max(sum(margin .- ŷ), 0)
     if max_val > 0
         margin_square = (margin .- ŷ) .^ 2
     else
@@ -537,7 +537,6 @@ function contrastive_loss(ŷ, y, margin = epseltype(ŷ),agg=mean)
     end
     return agg(y .* square_pred + (1 .- y) .* margin_square)
 end
-
 
 ```@meta
 DocTestFilters = nothing
