@@ -14,7 +14,7 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
   Flux.Losses.dice_coeff_loss,
   Flux.Losses.poisson_loss,
   Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-  Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss]
+  Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss,Flux.losses.contrastive_loss]
 
 
 @testset "xlogx & xlogy" begin
