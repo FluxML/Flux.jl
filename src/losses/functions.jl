@@ -537,7 +537,8 @@ function contrastive_loss(ŷ, y; agg = mean, margin = epseltype(ŷ))
     end
     return agg(y .* square_pred + (1 .- y) .* margin_square)
 end
-"""
+
+
 
 ```@meta
 DocTestFilters = nothing
