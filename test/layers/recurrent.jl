@@ -2,7 +2,7 @@
 @testset "BPTT-1D" begin
   seq = [rand(Float32, 2) for i = 1:3]
   for r ∈ [RNN,]
-    rnn = r(2, 3)
+    rnn = r(2 => 3)
     Flux.reset!(rnn)
     grads_seq = gradient(Flux.params(rnn)) do
         sum(rnn.(seq)[3])
@@ -24,7 +24,7 @@ end
 @testset "BPTT-2D" begin
   seq = [rand(Float32, (2, 1)) for i = 1:3]
   for r ∈ [RNN,]
-    rnn = r(2, 3)
+    rnn = r(2 => 3)
     Flux.reset!(rnn)
     grads_seq = gradient(Flux.params(rnn)) do
         sum(rnn.(seq)[3])
@@ -44,7 +44,7 @@ end
 
 @testset "BPTT-3D" begin
   seq = rand(Float32, (2, 1, 3))
-  rnn = RNN(2, 3)
+  rnn = RNN(2 => 3)
   Flux.reset!(rnn)
   grads_seq = gradient(Flux.params(rnn)) do
     sum(rnn(seq)[:, :, 3])
@@ -70,9 +70,9 @@ end
 
 @testset "RNN-shapes" begin
   @testset for R in [RNN, GRU, LSTM, GRUv3]
-    m1 = R(3, 5)
-    m2 = R(3, 5)
-    m3 = R(3, 5)
+    m1 = R(3 => 5)
+    m2 = R(3 => 5)
+    m3 = R(3, 5)  # leave one to test the silently deprecated "," not "=>" notation
     x1 = rand(Float32, 3)
     x2 = rand(Float32, 3, 1)
     x3 = rand(Float32, 3, 1, 2)
@@ -90,7 +90,7 @@ end
 
 @testset "RNN-input-state-eltypes" begin
   @testset for R in [RNN, GRU, LSTM, GRUv3]
-    m = R(3, 5)
+    m = R(3 => 5)
     x = rand(Float64, 3, 1)
     Flux.reset!(m)
     @test_throws MethodError m(x)

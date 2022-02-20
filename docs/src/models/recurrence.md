@@ -65,8 +65,11 @@ The `Recur` wrapper stores the state between runs in the `m.state` field.
 If we use the `RNN(2, 5)` constructor – as opposed to `RNNCell` – you'll see that it's simply a wrapped cell.
 
 ```julia
-julia> RNN(2, 5)
-Recur(RNNCell(2, 5, tanh))
+julia> RNN(2, 5)  # or equivalently RNN(2 => 5)
+Recur(
+  RNNCell(2 => 5, tanh),                # 45 parameters
+)         # Total: 4 trainable arrays, 45 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 412 bytes.
 ```
 
 Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also available. 
@@ -74,7 +77,7 @@ Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also availabl
 Using these tools, we can now build the model shown in the above diagram with: 
 
 ```julia
-m = Chain(RNN(2, 5), Dense(5 => 1))
+m = Chain(RNN(2 => 5), Dense(5 => 1))
 ```
 In this example, each output has only one component.
 
