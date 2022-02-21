@@ -187,7 +187,7 @@ struct LSTMCell{A,V,S}
   state0::S
 end
 
-function LSTMCell((in, out)::Pair{<:Integer, <:Integer};
+function LSTMCell((in, out)::Pair;
                   init = glorot_uniform,
                   initb = zeros32,
                   init_state = zeros32)
