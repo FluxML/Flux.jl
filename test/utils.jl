@@ -376,23 +376,23 @@ end
 end
 
 @testset "loadparams! & absent bias" begin
-  m0 = Dense(2 => 3; bias=false, init = Flux.ones32)
-  m1 = Dense(2 => 3; bias = Flux.randn32(3))
-  m2 = Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9])
+  m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
+  m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
+  m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
 
   Flux.loadparams!(m1, Flux.params(m2))
-  @test m1.bias == 7:9
-  @test sum(m1.weight) == 21
+  @test m1[1].bias == 7:9
+  @test sum(m1[1].weight) == 21
 
-  # load from a model without bias:
-  Flux.loadparams!(m1, Flux.params(m0))
-  @test_broken iszero(m1.bias)  # should ideally recognise the false but Params doesn't store it.
-  @test sum(m1.weight) == 6
+  # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
+  @test_broken Flux.loadparams!(m1, Flux.params(m0))
+  @test_broken iszero(m1[1].bias)
+  @test sum(m1[1].weight) == 6  # written before error
 
-  # load into a model without bias:
-  Flux.loadparams!(m0, Flux.params(m2))  #  ignore the parameter which has nowhere to go? Or error?
-  @test iszero(m0.bias)  # obviously unchanged
-  @test sum(m0.weight) == 21
+  # load into a model without bias -- should it ignore the parameter which has no home, or error?
+  @test_broken Flux.loadparams!(m0, Flux.params(m2))
+  @test iszero(m0[1].bias)  # obviously unchanged
+  @test sum(m0[1].weight) == 21
 end
 
 @testset "Train and test mode" begin
