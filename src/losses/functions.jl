@@ -551,9 +551,12 @@ true
 """
 function siamese_contrastive_loss(ŷ, y, margin = 1; agg = mean)
     _check_sizes(ŷ, y)
-    max_val = max(sum(margin .- ŷ), 0)
-    margin_square = max_val > 0 ? abs2.(margin .- ŷ) : 0
-    return agg(y .* margin_square + (1 .- y) .* abs2.(ŷ))
+    max_val = max(-sum(ŷ .- margin), 0)
+    if max_val > 0
+	    return agg(@. y * (margin - ŷ)^2 + (1 - y) * ŷ^2)
+	else
+	    return agg(@. y * (margin - ŷ)^2)
+    end
 end
                                     
 ```@meta
