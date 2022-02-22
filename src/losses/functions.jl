@@ -530,9 +530,10 @@ end
 """
     siamese_contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
                                     
-Return the [siamese_contrastive_loss](https://arxiv.org/pdf/1708.02002.pdf)
-which can be used in classification tasks with highly imbalanced classes.
-It down-weights well-classified examples and focuses on hard examples.
+Return the [siamese_contrastive_loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
+which can be used in training Siamese Networks.
+In supervised similarity learning, the networks are then trained to maximize the contrast (distance) between embeddings of inputs of different classes,
+while minimizing the distance between embeddings of similar classes, resulting in embedding spaces that reflect the class segmentation of the training inputs.
 The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
                                     
 margin: Integer, defines the baseline for distance for which pairs
