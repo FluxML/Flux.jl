@@ -537,21 +537,13 @@ Specify `margin` to set the baseline for distance at which pairs are dissimilar.
                                     
 # Example
 ```jldoctest
-julia> y1 = [1 0
-             0 0
-             0 1]
-3×2 Matrix{Int64}:
- 1  0
- 0  0
- 0  1
-                                    
-julia> ŷ1 = [0.4 0.2
-             0.5 0.5
-             0.1 0.3]
-3×2 Matrix{Float64}:
- 0.4  0.2
- 0.5  0.5
- 0.1  0.3
+julia> y = [1 0
+                 0 0
+                 0 1];
+           
+julia> ŷ = [0.4 0.2
+                0.5 0.5
+                0.1 0.3];
                                     
 julia> Flux.siamese_contrastive_loss(ŷ, y,1) ≈ 0.2333333333333333
 true
