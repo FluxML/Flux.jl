@@ -190,7 +190,7 @@ function _onehotbatch(data, labels)
   n_labels = length(labels)
   indices = _findval.(data, Ref(labels))
   if nothing in indices
-    unexpected_values = unique(data[indices .== nothinghl])
+    unexpected_values = unique(data[indices .== nothing])
     error("Values $unexpected_values are not in labels")
   end
   return OneHotArray(indices, n_labels)
