@@ -198,11 +198,15 @@ end
 
 function _onehotbatch(data, labels, default)
   n_labels = length(labels)
-  indices = _findval.(data, Ref(labels))
+  indices = map(x -> _findval(x, labels), data)
   if nothing in indices
-    indices = replace(indices, nothing => _findval(default, labels))
+    default_index = _findval(default, labels)
+    isnothing(default_index) && error("Default value $default_index is not in labels")
+    replaced_indices = replace(indices, nothing => default_index)
+    return OneHotArray(replaced_indices, n_labels)
+  else
+    return OneHotArray(indices, n_labels)
   end
-  return OneHotArray(indices, n_labels)
 end
 
 """
