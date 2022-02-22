@@ -560,7 +560,7 @@ true
 ```
                                     
 """
-function siamese_contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
+function siamese_contrastive_loss(ŷ, y, margin = 1; agg = mean)
     _check_sizes(ŷ, y)
     max_val = max(sum(margin .- ŷ), 0)
     margin_square = max_val > 0 ? abs2.(margin .- ŷ) : 0
