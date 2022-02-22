@@ -535,8 +535,8 @@ which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
 The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
                                     
-The modulating factor, `γ`, controls the down-weighting strength.
-For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
+margin: Integer, defines the baseline for distance for which pairs
+should be classified as dissimilar. - (default is 1).
                                     
 # Example
 ```jldoctest
