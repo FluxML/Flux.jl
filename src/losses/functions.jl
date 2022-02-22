@@ -532,10 +532,8 @@ end
                                     
 Return the [siamese_contrastive_loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
 which can be used in training Siamese Networks.
-In supervised similarity learning, the networks are then trained to maximize the contrast (distance) between embeddings of inputs of different classes,
-while minimizing the distance between embeddings of similar classes, resulting in embedding spaces that reflect the class segmentation of the training inputs.                                    
-margin: Integer, defines the baseline for distance for which pairs
-should be classified as dissimilar. - (default is 1).
+                                 
+margin: Integer, defines the baseline for distance for which pairs should be classified as dissimilar. - (default is 1).
                                     
 # Example
 ```jldoctest
