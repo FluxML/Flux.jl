@@ -540,21 +540,23 @@ For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](
                                     
 # Example
 ```jldoctest
-julia> y = [1  0  0  0  1
-            0  1  0  1  0
-            0  0  1  0  0]
+julia> y1 = [1 0
+             0 0
+             0 1]
 3×5 Matrix{Int64}:
- 1  0  0  0  1
- 0  1  0  1  0
- 0  0  1  0  0
+ 1  0
+ 0  0
+ 0  1
                                     
-julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+julia> ŷ1 = [0.4 0.2
+             0.5 0.5
+             0.1 0.3]
 3×5 Matrix{Float32}:
- 0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
- 0.244728   0.244728   0.244728   0.244728   0.244728
- 0.665241   0.665241   0.665241   0.665241   0.665241
+ 0.4  0.2
+ 0.5  0.5
+ 0.1  0.3
                                     
-julia> Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
+julia> Flux.siamese_contrastive_loss(ŷ1, y1,1) ≈ 0.2333333333333333
 true
 ```
                                     
