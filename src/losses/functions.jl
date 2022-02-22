@@ -528,9 +528,9 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
 end
 
 """
-    focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=eps(ŷ))
+    siamese_contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
                                     
-Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
+Return the [siamese_contrastive_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
 The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
@@ -557,8 +557,6 @@ julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
 julia> Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
 true
 ```
-                                    
-See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
                                     
 """
 function siamese_contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
