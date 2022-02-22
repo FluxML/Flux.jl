@@ -565,7 +565,7 @@ function contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
     _check_sizes(ŷ, y)
     max_val = max(sum(margin .- ŷ), 0)
     margin_square = max_val > 0 ? abs2.(margin .- ŷ) : 0
-    return agg(y .* (ŷ .^ 2) + (1 .- y) .* margin_square)
+    return agg(y .* margin_square + (1 .- y) .* (ŷ .^ 2))
 end
                                     
 ```@meta
