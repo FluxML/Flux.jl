@@ -557,8 +557,7 @@ julia> ŷ1 = [0.4 0.2
                                     
 julia> Flux.siamese_contrastive_loss(ŷ1, y1,1) ≈ 0.2333333333333333
 true
-```
-                                    
+```                                    
 """
 function siamese_contrastive_loss(ŷ, y, margin = 1; agg = mean)
     _check_sizes(ŷ, y)
