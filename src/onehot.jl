@@ -193,7 +193,7 @@ function _onehotbatch(data, labels)
     unexpected_values = unique(data[indices .== nothinghl])
     error("Values $unexpected_values are not in labels")
   end
-  OneHotArray(indices, n_labels)
+  return OneHotArray(indices, n_labels)
 end
 
 function _onehotbatch(data, labels, default)
