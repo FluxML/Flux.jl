@@ -533,7 +533,7 @@ end
 Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
 which can be useful for training Siamese Networks.
                                  
-margin: Integer, defines the baseline for distance for which pairs should be classified as dissimilar. - (default is 1).
+Specify `margin` to set the baseline for distance at which pairs are dissimilar.
                                     
 # Example
 ```jldoctest
