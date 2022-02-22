@@ -530,8 +530,8 @@ end
 """
     siamese_contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
                                     
-Return the [siamese_contrastive_loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
-which can be used in training Siamese Networks.
+Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
+which can be useful for training Siamese Networks.
                                  
 margin: Integer, defines the baseline for distance for which pairs should be classified as dissimilar. - (default is 1).
                                     
