@@ -543,7 +543,7 @@ For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](
 julia> y1 = [1 0
              0 0
              0 1]
-3×5 Matrix{Int64}:
+3×2 Matrix{Int64}:
  1  0
  0  0
  0  1
@@ -551,7 +551,7 @@ julia> y1 = [1 0
 julia> ŷ1 = [0.4 0.2
              0.5 0.5
              0.1 0.3]
-3×5 Matrix{Float32}:
+3×2 Matrix{Float32}:
  0.4  0.2
  0.5  0.5
  0.1  0.3
