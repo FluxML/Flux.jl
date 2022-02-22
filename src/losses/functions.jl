@@ -563,7 +563,7 @@ See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 """
 function contrastive_loss(ŷ, y, margin = epseltype(ŷ); agg = mean)
     _check_sizes(ŷ, y)
-    max_val = max(sum(ŷᵢ -> (margin - ŷᵢ), ŷ), 0)
+    max_val = max(sum(margin .- ŷ), 0)
     margin_square = max_val > 0 ? abs2.(margin .- ŷ) : 0
     return agg(y .* (ŷ .^ 2) + (1 .- y) .* margin_square)
 end
