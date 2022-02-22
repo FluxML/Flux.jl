@@ -218,5 +218,5 @@ end
     ŷ1 = [0.4 0.2
           0.5 0.5
           0.1 0.3]
-    @test Flux.siamese_contrastive_loss(ŷ1, y1,1) ≈ 0.43333333333333335
+    @test Flux.siamese_contrastive_loss(ŷ1, y1,1) ≈ 0.2333333333333333
 end
