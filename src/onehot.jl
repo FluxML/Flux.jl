@@ -183,9 +183,27 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
  3  6  15  3  9  3  12  3  6  15  3
 ```
 """
-onehotbatch(ls, labels, default...) = _onehotbatch(ls, length(labels) < 32 ? Tuple(labels) : labels, default...)
-# NB function barier:
-_onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
+onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ? Tuple(labels) : labels, default...)
+
+# NB function barrier:
+function _onehotbatch(data, labels)
+  n_labels = length(labels)
+  indices = _findval.(data, Ref(labels))
+  if nothing in indices
+    unexpected_values = unique(data[indices .== -1])
+    error("Values $unexpected_values are not in labels")
+  end
+  OneHotArray(indices, n_labels)
+end
+
+function _onehotbatch(data, labels, default)
+  n_labels = length(labels)
+  indices = _findval.(data, Ref(labels))
+  if nothing in indices
+    indices = replace!(indices, -1 => _findval(default, labels))
+  end
+  return OneHotArray(indices, n_labels)
+end
 
 """
     onecold(y::AbstractArray, labels = 1:size(y,1))
