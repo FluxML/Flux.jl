@@ -188,7 +188,7 @@ onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ?
 # NB function barrier:
 function _onehotbatch(data, labels)
   n_labels = length(labels)
-  indices = _findval.(data, Ref(labels))
+  indices = map(x -> _findval(x, labels), data)
   if nothing in indices
     unexpected_values = unique(data[indices .== nothing])
     error("Values $unexpected_values are not in labels")
