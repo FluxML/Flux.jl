@@ -184,30 +184,22 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
 ```
 """
 onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ? Tuple(labels) : labels, default...)
-onehotbatch(data::AbstractString, labels, default...) = onehotbatch([_ for _ in data], labels, default...)
 
 # NB function barrier:
 function _onehotbatch(data, labels)
-  n_labels = length(labels)
-  indices = map(x -> _findval(x, labels), data)
+  indices = [_findval(i, labels) for i in data]
   if nothing in indices
     unexpected_values = unique(data[indices .== nothing])
     error("Values $unexpected_values are not in labels")
   end
-  return OneHotArray(indices, n_labels)
+  return OneHotArray(indices, length(labels))
 end
 
 function _onehotbatch(data, labels, default)
-  n_labels = length(labels)
-  indices = map(x -> _findval(x, labels), data)
-  if nothing in indices
-    default_index = _findval(default, labels)
-    isnothing(default_index) && error("Default value $default is not in labels")
-    replaced_indices = replace(indices, nothing => default_index)
-    return OneHotArray(replaced_indices, n_labels)
-  else
-    return OneHotArray(indices, n_labels)
-  end
+  default_index = _findval(default, labels)
+  isnothing(default_index) && error("Default value $default is not in labels")
+  indices = [isnothing(_findval(i, labels)) ? default_index : _findval(i, labels) for i in data]
+  return OneHotArray(indices, length(labels))
 end
 
 """
