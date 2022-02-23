@@ -187,7 +187,7 @@ onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ?
 
 # NB function barrier:
 function _onehotbatch(data, labels)
-  indices = [_findval(i, labels) for i in data]
+  indices = UInt32[_findval(i, labels) for i in data]
   if nothing in indices
     unexpected_values = unique(data[indices .== nothing])
     error("Values $unexpected_values are not in labels")
@@ -198,7 +198,7 @@ end
 function _onehotbatch(data, labels, default)
   default_index = _findval(default, labels)
   isnothing(default_index) && error("Default value $default is not in labels")
-  indices = [isnothing(_findval(i, labels)) ? default_index : _findval(i, labels) for i in data]
+  indices = UInt32[isnothing(_findval(i, labels)) ? default_index : _findval(i, labels) for i in data]
   return OneHotArray(indices, length(labels))
 end
 
