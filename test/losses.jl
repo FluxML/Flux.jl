@@ -223,10 +223,10 @@ end
          0  0  1  0  0]
     ŷ1 = softmax(reshape(-7:7, 3, 5) .* 1f0)
     @test Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
-    @test Flux.siamese_contrastive_loss(ŷ, y,margin=0.5) ≈ 0.10000000000000002
-    @test Flux.siamese_contrastive_loss(ŷ, y,margin=1.5) ≈ 0.5333333333333333
+    @test Flux.siamese_contrastive_loss(ŷ, y,margin=0.5f0) ≈ 0.10000000000000002
+    @test Flux.siamese_contrastive_loss(ŷ, y,margin=1.5f0) ≈ 0.5333333333333333
     @test Flux.siamese_contrastive_loss(ŷ1, y1) ≈ 0.32554647357933836
-    @test Flux.siamese_contrastive_loss(ŷ1, y1,margin=0.5) ≈ 0.16453040969047064
-    @test Flux.siamese_contrastive_loss(ŷ1, y1,margin=1.5) ≈ 0.6532292041348727
-    @test Flux.siamese_contrastive_loss(ŷ, y,margin=1.0) ≈ Flux.siamese_contrastive_loss(ŷ, y)
+    @test Flux.siamese_contrastive_loss(ŷ1, y1,margin=0.5f0) ≈ 0.16453040969047064
+    @test Flux.siamese_contrastive_loss(ŷ1, y1,margin=1.5f0) ≈ 0.6532292041348727
+    @test Flux.siamese_contrastive_loss(ŷ, y,margin=1) ≈ Flux.siamese_contrastive_loss(ŷ, y)
 end
