@@ -184,6 +184,7 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
 ```
 """
 onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ? Tuple(labels) : labels, default...)
+onehotbatch(data::AbstractString, labels, default...) = onehotbatch([_ for _ in data], labels, default...)
 
 # NB function barrier:
 function _onehotbatch(data, labels)

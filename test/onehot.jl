@@ -18,10 +18,13 @@ using Test
   @test onehotbatch("abc", 'a':'c') == Bool[1 0 0; 0 1 0; 0 0 1]
   @test onehotbatch("zbc", ('a', 'b', 'c'), 'a') == Bool[1 0 0; 0 1 0; 0 0 1]
 
+  @test onehotbatch([10, 20], [30, 40, 50], 30) == Bool[1 1; 0 0; 0 0]
+
   @test_throws Exception onehotbatch([:a, :d], [:a, :b, :c])
   @test_throws Exception onehotbatch([:a, :d], (:a, :b, :c))
   @test_throws Exception onehotbatch([:a, :d], [:a, :b, :c], :e)
   @test_throws Exception onehotbatch([:a, :d], (:a, :b, :c), :e)
+  @test_throws Exception onehotbatch([:a, :e], (:a, :b, :c), :d)
 
   floats = (0.0, -0.0, NaN, -NaN, Inf, -Inf)
   @test onecold(onehot(0.0, floats)) == 1
