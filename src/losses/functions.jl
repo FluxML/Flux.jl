@@ -538,18 +538,26 @@ Specify `margin` to set the baseline for distance at which pairs are dissimilar.
 # Example
 ```jldoctest
 julia> y = [1 0
-                 0 0
-                 0 1];
+            0 0
+            0 1]
+3×2 Matrix{Int64}:
+ 1  0
+ 0  0
+ 0  1									
            
 julia> ŷ = [0.4 0.2
-                0.5 0.5
-                0.1 0.3];
+            0.5 0.5
+            0.1 0.3]
+3×2 Matrix{Float64}:
+ 0.4  0.2
+ 0.5  0.5
+ 0.1  0.3									
                                     
 julia> Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
 true
 ```                                    
 """
-function siamese_contrastive_loss(ŷ, y; agg = mean,margin = 1)
+function siamese_contrastive_loss(ŷ, y; agg = mean,margin::Int64 = 1)
     _check_sizes(ŷ, y)
     max_val = max(-sum(ŷ .- margin), 0)
     if max_val > 0
