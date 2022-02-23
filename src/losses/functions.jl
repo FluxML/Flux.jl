@@ -549,7 +549,7 @@ julia> Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
 true
 ```                                    
 """
-function siamese_contrastive_loss(ŷ, y, margin = 1; agg = mean)
+function siamese_contrastive_loss(ŷ, y; agg = mean,margin = 1)
     _check_sizes(ŷ, y)
     max_val = max(-sum(ŷ .- margin), 0)
     if max_val > 0
