@@ -202,7 +202,7 @@ function _onehotbatch(data, labels, default)
   indices = map(x -> _findval(x, labels), data)
   if nothing in indices
     default_index = _findval(default, labels)
-    isnothing(default_index) && error("Default value $default_index is not in labels")
+    isnothing(default_index) && error("Default value $default is not in labels")
     replaced_indices = replace(indices, nothing => default_index)
     return OneHotArray(replaced_indices, n_labels)
   else
