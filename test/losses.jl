@@ -212,11 +212,11 @@ end
 end
 
 @testset "siamese_contrastive_loss" begin
-    y1 = [1 0
+    y = [1 0
           0 0
           0 1]
-    ŷ1 = [0.4 0.2
+    ŷ = [0.4 0.2
           0.5 0.5
           0.1 0.3]
-    @test Flux.siamese_contrastive_loss(ŷ1, y1,1) ≈ 0.2333333333333333
+    @test Flux.siamese_contrastive_loss(ŷ, y,1) ≈ 0.2333333333333333
 end
