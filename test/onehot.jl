@@ -24,7 +24,6 @@ using Test
   @test_throws Exception onehotbatch([:a, :d], (:a, :b, :c))
   @test_throws Exception onehotbatch([:a, :d], [:a, :b, :c], :e)
   @test_throws Exception onehotbatch([:a, :d], (:a, :b, :c), :e)
-  @test_throws Exception onehotbatch([:a, :b], (:a, :b, :c), :d)
 
   floats = (0.0, -0.0, NaN, -NaN, Inf, -Inf)
   @test onecold(onehot(0.0, floats)) == 1
