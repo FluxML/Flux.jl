@@ -1,4 +1,5 @@
-using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy, binary_focal_loss, focal_loss
+using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy, binary_focal_loss, focal_loss,
+                   margin_ranking_loss
 
 
 @testset "Losses" begin
@@ -33,6 +34,18 @@ y = [1  0  0  0  1
   for loss in ALL_LOSSES
     gpu_autodiff_test(loss, x, y)
   end
+end
+
+@testset "margin_ranking_loss" begin
+     x1 = [1.2 2.3 3.4]
+     x2 = [9.8 8.7 7.6]
+     y = 1
+   
+     @test Flux.margin_ranking_loss(x1, x2, y) ≈ Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y)) |> cpu
+     @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=identity) ≈ 
+          Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y), margin=gpu(1.0), agg=identity) |> cpu atol=1e-6
+     @test Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=sum) ≈
+          Flux.margin_ranking_loss(gpu(x1), gpu(x2), gpu(y), margin=gpu(1.0), agg=sum)
 end
 
 end #testset

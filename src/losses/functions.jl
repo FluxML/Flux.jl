@@ -530,3 +530,32 @@ end
 ```@meta
 DocTestFilters = nothing
 ```
+
+"""
+  margin_ranking_loss(x1, x2, y; margin=0, agg=mean)
+Measures the margin ranking loss between `x1`, `x2` for `y` = 1 or -1 and `margin`. `agg` is `mean` by default; but can be specified as identity or sum.
+
+# Example
+```jldoctest
+julia> x1 = [1.2 2.3 3.4]
+1×3 Matrix{Float64}:
+ 1.2  2.3  3.4
+
+julia> x2 = [9.8 8.7 7.6]
+1×3 Matrix{Float64}:
+ 9.8  8.7  7.6
+
+julia> y = 1
+1
+
+julia> Flux.margin_ranking_loss(x1, x2, y, margin=1.0, agg=sum) ≈ 22.2
+true
+```
+"""
+function margin_ranking_loss(x1, x2, y; margin=zero(eltype(x1)), agg=mean)
+  any(∈((1, -1)), y) || error("Rank can be either 1 or -1, got $y")
+  agg(max.(zero(eltype(x1)), -y .* (x1 .- x2) .+ margin))
+end
+```@meta
+DocTestFilters = nothing
+```
