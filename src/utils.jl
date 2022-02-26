@@ -472,7 +472,7 @@ function _restructure(m, xs)
   return m̄
 end
 
-@adjoint function _restructure(m, xs)
+@adjoint function _restructure(m, xs)  # TODO ChainRulesCore.rrule
   m̄, numel = _restructure(m, xs), length(xs)
   function _restructure_pullback(dm)
     xs′ = destructure(dm)[1]
@@ -603,7 +603,10 @@ true
 """
 modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 
-@nograd modules
+@nograd modules # TODO: is this correct? might fail with explicit parameters.
+function ChainRulesCore.rrule(::typeof(modules), m)
+  modules(m), dm -> error("Flux.modules is not at present differentiable, sorry")
+end
 
 isleaflike(x) = Functors.isleaf(x)
 isleaflike(::Tuple{Vararg{<:Number}}) = true

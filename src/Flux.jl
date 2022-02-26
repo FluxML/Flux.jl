@@ -12,6 +12,7 @@ using MLUtils
 
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
+using ChainRulesCore
 
 export Chain, Dense, Maxout, SkipConnection, Parallel,
        RNN, LSTM, GRU, GRUv3,

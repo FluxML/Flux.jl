@@ -273,8 +273,7 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
   )
 end
 
-# TODO: Find proper fix for https://github.com/FluxML/Flux.jl/issues/900
-@nograd conv_transpose_dims
+ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
   b = reshape(c.bias, map(_->1, c.stride)..., :, 1)

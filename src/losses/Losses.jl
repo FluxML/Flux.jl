@@ -3,6 +3,7 @@ module Losses
 using Statistics
 using Zygote
 using Zygote: @adjoint
+using ChainRulesCore
 using ..Flux: ofeltype, epseltype
 using CUDA
 using NNlib: logsoftmax, logσ

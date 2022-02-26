@@ -11,10 +11,11 @@ function (BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}},
                   training=Flux._isactive(BN)))
 end
 
-@adjoint function batchnorm(g, b, x, running_mean, running_var, momentum; kw...)
+function ChainRulesCore.rrule(::typeof(batchnorm), g, b, x, running_mean, running_var, momentum; kw...)
   y = batchnorm(g, b, x, running_mean, running_var, momentum; kw...) 
   function batchnorm_pullback(Δ)
-    ∇batchnorm(g, b, x, Δ, running_mean, running_var, momentum; kw...)..., nothing, nothing, nothing
+    grad = ∇batchnorm(g, b, x, Δ, running_mean, running_var, momentum; kw...)
+    (NoTangent(), grad..., NoTangent(), NoTangent(), NoTangent())
   end
   y, batchnorm_pullback
 end

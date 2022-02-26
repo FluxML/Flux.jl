@@ -230,7 +230,11 @@ function _fast_argmax(x::OneHotLike)
   end
 end
 
-@nograd OneHotArray, onecold, onehot, onehotbatch
+ChainRulesCore.@non_differentiable onehot(::Any...)
+ChainRulesCore.@non_differentiable onehotbatch(::Any...)
+ChainRulesCore.@non_differentiable onecold(::Any...)
+
+ChainRulesCore.@non_differentiable (::Type{<:OneHotArray})(indices::Any, L::Integer)
 
 function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)
