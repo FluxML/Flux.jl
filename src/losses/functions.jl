@@ -548,7 +548,7 @@ julia> y = [1 0
 julia> ŷ = [1 0
             0 0
             0 1]
-3×2 Matrix{Float64}:
+3×2 Matrix{Int64}:
  1  0
  0  0
  0  1									
