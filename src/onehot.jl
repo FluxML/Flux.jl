@@ -188,8 +188,9 @@ onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ?
 function _onehotbatch(data, labels)
   indices = UInt32[something(_findval(i, labels), 0) for i in data]
   if 0 in indices
-    unexpected_values = unique(data[indices .== 0])
-    error("Values $unexpected_values are not in labels")
+    for x in data
+      isnothing(_findval(x, labels)) && error("Value $x not found in labels")
+    end
   end
   return OneHotArray(indices, length(labels))
 end
