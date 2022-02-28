@@ -225,14 +225,14 @@ end
   @test Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0.5f0) ≈ 0.10000000000000002
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 1.5f0) ≈ 0.5333333333333333
-  @test Flux.siamese_contrastive_loss(ŷ1, y1) ≈ 0.32554647357933836
-  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0.5f0) ≈ 0.16453040969047064
-  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 1.5f0) ≈ 0.6532292041348727
+  @test Flux.siamese_contrastive_loss(ŷ1, y1) ≈ 0.32554644f0
+  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0.5f0) ≈ 0.16271012f0
+  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 1.5f0) ≈ 0.6532292f0
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 1) ≈ Flux.siamese_contrastive_loss(ŷ, y)
   @test Flux.siamese_contrastive_loss(y, y) ≈ 0.0
   @test Flux.siamese_contrastive_loss(y1, y1) ≈ 0.0
-  @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0) ≈ 0.041666666666666664
-  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0) ≈ 0.038569372f0
+  @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0) ≈ 0.09166666666666667
+  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0) ≈ 0.13161165f0
   @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
 end
