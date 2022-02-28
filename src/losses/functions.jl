@@ -527,6 +527,68 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
 end
 
+"""
+    siamese_contrastive_loss(ŷ, y, margin = 1; agg = mean)
+                                    
+Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
+which can be useful for training Siamese Networks.
+                                 
+Specify `margin` to set the baseline for distance at which pairs are dissimilar.
+                                    
+# Example
+```jldoctest
+julia> y = [1 0
+            0 0
+            0 1]
+3×2 Matrix{Int64}:
+ 1  0
+ 0  0
+ 0  1									
+           
+julia> ŷ = [1 0
+            0 0
+            0 1]
+3×2 Matrix{Int64}:
+ 1  0
+ 0  0
+ 0  1									
+                                    
+julia> Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.0
+true
+julia> y1 = [1 0
+             0 0
+             0 1]
+3×2 Matrix{Int64}:
+ 1  0
+ 0  0
+ 0  1									
+           
+julia> ŷ1 = [0.4 0.2
+             0.5 0.5
+             0.1 0.3]
+3×2 Matrix{Float64}:
+ 0.4  0.2
+ 0.5  0.5
+ 0.1  0.3									
+                                    
+julia> Flux.siamese_contrastive_loss(ŷ1, y1) ≈ 0.2333333333333333
+true
+```                                    
+"""
+function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
+    _check_sizes(ŷ, y)
+    if margin >= 0
+        max_val = max(-sum(ŷ .- margin), 0)
+        if max_val > 0
+            return agg(@. y * (margin - ŷ)^2 + (1 - y) * ŷ^2)
+        else
+            return agg(@. y * (margin - ŷ)^2)
+        end
+    else
+        throw(DomainError(margin, "Margin must be non-negative"))
+    end
+end
+
 ```@meta
 DocTestFilters = nothing
 ```

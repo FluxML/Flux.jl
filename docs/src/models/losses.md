@@ -41,4 +41,5 @@ Flux.Losses.dice_coeff_loss
 Flux.Losses.tversky_loss
 Flux.Losses.binary_focal_loss
 Flux.Losses.focal_loss
+Flux.losses.siamese_contrastive_loss
 ```
