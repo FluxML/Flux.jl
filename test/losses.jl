@@ -222,6 +222,16 @@ end
         0 1 0 1 0
         0 0 1 0 0]
   ŷ1 = softmax(reshape(-7:7, 3, 5) .* 1.0f0)
+  y2 = [1
+        0
+        0
+        1
+        1]
+  ŷ2 = [0.6
+        0.4
+        0.1
+        0.2
+        0.7]
   @test Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0.5f0) ≈ 0.10000000000000002
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 1.5f0) ≈ 0.5333333333333333
@@ -233,6 +243,8 @@ end
   @test Flux.siamese_contrastive_loss(y1, y1) ≈ 0.0
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0) ≈ 0.09166666666666667
   @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0) ≈ 0.13161165f0
+  @test Flux.siamese_contrastive_loss(ŷ2, y2) ≈ 0.21200000000000005
+  @test Flux.siamese_contrastive_loss(ŷ2, ŷ2) ≈ 0.18800000000000003
   @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
 end
