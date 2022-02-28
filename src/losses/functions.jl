@@ -528,7 +528,7 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
 end
 
 """
-    siamese_contrastive_loss(ŷ, y, margin = 1; agg = mean)
+    siamese_contrastive_loss(ŷ, y; margin = 1, agg = mean)
                                     
 Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
 which can be useful for training Siamese Networks.
