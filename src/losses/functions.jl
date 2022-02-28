@@ -578,12 +578,7 @@ true
 function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
     _check_sizes(ŷ, y)
     margin < 0 && throw(DomainError(margin, "Margin must be non-negative"))
-    max_val = max(sum(margin .- ŷ), 0)
-    if max_val > 0
-        return agg(@. y * (margin - ŷ)^2 + (1 - y) * ŷ^2)
-    else
-        return agg(@. y * (margin - ŷ)^2)
-    end
+    return agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)
 end
 
 ```@meta
