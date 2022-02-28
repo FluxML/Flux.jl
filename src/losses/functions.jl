@@ -532,6 +532,8 @@ end
                                     
 Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
 which can be useful for training Siamese Networks.
+                                    
+Formula: [agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)]                                    
                                  
 Specify `margin` to set the baseline for distance at which pairs are dissimilar.
                                     
