@@ -483,7 +483,8 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-    Embedding(in => out; init=randn)
+    Embedding(in => out; init=randn32)
+    Embedding(weight::AbstractMatrix)
 
 A lookup table that stores embeddings of dimension `out` 
 for a vocabulary of size `in`.
