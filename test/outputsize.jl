@@ -155,3 +155,10 @@ end
   @test outputsize(m, (32, 32, 16, 16)) == (32, 32, 16, 16)
   @test outputsize(m, (32, 32, 16); padbatch=true) == (32, 32, 16, 1)
 end
+
+@testset "embedding" begin
+  m = Embedding(3=>5)
+  @test outputsize(m, (2,)) == (5, 2)
+  @test outputsize(m, (2, 3)) == (5, 2, 3)
+  @test outputsize(m, (2, 3, 4)) == (5, 2, 3, 4)
+end
