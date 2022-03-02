@@ -2,6 +2,9 @@ steps:
   - label: "GPU integration with julia v1.6"
     plugins:
       - JuliaCI/julia#v1:
+          # Drop default "registries" directory, so it is not persisted from execution to execution
+          # Taken from https://github.com/JuliaLang/julia/blob/v1.7.2/.buildkite/pipelines/main/platforms/package_linux.yml#L11-L12
+          persist_depot_dirs: packages,artifacts,compiled
           version: "1.6"
       - JuliaCI/julia-test#v1: ~
     agents:
