@@ -14,7 +14,7 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.dice_coeff_loss,
                     Flux.Losses.poisson_loss,
                     Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss]
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss, Flux.Losses.euclidean_distance]
 
 
 @testset "xlogx & xlogy" begin
@@ -232,6 +232,14 @@ end
         0.1
         0.2
         0.7]
+  x1 = [1 0
+        1 1
+        0 1]
+  x2 = [0.4 0.2
+        0.5 0.5
+        0.1 0.3]
+  y_true = [1
+            0]  
   @test Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0.5f0) ≈ 0.10000000000000002
   @test Flux.siamese_contrastive_loss(ŷ, y, margin = 1.5f0) ≈ 0.5333333333333333
@@ -247,4 +255,13 @@ end
   @test Flux.siamese_contrastive_loss(ŷ2, ŷ2) ≈ 0.18800000000000003
   @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
+  @test Flux.euclidean_distance(x1,x2) ≈ [0.7874007874011811
+                                   0.8831760866327847]
+  @test_throws DomainError(-1.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(x1, x2, y_true, margin = -1.5)
+  @test Flux.siamese_contrastive_loss(x1, x2, y_true, margin=0) ≈ 0.39
+  @test Flux.siamese_contrastive_loss(x1, x2, y_true) ≈ 0.41259921259881893
+  @test Flux.siamese_contrastive_loss(x1, x2, y_true, margin=2) ≈ 1.125198425197638
+  @test Flux.siamese_contrastive_loss(x1, x1, y_true) ≈ 0.5
+  @test Flux.siamese_contrastive_loss(x2, x2, y_true) ≈ 0.5
+  @test Flux.siamese_contrastive_loss(x1, x2, y_true, margin = 1) ≈ Flux.siamese_contrastive_loss(x1, x2, y_true)
 end
