@@ -25,7 +25,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 Adapt = "3.0"
-ArrayInterface = "3.1, 4"
+ArrayInterface = "3.1, 4, 5"
 CUDA = "3"
 ChainRulesCore = "1.12"
 Functors = "0.2.1"
