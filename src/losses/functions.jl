@@ -543,6 +543,10 @@ function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
     margin < 0 && throw(DomainError(margin, "Margin must be non-negative"))
     return agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)
 end
+                                    
+euclidean_distance(x1::AbstractMatrix, x2::AbstractMatrix) = sqrt.(sum(abs2, x1 - x2; dims=1)) |> vec
+siamese_contrastive_loss(x1::AbstractMatrix, x2::AbstractMatrix, y::AbstractVector;margin::Real = 1) =
+    siamese_contrastive_loss(euclidean_distance(x1, x2), y;margin=margin)                                    
 
 ```@meta
 DocTestFilters = nothing
