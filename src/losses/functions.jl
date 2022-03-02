@@ -545,8 +545,8 @@ function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
 end
                                     
 euclidean_distance(x1::AbstractMatrix, x2::AbstractMatrix) = sqrt.(sum(abs2, x1 - x2; dims=1)) |> vec
-siamese_contrastive_loss(x1::AbstractMatrix, x2::AbstractMatrix, y::AbstractVector;margin::Real = 1) =
-    siamese_contrastive_loss(euclidean_distance(x1, x2), y;margin=margin)                                    
+siamese_contrastive_loss(x1::AbstractMatrix, x2::AbstractMatrix, y::AbstractVector) =
+    siamese_contrastive_loss(euclidean_distance(x1, x2), y)                                    
 
 ```@meta
 DocTestFilters = nothing
