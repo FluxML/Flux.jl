@@ -257,7 +257,6 @@ end
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
   @test Flux.euclidean_distance(x1,x2) ≈ [0.7874007874011811
                                           0.8831760866327847]
-  @test_throws DomainError(-1.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(x1, x2, y_true, margin = -1.5)
   @test Flux.siamese_contrastive_loss(x1, x2, y_true) ≈ 0.41259921259881893
   @test Flux.siamese_contrastive_loss(x1, x1, y_true) ≈ 0.5
   @test Flux.siamese_contrastive_loss(x2, x2, y_true) ≈ 0.5
