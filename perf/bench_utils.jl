@@ -6,20 +6,9 @@ using Zygote: pullback, ignore
 
 fw(m, x) = m(x)
 bw(back) = back(1f0)
-fwbw(m, ps, x) = gradient(() -> sum(m(x)), ps)
+fwbw(m, ps, x) = gradient(() -> sum(fw(m, x)), ps)
+pb(m, ps, x) = pullback(()->sum(fw(m, x)), ps)
 
-# Need to specialize for flux.recur.
-fw(m::Flux.Recur, X::Vector{<:AbstractArray}) = begin
-    ignore() do
-      Flux.reset!(m)
-    end
-    [m(x) for x in X]
-end
-fwbw(m::Flux.Recur, ps, X::Vector{<:AbstractArray}) = gradient(ps) do
-    y = fw(m, X)
-    sum(sum(y))
-end
-  
 function run_benchmark(model, x; cuda=true)
     
     if cuda 
@@ -28,11 +17,7 @@ function run_benchmark(model, x; cuda=true)
     end
 
     ps = Flux.params(model)
-    y, back = if model isa Flux.Recur && eltype(x) <: AbstractArray
-        pullback(() -> sum(sum([model(x_t) for x_t in x])), ps)
-    else
-        pullback(() -> sum(model(x)), ps)
-    end
+    y, back =  pb(model, ps, x)
 
 
     if cuda
