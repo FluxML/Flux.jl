@@ -2,7 +2,7 @@ using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
              sparse_init, identity_init, stack, unstack, batch, unbatch,
-             unsqueeze, params, loadparams!
+             unsqueeze, params, loadmodel!
 using StatsBase: var, std
 using Statistics, LinearAlgebra
 using Random
@@ -366,14 +366,14 @@ end
     @test_skip typeof(l1.bias) === typeof(l2.bias)
   end
 
-  @testset "loadparams!" begin
+  @testset "loadmodel!" begin
     pars(w, b) = [w, b]
     pars(l) = pars(l.weight, l.bias)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.weight], vcat, m)
     @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
       m = dm(bt)
-      loadmodel!(m, params(m))
+      Flux.loadmodel!(m, params(m))
       testdense(m, bt)
     end
   end
@@ -421,22 +421,22 @@ end
   end
 end
 
-@testset "loadparams! & absent bias" begin
+@testset "loadmodel! & absent bias" begin
   m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
   m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
   m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
 
-  Flux.loadparams!(m1, Flux.params(m2))
+  Flux.loadmodel!(m1, m2)
   @test m1[1].bias == 7:9
   @test sum(m1[1].weight) == 21
 
   # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
-  @test_broken Flux.loadparams!(m1, Flux.params(m0))
-  @test_broken iszero(m1[1].bias)
+  m1 = Flux.loadmodel!(m1, m0)
+  @test iszero(m1[1].bias)
   @test sum(m1[1].weight) == 6  # written before error
 
   # load into a model without bias -- should it ignore the parameter which has no home, or error?
-  @test_broken Flux.loadparams!(m0, Flux.params(m2))
+  m0 = Flux.loadmodel!(m0, m2)
   @test iszero(m0[1].bias)  # obviously unchanged
   @test sum(m0[1].weight) == 21
 end

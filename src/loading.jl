@@ -18,26 +18,29 @@ By default, use `copyto!` when `x` and `x̄` are arrays.
 Otherwise, just return `x`.
 """
 loadleaf!(x, x̄, err) = x
-loadleaf!(x::Zeros, x̄, err) = x
+function loadleaf!(x::AbstractArray, x̄, err)
+  x .= x̄
+  return x
+end
 function loadleaf!(x::AbstractArray, x̄::AbstractArray, err)
-    (size(x) == size(x̄)) || throw(err)
-    copyto!(x, x̄)
+  (size(x) == size(x̄)) || throw(err)
+  copyto!(x, x̄)
 end
 
 function _loadto!(m, m̄)
-    ls, _ = functor(m)
-    l̄s, _ = functor(m̄)
-    (keys(ls) == keys(l̄s)) ||
-        throw(ArgumentError("Tried to load $m̄ into $m but the structures do not match."))
+  ls, _ = functor(m)
+  l̄s, _ = functor(m̄)
+  (keys(ls) == keys(l̄s)) ||
+    throw(ArgumentError("Tried to load $m̄ into $m but the structures do not match."))
 
-    err = DimensionMismatch("Tried to load $m̄ into $m but the parameter sizes do not match.")
-    foreach((l, l̄) -> loadleaf!(l, l̄, err), ls, l̄s)
+  err = DimensionMismatch("Tried to load $m̄ into $m but the parameter sizes do not match.")
+  foreach((l, l̄) -> loadleaf!(l, l̄, err), ls, l̄s)
 
-    return m
+  return m
 end
 function loadto!(m::T, m̄::S) where {T, S}
-    (nameof(T) == nameof(S)) || throw(ArgumentError("Tried to load $m̄ into $m."))
-    _loadto!(m, m̄)
+  (nameof(T) == nameof(S)) || throw(ArgumentError("Tried to load $m̄ into $m."))
+  _loadto!(m, m̄)
 end
 
 """
