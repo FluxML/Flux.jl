@@ -301,7 +301,7 @@ end
     Bilinear((in1, in2) => out, σ=identity; bias=true, init=glorot_uniform)
     Bilinear(W::AbstractArray, [bias, σ])
 
-Creates a fully connected layer which operates on two inputs.
+Creates a layer which is fully connected between two inputs and the output, and otherwise similar to [`Dense`](@ref).
 Its output, given vectors `x` & `y`, is another vector `z` with,
 for all `i ∈ 1:out`:
 
