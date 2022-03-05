@@ -172,7 +172,7 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(size::Integer...; bias = true, init = ones32)
+    Diagonal(size::Integer...; bias=true, init=ones32)
     Diagonal(scale::AbstractArray, [bias])
 
 Create an element-wise linear layer, which performs
@@ -181,9 +181,9 @@ Create an element-wise linear layer, which performs
 
 with no activation function.
  
-The learnable parameters are initialised `scale = init(size...)` and 
-`bias = zeros32(size...)`, with `init = ones32` by default. You may specify the function `init`, 
-turn off trainable bias with `bias = false`, or provide the array(s) explicitly.
+The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
+with `init=ones32` by default. You may specify the function `init`, 
+turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
 Used by [`LayerNorm`](@ref).
 """
