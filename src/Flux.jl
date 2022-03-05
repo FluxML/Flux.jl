@@ -37,7 +37,6 @@ using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
 include("utils.jl")
-include("zeros.jl")
 include("onehot.jl")
 include("functor.jl")
 

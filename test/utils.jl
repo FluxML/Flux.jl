@@ -1,8 +1,8 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
-             sparse_init, stack, unstack, Zeros, batch, unbatch,
-             unsqueeze, params
+             sparse_init, stack, unstack, batch, unbatch,
+             unsqueeze, params, loadparams!
 using StatsBase: var, std
 using Statistics, LinearAlgebra
 using Random
@@ -263,88 +263,36 @@ end
   @test eltype(f32(f64(m))[1].weight) == Float32
 end
 
-@testset "Zeros" begin
-  m = Dense(3,2; bias=false)
-  @test f64(m).bias === m.bias === Zeros()
-  @test f32(m).bias === m.bias === Zeros()
+@testset "zero bias" begin
+  m = Dense(3 => 2; bias=false)
+  @test f64(m).bias === m.bias === false
+  @test f32(m).bias === m.bias === false
 
   @testset "Gradients for broadcasted $op with sizes $s" for op in (+,-,*), s in ((1,), (2,3))
     o = ones(s)
     z = zeros(s)
-    Z = Zeros()
 
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
       g = gfun(o, z)
-      @test gfun(o, Z) == (g[1], nothing)
+      @test gfun(o, false) == (g[1], nothing)
 
       g = gfun(z, o)
-      @test gfun(Z, o) == (nothing, g[2])
+      @test gfun(false, o) == (nothing, g[2])
     end
 
     @testset "Implicit" begin
       gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
       g = gfun(o, z)
 
-      gres = gfun(o, Z)
+      gres = gfun(o, false)
       @test gres[o] == g[o]
-      @test Z ∉ gres.params
+      @test false ∉ gres.params
 
       g = gfun(z, o)
-      gres = gfun(Z, o)
+      gres = gfun(false, o)
       @test gres[o] == g[o]
-      @test Z ∉ gres.params
-    end
-  end
-
-  @testset "Gradients for broadcasted / with sizes $s" for s in ((1,), (2,3))
-    o = ones(s)
-    z = zeros(s)
-    Z = Zeros() # Only defined for 0-dim
-
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(x ./ y), args...)
-      g = gfun(z, o)
-      @test gfun(Z, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(x,y) = gradient(() -> sum(x ./ y), params([x,y]))
-
-      g = gfun(z, o)
-      gres = gfun(Z, o)
-      @test gres[o] == g[o]
-      @test Z ∉ gres.params
-    end
-  end
-
-  @testset "Gradients for $op with sizes $s" for op in (+,-), s in (tuple(), (1,), (2,3))
-    o = ones(s)
-    z = zeros(s)
-    Z = Zeros()
-
-
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(op(x,y)), args...)
-
-      g = gfun(o, z)
-      @test gfun(o, Z) == (g[1], nothing)
-
-      g = gfun(z, o)
-      @test gfun(Z, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(args...) = gradient(() -> sum(op(args...)), params(collect(args)))
-      g = gfun(o, z)
-      gres = gfun(o, Z)
-      @test gres[o] == g[o]
-      @test Z ∉ gres.params
-
-      g = gfun(z, o)
-      gres = gfun(Z, o)
-      @test gres[o] == g[o]
-      @test Z ∉ gres.params
+      @test false ∉ gres.params
     end
   end
 end
@@ -385,7 +333,7 @@ end
     dl(4, 3, bias)
   )
 
-  nobias(n) = Zeros()
+  nobias(n) = false
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
     @test l1.weight == l2.weight
     @test l1.bias == l2.bias
@@ -393,11 +341,7 @@ end
   end
 
   @testset "loadparams!" begin
-    import Flux: loadparams!
     pars(w, b) = [w, b]
-    import Flux: loadparams!, Zeros
-
-    pars(w, b::Zeros) = [w, Flux.zeros32(size(w,1))]
     pars(l) = pars(l.weight, l.bias)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.weight], vcat, m)
@@ -405,17 +349,6 @@ end
       m = dm(bt)
       loadparams!(m, params(m))
       testdense(m, bt)
-    end
-
-    @testset "$b1 to $b2" for (b1, b2, be) in (
-      (Flux.zeros32, Flux.ones32, Flux.ones32),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (Flux.ones32, nobias, Flux.zeros32), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, Flux.ones32, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
-    )
-      m1 = dm(b1)
-      m2 = dm(b2)
-      loadparams!(m1, b1 == nobias ? weights(m2) : pararray(m2))
-      testdense(m1, be)
     end
   end
 
@@ -440,6 +373,26 @@ end
       end
     end
   end
+end
+
+@testset "loadparams! & absent bias" begin
+  m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
+  m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
+  m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
+
+  Flux.loadparams!(m1, Flux.params(m2))
+  @test m1[1].bias == 7:9
+  @test sum(m1[1].weight) == 21
+
+  # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
+  @test_broken Flux.loadparams!(m1, Flux.params(m0))
+  @test_broken iszero(m1[1].bias)
+  @test sum(m1[1].weight) == 6  # written before error
+
+  # load into a model without bias -- should it ignore the parameter which has no home, or error?
+  @test_broken Flux.loadparams!(m0, Flux.params(m2))
+  @test iszero(m0[1].bias)  # obviously unchanged
+  @test sum(m0[1].weight) == 21
 end
 
 @testset "Train and test mode" begin

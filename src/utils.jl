@@ -441,17 +441,18 @@ rand32(dims...) = Base.rand(Float32, dims...)
 randn32(dims...) = Base.randn(Float32, dims...)
 
 """
-    create_bias(weights, bias, length)
+    create_bias(weights, bias, size...)
 
 Return a bias parameter for a layer, based on the value given
 to the constructor's keyword `bias=bias`.
 
-* `bias == true` creates a zero vector, of the same type as weights.
-* `bias == false` returns `Zeros()`, a special struct which exists only to encode the absence of bias.
-* `bias::AbstractArray` uses the array provided, provided it has the correct size and eltype. If the type is wrong, it will be converted.
+* `bias == true` creates a trainable array of the given size, of the same type as `weights`, initialised to zero.
+* `bias == false` returns `false`, which is understood by AD to be non-differentiable.
+* `bias::AbstractArray` uses the array provided, provided it has the correct size.
+  It does not at present correct the `eltype` to match that of `weights`.
 """
 function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
-  bias ? fill!(similar(weights, dims...), 0) : Zeros()
+  bias ? fill!(similar(weights, dims...), 0) : false
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))

@@ -155,8 +155,8 @@ end
   end
 end
 
-@testset "Dense with Zeros bias" begin
-  l = Dense(ones(Float32, 4, 3), Flux.Zeros()) |> gpu
+@testset "Dense without bias" begin
+  l = Dense(ones(Float32, 4, 3), false) |> gpu
   ip = zeros(Float32, 3, 7) |> gpu
 
   @test sum(l(ip)) ≈ 0.f0

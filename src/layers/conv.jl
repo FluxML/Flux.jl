@@ -6,6 +6,10 @@ _paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 
+conv_reshape_bias(c) = c.bias isa AbstractVector ?
+   reshape(c.bias, map(_->1, c.stride)..., :, 1) :
+   c.bias
+
 """
     SamePad()
 
@@ -61,8 +65,8 @@ Then:
 
 Keywords to control initialization of the layer:
 * `init` - Function used to generate initial weights. Defaults to `glorot_uniform`.
-* `bias` - Initial bias is zero by default, this can be disabled entirely by setting it to
-  `false`, or another vector explicitly as `bias = randn(Float32, out)`.
+* `bias` - The initial bias vector is all zero by default. Trainable bias can be disabled entirely
+  by setting this to `false`, or another vector can be provided such as `bias = randn(Float32, out)`.
 
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
@@ -159,10 +163,9 @@ end
 @functor Conv
 
 function (c::Conv)(x::AbstractArray)
-  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ = NNlib.fast_act(c.σ, x)
   cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
-  σ.(conv(x, c.weight, cdims) .+ b)
+  σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 _channels_in(l ::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
@@ -183,7 +186,7 @@ function _print_conv_opt(io::IO, l)
   if hasproperty(l, :groups)
     (l.groups == 1) || print(io, ", groups=", l.groups)
   end
-  (l.bias isa Zeros) && print(io, ", bias=false")
+  (l.bias === false) && print(io, ", bias=false")
 end
 
 """
@@ -276,10 +279,9 @@ end
 ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
-  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
-  σ.(∇conv_data(x, c.weight, cdims) .+ b)
+  σ.(∇conv_data(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::ConvTranspose)
@@ -371,10 +373,9 @@ depthwiseconvfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
                     init = glorot_uniform) where N = init(filter..., div(ch[2], ch[1]), ch[1])
 
 function (c::DepthwiseConv)(x)
-  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ = NNlib.fast_act(c.σ, x)
   cdims = DepthwiseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  σ.(depthwiseconv(x, c.weight, cdims) .+ b)
+  σ.(depthwiseconv(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::DepthwiseConv)
@@ -452,10 +453,9 @@ function crosscor(x, w, ddims::DenseConvDims)
 end
 
 function (c::CrossCor)(x::AbstractArray)
-  b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
   σ = NNlib.fast_act(c.σ, x)
   cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  σ.(crosscor(x, c.weight, cdims) .+ b)
+  σ.(crosscor(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::CrossCor)

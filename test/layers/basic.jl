@@ -175,7 +175,7 @@ import Flux: activations
       @test b1.σ == identity
 
       b2 = Flux.Bilinear(randn(3,4,5), false)
-      @test b2.bias == Flux.Zeros()
+      @test b2.bias === false
 
       b3 = Flux.Bilinear(randn(Float16, 3,4,5), true, tanh)
       @test b3.σ == tanh
