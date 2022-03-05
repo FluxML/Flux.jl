@@ -172,31 +172,40 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(α, β)
-    Diagonal(size::Integer...)
+    Diagonal(size::Integer...; bias=true, init=ones32)
+    Diagonal(scale::AbstractArray, [bias])
 
 Create an element-wise linear layer, which performs
 
-    y = α .* x .+ β
+    y = scale .* x .+ bias
 
-The learnable arrays are initialised `α = ones(Float32, size)` and
-`β = zeros(Float32, size)`.
+with no activation function.
+ 
+The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
+with `init=ones32` by default. You may specify the function `init`, 
+turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
 Used by [`LayerNorm`](@ref).
 """
-struct Diagonal{T}
-  α::T
-  β::T
+struct Diagonal{A<:AbstractArray, B}
+  scale::A
+  bias::B
+  function Diagonal(W::M, bias = true) where M<:AbstractArray
+    b = create_bias(W, bias, size(W)...)
+    new{M, typeof(b)}(W, b)
+  end
 end
 
-Diagonal(sz::Integer...) = Diagonal(ones32(sz...), zeros32(sz...))
+Diagonal(sz::Integer...; bias = true, init = ones32) = Diagonal(init(sz...), bias)
 
 @functor Diagonal
 
-(a::Diagonal)(x) = a.α .* x .+ a.β
+(a::Diagonal)(x) = a.scale .* x .+ a.bias
 
 function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", join(size(l.α), ", "), ")")
+  print(io, "Diagonal(", join(size(l.scale), ", "))
+  l.bias == false && print(io, "; bias=false")
+  print(io, ")")
 end
 
 """
