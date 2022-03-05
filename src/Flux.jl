@@ -1,18 +1,17 @@
 module Flux
 
-# Zero Flux Given
-
 using Base: tail
-using Statistics, Random, LinearAlgebra, SpecialFunctions
-using Zygote, MacroTools, ProgressLogging, Reexport
+using LinearAlgebra, Statistics, Random  # standard lib
+using MacroTools, Reexport, ProgressLogging, SpecialFunctions
 using MacroTools: @forward
+
 @reexport using NNlib
-
 using MLUtils
+import Optimisers: trainable  # before v0.13, Flux owned this function
 
+using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
-using ChainRulesCore
 
 export Chain, Dense, Maxout, SkipConnection, Parallel,
        RNN, LSTM, GRU, GRUv3,
@@ -31,7 +30,6 @@ export Descent, ADAM, Momentum, Nesterov, RMSProp,
   ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
   ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
-
 
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
