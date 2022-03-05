@@ -85,9 +85,22 @@ This ensures that the model loaded from `"mymodel.bson"` matches the structure o
 
 ```@docs
 Flux.loadmodel!
+Flux.loadto!
 Flux.isloadleaf
 Flux.loadleaf!
 ```
+
+### Customizing `loadmodel!` for a custom layer
+
+By default, [`loadmodel!`](@ref) will recursively walk a nested model (like a `Chain`) using [`Functors.fmap`](@ref) until it encounters a loading *leaf node*. A leaf node is defined as any node for which [`Flux.isloadleaf`](@ref) returns `true`. For example, consider the model
+
+```julia
+model = Chain(Dense(10 => 5), Parallel(+, Dense(5 => 2), Dense(5 => 2)))
+```
+
+Here, the `Chain` and `Parallel` layers are not leaf nodes, but all the `Dense` layers are leaf nodes. This makes sense, because `Dense` layers are the ones with parameters that we need to copy. The default behavior for [`Flux.isloadleaf`](@ref) should work for most custom layers, but you can override this function for your type.
+
+Once a pair of leaf nodes is encountered, `loadmodel!` will call [`Flux.loadto!](@ref) on them. By default, this just copies the parameters from one leaf node to the other, but you can customize the behavior by overriding `loadto!` for your pair of types.
 
 ## Checkpointing
 

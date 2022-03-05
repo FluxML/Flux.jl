@@ -27,7 +27,17 @@ function loadleaf!(x::AbstractArray, x̄::AbstractArray, err)
   copyto!(x, x̄)
 end
 
-function _loadto!(m, m̄)
+"""
+    loadto!(m, m̄)
+
+Load a leaf node `m̄` into `m`.
+
+By default, call [`Flux.loadleaf!`](@ref) on each pair of children
+in `zip(Functors.children(m), Functors.children(m̄))`.
+"""
+function loadto!(m::T, m̄::S) where {T, S}
+  (nameof(T) == nameof(S)) || throw(ArgumentError("Tried to load $m̄ into $m."))
+  
   ls, _ = functor(m)
   l̄s, _ = functor(m̄)
   (keys(ls) == keys(l̄s)) ||
@@ -37,10 +47,6 @@ function _loadto!(m, m̄)
   foreach((l, l̄) -> loadleaf!(l, l̄, err), ls, l̄s)
 
   return m
-end
-function loadto!(m::T, m̄::S) where {T, S}
-  (nameof(T) == nameof(S)) || throw(ArgumentError("Tried to load $m̄ into $m."))
-  _loadto!(m, m̄)
 end
 
 """
@@ -56,8 +62,38 @@ throwing an error whenever:
 - `x` and `x̄` do not share the same fields
 - the parameter sizes are mismatched between `x` and `x̄`
 
-See [`loadleaf!`](@ref) for more details on the copy behavior.
-See [`isloadleaf`](@ref) for more details on which layers are considered leaves.
+```julia
+julia> using Flux: loadmodel!
+
+julia> m = Chain(Dense(Flux.ones32(2, 5)), Dense(2 => 1))
+Chain(
+  Dense(5 => 2),                        # 12 parameters
+  Dense(2 => 1),                        # 3 parameters
+)                   # Total: 4 arrays, 15 parameters, 316 bytes.
+
+julia> m̄ = Chain(Dense(5 => 2), Dense(2 => 1));
+
+julia> all(isone, m[1].weight)
+true
+
+julia> m = loadmodel!(m, m̄)
+Chain(
+  Dense(5 => 2),                        # 12 parameters
+  Dense(2 => 1),                        # 3 parameters
+)                   # Total: 4 arrays, 15 parameters, 316 bytes.
+
+julia> all(isone, m[1].weight)
+false
+
+julia> m[1].weight == m̄[1].weight
+true
+
+julia> m[2].bias == m̄[2].bias
+true
+```
+
+See [`Flux.loadleaf!`](@ref) for more details on the copy behavior.
+See [`Flux.isloadleaf`](@ref) for more details on which layers are considered leaves.
 
 !!! warning
     This function allows `m̄` to be a vector or `Params` for backwards-compatibility.
