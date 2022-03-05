@@ -172,23 +172,18 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(scale, bias)
     Diagonal(size::Integer...; bias = true, init = ones32)
+    Diagonal(scale::AbstractArray, [bias])
 
 Create an element-wise linear layer, which performs
 
     y = scale .* x .+ bias
 
-if `bias` is true, and
-
-    y = x .* scale
-    
-otherwise.
-
-The learnable parameters are initialised `scale = Flux.ones32(size)` and 
-`bias = Flux.zeros32(size)`. Alternatively, specify `init` to customize how `scale` 
-is initialised. The weight matrix and/or the bias vector (with the same size as `x`) 
-may also be provided explicitly.
+with no activation function.
+ 
+The learnable parameters are initialised `scale = init(size...)` and 
+`bias = zeros32(size...)`, with `init = ones32` by default. You may specify the function `init`, 
+turn off trainable bias with `bias = false`, or provide the array(s) explicitly.
 
 Used by [`LayerNorm`](@ref).
 """
