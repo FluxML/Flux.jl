@@ -75,7 +75,7 @@ using Flux: loadmodel!
 using BSON: @load
 
 # some predefined model
-model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
+model = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
 
 # load one model into another
 model = loadmodel!(model, @load("mymodel.bson"))
