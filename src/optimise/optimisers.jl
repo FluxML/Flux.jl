@@ -23,7 +23,7 @@ opt = Descent()
 
 opt = Descent(0.3)
 
-ps = params(model)
+ps = Flux.params(model)
 
 gs = gradient(ps) do
     loss(x, y)
@@ -500,7 +500,7 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
+  Optimiser(ADAM(η, β), WeightDecay(decay))
 
 """
     AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)

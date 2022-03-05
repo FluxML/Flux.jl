@@ -6,13 +6,14 @@ gate(x::AbstractMatrix, h, n) = view(x, gate(h,n), :)
 # AD-friendly helper for dividing monolithic RNN params into equally sized gates
 multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
 
-@adjoint function multigate(x::AbstractArray, h, c)
+function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
   function multigate_pullback(dy)
-    dx = Zygote._zero(x, eltype(x))
-    map(multigate(dx, h, c), dy) do dxᵢ, dyᵢ
-      dyᵢ !== nothing && (dxᵢ.= Zygote.accum.(dxᵢ, dyᵢ));
+    dx = map!(zero, similar(x, float(eltype(x)), axes(x)), x)
+    foreach(multigate(dx, h, c), dy) do dxᵢ, dyᵢ
+      dyᵢ isa AbstractZero && return
+      @. dxᵢ += dyᵢ
     end
-    return (dx, nothing, nothing)
+    return (NoTangent(), dx, NoTangent(), NoTangent())
   end
   return multigate(x, h, c), multigate_pullback
 end
@@ -82,23 +83,10 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
-
-# TODO remove in v0.13
-function Base.getproperty(m::Recur, sym::Symbol)
-  if sym === :init
-    Zygote.ignore() do
-      @warn "Recur field :init has been deprecated. To access initial state weights, use m::Recur.cell.state0 instead."
-    end
-    return getfield(m.cell, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
 flip(f, xs) = reverse(f.(reverse(xs)))
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(view(x, :, :, i)) for i in 1:size(x, 3)]
+  h = [m(x_t) for x_t in eachslice(x, dims=3)]
   sze = size(h[1])
   reshape(reduce(hcat, h), sze[1], sze[2], length(h))
 end
@@ -113,7 +101,7 @@ struct RNNCell{F,A,V,S}
   state0::S
 end
 
-RNNCell(in::Integer, out::Integer, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) =
+RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) =
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
 function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
@@ -126,26 +114,26 @@ end
 @functor RNNCell
 
 function Base.show(io::IO, l::RNNCell)
-  print(io, "RNNCell(", size(l.Wi, 2), ", ", size(l.Wi, 1))
+  print(io, "RNNCell(", size(l.Wi, 2), " => ", size(l.Wi, 1))
   l.σ == identity || print(io, ", ", l.σ)
   print(io, ")")
 end
 
 """
-    RNN(in::Integer, out::Integer, σ = tanh)
+    RNN(in => out, σ = tanh)
 
 The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 
-The parameters `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
+The arguments `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
 
 This constructor is syntactic sugar for `Recur(RNNCell(a...))`, and so RNNs are stateful. Note that the state shape can change depending on the inputs, and so it is good to `reset!` the model between inference calls if the batch size changes. See the examples below.
 
 # Examples
 ```jldoctest
-julia> r = RNN(3, 5)
+julia> r = RNN(3 => 5)
 Recur(
-  RNNCell(3, 5, tanh),                  # 50 parameters
+  RNNCell(3 => 5, tanh),                # 50 parameters
 )         # Total: 4 trainable arrays, 50 parameters,
           # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
 
@@ -163,9 +151,9 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
     Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the following example:
 
     ```julia
-    julia> r = RNN(3, 5)
+    julia> r = RNN(3 => 5)
     Recur(
-      RNNCell(3, 5, tanh),                  # 50 parameters
+      RNNCell(3 => 5, tanh),                # 50 parameters
     )         # Total: 4 trainable arrays, 50 parameters,
               # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
 
@@ -191,18 +179,6 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::RNNCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "RNNCell field :h has been deprecated. Use m::RNNCell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
 # LSTM
 
 struct LSTMCell{A,V,S}
@@ -212,7 +188,7 @@ struct LSTMCell{A,V,S}
   state0::S
 end
 
-function LSTMCell(in::Integer, out::Integer;
+function LSTMCell((in, out)::Pair;
                   init = glorot_uniform,
                   initb = zeros32,
                   init_state = zeros32)
@@ -233,15 +209,15 @@ end
 @functor LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
-  print(io, "LSTMCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷4, ")")
+  print(io, "LSTMCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷4, ")")
 
 """
-    LSTM(in::Integer, out::Integer)
+    LSTM(in => out)
 
 [Long Short Term Memory](https://www.researchgate.net/publication/13853244_Long_Short-term_Memory)
 recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.
 
-The parameters `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
+The arguments `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
 
 This constructor is syntactic sugar for `Recur(LSTMCell(a...))`, and so LSTMs are stateful. Note that the state shape can change depending on the inputs, and so it is good to `reset!` the model between inference calls if the batch size changes. See the examples below.
 
@@ -250,9 +226,9 @@ for a good overview of the internals.
 
 # Examples
 ```jldoctest
-julia> l = LSTM(3, 5)
+julia> l = LSTM(3 => 5)
 Recur(
-  LSTMCell(3, 5),                       # 190 parameters
+  LSTMCell(3 => 5),                     # 190 parameters
 )         # Total: 5 trainable arrays, 190 parameters,
           # plus 2 non-trainable, 10 parameters, summarysize 1.062 KiB.
 
@@ -271,23 +247,6 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::LSTMCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "LSTMCell field :h has been deprecated. Use m::LSTMCell.state0[1] instead."
-    end
-    return getfield(m, :state0)[1]
-  elseif sym === :c
-    Zygote.ignore() do
-      @warn "LSTMCell field :c has been deprecated. Use m::LSTMCell.state0[2] instead."
-    end
-    return getfield(m, :state0)[2]
-  else
-    return getfield(m, sym)
-  end
-end
-
 # GRU
 
 function _gru_output(gxs, ghs, bs)
@@ -303,7 +262,7 @@ struct GRUCell{A,V,S}
   state0::S
 end
 
-GRUCell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
+GRUCell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
 function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
@@ -318,16 +277,16 @@ end
 @functor GRUCell
 
 Base.show(io::IO, l::GRUCell) =
-  print(io, "GRUCell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+  print(io, "GRUCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
 
 """
-    GRU(in::Integer, out::Integer)
+    GRU(in => out)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
 the variant proposed in v1 of the referenced paper.
 
-The parameters `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
+The integer arguments `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
 
 This constructor is syntactic sugar for `Recur(GRUCell(a...))`, and so GRUs are stateful. Note that the state shape can change depending on the inputs, and so it is good to `reset!` the model between inference calls if the batch size changes. See the examples below.
 
@@ -336,9 +295,9 @@ for a good overview of the internals.
 
 # Examples
 ```jldoctest
-julia> g = GRU(3, 5)
+julia> g = GRU(3 => 5)
 Recur(
-  GRUCell(3, 5),                        # 140 parameters
+  GRUCell(3 => 5),                      # 140 parameters
 )         # Total: 4 trainable arrays, 140 parameters,
           # plus 1 non-trainable, 5 parameters, summarysize 792 bytes.
 
@@ -357,19 +316,6 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 Recur(m::GRUCell) = Recur(m, m.state0)
 
-# TODO remove in v0.13
-function Base.getproperty(m::GRUCell, sym::Symbol)
-  if sym === :h
-    Zygote.ignore() do
-      @warn "GRUCell field :h has been deprecated. Use m::GRUCell.state0 instead."
-    end
-    return getfield(m, :state0)
-  else
-    return getfield(m, sym)
-  end
-end
-
-
 # GRU v3
 
 struct GRUv3Cell{A,V,S}
@@ -380,7 +326,7 @@ struct GRUv3Cell{A,V,S}
   state0::S
 end
 
-GRUv3Cell(in, out; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
+GRUv3Cell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3),
             init(out, out), init_state(out,1))
 
@@ -396,16 +342,16 @@ end
 @functor GRUv3Cell
 
 Base.show(io::IO, l::GRUv3Cell) =
-  print(io, "GRUv3Cell(", size(l.Wi, 2), ", ", size(l.Wi, 1)÷3, ")")
+  print(io, "GRUv3Cell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
 
 """
-    GRUv3(in::Integer, out::Integer)
+    GRUv3(in => out)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v3) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
 the variant proposed in v3 of the referenced paper.
 
-The parameters `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
+The arguments `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
 
 This constructor is syntactic sugar for `Recur(GRUv3Cell(a...))`, and so GRUv3s are stateful. Note that the state shape can change depending on the inputs, and so it is good to `reset!` the model between inference calls if the batch size changes. See the examples below.
 
@@ -414,9 +360,9 @@ for a good overview of the internals.
 
 # Examples
 ```jldoctest
-julia> g = GRUv3(3, 5)
+julia> g = GRUv3(3 => 5)
 Recur(
-  GRUv3Cell(3, 5),                      # 140 parameters
+  GRUv3Cell(3 => 5),                    # 140 parameters
 )         # Total: 5 trainable arrays, 140 parameters,
           # plus 1 non-trainable, 5 parameters, summarysize 848 bytes.
 
@@ -434,8 +380,3 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
-
-
-@adjoint function Broadcast.broadcasted(f::Recur, args...)
-  Zygote.∇map(__context__, f, args...)
-end

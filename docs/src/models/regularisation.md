@@ -9,7 +9,7 @@ For example, say we have a simple regression.
 ```julia
 using Flux
 using Flux.Losses: logitcrossentropy
-m = Dense(10, 5)
+m = Dense(10 => 5)
 loss(x, y) = logitcrossentropy(m(x), y)
 ```
 
@@ -39,9 +39,9 @@ Here's a larger example with a multi-layer perceptron.
 
 ```julia
 m = Chain(
-  Dense(28^2, 128, relu),
-  Dense(128, 32, relu),
-  Dense(32, 10))
+  Dense(28^2 => 128, relu),
+  Dense(128 => 32, relu),
+  Dense(32 => 10))
 
 sqnorm(x) = sum(abs2, x)
 
@@ -55,8 +55,8 @@ One can also easily add per-layer regularisation via the `activations` function:
 ```julia
 julia> using Flux: activations
 
-julia> c = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+julia> c = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)
+Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)
 
 julia> activations(c, rand(10))
 3-element Array{Any,1}:

@@ -31,7 +31,7 @@ end
 
 """
     Conv(filter, in => out, σ = identity;
-         stride = 1, pad = 0, dilation = 1, groups = 1, [bias, weight, init])
+         stride = 1, pad = 0, dilation = 1, groups = 1, [bias, init])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -61,11 +61,8 @@ Then:
 
 Keywords to control initialization of the layer:
 * `init` - Function used to generate initial weights. Defaults to `glorot_uniform`.
-* `weight` - Initial weights of the layer. Typically an array, and can be used to override
-  other configurations. By default, these are generated using [`convfilter`](@ref).
 * `bias` - Initial bias is zero by default, this can be disabled entirely by setting it to
-  [`Flux.Zeros()`](@ref) or equivalently `false`, or another vector provided as
-  `bias = randn(Float32, out)`.
+  `false`, or another vector explicitly as `bias = randn(Float32, out)`.
 
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
@@ -121,7 +118,7 @@ Conv((3,), 4 => 5, σ)  # 65 parameters
 julia> c1(randn(100, 4, 64)) |> size
 (98, 5, 64)
 
-julia> params(c1) |> length
+julia> Flux.params(c1) |> length
 2
 ```
 """
@@ -136,8 +133,9 @@ end
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
             init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groups = 1,
-            weight = convfilter(k, ch; init, groups), bias = true) where N
-
+            bias = true) where N
+    
+  weight = convfilter(k, ch; init, groups)
   Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
 
@@ -250,10 +248,10 @@ end
 function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                       init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
                       groups = 1,
-                      weight = convfilter(k, reverse(ch); init, groups),
                       bias = true,
                       ) where N
 
+  weight = convfilter(k, reverse(ch); init, groups)                    
   ConvTranspose(weight, bias, σ; stride, pad, dilation, groups)
 end
 
@@ -275,8 +273,7 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
   )
 end
 
-# TODO: Find proper fix for https://github.com/FluxML/Flux.jl/issues/900
-@nograd conv_transpose_dims
+ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
   b = reshape(c.bias, map(_->1, c.stride)..., :, 1)
@@ -335,7 +332,7 @@ struct DepthwiseConv{N,M,F,A,V}
 end
 
 """
-    DepthwiseConv(weight::AbstractArray, bias, [activation; stride, pad, dilation])
+    DepthwiseConv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Constructs a layer with the given weight and bias arrays.
 Accepts the same keywords as the `DepthwiseConv((4,4), 3 => 6, relu)` method.
@@ -351,8 +348,9 @@ end
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                 init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                weight = depthwiseconvfilter(k, ch, init = init), bias = true) where N
+                bias = true) where N
   @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
+  weight = depthwiseconvfilter(k, ch, init = init)
   return DepthwiseConv(weight, bias, σ; stride, pad, dilation)
 end
 
@@ -440,8 +438,9 @@ end
 
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                   init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                  weight = convfilter(k, ch, init = init), bias = true) where N
+                  bias = true) where N
 
+  weight = convfilter(k, ch, init = init)
   return CrossCor(weight, bias, σ; stride, pad, dilation)
 end
 

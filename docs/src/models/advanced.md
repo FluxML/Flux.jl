@@ -74,10 +74,10 @@ this using the slicing features `Chain` provides:
 
 ```julia
 m = Chain(
-      Dense(784, 64, relu),
-      Dense(64, 64, relu),
-      Dense(32, 10)
-    )
+      Dense(784 => 64, relu),
+      Dense(64 => 64, relu),
+      Dense(32 => 10)
+    );
 
 ps = Flux.params(m[3:end])
 ```
@@ -97,8 +97,8 @@ We can freeze a specific parameter of a specific layer which already entered a `
 by simply deleting it from `ps`:
 
 ```julia
-ps = params(m)
-delete!(ps, m[2].bias)
+ps = Flux.params(m)
+delete!(ps, m[2].bias) 
 ```
 
 ## Custom multiple input or output layer
@@ -142,10 +142,11 @@ Lastly, we can test our new layer. Thanks to the proper abstractions in Julia, o
 ```julia
 model = Chain(
               Join(vcat,
-                   Chain(Dense(1, 5),Dense(5, 1)), # branch 1
-                   Dense(1, 2),                    # branch 2
-                   Dense(1, 1)),                   # branch 3
-              Dense(4, 1)
+                   Chain(Dense(1 => 5, relu), Dense(5 => 1)), # branch 1
+                   Dense(1 => 2),                             # branch 2
+                   Dense(1 => 1)                              # branch 3
+                  ),
+              Dense(4 => 1)
              ) |> gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
@@ -164,11 +165,11 @@ Join(combine, paths...) = Join(combine, paths)
 # use vararg/tuple version of Parallel forward pass
 model = Chain(
               Join(vcat,
-                   Chain(Dense(1, 5),Dense(5, 1)),
-                   Dense(1, 2),
-                   Dense(1, 1)
+                   Chain(Dense(1 => 5, relu), Dense(5 => 1)),
+                   Dense(1 => 2),
+                   Dense(1 => 1)
                   ),
-              Dense(4, 1)
+              Dense(4 => 1)
              ) |> gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
@@ -201,8 +202,8 @@ Flux.@functor Split
 Now we can test to see that our `Split` does indeed produce multiple outputs.
 ```julia
 model = Chain(
-              Dense(10, 5),
-              Split(Dense(5, 1),Dense(5, 3),Dense(5, 2))
+              Dense(10 => 5),
+              Split(Dense(5 => 1, tanh), Dense(5 => 3, tanh), Dense(5 => 2))
              ) |> gpu
 
 model(gpu(rand(10)))

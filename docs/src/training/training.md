@@ -47,8 +47,8 @@ We can also define an objective in terms of some model:
 
 ```julia
 m = Chain(
-  Dense(784, 32, σ),
-  Dense(32, 10), softmax)
+  Dense(784 => 32, σ),
+  Dense(32 => 10), softmax)
 
 loss(x, y) = Flux.Losses.mse(m(x), y)
 ps = Flux.params(m)
@@ -64,7 +64,7 @@ At first glance it may seem strange that the model that we want to train is not 
 
 ## Model parameters
 
-The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `params(m)`.
+The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `Flux.params(m)`.
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 

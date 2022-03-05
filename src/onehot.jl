@@ -87,7 +87,7 @@ Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 2}} =
 Base.hcat(x::T, xs::T...) where {L, T <: OneHotLike{<:Any, L, <:Any, 1}} =
   OneHotMatrix(reduce(vcat, _indices.(xs); init = _indices(x)), L)
 
-batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotArray(_indices.(xs), L)
+MLUtils.batch(xs::AbstractArray{<:OneHotVector{<:Any, L}}) where L = OneHotMatrix(_indices.(xs), L)
 
 Adapt.adapt_structure(T, x::OneHotArray{<:Any, L}) where L = OneHotArray(adapt(T, _indices(x)), L)
 
@@ -183,9 +183,24 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
  3  6  15  3  9  3  12  3  6  15  3
 ```
 """
-onehotbatch(ls, labels, default...) = _onehotbatch(ls, length(labels) < 32 ? Tuple(labels) : labels, default...)
-# NB function barier:
-_onehotbatch(ls, labels, default...) = batch([onehot(l, labels, default...) for l in ls])
+onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ? Tuple(labels) : labels, default...)
+
+function _onehotbatch(data, labels)
+  indices = UInt32[something(_findval(i, labels), 0) for i in data]
+  if 0 in indices
+    for x in data
+      isnothing(_findval(x, labels)) && error("Value $x not found in labels")
+    end
+  end
+  return OneHotArray(indices, length(labels))
+end
+
+function _onehotbatch(data, labels, default)
+  default_index = _findval(default, labels)
+  isnothing(default_index) && error("Default value $default is not in labels")
+  indices = UInt32[something(_findval(i, labels), default_index) for i in data]
+  return OneHotArray(indices, length(labels))
+end
 
 """
     onecold(y::AbstractArray, labels = 1:size(y,1))
@@ -230,7 +245,11 @@ function _fast_argmax(x::OneHotLike)
   end
 end
 
-@nograd OneHotArray, onecold, onehot, onehotbatch
+ChainRulesCore.@non_differentiable onehot(::Any...)
+ChainRulesCore.@non_differentiable onehotbatch(::Any...)
+ChainRulesCore.@non_differentiable onecold(::Any...)
+
+ChainRulesCore.@non_differentiable (::Type{<:OneHotArray})(indices::Any, L::Integer)
 
 function Base.:(*)(A::AbstractMatrix, B::OneHotLike{<:Any, L}) where L
   _isonehot(B) || return invoke(*, Tuple{AbstractMatrix, AbstractMatrix}, A, B)

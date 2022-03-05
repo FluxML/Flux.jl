@@ -60,6 +60,8 @@ The behaviour of `params` on custom types can be customized using [`Functor.@fun
 
 # Examples
 ```jldoctest
+julia> using Flux: params
+
 julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
 Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
 
@@ -120,12 +122,12 @@ adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
 adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
-Zygote.@adjoint function Array(x::CUDA.CuArray)
-  Array(x), d -> (CUDA.cu(d),)
+function ChainRulesCore.rrule(::typeof(Array), x::CUDA.CuArray)
+  Array(x), d -> (NoTangent(), CUDA.cu(d),)
 end
 
-Zygote.@adjoint function Adapt.adapt_storage(to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), d -> (nothing, adapt_storage(FluxCUDAAdaptor(), d),)
+function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
+  adapt_storage(to, x), d -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), d),)
 end
 
 # CPU/GPU movement conveniences
@@ -202,7 +204,7 @@ function check_use_cuda()
     end
   end
 end
-Zygote.@nograd check_use_cuda
+ChainRulesCore.@non_differentiable check_use_cuda()
 
 # Precision
 

@@ -1,6 +1,6 @@
 istraining() = false
 
-@adjoint istraining() = true, _ -> nothing
+ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
 
 _isactive(m) = isnothing(m.active) ? istraining() : m.active
 
@@ -38,21 +38,19 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
 end
 dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
-@adjoint function dropout(rng, x, p; dims=:, active::Bool=true)
-  active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(rng, x, p, dims=dims)
-  return x .* y, Δ -> (nothing, Δ .* y, nothing)
-end
-
 dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 dropout_mask(rng, x::CuArray, p; kwargs...) =
   throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
 dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 function _dropout_mask(rng, x, p; dims=:)
-  y = rand!(rng, similar(x, _dropout_shape(x, dims)))
+  realfptype = float(real(eltype(x)))
+  y = rand!(rng, similar(x, realfptype, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
   return y
 end
+
+# TODO move this to NNlib
+ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 
 """
     Dropout(p; dims=:, rng = rng_from_array())
@@ -230,7 +228,8 @@ function _track_stats!(
   bn.σ² = res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new
   return nothing
 end
-Zygote.@nograd _track_stats!
+
+ChainRulesCore.@non_differentiable _track_stats!(::Any...)
 
 """
     BatchNorm(channels::Integer, λ=identity;
@@ -261,9 +260,9 @@ Use [`testmode!`](@ref) during inference.
 # Examples
 ```julia
 m = Chain(
-  Dense(28^2, 64),
+  Dense(28^2 => 64),
   BatchNorm(64, relu),
-  Dense(64, 10),
+  Dense(64 => 10),
   BatchNorm(10),
   softmax)
 ```

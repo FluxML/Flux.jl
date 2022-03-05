@@ -14,11 +14,12 @@ for T in [
 end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
+  pre, post = obj isa Chain{<:AbstractVector} ? ("([", "])") : ("(", ")")
   children = _show_children(obj)
   if all(_show_leaflike, children)
     _layer_show(io, obj, indent, name)
   else
-    println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), "(")
+    println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), pre)
     if obj isa Chain{<:NamedTuple} && children == getfield(obj, :layers)
       # then we insert names -- can this be done more generically? 
       for k in Base.keys(obj)
@@ -35,10 +36,10 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
       end
     end
     if indent == 0  # i.e. this is the outermost container
-      print(io, ")")
+      print(io, rpad(post, 2))
       _big_finale(io, obj)
     else
-      println(io, " "^indent, "),")
+      println(io, " "^indent, post, ",")
     end
   end
 end
@@ -54,7 +55,7 @@ _show_children(m::Maxout) = m.layers
 _show_children(p::Parallel) = (p.connection, p.layers...)
 
 for T in [
-    :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense,
+    :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense, :Bilinear, :Embedding,
     :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
@@ -90,18 +91,18 @@ function _big_finale(io::IO, m)
     noncnt = _childarray_sum(_->1, m) - length(ps)
     if noncnt > 0
       nonparam = underscorise(_childarray_sum(length, m) - sum(length, ps))
-      printstyled(io, " "^09, "# Total: ", length(ps), " trainable arrays, "; color=:light_black)
+      printstyled(io, " "^08, "# Total: ", length(ps), " trainable arrays, "; color=:light_black)
       println(io, pars, " parameters,")
       printstyled(io, " "^10, "# plus ", noncnt, " non-trainable, ", nonparam, " parameters, summarysize "; color=:light_black)
       print(io, bytes, ".")
     else
-      printstyled(io, " "^19, "# Total: ", length(ps), " arrays, "; color=:light_black)
+      printstyled(io, " "^18, "# Total: ", length(ps), " arrays, "; color=:light_black)
       print(io, pars, " parameters, ", bytes, ".")
     end
   end
 end
 
-_childarray_sum(f, x::AbstractArray) = f(x)
+_childarray_sum(f, x::AbstractArray{<:Number}) = f(x)
 _childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x))
 
 # utility functions

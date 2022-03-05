@@ -1,9 +1,11 @@
 using Flux
 using Flux.Data
 using Flux: OneHotArray, OneHotMatrix, OneHotVector
+using Flux: params
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
+using Zygote
 using CUDA
 
 Random.seed!(0)
