@@ -167,21 +167,21 @@ end
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
-  l.bias == false && print(io, "; bias=false")
+  l.bias == false && print(io, "; bias = false")
   print(io, ")")
 end
 
 """
-    Diagonal(α, β)
+    Diagonal(scale, bias)
     Diagonal(size::Integer...; bias = true, init = ones32)
 
 Create an element-wise linear layer, which performs
 
-    y = α .* x .+ β
+    y = scale .* x .+ bias
 
 if `bias` is true, and
 
-    y = α .* x
+    y = x .* scale
 
 otherwise. The learnable arrays are initialised `α = ones(Float32, size)` and
 `β = zeros(Float32, size)`. If `init` is specified, the function given to it is 
@@ -190,9 +190,9 @@ called and used to initialise α. The weight matrix and/or the bias vector
 
 Used by [`LayerNorm`](@ref).
 """
-struct Diagonal{A, B}
-  α::A
-  β::B
+struct Diagonal{A<:AbstractArray, B}
+  scale::A
+  bias::B
   function Diagonal(W::M, bias = true) where M<:AbstractArray
     b = create_bias(W, bias, size(W)...)
     new{M, typeof(b)}(W, b)
@@ -203,13 +203,12 @@ Diagonal(sz::Integer...; bias = true, init = ones32) = Diagonal(init(sz...), bia
 
 @functor Diagonal
 
-function (a::Diagonal)(x)
-  x = a.α .* x
-  x = x .+ a.β
-end
+(a::Diagonal)(x) = a.scale .* x .+ a.bias
 
 function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", join(size(l.α), ", "), ")")
+  print(io, "Diagonal(", join(size(l.scale), ", "))
+  l.bias == false && print(io, "; bias = false")
+  print(io, ")")
 end
 
 """
