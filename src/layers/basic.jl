@@ -110,7 +110,7 @@ as an `in × N` matrix, or any array with `size(x,1) == in`.
 The out `y` will be a vector  of length `out`, or a batch with
 `size(y) == (out, size(x)[2:end]...)`
 
-Keyword `bias = false` will switch off trainable bias for the layer.
+Keyword `bias=false` will switch off trainable bias for the layer.
 The initialisation of the weight matrix is `W = init(out, in)`, calling the function
 given to keyword `init`, with default [`glorot_uniform`](@doc Flux.glorot_uniform).
 The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
@@ -127,7 +127,7 @@ julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimension
 (2, 1, 1, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
-Dense(5 => 2, tanh; bias = false)  # 10 parameters
+Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
 julia> d1(ones(5))
 2-element Vector{Float64}:
@@ -167,7 +167,7 @@ end
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
-  l.bias == false && print(io, "; bias = false")
+  l.bias == false && print(io, "; bias=false")
   print(io, ")")
 end
 
@@ -182,11 +182,13 @@ Create an element-wise linear layer, which performs
 if `bias` is true, and
 
     y = x .* scale
+    
+otherwise.
 
-otherwise. The learnable arrays are initialised `scale = ones(Float32, size)` and
-`bias = zeros(Float32, size)`. If `init` is specified, the function given to it is 
-called and used to initialise scale. The weight matrix and/or the bias vector 
-(with the same size as x) may also be provided explicitly.
+The learnable parameters are initialised `scale = Flux.ones32(size)` and 
+`bias = Flux.zeros32(size)`. Alternatively, specify `init` to customize how `scale` 
+is initialised. The weight matrix and/or the bias vector (with the same size as `x`) 
+may also be provided explicitly.
 
 Used by [`LayerNorm`](@ref).
 """
@@ -207,7 +209,7 @@ Diagonal(sz::Integer...; bias = true, init = ones32) = Diagonal(init(sz...), bia
 
 function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", join(size(l.scale), ", "))
-  l.bias == false && print(io, "; bias = false")
+  l.bias == false && print(io, "; bias=false")
   print(io, ")")
 end
 
@@ -330,7 +332,7 @@ which is accepted as the input to a `Chain`.
 If the two input sizes are the same, `in1 == in2`, then you may write `Bilinear(in => out, σ)`.
 
 The initialisation works as for [`Dense`](@ref) layer, with `W = init(out, in1, in2)`.
-By default the bias vector is `zeros(Float32, out)`, option `bias = false` will switch off
+By default the bias vector is `zeros(Float32, out)`, option `bias=false` will switch off
 trainable bias. Either of these may be provided explicitly.
 
 # Examples
@@ -348,14 +350,14 @@ true
 
 julia> sc = SkipConnection(
                 Chain(Dense(5 => 20, tanh), Dense(20 => 9, tanh)),
-                Flux.Bilinear((9, 5) => 3, bias = false),
+                Flux.Bilinear((9, 5) => 3, bias=false),
             );  # used as the recombinator, with skip as the second input
 
 julia> sc(x) |> size
 (3, 32)
 
 julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
-Bilinear((8, 16) => 4, tanh; bias = false)  # 512 parameters
+Bilinear((8, 16) => 4, tanh; bias=false)  # 512 parameters
 ```
 """
 struct Bilinear{F,A,B}
@@ -406,7 +408,7 @@ function Base.show(io::IO, l::Bilinear)
     print(io, "Bilinear((", size(l.weight, 2), ", ", size(l.weight, 3), ") => ", size(l.weight, 1))
   end
   l.σ == identity || print(io, ", ", l.σ)
-  l.bias === false && print(io, "; bias = false")
+  l.bias === false && print(io, "; bias=false")
   print(io, ")")
 end
 
