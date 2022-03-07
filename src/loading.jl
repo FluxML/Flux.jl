@@ -1,104 +1,68 @@
 """
-    isloadleaf(x)
+    loadleaf!(dst, src, err)
 
-Return `true` whenever `x` should be treated as a "leaf node"
-for the purposes of loading parameters.
-By default, `isloadleaf` returns `true` if [`Functors.isleaf`](@ref)
-is `true` for all [`Functors.children(x)`](@ref `Functors.children`).
-
-You can override this function for a specific type if needed.
+Copy `src` to `dst` or throw `err` when their sizes are mismatched.
+By default, use `copyto!` when `dst` and `src` are arrays.
+When only `dst` is an array, set every element to `src`.
+Otherwise, just return `dst`.
 """
-isloadleaf(x) = all(Functors.isleaf, Functors.children(x))
-
-"""
-    loadleaf!(x, x̄, err)
-
-Copy `x̄` to `x` or throw `err` when their sizes are mismatched.
-By default, use `copyto!` when `x` and `x̄` are arrays.
-Otherwise, just return `x`.
-"""
-loadleaf!(x, x̄, err) = x
-function loadleaf!(x::AbstractArray, x̄, err)
-  x .= x̄
-  return x
+loadleaf!(dst, src, err) = dst
+function loadleaf!(dst::AbstractArray, src, err)
+  dst .= src
+  return dst
 end
-function loadleaf!(x::AbstractArray, x̄::AbstractArray, err)
-  (size(x) == size(x̄)) || throw(err)
-  copyto!(x, x̄)
+function loadleaf!(dst::AbstractArray, src::AbstractArray, err)
+  (size(dst) == size(src)) || throw(err)
+  copyto!(dst, src)
 end
 
 """
-    loadto!(m, m̄)
+    loadmodel!(dst, src)
 
-Load a leaf node `m̄` into `m`.
+Copy all the parameters (trainable and non-trainable) from `src` to `dst`.
 
-By default, call [`Flux.loadleaf!`](@ref) on each pair of children
-in `zip(Functors.children(m), Functors.children(m̄))`.
-"""
-function loadto!(m::T, m̄::S) where {T, S}
-  (nameof(T) == nameof(S)) || throw(ArgumentError("Tried to load $m̄ into $m."))
-  
-  ls, _ = functor(m)
-  l̄s, _ = functor(m̄)
-  (keys(ls) == keys(l̄s)) ||
-    throw(ArgumentError("Tried to load $m̄ into $m but the structures do not match."))
-
-  err = DimensionMismatch("Tried to load $m̄ into $m but the parameter sizes do not match.")
-  foreach((l, l̄) -> loadleaf!(l, l̄, err), ls, l̄s)
-
-  return m
-end
-
-"""
-    loadmodel!(m, m̄)
-
-Copy all the parameters (trainable and non-trainable) from `m̄` to `m`.
-
-`loadmodel!` recursively walks `m` and `m̄` until it encounters
-a subfield, `x`, (i.e. layer) where `isloadleaf(x)` is true.
-The parameters of the matching subfield, `x̄`, are copied to `x`,
-throwing an error whenever:
-- `x` and `x̄` are not the same type (e.g. loading a `Conv` to a `Dense`)
-- `x` and `x̄` do not share the same fields
-- the parameter sizes are mismatched between `x` and `x̄`
+`loadmodel!` recursively walks the [`Functors.children`](@ref) of `dst` and `src`
+calling `loadleaf!` on any pair of children where [`Functors.isleaf`](@ref) is true.
+It throws an error whenever:
+- `dst` and `src` do not share the same fields (at any level)
+- the sizes of leaf nodes are mismatched between `dst` and `src`
 
 ```julia
 julia> using Flux: loadmodel!
 
-julia> m = Chain(Dense(Flux.ones32(2, 5)), Dense(2 => 1))
+julia> dst = Chain(Dense(Flux.ones32(2, 5)), Dense(2 => 1))
 Chain(
   Dense(5 => 2),                        # 12 parameters
   Dense(2 => 1),                        # 3 parameters
 )                   # Total: 4 arrays, 15 parameters, 316 bytes.
 
-julia> m̄ = Chain(Dense(5 => 2), Dense(2 => 1));
+julia> src = Chain(Dense(5 => 2), Dense(2 => 1));
 
-julia> all(isone, m[1].weight)
+julia> all(isone, dst[1].weight)
 true
 
-julia> m = loadmodel!(m, m̄)
+julia> dst = loadmodel!(dst, src)
 Chain(
   Dense(5 => 2),                        # 12 parameters
   Dense(2 => 1),                        # 3 parameters
 )                   # Total: 4 arrays, 15 parameters, 316 bytes.
 
-julia> all(isone, m[1].weight)
+julia> all(isone, dst[1].weight)
 false
 
-julia> m[1].weight == m̄[1].weight
+julia> dst[1].weight == src[1].weight
 true
 
-julia> m[2].bias == m̄[2].bias
+julia> dst[2].bias == src[2].bias
 true
 ```
 
 See [`Flux.loadleaf!`](@ref) for more details on the copy behavior.
-See [`Flux.isloadleaf`](@ref) for more details on which layers are considered leaves.
 
 !!! warning
-    This function allows `m̄` to be a vector or `Params` for backwards-compatibility.
+    This function allows `src` to be a `Params` for backwards-compatibility.
     You should avoid using `loadmodel!` this way, because it skips most of the structural
-    checking used when `m̄` is also a struct. Silent errors may occur.
+    checking used when `src` is also a nested structure. Silent errors may occur.
 """
 function loadmodel!(m, xs::Params)
   for (p, x) in zip(params(m), xs)
@@ -107,5 +71,16 @@ function loadmodel!(m, xs::Params)
     copyto!(p, x)
   end
 end
-loadmodel!(m, xs::AbstractVector) = loadmodel!(m, params(xs))
-loadmodel!(m, m̄) = fmap(loadto!, m, m̄; exclude = isloadleaf)
+function loadmodel!(dst, src)
+  ldsts, _ = functor(dst)
+  lsrcs, _ = functor(src)
+  (keys(ldsts) == keys(lsrcs)) ||
+    throw(ArgumentError("Tried to load $src into $dst but the structures do not match."))
+
+  err = DimensionMismatch("Tried to load $src into $dst but the parameter sizes do not match.")
+  foreach(ldsts, lsrcs) do ldst, lsrc
+    Functors.isleaf(ldst) ? loadleaf!(ldst, lsrc, err) : loadmodel!(ldst, lsrc)
+  end
+
+  return dst
+end
