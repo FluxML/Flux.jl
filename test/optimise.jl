@@ -50,7 +50,7 @@ end
   l = 1
   Flux.train!(
               () -> (sleep(0.1); Flux.skip(); i+=1),
-              (),
+              Params([]),
               Iterators.repeated((), 10),
               Descent()
              )
@@ -59,7 +59,7 @@ end
 
   Flux.train!(
               () -> (sleep(0.1); i==8 && Flux.skip(); i+=1),
-              (),
+              Params([]),
               Iterators.repeated((), 10),
               Descent()
              )
@@ -68,7 +68,7 @@ end
 
   i = 0
   Flux.train!(() -> (sleep(0.1); i += 1; l),
-              (),
+              Params([]),
               Iterators.repeated((), 100),
               Descent(),
               cb = Flux.throttle(() -> (i > 3 && Flux.stop()), 1))
