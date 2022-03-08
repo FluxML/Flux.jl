@@ -8,14 +8,6 @@ using Statistics, LinearAlgebra
 using Random
 using Test
 
-@testset "unsqueeze" begin
-  x = randn(2, 3, 2)
-  @test @inferred(unsqueeze(x, 1)) == reshape(x, 1, 2, 3, 2)
-  @test @inferred(unsqueeze(x, 2)) == reshape(x, 2, 1, 3, 2)
-  @test @inferred(unsqueeze(x, 3)) == reshape(x, 2, 3, 1, 2)
-  @test @inferred(unsqueeze(x, 4)) == reshape(x, 2, 3, 2, 1)
-end
-
 @testset "Throttle" begin
   @testset "default behaviour" begin
     a = []
@@ -244,12 +236,6 @@ end
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
 end
 
-@testset "Basic Stacking" begin
-  x = randn(3,3)
-  stacked = stack([x, x], 2)
-  @test size(stacked) == (3,2,3)
-end
-
 @testset "Precision" begin
   m = Chain(Dense(10, 5, relu), Dense(5, 2))
   x64 = rand(Float64, 10)
@@ -297,14 +283,25 @@ end
   end
 end
 
-@testset "Stacking" begin
-  stacked_array=[ 8 9 3 5; 9 6 6 9; 9 1 7 2; 7 4 10 6 ]
-  unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
-  @test unstack(stacked_array, 2) == unstacked_array
-  @test stack(unstacked_array, 2) == stacked_array
-  @test stack(unstack(stacked_array, 1), 1) == stacked_array
+@testset "unsqueeze" begin
+  x = randn(2, 3, 2)
+  @test @inferred(unsqueeze(x, dims=1)) == reshape(x, 1, 2, 3, 2)
+  @test @inferred(unsqueeze(x, dims=2)) == reshape(x, 2, 1, 3, 2)
+  @test @inferred(unsqueeze(x, dims=3)) == reshape(x, 2, 3, 1, 2)
+  @test @inferred(unsqueeze(x, dims=4)) == reshape(x, 2, 3, 2, 1)
 end
 
+@testset "Stacking" begin
+  x = randn(3,3)
+  stacked = stack([x, x], dims=2)
+  @test size(stacked) == (3,2,3)
+
+  stacked_array=[ 8 9 3 5; 9 6 6 9; 9 1 7 2; 7 4 10 6 ]
+  unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
+  @test unstack(stacked_array, dims=2) == unstacked_array
+  @test stack(unstacked_array, dims=2) == stacked_array
+  @test stack(unstack(stacked_array, dims=1), dims=1) == stacked_array
+end
 
 @testset "Batching" begin
   stacked_array=[ 8 9 3 5
