@@ -23,7 +23,7 @@
   m = flatten
   @test outputsize(m, (5, 5, 3, 10)) == (75, 10)
 
-  m = Flux.unsqueeze(3)
+  m = Flux.unsqueeze(dims=3)
   @test outputsize(m, (5, 7, 13)) == (5, 7, 1, 13)
 
   m = Flux.Bilinear(10, 10, 7)
