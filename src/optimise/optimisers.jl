@@ -521,7 +521,7 @@ opt = AdaBelief()
 opt = AdaBelief(0.001, (0.9, 0.8))
 ```
 """
-mutable struct AdaBelief
+mutable struct AdaBelief <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   epsilon::Float64

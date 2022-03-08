@@ -20,13 +20,13 @@ according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
 As a result, the parameters are mutated and the optimizer's internal state may change.
 The gradient could be mutated as well.
 """
-function update!(opt, x, x̄)
+function update!(opt::AbstractOptimiser, x, x̄)
   x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
                                           # output are not mutable, see #1510 
   x .-= apply!(opt, x, x̄r)
 end
 
-function update!(opt, xs::Params, gs)
+function update!(opt::AbstractOptimiser, xs::Params, gs)
   for x in xs
     isnothing(gs[x]) && continue
     update!(opt, x, gs[x])
@@ -101,7 +101,7 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
 """
-function train!(loss, ps, data, opt; cb = () -> ())
+function train!(loss, ps, data, opt::AbstractOptimiser; cb = () -> ())
   ps = Params(ps)
   cb = runall(cb)
   n = (Base.IteratorSize(typeof(data)) == Base.HasLength()) ? length(data) : 0
