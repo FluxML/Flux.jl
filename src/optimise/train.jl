@@ -1,14 +1,6 @@
 using ProgressLogging: @progress, @withprogress, @logprogress
 import Zygote: Params, gradient
 
-"""
-    update!(x, x̄)
-
-Update the array `x` according to `x .-= x̄`.
-"""
-function update!(x::AbstractArray, x̄)
-  x .-= x̄
-end
 
 """
     update!(opt, p, g)
