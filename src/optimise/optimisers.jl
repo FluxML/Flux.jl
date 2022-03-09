@@ -553,7 +553,7 @@ mutable struct Optimiser <: AbstractOptimiser
   os::Vector{Any}
 end
 
-Optimiser(o...) = Optimiser(Any[o...])
+Optimiser(opts::AbstractOptimiser...) = Optimiser(Any[opts...])
 
 @forward Optimiser.os Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.setindex!
 @forward Optimiser.os Base.iterate
