@@ -73,25 +73,42 @@ batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
 """
-    train!(loss, params, data, opt; cb)
+    train!(loss, pars::Params, data, opt::AbstractOptimiser; [cb])
         
-`train!` uses a `loss` function and training `data` to improve the 
-[Model parameters](@ref) (`params`) based on a pluggable [Optimisers](@ref) (`opt`).
-        
-For each datapoint `d` in `data`, compute the gradient of  `loss` with
-respect to `params` through backpropagation and call the optimizer `opt`.
-If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
-        
-To pass trainable parameters, call [`Flux.params`](@ref) with your model or just the 
-layers you want to train, like `train!(loss, params(model), ...)` or `train!(loss, params(model[1:end-2), ...)` respectively.
+Uses a `loss` function and training `data` to improve the 
+model's parameters according to a particular optimisation rule `opt`.
 
-[Callbacks](@ref) are given with the keyword argument `cb`. For example, this will print "training" 
-every 10 seconds (using [`Flux.throttle`](@ref)):
-`train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))`
-        
+For each `d in data`, first the gradient of the `loss` is computed like this:
+```
+    gradient(() -> loss(d...), pars)  # if d isa Tuple
+    gradient(() -> loss(d), pars)     # otherwise
+```
+Here `pars` is produced by calling [`Flux.params`](@ref) on your model.
+(Or just on the layers you want to train, like `train!(loss, params(model[1:end-2]), data, opt)`.)
+This is the "implicit" style of parameter handling.
+
+Then, this gradient is used by optimizer `opt` to update the paramters:
+```
+    update!(opt, pars, grads)
+```
+The optimiser should be from the [Flux.Optimise](@ref) module.
+Different optimisers can be combined using [Flux.Optimise.Optimiser](@ref).
+
+This training loop iterates through `data` once.
+You can use [`@epochs`](@ref) to do this several times, or 
+use for instance `Iterators.repeat` to make a longer `data` iterator.
+
+## Callbacks
+
+[Callbacks](@ref) are given with the keyword argument `cb`.
+For example, this will print "training" every 10 seconds (using [`Flux.throttle`](@ref)):
+```
+    train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
+```
+    
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
-Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
+Multiple callbacks can be passed to `cb` as array.
 """
 function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   cb = runall(cb)
