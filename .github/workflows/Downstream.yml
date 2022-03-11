@@ -25,8 +25,8 @@ jobs:
           - {user: FluxML, repo: Torch.jl, group: All}
           - {user: FluxML, repo: Metalhead.jl, group: All}
           - {user: Chemellia, repo: AtomicGraphNets.jl, group: All}
-          - {user: SciML, repo: DiffEqFlux.jl, group: Layers}
-          - {user: SciML, repo: NeuralPDE.jl, group: NNPDE}
+          - {user: SciML, repo: DiffEqFlux.jl, group: All} # Layers}
+          - {user: SciML, repo: NeuralPDE.jl, group: All} # NNPDE}
           - {user: SciML, repo: OperatorLearning.jl, group: All}
     # if: contains(github.event.pull_request.labels.*.name, 'run downstream test')
     steps:
