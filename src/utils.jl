@@ -84,6 +84,8 @@ glorot_uniform(rng::AbstractRNG, dims...) = (rand(rng, Float32, dims...) .- 0.5f
 glorot_uniform(dims...) = glorot_uniform(rng_from_array(), dims...)
 glorot_uniform(rng::AbstractRNG) = (dims...) -> glorot_uniform(rng, dims...)
 
+ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
+
 """
     glorot_normal([rng=GLOBAL_RNG], dims...)
 
@@ -116,6 +118,8 @@ julia> Flux.glorot_normal(3, 2)
 glorot_normal(rng::AbstractRNG, dims...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
 glorot_normal(dims...) = glorot_normal(rng_from_array(), dims...)
 glorot_normal(rng::AbstractRNG) = (dims...) -> glorot_normal(rng, dims...)
+
+ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
 """
     kaiming_uniform([rng=GLOBAL_RNG], dims...; gain = √2)
@@ -154,6 +158,8 @@ end
 kaiming_uniform(dims...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
 kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
+ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
+
 """
     kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
 
@@ -190,6 +196,8 @@ end
 
 kaiming_normal(dims...; kwargs...) = kaiming_normal(rng_from_array(), dims...; kwargs...)
 kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 
 """
     truncated_normal([rng=GLOBAL_RNG], dims...; mean = 0, std = 1, lo = -2, hi = 2)
@@ -239,6 +247,8 @@ end
 
 truncated_normal(dims...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
 truncated_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
 """
     orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
@@ -307,6 +317,8 @@ end
 orthogonal(dims::Integer...; kwargs...) = orthogonal(rng_from_array(), dims...; kwargs...)
 orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
+ChainRulesCore.@non_differentiable orthogonal(::Any...)
+
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
 
@@ -350,6 +362,8 @@ end
 
 sparse_init(dims...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
 """
     identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
@@ -434,6 +448,8 @@ end
 identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs...)
 identity_init(; init_kwargs...) = identity_init(rng_from_array(); init_kwargs...)
 identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable identity_init(::Any...)
 
 ones32(dims...) = Base.ones(Float32, dims...)
 zeros32(dims...) = Base.zeros(Float32, dims...)
