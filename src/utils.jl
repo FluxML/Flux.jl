@@ -369,9 +369,6 @@ most Flux layers. Use `gain` to scale the identity by a constant.
 Often useful in the context of transfer learning, i.e when one wants to add more capacity to
 a model but start from the same mapping.
 
-Use keyword `shift` (integer or tuple) to apply circular shift to the output,
-equivalent to `Base.circshift(identity_init(size...), shift)`.
-
 Has the following behaviour
 *  1D: A `Vector` of `zeros` (useful for an identity bias)
 *  2D: An identity matrix (useful for an identity matrix multiplication)
@@ -388,12 +385,25 @@ Some caveats:
   padding must be applied so that output feature maps have the same size as input feature maps,
   e.g by using [`SamePad`](@ref).
 
+Use keyword `shift` (integer or tuple) to apply circular shift to the output,
+equivalent to `Base.circshift(identity_init(size...), shift)`.
+
+For consistency with other initialisers, it accepts `rng::AbstractRNG` as an optional
+first argument. But this is ignored, since the result is not random.
+
+# Examples
 ```jldoctest
 julia> Flux.identity_init(3,5)
 3×5 Matrix{Float32}:
  1.0  0.0  0.0  0.0  0.0
  0.0  1.0  0.0  0.0  0.0
  0.0  0.0  1.0  0.0  0.0
+
+julia> Dense(5 => 3, relu, init=Flux.identity_init)([1,-2,3,-4,5])
+3-element Vector{Float32}:
+ 1.0
+ 0.0
+ 3.0
 
 julia> Flux.identity_init(3,3,2; gain=100)
 3×3×2 Array{Float32, 3}:
@@ -408,7 +418,7 @@ julia> Flux.identity_init(3,3,2; gain=100)
  0.0    0.0  0.0
 
 julia> Conv((2,2), 1 => 1, init=Flux.identity_init(gain=10), pad=SamePad())([1 2 3; 4 5 6; 7 8 9;;;;])
-3×3×2×1 Array{Float32, 4}:
+3×3×1×1 Array{Float32, 4}:
 [:, :, 1, 1] =
  10.0  20.0  30.0
  40.0  50.0  60.0
