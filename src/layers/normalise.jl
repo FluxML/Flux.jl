@@ -139,7 +139,7 @@ testmode!(m::AlphaDropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
-    LayerNorm(sz, λ=nothing; affine=true, ϵ=1fe-5)
+    LayerNorm(sz, λ=identity; affine=true, ϵ=1fe-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states.
@@ -164,10 +164,9 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
-  sz = sz isa Integer ? (sz,) : sz
+function LayerNorm(sz, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
   diag = affine ? Diagonal(sz...) : identity
-  return LayerNorm(λ, diag, ϵ, sz, affine)
+  return LayerNorm(λ, diag, ϵ, Tuple(sz), affine)
 end
 
 @functor LayerNorm
