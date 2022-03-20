@@ -80,9 +80,11 @@ julia> Flux.glorot_uniform(2, 3)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_uniform(rng::AbstractRNG, dims...) = (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
-glorot_uniform(dims...) = glorot_uniform(rng_from_array(), dims...)
+glorot_uniform(rng::AbstractRNG, dims::Integer...) = (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+glorot_uniform(dims::Integer...) = glorot_uniform(rng_from_array(), dims...)
 glorot_uniform(rng::AbstractRNG) = (dims...) -> glorot_uniform(rng, dims...)
+
+ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
 """
     glorot_normal([rng=GLOBAL_RNG], dims...)
@@ -113,9 +115,11 @@ julia> Flux.glorot_normal(3, 2)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_normal(rng::AbstractRNG, dims...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
-glorot_normal(dims...) = glorot_normal(rng_from_array(), dims...)
+glorot_normal(rng::AbstractRNG, dims::Integer...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
+glorot_normal(dims::Integer...) = glorot_normal(rng_from_array(), dims...)
 glorot_normal(rng::AbstractRNG) = (dims...) -> glorot_normal(rng, dims...)
+
+ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
 """
     kaiming_uniform([rng=GLOBAL_RNG], dims...; gain = √2)
@@ -146,13 +150,15 @@ julia> Flux.kaiming_uniform(3, 2)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_uniform(rng::AbstractRNG, dims...; gain = √2)
+function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain = √2)
   bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
-kaiming_uniform(dims...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
+kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
 kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
 """
     kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
@@ -183,13 +189,15 @@ julia> Flux.kaiming_normal(3, 2)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_normal(rng::AbstractRNG, dims...; gain = √2f0)
+function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain = √2f0)
   std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
   return randn(rng, Float32, dims...) .* std
 end
 
-kaiming_normal(dims...; kwargs...) = kaiming_normal(rng_from_array(), dims...; kwargs...)
+kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(rng_from_array(), dims...; kwargs...)
 kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 
 """
     truncated_normal([rng=GLOBAL_RNG], dims...; mean = 0, std = 1, lo = -2, hi = 2)
@@ -221,7 +229,7 @@ julia> round(std(Flux.truncated_normal(10^6; lo = -100, hi = 100)))
 [PDF](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf). 
 Department of Scientific Computing website.
 """
-function truncated_normal(rng::AbstractRNG, dims...; mean = 0, std = 1, lo = -2, hi = 2)
+function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1, lo = -2, hi = 2)
   norm_cdf(x) = 0.5 * (1 + erf(x/√2))
   if (mean < lo - 2 * std) || (mean > hi + 2 * std)
     @warn "Mean is more than 2 std outside the limits in truncated_normal, so the distribution of values may be inaccurate." maxlog=1
@@ -237,8 +245,10 @@ function truncated_normal(rng::AbstractRNG, dims...; mean = 0, std = 1, lo = -2,
   return xs
 end
 
-truncated_normal(dims...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
+truncated_normal(dims::Integer...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
 truncated_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
 """
     orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
@@ -307,6 +317,8 @@ end
 orthogonal(dims::Integer...; kwargs...) = orthogonal(rng_from_array(), dims...; kwargs...)
 orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
+ChainRulesCore.@non_differentiable orthogonal(::Any...)
+
 """
     sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
 
@@ -336,7 +348,7 @@ julia> Flux.sparse_init(3, 2, sparsity=0.1)
 
 [1] Martens, J, "Deep learning via Hessian-free optimization" _Proceedings of the 27th International Conference on International Conference on Machine Learning_. 2010.
 """
-function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
+function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
   if length(dims) != 2
     throw(ArgumentError("Only 2-dimensional outputs are supported for sparse initialization."))
   end
@@ -348,8 +360,10 @@ function sparse_init(rng::AbstractRNG, dims...; sparsity, std = 0.01)
   return mapslices(shuffle, sparse_array, dims=1)
 end
 
-sparse_init(dims...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
+sparse_init(dims::Integer...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
 sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
 """
     identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
@@ -415,30 +429,32 @@ julia> Flux.identity_init(3,3,2,2)
 ```
 """
 # Assume bias
-identity_init(cols; gain=1, shift=0) = zeros32(cols)
+identity_init(cols::Integer; gain=1, shift=0) = zeros32(cols)
 
 # Assume matrix multiplication
-identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
+identity_init(rows::Integer, cols::Integer; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
 
 # Assume convolution
-function identity_init(dims...; gain=1, shift=0)
+function identity_init(dims::Integer...; gain=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
-  weights = zeros32(dims)
+  weights = zeros32(dims...)
   for i in 1:min(nin,nout)
     weights[centers..., i, i] = gain
   end
   return circshift(weights, shift)
 end
 
-identity_init(::AbstractRNG, dims...; kwargs...) = identity_init(dims...; kwargs...)
+identity_init(::AbstractRNG, dims::Integer...; kwargs...) = identity_init(dims...; kwargs...)
 identity_init(; init_kwargs...) = identity_init(rng_from_array(); init_kwargs...)
 identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
-ones32(dims...) = Base.ones(Float32, dims...)
-zeros32(dims...) = Base.zeros(Float32, dims...)
-rand32(dims...) = Base.rand(Float32, dims...)
-randn32(dims...) = Base.randn(Float32, dims...)
+ChainRulesCore.@non_differentiable identity_init(::Any...)
+
+ones32(dims::Integer...) = Base.ones(Float32, dims...)
+zeros32(dims::Integer...) = Base.zeros(Float32, dims...)
+rand32(dims::Integer...) = Base.rand(Float32, dims...)
+randn32(dims::Integer...) = Base.randn(Float32, dims...)
 
 """
     create_bias(weights, bias, size...)
