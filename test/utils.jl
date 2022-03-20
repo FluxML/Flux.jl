@@ -76,6 +76,8 @@ end
       sparse_init,
       truncated_normal,
       identity_init,
+      Flux.rand32,
+      Flux.randn32,
     ]
     if init == sparse_init
       init = (args...) -> sparse_init(args...; sparsity=0.5)
@@ -200,12 +202,10 @@ end
   end
 
   @testset "identity_init" begin
-
     @testset "Basic" begin
       partial = identity_init(gain=3)
       @test partial(3, 3) == identity_init(3, 3; gain=3) == [3 0 0; 0 3 0; 0 0 3]
     end
-
     @testset "Non-identity sizes" begin
         @test identity_init(2, 3)[:, end] == zeros(Float32, 2)
         @test identity_init(3, 2; shift=1)[1, :] == zeros(Float32, 2)
@@ -213,14 +213,12 @@ end
         @test identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
         @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
-
     @testset "Dense ID mapping" begin
         l = Dense(3,3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
     end
-
     @testset "$layer ID mapping with kernelsize $kernelsize" for layer in (Conv, ConvTranspose, CrossCor), kernelsize in (
         (1,),
         (3,),
@@ -233,7 +231,6 @@ end
         indata = randn(Float32, kernelsize..., nch, nch)
         @test l(indata) == indata
     end
-
     @testset "Inception identity" begin
       insize = 7
       path1 = Conv((1, 3), insize=>2; init=identity_init, pad=SamePad())

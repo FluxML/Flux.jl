@@ -215,14 +215,16 @@ paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 """
     f32(m)
 
-Convert the `eltype` of model's parameters to `Float32`.
+Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).
+Recurses into structs marked with [`@functor`](@ref).
 """
 f32(m) = paramtype(Float32, m)
 
 """
     f64(m)
 
-Convert the `eltype` of model's parameters to `Float64`.
+Converts the `eltype` of model's parameters to `Float64`.
+Recurses into structs marked with [`@functor`](@ref).
 """
 f64(m) = paramtype(Float64, m)
 
