@@ -164,7 +164,7 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(sz, λ=nothing; affine=true, ϵ=1f-5)
+function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
   sz = sz isa Integer ? (sz,) : sz
   diag = affine ? Diagonal(sz...) : identity
   return LayerNorm(λ, diag, ϵ, sz, affine)
@@ -174,12 +174,12 @@ end
 
 function (a::LayerNorm)(x)
   x = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
-  return isnothing(a.λ) ? x : a.λ.(x)
+  return a.λ === identity ? x : a.λ.(x)
 end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")
-  isnothing(l.λ) || print(io, ", $(l.λ)")
+  a.λ === identity || print(io, ", $(l.λ)")
   hasaffine(l) || print(io, ", affine=false")
   print(io, ")")
 end
