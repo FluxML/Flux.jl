@@ -52,8 +52,8 @@ else
 end
 
 """
-    glorot_normal([rng=GLOBAL_RNG], size...; gain = 1) -> Array
-    glorot_normal([rng]; kw...) -> Function
+    glorot_uniform([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    glorot_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform
 distribution on the interval ``[-x, x]``, where `x = gain * sqrt(6 / (fan_in + fan_out))`.
@@ -62,16 +62,16 @@ This method is described in [1] and also known as Xavier initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> extrema(Flux.glorot_uniform(10, 100))
-(-0.23351441f0, 0.23336345f0)
+julia> round.(extrema(Flux.glorot_uniform(10, 100)), digits=3)
+(-0.234f0, 0.234f0)
 
-julia> extrema(Flux.glorot_uniform(100, 10))
-(-0.23311867f0, 0.23339099f0)
+julia> round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
+(-0.233f0, 0.233f0)
 
-julia> extrema(Flux.glorot_uniform(100, 100))
-(-0.17319304f0, 0.17320111f0)
+julia> round.(extrema(Flux.glorot_uniform(100, 100)), digits=3)
+(-0.173f0, 0.173f0)
 
-julia> Dense(3 => 2, tanh; init=glorot_uniform(MersenneTwister(1)))
+julia> Dense(3 => 2, tanh; init=Flux.glorot_uniform(MersenneTwister(1)))
 Dense(3 => 2, tanh)  # 8 parameters
 
 julia> ans.bias
@@ -107,14 +107,14 @@ This method is described in [1] and also known as Xavier initialization.
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> using Statistics
 
-julia> std(Flux.glorot_normal(10, 100))
-0.13758826f0
+julia> round(std(Flux.glorot_normal(10, 1000)), digits=3)
+0.044f0
 
-julia> std(Flux.glorot_normal(100, 10))
-0.13859096f0
+julia> round(std(Flux.glorot_normal(1000, 10)), digits=3)
+0.044f0
 
-julia> std(Flux.glorot_normal(100, 100))
-0.10008307f0
+julia> round(std(Flux.glorot_normal(1000, 1000)), digits=3)
+0.032f0
 ```
 
 # References
@@ -141,14 +141,14 @@ This method is described in [1] and also known as He initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> extrema(Flux.kaiming_uniform(100, 10))
-(-0.7729515f0, 0.7726907f0)
+julia> round.(extrema(Flux.kaiming_uniform(100, 10)), digits=3)
+(-0.774f0, 0.774f0)
 
-julia> extrema(Flux.kaiming_uniform(10, 100))
-(-0.2446668f0, 0.24487591f0)
+julia> round.(extrema(Flux.kaiming_uniform(10, 100)), digits=3)
+(-0.245f0, 0.244f0)
 
-julia> extrema(Flux.kaiming_uniform(100, 100))
-(-0.24494839f0, 0.24493338f0)
+julia> round.(extrema(Flux.kaiming_uniform(100, 100)), digits=3)
+(-0.245f0, 0.245f0)
 ```
 
 # References
@@ -178,14 +178,14 @@ This method is described in [1] and also known as He initialization.
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> using Statistics
 
-julia> std(Flux.kaiming_normal(10, 100))
-0.14249805f0
+julia> round(std(Flux.kaiming_normal(10, 1000)), digits=3)
+0.045f0
 
-julia> std(Flux.kaiming_normal(100, 10))
-0.45106217f0
+julia> round(std(Flux.kaiming_normal(1000, 10)), digits=3)
+0.447f0
 
-julia> std(Flux.kaiming_normal(100, 100))
-0.14089037f0
+julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
+0.045f0
 ```
 
 # References
@@ -330,7 +330,7 @@ julia> sum(0 .== Flux.sparse_init(10, 11, sparsity=0.9), dims=1)
 1×11 Matrix{Int64}:
  9  9  9  9  9  9  9  9  9  9  9
 
-julia> Dense(3 => 10, tanh; init=sparse_init(sparsity=0.5))
+julia> Dense(3 => 10, tanh; init=Flux.sparse_init(sparsity=0.5))
 Dense(3 => 10, tanh)  # 40 parameters
 
 julia> count(iszero, ans.weight, dims=1)
@@ -460,12 +460,12 @@ Return an `Array{Float32}` of the given `size`, filled like `rand` or `randn`.
 When the size is not provided, `rand32(rng::AbstractRNG)` returns a function.
 """
 rand32(dims::Integer...) = Base.rand(Float32, dims...)
-rand32(rng::AbstractRNG, dims::Integer...) = Base.rand32(rng, Float32, dims...)
-rand32(rng::AbstractRNG) = (dims...,) -> rand32(rng, Float32, dims...)
+rand32(rng::AbstractRNG, dims::Integer...) = Base.rand(rng, Float32, dims...)
+rand32(rng::AbstractRNG) = (dims...,) -> Base.rand(rng, Float32, dims...)
 
 @doc @doc(rand32)
 randn32(dims::Integer...) = Base.randn(Float32, dims...)
-randn32(rng::AbstractRNG, dims::Integer...) = Base.rand32(rng, Float32, dims...)
+randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
 randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
 
 """
