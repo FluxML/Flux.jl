@@ -80,9 +80,12 @@ julia> Flux.glorot_uniform(2, 3)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_uniform(rng::AbstractRNG, dims::Integer...) = (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
+function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
+  scale = Float32(gain) * sqrt(24.0f0 / sum(nfan(dims...)))
+  (rand(rng, Float32, dims...) .- 0.5f0) .* scale
+end
 glorot_uniform(dims::Integer...) = glorot_uniform(rng_from_array(), dims...)
-glorot_uniform(rng::AbstractRNG) = (dims...) -> glorot_uniform(rng, dims...)
+glorot_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
@@ -115,9 +118,12 @@ julia> Flux.glorot_normal(3, 2)
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_normal(rng::AbstractRNG, dims::Integer...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
-glorot_normal(dims::Integer...) = glorot_normal(rng_from_array(), dims...)
-glorot_normal(rng::AbstractRNG) = (dims...) -> glorot_normal(rng, dims...)
+function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
+  std = Float32(gain) * sqrt(2.0f0 / sum(nfan(dims...)))
+  randn(rng, Float32, dims...) .* std
+end
+glorot_normal(dims::Integer...; kw...) = glorot_normal(rng_from_array(), dims...; kw...)
+glorot_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
@@ -156,7 +162,7 @@ function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain = √2)
 end
 
 kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+kaiming_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
@@ -246,7 +252,7 @@ function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1,
 end
 
 truncated_normal(dims::Integer...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
-truncated_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+truncated_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
@@ -315,7 +321,7 @@ function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
 end
 
 orthogonal(dims::Integer...; kwargs...) = orthogonal(rng_from_array(), dims...; kwargs...)
-orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+orthogonal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable orthogonal(::Any...)
 
@@ -361,7 +367,7 @@ function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
 end
 
 sparse_init(dims::Integer...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
-sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+sparse_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
@@ -445,16 +451,22 @@ function identity_init(dims::Integer...; gain=1, shift=0)
   return circshift(weights, shift)
 end
 
+# For consistency, it accepts an RNG, but ignores it:
 identity_init(::AbstractRNG, dims::Integer...; kwargs...) = identity_init(dims...; kwargs...)
-identity_init(; init_kwargs...) = identity_init(rng_from_array(); init_kwargs...)
-identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+identity_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable identity_init(::Any...)
 
 ones32(dims::Integer...) = Base.ones(Float32, dims...)
 zeros32(dims::Integer...) = Base.zeros(Float32, dims...)
+
 rand32(dims::Integer...) = Base.rand(Float32, dims...)
+rand32(rng::AbstractRNG, dims::Integer...) = Base.rand32(rng, Float32, dims...)
+rand32(rng::AbstractRNG) = (dims...,) -> rand32(rng, Float32, dims...)
+
 randn32(dims::Integer...) = Base.randn(Float32, dims...)
+randn32(rng::AbstractRNG, dims::Integer...) = Base.rand32(rng, Float32, dims...)
+randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
 
 """
     create_bias(weights, bias, size...)
