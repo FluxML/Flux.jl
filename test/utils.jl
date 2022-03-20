@@ -80,11 +80,13 @@ end
     if init == sparse_init
       init = (args...) -> sparse_init(args...; sparsity=0.5)
     else
+      # sparse_init is the only one which accepts only matrices:
       @test size(init(3)) == (3,)
       @test size(init(3, 4, 5)) == (3, 4, 5)
     end
     @test size(init(3, 4)) == (3, 4)
-    @test_skip size(init((3, 4, 5))) == (3, 4, 5)
+    # only init(size...) is accepted:
+    @test_throws MethodError size(init((3, 4, 5))) == (3, 4, 5)
 
     # rng, and currying:
     @test size(init(MersenneTwister(1), 3, 4)) == (3, 4)
