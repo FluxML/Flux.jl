@@ -118,7 +118,6 @@ end
       σ2 = sqrt(6/n_out)
       @test -1σ2  < minimum(v) < -0.9σ2
       @test 0.9σ2  < maximum(v) < 1σ2
-      @test eltype(v) == Float32
 
       v = kaiming_normal(n_in, n_out)
       σ2 = sqrt(2/n_out)
@@ -163,15 +162,22 @@ end
   end
 
   @testset "truncated_normal" begin
-    size = (100, 100, 100)
-    for (μ, σ, lo, hi) in [(0., 1, -2, 2), (0, 1, -4., 4)]
-      v = truncated_normal(size; mean = μ, std = σ, lo, hi)
+    m = truncated_normal(100, 100)
+    @test minimum(m) ≈ -2 atol = 0.05  # default arguments
+    @test maximum(m) ≈ 2 atol = 0.05
+    @test mean(m) ≈ 0 atol = 0.1
+
+    size100 = (100, 100, 100)
+    for (μ, σ, lo, hi) in [(0.0, 1, -2, 3), (1, 2, -4.0, 5.0)]
+      v = truncated_normal(size100...; mean = μ, std = σ, lo, hi)
       @test isapprox(mean(v), μ; atol = 1f-1)
-      @test isapprox(minimum(v), lo; atol = 1f-1)
-      @test isapprox(maximum(v), hi; atol = 1f-1)
+      @test isapprox(minimum(v), lo; atol = 1f-2)
+      @test isapprox(maximum(v), hi; atol = 1f-2)
+      @test eltype(v) == Float32  # despite some Float64 arguments
     end
-    for (μ, σ, lo, hi) in [(6, 2, -100., 100), (7., 10, -100, 100)]
-      v = truncated_normal(size...; mean = μ, std = σ, lo, hi)
+    for (μ, σ, lo, hi) in [(6, 2, -100.0, 100), (-7.0, 10, -100, 100)]
+      v = truncated_normal(size100...; mean = μ, std = σ, lo, hi)
+      @test isapprox(mean(v), μ; atol = 1f-1)
       @test isapprox(std(v), σ; atol = 1f-1)
     end
   end
