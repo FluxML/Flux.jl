@@ -1,7 +1,7 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
-             sparse_init, stack, unstack, batch, unbatch,
+             sparse_init, identity_init, stack, unstack, batch, unbatch,
              unsqueeze, params, loadparams!
 using StatsBase: var, std
 using Statistics, LinearAlgebra
@@ -69,6 +69,34 @@ end
     @test nfan(2, 3, 4, 50, 60) == (2 * 3 * 4 * 50, 2 * 3 * 4 * 60) #For 3D Conv layer
   end
 
+  @testset "Basics: $init" for init in [
+      glorot_uniform, glorot_normal, 
+      kaiming_uniform, kaiming_normal, 
+      orthogonal, 
+      sparse_init,
+      truncated_normal,
+      identity_init,
+    ]
+    if init == sparse_init
+      init = (args...) -> sparse_init(args...; sparsity=0.5)
+    else
+      @test size(init(3)) == (3,)
+    end
+    @test size(init(3, 4)) == (3, 4)
+    @test_skip size(init((3, 4, 5))) == (3, 4, 5)
+
+    # rng, and currying:
+    @test size(init(MersenneTwister(1), 3, 4)) == (3, 4)
+    closure = init(MersenneTwister(1))
+    @test size(closure(3, 4)) == (3, 4)
+
+    # eltype, default Float32
+    @test eltype(init(3, 4)) == Float32
+
+    # @non_differentiable
+    @test gradient(x -> sum(x .* init(3, 4)), 5.0)[1] isa Number
+  end
+
   @testset "glorot" begin
     # glorot_uniform and glorot_normal should both yield a kernel with
     # variance ≈ 2/(fan_in + fan_out)
@@ -78,7 +106,6 @@ end
         fan_in, fan_out = nfan(dims...)
         σ2 = 2 / (fan_in + fan_out)
         @test 0.9σ2 < var(v) < 1.1σ2
-        @test eltype(v) == Float32
       end
     end
   end
@@ -96,7 +123,6 @@ end
       v = kaiming_normal(n_in, n_out)
       σ2 = sqrt(2/n_out)
       @test 0.9σ2 < std(v) < 1.1σ2
-      @test eltype(v) == Float32
     end
   end
 
@@ -125,17 +151,14 @@ end
     @test_throws ArgumentError sparse_init(100, 100, 100, sparsity=0.1)
     v = sparse_init(100, 100, sparsity=-0.1)
     @test sum(v .== 0) == 0
-    @test eltype(v) == Float32
     v = sparse_init(100, 100, sparsity=1.1)
     @test sum(v .== 0) == length(v)
-    @test eltype(v) == Float32
 
     for (n_in, n_out, sparsity, σ) in [(100, 100, 0.25, 0.1), (100, 400, 0.75, 0.01)]
       expected_zeros = ceil(Integer, n_in * sparsity)
       v = sparse_init(n_in, n_out, sparsity=sparsity, std=σ)
       @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
       @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
-      @test eltype(v) == Float32
     end
   end
 
@@ -146,12 +169,10 @@ end
       @test isapprox(mean(v), μ; atol = 1f-1)
       @test isapprox(minimum(v), lo; atol = 1f-1)
       @test isapprox(maximum(v), hi; atol = 1f-1)
-      @test eltype(v) == Float32
     end
     for (μ, σ, lo, hi) in [(6, 2, -100., 100), (7., 10, -100, 100)]
       v = truncated_normal(size...; mean = μ, std = σ, lo, hi)
       @test isapprox(std(v), σ; atol = 1f-1)
-      @test eltype(v) == Float32
     end
   end
 
@@ -172,7 +193,6 @@ end
   end
 
   @testset "identity_init" begin
-    import Flux: identity_init
 
     @testset "Basic" begin
       partial = identity_init(gain=3)
