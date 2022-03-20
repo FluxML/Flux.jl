@@ -81,6 +81,7 @@ end
       init = (args...) -> sparse_init(args...; sparsity=0.5)
     else
       @test size(init(3)) == (3,)
+      @test size(init(3, 4, 5)) == (3, 4, 5)
     end
     @test size(init(3, 4)) == (3, 4)
     @test_skip size(init((3, 4, 5))) == (3, 4, 5)
@@ -182,16 +183,14 @@ end
     end
   end
 
-  @testset "partial_application" begin
-    big = 1e9
+  @testset "Partial application" begin
+    partial_ku = kaiming_uniform(gain=1e9)
+    @test maximum(partial_ku(8, 8)) > 1e9 / 2
+    @test maximum(partial_ku(8, 8, gain=1)) < 1e9 / 2
 
-    partial_ku = kaiming_uniform(gain=big)
-    @test maximum(partial_ku(8, 8)) > big / 2
-    @test maximum(partial_ku(8, 8, gain=1)) < big / 2
-
-    partial_kn = kaiming_normal(gain=big)
-    @test maximum(partial_kn(8, 8)) > big / 2
-    @test maximum(partial_kn(8, 8, gain=1)) < big / 2
+    partial_kn = kaiming_normal(gain=1e9)
+    @test maximum(partial_kn(8, 8)) > 1e9 / 2
+    @test maximum(partial_kn(8, 8, gain=1)) < 1e9 / 2
 
     partial_si = sparse_init(sparsity=1)
     @test maximum(partial_si(8, 8)) == 0

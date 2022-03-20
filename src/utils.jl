@@ -438,7 +438,7 @@ identity_init(rows, cols; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain,
 function identity_init(dims...; gain=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
-  weights = zeros32(dims)
+  weights = zeros32(dims...)
   for i in 1:min(nin,nout)
     weights[centers..., i, i] = gain
   end
