@@ -62,8 +62,11 @@ This method is described in [1] and also known as Xavier initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> Flux.glorot_uniform(3, 4) |> summary
+"3×4 Matrix{Float32}"
+
 julia> round.(extrema(Flux.glorot_uniform(10, 100)), digits=3)
-(-0.234f0, 0.234f0)
+(-0.232f0, 0.234f0)
 
 julia> round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
 (-0.233f0, 0.233f0)
@@ -71,7 +74,7 @@ julia> round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
 julia> round.(extrema(Flux.glorot_uniform(100, 100)), digits=3)
 (-0.173f0, 0.173f0)
 
-julia> Dense(3 => 2, tanh; init=Flux.glorot_uniform(MersenneTwister(1)))
+julia> Dense(3 => 2, tanh; init = Flux.glorot_uniform(MersenneTwister(1)))
 Dense(3 => 2, tanh)  # 8 parameters
 
 julia> ans.bias
@@ -88,7 +91,7 @@ function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   scale = Float32(gain) * sqrt(24.0f0 / sum(nfan(dims...)))
   (rand(rng, Float32, dims...) .- 0.5f0) .* scale
 end
-glorot_uniform(dims::Integer...) = glorot_uniform(rng_from_array(), dims...)
+glorot_uniform(dims::Integer...; kw...) = glorot_uniform(rng_from_array(), dims...; kw...)
 glorot_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
@@ -115,6 +118,12 @@ julia> round(std(Flux.glorot_normal(1000, 10)), digits=3)
 
 julia> round(std(Flux.glorot_normal(1000, 1000)), digits=3)
 0.032f0
+
+julia> Dense(10 => 1000, tanh; init = Flux.glorot_normal(gain=100))
+Dense(10 => 1000, tanh)  # 11_000 parameters
+
+julia> round(std(ans.weight), sigdigits=3)
+4.45f0
 ```
 
 # References
@@ -125,7 +134,7 @@ function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   std = Float32(gain) * sqrt(2.0f0 / sum(nfan(dims...)))
   randn(rng, Float32, dims...) .* std
 end
-glorot_normal(dims::Integer...; kw...) = glorot_normal(rng_from_array(), dims...; kw...)
+glorot_normal(dims::Integer...; kwargs...) = glorot_normal(rng_from_array(), dims...; kwargs...)
 glorot_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
