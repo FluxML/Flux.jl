@@ -34,6 +34,11 @@ struct Zeros
 end
 Zeros(args...) = Zeros()  # was used both Dense(10, 2, initb = Zeros) and Dense(rand(2,10), Zeros())
 
+function update!(x::AbstractArray, x̄)
+  depwarn("`Flux.update!(x, x̄)` was not used internally and has been removed. Please write `x .-= x̄` instead.", :update!)
+  x .-= x̄
+end
+
 # Channel notation: Changed to match Conv, but very softly deprecated!
 # Perhaps change to @deprecate for v0.14, but there is no plan to remove these.
 Dense(in::Integer, out::Integer, σ = identity; kw...) =
