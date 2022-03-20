@@ -1,7 +1,7 @@
-using Documenter, Flux, NNlib, Functors
+using Documenter, Flux, NNlib, Functors, MLUtils
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
-makedocs(modules = [Flux, NNlib, Functors],
+makedocs(modules = [Flux, NNlib, Functors, MLUtils],
          doctest = VERSION == v"1.5",
          sitename = "Flux",
          pages = ["Home" => "index.md",
