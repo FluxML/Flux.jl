@@ -4,8 +4,6 @@ using Zygote: IdSet
 import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
-trainable(m) = functor(m)[1]
-
 """
     testmode!(m, mode = true)
 

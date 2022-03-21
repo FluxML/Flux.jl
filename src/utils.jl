@@ -475,59 +475,6 @@ function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer.
   bias
 end
 
-# Flattening models to weight vectors, and back
-
-function _restructure(m, xs)
-  i = 0
-  m̄ = fmap(m) do x
-    x isa AbstractArray || return x
-    x = reshape(xs[i.+(1:length(x))], size(x))
-    i += length(x)
-    return x
-  end
-  length(xs) == i || @warn "Expected $(i) params, got $(length(xs))"
-  return m̄
-end
-
-@adjoint function _restructure(m, xs)  # TODO ChainRulesCore.rrule
-  m̄, numel = _restructure(m, xs), length(xs)
-  function _restructure_pullback(dm)
-    xs′ = destructure(dm)[1]
-    numel == length(xs′) || @warn "Expected $(numel) params, got $(length(xs′))"
-    return (nothing, xs′)
-  end
-  return m̄, _restructure_pullback
-end
-
-"""
-    destructure(m)
-
-Flatten a model's parameters into a single weight vector.
-
-    julia> m = Chain(Dense(10, 5, std), Dense(5, 2), softmax)
-    Chain(Dense(10, 5, std), Dense(5, 2), softmax)
-
-    julia> θ, re = destructure(m);
-
-    julia> θ
-    67-element Vector{Float32}:
-    -0.1407104
-    ...
-
-The second return value `re` allows you to reconstruct the original network after making
-modifications to the weight vector (for example, with a hypernetwork).
-
-    julia> re(θ .* 2)
-    Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
-"""
-function destructure(m)
-  xs = Zygote.Buffer([])
-  fmap(m) do x
-    x isa AbstractArray && push!(xs, x)
-    return x
-  end
-  return vcat(vec.(copy(xs))...), p -> _restructure(m, p)
-end
 
 # Other
 

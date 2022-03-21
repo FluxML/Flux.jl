@@ -7,7 +7,7 @@ using MacroTools: @forward
 
 @reexport using NNlib
 using MLUtils
-import Optimisers: trainable  # before v0.13, Flux owned this function
+import Optimisers: trainable, destructure  # before v0.13, Flux owned these functions
 
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
