@@ -6,7 +6,7 @@ NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN ins
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
 
-```julia
+```jldoctest gpu; setup = :(using Random; Random.seed!(0))
 julia> using CUDA
 
 julia> CUDA.functional()
@@ -51,39 +51,62 @@ d(cu(rand(10)))
 
 As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing. So, you can safely call `gpu` on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If the GPU library (CUDA.jl) loads successfully, `gpu` will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a `CuArray`.
 
-```julia
+```jldoctest gpu
 julia> using Flux, CUDA
 
 julia> m = Dense(10, 5) |> gpu
-Dense(10 => 5)
+Dense(10 => 5)      # 55 parameters
 
 julia> x = rand(10) |> gpu
-10-element CuArray{Float32,1}:
- 0.800225
- ⋮
- 0.511655
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.066846445
+ 0.15663664
+ 0.60529673
+ 0.13574456
+ 0.8381178
+ 0.914712
+ 0.30007496
+ 0.7228498
+ 0.11965257
+ 0.76706964
 
 julia> m(x)
-5-element CuArray{Float32,1}:
- -0.30535
- ⋮
- -0.618002
+5-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ -0.99992573
+  0.08930303
+  0.4309393
+ -0.5205649
+ -0.547261
 ```
 
 The analogue `cpu` is also available for moving models and data back off of the GPU.
 
-```julia
+```jldoctest gpu
 julia> x = rand(10) |> gpu
-10-element CuArray{Float32,1}:
- 0.235164
- ⋮
- 0.192538
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.8019236
+ 0.03534455
+ 0.48466054
+ 0.8991991
+ 0.9516907
+ 0.8011185
+ 0.12432273
+ 0.114268765
+ 0.07955447
+ 0.7766742
 
 julia> x |> cpu
-10-element Array{Float32,1}:
- 0.235164
- ⋮
- 0.192538
+10-element Vector{Float32}:
+ 0.8019236
+ 0.03534455
+ 0.48466054
+ 0.8991991
+ 0.9516907
+ 0.8011185
+ 0.12432273
+ 0.114268765
+ 0.07955447
+ 0.7766742
 ```
 
 ## Disabling CUDA or choosing which GPUs are visible to Flux
