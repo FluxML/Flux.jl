@@ -6,66 +6,79 @@ add the result to the overall loss.
 
 For example, say we have a simple regression.
 
-```julia
-using Flux
-using Flux.Losses: logitcrossentropy
-m = Dense(10 => 5)
-loss(x, y) = logitcrossentropy(m(x), y)
+```jldoctest regularisation; setup = :(using Random; Random.seed!(0))
+julia> using Flux
+
+julia> using Flux.Losses: logitcrossentropy
+
+julia> m = Dense(10 => 5)
+Dense(10 => 5)      # 55 parameters
+
+julia> loss(x, y) = logitcrossentropy(m(x), y)
+loss (generic function with 1 method)
 ```
 
 We can apply L2 regularisation by taking the squared norm of the parameters , `m.weight` and `m.bias`.
 
-```julia
-penalty() = sum(abs2, m.weight) + sum(abs2, m.bias)
-loss(x, y) = logitcrossentropy(m(x), y) + penalty()
+```jldoctest regularisation
+julia> penalty() = sum(abs2, m.weight) + sum(abs2, m.bias)
+penalty (generic function with 1 method)
+
+julia> loss(x, y) = logitcrossentropy(m(x), y) + penalty()
+loss (generic function with 1 method)
 ```
 
 When working with layers, Flux provides the `params` function to grab all
 parameters at once. We can easily penalise everything with `sum`:
 
-```julia
+```jldoctest regularisation
 julia> Flux.params(m)
-2-element Array{Any,1}:
- param([0.355408 0.533092; … 0.430459 0.171498])
- param([0.0, 0.0, 0.0, 0.0, 0.0])
+Params([Float32[0.34704182 -0.48532376 … -0.06914271 -0.38398427; 0.5201164 -0.033709668 … -0.36169025 -0.5552353; … ; 0.46534058 0.17114447 … -0.4809643 0.04993277; -0.47049698 -0.6206029 … -0.3092334 -0.47857067], Float32[0.0, 0.0, 0.0, 0.0, 0.0]])
 
 julia> sqnorm(x) = sum(abs2, x)
+sqnorm (generic function with 1 method)
 
 julia> sum(sqnorm, Flux.params(m))
-26.01749952921026
+8.34994f0
 ```
 
 Here's a larger example with a multi-layer perceptron.
 
-```julia
-m = Chain(
-  Dense(28^2 => 128, relu),
-  Dense(128 => 32, relu),
-  Dense(32 => 10))
+```jldoctest regularisation
+julia> m = Chain(Dense(28^2 => 128, relu), Dense(128 => 32, relu), Dense(32 => 10))
+Chain(
+  Dense(784 => 128, relu),              # 100_480 parameters
+  Dense(128 => 32, relu),               # 4_128 parameters
+  Dense(32 => 10),                      # 330 parameters
+)                   # Total: 6 arrays, 104_938 parameters, 410.289 KiB.
 
-sqnorm(x) = sum(abs2, x)
+julia> sqnorm(x) = sum(abs2, x)
+sqnorm (generic function with 1 method)
 
-loss(x, y) = logitcrossentropy(m(x), y) + sum(sqnorm, Flux.params(m))
+julia> loss(x, y) = logitcrossentropy(m(x), y) + sum(sqnorm, Flux.params(m))
+loss (generic function with 1 method)
 
-loss(rand(28^2), rand(10))
+julia> loss(rand(28^2), rand(10))
+300.76693683244997
 ```
 
 One can also easily add per-layer regularisation via the `activations` function:
 
-```julia
+```jldoctest regularisation
 julia> using Flux: activations
 
 julia> c = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)
-Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)
+Chain(
+  Dense(10 => 5, σ),                    # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
 julia> activations(c, rand(10))
-3-element Array{Any,1}:
- Float32[0.84682214, 0.6704139, 0.42177814, 0.257832, 0.36255655]
- Float32[0.1501253, 0.073269576]                                 
- Float32[0.5192045, 0.48079553]                                  
+([0.3274892431795043, 0.5360197770386552, 0.3447464835514667, 0.5273025865532305, 0.7513168089280781], [-0.3533774181890544, -0.010937055274926138], [0.4152168057978045, 0.5847831942021956])
 
 julia> sum(sqnorm, ans)
-2.0710278f0
+1.9953131077618562
 ```
 
 ```@docs
