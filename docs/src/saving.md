@@ -6,7 +6,7 @@ session. The easiest way to do this is via
 
 Save a model:
 
-```julia
+```jldoctest saving; setup = :(using Random; Random.seed!(0))
 julia> using Flux
 
 julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
@@ -23,9 +23,7 @@ julia> @save "mymodel.bson" model
 
 Load it again:
 
-```julia
-julia> using Flux
-
+```jldoctest saving
 julia> using BSON: @load
 
 julia> @load "mymodel.bson" model
@@ -56,11 +54,13 @@ In some cases it may be useful to save only the model parameters themselves, and
 rebuild the model architecture in your code. You can use `params(model)` to get
 model parameters.
 
-```Julia
-julia> using Flux
-
+```jldoctest saving
 julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
 julia> weights = Flux.params(model);
 
@@ -72,10 +72,12 @@ julia> @save "mymodel.bson" weights
 You can easily load parameters back into a model with `Flux.loadparams!`.
 
 ```julia
-julia> using Flux
-
 julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
 julia> using BSON: @load
 
@@ -90,16 +92,23 @@ The new `model` we created will now be identical to the one we saved parameters 
 
 In longer training runs it's a good idea to periodically save your model, so that you can resume if training is interrupted (for example, if there's a power cut). You can do this by saving the model in the [callback provided to `train!`](training/training.md).
 
-```julia
-using Flux: throttle
-using BSON: @save
+```jldoctest saving
+julia> using Flux: throttle
 
-m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
+julia> using BSON: @save
 
-evalcb = throttle(30) do
-  # Show loss
-  @save "model-checkpoint.bson" model
-end
+julia> m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+
+julia> evalcb = throttle(30) do
+         # Show loss
+         @save "model-checkpoint.bson" model
+       end
+(::Flux.var"#throttled#70"{Flux.var"#throttled#66#71"{Bool, Bool, var"#1#2", Int64}}) (generic function with 1 method)
 ```
 
 This will update the `"model-checkpoint.bson"` file every thirty seconds.
@@ -107,7 +116,7 @@ This will update the `"model-checkpoint.bson"` file every thirty seconds.
 You can get more advanced by saving a series of models throughout training, for example
 
 ```julia
-@save "model-$(now()).bson" model
+julia> @save "model-$(now()).bson" model
 ```
 
 will produce a series of models like `"model-2018-03-06T02:57:10.41.bson"`. You
@@ -115,7 +124,7 @@ could also store the current test set loss, so that it's easy to (for example)
 revert to an older copy of the model if it starts to overfit.
 
 ```julia
-@save "model-$(now()).bson" model loss = testloss()
+julia> @save "model-$(now()).bson" model loss = testloss()
 ```
 
 Note that to resume a model's training, you might need to restore other stateful parts of your training loop. Possible examples are stateful optimizers (which usually utilize an `IdDict` to store their state), and the randomness used to partition the original data into the training and validation sets.
@@ -124,7 +133,7 @@ You can store the optimiser state alongside the model, to resume training
 exactly where you left off. BSON is smart enough to [cache values](https://github.com/JuliaIO/BSON.jl/blob/v0.3.4/src/write.jl#L71) and insert links when saving, but only if it knows everything to be saved up front. Thus models and optimizers must be saved together to have the latter work after restoring.
 
 ```julia
-opt = ADAM()
-@save "model-$(now()).bson" model opt
+julia> opt = ADAM()
+julia> @save "model-$(now()).bson" model opt
 ```
 
