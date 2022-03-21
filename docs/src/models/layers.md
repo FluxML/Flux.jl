@@ -23,7 +23,7 @@ DepthwiseConv
 ConvTranspose
 CrossCor
 SamePad
-flatten
+Flux.flatten
 Flux.convfilter
 Flux.depthwiseconvfilter
 ```
