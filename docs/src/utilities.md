@@ -1,25 +1,7 @@
 # Utility Functions
 
-Flux contains some utility functions for working with data; these functions
-help create inputs for your models or batch your dataset.
-Other functions can be used to initialize your layers or to regularly execute
-callback functions.
-
-## Working with Data
-
-Utilities for data processing are provided by [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl). Below is a non-exhaustive list.
-
-```@docs
-MLUtils.unsqueeze
-MLUtils.stack
-MLUtils.unstack
-MLUtils.chunk
-MLUtils.group_counts
-MLUtils.batch
-MLUtils.unbatch
-MLUtils.batchseq
-Base.rpad(v::AbstractVector, n::Integer, p)
-```
+Flux provides utility functions which can be used to initialize your layers
+or to regularly execute callback functions.
 
 ## Layer Initialization
 
