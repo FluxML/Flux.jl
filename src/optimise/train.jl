@@ -43,14 +43,43 @@ struct SkipException <: Exception end
 """
     skip()
 
-Call `Flux.skip()` in a callback to indicate when a callback condition is met.
-This will trigger the train loop to skip the current data point and not update with the calculated gradient.
+Call `Flux.skip()` within the loss passed to [`train!`](@ref) to exit the
+current calculation and `continue` the training loop with the next data point.
+
+This can be used (say) to avoid updating model parameters for those data points
+whose loss is infinite, or NaN. It works by throwing an error which is caught by `train!`.
+
+Note that calling this from a callback is almost useless, as `cb` is evaluated
+after the `gradient` and `update!` steps have been performed.
 
 # Examples
-```julia
-cb = function ()
-  loss() > 1e7 && Flux.skip()
-end
+```jldoctest
+julia> model = [10.5f0];
+
+julia> Flux.train!(Flux.params(model), 1:10, Descent(1f0)) do i
+          @show i
+          3 < i < 9 && Flux.skip()
+          @show sum(model)
+       end
+i = 1
+sum(model) = 10.5f0
+i = 2
+sum(model) = 9.5f0
+i = 3
+sum(model) = 8.5f0
+i = 4
+i = 5
+i = 6
+i = 7
+i = 8
+i = 9
+sum(model) = 7.5f0
+i = 10
+sum(model) = 6.5f0
+
+julia> model
+1-element Vector{Float32}:
+ 5.5
 ```
 """
 function skip()
@@ -63,14 +92,31 @@ struct StopException <: Exception end
 """
     stop()
 
-Call `Flux.stop()` in a callback to indicate when a callback condition is met.
-This will trigger the train loop to stop and exit.
+Call `Flux.stop()` in a callback passed to [`train!`](@ref), 
+or inside the loss, to immediately `break` out of the training loop.
 
-# Examples
-```julia
-cb = function ()
-  accuracy() > 0.9 && Flux.stop()
-end
+This can be used to stop training when some accuracy is achieved.
+(It throws an error which is caught by `train!`.)
+
+# Example
+```jldoctest
+julia> model = [10.5f0];
+
+julia> cb = () -> sum(model) < 8 && Flux.stop();
+
+julia> Flux.train!(Flux.params(model), 1:10, Descent(1f0); cb) do i
+         @show i sum(model)
+       end
+i = 1
+sum(model) = 10.5f0
+i = 2
+sum(model) = 9.5f0
+i = 3
+sum(model) = 8.5f0
+
+julia> model
+1-element Vector{Float32}:
+ 7.5
 ```
 """
 function stop()
