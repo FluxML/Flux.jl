@@ -4,11 +4,7 @@ CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-<<<<<<< HEAD
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-=======
->>>>>>> f437aabe (Add doctests for `recurrence.md`, `saving.md`, and `training.md`)
 
 [compat]
 Documenter = "0.26"
