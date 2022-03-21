@@ -1,4 +1,4 @@
-# NNlib
+# NNlib.jl
 
 Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package.
 
