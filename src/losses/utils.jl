@@ -26,12 +26,11 @@ end
 ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # should help Diffractor's broadcasting
 ChainRulesCore.@scalar_rule xlogx(x) (log(y) + true)
 
-# This can be made an error in Flux v0.13, for now just a warning
 function _check_sizes(ŷ::AbstractArray, y::AbstractArray)
   for d in 1:max(ndims(ŷ), ndims(y)) 
-    if size(ŷ,d) != size(y,d)
-      @warn "Size mismatch in loss function! In future this will be an error. In Flux <= 0.12 broadcasting accepts this, but may not give sensible results" summary(ŷ) summary(y) maxlog=3 _id=hash(size(y))
-    end
+   size(ŷ,d) == size(y,d) || throw(DimensionMismatch(
+      "loss function expects size(ŷ) = $(size(ŷ)) to match size(y) = $(size(y))"
+    ))
   end
 end
 _check_sizes(ŷ, y) = nothing  # pass-through, for constant label e.g. y = 1

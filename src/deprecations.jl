@@ -1,13 +1,13 @@
 # v0.12 deprecations
 
 function ones(dims...)
-  Base.depwarn("Flux.ones(size...) is deprecated, please use Flux.ones32(size...) or Base.ones(Float32, size...)", :ones)
+  Base.depwarn("Flux.ones(size...) is deprecated, please use Flux.ones32(size...) or Base.ones(Float32, size...)", :ones, force=true)
   Base.ones(Float32, dims...)
 end
 ones(T::Type, dims...) = Base.ones(T, dims...)
 
 function zeros(dims...)
-  Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :zeros)
+  Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :zeros, force=true)
   Base.zeros(Float32, dims...)
 end
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
