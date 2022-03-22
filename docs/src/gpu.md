@@ -6,7 +6,7 @@ NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN ins
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
 
-```jldoctest gpu; setup = :(using Random; Random.seed!(0))
+```julia
 julia> using CUDA
 
 julia> CUDA.functional()
@@ -51,7 +51,7 @@ d(cu(rand(10)))
 
 As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing. So, you can safely call `gpu` on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If the GPU library (CUDA.jl) loads successfully, `gpu` will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a `CuArray`.
 
-```jldoctest gpu
+```julia
 julia> using Flux, CUDA
 
 julia> m = Dense(10, 5) |> gpu
@@ -81,7 +81,7 @@ julia> m(x)
 
 The analogue `cpu` is also available for moving models and data back off of the GPU.
 
-```jldoctest gpu
+```julia
 julia> x = rand(10) |> gpu
 10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
  0.8019236
