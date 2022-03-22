@@ -117,7 +117,7 @@ julia> x = [rand(Float32, 2) for i = 1:3];
 julia> [m(xi) for xi in x]
 3-element Vector{Vector{Float32}}:
  [0.36080405]
- [-0.1391441]
+ [-0.13914406]
  [0.9310162]
 ```
 
