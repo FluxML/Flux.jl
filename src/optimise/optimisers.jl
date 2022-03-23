@@ -51,7 +51,7 @@ Gradient descent optimizer with learning rate `η` and momentum `ρ`.
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
 - Momentum (`ρ`): Controls the acceleration of gradient descent in the
-                  prominent direction, in effect dampening oscillations.
+                  prominent direction, in effect damping oscillations.
 
 # Examples
 ```julia
@@ -84,7 +84,7 @@ Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
 - Nesterov momentum (`ρ`): Controls the acceleration of gradient descent in the
-                           prominent direction, in effect dampening oscillations.
+                           prominent direction, in effect damping oscillations.
 
 # Examples
 ```julia
@@ -121,7 +121,7 @@ generally don't need tuning.
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
 - Momentum (`ρ`): Controls the acceleration of gradient descent in the
-                  prominent direction, in effect dampening oscillations.
+                  prominent direction, in effect damping oscillations.
 
 # Examples
 ```julia
