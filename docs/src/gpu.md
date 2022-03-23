@@ -60,22 +60,13 @@ Dense(10 => 5)      # 55 parameters
 julia> x = rand(10) |> gpu
 10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
  0.066846445
- 0.15663664
- 0.60529673
- 0.13574456
- 0.8381178
- 0.914712
- 0.30007496
- 0.7228498
- 0.11965257
+ ⋮
  0.76706964
 
 julia> m(x)
 5-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
  -0.99992573
-  0.08930303
-  0.4309393
- -0.5205649
+ ⋮
  -0.547261
 ```
 
@@ -85,27 +76,13 @@ The analogue `cpu` is also available for moving models and data back off of the 
 julia> x = rand(10) |> gpu
 10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
  0.8019236
- 0.03534455
- 0.48466054
- 0.8991991
- 0.9516907
- 0.8011185
- 0.12432273
- 0.114268765
- 0.07955447
+ ⋮
  0.7766742
 
 julia> x |> cpu
 10-element Vector{Float32}:
  0.8019236
- 0.03534455
- 0.48466054
- 0.8991991
- 0.9516907
- 0.8011185
- 0.12432273
- 0.114268765
- 0.07955447
+ ⋮
  0.7766742
 ```
 

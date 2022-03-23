@@ -75,8 +75,7 @@ julia> predict(x_train)
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
 ```jldoctest overview
-julia> loss(x, y) = Flux.Losses.mse(predict(x), y)
-loss (generic function with 1 method)
+julia> loss(x, y) = Flux.Losses.mse(predict(x), y);
 
 julia> loss(x_train, y_train)
 122.64734f0

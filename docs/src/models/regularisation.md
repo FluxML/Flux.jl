@@ -14,18 +14,15 @@ julia> using Flux.Losses: logitcrossentropy
 julia> m = Dense(10 => 5)
 Dense(10 => 5)      # 55 parameters
 
-julia> loss(x, y) = logitcrossentropy(m(x), y)
-loss (generic function with 1 method)
+julia> loss(x, y) = logitcrossentropy(m(x), y);
 ```
 
 We can apply L2 regularisation by taking the squared norm of the parameters , `m.weight` and `m.bias`.
 
 ```jldoctest regularisation
-julia> penalty() = sum(abs2, m.weight) + sum(abs2, m.bias)
-penalty (generic function with 1 method)
+julia> penalty() = sum(abs2, m.weight) + sum(abs2, m.bias);
 
-julia> loss(x, y) = logitcrossentropy(m(x), y) + penalty()
-loss (generic function with 1 method)
+julia> loss(x, y) = logitcrossentropy(m(x), y) + penalty();
 ```
 
 When working with layers, Flux provides the `params` function to grab all
@@ -35,8 +32,7 @@ parameters at once. We can easily penalise everything with `sum`:
 julia> Flux.params(m)
 Params([Float32[0.34704182 -0.48532376 … -0.06914271 -0.38398427; 0.5201164 -0.033709668 … -0.36169025 -0.5552353; … ; 0.46534058 0.17114447 … -0.4809643 0.04993277; -0.47049698 -0.6206029 … -0.3092334 -0.47857067], Float32[0.0, 0.0, 0.0, 0.0, 0.0]])
 
-julia> sqnorm(x) = sum(abs2, x)
-sqnorm (generic function with 1 method)
+julia> sqnorm(x) = sum(abs2, x);
 
 julia> sum(sqnorm, Flux.params(m))
 8.34994f0
@@ -52,11 +48,9 @@ Chain(
   Dense(32 => 10),                      # 330 parameters
 )                   # Total: 6 arrays, 104_938 parameters, 410.289 KiB.
 
-julia> sqnorm(x) = sum(abs2, x)
-sqnorm (generic function with 1 method)
+julia> sqnorm(x) = sum(abs2, x);
 
-julia> loss(x, y) = logitcrossentropy(m(x), y) + sum(sqnorm, Flux.params(m))
-loss (generic function with 1 method)
+julia> loss(x, y) = logitcrossentropy(m(x), y) + sum(sqnorm, Flux.params(m));
 
 julia> loss(rand(28^2), rand(10))
 300.76693683244997

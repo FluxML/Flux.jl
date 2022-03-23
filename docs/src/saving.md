@@ -107,8 +107,7 @@ Chain(
 julia> evalcb = throttle(30) do
          # Show loss
          @save "model-checkpoint.bson" model
-       end
-(::Flux.var"#throttled#109"{Flux.var"#throttled#105#110"{Bool, Bool, var"#1#2", Int64}}) (generic function with 1 method)
+       end;
 ```
 
 This will update the `"model-checkpoint.bson"` file every thirty seconds.
