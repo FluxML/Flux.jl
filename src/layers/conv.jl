@@ -90,7 +90,7 @@ julia> Conv((1,1), 3 => 7; pad = (20,10,0,0))(xs) |> size
 (130, 100, 7, 50)
 
 julia> Conv((5,5), 3 => 7; stride = 2, dilation = 4)(xs) |> size
-(42, 42, 7, 5
+(42, 42, 7, 50)
 ```
 """
 struct Conv{N,M,F,A,V}
