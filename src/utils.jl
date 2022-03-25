@@ -297,10 +297,13 @@ true
 
 """
 function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain::Real = 1)
-  mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
+  if rows < cols
+    return permutedims(orthogonal(rng, cols, rows; gain))
+  end
+  mat = randn(rng, Float32, rows, cols)
   Q, R = LinearAlgebra.qr(mat)
   mat .= Array(Q) * sign.(LinearAlgebra.Diagonal(R)) .* Float32(gain)
-  return rows > cols ? mat : permutedims(mat)
+  return mat
 end
 
 function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
