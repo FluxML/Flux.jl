@@ -11,3 +11,6 @@ include("conv.jl")
 
 @info "Benchmark VGG"
 include("vgg.jl")
+
+@info "Benchmark Recurrent"
+include("recurrent.jl")
