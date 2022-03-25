@@ -424,7 +424,9 @@ julia> Flux.identity_init(3,3,2; gain=100)
  0.0  100.0  0.0
  0.0    0.0  0.0
 
-julia> Conv((2,2), 1 => 1, init=Flux.identity_init(gain=10), pad=SamePad())([1 2 3; 4 5 6; 7 8 9;;;;])
+julia> x4 = cat([1 2 3; 4 5 6; 7 8 9]; dims=4);
+
+julia> Conv((2,2), 1 => 1, init=Flux.identity_init(gain=10), pad=SamePad())(x4)
 3×3×1×1 Array{Float32, 4}:
 [:, :, 1, 1] =
  10.0  20.0  30.0
