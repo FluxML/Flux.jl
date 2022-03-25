@@ -7,7 +7,7 @@ using Zygote: pullback, ignore
 fw(m, x) = m(x)
 bw(back) = back(1f0)
 fwbw(m, ps, x) = gradient(() -> sum(fw(m, x)), ps)
-pb(m, ps, x) = pullback(()->sum(fw(m, x)), ps)
+pb(m, ps, x) = pullback(() -> sum(fw(m, x)), ps)
 
 function run_benchmark(model, x; cuda=true)
     
