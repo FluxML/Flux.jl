@@ -164,7 +164,7 @@ julia> round.(extrema(Flux.kaiming_uniform(100, 100)), digits=3)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain = √2)
+function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain::Real = √2)
   bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
@@ -201,7 +201,7 @@ julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain = √2f0)
+function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain::Real = √2f0)
   std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
   return randn(rng, Float32, dims...) .* std
 end
@@ -296,16 +296,11 @@ true
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
-function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain = 1)
+function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain::Real = 1)
   mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
-
   Q, R = LinearAlgebra.qr(mat)
-  Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
-  if rows < cols
-    Q = transpose(Q)
-  end
-
-  return gain * Q
+  mat .= Array(Q) * sign.(LinearAlgebra.Diagonal(R)) .* Float32(gain)
+  return rows > cols ? mat : permutedims(mat)
 end
 
 function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
@@ -434,14 +429,13 @@ julia> Conv((2,2), 1 => 1, init=Flux.identity_init(gain=10), pad=SamePad())([1 2
  70.0  80.0  90.0
 ```
 """
-# Assume bias
-identity_init(cols::Integer; gain=1, shift=0) = zeros32(cols)
+identity_init(cols::Integer; gain::Real=1, shift=0) = zeros32(cols) # Assume bias
 
 # Assume matrix multiplication
-identity_init(rows::Integer, cols::Integer; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
+identity_init(rows::Integer, cols::Integer; gain::Real=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
 
 # Assume convolution
-function identity_init(dims::Integer...; gain=1, shift=0)
+function identity_init(dims::Integer...; gain::Real=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros32(dims...)
