@@ -3,17 +3,33 @@
 Flux provides utility functions which can be used to initialize your layers
 or to regularly execute callback functions.
 
-## Layer Initialization
+## Layer Initialisation
 
-These are primarily useful if you are planning to write your own layers.
-Flux initializes convolutional layers and recurrent cells with `glorot_uniform`
-by default.
-To change the default on an applicable layer, pass the desired function with the
-`init` keyword. For example:
+Flux initialises convolutional layers and recurrent cells with `glorot_uniform` by default.
+Most layers accept a function as an `init` keyword, which replaces this default. For example:
 
 ```jldoctest; setup = :(using Flux)
-julia> conv = Conv((3, 3), 1 => 8, relu; init=Flux.glorot_normal)
-Conv((3, 3), 1 => 8, relu)  # 80 parameters
+julia> conv = Conv((3, 3), 3 => 2, relu; init=Flux.glorot_normal)
+Conv((3, 3), 3 => 2, relu)  # 56 parameters
+
+julia> conv.bias
+2-element Vector{Float32}:
+ 0.0
+ 0.0
+```
+
+Note that `init` creates the weight array, but not the bias vector.
+
+Many of the initialisation functions accept keywords such as `gain`, 
+and a random number generator. To make it easy to pass these to layers,
+there are methods which return a function:
+
+```jldoctest; setup = :(using Flux, Random)
+julia> Dense(4 => 5, tanh; init=Flux.glorot_uniform(gain=2))
+Dense(4 => 5, tanh)  # 25 parameters
+
+julia> Dense(4 => 5, tanh; init=Flux.randn32(MersenneTwister(1)))
+Dense(4 => 5, tanh)  # 25 parameters
 ```
 
 ```@docs
@@ -21,18 +37,23 @@ Flux.glorot_uniform
 Flux.glorot_normal
 Flux.kaiming_uniform
 Flux.kaiming_normal
+Flux.truncated_normal
 Flux.orthogonal
 Flux.sparse_init
+Flux.identity_init
+Flux.ones32
+Flux.rand32
 ```
 
 ## Changing the type of model parameters
+
+The default `eltype` for models is `Float32` since models are often trained/run on GPUs.
+The `eltype` of model `m` can be changed to `Float64` by `f64(m)`:
 
 ```@docs
 Flux.f64
 Flux.f32
 ```
-
-The default `eltype` for models is `Float32` since models are often trained/run on GPUs. The `eltype` of model `m` can be changed to `Float64` by `f64(m)`, or to `Float32` by `f32(m)`.
 
 ## Model Building
 
