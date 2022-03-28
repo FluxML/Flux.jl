@@ -76,6 +76,8 @@ end
       sparse_init,
       truncated_normal,
       identity_init,
+      Flux.rand32,
+      Flux.randn32,
     ]
     if init == sparse_init
       init = (args...) -> sparse_init(args...; sparsity=0.5)
@@ -100,17 +102,16 @@ end
     @test gradient(x -> sum(x .* init(3, 4)), 5.0)[1] isa Number
   end
 
-  @testset "glorot" begin
+  @testset "glorot: $init" for init ∈ [glorot_uniform, glorot_normal]
     # glorot_uniform and glorot_normal should both yield a kernel with
     # variance ≈ 2/(fan_in + fan_out)
     for dims ∈ [(1000,), (100, 100), (100, 400), (2, 3, 32, 64), (2, 3, 4, 32, 64)]
-      for init ∈ [glorot_uniform, glorot_normal]
         v = init(dims...)
         fan_in, fan_out = nfan(dims...)
         σ2 = 2 / (fan_in + fan_out)
         @test 0.9σ2 < var(v) < 1.1σ2
-      end
     end
+    @test eltype(init(3, 4; gain=1.5)) == Float32
   end
 
   @testset "kaiming" begin
@@ -126,6 +127,8 @@ end
       σ2 = sqrt(2/n_out)
       @test 0.9σ2 < std(v) < 1.1σ2
     end
+    @test eltype(kaiming_uniform(3, 4; gain=1.5)) == Float32
+    @test eltype(kaiming_normal(3, 4; gain=1.5)) == Float32
   end
 
   @testset "orthogonal" begin
@@ -141,6 +144,7 @@ end
       v = reshape(v, (rows,cols))
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
+    @test eltype(orthogonal(3, 4; gain=1.5)) == Float32
   end
 
   @testset "sparse_init" begin
@@ -162,6 +166,8 @@ end
       @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
       @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
     end
+
+    @test eltype(sparse_init(3, 4; std=1.5, sparsity=0.5)) == Float32
   end
 
   @testset "truncated_normal" begin
@@ -200,12 +206,11 @@ end
   end
 
   @testset "identity_init" begin
-
     @testset "Basic" begin
       partial = identity_init(gain=3)
       @test partial(3, 3) == identity_init(3, 3; gain=3) == [3 0 0; 0 3 0; 0 0 3]
+      @test eltype(identity_init(3, 4; gain=1.5)) == Float32  # despite Float64 keyword
     end
-
     @testset "Non-identity sizes" begin
         @test identity_init(2, 3)[:, end] == zeros(Float32, 2)
         @test identity_init(3, 2; shift=1)[1, :] == zeros(Float32, 2)
@@ -213,14 +218,12 @@ end
         @test identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
         @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
-
     @testset "Dense ID mapping" begin
         l = Dense(3,3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
     end
-
     @testset "$layer ID mapping with kernelsize $kernelsize" for layer in (Conv, ConvTranspose, CrossCor), kernelsize in (
         (1,),
         (3,),
@@ -233,7 +236,6 @@ end
         indata = randn(Float32, kernelsize..., nch, nch)
         @test l(indata) == indata
     end
-
     @testset "Inception identity" begin
       insize = 7
       path1 = Conv((1, 3), insize=>2; init=identity_init, pad=SamePad())

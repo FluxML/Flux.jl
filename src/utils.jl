@@ -1,4 +1,4 @@
-# Arrays
+
 """
     nfan(n_out, n_in=1) -> Tuple
     nfan(dims...)
@@ -38,11 +38,10 @@ epseltype(x) = eps(float(eltype(x)))
 
 Create an instance of the RNG most appropriate for `x`.
 The current defaults are:
-- `x isa AbstractArray`
+- `x isa CuArray`: `CUDA.default_rng()`, else:
+- `x isa AbstractArray`, or no `x` provided:
   - Julia version is < 1.7: `Random.GLOBAL_RNG`
   - Julia version is >= 1.7: `Random.default_rng()`
-- `x isa CuArray`: `CUDA.default_rng()`
-When `x` is unspecified, it is assumed to be a `AbstractArray`.
 """
 rng_from_array(::AbstractArray) = rng_from_array()
 rng_from_array(::CuArray) = CUDA.default_rng()
@@ -53,143 +52,156 @@ else
 end
 
 """
-    glorot_uniform([rng=GLOBAL_RNG], dims...)
+    glorot_uniform([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    glorot_uniform([rng]; kw...) -> Function
 
-Return an `Array` of size `dims` containing random variables taken from a uniform
-distribution in the interval ``[-x, x]``, where `x = sqrt(6 / (fan_in + fan_out))`.
+Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform
+distribution on the interval ``[-x, x]``, where `x = gain * sqrt(6 / (fan_in + fan_out))`.
 
 This method is described in [1] and also known as Xavier initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.glorot_uniform(2, 3)
-2×3 Matrix{Float32}:
- 0.601094  -0.57414   -0.814925
- 0.900868   0.805994   0.057514
+julia> Flux.glorot_uniform(3, 4) |> summary
+"3×4 Matrix{Float32}"
+
+julia> round.(extrema(Flux.glorot_uniform(10, 100)), digits=3)
+(-0.232f0, 0.234f0)
+
+julia> round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
+(-0.233f0, 0.233f0)
+
+julia> round.(extrema(Flux.glorot_uniform(100, 100)), digits=3)
+(-0.173f0, 0.173f0)
+
+julia> Dense(3 => 2, tanh; init = Flux.glorot_uniform(MersenneTwister(1)))
+Dense(3 => 2, tanh)  # 8 parameters
+
+julia> ans.bias
+2-element Vector{Float32}:
+ 0.0
+ 0.0
 ```
-
-# See also
-
-* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
-* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
-* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
-* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_uniform(rng::AbstractRNG, dims::Integer...) = (rand(rng, Float32, dims...) .- 0.5f0) .* sqrt(24.0f0 / sum(nfan(dims...)))
-glorot_uniform(dims::Integer...) = glorot_uniform(rng_from_array(), dims...)
-glorot_uniform(rng::AbstractRNG) = (dims...) -> glorot_uniform(rng, dims...)
+function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
+  scale = Float32(gain) * sqrt(24.0f0 / sum(nfan(dims...)))
+  (rand(rng, Float32, dims...) .- 0.5f0) .* scale
+end
+glorot_uniform(dims::Integer...; kw...) = glorot_uniform(rng_from_array(), dims...; kw...)
+glorot_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
 """
-    glorot_normal([rng=GLOBAL_RNG], dims...)
+    glorot_normal([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    glorot_normal([rng]; kw...) -> Function
 
-Return an `Array` of size `dims` containing random variables taken from a normal
-distribution with mean 0 and standard deviation `sqrt(2 / (fan_in + fan_out))`.
+Return an `Array{Float32}` of the given `size` containing random numbers drawn from a normal
+distribution with standard deviation `gain * sqrt(2 / (fan_in + fan_out))`,
+using [`nfan`](@ref Flux.nfan).
 
 This method is described in [1] and also known as Xavier initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.glorot_normal(3, 2)
-3×2 Matrix{Float32}:
-  0.429505  -0.0852891
-  0.523935   0.371009
- -0.223261   0.188052
+julia> using Statistics
+
+julia> round(std(Flux.glorot_normal(10, 1000)), digits=3)
+0.044f0
+
+julia> round(std(Flux.glorot_normal(1000, 10)), digits=3)
+0.044f0
+
+julia> round(std(Flux.glorot_normal(1000, 1000)), digits=3)
+0.032f0
+
+julia> Dense(10 => 1000, tanh; init = Flux.glorot_normal(gain=100))
+Dense(10 => 1000, tanh)  # 11_000 parameters
+
+julia> round(std(ans.weight), sigdigits=3)
+4.45f0
 ```
-
-# See also
-
-* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
-* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
-* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
-* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
 [1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." _Proceedings of the thirteenth international conference on artificial intelligence and statistics_. 2010.
 """
-glorot_normal(rng::AbstractRNG, dims::Integer...) = randn(rng, Float32, dims...) .* sqrt(2.0f0 / sum(nfan(dims...)))
-glorot_normal(dims::Integer...) = glorot_normal(rng_from_array(), dims...)
-glorot_normal(rng::AbstractRNG) = (dims...) -> glorot_normal(rng, dims...)
+function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
+  std = Float32(gain) * sqrt(2.0f0 / sum(nfan(dims...)))
+  randn(rng, Float32, dims...) .* std
+end
+glorot_normal(dims::Integer...; kwargs...) = glorot_normal(rng_from_array(), dims...; kwargs...)
+glorot_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
 """
-    kaiming_uniform([rng=GLOBAL_RNG], dims...; gain = √2)
+    kaiming_uniform([rng=GLOBAL_RNG], size...; gain = √2) -> Array
+    kaiming_uniform([rng]; kw...) -> Function
 
-Return an `Array` of size `dims` containing random variables taken from a uniform distribution in the
-interval `[-x, x]`, where `x = gain * sqrt(3/fan_in)`.
+Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform distribution
+on the interval `[-x, x]`, where `x = gain * sqrt(3/fan_in)` using [`nfan`](@ref Flux.nfan).
 
 This method is described in [1] and also known as He initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.kaiming_uniform(3, 2)
-3×2 Matrix{Float32}:
-  0.950413   1.27439
-  1.4244    -1.28851
- -0.907795   0.0909376
+julia> round.(extrema(Flux.kaiming_uniform(100, 10)), digits=3)
+(-0.774f0, 0.774f0)
+
+julia> round.(extrema(Flux.kaiming_uniform(10, 100)), digits=3)
+(-0.245f0, 0.244f0)
+
+julia> round.(extrema(Flux.kaiming_uniform(100, 100)), digits=3)
+(-0.245f0, 0.245f0)
 ```
-
-# See also
-
-* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
-* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
-* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
-* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
-* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain = √2)
+function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain::Real = √2)
   bound = Float32(√3 * gain / sqrt(first(nfan(dims...)))) # fan_in
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
 kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+kaiming_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
 """
-    kaiming_normal([rng=GLOBAL_RNG], dims...; gain = √2)
+    kaiming_normal([rng=GLOBAL_RNG], size...; gain = √2) -> Array
+    kaiming_normal([rng]; kw...) -> Function
 
-Return an `Array` of size `dims` containing random variables taken from a normal
-distribution with mean 0 and standard deviation `gain * sqrt(fan_in)`.
+Return an `Array{Float32}` of the given `size` containing random numbers taken from a normal
+distribution standard deviation `gain / sqrt(fan_in)`, using [`nfan`](@ref Flux.nfan).
 
 This method is described in [1] and also known as He initialization.
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.kaiming_normal(3, 2)
-3×2 Matrix{Float32}:
-  0.679107  -0.134854
-  0.828413   0.586617
- -0.353007   0.297336
+julia> using Statistics
+
+julia> round(std(Flux.kaiming_normal(10, 1000)), digits=3)
+0.045f0
+
+julia> round(std(Flux.kaiming_normal(1000, 10)), digits=3)
+0.447f0
+
+julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
+0.045f0
 ```
-
-# See also
-
-* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
-* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
-* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
-* calculation of `fan_in` and `fan_out`: [`nfan`](@ref Flux.nfan)
 
 # References
 
 [1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." _Proceedings of the IEEE international conference on computer vision_. 2015.
 """
-function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain = √2f0)
+function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain::Real = √2f0)
   std = Float32(gain / sqrt(first(nfan(dims...)))) # fan_in
   return randn(rng, Float32, dims...) .* std
 end
@@ -200,14 +212,14 @@ kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaimi
 ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 
 """
-    truncated_normal([rng=GLOBAL_RNG], dims...; mean = 0, std = 1, lo = -2, hi = 2)
+    truncated_normal([rng=GLOBAL_RNG], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
+    truncated_normal([rng]; kw...) -> Function
   
-Return an `Array{Float32}` of size `dims` where each element is drawn from a truncated normal distribution.
-The numbers are distributed like `filter(x -> lo<=x<=hi, mean .+ std .* randn(dims...))`.
+Return an `Array{Float32}` of the given `size` where each element is drawn from a truncated normal distribution.
+The numbers are distributed like `filter(x -> lo<=x<=hi, mean .+ std .* randn(100))`.
 
 The values are generated by sampling a Uniform(0, 1) (`rand()`) and then
-applying the inverse CDF of the truncated normal distribution
-(see the references for more info).
+applying the inverse CDF of the truncated normal distribution.
 This method works best when `lo ≤ mean ≤ hi`.
 
 # Examples
@@ -223,11 +235,6 @@ julia> round.(extrema(Flux.truncated_normal(10^6)); digits=3)
 julia> round(std(Flux.truncated_normal(10^6; lo = -100, hi = 100)))
 1.0f0
 ```
-
-# References
-[1] Burkardt, John. "The Truncated Normal Distribution" 
-[PDF](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf). 
-Department of Scientific Computing website.
 """
 function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1, lo = -2, hi = 2)
   norm_cdf(x) = 0.5 * (1 + erf(x/√2))
@@ -246,17 +253,18 @@ function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1,
 end
 
 truncated_normal(dims::Integer...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
-truncated_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+truncated_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
 """
-    orthogonal([rng=GLOBAL_RNG], dims...; gain = 1)
+    orthogonal([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    orthogonal([rng]; kw...) -> Function
 
-Return an `Array` of size `dims` which is a (semi) orthogonal matrix, as described in [1].
+Return an `Array{Float32}` of the given `size` which is a (semi) orthogonal matrix, as described in [1].
 
-The input must have at least 2 dimensions.
-For `length(dims) > 2`, a `prod(dims[1:(end - 1)])` by `dims[end]` orthogonal matrix
+Cannot construct a vector, i.e. `length(size) == 1` is forbidden.
+For `length(size) > 2`, a `prod(size[1:(end - 1)])` by `size[end]` orthogonal matrix
 is computed before reshaping it to the original dimensions.
 
 # Examples
@@ -283,28 +291,19 @@ julia> transpose(reshape(W3, :, 4)) * reshape(W3, :, 4) ≈ I(4)
 true
 ```
 
-# See also
-* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
-* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
-* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
-* sparse initialization: [`sparse_init`](@ref Flux.sparse_init)
-
 # References
 
 [1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120
 
 """
-function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain = 1)
-  mat = rows > cols ? randn(rng, Float32, rows, cols) : randn(rng, Float32, cols, rows)
-
-  Q, R = LinearAlgebra.qr(mat)
-  Q = Array(Q) * sign.(LinearAlgebra.Diagonal(R))
+function orthogonal(rng::AbstractRNG, rows::Integer, cols::Integer; gain::Real = 1)
   if rows < cols
-    Q = transpose(Q)
+    return permutedims(orthogonal(rng, cols, rows; gain))
   end
-
-  return gain * Q
+  mat = randn(rng, Float32, rows, cols)
+  Q, R = LinearAlgebra.qr(mat)
+  mat .= Array(Q) * sign.(LinearAlgebra.Diagonal(R)) .* Float32(gain)
+  return mat
 end
 
 function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
@@ -315,14 +314,15 @@ function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
 end
 
 orthogonal(dims::Integer...; kwargs...) = orthogonal(rng_from_array(), dims...; kwargs...)
-orthogonal(rng::AbstractRNG; init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+orthogonal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable orthogonal(::Any...)
 
 """
-    sparse_init([rng=GLOBAL_RNG], dims...; sparsity, std = 0.01)
+    sparse_init([rng=GLOBAL_RNG], rows, cols; sparsity, std = 0.01) -> Array
+    sparse_init([rng]; kw...) -> Function
 
-Return an `Array` of size `dims` where each column contains a fixed fraction of
+Return a `Matrix{Float32}` of size `rows, cols` where each column contains a fixed fraction of
 zero elements given by `sparsity`. Non-zero elements are normally distributed
 with a mean of zero and standard deviation `std`.
 
@@ -330,19 +330,20 @@ This method is described in [1].
 
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
-julia> Flux.sparse_init(3, 2, sparsity=0.1)
-3×2 Matrix{Float32}:
-  0.00828413  0.0
- -0.00353007  0.00297336
-  0.0         0.00586617
+julia> count(iszero, Flux.sparse_init(10, 10, sparsity=1/5))
+20
+
+julia> sum(0 .== Flux.sparse_init(10, 11, sparsity=0.9), dims=1)
+1×11 Matrix{Int64}:
+ 9  9  9  9  9  9  9  9  9  9  9
+
+julia> Dense(3 => 10, tanh; init=Flux.sparse_init(sparsity=0.5))
+Dense(3 => 10, tanh)  # 40 parameters
+
+julia> count(iszero, ans.weight, dims=1)
+1×3 Matrix{Int64}:
+ 5  5  5
 ```
-
-# See also
-
-* kaiming initialization using normal distribution: [`kaiming_normal`](@ref Flux.kaiming_normal)
-* kaiming initialization using uniform distribution: [`kaiming_uniform`](@ref Flux.kaiming_uniform)
-* glorot initialization using normal distribution: [`glorot_normal`](@ref Flux.glorot_normal)
-* glorot initialization using uniform distribution: [`glorot_uniform`](@ref Flux.glorot_uniform)
 
 # References
 
@@ -361,81 +362,85 @@ function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
 end
 
 sparse_init(dims::Integer...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
-sparse_init(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+sparse_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
 """
-    identity_init([rng=GLOBAL_RNG], dims...; gain=1, shift=0)
+    identity_init(size...; gain=1, shift=0) -> Array
+    identity_init(; kw...) -> Function
 
-Return an `Array` of size `dims` which yields an identity mapping when used as parameters in
+Return an `Array{Float32}` of the given `size` which yields an identity mapping when used as parameters in
 most Flux layers. Use `gain` to scale the identity by a constant.
 
 Often useful in the context of transfer learning, i.e when one wants to add more capacity to
 a model but start from the same mapping.
-
-Use `shift` (integer or tuple) to apply circular shift to the output.
-Equivalent to `Base.circshift(identity(dims...), shift)`.
-
-Some caveats: Not all layers will be identity mapping when used with this init. Exceptions
-include recurrent layers, `DepthwiseConv` and normalization layers.
-
-Also note that layers must have `input_size == output_size` for identity mapping to be
-possible. When this is not the case, extra dimensions of the array are padded with zeros.
-
-For convolutional layers, in addition to the above, the kernel sizes must also be odd and
-padding must be applied so that output feature maps have the same size as input feature maps,
-e.g by using [`SamePad`](@ref).
 
 Has the following behaviour
 *  1D: A `Vector` of `zeros` (useful for an identity bias)
 *  2D: An identity matrix (useful for an identity matrix multiplication)
 *  More than 2D: A dense block array of center tap spatial filters (useful for an identity convolution)
 
-```jldoctest
-julia> Flux.identity_init(3,3)
-3×3 Matrix{Float32}:
- 1.0  0.0  0.0
- 0.0  1.0  0.0
- 0.0  0.0  1.0
+Some caveats: 
+* Not all layers will be identity mapping when used with this init. Exceptions
+  include recurrent layers, `DepthwiseConv` and normalization layers.
 
+* Layers must have `input_size == output_size` for identity mapping to be
+  possible. When this is not the case, extra dimensions of the array are padded with zeros.
+
+* For convolutional layers, in addition to the above, the kernel sizes must also be odd and
+  padding must be applied so that output feature maps have the same size as input feature maps,
+  e.g by using [`SamePad`](@ref).
+
+Use keyword `shift` (integer or tuple) to apply circular shift to the output,
+equivalent to `Base.circshift(identity_init(size...), shift)`.
+
+For consistency with other initialisers, it accepts `rng::AbstractRNG` as an optional
+first argument. But this is ignored, since the result is not random.
+
+# Examples
+```jldoctest
 julia> Flux.identity_init(3,5)
 3×5 Matrix{Float32}:
  1.0  0.0  0.0  0.0  0.0
  0.0  1.0  0.0  0.0  0.0
  0.0  0.0  1.0  0.0  0.0
 
-julia> Flux.identity_init(3,3,2,2)
-3×3×2×2 Array{Float32,4}:
+julia> Dense(5 => 3, relu, init=Flux.identity_init)([1,-2,3,-4,5])
+3-element Vector{Float32}:
+ 1.0
+ 0.0
+ 3.0
+
+julia> Flux.identity_init(3,3,2; gain=100)
+3×3×2 Array{Float32, 3}:
+[:, :, 1] =
+   0.0  0.0  0.0
+ 100.0  0.0  0.0
+   0.0  0.0  0.0
+
+[:, :, 2] =
+ 0.0    0.0  0.0
+ 0.0  100.0  0.0
+ 0.0    0.0  0.0
+
+julia> x4 = cat([1 2 3; 4 5 6; 7 8 9]; dims=4);
+
+julia> Conv((2,2), 1 => 1, init=Flux.identity_init(gain=10), pad=SamePad())(x4)
+3×3×1×1 Array{Float32, 4}:
 [:, :, 1, 1] =
- 0.0  0.0  0.0
- 0.0  1.0  0.0
- 0.0  0.0  0.0
-
-[:, :, 2, 1] =
- 0.0  0.0  0.0
- 0.0  0.0  0.0
- 0.0  0.0  0.0
-
-[:, :, 1, 2] =
- 0.0  0.0  0.0
- 0.0  0.0  0.0
- 0.0  0.0  0.0
-
-[:, :, 2, 2] =
- 0.0  0.0  0.0
- 0.0  1.0  0.0
- 0.0  0.0  0.0
+ 10.0  20.0  30.0
+ 40.0  50.0  60.0
+ 70.0  80.0  90.0
 ```
 """
-# Assume bias
-identity_init(cols::Integer; gain=1, shift=0) = zeros32(cols)
+identity_init(cols::Integer; gain::Real=1, shift=0) = zeros32(cols) # Assume bias
 
 # Assume matrix multiplication
-identity_init(rows::Integer, cols::Integer; gain=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
+identity_init(rows::Integer, cols::Integer; gain::Real=1, shift=0) = circshift(Matrix{Float32}(I * gain, rows,cols), shift)
 
 # Assume convolution
-function identity_init(dims::Integer...; gain=1, shift=0)
+function identity_init(dims::Integer...; gain::Real=1, shift=0)
   nin, nout = dims[end-1], dims[end]
   centers = map(d -> cld(d, 2), dims[1:end-2])
   weights = zeros32(dims...)
@@ -445,16 +450,41 @@ function identity_init(dims::Integer...; gain=1, shift=0)
   return circshift(weights, shift)
 end
 
+# For consistency, it accepts an RNG, but ignores it:
 identity_init(::AbstractRNG, dims::Integer...; kwargs...) = identity_init(dims...; kwargs...)
-identity_init(; init_kwargs...) = identity_init(rng_from_array(); init_kwargs...)
-identity_init(rng::AbstractRNG; init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+identity_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable identity_init(::Any...)
 
 ones32(dims::Integer...) = Base.ones(Float32, dims...)
 zeros32(dims::Integer...) = Base.zeros(Float32, dims...)
+
+"""
+    ones32(size...) = ones(Float32, size...)
+    zeros32(size...) = zeros(Float32, size...)
+
+Return an `Array{Float32}` of the given `size`.
+"""
+ones32(dims...) = Base.ones(Float32, dims...)
+
+@doc @doc(ones32)
+zeros32(dims...) = Base.zeros(Float32, dims...)
+
+"""
+    rand32([rng], size...)
+    randn32([rng], size...)
+
+Return an `Array{Float32}` of the given `size`, filled like `rand` or `randn`.
+When the size is not provided, `rand32(rng::AbstractRNG)` returns a function.
+"""
 rand32(dims::Integer...) = Base.rand(Float32, dims...)
+rand32(rng::AbstractRNG, dims::Integer...) = Base.rand(rng, Float32, dims...)
+rand32(rng::AbstractRNG) = (dims...,) -> Base.rand(rng, Float32, dims...)
+
+@doc @doc(rand32)
 randn32(dims::Integer...) = Base.randn(Float32, dims...)
+randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
+randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
 
 """
     create_bias(weights, bias, size...)
