@@ -6,7 +6,7 @@ add the result to the overall loss.
 
 For example, say we have a simple regression.
 
-```jldoctest regularisation; setup = :(using Random; Random.seed!(0))
+```jldoctest regularisation
 julia> using Flux
 
 julia> using Flux.Losses: logitcrossentropy
@@ -28,7 +28,7 @@ julia> loss(x, y) = logitcrossentropy(m(x), y) + penalty();
 When working with layers, Flux provides the `params` function to grab all
 parameters at once. We can easily penalise everything with `sum`:
 
-```jldoctest regularisation
+```jldoctest regularisation; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> Flux.params(m)
 Params([Float32[0.34704182 -0.48532376 … -0.06914271 -0.38398427; 0.5201164 -0.033709668 … -0.36169025 -0.5552353; … ; 0.46534058 0.17114447 … -0.4809643 0.04993277; -0.47049698 -0.6206029 … -0.3092334 -0.47857067], Float32[0.0, 0.0, 0.0, 0.0, 0.0]])
 
@@ -40,7 +40,7 @@ julia> sum(sqnorm, Flux.params(m))
 
 Here's a larger example with a multi-layer perceptron.
 
-```jldoctest regularisation
+```jldoctest regularisation; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> m = Chain(Dense(28^2 => 128, relu), Dense(128 => 32, relu), Dense(32 => 10))
 Chain(
   Dense(784 => 128, relu),              # 100_480 parameters
@@ -58,7 +58,7 @@ julia> loss(rand(28^2), rand(10))
 
 One can also easily add per-layer regularisation via the `activations` function:
 
-```jldoctest regularisation
+```jldoctest regularisation; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> using Flux: activations
 
 julia> c = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)

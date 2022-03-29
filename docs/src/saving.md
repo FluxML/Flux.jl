@@ -6,7 +6,7 @@ session. The easiest way to do this is via
 
 Save a model:
 
-```jldoctest saving; setup = :(using Random; Random.seed!(0))
+```jldoctest saving
 julia> using Flux
 
 julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
