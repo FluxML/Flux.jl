@@ -151,8 +151,6 @@ channels from `in` to `out`.
 
 Accepts the keyword `init` (default: `glorot_uniform`) to control the sampling
 distribution.
-
-See also: [`depthwiseconvfilter`](@ref)
 """
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
@@ -298,91 +296,37 @@ end
 
 """
     DepthwiseConv(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
+    DepthwiseConv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+    
+Return a depthwise convolutional layer, that is a [`Conv`](@ref) layer with number of
+groups equal to the number of input channels.
 
-Depthwise convolutional layer. `filter` is a tuple of integers
-specifying the size of the convolutional kernel, while
-`in` and `out` specify the number of input and output channels.
-
-Note that `out` must be an integer multiple of `in`.
-
-Parameters are controlled by additional keywords, with defaults
-`init=glorot_uniform` and `bias=true`.
-
-See also [`Conv`](@ref) for more detailed description of keywords.
+See [`Conv`](@ref) for a description of the arguments.
 
 # Examples
+
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> lay = DepthwiseConv((5,5), 3 => 6, relu; bias=false)
-DepthwiseConv((5, 5), 3 => 6, relu, bias=false)  # 150 parameters
+Conv((5, 5), 3 => 6, relu, groups=3, bias=false)  # 150 parameters 
 
 julia> lay(xs) |> size
 (96, 96, 6, 50)
 
-julia> DepthwiseConv((5,5), 3 => 9, stride=2, pad=2)(xs) |> size
+julia> DepthwiseConv((5, 5), 3 => 9, stride=2, pad=2)(xs) |> size
 (50, 50, 9, 50)
 ```
 """
-struct DepthwiseConv{N,M,F,A,V}
-  σ::F
-  weight::A
-  bias::V
-  stride::NTuple{N,Int}
-  pad::NTuple{M,Int}
-  dilation::NTuple{N,Int}
+function DepthwiseConv(k::NTuple{<:Any,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; 
+            stride = 1, pad = 0, dilation = 1, bias = true, init = glorot_uniform)
+  Conv(k, ch, σ; groups=ch.first, stride, pad, dilation, bias, init)
 end
 
-"""
-    DepthwiseConv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
-
-Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `DepthwiseConv((4,4), 3 => 6, relu)` method.
-"""
 function DepthwiseConv(w::AbstractArray{T,N}, bias = true, σ = identity;
-                      stride = 1, pad = 0, dilation = 1) where {T,N}
-  stride = expand(Val(N-2), stride)
-  dilation = expand(Val(N-2), dilation)
-  pad = calc_padding(DepthwiseConv, pad, size(w)[1:N-2], dilation, stride)
-  b = create_bias(w, bias, prod(size(w)[N-1:end]))
-  return DepthwiseConv(σ, w, b, stride, pad, dilation)
-end
-
-function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-                init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                bias = true) where N
-  @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
-  weight = depthwiseconvfilter(k, ch, init = init)
-  return DepthwiseConv(weight, bias, σ; stride, pad, dilation)
-end
-
-@functor DepthwiseConv
-
-"""
-    depthwiseconvfilter(filter::Tuple, in => out)
-
-Constructs a depthwise convolutional weight array defined by `filter` and channels
-from `in` to `out`.
-
-Accepts the keyword `init` (default: `glorot_uniform`) to control the sampling
-distribution.
-
-See also: [`convfilter`](@ref)
-"""
-depthwiseconvfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
-                    init = glorot_uniform) where N = init(filter..., div(ch[2], ch[1]), ch[1])
-
-function (c::DepthwiseConv)(x)
-  σ = NNlib.fast_act(c.σ, x)
-  cdims = DepthwiseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
-  σ.(depthwiseconv(x, c.weight, cdims) .+ conv_reshape_bias(c))
-end
-
-function Base.show(io::IO, l::DepthwiseConv)
-  print(io, "DepthwiseConv(", size(l.weight)[1:end-2])
-  print(io, ", ", size(l.weight)[end], " => ", prod(size(l.weight)[end-1:end]))
-  _print_conv_opt(io, l)
-  print(io, ")")
+                  stride = 1, pad = 0, dilation = 1) where {T,N}
+  w2 = reshape(w, size(w)[1:end-2]..., 1, :)
+  Conv(w2, bias, σ; groups = size(w)[end-1], stride, pad, dilation)
 end
 
 
