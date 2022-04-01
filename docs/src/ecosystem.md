@@ -7,10 +7,6 @@ This is a non-exhaustive list of Julia packages, nicely complementing `Flux` in 
 machine learning and deep learning workflows. To add your project please send a [PR](https://github.com/FluxML/Flux.jl/pulls).
 See also academic work citing Flux or Zygote.
 
-## Advanced models
-
-- [FluxArchitectures.jl](https://github.com/sdobber/FluxArchitectures.jl) is a collection of slightly more advanced network architectures.
-
 ## Computer vision
 
 - [ObjectDetector.jl](https://github.com/r3tex/ObjectDetector.jl) provides ready-to-go image analysis via YOLO.
@@ -54,7 +50,7 @@ Tools to put data into the right order for creating a model.
  
 - [Augmentor.jl](https://github.com/Evizero/Augmentor.jl) is a real-time library augmentation library for increasing the number of training images.
 - [DataAugmentation.jl](https://github.com/lorenzoh/DataAugmentation.jl) aims to make it easy to build stochastic label-preserving augmentation pipelines for your datasets.
-- [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) is a library for processing Machine Learning datasets.
+- [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) (replaces [MLDataUtils.jl](https://github.com/JuliaML/MLDataUtils.jl) and [MLLabelUtils.jl](https://github.com/JuliaML/MLLabelUtils.jl)) is a library for processing Machine Learning datasets.
 
 ## Probabilistic programming
  
@@ -75,6 +71,10 @@ Tools to put data into the right order for creating a model.
 ## Statistics
 
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) provides single-pass algorithms for statistics.
+
+## Time series
+
+- [FluxArchitectures.jl](https://github.com/sdobber/FluxArchitectures.jl) is a collection of advanced network architectures for time series forecasting.
 
 ## Miscellaneous
 
