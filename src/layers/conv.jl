@@ -128,6 +128,8 @@ julia> Flux.params(c1) |> length
 """
 function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
               stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
+
+  @assert size(w, N) % groups == 0 "Output channel dimension must be divisible by groups."
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
@@ -155,6 +157,8 @@ distribution.
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
   cin, cout = ch
+  @assert cin % groups == 0 "Input channel dimension must be divisible by groups."
+  @assert cout % groups == 0 "Output channel dimension must be divisible by groups."
   init(filter..., cin÷groups, cout)
 end
 
