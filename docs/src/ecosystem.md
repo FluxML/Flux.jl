@@ -34,7 +34,8 @@ See also academic work citing Flux or Zygote.
 
 ## Graph learning
 
-- [GeometricFlux.jl](https://github.com/FluxML/GeometricFlux.jl) makes it easy to build fast neural networks over graphs.
+- [GraphNeuralNetworks.jl](https://github.com/CarloLucibello/GraphNeuralNetworks.jl) is a fresh, performant and flexible graph neural network library based on Flux.jl.
+- [GeometricFlux.jl](https://github.com/FluxML/GeometricFlux.jl) is the first graph neural network library for julia. 
 - [NeuralOperators.jl](https://github.com/SciML/NeuralOperators.jl) enables training infinite dimensional PDEs by learning a continuous function instead of using the finite element method.
 - [SeaPearl.jl](https://github.com/corail-research/SeaPearl.jl) is a Constraint Programming solver that uses Reinforcement Learning based on graphs as input.
 
