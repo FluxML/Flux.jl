@@ -54,8 +54,7 @@ Tools to put data into the right order for creating a model.
  
 - [Augmentor.jl](https://github.com/Evizero/Augmentor.jl) is a real-time library augmentation library for increasing the number of training images.
 - [DataAugmentation.jl](https://github.com/lorenzoh/DataAugmentation.jl) aims to make it easy to build stochastic label-preserving augmentation pipelines for your datasets.
-- [MLDataUtils.jl](https://github.com/JuliaML/MLDataUtils.jl) is a utility for generating, loading, partitioning, and processing Machine Learning datasets.
-- [MLLabelUtils.j](https://github.com/JuliaML/MLLabelUtils.jl) is a utility for working with classification targets. It provides the necessary functionality for interpreting class-predictions, as well as converting classification targets from one encoding to another. 
+- [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) is a library for processing Machine Learning datasets.
 
 ## Probabilistic programming
  
