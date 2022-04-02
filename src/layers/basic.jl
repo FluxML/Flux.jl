@@ -200,7 +200,7 @@ Diagonal(sz::Integer...; σ = identity, bias = true, init = ones32) = Diagonal(i
 
 function (a::Diagonal)(x::AbstractArray)
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ == typeof(identity) ? a.scale .* x .+ a.bias : σ.(a.scale .* x .+ a.bias)
+  return σ === typeof(identity) ? a.scale .* x .+ a.bias : σ.(a.scale .* x .+ a.bias)
 end
 
 function Base.show(io::IO, l::Diagonal)
