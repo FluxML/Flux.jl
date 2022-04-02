@@ -11,7 +11,7 @@
 end
 
 # TODO: These layers get into scalar indexing issues.
-const BROKEN_LAYERS = Union{DepthwiseConv}
+const BROKEN_LAYERS = Union{}
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,

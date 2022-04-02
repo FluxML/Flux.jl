@@ -25,7 +25,6 @@ CrossCor
 SamePad
 Flux.flatten
 Flux.convfilter
-Flux.depthwiseconvfilter
 ```
 
 ## Upsampling Layers
