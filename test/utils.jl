@@ -2,7 +2,7 @@ using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
              sparse_init, identity_init, stack, unstack, batch, unbatch,
-             unsqueeze, params, loadmodel!
+             unsqueeze, params, loadparams!, loadmodel!
 using StatsBase: var, std
 using Statistics, LinearAlgebra
 using Random
@@ -366,26 +366,24 @@ end
     @test_skip typeof(l1.bias) === typeof(l2.bias)
   end
 
-  @testset "loadmodel!" begin
+  @testset "loadparams!" begin
     pars(w, b) = [w, b]
     pars(l) = pars(l.weight, l.bias)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.weight], vcat, m)
     @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
       m = dm(bt)
-      Flux.loadmodel!(m, params(m))
+      Flux.loadparams!(m, params(m))
       testdense(m, bt)
     end
   end
 
   @testset "loadmodel!(dst, src)" begin
-    import Flux: loadmodel!, Zeros
-
     m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
     m2 = Chain(Dense(10, 5), Dense(5, 2))
     m3 = Chain(Conv((3, 3), 3 => 16), Dense(5, 2))
     m4 = Chain(Dense(10, 6), Dense(6, 2))
-    m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), Zeros()), Dense(5, 2)))
+    m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5, 2)))
     m6 = Chain(Dense(10, 5), Parallel(+, Dense(5, 2), Dense(5, 2)))
 
     loadmodel!(m1, m2)
@@ -408,6 +406,7 @@ end
     # size mismatches throw an error
     @test_throws DimensionMismatch loadmodel!(m1, m4)
 
+    # tests for BatchNorm and Dropout
     m1 = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), Flux.flatten, Dropout(0.2))
     m2 = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), x -> reshape(x, :, size(x)[end]), Dropout(0.1))
     m2[2].μ .= rand(Float32, size(m2[2].μ)...)
@@ -484,16 +483,32 @@ end
     @test chain2[2].bias != chain1[2].bias
 
     # test shared weights
-    m1 = Chain(Dense(10 => 5), Dense(5 => 2))
-    m2 = Chain(Dense(transpose(m1[2].weight)), Dense(permutedims(m1[1].weight)))
-    m3 = Chain(Dense(m1[1].weight), Dense(m1[2].weight))
-    m2[2].weight .= 1f0
-    loadmodel!(m1, m3)
-    @test m1[2].weight === parent(m2[1].weight)
-    @test m1[2].weight == transpose(m2[1].weight)
-    @test m1[1].weight === m3[1].weight
-    @test m2[2].weight != transpose(m1[1].weight)
-    @test m3[2].weight == transpose(m2[1].weight)
+    encoder_dst = Chain(Dense(10 => 5), Dense(5 => 2))
+    decoder_dst = Chain(Dense(transpose(encoder_dst[2].weight)),
+                        Dense(permutedims(encoder_dst[1].weight)))
+    encoder_src = Chain(Dense(10 => 5), Dense(5 => 2))
+    decoder_src = Chain(Dense(transpose(encoder_src[2].weight)),
+                        Dense(5 => 10))
+    # matched weights are okay
+    m1 = Chain(encoder_dst, decoder_dst)
+    m2 = Chain(encoder_src, decoder_src)
+    loadmodel!(m1, m2)
+    @test m1[1][2].weight === parent(m1[2][1].weight)
+    @test m1[1][1].weight == m2[1][1].weight
+    @test m1[1][1].weight != permutedims(m1[2][2].weight)
+    # mismatched weights are an error
+    m2 = Chain(Chain(Dense(10 => 5), Dense(5 => 2)), Chain(Dense(2 => 5), Dense(5 => 10)))
+    @test_throws ErrorException loadmodel!(m1, m2)
+    # loading into tied weights with absent parameter is okay when the dst == zero
+    b = Flux.zeros32(5)
+    m1 = Chain(Dense(10 => 5; bias = b), Dense(5 => 5; bias = b))
+    m2 = Chain(Dense(10 => 5; bias = Flux.zeros32(5)), Dense(5 => 5; bias = false))
+    loadmodel!(m1, m2)
+    @test m1[1].bias === m1[2].bias
+    @test iszero(m1[1].bias)
+    # loading into tied weights with absent parameter is bad when the dst != zero
+    m2[1].bias .= 1
+    @test_throws ErrorException loadmodel!(m1, m2)
   end
 
   @testset "destructure" begin

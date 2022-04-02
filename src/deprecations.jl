@@ -15,8 +15,6 @@ zeros(T::Type, dims...) = Base.zeros(T, dims...)
 ones32(::Type, dims...) = throw(ArgumentError("Flux.ones32 is always Float32, use Base.ones to specify the element type"))
 zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, use Base.zeros to specify the element type"))
 
-@deprecate loadparams!(m, xs) loadmodel!(m, xs)
-
 # v0.13 deprecations
 
 function Broadcast.broadcasted(f::Recur, args...)
@@ -48,6 +46,16 @@ end
 function Diagonal(size::Tuple; kw...)
   Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
   Scale(size...; kw...)
+end
+
+# Deprecate this eventually once saving models w/o structure is no more
+function loadparams!(m, xs)
+  Base.depwarn("loadparams! will be deprecated eventually. Use loadmodel! instead.", :loadparams!)
+  for (p, x) in zip(params(m), xs)
+    size(p) == size(x) ||
+      error("Expected param size $(size(p)), got $(size(x))")
+    copyto!(p, x)
+  end
 end
 
 # Channel notation: Changed to match Conv, but very softly deprecated!

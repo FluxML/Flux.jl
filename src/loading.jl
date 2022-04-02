@@ -1,20 +1,28 @@
-"""
-    loadleaf!(dst, src, err)
-
-Copy `src` to `dst` or throw `err` when their sizes are mismatched.
-By default, use `copyto!` when `dst` and `src` are arrays.
-When only `dst` is an array, set every element to `src`.
-Otherwise, just return `dst`.
-"""
 loadleaf!(dst, src, err) = dst
-function loadleaf!(dst::AbstractArray, src, err)
-  dst .= src
+function loadleaf!(dst::AbstractArray, src::Bool, err)
+  if iszero(src)
+    dst .= src
+  else
+    error("Cannot copy boolean parameter == true to non-zero parameter.")
+  end
   return dst
 end
+loadleaf!(dst::Bool, src::AbstractArray, err) = iszero(dst) ? dst :
+  error("Cannot copy non-zero parameter to boolean parameter == true.")
 function loadleaf!(dst::AbstractArray, src::AbstractArray, err)
   (size(dst) == size(src)) || throw(err)
   copyto!(dst, src)
 end
+
+_parent(x) = x
+_parent(x::AbstractArray) = parent(x)
+
+_tie_check(dst::AbstractArray, src::AbstractArray) = dst == src
+_tie_check(dst, src) = true
+
+_bool_tie_check(dst::Bool, src::AbstractArray) = iszero(dst)
+_bool_tie_check(dst::AbstractArray, src::Bool) = iszero(dst) && iszero(src)
+_bool_tie_check(dst, src) = true
 
 """
     loadmodel!(dst, src)
@@ -22,10 +30,13 @@ end
 Copy all the parameters (trainable and non-trainable) from `src` to `dst`.
 
 `loadmodel!` recursively walks the [`Functors.children`](@ref) of `dst` and `src`
-calling `loadleaf!` on any pair of children where [`Functors.isleaf`](@ref) is true.
+calling `copyto!` on any pair of children where [`Functors.isleaf`](@ref) is true.
+It also handles "absent" parameters such as `bias == false`.
 It throws an error whenever:
 - `dst` and `src` do not share the same fields (at any level)
 - the sizes of leaf nodes are mismatched between `dst` and `src`
+- `dst` is a "tied" parameter (e.g. `transpose` of another parameter) and
+  loaded into multiple times with mismatched source values
 
 ```julia
 julia> using Flux: loadmodel!
@@ -56,22 +67,8 @@ true
 julia> dst[2].bias == src[2].bias
 true
 ```
-
-See [`Flux.loadleaf!`](@ref) for more details on the copy behavior.
-
-!!! warning
-    This function allows `src` to be a `Params` for backwards-compatibility.
-    You should avoid using `loadmodel!` this way, because it skips most of the structural
-    checking used when `src` is also a nested structure. Silent errors may occur.
 """
-function loadmodel!(m, xs::Params)
-  for (p, x) in zip(params(m), xs)
-    size(p) == size(x) ||
-      error("Expected param size $(size(p)), got $(size(x))")
-    copyto!(p, x)
-  end
-end
-function loadmodel!(dst, src)
+function loadmodel!(dst, src; cache = Base.IdSet())
   ldsts, _ = functor(dst)
   lsrcs, _ = functor(src)
   (keys(ldsts) == keys(lsrcs)) ||
@@ -79,7 +76,20 @@ function loadmodel!(dst, src)
 
   err = DimensionMismatch("Tried to load $src into $dst but the parameter sizes do not match.")
   foreach(ldsts, lsrcs) do ldst, lsrc
-    Functors.isleaf(ldst) ? loadleaf!(ldst, lsrc, err) : loadmodel!(ldst, lsrc)
+    if _parent(ldst) in cache # we already loaded this parameter before
+      if !_bool_tie_check(ldst, lsrc) # special case to handle tied + absent parameters
+        error("Encountered tied parameter with boolean source at some nodes and non-boolean sources at others.")
+      elseif _tie_check(ldst, lsrc) # the arrays match and we already loaded (or these are not arrays)
+        return ldst
+      else # tied dst but mismatched src case
+        error("Encountered tied destination parameters with untied and mismatched sources.")
+      end
+    elseif Functors.isleaf(ldst) # our first time loading this leaf
+      push!(cache, ldst)
+      loadleaf!(ldst, lsrc, err)
+    else # this isn't a leaf
+      loadmodel!(ldst, lsrc; cache = cache)
+    end
   end
 
   return dst
