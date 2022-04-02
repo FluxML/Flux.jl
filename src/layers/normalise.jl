@@ -165,16 +165,13 @@ struct LayerNorm{F,D,T,N}
 end
 
 function LayerNorm(sz, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
-  diag = affine ? Diagonal(sz...) : identity
+  diag = affine ? Diagonal(sz...; σ = λ) : Base.Fix1(broadcast, λ)
   return LayerNorm(λ, diag, ϵ, Tuple(sz), affine)
 end
 
 @functor LayerNorm
 
-function (a::LayerNorm)(x)
-  x = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
-  return a.λ === identity ? x : a.λ.(x)
-end
+(a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm($(l.size)")

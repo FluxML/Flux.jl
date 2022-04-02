@@ -156,9 +156,8 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b = a.weight, a.bias
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(W*x .+ b)
+  return σ.(a.weight * x .+ a.bias)
 end
 
 (a::Dense)(x::AbstractArray) = 
@@ -172,35 +171,37 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(size::Integer...; bias=true, init=ones32)
-    Diagonal(scale::AbstractArray, [bias])
+    Diagonal(size::Integer...; σ = identity, bias=true, init=ones32)
+    Diagonal(scale::AbstractArray, [bias, activation])
 
 Create an element-wise linear layer, which performs
 
-    y = scale .* x .+ bias
+    y = σ.(scale .* x .+ bias)
 
-with no activation function.
- 
 The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
 with `init=ones32` by default. You may specify the function `init`, 
 turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
 Used by [`LayerNorm`](@ref).
 """
-struct Diagonal{A<:AbstractArray, B}
+struct Diagonal{A<:AbstractArray, B, F}
   scale::A
   bias::B
-  function Diagonal(W::M, bias = true) where M<:AbstractArray
+  σ::F
+  function Diagonal(W::M, bias = true, σ::F = identity) where {M<:AbstractArray, F}
     b = create_bias(W, bias, size(W)...)
-    new{M, typeof(b)}(W, b)
+    new{M, typeof(b), F}(W, b, σ)
   end
 end
 
-Diagonal(sz::Integer...; bias = true, init = ones32) = Diagonal(init(sz...), bias)
+Diagonal(sz::Integer...; σ = identity, bias = true, init = ones32) = Diagonal(init(sz...), bias, σ)
 
 @functor Diagonal
 
-(a::Diagonal)(x) = a.scale .* x .+ a.bias
+function (a::Diagonal)(x::AbstractArray)
+  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
+  return σ === typeof(identity) ? a.scale .* x .+ a.bias : σ.(a.scale .* x .+ a.bias)
+end
 
 function Base.show(io::IO, l::Diagonal)
   print(io, "Diagonal(", join(size(l.scale), ", "))
@@ -212,7 +213,7 @@ end
     Maxout(layers...)
     Maxout(f, n_alts)
 
-This contains a number of internal layes, each of which receives the same input.
+This contains a number of internal layers, each of which receives the same input.
 Its output is the elementwise maximum of the the internal layers' outputs.
 
 Instead of defining layers individually, you can provide a zero-argument function
