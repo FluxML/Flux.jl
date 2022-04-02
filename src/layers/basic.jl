@@ -138,13 +138,13 @@ julia> Flux.params(d1)  # no trainable bias
 Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{M<:AbstractMatrix, B, F}
+struct Dense{F, M<:AbstractMatrix, B}
   weight::M
   bias::B
   σ::F
   function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix, F}
     b = create_bias(W, bias, size(W,1))
-    new{M, typeof(b), F}(W, b, σ)
+    new{F,M,typeof(b)}(W, b, σ)
   end
 end
 
@@ -156,9 +156,8 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b = a.weight, a.bias
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(W * x .+ b)
+  return σ.(a.weight * x .+ a.bias)
 end
 
 (a::Dense)(x::AbstractArray) = 
