@@ -14,9 +14,6 @@ function loadleaf!(dst::AbstractArray, src::AbstractArray, err)
   copyto!(dst, src)
 end
 
-_parent(x) = x
-_parent(x::AbstractArray) = parent(x)
-
 _tie_check(dst::Bool, src::AbstractArray) = iszero(dst) ||
   error("Encountered tied parameter with boolean source at some nodes and non-boolean sources at others.")
 _tie_check(dst::AbstractArray, src::Bool) = (iszero(dst) && iszero(src)) ||
@@ -79,7 +76,7 @@ function loadmodel!(dst, src; cache = Base.IdSet())
 
   err = DimensionMismatch("Tried to load $src into $dst but the parameter sizes do not match.")
   foreach(ldsts, lsrcs) do ldst, lsrc
-    if _parent(ldst) in cache # we already loaded this parameter before
+    if ldst in cache # we already loaded this parameter before
       _tie_check(ldst, lsrc) && return ldst
     elseif Functors.isleaf(ldst) # our first time loading this leaf
       push!(cache, ldst)

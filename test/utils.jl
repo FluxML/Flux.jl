@@ -483,21 +483,16 @@ end
     @test chain2[2].bias != chain1[2].bias
 
     # test shared weights
-    encoder_dst = Chain(Dense(10 => 5), Dense(5 => 2))
-    decoder_dst = Chain(Dense(transpose(encoder_dst[2].weight)),
-                        Dense(permutedims(encoder_dst[1].weight)))
-    encoder_src = Chain(Dense(10 => 5), Dense(5 => 2))
-    decoder_src = Chain(Dense(transpose(encoder_src[2].weight)),
-                        Dense(5 => 10))
+    shared_dst = Dense(10 => 10)
+    shared_src = Dense(10 => 10)
     # matched weights are okay
-    m1 = Chain(encoder_dst, decoder_dst)
-    m2 = Chain(encoder_src, decoder_src)
+    m1 = Chain(shared_dst, Dense(shared_dst.weight))
+    m2 = Chain(shared_src, Dense(shared_src.weight))
     loadmodel!(m1, m2)
-    @test m1[1][2].weight === parent(m1[2][1].weight)
-    @test m1[1][1].weight == m2[1][1].weight
-    @test m1[1][1].weight != permutedims(m1[2][2].weight)
+    @test m1[1].weight === m1[2].weight
+    @test m1[1].weight == m2[2].weight
     # mismatched weights are an error
-    m2 = Chain(Chain(Dense(10 => 5), Dense(5 => 2)), Chain(Dense(2 => 5), Dense(5 => 10)))
+    m2 = Chain(Dense(10 => 10), Dense(10 => 10))
     @test_throws ErrorException loadmodel!(m1, m2)
     # loading into tied weights with absent parameter is okay when the dst == zero
     b = Flux.zeros32(5)
