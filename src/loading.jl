@@ -17,11 +17,14 @@ end
 _parent(x) = x
 _parent(x::AbstractArray) = parent(x)
 
-_tie_check(dst::AbstractArray, src::AbstractArray) = dst == src
+_tie_check(dst::Bool, src::AbstractArray) = iszero(dst) ||
+  error("Encountered tied parameter with boolean source at some nodes and non-boolean sources at others.")
+_tie_check(dst::AbstractArray, src::Bool) = (iszero(dst) && iszero(src)) ||
+  error("Encountered tied parameter with boolean source at some nodes and non-boolean sources at others.")
+_tie_check(dst::AbstractArray, src::AbstractArray) = (dst == src) ||
+  error("Encountered tied destination parameters with untied and mismatched sources.")
 _tie_check(dst, src) = true
 
-_bool_tie_check(dst::Bool, src::AbstractArray) = iszero(dst)
-_bool_tie_check(dst::AbstractArray, src::Bool) = iszero(dst) && iszero(src)
 _bool_tie_check(dst, src) = true
 
 """
@@ -77,13 +80,7 @@ function loadmodel!(dst, src; cache = Base.IdSet())
   err = DimensionMismatch("Tried to load $src into $dst but the parameter sizes do not match.")
   foreach(ldsts, lsrcs) do ldst, lsrc
     if _parent(ldst) in cache # we already loaded this parameter before
-      if !_bool_tie_check(ldst, lsrc) # special case to handle tied + absent parameters
-        error("Encountered tied parameter with boolean source at some nodes and non-boolean sources at others.")
-      elseif _tie_check(ldst, lsrc) # the arrays match and we already loaded (or these are not arrays)
-        return ldst
-      else # tied dst but mismatched src case
-        error("Encountered tied destination parameters with untied and mismatched sources.")
-      end
+      _tie_check(ldst, lsrc) && return ldst
     elseif Functors.isleaf(ldst) # our first time loading this leaf
       push!(cache, ldst)
       loadleaf!(ldst, lsrc, err)
