@@ -457,7 +457,7 @@ end
                                   +),
                                 LayerNorm(8)))
   @test length(mod_skip) == 6
-  @test mod_skip[end] isa Flux.Diagonal
+  @test mod_skip[end] isa Flux.Scale
 end
 
 @testset "Patience triggers" begin
