@@ -39,6 +39,15 @@ function Optimise.update!(x::AbstractArray, x̄)
   x .-= x̄
 end
 
+function Diagonal(size::Integer...; kw...)
+  Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
+  Scale(size...; kw...)
+end
+function Diagonal(size::Tuple; kw...)
+  Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
+  Scale(size...; kw...)
+end
+
 # Channel notation: Changed to match Conv, but very softly deprecated!
 # Perhaps change to @deprecate for v0.14, but there is no plan to remove these.
 Dense(in::Integer, out::Integer, σ = identity; kw...) =

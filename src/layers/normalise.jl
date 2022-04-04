@@ -139,7 +139,7 @@ testmode!(m::AlphaDropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
-    LayerNorm(sz, λ=identity; affine=true, ϵ=1fe-5)
+    LayerNorm(size..., λ=identity; affine=true, ϵ=1fe-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states.
@@ -151,10 +151,10 @@ for tuple `sz`, along the first dimension for integer `sz`.
 The input  is expected to have first dimensions' size equal to `sz`.
 
 If `affine=true` also applies a learnable shift and rescaling
-as in the [`Diagonal`](@ref) layer.
+using the [`Scale`](@ref) layer.
 
 
-Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
+See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """
 struct LayerNorm{F,D,T,N}
   λ::F
@@ -164,17 +164,19 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(sz, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
-  diag = affine ? Diagonal(sz...; σ = λ) : Base.Fix1(broadcast, λ)
-  return LayerNorm(λ, diag, ϵ, Tuple(sz), affine)
+function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
+  diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
+  return LayerNorm(λ, diag, ϵ, size, affine)
 end
+LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
+LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
 
 @functor LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
 
 function Base.show(io::IO, l::LayerNorm)
-  print(io, "LayerNorm($(l.size)")
+  print(io, "LayerNorm(", join(l.size, ", "))
   l.λ === identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io, ", affine=false")
   print(io, ")")

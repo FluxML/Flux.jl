@@ -171,40 +171,69 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(size::Integer...; σ = identity, bias=true, init=ones32)
-    Diagonal(scale::AbstractArray, [bias, activation])
+    Scale(size::Integer..., σ=identity; bias=true, init=ones32)
+    Scale(scale::AbstractArray, [bias, σ])
 
-Create an element-wise linear layer, which performs
+Create an element-wise layer, whose forward pass is given by:
 
     y = σ.(scale .* x .+ bias)
 
+This uses `.*` instead of matrix multiplication `*` of [`Dense`](@ref).
+    
 The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
 with `init=ones32` by default. You may specify the function `init`, 
 turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
-Used by [`LayerNorm`](@ref).
+Used by [`LayerNorm`](@ref) with `affine=true`.
+
+# Examples
+```jldoctest
+julia> a = Flux.Scale(2)
+Scale(2)      # 4 parameters
+
+julia> Flux.params(a)
+Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
+
+julia> a([1 2 3])
+2×3 Matrix{Float32}:
+ 1.0  2.0  3.0
+ 1.0  2.0  3.0
+
+julia> b = Flux.Scale([1 2 3 4], false, abs2)
+Scale(1, 4, abs2; bias=false)  # 4 parameters
+
+julia> b([1, 10])
+2×4 Matrix{Int64}:
+   1    4    9    16
+ 100  400  900  1600
+
+julia> Flux.params(b)
+Params([[1 2 3 4]])
+```
 """
-struct Diagonal{A<:AbstractArray, B, F}
+struct Scale{F<:Function, A<:AbstractArray, B}
   scale::A
   bias::B
   σ::F
-  function Diagonal(W::M, bias = true, σ::F = identity) where {M<:AbstractArray, F}
-    b = create_bias(W, bias, size(W)...)
-    new{M, typeof(b), F}(W, b, σ)
+  function Scale(scale::A, bias = true, σ::F = identity) where {A<:AbstractArray, F<:Function}
+    b = create_bias(scale, bias, size(scale)...)
+    new{F, A, typeof(b)}(scale, b, σ)
   end
 end
 
-Diagonal(sz::Integer...; σ = identity, bias = true, init = ones32) = Diagonal(init(sz...), bias, σ)
+Scale(size::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(size...), bias, _act)
+Scale(size_act...; bias = true, init = ones32) = Scale(size_act[1:end-1]...; bias, init, _act = size_act[end])
 
-@functor Diagonal
+@functor Scale
 
-function (a::Diagonal)(x::AbstractArray)
+function (a::Scale)(x::AbstractArray)
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ === typeof(identity) ? a.scale .* x .+ a.bias : σ.(a.scale .* x .+ a.bias)
+  σ.(a.scale .* x .+ a.bias)
 end
 
-function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", join(size(l.scale), ", "))
+function Base.show(io::IO, l::Scale)
+  print(io, "Scale(", join(size(l.scale), ", "))
+  l.σ == identity || print(io, ", ", l.σ)
   l.bias == false && print(io, "; bias=false")
   print(io, ")")
 end
