@@ -41,28 +41,23 @@ Zero bias vectors and `bias=false` are considered equivalent
 
 # Examples
 ```julia
-julia> using Flux: loadmodel!
-
-julia> dst = Chain(Dense(Flux.ones32(2, 5)), Dense(2 => 1))
+julia> dst = Chain(Dense(Flux.ones32(2, 5, tanh)), Dense(2 => 1; bias = [1f0]))
 Chain(
-  Dense(5 => 2),                        # 12 parameters
+  Dense(5 => 2, tanh),                  # 12 parameters
   Dense(2 => 1),                        # 3 parameters
 )                   # Total: 4 arrays, 15 parameters, 316 bytes.
 
-julia> src = Chain(Dense(5 => 2), Dense(2 => 1));
-
-julia> all(isone, dst[1].weight)
+julia> dst[1].weight ≈ ones(2, 5)  # by construction
 true
 
-julia> loadmodel!(dst, src);
+julia> src = Chain(Dense(5 => 2, relu), Dense(2 => 1, bias=false));
 
-julia> dst[1].weight ≈ ones(2, 5)
+julia> Flux.loadmodel!(dst, src);
+
+julia> dst[1].weight ≈ ones(2, 5)  # values changed
 false
 
-julia> dst[1].weight == src[1].weight
-true
-
-julia> dst[2].bias == src[2].bias
+julia> iszero(dst[2].bias)
 true
 ```
 
