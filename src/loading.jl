@@ -31,13 +31,16 @@ Copy all the parameters (trainable and non-trainable) from `src` into `dst`.
 
 Recursively walks `dst` and `src` together using [`Functors.children`](@ref),
 and calling `copyto!` on parameter arrays.
-Non-array elements (such as activation functions) need not match.
-An all-zero bias array can be copied to or from absent bias, encoded `bias = false`.
+Non-array elements (such as activation functions) are not copied
+and do not need to match between `dst` and `src`.
+Inactive parameters, encoded by `false` in place on an array,
+can be copied to and from all-zero arrays.
+Attempting to copy a non-zero array to/from an inactive parameter will throw an error.
 
 Throws an error when:
 - `dst` and `src` do not share the same fields (at any level)
 - the sizes of leaf nodes are mismatched between `dst` and `src`
-- `dst` is a "tied" parameter (e.g. `transpose` of another parameter) and
+- `dst` is a "tied" parameter (i.e. refers to another parameter) and
   loaded into multiple times with mismatched source values
 
 ```julia
