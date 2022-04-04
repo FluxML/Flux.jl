@@ -40,10 +40,6 @@ See also academic work citing Flux or Zygote.
 - [Transformers.jl](https://github.com/chengchingwen/Transformers.jl) provides components for Transformer models for NLP, as well as providing several trained models out of the box.
 - [TextAnalysis.jl](https://github.com/JuliaText/TextAnalysis.jl) provides several NLP algorithms that use Flux models under the hood.
 
-## Pipeline extensions
- 
-- [DLPipelines.jl](https://github.com/lorenzoh/DLPipelines.jl) is an interface for defining deep learning data pipelines.
-
 ## Plumbing
  
 Tools to put data into the right order for creating a model.
