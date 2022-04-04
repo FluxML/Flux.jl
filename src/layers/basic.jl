@@ -189,7 +189,7 @@ Used by [`LayerNorm`](@ref) with `affine=true`.
 # Examples
 ```jldoctest
 julia> a = Flux.Scale(2)
-Scale(2)      # 4 parameters
+Scale(2)            # 4 parameters
 
 julia> Flux.params(a)
 Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
