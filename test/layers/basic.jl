@@ -105,6 +105,11 @@ import Flux: activations
     @test Flux.Scale(2, 3, 4; bias = false)(rand(2, 3, 4)) |> size == (2, 3, 4)
     @test Flux.Scale(2, 3; bias = false)(rand(2, 1, 4)) |> size == (2, 3, 4)
     @test Flux.Scale(2, 3, tanh; bias = false, init = zeros)(rand(2, 1, 4)) == zeros(2, 3, 4)
+    
+    @test_throws MethodError Flux.Scale(1.)
+    @test_throws MethodError Flux.Scale(1., 2.)
+    @test_throws Exception Flux.Scale()
+    @test_throws MethodError Flux.Scale(sin)
   end
 
   @testset "Maxout" begin

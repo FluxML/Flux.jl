@@ -211,17 +211,17 @@ julia> Flux.params(b)
 Params([[1 2 3 4]])
 ```
 """
-struct Scale{F<:Function, A<:AbstractArray, B}
+struct Scale{F, A<:AbstractArray, B}
   scale::A
   bias::B
   σ::F
-  function Scale(scale::A, bias = true, σ::F = identity) where {A<:AbstractArray, F<:Function}
+  function Scale(scale::A, bias::B = true, σ::F = identity) where {A<:AbstractArray, B<:Union{Bool, AbstractArray}, F}
     b = create_bias(scale, bias, size(scale)...)
     new{F, A, typeof(b)}(scale, b, σ)
   end
 end
 
-Scale(size::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(size...), bias, _act)
+Scale(s1::Integer, s23::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(s1, s23...), bias, _act)
 Scale(size_act...; bias = true, init = ones32) = Scale(size_act[1:end-1]...; bias, init, _act = size_act[end])
 
 @functor Scale
