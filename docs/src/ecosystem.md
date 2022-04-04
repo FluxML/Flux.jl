@@ -49,7 +49,7 @@ See also academic work citing Flux or Zygote.
 Tools to put data into the right order for creating a model.
  
 - [Augmentor.jl](https://github.com/Evizero/Augmentor.jl) is a real-time library augmentation library for increasing the number of training images.
-- [DataAugmentation.jl](https://github.com/lorenzoh/DataAugmentation.jl) aims to make it easy to build stochastic label-preserving augmentation pipelines for your datasets.
+- [DataAugmentation.jl](https://github.com/lorenzoh/DataAugmentation.jl) aims to make it easy to build stochastic, label-preserving augmentation pipelines for vision use cases involving images, keypoints and segmentation masks.
 - [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) (replaces [MLDataUtils.jl](https://github.com/JuliaML/MLDataUtils.jl) and [MLLabelUtils.jl](https://github.com/JuliaML/MLLabelUtils.jl)) is a library for processing Machine Learning datasets.
 
 ## Probabilistic programming
