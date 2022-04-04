@@ -36,7 +36,6 @@ Chain(
   Dense(5 => 2),                        # 12 parameters
   NNlib.softmax,
 )                   # Total: 4 arrays, 67 parameters, 524 bytes.
-
 ```
 
 Models are just normal Julia structs, so it's fine to use any Julia storage
@@ -85,7 +84,6 @@ This ensures that the model loaded from `"mymodel.bson"` matches the structure o
 
 ```@docs
 Flux.loadmodel!
-Flux.loadleaf!
 ```
 
 ## Checkpointing
