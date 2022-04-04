@@ -33,9 +33,10 @@ Recursively walks `dst` and `src` together using [`Functors.children`](@ref),
 and calling `copyto!` on parameter arrays.
 Non-array elements (such as activation functions) are not copied
 and do not need to match between `dst` and `src`.
-Inactive parameters, encoded by `false` in place on an array,
-can be copied to and from all-zero arrays.
-Attempting to copy a non-zero array to/from an inactive parameter will throw an error.
+Inactive parameters can be encoded by using the boolean value `false` instead of an array.
+If `dst == false` and `src` is an all-zero array, no error will be raised (and no values copied);
+however, attempting to copy a non-zero array to an inactive parameter will throw an error.
+Likewise, copying `src == false` to any `dst` array is valid, but copying `src == true` will error.
 
 Throws an error when:
 - `dst` and `src` do not share the same fields (at any level)
