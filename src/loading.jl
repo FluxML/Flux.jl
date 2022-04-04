@@ -27,12 +27,14 @@ _bool_tie_check(dst, src) = true
 """
     loadmodel!(dst, src)
 
-Copy all the parameters (trainable and non-trainable) from `src` to `dst`.
+Copy all the parameters (trainable and non-trainable) from `src` into `dst`.
 
-`loadmodel!` recursively walks the [`Functors.children`](@ref) of `dst` and `src`
-calling `copyto!` on any pair of children where [`Functors.isleaf`](@ref) is true.
-It also handles "absent" parameters such as `bias == false`.
-It throws an error whenever:
+Recursively walks `dst` and `src` together using [`Functors.children`](@ref),
+and calling `copyto!` on parameter arrays.
+Non-array elements (such as activation functions) need not match.
+An all-zero bias array can be copied to or from absent bias, encoded `bias = false`.
+
+Throws an error when:
 - `dst` and `src` do not share the same fields (at any level)
 - the sizes of leaf nodes are mismatched between `dst` and `src`
 - `dst` is a "tied" parameter (e.g. `transpose` of another parameter) and
@@ -52,13 +54,9 @@ julia> src = Chain(Dense(5 => 2), Dense(2 => 1));
 julia> all(isone, dst[1].weight)
 true
 
-julia> dst = loadmodel!(dst, src)
-Chain(
-  Dense(5 => 2),                        # 12 parameters
-  Dense(2 => 1),                        # 3 parameters
-)                   # Total: 4 arrays, 15 parameters, 316 bytes.
+julia> loadmodel!(dst, src);
 
-julia> all(isone, dst[1].weight)
+julia> dst[1].weight ≈ ones(2, 5)
 false
 
 julia> dst[1].weight == src[1].weight
