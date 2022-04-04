@@ -7,6 +7,10 @@ This is a non-exhaustive list of Julia packages, nicely complementing `Flux` in 
 machine learning and deep learning workflows. To add your project please send a [PR](https://github.com/FluxML/Flux.jl/pulls).
 See also academic work citing Flux or Zygote.
 
+## High-level training flows
+
+- [FastAI.jl](https://github.com/FluxML/FastAI.jl) is a Julia port of Python's fast.ai library.
+- [FluxTraining.jl](https://github.com/FluxML/FluxTraining.jl) is a package for using and writing powerful, extensible training loops for deep learning models. It supports callbacks for many common use cases like hyperparameter scheduling, metrics tracking and logging, checkpointing, early stopping, and more.
 ## Computer vision
 
 - [ObjectDetector.jl](https://github.com/r3tex/ObjectDetector.jl) provides ready-to-go image analysis via YOLO.
