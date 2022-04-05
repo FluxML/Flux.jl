@@ -1,6 +1,11 @@
 using Documenter, Flux, NNlib, Functors, MLUtils
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
+DocMeta.setdocmeta!(Flux.Losses, :DocTestSetup, :(using Flux.Losses); recursive = true)
+
+# In the Losses module, doctests which differ in the printed Float32 values won't fail
+DocMeta.setdocmeta!(Flux.Losses, :DocTestFilters, :(r"[0-9\.]+f0"); recursive = true)
+
 makedocs(modules = [Flux, NNlib, Functors, MLUtils],
          doctest = false,
          sitename = "Flux",
