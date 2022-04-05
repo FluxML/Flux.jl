@@ -11,6 +11,7 @@ been removed in favour of MLDatasets.jl.
 * Many utily functions and the `DataLoader` are [now provided by MLUtils.jl](https://github.com/FluxML/Flux.jl/pull/1874).
 * The DataLoader is now compatible with generic dataset types implementing `MLUtils.numobs` and `MLUtils.getobs`.
 * Added [truncated normal initialisation](https://github.com/FluxML/Flux.jl/pull/1877) of weights.
+* The `Flux.Diagonal` layer is now called `Scale`, and accepts an activation function.
 
 ## v0.12.10
 * `Dropout`/`AlphaDropout` now supports [user-specified RNGs](https://github.com/FluxML/Flux.jl/pull/1838)

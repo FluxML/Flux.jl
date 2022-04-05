@@ -56,7 +56,7 @@ Maxout
 SkipConnection
 Parallel
 Flux.Bilinear
-Flux.Diagonal
+Flux.Scale
 Flux.Embedding
 ```
 
