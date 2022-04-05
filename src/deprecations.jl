@@ -48,6 +48,16 @@ function Diagonal(size::Tuple; kw...)
   Scale(size...; kw...)
 end
 
+# Deprecate this eventually once saving models w/o structure is no more
+function loadparams!(m, xs)
+  Base.depwarn("loadparams! will be deprecated eventually. Use loadmodel! instead.", :loadparams!)
+  for (p, x) in zip(params(m), xs)
+    size(p) == size(x) ||
+      error("Expected param size $(size(p)), got $(size(x))")
+    copyto!(p, x)
+  end
+end
+
 # Channel notation: Changed to match Conv, but very softly deprecated!
 # Perhaps change to @deprecate for v0.14, but there is no plan to remove these.
 Dense(in::Integer, out::Integer, σ = identity; kw...) =
