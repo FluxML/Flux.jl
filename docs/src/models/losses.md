@@ -10,13 +10,14 @@ can be imported with
 using Flux.Losses: logitcrossentropy
 ```
 
-Loss functions for supervised learning typically expect as inputs a true target `y` and a prediction `ŷ`,
-typically passed as arrays of size `num_target_features x num_examples_in_batch`. 
+Loss functions for supervised learning typically expect as inputs a true target `y` and a prediction `ŷ`.
 In Flux's convention, the order of the arguments is the following:
 
 ```julia
 loss(ŷ, y)
 ```
+
+They are commonly passed as arrays of size `num_target_features x num_examples_in_batch`. 
 
 Most loss functions in Flux have an optional argument `agg`, denoting the type of aggregation performed over the
 batch:
