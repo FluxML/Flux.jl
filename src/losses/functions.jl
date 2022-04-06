@@ -384,7 +384,7 @@ end
 Return how much the predicted distribution `ŷ` diverges from the expected Poisson
 distribution `y`. Calculated as 
 
-    sum(ŷ .- y .* log.(ŷ)) / size(y, 2)
+    agg(ŷ .- y .* log.(ŷ))
 
 [More information](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 """
@@ -399,7 +399,7 @@ end
 Return the [hinge_loss loss](https://en.wikipedia.org/wiki/Hinge_loss) given the
 prediction `ŷ` and true labels `y` (containing 1 or -1). Calculated as
 
-    sum(max.(0, 1 .- ŷ .* y)) / size(y, 2)
+    agg(max.(0, 1 .- ŷ .* y))
 
 See also: [`squared_hinge_loss`](@ref).
 """
@@ -412,7 +412,9 @@ end
     squared_hinge_loss(ŷ, y)
 
 Return the squared hinge_loss loss given the prediction `ŷ` and true labels `y`
-(containing 1 or -1); calculated as `sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)`.
+(containing 1 or -1).  Calculated as 
+
+    agg((max.(0, 1 .- ŷ .* y)).^2)
 
 See also [`hinge_loss`](@ref).
 """
@@ -458,7 +460,7 @@ end
     binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=eps(ŷ))
 
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
-The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
+The input `ŷ` is expected to be normalized (i.e. [`softmax`](@ref) output).
 
 For `γ == 0`, the loss is mathematically equivalent to [`binarycrossentropy`](@ref).
 
