@@ -2,7 +2,7 @@
 
 You may wish to save models so that they can be loaded and run in a later
 session. The easiest way to do this is via
-[BSON.jl](https://github.com/MikeInnes/BSON.jl).
+[BSON.jl](https://github.com/JuliaIO/BSON.jl).
 
 Save a model:
 
@@ -34,7 +34,6 @@ Chain(
   Dense(5 => 2),                        # 12 parameters
   NNlib.softmax,
 )                   # Total: 4 arrays, 67 parameters, 524 bytes.
-
 ```
 
 Models are just normal Julia structs, so it's fine to use any Julia storage
@@ -44,15 +43,17 @@ versions of Flux).
 
 !!! note
 
-    If a saved model's weights are stored on the GPU, the model will not load
+    If a saved model's parameters are stored on the GPU, the model will not load
     later on if there is no GPU support available. It's best to [move your model
     to the CPU](gpu.md) with `cpu(model)` before saving it.
 
-## Saving Model Weights
+!!! warning
 
-In some cases it may be useful to save only the model parameters themselves, and
-rebuild the model architecture in your code. You can use `params(model)` to get
-model parameters.
+    Previous versions of Flux suggested saving only the model weights using
+    `@save "mymodel.bson" params(model)`.
+    This is no longer recommended and even strongly discouraged.
+    Saving models this way will only store the trainable parameters which
+    will result in incorrect behavior for layers like `BatchNorm`.
 
 ```jldoctest saving
 julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
@@ -64,29 +65,26 @@ Chain(
 
 julia> weights = Flux.params(model);
 
-julia> using BSON: @save
-
-julia> @save "mymodel.bson" weights
-```
-
-You can easily load parameters back into a model with `Flux.loadparams!`.
+Loading the model as shown above will return a new model with the stored parameters.
+But sometimes you already have a model, and you want to load stored parameters into it.
+This can be done as
 
 ```julia
-julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
-Chain(
-  Dense(10 => 5, relu),                 # 55 parameters
-  Dense(5 => 2),                        # 12 parameters
-  NNlib.softmax,
-)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+using Flux: loadmodel!
+using BSON: @load
 
-julia> using BSON: @load
+# some predefined model
+model = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
 
-julia> @load "mymodel.bson" weights
-
-julia> Flux.loadparams!(model, weights)
+# load one model into another
+model = loadmodel!(model, @load("mymodel.bson"))
 ```
 
-The new `model` we created will now be identical to the one we saved parameters for.
+This ensures that the model loaded from `"mymodel.bson"` matches the structure of `model`. [`Flux.loadmodel!`](@ref) is also convenient for copying parameters between models in memory.
+
+```@docs
+Flux.loadmodel!
+```
 
 ## Checkpointing
 

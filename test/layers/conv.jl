@@ -81,6 +81,10 @@ end
     c = Conv((3,4,5), 100 => 25, groups = 5)
     @test size(c.weight) == (3,4,5, 20, 25)
     @test size(c(ip)) == (8,8,8, 25, 2)
+
+    # Test that we cannot ask for non-integer multiplication factors
+    @test_throws AssertionError Conv((2, 2), 3=>10, groups=2)
+    @test_throws AssertionError Conv((2, 2), 2=>9, groups=2)
   end
 end
 

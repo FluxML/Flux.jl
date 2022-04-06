@@ -156,9 +156,8 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b = a.weight, a.bias
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(W*x .+ b)
+  return σ.(a.weight * x .+ a.bias)
 end
 
 (a::Dense)(x::AbstractArray) = 
@@ -172,38 +171,69 @@ function Base.show(io::IO, l::Dense)
 end
 
 """
-    Diagonal(size::Integer...; bias=true, init=ones32)
-    Diagonal(scale::AbstractArray, [bias])
+    Scale(size::Integer..., σ=identity; bias=true, init=ones32)
+    Scale(scale::AbstractArray, [bias, σ])
 
-Create an element-wise linear layer, which performs
+Create an element-wise layer, whose forward pass is given by:
 
-    y = scale .* x .+ bias
+    y = σ.(scale .* x .+ bias)
 
-with no activation function.
- 
+This uses `.*` instead of matrix multiplication `*` of [`Dense`](@ref).
+    
 The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
 with `init=ones32` by default. You may specify the function `init`, 
 turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
-Used by [`LayerNorm`](@ref).
+Used by [`LayerNorm`](@ref) with `affine=true`.
+
+# Examples
+```jldoctest
+julia> a = Flux.Scale(2)
+Scale(2)            # 4 parameters
+
+julia> Flux.params(a)
+Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
+
+julia> a([1 2 3])
+2×3 Matrix{Float32}:
+ 1.0  2.0  3.0
+ 1.0  2.0  3.0
+
+julia> b = Flux.Scale([1 2 3 4], false, abs2)
+Scale(1, 4, abs2; bias=false)  # 4 parameters
+
+julia> b([1, 10])
+2×4 Matrix{Int64}:
+   1    4    9    16
+ 100  400  900  1600
+
+julia> Flux.params(b)
+Params([[1 2 3 4]])
+```
 """
-struct Diagonal{A<:AbstractArray, B}
+struct Scale{F, A<:AbstractArray, B}
   scale::A
   bias::B
-  function Diagonal(W::M, bias = true) where M<:AbstractArray
-    b = create_bias(W, bias, size(W)...)
-    new{M, typeof(b)}(W, b)
+  σ::F
+  function Scale(scale::A, bias::B = true, σ::F = identity) where {A<:AbstractArray, B<:Union{Bool, AbstractArray}, F}
+    b = create_bias(scale, bias, size(scale)...)
+    new{F, A, typeof(b)}(scale, b, σ)
   end
 end
 
-Diagonal(sz::Integer...; bias = true, init = ones32) = Diagonal(init(sz...), bias)
+Scale(s1::Integer, s23::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(s1, s23...), bias, _act)
+Scale(size_act...; bias = true, init = ones32) = Scale(size_act[1:end-1]...; bias, init, _act = size_act[end])
 
-@functor Diagonal
+@functor Scale
 
-(a::Diagonal)(x) = a.scale .* x .+ a.bias
+function (a::Scale)(x::AbstractArray)
+  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
+  σ.(a.scale .* x .+ a.bias)
+end
 
-function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", join(size(l.scale), ", "))
+function Base.show(io::IO, l::Scale)
+  print(io, "Scale(", join(size(l.scale), ", "))
+  l.σ == identity || print(io, ", ", l.σ)
   l.bias == false && print(io, "; bias=false")
   print(io, ")")
 end
@@ -212,7 +242,7 @@ end
     Maxout(layers...)
     Maxout(f, n_alts)
 
-This contains a number of internal layes, each of which receives the same input.
+This contains a number of internal layers, each of which receives the same input.
 Its output is the elementwise maximum of the the internal layers' outputs.
 
 Instead of defining layers individually, you can provide a zero-argument function

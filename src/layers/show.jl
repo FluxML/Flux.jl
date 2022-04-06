@@ -55,7 +55,7 @@ _show_children(m::Maxout) = m.layers
 _show_children(p::Parallel) = (p.connection, p.layers...)
 
 for T in [
-    :Conv, :ConvTranspose, :CrossCor, :DepthwiseConv, :Dense, :Bilinear, :Embedding,
+    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding,
     :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)

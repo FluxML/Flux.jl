@@ -87,21 +87,29 @@ import Flux: activations
     end
   end
 
-  @testset "Diagonal" begin
-    @test length(Flux.Diagonal(10)(randn(10))) == 10
-    @test length(Flux.Diagonal(10)(1)) == 10
-    @test length(Flux.Diagonal(10)(randn(1))) == 10
-    @test length(Flux.Diagonal(10; bias = false)(randn(10))) == 10
-    @test_throws DimensionMismatch Flux.Diagonal(10)(randn(2))
+  @testset "Scale" begin
+    @test length(Flux.Scale(10)(randn(10))) == 10
+    @test length(Flux.Scale(10)(randn(1))) == 10
+    @test length(Flux.Scale(10; bias = false)(randn(10))) == 10
+    @test length(Flux.Scale(10, tanh)(randn(10))) == 10
+    @test_throws DimensionMismatch Flux.Scale(10)(randn(2))
 
-    @test Flux.Diagonal(2)([1 2]) == [1 2; 1 2]
-    @test Flux.Diagonal(2)([1,2]) == [1,2]
-    @test Flux.Diagonal(2; bias = false)([1 2; 3 4]) == [1 2; 3 4]
+    @test Flux.Scale(2)([1 2]) == [1 2; 1 2]
+    @test Flux.Scale(2)([1, 2]) == [1, 2]
+    @test Flux.Scale(2; init = randn)([1, 2]) != [1, 2]
+    @test Flux.Scale(2; bias = false)([1 2; 3 4]) == [1 2; 3 4]
+    @test Flux.Scale(2, abs2; bias = false, init = ones)([1 2; 3 4]) == [1 4; 9 16]
 
-    @test Flux.Diagonal(2)(rand(2,3,4)) |> size == (2, 3, 4)
-    @test Flux.Diagonal(2,3)(rand(2,3,4)) |> size == (2, 3, 4)
-    @test Flux.Diagonal(2, 3, 4; bias = false)(rand(2,3,4)) |> size == (2, 3, 4)
-    @test Flux.Diagonal(2, 3; bias = false)(rand(2,1,4)) |> size == (2, 3, 4)
+    @test Flux.Scale(2)(rand(2, 3, 4)) |> size == (2, 3, 4)
+    @test Flux.Scale(2, 3;)(rand(2, 3, 4)) |> size == (2, 3, 4)
+    @test Flux.Scale(2, 3, 4; bias = false)(rand(2, 3, 4)) |> size == (2, 3, 4)
+    @test Flux.Scale(2, 3; bias = false)(rand(2, 1, 4)) |> size == (2, 3, 4)
+    @test Flux.Scale(2, 3, tanh; bias = false, init = zeros)(rand(2, 1, 4)) == zeros(2, 3, 4)
+    
+    @test_throws MethodError Flux.Scale(1.)
+    @test_throws MethodError Flux.Scale(1., 2.)
+    @test_throws Exception Flux.Scale()
+    @test_throws MethodError Flux.Scale(sin)
   end
 
   @testset "Maxout" begin

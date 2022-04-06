@@ -383,7 +383,7 @@ Has the following behaviour
 
 Some caveats: 
 * Not all layers will be identity mapping when used with this init. Exceptions
-  include recurrent layers, `DepthwiseConv` and normalization layers.
+  include recurrent layers and normalization layers.
 
 * Layers must have `input_size == output_size` for identity mapping to be
   possible. When this is not the case, extra dimensions of the array are padded with zeros.

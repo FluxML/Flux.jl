@@ -153,7 +153,7 @@ end
 
 ## fixes for layers that don't work out of the box
 
-for (fn, Dims) in ((:conv, DenseConvDims), (:depthwiseconv, DepthwiseConvDims))
+for (fn, Dims) in ((:conv, DenseConvDims),)
   @eval begin
     function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
       fill(nil, NNlib.output_size(dims)..., NNlib.channels_out(dims), size(a)[end])

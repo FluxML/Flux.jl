@@ -46,6 +46,8 @@ include("layers/normalise.jl")
 include("layers/upsample.jl")
 include("layers/show.jl")
 
+include("loading.jl")
+
 include("outputsize.jl")
 
 include("data/Data.jl")

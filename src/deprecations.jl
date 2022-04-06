@@ -1,13 +1,13 @@
 # v0.12 deprecations
 
 function ones(dims...)
-  Base.depwarn("Flux.ones(size...) is deprecated, please use Flux.ones32(size...) or Base.ones(Float32, size...)", :ones)
+  Base.depwarn("Flux.ones(size...) is deprecated, please use Flux.ones32(size...) or Base.ones(Float32, size...)", :ones, force=true)
   Base.ones(Float32, dims...)
 end
 ones(T::Type, dims...) = Base.ones(T, dims...)
 
 function zeros(dims...)
-  Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :zeros)
+  Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :zeros, force=true)
   Base.zeros(Float32, dims...)
 end
 zeros(T::Type, dims...) = Base.zeros(T, dims...)
@@ -37,6 +37,25 @@ Zeros(args...) = Zeros()  # was used both Dense(10, 2, initb = Zeros) and Dense(
 function Optimise.update!(x::AbstractArray, x̄)
   depwarn("`Flux.Optimise.update!(x, x̄)` was not used internally and has been removed. Please write `x .-= x̄` instead.", :update!)
   x .-= x̄
+end
+
+function Diagonal(size::Integer...; kw...)
+  Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
+  Scale(size...; kw...)
+end
+function Diagonal(size::Tuple; kw...)
+  Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
+  Scale(size...; kw...)
+end
+
+# Deprecate this eventually once saving models w/o structure is no more
+function loadparams!(m, xs)
+  Base.depwarn("loadparams! will be deprecated eventually. Use loadmodel! instead.", :loadparams!)
+  for (p, x) in zip(params(m), xs)
+    size(p) == size(x) ||
+      error("Expected param size $(size(p)), got $(size(x))")
+    copyto!(p, x)
+  end
 end
 
 # Channel notation: Changed to match Conv, but very softly deprecated!
