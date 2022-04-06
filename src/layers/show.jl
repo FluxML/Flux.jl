@@ -1,17 +1,58 @@
+"""
+    @big_show MyContainer
 
-for T in [
-    :Chain, :Parallel, :SkipConnection, :Recur, :Maxout, :PairwiseFusion  # container types
-  ]
-  @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
-    if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
-      _big_show(io, x)
-    elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
-      _layer_show(io, x)
-    else
-      show(io, x)
+This macro lets you opt-in to Flux's fancy printing.
+
+When `model::MyContainer` is returned at the REPL it will be treated like `Chain`,
+and the printing routine will recursively unfold its children.
+This is triggered by adding a method to 3-arg `Base.show(io::IO, ::MIME"text/plain", l::MyContainer)`.
+
+Custom layers which do not contain other layers (more like `Dense` than like `Chain`)
+need not call this, and should simply define 2-arg `Base.show(io::IO, l::MyLayer)`.
+
+# Example
+```jldoctest
+julia> struct Trio{A,B,C}; a::A; b::B; c::C end
+
+julia> Flux.@functor Trio
+
+julia> Flux.@big_show Trio
+
+julia> tri = Trio(Dense(10=>5,tanh), Dense(5=>2), softmax)
+Trio(
+  Dense(10 => 5, tanh),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 492 bytes.
+```
+
+Note that there is no automatic method for 2-arg `show`, and thus
+something like `(tri, tri)` will print all the type parameters. 
+
+However, `Chain(tri, tri)` will always use Flux's recursive printing,
+even without using this macro: `Chain` is the entry point.
+"""
+macro big_show(ex)
+    ex isa Symbol || error("usage is `Flux.@big_show Chain`")
+    eex = esc(ex)
+    quote
+        function Base.show(io::IO, m::MIME"text/plain", x::$eex)
+            if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
+              _big_show(io, x)
+            elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
+              _layer_show(io, x)
+            else
+              show(io, x)
+            end
+        end
     end
-  end
 end
+
+@big_show Chain
+@big_show Parallel
+@big_show SkipConnection
+@big_show Recur
+@big_show Maxout
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   pre, post = obj isa Chain{<:AbstractVector} ? ("([", "])") : ("(", ")")
