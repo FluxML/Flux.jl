@@ -1,3 +1,8 @@
+# In this file, doctests which differ in the printed Float32 values won't fail
+```@meta
+DocTestFilters = r"[0-9\.]+f0"
+```
+
 """
     mae(ŷ, y; agg = mean)
 
@@ -575,3 +580,8 @@ function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
     margin < 0 && throw(DomainError(margin, "Margin must be non-negative"))
     return agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)
 end
+
+
+```@meta
+DocTestFilters = nothing
+```
