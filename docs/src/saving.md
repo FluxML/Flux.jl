@@ -64,6 +64,7 @@ Chain(
 )                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
 julia> weights = Flux.params(model);
+```
 
 Loading the model as shown above will return a new model with the stored parameters.
 But sometimes you already have a model, and you want to load stored parameters into it.
