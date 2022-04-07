@@ -7,21 +7,66 @@ This is a non-exhaustive list of Julia packages, nicely complementing `Flux` in 
 machine learning and deep learning workflows. To add your project please send a [PR](https://github.com/FluxML/Flux.jl/pulls).
 See also academic work citing Flux or Zygote.
 
-## High-level training flows
+## Flux models
 
-- [FastAI.jl](https://github.com/FluxML/FastAI.jl) is a Julia port of Python's fast.ai library.
-- [FluxTraining.jl](https://github.com/FluxML/FluxTraining.jl) is a package for using and writing powerful, extensible training loops for deep learning models. It supports callbacks for many common use cases like hyperparameter scheduling, metrics tracking and logging, checkpointing, early stopping, and more. It powers training in FastAI.jl
-## Computer vision
+Packages that are actual `Flux` models but are not available directly through the `Flux` package.
 
-- [ObjectDetector.jl](https://github.com/r3tex/ObjectDetector.jl) provides ready-to-go object detection via YOLO.
+### Computer vision
+
+- [ObjectDetector.jl](https://github.com/r3tex/ObjectDetector.jl) provides ready-to-go image detection via YOLO.
 - [Metalhead.jl](https://github.com/FluxML/Metalhead.jl) includes many state-of-the-art computer vision models which can easily be used for transfer learning.
 - [UNet.jl](https://github.com/DhairyaLGandhi/UNet.jl) is a generic UNet implementation.
 
-## Datasets
+### Natural language processing
+
+- [Transformers.jl](https://github.com/chengchingwen/Transformers.jl) provides components for Transformer models for NLP, as well as providing several trained models out of the box.
+- [TextAnalysis.jl](https://github.com/JuliaText/TextAnalysis.jl) provides several NLP algorithms that use Flux models under the hood.
+
+### Reinforcement learning
+ 
+- [AlphaZero.jl](https://github.com/jonathan-laurent/AlphaZero.jl) provides a generic, simple and fast implementation of Deepmind's AlphaZero algorithm.
+- [ReinforcementLearning.jl](https://juliareinforcementlearning.org/) offers a collection of tools for doing reinforcement learning research in Julia.
+
+### Graph learning
+
+- [GraphNeuralNetworks.jl](https://github.com/CarloLucibello/GraphNeuralNetworks.jl) is a fresh, performant and flexible graph neural network library based on Flux.jl.
+- [GeometricFlux.jl](https://github.com/FluxML/GeometricFlux.jl) is the first graph neural network library for julia. 
+- [NeuralOperators.jl](https://github.com/SciML/NeuralOperators.jl) enables training infinite dimensional PDEs by learning a continuous function instead of using the finite element method.
+- [SeaPearl.jl](https://github.com/corail-research/SeaPearl.jl) is a Constraint Programming solver that uses Reinforcement Learning based on graphs as input.
+
+### Time series
+
+- [FluxArchitectures.jl](https://github.com/sdobber/FluxArchitectures.jl) is a collection of advanced network architectures for time series forecasting.
+
+## Tools closely associated with Flux
+
+Utility tools you're unlikely to have met if you never used Flux!
+
+### High-level training flows
+
+- [FastAI.jl](https://github.com/FluxML/FastAI.jl) is a Julia port of Python's fast.ai library.
+- [FluxTraining.jl](https://github.com/FluxML/FluxTraining.jl) is a package for using and writing powerful, extensible training loops for deep learning models. It supports callbacks for many common use cases like hyperparameter scheduling, metrics tracking and logging, checkpointing, early stopping, and more. It powers training in FastAI.jl
+
+### Datasets
 
 - [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl) focuses on downloading, unpacking, and accessing benchmark datasets.
 
+### Plumbing
+ 
+Tools to put data into the right order for creating a model.
+ 
+- [Augmentor.jl](https://github.com/Evizero/Augmentor.jl) is a real-time library augmentation library for increasing the number of training images.
+- [DataAugmentation.jl](https://github.com/lorenzoh/DataAugmentation.jl) aims to make it easy to build stochastic, label-preserving augmentation pipelines for vision use cases involving images, keypoints and segmentation masks.
+- [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) (replaces [MLDataUtils.jl](https://github.com/JuliaML/MLDataUtils.jl) and [MLLabelUtils.jl](https://github.com/JuliaML/MLLabelUtils.jl)) is a library for processing Machine Learning datasets.
+
+### Parameters
+
+- [Parameters.jl](https://github.com/mauro3/Parameters.jl) types with default field values, keyword constructors and (un-)pack macros.
+- [ParameterSchedulers.jl](https://github.com/darsnack/ParameterSchedulers.jl) standard scheduling policies for machine learning.
+
 ## Differentiable programming
+
+Packages based on differentiable programming but not necessarily related to Machine Learning. 
 
 - The [SciML](https://sciml.ai/) ecosystem uses Flux and Zygote to mix neural nets with differential equations, to get the best of black box and mechanistic modelling.
 - [DiffEqFlux.jl](https://github.com/SciML/DiffEqFlux.jl) provides tools for creating Neural Differential Equations.
@@ -32,51 +77,19 @@ See also academic work citing Flux or Zygote.
 - [AtomicGraphNets.jl](https://github.com/Chemellia/AtomicGraphNets.jl) enables learning graph based models on atomic systems used in chemistry.
 - [DiffImages.jl](https://github.com/SomTambe/DiffImages.jl) differentiable computer vision modeling in Julia with the Images.jl ecosystem.
 
-## Graph learning
-
-- [GraphNeuralNetworks.jl](https://github.com/CarloLucibello/GraphNeuralNetworks.jl) is a fresh, performant and flexible graph neural network library based on Flux.jl.
-- [GeometricFlux.jl](https://github.com/FluxML/GeometricFlux.jl) is the first graph neural network library for julia. 
-- [NeuralOperators.jl](https://github.com/SciML/NeuralOperators.jl) enables training infinite dimensional PDEs by learning a continuous function instead of using the finite element method.
-- [SeaPearl.jl](https://github.com/corail-research/SeaPearl.jl) is a Constraint Programming solver that uses Reinforcement Learning based on graphs as input.
-
-## Natural language processing
-
-- [Transformers.jl](https://github.com/chengchingwen/Transformers.jl) provides components for Transformer models for NLP, as well as providing several trained models out of the box.
-- [TextAnalysis.jl](https://github.com/JuliaText/TextAnalysis.jl) provides several NLP algorithms that use Flux models under the hood.
-
-## Plumbing
- 
-Tools to put data into the right order for creating a model.
- 
-- [Augmentor.jl](https://github.com/Evizero/Augmentor.jl) is a real-time library augmentation library for increasing the number of training images.
-- [DataAugmentation.jl](https://github.com/lorenzoh/DataAugmentation.jl) aims to make it easy to build stochastic, label-preserving augmentation pipelines for vision use cases involving images, keypoints and segmentation masks.
-- [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl) (replaces [MLDataUtils.jl](https://github.com/JuliaML/MLDataUtils.jl) and [MLLabelUtils.jl](https://github.com/JuliaML/MLLabelUtils.jl)) is a library for processing Machine Learning datasets.
-
-## Probabilistic programming
+### Probabilistic programming
  
 - [Turing.jl](https://github.com/TuringLang/Turing.jl) extends Flux's differentiable programming capabilities to probabilistic programming.
 - [Omega.jl](https://github.com/zenna/Omega.jl) is a research project aimed at causal, higher-order probabilistic programming.
 - [Stheno.jl](https://github.com/willtebbutt/Stheno.jl) provides flexible Gaussian processes.
 
-## Reinforcement learning
- 
-- [AlphaZero.jl](https://github.com/jonathan-laurent/AlphaZero.jl) provides a generic, simple and fast implementation of Deepmind's AlphaZero algorithm.
-- [ReinforcementLearning.jl](https://juliareinforcementlearning.org/) offers a collection of tools for doing reinforcement learning research in Julia.
-
-## Parameters
-
-- [Parameters.jl](https://github.com/mauro3/Parameters.jl) types with default field values, keyword constructors and (un-)pack macros.
-- [ParameterSchedulers.jl](https://github.com/darsnack/ParameterSchedulers.jl) standard scheduling policies for machine learning.
-
-## Statistics
+### Statistics
 
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) provides single-pass algorithms for statistics.
 
-## Time series
+## Useful miscellaneous packages
 
-- [FluxArchitectures.jl](https://github.com/sdobber/FluxArchitectures.jl) is a collection of advanced network architectures for time series forecasting.
-
-## Miscellaneous
+Some useful and random packages!
 
 - [AdversarialPrediction.jl](https://github.com/rizalzaf/AdversarialPrediction.jl) provides a way to easily optimize generic performance metrics in supervised learning settings using the [Adversarial Prediction](https://arxiv.org/abs/1812.07526) framework.
 - [Mill.jl](https://github.com/CTUAvastLab/Mill.jl) helps to prototype flexible multi-instance learning models.
