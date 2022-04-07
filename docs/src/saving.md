@@ -57,13 +57,14 @@ versions of Flux).
     Saving models this way will only store the trainable parameters which
     will result in incorrect behavior for layers like `BatchNorm`.
 
-```Julia
+```julia
 julia> using Flux
 
 julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
 Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
 
 julia> weights = Flux.params(model);
+```
 
 Loading the model as shown above will return a new model with the stored parameters.
 But sometimes you already have a model, and you want to load stored parameters into it.
@@ -127,4 +128,3 @@ exactly where you left off. BSON is smart enough to [cache values](https://githu
 opt = ADAM()
 @save "model-$(now()).bson" model opt
 ```
-
