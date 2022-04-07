@@ -19,8 +19,8 @@ loss(ŷ, y)
 
 They are commonly passed as arrays of size `num_target_features x num_examples_in_batch`. 
 
-Most loss functions in Flux have an optional argument `agg`, denoting the type of aggregation performed over the
-batch:
+Most losses in Flux have an optional argument `agg` accepting a function to be used as 
+as a final aggregation:
 
 ```julia
 loss(ŷ, y)                             # defaults to `mean`

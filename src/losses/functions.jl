@@ -8,6 +8,8 @@ Return the loss corresponding to mean absolute error:
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: mae
+
 julia> y_model = [1.1, 1.9, 3.1];
 
 julia> mae(y_model, 1:3)
@@ -31,6 +33,8 @@ See also: [`mae`](@ref), [`msle`](@ref), [`crossentropy`](@ref).
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: mse
+
 julia> y_model = [1.1, 1.9, 3.1];
 
 julia> y_true = 1:3;
@@ -57,6 +61,8 @@ Penalizes an under-estimation more than an over-estimatation.
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: msle
+
 julia> msle(Float32[1.1, 2.2, 3.3], 1:3)
 0.009084041f0
 
@@ -113,6 +119,8 @@ of label smoothing to binary distributions encoded in a single number.
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: label_smoothing, crossentropy
+
 julia> y = Flux.onehotbatch([1, 1, 1, 0, 1, 0], 0:1)
 2×6 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  ⋅  ⋅  ⋅  1  ⋅  1
@@ -179,6 +187,8 @@ See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbina
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: label_smoothing, crossentropy
+
 julia> y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
 3×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  1  ⋅  ⋅  ⋅  1
@@ -232,6 +242,8 @@ See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`lab
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: crossentropy, logitcrossentropy
+
 julia> y_label = onehotbatch(collect("abcabaa"), 'a':'c')
 3×7 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  1  ⋅  ⋅  1  ⋅  1  1
@@ -273,7 +285,10 @@ computing the loss.
 See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
+
 ```jldoctest
+julia> using Flux.Losses: binarycrossentropy, crossentropy
+
 julia> y_bin = Bool[1,0,1]
 3-element Vector{Bool}:
  1
@@ -314,7 +329,10 @@ Mathematically equivalent to
 See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
+
 ```jldoctest
+julia> using Flux.Losses: binarycrossentropy, logitbinarycrossentropy
+
 julia> y_bin = Bool[1,0,1];
 
 julia> y_model = Float32[2, -1, pi]
@@ -348,6 +366,8 @@ from the other. It is always non-negative, and zero only when both the distribut
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: kldivergence
+
 julia> p1 = [1 0; 0 1]
 2×2 Matrix{Int64}:
  1  0
@@ -467,6 +487,8 @@ For `γ == 0`, the loss is mathematically equivalent to [`binarycrossentropy`](@
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: binary_focal_loss
+
 julia> y = [0  1  0
             1  0  1]
 2×3 Matrix{Int64}:
@@ -509,6 +531,8 @@ For `γ == 0`, the loss is mathematically equivalent to [`crossentropy`](@ref).
 # Examples
 
 ```jldoctest
+julia> using Flux.Losses: focal_loss
+
 julia> y = [1  0  0  0  1
             0  1  0  1  0
             0  0  1  0  0]
