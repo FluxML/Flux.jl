@@ -249,7 +249,7 @@ See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`lab
 ```jldoctest
 julia> using Flux.Losses: crossentropy, logitcrossentropy
 
-julia> y_label = onehotbatch(collect("abcabaa"), 'a':'c')
+julia> y_label = Flux.onehotbatch(collect("abcabaa"), 'a':'c')
 3×7 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  1  ⋅  ⋅  1  ⋅  1  1
  ⋅  1  ⋅  ⋅  1  ⋅  ⋅
@@ -311,7 +311,7 @@ julia> binarycrossentropy(y_prob[2,:], y_bin)
 julia> all(p -> 0 < p < 1, y_prob[2,:])  # else DomainError
 true
 
-julia> y_hot = onehotbatch(y_bin, 0:1)
+julia> y_hot = Flux.onehotbatch(y_bin, 0:1)
 2×3 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  ⋅  1  ⋅
  1  ⋅  1
