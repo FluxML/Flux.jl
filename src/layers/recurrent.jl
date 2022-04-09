@@ -83,7 +83,7 @@ rnn.state = hidden(rnn.cell)
 reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
-flip(f, xs) = reverse(f.(reverse(xs)))
+flip(f, xs) = reverse([f(x) for x in reverse(xs)])
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
   h = [m(x_t) for x_t in eachslice(x, dims=3)]
