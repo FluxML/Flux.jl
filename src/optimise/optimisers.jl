@@ -168,7 +168,7 @@ mutable struct ADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 ADAM(η::Real = 0.001, β::Tuple = (0.9, 0.999), ϵ::Real = EPS) = ADAM(η, β, ϵ, IdDict())
 ADAM(η::Real, β::Tuple, state::IdDict) = ADAM(η, β, EPS, state)
@@ -210,7 +210,7 @@ mutable struct RADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 RADAM(η::Real = 0.001, β::Tuple = (0.9, 0.999), ϵ::Real = EPS) = RADAM(η, β, ϵ, IdDict())
 RADAM(η::Real, β::Tuple, state::IdDict) = RADAM(η, β, EPS, state)
@@ -221,7 +221,7 @@ function apply!(o::RADAM, x, Δ)
 
   mt, vt, βp, t = get!(o.state, x) do
       (zero(x), zero(x), Float64[β[1], β[2]], Ref(1))
-  end :: Tuple{typeof(x),typeof(x),Vector{Float64},Ref{Int}}
+  end :: Tuple{typeof(x),typeof(x),Vector{Float64},Base.RefValue{Int}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
@@ -260,7 +260,7 @@ mutable struct AdaMax <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 AdaMax(η::Real = 0.001, β::Tuple = (0.9, 0.999), ϵ::Real = EPS) = AdaMax(η, β, ϵ, IdDict())
 AdaMax(η::Real, β::Tuple, state::IdDict) = AdaMax(η, β, EPS, state)
@@ -303,7 +303,7 @@ mutable struct OADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 OADAM(η::Real = 0.001, β::Tuple = (0.5, 0.9), ϵ::Real = EPS) = OADAM(η, β, ϵ, IdDict())
 OADAM(η::Real, β::Tuple, state::IdDict) = RMSProp(η, β, EPS, state)
@@ -378,7 +378,7 @@ opt = ADADelta(0.89)
 mutable struct ADADelta <: AbstractOptimiser
   rho::Float64
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 ADADelta(ρ::Real = 0.9, ϵ::Real = EPS) = ADADelta(ρ, ϵ, IdDict())
 ADADelta(ρ::Real, state::IdDict) = ADADelta(ρ, EPS, state)
@@ -417,7 +417,7 @@ mutable struct AMSGrad <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 AMSGrad(η::Real = 0.001, β = (0.9, 0.999), ϵ::Real = EPS) = AMSGrad(η, β, ϵ, IdDict())
 AMSGrad(η::Real, β::Tuple, state::IdDict) = AMSGrad(η, β, EPS, state)
@@ -458,7 +458,7 @@ mutable struct NADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 NADAM(η::Real = 0.001, β = (0.9, 0.999), ϵ::Real = EPS) = NADAM(η, β, ϵ, IdDict())
 NADAM(η::Real, β::Tuple, state::IdDict) = NADAM(η, β, EPS, state)
@@ -525,7 +525,7 @@ mutable struct AdaBelief <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
   epsilon::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 AdaBelief(η::Real = 0.001, β = (0.9, 0.999), ϵ::Real = EPS) = AdaBelief(η, β, ϵ, IdDict())
 AdaBelief(η::Real, β::Tuple, state::IdDict) = AdaBelief(η, β, EPS, state)
@@ -590,7 +590,7 @@ opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 """
 mutable struct InvDecay <: AbstractOptimiser
   gamma::Float64
-  state::IdDict
+  state::IdDict{Any, Any}
 end
 
 InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
