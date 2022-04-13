@@ -68,7 +68,6 @@ end
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
-Base.firstindex(c::Chain) = 1
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)
