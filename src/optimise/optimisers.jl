@@ -590,10 +590,10 @@ opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 """
 mutable struct InvDecay <: AbstractOptimiser
   gamma::Float64
-  state::IdDict{Any, Any}
+  state::IdDict{Any, Int}
 end
 
-InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
+InvDecay(γ = 0.001) = InvDecay(γ, IdDict{Any, Int}())
 
 function apply!(o::InvDecay, x, Δ)
   γ = o.gamma
