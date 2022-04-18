@@ -31,6 +31,10 @@ import Flux: activations
     @test_throws ArgumentError Chain(layers = Dense(10, 10), two = identity) # reserved name
 
     @test_nowarn Chain([Dense(10, 5, σ), Dense(5, 2)])(randn(Float32, 10))  # vector of layers
+    
+    c = Chain(Dense(10, 5, σ), Dense(5, 2), Dense(2, 1, relu))
+    @test c[1] == c[begin]
+    @test c[3] == c[end]
   end
 
   @testset "Activations" begin

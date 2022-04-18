@@ -112,7 +112,8 @@ Multiple callbacks can be passed to `cb` as array.
 """
 function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   cb = runall(cb)
-  n = (Base.IteratorSize(typeof(data)) == Base.HasLength()) ? length(data) : 0
+  itrsz = Base.IteratorSize(typeof(data))
+  n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
   @withprogress for (i, d) in enumerate(data)
     try
       gs = gradient(ps) do
@@ -129,7 +130,7 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
         rethrow(ex)
       end
     end
-    @logprogress i / n
+    @logprogress iszero(n) ? nothing : i / n
   end
 end
 

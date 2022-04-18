@@ -44,7 +44,7 @@ function Chain(; kw...)
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
-  Base.iterate, Base.lastindex, Base.keys
+  Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
 @functor Chain
 
@@ -68,7 +68,6 @@ end
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
-
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)

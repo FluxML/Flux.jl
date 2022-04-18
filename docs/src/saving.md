@@ -55,7 +55,9 @@ versions of Flux).
     Saving models this way will only store the trainable parameters which
     will result in incorrect behavior for layers like `BatchNorm`.
 
-```jldoctest saving
+```julia
+julia> using Flux
+
 julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
 Chain(
   Dense(10 => 5, relu),                 # 55 parameters
@@ -134,4 +136,3 @@ exactly where you left off. BSON is smart enough to [cache values](https://githu
 opt = ADAM()
 @save "model-$(now()).bson" model opt
 ```
-
