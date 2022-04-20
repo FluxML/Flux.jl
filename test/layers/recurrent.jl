@@ -106,3 +106,17 @@ end
   @test res == sum(x[1:2, :]) + 2sum(x[5:6, :])
   @test dx == [ones(2, 5); zeros(2, 5); fill(2, 2, 5)]
 end
+
+@testset "eachlastdim" begin
+  x = rand(3, 6)
+  slicedim = (size(x)[1:end-1]..., 1)
+  res, (dx,) = Flux.withgradient(x) do x
+    x1, _, x3, _, x5, x6 = Flux.eachlastdim(x)
+    sum(x1) + sum(x3 .* 3) + sum(x5 * 5) + sum(x6 * 6)
+  end
+  @test res ≈ sum(x[:, 1]) + 3sum(x[:, 3]) + 
+              5sum(x[:, 5]) + 6sum(x[:, 6])
+  @test dx ≈ hcat(fill(1, slicedim), fill(0, slicedim),
+              fill(3, slicedim), fill(0, slicedim),
+              fill(5, slicedim), fill(6, slicedim))
+end
