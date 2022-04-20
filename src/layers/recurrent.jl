@@ -18,6 +18,17 @@ function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
   return multigate(x, h, c), multigate_pullback
 end
 
+# Type stable and AD-friendly helper for iterating over the last dimension of an array
+function eachlastdim(A::AbstractArray{T,N}) where {T,N}
+  inds_before = ntuple(Returns(:), N-1)
+  return (view(A, inds_before..., i) for i in axes(A, N))
+end
+
+function ChainRulesCore.rrule(::typeof(eachlastdim), x::AbstractArray{T,N}) where {T,N}
+  lastdims(dy) = (NoTangent(), Zygote.ChainRules.∇eachslice(unthunk(dy), x, Val(N)))
+  collect(eachlastdim(x)), lastdims
+end
+
 reshape_cell_output(h, x) = reshape(h, :, size(x)[2:end]...)
 
 # Stateful recurrence
@@ -86,7 +97,7 @@ reset!(m) = foreach(reset!, functor(m)[1])
 flip(f, xs) = reverse([f(x) for x in reverse(xs)])
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(x_t) for x_t in eachslice(x, dims=3)]
+  h = [m(x_t) for x_t in eachlastdim(x)]
   sze = size(h[1])
   reshape(reduce(hcat, h), sze[1], sze[2], length(h))
 end
