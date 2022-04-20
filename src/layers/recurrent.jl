@@ -20,7 +20,7 @@ end
 
 # Type stable and AD-friendly helper for iterating over the last dimension of an array
 function eachlastdim(A::AbstractArray{T,N}) where {T,N}
-  inds_before = ntuple(Returns(:), N-1)
+  inds_before = ntuple(_ -> :, N-1)
   return (view(A, inds_before..., i) for i in axes(A, N))
 end
 
