@@ -196,7 +196,7 @@ Split(paths...) = Split(paths)
 
 Flux.@functor Split
 
-(m::Split)(x::AbstractArray) = tuple(map(f -> f(x), m.paths))
+(m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
 ```
 
 Now we can test to see that our `Split` does indeed produce multiple outputs.
