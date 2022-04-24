@@ -5,7 +5,7 @@
     rnn = r(2 => 3)
     Flux.reset!(rnn)
     grads_seq = gradient(Flux.params(rnn)) do
-        sum(rnn.(seq)[3])
+        sum([rnn(s) for s in seq][3])
     end
     Flux.reset!(rnn);
     bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
@@ -17,7 +17,7 @@
                             + rnn.cell.b)),
                     rnn.cell.Wh)
     @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
-end
+  end
 end
 
 # Ref FluxML/Flux.jl#1209 2D input
@@ -27,7 +27,7 @@ end
     rnn = r(2 => 3)
     Flux.reset!(rnn)
     grads_seq = gradient(Flux.params(rnn)) do
-        sum(rnn.(seq)[3])
+        sum([rnn(s) for s in seq][3])
     end
     Flux.reset!(rnn);
     bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
@@ -39,7 +39,7 @@ end
                             + rnn.cell.b)),
                     rnn.cell.Wh)
     @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
-end
+  end
 end
 
 @testset "BPTT-3D" begin
