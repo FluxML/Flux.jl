@@ -24,8 +24,29 @@ function eachlastdim(A::AbstractArray{T,N}) where {T,N}
   return (view(A, inds_before..., i) for i in axes(A, N))
 end
 
+# adapted from https://github.com/JuliaDiff/ChainRules.jl/blob/f13e0a45d10bb13f48d6208e9c9d5b4a52b96732/src/rulesets/Base/indexing.jl#L77
+function ∇eachlastdim(dys_raw, x::AbstractArray{T1, dim}) where {T1,dim}
+  dys = unthunk(dys_raw)
+  i1 = findfirst(dy -> dy isa AbstractArray, dys)
+  if i1 === nothing  # all slices are Zero!
+      return fill!(similar(x, float(T1), axes(x)), float(T1))
+  end
+  T = promote_type(eltype(dys[i1]), T1)
+  # The whole point of this gradient is that we can allocate one `dx` array:
+  dx = similar(x, T, axes(x))
+  for i in axes(x, dim)
+      slice = selectdim(dx, dim, i)
+      if dys[i] isa AbstractZero
+          fill!(slice, zero(eltype(slice)))
+      else
+          copyto!(slice, dys[i])
+      end
+  end
+  return ProjectTo(x)(dx)
+end
+
 function ChainRulesCore.rrule(::typeof(eachlastdim), x::AbstractArray{T,N}) where {T,N}
-  lastdims(dy) = (NoTangent(), Zygote.ChainRules.∇eachslice(unthunk(dy), x, Val(N)))
+  lastdims(dy) = (NoTangent(), ∇eachlastdim(unthunk(dy), x))
   collect(eachlastdim(x)), lastdims
 end
 
