@@ -121,7 +121,7 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
       training_loss, gs = pullback(() -> loss(batchmemaybe(d)...), ps);
       gs = gs(one(training_loss));
       next!(p;showvalues=[(:training_loss,training_loss)])
-      Optimise.update!(opt, ps, gs)
+      update!(opt, ps, gs)
       cb()
     catch ex
       if ex isa StopException
