@@ -118,7 +118,7 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   p = Progress(length(enumerate(data));dt=0.1,showspeed=true)
   @withprogress for (i,d) in enumerate(data)
     try
-      training_loss, gs = pullback(() -> loss(d...), ps);
+      training_loss, gs = pullback(() -> loss(batchmemaybe(d)...), ps);
       gs = gs(one(training_loss));
       next!(p;showvalues=[(:training_loss,training_loss)])
       update!(opt, ps, gs)
