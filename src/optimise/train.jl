@@ -1,5 +1,6 @@
 using ProgressLogging: @progress, @withprogress, @logprogress
-import Zygote: Params, gradient
+using ProgressMeter: Progress,next!
+import Zygote: Params, gradient, pullback
 
 
 """
@@ -114,11 +115,12 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   cb = runall(cb)
   itrsz = Base.IteratorSize(typeof(data))
   n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
-  @withprogress for (i, d) in enumerate(data)
+  p = Progress(length(enumerate(data));dt=0.1,showspeed=true)
+  @withprogress for (i,d) in enumerate(data)
     try
-      gs = gradient(ps) do
-        loss(batchmemaybe(d)...)
-      end
+      training_loss, gs = pullback(() -> loss(d...), ps);
+      gs = gs(one(training_loss));
+      next!(p;showvalues=[(:training_loss,training_loss)])
       update!(opt, ps, gs)
       cb()
     catch ex

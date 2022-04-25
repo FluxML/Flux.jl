@@ -8,7 +8,7 @@ using MacroTools: @forward
 @reexport using NNlib
 using MLUtils
 import Optimisers: trainable, destructure  # before v0.13, Flux owned these functions
-
+using ProgressMeter
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
