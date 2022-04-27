@@ -29,7 +29,7 @@ function ∇eachlastdim(dys_raw, x::AbstractArray{T1, dim}) where {T1,dim}
   dys = unthunk(dys_raw)
   i1 = findfirst(dy -> dy isa AbstractArray, dys)
   if i1 === nothing  # all slices are Zero!
-      return fill!(similar(x, float(T1), axes(x)), float(T1))
+      return fill!(similar(x, float(T1), axes(x)), zero(T1))
   end
   T = promote_type(eltype(dys[i1]), T1)
   # The whole point of this gradient is that we can allocate one `dx` array:
