@@ -120,3 +120,19 @@ end
   @test dx ≈ cat(fill(1, slicedim), fill(0, slicedim),
               fill(3, slicedim), fill(0, slicedim); dims=ndims(x))
 end
+
+@testset "∇eachlastdim" begin
+    x = rand(3, 3, 1, 2, 4)
+    x_size = size(x)
+    y = collect(eachslice(x; dims=ndims(x)))
+    @test @inferred(Flux.∇eachlastdim(y, x)) == x
+    abstract_zeros_vector = [ZeroTangent(), ZeroTangent(), NoTangent(), NoTangent()]
+    @test @inferred(Flux.∇eachlastdim(abstract_zeros_vector, x)) == zeros(size(x))
+    x2 = rand(Float64, x_size[1:end-1])
+    x3 = rand(Float64, x_size[1:end-1])
+    mixed_vector = [ZeroTangent(), x2, x3, ZeroTangent()]
+    @test @inferred(Flux.∇eachlastdim(mixed_vector, x)) ≈ cat(zeros(x_size[1:end-1]), 
+                                                         x2, 
+                                                         x3, 
+                                                         zeros(x_size[1:end-1]); dims=ndims(x))
+end
