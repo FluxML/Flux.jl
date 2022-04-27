@@ -126,6 +126,8 @@ end
     x_size = size(x)
     y = collect(eachslice(x; dims=ndims(x)))
     @test @inferred(Flux.∇eachlastdim(y, x)) == x
+    ZeroTangent = Flux.Zygote.ZeroTangent
+    NoTangent = Flux.Zygote.NoTangent
     abstract_zeros_vector = [ZeroTangent(), ZeroTangent(), NoTangent(), NoTangent()]
     @test @inferred(Flux.∇eachlastdim(abstract_zeros_vector, x)) == zeros(size(x))
     x2 = rand(Float64, x_size[1:end-1])
