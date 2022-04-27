@@ -627,7 +627,7 @@ for more general scheduling techniques.
 `ExpDecay` is typically composed  with other optimizers 
 as the last transformation of the gradient:
 ```julia
-opt = Optimiser(ADAM(), ExpDecay())
+opt = Optimiser(ADAM(1.0), ExpDecay())
 ```
 """
 mutable struct ExpDecay <: AbstractOptimiser
