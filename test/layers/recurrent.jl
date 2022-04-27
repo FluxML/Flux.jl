@@ -108,15 +108,15 @@ end
 end
 
 @testset "eachlastdim" begin
-  x = rand(3, 6)
+  x = rand(3, 3, 1, 2, 4)
+  @test length(Flux.eachlastdim(x)) == size(x, ndims(x))
+  @test collect(@inferred(Flux.eachlastdim(x))) == collect(eachslice(x; dims=ndims(x)))
   slicedim = (size(x)[1:end-1]..., 1)
   res, (dx,) = Flux.withgradient(x) do x
-    x1, _, x3, _, x5, x6 = Flux.eachlastdim(x)
-    sum(x1) + sum(x3 .* 3) + sum(x5 * 5) + sum(x6 * 6)
+    x1, _, x3, _ = Flux.eachlastdim(x)
+    sum(x1) + sum(x3 .* 3)
   end
-  @test res ≈ sum(x[:, 1]) + 3sum(x[:, 3]) + 
-              5sum(x[:, 5]) + 6sum(x[:, 6])
-  @test dx ≈ hcat(fill(1, slicedim), fill(0, slicedim),
-              fill(3, slicedim), fill(0, slicedim),
-              fill(5, slicedim), fill(6, slicedim))
+  @test res ≈ sum(selectdim(x, ndims(x), 1)) + 3sum(selectdim(x, ndims(x), 3))
+  @test dx ≈ cat(fill(1, slicedim), fill(0, slicedim),
+              fill(3, slicedim), fill(0, slicedim); dims=ndims(x))
 end
