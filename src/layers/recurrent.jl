@@ -25,17 +25,16 @@ function eachlastdim(A::AbstractArray{T,N}) where {T,N}
 end
 
 # adapted from https://github.com/JuliaDiff/ChainRules.jl/blob/f13e0a45d10bb13f48d6208e9c9d5b4a52b96732/src/rulesets/Base/indexing.jl#L77
-function ∇eachlastdim(dys_raw, x::AbstractArray{T1, dim}) where {T1,dim}
+function ∇eachlastdim(dys_raw, x::AbstractArray{T, N}) where {T, N}
   dys = unthunk(dys_raw)
   i1 = findfirst(dy -> dy isa AbstractArray, dys)
-  if i1 === nothing  # all slices are Zero!
-      return fill!(similar(x, float(T1), axes(x)), zero(T1))
+  if isnothing(i1)  # all slices are Zero!
+      return fill!(similar(x, T, axes(x)), zero(T))
   end
-  T = promote_type(eltype(dys[i1]), T1)
   # The whole point of this gradient is that we can allocate one `dx` array:
-  dx = similar(x, T, axes(x))
-  for i in axes(x, dim)
-      slice = selectdim(dx, dim, i)
+  dx = similar(x, T, axes(x))::AbstractArray
+  for i in axes(x, N)
+      slice = selectdim(dx, N, i)
       if dys[i] isa AbstractZero
           fill!(slice, zero(eltype(slice)))
       else
