@@ -627,8 +627,10 @@ for more general scheduling techniques.
 `ExpDecay` is typically composed  with other optimizers 
 as the last transformation of the gradient:
 ```julia
-opt = Optimiser(ADAM(1.0), ExpDecay())
+opt = Optimiser(ADAM(), ExpDecay(1.0))
 ```
+Note: you may want to start with `η=1` in `ExpDecay` when combined with other
+optimizers (`ADAM` in this case) that have their own learning rate.
 """
 mutable struct ExpDecay <: AbstractOptimiser
   eta::Float64
