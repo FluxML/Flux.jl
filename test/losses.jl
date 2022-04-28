@@ -1,20 +1,20 @@
 using Test
-using Flux: onehotbatch, σ
+using Flux: onehotbatch, sigmoid
 
-using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
+using Flux.Losses
 using Flux.Losses: xlogx, xlogy
 
 # group here all losses, used in tests
-const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
-                    Flux.Losses.crossentropy, Flux.Losses.logitcrossentropy,
-                    Flux.Losses.binarycrossentropy, Flux.Losses.logitbinarycrossentropy,
-                    Flux.Losses.kldivergence,
-                    Flux.Losses.huber_loss,
-                    Flux.Losses.tversky_loss,
-                    Flux.Losses.dice_coeff_loss,
-                    Flux.Losses.poisson_loss,
-                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss]
+const ALL_LOSSES = [mse, mae, msle,
+                    crossentropy, logitcrossentropy,
+                    binarycrossentropy, logitbinarycrossentropy,
+                    kldivergence,
+                    huber_loss,
+                    tversky_loss,
+                    dice_coeff_loss,
+                    poisson_loss,
+                    hinge_loss, squared_hinge_loss,
+                    binary_focal_loss, focal_loss, siamese_contrastive_loss]
 
 
 @testset "xlogx & xlogy" begin
@@ -45,17 +45,17 @@ y = [1, 1, 0, 0]
 end
 
 @testset "mae" begin
-  @test Flux.mae(ŷ, y) ≈ 1/2
+  @test mae(ŷ, y) ≈ 1/2
 end
 
 @testset "huber_loss" begin
-  @test Flux.huber_loss(ŷ, y) ≈ 0.20500000000000002
+  @test huber_loss(ŷ, y) ≈ 0.20500000000000002
 end
 
 y = [123.0,456.0,789.0]
 ŷ = [345.0,332.0,789.0]
 @testset "msle" begin
-  @test Flux.msle(ŷ, y) ≈ 0.38813985859136585
+  @test msle(ŷ, y) ≈ 0.38813985859136585
 end
 
 # Now onehot y's
@@ -104,15 +104,15 @@ logŷ, y = randn(3), rand(3)
 yls = y.*(1-2sf).+sf
 
 @testset "binarycrossentropy" begin
-  @test binarycrossentropy.(σ.(logŷ), label_smoothing(y, 2sf; dims=0); ϵ=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
-  @test binarycrossentropy(σ.(logŷ), y; ϵ=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
-  @test binarycrossentropy(σ.(logŷ), y) ≈ mean(-y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ))))
+  @test binarycrossentropy.(sigmoid.(logŷ), label_smoothing(y, 2sf; dims=0); ϵ=0) ≈ -yls.*log.(sigmoid.(logŷ)) - (1 .- yls).*log.(1 .- sigmoid.(logŷ))
+  @test binarycrossentropy(sigmoid.(logŷ), y; ϵ=0) ≈ mean(-y.*log.(sigmoid.(logŷ)) - (1 .- y).*log.(1 .- sigmoid.(logŷ)))
+  @test binarycrossentropy(sigmoid.(logŷ), y) ≈ mean(-y.*log.(sigmoid.(logŷ) .+ eps.(sigmoid.(logŷ))) - (1 .- y).*log.(1 .- sigmoid.(logŷ) .+ eps.(sigmoid.(logŷ))))
   @test binarycrossentropy([0.1,0.2,0.9], 1) ≈ -mean(log, [0.1,0.2,0.9])  # constant label
 end
 
 @testset "logitbinarycrossentropy" begin
-  @test logitbinarycrossentropy.(logŷ, label_smoothing(y, 0.2)) ≈ binarycrossentropy.(σ.(logŷ), label_smoothing(y, 0.2); ϵ=0)
-  @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(σ.(logŷ), y; ϵ=0)
+  @test logitbinarycrossentropy.(logŷ, label_smoothing(y, 0.2)) ≈ binarycrossentropy.(sigmoid.(logŷ), label_smoothing(y, 0.2); ϵ=0)
+  @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(sigmoid.(logŷ), y; ϵ=0)
 end
 
 y = onehotbatch([1], 0:1)
@@ -128,44 +128,44 @@ y = [1 2 3]
 ŷ = [4.0 5.0 6.0]
 
 @testset "kldivergence" begin
-  @test Flux.kldivergence([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ Flux.kldivergence([0.1,0.9], [0.1,0.9])
-  @test Flux.kldivergence(ŷ, y) ≈ -1.7661057888493457
-  @test Flux.kldivergence(y, y) ≈ 0
+  @test kldivergence([0.1,0.0,0.9], [0.1,0.0,0.9]) ≈ kldivergence([0.1,0.9], [0.1,0.9])
+  @test kldivergence(ŷ, y) ≈ -1.7661057888493457
+  @test kldivergence(y, y) ≈ 0
 end
 
 y = [1 2 3 4]
 ŷ = [5.0 6.0 7.0 8.0]
 
 @testset "hinge_loss" begin
-  @test Flux.hinge_loss(ŷ, y) ≈ 0
-  @test Flux.hinge_loss(y, 0.5 .* y) ≈ 0.125
+  @test hinge_loss(ŷ, y) ≈ 0
+  @test hinge_loss(y, 0.5 .* y) ≈ 0.125
 end
 
 @testset "squared_hinge_loss" begin
-  @test Flux.squared_hinge_loss(ŷ, y) ≈ 0
-  @test Flux.squared_hinge_loss(y, 0.5 .* y) ≈ 0.0625
+  @test squared_hinge_loss(ŷ, y) ≈ 0
+  @test squared_hinge_loss(y, 0.5 .* y) ≈ 0.0625
 end
 
 y = [0.1 0.2 0.3]
 ŷ = [0.4 0.5 0.6]
 
 @testset "poisson_loss" begin
-  @test Flux.poisson_loss(ŷ, y) ≈ 0.6278353988097339
-  @test Flux.poisson_loss(y, y) ≈ 0.5044459776946685
+  @test poisson_loss(ŷ, y) ≈ 0.6278353988097339
+  @test poisson_loss(y, y) ≈ 0.5044459776946685
 end
 
 y = [1.0 0.5 0.3 2.4]
 ŷ = [0 1.4 0.5 1.2]
 
 @testset "dice_coeff_loss" begin
-  @test Flux.dice_coeff_loss(ŷ, y) ≈ 0.2799999999999999
-  @test Flux.dice_coeff_loss(y, y) ≈ 0.0
+  @test dice_coeff_loss(ŷ, y) ≈ 0.2799999999999999
+  @test dice_coeff_loss(y, y) ≈ 0.0
 end
 
 @testset "tversky_loss" begin
-  @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
-  @test Flux.tversky_loss(ŷ, y, β=0.8) ≈ -0.09490740740740744
-  @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
+  @test tversky_loss(ŷ, y) ≈ -0.06772009029345383
+  @test tversky_loss(ŷ, y, β=0.8) ≈ -0.09490740740740744
+  @test tversky_loss(y, y) ≈ -0.5576923076923075
 end
 
 @testset "no spurious promotions" begin
@@ -173,7 +173,7 @@ end
     y = rand(T, 2)
     ŷ = rand(T, 2)
     for f in ALL_LOSSES
-      fwd, back = Flux.pullback(f, ŷ, y)
+      fwd, back = pullback(f, ŷ, y)
       @test fwd isa T
       @test eltype(back(one(T))[1]) == T
     end
@@ -190,9 +190,9 @@ end
           0 1]
     ŷ1 = [0.6 0.3
           0.4 0.7]
-    @test Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
-    @test Flux.binary_focal_loss(ŷ1, y1) ≈ 0.05691642237852222
-    @test Flux.binary_focal_loss(ŷ, y; γ=0.0) ≈ Flux.binarycrossentropy(ŷ, y)
+    @test binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
+    @test binary_focal_loss(ŷ1, y1) ≈ 0.05691642237852222
+    @test binary_focal_loss(ŷ, y; γ=0.0) ≈ binarycrossentropy(ŷ, y)
 end
 
 @testset "focal_loss" begin
@@ -206,9 +206,9 @@ end
     ŷ1 = [0.4 0.2
           0.5 0.5
           0.1 0.3]
-    @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
-    @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
-    @test Flux.focal_loss(ŷ, y; γ=0.0) ≈ Flux.crossentropy(ŷ, y)
+    @test focal_loss(ŷ, y) ≈ 1.1277571935622628
+    @test focal_loss(ŷ1, y1) ≈ 0.45990566879720157
+    @test focal_loss(ŷ, y; γ=0.0) ≈ crossentropy(ŷ, y)
 end
   
 @testset "siamese_contrastive_loss" begin
@@ -232,19 +232,19 @@ end
         0.1
         0.2
         0.7]
-  @test Flux.siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
-  @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0.5f0) ≈ 0.10000000000000002
-  @test Flux.siamese_contrastive_loss(ŷ, y, margin = 1.5f0) ≈ 0.5333333333333333
-  @test Flux.siamese_contrastive_loss(ŷ1, y1) ≈ 0.32554644f0
-  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0.5f0) ≈ 0.16271012f0
-  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 1.5f0) ≈ 0.6532292f0
-  @test Flux.siamese_contrastive_loss(ŷ, y, margin = 1) ≈ Flux.siamese_contrastive_loss(ŷ, y)
-  @test Flux.siamese_contrastive_loss(y, y) ≈ 0.0
-  @test Flux.siamese_contrastive_loss(y1, y1) ≈ 0.0
-  @test Flux.siamese_contrastive_loss(ŷ, y, margin = 0) ≈ 0.09166666666666667
-  @test Flux.siamese_contrastive_loss(ŷ1, y1, margin = 0) ≈ 0.13161165f0
-  @test Flux.siamese_contrastive_loss(ŷ2, y2) ≈ 0.21200000000000005
-  @test Flux.siamese_contrastive_loss(ŷ2, ŷ2) ≈ 0.18800000000000003
-  @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
-  @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
+  @test siamese_contrastive_loss(ŷ, y) ≈ 0.2333333333333333
+  @test siamese_contrastive_loss(ŷ, y, margin = 0.5f0) ≈ 0.10000000000000002
+  @test siamese_contrastive_loss(ŷ, y, margin = 1.5f0) ≈ 0.5333333333333333
+  @test siamese_contrastive_loss(ŷ1, y1) ≈ 0.32554644f0
+  @test siamese_contrastive_loss(ŷ1, y1, margin = 0.5f0) ≈ 0.16271012f0
+  @test siamese_contrastive_loss(ŷ1, y1, margin = 1.5f0) ≈ 0.6532292f0
+  @test siamese_contrastive_loss(ŷ, y, margin = 1) ≈ siamese_contrastive_loss(ŷ, y)
+  @test siamese_contrastive_loss(y, y) ≈ 0.0
+  @test siamese_contrastive_loss(y1, y1) ≈ 0.0
+  @test siamese_contrastive_loss(ŷ, y, margin = 0) ≈ 0.09166666666666667
+  @test siamese_contrastive_loss(ŷ1, y1, margin = 0) ≈ 0.13161165f0
+  @test siamese_contrastive_loss(ŷ2, y2) ≈ 0.21200000000000005
+  @test siamese_contrastive_loss(ŷ2, ŷ2) ≈ 0.18800000000000003
+  @test_throws DomainError(-0.5, "Margin must be non-negative") siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
+  @test_throws DomainError(-1, "Margin must be non-negative") siamese_contrastive_loss(ŷ, y, margin = -1)
 end

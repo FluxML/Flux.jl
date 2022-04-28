@@ -213,6 +213,7 @@ model(gpu(rand(10)))
 A custom loss function for the multiple outputs may look like this:
 ```julia
 using Statistics
+using Flux.Losses: mse
 
 # assuming model returns the output of a Split
 # x is a single input
@@ -220,6 +221,6 @@ using Statistics
 function loss(x, ys, model)
   # rms over all the mse
   ŷs = model(x)
-  return sqrt(mean(Flux.mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
+  return sqrt(mean(mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
 end
 ```
