@@ -18,6 +18,37 @@ function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
   return multigate(x, h, c), multigate_pullback
 end
 
+# Type stable and AD-friendly helper for iterating over the last dimension of an array
+function eachlastdim(A::AbstractArray{T,N}) where {T,N}
+  inds_before = ntuple(_ -> :, N-1)
+  return (view(A, inds_before..., i) for i in axes(A, N))
+end
+
+# adapted from https://github.com/JuliaDiff/ChainRules.jl/blob/f13e0a45d10bb13f48d6208e9c9d5b4a52b96732/src/rulesets/Base/indexing.jl#L77
+function ∇eachlastdim(dys_raw, x::AbstractArray{T, N}) where {T, N}
+  dys = unthunk(dys_raw)
+  i1 = findfirst(dy -> dy isa AbstractArray, dys)
+  if isnothing(i1)  # all slices are Zero!
+      return fill!(similar(x, T, axes(x)), zero(T))
+  end
+  # The whole point of this gradient is that we can allocate one `dx` array:
+  dx = similar(x, T, axes(x))::AbstractArray
+  for i in axes(x, N)
+      slice = selectdim(dx, N, i)
+      if dys[i] isa AbstractZero
+          fill!(slice, zero(eltype(slice)))
+      else
+          copyto!(slice, dys[i])
+      end
+  end
+  return ProjectTo(x)(dx)
+end
+
+function ChainRulesCore.rrule(::typeof(eachlastdim), x::AbstractArray{T,N}) where {T,N}
+  lastdims(dy) = (NoTangent(), ∇eachlastdim(unthunk(dy), x))
+  collect(eachlastdim(x)), lastdims
+end
+
 reshape_cell_output(h, x) = reshape(h, :, size(x)[2:end]...)
 
 # Stateful recurrence
@@ -86,7 +117,7 @@ reset!(m) = foreach(reset!, functor(m)[1])
 flip(f, xs) = reverse([f(x) for x in reverse(xs)])
 
 function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(x_t) for x_t in eachslice(x, dims=3)]
+  h = [m(x_t) for x_t in eachlastdim(x)]
   sze = size(h[1])
   reshape(reduce(hcat, h), sze[1], sze[2], length(h))
 end

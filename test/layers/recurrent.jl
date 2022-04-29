@@ -106,3 +106,35 @@ end
   @test res == sum(x[1:2, :]) + 2sum(x[5:6, :])
   @test dx == [ones(2, 5); zeros(2, 5); fill(2, 2, 5)]
 end
+
+@testset "eachlastdim" begin
+  x = rand(3, 3, 1, 2, 4)
+  @test length(Flux.eachlastdim(x)) == size(x, ndims(x))
+  @test collect(@inferred(Flux.eachlastdim(x))) == collect(eachslice(x; dims=ndims(x)))
+  slicedim = (size(x)[1:end-1]..., 1)
+  res, (dx,) = Flux.withgradient(x) do x
+    x1, _, x3, _ = Flux.eachlastdim(x)
+    sum(x1) + sum(x3 .* 3)
+  end
+  @test res ≈ sum(selectdim(x, ndims(x), 1)) + 3sum(selectdim(x, ndims(x), 3))
+  @test dx ≈ cat(fill(1, slicedim), fill(0, slicedim),
+              fill(3, slicedim), fill(0, slicedim); dims=ndims(x))
+end
+
+@testset "∇eachlastdim" begin
+    x = rand(3, 3, 1, 2, 4)
+    x_size = size(x)
+    y = collect(eachslice(x; dims=ndims(x)))
+    @test @inferred(Flux.∇eachlastdim(y, x)) == x
+    ZeroTangent = Flux.Zygote.ZeroTangent
+    NoTangent = Flux.Zygote.NoTangent
+    abstract_zeros_vector = [ZeroTangent(), ZeroTangent(), NoTangent(), NoTangent()]
+    @test @inferred(Flux.∇eachlastdim(abstract_zeros_vector, x)) == zeros(size(x))
+    x2 = rand(Float64, x_size[1:end-1])
+    x3 = rand(Float64, x_size[1:end-1])
+    mixed_vector = [ZeroTangent(), x2, x3, ZeroTangent()]
+    @test @inferred(Flux.∇eachlastdim(mixed_vector, x)) ≈ cat(zeros(x_size[1:end-1]), 
+                                                         x2, 
+                                                         x3, 
+                                                         zeros(x_size[1:end-1]); dims=ndims(x))
+end
