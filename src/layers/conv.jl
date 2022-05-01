@@ -6,9 +6,9 @@ _paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]
 expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 
-conv_reshape_bias(c) = c.bias isa AbstractVector ?
-   reshape(c.bias, map(_->1, c.stride)..., :, 1) :
-   c.bias
+conv_reshape_bias(c) = conv_reshape_bias(c.bias, c.stride)
+conv_reshape_bias(@nospecialize(bias), _) = bias
+conv_reshape_bias(bias::AbstractVector, stride) = reshape(bias, map(_->1, stride)..., :, 1)
 
 """
     SamePad()
@@ -164,9 +164,14 @@ end
 
 @functor Conv
 
+conv_dims(c::Conv, x::AbstractArray) =
+  DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
+
+ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
+
 function (c::Conv)(x::AbstractArray)
   σ = NNlib.fast_act(c.σ, x)
-  cdims = DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
+  cdims = conv_dims(c, x)
   σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
@@ -400,9 +405,14 @@ function crosscor(x, w, ddims::DenseConvDims)
   return conv(x, w, ddims)
 end
 
+crosscor_dims(c::CrossCor, x::AbstractArray) =
+  DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation)
+
+ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
+
 function (c::CrossCor)(x::AbstractArray)
   σ = NNlib.fast_act(c.σ, x)
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  cdims = crosscor_dims(c, x)
   σ.(crosscor(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
