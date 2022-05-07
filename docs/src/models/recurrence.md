@@ -64,7 +64,9 @@ The `Recur` wrapper stores the state between runs in the `m.state` field.
 
 If we use the `RNN(2, 5)` constructor – as opposed to `RNNCell` – you'll see that it's simply a wrapped cell.
 
-```julia
+```jldoctest recurrence
+julia> using Flux
+
 julia> RNN(2, 5)  # or equivalently RNN(2 => 5)
 Recur(
   RNNCell(2 => 5, tanh),                # 45 parameters
@@ -76,8 +78,15 @@ Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also availabl
 
 Using these tools, we can now build the model shown in the above diagram with: 
 
-```julia
-m = Chain(RNN(2 => 5), Dense(5 => 1))
+```jldoctest recurrence
+julia> m = Chain(RNN(2 => 5), Dense(5 => 1))
+Chain(
+  Recur(
+    RNNCell(2 => 5, tanh),              # 45 parameters
+  ),
+  Dense(5 => 1),                        # 6 parameters
+)         # Total: 6 trainable arrays, 51 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 580 bytes.   
 ```
 In this example, each output has only one component.
 
@@ -85,12 +94,12 @@ In this example, each output has only one component.
 
 Using the previously defined `m` recurrent model, we can now apply it to a single step from our sequence:
 
-```julia
+```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> x = rand(Float32, 2);
 
 julia> m(x)
 1-element Vector{Float32}:
- 0.31759313
+ 0.45860028
 ```
 
 The `m(x)` operation would be represented by `x1 -> A -> y1` in our diagram.
@@ -102,14 +111,14 @@ iterating the model on a sequence of data.
 
 To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of `length = seq_length` and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
 
-```julia
+```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> x = [rand(Float32, 2) for i = 1:3];
 
 julia> [m(xi) for xi in x]
 3-element Vector{Vector{Float32}}:
- [-0.033448644]
- [0.5259023]
- [-0.11183384]
+ [0.36080405]
+ [-0.13914406]
+ [0.9310162]
 ```
 
 !!! warning "Use of map and broadcast"

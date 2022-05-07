@@ -55,35 +55,35 @@ As a convenience, Flux provides the `gpu` function to convert models and data to
 julia> using Flux, CUDA
 
 julia> m = Dense(10, 5) |> gpu
-Dense(10 => 5)
+Dense(10 => 5)      # 55 parameters
 
 julia> x = rand(10) |> gpu
-10-element CuArray{Float32,1}:
- 0.800225
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.066846445
  ⋮
- 0.511655
+ 0.76706964
 
 julia> m(x)
-5-element CuArray{Float32,1}:
- -0.30535
+5-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ -0.99992573
  ⋮
- -0.618002
+ -0.547261
 ```
 
 The analogue `cpu` is also available for moving models and data back off of the GPU.
 
 ```julia
 julia> x = rand(10) |> gpu
-10-element CuArray{Float32,1}:
- 0.235164
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.8019236
  ⋮
- 0.192538
+ 0.7766742
 
 julia> x |> cpu
-10-element Array{Float32,1}:
- 0.235164
+10-element Vector{Float32}:
+ 0.8019236
  ⋮
- 0.192538
+ 0.7766742
 ```
 
 ## Disabling CUDA or choosing which GPUs are visible to Flux

@@ -116,9 +116,9 @@ A convenient way to run multiple epochs from the REPL is provided by `@epochs`.
 julia> using Flux: @epochs
 
 julia> @epochs 2 println("hello")
-INFO: Epoch 1
+[ Info: Epoch 1
 hello
-INFO: Epoch 2
+[ Info: Epoch 2
 hello
 
 julia> @epochs 2 Flux.train!(...)

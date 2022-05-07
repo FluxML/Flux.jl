@@ -6,7 +6,7 @@ session. The easiest way to do this is via
 
 Save a model:
 
-```julia
+```jldoctest saving
 julia> using Flux
 
 julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
@@ -23,9 +23,7 @@ julia> @save "mymodel.bson" model
 
 Load it again:
 
-```julia
-julia> using Flux
-
+```jldoctest saving
 julia> using BSON: @load
 
 julia> @load "mymodel.bson" model
@@ -61,7 +59,11 @@ versions of Flux).
 julia> using Flux
 
 julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
 julia> weights = Flux.params(model);
 ```
@@ -91,16 +93,22 @@ Flux.loadmodel!
 
 In longer training runs it's a good idea to periodically save your model, so that you can resume if training is interrupted (for example, if there's a power cut). You can do this by saving the model in the [callback provided to `train!`](training/training.md).
 
-```julia
-using Flux: throttle
-using BSON: @save
+```jldoctest saving
+julia> using Flux: throttle
 
-m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
+julia> using BSON: @save
 
-evalcb = throttle(30) do
-  # Show loss
-  @save "model-checkpoint.bson" model
-end
+julia> m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+
+julia> evalcb = throttle(30) do
+         # Show loss
+         @save "model-checkpoint.bson" model
+       end;
 ```
 
 This will update the `"model-checkpoint.bson"` file every thirty seconds.
