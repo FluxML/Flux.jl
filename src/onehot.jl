@@ -185,6 +185,8 @@ julia> reshape(1:15, 3, 5) * oh  # this matrix multiplication is done efficientl
 """
 onehotbatch(data, labels, default...) = _onehotbatch(data, length(labels) < 32 ? Tuple(labels) : labels, default...)
 
+_onehotbatch(data::CuArray, labels) = _onehotbatch(data |> cpu, labels) |> gpu
+
 function _onehotbatch(data, labels)
   indices = UInt32[something(_findval(i, labels), 0) for i in data]
   if 0 in indices
