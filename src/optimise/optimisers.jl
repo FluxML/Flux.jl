@@ -532,10 +532,16 @@ AdaBelief(η::Real, β::Tuple, state::IdDict) = AdaBelief(η, β, EPS, state)
 
 function apply!(o::AdaBelief, x, Δ)
   η, β = o.eta, o.beta
-  mt, st = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
+
+  mt, st, βp = get!(o.state, x) do
+      (zero(x), zero(x), Float64[β[1], β[2]])
+  end :: Tuple{typeof(x), typeof(x), Vector{Float64}}
+  
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt)
-  @. Δ =  η * mt / (√(st) + o.epsilon)
+  @. Δ =  η * mt / (1 - βp[1]) / (√(st / (1 - βp[2])) + o.epsilon)
+  βp .= βp .* β
+
   return Δ
 end
 
