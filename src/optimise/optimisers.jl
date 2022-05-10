@@ -541,14 +541,15 @@ function apply!(o::AdaBelief, x, Δ)
   second moment which is usually far enough from zero. This is problematic, since st
   can be slightly negative due to numerical error, and the square root below will fail.
   Also, if we want to differentiate through the optimizer, √0 is not differentiable.
-  To protect against this, we add a small number, st -> st + eps_root.
+  To protect against this, we add a small number, st -> st + eps2.
   The original implementation (https://github.com/juntang-zhuang/Adabelief-Optimizer)
-  uses the square of Adam's epsilon, which we do here. =#
-  eps_root = o.epsilon^2
+  uses the square of Adam's epsilon, which we do here.
+  See also: https://github.com/juntang-zhuang/Adabelief-Optimizer/issues/61 =#
+  eps2 = o.epsilon^2
   
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt)
-  @. Δ =  η * mt / (1 - βp[1]) / (√((st + eps_root) / (1 - βp[2])) + o.epsilon)
+  @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt) + eps2
+  @. Δ =  η * mt / (1 - βp[1]) / (√(st / (1 - βp[2])) + eps2)
   βp .= βp .* β
 
   return Δ
