@@ -536,10 +536,19 @@ function apply!(o::AdaBelief, x, Δ)
   mt, st, βp = get!(o.state, x) do
       (zero(x), zero(x), Float64[β[1], β[2]])
   end :: Tuple{typeof(x), typeof(x), Vector{Float64}}
+
+  #= st is a variance and can go to zero. This is in contrast to ADAM, which uses the
+  second moment which is usually far enough from zero. This is problematic, since st
+  can be slightly negative due to numerical error, and the square root below will fail.
+  Also, if we want to differentiate through the optimizer, √0 is not differentiable.
+  To protect against this, we add a small number, st -> st + eps_root.
+  The original implementation (https://github.com/juntang-zhuang/Adabelief-Optimizer)
+  uses the square of Adam's epsilon, which we do here. =#
+  eps_root = o.epsilon^2
   
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt)
-  @. Δ =  η * mt / (1 - βp[1]) / (√(st / (1 - βp[2])) + o.epsilon)
+  @. Δ =  η * mt / (1 - βp[1]) / (√((st + eps_root) / (1 - βp[2])) + o.epsilon)
   βp .= βp .* β
 
   return Δ
