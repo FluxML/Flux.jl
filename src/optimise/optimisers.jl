@@ -545,7 +545,7 @@ function apply!(o::AdaBelief, x, Δ)
   The original implementation (https://github.com/juntang-zhuang/Adabelief-Optimizer)
   uses the square of Adam's epsilon, which we do here.
   See also: https://github.com/juntang-zhuang/Adabelief-Optimizer/issues/61 =#
-  eps2 = o.epsilon^2
+  eps2 = o.epsilon^2 # TODO: make epsilon^2 the default in next breaking release
   
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt) + eps2
