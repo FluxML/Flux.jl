@@ -75,7 +75,7 @@ Packages based on differentiable programming but not necessarily related to Mach
 - [Duckietown.jl](https://github.com/tejank10/Duckietown.jl) Differentiable Duckietown simulator.
 - The [Yao.jl](https://github.com/QuantumBFS/Yao.jl) project uses Flux and Zygote for Quantum Differentiable Programming.
 - [AtomicGraphNets.jl](https://github.com/Chemellia/AtomicGraphNets.jl) enables learning graph based models on atomic systems used in chemistry.
-- [DiffImages.jl](https://github.com/SomTambe/DiffImages.jl) differentiable computer vision modeling in Julia with the Images.jl ecosystem.
+- [DiffImages.jl](https://github.com/FluxML/DiffImages.jl) differentiable computer vision modeling in Julia with the Images.jl ecosystem.
 
 ### Probabilistic programming
  
