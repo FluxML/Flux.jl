@@ -16,6 +16,7 @@ conv_reshape_bias(bias::AbstractVector, stride) = reshape(bias, map(_->1, stride
 Passed as an option to convolutional layers (and friends), this causes
 the padding to be chosen such that the input and output sizes agree
 (on the first `N` dimensions, the kernel or window) when `stride==1`.
+When `stride≠1`, the output size equals `ceil(input_size/stride)`.
 
 See also [`Conv`](@ref), [`MaxPool`](@ref).
 """
