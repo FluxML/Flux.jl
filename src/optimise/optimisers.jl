@@ -159,6 +159,7 @@ function apply!(o::RMSProp, x, Δ)
     @. Δ_ave = ρ * Δ_ave + (1 - ρ) * Δ
   end
   @. Δ *= η / (√(acc - Δ_ave * conj(Δ_ave)) + ϵ)
+end
 
 """
     ADAM(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
