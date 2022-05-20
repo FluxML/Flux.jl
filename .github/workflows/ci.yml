@@ -17,14 +17,20 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1' # Replace this with the minimum Julia version that your package supports.
+          - '1.6' # Replace this with the minimum Julia version that your package supports.
+          - '1'
           - 'nightly'
         os:
           - ubuntu-latest
-          - macOS-latest
-          - windows-latest
         arch:
           - x64
+        include:
+          - os: windows-latest
+            version: '1'
+            arch: x64
+          - os: macOS-latest
+            version: '1'
+            arch: x64
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -58,7 +64,7 @@ jobs:
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
       - run: |
-          julia --project=docs/ -e '
+          julia --color=yes --project=docs/ -e '
             using Flux
             # using Pkg; Pkg.activate("docs")
             using Documenter

@@ -2,17 +2,17 @@
 
 You may wish to save models so that they can be loaded and run in a later
 session. The easiest way to do this is via
-[BSON.jl](https://github.com/MikeInnes/BSON.jl).
+[BSON.jl](https://github.com/JuliaIO/BSON.jl).
 
 Save a model:
 
-```julia
+```jldoctest saving
 julia> using Flux
 
 julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
 Chain(
-  Dense(10, 5, relu),                   # 55 parameters
-  Dense(5, 2),                          # 12 parameters
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
   NNlib.softmax,
 )                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
@@ -23,20 +23,17 @@ julia> @save "mymodel.bson" model
 
 Load it again:
 
-```julia
-julia> using Flux
-
+```jldoctest saving
 julia> using BSON: @load
 
 julia> @load "mymodel.bson" model
 
 julia> model
 Chain(
-  Dense(10, 5, relu),                   # 55 parameters
-  Dense(5, 2),                          # 12 parameters
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
   NNlib.softmax,
 )                   # Total: 4 arrays, 67 parameters, 524 bytes.
-
 ```
 
 Models are just normal Julia structs, so it's fine to use any Julia storage
@@ -46,60 +43,72 @@ versions of Flux).
 
 !!! note
 
-    If a saved model's weights are stored on the GPU, the model will not load
+    If a saved model's parameters are stored on the GPU, the model will not load
     later on if there is no GPU support available. It's best to [move your model
     to the CPU](gpu.md) with `cpu(model)` before saving it.
 
-## Saving Model Weights
+!!! warning
 
-In some cases it may be useful to save only the model parameters themselves, and
-rebuild the model architecture in your code. You can use `params(model)` to get
-model parameters.
-
-```Julia
-julia> using Flux
-
-julia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
-
-julia> weights = params(model);
-
-julia> using BSON: @save
-
-julia> @save "mymodel.bson" weights
-```
-
-You can easily load parameters back into a model with `Flux.loadparams!`.
+    Previous versions of Flux suggested saving only the model weights using
+    `@save "mymodel.bson" params(model)`.
+    This is no longer recommended and even strongly discouraged.
+    Saving models this way will only store the trainable parameters which
+    will result in incorrect behavior for layers like `BatchNorm`.
 
 ```julia
 julia> using Flux
 
-julia> model = Chain(Dense(10,5,relu),Dense(5,2),softmax)
-Chain(Dense(10, 5, NNlib.relu), Dense(5, 2), NNlib.softmax)
+julia> model = Chain(Dense(10 => 5,relu),Dense(5 => 2),softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
-julia> using BSON: @load
-
-julia> @load "mymodel.bson" weights
-
-julia> Flux.loadparams!(model, weights)
+julia> weights = Flux.params(model);
 ```
 
-The new `model` we created will now be identical to the one we saved parameters for.
+Loading the model as shown above will return a new model with the stored parameters.
+But sometimes you already have a model, and you want to load stored parameters into it.
+This can be done as
+
+```julia
+using Flux: loadmodel!
+using BSON: @load
+
+# some predefined model
+model = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
+
+# load one model into another
+model = loadmodel!(model, @load("mymodel.bson"))
+```
+
+This ensures that the model loaded from `"mymodel.bson"` matches the structure of `model`. [`Flux.loadmodel!`](@ref) is also convenient for copying parameters between models in memory.
+
+```@docs
+Flux.loadmodel!
+```
 
 ## Checkpointing
 
 In longer training runs it's a good idea to periodically save your model, so that you can resume if training is interrupted (for example, if there's a power cut). You can do this by saving the model in the [callback provided to `train!`](training/training.md).
 
-```julia
-using Flux: throttle
-using BSON: @save
+```jldoctest saving
+julia> using Flux: throttle
 
-m = Chain(Dense(10,5,relu),Dense(5,2),softmax)
+julia> using BSON: @save
 
-evalcb = throttle(30) do
-  # Show loss
-  @save "model-checkpoint.bson" model
-end
+julia> m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
+Chain(
+  Dense(10 => 5, relu),                 # 55 parameters
+  Dense(5 => 2),                        # 12 parameters
+  NNlib.softmax,
+)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+
+julia> evalcb = throttle(30) do
+         # Show loss
+         @save "model-checkpoint.bson" model
+       end;
 ```
 
 This will update the `"model-checkpoint.bson"` file every thirty seconds.
@@ -118,8 +127,10 @@ revert to an older copy of the model if it starts to overfit.
 @save "model-$(now()).bson" model loss = testloss()
 ```
 
-You can even store optimiser state alongside the model, to resume training
-exactly where you left off.
+Note that to resume a model's training, you might need to restore other stateful parts of your training loop. Possible examples are stateful optimizers (which usually utilize an `IdDict` to store their state), and the randomness used to partition the original data into the training and validation sets.
+
+You can store the optimiser state alongside the model, to resume training
+exactly where you left off. BSON is smart enough to [cache values](https://github.com/JuliaIO/BSON.jl/blob/v0.3.4/src/write.jl#L71) and insert links when saving, but only if it knows everything to be saved up front. Thus models and optimizers must be saved together to have the latter work after restoring.
 
 ```julia
 opt = ADAM()

@@ -3,7 +3,7 @@ using MacroTools: @forward
 
 abstract type AbstractOptimiser end
 
-const ϵ = 1e-8
+const EPS = 1e-8
 
 # TODO: should use weak refs
 
@@ -23,7 +23,7 @@ opt = Descent()
 
 opt = Descent(0.3)
 
-ps = params(model)
+ps = Flux.params(model)
 
 gs = gradient(ps) do
     loss(x, y)
@@ -51,7 +51,7 @@ Gradient descent optimizer with learning rate `η` and momentum `ρ`.
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
 - Momentum (`ρ`): Controls the acceleration of gradient descent in the
-                  prominent direction, in effect dampening oscillations.
+                  prominent direction, in effect damping oscillations.
 
 # Examples
 ```julia
@@ -84,7 +84,7 @@ Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
 - Learning rate (`η`): Amount by which gradients are discounted before updating
                        the weights.
 - Nesterov momentum (`ρ`): Controls the acceleration of gradient descent in the
-                           prominent direction, in effect dampening oscillations.
+                           prominent direction, in effect damping oscillations.
 
 # Examples
 ```julia
@@ -110,7 +110,7 @@ function apply!(o::Nesterov, x, Δ)
 end
 
 """
-    RMSProp(η = 0.001, ρ = 0.9, centered = false)
+    RMSProp(η = 0.001, ρ = 0.9, ϵ = $EPS, centered = false)
 
 Optimizer using the
 [RMSProp](https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
@@ -138,27 +138,30 @@ mutable struct RMSProp <: AbstractOptimiser
   eta::Float64
   rho::Float64
   centered::Bool
-  state::IdDict
+  epsilon::Float64
+  acc::IdDict
 end
 
-RMSProp(η = 0.001, ρ = 0.9, centered = false) = RMSProp(η, ρ, centered, IdDict())
+RMSProp(η::Real = 0.001, ρ::Real = 0.9, centered::Bool = false, ϵ::Real = EPS) = RMSProp(η, ρ, centered, ϵ, IdDict())
+RMSProp(η::Real = 0.001, ρ::Real = 0.9, ϵ::Real = EPS; centered::Bool = false) = RMSProp(η, ρ, centered, ϵ, IdDict())
+RMSProp(η::Real, ρ::Real, acc::IdDict; centered::Bool = false) = RMSProp(η, ρ, EPS, centered, acc)
+
 
 function apply!(o::RMSProp, x, Δ)
   η, ρ = o.eta, o.rho
 
-  acc, Δ_ave = get!(o.state, x) do
+  acc, Δ_ave = get!(o.acc, x) do
     (zero(x), zero(x))
   end :: Tuple{typeof(x),typeof(x)}
 
-  @. acc = ρ * acc + (1 - ρ) * Δ^2
+  @. acc = ρ * acc + (1 - ρ) * Δ * conj(Δ)
   if o.centered
     @. Δ_ave = ρ * Δ_ave + (1 - ρ) * Δ
   end
-  @. Δ *= η / (√(acc - Δ_ave^2) + ϵ)
-end
+  @. Δ *= η / (√(acc - Δ_ave * conj(Δ_ave)) + ϵ)
 
 """
-    ADAM(η = 0.001, β::Tuple = (0.9, 0.999))
+    ADAM(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
 [ADAM](https://arxiv.org/abs/1412.6980) optimiser.
 
@@ -178,10 +181,11 @@ opt = ADAM(0.001, (0.9, 0.8))
 mutable struct ADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-ADAM(η = 0.001, β = (0.9, 0.999)) = ADAM(η, β, IdDict())
+ADAM(η::Real = 0.001, β::Tuple = (0.9, 0.999), ϵ::Real = EPS) = ADAM(η, β, ϵ, IdDict())
+ADAM(η::Real, β::Tuple, state::IdDict) = ADAM(η, β, EPS, state)
 
 function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -191,15 +195,15 @@ function apply!(o::ADAM, x, Δ)
   end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
+  @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + o.epsilon) * η
   βp .= βp .* β
 
   return Δ
 end
 
 """
-    RADAM(η = 0.001, β::Tuple = (0.9, 0.999))
+    RADAM(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
 [Rectified ADAM](https://arxiv.org/abs/1908.03265) optimizer.
 
@@ -219,10 +223,11 @@ opt = RADAM(0.001, (0.9, 0.8))
 mutable struct RADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-RADAM(η = 0.001, β = (0.9, 0.999)) = RADAM(η, β, IdDict())
+RADAM(η::Real = 0.001, β::Tuple = (0.9, 0.999), ϵ::Real = EPS) = RADAM(η, β, ϵ, IdDict())
+RADAM(η::Real, β::Tuple, state::IdDict) = RADAM(η, β, EPS, state)
 
 function apply!(o::RADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -230,14 +235,14 @@ function apply!(o::RADAM, x, Δ)
 
   mt, vt, βp, t = get!(o.state, x) do
       (zero(x), zero(x), Float64[β[1], β[2]], Ref(1))
-  end :: Tuple{typeof(x),typeof(x),Vector{Float64},Ref{Int}}
+  end :: Tuple{typeof(x),typeof(x),Vector{Float64},Base.RefValue{Int}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
   ρ = ρ∞ - 2t[] * βp[2] / (1 - βp[2])
   if ρ > 4
     r = sqrt((ρ-4)*(ρ-2)*ρ∞/((ρ∞-4)*(ρ∞-2)*ρ))
-    @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ) * η * r
+    @. Δ =  mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + o.epsilon) * η * r
   else
     @. Δ =  mt / (1 - βp[1]) * η
   end
@@ -248,7 +253,7 @@ function apply!(o::RADAM, x, Δ)
 end
 
 """
-    AdaMax(η = 0.001, β::Tuple = (0.9, 0.999))
+    AdaMax(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
 [AdaMax](https://arxiv.org/abs/1412.6980) is a variant of ADAM based on the ∞-norm.
 
@@ -268,10 +273,11 @@ opt = AdaMax(0.001, (0.9, 0.995))
 mutable struct AdaMax <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-AdaMax(η = 0.001, β = (0.9, 0.999)) = AdaMax(η, β, IdDict())
+AdaMax(η::Real = 0.001, β::Tuple = (0.9, 0.999), ϵ::Real = EPS) = AdaMax(η, β, ϵ, IdDict())
+AdaMax(η::Real, β::Tuple, state::IdDict) = AdaMax(η, β, EPS, state)
 
 function apply!(o::AdaMax, x, Δ)
   η, β = o.eta, o.beta
@@ -282,14 +288,14 @@ function apply!(o::AdaMax, x, Δ)
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. ut = max(β[2] * ut, abs(Δ))
-  @. Δ = (η/(1 - βp[1])) * mt/(ut + ϵ)
+  @. Δ = (η/(1 - βp[1])) * mt/(ut + o.epsilon)
   βp .= βp .* β
 
   return Δ
 end
 
 """
-    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9))
+    OADAM(η = 0.0001, β::Tuple = (0.5, 0.9), ϵ = $EPS)
 
 [OADAM](https://arxiv.org/abs/1711.00141) (Optimistic ADAM)
 is a variant of ADAM adding an "optimistic" term suitable for adversarial training.
@@ -310,10 +316,11 @@ opt = OADAM(0.001, (0.9, 0.995))
 mutable struct OADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-OADAM(η = 0.001, β = (0.5, 0.9)) = OADAM(η, β, IdDict())
+OADAM(η::Real = 0.001, β::Tuple = (0.5, 0.9), ϵ::Real = EPS) = OADAM(η, β, ϵ, IdDict())
+OADAM(η::Real, β::Tuple, state::IdDict) = RMSProp(η, β, EPS, state)
 
 function apply!(o::OADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -323,9 +330,9 @@ function apply!(o::OADAM, x, Δ)
   end :: Tuple{typeof(x),typeof(x),typeof(x),Vector{Float64}}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
   @. Δ = -Δ_
-  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + ϵ)
+  @. Δ_ = η * mt / (1 - βp[1]) / (√(vt / (1 - βp[2])) + o.epsilon)
   @. Δ += 2Δ_
   βp .= βp .* β
 
@@ -333,7 +340,7 @@ function apply!(o::OADAM, x, Δ)
 end
 
 """
-    ADAGrad(η = 0.1)
+    ADAGrad(η = 0.1, ϵ = $EPS)
 
 [ADAGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimizer. It has
 parameter specific learning rates based on how frequently it is updated.
@@ -352,20 +359,21 @@ opt = ADAGrad(0.001)
 """
 mutable struct ADAGrad <: AbstractOptimiser
   eta::Float64
+  epsilon::Float64
   acc::IdDict
 end
-
-ADAGrad(η = 0.1) = ADAGrad(η, IdDict())
+ADAGrad(η::Real = 0.1, ϵ::Real = EPS) = ADAGrad(η, ϵ, IdDict())
+ADAGrad(η::Real, state::IdDict) = ADAGrad(η, EPS, state)
 
 function apply!(o::ADAGrad, x, Δ)
   η = o.eta
-  acc = get!(() -> fill!(similar(x), ϵ), o.acc, x)::typeof(x)
-  @. acc += Δ^2
-  @. Δ *= η / (√acc + ϵ)
+  acc = get!(() -> fill!(similar(x), o.epsilon), o.acc, x)::typeof(x)
+  @. acc += Δ * conj(Δ)
+  @. Δ *= η / (√acc + o.epsilon)
 end
 
 """
-    ADADelta(ρ = 0.9)
+    ADADelta(ρ = 0.9, ϵ = $EPS)
 
 [ADADelta](https://arxiv.org/abs/1212.5701) is a version of ADAGrad adapting its learning
 rate based on a window of past gradient updates.
@@ -383,24 +391,25 @@ opt = ADADelta(0.89)
 """
 mutable struct ADADelta <: AbstractOptimiser
   rho::Float64
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-ADADelta(ρ = 0.9) = ADADelta(ρ, IdDict())
+ADADelta(ρ::Real = 0.9, ϵ::Real = EPS) = ADADelta(ρ, ϵ, IdDict())
+ADADelta(ρ::Real, state::IdDict) = ADADelta(ρ, EPS, state)
 
 function apply!(o::ADADelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
-  @. acc = ρ * acc + (1 - ρ) * Δ^2
+  @. acc = ρ * acc + (1 - ρ) * Δ * conj(Δ)
   # DON'T remove epsilon from numerator
   # or even out of the square roots
-  @. Δ *= √(Δacc + ϵ) / √(acc + ϵ)
-  @. Δacc = ρ * Δacc + (1 - ρ) * Δ^2
+  @. Δ *= √(Δacc + o.epsilon) / √(acc + o.epsilon)
+  @. Δacc = ρ * Δacc + (1 - ρ) * Δ * conj(Δ)
   return Δ
 end
 
 """
-    AMSGrad(η = 0.001, β::Tuple = (0.9, 0.999))
+    AMSGrad(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
 The [AMSGrad](https://openreview.net/forum?id=ryQu7f-RZ) version of the ADAM
 optimiser. Parameters don't need tuning.
@@ -421,26 +430,27 @@ opt = AMSGrad(0.001, (0.89, 0.995))
 mutable struct AMSGrad <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-AMSGrad(η = 0.001, β = (0.9, 0.999)) = AMSGrad(η, β, IdDict())
+AMSGrad(η::Real = 0.001, β = (0.9, 0.999), ϵ::Real = EPS) = AMSGrad(η, β, ϵ, IdDict())
+AMSGrad(η::Real, β::Tuple, state::IdDict) = AMSGrad(η, β, EPS, state)
 
 function apply!(o::AMSGrad, x, Δ)
   η, β = o.eta, o.beta
 
   mt, vt, v̂t = get!(o.state, x) do
-    (fill!(similar(x), ϵ), fill!(similar(x), ϵ), fill!(similar(x), ϵ))
+    (fill!(similar(x), o.epsilon), fill!(similar(x), o.epsilon), fill!(similar(x), o.epsilon))
   end :: NTuple{3,typeof(x)}
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
   @. vt = β[2] * vt + (1 - β[2]) * Δ ^ 2
   @. v̂t = max(v̂t, vt)
-  @. Δ = η * mt / (√v̂t + ϵ)
+  @. Δ = η * mt / (√v̂t + o.epsilon)
 end
 
 """
-    NADAM(η = 0.001, β::Tuple = (0.9, 0.999))
+    NADAM(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
 [NADAM](https://openreview.net/forum?id=OM0jvwB8jIp57ZJjtNEZ) is a Nesterov variant of ADAM.
 Parameters don't need tuning.
@@ -461,10 +471,11 @@ opt = NADAM(0.002, (0.89, 0.995))
 mutable struct NADAM <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64, Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-NADAM(η = 0.001, β = (0.9, 0.999)) = NADAM(η, β, IdDict())
+NADAM(η::Real = 0.001, β = (0.9, 0.999), ϵ::Real = EPS) = NADAM(η, β, ϵ, IdDict())
+NADAM(η::Real, β::Tuple, state::IdDict) = NADAM(η, β, EPS, state)
 
 function apply!(o::NADAM, x, Δ)
   η, β = o.eta, o.beta
@@ -475,8 +486,8 @@ function apply!(o::NADAM, x, Δ)
   β1p, β2p = βp
 
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. vt = β[2] * vt + (1 - β[2]) * Δ^2
-  @. Δ = (β[1] * mt / (1 - β[1] * β1p) + (1 - β[1]) * Δ / (1 - β1p)) / (√(vt * β[2] / (1 - β2p)) + ϵ) * η
+  @. vt = β[2] * vt + (1 - β[2]) * Δ * conj(Δ)
+  @. Δ = (β[1] * mt / (1 - β[1] * β1p) + (1 - β[1]) * Δ / (1 - β1p)) / (√(vt * β[2] / (1 - β2p)) + o.epsilon) * η
   βp .= βp .* β
 
   return Δ
@@ -503,10 +514,10 @@ opt = ADAMW(0.001, (0.89, 0.995), 0.1)
 ```
 """
 ADAMW(η = 0.001, β = (0.9, 0.999), decay = 0) =
-  Optimiser(ADAM(1, β), WeightDecay(decay), Descent(η))
+  Optimiser(ADAM(η, β), WeightDecay(decay))
 
 """
-    AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999))
+    AdaBelief(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
 The [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser is a variant of the well-known
 ADAM optimiser.
@@ -524,20 +535,37 @@ opt = AdaBelief()
 opt = AdaBelief(0.001, (0.9, 0.8))
 ```
 """
-mutable struct AdaBelief
+mutable struct AdaBelief <: AbstractOptimiser
   eta::Float64
   beta::Tuple{Float64,Float64}
-  state::IdDict
+  epsilon::Float64
+  state::IdDict{Any, Any}
 end
-
-AdaBelief(η = 0.001, β = (0.9, 0.999)) = AdaBelief(η, β, IdDict())
+AdaBelief(η::Real = 0.001, β = (0.9, 0.999), ϵ::Real = EPS) = AdaBelief(η, β, ϵ, IdDict())
+AdaBelief(η::Real, β::Tuple, state::IdDict) = AdaBelief(η, β, EPS, state)
 
 function apply!(o::AdaBelief, x, Δ)
   η, β = o.eta, o.beta
-  mt, st = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
+
+  mt, st, βp = get!(o.state, x) do
+      (zero(x), zero(x), Float64[β[1], β[2]])
+  end :: Tuple{typeof(x), typeof(x), Vector{Float64}}
+
+  #= st is a variance and can go to zero. This is in contrast to ADAM, which uses the
+  second moment which is usually far enough from zero. This is problematic, since st
+  can be slightly negative due to numerical error, and the square root below will fail.
+  Also, if we want to differentiate through the optimizer, √0 is not differentiable.
+  To protect against this, we add a small number, st -> st + eps2.
+  The original implementation (https://github.com/juntang-zhuang/Adabelief-Optimizer)
+  uses the square of Adam's epsilon, which we do here.
+  See also: https://github.com/juntang-zhuang/Adabelief-Optimizer/issues/61 =#
+  eps2 = o.epsilon^2 # TODO: make epsilon^2 the default in next breaking release
+  
   @. mt = β[1] * mt + (1 - β[1]) * Δ
-  @. st = β[2] * st + (1 - β[2]) * (Δ - mt)^2
-  @. Δ =  η * mt / (√(st) + ϵ)
+  @. st = β[2] * st + (1 - β[2]) * (Δ - mt) * conj(Δ - mt) + eps2
+  @. Δ =  η * mt / (1 - βp[1]) / (√(st / (1 - βp[2])) + eps2)
+  βp .= βp .* β
+
   return Δ
 end
 
@@ -555,7 +583,7 @@ mutable struct Optimiser <: AbstractOptimiser
   os::Vector{Any}
 end
 
-Optimiser(o...) = Optimiser(Any[o...])
+Optimiser(opts::AbstractOptimiser...) = Optimiser(Any[opts...])
 
 @forward Optimiser.os Base.getindex, Base.first, Base.last, Base.lastindex, Base.push!, Base.setindex!
 @forward Optimiser.os Base.iterate
@@ -592,10 +620,10 @@ opt = Optimiser(Adam(1f-3), InvDecay(1f-2))
 """
 mutable struct InvDecay <: AbstractOptimiser
   gamma::Float64
-  state::IdDict
+  state::IdDict{Any, Int}
 end
 
-InvDecay(γ = 0.001) = InvDecay(γ, IdDict())
+InvDecay(γ = 0.001) = InvDecay(γ, IdDict{Any, Int}())
 
 function apply!(o::InvDecay, x, Δ)
   γ = o.gamma
@@ -606,7 +634,7 @@ function apply!(o::InvDecay, x, Δ)
 end
 
 """
-    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4)
+    ExpDecay(η = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4, start = 1)
 
 Discount the learning rate `η` by the factor `decay` every `decay_step` steps till
 a minimum of `clip`.
@@ -618,6 +646,7 @@ a minimum of `clip`.
 - `decay_step`: Schedule decay operations by setting the number of steps between
                 two decay operations.
 - `clip`: Minimum value of learning rate.
+- 'start': Step at which the decay starts.
 
 
 See also the [Scheduling Optimisers](@ref) section of the docs
@@ -628,24 +657,27 @@ for more general scheduling techniques.
 `ExpDecay` is typically composed  with other optimizers 
 as the last transformation of the gradient:
 ```julia
-opt = Optimiser(ADAM(), ExpDecay())
+opt = Optimiser(ADAM(), ExpDecay(1.0))
 ```
+Note: you may want to start with `η=1` in `ExpDecay` when combined with other
+optimizers (`ADAM` in this case) that have their own learning rate.
 """
 mutable struct ExpDecay <: AbstractOptimiser
   eta::Float64
   decay::Float64
   step::Int64
   clip::Float64
+  start::Int64
   current::IdDict
 end
 
-ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4) = 
-  ExpDecay(opt, decay, decay_step, clip, IdDict())
+ExpDecay(opt = 0.001, decay = 0.1, decay_step = 1000, clip = 1e-4, start = 0) =
+  ExpDecay(opt, decay, decay_step, clip, start, IdDict())
 
 function apply!(o::ExpDecay, x, Δ)
-  η, s, decay = o.eta, o.step, o.decay
+  η, s, decay, start = o.eta, o.step, o.decay, o.start
   n = o.current[x] = get(o.current, x, 0) + 1
-  if o.current[x]%s == 0 && count(x -> x%s == 0, values(o.current)) == 1
+  if n > start && n % s == 0 && count(x -> x > start && x % s == 0, values(o.current)) == 1
     η = max(η * decay, o.clip)
     o.eta = η
   end

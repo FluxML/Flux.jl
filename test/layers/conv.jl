@@ -58,7 +58,7 @@ end
   opt = Descent()
 
   for _ = 1:10^3
-    gs = gradient(params(bias)) do
+    gs = gradient(Flux.params(bias)) do
       Flux.Losses.mse(bias(ip), op)
     end
     Flux.Optimise.update!(opt, params(bias), gs)
@@ -81,6 +81,10 @@ end
     c = Conv((3,4,5), 100 => 25, groups = 5)
     @test size(c.weight) == (3,4,5, 20, 25)
     @test size(c(ip)) == (8,8,8, 25, 2)
+
+    # Test that we cannot ask for non-integer multiplication factors
+    @test_throws AssertionError Conv((2, 2), 3=>10, groups=2)
+    @test_throws AssertionError Conv((2, 2), 2=>9, groups=2)
   end
 end
 
@@ -160,7 +164,7 @@ end
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
-  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+  @test gradient(()->sum(m(x)), Flux.params(m)) isa Flux.Zygote.Grads
 
   x = zeros(Float32, 5, 5, 2, 4)
   m = ConvTranspose((3,3), 2=>3)
@@ -273,7 +277,7 @@ end
 
 @testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
   @test fun(rand(2,3,4)).bias isa Vector{Float64}
-  @test fun(rand(2,3,4,5), false).bias isa Flux.Zeros
+  @test fun(rand(2,3,4,5), false).bias === false
   if fun == Conv
     @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
     @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}

@@ -47,8 +47,8 @@ We can also define an objective in terms of some model:
 
 ```julia
 m = Chain(
-  Dense(784, 32, σ),
-  Dense(32, 10), softmax)
+  Dense(784 => 32, σ),
+  Dense(32 => 10), softmax)
 
 loss(x, y) = Flux.Losses.mse(m(x), y)
 ps = Flux.params(m)
@@ -64,11 +64,15 @@ At first glance it may seem strange that the model that we want to train is not 
 
 ## Model parameters
 
-The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `params(m)`.
+The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `Flux.params(m)`.
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 
 Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../models/basics.md) section. Also, for freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
+
+```@docs
+Flux.params
+```
 
 ## Datasets
 
@@ -102,7 +106,7 @@ Training data can be conveniently  partitioned for mini-batch training using the
 ```julia
 X = rand(28, 28, 60000)
 Y = rand(0:9, 60000)
-data = DataLoader(X, Y, batchsize=128) 
+data = DataLoader((X, Y), batchsize=128) 
 ```
 
 Note that, by default, `train!` only loops over the data once (a single "epoch").
@@ -112,9 +116,9 @@ A convenient way to run multiple epochs from the REPL is provided by `@epochs`.
 julia> using Flux: @epochs
 
 julia> @epochs 2 println("hello")
-INFO: Epoch 1
+[ Info: Epoch 1
 hello
-INFO: Epoch 2
+[ Info: Epoch 2
 hello
 
 julia> @epochs 2 Flux.train!(...)

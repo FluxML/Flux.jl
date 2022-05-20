@@ -15,7 +15,7 @@ using Random
                        Nesterov(), RMSProp(), Momentum()]
     Random.seed!(42)
     w′ = randn(10, 10)
-    b = Flux.Zeros()
+    b = false
     loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
     for t = 1: 10^5
       θ = params([w′, b])
@@ -50,7 +50,7 @@ end
   l = 1
   Flux.train!(
               () -> (sleep(0.1); Flux.skip(); i+=1),
-              (),
+              Params([]),
               Iterators.repeated((), 10),
               Descent()
              )
@@ -59,7 +59,7 @@ end
 
   Flux.train!(
               () -> (sleep(0.1); i==8 && Flux.skip(); i+=1),
-              (),
+              Params([]),
               Iterators.repeated((), 10),
               Descent()
              )
@@ -68,7 +68,7 @@ end
 
   i = 0
   Flux.train!(() -> (sleep(0.1); i += 1; l),
-              (),
+              Params([]),
               Iterators.repeated((), 100),
               Descent(),
               cb = Flux.throttle(() -> (i > 3 && Flux.stop()), 1))
@@ -94,6 +94,16 @@ end
     p = [0.0]
     steps = 1:8
     eta_expected = @. max(o.eta * 0.5 ^ steps, o.clip)
+    eta_actual = [Optimise.apply!(o, p, [1.0])[1] for _ in steps]
+    @test eta_actual == eta_expected
+  end
+
+  @testset "starting step" begin
+    start = 4
+    o = ExpDecay(0.2, 0.5, 1, 1e-3, start)
+    p = [0.0]
+    steps = 1:8
+    eta_expected = @. max(o.eta * 0.5 ^ max(steps - start, 0), o.clip)
     eta_actual = [Optimise.apply!(o, p, [1.0])[1] for _ in steps]
     @test eta_actual == eta_expected
   end
@@ -189,4 +199,41 @@ end
   opt = Descent(0.1)
   Flux.update!(opt, θ, gs)
   @test w ≈ wold .- 0.1
+end
+
+# Flux PR #1776
+# We need to test that optimisers like ADAM that maintain an internal momentum
+# estimate properly calculate the second-order statistics on the gradients as
+# the flow backward through the model.  Previously, we would calculate second-
+# order statistics via `Δ^2` rather than the complex-aware `Δ * conj(Δ)`, which
+# wreaks all sorts of havoc on our training loops.  This test ensures that
+# a simple optimization is montonically decreasing (up to learning step effects)
+@testset "Momentum Optimisers and complex values" begin
+  # Test every optimizer that has momentum internally
+  for opt_ctor in [ADAM, RMSProp, RADAM, OADAM, ADAGrad, ADADelta, NADAM, AdaBelief]
+    # Our "model" is just a complex number
+    w = zeros(ComplexF32, 1)
+
+    # Our model attempts to learn `f(x) = conj(x)` where `f(x) = w*x`
+    function loss()
+        # Deterministic training data is the best training data
+        x = ones(1, 1) + 1im*ones(1, 1)
+
+        # Manually implement `mse()` to allow demonstration of brokenness
+        # on older Flux builds that don't have a fixed `mse()`
+        return sum(abs2.(w * x .- conj(x)))
+    end
+
+    params = Flux.Params([w])
+    opt = opt_ctor(1e-2)
+
+    # Train for 10 iterations, enforcing that loss is monotonically decreasing
+    last_loss = Inf
+    for idx in 1:10
+        grads = Flux.gradient(loss, params)
+        @test loss() < last_loss
+        last_loss = loss()
+        Flux.update!(opt, params, grads)
+    end
+  end
 end

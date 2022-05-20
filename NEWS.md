@@ -1,5 +1,30 @@
 # Flux Release Notes
 
+## v0.13
+* After a deprecations cycle, the datasets in `Flux.Data` have
+been removed in favour of MLDatasets.jl.
+* `params` is not exported anymore since it is a common name and is also exported by Distributions.jl
+* `flatten` is not exported anymore due to clash with Iterators.flatten.
+* Remove Juno.jl progress bar support as it is now obsolete.
+* `Dropout` gained improved compatibility with Int and Complex arrays and is now twice-differentiable.
+* Notation `Dense(2 => 3, σ)` for channels matches `Conv`; the equivalent `Dense(2, 3, σ)` still works.
+* Many utily functions and the `DataLoader` are [now provided by MLUtils.jl](https://github.com/FluxML/Flux.jl/pull/1874).
+* The DataLoader is now compatible with generic dataset types implementing `MLUtils.numobs` and `MLUtils.getobs`.
+* Added [truncated normal initialisation](https://github.com/FluxML/Flux.jl/pull/1877) of weights.
+* The `Flux.Diagonal` layer is now called `Scale`, and accepts an activation function.
+* `loadparams!` is replaced by [`loadmodel!`](https://github.com/FluxML/Flux.jl/pull/1875) which copies trainable + non-trainable parameters and performs more thorough structural checking
+
+## v0.12.10
+* `Dropout`/`AlphaDropout` now supports [user-specified RNGs](https://github.com/FluxML/Flux.jl/pull/1838)
+
+## v0.12.9
+* Fixed incorrect output and added GPU compatibility for [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781).
+* Add trilinear [Upsample layer](https://github.com/FluxML/Flux.jl/pull/1792).
+* Improved [performance of RNNs](https://github.com/FluxML/Flux.jl/pull/1761)
+* Optimisers now accept an `ϵ` argument
+* [Improved handling of complex values inputs](https://github.com/FluxML/Flux.jl/pull/1776) while training
+* Fixed [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781)
+
 ## v0.12.8
 * Optimized inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1756)
 
@@ -12,7 +37,7 @@
 * REPL printing via [`show`](https://github.com/FluxML/Flux.jl/pull/1467) displays parameter counts.
 
 ## v0.12.4
-* Implemented an [`Embedding layer`](https://github.com/FluxML/Flux.jl/pull/1516) 
+* Implemented an [`Embedding layer`](https://github.com/FluxML/Flux.jl/pull/1516)
   based on `NNlib.gather` and `NNlib.scatter`.
 
 ## v0.12.1 - v0.12.3
@@ -37,8 +62,8 @@
 * New [`Parallel` layer](https://github.com/FluxML/Flux.jl/pull/1462) adds inception module-like building blocks.
 * Feature additions and bug fixes for BatchNorm, LayerNorm, InstanceNorm, and GroupNorm [normalization layers](https://github.com/FluxML/Flux.jl/pull/1397)
 * Added [Upsample and PixelShuffle layers](https://github.com/FluxML/Flux.jl/pull/1468)
-* End of deprecation cycle: loss functions cannot be accessed directly from `Flux` anymore, they live in the `Flux.Losses` module. 
- All loss functions perform `mean` aggregation by default. 
+* End of deprecation cycle: loss functions cannot be accessed directly from `Flux` anymore, they live in the `Flux.Losses` module.
+ All loss functions perform `mean` aggregation by default.
 
 ## v0.11.2
 

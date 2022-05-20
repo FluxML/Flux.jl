@@ -1,4 +1,4 @@
-# NNlib
+# NNlib.jl
 
 Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package.
 
@@ -56,6 +56,7 @@ NNlib.depthwiseconv
 ```@docs
 NNlib.upsample_nearest
 NNlib.upsample_bilinear
+NNlib.upsample_trilinear
 NNlib.pixel_shuffle
 ```
 
@@ -75,7 +76,10 @@ NNlib.gather
 NNlib.gather!
 NNlib.scatter
 NNlib.scatter!
+```
 
-## Utilities
+## Miscellaneous
+
+```@docs
 NNlib.logsumexp
 ```

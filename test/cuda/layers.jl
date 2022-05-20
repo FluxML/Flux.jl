@@ -10,13 +10,8 @@
   @test gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
 end
 
-# TODO: These layers get into scalar indexing
-# `AlphaDropout` throws a compilation error on GPUs,
-# whereas, the rest are scalar indexing issues.
-# The norm layers behave differently on the CPU and
-# the GPU too.
-const BROKEN_LAYERS = Union{DepthwiseConv,
-                            AlphaDropout}
+# TODO: These layers get into scalar indexing issues.
+const BROKEN_LAYERS = Union{}
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
@@ -55,9 +50,9 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
               @test isnothing(xg_gpu)
             else
               if layer === GroupedConvTranspose
-                @test Array(xg_gpu) ≈ xg_cpu rtol=2f-2 atol=1f-3
+                @test Array(xg_gpu) ≈ xg_cpu rtol = 2f-2 atol = 1f-3
               else
-                @test Array(xg_gpu) ≈ xg_cpu rtol=1f-3 atol=1f-3
+                @test Array(xg_gpu) ≈ xg_cpu rtol = 1f-3 atol = 1f-3
               end
             end
           end
@@ -160,8 +155,8 @@ end
   end
 end
 
-@testset "Dense with Zeros bias" begin
-  l = Dense(ones(Float32, 4, 3), Flux.Zeros()) |> gpu
+@testset "Dense without bias" begin
+  l = Dense(ones(Float32, 4, 3), false) |> gpu
   ip = zeros(Float32, 3, 7) |> gpu
 
   @test sum(l(ip)) ≈ 0.f0
@@ -283,5 +278,15 @@ end
     for (pgpu, pcpu) in zip(params(layer_cpu), params(layer_gpu))
       @test gs_cpu[pcpu] ≈ gs_gpu[pgpu]
     end
+  end
+end
+
+@testset "Dropout RNGs" begin
+  @test_throws ArgumentError Flux.dropout(MersenneTwister(), CUDA.rand(Float32, 2, 3), 0.1)
+  @testset for layer in (Dropout, AlphaDropout)
+    m = layer(0.1; rng = MersenneTwister(123))
+    @test_throws ErrorException gpu(m)
+    m = layer(0.1; rng = CUDA.default_rng())
+    @test gpu(m).rng isa CUDA.RNG
   end
 end

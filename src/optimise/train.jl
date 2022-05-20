@@ -1,14 +1,6 @@
-using Juno
+using ProgressLogging: @progress, @withprogress, @logprogress
 import Zygote: Params, gradient
 
-"""
-    update!(x, x̄)
-
-Update the array `x` according to `x .-= x̄`.
-"""
-function update!(x::AbstractArray, x̄)
-  x .-= x̄
-end
 
 """
     update!(opt, p, g)
@@ -20,13 +12,13 @@ according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
 As a result, the parameters are mutated and the optimizer's internal state may change.
 The gradient could be mutated as well.
 """
-function update!(opt, x, x̄)
+function update!(opt::AbstractOptimiser, x, x̄)
   x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
                                           # output are not mutable, see #1510 
   x .-= apply!(opt, x, x̄r)
 end
 
-function update!(opt, xs::Params, gs)
+function update!(opt::AbstractOptimiser, xs::Params, gs)
   for x in xs
     isnothing(gs[x]) && continue
     update!(opt, x, gs[x])
@@ -81,25 +73,48 @@ batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
 """
-    train!(loss, params, data, opt; cb)
+    train!(loss, pars::Params, data, opt::AbstractOptimiser; [cb])
+        
+Uses a `loss` function and training `data` to improve the 
+model's parameters according to a particular optimisation rule `opt`.
 
-For each datapoint `d` in `data`, compute the gradient of  `loss` with
-respect to `params` through backpropagation and call the optimizer `opt`.
+For each `d in data`, first the gradient of the `loss` is computed like this:
+```
+    gradient(() -> loss(d...), pars)  # if d isa Tuple
+    gradient(() -> loss(d), pars)     # otherwise
+```
+Here `pars` is produced by calling [`Flux.params`](@ref) on your model.
+(Or just on the layers you want to train, like `train!(loss, params(model[1:end-2]), data, opt)`.)
+This is the "implicit" style of parameter handling.
 
-If `d` is a tuple of arguments to `loss` call `loss(d...)`, else call `loss(d)`.
+Then, this gradient is used by optimizer `opt` to update the paramters:
+```
+    update!(opt, pars, grads)
+```
+The optimiser should be from the [Flux.Optimise](@ref) module.
+Different optimisers can be combined using [Flux.Optimise.Optimiser](@ref).
 
-A callback is given with the keyword argument `cb`. For example, this will print
-"training" every 10 seconds (using [`Flux.throttle`](@ref)):
+This training loop iterates through `data` once.
+You can use [`@epochs`](@ref) to do this several times, or 
+use for instance `Iterators.repeat` to make a longer `data` iterator.
+
+## Callbacks
+
+[Callbacks](@ref) are given with the keyword argument `cb`.
+For example, this will print "training" every 10 seconds (using [`Flux.throttle`](@ref)):
+```
     train!(loss, params, data, opt, cb = throttle(() -> println("training"), 10))
-
+```
+    
 The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
-Multiple optimisers and callbacks can be passed to `opt` and `cb` as arrays.
+Multiple callbacks can be passed to `cb` as array.
 """
-function train!(loss, ps, data, opt; cb = () -> ())
-  ps = Params(ps)
+function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   cb = runall(cb)
-  @progress for d in data
+  itrsz = Base.IteratorSize(typeof(data))
+  n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
+  @withprogress for (i, d) in enumerate(data)
     try
       gs = gradient(ps) do
         loss(batchmemaybe(d)...)
@@ -115,6 +130,7 @@ function train!(loss, ps, data, opt; cb = () -> ())
         rethrow(ex)
       end
     end
+    @logprogress iszero(n) ? nothing : i / n
   end
 end
 

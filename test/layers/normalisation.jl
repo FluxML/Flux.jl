@@ -4,57 +4,121 @@ using Zygote: pullback
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
-  x = [1.,2.,3.]
-  @test x == Dropout(0.1)(x)
-  @test x == evalwgrad(Dropout(0), x)
-  @test zero(x) == evalwgrad(Dropout(1), x)
+  @testset for rng_kwargs in ((), (; rng = MersenneTwister()))
+    x = [1.0+0im,2.0+1im,3.0+3im]
+    @test x == Dropout(0.1; rng_kwargs...)(x)
+    @test x == evalwgrad(Dropout(0; rng_kwargs...), x)
+    @test zero(x) == evalwgrad(Dropout(1; rng_kwargs...), x)
 
-  x = rand(100)
-  m = Dropout(0.9)
-  y = evalwgrad(m, x)
-  @test count(a->a==0, y) > 50
-  testmode!(m, true)
-  y = evalwgrad(m, x) # should override istraining
-  @test count(a->a==0, y) == 0
-  testmode!(m, false)
-  y = evalwgrad(m, x)
-  @test count(a->a==0, y) > 50
+    x = [1.,2.,3.]
+    @test x == Dropout(0.1; rng_kwargs...)(x)
+    @test x == evalwgrad(Dropout(0; rng_kwargs...), x)
+    @test zero(x) == evalwgrad(Dropout(1; rng_kwargs...), x)
 
-  x = rand(Float32, 100)
-  m = Chain(Dense(100,100),
-            Dropout(0.9))
-  y = evalwgrad(m, x)
-  @test count(a->a == 0, y) > 50
-  testmode!(m, true)
-  y = evalwgrad(m, x) # should override istraining
-  @test count(a->a == 0, y) == 0
+    x = rand(100)
+    m = Dropout(0.9; rng_kwargs...)
+    y = evalwgrad(m, x)
+    @test count(a->a==0, y) > 50
+    testmode!(m, true)
+    y = evalwgrad(m, x) # should override istraining
+    @test count(a->a==0, y) == 0
+    testmode!(m, false)
+    y = evalwgrad(m, x)
+    @test count(a->a==0, y) > 50
 
-  x = rand(100, 50)
-  m = Dropout(0.5, dims = 2)
-  y = m(x)
-  c = map(i->count(a->a==0, @view y[i, :]), 1:100)
-  @test minimum(c) == maximum(c)
-  m = Dropout(0.5, dims = 1)
-  y = m(x)
-  c = map(i->count(a->a==0, @view y[:, i]), 1:50)
-  @test minimum(c) == maximum(c)
+    x = rand(Float32, 100)
+    m = Chain(Dense(100,100),
+              Dropout(0.9; rng_kwargs...))
+    y = evalwgrad(m, x)
+    @test count(a->a == 0, y) > 50
+    testmode!(m, true)
+    y = evalwgrad(m, x) # should override istraining
+    @test count(a->a == 0, y) == 0
 
-  # issue #1084
-  m = Dropout(0.9)
-  x = rand(100)
+    x = rand(100, 50)
+    m = Dropout(0.5; dims = 2, rng_kwargs...)
+    y = m(x)
+    c = map(i->count(a->a==0, @view y[i, :]), 1:100)
+    @test minimum(c) == maximum(c)
+    m = Dropout(0.5; dims = 1, rng_kwargs...)
+    y = m(x)
+    c = map(i->count(a->a==0, @view y[:, i]), 1:50)
+    @test minimum(c) == maximum(c)
 
-  testmode!(m)
-  y = m(x)
-  @test count(a->a == 0, y) == 0
-  trainmode!(m)
-  y = m(x)
-  @test count(a->a == 0, y) > 50
+    # issue #1084
+    m = Dropout(0.9; rng_kwargs...)
+    x = rand(100)
 
-  y = Flux.dropout(x, 0.9, active=true)
-  @test count(a->a == 0, y) > 50
+    testmode!(m)
+    y = m(x)
+    @test count(a->a == 0, y) == 0
+    trainmode!(m)
+    y = m(x)
+    @test count(a->a == 0, y) > 50
 
-  y = Flux.dropout(x, 0.9, active=false)
-  @test count(a->a == 0, y) == 0
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=true)
+    @test count(a->a == 0, y) > 50
+
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=false)
+    @test count(a->a == 0, y) == 0
+
+    # CPU RNGs map onto CPU ok
+    if isempty(rng_kwargs)
+      if VERSION >= v"1.7"
+        @test cpu(m).rng isa Random.TaskLocalRNG
+      else
+        @test cpu(m).rng isa Random._GLOBAL_RNG
+      end
+    else
+      @test cpu(m).rng === only(values(rng_kwargs))
+    end
+  end
+end
+
+@testset "AlphaDropout" begin
+  @testset for rng_kwargs in ((), (; rng = MersenneTwister()))
+    x = [1., 2., 3.]
+    @test x == AlphaDropout(0.1; rng_kwargs...)(x)
+    @test x == evalwgrad(AlphaDropout(0; rng_kwargs...), x)
+    @test zero(x) == evalwgrad(AlphaDropout(1; rng_kwargs...), x)
+
+    x = randn(1000) # large enough to prevent flaky test
+    m = AlphaDropout(0.5; rng_kwargs...)
+
+    y = evalwgrad(m, x)
+    # Should preserve unit mean and variance
+    @test mean(y) ≈ 0 atol=0.2
+    @test var(y) ≈ 1 atol=0.2
+
+    testmode!(m, true) # should override istraining
+    @test evalwgrad(m, x) == x
+
+    testmode!(m, false)
+    y = evalwgrad(m, x)
+    @test mean(y) ≈ 0 atol=0.2
+    @test var(y) ≈ 1 atol=0.2
+
+    # Known good value ranges
+    # Values taken from https://github.com/pytorch/pytorch/blob/v1.10.0/test/cpp/api/modules.cpp#L1337-L1338
+    x = ones(100)
+    if isempty(rng_kwargs)
+      @test 40 < sum(evalwgrad(m, x)) < 130
+    else
+      # FIXME: this breaks spuriously for MersenneTwister
+      @test_skip 40 < sum(evalwgrad(m, x)) < 130
+    end
+
+    # CPU RNGs map onto CPU ok
+    if isempty(rng_kwargs)
+      if VERSION >= v"1.7"
+        @test cpu(m).rng isa Random.TaskLocalRNG
+      else
+        @test cpu(m).rng isa Random._GLOBAL_RNG
+      end
+    else
+      @test cpu(m).rng === only(values(rng_kwargs))
+    end
+  end
 end
 
 @testset "BatchNorm" begin
@@ -62,7 +126,7 @@ end
                              2.0 4.0 6.0]
 
     @test Flux.hasaffine(m) == true
-    @test length(params(m)) == 2
+    @test length(Flux.params(m)) == 2
 
     @test m.β == [0, 0]  # initβ(2)
     @test m.γ == [1, 1]  # initγ(2)
@@ -90,9 +154,15 @@ end
     #  1.3
     #  1.3
     @test m.σ² ≈ .1 .* var(x, dims=2, corrected=false) .* (3 / 2).+ .9 .* [1., 1.]
-    
+
     x′ = m(x)
     @test isapprox(x′[1], (1 .- 0.3) / sqrt(1.3), atol = 1.0e-5)
+
+    @inferred m(x)
+  end
+
+  let m = BatchNorm(2; track_stats=false), x = [1.0 3.0 5.0; 2.0 4.0 6.0]
+    @inferred m(x)
   end
 
   # with activation function
@@ -100,29 +170,34 @@ end
                                       2.0 4.0 6.0]
     y = m(x)
     @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
+    @inferred m(x)
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)
     y = reshape(permutedims(x, [2, 1, 3]), 2, :)
     y = permutedims(reshape(m(y), 2, 3, 1), [2, 1, 3])
     @test m(x) == y
+    @inferred m(x)
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:12), 2, 3, 2, 1)
     y = reshape(permutedims(x, [3, 1, 2, 4]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 3, 1), [2, 3, 1, 4])
     @test m(x) == y
+    @inferred m(x)
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:24), 2, 2, 3, 2, 1)
     y = reshape(permutedims(x, [4, 1, 2, 3, 5]), 2, :)
     y = permutedims(reshape(m(y), 2, 2, 2, 3, 1), [2, 3, 4, 1, 5])
     @test m(x) == y
+    @inferred m(x)
   end
 
   let m = BatchNorm(32), x = randn(Float32, 416, 416, 32, 1);
     m(x)
     @test (@allocated m(x)) <  100_000_000
+    @inferred m(x)
   end
 
   @test length(Flux.params(BatchNorm(10))) == 2
@@ -135,7 +210,7 @@ end
   let m = InstanceNorm(2; affine=true, track_stats=true), sizes = (3, 2, 2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
-      @test length(params(m)) == 2
+      @test length(Flux.params(m)) == 2
       x = Float32.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
@@ -173,6 +248,8 @@ end
       @test length(m.μ) == 2
       @test length(m.σ²) == 2
       @test y ≈ (x .- reshape(m.μ, 1,2,1)) ./ sqrt.(reshape(m.σ², 1,2,1) .+ 1f-5)   atol=1.0e-5
+
+      @inferred m(x)
   end
 
   # with activation function
@@ -183,10 +260,12 @@ end
     affine_shape[[1,3]] .= 1
 
     y = evalwgrad(m, x)
-    y = m(x) # inference time after a training step    
+    y = m(x) # inference time after a training step
     μ = reshape(m.μ, affine_shape...)
     σ² = reshape(m.σ², affine_shape...)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+
+    @inferred m(x)
   end
 
   # with activation function
@@ -194,24 +273,28 @@ end
       x = reshape(collect(1:prod(sizes)), sizes)
 
     @test Flux.hasaffine(m) == true
-    @test length(params(m)) == 2  
+    @test length(Flux.params(m)) == 2
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
     σ² = var(x, dims=1, corrected=false)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+
+    @inferred m(x)
   end
 
   let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
       x = reshape(collect(1:prod(sizes)), sizes)
     @test Flux.hasaffine(m) == false
-    @test length(params(m)) == 0
-    
+    @test length(Flux.params(m)) == 0
+
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
     σ² = var(x, dims=1, corrected=false)
     @test y ≈ sigmoid.((x .- μ) ./ sqrt.(σ² .+ m.ϵ))   atol=1.0e-7
+
+    @inferred m(x)
   end
 
 
@@ -220,6 +303,8 @@ end
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
     @test m(x) == y
+
+    @inferred m(x)
   end
 
   # check that μ, σ², and the output are the correct size for higher rank tensors
@@ -229,6 +314,8 @@ end
     @test size(m.μ) == (sizes[end - 1], )
     @test size(m.σ²) == (sizes[end - 1], )
     @test size(y) == sizes
+
+    @inferred m(x)
   end
 
   # show that instance norm is equal to batch norm when channel and batch dims are squashed
@@ -240,6 +327,8 @@ end
   let m = InstanceNorm(32), x = randn(Float32, 416, 416, 32, 1);
     m(x)
     @test (@allocated m(x)) <  100_000_000
+
+    @inferred m(x)
   end
 
   @test length(Flux.params(InstanceNorm(10))) == 0
@@ -264,10 +353,10 @@ end
 
   m = LayerNorm((2,3,4))
   @test Flux.hasaffine(m) == true
-  @test length(params(m)) == 2
+  @test length(Flux.params(m)) == 2
   m = LayerNorm((2,3,4), affine=false)
   @test Flux.hasaffine(m) == false
-  @test length(params(m)) == 0
+  @test length(Flux.params(m)) == 0
 end
 
 @testset "GroupNorm" begin
@@ -277,7 +366,7 @@ end
   let m = GroupNorm(4,2, track_stats=true), sizes = (3,4,2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
-      @test length(params(m)) == 2
+      @test length(Flux.params(m)) == 2
       x = Float32.(x)
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
@@ -368,4 +457,9 @@ end
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end
+end
+
+@testset "second derivatives" begin
+  m1 = Dropout(0.5)
+  @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
 end

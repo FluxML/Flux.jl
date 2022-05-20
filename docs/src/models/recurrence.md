@@ -8,22 +8,24 @@ To introduce Flux's recurrence functionalities, we will consider the following v
 
 In the above, we have a sequence of length 3, where `x1` to `x3` represent the input at each step (could be a timestamp or a word in a sentence), and `y1` to `y3` are their respective outputs.
 
-An aspect to recognize is that in such model, the recurrent cells `A` all refer to the same structure. What distinguishes it from a simple dense layer is that the cell `A` is fed, in addition to an input `x`, with information from the previous state of the model (hidden state denoted as `h1` & `h2` in the diagram).
+An aspect to recognize is that in such a model, the recurrent cells `A` all refer to the same structure. What distinguishes it from a simple dense layer is that the cell `A` is fed, in addition to an input `x`, with information from the previous state of the model (hidden state denoted as `h1` & `h2` in the diagram).
 
 In the most basic RNN case, cell A could be defined by the following: 
 
 ```julia
-Wxh = randn(Float32, 5, 2)
-Whh = randn(Float32, 5, 5)
-b   = randn(Float32, 5)
+output_size = 5
+input_size = 2
+Wxh = randn(Float32, output_size, input_size)
+Whh = randn(Float32, output_size, output_size)
+b   = randn(Float32, output_size)
 
 function rnn_cell(h, x)
     h = tanh.(Wxh * x .+ Whh * h .+ b)
     return h, h
 end
 
-x = rand(Float32, 2) # dummy data
-h = rand(Float32, 5)  # initial hidden state
+x = rand(Float32, input_size) # dummy input data
+h = rand(Float32, output_size) # random initial hidden state
 
 h, y = rnn_cell(h, x)
 ```
@@ -62,17 +64,29 @@ The `Recur` wrapper stores the state between runs in the `m.state` field.
 
 If we use the `RNN(2, 5)` constructor – as opposed to `RNNCell` – you'll see that it's simply a wrapped cell.
 
-```julia
-julia> RNN(2, 5)
-Recur(RNNCell(2, 5, tanh))
+```jldoctest recurrence
+julia> using Flux
+
+julia> RNN(2, 5)  # or equivalently RNN(2 => 5)
+Recur(
+  RNNCell(2 => 5, tanh),                # 45 parameters
+)         # Total: 4 trainable arrays, 45 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 412 bytes.
 ```
 
 Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also available. 
 
 Using these tools, we can now build the model shown in the above diagram with: 
 
-```julia
-m = Chain(RNN(2, 5), Dense(5, 1))
+```jldoctest recurrence
+julia> m = Chain(RNN(2 => 5), Dense(5 => 1))
+Chain(
+  Recur(
+    RNNCell(2 => 5, tanh),              # 45 parameters
+  ),
+  Dense(5 => 1),                        # 6 parameters
+)         # Total: 6 trainable arrays, 51 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 580 bytes.   
 ```
 In this example, each output has only one component.
 
@@ -80,13 +94,12 @@ In this example, each output has only one component.
 
 Using the previously defined `m` recurrent model, we can now apply it to a single step from our sequence:
 
-```julia
+```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> x = rand(Float32, 2);
 
 julia> m(x)
-2-element Vector{Float32}:
- -0.12852919
-  0.009802654
+1-element Vector{Float32}:
+ 0.45860028
 ```
 
 The `m(x)` operation would be represented by `x1 -> A -> y1` in our diagram.
@@ -98,14 +111,14 @@ iterating the model on a sequence of data.
 
 To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of `length = seq_length` and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
 
-```julia
+```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> x = [rand(Float32, 2) for i = 1:3];
 
 julia> [m(xi) for xi in x]
 3-element Vector{Vector{Float32}}:
- [-0.018976994, 0.61098206]
- [-0.8924057, -0.7512169]
- [-0.34613007, -0.54565114]
+ [0.36080405]
+ [-0.13914406]
+ [0.9310162]
 ```
 
 !!! warning "Use of map and broadcast"
@@ -159,7 +172,7 @@ data = zip(X,Y)
 Flux.reset!(m)
 [m(x) for x in seq_init]
 
-ps = params(m)
+ps = Flux.params(m)
 opt= ADAM(1e-3)
 Flux.train!(loss, ps, data, opt)
 ```
@@ -175,9 +188,39 @@ x = [rand(Float32, 2, 4) for i = 1:3]
 y = [rand(Float32, 1, 4) for i = 1:3]
 ```
 
-That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix).
+That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix). We do not need to use `Flux.reset!(m)` here; each sentence in the batch will output in its own "column", and the outputs of the different sentences won't mix. 
 
-In many situations, such as when dealing with a language model, each batch typically contains independent sentences, so we cannot handle the model as if each batch was the direct continuation of the previous one. To handle such situation, we need to reset the state of the model between each batch, which can be conveniently performed within the loss function:
+To illustrate, we go through an example of batching with our implementation of `rnn_cell`. The implementation doesn't need to change; the batching comes for "free" from the way Julia does broadcasting and the rules of matrix multiplication.
+
+```julia
+output_size = 5
+input_size = 2
+Wxh = randn(Float32, output_size, input_size)
+Whh = randn(Float32, output_size, output_size)
+b   = randn(Float32, output_size)
+
+function rnn_cell(h, x)
+    h = tanh.(Wxh * x .+ Whh * h .+ b)
+    return h, h
+end
+```
+
+Here, we use the last dimension of the input and the hidden state as the batch dimension. I.e., `h[:, n]` would be the hidden state of the nth sentence in the batch.
+
+```julia
+batch_size = 4
+x = rand(Float32, input_size, batch_size) # dummy input data
+h = rand(Float32, output_size, batch_size) # random initial hidden state
+
+h, y = rnn_cell(h, x)
+``` 
+
+```julia
+julia> size(h) == size(y) == (output_size, batch_size)
+true
+```
+
+In many situations, such as when dealing with a language model, the sentences in each batch are independent (i.e. the last item of the first sentence of the first batch is independent from the first item of the first sentence of the second batch), so we cannot handle the model as if each batch was the direct continuation of the previous one. To handle such situations, we need to reset the state of the model between each batch, which can be conveniently performed within the loss function:
 
 ```julia
 function loss(x, y)

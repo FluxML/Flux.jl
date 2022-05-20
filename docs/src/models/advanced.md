@@ -2,6 +2,36 @@
 
 Here we will try and describe usage of some more advanced features that Flux provides to give more control over model building.
 
+## Custom Model Example
+
+Here is a basic example of a custom model. It simply adds the input to the result from the neural network.
+
+```julia
+struct CustomModel
+  chain::Chain
+end
+
+function (m::CustomModel)(x)
+  # Arbitrary code can go here, but note that everything will be differentiated.
+  # Zygote does not allow some operations, like mutating arrays.
+
+  return m.chain(x) + x
+end
+
+# Call @functor to allow for training. Described below in more detail.
+Flux.@functor CustomModel
+```
+
+You can then use the model like:
+
+```julia
+chain = Chain(Dense(10, 10))
+model = CustomModel(chain)
+model(rand(10))
+```
+
+For an intro to Flux and automatic differentiation, see this [tutorial](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html).
+
 ## Customising Parameter Collection for a Model
 
 Taking reference from our example `Affine` layer from the [basics](basics.md#Building-Layers-1).
@@ -44,10 +74,10 @@ this using the slicing features `Chain` provides:
 
 ```julia
 m = Chain(
-      Dense(784, 64, relu),
-      Dense(64, 64, relu),
-      Dense(32, 10)
-    )
+      Dense(784 => 64, relu),
+      Dense(64 => 64, relu),
+      Dense(32 => 10)
+    );
 
 ps = Flux.params(m[3:end])
 ```
@@ -67,7 +97,7 @@ We can freeze a specific parameter of a specific layer which already entered a `
 by simply deleting it from `ps`:
 
 ```julia
-ps = params(m)
+ps = Flux.params(m)
 delete!(ps, m[2].bias) 
 ```
 
@@ -112,10 +142,11 @@ Lastly, we can test our new layer. Thanks to the proper abstractions in Julia, o
 ```julia
 model = Chain(
               Join(vcat,
-                   Chain(Dense(1, 5),Dense(5, 1)), # branch 1
-                   Dense(1, 2),                    # branch 2
-                   Dense(1, 1)),                   # branch 3
-              Dense(4, 1)
+                   Chain(Dense(1 => 5, relu), Dense(5 => 1)), # branch 1
+                   Dense(1 => 2),                             # branch 2
+                   Dense(1 => 1)                              # branch 3
+                  ),
+              Dense(4 => 1)
              ) |> gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
@@ -134,11 +165,11 @@ Join(combine, paths...) = Join(combine, paths)
 # use vararg/tuple version of Parallel forward pass
 model = Chain(
               Join(vcat,
-                   Chain(Dense(1, 5),Dense(5, 1)),
-                   Dense(1, 2),
-                   Dense(1, 1)
+                   Chain(Dense(1 => 5, relu), Dense(5 => 1)),
+                   Dense(1 => 2),
+                   Dense(1 => 1)
                   ),
-              Dense(4, 1)
+              Dense(4 => 1)
              ) |> gpu
 
 xs = map(gpu, (rand(1), rand(1), rand(1)))
@@ -165,14 +196,14 @@ Split(paths...) = Split(paths)
 
 Flux.@functor Split
 
-(m::Split)(x::AbstractArray) = tuple(map(f -> f(x), m.paths))
+(m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
 ```
 
 Now we can test to see that our `Split` does indeed produce multiple outputs.
 ```julia
 model = Chain(
-              Dense(10, 5),
-              Split(Dense(5, 1),Dense(5, 3),Dense(5, 2))
+              Dense(10 => 5),
+              Split(Dense(5 => 1, tanh), Dense(5 => 3, tanh), Dense(5 => 2))
              ) |> gpu
 
 model(gpu(rand(10)))

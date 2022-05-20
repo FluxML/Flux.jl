@@ -1,6 +1,6 @@
 istraining() = false
 
-@adjoint istraining() = true, _ -> nothing
+ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
 
 _isactive(m) = isnothing(m.active) ? istraining() : m.active
 
@@ -10,7 +10,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout(x, p; dims=:, active=true)
+    dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -20,6 +20,9 @@ This is used as a regularisation, i.e. it reduces overfitting during training.
 
 If `active` is `false`, it just returns the input `x`.
 
+Specify `rng` for custom RNGs instead of the default RNG.
+Note that custom RNGs are only supported on the CPU.
+
 Warning: when using this function, you have to manually manage the activation
 state. Usually in fact, dropout is used while training
 but is deactivated in the inference phase. This can be
@@ -28,26 +31,29 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(x, p; dims=:, active::Bool=true)
+function dropout(rng, x, p; dims=:, active::Bool=true)
   active || return x
-  y = dropout_mask(x, p, dims=dims)
+  y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
+dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
-@adjoint function dropout(x, p; dims=:, active::Bool=true)
-  active || return x, Δ -> (Δ, nothing)
-  y = dropout_mask(x, p, dims=dims)
-  return x .* y, Δ -> (Δ .* y, nothing)
-end
-
-function dropout_mask(x, p; dims=:)
-  y = rand!(similar(x, _dropout_shape(x, dims)))
+dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
+dropout_mask(rng, x::CuArray, p; kwargs...) =
+  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
+dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
+function _dropout_mask(rng, x, p; dims=:)
+  realfptype = float(real(eltype(x)))
+  y = rand!(rng, similar(x, realfptype, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
   return y
 end
 
+# TODO move this to NNlib
+ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
+
 """
-    Dropout(p; dims=:)
+    Dropout(p; dims=:, rng = rng_from_array())
 
 Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
 
@@ -55,22 +61,30 @@ To apply dropout along certain dimension(s), specify the `dims` keyword.
 e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
 (also called 2D dropout).
 
+Specify `rng` to use a custom RNG instead of the default.
+Custom RNGs are only supported on the CPU.
+
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 """
-mutable struct Dropout{F,D}
+mutable struct Dropout{F,D,R<:AbstractRNG}
   p::F
   dims::D
   active::Union{Bool, Nothing}
+  rng::R
+end
+Dropout(p, dims, active) = Dropout(p, dims, active, rng_from_array())
+
+function Dropout(p; dims=:, rng = rng_from_array())
+  @assert 0 ≤ p ≤ 1
+  Dropout(p, dims, nothing, rng)
 end
 
-function Dropout(p; dims=:)
-  @assert 0 ≤ p ≤ 1
-  Dropout(p, dims, nothing)
-end
+@functor Dropout
+trainable(a::Dropout) = (;)
 
 function (a::Dropout)(x)
   _isactive(a) || return x
-  return dropout(x, a.p; dims=a.dims, active=true)
+  return dropout(a.rng, x, a.p; dims=a.dims, active=true)
 end
 
 testmode!(m::Dropout, mode=true) =
@@ -83,7 +97,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p)
+    AlphaDropout(p; rng = rng_from_array())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -92,48 +106,55 @@ remain the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
 """
-mutable struct AlphaDropout{F}
+mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
   active::Union{Bool, Nothing}
-  function AlphaDropout(p, active = nothing)
+  rng::R
+  function AlphaDropout(p, active, rng)
     @assert 0 ≤ p ≤ 1
-    new{typeof(p)}(p, active)
+    new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
+AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
+AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
 
-function (a::AlphaDropout)(x)
+@functor AlphaDropout
+trainable(a::AlphaDropout) = (;)
+
+function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
-  λ = eltype(x)(1.0507009873554804934193349852946)
-  α = eltype(x)(1.6732632423543772848170429916717)
-  α1 = eltype(x)(-λ*α)
-  noise = randn(eltype(x), size(x))
-  x = @. x*(noise > (1 - a.p)) + α1 * (noise < (1 - a.p))
-  A = sqrt(a.p + a.p * (1 - a.p) * α1^2)
-  B = -A * α1 * (1 - a.p)
-  x = @. A * x + B
-  return x
+  p = a.p
+  iszero(p) && return x
+  isone(p) && return sign.(x) .* T(0)
+
+  α′ = T(-1.7580993408473766) # selu(-Inf) == -λα
+  A = T(inv(sqrt((1 - p) * (1 + p * α′^2))))
+  B = T(-A * α′ * p)
+
+  noise = rand!(a.rng, similar(x))
+  return A .* ifelse.(noise .> p, x, α′) .+ B
 end
 
 testmode!(m::AlphaDropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
 
 """
-    LayerNorm(sz, λ=identity; affine=true, ϵ=1fe-5)
+    LayerNorm(size..., λ=identity; affine=true, ϵ=1fe-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
-used with recurrent hidden states. 
-The argument `sz` should be an integer or a tuple of integers. 
-In the forward pass, the layer normalises the mean and standard 
+used with recurrent hidden states.
+The argument `sz` should be an integer or a tuple of integers.
+In the forward pass, the layer normalises the mean and standard
 deviation of the input, the applied the elementwise activation `λ`.
 The input is normalised along the first `length(sz)` dimensions
 for tuple `sz`, along the first dimension for integer `sz`.
-The input  is expected to have first dimensions' size equal to `sz`. 
+The input  is expected to have first dimensions' size equal to `sz`.
 
 If `affine=true` also applies a learnable shift and rescaling
-as in the [`Diagonal`](@ref) layer.
+using the [`Scale`](@ref) layer.
 
 
-Se also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
+See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """
 struct LayerNorm{F,D,T,N}
   λ::F
@@ -143,22 +164,20 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(sz, λ=identity; affine=true, ϵ=1f-5)
-  sz = sz isa Integer ? (sz,) : sz
-  diag = affine ? Diagonal(sz...) : nothing
-  return LayerNorm(λ, diag, ϵ, sz, affine)
+function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
+  diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
+  return LayerNorm(λ, diag, ϵ, size, affine)
 end
+LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
+LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
 
 @functor LayerNorm
 
-function (a::LayerNorm)(x)
-  x = normalise(x, dims=1:length(a.size), ϵ=a.ϵ)
-  a.diag === nothing ? a.λ.(x) : a.λ.(a.diag(x))
-end
+(a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
 
 function Base.show(io::IO, l::LayerNorm)
-  print(io, "LayerNorm($(l.size)")
-  l.λ == identity || print(io, ", $(l.λ)")
+  print(io, "LayerNorm(", join(l.size, ", "))
+  l.λ === identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io, ", affine=false")
   print(io, ")")
 end
@@ -167,34 +186,48 @@ end
 # Compute the statistics on the slices specified by reduce_dims.
 # reduce_dims=[1,...,N-2,N] for BatchNorm
 # reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(l, x::AbstractArray{T,N}; reduce_dims, affine_shape) where {T, N}
+function _norm_layer_forward(
+  l, x::AbstractArray{T, N}; reduce_dims, affine_shape,
+) where {T, N}
   if !_isactive(l) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
-  else  # trainmode or testmode without tracked stats
+  else # trainmode or testmode without tracked stats
     μ = mean(x; dims=reduce_dims)
     σ² = mean((x .- μ).^2; dims=reduce_dims)
     if l.track_stats
-      ## update moving mean/std
-      Zygote.ignore() do
-        mtm = l.momentum
-        m = prod(size(x, i) for i in reduce_dims)  # needed for computing corrected var
-        μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
-        σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
-        l.μ = (1-mtm) .* l.μ .+ mtm .* μnew
-        l.σ² = (1-mtm) .* l.σ² .+ mtm .* (m / (m - one(eltype(l.σ²)))) .* σ²new
-      end
+      _track_stats!(l, x, μ, σ², reduce_dims) # update moving mean/std
     end
   end
-  if hasaffine(l)
-    γ = reshape(l.γ, affine_shape)
-    β = reshape(l.β, affine_shape)
-    return l.λ.(γ .* (x .- μ) ./ sqrt.(σ² .+ l.ϵ) .+ β)
-  else
-    return l.λ.((x .- μ) ./ sqrt.(σ² .+ l.ϵ))
-  end
+
+  o = _norm_layer_forward(x, μ, σ², l.ϵ)
+  hasaffine(l) || return l.λ.(o)
+
+  γ = reshape(l.γ, affine_shape)
+  β = reshape(l.β, affine_shape)
+  return l.λ.(γ .* o .+ β)
 end
+
+@inline _norm_layer_forward(x, μ, σ², ϵ) = (x .- μ) ./ sqrt.(σ² .+ ϵ)
+
+function _track_stats!(
+  bn, x::AbstractArray{T, N}, μ, σ², reduce_dims,
+) where {T, N}
+  V = eltype(bn.σ²)
+  mtm = bn.momentum
+  res_mtm = one(V) - mtm
+  m = prod(size(x, i) for i in reduce_dims)
+
+  μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
+  σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
+
+  bn.μ = res_mtm .* bn.μ .+ mtm .* μnew
+  bn.σ² = res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new
+  return nothing
+end
+
+ChainRulesCore.@non_differentiable _track_stats!(::Any...)
 
 """
     BatchNorm(channels::Integer, λ=identity;
@@ -209,15 +242,15 @@ Given an array with `N` dimensions, call the `N-1`th the channel dimension. For
 a batch of feature vectors this is just the data dimension, for `WHCN` images
 it's the usual channel dimension.
 
-`BatchNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×D_N` 
+`BatchNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×D_N`
 input slice and normalises the input accordingly.
 
-If `affine=true`, it also applies  a shift and a rescale to the input 
+If `affine=true`, it also applies  a shift and a rescale to the input
 through to learnable per-channel bias β and scale γ parameters.
 
-After normalisation, elementwise activation `λ` is applied.  
+After normalisation, elementwise activation `λ` is applied.
 
-If `track_stats=true`, accumulates mean and var statistics in training phase 
+If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 
 Use [`testmode!`](@ref) during inference.
@@ -225,9 +258,9 @@ Use [`testmode!`](@ref) during inference.
 # Examples
 ```julia
 m = Chain(
-  Dense(28^2, 64),
+  Dense(28^2 => 64),
   BatchNorm(64, relu),
-  Dense(64, 10),
+  Dense(64 => 10),
   BatchNorm(10),
   softmax)
 ```
@@ -247,7 +280,7 @@ mutable struct BatchNorm{F,V,N,W}
 end
 
 function BatchNorm(chs::Int, λ=identity;
-          initβ=zeros32, initγ=ones32, 
+          initβ=zeros32, initγ=ones32,
           affine=true, track_stats=true,
           ϵ=1f-5, momentum=0.1f0)
 
@@ -257,13 +290,13 @@ function BatchNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return BatchNorm(λ, β, γ,
-            μ, σ², ϵ, momentum, 
-            affine, track_stats, 
+            μ, σ², ϵ, momentum,
+            affine, track_stats,
             nothing, chs)
 end
 
 @functor BatchNorm
-trainable(bn::BatchNorm) = hasaffine(bn) ? (bn.β, bn.γ) : ()
+trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
 
 function (BN::BatchNorm)(x)
   @assert size(x, ndims(x)-1) == BN.chs
@@ -293,19 +326,19 @@ end
 [Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
 `channels` should be the size of the channel dimension in your data (see below).
 
-Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension. 
+Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension.
 For `WHCN` images it's the usual channel dimension.
 
-`InstanceNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×1` 
+`InstanceNorm` computes the mean and variance for each `D_1×...×D_{N-2}×1×1`
 input slice and normalises the input accordingly.
 
-If `affine=true`, it also applies  a shift and a rescale to the input 
+If `affine=true`, it also applies  a shift and a rescale to the input
 through to learnable per-channel bias `β` and scale `γ` parameters.
 
-If `track_stats=true`, accumulates mean and var statistics in training phase 
+If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 
-**Warning**: the defaults for `affine` and `track_stats` used to be `true` 
+**Warning**: the defaults for `affine` and `track_stats` used to be `true`
 in previous Flux versions (< v0.12).
 """
 mutable struct InstanceNorm{F,V,N,W}
@@ -333,13 +366,13 @@ function InstanceNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return InstanceNorm(λ, β, γ,
-            μ, σ², ϵ, momentum, 
+            μ, σ², ϵ, momentum,
             affine, track_stats,
             nothing, chs)
 end
 
 @functor InstanceNorm
-trainable(in::InstanceNorm) = hasaffine(in) ? (in.β, in.γ) : ()
+trainable(in::InstanceNorm) = hasaffine(in) ? (β = in.β, γ = in.γ) : (;)
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
@@ -376,13 +409,13 @@ The number of channels must be an integer multiple of the number of groups.
 
 `channels` should be the size of the channel dimension in your data (see below).
 
-Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension. 
+Given an array with `N > 2` dimensions, call the `N-1`th the channel dimension.
 For `WHCN` images it's the usual channel dimension.
 
-If `affine=true`, it also applies  a shift and a rescale to the input 
+If `affine=true`, it also applies  a shift and a rescale to the input
 through to learnable per-channel bias `β` and scale `γ` parameters.
 
-If `track_stats=true`, accumulates mean and var statistics in training phase 
+If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 """
 mutable struct GroupNorm{F,V,N,W}
@@ -401,10 +434,10 @@ mutable struct GroupNorm{F,V,N,W}
 end
 
 @functor GroupNorm
-trainable(gn::GroupNorm) = hasaffine(gn) ? (gn.β, gn.γ) : ()
+trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
-              initβ=zeros32, initγ=ones32, 
+              initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
@@ -415,11 +448,11 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
   μ = track_stats ? zeros32(G) : nothing
   σ² = track_stats ? ones32(G) : nothing
 
-  return GroupNorm(G, λ, 
+  return GroupNorm(G, λ,
             β, γ,
-            μ, σ², 
-            ϵ, momentum, 
-            affine, track_stats, 
+            μ, σ²,
+            ϵ, momentum,
+            affine, track_stats,
             nothing, chs)
 end
 
@@ -450,7 +483,7 @@ end
 """
   hasaffine(l)
 
-Return `true` if a normalisation layer has trainable shift and 
+Return `true` if a normalisation layer has trainable shift and
 scale parameters, `false` otherwise.
 
 See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).

@@ -26,7 +26,7 @@ When a function has many parameters, we can get gradients of each one at the sam
 julia> f(x, y) = sum((x .- y).^2);
 
 julia> gradient(f, [2, 1], [2, 0])
-([0, 2], [0, -2])
+([0.0, 2.0], [-0.0, -2.0])
 ```
 
 These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
@@ -39,20 +39,20 @@ julia> x = [2, 1];
 
 julia> y = [2, 0];
 
-julia> gs = gradient(params(x, y)) do
+julia> gs = gradient(Flux.params(x, y)) do
          f(x, y)
        end
 Grads(...)
 
 julia> gs[x]
-2-element Vector{Int64}:
- 0
- 2
+2-element Vector{Float64}:
+ 0.0
+ 2.0
 
 julia> gs[y]
-2-element Vector{Int64}:
-  0
- -2
+2-element Vector{Float64}:
+ -0.0
+ -2.0
 ```
 
 Here, `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.
@@ -83,7 +83,7 @@ To improve the prediction we can take the gradients of the loss with respect to 
 ```julia
 using Flux
 
-gs = gradient(() -> loss(x, y), params(W, b))
+gs = gradient(() -> loss(x, y), Flux.params(W, b))
 ```
 
 Now that we have gradients, we can pull them out and update `W` to train the model.
@@ -158,14 +158,14 @@ a(rand(10)) # => 5-element vector
 
 Congratulations! You just built the `Dense` layer that comes with Flux. Flux has many interesting layers available, but they're all things you could have built yourself very easily.
 
-(There is one small difference with `Dense` – for convenience it also takes an activation function, like `Dense(10, 5, σ)`.)
+(There is one small difference with `Dense` – for convenience it also takes an activation function, like `Dense(10 => 5, σ)`.)
 
 ## Stacking It Up
 
 It's pretty common to write models that look something like:
 
 ```julia
-layer1 = Dense(10, 5, σ)
+layer1 = Dense(10 => 5, σ)
 # ...
 model(x) = layer3(layer2(layer1(x)))
 ```
@@ -175,7 +175,7 @@ For long chains, it might be a bit more intuitive to have a list of layers, like
 ```julia
 using Flux
 
-layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
+layers = [Dense(10 => 5, σ), Dense(5 => 2), softmax]
 
 model(x) = foldl((x, m) -> m(x), layers, init = x)
 
@@ -186,8 +186,8 @@ Handily, this is also provided for in Flux:
 
 ```julia
 model2 = Chain(
-  Dense(10, 5, σ),
-  Dense(5, 2),
+  Dense(10 => 5, σ),
+  Dense(5 => 2),
   softmax)
 
 model2(rand(10)) # => 2-element vector
@@ -198,7 +198,7 @@ This quickly starts to look like a high-level deep learning library; yet you can
 A nice property of this approach is that because "models" are just functions (possibly with trainable parameters), you can also see this as simple function composition.
 
 ```julia
-m = Dense(5, 2) ∘ Dense(10, 5, σ)
+m = Dense(5 => 2) ∘ Dense(10 => 5, σ)
 
 m(rand(10))
 ```

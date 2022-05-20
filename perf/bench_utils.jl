@@ -1,13 +1,14 @@
 using BenchmarkTools
 using Flux
 using CUDA
-using Zygote: pullback
+using Zygote: pullback, ignore
 
 
 fw(m, x) = m(x)
 bw(back) = back(1f0)
-fwbw(m, ps, x) = gradient(() -> sum(m(x)), ps)
-  
+fwbw(m, ps, x) = gradient(() -> sum(fw(m, x)), ps)
+pb(m, ps, x) = pullback(() -> sum(fw(m, x)), ps)
+
 function run_benchmark(model, x; cuda=true)
     
     if cuda 
@@ -16,7 +17,7 @@ function run_benchmark(model, x; cuda=true)
     end
 
     ps = Flux.params(model)
-    y, back = pullback(() -> sum(model(x)), ps)
+    y, back =  pb(model, ps, x)
 
 
     if cuda

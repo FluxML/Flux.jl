@@ -14,44 +14,60 @@ julia> m = Chain(x -> x^2, x -> x+1);
 julia> m(5) == 26
 true
 
-julia> m = Chain(Dense(10, 5, tanh), Dense(5, 2));
+julia> m = Chain(Dense(10 => 5, tanh), Dense(5 => 2));
 
 julia> x = rand(10, 32);
 
 julia> m(x) == m[2](m[1](x))
 true
 
-julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10, 5, tanh)), 
-                  dec = Dense(5, 2));
+julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10 => 5, tanh)), 
+                  dec = Dense(5 => 2));
 
 julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
+
+For large models, there is a special type-unstable path which can reduce compilation
+times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
+This feature is somewhat experimental, beware!
 """
-struct Chain{T}
+struct Chain{T<:Union{Tuple, NamedTuple, AbstractVector}}
   layers::T
-  Chain(xs...) = new{typeof(xs)}(xs)
-  function Chain(; kw...)
-    :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
-    isempty(kw) && return new{Tuple{}}(())
-    new{typeof(values(kw))}(values(kw))
-  end
+end
+
+Chain(xs...) = Chain(xs)
+function Chain(; kw...)
+  :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+  isempty(kw) && return Chain(())
+  Chain(values(kw))
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
-  Base.iterate, Base.lastindex, Base.keys
+  Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
-functor(::Type{<:Chain}, c) = c.layers, ls -> Chain(ls...)
+@functor Chain
 
-applychain(::Tuple{}, x) = x
-applychain(fs::Tuple, x) = applychain(tail(fs), first(fs)(x))
+(c::Chain)(x) = applychain(c.layers, x)
 
-(c::Chain)(x) = applychain(Tuple(c.layers), x)
+@generated function applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+  symbols = vcat(:x, [gensym() for _ in 1:N])
+  calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
+  Expr(:block, calls...)
+end
 
-Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i]...)
-Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) = 
-  Chain(; NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i])...)
+applychain(layers::NamedTuple, x) = applychain(Tuple(layers), x)
 
+function applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
+  for f in layers
+    x = f(x)
+  end
+  x
+end
+
+Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
+Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
+  Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)
@@ -59,6 +75,7 @@ function Base.show(io::IO, c::Chain)
 end
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+_show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -80,10 +97,10 @@ extraChain(::Tuple{}, x) = ()
 
 
 """
-    Dense(in, out, σ=identity; bias=true, init=glorot_uniform)
+    Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
     Dense(W::AbstractMatrix, [bias, σ])
 
-Create a traditional `Dense` layer, whose forward pass is given by:
+Create a traditional fully connected layer, whose forward pass is given by:
 
     y = σ.(W * x .+ bias)
 
@@ -99,8 +116,8 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 
 # Examples
 ```jldoctest
-julia> d = Dense(5, 2)
-Dense(5, 2)         # 12 parameters
+julia> d = Dense(5 => 2)
+Dense(5 => 2)       # 12 parameters
 
 julia> d(rand(Float32, 5, 64)) |> size
 (2, 64)
@@ -109,7 +126,7 @@ julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimension
 (2, 1, 1, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
-Dense(5, 2, tanh; bias=false)  # 10 parameters
+Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
 julia> d1(ones(5))
 2-element Vector{Float64}:
@@ -130,128 +147,151 @@ struct Dense{F, M<:AbstractMatrix, B}
   end
 end
 
-function Dense(in::Integer, out::Integer, σ = identity;
-               initW = nothing, initb = nothing,
-               init = glorot_uniform, bias=true)
-
-  W = if initW !== nothing
-    Base.depwarn("keyword initW is deprecated, please use init (which similarly accepts a funtion like randn)", :Dense)
-    initW(out, in)
-  else
-    init(out, in)
-  end
-
-  b = if bias === true && initb !== nothing
-    Base.depwarn("keyword initb is deprecated, please simply supply the bias vector, bias=initb(out)", :Dense)
-    initb(out)
-  else
-    bias
-  end
-
-  return Dense(W, b, σ)
+function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
+               init = glorot_uniform, bias = true)
+  Dense(init(out, in), bias, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  W, b, σ = a.weight, a.bias, a.σ
-  return σ.(W*x .+ b)
+  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
+  return σ.(a.weight * x .+ a.bias)
 end
 
 (a::Dense)(x::AbstractArray) = 
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.weight, 2), ", ", size(l.weight, 1))
+  print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
-  l.bias == Zeros() && print(io, "; bias=false")
+  l.bias == false && print(io, "; bias=false")
   print(io, ")")
 end
 
 """
-    Diagonal(α, β)
-    Diagonal(size::Integer...)
+    Scale(size::Integer..., σ=identity; bias=true, init=ones32)
+    Scale(scale::AbstractArray, [bias, σ])
 
-Create an element-wise linear layer, which performs
+Create an element-wise layer, whose forward pass is given by:
 
-    y = α .* x .+ β
+    y = σ.(scale .* x .+ bias)
 
-The learnable arrays are initialised `α = ones(Float32, size)` and
-`β = zeros(Float32, size)`.
+This uses `.*` instead of matrix multiplication `*` of [`Dense`](@ref).
+    
+The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
+with `init=ones32` by default. You may specify the function `init`, 
+turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
-Used by [`LayerNorm`](@ref).
-"""
-struct Diagonal{T}
-  α::T
-  β::T
-end
-
-function Diagonal(sz::Integer...; initα = nothing, initβ = nothing)
-  α = if initα !== nothing
-    Base.depwarn("keyword initα is deprecated, please simply supply the desired vectors", :Diagonal)
-    initα(sz...)
-  else
-    ones32(sz...)
-  end
-  β = if initβ !== nothing
-    Base.depwarn("keyword initβ is deprecated, please simply supply the desired vectors", :Diagonal)
-    initβ(sz...)
-  else
-    zeros32(sz...)
-  end
-  Diagonal(α, β)
-end
-
-@functor Diagonal
-
-(a::Diagonal)(x) = a.α .* x .+ a.β
-
-function Base.show(io::IO, l::Diagonal)
-  print(io, "Diagonal(", join(size(l.α), ", "), ")")
-end
-
-"""
-    Maxout(over)
-
-The [Maxout](https://arxiv.org/abs/1302.4389) layer has a number of
-internal layers which all receive the same input. It returns the elementwise
-maximum of the internal layers' outputs.
-
-Maxout over linear dense layers satisfies the univeral approximation theorem.
-"""
-struct Maxout{FS<:Tuple}
-    over::FS
-end
-
-"""
-    Maxout(f, n_alts)
-
-Construct a Maxout layer over `n_alts` instances of the layer given by `f`.
-The function takes no arguments and should return some callable layer.
-Conventionally, this is a linear dense layer.
+Used by [`LayerNorm`](@ref) with `affine=true`.
 
 # Examples
-
-This constructs a `Maxout` layer over 4 internal dense linear layers, each
-identical in structure (784 inputs, 128 outputs):
 ```jldoctest
-julia> insize = 784;
+julia> a = Flux.Scale(2)
+Scale(2)            # 4 parameters
 
-julia> outsize = 128;
+julia> Flux.params(a)
+Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
 
-julia> Maxout(()->Dense(insize, outsize), 4);
+julia> a([1 2 3])
+2×3 Matrix{Float32}:
+ 1.0  2.0  3.0
+ 1.0  2.0  3.0
+
+julia> b = Flux.Scale([1 2 3 4], false, abs2)
+Scale(1, 4, abs2; bias=false)  # 4 parameters
+
+julia> b([1, 10])
+2×4 Matrix{Int64}:
+   1    4    9    16
+ 100  400  900  1600
+
+julia> Flux.params(b)
+Params([[1 2 3 4]])
 ```
 """
-function Maxout(f, n_alts)
-  over = Tuple(f() for _ in 1:n_alts)
-  return Maxout(over)
+struct Scale{F, A<:AbstractArray, B}
+  scale::A
+  bias::B
+  σ::F
+  function Scale(scale::A, bias::B = true, σ::F = identity) where {A<:AbstractArray, B<:Union{Bool, AbstractArray}, F}
+    b = create_bias(scale, bias, size(scale)...)
+    new{F, A, typeof(b)}(scale, b, σ)
+  end
 end
+
+Scale(s1::Integer, s23::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(s1, s23...), bias, _act)
+Scale(size_act...; bias = true, init = ones32) = Scale(size_act[1:end-1]...; bias, init, _act = size_act[end])
+
+@functor Scale
+
+function (a::Scale)(x::AbstractArray)
+  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
+  σ.(a.scale .* x .+ a.bias)
+end
+
+function Base.show(io::IO, l::Scale)
+  print(io, "Scale(", join(size(l.scale), ", "))
+  l.σ == identity || print(io, ", ", l.σ)
+  l.bias == false && print(io, "; bias=false")
+  print(io, ")")
+end
+
+"""
+    Maxout(layers...)
+    Maxout(f, n_alts)
+
+This contains a number of internal layers, each of which receives the same input.
+Its output is the elementwise maximum of the the internal layers' outputs.
+
+Instead of defining layers individually, you can provide a zero-argument function
+which constructs them, and the number to construct.
+
+Maxout over linear dense layers satisfies the univeral approximation theorem.
+See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks" 
+[https://arxiv.org/abs/1302.4389](1302.4389).
+
+See also [`Parallel`](@ref) to reduce with other operators.
+
+# Examples
+```
+julia> m = Maxout(x -> abs2.(x), x -> x .* 3);
+
+julia> m([-2 -1 0 1 2])
+1×5 Matrix{Int64}:
+ 4  1  0  3  6
+
+julia> m3 = Maxout(() -> Dense(5 => 7, tanh), 3)
+Maxout(
+  Dense(5 => 7, tanh),                  # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
+  Dense(5 => 7, tanh),                  # 42 parameters
+)                   # Total: 6 arrays, 126 parameters, 888 bytes.
+
+julia> Flux.outputsize(m3, (5, 11))
+(7, 11)
+```
+"""
+struct Maxout{T<:Tuple}
+  layers::T
+end
+Maxout(layers...) = Maxout(layers)
+Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
 
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
-    mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.over)
+  # Perhaps surprisingly, pairwise max broadcast is often faster,
+  # even with Zygote. See #698 and #1794
+  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.layers)
 end
+
+function Base.show(io::IO, mo::Maxout)
+  print(io, "Maxout(")
+  _show_layers(io, mo.layers)
+  print(io, ")")
+end
+
 
 """
     SkipConnection(layer, connection)
@@ -277,6 +317,8 @@ julia> sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3));
 julia> size(sm(x)) == (5, 5, 11, 10)
 true
 ```
+
+See also [`Parallel`](@ref), [`Maxout`](@ref).
 """
 struct SkipConnection{T,F}
   layers::T
@@ -294,22 +336,24 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    Bilinear(in1, in2, out, σ=identity; bias=true, init=glorot_uniform)
+    Bilinear((in1, in2) => out, σ=identity; bias=true, init=glorot_uniform)
     Bilinear(W::AbstractArray, [bias, σ])
 
-Creates a Bilinear layer, which operates on two inputs at the same time.
+Creates a layer which is fully connected between two inputs and the output, and otherwise similar to [`Dense`](@ref).
 Its output, given vectors `x` & `y`, is another vector `z` with,
 for all `i ∈ 1:out`:
 
     z[i] = σ(x' * W[i,:,:] * y + bias[i])
 
 If `x` and `y` are matrices, then each column of the output `z = B(x, y)` is of this form,
-with `B` a Bilinear layer.
+with `B` the Bilinear layer.
 
-If `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
+If the second input `y` is not given, it is taken to be equal to `x`, i.e. `B(x) == B(x, x)`
 
 The two inputs may also be provided as a tuple, `B((x, y)) == B(x, y)`,
 which is accepted as the input to a `Chain`.
+
+If the two input sizes are the same, `in1 == in2`, then you may write `Bilinear(in => out, σ)`.
 
 The initialisation works as for [`Dense`](@ref) layer, with `W = init(out, in1, in2)`.
 By default the bias vector is `zeros(Float32, out)`, option `bias=false` will switch off
@@ -319,7 +363,8 @@ trainable bias. Either of these may be provided explicitly.
 ```jldoctest
 julia> x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
 
-julia> B = Flux.Bilinear(5, 5, 7);
+julia> B = Flux.Bilinear((5, 5) => 7)
+Bilinear(5 => 7)    # 182 parameters
 
 julia> B(x) |> size  # interactions based on one input
 (7, 32)
@@ -328,15 +373,15 @@ julia> B(x,y) == B((x,y))  # two inputs, may be given as a tuple
 true
 
 julia> sc = SkipConnection(
-                Chain(Dense(5, 20, tanh), Dense(20, 9, tanh)),
-                Flux.Bilinear(9, 5, 3, bias=false),
+                Chain(Dense(5 => 20, tanh), Dense(20 => 9, tanh)),
+                Flux.Bilinear((9, 5) => 3, bias=false),
             );  # used as the recombinator, with skip as the second input
 
 julia> sc(x) |> size
 (3, 32)
 
 julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
-Bilinear(8, 16, 4, tanh, bias=false)
+Bilinear((8, 16) => 4, tanh; bias=false)  # 512 parameters
 ```
 """
 struct Bilinear{F,A,B}
@@ -352,10 +397,11 @@ end
 
 @functor Bilinear
 
-function Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity;
-                  init = glorot_uniform, bias = true)
+function Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity;
+                  bias = true, init = glorot_uniform)
   Bilinear(init(out, in1, in2), bias, σ)
 end
+Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear((in12, in12) => out, σ; kw...)
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   W, b, σ = a.weight, a.bias, a.σ
@@ -380,9 +426,13 @@ end
 (a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x[1], x[2])
 
 function Base.show(io::IO, l::Bilinear)
-  print(io, "Bilinear(", size(l.weight, 2), ", ", size(l.weight, 3), ", ", size(l.weight, 1))
+  if size(l.weight, 2) == size(l.weight, 3)
+    print(io, "Bilinear(", size(l.weight, 2), " => ", size(l.weight, 1))
+  else
+    print(io, "Bilinear((", size(l.weight, 2), ", ", size(l.weight, 3), ") => ", size(l.weight, 1))
+  end
   l.σ == identity || print(io, ", ", l.σ)
-  l.bias == Flux.Zeros() && print(io, ", bias=false")
+  l.bias === false && print(io, "; bias=false")
   print(io, ")")
 end
 
@@ -390,21 +440,24 @@ end
     Parallel(connection, layers...)
     Parallel(connection; name = layer, ...)
 
-Create a 'Parallel' layer that passes an input array to each path in
+Create a layer which passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
-Called with one input `x`, this is equivalent to `reduce(connection, [l(x) for l in layers])`.
-If called with multiple inputs, they are `zip`ped with the layers, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
+If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
 
+See also [`SkipConnection`](@ref) which is `Parallel` with one `identity`,
+and [`Maxout`](@ref) which reduces by broadcasting `max`.
+
 # Examples
 
 ```jldoctest
-julia> model = Chain(Dense(3, 5),
-                     Parallel(vcat, Dense(5, 4), Chain(Dense(5, 7), Dense(7, 4))),
-                     Dense(8, 17));
+julia> model = Chain(Dense(3 => 5),
+                     Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
+                     Dense(8 => 17));
 
 julia> model(rand(3)) |> size
 (17,)
@@ -412,8 +465,8 @@ julia> model(rand(3)) |> size
 julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
 Parallel(
   +,
-  α = Dense(10, 2, tanh),               # 22 parameters
-  β = Dense(5, 2),                      # 12 parameters
+  α = Dense(10 => 2, tanh),             # 22 parameters
+  β = Dense(5 => 2),                    # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
 julia> model2(rand(10), rand(5)) |> size
@@ -426,7 +479,7 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T}
+struct Parallel{F, T<:Union{Tuple, NamedTuple}}
   connection::F
   layers::T
 end
@@ -436,24 +489,30 @@ function Parallel(connection; kw...)
   layers = NamedTuple(kw)
   if :layers in Base.keys(layers) || :connection in Base.keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
-  elseif isempty(layers)
-    Parallel(connection, ())
   end
+  isempty(layers) && return Parallel(connection, ())
   Parallel(connection, layers)
 end
 
 @functor Parallel
 
-(m::Parallel)(x) = mapreduce(f -> f(x), m.connection, Tuple(m.layers))
-(m::Parallel)(xs...) = mapreduce((f, x) -> f(x), m.connection, Tuple(m.layers), xs)
+(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs::Tuple) = m(xs...)
+function (m::Parallel)(xs...)
+  nl = length(m.layers)
+  nx = length(xs)
+  if nl != nx
+    throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+  end
+  m.connection(map(|>, xs, Tuple(m.layers))...)
+end
 
 Base.getindex(m::Parallel, i) = m.layers[i]
-Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i]...)
+Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
+Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector) =
+  Parallel(m.connection, NamedTuple{Base.keys(m)[i]}(Tuple(m.layers)[i]))
 
 Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
-
-trainable(m::Parallel) = (m.connection, m.layers...)
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
@@ -462,39 +521,33 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-    Embedding(in, out; init=randn)
+    Embedding(in => out; init=randn)
 
 A lookup table that stores embeddings of dimension `out` 
-for a vocabulary of size `in`. 
+for a vocabulary of size `in`.
 
-This layers is often used to store word embeddings and retrieve them using indices. 
+This layer is often used to store word embeddings and retrieve them using indices. 
 The input to the layer can be either a vector of indexes
 or the corresponding [onehot encoding](@ref Flux.OneHotArray). 
 
 # Examples
-
-```julia-repl
-julia> using Flux: Embedding
-
+```jldoctest
 julia> vocab_size, embed_size = 1000, 4;
 
-julia> model = Embedding(vocab_size, embed_size)
-Embedding(1000, 4)
+julia> model = Flux.Embedding(vocab_size => embed_size)
+Embedding(1000 => 4)  # 4_000 parameters
 
-julia> vocab_idxs = [1, 722, 53, 220, 3]
+julia> vocab_idxs = [1, 722, 53, 220, 3];
 
-julia> x = OneHotMatrix(vocab_idxs, vocab_size);
+julia> x = Flux.OneHotMatrix(vocab_idxs, vocab_size); summary(x)
+"1000×5 OneHotMatrix(::Vector{Int64}) with eltype Bool"
 
-julia> model(x)
-4×5 Matrix{Float32}:
-  0.91139    0.670462    0.463217   0.670462    0.110932
-  0.247225  -0.0823874   0.698694  -0.0823874   0.945958
- -0.393626  -0.590136   -0.545422  -0.590136    0.77743
- -0.497621   0.87595    -0.870251   0.87595    -0.772696
-```
+julia> model(x) |> summary
+"4×5 Matrix{Float32}"
 
 julia> model(vocab_idxs) == model(x)
 true
+```
 """
 struct Embedding{W}
   weight::W
@@ -502,18 +555,17 @@ end
 
 @functor Embedding
 
-Embedding(in::Integer, out::Integer; init = randn32) = Embedding(init(out, in))
+Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
   
-
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
 function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-    size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
+  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
   return m(onecold(x))
 end
  
 function Base.show(io::IO, m::Embedding)
-  print(io, "Embedding($(size(m.weight, 2)), $(size(m.weight, 1)))")
+  print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end

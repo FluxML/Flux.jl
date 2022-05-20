@@ -1,6 +1,7 @@
 using Flux, Test, CUDA
 using Zygote
 using Zygote: pullback
+using Random
 
 @info "Testing GPU Support"
 CUDA.allowscalar(false)

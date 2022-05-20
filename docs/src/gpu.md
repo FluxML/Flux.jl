@@ -39,49 +39,65 @@ Note that we convert both the parameters (`W`, `b`) and the data set (`x`, `y`) 
 If you define a structured model, like a `Dense` layer or `Chain`, you just need to convert the internal parameters. Flux provides `fmap`, which allows you to alter all parameters of a model at once.
 
 ```julia
-d = Dense(10, 5, σ)
+d = Dense(10 => 5, σ)
 d = fmap(cu, d)
 d.weight # CuArray
 d(cu(rand(10))) # CuArray output
 
-m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+m = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax)
 m = fmap(cu, m)
 d(cu(rand(10)))
 ```
 
-As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing, but loading `CUDA` will cause it to move data to the GPU instead.
+As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing. So, you can safely call `gpu` on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If the GPU library (CUDA.jl) loads successfully, `gpu` will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a `CuArray`.
 
 ```julia
 julia> using Flux, CUDA
 
-julia> m = Dense(10,5) |> gpu
-Dense(10, 5)
+julia> m = Dense(10, 5) |> gpu
+Dense(10 => 5)      # 55 parameters
 
 julia> x = rand(10) |> gpu
-10-element CuArray{Float32,1}:
- 0.800225
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.066846445
  ⋮
- 0.511655
+ 0.76706964
 
 julia> m(x)
-5-element CuArray{Float32,1}:
- -0.30535
+5-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ -0.99992573
  ⋮
- -0.618002
+ -0.547261
 ```
 
 The analogue `cpu` is also available for moving models and data back off of the GPU.
 
 ```julia
 julia> x = rand(10) |> gpu
-10-element CuArray{Float32,1}:
- 0.235164
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.8019236
  ⋮
- 0.192538
+ 0.7766742
 
 julia> x |> cpu
-10-element Array{Float32,1}:
- 0.235164
+10-element Vector{Float32}:
+ 0.8019236
  ⋮
- 0.192538
+ 0.7766742
 ```
+
+## Disabling CUDA or choosing which GPUs are visible to Flux
+
+Sometimes it is required to control which GPUs are visible to `julia` on a system with multiple GPUs or disable GPUs entirely. This can be achieved with an environment variable `CUDA_VISIBLE_DEVICES`.
+
+To disable all devices:
+```
+$ export CUDA_VISIBLE_DEVICES='-1'
+```
+To select specific devices by device id:
+```
+$ export CUDA_VISIBLE_DEVICES='0,1'
+```
+
+
+More information for conditional use of GPUs in CUDA.jl can be found in its [documentation](https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use), and information about the specific use of the variable is described in the [Nvidia CUDA blogpost](https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/).

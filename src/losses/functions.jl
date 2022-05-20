@@ -44,7 +44,7 @@ julia> Flux.mse(y_model, y_true)
 """
 function mse(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
-  agg((ŷ .- y) .^ 2)
+  agg(abs2.(ŷ .- y))
 end
 
 """
@@ -525,6 +525,23 @@ function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
     _check_sizes(ŷ, y)
     ŷ = ŷ .+ ϵ
     agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
+end
+
+"""
+    siamese_contrastive_loss(ŷ, y; margin = 1, agg = mean)
+                                    
+Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
+which can be useful for training Siamese Networks. It is given by
+                                    
+    agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)                           
+                                 
+Specify `margin` to set the baseline for distance at which pairs are dissimilar.
+                                    
+"""
+function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
+    _check_sizes(ŷ, y)
+    margin < 0 && throw(DomainError(margin, "Margin must be non-negative"))
+    return agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)
 end
 
 ```@meta

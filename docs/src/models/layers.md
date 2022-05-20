@@ -23,9 +23,8 @@ DepthwiseConv
 ConvTranspose
 CrossCor
 SamePad
-flatten
+Flux.flatten
 Flux.convfilter
-Flux.depthwiseconvfilter
 ```
 
 ## Upsampling Layers
@@ -57,7 +56,7 @@ Maxout
 SkipConnection
 Parallel
 Flux.Bilinear
-Flux.Diagonal
+Flux.Scale
 Flux.Embedding
 ```
 

@@ -14,7 +14,7 @@ loss(x, y) = sum((predict(x) .- y).^2)
 x, y = rand(5), rand(2) # Dummy data
 l = loss(x, y) # ~ 3
 
-θ = params(W, b)
+θ = Flux.params(W, b)
 grads = gradient(() -> loss(x, y), θ)
 ```
 

@@ -14,7 +14,7 @@
   m = Chain(Dense(10, 8, σ), Dense(8, 4), Dense(5, 2))
   @test_throws DimensionMismatch outputsize(m, (10,))
 
-  m = Flux.Diagonal(10)
+  m = Flux.Scale(10)
   @test outputsize(m, (10, 1)) == (10, 1)
 
   m = Maxout(() -> Conv((3, 3), 3 => 16), 2)
@@ -23,7 +23,7 @@
   m = flatten
   @test outputsize(m, (5, 5, 3, 10)) == (75, 10)
 
-  m = Flux.unsqueeze(3)
+  m = Flux.unsqueeze(dims=3)
   @test outputsize(m, (5, 7, 13)) == (5, 7, 1, 13)
 
   m = Flux.Bilinear(10, 10, 7)

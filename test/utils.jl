@@ -1,19 +1,12 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
-             kaiming_normal, kaiming_uniform, orthogonal,
-             sparse_init, stack, unstack, Zeros, batch, unbatch,
-             unsqueeze
+             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
+             sparse_init, identity_init, stack, unstack, batch, unbatch,
+             unsqueeze, params, loadparams!, loadmodel!
 using StatsBase: var, std
+using Statistics, LinearAlgebra
 using Random
 using Test
-
-@testset "unsqueeze" begin
-  x = randn(2, 3, 2)
-  @test @inferred(unsqueeze(x, 1)) == reshape(x, 1, 2, 3, 2)
-  @test @inferred(unsqueeze(x, 2)) == reshape(x, 2, 1, 3, 2)
-  @test @inferred(unsqueeze(x, 3)) == reshape(x, 2, 3, 1, 2)
-  @test @inferred(unsqueeze(x, 4)) == reshape(x, 2, 3, 2, 1)
-end
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
@@ -76,18 +69,49 @@ end
     @test nfan(2, 3, 4, 50, 60) == (2 * 3 * 4 * 50, 2 * 3 * 4 * 60) #For 3D Conv layer
   end
 
-  @testset "glorot" begin
+  @testset "Basics: $init" for init in [
+      glorot_uniform, glorot_normal, 
+      kaiming_uniform, kaiming_normal, 
+      orthogonal, 
+      sparse_init,
+      truncated_normal,
+      identity_init,
+      Flux.rand32,
+      Flux.randn32,
+    ]
+    if init == sparse_init
+      init = (args...) -> sparse_init(args...; sparsity=0.5)
+    else
+      # sparse_init is the only one which accepts only matrices:
+      @test size(init(3)) == (3,)
+      @test size(init(3, 4, 5)) == (3, 4, 5)
+    end
+    @test size(init(3, 4)) == (3, 4)
+    # only init(size...) is accepted:
+    @test_throws MethodError size(init((3, 4, 5))) == (3, 4, 5)
+
+    # rng, and currying:
+    @test size(init(MersenneTwister(1), 3, 4)) == (3, 4)
+    closure = init(MersenneTwister(1))
+    @test size(closure(3, 4)) == (3, 4)
+
+    # eltype, default Float32
+    @test eltype(init(3, 4)) == Float32
+
+    # @non_differentiable
+    @test gradient(x -> sum(x .* init(3, 4)), 5.0)[1] isa Number
+  end
+
+  @testset "glorot: $init" for init ∈ [glorot_uniform, glorot_normal]
     # glorot_uniform and glorot_normal should both yield a kernel with
     # variance ≈ 2/(fan_in + fan_out)
     for dims ∈ [(1000,), (100, 100), (100, 400), (2, 3, 32, 64), (2, 3, 4, 32, 64)]
-      for init ∈ [glorot_uniform, glorot_normal]
         v = init(dims...)
         fan_in, fan_out = nfan(dims...)
         σ2 = 2 / (fan_in + fan_out)
         @test 0.9σ2 < var(v) < 1.1σ2
-        @test eltype(v) == Float32
-      end
     end
+    @test eltype(init(3, 4; gain=1.5)) == Float32
   end
 
   @testset "kaiming" begin
@@ -98,13 +122,13 @@ end
       σ2 = sqrt(6/n_out)
       @test -1σ2  < minimum(v) < -0.9σ2
       @test 0.9σ2  < maximum(v) < 1σ2
-      @test eltype(v) == Float32
 
       v = kaiming_normal(n_in, n_out)
       σ2 = sqrt(2/n_out)
       @test 0.9σ2 < std(v) < 1.1σ2
-      @test eltype(v) == Float32
     end
+    @test eltype(kaiming_uniform(3, 4; gain=1.5)) == Float32
+    @test eltype(kaiming_normal(3, 4; gain=1.5)) == Float32
   end
 
   @testset "orthogonal" begin
@@ -120,6 +144,7 @@ end
       v = reshape(v, (rows,cols))
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
+    @test eltype(orthogonal(3, 4; gain=1.5)) == Float32
   end
 
   @testset "sparse_init" begin
@@ -132,30 +157,48 @@ end
     @test_throws ArgumentError sparse_init(100, 100, 100, sparsity=0.1)
     v = sparse_init(100, 100, sparsity=-0.1)
     @test sum(v .== 0) == 0
-    @test eltype(v) == Float32
     v = sparse_init(100, 100, sparsity=1.1)
     @test sum(v .== 0) == length(v)
-    @test eltype(v) == Float32
 
     for (n_in, n_out, sparsity, σ) in [(100, 100, 0.25, 0.1), (100, 400, 0.75, 0.01)]
       expected_zeros = ceil(Integer, n_in * sparsity)
       v = sparse_init(n_in, n_out, sparsity=sparsity, std=σ)
       @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
       @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
-      @test eltype(v) == Float32
+    end
+
+    @test eltype(sparse_init(3, 4; std=1.5, sparsity=0.5)) == Float32
+  end
+
+  @testset "truncated_normal" begin
+    m = truncated_normal(100, 100)
+    @test minimum(m) ≈ -2 atol = 0.05  # default arguments
+    @test maximum(m) ≈ 2 atol = 0.05
+    @test mean(m) ≈ 0 atol = 0.1
+
+    size100 = (100, 100, 100)
+    for (μ, σ, lo, hi) in [(0.0, 1, -2, 3), (1, 2, -4.0, 5.0)]
+      v = truncated_normal(size100...; mean = μ, std = σ, lo, hi)
+      @test isapprox(mean(v), μ; atol = 1f-1)
+      @test isapprox(minimum(v), lo; atol = 1f-2)
+      @test isapprox(maximum(v), hi; atol = 1f-2)
+      @test eltype(v) == Float32  # despite some Float64 arguments
+    end
+    for (μ, σ, lo, hi) in [(6, 2, -100.0, 100), (-7.0, 10, -100, 100)]
+      v = truncated_normal(size100...; mean = μ, std = σ, lo, hi)
+      @test isapprox(mean(v), μ; atol = 1f-1)
+      @test isapprox(std(v), σ; atol = 1f-1)
     end
   end
 
-  @testset "partial_application" begin
-    big = 1e9
+  @testset "Partial application" begin
+    partial_ku = kaiming_uniform(gain=1e9)
+    @test maximum(partial_ku(8, 8)) > 1e9 / 2
+    @test maximum(partial_ku(8, 8, gain=1)) < 1e9 / 2
 
-    partial_ku = kaiming_uniform(gain=big)
-    @test maximum(partial_ku(8, 8)) > big / 2
-    @test maximum(partial_ku(8, 8, gain=1)) < big / 2
-
-    partial_kn = kaiming_normal(gain=big)
-    @test maximum(partial_kn(8, 8)) > big / 2
-    @test maximum(partial_kn(8, 8, gain=1)) < big / 2
+    partial_kn = kaiming_normal(gain=1e9)
+    @test maximum(partial_kn(8, 8)) > 1e9 / 2
+    @test maximum(partial_kn(8, 8, gain=1)) < 1e9 / 2
 
     partial_si = sparse_init(sparsity=1)
     @test maximum(partial_si(8, 8)) == 0
@@ -163,13 +206,11 @@ end
   end
 
   @testset "identity_init" begin
-    import Flux: identity_init
-
     @testset "Basic" begin
       partial = identity_init(gain=3)
       @test partial(3, 3) == identity_init(3, 3; gain=3) == [3 0 0; 0 3 0; 0 0 3]
+      @test eltype(identity_init(3, 4; gain=1.5)) == Float32  # despite Float64 keyword
     end
-
     @testset "Non-identity sizes" begin
         @test identity_init(2, 3)[:, end] == zeros(Float32, 2)
         @test identity_init(3, 2; shift=1)[1, :] == zeros(Float32, 2)
@@ -177,14 +218,12 @@ end
         @test identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
         @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
-
     @testset "Dense ID mapping" begin
         l = Dense(3,3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
     end
-
     @testset "$layer ID mapping with kernelsize $kernelsize" for layer in (Conv, ConvTranspose, CrossCor), kernelsize in (
         (1,),
         (3,),
@@ -197,7 +236,6 @@ end
         indata = randn(Float32, kernelsize..., nch, nch)
         @test l(indata) == indata
     end
-
     @testset "Inception identity" begin
       insize = 7
       path1 = Conv((1, 3), insize=>2; init=identity_init, pad=SamePad())
@@ -227,12 +265,6 @@ end
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
 end
 
-@testset "Basic Stacking" begin
-  x = randn(3,3)
-  stacked = stack([x, x], 2)
-  @test size(stacked) == (3,2,3)
-end
-
 @testset "Precision" begin
   m = Chain(Dense(10, 5, relu), Dense(5, 2))
   x64 = rand(Float64, 10)
@@ -246,100 +278,59 @@ end
   @test eltype(f32(f64(m))[1].weight) == Float32
 end
 
-@testset "Zeros" begin
-  m = Dense(3,2; bias=false)
-  @test f64(m).bias === m.bias === Zeros()
-  @test f32(m).bias === m.bias === Zeros()
+@testset "zero bias" begin
+  m = Dense(3 => 2; bias=false)
+  @test f64(m).bias === m.bias === false
+  @test f32(m).bias === m.bias === false
 
   @testset "Gradients for broadcasted $op with sizes $s" for op in (+,-,*), s in ((1,), (2,3))
     o = ones(s)
     z = zeros(s)
-    Z = Zeros()
 
     @testset "Explicit" begin
       gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
       g = gfun(o, z)
-      @test gfun(o, Z) == (g[1], nothing)
+      @test gfun(o, false) == (g[1], nothing)
 
       g = gfun(z, o)
-      @test gfun(Z, o) == (nothing, g[2])
+      @test gfun(false, o) == (nothing, g[2])
     end
 
     @testset "Implicit" begin
       gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
       g = gfun(o, z)
 
-      gres = gfun(o, Z)
+      gres = gfun(o, false)
       @test gres[o] == g[o]
-      @test Z ∉ gres.params
+      @test false ∉ gres.params
 
       g = gfun(z, o)
-      gres = gfun(Z, o)
+      gres = gfun(false, o)
       @test gres[o] == g[o]
-      @test Z ∉ gres.params
+      @test false ∉ gres.params
     end
   end
+end
 
-  @testset "Gradients for broadcasted / with sizes $s" for s in ((1,), (2,3))
-    o = ones(s)
-    z = zeros(s)
-    Z = Zeros() # Only defined for 0-dim
-
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(x ./ y), args...)
-      g = gfun(z, o)
-      @test gfun(Z, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(x,y) = gradient(() -> sum(x ./ y), params([x,y]))
-
-      g = gfun(z, o)
-      gres = gfun(Z, o)
-      @test gres[o] == g[o]
-      @test Z ∉ gres.params
-    end
-  end
-
-  @testset "Gradients for $op with sizes $s" for op in (+,-), s in (tuple(), (1,), (2,3))
-    o = ones(s)
-    z = zeros(s)
-    Z = Zeros()
-
-
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(op(x,y)), args...)
-
-      g = gfun(o, z)
-      @test gfun(o, Z) == (g[1], nothing)
-
-      g = gfun(z, o)
-      @test gfun(Z, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(args...) = gradient(() -> sum(op(args...)), params(collect(args)))
-      g = gfun(o, z)
-      gres = gfun(o, Z)
-      @test gres[o] == g[o]
-      @test Z ∉ gres.params
-
-      g = gfun(z, o)
-      gres = gfun(Z, o)
-      @test gres[o] == g[o]
-      @test Z ∉ gres.params
-    end
-  end
+@testset "unsqueeze" begin
+  x = randn(2, 3, 2)
+  @test @inferred(unsqueeze(x, dims=1)) == reshape(x, 1, 2, 3, 2)
+  @test @inferred(unsqueeze(x, dims=2)) == reshape(x, 2, 1, 3, 2)
+  @test @inferred(unsqueeze(x, dims=3)) == reshape(x, 2, 3, 1, 2)
+  @test @inferred(unsqueeze(x, dims=4)) == reshape(x, 2, 3, 2, 1)
 end
 
 @testset "Stacking" begin
+  x = randn(3,3)
+  stacked = stack([x, x], dims=2)
+  @test size(stacked) == (3,2,3)
+
   stacked_array=[ 8 9 3 5; 9 6 6 9; 9 1 7 2; 7 4 10 6 ]
   unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
-  @test unstack(stacked_array, 2) == unstacked_array
-  @test stack(unstacked_array, 2) == stacked_array
-  @test stack(unstack(stacked_array, 1), 1) == stacked_array
+  @test unstack(stacked_array, dims=2) == unstacked_array
+  @test stack(unstacked_array, dims=2) == stacked_array
+  @test stack(unstack(stacked_array, dims=1), dims=1) == stacked_array
 end
-
 
 @testset "Batching" begin
   stacked_array=[ 8 9 3 5
@@ -368,7 +359,7 @@ end
     dl(4, 3, bias)
   )
 
-  nobias(n) = Zeros()
+  nobias(n) = false
   testdense(m, bt) = @testset "Check layer $i" for (i, (l1, l2)) in enumerate(zip(m, dm(bt)))
     @test l1.weight == l2.weight
     @test l1.bias == l2.bias
@@ -376,30 +367,143 @@ end
   end
 
   @testset "loadparams!" begin
-    import Flux: loadparams!
     pars(w, b) = [w, b]
-    import Flux: loadparams!, Zeros
-
-    pars(w, b::Zeros) = [w, Flux.zeros32(size(w,1))]
     pars(l) = pars(l.weight, l.bias)
     pararray(m) = mapreduce(pars, vcat, m)
     weights(m) = mapreduce(l -> [l.weight], vcat, m)
     @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
       m = dm(bt)
-      loadparams!(m, params(m))
+      Flux.loadparams!(m, params(m))
       testdense(m, bt)
     end
+  end
 
-    @testset "$b1 to $b2" for (b1, b2, be) in (
-      (Flux.zeros32, Flux.ones32, Flux.ones32),   # Load ones as bias to a model with zeros as bias -> model gets ones as bias
-      (Flux.ones32, nobias, Flux.zeros32), # Load Zeros as bias to a model with ones as bias-> model gets zeros as bias
-      (nobias, Flux.ones32, nobias),     # Load ones as bias to a model with Zeros as bias-> model bias does not change
-    )
-      m1 = dm(b1)
-      m2 = dm(b2)
-      loadparams!(m1, b1 == nobias ? weights(m2) : pararray(m2))
-      testdense(m1, be)
+  @testset "loadmodel!(dst, src)" begin
+    m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
+    m2 = Chain(Dense(10, 5), Dense(5, 2))
+    m3 = Chain(Conv((3, 3), 3 => 16), Dense(5, 2))
+    m4 = Chain(Dense(10, 6), Dense(6, 2))
+    m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5, 2)))
+    m6 = Chain(Dense(10, 5), Parallel(+, Dense(5, 2), Dense(5, 2)))
+
+    loadmodel!(m1, m2)
+    # trainable parameters copy over
+    @test m1[1].weight == m2[1].weight
+    @test m1[1].bias == m2[1].bias
+    # non-array leaves are untouched
+    @test m1[2].σ == relu
+
+    loadmodel!(m5, m6)
+    # more complex nested structures also work
+    @test m5[1].weight == m6[1].weight
+    @test m5[2][1].weight == m6[2][1].weight
+    # false bias is not overwritten
+    @test m5[2][1].bias == false
+
+    # mismatched nodes throw an error
+    @test_throws ArgumentError loadmodel!(m1, m3)
+    @test_throws ArgumentError loadmodel!(m1, m5)
+    # size mismatches throw an error
+    @test_throws DimensionMismatch loadmodel!(m1, m4)
+
+    # tests for BatchNorm and Dropout
+    m1 = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), Flux.flatten, Dropout(0.2))
+    m2 = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), x -> reshape(x, :, size(x)[end]), Dropout(0.1))
+    m2[2].μ .= rand(Float32, size(m2[2].μ)...)
+    loadmodel!(m1, m2)
+    # non-trainable parameters are copied as well
+    @test m1[2].μ == m2[2].μ
+    # functions are not copied
+    @test m1[3] == Flux.flatten
+    # dropout rate is not copied
+    @test m1[4].p == 0.2
+
+    # from LegolasFlux (https://github.com/beacon-biosignals/LegolasFlux.jl/blob/80569ab63a8248a8a063c76e0bbf701f4ada9bd4/examples/digits.jl#L33)
+    # tests Chain(...) vs Chain([...])
+    # tests MaxPool
+    # tests testmode!/trainmode! is not copied
+    # tests Dense, Conv, BatchNorm, Dropout (like above) but in a bigger model
+    chain1 = Chain(Dropout(0.2),
+                   Conv((3, 3), 1 => 32, relu),
+                   BatchNorm(32, relu),
+                   MaxPool((2, 2)),
+                   Dropout(0.2),
+                   Conv((3, 3), 32 => 16, relu),
+                   Dropout(0.2),
+                   MaxPool((2, 2)),
+                   Dropout(0.2),
+                   Conv((3, 3), 16 => 10, relu),
+                   Dropout(0.2),
+                   x -> reshape(x, :, size(x, 4)),
+                   Dropout(0.2),
+                   Dense(90, 10),
+                   softmax)
+    chain2 = Chain([Dropout(0.1),
+                   Conv((3, 3), 1 => 32, relu),
+                   BatchNorm(32, relu),
+                   MaxPool((3, 3)),
+                   Dropout(0.1),
+                   Conv((3, 3), 32 => 16, relu),
+                   Dropout(0.1),
+                   MaxPool((3, 3)),
+                   Dropout(0.1),
+                   Conv((3, 3), 16 => 10, relu),
+                   Dropout(0.1),
+                   x -> reshape(x, :, size(x, 4)),
+                   Dropout(0.1),
+                   Dense(90, 10),
+                   softmax])
+    chain2[3].μ .= 5f0
+    chain2[3].σ² .= 2f0
+    testmode!(chain2)
+    loadmodel!(chain1, chain2)
+    for (dst, src) in zip(chain1, chain2)
+      if dst isa Dropout
+        @test dst.p == 0.2
+      elseif dst isa Union{Conv, Dense}
+        @test dst.weight == src.weight
+        @test dst.bias == src.bias
+      elseif dst isa MaxPool
+        @test dst.k == (2, 2)
+      elseif dst isa BatchNorm
+        @test dst.μ == src.μ
+        @test dst.σ² == src.σ²
+        @test isnothing(dst.active)
+      end
     end
+
+    # copy only a subset of the model
+    chain1[end - 1].weight .= 1f0
+    chain1[3].μ .= 3f0
+    chain1[2].bias .= 5f0
+    loadmodel!(chain2[end - 1], chain1[end - 1])
+    loadmodel!(chain2[3], chain1[3])
+    @test chain2[end - 1].weight == chain1[end - 1].weight
+    @test chain2[3].μ == chain1[3].μ
+    @test chain2[2].bias != chain1[2].bias
+
+    # test shared weights
+    shared_dst = Dense(10 => 10)
+    shared_src = Dense(10 => 10)
+    # matched weights are okay
+    m1 = Chain(shared_dst, Dense(shared_dst.weight))
+    m2 = Chain(shared_src, Dense(shared_src.weight))
+    loadmodel!(m1, m2)
+    @test m1[1].weight === m1[2].weight
+    @test m1[1].weight == m2[2].weight
+    # mismatched weights are an error
+    m2 = Chain(Dense(10 => 10), Dense(10 => 10))
+    @test_throws ErrorException loadmodel!(m1, m2)
+    # loading into tied weights with absent parameter is okay when the dst == zero
+    b = Flux.zeros32(5)
+    m1 = Chain(Dense(10 => 5; bias = b), Dense(5 => 5; bias = b))
+    m2 = Chain(Dense(10 => 5; bias = Flux.zeros32(5)), Dense(5 => 5; bias = false))
+    loadmodel!(m1, m2)
+    @test m1[1].bias === m1[2].bias
+    @test iszero(m1[1].bias)
+    # loading into tied weights with absent parameter is bad when the dst != zero
+    m2[1].bias .= 1
+    @test_throws ErrorException loadmodel!(m1, m2)
   end
 
   @testset "destructure" begin
@@ -419,6 +523,26 @@ end
       @test ∇p ≈ destructure(∇m)[1]
     end
   end
+end
+
+@testset "loadmodel! & absent bias" begin
+  m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
+  m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
+  m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
+
+  Flux.loadmodel!(m1, m2)
+  @test m1[1].bias == 7:9
+  @test sum(m1[1].weight) == 21
+
+  # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
+  m1 = Flux.loadmodel!(m1, m0)
+  @test iszero(m1[1].bias)
+  @test sum(m1[1].weight) == 6  # written before error
+
+  # load into a model without bias -- should it ignore the parameter which has no home, or error?
+  m0 = Flux.loadmodel!(m0, m2)
+  @test iszero(m0[1].bias)  # obviously unchanged
+  @test sum(m0[1].weight) == 21
 end
 
 @testset "Train and test mode" begin
@@ -442,21 +566,26 @@ end
   m5 =  Chain(m4, m2)
   modules = Flux.modules(m5)
   # Depth-first descent
-  @test length(modules) == 5
+  @test length(modules) == 6
   @test modules[1] === m5
-  @test modules[2] === m4
-  @test modules[3] === m1
-  @test modules[4] === m2
-  @test modules[5] === m3
+  @test modules[3] === m4
+  @test modules[4] === m1
+  @test modules[5] === m2
+  @test modules[6] === m3
 
-  modules = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
-  @test length(modules) == 5
+  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2,2,abs), Dense(2,2,abs2)))
+  @test length(mod_par) == 5
 
-  modules = Flux.modules(Chain(SkipConnection(
+  mod_rnn = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  @test length(mod_rnn) == 6
+  @test mod_rnn[end] isa Flux.LSTMCell
+
+  mod_skip = Flux.modules(Chain(SkipConnection(
                                   Conv((2,3), 4=>5; pad=6, stride=7),
                                   +),
                                 LayerNorm(8)))
-  @test length(modules) == 5
+  @test length(mod_skip) == 6
+  @test mod_skip[end] isa Flux.Scale
 end
 
 @testset "Patience triggers" begin
@@ -534,4 +663,96 @@ end
 
     @test n_iter == 3
   end
+end
+
+@testset "Various destructure bugs" begin
+
+  @testset "issue 1601" begin
+    struct TwoDenses
+        dense::Dense
+        dense2::Dense
+    end
+    Flux.@functor TwoDenses
+
+    function (m::TwoDenses)(x)
+        out = m.dense(x)
+    end
+
+    model = TwoDenses(
+        Dense(3,1),
+        Dense(3,2)
+    )
+    p, re = Flux.destructure(model)
+
+    x = [1., 2., 3.]
+    y, back = Flux.Zygote.pullback((x, p) -> re(p)(x), x, p)
+
+    dy = [4.]
+    dx, dp = back(dy)
+    @test length(p) == length(dp)
+  end
+
+  @testset "issue 1727" begin
+    p, re = Flux.destructure(BatchNorm(3))  # 6 parameters, plus 6 non-trainable
+    @test length(p) == 6
+
+    x = rand(Float32, 3, 4)
+    y, back = Flux.pullback(x, p) do x, p
+      vec(re(p)(x))
+    end
+    @test_nowarn back(y)
+    b = back(y)
+
+    @test size(b[1]) == size(x)
+    @test size(b[2]) == size(p)
+  end
+
+  @testset "issue 1767" begin
+    struct Model{A}
+        a::A
+        b::A
+    end
+    Flux.@functor Model
+    (m::Model)(x) = m.a(x) .+ m.b(x)
+
+    d = Dense(1, 1)
+    x = rand(Float32, 1, 1)
+
+    # Sharing the parameters
+    model = Model(d, d)
+
+    # Works
+    g1 = Flux.gradient(() -> sum(model(x)), Flux.params(model))
+
+    p, re = Flux.destructure(model)
+    # Fails
+    g2 = Flux.gradient(p -> sum(re(p)(x)), p)
+
+    @test g2[1] ≈ vcat(g1[d.weight], g1[d.bias])
+  end
+
+  @testset "issue 1826" begin
+    struct Split{T}  # taken from: https://fluxml.ai/Flux.jl/stable/models/advanced/#Multiple-outputs:-a-custom-Split-layer
+        paths::T
+    end
+    Split(paths...) = Split(paths)
+    Flux.@functor Split
+    (m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
+
+    n_input, n_batch, n_shared = 5, 13, 11
+    n_outputs = [3, 7]
+
+    data = rand(Float32, n_input, n_batch)
+    model = Chain(
+        Dense(n_input, n_shared),
+        Split(Dense(n_shared, n_outputs[1]), Dense(n_shared, n_outputs[2]))
+    )
+
+    pvec, re = Flux.destructure(model)
+    loss(x, idx, pv) = sum(abs2, re(pv)(x)[idx])  # loss wrt `idx`th output term
+
+    g = Flux.Zygote.ForwardDiff.gradient(pv -> loss(data, 1, pv), pvec)
+    @test g ≈ Flux.Zygote.gradient(pv -> loss(data, 1, pv), pvec)[1]
+  end
+
 end
