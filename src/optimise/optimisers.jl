@@ -158,7 +158,7 @@ function apply!(o::RMSProp, x, Δ)
   if o.centered
     @. Δ_ave = ρ * Δ_ave + (1 - ρ) * Δ
   end
-  @. Δ *= η / (√(acc - Δ_ave * conj(Δ_ave)) + ϵ)
+  @. Δ *= η / (√(acc - Δ_ave * conj(Δ_ave)) + o.epsilon)
 end
 
 """
@@ -190,7 +190,6 @@ ADAM(η::Real, β::Tuple, state::IdDict) = ADAM(η, β, EPS, state)
 
 function apply!(o::ADAM, x, Δ)
   η, β = o.eta, o.beta
-
   mt, vt, βp = get!(o.state, x) do
       (zero(x), zero(x), Float64[β[1], β[2]])
   end :: Tuple{typeof(x),typeof(x),Vector{Float64}}
