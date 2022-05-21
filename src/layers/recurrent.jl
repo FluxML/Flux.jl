@@ -281,8 +281,8 @@ Recur(m::LSTMCell) = Recur(m, m.state0)
 # GRU
 
 function _gru_output(gxs, ghs, bs)
-  r = @. σ(gxs[1] + ghs[1] + bs[1])
-  z = @. σ(gxs[2] + ghs[2] + bs[2])
+  r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
+  z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
   return r, z
 end
 
