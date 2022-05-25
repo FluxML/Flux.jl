@@ -487,7 +487,7 @@ end
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
   layers = NamedTuple(kw)
-  if :layers in Base.keys(layers) || :connection in Base.keys(layers)
+  if :layers in keys(layers) || :connection in keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
   end
   isempty(layers) && return Parallel(connection, ())
@@ -510,15 +510,99 @@ end
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
 Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector) =
-  Parallel(m.connection, NamedTuple{Base.keys(m)[i]}(Tuple(m.layers)[i]))
+  Parallel(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
 
-Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
+Base.keys(m::Parallel) = keys(getfield(m, :layers))
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
   _show_layers(io, m.layers)
   print(io, ")")
 end
+
+"""
+    PairwiseFusion(connection, layers...)
+
+```
+x1 --> layer1 --> y1
+                  |
+                  |--> connection --> layer2 --> y2
+                  |                              |
+                  x2                             |--> connection --> layer3 --> y3
+                                                 |                              |
+                                                 x3                             |--> connection --> y4
+                                                                                |
+                                                                                x4
+```
+
+## Arguments
+
+- `connection`: Takes 2 inputs and combines them
+- `layers`: The layers whose outputs are combined
+
+## Inputs
+
+This layer behaves differently based on input type:
+
+1. Input `x` is a tuple/vector of length `N`. Then `layers` must be a tuple of length `N`. The computation is as follows:
+
+```julia
+y = x[1]
+for i in 1:N
+    y = connection(x[i], layers[i](y))
+end
+```
+
+2. Any other kind of input:
+
+```julia
+y = x
+for i in 1:N
+    y = connection(x, layers[i](y))
+end
+```
+
+## Returns
+
+`PairwiseFusion` returns a tuple of length `N` with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
+"""
+struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}}
+  connection::F
+  layers::T
+end
+
+PairwiseFusion(connection, layers...) = PairwiseFusion(connection, layers)
+function PairwiseFusion(connection; kw...)
+  layers = NamedTuple(kw)
+  if :layers in keys(layers) || :connection in keys(layers)
+    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
+  end
+  isempty(layers) && return Parallel(connection, ())
+  return PairwiseFusion(connection, layers)
+end
+
+function (m::PairwiseFusion)(x::T) where {T}
+  getinput(i) = T <: Union{Tuple, Vector} ? x[i] : x
+  nx = length(x)
+  nlayers = length(m.layers)
+  if nx != nlayers
+    throw(ArgumentError("PairwiseFusion with $nlayers layers takes $nlayers inputs, but got $nx inputs"))
+  end
+  outputs = [m.layers[1](getinput(1))]
+  for i in 2:nlayers
+    push!(outputs, m.layers[i](m.connection(getinput(i), outputs[i - 1])))
+  end
+  return outputs
+end
+
+@functor PairwiseFusion
+
+Base.getindex(m::PairwiseFusion, i) = m.layers[i]
+Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
+Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
+  PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+
+Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
 
 """
     Embedding(in => out; init=randn)
