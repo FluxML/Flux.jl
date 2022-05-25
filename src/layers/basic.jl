@@ -582,11 +582,15 @@ function PairwiseFusion(connection; kw...)
 end
 
 function (m::PairwiseFusion)(x::T) where {T}
-  getinput(i) = T <: Union{Tuple, Vector} ? x[i] : x
-  nx = length(x)
   nlayers = length(m.layers)
-  if nx != nlayers
-    throw(ArgumentError("PairwiseFusion with $nlayers layers takes $nlayers inputs, but got $nx inputs"))
+  if T <: Union{Tuple, Vector}
+    getinput(i) = x[i]
+    nx = length(x)
+    if nx != nlayers
+      throw(ArgumentError("PairwiseFusion with $nlayers layers takes $nlayers inputs, but got $nx inputs"))
+    end
+  else
+    getinput(i) = x
   end
   outputs = [m.layers[1](getinput(1))]
   for i in 2:nlayers
