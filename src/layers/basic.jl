@@ -544,7 +544,7 @@ x1 --> layer1 --> y1
 
 This layer behaves differently based on input type:
 
-1. Input `x` is a tuple/vector of length `N`. Then `layers` must be a tuple of length `N`. The computation is as follows:
+1. Input `x` is a tuple of length `N`. Then `layers` must be a tuple of length `N`. The computation is as follows:
 
 ```julia
 y = x[1]
@@ -583,14 +583,12 @@ end
 
 function (m::PairwiseFusion)(x::T) where {T}
   nlayers = length(m.layers)
-  if T <: Union{Tuple, Vector}
-    getinput(i) = x[i]
+  getinput(i) = T <: Tuple ? x[i] : x
+  if T <: Tuple
     nx = length(x)
     if nx != nlayers
       throw(ArgumentError("PairwiseFusion with $nlayers layers takes $nlayers inputs, but got $nx inputs"))
     end
-  else
-    getinput(i) = x
   end
   outputs = [m.layers[1](getinput(1))]
   for i in 2:nlayers
@@ -644,7 +642,7 @@ end
 @functor Embedding
 
 Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
-  
+
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
@@ -653,7 +651,7 @@ function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T
   size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
   return m(onecold(x))
 end
- 
+
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
