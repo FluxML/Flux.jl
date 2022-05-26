@@ -22,12 +22,12 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), pre)
     if obj isa Chain{<:NamedTuple} && children == getfield(obj, :layers)
       # then we insert names -- can this be done more generically? 
-      for k in Base.keys(obj)
+      for k in keys(obj)
         _big_show(io, obj[k], indent+2, k)
       end
     elseif obj isa Parallel{<:Any, <:NamedTuple}
       _big_show(io, obj.connection, indent+2)
-      for k in Base.keys(obj)
+      for k in keys(obj)
         _big_show(io, obj[k], indent+2, k)
       end
     else

@@ -38,7 +38,7 @@ end
 
 Chain(xs...) = Chain(xs)
 function Chain(; kw...)
-  :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+  :layers in keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
   isempty(kw) && return Chain(())
   Chain(values(kw))
 end
@@ -444,7 +444,7 @@ Create a layer which passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
 Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
-If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, )(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
@@ -519,6 +519,96 @@ function Base.show(io::IO, m::Parallel)
   _show_layers(io, m.layers)
   print(io, ")")
 end
+
+"""
+    PairwiseFusion(connection, layers...)
+
+```
+x1 --> layer1 --> y1
+                  |
+                  |--> connection --> layer2 --> y2
+                  |                              |
+                  x2                             |--> connection --> layer3 --> y3
+                                                 |                              |
+                                                 x3                             |--> connection --> y4
+                                                                                |
+                                                                                x4
+```
+
+## Arguments
+
+- `connection`: Takes 2 inputs and combines them
+- `layers`: The layers whose outputs are combined
+
+## Inputs
+
+This layer behaves differently based on input type:
+
+1. Input `x` is a tuple of length `N`. Then `layers` must be a tuple of length `N`. The computation is as follows:
+
+```julia
+y = x[1]
+for i in 1:N
+    y = connection(x[i], layers[i](y))
+end
+```
+
+2. Any other kind of input:
+
+```julia
+y = x
+for i in 1:N
+    y = connection(x, layers[i](y))
+end
+```
+
+## Returns
+
+`PairwiseFusion` returns a tuple of length `N` with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
+"""
+struct PairwiseFusion{F, T <: NamedTuple}
+  connection::F
+  layers::T
+end
+
+function PairwiseFusion(connection, layers...)
+  names = ntuple(i -> Symbol("layer_$i"), length(layers))
+  return PairwiseFusion(connection, NamedTuple{names}(layers))
+end
+
+function PairwiseFusion(connection; kw...)
+  layers = NamedTuple(kw)
+  if :layers in keys(layers) || :connection in keys(layers)
+    throw(ArgumentError("a PairwiseFusion layer cannot have a named sub-layer called `connection` or `layers`"))
+  end
+  isempty(layers) && return PairwiseFusion(connection, ())
+  return PairwiseFusion(connection, layers)
+end
+
+function _pairwise_check(lx, N, T)
+  if T <: Tuple && lx != N
+    throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
+  end
+end
+ChainRulesCore.@non_differentiable _pairwise_check(lx, N, T)
+
+function (m::PairwiseFusion)(x::Tuple)
+  nlayers = length(m.layers)
+  nx = length(x)
+  _pairwise_check(nx, nlayers, Tuple)
+  h = x[1]
+  out(i) = i === 1 ? m.layers[1](h) : m.layers[i](m.connection(h, x[i]))
+  outputs = [(h = out(i); h) for i in 1:nlayers]
+  return outputs
+end
+
+@functor PairwiseFusion
+
+Base.getindex(m::PairwiseFusion, i) = m.layers[i]
+Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
+  PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+
+Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
 
 """
     Embedding(in => out; init=randn)
