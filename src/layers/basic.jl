@@ -595,18 +595,23 @@ end
                $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))) 
              for i in 1:N - 1])
   push!(calls, :($(y_symbols[N]) = layers[$N]($(y_symbols[N + 1]))))
-  push!(calls, :(return $(y_symbols[N])))
+  push!(calls, :(return tuple($(Tuple(y_symbols[1:N])...))))
   return Expr(:block, calls...)
 end
 
 @functor PairwiseFusion
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
-Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
 Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
   PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
 
 Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
+
+function Base.show(io::IO, m::PairwiseFusion)
+  print(io, "PairwiseFusion(", m.connection, ", ")
+  _show_layers(io, m.layers)
+  print(io, ")")
+end
 
 """
     Embedding(in => out; init=randn)
