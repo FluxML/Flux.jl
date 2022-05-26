@@ -67,7 +67,7 @@ end
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
-  Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
+  Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)
@@ -566,35 +566,37 @@ end
 
 `PairwiseFusion` returns a tuple of length `N` with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
 """
-struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}}
+struct PairwiseFusion{F, T <: NamedTuple}
   connection::F
   layers::T
 end
 
-PairwiseFusion(connection, layers...) = PairwiseFusion(connection, layers)
-function PairwiseFusion(connection; kw...)
-  layers = NamedTuple(kw)
-  if :layers in keys(layers) || :connection in keys(layers)
-    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
-  end
-  isempty(layers) && return Parallel(connection, ())
-  return PairwiseFusion(connection, layers)
+function PairwiseFusion(connection, layers...)
+  names = ntuple(i -> Symbol("layer_$i"), length(layers))
+  return PairwiseFusion(connection, NamedTuple{names}(layers))
 end
 
 function (m::PairwiseFusion)(x::T) where {T}
-  nlayers = length(m.layers)
-  getinput(i) = T <: Tuple ? x[i] : x
-  if T <: Tuple
-    nx = length(x)
-    if nx != nlayers
-      throw(ArgumentError("PairwiseFusion with $nlayers layers takes $nlayers inputs, but got $nx inputs"))
-    end
+  lx = length(x)
+  N = length(m.layers)
+  if T <: Tuple && lx != N
+    throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
   end
-  outputs = [m.layers[1](getinput(1))]
-  for i in 2:nlayers
-    push!(outputs, m.layers[i](m.connection(getinput(i), outputs[i - 1])))
-  end
-  return outputs
+  applypairwisefusion(m.layers, m.connection, x)
+end
+
+@generated function applypairwisefusion(layers::NamedTuple{names}, connection, x::T) where {names, T}
+  N = length(names)
+  y_symbols = [gensym() for _ in 1:(N + 1)]
+  getinput(i) = T <: Tuple ? :(x[$i]) : :x
+  calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
+  append!(calls,
+            [:($(y_symbols[i]) = layers[$i]($(y_symbols[N + 1]));
+               $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))) 
+             for i in 1:N - 1])
+  push!(calls, :($(y_symbols[N]) = layers[$N]($(y_symbols[N + 1]))))
+  push!(calls, :(return $(y_symbols[N])))
+  return Expr(:block, calls...)
 end
 
 @functor PairwiseFusion
