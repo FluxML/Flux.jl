@@ -255,13 +255,13 @@ that will be used to renormalize the input in test phase.
 Use [`testmode!`](@ref) during inference.
 
 # Examples
-```julia
-m = Chain(
-  Dense(28^2 => 64),
-  BatchNorm(64, relu),
-  Dense(64 => 10),
-  BatchNorm(10),
-  softmax)
+```jldoctest
+julia> m = Chain(
+        Dense(28^2 => 64),
+        BatchNorm(64, relu),
+        Dense(64 => 10),
+        BatchNorm(10),
+        softmax);
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
@@ -480,7 +480,7 @@ function Base.show(io::IO, l::GroupNorm)
 end
 
 """
-  hasaffine(l)
+    hasaffine(l)
 
 Return `true` if a normalisation layer has trainable shift and
 scale parameters, `false` otherwise.

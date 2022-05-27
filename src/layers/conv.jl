@@ -22,7 +22,7 @@ See also [`Conv`](@ref), [`MaxPool`](@ref).
 """
 struct SamePad end
 
-calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
+calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
 function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
@@ -37,6 +37,7 @@ end
 """
     Conv(filter, in => out, σ = identity;
          stride = 1, pad = 0, dilation = 1, groups = 1, [bias, init])
+    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -69,6 +70,10 @@ Keywords to control initialization of the layer:
 * `bias` - The initial bias vector is all zero by default. Trainable bias can be disabled entirely
   by setting this to `false`, or another vector can be provided such as `bias = randn(Float32, out)`.
 
+Convolutional layer can also be constructed with given weights and biases.
+While constructung a convolutional layer by providing weights and biases, the layer accepts the
+same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)` method.
+  
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
 # Examples
@@ -92,27 +97,7 @@ julia> Conv((1,1), 3 => 7; pad = (20,10,0,0))(xs) |> size
 
 julia> Conv((5,5), 3 => 7; stride = 2, dilation = 4)(xs) |> size
 (42, 42, 7, 50)
-```
-"""
-struct Conv{N,M,F,A,V}
-  σ::F
-  weight::A
-  bias::V
-  stride::NTuple{N,Int}
-  pad::NTuple{M,Int}
-  dilation::NTuple{N,Int}
-  groups::Int
-end
 
-"""
-    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
-
-Constructs a convolutional layer with the given weight and bias.
-Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)`
-method.
-
-# Examples
-```jldoctest
 julia> weight = rand(3, 4, 5);
 
 julia> bias = zeros(5);
@@ -127,6 +112,16 @@ julia> Flux.params(c1) |> length
 2
 ```
 """
+struct Conv{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  dilation::NTuple{N,Int}
+  groups::Int
+end
+
 function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
               stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
 
@@ -154,6 +149,8 @@ channels from `in` to `out`.
 
 Accepts the keyword `init` (default: `glorot_uniform`) to control the sampling
 distribution.
+
+This is internally used by the [`Conv`](@ref) layer but can also be used independently.
 """
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
@@ -176,7 +173,7 @@ function (c::Conv)(x::AbstractArray)
   σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
-_channels_in(l ::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
+_channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
 _channels_out(l::Conv) = size(l.weight, ndims(l.weight))
 
 function Base.show(io::IO, l::Conv)
@@ -186,6 +183,8 @@ function Base.show(io::IO, l::Conv)
   print(io, ")")
 end
 
+# helper function to  print additional options and keyword arguments for `Conv`
+# and friends when using `Base.show`
 function _print_conv_opt(io::IO, l)
   l.σ == identity || print(io, ", ", l.σ)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
@@ -199,6 +198,7 @@ end
 
 """
     ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
+    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -241,12 +241,6 @@ end
 _channels_in(l::ConvTranspose)  = size(l.weight)[end]
 _channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
 
-"""
-    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
-
-Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `ConvTranspose((4,4), 3 => 7, relu)` method.
-"""
 function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1, groups=1) where {T,N}
   stride = expand(Val(N-2), stride)
@@ -299,7 +293,6 @@ function Base.show(io::IO, l::ConvTranspose)
   print(io, ")")
 end
 
-
 function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
 end
@@ -342,6 +335,7 @@ end
 
 """
     CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
+    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Standard cross convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -376,12 +370,6 @@ struct CrossCor{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
-"""
-    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
-
-Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `CrossCor((4,4), 3 => 7, relu)` method.
-"""
 function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
@@ -642,6 +630,7 @@ function Base.show(io::IO, m::MaxPool)
   print(io, ")")
 end
 
+# helper functions for printing `Conv` (and family) layers
 _maybetuple_string(pad) = string(pad)
 _maybetuple_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
 

@@ -50,6 +50,36 @@ end
 
 (c::Chain)(x) = applychain(c.layers, x)
 
+"""
+    applychain(layers, x)
+
+Calculates the forward results of the complete chain provided as a `Tuple`, `AbstractVector`,
+or a `NamedTuple` of layers with `x` as model input. Users are encouraged to call a chain
+instead of using this function directly.
+
+# Examples
+
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+julia> using Flux: applychain
+
+julia> c = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax);
+
+julia> applychain(c.layers, rand(10))  # will output a 2 element vector as our chain has 2 neurons in the final output layer
+2-element Vector{Float64}:
+ 0.5101459322326873
+ 0.4898540677673126
+
+julia> applychain([Dense(10 => 5, σ), Dense(5 => 2), softmax], rand(10))  # will output a 2 element vector as our chain has 2 neurons in the final output layer
+2-element Vector{Float64}:
+ 0.5101459322326873
+ 0.4898540677673126
+
+julia> c(rand(10))  # encouraged method
+2-element Vector{Float64}:
+ 0.4861734115447846
+ 0.5138265884552153
+```
+"""
 @generated function applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
   calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
@@ -65,6 +95,8 @@ function applychain(layers::AbstractVector, x)  # type-unstable path, helps comp
   x
 end
 
+# Overrides Base.getindex to obtain a `Chain` with selected layers
+# from a `Chain` passed to it.
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
@@ -73,6 +105,8 @@ function Base.show(io::IO, c::Chain)
   _show_layers(io, c.layers)
   print(io, ")")
 end
+
+# supporting methods for the overriden `Base.show` function
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
 _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
@@ -85,10 +119,35 @@ _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", 
 """
     activations(c::Chain, input)
 
-Calculate the forward results of each layers in Chain `c` with `input` as model input.
+Calculates the forward results of each layers in Chain `c` with `input` as model input.
+
+# Examples
+
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+julia> using Flux: activations
+
+julia> c = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax);
+
+julia> activations(c, rand(10))  # will output a tuple of 3 lists (with length = 5, 2, and 2) as our chain has 3 layers
+([0.3274892431795043, 0.5360197770386552, 0.3447464835514667, 0.5273025865532305, 0.7513168089280781], [-0.3533774181890544, -0.010937055274926138], [0.4152168057978045, 0.5847831942021956])
+```
 """
 activations(c::Chain, input) = extraChain(Tuple(c.layers), input)
 
+"""
+    extraChain(fs::Tuple, x)
+
+Calculates the forward results of each layer provided in a `Tuple` with `x` as model input.
+
+# Examples
+
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+julia> using Flux: extraChain
+
+julia> extraChain((Dense(10 => 5, σ), Dense(5 => 2), softmax), rand(10))  # will output a tuple of 3 lists (with length = 5, 2, and 2) as our chain has 3 layers
+([0.3274892431795043, 0.5360197770386552, 0.3447464835514667, 0.5273025865532305, 0.7513168089280781], [-0.3533774181890544, -0.010937055274926138], [0.4152168057978045, 0.5847831942021956])
+```
+"""
 function extraChain(fs::Tuple, x)
   res = first(fs)(x)
   return (res, extraChain(Base.tail(fs), res)...)
@@ -98,7 +157,7 @@ extraChain(::Tuple{}, x) = ()
 
 """
     Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
-    Dense(W::AbstractMatrix, [bias, σ])
+    Dense(weights, bias=true, σ=identity)
 
 Create a traditional fully connected layer, whose forward pass is given by:
 
@@ -254,7 +313,7 @@ See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks"
 See also [`Parallel`](@ref) to reduce with other operators.
 
 # Examples
-```
+```jldoctest
 julia> m = Maxout(x -> abs2.(x), x -> x .* 3);
 
 julia> m([-2 -1 0 1 2])
