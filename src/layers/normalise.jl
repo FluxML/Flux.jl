@@ -195,7 +195,7 @@ function _norm_layer_forward(
     σ² = reshape(l.σ², stats_shape)
   else # trainmode or testmode without tracked stats
     μ = mean(x; dims=reduce_dims)
-    σ² = mean((x .- μ).^2; dims=reduce_dims)
+    σ² = var(x; mean=μ, dims=reduce_dims, corrected=false)
     if l.track_stats
       _track_stats!(l, x, μ, σ², reduce_dims) # update moving mean/std
     end
