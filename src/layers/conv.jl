@@ -19,6 +19,12 @@ the padding to be chosen such that the input and output sizes agree
 When `stride≠1`, the output size equals `ceil(input_size/stride)`.
 
 See also [`Conv`](@ref), [`MaxPool`](@ref).
+
+# Examples
+```jldoctest
+julia> Conv((2,2), 1 => 1, pad=SamePad())
+Conv((2, 2), 1 => 1, pad=(1, 0, 1, 0))  # 5 parameters
+```
 """
 struct SamePad end
 
