@@ -157,7 +157,7 @@ extraChain(::Tuple{}, x) = ()
 
 """
     Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
-    Dense(weights, bias=true, σ=identity)
+    Dense(W::AbstractMatrix, [bias, σ])
 
 Create a traditional fully connected layer, whose forward pass is given by:
 

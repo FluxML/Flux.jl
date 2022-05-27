@@ -209,6 +209,10 @@ Note that `pad=SamePad()` here tries to ensure `size(output,d) == size(x,d) * st
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
 
+ConvTranspose layer can also be constructed with given weights and biases.
+While constructung a ConvTranspose layer by providing weights and biases, the layer accepts the
+same keywords (and has the same defaults) as the `ConvTranspose((4,4), 3 => 7, relu)` method.
+
 See also [`Conv`](@ref) for more detailed description of keywords.
 
 # Examples
@@ -343,6 +347,10 @@ specifying the size of the convolutional kernel;
 
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
+
+CrossCor layer can also be constructed with given weights and biases.
+While constructung a CrossCor layer by providing weights and biases, the layer accepts the
+same keywords (and has the same defaults) as the `CrossCor((4,4), 3 => 7, relu)` method.
 
 See also [`Conv`](@ref) for more detailed description of keywords.
 
