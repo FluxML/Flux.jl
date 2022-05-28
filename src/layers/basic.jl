@@ -123,13 +123,13 @@ Calculates the forward results of each layers in Chain `c` with `input` as model
 
 # Examples
 
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest
 julia> using Flux: activations
 
-julia> c = Chain(Dense(10 => 5, σ), Dense(5 => 2), softmax);
+julia> c = Chain(x -> x + 1, x -> x * 2, x -> x ^ 3);
 
-julia> activations(c, rand(10))  # will output a tuple of 3 lists (with length = 5, 2, and 2) as our chain has 3 layers
-([0.3274892431795043, 0.5360197770386552, 0.3447464835514667, 0.5273025865532305, 0.7513168089280781], [-0.3533774181890544, -0.010937055274926138], [0.4152168057978045, 0.5847831942021956])
+julia> activations(c, 1)
+(2, 4, 64)
 ```
 """
 activations(c::Chain, input) = extraChain(Tuple(c.layers), input)
