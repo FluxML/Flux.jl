@@ -76,8 +76,7 @@ Keywords to control initialization of the layer:
 * `bias` - The initial bias vector is all zero by default. Trainable bias can be disabled entirely
   by setting this to `false`, or another vector can be provided such as `bias = randn(Float32, out)`.
 
-Convolutional layer can also be constructed with given weights and biases.
-While constructung a convolutional layer by providing weights and biases, the layer accepts the
+Convolutional layers can also be constructed with given weights and biases. This constructor accepts the
 same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)` method.
   
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
