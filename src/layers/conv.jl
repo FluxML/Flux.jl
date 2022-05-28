@@ -189,8 +189,6 @@ function Base.show(io::IO, l::Conv)
   print(io, ")")
 end
 
-# helper function to  print additional options and keyword arguments for `Conv`
-# and friends when using `Base.show`
 function _print_conv_opt(io::IO, l)
   l.σ == identity || print(io, ", ", l.σ)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
@@ -644,7 +642,6 @@ function Base.show(io::IO, m::MaxPool)
   print(io, ")")
 end
 
-# helper functions for printing `Conv` (and family) layers
 _maybetuple_string(pad) = string(pad)
 _maybetuple_string(pad::Tuple) = all(==(pad[1]), pad) ? string(pad[1])  : string(pad)
 
