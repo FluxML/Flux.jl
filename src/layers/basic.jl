@@ -119,7 +119,7 @@ _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", 
 """
     activations(c::Chain, input)
 
-Calculates the forward results of each layers in Chain `c` with `input` as model input.
+Like calling a `Chain`, but saves the result of each layer as an output.
 
 # Examples
 
