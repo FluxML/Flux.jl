@@ -22,8 +22,25 @@ See also [`Conv`](@ref), [`MaxPool`](@ref).
 
 # Examples
 ```jldoctest
-julia> Conv((2,2), 1 => 1, pad=SamePad())
-Conv((2, 2), 1 => 1, pad=(1, 0, 1, 0))  # 5 parameters
+julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of image
+
+julia> layer = Conv((2,2), 3 => 7, pad=SamePad())
+Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0))  # 91 parameters
+
+julia> layer(xs) |> size  # notice how the dimensions would stay same as "same" padding is applied
+(100, 100, 7, 50)
+
+julia> layer2 = Conv((2,2), 3 => 7)
+Conv((2, 2), 3 => 7)  # 91 parameters
+
+julia> layer2(xs) |> size  # the output dimension changes as the padding was not "same"
+(99, 99, 7, 50)
+
+julia> layer3 = Conv((2,2), 3 => 7, stride=2, pad=SamePad())
+Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0), stride=2)  # 91 parameters
+
+julia> layer3(xs) |> size  # output size = `ceil(input_size/stride)` = 50
+(50, 50, 7, 50)
 ```
 """
 struct SamePad end
