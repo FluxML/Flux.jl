@@ -76,8 +76,9 @@ Keywords to control initialization of the layer:
 * `bias` - The initial bias vector is all zero by default. Trainable bias can be disabled entirely
   by setting this to `false`, or another vector can be provided such as `bias = randn(Float32, out)`.
 
-Convolutional layers can also be constructed with given weights and biases. This constructor accepts the
-same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)` method.
+Convolutional layer can also be manually constructed by passing in weights and
+biases. This constructor accepts the same keywords (and has the same defaults)
+as the `Conv((4,4), 3 => 7, relu)` method.
   
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
@@ -212,7 +213,7 @@ Note that `pad=SamePad()` here tries to ensure `size(output,d) == size(x,d) * st
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
 
-ConvTranspose layer can also be manually constructed with passing in weights and
+ConvTranspose layer can also be manually constructed by passing in weights and
 biases. This constructor accepts the same keywords (and has the same defaults) as the
 `ConvTranspose((4,4), 3 => 7, relu)` method.
 
@@ -351,7 +352,7 @@ specifying the size of the convolutional kernel;
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
 
-CrossCor layer can also be manually constructed with passing in weights and
+CrossCor layer can also be manually constructed by passing in weights and
 biases. This constructor accepts the layer accepts the same keywords (and has
 the same defaults) as the `CrossCor((4,4), 3 => 7, relu)` method.
 
