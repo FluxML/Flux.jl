@@ -68,8 +68,6 @@ function applychain(layers::AbstractVector, x)  # type-unstable path, helps comp
   x
 end
 
-# Overrides Base.getindex to obtain a `Chain` with selected layers
-# from a `Chain` passed to it.
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
@@ -79,7 +77,6 @@ function Base.show(io::IO, c::Chain)
   print(io, ")")
 end
 
-# supporting methods for the overriden `Base.show` function
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
 _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
