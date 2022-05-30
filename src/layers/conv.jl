@@ -36,8 +36,8 @@ Conv((2, 2), 3 => 7)  # 91 parameters
 julia> layer2(xs) |> size  # the output dimension changes as the padding was not "same"
 (99, 99, 7, 50)
 
-julia> layer3 = Conv((2,2), 3 => 7, stride=2, pad=SamePad())
-Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0), stride=2)  # 91 parameters
+julia> layer3 = Conv((5, 5), 3 => 7, stride=2, pad=SamePad())
+Conv((5, 5), 3 => 7, pad=2, stride=2)  # 532 parameters
 
 julia> layer3(xs) |> size  # output size = `ceil(input_size/stride)` = 50
 (50, 50, 7, 50)
@@ -60,7 +60,6 @@ end
 """
     Conv(filter, in => out, σ = identity;
          stride = 1, pad = 0, dilation = 1, groups = 1, [bias, init])
-    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -93,10 +92,6 @@ Keywords to control initialization of the layer:
 * `bias` - The initial bias vector is all zero by default. Trainable bias can be disabled entirely
   by setting this to `false`, or another vector can be provided such as `bias = randn(Float32, out)`.
 
-Convolutional layer can also be manually constructed by passing in weights and
-biases. This constructor accepts the same keywords (and has the same defaults)
-as the `Conv((4,4), 3 => 7, relu)` method.
-  
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
 # Examples
@@ -120,7 +115,26 @@ julia> Conv((1,1), 3 => 7; pad = (20,10,0,0))(xs) |> size
 
 julia> Conv((5,5), 3 => 7; stride = 2, dilation = 4)(xs) |> size
 (42, 42, 7, 50)
+```
+"""
+struct Conv{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  dilation::NTuple{N,Int}
+  groups::Int
+end
 
+"""
+    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
+Constructs a convolutional layer with the given weight and bias.
+Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)`
+method.
+
+```jldoctest
 julia> weight = rand(3, 4, 5);
 
 julia> bias = zeros(5);
@@ -135,16 +149,6 @@ julia> Flux.params(c1) |> length
 2
 ```
 """
-struct Conv{N,M,F,A,V}
-  σ::F
-  weight::A
-  bias::V
-  stride::NTuple{N,Int}
-  pad::NTuple{M,Int}
-  dilation::NTuple{N,Int}
-  groups::Int
-end
-
 function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
               stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
 
@@ -173,7 +177,7 @@ channels from `in` to `out`.
 Accepts the keyword `init` (default: `glorot_uniform`) to control the sampling
 distribution.
 
-This is internally used by the [`Conv`](@ref) layer but can also be used independently.
+This is internally used by the [`Conv`](@ref) layer.
 """
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
@@ -219,7 +223,6 @@ end
 
 """
     ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
-    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -229,10 +232,6 @@ Note that `pad=SamePad()` here tries to ensure `size(output,d) == size(x,d) * st
 
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
-
-ConvTranspose layer can also be manually constructed by passing in weights and
-biases. This constructor accepts the same keywords (and has the same defaults) as the
-`ConvTranspose((4,4), 3 => 7, relu)` method.
 
 See also [`Conv`](@ref) for more detailed description of keywords.
 
@@ -266,6 +265,28 @@ end
 _channels_in(l::ConvTranspose)  = size(l.weight)[end]
 _channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
 
+"""
+    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
+
+Constructs a ConvTranspose layer with the given weight and bias.
+Accepts the same keywords (and has the same defaults) as the `ConvTranspose((4,4), 3 => 7, relu)` method.
+
+# Examples
+```jldoctest
+julia> weight = rand(3, 4, 5);
+
+julia> bias = zeros(4);
+
+julia> c1 = ConvTranspose(weight, bias, sigmoid)
+ConvTranspose((3,), 5 => 4, σ)  # 64 parameters
+
+julia> c1(randn(100, 5, 64)) |> size  # transposed convolution will increase the dimension size (upsampling)
+(102, 4, 64)
+
+julia> Flux.params(c1) |> length
+2
+```
+"""
 function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1, groups=1) where {T,N}
   stride = expand(Val(N-2), stride)
