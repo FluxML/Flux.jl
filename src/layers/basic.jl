@@ -50,9 +50,6 @@ end
 
 (c::Chain)(x) = _applychain(c.layers, x)
 
-# Calculates the forward results of the complete chain provided as a `Tuple`, `AbstractVector`,
-# or a `NamedTuple` of layers with `x` as model input. Users are encouraged to call a chain
-# instead of using this function directly.
 @generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
   calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
