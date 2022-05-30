@@ -22,12 +22,12 @@ See also [`Conv`](@ref), [`MaxPool`](@ref).
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of image
+julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of images
 
 julia> layer = Conv((2,2), 3 => 7, pad=SamePad())
 Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0))  # 91 parameters
 
-julia> layer(xs) |> size  # notice how the dimensions would stay same as "same" padding is applied
+julia> layer(xs) |> size  # notice how the dimensions stay the same with this padding
 (100, 100, 7, 50)
 
 julia> layer2 = Conv((2,2), 3 => 7)
