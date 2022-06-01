@@ -143,16 +143,15 @@ testmode!(m::AlphaDropout, mode=true) =
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states.
-The argument `sz` should be an integer or a tuple of integers.
+The argument `size` should be an integer or a tuple of integers.
 In the forward pass, the layer normalises the mean and standard
-deviation of the input, the applied the elementwise activation `λ`.
-The input is normalised along the first `length(sz)` dimensions
-for tuple `sz`, along the first dimension for integer `sz`.
-The input  is expected to have first dimensions' size equal to `sz`.
+deviation of the input, then applies the elementwise activation `λ`.
+The input is normalised along the first `length(size)` dimensions
+for tuple `size`, and along the first dimension for integer `size`.
+The input is expected to have first dimensions' size equal to `size`.
 
-If `affine=true` also applies a learnable shift and rescaling
+If `affine=true`, it also applies a learnable shift and rescaling
 using the [`Scale`](@ref) layer.
-
 
 See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 """

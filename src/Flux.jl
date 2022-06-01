@@ -7,11 +7,14 @@ using MacroTools: @forward
 
 @reexport using NNlib
 using MLUtils
-import Optimisers: trainable, destructure  # before v0.13, Flux owned these functions
+import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
 
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
+
+# Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
+Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
 
 export Chain, Dense, Maxout, SkipConnection, Parallel, PairwiseFusion,
        RNN, LSTM, GRU, GRUv3,
@@ -37,6 +40,9 @@ const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 include("utils.jl")
 include("onehot.jl")
 include("functor.jl")
+
+# Pirate error to catch a common mistake.
+Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")

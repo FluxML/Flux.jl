@@ -24,6 +24,8 @@ julia> @save "mymodel.bson" model
 Load it again:
 
 ```jldoctest saving
+julia> using Flux # Flux must be loaded before calling @load
+
 julia> using BSON: @load
 
 julia> @load "mymodel.bson" model
