@@ -118,8 +118,9 @@ In order to train the model using the GPU both model and the training data have 
    gpu_train_loader = Flux.DataLoader((xtrain |> gpu, ytrain |> gpu), batchsize = 32)
    ```
    ```julia
-   gpu_train_loader = Flux.DataLoader(gpu.(collect.((xtrain, ytrain))), batchsize = 32)
+   gpu_train_loader = Flux.DataLoader((xtrain, ytrain) |> gpu, batchsize = 32)
    ```
+   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples.
 
 ### Saving GPU-Trained Models
 
@@ -136,8 +137,12 @@ BSON.@save "./path/to/trained_model.bson" model
 # in this approach the cpu-transferred model (referenced by the variable `model`)
 # only exists inside the `let` statement
 let model = cpu(model)
+   # ...
    BSON.@save "./path/to/trained_model.bson" model
 end
+
+# is equivalente to the above, but uses `key=value` storing directve from BSON.jl
+BSON.@save "./path/to/trained_model.bson" model = cpu(model)
 ```
 The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect `CuArray`s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.
 
