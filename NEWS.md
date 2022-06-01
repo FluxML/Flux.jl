@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.13.4
+* Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1971)
+
 ## v0.13
 * After a deprecations cycle, the datasets in `Flux.Data` have
 been removed in favour of MLDatasets.jl.
