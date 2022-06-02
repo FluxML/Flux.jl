@@ -564,7 +564,7 @@ end
 
 ## Returns
 
-`PairwiseFusion` returns a tuple of length `N` with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
+A tuple of length `N` with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
 """
 struct PairwiseFusion{F, T <: NamedTuple}
   connection::F
@@ -576,12 +576,17 @@ function PairwiseFusion(connection, layers...)
   return PairwiseFusion(connection, NamedTuple{names}(layers))
 end
 
-function (m::PairwiseFusion)(x::T) where {T}
-  lx = length(x)
-  N = length(m.layers)
+function _pairwise_check(lx, N, T)
   if T <: Tuple && lx != N
     throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
   end
+end
+ChainRulesCore.@non_differentiable _pairwise_check(lx, N, T)
+
+function (m::PairwiseFusion)(x::T) where {T}
+  lx = length(x)
+  N = length(m.layers)
+  _pairwise_check(lx, N, T)
   applypairwisefusion(m.layers, m.connection, x)
 end
 
@@ -590,10 +595,12 @@ end
   y_symbols = [gensym() for _ in 1:(N + 1)]
   getinput(i) = T <: Tuple ? :(x[$i]) : :x
   calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
-  append!(calls,
-            [:($(y_symbols[i]) = layers[$i]($(y_symbols[N + 1]));
-               $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))) 
-             for i in 1:N - 1])
+  for i in 1:N - 1
+    push!(calls, quote
+      $(y_symbols[i]) = layers[$i]($(y_symbols[N + 1]))
+      $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))
+    end)
+  end
   push!(calls, :($(y_symbols[N]) = layers[$N]($(y_symbols[N + 1]))))
   push!(calls, :(return tuple($(Tuple(y_symbols[1:N])...))))
   return Expr(:block, calls...)

@@ -358,4 +358,11 @@ end
   @test length(y) == 2
   @test size(y[1]) == (30, 10)
   @test size(y[2]) == (10, 10)
+
+  x = rand(1, 10)
+  layer = PairwiseFusion(.+,  Dense(1, 10),  Dense(10, 1))
+  y = layer(x)
+  @test length(y) == 2
+  @test size(y[1]) == (10, 10)
+  @test size(y[2]) == (1, 10)
 end
