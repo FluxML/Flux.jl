@@ -124,7 +124,7 @@ The out `y` will be a vector  of length `out`, or a batch with
 
 Keyword `bias=false` will switch off trainable bias for the layer.
 The initialisation of the weight matrix is `W = init(out, in)`, calling the function
-given to keyword `init`, with default [`glorot_uniform`](@doc Flux.glorot_uniform).
+given to keyword `init`, with default [`glorot_uniform`](@ref Flux.glorot_uniform).
 The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
 
 # Examples
@@ -262,7 +262,7 @@ which constructs them, and the number to construct.
 
 Maxout over linear dense layers satisfies the univeral approximation theorem.
 See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks" 
-[https://arxiv.org/abs/1302.4389](1302.4389).
+[https://arxiv.org/abs/1302.4389](https://arxiv.org/abs/1302.4389).
 
 See also [`Parallel`](@ref) to reduce with other operators.
 

@@ -59,7 +59,7 @@ Flux.f32
 
 Flux provides some utility functions to help you generate models in an automated fashion.
 
-[`outputsize`](@ref) enables you to calculate the output sizes of layers like [`Conv`](@ref)
+[`Flux.outputsize`](@ref) enables you to calculate the output sizes of layers like [`Conv`](@ref)
 when applied to input samples of a given size. This is achieved by passing a "dummy" array into
 the model that preserves size information without running any computation.
 `outputsize(f, inputsize)` works for all layers (including custom layers) out of the box.
