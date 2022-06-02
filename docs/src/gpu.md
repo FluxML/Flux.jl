@@ -92,7 +92,7 @@ Some of the common workflows involving the use of GPUs are presented below.
 
 ### Transferring Training Data
 
-In order to train the model using the GPU both model and the training data have be transferred to GPU memory. This process can be done with the `gpu` function in two different  ways:
+In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the `gpu` function in two different  ways:
 
 1. Iterating over the batches in a [DataLoader](@ref) object transfering each one of the training batches at a time to the GPU. 
    ```julia
