@@ -21,17 +21,17 @@ grads = gradient(() -> loss(x, y), θ)
 We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
 
 ```julia
-using Flux.Optimise: update!
-
 η = 0.1 # Learning Rate
 for p in (W, b)
-  update!(p, η * grads[p])
+  p .-= η * grads[p]
 end
 ```
 
 Running this will alter the parameters `W` and `b` and our loss should go down. Flux provides a more general way to do optimiser updates like this.
 
 ```julia
+using Flux: update!
+
 opt = Descent(0.1) # Gradient descent with learning rate 0.1
 
 for p in (W, b)
