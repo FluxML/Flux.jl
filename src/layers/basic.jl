@@ -663,7 +663,7 @@ Embedding(1000 => 4)  # 4_000 parameters
 julia> vocab_idxs = [1, 722, 53, 220, 3];
 
 julia> x = Flux.onehotbatch(vocab_idxs, 1:vocab_size); summary(x)
-"1000×5 OneHotMatrix(::Vector{Int64}) with eltype Bool"
+"1000×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool"
 
 julia> model(x) |> summary
 "4×5 Matrix{Float32}"
