@@ -651,7 +651,7 @@ for a vocabulary of size `in`.
 
 This layer is often used to store word embeddings and retrieve them using indices. 
 The input to the layer can be either a vector of indexes
-or the corresponding [onehot encoding](@ref Flux.OneHotArray). 
+or the corresponding [`onehot encoding`](@ref Flux.onehotbatch). 
 
 # Examples
 ```jldoctest
@@ -662,7 +662,7 @@ Embedding(1000 => 4)  # 4_000 parameters
 
 julia> vocab_idxs = [1, 722, 53, 220, 3];
 
-julia> x = Flux.OneHotMatrix(vocab_idxs, vocab_size); summary(x)
+julia> x = Flux.onehotbatch(vocab_idxs, 1:vocab_size); summary(x)
 "1000×5 OneHotMatrix(::Vector{Int64}) with eltype Bool"
 
 julia> model(x) |> summary
