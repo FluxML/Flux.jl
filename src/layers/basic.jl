@@ -523,18 +523,6 @@ end
 """
     PairwiseFusion(connection, layers...)
 
-```
-x1 --> layer1 --> y1
-                  |
-                  |--> connection --> layer2 --> y2
-                  |                              |
-                  x2                             |--> connection --> layer3 --> y3
-                                                 |                              |
-                                                 x3                             |--> connection --> y4
-                                                                                |
-                                                                                x4
-```
-
 ## Arguments
 
 - `connection`: Takes 2 inputs and combines them
@@ -544,21 +532,31 @@ x1 --> layer1 --> y1
 
 This layer behaves differently based on input type:
 
-1. Input `x` is a tuple of length `N`. Then `layers` must be a tuple of length `N`. The computation is as follows:
+1. Input `x` is a tuple of length `N`. Then `layers` must be a tuple of length `N`. 
 
+With 3 layers, it takes 3 inputs and returns 3 outputs.
+`(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
+may be drawn as:
+```
+x1 → layer1 → y1 ↘
+                  connection → layer2 → y2 ↘
+              x2 ↗                          connection → layer3 → y3
+                                        x3 ↗
+```
+
+In code:
 ```julia
-y = x[1]
-for i in 1:N
-    y = connection(x[i], layers[i](y))
-end
+y1 = layer1(x1)
+y2 = layer2(connection(x2, y1))
+y3 = layer3(connection(x3, y2))
 ```
 
 2. Any other kind of input:
 
 ```julia
-y = x
+y₁ = x
 for i in 1:N
-    y = connection(x, layers[i](y))
+    yᵢ₊₁ = connection(x, layers[i](yᵢ))
 end
 ```
 
