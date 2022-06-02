@@ -525,7 +525,7 @@ end
 
 ## Arguments
 
-- `connection`: Takes 2 inputs and combines them
+- `connection`: A function taking 2 inputs and combining them into a single output 
 - `layers`: The layers whose outputs are combined
 
 ## Inputs
