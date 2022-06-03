@@ -532,31 +532,30 @@ end
 
 This layer behaves differently based on input type:
 
-1. Input `x` is a tuple of length `N`. Then `layers` must be a tuple of length `N`. 
-
-With 3 layers, it takes 3 inputs and returns 3 outputs.
-`(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
-may be drawn as:
+1. If input `x` is a tuple of length `N`, matching the number of `layers`, 
+  then each layer receives a new input `x[i]` combined with the previous output `y[i-1]` using `connection`.
+  Thus `(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
+  may be drawn as:
 ```
 x1 → layer1 → y1 ↘
                   connection → layer2 → y2 ↘
               x2 ↗                          connection → layer3 → y3
                                         x3 ↗
 ```
-
-In code:
+... or written as:
 ```julia
 y1 = layer1(x1)
 y2 = layer2(connection(x2, y1))
 y3 = layer3(connection(x3, y2))
 ```
 
-2. Any other kind of input:
+2. With just one input, each layer receives the same `x` combined with the previous output.
+   Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
 
 ```julia
-y₁ = x
-for i in 1:N
-    yᵢ₊₁ = connection(x, layers[i](yᵢ))
+y[1] == layers[1](x)
+for i in 2:length(layers)
+    y[i] == connection(x, layers[i](y[i-1]))
 end
 ```
 
