@@ -107,7 +107,6 @@ Flux.outputsize
 
 ```@docs
 Flux.modules
-Flux.destructure
 Flux.nfan
 ```
 
