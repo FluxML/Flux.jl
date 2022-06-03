@@ -25,7 +25,7 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
       for k in Base.keys(obj)
         _big_show(io, obj[k], indent+2, k)
       end
-    elseif obj isa Parallel{<:Any, <:NamedTuple}
+    elseif obj isa Parallel{<:Any, <:NamedTuple} || obj isa PairwiseFusion{<:Any, <:NamedTuple}
       _big_show(io, obj.connection, indent+2)
       for k in Base.keys(obj)
         _big_show(io, obj[k], indent+2, k)

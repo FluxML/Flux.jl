@@ -38,7 +38,7 @@ end
 
 Chain(xs...) = Chain(xs)
 function Chain(; kw...)
-  :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+  :layers in keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
   isempty(kw) && return Chain(())
   Chain(values(kw))
 end
@@ -498,12 +498,18 @@ end
 
 (m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs::Tuple) = m(xs...)
-function (m::Parallel)(xs...)
-  nl = length(m.layers)
-  nx = length(xs)
-  if nl != nx
+
+function _parallel_check(layers, xs)
+  nl = length(layers)
+  nx = length(xs) 
+  if (nl != nx)
     throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
   end
+end
+ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
+
+function (m::Parallel)(xs...)
+  _parallel_check(m.layers, xs)
   m.connection(map(|>, xs, Tuple(m.layers))...)
 end
 
@@ -563,17 +569,24 @@ end
 
 A tuple of length `N` with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
 """
-struct PairwiseFusion{F, T <: NamedTuple}
+struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}}
   connection::F
   layers::T
 end
 
-function PairwiseFusion(connection, layers...)
-  names = ntuple(i -> Symbol("layer_$i"), length(layers))
-  return PairwiseFusion(connection, NamedTuple{names}(layers))
+PairwiseFusion(connection, layers...) = PairwiseFusion(connection, layers)
+function PairwiseFusion(connection; kw...)
+  layers = NamedTuple(kw)
+  if :layers in keys(layers) || :connection in keys(layers)
+    throw(ArgumentError("a PairwiseFusion layer cannot have a named sub-layer called `connection` or `layers`"))
+  end
+  isempty(layers) && return PairwiseFusion(connection, ())
+  PairwiseFusion(connection, layers)
 end
 
-function _pairwise_check(lx, N, T)
+function _pairwise_check(x, layers, T)
+  lx = length(x)
+  N = length(layers)
   if T <: Tuple && lx != N
     throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
   end
@@ -581,14 +594,11 @@ end
 ChainRulesCore.@non_differentiable _pairwise_check(lx, N, T)
 
 function (m::PairwiseFusion)(x::T) where {T}
-  lx = length(x)
-  N = length(m.layers)
-  _pairwise_check(lx, N, T)
+  _pairwise_check(x, m.layers, T)
   applypairwisefusion(m.layers, m.connection, x)
 end
 
-@generated function applypairwisefusion(layers::NamedTuple{names}, connection, x::T) where {names, T}
-  N = length(names)
+@generated function applypairwisefusion(layers::Tuple{Vararg{<:Any,N}}, connection, x::T) where {N, T}
   y_symbols = [gensym() for _ in 1:(N + 1)]
   getinput(i) = T <: Tuple ? :(x[$i]) : :x
   calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
@@ -602,10 +612,12 @@ end
   push!(calls, :(return tuple($(Tuple(y_symbols[1:N])...))))
   return Expr(:block, calls...)
 end
+applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tuple(layers), connection, x)
 
 @functor PairwiseFusion
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
+Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
 Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
   PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
 
