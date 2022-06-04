@@ -1,6 +1,6 @@
 # GPU Support
 
-NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CUDA](https://github.com/JuliaGPU/CUDA.jl) readme.
+NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) readme.
 
 ## Checking GPU Availability
 
@@ -85,6 +85,82 @@ julia> x |> cpu
  ⋮
  0.7766742
 ```
+
+## Common GPU Workflows
+
+Some of the common workflows involving the use of GPUs are presented below.
+
+### Transferring Training Data
+
+In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the `gpu` function in two different  ways:
+
+1. Iterating over the batches in a [DataLoader](@ref) object transfering each one of the training batches at a time to the GPU. 
+   ```julia
+   train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
+   # ... model, optimizer and loss definitions
+   for epoch in 1:nepochs
+       for (xtrain_batch, ytrain_batch) in train_loader
+           x, y = gpu(xtrain_batch), gpu(ytrain_batch)
+           gradients = gradient(() -> loss(x, y), parameters)
+           Flux.Optimise.update!(optimizer, parameters, gradients)
+       end
+   end
+   ```
+
+2. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possitilities are:
+   ```julia
+   gpu_train_loader = Flux.DataLoader((xtrain |> gpu, ytrain |> gpu), batchsize = 32)
+   ```
+   ```julia
+   gpu_train_loader = Flux.DataLoader((xtrain, ytrain) |> gpu, batchsize = 32)
+   ```
+   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples. Other possibility is to use [`MLUtils.mapsobs`](https://juliaml.github.io/MLUtils.jl/dev/api/#MLUtils.mapobs) to push the data movement invocation into the background thread:
+   ```julia
+   using MLUtils: mapobs
+   # ...
+   gpu_train_loader = Flux.DataLoader(mapobs(gpu, (xtrain, ytrain)), batchsize = 16)
+   ```
+
+3. Wrapping the `DataLoader` in [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator) to efficiently move data to GPU on demand:
+   ```julia
+   using CUDA: CuIterator
+   train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
+   # ... model, optimizer and loss definitions
+   for epoch in 1:nepochs
+       for (xtrain_batch, ytrain_batch) in CuIterator(train_loader)
+          # ...
+       end
+   end
+   ```
+
+   Note that this works with a limited number of data types. If `iterate(train_loader)` returns anything other than arrays, approach 1 or 2 is preferred.
+
+### Saving GPU-Trained Models
+
+After the training process is done, one must always transfer the trained model back to the `cpu` memory scope before serializing or saving to disk. This can be done, as described in the previous section, with:
+```julia
+model = cpu(model) # or model = model |> cpu
+```
+and then
+```julia
+using BSON
+# ...
+BSON.@save "./path/to/trained_model.bson" model
+
+# in this approach the cpu-transferred model (referenced by the variable `model`)
+# only exists inside the `let` statement
+let model = cpu(model)
+   # ...
+   BSON.@save "./path/to/trained_model.bson" model
+end
+
+# is equivalente to the above, but uses `key=value` storing directve from BSON.jl
+BSON.@save "./path/to/trained_model.bson" model = cpu(model)
+```
+The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect `CuArray`s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.
+
+In controlled scenarios in which the data fed to the loaded models is garanteed to be in the GPU there's no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no garantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.
+
 
 ## Disabling CUDA or choosing which GPUs are visible to Flux
 
