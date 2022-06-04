@@ -107,20 +107,33 @@ In order to train the model using the GPU both model and the training data have 
    end
    ```
 
-1. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possitilities are:
-   ```julia
-   gpu_x = gpu(xtrain)
-   gpu_y = gpu(ytrain)
-
-   gpu_train_loader = Flux.DataLoader((gpu_x, gpu_y), batchsize = 32)
-   ```
+2. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possitilities are:
    ```julia
    gpu_train_loader = Flux.DataLoader((xtrain |> gpu, ytrain |> gpu), batchsize = 32)
    ```
    ```julia
    gpu_train_loader = Flux.DataLoader((xtrain, ytrain) |> gpu, batchsize = 32)
    ```
-   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples.
+   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples. Other possibility is to use [`MLUtils.mapsobs`](https://juliaml.github.io/MLUtils.jl/dev/api/#MLUtils.mapobs) to push the data movement invocation into the background thread:
+   ```julia
+   using MLUtils: mapobs
+   # ...
+   gpu_train_loader = Flux.DataLoader(mapobs(gpu, (xtrain, ytrain)), batchsize = 16)
+   ```
+
+3. Wrapping the `DataLoader` in [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator) to efficiently move data to GPU on demand:
+   ```julia
+   using CUDA: CuIterator
+   train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
+   # ... model, optimizer and loss definitions
+   for epoch in 1:nepochs
+       for (xtrain_batch, ytrain_batch) in CuIterator(train_loader)
+          # ...
+       end
+   end
+   ```
+
+   Note that this works with a limited number of data types. If `iterate(train_loader)` returns anything other than arrays, approach 1 or 2 is preferred.
 
 ### Saving GPU-Trained Models
 
