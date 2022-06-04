@@ -137,7 +137,7 @@ In order to train the model using the GPU both model and the training data have 
 
 ### Saving GPU-Trained Models
 
-After the training process is done one must always transfer the trained model back to the `cpu` memory scope before saving it to secundary memory. This can be done, as described in the previous section, with:
+After the training process is done, one must always transfer the trained model back to the `cpu` memory scope before serializing or saving to disk. This can be done, as described in the previous section, with:
 ```julia
 model = cpu(model) # or model = model |> cpu
 ```
