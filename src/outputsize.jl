@@ -168,3 +168,7 @@ for (fn, Dims) in ((:conv, DenseConvDims),)
     end
   end
 end
+
+function NNlib.gather(src::AbstractArray{Tsrc, Nsrc}, idx::AbstractArray{<:Nil}) where {Tsrc, Nsrc}
+  fill(nil, (size(src)[1:Nsrc-1]..., size(idx)...))
+end
