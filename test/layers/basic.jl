@@ -365,4 +365,7 @@ end
   @test length(y) == 2
   @test size(y[1]) == (10, 10)
   @test size(y[2]) == (1, 10)
+
+  @test PairwiseFusion(vcat, x->x.+1, x->x.+2, x->x.^3)(2, 10, 20) == (3, [5, 12], [125, 1728, 8000])
+  @test PairwiseFusion(vcat, x->x.+1, x->x.+2, x->x.^3)(7) == (8, [10, 9], [1000, 729, 343])
 end
