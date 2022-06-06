@@ -1,6 +1,6 @@
 
 for T in [
-    :Chain, :Parallel, :SkipConnection, :Recur, :Maxout  # container types
+    :Chain, :Parallel, :SkipConnection, :Recur, :Maxout, :PairwiseFusion  # container types
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
     if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
@@ -25,7 +25,7 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
       for k in Base.keys(obj)
         _big_show(io, obj[k], indent+2, k)
       end
-    elseif obj isa Parallel{<:Any, <:NamedTuple}
+    elseif obj isa Parallel{<:Any, <:NamedTuple} || obj isa PairwiseFusion{<:Any, <:NamedTuple}
       _big_show(io, obj.connection, indent+2)
       for k in Base.keys(obj)
         _big_show(io, obj[k], indent+2, k)
@@ -53,6 +53,7 @@ _show_children(x) = trainable(x)  # except for layers which hide their Tuple:
 _show_children(c::Chain) = c.layers
 _show_children(m::Maxout) = m.layers
 _show_children(p::Parallel) = (p.connection, p.layers...)
+_show_children(f::PairwiseFusion) = (f.connection, f.layers...)
 
 for T in [
     :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding,

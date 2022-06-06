@@ -38,7 +38,7 @@ end
 
 Chain(xs...) = Chain(xs)
 function Chain(; kw...)
-  :layers in Base.keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+  :layers in keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
   isempty(kw) && return Chain(())
   Chain(values(kw))
 end
@@ -67,7 +67,7 @@ end
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
-  Chain(NamedTuple{Base.keys(c)[i]}(Tuple(c.layers)[i]))
+  Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)
@@ -487,7 +487,7 @@ end
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
   layers = NamedTuple(kw)
-  if :layers in Base.keys(layers) || :connection in Base.keys(layers)
+  if :layers in keys(layers) || :connection in keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
   end
   isempty(layers) && return Parallel(connection, ())
@@ -498,24 +498,134 @@ end
 
 (m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs::Tuple) = m(xs...)
-function (m::Parallel)(xs...)
-  nl = length(m.layers)
-  nx = length(xs)
-  if nl != nx
+
+function _parallel_check(layers, xs)
+  nl = length(layers)
+  nx = length(xs) 
+  if (nl != nx)
     throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
   end
+end
+ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
+
+function (m::Parallel)(xs...)
+  _parallel_check(m.layers, xs)
   m.connection(map(|>, xs, Tuple(m.layers))...)
 end
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
 Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector) =
-  Parallel(m.connection, NamedTuple{Base.keys(m)[i]}(Tuple(m.layers)[i]))
+  Parallel(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
 
-Base.keys(m::Parallel) = Base.keys(getfield(m, :layers))
+Base.keys(m::Parallel) = keys(getfield(m, :layers))
 
 function Base.show(io::IO, m::Parallel)
   print(io, "Parallel(", m.connection, ", ")
+  _show_layers(io, m.layers)
+  print(io, ")")
+end
+
+"""
+    PairwiseFusion(connection, layers...)
+
+## Arguments
+
+- `connection`: A function taking 2 inputs and combining them into a single output 
+- `layers`: The layers whose outputs are combined
+
+## Inputs
+
+This layer behaves differently based on input type:
+
+1. If input `x` is a tuple of length N (or the input is `xs` with N `x`'s), matching the number of `layers`, 
+  then each layer receives a new input `x[i]` combined with the previous output `y[i-1]` using `connection`.
+  Thus `(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
+  may be drawn as:
+```
+x1 → layer1 → y1 ↘
+                  connection → layer2 → y2 ↘
+              x2 ↗                          connection → layer3 → y3
+                                        x3 ↗
+```
+... or written as:
+```julia
+y1 = layer1(x1)
+y2 = layer2(connection(x2, y1))
+y3 = layer3(connection(x3, y2))
+```
+
+2. With just one input, each layer receives the same `x` combined with the previous output.
+   Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
+
+```julia
+y[1] == layers[1](x)
+for i in 2:length(layers)
+    y[i] == connection(x, layers[i](y[i-1]))
+end
+```
+
+## Returns
+
+A tuple of length N with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
+"""
+struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}}
+  connection::F
+  layers::T
+end
+
+PairwiseFusion(connection, layers...) = PairwiseFusion(connection, layers)
+function PairwiseFusion(connection; kw...)
+  layers = NamedTuple(kw)
+  if :layers in keys(layers) || :connection in keys(layers)
+    throw(ArgumentError("a PairwiseFusion layer cannot have a named sub-layer called `connection` or `layers`"))
+  end
+  isempty(layers) && return PairwiseFusion(connection, ())
+  PairwiseFusion(connection, layers)
+end
+
+function _pairwise_check(x, layers, T)
+  lx = length(x)
+  N = length(layers)
+  if T <: Tuple && lx != N
+    throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
+  end
+end
+ChainRulesCore.@non_differentiable _pairwise_check(lx, N, T)
+
+function (m::PairwiseFusion)(x::T) where {T}
+  _pairwise_check(x, m.layers, T)
+  applypairwisefusion(m.layers, m.connection, x)
+end
+(m::PairwiseFusion)(xs...) = m(xs)
+
+@generated function applypairwisefusion(layers::Tuple{Vararg{<:Any,N}}, connection, x::T) where {N, T}
+  y_symbols = [gensym() for _ in 1:(N + 1)]
+  getinput(i) = T <: Tuple ? :(x[$i]) : :x
+  calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
+  for i in 1:N - 1
+    push!(calls, quote
+      $(y_symbols[i]) = layers[$i]($(y_symbols[N + 1]))
+      $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))
+    end)
+  end
+  push!(calls, :($(y_symbols[N]) = layers[$N]($(y_symbols[N + 1]))))
+  push!(calls, :(return tuple($(Tuple(y_symbols[1:N])...))))
+  return Expr(:block, calls...)
+end
+applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tuple(layers), connection, x)
+
+@functor PairwiseFusion
+
+Base.getindex(m::PairwiseFusion, i) = m.layers[i]
+Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
+Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
+  PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+
+Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
+
+function Base.show(io::IO, m::PairwiseFusion)
+  print(io, "PairwiseFusion(", m.connection, ", ")
   _show_layers(io, m.layers)
   print(io, ")")
 end
@@ -556,7 +666,7 @@ end
 @functor Embedding
 
 Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
-  
+
 (m::Embedding)(x::Integer) = m.weight[:, x]
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
@@ -565,7 +675,7 @@ function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T
   size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
   return m(onecold(x))
 end
- 
+
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end

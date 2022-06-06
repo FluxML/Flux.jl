@@ -350,3 +350,22 @@ end
   @test Flux.destructure(m1)[2](z1)[1].weight ≈ Flux.destructure(m1v)[2](z1)[1].weight
   # Note that Flux.destructure(m1v)[2](z) has a Chain{Tuple}, as does m1v[1:2]
 end
+
+@testset "PairwiseFusion" begin
+  x = (rand(1, 10), rand(30, 10))
+  layer = PairwiseFusion(+,  Dense(1, 30),  Dense(30, 10))
+  y = layer(x)
+  @test length(y) == 2
+  @test size(y[1]) == (30, 10)
+  @test size(y[2]) == (10, 10)
+
+  x = rand(1, 10)
+  layer = PairwiseFusion(.+,  Dense(1, 10),  Dense(10, 1))
+  y = layer(x)
+  @test length(y) == 2
+  @test size(y[1]) == (10, 10)
+  @test size(y[2]) == (1, 10)
+
+  @test PairwiseFusion(vcat, x->x.+1, x->x.+2, x->x.^3)(2, 10, 20) == (3, [5, 12], [125, 1728, 8000])
+  @test PairwiseFusion(vcat, x->x.+1, x->x.+2, x->x.^3)(7) == (8, [10, 9], [1000, 729, 343])
+end
