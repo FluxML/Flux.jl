@@ -24,6 +24,7 @@ DepthwiseConv
 ConvTranspose
 ConvTranspose(weight::AbstractArray)
 CrossCor
+CrossCor(weight::AbstractArray)
 SamePad
 Flux.flatten
 ```

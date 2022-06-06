@@ -381,9 +381,8 @@ end
 
 """
     CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
-    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
-Standard cross convolutional layer. `filter` is a tuple of integers
+Standard cross correlation layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
 `in` and `out` specify the number of input and output channels.
 
@@ -420,6 +419,28 @@ struct CrossCor{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
+"""
+    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
+
+Constructs a CrossCor layer with the given weight and bias.
+Accepts the same keywords (and has the same defaults) as the `CrossCor((5,5), 3 => 6, relu)` method.
+
+# Examples
+```jldoctest
+julia> weight = rand(3, 4, 5);
+
+julia> bias = zeros(5);
+
+julia> lay = CrossCor(weight, bias, relu)
+CrossCor((3,), 4 => 5, relu)  # 65 parameters
+
+julia> lay(randn(100, 4, 64)) |> size
+(98, 5, 64)
+
+julia> Flux.params(lay) |> length
+2
+```
+"""
 function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
