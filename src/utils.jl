@@ -533,9 +533,6 @@ julia> a = Flux.throttle(() -> println("Flux"), 2);
 julia> a()
 Flux
 
-julia> a()
-Flux
-
 julia> for i = 1:4  # sleeps for 1 second -> the function can be called in alternate iterations
            a()
            sleep(1)
@@ -551,7 +548,6 @@ Flux
 Flux
 Flux
 Flux
-
 ```
 """
 function throttle(f, timeout; leading=true, trailing=false)

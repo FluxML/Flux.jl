@@ -393,7 +393,7 @@ end
 Return how much the predicted distribution `ŷ` diverges from the expected Poisson
 distribution `y`; calculated as -
 
-    `sum(ŷ .- y .* log.(ŷ)) / size(y, 2)`.
+    sum(ŷ .- y .* log.(ŷ)) / size(y, 2)
 
 [More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 
@@ -416,7 +416,7 @@ end
 Return the [hinge_loss](https://en.wikipedia.org/wiki/Hinge_loss) given the
 prediction `ŷ` and true labels `y` (containing 1 or -1); calculated as
 
-    `sum(max.(0, 1 .- ŷ .* y)) / size(y, 2)`.
+    sum(max.(0, 1 .- ŷ .* y)) / size(y, 2)
 
 Usually used with classifiers like Support Vector Machines.
 See also: [`squared_hinge_loss`](@ref)
@@ -451,7 +451,7 @@ end
 Return the squared hinge_loss loss given the prediction `ŷ` and true labels `y`
 (containing 1 or -1); calculated as
 
-    `sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)`.
+    sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)
 
 Usually used with classifiers like Support Vector Machines.
 See also: [`hinge_loss`](@ref)
