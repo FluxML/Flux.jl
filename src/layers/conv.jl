@@ -156,7 +156,7 @@ function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
-  bias = create_bias(w, b, size(w, N))
+  bias = _create_bias(w, b, size(w, N))
   return Conv(σ, w, bias, stride, pad, dilation, groups)
 end
 
@@ -293,7 +293,7 @@ function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(ConvTranspose, pad, size(w)[1:N-2], dilation, stride)
-  b = create_bias(w, bias, size(w, N-1) * groups)
+  b = _create_bias(w, bias, size(w, N-1) * groups)
   return ConvTranspose(σ, w, b, stride, pad, dilation, groups)
 end
 
@@ -441,7 +441,7 @@ function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
-  b = create_bias(w, bias, size(w, N))
+  b = _create_bias(w, bias, size(w, N))
   return CrossCor(σ, w, b, stride, pad, dilation)
 end
 

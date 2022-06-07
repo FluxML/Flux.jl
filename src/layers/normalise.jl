@@ -10,7 +10,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)
+    dropout([rng = _rng_from_array(x)], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -34,7 +34,7 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
   y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
-dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
+dropout(x, p; kwargs...) = dropout(_rng_from_array(x), x, p; kwargs...)
 
 dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 dropout_mask(rng, x::CuArray, p; kwargs...) =
@@ -51,7 +51,7 @@ end
 ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 
 """
-    Dropout(p; dims=:, rng = rng_from_array())
+    Dropout(p; dims=:, rng = _rng_from_array())
 
 Dropout layer.
 
@@ -96,9 +96,9 @@ mutable struct Dropout{F,D,R<:AbstractRNG}
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p, dims, active) = Dropout(p, dims, active, rng_from_array())
+Dropout(p, dims, active) = Dropout(p, dims, active, _rng_from_array())
 
-function Dropout(p; dims=:, rng = rng_from_array())
+function Dropout(p; dims=:, rng = _rng_from_array())
   @assert 0 ≤ p ≤ 1
   Dropout(p, dims, nothing, rng)
 end
@@ -121,7 +121,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p; rng = rng_from_array())
+    AlphaDropout(p; rng = _rng_from_array())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -155,8 +155,8 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
     new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
-AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
-AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
+AlphaDropout(p, active) = AlphaDropout(p, active, _rng_from_array())
+AlphaDropout(p; rng = _rng_from_array()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
 trainable(a::AlphaDropout) = (;)

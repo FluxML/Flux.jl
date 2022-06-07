@@ -42,7 +42,9 @@ Flux.orthogonal
 Flux.sparse_init
 Flux.identity_init
 Flux.ones32
+Flux.zeros32
 Flux.rand32
+Flux.randn32
 ```
 
 ## Changing the type of model parameters

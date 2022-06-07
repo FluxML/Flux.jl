@@ -34,7 +34,7 @@ ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
 
 """
-    rng_from_array([x])
+    _rng_from_array([x])
 
 Create an instance of the RNG most appropriate for `x`.
 The current defaults are:
@@ -43,12 +43,12 @@ The current defaults are:
   - Julia version is < 1.7: `Random.GLOBAL_RNG`
   - Julia version is >= 1.7: `Random.default_rng()`
 """
-rng_from_array(::AbstractArray) = rng_from_array()
-rng_from_array(::CuArray) = CUDA.default_rng()
+_rng_from_array(::AbstractArray) = _rng_from_array()
+_rng_from_array(::CuArray) = CUDA.default_rng()
 if VERSION >= v"1.7"
-  rng_from_array() = Random.default_rng()
+  _rng_from_array() = Random.default_rng()
 else
-  rng_from_array() = Random.GLOBAL_RNG
+  _rng_from_array() = Random.GLOBAL_RNG
 end
 
 """
@@ -91,8 +91,8 @@ function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   scale = Float32(gain) * sqrt(24.0f0 / sum(nfan(dims...)))
   (rand(rng, Float32, dims...) .- 0.5f0) .* scale
 end
-glorot_uniform(dims::Integer...; kw...) = glorot_uniform(rng_from_array(), dims...; kw...)
-glorot_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
+glorot_uniform(dims::Integer...; kw...) = glorot_uniform(_rng_from_array(), dims...; kw...)
+glorot_uniform(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
@@ -134,8 +134,8 @@ function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   std = Float32(gain) * sqrt(2.0f0 / sum(nfan(dims...)))
   randn(rng, Float32, dims...) .* std
 end
-glorot_normal(dims::Integer...; kwargs...) = glorot_normal(rng_from_array(), dims...; kwargs...)
-glorot_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
+glorot_normal(dims::Integer...; kwargs...) = glorot_normal(_rng_from_array(), dims...; kwargs...)
+glorot_normal(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
@@ -169,8 +169,8 @@ function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain::Real = √2)
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
-kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(_rng_from_array(), dims...; kwargs...)
+kaiming_uniform(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
@@ -206,7 +206,7 @@ function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain::Real = √2f0)
   return randn(rng, Float32, dims...) .* std
 end
 
-kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(rng_from_array(), dims...; kwargs...)
+kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(_rng_from_array(), dims...; kwargs...)
 kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
@@ -252,8 +252,8 @@ function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1,
   return xs
 end
 
-truncated_normal(dims::Integer...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
-truncated_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+truncated_normal(dims::Integer...; kwargs...) = truncated_normal(_rng_from_array(), dims...; kwargs...)
+truncated_normal(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
@@ -313,8 +313,8 @@ function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
   return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
 end
 
-orthogonal(dims::Integer...; kwargs...) = orthogonal(rng_from_array(), dims...; kwargs...)
-orthogonal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+orthogonal(dims::Integer...; kwargs...) = orthogonal(_rng_from_array(), dims...; kwargs...)
+orthogonal(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable orthogonal(::Any...)
 
@@ -361,8 +361,8 @@ function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
   return mapslices(shuffle, sparse_array, dims=1)
 end
 
-sparse_init(dims::Integer...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
-sparse_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+sparse_init(dims::Integer...; kwargs...) = sparse_init(_rng_from_array(), dims...; kwargs...)
+sparse_init(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
@@ -452,7 +452,7 @@ end
 
 # For consistency, it accepts an RNG, but ignores it:
 identity_init(::AbstractRNG, dims::Integer...; kwargs...) = identity_init(dims...; kwargs...)
-identity_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+identity_init(rng::AbstractRNG=_rng_from_array(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable identity_init(::Any...)
 
@@ -461,33 +461,40 @@ zeros32(dims::Integer...) = Base.zeros(Float32, dims...)
 
 """
     ones32(size...) = ones(Float32, size...)
-    zeros32(size...) = zeros(Float32, size...)
 
-Return an `Array{Float32}` of the given `size`.
+Return an `Array{Float32}` of the given `size` filled with 1s.
 """
 ones32(dims...) = Base.ones(Float32, dims...)
 
-@doc @doc(ones32)
+"""
+    zeros32(size...) = zeros(Float32, size...)
+
+Return an `Array{Float32}` of the given `size` filled with 0s.
+"""
 zeros32(dims...) = Base.zeros(Float32, dims...)
 
 """
     rand32([rng], size...)
-    randn32([rng], size...)
 
-Return an `Array{Float32}` of the given `size`, filled like `rand` or `randn`.
+Return an `Array{Float32}` of the given `size`, filled like `rand`.
 When the size is not provided, `rand32(rng::AbstractRNG)` returns a function.
 """
 rand32(dims::Integer...) = Base.rand(Float32, dims...)
 rand32(rng::AbstractRNG, dims::Integer...) = Base.rand(rng, Float32, dims...)
 rand32(rng::AbstractRNG) = (dims...,) -> Base.rand(rng, Float32, dims...)
 
-@doc @doc(rand32)
+"""
+    randn32([rng], size...)
+
+Return an `Array{Float32}` of the given `size`, filled like `randn`.
+When the size is not provided, `randn32(rng::AbstractRNG)` returns a function.
+"""
 randn32(dims::Integer...) = Base.randn(Float32, dims...)
 randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
 randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
 
 """
-    create_bias(weights, bias, size...)
+    _create_bias(weights, bias, size...)
 
 Return a bias parameter for a layer, based on the value given
 to the constructor's keyword `bias=bias`.
@@ -497,10 +504,10 @@ to the constructor's keyword `bias=bias`.
 * `bias::AbstractArray` uses the array provided, provided it has the correct size.
   It does not at present correct the `eltype` to match that of `weights`.
 """
-function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
+function _create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
   bias ? fill!(similar(weights, dims...), 0) : false
 end
-function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
+function _create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
   bias
 end
@@ -518,6 +525,34 @@ Normally, the throttled function will run as much as it can, without ever
 going more than once per `wait` duration; but if you'd like to disable the
 execution on the leading edge, pass `leading=false`. To enable execution on
 the trailing edge, pass `trailing=true`.
+
+# Examples
+```jldoctest
+julia> a = Flux.throttle(() -> println("Flux"), 2);
+
+julia> a()
+Flux
+
+julia> a()
+Flux
+
+julia> for i = 1:4  # sleeps for 1 second -> the function can be called in alternate iterations
+           a()
+           sleep(1)
+       end
+Flux
+Flux
+
+julia> for i = 1:4  # sleeps for 2 second -> the function can be called in the next iteration
+           a()
+           sleep(2)
+       end
+Flux
+Flux
+Flux
+Flux
+
+```
 """
 function throttle(f, timeout; leading=true, trailing=false)
   cooldown = true
