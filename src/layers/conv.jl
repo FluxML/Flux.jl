@@ -423,7 +423,7 @@ end
     CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Constructs a CrossCor layer with the given weight and bias.
-Accepts the same keywords (and has the same defaults) as the `CrossCor((5,5), 3 => 6, relu)` method.
+Accepts the same keywords and has the same defaults as `CrossCor((5,5), 3 => 6, relu)`.
 
 # Examples
 ```jldoctest
