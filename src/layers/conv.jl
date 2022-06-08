@@ -131,8 +131,7 @@ end
     Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Constructs a convolutional layer with the given weight and bias.
-Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)`
-method.
+Accepts the same keywords and has the same defaults as `Conv((4,4), 3 => 7, relu)`.
 
 ```jldoctest
 julia> weight = rand(3, 4, 5);
@@ -269,7 +268,7 @@ _channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
     ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
 
 Constructs a ConvTranspose layer with the given weight and bias.
-Accepts the same keywords (and has the same defaults) as the `ConvTranspose((4,4), 3 => 7, relu)` method.
+Accepts the same keywords and has the same defaults as `ConvTranspose((4,4), 3 => 7, relu)`.
 
 # Examples
 ```jldoctest
