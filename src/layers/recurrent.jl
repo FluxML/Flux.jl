@@ -63,28 +63,97 @@ in the background. `cell` should be a model of the form:
 
 For example, here's a recurrent network that keeps a running total of its inputs:
 
-```julia
-accum(h, x) = (h + x, x)
-rnn = Flux.Recur(accum, 0)
-rnn(2)      # 2
-rnn(3)      # 3
-rnn.state   # 5
-rnn.(1:10)  # apply to a sequence
-rnn.state   # 60
+# Examples
+```jldoctest
+julia> accum(h, x) = (h + x, x)
+accum (generic function with 1 method)
+
+julia> rnn = Flux.Recur(accum, 0)
+Recur(accum)
+
+julia> rnn(2) 
+2
+
+julia> rnn(3)
+3
+
+julia> rnn.state
+5
+
+julia> rnn.(1:10)  # apply to a sequence
+10-element Vector{Int64}:
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+
+julia> rnn.state
+60
 ```
 
 Folding over a 3d Array of dimensions `(features, batch, time)` is also supported:
 
-```julia
-accum(h, x) = (h .+ x, x)
-rnn = Flux.Recur(accum, zeros(Int, 1, 1))
-rnn([2])                    # 2
-rnn([3])                    # 3
-rnn.state                   # 5
-rnn(reshape(1:10, 1, 1, :)) # apply to a sequence of (features, batch, time)
-rnn.state                   # 60
-```
+```jldoctest
+julia> accum(h, x) = (h .+ x, x)
+accum (generic function with 1 method)
 
+julia> rnn = Flux.Recur(accum, zeros(Int, 1, 1))
+Recur(accum)
+
+julia> rnn([2])
+1-element Vector{Int64}:
+ 2
+
+julia> rnn([3])
+1-element Vector{Int64}:
+ 3
+
+julia> rnn.state
+1×1 Matrix{Int64}:
+ 5
+
+julia> rnn(reshape(1:10, 1, 1, :))  # apply to a sequence of (features, batch, time)
+1×1×10 Array{Int64, 3}:
+[:, :, 1] =
+ 1
+
+[:, :, 2] =
+ 2
+
+[:, :, 3] =
+ 3
+
+[:, :, 4] =
+ 4
+
+[:, :, 5] =
+ 5
+
+[:, :, 6] =
+ 6
+
+[:, :, 7] =
+ 7
+
+[:, :, 8] =
+ 8
+
+[:, :, 9] =
+ 9
+
+[:, :, 10] =
+ 10
+
+julia> rnn.state
+1×1 Matrix{Int64}:
+ 60
+```
 """
 mutable struct Recur{T,S}
   cell::T
@@ -107,8 +176,36 @@ Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 Reset the hidden state of a recurrent layer back to its original value.
 
 Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
-```julia
-rnn.state = hidden(rnn.cell)
+
+    rnn.state = hidden(rnn.cell)
+
+# Examples
+```jldoctest
+julia> r = RNN(3 => 5);
+
+julia> r.state
+5×1 Matrix{Float32}:
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+
+julia> r(rand(Float32, 3)); r.state
+5×1 Matrix{Float32}:
+ -0.32719195
+ -0.45280662
+ -0.50386846
+ -0.14782222
+  0.23584609
+
+julia> Flux.reset!(r)
+5×1 Matrix{Float32}:
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
 ```
 """
 reset!(m::Recur) = (m.state = m.cell.state0)
