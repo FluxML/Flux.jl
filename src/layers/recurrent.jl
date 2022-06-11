@@ -80,7 +80,7 @@ julia> rnn(3)
 julia> rnn.state
 5
 
-julia> rnn.(1:10)  # apply to a sequence
+julia> rnn(1:10)  # apply to a sequence
 10-element Vector{Int64}:
   1
   2
@@ -118,7 +118,12 @@ julia> rnn.state
 1×1 Matrix{Int64}:
  5
 
-julia> rnn(reshape(1:10, 1, 1, :))  # apply to a sequence of (features, batch, time)
+julia> vec = rnn(reshape(1:10, 1, 1, :));  # apply to a sequence of (features, batch, time)
+
+julia> size(vec)
+(1, 1, 10)
+
+julia> vec 
 1×1×10 Array{Int64, 3}:
 [:, :, 1] =
  1

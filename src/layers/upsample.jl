@@ -84,10 +84,57 @@ See [`NNlib.pixel_shuffle`](@ref).
 ```jldoctest
 julia> p = PixelShuffle(2);
 
-julia> xs = rand(2, 2, 4, 1); # an image with 4 channels having 2X2 pixels in each channel
+julia> xs = [2row + col + channel/10 for row in 1:2, col in 1:2, channel in 1:4, n in 1:1]
+2×2×4×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 3.1  4.1
+ 5.1  6.1
 
-julia> p(xs) |> size  # upsampled image with only 1 channel
-(4, 4, 1, 1)
+[:, :, 2, 1] =
+ 3.2  4.2
+ 5.2  6.2
+
+[:, :, 3, 1] =
+ 3.3  4.3
+ 5.3  6.3
+
+[:, :, 4, 1] =
+ 3.4  4.4
+ 5.4  6.4
+
+julia> p(xs)
+4×4×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 3.1  3.3  4.1  4.3
+ 3.2  3.4  4.2  4.4
+ 5.1  5.3  6.1  6.3
+ 5.2  5.4  6.2  6.4
+
+julia> xs = [3row + col + channel/10 for row in 1:2, col in 1:3, channel in 1:4, n in 1:1]
+2×3×4×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 4.1  5.1  6.1
+ 7.1  8.1  9.1
+
+[:, :, 2, 1] =
+ 4.2  5.2  6.2
+ 7.2  8.2  9.2
+
+[:, :, 3, 1] =
+ 4.3  5.3  6.3
+ 7.3  8.3  9.3
+
+[:, :, 4, 1] =
+ 4.4  5.4  6.4
+ 7.4  8.4  9.4
+
+julia> p(xs)
+4×6×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 4.1  4.3  5.1  5.3  6.1  6.3
+ 4.2  4.4  5.2  5.4  6.2  6.4
+ 7.1  7.3  8.1  8.3  9.1  9.3
+ 7.2  7.4  8.2  8.4  9.2  9.4
 ```
 """
 struct PixelShuffle 
