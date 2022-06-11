@@ -68,7 +68,6 @@ These layers don't affect the structure of the network but may improve training 
 ```@docs
 Flux.normalise
 BatchNorm
-Flux.dropout
 Dropout
 AlphaDropout
 LayerNorm

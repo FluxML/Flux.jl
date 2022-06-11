@@ -79,22 +79,6 @@ julia> rnn(3)
 
 julia> rnn.state
 5
-
-julia> rnn(1:10)  # apply to a sequence
-10-element Vector{Int64}:
-  1
-  2
-  3
-  4
-  5
-  6
-  7
-  8
-  9
- 10
-
-julia> rnn.state
-60
 ```
 
 Folding over a 3d Array of dimensions `(features, batch, time)` is also supported:

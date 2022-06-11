@@ -67,32 +67,24 @@ Custom RNGs are only supported on the CPU.
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 
 # Examples
-```julia
-julia> m = Chain(Dense(2 => 2), Dropout(1))
-Chain(
-  Dense(2 => 2),                        # 6 parameters
-  Dropout(1),
-)
-
-julia> Flux.trainmode!(m);  # activating the layer without actually training it
-
-julia> m([1, 2])  # drops neurons with a probability of 1
-2-element Vector{Float32}:
- -0.0
- -0.0
-
-julia> m = Chain(Dense(2 => 2), Dropout(0.5))
-Chain(
-  Dense(2 => 2),                        # 6 parameters
-  Dropout(0.5),
-)
+```jldoctest
+julia> m = Chain(Dense(1 => 1), Dropout(1));
 
 julia> Flux.trainmode!(m);
 
-julia> m([1, 2])  # drops neurons with a probability of 0.5
-2-element Vector{Float32}:
- -4.537827
- -0.0
+julia> y = m([1]);
+
+julia> count(i->(i == 0), y) == m[2].p  # number of zeros == 1
+true
+
+julia> m = Chain(Dense(1 => 1), Dropout(0.5));
+
+julia> Flux.trainmode!(m);
+
+julia> y = m([1]);
+
+julia> m[2].p - 0.5 <= count(i->(i == 0), y) <= m[2].p + 0.5  # number of zeros can be 0 or 1
+true
 ```
 """
 mutable struct Dropout{F,D,R<:AbstractRNG}
@@ -136,7 +128,9 @@ remain the same as before.
 Does nothing to the input once [`testmode!`](@ref) is true.
 
 # Examples
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest
+julia> using Statistics
+
 julia> x = randn(20,1);
 
 julia> m = Chain(Dense(20 => 10, selu), AlphaDropout(0.5));
@@ -145,17 +139,8 @@ julia> Flux.trainmode!(m);
 
 julia> y = m(x);
 
-julia> Flux.std(x)
-1.097500619939126
-
-julia> Flux.std(y)  # maintains the standard deviation of the input
-1.1504012188827453
-
-julia> Flux.mean(x)  # maintains the mean of the input
--0.3217018554158738
-
-julia> Flux.mean(y)
--0.2526866470385106
+julia> isapprox(std(x), std(y), rtol=0.6)
+true
 ```
 """
 mutable struct AlphaDropout{F,R<:AbstractRNG}
@@ -208,24 +193,20 @@ using the [`Scale`](@ref) layer.
 See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 
 # Examples
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest
+julia> using Statistics
+
 julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
 
 julia> m = LayerNorm(3);
 
 julia> y = m(xs);
 
-julia> Flux.std(xs[:, :, :, 1])
-0.28713812337208383
+julia> isapprox(std(y[:, :, :, 1]), 1, atol=0.1) && std(xs[:, :, :, 1]) != std(y[:, :, :, 1])
+true
 
-julia> Flux.std(y[:, :, :, 1])  # normalises each image (or all channels in an image)
-1.018993632693022
-
-julia> Flux.std(xs[:, :, :, 2])
-0.22540260537916373
-
-julia> Flux.std(y[:, :, :, 2])  # normalises each image (or all channels in an image)
-1.018965249873791
+julia> isapprox(std(y[:, :, :, 2]), 1, atol=0.1) && std(xs[:, :, :, 2]) != std(y[:, :, :, 2])
+true
 ```
 """
 struct LayerNorm{F,D,T,N}
@@ -329,17 +310,16 @@ Use [`testmode!`](@ref) during inference.
 
 # Examples
 ```julia
-julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+julia> using Statistics
 
-julia> Flux.std(xs)
-2.6822461565718467
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
 
 julia> m = BatchNorm(3);
 
-julia> Flux.trainmode!(m);  # activating the layer without actually training it
+julia> Flux.trainmode!(m);
 
-julia> Flux.std(m(xs))  # normalises the complete batch
-1.0093209961092855
+julia> isapprox(std(m(xs)), 1, atol=0.1) && std(xs) != std(m(xs))
+true
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
@@ -419,24 +399,20 @@ that will be used to renormalize the input in test phase.
 in previous Flux versions (< v0.12).
 
 # Examples
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest
+julia> using Statistics
+
 julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
 
 julia> m = InstanceNorm(3);
 
 julia> y = m(xs);
 
-julia> Flux.std(xs[:, :, 1, 1])  # original standard deviation of the first channel of image 1
-0.2989802650787384
+julia> isapprox(std(y[:, :, 1, 1]), 1, atol=0.1) && std(xs[:, :, 1, 1]) != std(y[:, :, 1, 1])
+true
 
-julia> Flux.std(y[:, :, 1, 1])  # each channel of the batch is normalised
-1.0606027381538408
-
-julia> Flux.std(xs[:, :, 2, 2])  # original standard deviation of the second channel of image 2
-0.28662705400461197
-
-julia> Flux.std(y[:, :, 2, 2])  # each channel of the batch is normalised
-1.06058729821187
+julia> isapprox(std(y[:, :, 2, 2]), 1, atol=0.1) && std(xs[:, :, 2, 2]) != std(y[:, :, 2, 2])
+true
 ```
 """
 mutable struct InstanceNorm{F,V,N,W}
@@ -517,24 +493,20 @@ If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 
 # Examples
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest
+julia> using Statistics
+
 julia> xs = rand(3, 3, 4, 2);  # a batch of 2 3X3X4 images
 
 julia> m = GroupNorm(4, 2);
 
 julia> y = m(xs);
 
-julia> Flux.std(xs[:, :, 1:2, 1])  # original standard deviation of the first 2 channels of image 1
-0.307588490584917
+julia> isapprox(std(y[:, :, 1:2, 1]), 1, atol=0.1) && std(xs[:, :, 1:2, 1]) != std(y[:, :, 1:2, 1])
+true
 
-julia> Flux.std(y[:, :, 1:2, 1])  # normalises channels in groups of 2 (as specified)
-1.0289339365431291
-
-julia> Flux.std(xs[:, :, 3:4, 2])  # original standard deviation of the last 2 channels of image 2
-0.3111566100804274
-
-julia> Flux.std(y[:, :, 3:4, 2])    # normalises channels in groups of 2 (as specified)
-1.0289352493058574
+julia> isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) && std(xs[:, :, 3:4, 2]) != std(y[:, :, 3:4, 2])
+true
 ```
 """
 mutable struct GroupNorm{F,V,N,W}
