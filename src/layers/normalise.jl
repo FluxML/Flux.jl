@@ -67,7 +67,7 @@ Custom RNGs are only supported on the CPU.
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 
 # Examples
-```jldoctest; filter = r"[+-]?(?:(?:[0-9])(?:\\.\\d+)?)|(?:1)(?:\\.0+)?"
+```julia
 julia> m = Chain(Dense(2 => 2), Dropout(1))
 Chain(
   Dense(2 => 2),                        # 6 parameters
