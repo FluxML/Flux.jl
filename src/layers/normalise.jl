@@ -255,13 +255,13 @@ that will be used to renormalize the input in test phase.
 Use [`testmode!`](@ref) during inference.
 
 # Examples
-```jldoctest
-julia> m = Chain(
-        Dense(28^2 => 64),
-        BatchNorm(64, relu),
-        Dense(64 => 10),
-        BatchNorm(10),
-        softmax);
+```julia
+m = Chain(
+  Dense(28^2 => 64),
+  BatchNorm(64, relu),
+  Dense(64 => 10),
+  BatchNorm(10),
+  softmax)
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
