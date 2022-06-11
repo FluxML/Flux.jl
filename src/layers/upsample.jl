@@ -102,7 +102,7 @@ julia> xs = rand(2, 2, 4, 1)  # an image with 4 channels having 2X2 pixels in ea
  0.825737  0.98609
  0.757365  0.294784
 
-julia> p(xs)  # an image with only 1 channel with 4X4 pixels in the single channel
+julia> p(xs)  # upsampled image with only 1 channel
 4×4×1×1 Array{Float64, 4}:
 [:, :, 1, 1] =
  0.826452   0.105997  0.0519244  0.422996

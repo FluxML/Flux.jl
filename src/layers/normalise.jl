@@ -87,7 +87,7 @@ Chain(
   Dropout(0.5),
 )
 
-julia> Flux.trainmode!(m);  # activating the layer without actually training it
+julia> Flux.trainmode!(m);
 
 julia> m([1, 2])  # drops neurons with a probability of 0.5
 2-element Vector{Float32}:
