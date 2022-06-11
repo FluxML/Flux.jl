@@ -55,7 +55,7 @@ ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 """
     Dropout(p; dims=:, rng = rng_from_array())
 
-Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
+Dropout layer. In the forward pass, applies the [`Flux.dropout`](@ref) function on the input.
 
 To apply dropout along certain dimension(s), specify the `dims` keyword.
 e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
@@ -65,6 +65,35 @@ Specify `rng` to use a custom RNG instead of the default.
 Custom RNGs are only supported on the CPU.
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
+
+# Examples
+```jldoctest
+julia> m = Chain(Dense(2 => 2), Dropout(1))
+Chain(
+  Dense(2 => 2),                        # 6 parameters
+  Dropout(1),
+)
+
+julia> Flux.trainmode!(m);  # activating the layer without actually training it
+
+julia> m([1, 2])  # drops neurons with a probability of 1
+2-element Vector{Float32}:
+ -0.0
+ -0.0
+
+julia> m = Chain(Dense(2 => 2), Dropout(0.5))
+Chain(
+  Dense(2 => 2),                        # 6 parameters
+  Dropout(0.5),
+)
+
+julia> Flux.trainmode!(m);  # activating the layer without actually training it
+
+julia> m([1, 2])  # drops neurons with a probability of 0.5
+2-element Vector{Float32}:
+ -4.537827
+ -0.0
+```
 """
 mutable struct Dropout{F,D,R<:AbstractRNG}
   p::F
@@ -105,6 +134,33 @@ The AlphaDropout layer ensures that mean and variance of activations
 remain the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
+
+# Examples
+```jldoctest
+julia> x = randn(20,1);
+
+julia> m = Chain(Dense(20 => 10, selu), AlphaDropout(0.5))
+Chain(
+  Dense(20 => 10, selu),                # 210 parameters
+  AlphaDropout{Float64, Random.TaskLocalRNG}(0.5, nothing, Random.TaskLocalRNG()),
+)
+
+julia> Flux.trainmode!(m);
+
+julia> y = m(x);
+
+julia> Flux.std(x)
+1.097500619939126
+
+julia> Flux.std(y)  # maintains the standard deviation of the input
+1.1504012188827453
+
+julia> Flux.mean(x)  # maintains the mean of the input
+-0.3217018554158738
+
+julia> Flux.mean(y)
+-0.2526866470385106
+```
 """
 mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
@@ -154,6 +210,27 @@ If `affine=true`, it also applies a learnable shift and rescaling
 using the [`Scale`](@ref) layer.
 
 See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
+
+# Examples
+```jldoctest
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+
+julia> m = LayerNorm(3);
+
+julia> y = m(xs);
+
+julia> Flux.std(xs[:, :, :, 1])
+0.28713812337208383
+
+julia> Flux.std(y[:, :, :, 1])  # normalises each image (or all channels in an image)
+1.018993632693022
+
+julia> Flux.std(xs[:, :, :, 2])
+0.22540260537916373
+
+julia> Flux.std(y[:, :, :, 2])  # normalises each image (or all channels in an image)
+1.018965249873791
+```
 """
 struct LayerNorm{F,D,T,N}
   λ::F
@@ -256,12 +333,17 @@ Use [`testmode!`](@ref) during inference.
 
 # Examples
 ```julia
-m = Chain(
-  Dense(28^2 => 64),
-  BatchNorm(64, relu),
-  Dense(64 => 10),
-  BatchNorm(10),
-  softmax)
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+
+julia> Flux.std(xs)
+2.6822461565718467
+
+julia> m = BatchNorm(3);
+
+julia> Flux.trainmode!(m);  # activating the layer without actually training it
+
+julia> Flux.std(m(xs))  # normalises the complete batch
+1.0093209961092855
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
@@ -339,6 +421,27 @@ that will be used to renormalize the input in test phase.
 
 **Warning**: the defaults for `affine` and `track_stats` used to be `true`
 in previous Flux versions (< v0.12).
+
+# Examples
+```jldoctest
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+
+julia> m = InstanceNorm(3);
+
+julia> y = m(xs);
+
+julia> Flux.std(xs[:, :, 1, 1])  # original standard deviation of the first channel of image 1
+0.2989802650787384
+
+julia> Flux.std(y[:, :, 1, 1])  # each channel of the batch is normalised
+1.0606027381538408
+
+julia> Flux.std(xs[:, :, 2, 2])  # original standard deviation of the second channel of image 2
+0.28662705400461197
+
+julia> Flux.std(y[:, :, 2, 2])  # each channel of the batch is normalised
+1.06058729821187
+```
 """
 mutable struct InstanceNorm{F,V,N,W}
   λ::F  # activation function
@@ -416,6 +519,27 @@ through to learnable per-channel bias `β` and scale `γ` parameters.
 
 If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
+
+# Examples
+```jldoctest
+julia> xs = rand(3, 3, 4, 2);  # a batch of 2 3X3X4 images
+
+julia> m = GroupNorm(4, 2);
+
+julia> y = m(xs);
+
+julia> Flux.std(xs[:, :, 1:2, 1])  # original standard deviation of the first 2 channels of image 1
+0.307588490584917
+
+julia> Flux.std(y[:, :, 1:2, 1])  # normalises channels in groups of 2 (as specified)
+1.0289339365431291
+
+julia> Flux.std(xs[:, :, 3:4, 2])  # original standard deviation of the last 2 channels of image 2
+0.3111566100804274
+
+julia> Flux.std(y[:, :, 3:4, 2])    # normalises channels in groups of 2 (as specified)
+1.0289352493058574
+```
 """
 mutable struct GroupNorm{F,V,N,W}
   G::Int  # number of groups
