@@ -183,7 +183,7 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
 ```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> r = RNN(1 => 1);
 
-julia> a = Vector{Float32}([1])
+julia> a = ones(Float32, 1)
 1-element Vector{Float32}:
  1.0
 
