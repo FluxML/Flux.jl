@@ -81,34 +81,13 @@ resolution images while upscaling them.
 See [`NNlib.pixel_shuffle`](@ref).
 
 # Examples
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest
 julia> p = PixelShuffle(2);
 
-julia> xs = rand(2, 2, 4, 1)  # an image with 4 channels having 2X2 pixels in each channel
-2×2×4×1 Array{Float64, 4}:
-[:, :, 1, 1] =
- 0.826452   0.0519244
- 0.0686387  0.438346
+julia> xs = rand(2, 2, 4, 1); # an image with 4 channels having 2X2 pixels in each channel
 
-[:, :, 2, 1] =
- 0.343179  0.445101
- 0.543927  0.740905
-
-[:, :, 3, 1] =
- 0.105997  0.422996
- 0.32957   0.167205
-
-[:, :, 4, 1] =
- 0.825737  0.98609
- 0.757365  0.294784
-
-julia> p(xs)  # upsampled image with only 1 channel
-4×4×1×1 Array{Float64, 4}:
-[:, :, 1, 1] =
- 0.826452   0.105997  0.0519244  0.422996
- 0.343179   0.825737  0.445101   0.98609
- 0.0686387  0.32957   0.438346   0.167205
- 0.543927   0.757365  0.740905   0.294784
+julia> p(xs) |> size  # upsampled image with only 1 channel
+(4, 4, 1, 1)
 ```
 """
 struct PixelShuffle 

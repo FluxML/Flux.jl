@@ -67,7 +67,7 @@ Custom RNGs are only supported on the CPU.
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
 
 # Examples
-```jldoctest
+```jldoctest; filter = r"[+-]?(?:(?:[0-9])(?:\\.\\d+)?)|(?:1)(?:\\.0+)?"
 julia> m = Chain(Dense(2 => 2), Dropout(1))
 Chain(
   Dense(2 => 2),                        # 6 parameters
@@ -136,14 +136,10 @@ remain the same as before.
 Does nothing to the input once [`testmode!`](@ref) is true.
 
 # Examples
-```jldoctest
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> x = randn(20,1);
 
-julia> m = Chain(Dense(20 => 10, selu), AlphaDropout(0.5))
-Chain(
-  Dense(20 => 10, selu),                # 210 parameters
-  AlphaDropout{Float64, Random.TaskLocalRNG}(0.5, nothing, Random.TaskLocalRNG()),
-)
+julia> m = Chain(Dense(20 => 10, selu), AlphaDropout(0.5));
 
 julia> Flux.trainmode!(m);
 
@@ -212,7 +208,7 @@ using the [`Scale`](@ref) layer.
 See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
 
 # Examples
-```jldoctest
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
 
 julia> m = LayerNorm(3);
@@ -423,7 +419,7 @@ that will be used to renormalize the input in test phase.
 in previous Flux versions (< v0.12).
 
 # Examples
-```jldoctest
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
 
 julia> m = InstanceNorm(3);
@@ -521,7 +517,7 @@ If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
 
 # Examples
-```jldoctest
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> xs = rand(3, 3, 4, 2);  # a batch of 2 3X3X4 images
 
 julia> m = GroupNorm(4, 2);

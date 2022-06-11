@@ -180,31 +180,23 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
     rnn.state = hidden(rnn.cell)
 
 # Examples
-```jldoctest
-julia> r = RNN(3 => 5);
+```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+julia> r = RNN(1 => 1);
+
+julia> a = Vector{Float32}([1])
+1-element Vector{Float32}:
+ 1.0
 
 julia> r.state
-5×1 Matrix{Float32}:
- 0.0
- 0.0
- 0.0
- 0.0
+1×1 Matrix{Float32}:
  0.0
 
-julia> r(rand(Float32, 3)); r.state
-5×1 Matrix{Float32}:
- -0.32719195
- -0.45280662
- -0.50386846
- -0.14782222
-  0.23584609
+julia> r(a); r.state
+1×1 Matrix{Float32}:
+ 0.61431444
 
 julia> Flux.reset!(r)
-5×1 Matrix{Float32}:
- 0.0
- 0.0
- 0.0
- 0.0
+1×1 Matrix{Float32}:
  0.0
 ```
 """
