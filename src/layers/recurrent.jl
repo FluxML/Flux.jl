@@ -102,41 +102,22 @@ julia> rnn.state
 1×1 Matrix{Int64}:
  5
 
-julia> vec = rnn(reshape(1:10, 1, 1, :));  # apply to a sequence of (features, batch, time)
+julia> out = rnn(reshape(1:10, 1, 1, :));  # apply to a sequence of (features, batch, time)
 
-julia> size(vec)
+julia> out |> size
 (1, 1, 10)
 
-julia> vec 
-1×1×10 Array{Int64, 3}:
-[:, :, 1] =
- 1
-
-[:, :, 2] =
- 2
-
-[:, :, 3] =
- 3
-
-[:, :, 4] =
- 4
-
-[:, :, 5] =
- 5
-
-[:, :, 6] =
- 6
-
-[:, :, 7] =
- 7
-
-[:, :, 8] =
- 8
-
-[:, :, 9] =
- 9
-
-[:, :, 10] =
+julia> vec(out)
+10-element Vector{Int64}:
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
  10
 
 julia> rnn.state

@@ -77,13 +77,13 @@ julia> y = m([1]);
 julia> y == [0]
 true
 
-julia> m = Chain(Dense(1 => 1), Dropout(0.5));
+julia> m = Chain(Dense(1000 => 1000), Dropout(0.5));
 
 julia> Flux.trainmode!(m);
 
-julia> y = m([1]);
+julia> y = m(ones(1000));
 
-julia> m[2].p - 0.5 <= count(i->(i == 0), y) <= m[2].p + 0.5  # number of zeros can be 0 or 1
+julia> isapprox(count(==(0), y) / length(y), 0.5, atol=0.1)
 true
 ```
 """
@@ -139,7 +139,7 @@ julia> Flux.trainmode!(m);
 
 julia> y = m(x);
 
-julia> isapprox(std(x), std(y), rtol=0.6)
+julia> isapprox(std(x), std(y), atol=0.6)
 true
 ```
 """
