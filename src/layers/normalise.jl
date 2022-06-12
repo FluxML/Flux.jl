@@ -74,7 +74,7 @@ julia> Flux.trainmode!(m);
 
 julia> y = m([1]);
 
-julia> count(i->(i == 0), y) == m[2].p  # number of zeros == 1
+julia> y == [0]
 true
 
 julia> m = Chain(Dense(1 => 1), Dropout(0.5));
