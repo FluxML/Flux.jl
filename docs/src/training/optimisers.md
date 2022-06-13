@@ -39,7 +39,7 @@ for p in (W, b)
 end
 ```
 
-An optimiser `update!` accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass `opt` to our [training loop](training.md), which will update all parameters of the model in a loop. However, we can now easily replace `Descent` with a more advanced optimiser such as `ADAM`.
+An optimiser `update!` accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass `opt` to our [training loop](training.md), which will update all parameters of the model in a loop. However, we can now easily replace `Descent` with a more advanced optimiser such as `Adam`.
 
 ## Optimiser Reference
 
@@ -51,15 +51,15 @@ Descent
 Momentum
 Nesterov
 RMSProp
-ADAM
-RADAM
+Adam
+RAdam
 AdaMax
-ADAGrad
-ADADelta
+AdaGrad
+AdaDelta
 AMSGrad
-NADAM
-ADAMW
-OADAM
+NAdam
+AdamW
+OAdam
 AdaBelief
 ```
 
@@ -182,7 +182,7 @@ WeightDecay
 Gradient clipping is useful for training recurrent neural networks, which have a tendency to suffer from the exploding gradient problem. An example usage is
 
 ```julia
-opt = Optimiser(ClipValue(1e-3), ADAM(1e-3))
+opt = Optimiser(ClipValue(1e-3), Adam(1e-3))
 ```
 
 ```@docs

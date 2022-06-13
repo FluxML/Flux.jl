@@ -135,6 +135,6 @@ You can store the optimiser state alongside the model, to resume training
 exactly where you left off. BSON is smart enough to [cache values](https://github.com/JuliaIO/BSON.jl/blob/v0.3.4/src/write.jl#L71) and insert links when saving, but only if it knows everything to be saved up front. Thus models and optimizers must be saved together to have the latter work after restoring.
 
 ```julia
-opt = ADAM()
+opt = Adam()
 @save "model-$(now()).bson" model opt
 ```

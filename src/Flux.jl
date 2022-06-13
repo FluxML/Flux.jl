@@ -29,9 +29,9 @@ include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
 using .Optimise: skip
-export Descent, ADAM, Momentum, Nesterov, RMSProp,
-  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, OADAM,
-  ADAMW, RADAM, AdaBelief, InvDecay, ExpDecay,
+export Descent, Adam, Momentum, Nesterov, RMSProp,
+  AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
+  AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
 
 using CUDA
