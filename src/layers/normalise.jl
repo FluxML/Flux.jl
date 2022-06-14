@@ -196,7 +196,7 @@ See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [
 ```jldoctest
 julia> using Statistics
 
-julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
 
 julia> m = LayerNorm(3);
 
@@ -312,7 +312,7 @@ Use [`testmode!`](@ref) during inference.
 ```julia
 julia> using Statistics
 
-julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
 
 julia> m = BatchNorm(3);
 
@@ -402,7 +402,7 @@ in previous Flux versions (< v0.12).
 ```jldoctest
 julia> using Statistics
 
-julia> xs = rand(3, 3, 3, 2);  # a batch of 2 3X3X3 images
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
 
 julia> m = InstanceNorm(3);
 
@@ -496,7 +496,7 @@ that will be used to renormalize the input in test phase.
 ```jldoctest
 julia> using Statistics
 
-julia> xs = rand(3, 3, 4, 2);  # a batch of 2 3X3X4 images
+julia> xs = rand(3, 3, 4, 2);  # a batch of 2 images, each having 4 channels
 
 julia> m = GroupNorm(4, 2);
 
