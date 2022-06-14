@@ -401,7 +401,7 @@ distribution `y`; calculated as -
 ```jldoctest
 julia> y_model = [1, 3, 3];  # data should only take integral values
 
-julia> poisson_loss(y_model, 1:3)
+julia> Flux.poisson_loss(y_model, 1:3)
 0.5023128522198171
 ```
 """
@@ -430,14 +430,14 @@ julia> y_pred = [0.1, 0.3, 1, 1.5];
 julia> Flux.hinge_loss(y_pred, y_true)
 0.55
 
-julia> Flux.hinge_loss(y_pred[1], y_true[1])  # same sign but |ŷ| < 1
-0.9
+julia> Flux.hinge_loss(y_pred[1], y_true[1]) != 0  # same sign but |ŷ| < 1
+true
 
-julia> Flux.hinge_loss(y_pred[end], y_true[end])  # same sign but |ŷ| >= 1 -> loss = 0
-0.0
+julia> Flux.hinge_loss(y_pred[end], y_true[end]) == 0  # same sign but |ŷ| >= 1
+true
 
-julia> Flux.hinge_loss(y_pred[2], y_true[2])  # opposite signs -> loss != 0
-1.3
+julia> Flux.hinge_loss(y_pred[2], y_true[2]) != 0 # opposite signs
+true
 ```
 """
 function hinge_loss(ŷ, y; agg = mean)
@@ -465,14 +465,14 @@ julia> y_pred = [0.1, 0.3, 1, 1.5];
 julia> Flux.squared_hinge_loss(y_pred, y_true)
 0.625
 
-julia> Flux.squared_hinge_loss(y_pred[1], y_true[1])  # same sign but |ŷ| < 1
-0.81
+julia> Flux.squared_hinge_loss(y_pred[1], y_true[1]) != 0
+true
 
-julia> Flux.squared_hinge_loss(y_pred[end], y_true[end])  # same sign and |ŷ| >= 1 -> loss = 0
-0.0
+julia> Flux.squared_hinge_loss(y_pred[end], y_true[end]) == 0
+true
 
-julia> Flux.squared_hinge_loss(y_pred[2], y_true[2])  # opposite signs -> loss != 0
-1.6900000000000002
+julia> Flux.squared_hinge_loss(y_pred[2], y_true[2]) != 0
+true
 ```
 """
 function squared_hinge_loss(ŷ, y; agg = mean)
@@ -527,8 +527,8 @@ julia> ŷ_fnp = [1, 1, 0, 1, 1, 0];  # 1 false negative, 1 false positive -> 2 
 julia> Flux.tversky_loss(ŷ_fnp, y)
 0.19999999999999996
 
-julia> Flux.tversky_loss(ŷ_fp, y)  # should be smaller than tversky_loss(ŷ_fnp, y), as FN is given more weight
-0.1071428571428571
+julia> Flux.tversky_loss(ŷ_fp, y) < Flux.tversky_loss(ŷ_fnp, y)  # FN is given more weight
+true
 ```
 """
 function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))

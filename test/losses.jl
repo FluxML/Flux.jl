@@ -163,8 +163,8 @@ y = [1.0 0.5 0.3 2.4]
 end
 
 @testset "tversky_loss" begin
-  @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
-  @test Flux.tversky_loss(ŷ, y, β=0.8) ≈ -0.09490740740740744
+  @test Flux.tversky_loss(ŷ, y) ≈ 0.028747433264887046
+  @test Flux.tversky_loss(ŷ, y, β=0.8) ≈ 0.050200803212851364
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
 end
 

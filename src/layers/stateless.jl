@@ -35,27 +35,21 @@ Per default, `dims` is the last dimension.
 
 # Examples
 ```jldoctest
-julia> x = [9, 10, 20, 60];
+julia> using Statistics
 
-julia> Flux.std(x)
-24.01908963026423
+julia> x = [9, 10, 20, 60];
 
 julia> y = Flux.normalise(x);
 
-julia> Flux.std(y)
-1.1546999832655012
+julia> isapprox(std(y), 1, atol=0.2) && std(y) != std(x)
+true
 
 julia> x = rand(1:100, 10, 2);
 
-julia> Flux.std(x, dims=1)
-1×2 Matrix{Float64}:
- 28.5324  34.6425
-
 julia> y = Flux.normalise(x, dims=1);
 
-julia> Flux.std(y, dims=1)
-1×2 Matrix{Float64}:
- 1.05409  1.05409
+julia> isapprox(std(y, dims=1), ones(1, 2), atol=0.2) && std(y, dims=1) != std(x, dims=1)
+true
 ```
 """
 @inline function normalise(x::AbstractArray; dims=ndims(x), ϵ=ofeltype(x, 1e-5))

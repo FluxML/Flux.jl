@@ -535,7 +535,7 @@ Flux
 
 julia> for i = 1:4  # sleeps for 1 second -> the function can be called in alternate iterations
            a()
-           sleep(1)
+           sleep(1.5)
        end
 Flux
 Flux
