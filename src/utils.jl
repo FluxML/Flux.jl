@@ -530,22 +530,10 @@ the trailing edge, pass `trailing=true`.
 ```jldoctest
 julia> a = Flux.throttle(() -> println("Flux"), 2);
 
-julia> a()
-Flux
-
-julia> for i = 1:4  # sleeps for 1 second -> the function can be called in alternate iterations
+julia> for i = 1:4  # a called in alternate iterations
            a()
-           sleep(1.5)
+           sleep(1)
        end
-Flux
-Flux
-
-julia> for i = 1:4  # sleeps for 2 second -> the function can be called in the next iteration
-           a()
-           sleep(2)
-       end
-Flux
-Flux
 Flux
 Flux
 ```
