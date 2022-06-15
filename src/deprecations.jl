@@ -71,3 +71,12 @@ LSTMCell(in::Integer, out::Integer; kw...) = LSTMCell(in => out; kw...)
 
 GRUCell(in::Integer, out::Integer; kw...) = GRUCell(in => out; kw...)
 GRUv3Cell(in::Integer, out::Integer; kw...) = GRUv3Cell(in => out; kw...)
+
+# Deprecate Optimisers with old naming convention
+@deprecate ADAM Adam
+@deprecate NADAM NAdam
+@deprecate ADAMW AdamW
+@deprecate RADAM RAdam
+@deprecate OADAM OAdam
+@deprecate ADAGrad AdaGrad
+@deprecate ADADelta AdaDelta
