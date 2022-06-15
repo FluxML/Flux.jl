@@ -131,15 +131,15 @@ Does nothing to the input once [`testmode!`](@ref) is true.
 ```jldoctest
 julia> using Statistics
 
-julia> x = randn(20,1);
+julia> x = randn(1000,1);
 
-julia> m = Chain(Dense(20 => 10, selu), AlphaDropout(0.5));
+julia> m = Chain(Dense(1000 => 1000, selu), AlphaDropout(0.2));
 
 julia> Flux.trainmode!(m);
 
 julia> y = m(x);
 
-julia> isapprox(std(x), std(y), atol=0.6)
+julia> isapprox(std(x), std(y), atol=0.2)
 true
 ```
 """
