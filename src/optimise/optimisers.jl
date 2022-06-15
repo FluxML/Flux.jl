@@ -359,9 +359,9 @@ function apply!(o::AdaGrad, x, Δ)
 end
 
 """
-    ADADelta(ρ = 0.9, ϵ = $EPS)
+    AdaDelta(ρ = 0.9, ϵ = $EPS)
 
-[ADADelta](https://arxiv.org/abs/1212.5701) is a version of AdaGrad adapting its learning
+[AdaDelta](https://arxiv.org/abs/1212.5701) is a version of AdaGrad adapting its learning
 rate based on a window of past gradient updates.
 Parameters don't need tuning.
 
@@ -370,20 +370,20 @@ Parameters don't need tuning.
 
 # Examples
 ```julia
-opt = ADADelta()
+opt = AdaDelta()
 
-opt = ADADelta(0.89)
+opt = AdaDelta(0.89)
 ```
 """
-mutable struct ADADelta <: AbstractOptimiser
+mutable struct AdaDelta <: AbstractOptimiser
   rho::Float64
   epsilon::Float64
   state::IdDict{Any, Any}
 end
-ADADelta(ρ::Real = 0.9, ϵ::Real = EPS) = ADADelta(ρ, ϵ, IdDict())
-ADADelta(ρ::Real, state::IdDict) = ADADelta(ρ, EPS, state)
+AdaDelta(ρ::Real = 0.9, ϵ::Real = EPS) = AdaDelta(ρ, ϵ, IdDict())
+AdaDelta(ρ::Real, state::IdDict) = AdaDelta(ρ, EPS, state)
 
-function apply!(o::ADADelta, x, Δ)
+function apply!(o::AdaDelta, x, Δ)
   ρ = o.rho
   acc, Δacc = get!(() -> (zero(x), zero(x)), o.state, x)::NTuple{2,typeof(x)}
   @. acc = ρ * acc + (1 - ρ) * Δ * conj(Δ)
