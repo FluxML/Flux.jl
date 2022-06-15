@@ -436,8 +436,6 @@ CrossCor((3,), 4 => 5, relu)  # 65 parameters
 julia> lay(randn(100, 4, 64)) |> size
 (98, 5, 64)
 
-julia> Flux.params(lay) |> length
-2
 ```
 """
 function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
