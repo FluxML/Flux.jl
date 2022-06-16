@@ -10,8 +10,8 @@ using Random
   # so that w and w' are different
   Random.seed!(84)
   w = randn(10, 10)
-  @testset for opt in [ADAMW(), ADAGrad(0.1), AdaMax(), ADADelta(0.9), AMSGrad(),
-                       NADAM(), RADAM(), Descent(0.1), ADAM(), OADAM(), AdaBelief(),
+  @testset for opt in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
+                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
                        Nesterov(), RMSProp(), Momentum()]
     Random.seed!(42)
     w′ = randn(10, 10)
@@ -34,7 +34,7 @@ end
     Random.seed!(42)
     w′ = randn(10, 10)
     loss(x) = Flux.Losses.mse(w*x, w′*x)
-    opt = Optimiser(Opt(), ADAM(0.001))
+    opt = Optimiser(Opt(), Adam(0.001))
     for t = 1:10^5
       θ = Params([w′])
       x = rand(10)
@@ -202,7 +202,7 @@ end
 end
 
 # Flux PR #1776
-# We need to test that optimisers like ADAM that maintain an internal momentum
+# We need to test that optimisers like Adam that maintain an internal momentum
 # estimate properly calculate the second-order statistics on the gradients as
 # the flow backward through the model.  Previously, we would calculate second-
 # order statistics via `Δ^2` rather than the complex-aware `Δ * conj(Δ)`, which
@@ -210,7 +210,7 @@ end
 # a simple optimization is montonically decreasing (up to learning step effects)
 @testset "Momentum Optimisers and complex values" begin
   # Test every optimizer that has momentum internally
-  for opt_ctor in [ADAM, RMSProp, RADAM, OADAM, ADAGrad, ADADelta, NADAM, AdaBelief]
+  for opt_ctor in [Adam, RMSProp, RAdam, OAdam, AdaGrad, AdaDelta, NAdam, AdaBelief]
     # Our "model" is just a complex number
     w = zeros(ComplexF32, 1)
 
