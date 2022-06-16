@@ -73,10 +73,10 @@ GRUCell(in::Integer, out::Integer; kw...) = GRUCell(in => out; kw...)
 GRUv3Cell(in::Integer, out::Integer; kw...) = GRUv3Cell(in => out; kw...)
 
 # Optimisers with old naming convention
-@deprecate ADAM Adam
-@deprecate NADAM NAdam
-@deprecate ADAMW AdamW
-@deprecate RADAM RAdam
-@deprecate OADAM OAdam
-@deprecate ADAGrad AdaGrad
-@deprecate ADADelta AdaDelta
+Base.@deprecate_binding ADAM Adam
+Base.@deprecate_binding NADAM NAdam
+Base.@deprecate_binding ADAMW AdamW
+Base.@deprecate_binding RADAM RAdam
+Base.@deprecate_binding OADAM OAdam
+Base.@deprecate_binding ADAGrad AdaGrad
+Base.@deprecate_binding ADADelta AdaDelta
