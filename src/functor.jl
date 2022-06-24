@@ -36,13 +36,16 @@ Possible values include:
 """
 trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
 
-params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = push!(p, x)
-
 function params!(p::Params, x, seen = IdSet())
-  x in seen && return
-  push!(seen, x)
-  for child in trainable(x)
-    params!(p, child, seen)
+  if x isa AbstractArray{<:Number} && Functors.isleaf(x)
+    return push!(p, x)
+  elseif x in seen
+    nothing
+  else
+    push!(seen, x)
+    for child in trainable(x)
+      params!(p, child, seen)
+    end
   end
 end
 
