@@ -2,9 +2,14 @@ istraining() = false
 
 ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
 
-_isactive(m) = isnothing(m.active) ? istraining() : Bool(m.active)
+_isactive(m) = Bool(something(m.active, istraining()))
 
-ChainRulesCore.@non_differentiable _isactive(::Any)
+# Avoids instabilities from differentiating through getproperty(m, :active)
+function ChainRulesCore.rrule(::typeof(_isactive), m)
+  training, _ = rrule(istraining)
+  _isactive_pullback(_) = (NoTangent(), NoTangent())
+  return Bool(something(m.active, training)), _isactive_pullback
+end
 
 _dropout_shape(s, ::Colon) = size(s)
 _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
@@ -57,7 +62,7 @@ end
 
 function (pb::DropoutPullback)(dy)
   dx = pb.project(_apply_mask(dy, pb.mask))
-  return (NoTangent(), NoTangent(), dx, NoTangent())
+  return (NoTangent(), NoTangent(), dx, NoTangent(), NoTangent(), NoTangent())
 end
 
 _apply_mask(x, ::Nothing) = x
