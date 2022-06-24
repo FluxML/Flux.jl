@@ -202,10 +202,7 @@ julia> m = LayerNorm(3);
 
 julia> y = m(xs);
 
-julia> isapprox(std(y[:, :, :, 1]), 1, atol=0.1) && std(xs[:, :, :, 1]) != std(y[:, :, :, 1])
-true
-
-julia> isapprox(std(y[:, :, :, 2]), 1, atol=0.1) && std(xs[:, :, :, 2]) != std(y[:, :, :, 2])
+julia> isapprox(std(y, dims=1:3), ones(1, 1, 1, 2), atol=0.1) && std(y, dims=1:3) != std(xs, dims=1:3)
 true
 ```
 """
@@ -408,10 +405,7 @@ julia> m = InstanceNorm(3);
 
 julia> y = m(xs);
 
-julia> isapprox(std(y[:, :, 1, 1]), 1, atol=0.1) && std(xs[:, :, 1, 1]) != std(y[:, :, 1, 1])
-true
-
-julia> isapprox(std(y[:, :, 2, 2]), 1, atol=0.1) && std(xs[:, :, 2, 2]) != std(y[:, :, 2, 2])
+julia> isapprox(std(y, dims=1:2), ones(1, 1, 3, 2), atol=0.2) && std(y, dims=1:2) != std(xs, dims=1:2)
 true
 ```
 """
