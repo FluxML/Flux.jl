@@ -150,23 +150,29 @@ Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
     rnn.state = hidden(rnn.cell)
 
 # Examples
-```jldoctest; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> r = RNN(1 => 1);
+```jldoctest
+julia> r = Flux.RNNCell(relu, ones(1,1), zeros(1,1), ones(1,1), zeros(1,1));  # users should use the RNN wrapper struct instead
 
-julia> a = ones(Float32, 1)
-1-element Vector{Float32}:
+julia> y = Flux.Recur(r, ones(1,1));
+
+julia> y.state
+1×1 Matrix{Float64}:
  1.0
 
-julia> r.state
-1×1 Matrix{Float32}:
+julia> y(ones(1,1))  # relu(1*1 + 1)
+1×1 Matrix{Float64}:
+ 2.0
+
+julia> y.state
+1×1 Matrix{Float64}:
+ 2.0
+
+julia> Flux.reset!(y)
+1×1 Matrix{Float64}:
  0.0
 
-julia> r(a); r.state
-1×1 Matrix{Float32}:
- 0.61431444
-
-julia> Flux.reset!(r)
-1×1 Matrix{Float32}:
+julia> y.state
+1×1 Matrix{Float64}:
  0.0
 ```
 """
