@@ -42,6 +42,7 @@ Much like the core layers above, but can be used to process sequence data (as we
 RNN
 LSTM
 GRU
+GRUv3
 Flux.Recur
 Flux.reset!
 ```
@@ -67,7 +68,6 @@ These layers don't affect the structure of the network but may improve training 
 ```@docs
 Flux.normalise
 BatchNorm
-Flux.dropout
 Dropout
 AlphaDropout
 LayerNorm
