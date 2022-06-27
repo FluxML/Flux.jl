@@ -1,0 +1,74 @@
+name: Bug report
+description: File a bug report
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Thank you for taking the time to file an issue. Please see the
+        instructions below so that we can most effectively help you.
+
+
+        - Make sure you're reporting *a bug*; for general questions, please use
+        Discourse, Slack or Zulip.
+
+
+        - Always ensure you're using the latest version of the following
+        packages:
+          - Flux
+          - [Zygote](https://github.com/FluxML/Zygote.jl)
+          - [NNlib](https://github.com/FluxML/NNlib.jl)
+          - [CUDA](https://github.com/JuliaGPU/CUDA.jl)
+          - [MLUtils](https://github.com/JuliaML/MLUtils.jl)
+
+           You can check what versions are installed in your current environment using [`status -m`](https://pkgdocs.julialang.org/v1/repl/#repl-status) from the Pkg REPL.
+
+        - Flux re-exports some functionality from other libraries:
+          - `gradient`, `pullback` and `Params` are from Zygote.jl.
+          - "functional" operations such as `conv` or `relu` live in NNlib.jl and NNlibCUDA.jl.
+          - `DataLoader` comes from MLUtils.jl.
+          - `cu` comes from CUDA.jl.
+          - `destructure` comes from Optimisers.jl.
+
+          If your code only uses these and nothing from Flux itself, please file an issue at those projects instead. Here is a (non-exhaustive) list of what lives in the Flux repository:
+          - Layers (e.g. `Chain`, `Dense`, `Conv`)
+          - Training loop functionality (e.g. `train!`, `@epochs` and anything else mentioned [here](https://fluxml.ai/Flux.jl/stable/training/training/#Flux.Optimise.train!))
+          - Loss functions (e.g. `mse`, `(logit)crossentropy`)
+          - Parameter conversion functions (e.g. `cpu`, `gpu`, `f64`)
+
+          For a full list, see the [docs](https://fluxml.ai/Flux.jl/stable). If you're unsure of whether your code uses any of this functionality, please just note so in your report and we'll try to find the right place for it.
+
+        If your bug is still valid, please go ahead and fill out the template
+        below.
+  - type: textarea
+    attributes:
+      label: Description
+      description: >-
+        A clear and concise description of the problem. If you have a link to
+        related discussion on Discourse, Zulip or other places on GitHub, please
+        include them here.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal Reproduction / Working Example
+      description: >-
+        This "MWE" will be what we run to try to reproduce your issue. Please
+        try to remove as many packages and as much code as possible that is not
+        required to replicate.
+      placeholder: >-
+        Code blocks (preferred), link to gist or GH repo (for more complex
+        examples) containing the MWE code and instructions to replicate the
+        issue.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Errors encountered (if applicable)
+      description: >-
+        Please provide a _full_ error message and stacktrace for errors you've
+        encountered. If either is too large for this textbox, linking to a Gist
+        is also fine.
+
