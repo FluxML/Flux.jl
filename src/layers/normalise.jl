@@ -566,7 +566,7 @@ function Base.show(io::IO, l::GroupNorm)
 end
 
 """
-  hasaffine(l)
+    hasaffine(l)
 
 Return `true` if a normalisation layer has trainable shift and
 scale parameters, `false` otherwise.

@@ -48,17 +48,17 @@ end
 
 @functor Chain
 
-(c::Chain)(x) = applychain(c.layers, x)
+(c::Chain)(x) = _applychain(c.layers, x)
 
-@generated function applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+@generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
   calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
   Expr(:block, calls...)
 end
 
-applychain(layers::NamedTuple, x) = applychain(Tuple(layers), x)
+_applychain(layers::NamedTuple, x) = _applychain(Tuple(layers), x)
 
-function applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
+function _applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
   for f in layers
     x = f(x)
   end
@@ -73,6 +73,7 @@ function Base.show(io::IO, c::Chain)
   _show_layers(io, c.layers)
   print(io, ")")
 end
+
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
 _show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
 _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
@@ -85,15 +86,27 @@ _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", 
 """
     activations(c::Chain, input)
 
-Calculate the forward results of each layers in Chain `c` with `input` as model input.
-"""
-activations(c::Chain, input) = extraChain(Tuple(c.layers), input)
+Like calling a `Chain`, but saves the result of each layer as an output.
 
-function extraChain(fs::Tuple, x)
+# Examples
+
+```jldoctest
+julia> using Flux: activations
+
+julia> c = Chain(x -> x + 1, x -> x * 2, x -> x ^ 3);
+
+julia> activations(c, 1)
+(2, 4, 64)
+```
+"""
+activations(c::Chain, input) = _extraChain(Tuple(c.layers), input)
+
+# Calculates the forward results of each layer provided in a `Tuple` with `x` as model input.
+function _extraChain(fs::Tuple, x)
   res = first(fs)(x)
-  return (res, extraChain(Base.tail(fs), res)...)
+  return (res, _extraChain(Base.tail(fs), res)...)
 end
-extraChain(::Tuple{}, x) = ()
+_extraChain(::Tuple{}, x) = ()
 
 
 """
@@ -254,7 +267,7 @@ See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks"
 See also [`Parallel`](@ref) to reduce with other operators.
 
 # Examples
-```
+```jldoctest
 julia> m = Maxout(x -> abs2.(x), x -> x .* 3);
 
 julia> m([-2 -1 0 1 2])

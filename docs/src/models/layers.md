@@ -13,6 +13,7 @@ These layers are used to build convolutional neural networks (CNNs).
 
 ```@docs
 Conv
+Conv(weight::AbstractArray)
 AdaptiveMaxPool
 MaxPool
 GlobalMaxPool
@@ -21,10 +22,11 @@ MeanPool
 GlobalMeanPool
 DepthwiseConv
 ConvTranspose
+ConvTranspose(weight::AbstractArray)
 CrossCor
+CrossCor(weight::AbstractArray)
 SamePad
 Flux.flatten
-Flux.convfilter
 ```
 
 ## Upsampling Layers
