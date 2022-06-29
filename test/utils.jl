@@ -665,6 +665,17 @@ end
   end
 end
 
+@testset "Shared parameters" begin
+  mat = [1 2; 3 4.0]
+  simple = ((nothing, mat, (3, mat, 4)))
+  @test length(Flux.params(simple)) == 1
+  
+  oneadj = (nt = (m = mat, a = mat'))
+  @test length(Flux.params(oneadj)) == 1  # needs Functors@0.3
+  
+  @test Flux.destructure(simple)[1] == Flux.destructure(oneadj)[1] == [1, 3, 2, 4]
+end
+
 @testset "Various destructure bugs" begin
 
   @testset "issue 1601" begin
