@@ -16,8 +16,6 @@ The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
 `p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
 e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
-This is used as a regularisation, i.e. it reduces overfitting during training.
-
 If `active` is `false`, it just returns the input `x`.
 
 Specify `rng` for custom RNGs instead of the default RNG.
@@ -55,11 +53,16 @@ ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 """
     Dropout(p; dims=:, rng = rng_from_array())
 
-Dropout layer. In the forward pass, applies the [`Flux.dropout`](@ref) function on the input.
+Dropout layer.
 
-To apply dropout along certain dimension(s), specify the `dims` keyword.
-e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
-(also called 2D dropout).
+While training, for each input, this layer either sets that input to `0` (with probability
+`p`) or scales it by `1 / (1 - p)`. To apply dropout along certain dimension(s), specify the 
+`dims` keyword. e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
+(also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during 
+training.
+
+In the forward pass, this layer applies the [`Flux.dropout`](@ref) function. See that for more
+details.
 
 Specify `rng` to use a custom RNG instead of the default.
 Custom RNGs are only supported on the CPU.
