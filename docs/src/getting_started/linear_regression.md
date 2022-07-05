@@ -288,11 +288,7 @@ julia> std(x_train)
 
 The data is indeed not normalised. We can use the [`Flux.normalise`](@ref) function to normalise the training data.
 
-```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> x_train_n = Flux.normalise(x_train);
-
-julia> std(x_train_n)
-1.0000843694328236
 ```
 
 The standard deviation is now close to one! Our data is ready!
