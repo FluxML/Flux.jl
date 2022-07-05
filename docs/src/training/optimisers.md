@@ -4,7 +4,7 @@ CurrentModule = Flux
 
 # Optimisers
 
-Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
+Consider a [simple linear regression](../getting_started/linear_regression.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
 
 ```julia
 using Flux

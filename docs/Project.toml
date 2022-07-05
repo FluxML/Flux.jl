@@ -2,10 +2,13 @@
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
+MLDatasets = "eb30cadb-4394-5ae3-aed4-317e484a6458"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 OneHotArrays = "0b1bfda6-eb8a-41d2-88d8-f5af5cad476f"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Documenter = "0.27"

@@ -1,18 +1,21 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Plots, MLDatasets, Statistics
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Plots, MLDatasets, Statistics],
     doctest = false,
     sitename = "Flux",
     strict = [:cross_references,],
     pages = [
         "Home" => "index.md",
+        "Getting Started" => [
+            "Overview" => "getting_started/overview.md",
+            "Basics" => "getting_started/basics.md",
+            "Linear Regression" => "getting_started/linear_regression.md",
+        ],
         "Building Models" => [
-            "Overview" => "models/overview.md",
-            "Basics" => "models/basics.md",
             "Recurrence" => "models/recurrence.md",
             "Model Reference" => "models/layers.md",
             "Loss Functions" => "models/losses.md",

@@ -221,4 +221,4 @@ Flux.@functor Affine
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
 
-For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).
+For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](../models/advanced.md).
