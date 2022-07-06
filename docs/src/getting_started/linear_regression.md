@@ -465,11 +465,14 @@ Let's start by initializing our dataset. We will be using the [`BostonHousing`](
 ```jldoctest linear_regression_complex
 julia> using DataFrames
 
+<<<<<<< HEAD
 =======
 Let's start by initializing our dataset. We will be using the [`BostonHousing`](https://juliaml.github.io/MLDatasets.jl/stable/datasets/misc/#MLDatasets.BostonHousing) dataset consisting of `506` data points. Each of these data points has `13` features and a corresponding label, the house's price. 
 
 ```julia linear_regression_complex
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
+=======
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> dataset = BostonHousing()
 dataset BostonHousing:
   metadata    =>    Dict{String, Any} with 5 entries
@@ -478,19 +481,27 @@ dataset BostonHousing:
   dataframe   =>    506×14 DataFrame
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 julia> x, y = BostonHousing(as_df=false)[:];
 =======
 julia> x, y = BostonHousing(as_df=false)[:]
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
+=======
+julia> x, y = BostonHousing(as_df=false)[:];
+>>>>>>> 3e9630b3 (Enable doctests)
 ```
 
 We can now split the obtained data into training and testing data -
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ```jldoctest linear_regression_complex
 =======
 ```julia linear_regression_complex
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
+=======
+```jldoctest linear_regression_complex
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> x_train, x_test, y_train, y_test = x[:, 1:400], x[:, 401:end], y[:, 1:400], y[:, 401:end];
 
 julia> x_train |> size, x_test |> size, y_train |> size, y_test |> size
@@ -500,16 +511,21 @@ julia> x_train |> size, x_test |> size, y_train |> size, y_test |> size
 This data contains a diverse number of features, which means that the features have different scales. A wise option here would be to `normalise` the data, making the training process more efficient and fast. Let's check the standard deviation of the training data before normalising it.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 =======
 ```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
+=======
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> std(x_train)
 134.06784844377117
 ```
 
 The data is indeed not normalised. We can use the [`Flux.normalise`](@ref) function to normalise the training data.
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 julia> x_train_n = Flux.normalise(x_train);
 ```
@@ -522,6 +538,9 @@ We can now directly use `Flux` and let it do all the work internally! Let's defi
 ```jldoctest linear_regression_complex
 =======
 ```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+=======
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> x_train_n = Flux.normalise(x_train);
 
 julia> std(x_train_n)
@@ -530,7 +549,7 @@ julia> std(x_train_n)
 
 The standard deviation is now close to one! The last step for this section would be to wrap the `x`s and `y`s together to create the training data.
 
-```julia linear_regression_complex
+```jldoctest linear_regression_complex
 julia> train_data = [(x_train_n, y_train)];
 ```
 
@@ -539,8 +558,12 @@ Our data is ready!
 ### Model
 We can now directly use `Flux` and let it do all the work internally! Let's define a model that takes in 13 inputs (13 features) and gives us a single output (the label). We will then pass our entire data through this model in one go, and `Flux` will handle everything for us! Remember, we could have declared a model in plain `Julia` as well. The model will have 14 parameters, 13 weights, and one bias.
 
+<<<<<<< HEAD
 ```julia linear_regression_complex
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
+=======
+```jldoctest linear_regression_complex
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> model = Dense(13 => 1)
 Dense(13 => 1)      # 14 parameters
 ```
@@ -548,10 +571,14 @@ Dense(13 => 1)      # 14 parameters
 Same as before, our next step would be to define a loss function to quantify our accuracy somehow. The lower the loss, the better the model!
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function loss(model, x, y)
 =======
 ```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+=======
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> function loss(x, y)
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
            ŷ = model(x)
@@ -600,7 +627,7 @@ julia> while true
 =======
 Before training the model, let's initialize the optimiser and let `Flux` know that we want all the derivatives of all the parameters of our `model`.
 
-```julia linear_regression_complex
+```jldoctest linear_regression_complex
 julia> opt = Descent(0.05);
 
 julia> params = Flux.params(model);
@@ -609,16 +636,15 @@ julia> params = Flux.params(model);
 Contrary to our last training procedure, let's say that this time we don't want to hardcode the number of epochs. We want the training procedure to stop when the loss converges, that is, when `change in loss < δ`. The quantity `δ` can be altered according to a user's need, but let's fix it to `10⁻³` for this tutorial.
 
 We can write such custom training loops effortlessly using Flux and plain Julia!
-```julia linear_regression_complex
+```jldoctest linear_regression_complex
 julia> loss_init = Inf;
 
 julia> while true
-           Flux.train!(loss, params, data, opt)
+           Flux.train!(loss, params, train_data, opt)
            if loss_init == Inf
                loss_init = loss(x_train_n, y_train)
                continue
            end
-
            if abs(loss_init - loss(x_train_n, y_train)) < 1e-3
                break
            else
@@ -635,10 +661,14 @@ This custom loop works! This shows how easily a user can write down any custom t
 Let's have a look at the loss -
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> loss(model, x_train_n, y_train)
 =======
 ```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+=======
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+>>>>>>> 3e9630b3 (Enable doctests)
 julia> loss(x_train_n, y_train)
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
 27.127200028562164
@@ -657,7 +687,7 @@ julia> loss(model, x_test_n, y_test)
 =======
 The last step of this tutorial would be to test our model using the testing data. We will first normalise the testing data and then calculate the corresponding loss.
 
-```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> x_test_n = Flux.normalise(x_test);
 
 julia> loss(x_test_n, y_test)
