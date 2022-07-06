@@ -3,7 +3,7 @@
 The following page contains a step-by-step walkthrough of the linear regression algorithm in `Julia` using `Flux`! We will start by creating a simple linear regression model for dummy data and then move on to a real dataset. The first part would involve writing some parts of the model on our own, which will later be replaced by `Flux`.
 
 ## A simple linear regression model
-Let us start by building a simple linear regression model. This model would be trained on the data points of the form `(x₁, y₁), (x₂, y₂), ... , (xₙ, yₙ)`. In the real world, these `x`s denote a feature, and the `y`s denote a label; hence, our data would have `n` data points, each point mapping a single feature to a single label.
+Let us start by building a simple linear regression model. This model would be trained on the data points of the form `(x₁, y₁), (x₂, y₂), ... , (xₙ, yₙ)`. In the real world, these `x`s can have multiple features, and the `y`s denote a label. In our example, each `x` has a single feature; hence, our data would have `n` data points, each point mapping a single feature to a single label.
 
 Importing the required `Julia` packages -
 
@@ -13,7 +13,7 @@ julia> using Flux
 julia> using Plots
 ```
 ### Generating a dataset
-The data usually comes from the real world, which we will be exploring in the last part of this tutorial, but we don't want to jump straight to the relatively harder part. Here we will generate the `x`s of our data points and map them to the respective `y`s using a simple function. Remember, each `x` is a feature, and each `y` is the corresponding label. Combining all the `x`s and `y`s would create the complete dataset.
+The data usually comes from the real world, which we will be exploring in the last part of this tutorial, but we don't want to jump straight to the relatively harder part. Here we will generate the `x`s of our data points and map them to the respective `y`s using a simple function. Remember, here each `x` is equivalent to a feature, and each `y` is the corresponding label. Combining all the `x`s and `y`s would create the complete dataset.
 
 ```jldoctest linear_regression_simple
 julia> x = hcat(collect(Float32, -3:0.1:3)...);
@@ -120,14 +120,14 @@ julia> flux_model = Dense(1 => 1)
 Dense(1 => 1)       # 2 parameters
 ```
 
-A [`Dense(1 => 1)`](@ref Dense) layer denotes a layer of one neuron with one output and one input. This layer is exactly same as the mathematical model defined by us above! Under the hood, `Flux` too calculates the output using the same expression! But, we don't have to initialize the parameters ourselves this time, instead `Flux` does it for us.
+A [`Dense(1 => 1)`](@ref Dense) layer denotes a layer of one neuron with one input (one feature) and one output. This layer is exactly same as the mathematical model defined by us above! Under the hood, `Flux` too calculates the output using the same expression! But, we don't have to initialize the parameters ourselves this time, instead `Flux` does it for us.
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> flux_model.weight, flux_model.bias
 (Float32[1.0764818], Float32[0.0])
 ```
 
-Now we can check if our model is acting right -
+Now we can check if our model is acting right. We can pass the complete data in one go, with each `x` having exactly one feature (one input) -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> flux_model(x) |> size
@@ -268,7 +268,7 @@ julia> using MLDatasets: BostonHousing
 ```
 
 ### Data
-Let's start by initializing our dataset. We will be using the [`BostonHousing`](https://juliaml.github.io/MLDatasets.jl/stable/datasets/misc/#MLDatasets.BostonHousing) dataset consisting of `506` data points. Each of these data points has `13` features and a corresponding label, the house's price. 
+Let's start by initializing our dataset. We will be using the [`BostonHousing`](https://juliaml.github.io/MLDatasets.jl/stable/datasets/misc/#MLDatasets.BostonHousing) dataset consisting of `506` data points. Each of these data points has `13` features and a corresponding label, the house's price. The `x`s are still mapped to a single `y`, but now, a single `x` data point has 13 features. 
 
 ```julia linear_regression_complex
 julia> dataset = BostonHousing()
