@@ -191,7 +191,7 @@ julia> dLdW, dLdb, _, _ = gradient(loss, W, b, x, y)
 
 We can now update the parameters, following the gradient descent algorithm -
 
-```jldoctest linear_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> W .= W .- 0.1 .* dLdW
 1-element Vector{Float32}:
  1.8144473
