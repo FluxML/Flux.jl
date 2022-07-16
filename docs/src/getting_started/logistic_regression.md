@@ -112,7 +112,7 @@ julia> custom_model(W, b, x) |> size
 It works! Let's check if the `softmax` function is working.
 
 ```jldoctest logistic_regression
-julia> all((custom_model(W, b, x) .< 1.0f0) .&& (custom_model(W, b, x) .> 0.0f0))
+julia> all(custom_model(W, b, x) .< 1.0f0) && all(custom_model(W, b, x) .> 0.0f0)
 true
 
 julia> sum(custom_model(W, b, x), dims=1)
