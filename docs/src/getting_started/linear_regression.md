@@ -71,8 +71,8 @@ model(W, b, x) = Wx + b
 where `W` is the weight matrix and `b` is the bias. For our case, the weight matrix (`W`) would constitute only a single element, as we have only a single feature. We can define our model in `Julia` using the exact same notation!
 
 ```jldoctest linear_regression_simple
-julia> model(W, b, x) = @. W*x + b
-model (generic function with 1 method)
+julia> custom_model(W, b, x) = @. W*x + b
+custom_model (generic function with 1 method)
 ```
 
 The `@.` macro allows you to perform the calculations by broadcasting the scalar quantities (for example - the bias).
@@ -92,22 +92,22 @@ julia> b = [0.0f0]
 Time to test if our model works!
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> model(W, b, x) |> size
+julia> custom_model(W, b, x) |> size
 (1, 61)
 
-julia> model(W, b, x)[1], y[1]
+julia> custom_model(W, b, x)[1], y[1]
 (-1.6116865f0, -7.0f0)
 ```
 
 It does! But the predictions are way off. We need to train the model to improve the predictions, but before training the model we need to define the loss function. The loss function would ideally output a quantity that we will try to minimize during the entire training process. Here we will use the mean sum squared error loss function.
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> function loss(W, b, x, y)
-           ŷ = model(W, b, x)
+julia> function custom_loss(W, b, x, y)
+           ŷ = custom_model(W, b, x)
            sum((y .- ŷ).^2) / length(x)
        end;
 
-julia> loss(W, b, x, y)
+julia> custom_loss(W, b, x, y)
 23.772217f0
 ```
 
@@ -140,12 +140,12 @@ julia> flux_model(x)[1], y[1]
 It is! The next step would be defining the loss function using `Flux`'s functions -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> function flux_loss(x, y)
+julia> function flux_loss(flux_model, x, y)
            ŷ = flux_model(x)
            Flux.mse(ŷ, y)
        end;
 
-julia> flux_loss(x, y)
+julia> flux_loss(flux_model, x, y)
 22.74856f0
 ```
 
@@ -161,7 +161,7 @@ julia> W = Float32[1.1412252]
 To check how both the models are performing on the data, let's find out the losses using the `loss` and `flux_loss` functions -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> loss(W, b, x, y), flux_loss(x, y)
+julia> custom_loss(W, b, x, y), flux_loss(flux_model, x, y)
 (22.74856f0, 22.74856f0)
 ```
 
@@ -182,9 +182,8 @@ The derivatives are calculated using an Automatic Differentiation tool, and `Flu
 
 Our first step would be to obtain the gradient of the loss function with respect to the weights and the biases. `Flux` re-exports `Zygote`'s `gradient` function; hence, we don't need to import `Zygote` explicitly to use the functionality.
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> dLdW, dLdb, _, _ = gradient(loss, W, b, x, y)
-(Float32[-6.7322206], Float32[-4.132563], Float32[0.1926041 0.14162663 … -0.39782608 -0.29997927], Float32[-0.16876957 -0.12410051 … 0.3485956 0.2628572])
+```jldoctest linear_regression_simple
+julia> dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, y);
 ```
 
 We can now update the parameters, following the gradient descent algorithm -
@@ -202,7 +201,7 @@ julia> b .= b .- 0.1 .* dLdb
 The parameters have been updated! We can now check the value of the loss function -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> loss(W, b, x, y)
+julia> custom_loss(W, b, x, y)
 17.157953f0
 ```
 
@@ -211,15 +210,15 @@ The loss went down! This means that we successfully trained our model for one ep
 Let's plug our super training logic inside a function and test it again -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> function train_model()
-           dLdW, dLdb, _, _ = gradient(loss, W, b, x, y)
+julia> function train_custom_model()
+           dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, y)
            @. W = W - 0.1 * dLdW
            @. b = b - 0.1 * dLdb
        end;
 
-julia> train_model();
+julia> train_custom_model();
 
-julia> W, b, loss(W, b, x, y)
+julia> W, b, custom_loss(W, b, x, y)
 (Float32[2.340657], Float32[0.7516814], 13.64972f0)
 ```
 
@@ -227,10 +226,10 @@ It works, and the loss went down again! This was the second epoch of our trainin
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> for i = 1:30
-          train_model()
+          train_custom_model()
        end
 
-julia> W, b, loss(W, b, x, y)
+julia> W, b, custom_loss(W, b, x, y)
 (Float32[4.2408285], Float32[2.243728], 7.668049f0)
 ```
 
@@ -239,7 +238,7 @@ There was a significant reduction in loss, and the parameters were updated!
 `Flux` provides yet another convenience functionality, the [`Flux.@epochs`](@ref) macro, which can be used to train a model for a specific number of epochs.
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> Flux.@epochs 10 train_model()
+julia> Flux.@epochs 10 train_custom_model()
 [ Info: Epoch 1
 [ Info: Epoch 2
 [ Info: Epoch 3
@@ -251,7 +250,7 @@ julia> Flux.@epochs 10 train_model()
 [ Info: Epoch 9
 [ Info: Epoch 10
 
-julia> W, b, loss(W, b, x, y)
+julia> W, b, custom_loss(W, b, x, y)
 (Float32[4.2422233], Float32[2.2460847], 7.6680417f0)
 ```
 
@@ -428,30 +427,30 @@ x = x .* reshape(rand(Float32, 61), (1, 61))
 plot(reshape(x, (61, 1)), reshape(y, (61, 1)), lw = 3, seriestype = :scatter, label = "", title = "Generated data", xlabel = "x", ylabel= "y")
 
 # custom model and parameters
-model(W, b, x) = @. W*x + b
+custom_model(W, b, x) = @. W*x + b
 W = rand(Float32, 1, 1)
 b = [0.0f0]
 
 # loss function
-function loss(model, x, y)
-    ŷ = model(x)
+function custom_loss(W, b, x, y)
+    ŷ = custom_model(W, b, x)
     sum((y .- ŷ).^2) / length(x)
 end;
 
-print("Initial loss", loss(model, x, y), "\n")
+print("Initial loss: ", custom_loss(W, b, x, y), "\n")
 
 # train
-function train_model()
-    dLdW, dLdb, _, _ = gradient(loss, W, b, x, y)
+function train_custom_model()
+    dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, y)
     @. W = W - 0.1 * dLdW
     @. b = b - 0.1 * dLdb
 end
 
 for i = 1:40
-    train_model()
+    train_custom_model()
 end
 
-print("Final loss", loss(model, x, y), "\n")
+print("Final loss: ", custom_loss(W, b, x, y), "\n")
 
 # plot data and results
 plot(reshape(x, (61, 1)), reshape(y, (61, 1)), lw = 3, seriestype = :scatter, label = "", title = "Simple Linear Regression", xlabel = "x", ylabel= "y")
@@ -477,10 +476,10 @@ function loss(model, x, y)
     Flux.mse(ŷ, y)
 end;
 
-print("Initial loss", loss(model, x_train_n, y_train), "\n")
+print("Initial loss: ", loss(model, x_train_n, y_train), "\n")
 
 # train
-function train_model()
+function train_custom_model()
     dLdm, _, _ = gradient(loss, model, x, y)
     @. model.weight = model.weight - 0.000001 * dLdm.weight
     @. model.bias = model.bias - 0.000001 * dLdm.bias
@@ -488,7 +487,7 @@ end
 
 loss_init = Inf;
 while true
-    train_model()
+    train_custom_model()
     if loss_init == Inf
         loss_init = loss(model, x_train_n, y_train)
         continue
@@ -500,9 +499,9 @@ while true
     end
 end
 
-print("Final loss", loss(model, x_train_n, y_train), "\n")
+print("Final loss: ", loss(model, x_train_n, y_train), "\n")
 
 # test
 x_test_n = Flux.normalise(x_test);
-print("Test loss", loss(model, x_test_n, y_test), "\n")
+print("Test loss: ", loss(model, x_test_n, y_test), "\n")
 ```
