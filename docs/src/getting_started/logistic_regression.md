@@ -381,3 +381,104 @@ The accuracy went up! The loss went down! Everything worked again!
 Summarising this tutorial, we saw how we can run a logistic regression algorithm in `Julia` with and without using `Flux`. We started by importing the classic `Iris` dataset, and one hot encoded the labels. Next, we defined our model, the loss function, and the accuracy, all by ourselves!
 
 Finally, we trained the model by manually writing down the Gradient Descent algorithm and optimising the loss. Interestingly, we implemented most of the functions on our own, and then parallelly compared them with the functionalities provided by `Flux`!
+
+## Copy-pastable code
+### Custom model
+```julia
+using Flux, Statistics, MLDatasets
+
+# data
+x, y = Iris(as_df=false)[:]
+y_r = reshape(y, (150, 1))
+custom_y_onehot = unique(y_r) .== permutedims(y_r)
+
+# activation function
+custom_softmax(x) = exp.(x) ./ sum(exp.(x), dims=1)
+
+# model
+m(W, b, x) = W*x .+ b
+W = rand(Float32, 3, 4)
+b = [0.0f0, 0.0f0, 0.0f0]
+custom_model(W, b, x) = m(W, b, x) |> custom_softmax
+
+# loss function
+custom_logitcrossentropy(ŷ, y) = mean(.-sum(y .* logsoftmax(ŷ; dims = 1); dims = 1))
+function custom_loss(W, b, x, y)
+    ŷ = custom_model(W, b, x)
+    custom_logitcrossentropy(ŷ, y)
+end
+
+# accuracy function
+function custom_onecold(custom_y_onehot)
+    mxidx = findmax(custom_y_onehot, dims=1)[2]
+    custom_y_cold = Vector{String}(undef, size(custom_y_onehot)[2])
+    for i = 1:size(custom_y_onehot)[2]
+        if mxidx[i].I[1] == 1
+            custom_y_cold[i] = "Iris-setosa"
+        elseif mxidx[i].I[1] == 2
+            custom_y_cold[i] = "Iris-versicolor"
+        elseif mxidx[i].I[1] == 3
+            custom_y_cold[i] = "Iris-virginica"
+        end
+    end
+    custom_y_cold
+end
+custom_accuracy(W, b, x, y) = mean(custom_onecold(custom_model(W, b, x)) .== y_r)
+
+print("Initial accuracy: ", custom_accuracy(W, b, x, y), "\n")
+print("Initial loss: ", custom_loss(W, b, x, custom_y_onehot), "\n")
+
+# train
+function train_custom_model()
+    dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, custom_y_onehot)
+    W .= W .- 0.1 .* dLdW
+    b .= b .- 0.1 .* dLdb
+end
+
+for i = 1:500
+    train_custom_model();
+    custom_accuracy(W, b, x, y) >= 0.98 && break
+end
+
+print("Final accuracy: ", custom_accuracy(W, b, x, y), "\n")
+print("Final loss: ", custom_loss(W, b, x, custom_y_onehot), "\n")
+```
+### Flux model
+```julia
+using Flux, Statistics, MLDatasets
+
+# data
+x, y = Iris(as_df=false)[:]
+y_r = reshape(y, (150, 1))
+flux_y_onehot = Flux.onehotbatch(y_r, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
+
+# model
+flux_model = Chain(Dense(4 => 3), softmax)
+
+# loss function
+function flux_loss(flux_model, x, y)
+    ŷ = flux_model(x)
+    Flux.logitcrossentropy(ŷ, y)
+end
+
+# accuracy function
+flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y_r)
+
+print("Initial accuracy: ", flux_accuracy(x, y), "\n")
+print("Initial loss: ", flux_loss(flux_model, x, flux_y_onehot), "\n")
+
+# train
+function train_flux_model()
+    dLdm, _, _ = gradient(flux_loss, flux_model, x, flux_y_onehot)
+    @. flux_model[1].weight = flux_model[1].weight - 0.1 * dLdm[:layers][1][:weight]
+    @. flux_model[1].bias = flux_model[1].bias - 0.1 * dLdm[:layers][1][:bias]
+end
+
+for i = 1:500
+    train_flux_model();
+    flux_accuracy(x, y) >= 0.98 && break
+end
+
+print("Final accuracy: ", flux_accuracy(x, y), "\n")
+print("Final loss: ", flux_loss(flux_model, x, flux_y_onehot), "\n")
+```
