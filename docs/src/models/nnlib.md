@@ -58,6 +58,7 @@ NNlib.upsample_nearest
 NNlib.upsample_bilinear
 NNlib.upsample_trilinear
 NNlib.pixel_shuffle
+NNlib.grid_sample
 ```
 
 ## Batched Operations
