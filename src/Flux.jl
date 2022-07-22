@@ -9,7 +9,9 @@ using MacroTools: @forward
 using MLUtils
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
 
-using Zygote, ChainRulesCore
+using ChainRulesCore
+import ChainRulesCore: rrule, RuleConfig, HasReverseMode
+using Zygote
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
