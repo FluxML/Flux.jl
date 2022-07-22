@@ -6,7 +6,7 @@ using Zygote: @adjoint
 using ChainRulesCore
 using ..Flux: ofeltype, epseltype
 using CUDA
-using NNlib: logsoftmax, logσ
+using NNlib: logsoftmax, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
 import Base.Broadcast: broadcasted
 
 export mse, mae, msle,
@@ -24,6 +24,5 @@ export mse, mae, msle,
 
 include("utils.jl")
 include("functions.jl")
-include("ctc.jl")
 
 end #module
