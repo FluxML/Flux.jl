@@ -112,7 +112,7 @@ end
 
   # Even more trivial: no movement
   @test gradient(x -> sum(abs, cpu(x)), a)[1] isa Matrix
-  @test gradient(x -> sum(abs, cpu(x)), a')[1] isa LinearAlgebra.Adjoint
+  @test gradient(x -> sum(abs, cpu(x)), a')[1] isa Matrix
   @test gradient(x -> sum(cpu(x)), a)[1] isa typeof(gradient(sum, a)[1]) # FillArray
   @test gradient(x -> sum(abs, gpu(x)), ca)[1] isa CuArray
   @test_skip gradient(x -> sum(abs, gpu(x)), ca')[1] isa CuArray # KernelError: passing and using non-bitstype argument
