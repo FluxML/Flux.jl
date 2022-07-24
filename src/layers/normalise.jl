@@ -209,7 +209,7 @@ julia> isapprox(std(y, dims=1:3), ones(1, 1, 1, 2), atol=0.1) && std(y, dims=1:3
 true
 ```
 """
-struct LayerNorm{F,D,T,N}
+struct LayerNorm{F,D,T,N} <: SimpleLayer
   λ::F
   diag::D
   ϵ::T
@@ -322,7 +322,7 @@ julia> isapprox(std(m(xs)), 1, atol=0.1) && std(xs) != std(m(xs))
 true
 ```
 """
-mutable struct BatchNorm{F,V,N,W}
+mutable struct BatchNorm{F,V,N,W} <: SimpleLayer
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -412,7 +412,7 @@ julia> isapprox(std(y, dims=1:2), ones(1, 1, 3, 2), atol=0.2) && std(y, dims=1:2
 true
 ```
 """
-mutable struct InstanceNorm{F,V,N,W}
+mutable struct InstanceNorm{F,V,N,W} <: SimpleLayer
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -506,7 +506,7 @@ julia> isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) && std(xs[:, :, 3:4, 2]) != s
 true
 ```
 """
-mutable struct GroupNorm{F,V,N,W}
+mutable struct GroupNorm{F,V,N,W} <: SimpleLayer
   G::Int  # number of groups
   λ::F  # activation function
   β::V  # bias

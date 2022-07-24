@@ -1,3 +1,20 @@
+
+abstract type AbstractLayer end
+"""
+    abstract type ContainerLayer <: AbstractLayer end
+    
+Supertype for layers such as `Chain` & `Parallel`.
+Not essential to Flux's functioning, but tells fancy `show` to unfold the contents.
+"""
+abstract type ContainerLayer <: AbstractLayer end
+"""
+    abstract type SimpleLayer <: AbstractLayer end
+    
+Supertype for layers such as `Dense` & `Conv`.
+Not essential to Flux's functioning, but tells `show` how to behave.
+"""
+abstract type SimpleLayer <: AbstractLayer end
+
 """
     Chain(layers...)
     Chain(name = layer, ...)
@@ -32,7 +49,7 @@ For large models, there is a special type-unstable path which can reduce compila
 times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
 This feature is somewhat experimental, beware!
 """
-struct Chain{T<:Union{Tuple, NamedTuple, AbstractVector}}
+struct Chain{T<:Union{Tuple, NamedTuple, AbstractVector}} <: ContainerLayer
   layers::T
 end
 
@@ -150,7 +167,7 @@ julia> Flux.params(d1)  # no trainable bias
 Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{F, M<:AbstractMatrix, B}
+struct Dense{F, M<:AbstractMatrix, B} <: SimpleLayer
   weight::M
   bias::B
   σ::F
@@ -223,7 +240,7 @@ julia> Flux.params(b)
 Params([[1 2 3 4]])
 ```
 """
-struct Scale{F, A<:AbstractArray, B}
+struct Scale{F, A<:AbstractArray, B} <: SimpleLayer
   scale::A
   bias::B
   σ::F
@@ -285,7 +302,7 @@ julia> Flux.outputsize(m3, (5, 11))
 (7, 11)
 ```
 """
-struct Maxout{T<:Tuple}
+struct Maxout{T<:Tuple} <: SimpleLayer
   layers::T
 end
 Maxout(layers...) = Maxout(layers)
@@ -333,7 +350,7 @@ true
 
 See also [`Parallel`](@ref), [`Maxout`](@ref).
 """
-struct SkipConnection{T,F}
+struct SkipConnection{T,F} <: ContainerLayer
   layers::T
   connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
@@ -397,7 +414,7 @@ julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the ou
 Bilinear((8, 16) => 4, tanh; bias=false)  # 512 parameters
 ```
 """
-struct Bilinear{F,A,B}
+struct Bilinear{F,A,B} <: SimpleLayer
   weight::A
   bias::B
   σ::F
@@ -492,7 +509,7 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T<:Union{Tuple, NamedTuple}}
+struct Parallel{F, T<:Union{Tuple, NamedTuple}} <: ContainerLayer
   connection::F
   layers::T
 end
@@ -582,7 +599,7 @@ end
 
 A tuple of length N with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
 """
-struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}}
+struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}} <: ContainerLayer
   connection::F
   layers::T
 end
@@ -672,7 +689,7 @@ julia> model(vocab_idxs) == model(x)
 true
 ```
 """
-struct Embedding{W}
+struct Embedding{W} <: SimpleLayer
   weight::W
 end
 

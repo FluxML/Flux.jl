@@ -117,7 +117,7 @@ julia> Conv((5,5), 3 => 7; stride = 2, dilation = 4)(xs) |> size
 (42, 42, 7, 50)
 ```
 """
-struct Conv{N,M,F,A,V}
+struct Conv{N,M,F,A,V} <: SimpleLayer
   σ::F
   weight::A
   bias::V
@@ -252,7 +252,7 @@ julia> ConvTranspose((5,5), 3 => 7, stride=3, pad=SamePad())(xs) |> size
 (300, 300, 7, 50)
 ```
 """
-struct ConvTranspose{N,M,F,A,V}
+struct ConvTranspose{N,M,F,A,V} <: SimpleLayer
   σ::F
   weight::A
   bias::V
@@ -407,7 +407,7 @@ julia> CrossCor((5,5), 3 => 7, stride=3, pad=(2,0))(xs) |> size
 (34, 32, 7, 50)
 ```
 """
-struct CrossCor{N,M,F,A,V}
+struct CrossCor{N,M,F,A,V} <: SimpleLayer
   σ::F
   weight::A
   bias::V

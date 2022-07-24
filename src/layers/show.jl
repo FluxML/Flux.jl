@@ -1,22 +1,20 @@
 
-for T in [
-    :Chain, :Parallel, :SkipConnection, :Recur, :Maxout, :PairwiseFusion  # container types
-  ]
-  @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
-    if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
-      _big_show(io, x)
-    elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
-      _layer_show(io, x)
-    else
-      show(io, x)
-    end
+@nospecialize
+
+function Base.show(io::IO, m::MIME"text/plain", x::ContainerLayer)
+  if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
+    _big_show(io, x)
+  elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
+    _layer_show(io, x)
+  else
+    show(io, x)
   end
 end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   pre, post = obj isa Chain{<:AbstractVector} ? ("([", "])") : ("(", ")")
   children = _show_children(obj)
-  if all(_show_leaflike, children)
+  if all(_show_leaflike, children)  # or else if obj isa SimpleLayer, via dispatch below
     _layer_show(io, obj, indent, name)
   else
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), pre)
@@ -43,6 +41,7 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
     end
   end
 end
+_big_show(io::IO, obj::SimpleLayer, indent::Int=0, name=nothing) = _layer_show(io, obj, indent, name)
 
 _show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
 _show_leaflike(::Tuple{Vararg{<:Number}}) = true         # e.g. stride of Conv
@@ -55,16 +54,11 @@ _show_children(m::Maxout) = m.layers
 _show_children(p::Parallel) = (p.connection, p.layers...)
 _show_children(f::PairwiseFusion) = (f.connection, f.layers...)
 
-for T in [
-    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding,
-    :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
-  ]
-  @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
-    if !get(io, :compact, false)
-      _layer_show(io, x)
-    else
-      show(io, x)
-    end
+function Base.show(io::IO, m::MIME"text/plain", x::SimpleLayer)
+  if !get(io, :compact, false)
+    _layer_show(io, x)
+  else
+    show(io, x)
   end
 end
 
@@ -128,3 +122,5 @@ _any(f, x::Number) = f(x)
 # _any(f, x) = false
 
 _all(f, xs) = !_any(!f, xs)
+
+@specialize
