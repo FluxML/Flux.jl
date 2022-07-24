@@ -16,10 +16,6 @@ Random.seed!(0)
     include("utils.jl")
   end
 
-  @testset "Onehot" begin
-    include("onehot.jl")
-  end
-
   @testset "Optimise" begin
     include("optimise.jl")
   end
