@@ -80,3 +80,12 @@ Base.@deprecate_binding RADAM RAdam
 Base.@deprecate_binding OADAM OAdam
 Base.@deprecate_binding ADAGrad AdaGrad
 Base.@deprecate_binding ADADelta AdaDelta
+
+# All things one-hot moved to a package, which v0.14 won't load for you:
+import OneHotArrays
+@deprecate onehot(xs) OneHotArrays.onehot(xs)
+@deprecate onecold(xs) OneHotArrays.onecold(xs)
+@deprecate onehotbatch(xs) OneHotArrays.onehotbatch(xs)
+Base.@deprecate_binding OneHotArray OneHotArrays.OneHotArray
+Base.@deprecate_binding OneHotVector OneHotArrays.OneHotVector
+Base.@deprecate_binding OneHotMatrix OneHotArrays.OneHotMatrix
