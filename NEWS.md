@@ -1,11 +1,22 @@
 # Flux Release Notes
 
+# v0.14
+
+* The use of Zygote's implicit parameters (with `Flux.params` and global variables) is deprecated in favour of the explicit style.
+  The function `train!` has new methods (accepting the model itself) to handle this.
+
+* Sub-module `Flux.Optimise` has been removed, in favour of using [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) more deeply.
+  The function `train!` now lives in sub-module `Flux.Train`, and has re-written internals.
+
+* One-hot arrays have moved to a new package [OneHotArrays.jl](https://github.com/FluxML/OneHotArrays.jl)
+
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)
 
-## v0.13
+## v0.13 (April 2022)
+
 * After a deprecations cycle, the datasets in `Flux.Data` have
-been removed in favour of MLDatasets.jl.
+  been removed in favour of [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl).
 * `params` is not exported anymore since it is a common name and is also exported by Distributions.jl
 * `flatten` is not exported anymore due to clash with Iterators.flatten.
 * Remove Juno.jl progress bar support as it is now obsolete.
@@ -48,7 +59,7 @@ been removed in favour of MLDatasets.jl.
 * CUDA.jl 3.0 support
 * Bug fixes and optimizations.
 
-## v0.12.0
+## v0.12.0 (March 2021)
 
 * Add [identity_init](https://github.com/FluxML/Flux.jl/pull/1524).
 * Add [Orthogonal Matrix initialization](https://github.com/FluxML/Flux.jl/pull/1496) as described in [Exact solutions to the nonlinear dynamics of learning in deep linear neural networks](https://arxiv.org/abs/1312.6120).
@@ -73,7 +84,7 @@ been removed in favour of MLDatasets.jl.
 * Adds the [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser.
 * Other new features and bug fixes (see GitHub releases page)
 
-## v0.11
+## v0.11 (July 2020)
 
 * Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
 * Add [kaiming initialization](https://arxiv.org/abs/1502.01852) methods: [kaiming_uniform and kaiming_normal](https://github.com/FluxML/Flux.jl/pull/1243)
@@ -101,7 +112,7 @@ keyword argument. The `Dropout` struct *whose behavior is left unchanged) is the
 
 See GitHub's releases.
 
-## v0.10.0
+## v0.10.0 (November 2019)
 
 * The default AD engine has switched from [Tracker to Zygote.jl](https://github.com/FluxML/Flux.jl/pull/669)
   - The dependency on Tracker.jl has been removed.

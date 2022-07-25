@@ -11,7 +11,7 @@ import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owne
 
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
-export gradient
+# export gradient  # stop exporting this, to make people say "using Zygote", and make easier to replace
 
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
 Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
@@ -25,14 +25,15 @@ export Chain, Dense, Maxout, SkipConnection, Parallel, PairwiseFusion,
        fmap, cpu, gpu, f32, f64,
        testmode!, trainmode!
 
-include("optimise/Optimise.jl")
-using .Optimise
-using .Optimise: @epochs
-using .Optimise: skip
-export Descent, Adam, Momentum, Nesterov, RMSProp,
-  AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
-  AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
-  WeightDecay, ClipValue, ClipNorm
+include("train/Train.jl")
+using .Train
+export train!
+# Stop exporting these, since Optimisers.jl exports the same names, 
+# and with this PR, Flux.Adam() is literally a wrapper around Adam().
+# export Descent, Adam, Momentum, Nesterov, RMSProp,
+#   AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
+#   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
+#   WeightDecay, ClipValue, ClipNorm
 
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)

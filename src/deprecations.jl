@@ -34,10 +34,10 @@ struct Zeros
 end
 Zeros(args...) = Zeros()  # was used both Dense(10, 2, initb = Zeros) and Dense(rand(2,10), Zeros())
 
-function Optimise.update!(x::AbstractArray, x̄)
-  Base.depwarn("`Flux.Optimise.update!(x, x̄)` was not used internally and has been removed. Please write `x .-= x̄` instead.", :update!)
-  x .-= x̄
-end
+# function Optimise.update!(x::AbstractArray, x̄)
+#   Base.depwarn("`Flux.Optimise.update!(x, x̄)` was not used internally and has been removed. Please write `x .-= x̄` instead.", :update!)
+#   x .-= x̄
+# end
 
 function Diagonal(size::Integer...; kw...)
   Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
@@ -80,3 +80,6 @@ Base.@deprecate_binding RADAM RAdam
 Base.@deprecate_binding OADAM OAdam
 Base.@deprecate_binding ADAGrad AdaGrad
 Base.@deprecate_binding ADADelta AdaDelta
+
+# What remains from the Optimise sub-module has moved to Train:
+Base.@deprecate_binding Optimise Train
