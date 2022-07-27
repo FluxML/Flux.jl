@@ -29,7 +29,7 @@ function train!(loss::Function, pars::Params, data, opt::FluxState)
   losses = Float32[]
   for d in data
     l, grads = Zygote.withgradient(() -> loss(batchmemaybe(d)...), pars)
-    update!(opt, pars, grads)
+    _update!(opt, pars, grads)
     push!(losses, l)
   end
   return losses
@@ -49,7 +49,7 @@ function train!(loss::Function, pars::Params, opt::FluxState)
                   Explicit parameters are now preferred, see `train!(loss, model, data, opt)`""", :train!, force=true)
   _initialise!(opt, pars)
   l, grads = Zygote.withgradient(() -> loss(), pars)
-  update!(opt, pars, grads)
+  _update!(opt, pars, grads)
   return l
 end
 
@@ -68,6 +68,12 @@ Legacy method, mimicking the behaviour of Flux <= 0.13.
 """
 function update!(opt::FluxState, xs::Params, gs)
   Base.depwarn("Flux.update! is a legacy function", :update!)
+  _initialise!(opt, xs)
+  _update!(opt, xs, gs)
+end
+# This _update! exists only so that train! above gives one depwarn, not two!
+# ... and also to call _initialise!
+function _update!(opt::FluxState, xs::Params, gs)
   for x in xs
     isnothing(gs[x]) && continue
     update!(opt, x, gs[x])

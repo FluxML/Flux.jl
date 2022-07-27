@@ -52,26 +52,28 @@ function train!(loss::Function, model, data, opt::FluxState)
   _initialise!(opt, model)
   losses = Float32[]
   s = opt.state
-  s isa IdDict && error("can't mix explicit & implicit!")
+  s isa IdDict && error("""Can't mix explicit & implicit modes!
+                           Once `FluxState` is initialised by `train!` in one mode, it cannot be used in the other.""")
   for d in data
-    l, (g, _...) = Zygote.withgradient(loss, model, train_ok(d)...)
+    l, (g, _...) = explicit_withgradient(loss, model, data_splat(d)...)
     s, model = Optimisers.update!(s, model, g)
     push!(losses, l)
     opt.state = s
   end
-  return losses
+  return losses  # Not entirely sure returning losses is a good idea. Flux 0.13 returns `nothing`.
 end
 
-train_ok(x::T) where T =  error("""train! expects every d in data be a Tuple or a NamedTuple, got $T
-                                   To allow this type, define `Flux.Optimise.train_ok(x::$T) = (x,)`""")
-train_ok(x::Tuple) = x
-train_ok(x::NamedTuple) = x
+data_splat(x::T) where T =  error("""train! expects every d in data be a Tuple or a NamedTuple, got $T
+                                   To allow this type, define `Flux.Train.data_splat(x::$T) = (x,)`""")
+data_splat(x::Tuple) = x
+data_splat(x::NamedTuple) = x
 
 function _initialise!(opt::FluxState, model)
   if opt.state isa Missing
     opt.state = Optimisers.setup(opt.rule, model)
     fmap(model, exclude = Optimisers.isnumeric) do x
-      Optimisers.maywrite(x) || error("model must be fully mutable for train! to work, got $(typeof(x))")
+      Optimisers.maywrite(x) || error("""model must be fully mutable for train! to work, got x::$(typeof(x))
+                                         If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
     end
   end
   opt
@@ -107,12 +109,12 @@ function train!(loss::Function, model, opt::FluxState)
   l
 end
 
+# This method lets you use Optimisers.Descent() instead of Flux.Descent(), when there is no state
 function train!(loss::Function, model, data, opt::Optimisers.AbstractRule)
   _initialise!(opt, model)
-  # fmap(opt.state) do x
-  #   x isa Union{Number, AbstractArray{<:Number}} && @warn "optimiser state will be lost!"
-  #   x
-  # end  # won't work as you need to look inside Leaf for non-nothings.
-  @warn "optimiser state will be lost!"
+  fmap(opt.state, exclude = x -> x isa Optimsers.Leaf) do leaf
+    leaf.state isa Nothing ||  @warn "Optimiser state will be lost! Please wrap optimisation rule in `FluxState`, e.g. by using `Flux.Adam()`" leaf
+    leaf
+  end
   train!(loss, model, data, FluxState(opt))
 end

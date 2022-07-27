@@ -20,8 +20,8 @@ Random.seed!(0)
     include("onehot.jl")
   end
 
-  @testset "Optimise" begin
-    include("optimise.jl")
+  @testset "Train" begin
+    include("train.jl")
   end
 
   @testset "Data" begin
