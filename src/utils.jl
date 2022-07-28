@@ -621,7 +621,7 @@ julia> loss() = rand();
 julia> trigger = Flux.patience(() -> loss() < 1, 3);
 
 
-julia> for i in 1:10 begin
+julia> for i in 1:10
          @info "Epoch \$i"
          trigger() && break
        end
