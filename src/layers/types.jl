@@ -24,30 +24,22 @@ But they do simplify some common interactions:
 """
 abstract type AbstractLayer end
 
-if VERSION > v"1.9-"
-  function Functors.functor(::Type{T}, x) where {T<:AbstractLayer}
-    namedtuple(x), Splat(paramerterlesstype(T))  # avoids warnings: `splat(x)` is deprecated, use `Splat(x)` instead.
-  end
-else
-  function Functors.functor(::Type{T}, x) where {T<:AbstractLayer}
-    namedtuple(x), Base.splat(paramerterlesstype(T))
+function Functors.functor(::Type{T}, x) where {T<:AbstractLayer}
+  if @generated
+    F = fieldnames(T)
+    args = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
+    C = Base.typename(T).name  # constructor
+    recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
+    :((NamedTuple{$F}(($(args...),)), $recon))
+  else
+    # Getting this parameterless type takes about 2μs, every time:
+    namedtuple(x), Base.splat(Base.typename(T).wrapper)
   end
 end
 
 function namedtuple(x::T) where T
   F = fieldnames(T)
   NamedTuple{F}(map(sy -> getfield(x, sy), F))
-end
-#=
-@generated function namedtuple(x::T) where T  # doesn't help
-  F = fieldnames(T)
-  G = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
-  :(NamedTuple{$F}(($(G...),)))
-end
-=#
-function paramerterlesstype(::Type{T}) where T
-  isstructtype(T) || throw(ArgumentError("paramerterlesstype(T) expects isstructtype(T), got $T"))
-  T.name.wrapper
 end
 
 Adapt.adapt_structure(to, layer::AbstractLayer) = fmap(x -> adapt(to, x), layer)
