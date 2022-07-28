@@ -90,7 +90,7 @@ julia> isapprox(count(==(0), y) / length(y), 0.5, atol=0.1)
 true
 ```
 """
-mutable struct Dropout{F,D,R<:AbstractRNG}
+mutable struct Dropout{F,D,R<:AbstractRNG} <: NoTrainLayer
   p::F
   dims::D
   active::Union{Bool, Nothing}
@@ -104,8 +104,6 @@ function Dropout(p; dims=:, rng = rng_from_array())
 end
 
 @functor Dropout
-trainable(a::Dropout) = (;)
-
 function (a::Dropout)(x)
   _isactive(a) || return x
   return dropout(a.rng, x, a.p; dims=a.dims, active=true)
@@ -146,7 +144,7 @@ julia> isapprox(std(x), std(y), atol=0.2)
 true
 ```
 """
-mutable struct AlphaDropout{F,R<:AbstractRNG}
+mutable struct AlphaDropout{F,R<:AbstractRNG} <: NoTrainLayer
   p::F
   active::Union{Bool, Nothing}
   rng::R
@@ -159,8 +157,6 @@ AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
 AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
-trainable(a::AlphaDropout) = (;)
-
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
   p = a.p
@@ -209,7 +205,7 @@ julia> isapprox(std(y, dims=1:3), ones(1, 1, 1, 2), atol=0.1) && std(y, dims=1:3
 true
 ```
 """
-struct LayerNorm{F,D,T,N} <: SimpleLayer
+struct LayerNorm{F,D,T,N} <: PartialTrainLayer{(:diag,)}
   λ::F
   diag::D
   ϵ::T
@@ -322,7 +318,7 @@ julia> isapprox(std(m(xs)), 1, atol=0.1) && std(xs) != std(m(xs))
 true
 ```
 """
-mutable struct BatchNorm{F,V,N,W} <: SimpleLayer
+mutable struct BatchNorm{F,V,N,W} <: PartialTrainLayer{(:β, :γ)}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -353,7 +349,6 @@ function BatchNorm(chs::Int, λ=identity;
 end
 
 @functor BatchNorm
-trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
 
 function (BN::BatchNorm)(x)
   @assert size(x, ndims(x)-1) == BN.chs
@@ -412,7 +407,7 @@ julia> isapprox(std(y, dims=1:2), ones(1, 1, 3, 2), atol=0.2) && std(y, dims=1:2
 true
 ```
 """
-mutable struct InstanceNorm{F,V,N,W} <: SimpleLayer
+mutable struct InstanceNorm{F,V,N,W} <: PartialTrainLayer{(:β, :γ)}
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
@@ -443,7 +438,6 @@ function InstanceNorm(chs::Int, λ=identity;
 end
 
 @functor InstanceNorm
-trainable(in::InstanceNorm) = hasaffine(in) ? (β = in.β, γ = in.γ) : (;)
 
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
@@ -506,7 +500,7 @@ julia> isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) && std(xs[:, :, 3:4, 2]) != s
 true
 ```
 """
-mutable struct GroupNorm{F,V,N,W} <: SimpleLayer
+mutable struct GroupNorm{F,V,N,W} <: PartialTrainLayer{(:β, :γ)}
   G::Int  # number of groups
   λ::F  # activation function
   β::V  # bias
@@ -522,7 +516,6 @@ mutable struct GroupNorm{F,V,N,W} <: SimpleLayer
 end
 
 @functor GroupNorm
-trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,

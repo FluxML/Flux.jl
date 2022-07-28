@@ -125,7 +125,7 @@ julia> rnn.state
  60
 ```
 """
-mutable struct Recur{T,S}
+mutable struct Recur{T,S} <: ContainerLayer
   cell::T
   state::S
 end
@@ -136,7 +136,7 @@ function (m::Recur)(x)
 end
 
 @functor Recur
-trainable(a::Recur) = (; cell = a.cell)
+trainable(a::Recur) = (; cell = a.cell)  # can't use <: PartialTrainLayer
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -189,7 +189,7 @@ end
 
 # Vanilla RNN
 
-struct RNNCell{F,A,V,S}
+struct RNNCell{F,A,V,S} <: SimpleLayer  # or should it be PartialTrainLayer{(:Wi, :Wh, :b)}?
   σ::F
   Wi::A
   Wh::A
@@ -277,7 +277,7 @@ Recur(m::RNNCell) = Recur(m, m.state0)
 
 # LSTM
 
-struct LSTMCell{A,V,S}
+struct LSTMCell{A,V,S} <: SimpleLayer  # or should it be PartialTrainLayer{(:Wi, :Wh, :b)}?
   Wi::A
   Wh::A
   b::V
@@ -351,7 +351,7 @@ function _gru_output(gxs, ghs, bs)
   return r, z
 end
 
-struct GRUCell{A,V,S}
+struct GRUCell{A,V,S} <: SimpleLayer  # or should it be PartialTrainLayer{(:Wi, :Wh, :b)}?
   Wi::A
   Wh::A
   b::V

@@ -44,6 +44,7 @@ include("functor.jl")
 # Pirate error to catch a common mistake.
 Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
 
+include("layers/types.jl")
 include("layers/stateless.jl")
 include("layers/basic.jl")
 include("layers/conv.jl")

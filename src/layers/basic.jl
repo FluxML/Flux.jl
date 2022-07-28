@@ -1,20 +1,4 @@
 
-abstract type AbstractLayer end
-"""
-    abstract type ContainerLayer <: AbstractLayer end
-    
-Supertype for layers such as `Chain` & `Parallel`.
-Not essential to Flux's functioning, but tells fancy `show` to unfold the contents.
-"""
-abstract type ContainerLayer <: AbstractLayer end
-"""
-    abstract type SimpleLayer <: AbstractLayer end
-    
-Supertype for layers such as `Dense` & `Conv`.
-Not essential to Flux's functioning, but tells `show` how to behave.
-"""
-abstract type SimpleLayer <: AbstractLayer end
-
 """
     Chain(layers...)
     Chain(name = layer, ...)
@@ -302,7 +286,7 @@ julia> Flux.outputsize(m3, (5, 11))
 (7, 11)
 ```
 """
-struct Maxout{T<:Tuple} <: SimpleLayer
+struct Maxout{T<:Tuple} <: ContainerLayer
   layers::T
 end
 Maxout(layers...) = Maxout(layers)
