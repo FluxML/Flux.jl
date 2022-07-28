@@ -146,7 +146,7 @@ Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
 training in a REPL.
 
 # Examples
-```jldoctest
+```julia
 julia> Flux.@epochs 2 println("hello")
 [ Info: Epoch 1
 hello
