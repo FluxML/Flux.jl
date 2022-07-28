@@ -38,6 +38,9 @@ struct SkipException <: Exception end
 Call `Flux.skip()` in a callback to indicate when a callback condition is met.
 This will trigger the train loop to skip the current data point and not update with the calculated gradient.
 
+!!! note
+    `Flux.skip()` will be removed from Flux 0.14
+
 # Examples
 ```julia
 cb = function ()
@@ -60,6 +63,9 @@ struct StopException <: Exception end
 
 Call `Flux.stop()` in a callback to indicate when a callback condition is met.
 This will trigger the train loop to stop and exit.
+
+!!! note
+    `Flux.stop()` will be removed from Flux 0.14. It should be replaced with `break` in an ordinary `for` loop.
 
 # Examples
 ```julia
@@ -144,6 +150,9 @@ end
 
 Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
 training in a REPL.
+
+!!! note
+    The macro `@epochs` will be removed from Flux 0.14. Please just write an ordinary `for` loop.
 
 # Examples
 ```julia
