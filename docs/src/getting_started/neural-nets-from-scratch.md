@@ -1,5 +1,28 @@
 # Flux Basics
 
+## Building Simple Models
+
+Consider a simple linear regression model, which tries to predict an output array `y` from an input `x`. For a more detailed example see [`Linear Regression`](@ref)
+
+```julia
+julia> W = rand(2, 5);
+julia> b = rand(2);
+
+julia> predict(x) = W*x .+ b
+
+julia> function loss(x, y)
+         ŷ = predict(x)
+         sum((y .- ŷ).^2)
+       end;
+
+julia> x, y = rand(5), rand(2);
+
+julia> loss(x, y)
+
+```
+
+To improve the prediction we can take the gradients of the loss with respect to `W` and `b` and perform gradient descent.
+
 ## Taking Gradients
 
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
@@ -30,55 +53,6 @@ julia> gradient(f, [2, 1], [2, 0])
 ```
 
 These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
-
-
-Machine learning often can have *hundreds* of parameters, so Flux lets you work with collections of parameters, via the `params` functions. You can get the gradient of all parameters used in a program without explicitly passing them in.
-
-```jldoctest basics
-julia> x = [2, 1];
-
-julia> y = [2, 0];
-
-julia> gs = gradient(Flux.params(x, y)) do
-         f(x, y)
-       end
-Grads(...)
-
-julia> gs[x]
-2-element Vector{Float64}:
- 0.0
- 2.0
-
-julia> gs[y]
-2-element Vector{Float64}:
- -0.0
- -2.0
-```
-
-Here, `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.
-
-This will come in really handy when dealing with big, complicated models. For now, though, let's start with something simple.
-
-## Building Simple Models
-
-Consider a simple linear regression, which tries to predict an output array `y` from an input `x`.
-
-```julia
-W = rand(2, 5)
-b = rand(2)
-
-predict(x) = W*x .+ b
-
-function loss(x, y)
-  ŷ = predict(x)
-  sum((y .- ŷ).^2)
-end
-
-x, y = rand(5), rand(2) # Dummy data
-loss(x, y) # ~ 3
-```
-
-To improve the prediction we can take the gradients of the loss with respect to `W` and `b` and perform gradient descent.
 
 ```julia
 using Flux
