@@ -103,7 +103,6 @@ function Dropout(p; dims=:, rng = rng_from_array())
   Dropout(p, dims, nothing, rng)
 end
 
-@functor Dropout
 function (a::Dropout)(x)
   _isactive(a) || return x
   return dropout(a.rng, x, a.p; dims=a.dims, active=true)
@@ -156,7 +155,6 @@ end
 AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
 AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
 
-@functor AlphaDropout
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a) || return x
   p = a.p
@@ -219,8 +217,6 @@ function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, ϵ:
 end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
-
-@functor LayerNorm
 
 (a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
 
@@ -348,8 +344,6 @@ function BatchNorm(chs::Int, λ=identity;
             nothing, chs)
 end
 
-@functor BatchNorm
-
 function (BN::BatchNorm)(x)
   @assert size(x, ndims(x)-1) == BN.chs
   N = ndims(x)
@@ -437,8 +431,6 @@ function InstanceNorm(chs::Int, λ=identity;
             nothing, chs)
 end
 
-@functor InstanceNorm
-
 function (l::InstanceNorm)(x)
   @assert ndims(x) > 2
   @assert size(x, ndims(x)-1) == l.chs
@@ -514,8 +506,6 @@ mutable struct GroupNorm{F,V,N,W} <: PartialTrainLayer{(:β, :γ)}
   active::Union{Bool, Nothing}
   chs::Int # number of channels
 end
-
-@functor GroupNorm
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,

@@ -187,8 +187,6 @@ function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
   init(filter..., cin÷groups, cout)
 end
 
-@functor Conv
-
 conv_dims(c::Conv, x::AbstractArray) =
   DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
 
@@ -306,8 +304,6 @@ function ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ =
   weight = convfilter(k, reverse(ch); init, groups)                    
   ConvTranspose(weight, bias, σ; stride, pad, dilation, groups)
 end
-
-@functor ConvTranspose
 
 function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
   # Calculate size of "input", from ∇conv_data()'s perspective...
@@ -452,8 +448,6 @@ function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = iden
   weight = convfilter(k, ch, init = init)
   return CrossCor(weight, bias, σ; stride, pad, dilation)
 end
-
-@functor CrossCor
 
 function crosscor(x, w, ddims::DenseConvDims)
   ddims = DenseConvDims(ddims, F=true)

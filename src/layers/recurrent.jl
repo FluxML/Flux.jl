@@ -135,7 +135,6 @@ function (m::Recur)(x)
   return y
 end
 
-@functor Recur
 trainable(a::Recur) = (; cell = a.cell)  # can't use <: PartialTrainLayer
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
@@ -206,8 +205,6 @@ function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T}
   h = σ.(Wi*x .+ Wh*h .+ b)
   return h, reshape_cell_output(h, x)
 end
-
-@functor RNNCell
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), " => ", size(l.Wi, 1))
@@ -302,8 +299,6 @@ function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{Abstr
   return (h′, c′), reshape_cell_output(h′, x)
 end
 
-@functor LSTMCell
-
 Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷4, ")")
 
@@ -370,8 +365,6 @@ function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},O
   return h′, reshape_cell_output(h′, x)
 end
 
-@functor GRUCell
-
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
 
@@ -434,8 +427,6 @@ function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T}
   h′ = @. (1 - z) * h̃ + z * h
   return h′, reshape_cell_output(h′, x)
 end
-
-@functor GRUv3Cell
 
 Base.show(io::IO, l::GRUv3Cell) =
   print(io, "GRUv3Cell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
