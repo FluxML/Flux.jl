@@ -9,5 +9,7 @@ Functors.isleaf
 Functors.children
 Functors.fcollect
 Functors.functor
+Functors.@functor
 Functors.fmap
+Functors.fmapstructure
 ```

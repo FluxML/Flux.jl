@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = Flux
+```
+
 # Optimisers
 
 Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
@@ -188,4 +192,14 @@ opt = Optimiser(ClipValue(1e-3), Adam(1e-3))
 ```@docs
 ClipValue
 ClipNorm
+```
+
+# Optimisers.jl
+
+Flux re-exports some utility functions from [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl)
+and the complete `Optimisers` package under the `Flux.Optimisers` namespace.
+
+```@docs
+Optimisers.destructure
+Optimisers.trainable
 ```

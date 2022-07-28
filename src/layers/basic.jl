@@ -124,7 +124,7 @@ The out `y` will be a vector  of length `out`, or a batch with
 
 Keyword `bias=false` will switch off trainable bias for the layer.
 The initialisation of the weight matrix is `W = init(out, in)`, calling the function
-given to keyword `init`, with default [`glorot_uniform`](@doc Flux.glorot_uniform).
+given to keyword `init`, with default [`glorot_uniform`](@ref Flux.glorot_uniform).
 The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
 
 # Examples
@@ -262,7 +262,7 @@ which constructs them, and the number to construct.
 
 Maxout over linear dense layers satisfies the univeral approximation theorem.
 See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks" 
-[https://arxiv.org/abs/1302.4389](1302.4389).
+[https://arxiv.org/abs/1302.4389](https://arxiv.org/abs/1302.4389).
 
 See also [`Parallel`](@ref) to reduce with other operators.
 
@@ -651,7 +651,7 @@ for a vocabulary of size `in`.
 
 This layer is often used to store word embeddings and retrieve them using indices. 
 The input to the layer can be either a vector of indexes
-or the corresponding [onehot encoding](@ref Flux.OneHotArray). 
+or the corresponding [`onehot encoding`](@ref Flux.onehotbatch). 
 
 # Examples
 ```jldoctest
@@ -662,8 +662,8 @@ Embedding(1000 => 4)  # 4_000 parameters
 
 julia> vocab_idxs = [1, 722, 53, 220, 3];
 
-julia> x = Flux.OneHotMatrix(vocab_idxs, vocab_size); summary(x)
-"1000×5 OneHotMatrix(::Vector{Int64}) with eltype Bool"
+julia> x = Flux.onehotbatch(vocab_idxs, 1:vocab_size); summary(x)
+"1000×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool"
 
 julia> model(x) |> summary
 "4×5 Matrix{Float32}"
