@@ -225,34 +225,15 @@ julia> W, b, custom_loss(W, b, x, y)
 It works, and the loss went down again! This was the second epoch of our training procedure. Let's plug this in a for loop and train the model for 30 epochs.
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> for i = 1:30
+julia> for i = 1:40
           train_custom_model()
        end
 
 julia> W, b, custom_loss(W, b, x, y)
-(Float32[4.2408285], Float32[2.243728], 7.668049f0)
+(Float32[4.2422233], Float32[2.2460847], 7.6680417f0)
 ```
 
 There was a significant reduction in loss, and the parameters were updated!
-
-`Flux` provides yet another convenience functionality, the [`Flux.@epochs`](@ref) macro, which can be used to train a model for a specific number of epochs.
-
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> Flux.@epochs 10 train_custom_model()
-[ Info: Epoch 1
-[ Info: Epoch 2
-[ Info: Epoch 3
-[ Info: Epoch 4
-[ Info: Epoch 5
-[ Info: Epoch 6
-[ Info: Epoch 7
-[ Info: Epoch 8
-[ Info: Epoch 9
-[ Info: Epoch 10
-
-julia> W, b, custom_loss(W, b, x, y)
-(Float32[4.2422233], Float32[2.2460847], 7.6680417f0)
-```
 
 We can train the model even more or tweak the hyperparameters to achieve the desired result faster, but let's stop here. We trained our model for 42 epochs, and loss went down from `22.74856` to `7.6680417f`. Time for some visualization!
 
