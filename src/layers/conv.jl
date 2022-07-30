@@ -19,10 +19,33 @@ the padding to be chosen such that the input and output sizes agree
 When `stride≠1`, the output size equals `ceil(input_size/stride)`.
 
 See also [`Conv`](@ref), [`MaxPool`](@ref).
+
+# Examples
+```jldoctest
+julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of images
+
+julia> layer = Conv((2,2), 3 => 7, pad=SamePad())
+Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0))  # 91 parameters
+
+julia> layer(xs) |> size  # notice how the dimensions stay the same with this padding
+(100, 100, 7, 50)
+
+julia> layer2 = Conv((2,2), 3 => 7)
+Conv((2, 2), 3 => 7)  # 91 parameters
+
+julia> layer2(xs) |> size  # the output dimension changes as the padding was not "same"
+(99, 99, 7, 50)
+
+julia> layer3 = Conv((5, 5), 3 => 7, stride=2, pad=SamePad())
+Conv((5, 5), 3 => 7, pad=2, stride=2)  # 532 parameters
+
+julia> layer3(xs) |> size  # output size = `ceil(input_size/stride)` = 50
+(50, 50, 7, 50)
+```
 """
 struct SamePad end
 
-calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N}= expand(Val(2*N), pad)
+calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
 function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
@@ -108,22 +131,21 @@ end
     Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Constructs a convolutional layer with the given weight and bias.
-Accepts the same keywords (and has the same defaults) as the `Conv((4,4), 3 => 7, relu)`
-method.
+Accepts the same keywords and has the same defaults as
+[`Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ; ...)`](@ref Conv).
 
-# Examples
 ```jldoctest
 julia> weight = rand(3, 4, 5);
 
 julia> bias = zeros(5);
 
-julia> c1 = Conv(weight, bias, sigmoid)  # expects 1 spatial dimension
+julia> layer = Conv(weight, bias, sigmoid)  # expects 1 spatial dimension
 Conv((3,), 4 => 5, σ)  # 65 parameters
 
-julia> c1(randn(100, 4, 64)) |> size
+julia> layer(randn(100, 4, 64)) |> size
 (98, 5, 64)
 
-julia> Flux.params(c1) |> length
+julia> Flux.params(layer) |> length
 2
 ```
 """
@@ -154,6 +176,8 @@ channels from `in` to `out`.
 
 Accepts the keyword `init` (default: `glorot_uniform`) to control the sampling
 distribution.
+
+This is internally used by the [`Conv`](@ref) layer.
 """
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
@@ -176,7 +200,7 @@ function (c::Conv)(x::AbstractArray)
   σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
-_channels_in(l ::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
+_channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
 _channels_out(l::Conv) = size(l.weight, ndims(l.weight))
 
 function Base.show(io::IO, l::Conv)
@@ -215,10 +239,10 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
-julia> lay = ConvTranspose((5,5), 3 => 7, relu)
+julia> layer = ConvTranspose((5,5), 3 => 7, relu)
 ConvTranspose((5, 5), 3 => 7, relu)  # 532 parameters
 
-julia> lay(xs) |> size
+julia> layer(xs) |> size
 (104, 104, 7, 50)
 
 julia> ConvTranspose((5,5), 3 => 7, stride=2)(xs) |> size
@@ -244,8 +268,25 @@ _channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
 """
     ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])
 
-Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `ConvTranspose((4,4), 3 => 7, relu)` method.
+Constructs a ConvTranspose layer with the given weight and bias.
+Accepts the same keywords and has the same defaults as
+[`ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ; ...)`](@ref ConvTranspose).
+
+# Examples
+```jldoctest
+julia> weight = rand(3, 4, 5);
+
+julia> bias = zeros(4);
+
+julia> layer = ConvTranspose(weight, bias, sigmoid)
+ConvTranspose((3,), 5 => 4, σ)  # 64 parameters
+
+julia> layer(randn(100, 5, 64)) |> size  # transposed convolution will increase the dimension size (upsampling)
+(102, 4, 64)
+
+julia> Flux.params(layer) |> length
+2
+```
 """
 function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, dilation = 1, groups=1) where {T,N}
@@ -299,7 +340,6 @@ function Base.show(io::IO, l::ConvTranspose)
   print(io, ")")
 end
 
-
 function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
 end
@@ -318,10 +358,10 @@ See [`Conv`](@ref) for a description of the arguments.
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
-julia> lay = DepthwiseConv((5,5), 3 => 6, relu; bias=false)
+julia> layer = DepthwiseConv((5,5), 3 => 6, relu; bias=false)
 Conv((5, 5), 3 => 6, relu, groups=3, bias=false)  # 150 parameters 
 
-julia> lay(xs) |> size
+julia> layer(xs) |> size
 (96, 96, 6, 50)
 
 julia> DepthwiseConv((5, 5), 3 => 9, stride=2, pad=2)(xs) |> size
@@ -343,7 +383,7 @@ end
 """
     CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
 
-Standard cross convolutional layer. `filter` is a tuple of integers
+Standard cross correlation layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
 `in` and `out` specify the number of input and output channels.
 
@@ -357,10 +397,10 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
-julia> lay = CrossCor((5,5), 3 => 6, relu; bias=false)
+julia> layer = CrossCor((5,5), 3 => 6, relu; bias=false)
 CrossCor((5, 5), 3 => 6, relu, bias=false)  # 450 parameters
 
-julia> lay(xs) |> size
+julia> layer(xs) |> size
 (96, 96, 6, 50)
 
 julia> CrossCor((5,5), 3 => 7, stride=3, pad=(2,0))(xs) |> size
@@ -379,8 +419,22 @@ end
 """
     CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
-Constructs a layer with the given weight and bias arrays.
-Accepts the same keywords as the `CrossCor((4,4), 3 => 7, relu)` method.
+Constructs a CrossCor layer with the given weight and bias.
+Accepts the same keywords and has the same defaults as
+[`CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ; ...)`](@ref CrossCor).
+
+# Examples
+```jldoctest
+julia> weight = rand(3, 4, 5);
+
+julia> bias = zeros(5);
+
+julia> layer = CrossCor(weight, bias, relu)
+CrossCor((3,), 4 => 5, relu)  # 65 parameters
+
+julia> layer(randn(100, 4, 64)) |> size
+(98, 5, 64)
+```
 """
 function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
@@ -611,10 +665,10 @@ julia> m[1](xs) |> size
 julia> m(xs) |> size
 (20, 20, 7, 50)
 
-julia> lay = MaxPool((5,), pad=2, stride=(3,))  # one-dimensional window
+julia> layer = MaxPool((5,), pad=2, stride=(3,))  # one-dimensional window
 MaxPool((5,), pad=2, stride=3)
 
-julia> lay(rand(Float32, 100, 7, 50)) |> size
+julia> layer(rand(Float32, 100, 7, 50)) |> size
 (34, 7, 50)
 ```
 """

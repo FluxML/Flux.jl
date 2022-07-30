@@ -9,7 +9,7 @@ Flux is a library for machine learning geared towards high-performance productio
 
 ## Installation
 
-Download [Julia 1.0](https://julialang.org/) or later, if you haven't already. You can add Flux from using Julia's package manager, by typing `] add Flux` in the Julia prompt.
+Download [Julia 1.6](https://julialang.org/) or later, if you haven't already. You can add Flux using Julia's package manager, by typing `] add Flux` in the Julia prompt.
 
 If you have CUDA you can also run `] add CUDA` to get GPU support; see [here](gpu.md) for more details.
 

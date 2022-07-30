@@ -16,8 +16,6 @@ The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
 `p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
 e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
-This is used as a regularisation, i.e. it reduces overfitting during training.
-
 If `active` is `false`, it just returns the input `x`.
 
 Specify `rng` for custom RNGs instead of the default RNG.
@@ -55,16 +53,42 @@ ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 """
     Dropout(p; dims=:, rng = rng_from_array())
 
-Dropout layer. In the forward pass, apply the [`Flux.dropout`](@ref) function on the input.
+Dropout layer.
 
-To apply dropout along certain dimension(s), specify the `dims` keyword.
-e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
-(also called 2D dropout).
+While training, for each input, this layer either sets that input to `0` (with probability
+`p`) or scales it by `1 / (1 - p)`. To apply dropout along certain dimension(s), specify the 
+`dims` keyword. e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
+(also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during 
+training.
+
+In the forward pass, this layer applies the [`Flux.dropout`](@ref) function. See that for more
+details.
 
 Specify `rng` to use a custom RNG instead of the default.
 Custom RNGs are only supported on the CPU.
 
 Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
+
+# Examples
+```jldoctest
+julia> m = Chain(Dense(1 => 1), Dropout(1));
+
+julia> Flux.trainmode!(m);
+
+julia> y = m([1]);
+
+julia> y == [0]
+true
+
+julia> m = Chain(Dense(1000 => 1000), Dropout(0.5));
+
+julia> Flux.trainmode!(m);
+
+julia> y = m(ones(1000));
+
+julia> isapprox(count(==(0), y) / length(y), 0.5, atol=0.1)
+true
+```
 """
 mutable struct Dropout{F,D,R<:AbstractRNG}
   p::F
@@ -105,6 +129,22 @@ The AlphaDropout layer ensures that mean and variance of activations
 remain the same as before.
 
 Does nothing to the input once [`testmode!`](@ref) is true.
+
+# Examples
+```jldoctest
+julia> using Statistics
+
+julia> x = randn(1000,1);
+
+julia> m = Chain(Dense(1000 => 1000, selu), AlphaDropout(0.2));
+
+julia> Flux.trainmode!(m);
+
+julia> y = m(x);
+
+julia> isapprox(std(x), std(y), atol=0.2)
+true
+```
 """
 mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
@@ -154,6 +194,20 @@ If `affine=true`, it also applies a learnable shift and rescaling
 using the [`Scale`](@ref) layer.
 
 See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
+
+# Examples
+```jldoctest
+julia> using Statistics
+
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
+
+julia> m = LayerNorm(3);
+
+julia> y = m(xs);
+
+julia> isapprox(std(y, dims=1:3), ones(1, 1, 1, 2), atol=0.1) && std(y, dims=1:3) != std(xs, dims=1:3)
+true
+```
 """
 struct LayerNorm{F,D,T,N}
   λ::F
@@ -256,12 +310,16 @@ Use [`testmode!`](@ref) during inference.
 
 # Examples
 ```julia
-m = Chain(
-  Dense(28^2 => 64),
-  BatchNorm(64, relu),
-  Dense(64 => 10),
-  BatchNorm(10),
-  softmax)
+julia> using Statistics
+
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
+
+julia> m = BatchNorm(3);
+
+julia> Flux.trainmode!(m);
+
+julia> isapprox(std(m(xs)), 1, atol=0.1) && std(xs) != std(m(xs))
+true
 ```
 """
 mutable struct BatchNorm{F,V,N,W}
@@ -339,6 +397,20 @@ that will be used to renormalize the input in test phase.
 
 **Warning**: the defaults for `affine` and `track_stats` used to be `true`
 in previous Flux versions (< v0.12).
+
+# Examples
+```jldoctest
+julia> using Statistics
+
+julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
+
+julia> m = InstanceNorm(3);
+
+julia> y = m(xs);
+
+julia> isapprox(std(y, dims=1:2), ones(1, 1, 3, 2), atol=0.2) && std(y, dims=1:2) != std(xs, dims=1:2)
+true
+```
 """
 mutable struct InstanceNorm{F,V,N,W}
   λ::F  # activation function
@@ -416,6 +488,23 @@ through to learnable per-channel bias `β` and scale `γ` parameters.
 
 If `track_stats=true`, accumulates mean and var statistics in training phase
 that will be used to renormalize the input in test phase.
+
+# Examples
+```jldoctest
+julia> using Statistics
+
+julia> xs = rand(3, 3, 4, 2);  # a batch of 2 images, each having 4 channels
+
+julia> m = GroupNorm(4, 2);
+
+julia> y = m(xs);
+
+julia> isapprox(std(y[:, :, 1:2, 1]), 1, atol=0.1) && std(xs[:, :, 1:2, 1]) != std(y[:, :, 1:2, 1])
+true
+
+julia> isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) && std(xs[:, :, 3:4, 2]) != std(y[:, :, 3:4, 2])
+true
+```
 """
 mutable struct GroupNorm{F,V,N,W}
   G::Int  # number of groups
@@ -480,7 +569,7 @@ function Base.show(io::IO, l::GroupNorm)
 end
 
 """
-  hasaffine(l)
+    hasaffine(l)
 
 Return `true` if a normalisation layer has trainable shift and
 scale parameters, `false` otherwise.

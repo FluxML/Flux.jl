@@ -11,7 +11,9 @@ NNlib.celu
 NNlib.elu
 NNlib.gelu
 NNlib.hardsigmoid
+NNlib.sigmoid_fast
 NNlib.hardtanh
+NNlib.tanh_fast
 NNlib.leakyrelu
 NNlib.lisht
 NNlib.logcosh
@@ -58,6 +60,7 @@ NNlib.upsample_nearest
 NNlib.upsample_bilinear
 NNlib.upsample_trilinear
 NNlib.pixel_shuffle
+NNlib.grid_sample
 ```
 
 ## Batched Operations

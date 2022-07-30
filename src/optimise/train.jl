@@ -91,8 +91,8 @@ Then, this gradient is used by optimizer `opt` to update the paramters:
 ```
     update!(opt, pars, grads)
 ```
-The optimiser should be from the [Flux.Optimise](@ref) module.
-Different optimisers can be combined using [Flux.Optimise.Optimiser](@ref).
+The optimiser should be from the `Flux.Optimise` module (see [Optimisers](@ref)).
+Different optimisers can be combined using [`Flux.Optimise.Optimiser`](@ref Flux.Optimiser).
 
 This training loop iterates through `data` once.
 You can use [`@epochs`](@ref) to do this several times, or 
