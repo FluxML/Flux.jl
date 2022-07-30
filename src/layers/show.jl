@@ -47,7 +47,8 @@ end
 _show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
 _show_leaflike(::Tuple{Vararg{<:Number}}) = true         # e.g. stride of Conv
 _show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # e.g. parameters of LSTMcell
-_show_leaflike(::Diagonal) = true                        # appears inside LayerNorm
+_show_leaflike(::Scale) = true                           # appears inside LayerNorm
+_show_leaflike(::AbstractArray{<:Number}) = true         # e.g. transposed arrays
 
 _show_children(x) = trainable(x)  # except for layers which hide their Tuple:
 _show_children(c::Chain) = c.layers
