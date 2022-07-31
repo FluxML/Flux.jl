@@ -159,8 +159,7 @@ end
 ## Custom Training loops
 
 The `Flux.train!` function can be very convenient, especially for simple problems.
-It's also very flexible with the use of callbacks.
-But for some problems it's much cleaner to write your own custom training loop.
+For some problems, however, it's much cleaner to write your own custom training loop.
 An example follows that works similar to the default `Flux.train` but with no callbacks.
 You don't need callbacks if you just code the calls to your functions directly into the loop.
 E.g. in the places marked with comments.
