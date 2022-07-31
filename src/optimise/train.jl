@@ -87,7 +87,7 @@ Here `pars` is produced by calling [`Flux.params`](@ref) on your model.
 (Or just on the layers you want to train, like `train!(loss, params(model[1:end-2]), data, opt)`.)
 This is the "implicit" style of parameter handling.
 
-Then, this gradient is used by optimizer `opt` to update the paramters:
+Then, this gradient is used by optimizer `opt` to update the parameters:
 ```
     update!(opt, pars, grads)
 ```
