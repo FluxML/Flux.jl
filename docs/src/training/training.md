@@ -178,8 +178,8 @@ function my_custom_train!(loss, ps, data, opt)
     end
     # Insert whatever code you want here that needs training_loss, e.g. logging.
     # logging_callback(training_loss)
-    # Insert whatever code you want here that needs gradient.
-    # E.g. logging with TensorBoardLogger.jl as a histogram so you can see if it is becoming huge.
+    # Insert whatever code you want here that needs gradients.
+    # e.g. logging histograms with TensorBoardLogger.jl to check for exploding gradients.
     update!(opt, ps, gs)
     # Here you might like to check validation set accuracy, and break out to do early stopping.
   end
