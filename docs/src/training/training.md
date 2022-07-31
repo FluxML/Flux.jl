@@ -93,7 +93,7 @@ using IterTools: ncycle
 data = ncycle([(x, y)], 3)
 ```
 
-It's common to load the `x`s and `y`s separately. In this case, you can use `zip`:
+It's common to load the `x`s and `y`s separately. Here you can use `zip`:
 
 ```julia
 xs = [rand(784), rand(784), rand(784)]
