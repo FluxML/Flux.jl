@@ -71,7 +71,7 @@ AdaBelief
 
 Flux's optimisers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
 
-In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work this with a simple example.
+In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work on this with a simple example.
 
 ```julia
 mutable struct Momentum
@@ -135,7 +135,7 @@ end
 loss(rand(10)) # around 0.9
 ```
 
-In this manner it is possible to compose optimisers for some added flexibility.
+In this manner, it is possible to compose optimisers for some added flexibility.
 
 ```@docs
 Flux.Optimise.Optimiser
@@ -145,7 +145,7 @@ Flux.Optimise.Optimiser
 
 In practice, it is fairly common to schedule the learning rate of an optimiser to obtain faster convergence. There are a variety of popular scheduling policies, and you can find implementations of them in [ParameterSchedulers.jl](https://darsnack.github.io/ParameterSchedulers.jl/dev/README.html). The documentation for ParameterSchedulers.jl provides a more detailed overview of the different scheduling policies, and how to use them with Flux optimizers. Below, we provide a brief snippet illustrating a [cosine annealing](https://arxiv.org/pdf/1608.03983.pdf) schedule with a momentum optimiser.
 
-First, we import ParameterSchedulers.jl and initalize a cosine annealing schedule to varying the learning rate between `1e-4` and `1e-2` every 10 steps. We also create a new [`Momentum`](@ref) optimiser.
+First, we import ParameterSchedulers.jl and initialize a cosine annealing schedule to vary the learning rate between `1e-4` and `1e-2` every 10 steps. We also create a new [`Momentum`](@ref) optimiser.
 ```julia
 using ParameterSchedulers
 
