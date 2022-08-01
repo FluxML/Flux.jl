@@ -1,7 +1,7 @@
 using Flux.Train
 using Zygote: Params, gradient
 
-import FillArrays, ComponentArrays
+import Optimisers, FillArrays, ComponentArrays
 
 using Test
 using Random
@@ -29,10 +29,40 @@ end
   w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
   @testset for opt in [Descent(0.1), Adam()]
     @test opt isa FluxState
-    w′ = copy(w2)
-    b = zeros(10)
+    @test opt.state isa Missing
+
     loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-    model = (weight=w′, bias=b, ignore=nothing)
+    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
+    @test loss(model, rand(10, 10)) > 1
+
+    train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
+    @test loss(model, rand(10, 10)) < 0.01
+    @test opt.state isa NamedTuple
+  end
+  
+  # Test 3-arg `train!` method:
+  @testset for opt in [Descent(0.1), Adam()]
+    @test opt isa FluxState
+    @test opt.state isa Missing
+
+    loss(m) = let x = rand(10)
+      Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+    end
+    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
+    @test loss(model) > 1
+
+    for i in 1:10^5
+      train!(loss, model, opt)
+    end
+    @test loss(model) < 0.01
+    @test opt.state isa NamedTuple
+  end
+  
+  # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
+  @testset for opt in [Optimisers.Descent(0.1), Optimisers.Adam()]
+    @test opt isa Optimisers.AbstractRule
+    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
     @test loss(model, rand(10, 10)) > 1
     train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
     @test loss(model, rand(10, 10)) < 0.01

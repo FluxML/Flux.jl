@@ -54,6 +54,7 @@ function train!(loss::Function, model, data, opt::FluxState)
   s = opt.state
   s isa IdDict && error("""Can't mix explicit & implicit modes!
                            Once `FluxState` is initialised by `train!` in one mode, it cannot be used in the other.""")
+  # TODO check whether this loop ought to be in another function, for perfomance / type-stability.
   for d in data
     l, (g, _...) = explicit_withgradient(loss, model, data_splat(d)...)
     s, model = Optimisers.update!(s, model, g)
@@ -110,11 +111,13 @@ function train!(loss::Function, model, opt::FluxState)
 end
 
 # This method lets you use Optimisers.Descent() instead of Flux.Descent(), when there is no state
-function train!(loss::Function, model, data, opt::Optimisers.AbstractRule)
+function train!(loss::Function, model, data, rule::Optimisers.AbstractRule)
+  opt = FluxState(rule, missing)
   _initialise!(opt, model)
-  fmap(opt.state, exclude = x -> x isa Optimsers.Leaf) do leaf
-    leaf.state isa Nothing ||  @warn "Optimiser state will be lost! Please wrap optimisation rule in `FluxState`, e.g. by using `Flux.Adam()`" leaf
+  @gensym warn_id
+  fmap(opt.state, exclude = x -> x isa Optimisers.Leaf) do leaf
+    leaf.state isa Nothing ||  @warn "Optimiser state will be discarded! Please wrap optimisation rule from Optimisers.jl in `FluxState`, e.g. by using `Flux.Adam()`" leaf maxlog=1 _id=warn_id
     leaf
   end
-  train!(loss, model, data, FluxState(opt))
+  train!(loss, model, data, opt)
 end
