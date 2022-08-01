@@ -47,13 +47,11 @@ function ChainRulesCore.rrule(::typeof(_mean_std), x::AbstractArray, dims)
   return (μ, σ), _mean_std_pullback
 end
 
-_zscore(x, μ, σ, ϵ) = (x - μ) / (σ + ϵ)
-
 # We don't define a rrule for the whole function because we want
-# AD to figure out the _zscore broadcast for us.
+# AD to figure out the broadcast for us.
 function _normalize(x::AbstractArray, dims, ϵ)
   μ, σ = _mean_std(x, dims)
-  return _zscore.(x, μ, σ, ϵ)
+  return @. (x - μ) / (σ + ϵ)
 end
 
 """
