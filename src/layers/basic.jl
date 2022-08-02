@@ -694,7 +694,7 @@ function Base.show(io::IO, m::Embedding)
 end
 
 """
-    EmbeddingBag(in => out, reduction=Statistics.mean; init=randn)
+    EmbeddingBag(in => out, reduction=mean; init=randn)
 
 A lookup table that stores embeddings of dimension `out` for a vocabulary of size 
 `in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag". The
@@ -706,7 +706,7 @@ The inputs can take several forms:
   - A scalar := single bag with a single item
   - A vector := single bag with multiple items
   - A matrix := multiple bags with multiple items (each column is a bag)
-  - A vector of vectors: multiple mags with multiple items (each vector is a bag)
+  - A vector of vectors: multiple bags with multiple items (each vector is a bag)
   - An input vector and offset vector: Explained below
 
   The `input`/`offset` input type is similar to PyTorch's implementation. `input` should be
