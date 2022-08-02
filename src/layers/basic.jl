@@ -722,11 +722,11 @@ The inputs can take several forms:
 julia> vocab_size, embed_size = 1000, 4;
 
 julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
-Embedding(1000 => 4)  # 4_000 parameters
+EmbeddingBag(1000 => 4)  # 4_000 parameters
 
 julia> bags = [[1, 200, 25, 789], [2, 5, 10, 999]];
 
-julia> bags_mtx = [1 2; 200 5; 25 10; 789 999]
+julia> bags_mtx = [1 2; 200 5; 25 10; 789 999];
 
 julia> model(bags) |> summary
 "4×2 Matrix{Float32}"
