@@ -699,7 +699,7 @@ end
 A lookup table that stores embeddings of dimension `out` for a vocabulary of size 
 `in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag". The
 embeddings of these are then reduced to a single embedding based on `reduction`.
-Typically, `reduction` is `Statistics.mean`, `sum`, or `maximum`. 
+Typically, `reduction` is `mean`, `sum`, or `maximum`. 
 
 This layer is often used to store word embeddings and retrieve them using indices. 
 The inputs can take several forms:
@@ -742,8 +742,8 @@ end
 
 @functor EmbeddingBag
 
-EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = Statistics.mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
-EmbeddingBag(weight) = EmbeddingBag(weight, Statistics.mean)
+EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
+EmbeddingBag(weight) = EmbeddingBag(weight, mean)
 
 function (m::EmbeddingBag)(inputs::AbstractVector, offsets::AbstractVector)
     offsets[1] == 0 || throw(ArgumentError("`offsets` must begin with 0."))
