@@ -311,6 +311,63 @@ import Flux: activations
     @test m(OneHotVector(3, vocab_size)) ≈ m.weight[:,3]
     @test_throws DimensionMismatch m(OneHotVector(3, 1000))
   end
+
+  @testset "EmbeddingBag" begin
+    for reduction in [sum, Statistics.mean, maximum]
+      vocab_size, embed_size = 10, 4
+      emb_bag = Flux.EmbeddingBag(vocab_size => embed_size, reduction)
+      emb = Flux.Embedding(emb_bag.weight)
+      @test size(emb_bag.weight) == (embed_size, vocab_size)
+
+      # scalar bag
+      @test emb_bag(2) ≈ emb_bag.weight[:,2]
+      @test emb_bag(3) ≈ emb(3)
+
+      # single bag (input as a vector)
+      x = rand(1:vocab_size, 3)
+      y = emb_bag(x)
+      z = vec(reduction(emb(x), dims=2))
+      @test y isa Vector{Float32}
+      @test y ≈ z
+
+      # PyTorch style `input`/`offset` bagging
+      @test emb_bag([1,3,2,4,5,7], [0,2,4]) ≈ emb_bag([[1,3], [2,4], [5,7]])
+      @test emb_bag([1,3,2,4,5,7], [0,2,4]) ≈ emb_bag([1 2 5; 3 4 7])
+      @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [2,4])
+      @test_throws BoundsError emb_bag([1,2,3,4,5,6], [0,12])
+
+      # docstring example
+      @test emb_bag([1,2,3,4,5,6,7,8,9,10], [0,4,5,7]) ≈ emb_bag([[1,2,3,4], [5], [6,7], [8,9,10]])
+
+      # multiple bags (input as a vector of vectors)
+      x = [rand(1:vocab_size, 3) for _ in 1:4]
+      y = emb_bag(x)
+      z = reduce(hcat, reduction.(emb.(x), dims=2))
+      @test y isa Matrix{Float32}
+      @test y ≈ z
+
+      # multiple bags (input as a matrix)
+      x = rand(1:vocab_size, (3, 5))
+      xvec = collect(eachcol(x))
+      y = emb_bag(x)
+      z = reduce(hcat, reduction.(emb.(xvec), dims=2))
+      @test y ≈ emb_bag(xvec)
+      @test y ≈ z
+
+      # one hot bags. should be identical to Embedding, since the bags
+      # are of size 1.
+      @test emb_bag(Flux.OneHotVector(3, vocab_size)) ≈ emb_bag.weight[:,3]
+      @test emb_bag(Flux.OneHotVector(4, vocab_size)) ≈ emb(Flux.OneHotVector(4, vocab_size))
+      @test_throws DimensionMismatch emb_bag(Flux.OneHotVector(3, 1000))
+
+      x2 = Flux.OneHotMatrix(rand(1:vocab_size, 3), vocab_size)
+      y2 = emb_bag(x2)
+      z2 = emb(x2)
+      @test y2 isa Matrix{Float32}
+      @test y2 ≈ z2
+      @test_throws DimensionMismatch emb_bag(Flux.OneHotMatrix(1:5, 1000))
+    end
+  end
 end
 
 @testset "second derivatives" begin

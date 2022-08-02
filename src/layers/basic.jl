@@ -692,3 +692,84 @@ end
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
+
+"""
+    EmbeddingBag(in => out, reduction=Statistics.mean; init=randn)
+
+A lookup table that stores embeddings of dimension `out` for a vocabulary of size 
+`in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag". The
+embeddings of these are then reduced to a single embedding based on `reduction`.
+Typically, `reduction` is `Statistics.mean`, `sum`, or `maximum`. 
+
+This layer is often used to store word embeddings and retrieve them using indices. 
+The inputs can take several forms:
+  - A scalar := single bag with a single item
+  - A vector := single bag with multiple items
+  - A matrix := multiple bags with multiple items (each column is a bag)
+  - A vector of vectors: multiple mags with multiple items (each vector is a bag)
+  - An input vector and offset vector: Explained below
+
+  The `input`/`offset` input type is similar to PyTorch's implementation. `input` should be
+  a vector of class indices and `offset` should be a vector representing offsets from the
+  first index of `input`. The first element of `offsets` must be `0`, and `offsets` should
+  be monotonically increasing, but the second condition is not checked.
+
+  For example, the `input`/`offset` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[0, 4, 5, 7]`
+  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`
+
+# Examples
+```jldoctest
+julia> vocab_size, embed_size = 1000, 4;
+
+julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
+Embedding(1000 => 4)  # 4_000 parameters
+
+julia> bags = [[1, 200, 25, 789], [2, 5, 10, 999]];
+
+julia> bags_mtx = [1 2; 200 5; 25 10; 789 999]
+
+julia> model(bags) |> summary
+"4×2 Matrix{Float32}"
+
+julia> model(bags) ≈ model(bags_mtx)
+true
+```
+"""
+struct EmbeddingBag{F, W}
+  weight::W
+  reduction::F
+end
+
+@functor EmbeddingBag
+
+EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = Statistics.mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
+EmbeddingBag(weight) = EmbeddingBag(weight, Statistics.mean)
+
+function (m::EmbeddingBag)(inputs::AbstractVector, offsets::AbstractVector)
+    offsets[1] == 0 || throw(ArgumentError("`offsets` must begin with 0."))
+    out = zeros(eltype(m.weight), size(m.weight, 1), length(offsets))
+    start = firstindex(inputs)
+    for i in eachindex(offsets[1:end-1])
+        out[:, i] = m(inputs[start:offsets[i+1]])
+        start = offsets[i+1]+1
+    end
+    out[:, end] = m(inputs[offsets[end]+1:end])
+    out
+end
+(m::EmbeddingBag)(idx::Integer) = m.weight[:, idx]
+(m::EmbeddingBag)(bag::AbstractVector) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
+(m::EmbeddingBag)(bags::AbstractVector{<:AbstractVector}) = reduce(hcat, m.(bags))
+(m::EmbeddingBag)(bags::AbstractMatrix) = reduce(hcat, m.(eachcol(bags)))
+
+function (m::EmbeddingBag)(x::OneHotVector{T,L}) where {T,L}
+  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
+  return m(onecold(x))
+end
+function (m::EmbeddingBag)(x::OneHotMatrix{T,L}) where {T,L}
+  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
+  return m(LinearAlgebra.Transpose(onecold(x)))
+end
+
+function Base.show(io::IO, m::EmbeddingBag)
+  print(io, "EmbeddingBag(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
+end

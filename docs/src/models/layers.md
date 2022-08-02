@@ -61,6 +61,7 @@ Parallel
 Flux.Bilinear
 Flux.Scale
 Flux.Embedding
+Flux.EmbeddingBag
 ```
 
 ## Normalisation & Regularisation
