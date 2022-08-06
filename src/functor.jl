@@ -115,7 +115,7 @@ adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
 adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
-function ChainRulesCore.rrule(::typeof(Array), x::CUDA.CuArray)
+function ChainRulesCore.rrule(::Type{Array}, x::CUDA.CuArray)
   Array(x), d -> (NoTangent(), CUDA.cu(d),)
 end
 
