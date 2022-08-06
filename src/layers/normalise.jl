@@ -10,7 +10,7 @@ _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(s
 _dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
 
 """
-    dropout([rng = _rng_from_array(x)], x, p; dims=:, active=true)
+    dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)
 
 The dropout function. If `active` is `true`,
 for each input, either sets that input to `0` (with probability
@@ -34,7 +34,7 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
   y = dropout_mask(rng, x, p, dims=dims)
   return x .* y
 end
-dropout(x, p; kwargs...) = dropout(_rng_from_array(x), x, p; kwargs...)
+dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
 dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 dropout_mask(rng, x::CuArray, p; kwargs...) =

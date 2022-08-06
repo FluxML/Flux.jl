@@ -34,7 +34,7 @@ ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
 
 """
-    _rng_from_array([x])
+    rng_from_array([x])
 
 Create an instance of the RNG most appropriate for `x`.
 The current defaults are:
