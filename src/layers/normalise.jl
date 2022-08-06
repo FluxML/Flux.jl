@@ -51,7 +51,7 @@ end
 ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 
 """
-    Dropout(p; dims=:, rng = _rng_from_array())
+    Dropout(p; dims=:, rng = default_rng_value())
 
 Dropout layer.
 
@@ -96,9 +96,9 @@ mutable struct Dropout{F,D,R<:AbstractRNG}
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p, dims, active) = Dropout(p, dims, active, _rng_from_array())
+Dropout(p, dims, active) = Dropout(p, dims, active, default_rng_value())
 
-function Dropout(p; dims=:, rng = _rng_from_array())
+function Dropout(p; dims=:, rng = default_rng_value())
   @assert 0 ≤ p ≤ 1
   Dropout(p, dims, nothing, rng)
 end
@@ -121,7 +121,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p; rng = _rng_from_array())
+    AlphaDropout(p; rng = default_rng_value())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -155,8 +155,8 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
     new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
-AlphaDropout(p, active) = AlphaDropout(p, active, _rng_from_array())
-AlphaDropout(p; rng = _rng_from_array()) = AlphaDropout(p, nothing, rng)
+AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
+AlphaDropout(p; rng = default_rng_value()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
 trainable(a::AlphaDropout) = (;)

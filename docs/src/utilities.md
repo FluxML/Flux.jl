@@ -45,6 +45,8 @@ Flux.ones32
 Flux.zeros32
 Flux.rand32
 Flux.randn32
+Flux.rng_from_array
+Flux.default_rng_value
 ```
 
 ## Changing the type of model parameters
