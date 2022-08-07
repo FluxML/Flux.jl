@@ -1,24 +1,29 @@
-# Flux Basics
+# Neural Networks from scratch
+
+The following page contains a step-by-step walkthrough of creating neural networks from scratch in `Julia` using `Flux`! The first part would involve writing some parts of the model on our own, which will later be replaced by `Flux`.
 
 ## Building Simple Models
 
-Consider a simple linear regression model, which tries to predict an output array `y` from an input `x`. For a more detailed example see [`Linear Regression`](@ref)
+Consider a simple linear regression model, which tries to predict an output array `y` from an input `x`. For a more detailed example see [Linear Regression](@ref).
 
-```julia
+```jldoctest nn_from_scratch
+julia> using Flux
+
 julia> W = rand(2, 5);
+
 julia> b = rand(2);
 
-julia> predict(x) = W*x .+ b
+julia> predict(W, b, x) = W*x .+ b;
 
-julia> function loss(x, y)
-         ŷ = predict(x)
+julia> function loss(W, b, x, y)
+         ŷ = predict(W, b, x)
          sum((y .- ŷ).^2)
        end;
 
 julia> x, y = rand(5), rand(2);
 
-julia> loss(x, y)
-
+julia> loss(W, b, x, y)
+2.181161295515343
 ```
 
 To improve the prediction we can take the gradients of the loss with respect to `W` and `b` and perform gradient descent.
@@ -27,9 +32,7 @@ To improve the prediction we can take the gradients of the loss with respect to 
 
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
-```jldoctest basics
-julia> using Flux
-
+```jldoctest nn_from_scratch
 julia> f(x) = 3x^2 + 2x + 1;
 
 julia> df(x) = gradient(f, x)[1]; # df/dx = 6x + 2
@@ -45,7 +48,7 @@ julia> d2f(2)
 
 When a function has many parameters, we can get gradients of each one at the same time:
 
-```jldoctest basics
+```jldoctest nn_from_scratch
 julia> f(x, y) = sum((x .- y).^2);
 
 julia> gradient(f, [2, 1], [2, 0])
@@ -54,20 +57,19 @@ julia> gradient(f, [2, 1], [2, 0])
 
 These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
 
-```julia
-using Flux
-
-gs = gradient(() -> loss(x, y), Flux.params(W, b))
+```jldoctest nn_from_scratch
+julia> dLdW, dLdb, dLdx, dLdy = gradient(loss, W, b, x, y);
 ```
 
 Now that we have gradients, we can pull them out and update `W` to train the model.
 
-```julia
-W̄ = gs[W]
+```jldoctest nn_from_scratch
+julia> W̄ = dLdW;
 
-W .-= 0.1 .* W̄
+julia> W .-= 0.1 .* W̄;
 
-loss(x, y) # ~ 2.5
+julia> loss(W, b, x, y)
+1.171864506627872
 ```
 
 The loss has decreased a little, meaning that our prediction `x` is closer to the target `y`. If we have some data we can already try [training the model](../training/training.md).
@@ -78,56 +80,60 @@ All deep learning in Flux, however complex, is a simple generalisation of this e
 
 It's common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like [sigmoid](https://en.wikipedia.org/wiki/Sigmoid_function) (`σ`) in between them. In the above style we could write this as:
 
-```julia
-using Flux
+```jldoctest nn_from_scratch
+julia> W1 = rand(3, 5);
 
-W1 = rand(3, 5)
-b1 = rand(3)
-layer1(x) = W1 * x .+ b1
+julia> b1 = rand(3);
 
-W2 = rand(2, 3)
-b2 = rand(2)
-layer2(x) = W2 * x .+ b2
+julia> layer1(x) = W1 * x .+ b1;
 
-model(x) = layer2(σ.(layer1(x)))
+julia> W2 = rand(2, 3);
 
-model(rand(5)) # => 2-element vector
+julia> b2 = rand(2);
+
+julia> layer2(x) = W2 * x .+ b2;
+
+julia> model(x) = layer2(σ.(layer1(x)));
+
+julia> model(rand(5)) |> size
+(2,)
 ```
 
 This works but is fairly unwieldy, with a lot of repetition – especially as we add more layers. One way to factor this out is to create a function that returns linear layers.
 
-```julia
-function linear(in, out)
-  W = randn(out, in)
-  b = randn(out)
-  x -> W * x .+ b
-end
+```jldoctest nn_from_scratch
+julia> function linear(in, out)
+         W = randn(out, in)
+         b = randn(out)
+         x -> W * x .+ b
+       end;
 
-linear1 = linear(5, 3) # we can access linear1.W etc
-linear2 = linear(3, 2)
+julia> linear1 = linear(5, 3); # we can access linear1.W etc
 
-model(x) = linear2(σ.(linear1(x)))
+julia> linear2 = linear(3, 2);
 
-model(rand(5)) # => 2-element vector
+julia> model(x) = linear2(σ.(linear1(x)));
+
+julia> model(rand(5)) |> size
+(2,)
 ```
 
 Another (equivalent) way is to create a struct that explicitly represents the affine layer.
 
-```julia
-struct Affine
-  W
-  b
-end
+```jldoctest nn_from_scratch
+julia> struct Affine
+         W
+         b
+       end
 
-Affine(in::Integer, out::Integer) =
-  Affine(randn(out, in), randn(out))
+julia> Affine(in::Integer, out::Integer) = Affine(randn(out, in), randn(out));
 
-# Overload call, so the object can be used as a function
-(m::Affine)(x) = m.W * x .+ m.b
+julia> (m::Affine)(x) = m.W * x .+ m.b # Overload call, so the object can be used as a function
 
-a = Affine(10, 5)
+julia> a = Affine(10, 5);
 
-a(rand(10)) # => 5-element vector
+julia> a(rand(10)) |> size
+(5,)
 ```
 
 Congratulations! You just built the `Dense` layer that comes with Flux. Flux has many interesting layers available, but they're all things you could have built yourself very easily.
@@ -138,59 +144,66 @@ Congratulations! You just built the `Dense` layer that comes with Flux. Flux has
 
 It's pretty common to write models that look something like:
 
-```julia
-layer1 = Dense(10 => 5, σ)
-# ...
-model(x) = layer3(layer2(layer1(x)))
+```jldoctest nn_from_scratch
+julia> l1 = Dense(10 => 5, σ);
+
+julia> l2 = Dense(5 => 3, σ);
+
+julia> l3 = Dense(3 => 1, σ);
+
+julia> model(x) = l3(l2(l1(x)));
 ```
 
 For long chains, it might be a bit more intuitive to have a list of layers, like this:
 
-```julia
-using Flux
+```jldoctest nn_from_scratch
+julia> layers = [Dense(10 => 5, σ), Dense(5 => 2), softmax];
 
-layers = [Dense(10 => 5, σ), Dense(5 => 2), softmax]
+julia> model(x) = foldl((x, m) -> m(x), layers, init = x);
 
-model(x) = foldl((x, m) -> m(x), layers, init = x)
-
-model(rand(10)) # => 2-element vector
+julia> model(rand(10)) |> size
+(2,)
 ```
 
 Handily, this is also provided for in Flux:
 
-```julia
-model2 = Chain(
-  Dense(10 => 5, σ),
-  Dense(5 => 2),
-  softmax)
+```jldoctest nn_from_scratch
+julia> model2 = Chain(
+         Dense(10 => 5, σ),
+         Dense(5 => 2),
+         softmax
+       )
 
-model2(rand(10)) # => 2-element vector
+julia> model2(rand(10)) |> size
+(2,)
 ```
 
 This quickly starts to look like a high-level deep learning library; yet you can see how it falls out of simple abstractions, and we lose none of the power of Julia code.
 
 A nice property of this approach is that because "models" are just functions (possibly with trainable parameters), you can also see this as simple function composition.
 
-```julia
-m = Dense(5 => 2) ∘ Dense(10 => 5, σ)
+```jldoctest nn_from_scratch
+julia> m = Dense(5 => 2) ∘ Dense(10 => 5, σ)
 
-m(rand(10))
+julia> m(rand(10)) |> size
+(2,)
 ```
 
 Likewise, `Chain` will happily work with any Julia function.
 
-```julia
-m = Chain(x -> x^2, x -> x+1)
+```jldoctest nn_from_scratch
+julia> m = Chain(x -> x^2, x -> x+1);
 
-m(5) # => 26
+julia> m(5)
+26
 ```
 
 ## Layer helpers
 
 Flux provides a set of helpers for custom layers, which you can enable by calling
 
-```julia
-Flux.@functor Affine
+```jldoctest nn_from_scratch
+julia> Flux.@functor Affine
 ```
 
 This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).

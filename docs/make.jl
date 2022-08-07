@@ -12,9 +12,9 @@ makedocs(
         "Home" => "index.md",
         "Getting Started" => [
             "Overview" => "getting_started/overview.md",
-            "Basics" => "getting_started/basics.md",
             "Linear Regression" => "getting_started/linear_regression.md",
             "Logistic Regression" => "getting_started/logistic_regression.md",
+            "Neural Networks from scratch" => "getting_started/neural_nets_from_scratch.md",
         ],
         "Building Models" => [
             "Recurrence" => "models/recurrence.md",
