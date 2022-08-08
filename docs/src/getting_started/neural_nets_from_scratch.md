@@ -6,7 +6,7 @@ The following page contains a step-by-step walkthrough of creating neural networ
 
 Consider a simple linear regression model, which tries to predict an output array `y` from an input `x`. For a more detailed example see [Linear Regression](@ref).
 
-```jldoctest nn_from_scratch
+```jldoctest nn_from_scratch; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> using Flux
 
 julia> W = rand(2, 5);
@@ -63,7 +63,7 @@ julia> dLdW, dLdb, dLdx, dLdy = gradient(loss, W, b, x, y);
 
 Now that we have gradients, we can pull them out and update `W` to train the model.
 
-```jldoctest nn_from_scratch
+```jldoctest nn_from_scratch; filter = r"[+-]?([0-9]*[.])?[0-9]+"
 julia> W̄ = dLdW;
 
 julia> W .-= 0.1 .* W̄;
@@ -124,7 +124,7 @@ Another (equivalent) way is to create a struct that explicitly represents the af
 julia> struct Affine
          W
          b
-       end
+       end;
 
 julia> Affine(in::Integer, out::Integer) = Affine(randn(out, in), randn(out));
 
@@ -172,7 +172,7 @@ julia> model2 = Chain(
          Dense(10 => 5, σ),
          Dense(5 => 2),
          softmax
-       )
+       );
 
 julia> model2(rand(10)) |> size
 (2,)
@@ -183,7 +183,7 @@ This quickly starts to look like a high-level deep learning library; yet you can
 A nice property of this approach is that because "models" are just functions (possibly with trainable parameters), you can also see this as simple function composition.
 
 ```jldoctest nn_from_scratch
-julia> m = Dense(5 => 2) ∘ Dense(10 => 5, σ)
+julia> m = Dense(5 => 2) ∘ Dense(10 => 5, σ);
 
 julia> m(rand(10)) |> size
 (2,)
