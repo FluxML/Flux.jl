@@ -10,10 +10,9 @@ using Random
   Random.seed!(84)
   w = randn(10, 10)
   w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
-  @testset for opt in [Descent(0.1), Adam()]
-                      # [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
-                      #  NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
-                      #  Nesterov(), RMSProp(), Momentum()]
+  @testset for opt in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
+                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
+                       Nesterov(), RMSProp(), Momentum()]
     w′ = copy(w2)
     b = zeros(10)
     loss(x) = Flux.Losses.mse(w*x, w′*x .+ b)
@@ -27,7 +26,9 @@ end
   Random.seed!(84)
   w = randn(10, 10)
   w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
-  @testset for opt in [Descent(0.1), Adam()]
+  @testset for opt in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
+                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
+                       Nesterov(), RMSProp(), Momentum()]
     @test opt isa FluxState
     @test opt.state isa Missing
 
@@ -41,7 +42,7 @@ end
   end
   
   # Test 3-arg `train!` method:
-  @testset for opt in [Descent(0.1), Adam()]
+  @testset for opt in [Descent(0.1), Adam(), AdamW()]
     @test opt isa FluxState
     @test opt.state isa Missing
 
