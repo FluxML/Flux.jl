@@ -1,7 +1,7 @@
 using Flux.Train
 using Zygote: Params, gradient
 
-import Optimisers, FillArrays, ComponentArrays
+import Optimisers, FillArrays, ComponentArrays, Yota
 
 using Test
 using Random
@@ -22,7 +22,7 @@ using Random
   end
 end
 
-@testset "Explicit train!" begin
+@testset "Explicit train! with Zygote" begin
   Random.seed!(84)
   w = randn(10, 10)
   w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
@@ -69,6 +69,48 @@ end
     @test loss(model, rand(10, 10)) < 0.01
   end
 end
+
+using Yota
+using Flux: Descent, Adam, AdamW, FluxState
+Flux.@train_autodiff Yota
+
+@testset "Explicit train! with Yota" begin
+  Random.seed!(84)
+  w = randn(10, 10)
+  w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
+  @testset for opt in [Descent(0.1), Adam(), AdamW()]
+    @test opt isa FluxState
+    @test opt.state isa Missing
+
+    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
+    @test loss(model, rand(10, 10)) > 1
+
+    train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
+    @test loss(model, rand(10, 10)) < 0.01
+    @test opt.state isa NamedTuple
+  end
+  
+  # Test 3-arg `train!` method:
+  @testset for opt in [Descent(0.1), Adam(), AdamW()]
+    @test opt isa FluxState
+    @test opt.state isa Missing
+
+    loss(m) = let x = rand(10)
+      Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+    end
+    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
+    @test loss(model) > 1
+
+    for i in 1:10^5
+      train!(loss, model, opt)
+    end
+    @test loss(model) < 0.01
+    @test opt.state isa NamedTuple
+  end
+end
+
+Flux.@train_autodiff Zygote
 
 #=
 

@@ -39,6 +39,7 @@ ProgressLogging = "0.1"
 Reexport = "0.2, 1.0"
 SpecialFunctions = "1.8.2, 2.1.2"
 StatsBase = "0.33"
+Yota = "0.7.4"
 Zygote = "0.6.34"
 julia = "1.6"
 
@@ -49,6 +50,7 @@ FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Yota = "cd998857-8626-517d-b929-70ad188a48f0"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays", "Yota"]

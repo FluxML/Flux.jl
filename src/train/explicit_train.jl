@@ -25,6 +25,9 @@ end
 which evaluates the gradient of `loss(model, x1, y1)` with respect to `model`,
 to know how to update the parameters stored within `model`.
 
+To change the package used to calculate gradients, enter `using Yota; Flux.@train_autodiff Yota`
+to use [Yota.jl](https://github.com/dfdx/Yota.jl). The same command works with [Diffractor.jl](https://github.com/JuliaDiff/Diffractor.jl).
+
 It is often convenient to provide the function `loss` using `do` block syntax,
 instead of defining a named function:
 ```
@@ -100,6 +103,9 @@ This calls `Zygote.withgradient(m -> Flux.crossentropy(m(x1), y1), model)`.
 Then it updates the parameters contained within `model` according
 to the chosen `opt`imiser.
 Finally it returns the value of the loss function.
+
+To change the package used to calculate gradients, enter `using Yota; Flux.@train_autodiff Yota`
+to use [Yota.jl](https://github.com/dfdx/Yota.jl). The same command works with [Diffractor.jl](https://github.com/JuliaDiff/Diffractor.jl).
 """
 function train!(loss::Function, model, opt::FluxState)
   _initialise!(opt, model)
