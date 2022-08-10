@@ -37,8 +37,8 @@ export Descent, Adam, Momentum, Nesterov, RMSProp,
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
+using Adapt, Functors, OneHotArrays
 include("utils.jl")
-include("onehot.jl")
 include("functor.jl")
 
 # Pirate error to catch a common mistake.

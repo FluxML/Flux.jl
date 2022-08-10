@@ -49,9 +49,11 @@ end
   # construct from CuArray
   x = [1, 3, 2]
   y = Flux.onehotbatch(x, 0:3)
+  @test_skip begin  # https://github.com/FluxML/OneHotArrays.jl/issues/16
   y2 = Flux.onehotbatch(x |> gpu, 0:3)
   @test y2.indices isa CuArray
   @test y2 |> cpu == y
+  end
 end
 
 @testset "onecold gpu" begin
