@@ -20,10 +20,15 @@ Below is a non-exhaustive list of such utility functions.
 
 ```@docs
 MLUtils.unsqueeze
+MLUtils.flatten
 MLUtils.stack
 MLUtils.unstack
+MLUtils.numobs
+MLUtils.getobs
+MLUtils.getobs!
 MLUtils.chunk
 MLUtils.group_counts
+MLUtils.group_indices
 MLUtils.batch
 MLUtils.unbatch
 MLUtils.batchseq

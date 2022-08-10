@@ -1,10 +1,10 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers],
     doctest = false,
     sitename = "Flux",
     pages = [

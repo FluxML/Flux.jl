@@ -11,7 +11,9 @@ NNlib.celu
 NNlib.elu
 NNlib.gelu
 NNlib.hardsigmoid
+NNlib.sigmoid_fast
 NNlib.hardtanh
+NNlib.tanh_fast
 NNlib.leakyrelu
 NNlib.lisht
 NNlib.logcosh

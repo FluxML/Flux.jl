@@ -8,7 +8,7 @@ To actually train a model we need four things:
 * An [optimiser](optimisers.md) that will update the model parameters appropriately.
 
 Training a model is typically an iterative process, where we go over the data set,
-calculate the objective function over the datapoints, and optimise that.
+calculate the objective function over the data points, and optimise that.
 This can be visualised in the form of a simple loop.
 
 ```julia
@@ -41,7 +41,7 @@ more information can be found on [Custom Training Loops](../models/advanced.md).
 ## Loss Functions
 
 The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective.
-In addition to custom losses, model can be trained in conjuction with
+In addition to custom losses, a model can be trained in conjunction with
 the commonly used losses that are grouped under the `Flux.Losses` module.
 We can also define an objective in terms of some model:
 
@@ -57,10 +57,10 @@ ps = Flux.params(m)
 Flux.train!(loss, ps, data, opt)
 ```
 
-The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built in, like `mse` for mean squared error or `crossentropy` for cross entropy loss, but you can calculate it however you want.
+The objective will almost always be defined in terms of some *cost function* that measures the distance of the prediction `m(x)` from the target `y`. Flux has several of these built-in, like `mse` for mean squared error or `crossentropy` for cross-entropy loss, but you can calculate it however you want.
 For a list of all built-in loss functions, check out the [losses reference](../models/losses.md).
 
-At first glance it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility, and the possibility of optimizing the calculations.
+At first glance, it may seem strange that the model that we want to train is not part of the input arguments of `Flux.train!` too. However the target of the optimizer is not the model itself, but the objective function that represents the departure between modelled and observed data. In other words, the model is implicitly defined in the objective function, and there is no need to give it explicitly. Passing the objective function instead of the model and a cost function separately provides more flexibility and the possibility of optimizing the calculations.
 
 ## Model parameters
 
@@ -68,7 +68,7 @@ The model to be trained must have a set of tracked parameters that are used to c
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 
-Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../models/basics.md) section. Also, for freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
+Handling all the parameters on a layer-by-layer basis is explained in the [Layer Helpers](../models/basics.md) section. For freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
 
 ```@docs
 Flux.params
@@ -93,7 +93,7 @@ using IterTools: ncycle
 data = ncycle([(x, y)], 3)
 ```
 
-It's common to load the `x`s and `y`s separately. In this case you can use `zip`:
+It's common to load the `x`s and `y`s separately. Here you can use `zip`:
 
 ```julia
 xs = [rand(784), rand(784), rand(784)]
@@ -159,8 +159,7 @@ end
 ## Custom Training loops
 
 The `Flux.train!` function can be very convenient, especially for simple problems.
-Its also very flexible with the use of callbacks.
-But for some problems its much cleaner to write your own custom training loop.
+For some problems, however, it's much cleaner to write your own custom training loop.
 An example follows that works similar to the default `Flux.train` but with no callbacks.
 You don't need callbacks if you just code the calls to your functions directly into the loop.
 E.g. in the places marked with comments.
@@ -179,8 +178,8 @@ function my_custom_train!(loss, ps, data, opt)
     end
     # Insert whatever code you want here that needs training_loss, e.g. logging.
     # logging_callback(training_loss)
-    # Insert what ever code you want here that needs gradient.
-    # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge.
+    # Insert whatever code you want here that needs gradients.
+    # e.g. logging histograms with TensorBoardLogger.jl to check for exploding gradients.
     update!(opt, ps, gs)
     # Here you might like to check validation set accuracy, and break out to do early stopping.
   end
@@ -202,7 +201,7 @@ function my_custom_train!(loss, ps, data, opt)
     # logging_callback(training_loss)
     # Apply back() to the correct type of 1.0 to get the gradient of loss.
     gs = back(one(train_loss))
-    # Insert what ever code you want here that needs gradient.
+    # Insert whatever code you want here that needs gradient.
     # E.g. logging with TensorBoardLogger.jl as histogram so you can see if it is becoming huge.
     update!(opt, ps, gs)
     # Here you might like to check validation set accuracy, and break out to do early stopping.

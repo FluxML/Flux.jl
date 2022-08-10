@@ -665,6 +665,17 @@ end
   end
 end
 
+@testset "Shared parameters" begin
+  mat = [1 2; 3 4.0]
+  simple = ((nothing, mat, (3, mat, 4)))
+  @test length(Flux.params(simple)) == 1
+  
+  oneadj = (nt = (m = mat, a = mat'))
+  @test length(Flux.params(oneadj)) == 1  # needs Functors@0.3
+  
+  @test Flux.destructure(simple)[1] == Flux.destructure(oneadj)[1] == [1, 3, 2, 4]
+end
+
 @testset "Various destructure bugs" begin
 
   @testset "issue 1601" begin
@@ -754,5 +765,16 @@ end
     g = Flux.Zygote.ForwardDiff.gradient(pv -> loss(data, 1, pv), pvec)
     @test g ≈ Flux.Zygote.gradient(pv -> loss(data, 1, pv), pvec)[1]
   end
+end
 
+@testset "Rrule" begin
+  @testset "issue 2033" begin
+    if CUDA.functional()
+      struct Wrapped{T}
+          x::T
+      end
+      y, _ = Flux.pullback(Wrapped, cu(randn(3,3)))
+      @test y isa Wrapped{<:CuArray}
+    end
+  end
 end

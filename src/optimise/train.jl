@@ -87,12 +87,12 @@ Here `pars` is produced by calling [`Flux.params`](@ref) on your model.
 (Or just on the layers you want to train, like `train!(loss, params(model[1:end-2]), data, opt)`.)
 This is the "implicit" style of parameter handling.
 
-Then, this gradient is used by optimizer `opt` to update the paramters:
+This gradient is then used by optimizer `opt` to update the parameters:
 ```
     update!(opt, pars, grads)
 ```
-The optimiser should be from the [Flux.Optimise](@ref) module.
-Different optimisers can be combined using [Flux.Optimise.Optimiser](@ref).
+The optimiser should be from the `Flux.Optimise` module (see [Optimisers](@ref)).
+Different optimisers can be combined using [`Flux.Optimise.Optimiser`](@ref Flux.Optimiser).
 
 This training loop iterates through `data` once.
 You can use [`@epochs`](@ref) to do this several times, or 

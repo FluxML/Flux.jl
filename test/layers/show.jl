@@ -68,4 +68,8 @@ end
   @test Meta.isexpr(Meta.parse(toplevel_longchain), :call)  # comments are ignored
   @test Meta.parse(toplevel_longchain).args[1] == :Chain
 
+  # Functors@0.3 marks transposed matrices non-leaf, shouldn't affect printing:
+  adjoint_chain = repr("text/plain", Chain([Dense([1 2; 3 4]')]))
+  @test occursin("Dense(2 => 2)", adjoint_chain)
+  @test occursin("Chain([", adjoint_chain)
 end

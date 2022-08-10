@@ -86,15 +86,20 @@ julia> x |> cpu
  0.7766742
 ```
 
+```@docs
+cpu
+gpu
+```
+
 ## Common GPU Workflows
 
 Some of the common workflows involving the use of GPUs are presented below.
 
 ### Transferring Training Data
 
-In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the `gpu` function in two different  ways:
+In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the `gpu` function in two different ways:
 
-1. Iterating over the batches in a [DataLoader](@ref) object transfering each one of the training batches at a time to the GPU. 
+1. Iterating over the batches in a [DataLoader](@ref) object transferring each one of the training batches at a time to the GPU. 
    ```julia
    train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
    # ... model, optimizer and loss definitions
@@ -107,14 +112,14 @@ In order to train the model using the GPU both model and the training data have 
    end
    ```
 
-2. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possitilities are:
+2. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possibilities are:
    ```julia
    gpu_train_loader = Flux.DataLoader((xtrain |> gpu, ytrain |> gpu), batchsize = 32)
    ```
    ```julia
    gpu_train_loader = Flux.DataLoader((xtrain, ytrain) |> gpu, batchsize = 32)
    ```
-   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples. Other possibility is to use [`MLUtils.mapsobs`](https://juliaml.github.io/MLUtils.jl/dev/api/#MLUtils.mapobs) to push the data movement invocation into the background thread:
+   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples. Another possibility is to use [`MLUtils.mapsobs`](https://juliaml.github.io/MLUtils.jl/dev/api/#MLUtils.mapobs) to push the data movement invocation into the background thread:
    ```julia
    using MLUtils: mapobs
    # ...
@@ -154,7 +159,7 @@ let model = cpu(model)
    BSON.@save "./path/to/trained_model.bson" model
 end
 
-# is equivalente to the above, but uses `key=value` storing directve from BSON.jl
+# is equivalent to the above, but uses `key=value` storing directive from BSON.jl
 BSON.@save "./path/to/trained_model.bson" model = cpu(model)
 ```
 The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect `CuArray`s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.
@@ -176,4 +181,4 @@ $ export CUDA_VISIBLE_DEVICES='0,1'
 ```
 
 
-More information for conditional use of GPUs in CUDA.jl can be found in its [documentation](https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use), and information about the specific use of the variable is described in the [Nvidia CUDA blogpost](https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/).
+More information for conditional use of GPUs in CUDA.jl can be found in its [documentation](https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use), and information about the specific use of the variable is described in the [Nvidia CUDA blog post](https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/).
