@@ -7,6 +7,7 @@ makedocs(
     modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers],
     doctest = false,
     sitename = "Flux",
+    strict = [:cross_references],
     pages = [
         "Home" => "index.md",
         "Building Models" => [
