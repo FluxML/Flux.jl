@@ -202,4 +202,5 @@ and the complete `Optimisers` package under the `Flux.Optimisers` namespace.
 ```@docs
 Optimisers.destructure
 Optimisers.trainable
+Optimisers.isnumeric
 ```

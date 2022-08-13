@@ -651,7 +651,7 @@ for a vocabulary of size `in`.
 
 This layer is often used to store word embeddings and retrieve them using indices. 
 The input to the layer can be either a vector of indexes
-or the corresponding [`onehot encoding`](@ref Flux.onehotbatch). 
+or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch). 
 
 # Examples
 ```jldoctest

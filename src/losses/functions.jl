@@ -167,7 +167,7 @@ Cross entropy is typically used as a loss in multi-class classification,
 in which case the labels `y` are given in a one-hot format.
 `dims` specifies the dimension (or the dimensions) containing the class probabilities.
 The prediction `ŷ` is supposed to sum to one across `dims`,
-as would be the case with the output of a [`softmax`](@ref) operation.
+as would be the case with the output of a [softmax](@ref Softmax) operation.
 
 For numerical stability, it is recommended to use [`logitcrossentropy`](@ref)
 rather than `softmax` followed by `crossentropy` .
@@ -225,7 +225,7 @@ Return the cross entropy calculated by
 
 This is mathematically equivalent to `crossentropy(softmax(ŷ), y)`,
 but is more numerically stable than using functions [`crossentropy`](@ref)
-and [`softmax`](@ref) separately.
+and [softmax](@ref Softmax) separately.
 
 See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref).
 
@@ -262,7 +262,7 @@ Return the binary cross-entropy loss, computed as
 
     agg(@.(-y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)))
 
-Where typically, the prediction `ŷ` is given by the output of a [`sigmoid`](@ref) activation.
+Where typically, the prediction `ŷ` is given by the output of a [sigmoid](@ref Activation-Functions) activation.
 The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
 over `binarycrossentropy` for numerical stability.
 
@@ -452,7 +452,7 @@ end
     binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=eps(ŷ))
 
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
-The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
+The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
 
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
 
@@ -493,7 +493,7 @@ end
 Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
-The input, 'ŷ', is expected to be normalized (i.e. [`softmax`](@ref) output).
+The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
 
 The modulating factor, `γ`, controls the down-weighting strength.
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).

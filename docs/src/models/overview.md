@@ -42,7 +42,7 @@ Normally, your training and test data come from real world observations, but thi
 
 Now, build a model to make predictions with `1` input and `1` output:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> model = Dense(1 => 1)
 Dense(1 => 1)       # 2 parameters
 
@@ -66,7 +66,7 @@ Dense(1 => 1)       # 2 parameters
 
 This model will already make predictions, though not accurate ones yet:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict(x_train)
 1×6 Matrix{Float32}:
  0.0  0.906654  1.81331  2.71996  3.62662  4.53327
@@ -74,7 +74,7 @@ julia> predict(x_train)
 
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> loss(x, y) = Flux.Losses.mse(predict(x), y);
 
 julia> loss(x_train, y_train)
@@ -100,7 +100,7 @@ julia> data = [(x_train, y_train)]
 
 Now, we have the optimiser and data we'll pass to `train!`. All that remains are the parameters of the model. Remember, each model is a Julia struct with a function and configurable parameters. Remember, the dense layer has weights and biases that depend on the dimensions of the inputs and outputs: 
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict.weight
 1×1 Matrix{Float32}:
  0.9066542
@@ -112,7 +112,7 @@ julia> predict.bias
 
 The dimensions of these model parameters depend on the number of inputs and outputs. Since models can have hundreds of inputs and several layers, it helps to have a function to collect the parameters into the data structure Flux expects:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> parameters = Flux.params(predict)
 Params([Float32[0.9066542], Float32[0.0]])
 ```
@@ -135,14 +135,14 @@ julia> train!(loss, parameters, data, opt)
 
 And check the loss:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> loss(x_train, y_train)
 116.38745f0
 ```
 
 It went down. Why? 
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> parameters
 Params([Float32[7.5777884], Float32[1.9466728]])
 ```
@@ -153,7 +153,7 @@ The parameters have changed. This single step is the essence of machine learning
 
 In the previous section, we made a single call to `train!` which iterates over the data we passed in just once. An *epoch* refers to one pass over the dataset. Typically, we will run the training for multiple epochs to drive the loss down even further. Let's run it a few more times:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for epoch in 1:200
          train!(loss, parameters, data, opt)
        end
@@ -171,7 +171,7 @@ After 200 training steps, the loss went down, and the parameters are getting clo
 
 Now, let's verify the predictions:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict(x_test)
 1×5 Matrix{Float32}:
  26.1121  30.13  34.1479  38.1657  42.1836

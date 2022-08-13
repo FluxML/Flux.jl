@@ -94,7 +94,7 @@ In this example, each output has only one component.
 
 Using the previously defined `m` recurrent model, we can now apply it to a single step from our sequence:
 
-```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> x = rand(Float32, 2);
 
 julia> m(x)
@@ -111,7 +111,7 @@ iterating the model on a sequence of data.
 
 To do so, we'll need to structure the input data as a `Vector` of observations at each time step. This `Vector` will therefore be of `length = seq_length` and each of its elements will represent the input features for a given step. In our example, this translates into a `Vector` of length 3, where each element is a `Matrix` of size `(features, batch_size)`, or just a `Vector` of length `features` if dealing with a single observation.  
 
-```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest recurrence; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> x = [rand(Float32, 2) for i = 1:3];
 
 julia> [m(xi) for xi in x]
