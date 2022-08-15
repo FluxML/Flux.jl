@@ -307,7 +307,7 @@ julia> std(x_train_n)
 The standard deviation is now close to one! Our data is ready!
 
 ### Model
-We can now directly use `Flux` and let it do all the work internally! Let's define a model that takes in 13 inputs (13 features) and gives us a single output (the label). We will then pass our entire data through this model in one go, and `Flux` will handle everything for us! Remember, we could have declared a model in plain `Julia` as well. The model will have 14 parameters, 13 weights, and one bias.
+We can now directly use `Flux` and let it do all the work internally! Let's define a model that takes in 13 inputs (13 features) and gives us a single output (the label). We will then pass our entire data through this model in one go, and `Flux` will handle everything for us! Remember, we could have declared a model in plain `Julia` as well. The model will have 14 parameters: 13 weights and 1 bias.
 
 ```jldoctest linear_regression_complex
 julia> model = Dense(13 => 1)
