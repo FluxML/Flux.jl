@@ -5,13 +5,7 @@ The following page contains a step-by-step walkthrough of the logistic regressio
 Let's start by importing the required `Julia` packages!
 
 ```jldoctest logistic_regression
-julia> using Flux
-
-julia> using Statistics
-
-julia> using MLDatasets
-
-julia> using DataFrames
+julia> using Flux, Statistics, MLDatasets, DataFrames, OneHotArrays
 ```
 
 ## Dataset
@@ -40,10 +34,10 @@ julia> custom_y_onehot = unique(y_r) .== permutedims(y_r)
  0  0  0  0  0  0  0  0  0  0  0  0  0     1  1  1  1  1  1  1  1  1  1  1  1
 ```
 
-This same operation can also be performed using `Flux`'s `onehotbatch` function! We will use both of these outputs parallelly to show how intuitive `Flux` is!
+This same operation can also be performed using [OneHotArrays](https://github.com/FluxML/OneHotArrays.jl)' `onehotbatch` function! We will use both of these outputs parallelly to show how intuitive `FluxML` is!
 
 ```jldoctest logistic_regression
-julia> flux_y_onehot = Flux.onehotbatch(y_r, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
+julia> flux_y_onehot = onehotbatch(y_r, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
 3×150×1 OneHotArray(::Matrix{UInt32}) with eltype Bool:
 [:, :, 1] =
  1  1  1  1  1  1  1  1  1  1  1  1  1  …  0  0  0  0  0  0  0  0  0  0  0  0
@@ -72,7 +66,7 @@ Note that this model lacks an activation function, but we will come back to that
 
 We can now move ahead to initialize the parameters of our model. Given that our model has four inputs (4 features in every data point), and three outputs (3 different classes), the parameters can be initialized in the following way -
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> W = rand(Float32, 3, 4);
 
 julia> b = [0.0f0, 0.0f0, 0.0f0];
@@ -140,7 +134,7 @@ The `softmax` function provided by `NNLib.jl` is re-exported by `Flux`, which ha
 
 A model's weights and biases can be accessed as follows -
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_model[1].weight, flux_model[1].bias
 (Float32[0.78588694 -0.45968163 -0.77409476 0.2358028; -0.9049773 -0.58643705 0.466441 -0.79523873; 0.82426906 0.4143493 0.7630932 0.020588955], Float32[0.0, 0.0, 0.0])
 ```
@@ -159,7 +153,7 @@ julia> custom_logitcrossentropy(ŷ, y) = mean(.-sum(y .* logsoftmax(ŷ; dims = 1
 
 Now we can wrap the `custom_logitcrossentropy` inside a function that takes in the model parameters, `x`s, and `y`s, and returns the loss value.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function custom_loss(W, b, x, y)
            ŷ = custom_model(W, b, x)
            custom_logitcrossentropy(ŷ, y)
@@ -173,7 +167,7 @@ The loss function works!
 
 `Flux` provides us with many minimal yet elegant loss functions. In fact, the `custom_logitcrossentropy` defined above has been taken directly from `Flux`, the only difference being the functionalities provided by `Flux` is much more general. For example, you can use the `Flux.logitcrossentropy` with any dataset, but `custom_logitcrossentropy` is specific to this tutorial and would give weird results if used otherwise.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function flux_loss(flux_model, x, y)
            ŷ = flux_model(x)
            Flux.logitcrossentropy(ŷ, y)
@@ -191,7 +185,7 @@ We can divide this task into two parts -
 
 The maximum index should be calculated along the columns (remember, each column is the output of a single `x` data point). We can use `Julia`'s `findmax` function to achieve this.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> findmax(custom_y_onehot, dims=1)
 (Bool[1 1 … 1 1], CartesianIndex{2}[CartesianIndex(1, 1) CartesianIndex(1, 2) … CartesianIndex(3, 149) CartesianIndex(3, 150)])
 
@@ -263,7 +257,7 @@ Both the functions act identically!
 
 We now move to the `accuracy` metric and run it with the untrained `custom_model`.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> custom_accuracy(W, b, x, y) = mean(custom_onecold(custom_model(W, b, x)) .== y_r);
 
 julia> custom_accuracy(W, b, x, y)
@@ -272,7 +266,7 @@ julia> custom_accuracy(W, b, x, y)
 
 Alternatively, we can use the functionalities provided by `Flux` to define the `flux_accuracy` function.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y_r);
 
 julia> flux_accuracy(x, y)
@@ -302,7 +296,7 @@ julia> dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, custom_y_onehot);
 
 We can now update the parameters, following the gradient descent algorithm -
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> W .= W .- 0.1 .* dLdW;
 
 julia> b .= b .- 0.1 .* dLdb;
@@ -310,7 +304,7 @@ julia> b .= b .- 0.1 .* dLdb;
 
 The parameters have been updated! We can now check the value of our custom loss function -
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> custom_loss(W, b, x, custom_y_onehot)
 1.164742997664842
 ```
@@ -327,7 +321,7 @@ julia> function train_custom_model()
 
 We can plug the training function inside a loop and train the model for more epochs. The loop can be tailored to suit the user's needs, and the conditions can be specified in plain `Julia`! Here we will train the model for a maximum of `500` epochs, but to ensure that the model does not overfit, we will break as soon as our accuracy value crosses or becomes equal to 0.98. 
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for i = 1:500
             train_custom_model();
             custom_accuracy(W, b, x, y) >= 0.98 && break
@@ -339,7 +333,7 @@ custom_accuracy(W, b, x, y) = 0.98
 
 Everything works! Our model achieved an accuracy of `0.98`! Let's have a look at the loss.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> custom_loss(W, b, x, custom_y_onehot)
 0.6520349798243569
 ```
@@ -348,7 +342,7 @@ As expected, the loss went down too! Now, let's repeat the same steps with our `
 
 We can write a similar-looking training loop for our `flux_model` and train it similarly.
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_loss(flux_model, x, flux_y_onehot)
 1.215731131385928
 
@@ -366,7 +360,7 @@ julia> for i = 1:500
 
 Looking at the accuracy and loss value -
 
-```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> @show flux_accuracy(x, y);
 flux_accuracy(x, y) = 0.98
 
