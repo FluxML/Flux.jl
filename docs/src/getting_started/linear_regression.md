@@ -49,7 +49,7 @@ julia> x = x .* reshape(rand(Float32, 61), (1, 61));
 Visualizing the final data -
 
 ```jldoctest linear_regression_simple
-julia> plot(reshape(x, (61, 1)), reshape(y, (61, 1)), lw = 3, seriestype = :scatter, label = "", title = "Generated data", xlabel = "x", ylabel= "y");
+julia> plot(vec(x), vec(y), lw = 3, seriestype = :scatter, label = "", title = "Generated data", xlabel = "x", ylabel= "y");
 ```
 
 
