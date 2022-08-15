@@ -8,9 +8,7 @@ Let us start by building a simple linear regression model. This model would be t
 Importing the required `Julia` packages -
 
 ```jldoctest linear_regression_simple
-julia> using Flux
-
-julia> using Plots
+julia> using Flux, Plots
 ```
 ### Generating a dataset
 The data usually comes from the real world, which we will be exploring in the last part of this guide, but we don't want to jump straight to the relatively harder part. Here we will generate the `x`s of our data points and map them to the respective `y`s using a simple function. Remember, here each `x` is equivalent to a feature, and each `y` is the corresponding label. Combining all the `x`s and `y`s would create the complete dataset.
