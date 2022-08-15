@@ -6,7 +6,7 @@ The following page contains a step-by-step walkthrough of creating neural networ
 
 Consider a simple linear regression model, which tries to predict an output array `y` from an input `x`. For a more detailed example see [Linear Regression](@ref).
 
-```jldoctest nn_from_scratch; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest nn_from_scratch; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> using Flux
 
 julia> W = rand(2, 5);
@@ -63,7 +63,7 @@ julia> dLdW, dLdb, dLdx, dLdy = gradient(loss, W, b, x, y);
 
 Now that we have gradients, we can pull them out and update `W` to train the model.
 
-```jldoctest nn_from_scratch; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest nn_from_scratch; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> W̄ = dLdW;
 
 julia> W .-= 0.1 .* W̄;

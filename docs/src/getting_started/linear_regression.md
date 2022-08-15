@@ -124,7 +124,7 @@ julia> W = rand(Float32, 1, 1)
 1×1 Matrix{Float32}:
  0.99285793
 =======
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> W = rand(Float32, 1, 1)
 1×1 Matrix{Float32}:
  0.33832288
@@ -145,7 +145,7 @@ julia> custom_model(W, b, x) |> size
 julia> custom_model(W, b, x)[1], y[1]
 (-1.6116865f0, -7.0f0)
 =======
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> model(x) |> size
 (1, 61)
 
@@ -166,7 +166,7 @@ julia> function custom_loss(W, b, x, y)
 julia> custom_loss(W, b, x, y)
 23.772217f0
 =======
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function loss(x, y)
            ŷ = model(x)
            sum((y .- ŷ).^2) / length(x)
@@ -200,14 +200,14 @@ Now we can check if our model is acting right. We can pass the complete data in 
 =======
 A [`Dense(1 => 1)`](@ref Dense) layer denotes a layer of one neuron with one output and one input. This layer is exactly same as the mathematical model defined by us above! Under the hood, `Flux` too calculates the output using the same expression! But, we don't have to initialize the parameters ourselves this time, instead `Flux` does it for us.
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_model.weight, flux_model.bias
 (Float32[1.0764818], Float32[0.0])
 ```
 
 Now we can check if our model is acting right -
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
 julia> flux_model(x) |> size
 (1, 61)
@@ -226,7 +226,7 @@ It is! The next step would be defining the loss function using `Flux`'s function
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function flux_loss(flux_model, x, y)
 =======
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function flux_loss(x, y)
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
            ŷ = flux_model(x)
@@ -251,7 +251,7 @@ julia> W = Float32[1.1412252]
 1-element Vector{Float32}:
  1.1412252
 =======
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> W = Float32[1.0764818]
 1-element Vector{Float32}:
  1.0764818
@@ -341,7 +341,7 @@ We can train the model even more or tweak the hyperparameters to achieve the des
 ### Results
 The main objective of this guide was to fit a line to our dataset using the linear regression algorithm. The training procedure went well, and the loss went down significantly! Let's see what the fitted line looks like. Remember, `Wx + b` is nothing more than a line's equation, with `slope = W[1]` and `y-intercept = b[1]` (indexing at `1` as `W` and `b` are iterable).
 =======
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> loss(x, y), flux_loss(x, y)
 (23.189152f0, 23.189152f0)
 ```
@@ -352,7 +352,7 @@ The losses are identical! This means that our `model` and the `flux_model` are i
 
 Before we begin the training procedure with `Flux`, let's initialize an optimiser, finalize our data, and pass our parameters through [`Flux.params`](@ref) to specify that we want all derivatives of `W` and `b`. We will be using the classic [`Gradient Descent`](@ref Descent) algorithm. `Flux` comes loaded with a lot of different optimisers; refer to [Optimisers](@ref) for more information on the same.
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> opt = Descent(0.01);
 
 julia> data = [(x, y)];
@@ -373,7 +373,7 @@ julia> Flux.Optimise.update!(opt, params, gs)
 
 We can now check the values of our parameters and the value of the loss function -
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> params, loss(x, y)
 (Params([Float32[1.145264], Float32[0.041250423]]), 22.5526f0)
 ```
@@ -382,7 +382,7 @@ The parameters changed, and the loss went down! This means that we successfully 
 
 `Flux` also provides a convenience function to train a model. The [`Flux.train!`](@ref) function performs the same task described above and does not require calculating the gradient manually.
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> Flux.train!(loss, params, data, opt)
 
 julia> params, loss(x, y)
@@ -391,7 +391,7 @@ julia> params, loss(x, y)
 
 The parameters changed again, and the loss went down again! This was the second epoch of our training procedure. Let's plug this in a for loop and train the model for 60 epochs.
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for i = 1:60
           Flux.train!(loss, params, data, opt)
        end
@@ -404,7 +404,7 @@ The loss went down significantly!
 
 `Flux` provides yet another convenience functionality, the [`Flux.@epochs`](@ref) macro, which can be used to train a model for a specific number of epochs.
 
-```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> Flux.@epochs 10 Flux.train!(loss, params, data, opt)
 [ Info: Epoch 1
 [ Info: Epoch 2
@@ -514,10 +514,10 @@ This data contains a diverse number of features, which means that the features h
 <<<<<<< HEAD
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 =======
-```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
 =======
-```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 >>>>>>> 3e9630b3 (Enable doctests)
 julia> std(x_train)
 134.06784844377117
@@ -537,9 +537,9 @@ We can now directly use `Flux` and let it do all the work internally! Let's defi
 
 ```jldoctest linear_regression_complex
 =======
-```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 =======
-```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 >>>>>>> 3e9630b3 (Enable doctests)
 julia> x_train_n = Flux.normalise(x_train);
 
@@ -575,9 +575,9 @@ Same as before, our next step would be to define a loss function to quantify our
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function loss(model, x, y)
 =======
-```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 =======
-```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 >>>>>>> 3e9630b3 (Enable doctests)
 julia> function loss(x, y)
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
@@ -665,9 +665,9 @@ Let's have a look at the loss -
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> loss(model, x_train_n, y_train)
 =======
-```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```julia linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 =======
-```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 >>>>>>> 3e9630b3 (Enable doctests)
 julia> loss(x_train_n, y_train)
 >>>>>>> 8253c9d0 (Create a getting started section and add a new linear regression example)
@@ -687,7 +687,7 @@ julia> loss(model, x_test_n, y_test)
 =======
 The last step of this tutorial would be to test our model using the testing data. We will first normalise the testing data and then calculate the corresponding loss.
 
-```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> x_test_n = Flux.normalise(x_test);
 
 julia> loss(x_test_n, y_test)
