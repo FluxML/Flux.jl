@@ -10,17 +10,14 @@ Importing the required `Julia` packages -
 ```jldoctest linear_regression_simple
 julia> using Flux, Plots
 ```
+
 ### Generating a dataset
 The data usually comes from the real world, which we will be exploring in the last part of this guide, but we don't want to jump straight to the relatively harder part. Here we will generate the `x`s of our data points and map them to the respective `y`s using a simple function. Remember, here each `x` is equivalent to a feature, and each `y` is the corresponding label. Combining all the `x`s and `y`s would create the complete dataset.
 
 ```jldoctest linear_regression_simple
-julia> x = hcat(collect(Float32, -3:0.1:3)...);
-
-julia> x |> size
-(1, 61)
-
-julia> typeof(x)
-Matrix{Float32} (alias for Array{Float32, 2})
+julia> x = hcat(collect(Float32, -3:0.1:3)...)
+1×61 Matrix{Float32}:
+ -3.0  -2.9  -2.8  -2.7  -2.6  -2.5  …  2.4  2.5  2.6  2.7  2.8  2.9  3.0
 ```
 
 The `hcat` call generates a `Matrix` with numbers ranging from `-3.0` to `3.0` with a gap of `0.1` between them. Each column of this matrix holds a single `x`, a total of 61 `x`s. The next step would be to generate the corresponding labels or the `y`s.
@@ -28,13 +25,9 @@ The `hcat` call generates a `Matrix` with numbers ranging from `-3.0` to `3.0` w
 ```jldoctest linear_regression_simple
 julia> f(x) = @. 3x + 2;
 
-julia> y = f(x);
-
-julia> y |> size
-(1, 61)
-
-julia> typeof(y)
-Matrix{Float32} (alias for Array{Float32, 2})
+julia> y = f(x)
+1×61 Matrix{Float32}:
+ -7.0  -6.7  -6.4  -6.1  -5.8  -5.5  …  9.5  9.8  10.1  10.4  10.7  11.0
 ```
 
 The function `f` maps each `x` to a `y`, and as `x` is a `Matrix`, the expression broadcasts the scalar values using `@.` macro. Our data points are ready, but they are too perfect. In a real-world scenario, we will not have an `f` function to generate `y` values, but instead, the labels would be manually added.
