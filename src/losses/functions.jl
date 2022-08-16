@@ -516,26 +516,12 @@ Calculated as:
 
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
 
-# Example
-```jldoctest
-julia> y = [0, 1, 0, 1, 1, 1];
-
-julia> ŷ_fp = [1, 1, 1, 1, 1, 1];  # 2 false positive -> 2 wrong predictions
-
-julia> ŷ_fnp = [1, 1, 0, 1, 1, 0];  # 1 false negative, 1 false positive -> 2 wrong predictions
-
-julia> Flux.tversky_loss(ŷ_fnp, y)
-0.19999999999999996
-
-julia> Flux.tversky_loss(ŷ_fp, y) < Flux.tversky_loss(ŷ_fnp, y)  # FN is given more weight
-true
-```
 """
 function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
     _check_sizes(ŷ, y)
     #TODO add agg
     num = sum(y .* ŷ) + 1
-    den = sum(y .* ŷ + (1 - β) * (1 .- y) .* ŷ + β * y .* (1 .- ŷ)) + 1
+    den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
     1 - num / den
 end
 
