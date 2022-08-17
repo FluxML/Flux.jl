@@ -80,6 +80,17 @@ given the prediction `ŷ` and true values `y`.
                  | 0.5 * |ŷ - y|^2,            for |ŷ - y| <= δ
     Huber loss = |
                  |  δ * (|ŷ - y| - 0.5 * δ), otherwise
+
+# Example
+```jldoctest
+julia> ŷ = [1.1, 2.1, 3.1];
+
+julia> Flux.huber_loss(ŷ, 1:3)  # default δ = 1 > |ŷ - y|
+0.005000000000000009
+
+julia> Flux.huber_loss(ŷ, 1:3, δ=0.05)  # changes behaviour as |ŷ - y| > δ
+0.003750000000000005
+```
 """
 function huber_loss(ŷ, y; agg = mean, δ = ofeltype(ŷ, 1))
    _check_sizes(ŷ, y)
@@ -377,12 +388,22 @@ function kldivergence(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
 end
 
 """
-    poisson_loss(ŷ, y)
+    poisson_loss(ŷ, y; agg = mean)
 
-# Return how much the predicted distribution `ŷ` diverges from the expected Poisson
-# distribution `y`; calculated as `sum(ŷ .- y .* log.(ŷ)) / size(y, 2)`.
+Return how much the predicted distribution `ŷ` diverges from the expected Poisson
+distribution `y`; calculated as -
+
+    sum(ŷ .- y .* log.(ŷ)) / size(y, 2)
 
 [More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
+
+# Example
+```jldoctest
+julia> y_model = [1, 3, 3];  # data should only take integral values
+
+julia> Flux.poisson_loss(y_model, 1:3)
+0.5023128522198171
+```
 """
 function poisson_loss(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
@@ -392,11 +413,32 @@ end
 """
     hinge_loss(ŷ, y; agg = mean)
 
-Return the [hinge_loss loss](https://en.wikipedia.org/wiki/Hinge_loss) given the
+Return the [hinge_loss](https://en.wikipedia.org/wiki/Hinge_loss) given the
 prediction `ŷ` and true labels `y` (containing 1 or -1); calculated as
-`sum(max.(0, 1 .- ŷ .* y)) / size(y, 2)`.
 
+    sum(max.(0, 1 .- ŷ .* y)) / size(y, 2)
+
+Usually used with classifiers like Support Vector Machines.
 See also: [`squared_hinge_loss`](@ref)
+
+# Example
+```jldoctest
+julia> y_true = [1, -1, 1, 1];
+
+julia> y_pred = [0.1, 0.3, 1, 1.5];
+
+julia> Flux.hinge_loss(y_pred, y_true)
+0.55
+
+julia> Flux.hinge_loss(y_pred[1], y_true[1]) != 0  # same sign but |ŷ| < 1
+true
+
+julia> Flux.hinge_loss(y_pred[end], y_true[end]) == 0  # same sign but |ŷ| >= 1
+true
+
+julia> Flux.hinge_loss(y_pred[2], y_true[2]) != 0 # opposite signs
+true
+```
 """
 function hinge_loss(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
@@ -407,9 +449,31 @@ end
     squared_hinge_loss(ŷ, y)
 
 Return the squared hinge_loss loss given the prediction `ŷ` and true labels `y`
-(containing 1 or -1); calculated as `sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)`.
+(containing 1 or -1); calculated as
 
+    sum((max.(0, 1 .- ŷ .* y)).^2) / size(y, 2)
+
+Usually used with classifiers like Support Vector Machines.
 See also: [`hinge_loss`](@ref)
+
+# Example
+```jldoctes
+julia> y_true = [1, -1, 1, 1];
+
+julia> y_pred = [0.1, 0.3, 1, 1.5];
+
+julia> Flux.squared_hinge_loss(y_pred, y_true)
+0.625
+
+julia> Flux.squared_hinge_loss(y_pred[1], y_true[1]) != 0
+true
+
+julia> Flux.squared_hinge_loss(y_pred[end], y_true[end]) == 0
+true
+
+julia> Flux.squared_hinge_loss(y_pred[2], y_true[2]) != 0
+true
+```
 """
 function squared_hinge_loss(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
@@ -422,9 +486,20 @@ end
 Return a loss based on the dice coefficient.
 Used in the [V-Net](https://arxiv.org/abs/1606.04797) image segmentation
 architecture.
-Similar to the F1_score. Calculated as:
+The dice coefficient is similar to the F1_score. Loss calculated as:
 
     1 - 2*sum(|ŷ .* y| + smooth) / (sum(ŷ.^2) + sum(y.^2) + smooth)
+
+# Example
+```jldoctest
+julia> y_pred = [1.1, 2.1, 3.1];
+
+julia> Flux.dice_coeff_loss(y_pred, 1:3)
+0.000992391663909964
+
+julia> 1 - Flux.dice_coeff_loss(y_pred, 1:3)  # ~ F1 score for image segmentation
+0.99900760833609
+```
 """
 function dice_coeff_loss(ŷ, y; smooth = ofeltype(ŷ, 1.0))
   _check_sizes(ŷ, y)
@@ -436,9 +511,11 @@ end
 
 Return the [Tversky loss](https://arxiv.org/abs/1706.05721).
 Used with imbalanced data to give more weight to false negatives.
-Larger β weigh recall more than precision (by placing more emphasis on false negatives)
+Larger β weigh recall more than precision (by placing more emphasis on false negatives).
 Calculated as:
-    1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + β*(1 .- y) .* ŷ + (1 - β)*y .* (1 .- ŷ)) + 1)
+
+    1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
+
 """
 function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
     _check_sizes(ŷ, y)
@@ -455,6 +532,8 @@ Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
 
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
+
+See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
 # Example
 ```jldoctest
@@ -473,9 +552,6 @@ julia> ŷ = [0.268941  0.5  0.268941
 julia> Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
 true
 ```
-
-See also: [`Losses.focal_loss`](@ref) for multi-class setting
-
 """
 function binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=epseltype(ŷ))
     _check_sizes(ŷ, y)
@@ -536,7 +612,17 @@ which can be useful for training Siamese Networks. It is given by
     agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)                           
                                  
 Specify `margin` to set the baseline for distance at which pairs are dissimilar.
-                                    
+
+# Example
+```jldoctest
+julia> ŷ = [0.5, 1.5, 2.5];
+
+julia> Flux.siamese_contrastive_loss(ŷ, 1:3)
+-4.833333333333333
+
+julia> Flux.siamese_contrastive_loss(ŷ, 1:3, margin = 2)
+-4.0
+```
 """
 function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
     _check_sizes(ŷ, y)

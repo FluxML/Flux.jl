@@ -155,7 +155,7 @@ struct Dense{F, M<:AbstractMatrix, B}
   bias::B
   σ::F
   function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix, F}
-    b = create_bias(W, bias, size(W,1))
+    b = _create_bias(W, bias, size(W,1))
     new{F,M,typeof(b)}(W, b, σ)
   end
 end
@@ -228,7 +228,7 @@ struct Scale{F, A<:AbstractArray, B}
   bias::B
   σ::F
   function Scale(scale::A, bias::B = true, σ::F = identity) where {A<:AbstractArray, B<:Union{Bool, AbstractArray}, F}
-    b = create_bias(scale, bias, size(scale)...)
+    b = _create_bias(scale, bias, size(scale)...)
     new{F, A, typeof(b)}(scale, b, σ)
   end
 end
@@ -403,7 +403,7 @@ struct Bilinear{F,A,B}
   σ::F
   function Bilinear(W::A, bias = true, σ::F = identity) where {A<:AbstractArray, F}
     ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
-    b = create_bias(W, bias, size(W,1))
+    b = _create_bias(W, bias, size(W,1))
     new{F,A,typeof(b)}(W, b, σ)
   end
 end

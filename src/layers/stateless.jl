@@ -32,6 +32,25 @@ end
 Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
 Per default, `dims` is the last dimension. 
 `ϵ` is a small additive factor added to the denominator for numerical stability.
+
+# Examples
+```jldoctest
+julia> using Statistics
+
+julia> x = [9, 10, 20, 60];
+
+julia> y = Flux.normalise(x);
+
+julia> isapprox(std(y), 1, atol=0.2) && std(y) != std(x)
+true
+
+julia> x = rand(1:100, 10, 2);
+
+julia> y = Flux.normalise(x, dims=1);
+
+julia> isapprox(std(y, dims=1), ones(1, 2), atol=0.2) && std(y, dims=1) != std(x, dims=1)
+true
+```
 """
 @inline function normalise(x::AbstractArray; dims=ndims(x), ϵ=ofeltype(x, 1e-5))
   μ = mean(x, dims=dims)
