@@ -529,6 +529,10 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
+if track_stats
+  @warn("`track_stats=true` will be removed. Please use `track_stats=false` instead")
+end
+
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
   β = affine ? initβ(chs) : nothing
