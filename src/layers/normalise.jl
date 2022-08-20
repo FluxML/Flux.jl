@@ -431,6 +431,10 @@ function InstanceNorm(chs::Int, λ=identity;
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
 
+  if track_stats
+    @warn("`track_stats=true` will be removed. Please use `track_stats=false` instead")
+  end
+
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
   μ = track_stats ? zeros32(chs) : nothing
