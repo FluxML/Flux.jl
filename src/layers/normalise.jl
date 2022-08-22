@@ -432,7 +432,7 @@ function InstanceNorm(chs::Int, λ=identity;
                     ϵ=1f-5, momentum=0.1f0)
 
   if track_stats
-    @warn("`track_stats=true` will be removed. Please use `track_stats=false` instead")
+    Base.depwarn("`track_stats=true` will be removed from InstanceNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :InstanceNorm)
   end
 
   β = affine ? initβ(chs) : nothing
@@ -534,7 +534,7 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
               ϵ=1f-5, momentum=0.1f0)
 
 if track_stats
-  @warn("`track_stats=true` will be removed. Please use `track_stats=false` instead")
+  Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
 end
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
