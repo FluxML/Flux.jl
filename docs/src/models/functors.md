@@ -1,4 +1,4 @@
-# Functors.jl
+# Functor from Functors.jl
 
 Flux makes use of the [Functors.jl](https://github.com/FluxML/Functors.jl) to represent many of the core functionalities it provides.
 

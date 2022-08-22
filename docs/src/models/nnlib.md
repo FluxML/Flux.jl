@@ -1,4 +1,4 @@
-# NNlib.jl
+# Neural Network primitives from NNlib.jl
 
 Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package.
 
@@ -7,72 +7,103 @@ Flux re-exports all of the functions exported by the [NNlib](https://github.com/
 Non-linearities that go between layers of your model. Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call `σ.(xs)`, `relu.(xs)` and so on.
 
 ```@docs
-NNlib.celu
-NNlib.elu
-NNlib.gelu
-NNlib.hardsigmoid
-NNlib.sigmoid_fast
-NNlib.hardtanh
-NNlib.tanh_fast
-NNlib.leakyrelu
-NNlib.lisht
-NNlib.logcosh
-NNlib.logsigmoid
-NNlib.mish
-NNlib.relu
-NNlib.relu6
-NNlib.rrelu
-NNlib.selu
-NNlib.sigmoid
-NNlib.softplus
-NNlib.softshrink
-NNlib.softsign
-NNlib.swish
-NNlib.tanhshrink
-NNlib.trelu
+celu
+elu
+gelu
+hardsigmoid
+sigmoid_fast
+hardtanh
+tanh_fast
+leakyrelu
+lisht
+logcosh
+logsigmoid
+mish
+relu
+relu6
+rrelu
+selu
+sigmoid
+softplus
+softshrink
+softsign
+swish
+hardswish
+tanhshrink
+trelu
 ```
 
 ## Softmax
 
+`Flux`'s `logitcrossentropy` uses `NNlib.softmax` internally.
+
 ```@docs
-NNlib.softmax
-NNlib.logsoftmax
+softmax
+logsoftmax
 ```
 
 ## Pooling
 
+`Flux`'s `AdaptiveMaxPool`, `AdaptiveMeanPool`, `GlobalMaxPool`, `GlobalMeanPool`, `MaxPool`, and `MeanPool` use `NNlib.PoolDims`, `NNlib.maxpool`, and `NNlib.meanpool` as their backend.
+
 ```@docs
-NNlib.maxpool
-NNlib.meanpool
+PoolDims
+maxpool
+meanpool
+```
+
+## Padding
+
+```@docs
+pad_reflect
+pad_constant
+pad_repeat
+pad_zeros
 ```
 
 ## Convolution
 
+`Flux`'s `Conv` and `CrossCor` layers use `NNlib.DenseConvDims` and `NNlib.conv` internally. 
+
 ```@docs
-NNlib.conv
-NNlib.depthwiseconv
+conv
+ConvDims
+depthwiseconv
+DepthwiseConvDims
+DenseConvDims
 ```
 
 ## Upsampling
 
+`Flux`'s `Upsample` layer uses `NNlib.upsample_nearest`, `NNlib.upsample_bilinear`, and `NNlib.upsample_trilinear` as its backend. Additionally, `Flux`'s `PixelShuffle` layer uses `NNlib.pixel_shuffle` as its backend.
+
 ```@docs
-NNlib.upsample_nearest
-NNlib.upsample_bilinear
-NNlib.upsample_trilinear
-NNlib.pixel_shuffle
-NNlib.grid_sample
+upsample_nearest
+∇upsample_nearest
+upsample_linear
+∇upsample_linear
+upsample_bilinear
+∇upsample_bilinear
+upsample_trilinear
+∇upsample_trilinear
+pixel_shuffle
 ```
 
 ## Batched Operations
 
+`Flux`'s `Bilinear` layer uses `NNlib.batched_mul` internally.
+
 ```@docs
-NNlib.batched_mul
-NNlib.batched_mul!
-NNlib.batched_adjoint
-NNlib.batched_transpose
+batched_mul
+batched_mul!
+batched_adjoint
+batched_transpose
+batched_vec
 ```
 
 ## Gather and Scatter
+
+`Flux`'s `Embedding` layer uses `NNlib.gather` as its backend.
 
 ```@docs
 NNlib.gather
@@ -81,8 +112,22 @@ NNlib.scatter
 NNlib.scatter!
 ```
 
+## Sampling
+
+```@docs
+grid_sample
+∇grid_sample
+```
+
+## Losses
+
+```@docs
+ctc_loss
+```
+
 ## Miscellaneous
 
 ```@docs
-NNlib.logsumexp
+logsumexp
+NNlib.glu
 ```

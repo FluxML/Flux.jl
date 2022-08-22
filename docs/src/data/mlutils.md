@@ -1,4 +1,4 @@
-# MLUtils.jl
+# Working with data using MLUtils.jl
 
 Flux re-exports the `DataLoader` type and utility functions for working with
 data from [MLUtils](https://github.com/JuliaML/MLUtils.jl).
