@@ -247,19 +247,13 @@ The line fits well! There is room for improvement, but we leave that up to you! 
 We now move on to a relatively complex linear regression model. Here we will use a real dataset from [`MLDatasets.jl`](https://github.com/JuliaML/MLDatasets.jl), which will not confine our data points to have only one feature. Let's start by importing the required packages -
 
 ```jldoctest linear_regression_complex
-julia> using Flux
-
-julia> using Statistics
-
-julia> using MLDatasets: BostonHousing
+julia> using Flux, Statistics, MLDatasets, DataFrames
 ```
 
 ### Data
 Let's start by initializing our dataset. We will be using the [`BostonHousing`](https://juliaml.github.io/MLDatasets.jl/stable/datasets/misc/#MLDatasets.BostonHousing) dataset consisting of `506` data points. Each of these data points has `13` features and a corresponding label, the house's price. The `x`s are still mapped to a single `y`, but now, a single `x` data point has 13 features. 
 
 ```jldoctest linear_regression_complex
-julia> using DataFrames
-
 julia> dataset = BostonHousing()
 dataset BostonHousing:
   metadata    =>    Dict{String, Any} with 5 entries
@@ -324,7 +318,7 @@ The training procedure would make use of the same mathematics, but now we can pa
 
 ```jldoctest linear_regression_complex
 julia> function train_model()
-           dLdm, _, _ = gradient(loss, model, x, y)
+           dLdm, _, _ = gradient(loss, model, x_train_n, y_train)
            @. model.weight = model.weight - 0.000001 * dLdm.weight
            @. model.bias = model.bias - 0.000001 * dLdm.bias
        end;
@@ -342,7 +336,7 @@ julia> while true
                loss_init = loss(model, x_train_n, y_train)
                continue
            end
-           if abs(loss_init - loss(model, x_train_n, y_train)) < 1e-3
+           if abs(loss_init - loss(model, x_train_n, y_train)) < 1e-4
                break
            else
                loss_init = loss(model, x_train_n, y_train)
@@ -386,8 +380,7 @@ After getting familiar with the basics of `Flux` and `Julia`, we moved ahead to 
 ## Copy-pastable code
 ### Dummy dataset
 ```julia
-using Flux
-using Plots
+using Flux, Plots
 
 # data
 x = hcat(collect(Float32, -3:0.1:3)...)
@@ -430,9 +423,7 @@ plot!((x) -> b[1] + W[1] * x, -3, 3, label="Custom model", lw=2)
 ```
 ### Real dataset
 ```julia
-using Flux
-using Statistics
-using MLDatasets: BostonHousing
+using Flux, Statistics, MLDatasets
 
 # data
 x, y = BostonHousing(as_df=false)[:]
@@ -452,7 +443,7 @@ print("Initial loss: ", loss(model, x_train_n, y_train), "\n")
 
 # train
 function train_custom_model()
-    dLdm, _, _ = gradient(loss, model, x, y)
+    dLdm, _, _ = gradient(loss, model, x_train_n, y_train)
     @. model.weight = model.weight - 0.000001 * dLdm.weight
     @. model.bias = model.bias - 0.000001 * dLdm.bias
 end
@@ -464,7 +455,7 @@ while true
         loss_init = loss(model, x_train_n, y_train)
         continue
     end
-    if abs(loss_init - loss(model, x_train_n, y_train)) < 1e-3
+    if abs(loss_init - loss(model, x_train_n, y_train)) < 1e-4
         break
     else
         loss_init = loss(model, x_train_n, y_train)
