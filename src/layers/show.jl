@@ -1,63 +1,30 @@
-"""
-    @big_show MyContainer
+@nospecialize  # just for this file, for startup time
 
-This macro lets you opt-in to Flux's fancy printing.
-
-When `model::MyContainer` is returned at the REPL it will be treated like `Chain`,
-and the printing routine will recursively unfold its children.
-This is triggered by adding a method to 3-arg `Base.show(io::IO, ::MIME"text/plain", l::MyContainer)`.
-
-Custom layers which do not contain other layers (more like `Dense` than like `Chain`)
-need not call this, and should simply define 2-arg `Base.show(io::IO, l::MyLayer)`.
-
-# Example
-```jldoctest
-julia> struct Trio{A,B,C}; a::A; b::B; c::C end
-
-julia> Flux.@functor Trio
-
-julia> Flux.@big_show Trio
-
-julia> tri = Trio(Dense(10=>5,tanh), Dense(5=>2), softmax)
-Trio(
-  Dense(10 => 5, tanh),                 # 55 parameters
-  Dense(5 => 2),                        # 12 parameters
-  NNlib.softmax,
-)                   # Total: 4 arrays, 67 parameters, 492 bytes.
-```
-
-Note that there is no automatic method for 2-arg `show`, and thus
-something like `(tri, tri)` will print all the type parameters. 
-
-However, `Chain(tri, tri)` will always use Flux's recursive printing,
-even without using this macro: `Chain` is the entry point.
-"""
-macro big_show(ex)
-    ex isa Symbol || error("usage is `Flux.@big_show Chain`")
-    eex = esc(ex)
-    quote
-        function Base.show(io::IO, m::MIME"text/plain", x::$eex)
-            if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
-              _big_show(io, x)
-            elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
-              _layer_show(io, x)
-            else
-              show(io, x)
-            end
-        end
+# This is called by @layer :expand, on layers which should be treated like Chain, and returns an expression:
+function _macro_big_show(ex)
+  quote
+    # Entry point:
+    function Base.show(io::IO, m::MIME"text/plain", x::$ex)
+      if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
+        _big_show(io, x)
+      elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
+        _layer_show(io, x)
+      else
+        show(io, x)
+      end
     end
-end
 
-@big_show Chain
-@big_show Parallel
-@big_show SkipConnection
-@big_show Recur
-@big_show Maxout
+    # Don't show Chain(Tuple(...)), always splat that. And ignore Recur's non-trainable state:
+    Flux._show_children(x::$ex) = _flat_children(trainable(x))
+  end
+end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   pre, post = obj isa Chain{<:AbstractVector} ? ("([", "])") : ("(", ")")
   children = _show_children(obj)
   if all(_show_leaflike, children)
+    # This check may not be useful anymore: it tries to infer when to stop the recursion by looking for grandkids,
+    # but once all layers use @layer, they stop the recursion by defining a method for _big_show.
     _layer_show(io, obj, indent, name)
   else
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", nameof(typeof(obj)), pre)
@@ -90,25 +57,33 @@ _show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
 # note the covariance of tuple, using <:T causes warning or error
 _show_leaflike(::Tuple{Vararg{Number}}) = true         # e.g. stride of Conv
 _show_leaflike(::Tuple{Vararg{AbstractArray}}) = true  # e.g. parameters of LSTMcell
-_show_leaflike(::Scale) = true                           # appears inside LayerNorm
 _show_leaflike(::AbstractArray{<:Number}) = true         # e.g. transposed arrays
+_show_leaflike(::Scale) = true                           # appears inside LayerNorm
 
-_show_children(x) = trainable(x)  # except for layers which hide their Tuple:
-_show_children(c::Chain) = c.layers
-_show_children(m::Maxout) = m.layers
-_show_children(p::Parallel) = (p.connection, p.layers...)
-_show_children(f::PairwiseFusion) = (f.connection, f.layers...)
+_show_children(x) = trainable(x)
+# This used to have methods for Chain, Maxout, Parallel, PairwiseFusion. Now @layer instead
+# writes a method to use this function. It flattens the Tuple within Chain etc.
+# (The remaining special cases are for printing of layer names when a NamedTuple, above.)
+function _flat_children(x)
+    alpha = map(f -> getfield(x, f), fieldnames(typeof(x)))
+    beta = map(y -> y isa Union{Tuple, NamedTuple} ? y : (y,), alpha)
+    gamma = ((beta...)...,)
+end
 
-for T in [
-    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding, :EmbeddingBag,
-    :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
-  ]
-  @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
-    if !get(io, :compact, false)
-      _layer_show(io, x)
-    else
-      show(io, x)
+# This is called by @layer, on layers which should be treated like Dense, and returns an expression:
+function _macro_layer_show(ex)
+  quote
+    # Entry point:
+    function Base.show(io::IO, m::MIME"text/plain", x::$ex)
+      if !get(io, :compact, false)
+        _layer_show(io, x)
+      else
+        show(io, x)
+      end
     end
+
+    # Exit from _big_show recursion:
+    Flux._big_show(io::IO, obj::$ex, indent::Int=0, name=nothing) = _layer_show(io, obj, indent, name)
   end
 end
 
@@ -166,6 +141,8 @@ function _nan_show(io::IO, x)
     printstyled(io, "  (some Inf)", color=:red)
   end
 end
+
+@specialize  # un-does @nospecialze at the top of this file
 
 _any(f, xs::AbstractArray{<:Number}) = any(f, xs)
 # _any(f, xs::Union{Tuple,NamedTuple,Zygote.Params}) = any(x -> _any(f, x), xs)

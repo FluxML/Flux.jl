@@ -46,7 +46,7 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
-@functor Chain
+@layer :expand Chain  # the + opts-in to container-style pretty-printing
 
 (c::Chain)(x) = _applychain(c.layers, x)
 
@@ -165,7 +165,7 @@ function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
   Dense(init(out, in), bias, σ)
 end
 
-@functor Dense
+@layer Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
   _size_check(a, x, 1 => size(a.weight, 2))
@@ -251,7 +251,7 @@ end
 Scale(s1::Integer, s23::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(s1, s23...), bias, _act)
 Scale(size_act...; bias = true, init = ones32) = Scale(size_act[1:end-1]...; bias, init, _act = size_act[end])
 
-@functor Scale
+@layer Scale
 
 function (a::Scale)(x::AbstractArray)
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
@@ -306,7 +306,7 @@ end
 Maxout(layers...) = Maxout(layers)
 Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
 
-@functor Maxout
+@layer :expand Maxout
 
 function (mo::Maxout)(input::AbstractArray)
   # Perhaps surprisingly, pairwise max broadcast is often faster,
@@ -353,7 +353,7 @@ struct SkipConnection{T,F}
   connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
-@functor SkipConnection
+@layer :expand SkipConnection
 
 function (skip::SkipConnection)(input)
   skip.connection(skip.layers(input), input)
@@ -423,7 +423,7 @@ struct Bilinear{F,A,B}
   end
 end
 
-@functor Bilinear
+@layer Bilinear
 
 function Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity;
                   bias = true, init = glorot_uniform)
@@ -522,7 +522,7 @@ function Parallel(connection; kw...)
   Parallel(connection, layers)
 end
 
-@functor Parallel
+@layer :expand Parallel
 
 (m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
 (m::Parallel)(xs::Tuple) = m(xs...)
@@ -643,7 +643,7 @@ end
 end
 applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tuple(layers), connection, x)
 
-@functor PairwiseFusion
+@layer :expand PairwiseFusion
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
 Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
@@ -701,7 +701,7 @@ struct Embedding{W<:AbstractMatrix}
   weight::W
 end
 
-@functor Embedding
+@layer Embedding
 
 Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
 

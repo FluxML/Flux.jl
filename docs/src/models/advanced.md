@@ -18,8 +18,8 @@ function (m::CustomModel)(x)
   return m.chain(x) + x
 end
 
-# Call @functor to allow for training. Described below in more detail.
-Flux.@functor CustomModel
+# Call @layer to allow for training. Described below in more detail.
+Flux.@layer CustomModel
 ```
 
 You can then use the model like:
@@ -39,7 +39,7 @@ Taking reference from our example `Affine` layer from the [basics](@ref man-basi
 By default all the fields in the `Affine` type are collected as its parameters, however, in some cases it may be desired to hold other metadata in our "layers" that may not be needed for training, and are hence supposed to be ignored while the parameters are collected. With Flux, the way to mark some fields of our layer as trainable is through overloading the `trainable` function:
 
 ```julia-repl
-julia> Flux.@functor Affine
+julia> @layer Affine
 
 julia> a = Affine(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9])
 Affine(Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0])
@@ -47,7 +47,7 @@ Affine(Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0])
 julia> Flux.params(a) # default behavior
 Params([Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0]])
 
-julia> Flux.trainable(a::Affine) = (; a.W)  # returns a NamedTuple using the field's name
+julia> Flux.trainable(a::Affine) = (; W = a.W)  # returns a NamedTuple using the field's name
 
 julia> Flux.params(a)
 Params([Float32[1.0 2.0; 3.0 4.0; 5.0 6.0]])
@@ -67,7 +67,21 @@ julia> Flux.params(Affine(true, [10, 11, 12.0]))
 Params([])
 ```
 
-It is also possible to further restrict what fields are seen by writing `@functor Affine (W,)`. However, this is not recommended. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument, and the ignored fields will not be seen by functions like `gpu` (which is usually undesired).
+The exact same method of `trainable` can also be defined using the macro, for convenience:
+
+```julia
+Flux.@layer Affine trainable=(W,)
+```
+
+There is a second, more severe, kind of restriction possible:
+
+```
+Flux.@layer Affine children=(W,)
+```
+
+This is equivalent to `Functors.@functor Affine (W,)`. It means that all no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This is not usually recommended.
+ This is generally not recommended. It requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
+
 
 ## Freezing Layer Parameters
 
@@ -135,9 +149,9 @@ Join(combine, paths...) = Join(combine, paths)
 ```
 Notice that we parameterized the type of the `paths` field. This is necessary for fast Julia code; in general, `T` might be a `Tuple` or `Vector`, but we don't need to pay attention to what it specifically is. The same goes for the `combine` field.
 
-The next step is to use [`Functors.@functor`](@ref) to make our struct behave like a Flux layer. This is important so that calling `params` on a `Join` returns the underlying weight arrays on each path.
+The next step is to use [`Functors.@layer`](@ref) to make our struct behave like a Flux layer. This is important so that calling `params` on a `Join` returns the underlying weight arrays on each path.
 ```julia
-Flux.@functor Join
+Flux.@layer Join
 ```
 
 Finally, we define the forward pass. For `Join`, this means applying each `path` in `paths` to each input array, then using `combine` to merge the results.
@@ -194,7 +208,7 @@ model(xs)
 
 Our custom `Split` layer will accept a single input, then pass the input through a separate path to produce multiple outputs.
 
-We start by following the same steps as the `Join` layer: define a struct, use [`Functors.@functor`](@ref), and define the forward pass.
+We start by following the same steps as the `Join` layer: define a struct, use [`@layer`](@ref), and define the forward pass.
 ```julia
 using Flux
 using CUDA
@@ -206,7 +220,7 @@ end
 
 Split(paths...) = Split(paths)
 
-Flux.@functor Split
+Flux.@layer Split
 
 (m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
 ```
