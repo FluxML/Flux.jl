@@ -36,7 +36,7 @@ Possible values include:
 """
 trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
 
-params!(p::Params, x::AbstractArray{<:Number}, seen = IdSet()) = Functors.isleaf(x) && push!(p, x)
+params!(p::Params, x::DenseArray{<:Number}, seen = IdSet()) = Functors.isleaf(x) && push!(p, x)
 
 function params!(p::Params, x, seen = IdSet())
   x in seen && return
