@@ -50,7 +50,6 @@ end
 """
 function skip()
   Base.depwarn("""Flux.skip() will be removed from Flux 0.14.
-                  It never worked as described, 
                   and should be replaced with `continue` in an ordinary `for` loop.""", :skip)
   throw(SkipException())
 end
@@ -165,7 +164,7 @@ hello
 """
 macro epochs(n, ex)
   Base.depwarn("""The macro `@epochs` will be removed from Flux 0.14.
-                  Just write an ordinary for loop.""", Symbol("@epochs"), force=true)
+                  As an alternative, you can write a simple `for i in 1:epochs` loop.""", Symbol("@epochs"), force=true)
   :(@progress for i = 1:$(esc(n))
       @info "Epoch $i"
       $(esc(ex))
