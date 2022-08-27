@@ -38,6 +38,9 @@ struct SkipException <: Exception end
 Call `Flux.skip()` in a callback to indicate when a callback condition is met.
 This will trigger the train loop to skip the current data point and not update with the calculated gradient.
 
+!!! note
+    `Flux.skip()` will be removed from Flux 0.14
+
 # Examples
 ```julia
 cb = function ()
@@ -46,6 +49,8 @@ end
 ```
 """
 function skip()
+  Base.depwarn("""Flux.skip() will be removed from Flux 0.14.
+                  and should be replaced with `continue` in an ordinary `for` loop.""", :skip)
   throw(SkipException())
 end
 
@@ -58,6 +63,9 @@ struct StopException <: Exception end
 Call `Flux.stop()` in a callback to indicate when a callback condition is met.
 This will trigger the train loop to stop and exit.
 
+!!! note
+    `Flux.stop()` will be removed from Flux 0.14. It should be replaced with `break` in an ordinary `for` loop.
+
 # Examples
 ```julia
 cb = function ()
@@ -66,6 +74,8 @@ end
 ```
 """
 function stop()
+  Base.depwarn("""Flux.stop() will be removed from Flux 0.14.
+                  It should be replaced with `break` in an ordinary `for` loop.""", :stop)
   throw(StopException())
 end
 
@@ -140,8 +150,11 @@ end
 Run `body` `N` times. Mainly useful for quickly doing multiple epochs of
 training in a REPL.
 
+!!! note
+    The macro `@epochs` will be removed from Flux 0.14. Please just write an ordinary `for` loop.
+
 # Examples
-```jldoctest
+```julia
 julia> Flux.@epochs 2 println("hello")
 [ Info: Epoch 1
 hello
@@ -150,6 +163,8 @@ hello
 ```
 """
 macro epochs(n, ex)
+  Base.depwarn("""The macro `@epochs` will be removed from Flux 0.14.
+                  As an alternative, you can write a simple `for i in 1:epochs` loop.""", Symbol("@epochs"), force=true)
   :(@progress for i = 1:$(esc(n))
       @info "Epoch $i"
       $(esc(ex))
