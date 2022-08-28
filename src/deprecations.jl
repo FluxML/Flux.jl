@@ -80,3 +80,5 @@ Base.@deprecate_binding RADAM RAdam
 Base.@deprecate_binding OADAM OAdam
 Base.@deprecate_binding ADAGrad AdaGrad
 Base.@deprecate_binding ADADelta AdaDelta
+
+@deprecate rng_from_array() default_rng_value()
