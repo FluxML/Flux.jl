@@ -648,7 +648,8 @@ julia> loss() = rand();
 julia> trigger = Flux.patience(() -> loss() < 1, 3);
 
 
-julia> Flux.@epochs 10 begin
+julia> for i in 1:10
+         @info "Epoch \$i"
          trigger() && break
        end
 [ Info: Epoch 1
@@ -685,7 +686,8 @@ julia> loss = let l = 0
 julia> es = Flux.early_stopping(loss, 3);
 
 
-julia> Flux.@epochs 10 begin
+julia> for i in 1:10
+         @info "Epoch \$i"
          es() && break
        end
 [ Info: Epoch 1
@@ -726,7 +728,8 @@ julia> f = let v = 10
 julia> trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
 
 
-julia> Flux.@epochs 10 begin
+julia> for i in 1:10
+         @info "Epoch \$i"
          trigger() && break
        end
 [ Info: Epoch 1

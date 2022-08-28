@@ -263,6 +263,10 @@ end
   r = Any[nothing,m]
   r[1] = r
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+
+  # Ensure functor explores inside Transpose but not SubArray
+  m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
+  @test size.(Flux.params(m)) == [(2,), (1, 2)]
 end
 
 @testset "Precision" begin
