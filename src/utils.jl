@@ -520,6 +520,9 @@ function _create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer
   bias
 end
 
+# TODO figure out whether we want to document or deprecate this
+const create_bias = _create_bias
+
 
 # Other
 
