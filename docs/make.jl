@@ -1,13 +1,13 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base],
     doctest = false,
     sitename = "Flux",
-    strict = [:cross_references,],
+    # strict = [:cross_references,],
     pages = [
         "Home" => "index.md",
         "Building Models" => [

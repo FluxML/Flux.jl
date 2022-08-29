@@ -1,4 +1,4 @@
-## Model Building
+# Size Propagation
 
 Flux provides some utility functions to help you generate models in an automated fashion.
 

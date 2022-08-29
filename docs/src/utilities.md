@@ -27,7 +27,7 @@ julia> Dense(4 => 5, tanh; init=Flux.randn32(MersenneTwister(1)))
 Dense(4 => 5, tanh)  # 25 parameters
 ```
 
-## Initialisation Functions
+## Initialisation functions
 
 ```@docs
 Flux.glorot_uniform
@@ -52,7 +52,7 @@ Flux.default_rng_value
 Flux.nfan
 ```
 
-## Changing the type of model parameters
+## Changing the type of all parameters
 
 The default `eltype` for models is `Float32` since models are often trained/run on GPUs.
 The `eltype` of model `m` can be changed to `Float64` by `f64(m)`:
