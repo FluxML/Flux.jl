@@ -17,7 +17,7 @@ makedocs(
             "Layer Reference" => "models/layers.md",
             "Loss Functions" => "models/losses.md",
             "Regularisation" => "models/regularisation.md",
-            "Advanced Model Building" => "models/advanced.md",
+            "Custom Layers" => "models/advanced.md",
             "NNlib.jl" => "models/nnlib.md",
             "Activation Functions" => "models/activation.md",
             "Functors.jl" => "models/functors.md",
