@@ -18,12 +18,12 @@ makedocs(
             "Loss Functions" => "models/losses.md",
             "Regularisation" => "models/regularisation.md",
             "Advanced Model Building" => "models/advanced.md",
-            "NNlib" => "models/nnlib.md",
-            "Functors" => "models/functors.md"
+            "Neural Network primitives from NNlib.jl" => "models/nnlib.md",
+            "Functor from Functors.jl" => "models/functors.md"
          ],
          "Handling Data" => [
-             "One-Hot Encoding" => "data/onehot.md",
-             "MLUtils" => "data/mlutils.md"
+             "One-Hot Encoding with OneHotArrays.jl" => "data/onehot.md",
+             "Working with data using MLUtils.jl" => "data/mlutils.md"
          ],
          "Training Models" => [
              "Optimisers" => "training/optimisers.md",

@@ -1,4 +1,4 @@
-# MLUtils.jl
+# Working with data using MLUtils.jl
 
 Flux re-exports the `DataLoader` type and utility functions for working with
 data from [MLUtils](https://github.com/JuliaML/MLUtils.jl).
@@ -6,6 +6,8 @@ data from [MLUtils](https://github.com/JuliaML/MLUtils.jl).
 ## DataLoader
 
 `DataLoader` can be used to handle iteration over mini-batches of data.
+
+`Flux`'s website has a [dedicated tutorial](https://fluxml.ai/tutorials/2021/01/21/data-loader.html) on `DataLoader` for more information. 
 
 ```@docs
 MLUtils.DataLoader
