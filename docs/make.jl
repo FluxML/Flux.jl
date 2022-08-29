@@ -19,7 +19,7 @@ makedocs(
             "Regularisation" => "models/regularisation.md",
             "Advanced Model Building" => "models/advanced.md",
             "Neural Network primitives from NNlib.jl" => "models/nnlib.md",
-            "Functor from Functors.jl" => "models/functors.md"
+            "Recursive transformations from Functors.jl" => "models/functors.md"
          ],
          "Handling Data" => [
              "One-Hot Encoding with OneHotArrays.jl" => "data/onehot.md",
