@@ -29,6 +29,7 @@ makedocs(
          "Training Models" => [
              "Optimisers" => "training/optimisers.md",
              "Training" => "training/training.md",
+             "Callback Helpers" => "training/callbacks.md",
              "Zygote.jl" => "training/zygote.md",
          ],
          "GPU Support" => "gpu.md",
