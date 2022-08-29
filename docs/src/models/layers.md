@@ -86,3 +86,12 @@ Many normalisation layers behave differently under training and inference (testi
 Flux.testmode!
 trainmode!
 ```
+
+
+## Listing All Layers
+
+The `modules` command uses Functors to extract a flat list of all layers:
+
+```@docs
+Flux.modules
+```

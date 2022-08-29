@@ -14,28 +14,29 @@ makedocs(
             "Overview" => "models/overview.md",
             "Basics" => "models/basics.md",
             "Recurrence" => "models/recurrence.md",
-            "Model Reference" => "models/layers.md",
+            "Layer Reference" => "models/layers.md",
             "Loss Functions" => "models/losses.md",
             "Regularisation" => "models/regularisation.md",
             "Advanced Model Building" => "models/advanced.md",
-            "Neural Network primitives from NNlib.jl" => "models/nnlib.md",
-            "Recursive transformations from Functors.jl" => "models/functors.md"
+            "NNlib.jl" => "models/nnlib.md",
+            "Functors.jl" => "models/functors.md",
          ],
          "Handling Data" => [
-             "One-Hot Encoding with OneHotArrays.jl" => "data/onehot.md",
-             "Working with data using MLUtils.jl" => "data/mlutils.md"
+             "MLUtils.jl" => "data/mlutils.md",
+             "OneHotArrays.jl" => "data/onehot.md",
          ],
          "Training Models" => [
              "Optimisers" => "training/optimisers.md",
-             "Training" => "training/training.md"
+             "Training" => "training/training.md",
          ],
          "GPU Support" => "gpu.md",
-         "Saving & Loading" => "saving.md",
-         "The Julia Ecosystem" => "ecosystem.md",
-         "Utility Functions" => "utilities.md",
+         "Model Tools" => [
+             "Saving & Loading" => "saving.md",
+             "Size Propagation" => "outputsize.md",
+             "Weight Initialisation" => "utilities.md",
+         ],
          "Performance Tips" => "performance.md",
-         "Datasets" => "datasets.md",
-         "Community" => "community.md"
+         "Flux's Ecosystem" => "ecosystem.md",
     ],
     format = Documenter.HTML(
         analytics = "UA-36890222-9",

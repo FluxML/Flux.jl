@@ -18,3 +18,9 @@ NOTE: Flux used to have a CuArrays.jl dependency until v0.10.4, replaced by CUDA
 ## Learning Flux
 
 There are several different ways to learn Flux. If you just want to get started writing models, the [model zoo](https://github.com/FluxML/model-zoo/) gives good starting points for many common ones. This documentation provides a reference to all of Flux's APIs, as well as a from-scratch introduction to Flux's take on models and how they work. Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
+
+## Community
+
+All Flux users are welcome to join our community on the [Julia forum](https://discourse.julialang.org/), or the [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866) (channel #machine-learning). If you have questions or issues we'll try to help you out.
+
+If you're interested in hacking on Flux, the [source code](https://github.com/FluxML/Flux.jl) is open and easy to understand -- it's all just the same Julia code you work with normally. You might be interested in our [intro issues](https://github.com/FluxML/Flux.jl/labels/good%20first%20issue) to get started or our [contributing guide](https://github.com/FluxML/Flux.jl/blob/master/CONTRIBUTING.md).
