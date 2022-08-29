@@ -22,6 +22,7 @@ Below is a non-exhaustive list of such utility functions.
 
 ```@docs
 MLUtils.unsqueeze
+MLUtils.flatten
 MLUtils.stack
 MLUtils.unstack
 MLUtils.numobs
