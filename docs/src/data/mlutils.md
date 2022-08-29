@@ -7,6 +7,8 @@ data from [MLUtils](https://github.com/JuliaML/MLUtils.jl).
 
 `DataLoader` can be used to handle iteration over mini-batches of data.
 
+`Flux`'s website has a [dedicated tutorial](https://fluxml.ai/tutorials/2021/01/21/data-loader.html) on `DataLoader` for more information. 
+
 ```@docs
 MLUtils.DataLoader
 ```
@@ -20,7 +22,6 @@ Below is a non-exhaustive list of such utility functions.
 
 ```@docs
 MLUtils.unsqueeze
-MLUtils.flatten
 MLUtils.stack
 MLUtils.unstack
 MLUtils.numobs
