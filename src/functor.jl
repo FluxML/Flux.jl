@@ -88,7 +88,7 @@ function params(m...)
   return ps
 end
 
-# Allows caching of the parameters when params is called within gradient()
+# Allows caching of the parameters when params is called within gradient() to fix #2040.
 @non_differentiable params(m...)
 
 struct FluxCUDAAdaptor end
