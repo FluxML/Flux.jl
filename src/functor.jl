@@ -119,11 +119,11 @@ adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
 function ChainRulesCore.rrule(::Type{Array}, x::CUDA.CuArray)
-  Array(x), d -> (NoTangent(), CUDA.cu(d),)
+  Array(x), dx -> (NoTangent(), CUDA.cu(unthunk(dx)),)
 end
 
 function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), d -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), d),)
+  adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)),)
 end
 
 # CPU/GPU movement conveniences
@@ -227,3 +227,4 @@ f64(m) = paramtype(Float64, m)
 # Functors for certain Julia data structures
 @functor Cholesky
 trainable(c::Cholesky) = ()
+
