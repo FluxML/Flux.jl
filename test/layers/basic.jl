@@ -331,13 +331,13 @@ import Flux: activations
       @test y ≈ z
 
       # PyTorch style `input`/`offset` bagging
-      @test emb_bag([1,3,2,4,5,7], [0,2,4]) ≈ emb_bag([[1,3], [2,4], [5,7]])
-      @test emb_bag([1,3,2,4,5,7], [0,2,4]) ≈ emb_bag([1 2 5; 3 4 7])
+      @test emb_bag([1,3,2,4,5,7], [1,3,5]) ≈ emb_bag([[1,3], [2,4], [5,7]])
+      @test emb_bag([1,3,2,4,5,7], [1,3,5]) ≈ emb_bag([1 2 5; 3 4 7])
       @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [2,4])
-      @test_throws BoundsError emb_bag([1,2,3,4,5,6], [0,12])
+      @test_throws BoundsError emb_bag([1,2,3,4,5,6], [1,12])
 
       # docstring example
-      @test emb_bag([1,2,3,4,5,6,7,8,9,10], [0,4,5,7]) ≈ emb_bag([[1,2,3,4], [5], [6,7], [8,9,10]])
+      @test emb_bag([1,2,3,4,5,6,7,8,9,10], [1,5,6,8]) ≈ emb_bag([[1,2,3,4], [5], [6,7], [8,9,10]])
 
       # multiple bags (input as a vector of vectors)
       x = [rand(1:vocab_size, 3) for _ in 1:4]

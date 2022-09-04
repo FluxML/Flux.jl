@@ -710,12 +710,11 @@ The inputs can take several forms:
   - An input vector and offset vector: Explained below
 
   The `input`/`offset` input type is similar to PyTorch's implementation. `input` should be
-  a vector of class indices and `offset` should be a vector representing offsets from the
-  first index of `input`. The first element of `offsets` must be `0`, and `offsets` should
+  a vector of class indices and `offset` should be a vector representing the starting index of a bag in the `inputs` vector. The first element of `offsets` must be `1`, and `offsets` should
   be monotonically increasing, but the second condition is not checked.
 
-  For example, the `input`/`offset` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[0, 4, 5, 7]`
-  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`
+  For example, the `input`/`offset` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[1, 5, 6, 8]`
+  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc. 
 
 # Examples
 ```jldoctest
@@ -746,29 +745,20 @@ EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; 
 EmbeddingBag(weight) = EmbeddingBag(weight, mean)
 
 function (m::EmbeddingBag)(inputs::AbstractVector, offsets::AbstractVector)
-    offsets[1] == 0 || throw(ArgumentError("`offsets` must begin with 0."))
-    out = zeros(eltype(m.weight), size(m.weight, 1), length(offsets))
+    offsets[firstindex(offsets)] == 1 || throw(ArgumentError("`offsets` must begin with 1."))
     start = firstindex(inputs)
-    for i in eachindex(offsets[1:end-1])
-        out[:, i] = m(inputs[start:offsets[i+1]])
-        start = offsets[i+1]+1
-    end
-    out[:, end] = m(inputs[offsets[end]+1:end])
-    out
+    newoffsets = vcat(offsets, [lastindex(inputs)])
+    slices = [inputs[offsets[i]:(i+1 > lastindex(offsets) ? end : offsets[i+1]-1)] for i in eachindex(offsets)]
+
+    return m(slices)
 end
 (m::EmbeddingBag)(idx::Integer) = m.weight[:, idx]
 (m::EmbeddingBag)(bag::AbstractVector) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
 (m::EmbeddingBag)(bags::AbstractVector{<:AbstractVector}) = reduce(hcat, m.(bags))
 (m::EmbeddingBag)(bags::AbstractMatrix) = reduce(hcat, m.(eachcol(bags)))
 
-function (m::EmbeddingBag)(x::OneHotVector{T,L}) where {T,L}
-  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
-  return m(onecold(x))
-end
-function (m::EmbeddingBag)(x::OneHotMatrix{T,L}) where {T,L}
-  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
-  return m(LinearAlgebra.Transpose(onecold(x)))
-end
+(m::EmbeddingBag)(x::OneHotVector) = m.weight * x
+(m::EmbeddingBag)(x::OneHotMatrix) = m.reduction(m.weight * x, dims = 3)
 
 function Base.show(io::IO, m::EmbeddingBag)
   print(io, "EmbeddingBag(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
