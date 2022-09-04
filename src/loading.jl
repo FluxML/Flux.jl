@@ -33,7 +33,7 @@ _filter_children(f, children::NamedTuple) =
 _filter_children(f, children) = filter(f, children)
 
 """
-    loadmodel!(dst, src; filter = _ -> true)
+    loadmodel!(dst, src)
 
 Copy all the parameters (trainable and non-trainable) from `src` into `dst`.
 
@@ -42,9 +42,6 @@ and calling `copyto!` on parameter arrays or throwing an error when there is a m
 Non-array elements (such as activation functions) are not copied and need not match.
 Zero bias vectors and `bias=false` are considered equivalent
 (see extended help for more details).
-
-Specify the predicate function `filter` to control what is recursed.
-A child node `x` in either `dst` and `src` is skipped when `filter(x) == false`.
 
 # Examples
 ```julia
@@ -66,19 +63,6 @@ false
 
 julia> iszero(dst[2].bias)
 true
-
-julia> src = Chain(Dense(5 => 2), Dropout(0.2), Dense(2 => 1))
-Chain(
-  Dense(5 => 2),                        # 12 parameters
-  Dropout(0.2),
-  Dense(2 => 1),                        # 3 parameters
-)                   # Total: 4 arrays, 15 parameters, 348 bytes.
-
-julia> Flux.loadmodel!(dst, src; filter = x -> !(x isa Dropout)) # skips loading Dropout
-Chain(
-  Dense(5 => 2, tanh),                  # 12 parameters
-  Dense(2 => 1),                        # 3 parameters
-)                   # Total: 4 arrays, 15 parameters, 316 bytes.
 ```
 
 # Extended help

@@ -1,8 +1,5 @@
 # Flux Release Notes
 
-## v0.13.5
-* `loadmodel!` now supports a [`filter` keyword argument](https://github.com/FluxML/Flux.jl/pull/2041)
-
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)
 
