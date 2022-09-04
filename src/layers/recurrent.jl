@@ -9,7 +9,7 @@ multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
 function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
   function multigate_pullback(dy)
     dx = map!(zero, similar(x, float(eltype(x)), axes(x)), x)
-    foreach(multigate(dx, h, c), dy) do dxᵢ, dyᵢ
+    foreach(multigate(dx, h, c), unthunk(dy)) do dxᵢ, dyᵢ
       dyᵢ isa AbstractZero && return
       @. dxᵢ += dyᵢ
     end
