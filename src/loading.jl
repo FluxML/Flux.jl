@@ -28,6 +28,10 @@ _tie_check(dst, src) = true
 
 _bool_tie_check(dst, src) = true
 
+_filter_children(f, children::NamedTuple) =
+  NamedTuple(filter(kv -> f(kv[2]), pairs(children)))
+_filter_children(f, children) = filter(f, children)
+
 """
     loadmodel!(dst, src)
 
@@ -41,7 +45,7 @@ Zero bias vectors and `bias=false` are considered equivalent
 
 # Examples
 ```julia
-julia> dst = Chain(Dense(Flux.ones32(2, 5, tanh)), Dense(2 => 1; bias = [1f0]))
+julia> dst = Chain(Dense(Flux.ones32(2, 5), Flux.ones32(2), tanh), Dense(2 => 1; bias = [1f0]))
 Chain(
   Dense(5 => 2, tanh),                  # 12 parameters
   Dense(2 => 1),                        # 3 parameters
@@ -77,9 +81,9 @@ however, attempting to copy a non-zero array to an inactive parameter will throw
 Likewise, copying a `src` value of `false` to any `dst` array is valid,
 but copying a `src` value of `true` will error.
 """
-function loadmodel!(dst, src; cache = Base.IdSet())
-  ldsts, _ = functor(dst)
-  lsrcs, _ = functor(src)
+function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
+  ldsts = _filter_children(filter, functor(dst)[1])
+  lsrcs = _filter_children(filter, functor(src)[1])
   (keys(ldsts) == keys(lsrcs)) ||
     throw(ArgumentError("Tried to load $src into $dst but the structures do not match."))
 
@@ -91,7 +95,7 @@ function loadmodel!(dst, src; cache = Base.IdSet())
       push!(cache, ldst)
       loadleaf!(ldst, lsrc, err)
     else # this isn't a leaf
-      loadmodel!(ldst, lsrc; cache = cache)
+      loadmodel!(ldst, lsrc; filter = filter, cache = cache)
     end
   end
 

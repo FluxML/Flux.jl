@@ -508,6 +508,42 @@ end
     # loading into tied weights with absent parameter is bad when the dst != zero
     m2[1].bias .= 1
     @test_throws ErrorException loadmodel!(m1, m2)
+
+    @testset "loadmodel! & filter" begin
+      m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
+      m2 = Chain(Dense(10, 5), Dropout(0.2), Dense(5, 2))
+      m3 = Chain(Dense(10, 5), Dense(5, 2, relu))
+
+      # this will not error cause Dropout is skipped
+      loadmodel!(m1, m2; filter = x -> !(x isa Dropout))
+      @test m1[1].weight == m2[1].weight
+      @test m1[2].weight == m2[3].weight
+
+      # this will not error cause Dropout is skipped
+      loadmodel!(m2, m3; filter = x -> !(x isa Dropout))
+      @test m3[1].weight == m2[1].weight
+      @test m3[2].weight == m2[3].weight
+    end
+
+    @testset "loadmodel! & absent bias" begin
+      m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
+      m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
+      m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
+    
+      Flux.loadmodel!(m1, m2)
+      @test m1[1].bias == 7:9
+      @test sum(m1[1].weight) == 21
+    
+      # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
+      m1 = Flux.loadmodel!(m1, m0)
+      @test iszero(m1[1].bias)
+      @test sum(m1[1].weight) == 6  # written before error
+    
+      # load into a model without bias -- should it ignore the parameter which has no home, or error?
+      m0 = Flux.loadmodel!(m0, m2)
+      @test iszero(m0[1].bias)  # obviously unchanged
+      @test sum(m0[1].weight) == 21
+    end
   end
 
   @testset "destructure" begin
@@ -527,26 +563,6 @@ end
       @test ∇p ≈ destructure(∇m)[1]
     end
   end
-end
-
-@testset "loadmodel! & absent bias" begin
-  m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
-  m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
-  m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
-
-  Flux.loadmodel!(m1, m2)
-  @test m1[1].bias == 7:9
-  @test sum(m1[1].weight) == 21
-
-  # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
-  m1 = Flux.loadmodel!(m1, m0)
-  @test iszero(m1[1].bias)
-  @test sum(m1[1].weight) == 6  # written before error
-
-  # load into a model without bias -- should it ignore the parameter which has no home, or error?
-  m0 = Flux.loadmodel!(m0, m2)
-  @test iszero(m0[1].bias)  # obviously unchanged
-  @test sum(m0[1].weight) == 21
 end
 
 @testset "Train and test mode" begin
