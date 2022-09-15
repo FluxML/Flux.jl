@@ -35,7 +35,7 @@ makedocs(
          "GPU Support" => "gpu.md",
          "Model Tools" => [
              "Saving & Loading" => "saving.md",
-             "Size Propagation" => "outputsize.md",
+             "Shape Inference" => "outputsize.md",
              "Weight Initialisation" => "utilities.md",
          ],
          "Performance Tips" => "performance.md",

@@ -1,10 +1,10 @@
-# Size Propagation
+# Shape Inference
 
-Flux provides some utility functions to help you generate models in an automated fashion.
+To help you generate models in an automated fashion, [`Flux.outputsize`](@ref) lets you 
+calculate the size returned produced by layers for a given size input.
+This is especially useful for layers like [`Conv`](@ref).
 
-[`Flux.outputsize`](@ref) enables you to calculate the output sizes of layers like [`Conv`](@ref)
-when applied to input samples of a given size. This is achieved by passing a "dummy" array into
-the model that preserves size information without running any computation.
+It works by passing a "dummy" array into the model that preserves size information without running any computation.
 `outputsize(f, inputsize)` works for all layers (including custom layers) out of the box.
 By default, `inputsize` expects the batch dimension,
 but you can exclude the batch size with `outputsize(f, inputsize; padbatch=true)` (assuming it to be one).
