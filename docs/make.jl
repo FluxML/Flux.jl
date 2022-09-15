@@ -20,7 +20,6 @@ makedocs(
             "Custom Layers" => "models/advanced.md",
             "NNlib.jl" => "models/nnlib.md",
             "Activation Functions" => "models/activation.md",
-            "Functors.jl" => "models/functors.md",
          ],
          "Handling Data" => [
              "MLUtils.jl" => "data/mlutils.md",
@@ -37,6 +36,7 @@ makedocs(
              "Saving & Loading" => "saving.md",
              "Shape Inference" => "outputsize.md",
              "Weight Initialisation" => "utilities.md",
+             "Functors.jl" => "models/functors.md",
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
