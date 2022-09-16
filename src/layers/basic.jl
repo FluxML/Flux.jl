@@ -694,7 +694,7 @@ function Base.show(io::IO, m::Embedding)
 end
 
 """
-    EmbeddingBag(in => out, reduction=mean; init=randn)
+    EmbeddingBag(in => out, reduction=mean; init=Flux.randn32)
 
 A lookup table that stores embeddings of dimension `out` for a vocabulary of size 
 `in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag". The
@@ -783,7 +783,7 @@ julia> model(ohm_bag) |> summary
 "8×4 Matrix{Float32}"
 ```
 """
-struct EmbeddingBag{F, W}
+struct EmbeddingBag{F, W<:AbstractMatrix}
   weight::W
   reduction::F
 end
@@ -802,7 +802,7 @@ function (m::EmbeddingBag)(inputs::AbstractVector, offsets::AbstractVector)
     return m(slices)
 end
 (m::EmbeddingBag)(idx::Integer) = m.weight[:, idx]
-(m::EmbeddingBag)(bag::AbstractVector) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
+(m::EmbeddingBag)(bag::AbstractVector{<:Integer}) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
 
 # TODO: replace these with `mapreduce(m, hcat, bags)` when
 # optimized versions are available. See #2031 for discussion.
