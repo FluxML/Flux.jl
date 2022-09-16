@@ -697,8 +697,7 @@ end
     EmbeddingBag(in => out, reduction=mean; init=Flux.randn32)
 
 A lookup table that stores embeddings of dimension `out` for a vocabulary of size 
-`in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag". The
-embeddings of these are then reduced to a single embedding based on `reduction`.
+`in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag", and the reduce each bag's embeddings to a single embedding based on `reduction`.
 Typically, `reduction` is `mean`, `sum`, or `maximum`. 
 
 This layer is often used to store word embeddings and retrieve them using indices. 
@@ -716,25 +715,9 @@ The inputs can take several forms:
   This format is useful for dealing with flattened representations of "ragged" tensors. E.g., if you have a flat vector of class labels that need to be grouped in a non-uniform way. However, under the hood, it is just syntactic sugar for the vector-of-vectors input style.
 
   For example, the `input`/`offset` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[1, 5, 6, 8]`
-  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc. Below is another example usage.
+  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc.
 
-# Examples
-```jldoctest
-julia> vocab_size, embed_size = 1000, 4;
-
-julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
-EmbeddingBag(1000 => 4)  # 4_000 parameters
-
-julia> bags = [[1, 200, 25, 789], [2, 5, 10, 999]];
-
-julia> bags_mtx = [1 2; 200 5; 25 10; 789 999];
-
-julia> model(bags) |> summary
-"4×2 Matrix{Float32}"
-
-julia> model(bags) ≈ model(bags_mtx)
-true
-```
+# Examples 
 
 ```jldoctest
 julia> vocab_size, embed_size = 10, 8;
@@ -742,27 +725,16 @@ julia> vocab_size, embed_size = 10, 8;
 julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
 EmbeddingBag(10 => 8)  # 80 parameters
 
-julia> scalar_bag = 5 # just a single bag of one item
-5
-
-julia> model(scalar_bag);
-
-julia> single_bag = [1, 2, 2, 4]; # one bag several items
-
-julia> model(single_bag) |> summary
+julia> model(5) |> summary # a single bag of one item
 "8-element Vector{Float32}"
 
-julia> bags_mtx = [1 2 3; 4 5 6] # 2 bags each with 3 items
-2×3 Matrix{Int64}:
- 1  2  3
- 4  5  6
+julia> model([1, 2, 2, 4]) |> summary # one bag several items
+"8-element Vector{Float32}"
 
-julia> model(bags_mtx) |> summary
+julia> model([1 2 3; 4 5 6]) |> summary  # 2 bags each with 3 items
 "8×3 Matrix{Float32}"
 
-julia> vec_vec_bags = [[1, 2], [3], [4], [5, 6, 7]]; # 4 bags with different number of items.
-
-julia> model(vec_vec_bags) |> summary
+julia> model([[1, 2], [3], [4], [5, 6, 7]]) |> summary  # 4 bags with different number of items
 "8×4 Matrix{Float32}"
 
 julia> inputs = [1, 4, 5, 2, 3];
@@ -774,12 +746,10 @@ julia> model(inputs, offsets) |> summary
 
 julia> oh_bag = Flux.OneHotVector(2, vocab_size); # single bag of one item
 
-julia> model(oh_bag) |> summary
+julia> model(Flux.OneHotVector(2, vocab_size)) |> summary # single bag with one item
 "8-element Vector{Float32}"
 
-julia> ohm_bag = Flux.OneHotMatrix([2, 3, 5, 7], vocab_size); # 4 bags, each with one item
-
-julia> model(ohm_bag) |> summary
+julia> model(Flux.OneHotMatrix([2, 3, 5, 7], vocab_size)) |> summary # 4 bags, each with one item
 "8×4 Matrix{Float32}"
 ```
 """
