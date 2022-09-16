@@ -706,15 +706,15 @@ The inputs can take several forms:
   - A scalar := single bag with a single item
   - A vector := single bag with multiple items
   - A matrix := multiple bags with multiple items (each column is a bag)
-  - A vector of vectors: multiple bags with multiple items (each vector is a bag)
-  - An input vector and offset vector: Explained below
+  - A vector of vectors := multiple bags with multiple items (each vector is a bag)
+  - An input vector and offset vector := Explained below.
 
   The `input`/`offset` input type is similar to PyTorch's implementation. `input` should be
   a vector of class indices and `offset` should be a vector representing the starting index of a bag in the `inputs` vector. The first element of `offsets` must be `1`, and `offsets` should
   be monotonically increasing, but the second condition is not checked.
 
   For example, the `input`/`offset` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[1, 5, 6, 8]`
-  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc. 
+  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc. Below is another example usage.
 
 # Examples
 ```jldoctest
@@ -732,6 +732,46 @@ julia> model(bags) |> summary
 
 julia> model(bags) ≈ model(bags_mtx)
 true
+```
+
+```
+julia> vocab_size, embed_size = 10, 8;
+
+julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
+EmbeddingBag(10 => 8)  # 80 parameters
+
+julia> scalar_bag = 5 # just a single bag of one item
+5
+
+julia> model(scalar_bag);
+
+julia> single_bag = [1, 2, 2, 4]; # one bag several items
+
+julia> model(single_bag) |> summary
+"8-element Vector{Float32}"
+
+julia> bags_mtx = [1 2 3; 4 5 6] # 2 bags each with 3 items
+2×3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+
+julia> model(bags_mtx) |> summary
+"8×3 Matrix{Float32}"
+
+julia> vec_vec_bags = [[1, 2], [3], [4], [5, 6, 7]]; # 4 bags with different number of items.
+
+julia> model(vec_vec_bags) |> summary
+"8×4 Matrix{Float32}"
+
+julia> oh_bag = Flux.OneHotVector(2, vocab_size); # single bag of one item
+
+julia> model(oh_bag) |> summary
+"8-element Vector{Float32}"
+
+julia> ohm_bag = Flux.OneHotMatrix([2, 3, 5, 7], vocab_size); # 4 bags, each with one item
+
+julia> model(ohm_bag) |> summary
+"8×4 Matrix{Float32}"
 ```
 """
 struct EmbeddingBag{F, W}
@@ -754,6 +794,9 @@ function (m::EmbeddingBag)(inputs::AbstractVector, offsets::AbstractVector)
 end
 (m::EmbeddingBag)(idx::Integer) = m.weight[:, idx]
 (m::EmbeddingBag)(bag::AbstractVector) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
+
+# TODO: replace these with `mapreduce(m, hcat, bags)` when
+# optimized versions are available. See #2031 for discussion.
 (m::EmbeddingBag)(bags::AbstractVector{<:AbstractVector}) = reduce(hcat, m.(bags))
 (m::EmbeddingBag)(bags::AbstractMatrix) = reduce(hcat, m.(eachcol(bags)))
 
