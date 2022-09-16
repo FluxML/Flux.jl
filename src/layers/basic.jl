@@ -736,7 +736,7 @@ julia> model(bags) ≈ model(bags_mtx)
 true
 ```
 
-```
+```jldoctest
 julia> vocab_size, embed_size = 10, 8;
 
 julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
