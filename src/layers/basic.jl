@@ -713,6 +713,8 @@ The inputs can take several forms:
   a vector of class indices and `offset` should be a vector representing the starting index of a bag in the `inputs` vector. The first element of `offsets` must be `1`, and `offsets` should
   be monotonically increasing, but the second condition is not checked.
 
+  This format is useful for dealing with flattened representations of "ragged" tensors. E.g., if you have a flat vector of class labels that need to be grouped in a non-uniform way. However, under the hood, it is just syntactic sugar for the vector-of-vectors input style.
+
   For example, the `input`/`offset` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[1, 5, 6, 8]`
   is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc. Below is another example usage.
 
@@ -762,6 +764,13 @@ julia> vec_vec_bags = [[1, 2], [3], [4], [5, 6, 7]]; # 4 bags with different num
 
 julia> model(vec_vec_bags) |> summary
 "8×4 Matrix{Float32}"
+
+julia> inputs = [1, 4, 5, 2, 3];
+
+julia> offsets = [1, 3, 4]; # 3 bags of sizes [2, 1, 2]
+
+julia> model(inputs, offsets) |> summary
+"8×3 Matrix{Float32}"
 
 julia> oh_bag = Flux.OneHotVector(2, vocab_size); # single bag of one item
 
