@@ -777,7 +777,7 @@ end
 # TODO: replace these with `mapreduce(m, hcat, bags)` when
 # optimized versions are available. See #2031 for discussion.
 (m::EmbeddingBag)(bags::AbstractVector{<:AbstractVector}) = reduce(hcat, m.(bags))
-(m::EmbeddingBag)(bags::AbstractMatrix) = reduce(hcat, m.(eachcol(bags)))
+(m::EmbeddingBag)(bags::AbstractMatrix) = reduce(hcat, map(m, eachcol(bags)))
 
 (m::EmbeddingBag)(x::OneHotVector) = m.weight * x
 (m::EmbeddingBag)(x::OneHotMatrix) = m.reduction(m.weight * x, dims = 3)
