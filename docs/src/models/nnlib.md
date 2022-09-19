@@ -1,37 +1,6 @@
 # Neural Network primitives from NNlib.jl
 
-Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package.
-
-## Activation Functions
-
-Non-linearities that go between layers of your model. Note that, unless otherwise stated, activation functions operate on scalars. To apply them to an array you can call `σ.(xs)`, `relu.(xs)` and so on.
-
-```@docs
-celu
-elu
-gelu
-hardsigmoid
-sigmoid_fast
-hardtanh
-tanh_fast
-leakyrelu
-lisht
-logcosh
-logsigmoid
-mish
-relu
-relu6
-rrelu
-selu
-sigmoid
-softplus
-softshrink
-softsign
-swish
-hardswish
-tanhshrink
-trelu
-```
+Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package. This includes activation functions, described on the next page. Many of the functions on this page exist primarily as the internal implementation of Flux layer, but can also be used independently.
 
 ## Softmax
 

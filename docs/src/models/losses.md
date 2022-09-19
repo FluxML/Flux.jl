@@ -3,7 +3,7 @@
 Flux provides a large number of common loss functions used for training machine learning models.
 They are grouped together in the `Flux.Losses` module.
 
-Loss functions for supervised learning typically expect as inputs a target `y`, and a prediction `ŷ`.
+Loss functions for supervised learning typically expect as inputs a target `y`, and a prediction `ŷ` from your model.
 In Flux's convention, the order of the arguments is the following
 
 ```julia
@@ -21,7 +21,7 @@ loss(ŷ, y, agg=x->mean(w .* x))    # weighted mean
 loss(ŷ, y, agg=identity)           # no aggregation.
 ```
 
-## Losses Reference
+### Function listing
 
 ```@docs
 Flux.Losses.mae

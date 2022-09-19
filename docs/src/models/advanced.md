@@ -1,4 +1,4 @@
-# Advanced Model Building and Customisation
+# Defining Customised Layers
 
 Here we will try and describe usage of some more advanced features that Flux provides to give more control over model building.
 

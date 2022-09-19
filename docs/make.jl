@@ -1,41 +1,45 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base],
     doctest = false,
     sitename = "Flux",
-    strict = [:cross_references,],
+    # strict = [:cross_references,],
     pages = [
         "Home" => "index.md",
         "Building Models" => [
             "Overview" => "models/overview.md",
             "Basics" => "models/basics.md",
             "Recurrence" => "models/recurrence.md",
-            "Model Reference" => "models/layers.md",
+            "Layer Reference" => "models/layers.md",
             "Loss Functions" => "models/losses.md",
             "Regularisation" => "models/regularisation.md",
-            "Advanced Model Building" => "models/advanced.md",
-            "Neural Network primitives from NNlib.jl" => "models/nnlib.md",
-            "Recursive transformations from Functors.jl" => "models/functors.md"
+            "Custom Layers" => "models/advanced.md",
+            "NNlib.jl" => "models/nnlib.md",
+            "Activation Functions" => "models/activation.md",
          ],
          "Handling Data" => [
-             "One-Hot Encoding with OneHotArrays.jl" => "data/onehot.md",
-             "Working with data using MLUtils.jl" => "data/mlutils.md"
+             "MLUtils.jl" => "data/mlutils.md",
+             "OneHotArrays.jl" => "data/onehot.md",
          ],
          "Training Models" => [
              "Optimisers" => "training/optimisers.md",
-             "Training" => "training/training.md"
+             "Training" => "training/training.md",
+             "Callback Helpers" => "training/callbacks.md",
+             "Zygote.jl" => "training/zygote.md",
          ],
          "GPU Support" => "gpu.md",
-         "Saving & Loading" => "saving.md",
-         "The Julia Ecosystem" => "ecosystem.md",
-         "Utility Functions" => "utilities.md",
+         "Model Tools" => [
+             "Saving & Loading" => "saving.md",
+             "Shape Inference" => "outputsize.md",
+             "Weight Initialisation" => "utilities.md",
+             "Functors.jl" => "models/functors.md",
+         ],
          "Performance Tips" => "performance.md",
-         "Datasets" => "datasets.md",
-         "Community" => "community.md"
+         "Flux's Ecosystem" => "ecosystem.md",
     ],
     format = Documenter.HTML(
         analytics = "UA-36890222-9",

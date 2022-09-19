@@ -1,4 +1,4 @@
-# The Julia Ecosystem
+# The Julia Ecosystem around Flux
 
 One of the main strengths of Julia lies in an ecosystem of packages 
 globally providing a rich and consistent user experience.
@@ -49,7 +49,10 @@ Utility tools you're unlikely to have met if you never used Flux!
 
 ### Datasets
 
+Commonly used machine learning datasets are provided by the following packages in the julia ecosystem:
+
 - [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl) focuses on downloading, unpacking, and accessing benchmark datasets.
+- [GraphMLDatasets.jl](https://github.com/yuehhua/GraphMLDatasets.jl): a library for machine learning datasets on graph.
 
 ### Plumbing
  
@@ -86,6 +89,7 @@ Packages based on differentiable programming but not necessarily related to Mach
 ### Statistics
 
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) provides single-pass algorithms for statistics.
+
 
 ## Useful miscellaneous packages
 
