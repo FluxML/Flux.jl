@@ -724,7 +724,7 @@ The inputs can take several forms:
   - A scalar := single bag with a single item
   - A vector := single bag with multiple items
   - A matrix := multiple bags with multiple items (each column is a bag)
-  - A vector of vectors := multiple bags with multiple items (each vector is a bag)
+  - A vector of vectors := multiple bags with multiple items (each inner vector is a bag)
   - A "data" vector and an "offsets" vector := Explained below.
 
   The `data`/`offsets` input type is similar to PyTorch's implementation. `data` should be
