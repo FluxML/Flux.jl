@@ -313,6 +313,29 @@ import Flux: activations
   end
 
   @testset "EmbeddingBag" begin
+
+    # test _splitat
+    inputs = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    offsets_good = [1, 3, 6]
+    offsets_each = [1,2,3,4,5,6,7,8,9]
+    offsets_just_one = [1]
+    offsets_all_but_last = [1, 9]
+
+    @test Flux._splitat(inputs, offsets_good) == [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+    @test Flux._splitat(inputs, offsets_each) == [[1], [2], [3], [4], [5], [6], [7], [8], [9]]
+    @test Flux._splitat(inputs, offsets_just_one) == [[1,2,3,4,5,6,7,8,9]]
+    @test Flux._splitat(inputs, offsets_all_but_last) == [[1,2,3,4,5,6,7,8], [9]]
+
+    offsets_non_monotonic = [1, 2, 2, 5]
+    offsets_non_sorted = [1, 5, 2]
+    offsets_non_one = [2, 3, 5]
+    offsets_too_large = [1, 5, 11]
+
+    @test_throws ArgumentError  Flux._splitat(inputs, offsets_non_monotonic)
+    @test_throws ArgumentError  Flux._splitat(inputs, offsets_non_sorted)
+    @test_throws ArgumentError  Flux._splitat(inputs, offsets_non_one)
+    @test_throws ArgumentError  Flux._splitat(inputs, offsets_too_large)
+
     for reduction in [sum, Statistics.mean, maximum]
       vocab_size, embed_size = 10, 4
       emb_bag = Flux.EmbeddingBag(vocab_size => embed_size, reduction)
@@ -333,8 +356,8 @@ import Flux: activations
       # PyTorch style `input`/`offset` bagging
       @test emb_bag([1,3,2,4,5,7], [1,3,5]) ≈ emb_bag([[1,3], [2,4], [5,7]])
       @test emb_bag([1,3,2,4,5,7], [1,3,5]) ≈ emb_bag([1 2 5; 3 4 7])
-      @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [2,4])
-      @test_throws BoundsError emb_bag([1,2,3,4,5,6], [1,12])
+      @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [2, 4])
+      @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [1, 12])
 
       # docstring example
       @test emb_bag([1,2,3,4,5,6,7,8,9,10], [1,5,6,8]) ≈ emb_bag([[1,2,3,4], [5], [6,7], [8,9,10]])

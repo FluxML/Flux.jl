@@ -693,6 +693,25 @@ function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
 
+
+"""
+    _splitat(data::AbstractVector, offsets::AbstractVector{Int})
+
+Splits a vector of data into a vector of vectors based on offsets. Each offset
+specifies the next sub-vectors starting index in the `data` vector. In otherwords,
+the `data` vector is chuncked into vectors from `offsets[1]` to `offsets[2]` (not including the element at `offsets[2]`), `offsets[2]` to `offsets[3]`, etc.
+The last offset specifies a bag that contains everything to the right of it.
+
+The `offsets` vector must begin with `1` and be monotonically increasing. The last element of `offsets` must be at most `length(data)`.
+"""
+function _splitat(data::AbstractVector, offsets::AbstractVector{Int})
+  offsets[firstindex(offsets)] == 1 || throw(ArgumentError("`offsets` must begin with 1."))
+  offsets[end] <= length(data) || throw(ArgumentError("The last element in `offsets` must be at most the length of `data`."))
+  issorted(offsets, lt = <=) || throw(ArgumentError("`offsets` must be monotonically increasing with no duplicates."))
+  newoffsets = vcat(offsets, [lastindex(data)])
+  return [data[offsets[i]:(i+1 > lastindex(offsets) ? end : offsets[i+1]-1)] for i in eachindex(offsets)]
+end
+
 """
     EmbeddingBag(in => out, reduction=mean; init=Flux.randn32)
 
@@ -709,8 +728,7 @@ The inputs can take several forms:
   - An input vector and offset vector := Explained below.
 
   The `input`/`offset` input type is similar to PyTorch's implementation. `input` should be
-  a vector of class indices and `offset` should be a vector representing the starting index of a bag in the `inputs` vector. The first element of `offsets` must be `1`, and `offsets` should
-  be monotonically increasing, but the second condition is not checked.
+  a vector of class indices and `offset` should be a vector representing the starting index of a bag in the `inputs` vector. The first element of `offsets` must be `1`, and `offsets` must be monotonically increasing with no duplicates.
 
   This format is useful for dealing with flattened representations of "ragged" tensors. E.g., if you have a flat vector of class labels that need to be grouped in a non-uniform way. However, under the hood, it is just syntactic sugar for the vector-of-vectors input style.
 
@@ -762,12 +780,7 @@ EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; 
 EmbeddingBag(weight) = EmbeddingBag(weight, mean)
 
 function (m::EmbeddingBag)(inputs::AbstractVector, offsets::AbstractVector)
-    offsets[firstindex(offsets)] == 1 || throw(ArgumentError("`offsets` must begin with 1."))
-    start = firstindex(inputs)
-    newoffsets = vcat(offsets, [lastindex(inputs)])
-    slices = [inputs[offsets[i]:(i+1 > lastindex(offsets) ? end : offsets[i+1]-1)] for i in eachindex(offsets)]
-
-    return m(slices)
+  return m(_splitat(inputs, offsets))
 end
 (m::EmbeddingBag)(idx::Integer) = m.weight[:, idx]
 (m::EmbeddingBag)(bag::AbstractVector{<:Integer}) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
