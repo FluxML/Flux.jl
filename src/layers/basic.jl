@@ -744,8 +744,6 @@ julia> offsets = [1, 3, 4]; # 3 bags of sizes [2, 1, 2]
 julia> model(inputs, offsets) |> summary
 "8×3 Matrix{Float32}"
 
-julia> oh_bag = Flux.OneHotVector(2, vocab_size); # single bag of one item
-
 julia> model(Flux.OneHotVector(2, vocab_size)) |> summary # single bag with one item
 "8-element Vector{Float32}"
 
