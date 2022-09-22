@@ -1,4 +1,4 @@
-# Recursive transformations from Functors.jl
+`# Recursive transformations from Functors.jl
 
 Flux models are deeply nested structures, and [Functors.jl](https://github.com/FluxML/Functors.jl) provides tools needed to explore such objects, apply functions to the parameters they contain, and re-build them.
 

@@ -2,7 +2,7 @@
 
 Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
 
-### Implicit style
+## Implicit style
 
 Flux uses primarily what Zygote calls "implicit" gradients, [described here](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) in its documentation. 
 
@@ -10,9 +10,10 @@ Flux uses primarily what Zygote calls "implicit" gradients, [described here](htt
 Zygote.gradient
 Zygote.Params
 Zygote.Grads
+Zygote.jacobian(loss, ::Params)
 ```
 
-### Explicit style
+## Explicit style
 
 The other way of using Zygote, and using most other AD packages, is to explicitly provide a function and its arguments.
 
@@ -23,7 +24,7 @@ Zygote.jacobian(f, args...)
 ```
 
 
-### ChainRules
+## ChainRules
 
 Sometimes it is necessary to exclude some code, or a whole function, from automatic differentiation. This can be done using [ChainRules](https://github.com/JuliaDiff/ChainRules.jl):
 
@@ -36,4 +37,17 @@ To manually supply the gradient for one function, you should define a method of 
 
 ```@docs
 ChainRulesCore.rrule
+```
+
+## Utilities
+
+Zygote provides a user with some friendly utility functions.
+All the utility functions are available in [Zygote's documentation](https://fluxml.ai/Zygote.jl/latest/utils/).
+
+```@docs
+Zygote.hessian
+Zygote.hessian_reverse
+Zygote.diaghessian
+Zygote.withjacobian
+Zygote.withgradient
 ```
