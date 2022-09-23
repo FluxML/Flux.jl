@@ -799,3 +799,9 @@ end
     end
   end
 end
+
+# make sure rng_from_array is non_differentiable
+@testset "rng_from_array" begin
+  m(x) = (rand(rng_from_array(x)) * x)[1]
+  gradient(m, ones(2))
+end
