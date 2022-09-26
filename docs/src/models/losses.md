@@ -4,10 +4,17 @@ Flux provides a large number of common loss functions used for training machine 
 They are grouped together in the `Flux.Losses` module.
 
 Loss functions for supervised learning typically expect as inputs a target `y`, and a prediction `ŷ` from your model.
-In Flux's convention, the order of the arguments is the following
+In Flux's convention, the target is the last argumemt:
 
 ```julia
 loss(ŷ, y)
+```
+
+All loss functions have a method which takes the model as the first argument, and calculates the prediction `ŷ = model(x)`.
+This is convenient for [`train!`](@ref Flux.train)`(loss, model, [(x,y), (x2,y2), ...], opt)`:
+
+```julia
+loss(model, x, y) = loss(model(x), y)
 ```
 
 Most loss functions in Flux have an optional argument `agg`, denoting the type of aggregation performed over the
@@ -15,10 +22,9 @@ batch:
 
 ```julia
 loss(ŷ, y)                         # defaults to `mean`
-loss(ŷ, y, agg=sum)                # use `sum` for reduction
-loss(ŷ, y, agg=x->sum(x, dims=2))  # partial reduction
+loss(ŷ, y, agg=sum)                # use `sum` instead
 loss(ŷ, y, agg=x->mean(w .* x))    # weighted mean
-loss(ŷ, y, agg=identity)           # no aggregation.
+loss(ŷ, y, agg=x->sum(x, dims=2))  # partial reduction, returns an array
 ```
 
 ### Function listing

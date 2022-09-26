@@ -248,3 +248,12 @@ end
   @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
 end
+
+@testset "3-arg methods" begin
+  @testset for loss in ALL_LOSSES
+    fun(x) = x[1:2]
+    x = rand(3)
+    y = rand(2)
+    @test loss(fun, x, y) == loss(fun(x), y)
+  end
+end
