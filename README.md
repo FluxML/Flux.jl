@@ -5,7 +5,7 @@
 <div align="center">
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) [![](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://julialang.org/slack/) [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac) [![DOI](https://joss.theoj.org/papers/10.21105/joss.00602/status.svg)](https://doi.org/10.21105/joss.00602)
-
+<br/>
 [![][action-img]][action-url] [![][codecov-img]][codecov-url]
 
 </div>
@@ -17,6 +17,7 @@
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
+Works best with [Julia 1.8](https://julialang.org/downloads/) or later. This will install everything (including CUDA) and solve the XOR problem:
 ```julia
 using Flux
 
@@ -33,6 +34,6 @@ Flux.train!(loss, Flux.params(model), data, optim)
 all((model(x) .> 0.5) .== y)
 ```
 
-See the [documentation](https://fluxml.github.io/Flux.jl/) or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
+See the [documentation](https://fluxml.github.io/Flux.jl/) for details, the [website](https://fluxml.ai/tutorials.html) for tutorials, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples.
 
 If you use Flux in your research, please [cite](CITATION.bib) our work.
