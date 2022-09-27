@@ -42,6 +42,7 @@ makedocs(
          "Flux's Ecosystem" => "ecosystem.md",
     ],
     format = Documenter.HTML(
+        sidebar_sitename = false,
         analytics = "UA-36890222-9",
         assets = ["assets/flux.css"],
         prettyurls = get(ENV, "CI", nothing) == "true"
