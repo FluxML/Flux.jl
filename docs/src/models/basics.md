@@ -1,4 +1,4 @@
-# Flux Basics
+# How Flux Works: Gradients and Layers
 
 ## Taking Gradients
 

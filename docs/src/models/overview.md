@@ -1,11 +1,11 @@
-# Flux Overview
+# Flux Overview: Fitting a Straight Line
 
 Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
 
-- Provide training and test data
-- Build a model with configurable *parameters* to make predictions
-- Iteratively train the model by tweaking the parameters to improve predictions
-- Verify your model
+1. Provide training and test data
+2. Build a model with configurable *parameters* to make predictions
+3. Iteratively train the model by tweaking the parameters to improve predictions
+4. Verify your model
 
 Under the hood, Flux uses a technique called automatic differentiation to take gradients that help improve predictions. Flux is also fully written in Julia so you can easily replace any layer of Flux with your own code to improve your understanding or satisfy special requirements.
 

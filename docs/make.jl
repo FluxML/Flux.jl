@@ -9,12 +9,15 @@ makedocs(
     sitename = "Flux",
     # strict = [:cross_references,],
     pages = [
-        "Home" => "index.md",
+        "Getting Started" => [
+            "Welcome" => "index.md",
+            "Quick Start" => "models/quickstart.md",
+            "Fitting a Line" => "models/overview.md",
+        ],
         "Building Models" => [
-            "Overview" => "models/overview.md",
-            "Basics" => "models/basics.md",
+            "Gradients and Layers" => "models/basics.md",
             "Recurrence" => "models/recurrence.md",
-            "Layer Reference" => "models/layers.md",
+            "Built-in Layers" => "models/layers.md",
             "Loss Functions" => "models/losses.md",
             "Regularisation" => "models/regularisation.md",
             "Custom Layers" => "models/advanced.md",
@@ -31,8 +34,8 @@ makedocs(
              "Callback Helpers" => "training/callbacks.md",
              "Zygote.jl" => "training/zygote.md",
          ],
-         "GPU Support" => "gpu.md",
          "Model Tools" => [
+             "GPU Support" => "gpu.md",
              "Saving & Loading" => "saving.md",
              "Shape Inference" => "outputsize.md",
              "Weight Initialisation" => "utilities.md",
@@ -40,6 +43,9 @@ makedocs(
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
+         # "Tutorials" => [
+         #
+         # ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,
@@ -54,3 +60,10 @@ deploydocs(
     target = "build",
     push_preview = true
 )
+
+#=
+] activate .
+instantiate
+
+time julia --project --color=yes make.jl
+=#
