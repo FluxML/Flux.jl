@@ -20,11 +20,11 @@ makedocs(
             "Recurrence" => "models/recurrence.md",
             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
             "Activation Functions 📚" => "models/activation.md",
-            "NNlib.jl 📚" => "models/nnlib.md",
+            "NNlib.jl 📚 (`softmax`, `conv`, ...)" => "models/nnlib.md",
          ],
          "Handling Data" => [
-             "MLUtils.jl 📚" => "data/mlutils.md",
-             "OneHotArrays.jl 📚" => "data/onehot.md",
+             "MLUtils.jl 📚 (`DataLoader`, ...)" => "data/mlutils.md",
+             "OneHotArrays.jl 📚 (`onehot`, ...)" => "data/onehot.md",
          ],
          "Training Models" => [
              "Training" => "training/training.md",
@@ -32,7 +32,7 @@ makedocs(
              "Loss Functions 📚" => "models/losses.md",
              "Optimisation Rules 📚" => "training/optimisers.md",  # TODO move optimiser intro up to Training, destructure to new section
              "Callback Helpers 📚" => "training/callbacks.md",
-             "Zygote.jl 📚" => "training/zygote.md",
+             "Zygote.jl 📚 (`gradient`, ...)" => "training/zygote.md",
          ],
          "Model Tools" => [
              "GPU Support" => "gpu.md",
@@ -40,7 +40,7 @@ makedocs(
              # "Flatten & Rebuild" => "destructure.jl" # TODO, maybe
              "Shape Inference 📚" => "outputsize.md",
              "Weight Initialisation 📚" => "utilities.md",
-             "Functors.jl 📚" => "models/functors.md",
+             "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
