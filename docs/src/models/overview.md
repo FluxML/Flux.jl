@@ -13,7 +13,9 @@ Here's how you'd use Flux to build and train the most basic of models, step by s
 
 ## Make a Trivial Prediction
 
-This example will predict the output of the function `4x + 2`. First, import `Flux` and define the function we want to simulate:
+This example will predict the output of the function `4x + 2`. Making such predictions is called "linear regression", and is really too simple to *need* a neural network. But it's a nice toy example.
+
+First, import `Flux` and define the function we want to simulate:
 
 ```jldoctest overview
 julia> using Flux
@@ -36,7 +38,7 @@ julia> y_train, y_test = actual.(x_train), actual.(x_test)
 ([2 6 … 18 22], [26 30 … 38 42])
 ```
 
-Normally, your training and test data come from real world observations, but this function will simulate real-world observations.
+Normally, your training and test data come from real world observations, but here we simulate them.
 
 ## Build a Model to Make Predictions
 
@@ -122,7 +124,6 @@ These are the parameters Flux will change, one step at a time, to improve predic
 ```jldoctest overview
 julia> predict.weight in parameters, predict.bias in parameters
 (true, true)
-
 ```
 
 The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
