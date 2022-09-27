@@ -43,9 +43,8 @@ makedocs(
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
-         # "Tutorials" => [
-         #
-         # ],
+         "Tutorials" => [
+         ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,
@@ -60,10 +59,3 @@ deploydocs(
     target = "build",
     push_preview = true
 )
-
-#=
-] activate .
-instantiate
-
-time julia --project --color=yes make.jl
-=#
