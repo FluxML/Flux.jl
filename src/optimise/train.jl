@@ -1,5 +1,5 @@
 using ProgressLogging: @progress, @withprogress, @logprogress
-import Zygote: Params, gradient
+import Zygote: Params, gradient, withgradient
 
 
 """
@@ -126,8 +126,12 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
   @withprogress for (i, d) in enumerate(data)
     try
-      gs = gradient(ps) do
+      l, gs = withgradient(ps) do
         loss(batchmemaybe(d)...)
+      end
+      if !isfinite(l)
+        @warn "Loss is $l on item $i, stopping training"
+        break
       end
       update!(opt, ps, gs)
       cb()
