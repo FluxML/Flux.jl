@@ -41,10 +41,10 @@ end
 pars  # has changed!
 out2 = model(noisy)
 
+mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
+
 p_done = Plots.scatter(noisy[1,:], noisy[2,:], zcolor=out2[1,:], legend=false, title="Trained network")
 plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))  # combined plot, shown below
-
-mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
 
 ![](../assets/oneminute.png)
