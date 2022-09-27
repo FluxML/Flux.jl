@@ -26,8 +26,8 @@ mat = Flux.onehotbatch(truth, [true, false])                      # 2×1000 OneH
 data = Flux.DataLoader((noisy, mat), batchsize=64, shuffle=true);
 first(data) .|> summary                                           # ("2×64 Matrix{Float32}", "2×64 Matrix{Bool}")
 
-pars = Flux.params(model)
-opt = Flux.Adam(0.01)
+pars = Flux.params(model)  # contains references to arrays in model
+opt = Flux.Adam(0.01)      # will store optimiser momentum etc.
 
 # Training loop, using whole data set 1000 times:
 for epoch in 1:1_000
@@ -39,6 +39,7 @@ for epoch in 1:1_000
 end
 
 pars  # has changed!
+opt
 out2 = model(noisy)
 
 mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!

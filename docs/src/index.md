@@ -12,7 +12,7 @@ Download [Julia 1.6](https://julialang.org/downloads/) or later, preferably the 
 
 This will automatically install several other packages, including [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) which supports Nvidia GPUs. To directly access some of its functionality, you may want to add `] add CUDA` too. The page on [GPU support](gpu.md) has more details.
 
-Other closely associated packages include [Zygote.jl](https://github.com/FluxML/Zygote.jl), [Optimisers.jl](https://github.com/FluxML/Optimisers.jl), [NNlib.jl](https://github.com/FluxML/NNlib.jl), [Functors.jl](https://github.com/FluxML/Functors.jl) and [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl).
+Other closely associated packages, which are also installed, are [Zygote.jl](https://github.com/FluxML/Zygote.jl), [Optimisers.jl](https://github.com/FluxML/Optimisers.jl), [NNlib.jl](https://github.com/FluxML/NNlib.jl), [Functors.jl](https://github.com/FluxML/Functors.jl) and [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl).
 
 ## Learning Flux
 
@@ -26,4 +26,4 @@ If you just want to get started writing models, the [model zoo](https://github.c
 
 Everyone is welcome to join our community on the [Julia discourse forum](https://discourse.julialang.org/), or the [slack chat](https://discourse.julialang.org/t/announcing-a-julia-slack/4866) (channel #machine-learning). If you have questions or issues we'll try to help you out.
 
-If you're interested in hacking on Flux, the [source code](https://github.com/FluxML/Flux.jl) is open and easy to understand -- it's all just the same Julia code you work with normally. You might be interested in our [intro issues](https://github.com/FluxML/Flux.jl/labels/good%20first%20issue) to get started or our [contributing guide](https://github.com/FluxML/Flux.jl/blob/master/CONTRIBUTING.md).
+If you're interested in hacking on Flux, the [source code](https://github.com/FluxML/Flux.jl) is open and easy to understand -- it's all just the same Julia code you work with normally. You might be interested in our [intro issues](https://github.com/FluxML/Flux.jl/labels/good%20first%20issue) to get started, or our [contributing guide](https://github.com/FluxML/Flux.jl/blob/master/CONTRIBUTING.md).

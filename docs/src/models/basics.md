@@ -211,7 +211,7 @@ m = Chain(x -> x^2, x -> x+1)
 m(5) # => 26
 ```
 
-## Layer helpers
+## Layer Helpers
 
 Flux provides a set of helpers for custom layers, which you can enable by calling
 
