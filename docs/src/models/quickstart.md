@@ -27,7 +27,7 @@ data = Flux.DataLoader((noisy, mat), batchsize=64, shuffle=true);
 first(data) .|> summary                                           # ("2×64 Matrix{Float32}", "2×64 Matrix{Bool}")
 
 pars = Flux.params(model)  # contains references to arrays in model
-opt = Flux.Adam(0.01)      # will store optimiser momentum etc.
+opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 
 # Training loop, using whole data set 1000 times:
 for epoch in 1:1_000

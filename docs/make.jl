@@ -16,34 +16,35 @@ makedocs(
             "Gradients and Layers" => "models/basics.md",
         ],
         "Building Models" => [
-            "Built-in Layers" => "models/layers.md",
-            "Loss Functions" => "models/losses.md",
+            "Built-in Layers 📚" => "models/layers.md",  # TODO move modules somewhere
             "Recurrence" => "models/recurrence.md",
-            "Regularisation" => "models/regularisation.md",
-            "Custom Layers" => "models/advanced.md",
-            "Activation Functions" => "models/activation.md",
-            "NNlib.jl" => "models/nnlib.md",
+            "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
+            "Activation Functions 📚" => "models/activation.md",
+            "NNlib.jl 📚" => "models/nnlib.md",
          ],
          "Handling Data" => [
-             "MLUtils.jl" => "data/mlutils.md",
-             "OneHotArrays.jl" => "data/onehot.md",
+             "MLUtils.jl 📚" => "data/mlutils.md",
+             "OneHotArrays.jl 📚" => "data/onehot.md",
          ],
          "Training Models" => [
-             "Optimisers" => "training/optimisers.md",
              "Training" => "training/training.md",
-             "Callback Helpers" => "training/callbacks.md",
-             "Zygote.jl" => "training/zygote.md",
+             "Regularisation" => "models/regularisation.md",
+             "Loss Functions 📚" => "models/losses.md",
+             "Optimisation Rules 📚" => "training/optimisers.md",  # TODO move optimiser intro up to Training, destructure to new section
+             "Callback Helpers 📚" => "training/callbacks.md",
+             "Zygote.jl 📚" => "training/zygote.md",
          ],
          "Model Tools" => [
              "GPU Support" => "gpu.md",
              "Saving & Loading" => "saving.md",
-             "Shape Inference" => "outputsize.md",
-             "Weight Initialisation" => "utilities.md",
-             "Functors.jl" => "models/functors.md",
+             # "Flatten & Rebuild" => "destructure.jl" # TODO, maybe
+             "Shape Inference 📚" => "outputsize.md",
+             "Weight Initialisation 📚" => "utilities.md",
+             "Functors.jl 📚" => "models/functors.md",
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
-         "Tutorials" => [
+         "Tutorials" => [  # TODO, maybe
          ],
     ],
     format = Documenter.HTML(
