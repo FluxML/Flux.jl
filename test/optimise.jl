@@ -93,10 +93,10 @@ end
   CNT = 0
   Flux.train!(Flux.params(m), 1:100, Descent(0.1)) do i
     CNT += 1
-    i > 50 ? NaN32 : sum(m([1.0]))
+    i == 51 ? NaN32 : sum(m([1f0]))
   end
-  @test m.weight[1] ≈ -5  # did not corrupt weights
   @test CNT == 51  # stopped early
+  @test m.weight[1] ≈ -5  # did not corrupt weights
 end
 
 @testset "ExpDecay" begin
