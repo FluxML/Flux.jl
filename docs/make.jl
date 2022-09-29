@@ -30,7 +30,7 @@ makedocs(
              "Training" => "training/training.md",
              "Regularisation" => "models/regularisation.md",
              "Loss Functions 📚" => "models/losses.md",
-             "Optimisation Rules 📚" => "training/optimisers.md",  # TODO move optimiser intro up to Training, destructure to new section
+             "Optimisation Rules 📚" => "training/optimisers.md",  # TODO move optimiser intro up to Training
              "Callback Helpers 📚" => "training/callbacks.md",
              "Zygote.jl 📚 (`gradient`, ...)" => "training/zygote.md",
          ],
@@ -44,8 +44,8 @@ makedocs(
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
-         "Tutorials" => [  # TODO, maybe
-         ],
+         # "Tutorials" => [  # TODO, maybe
+         # ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,

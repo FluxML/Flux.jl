@@ -3,8 +3,6 @@
 
 A Flux model is a nested structure, with parameters stored within many layers. Sometimes you may want a flat representation of them, to interact with functions expecting just one vector. This is provided by `destructure`.
 
-For example, this computes the Hessian `∂²L/∂θᵢ∂θⱼ` of some loss function, with respect to all parameters of a Flux model. The resulting matrix has off-diagonal entries, which cannot really be expressed in a nested structure:
-
 ```julia
 julia> model = Chain(Dense(2=>1, tanh), Dense(1=>1))
 Chain(
@@ -15,6 +13,16 @@ Chain(
 julia> flat, rebuild = Flux.destructure(model)
 (Float32[0.863101, 1.2454957, 0.0, -1.6345707, 0.0], Restructure(Chain, ..., 5))
 
+julia> rebuild(zeros(5))  # same structure, new parameters
+Chain(
+  Dense(2 => 1, tanh),                  # 3 parameters  (all zero)
+  Dense(1 => 1),                        # 2 parameters  (all zero)
+)                   # Total: 4 arrays, 5 parameters, 276 bytes.
+```
+
+This can be used within gradient computations. For instance, this computes the Hessian `∂²L/∂θᵢ∂θⱼ` of some loss function, with respect to all parameters of the Flux model. The resulting matrix has off-diagonal entries, which cannot really be expressed in a nested structure:
+
+```
 julia> x = rand(Float32, 2, 16);
 
 julia> grad = gradient(m -> sum(abs2, m(x)), model)  # nested gradient
@@ -26,7 +34,7 @@ julia> function loss(v::Vector)
          sum(abs2, y)
        end;
 
-julia> gradient(loss, flat)  # same numbers
+julia> gradient(loss, flat)  # flat gradient, same numbers
 (Float32[10.339018, 11.379145, 22.845667, -29.565302, -37.644184],)
 
 julia> Zygote.hessian(loss, flat)  # second derivative

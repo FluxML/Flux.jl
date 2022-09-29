@@ -12,7 +12,7 @@ Download [Julia 1.6](https://julialang.org/downloads/) or later, preferably the 
 
 This will automatically install several other packages, including [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) which supports Nvidia GPUs. To directly access some of its functionality, you may want to add `] add CUDA` too. The page on [GPU support](gpu.md) has more details.
 
-Other closely associated packages, which are also installed, are [Zygote.jl](https://github.com/FluxML/Zygote.jl), [Optimisers.jl](https://github.com/FluxML/Optimisers.jl), [NNlib.jl](https://github.com/FluxML/NNlib.jl), [Functors.jl](https://github.com/FluxML/Functors.jl) and [MLUtils.jl](https://github.com/JuliaML/MLUtils.jl).
+Other closely associated packages, also installed automatically, include [Zygote](https://github.com/FluxML/Zygote.jl), [Optimisers](https://github.com/FluxML/Optimisers.jl), [NNlib](https://github.com/FluxML/NNlib.jl), [Functors](https://github.com/FluxML/Functors.jl) and [MLUtils](https://github.com/JuliaML/MLUtils.jl).
 
 ## Learning Flux
 
@@ -20,7 +20,7 @@ The [quick start](models/quickstart.md) page trains a simple neural network.
 
 This rest of this documentation provides a from-scratch introduction to Flux's take on models and how they work, starting with [fitting a line](models/overview.md). Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
 
-Sections with 📚 contain API listings. The same text is avalable at the Julia prompt by typing `?gpu`.
+Sections with 📚 contain API listings. The same text is avalable at the Julia prompt, by typing for example `?gpu`.
 
 If you just want to get started writing models, the [model zoo](https://github.com/FluxML/model-zoo/) gives good starting points for many common ones.
 
