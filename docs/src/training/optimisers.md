@@ -194,13 +194,4 @@ ClipValue
 ClipNorm
 ```
 
-# Optimisers.jl
 
-Flux re-exports some utility functions from [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl)
-and the complete `Optimisers` package under the `Flux.Optimisers` namespace.
-
-```@docs
-Optimisers.destructure
-Optimisers.trainable
-Optimisers.isnumeric
-```

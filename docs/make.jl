@@ -16,7 +16,7 @@ makedocs(
             "Gradients and Layers" => "models/basics.md",
         ],
         "Building Models" => [
-            "Built-in Layers 📚" => "models/layers.md",  # TODO move modules somewhere
+            "Built-in Layers 📚" => "models/layers.md",
             "Recurrence" => "models/recurrence.md",
             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
             "Activation Functions 📚" => "models/activation.md",
@@ -37,9 +37,9 @@ makedocs(
          "Model Tools" => [
              "GPU Support" => "gpu.md",
              "Saving & Loading" => "saving.md",
-             # "Flatten & Rebuild" => "destructure.jl" # TODO, maybe
              "Shape Inference 📚" => "outputsize.md",
              "Weight Initialisation 📚" => "utilities.md",
+             "Flat vs. Nested 📚" => "destructure.md",
              "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
          ],
          "Performance Tips" => "performance.md",
