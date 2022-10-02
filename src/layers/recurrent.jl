@@ -189,10 +189,10 @@ end
 
 # Vanilla RNN
 
-struct RNNCell{F,A,V,S}
+struct RNNCell{F,I,H,V,S}
   σ::F
-  Wi::A
-  Wh::A
+  Wi::I
+  Wh::H
   b::V
   state0::S
 end
@@ -200,7 +200,7 @@ end
 RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) =
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell{F,A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,A,V,T}
+function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,I,H,V,T}
   Wi, Wh, b = m.Wi, m.Wh, m.b
   σ = NNlib.fast_act(m.σ, x)
   h = σ.(Wi*x .+ Wh*h .+ b)
@@ -271,15 +271,27 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
     julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
     (50,)
     ```
+
+# Note: 
+  `RNNCell`s can be constructed directly by specifying the non-linear function, the `W_i` and `W_h` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `W_i` and `W_h` matrices do not need to be the same type, but if `W_h` is `dxd`, then `W_i` should be of shape `dxN`.
+
+  ```julia
+  julia> using LinearAlgebra
+
+  julia> r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
+
+  julia> r(rand(4, 10)) |> size # batch size of 10
+  (5, 10)
+  ````
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
 
 # LSTM
 
-struct LSTMCell{A,V,S}
-  Wi::A
-  Wh::A
+struct LSTMCell{I,H,V,S}
+  Wi::I
+  Wh::H
   b::V
   state0::S
 end
@@ -293,7 +305,7 @@ function LSTMCell((in, out)::Pair;
   return cell
 end
 
-function (m::LSTMCell{A,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
+function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {I,H,V,T}
   b, o = m.b, size(h, 1)
   g = muladd(m.Wi, x, muladd(m.Wh, h, b))
   input, forget, cell, output = multigate(g, o, Val(4))
@@ -351,9 +363,9 @@ function _gru_output(gxs, ghs, bs)
   return r, z
 end
 
-struct GRUCell{A,V,S}
-  Wi::A
-  Wh::A
+struct GRUCell{I,H,V,S}
+  Wi::I
+  Wh::H
   b::V
   state0::S
 end
@@ -361,7 +373,7 @@ end
 GRUCell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
-function (m::GRUCell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
+function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {I,H,V,T}
   Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
   gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
@@ -414,11 +426,11 @@ Recur(m::GRUCell) = Recur(m, m.state0)
 
 # GRU v3
 
-struct GRUv3Cell{A,V,S}
-  Wi::A
-  Wh::A
+struct GRUv3Cell{I,H,V,HH,S}
+  Wi::I
+  Wh::H
   b::V
-  Wh_h̃::A
+  Wh_h̃::HH
   state0::S
 end
 
@@ -426,7 +438,7 @@ GRUv3Cell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = 
   GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3),
             init(out, out), init_state(out,1))
 
-function (m::GRUv3Cell{A,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {A,V,T}
+function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {I,H,V,HH,T}
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
   gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)

@@ -1,3 +1,5 @@
+using LinearAlgebra
+
 # Ref FluxML/Flux.jl#1209 1D input
 @testset "BPTT-1D" begin
   seq = [rand(Float32, 2) for i = 1:3]
@@ -137,4 +139,33 @@ end
                                                          x2, 
                                                          x3, 
                                                          zeros(x_size[1:end-1]); dims=ndims(x))
+end
+
+@testset "Different Internal Matrix Types" begin
+  R = Flux.Recur(Flux.RNNCell(tanh, rand(5, 3), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
+  # don't want to pull in SparseArrays just for this test, but there aren't any
+  # non-square structured matrix types in LinearAlgebra. so we will use a different
+  # eltype matrix, which would fail before when `W_i` and `W_h` were required to be the
+  # same type.
+  L = Flux.Recur(Flux.LSTMCell(rand(5*4, 3), rand(1:20, 5*4, 5), rand(5*4), (rand(5, 1), rand(5, 1))))
+  G = Flux.Recur(Flux.GRUCell(rand(5*3, 3), rand(1:20, 5*3, 5), rand(5*3), rand(5, 1)))
+  G3 = Flux.Recur(Flux.GRUv3Cell(rand(5*3, 3), rand(1:20, 5*2, 5), rand(5*3), Tridiagonal(rand(5, 5)), rand(5, 1)))
+
+  for m in [R, L, G, G3]
+
+    x1 = rand(3)
+    x2 = rand(3, 1)
+    x3 = rand(3, 1, 2)
+    Flux.reset!(m)
+    @test size(m(x1)) == (5,)
+    Flux.reset!(m)
+    @test size(m(x1)) == (5,) # repeat in case of effect from change in state shape
+    @test size(m(x2)) == (5, 1)
+    Flux.reset!(m)
+    @test size(m(x2)) == (5, 1)
+    Flux.reset!(m)
+    @test size(m(x3)) == (5, 1, 2)
+    Flux.reset!(m)
+    @test size(m(x3)) == (5, 1, 2)
+  end
 end
