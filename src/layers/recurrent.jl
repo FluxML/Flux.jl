@@ -272,8 +272,8 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
     (50,)
     ```
 
-# Note: 
-  `RNNCell`s can be constructed directly by specifying the non-linear function, the `W_i` and `W_h` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `W_i` and `W_h` matrices do not need to be the same type, but if `W_h` is `dxd`, then `W_i` should be of shape `dxN`.
+# Note:
+  `RNNCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type, but if `Wh` is `dxd`, then `Wi` should be of shape `dxN`.
 
   ```julia
   julia> using LinearAlgebra
@@ -282,7 +282,7 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
 
   julia> r(rand(4, 10)) |> size # batch size of 10
   (5, 10)
-  ````
+  ```
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
@@ -351,6 +351,9 @@ julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
 
 !!! warning "Batch size changes"
     Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
+
+# Note:
+  `LSTMCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type. See the example in [`RNN`](@ref).
 """
 LSTM(a...; ka...) = Recur(LSTMCell(a...; ka...))
 Recur(m::LSTMCell) = Recur(m, m.state0)
@@ -420,6 +423,9 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 
 !!! warning "Batch size changes"
     Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
+
+# Note:
+  `GRUCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type. See the example in [`RNN`](@ref).
 """
 GRU(a...; ka...) = Recur(GRUCell(a...; ka...))
 Recur(m::GRUCell) = Recur(m, m.state0)
@@ -485,6 +491,9 @@ julia> g(rand(Float32, 3, 10)) |> size # batch size of 10
 
 !!! warning "Batch size changes"
     Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the example in [`RNN`](@ref).
+
+# Note:
+  `GRUv3Cell`s can be constructed directly by specifying the non-linear function, the `Wi`, `Wh`, and `Wh_h` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi`, `Wh`, and `Wh_h` matrices do not need to be the same type. See the example in [`RNN`](@ref).
 """
 GRUv3(a...; ka...) = Recur(GRUv3Cell(a...; ka...))
 Recur(m::GRUv3Cell) = Recur(m, m.state0)
