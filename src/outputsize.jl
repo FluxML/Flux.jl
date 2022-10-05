@@ -147,29 +147,11 @@ outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chai
 
 ## bypass statistics in normalization layers
 
-# for layer in (:LayerNorm, :BatchNorm, :InstanceNorm, :GroupNorm)
-#   @eval (l::$layer)(x::AbstractArray{Nil}) = x
-# end
-for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)
+for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
   @eval function (l::$layer)(x::AbstractArray{Nil})
     l.chs == size(x, ndims(x)-1) || throw(DimensionMismatch(
-      string($layer, " expected ", l.chs, " channels, but got ", _channelsize(x))))
+      string($layer, " expected ", l.chs, " channels, but got size(x) == ", size(x))))
     x
-  end
-end
-
-_channelsize(x::AbstractArray) = size(x, ndims(x)-1)
-_channelsize(x::AbstractVector) = size(x, 1)
-
-function (l::LayerNorm)(x::AbstractArray{Nil,N}) where N
-  l.affine || return x
-  n = length(l.size)
-  l.size[1:min(n,N)] == size(x)[1:min(n,N)] || throw(DimensionMismatch(
-    string("LayerNorm expected size of input starting with ", l.size, ", but got size(x) == ", size(x))))
-  if n <= N
-    return x
-  else
-    return similar(x, l.size)
   end
 end
 
@@ -192,25 +174,25 @@ for (fn, Dims) in ((:conv, DenseConvDims),)
 end
 
 
-export @autosize
-
 """
     @autosize (size...,) Chain(Layer(_ => 2), Layer(_), ...)
 
 Returns the specified model, with each `_` replaced by an inferred number,
-for input of the given size.
+for input of the given `size`.
 
-The unknown sizes are always the second-last dimension (or the length of a vector),
-of that layer's input, which Flux usually regards as the channel dimension.
+The unknown sizes are usually the second-last dimension of that layer's input,
+which Flux regards as the channel dimension.
+(A few layers, `Dense` & [`LayerNorm`](@ref), instead always use the first dimension.)
 The underscore may appear as an argument of a layer, or inside a `=>`.
+It may be used in further calculations, such as `Dense(_ => _÷4)`.
 
 # Examples
 ```
-julia> @autosize (3,) Chain(Dense(_ => 2, sigmoid), Flux.Scale(_))
+julia> @autosize (3, 1) Chain(Dense(_ => 2, sigmoid), BatchNorm(_, affine=false))
 Chain(
   Dense(3 => 2, σ),                     # 8 parameters
-  Scale(2),                             # 4 parameters
-)                   # Total: 4 arrays, 12 parameters, 304 bytes.
+  BatchNorm(2, affine=false),
+) 
 
 julia> img = [28, 28];
 
@@ -244,15 +226,15 @@ julia> outputsize(ans, (28, 28, 1, 32))
 ```
 
 Limitations:
-* Won't work yet for Bilinear, except like `@autosize (5, 32) Flux.Bilinear(_ => 7)`
-* Beyond a matrix it gets Dense wrong, e.g. `@autosize (2, 3, 4) Dense(_ => 5)`
-* `LayerNorm(_,_)` probably won't work, needs first few input dims.
-* RNN: `@autosize (7, 11) LSTM(_ => 5)` fails, but `outputsize(RNN(3=>7), (3,))` also fails.
+* While `@autosize (5, 32) Flux.Bilinear(_ => 7)` is OK, something like `Bilinear((_, _) => 7)` will fail.
+* While `Scale(_)` and `LayerNorm(_)` are fine (and use the first dimension), `Scale(_,_)` and `LayerNorm(_,_)`
+  will fail if `size(x,1) != size(x,2)`.
+* RNNs won't work: `@autosize (7, 11) LSTM(_ => 5)` fails, because `outputsize(RNN(3=>7), (3,))` also fails, a known issue.
 """
 macro autosize(size, model)
   Meta.isexpr(size, :tuple) || error("@autosize's first argument must be a tuple, the size of the input")
   Meta.isexpr(model, :call) || error("@autosize's second argument must be something like Chain(layers...)")
-  ex = makelazy(model)
+  ex = _makelazy(model)
   @gensym m
   quote
     $m = $ex
@@ -261,38 +243,56 @@ macro autosize(size, model)
   end |> esc
 end
 
-function makelazy(ex::Expr)
-  n = underscoredepth(ex)
+function _makelazy(ex::Expr)
+  n = _underscoredepth(ex)
   n == 0 && return ex
   n == 1 && error("@autosize doesn't expect an underscore here: $ex")
-  n == 2 && return :($LazyLayer($(string(ex)), $(makefun(ex)), nothing))
-  n > 2 && return Expr(ex.head, ex.args[1], map(makelazy, ex.args[2:end])...)
+  n == 2 && return :($LazyLayer($(string(ex)), $(_makefun(ex)), nothing))
+  n > 2 && return Expr(ex.head, ex.args[1], map(_makelazy, ex.args[2:end])...)
 end
-makelazy(x) = x
+_makelazy(x) = x
 
-function underscoredepth(ex::Expr)
+function _underscoredepth(ex::Expr)
   # Meta.isexpr(ex, :tuple) && :_ in ex.args && return 10
   ex.head in (:call, :kw, :(->), :block) || return 0
   ex.args[1] == :(=>) && ex.args[2] == :_ && return 1
-  m = maximum(underscoredepth, ex.args)
+  m = maximum(_underscoredepth, ex.args)
   m == 0 ? 0 : m+1
 end
-underscoredepth(ex) = Int(ex == :_)
+_underscoredepth(ex) = Int(ex == :_)
 
 #=
 
-@autosize (3,) Chain(one = Dense(_ => 10))  # needs kw
-@autosize (10,) Maxout(() -> Dense(_ => 7, tanh), 3)  # needs ->, block
+@autosize (3,) Chain(one = Dense(_ => 4), two = softmax)  # needs kw
+@autosize (3, 45) Maxout(() -> Dense(_ => 6, tanh), 2)    # needs ->, block
+
+# here Parallel gets two inputs, no problem:
+@autosize (3,) Chain(SkipConnection(Dense(_ => 4), Parallel(vcat, Dense(_ => 5), Dense(_ => 6))), Flux.Scale(_))
 
 =#
 
-function makefun(ex)
-  @gensym s
-  Expr(:(->), s, replaceunderscore(ex, s))
+function _makefun(ex)
+  T = Meta.isexpr(ex, :call) ? ex.args[1] : Type
+  @gensym x s
+  Expr(:(->), x, Expr(:block, :($s = $autosizefor($T, $x)), _replaceunderscore(ex, s)))
 end
 
-replaceunderscore(e, s) = e == :_ ? s : e
-replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> replaceunderscore(a, s), ex.args)...)
+"""
+    autosizefor(::Type, x)
+
+If an `_` in your layer's constructor, used within `@autosize`, should
+*not* mean the 2nd-last dimension, then you can overload this.
+
+For instance `autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)`
+is needed to make `@autosize (2,3,4) Dense(_ => 5)` return 
+`Dense(2 => 5)` rather than `Dense(3 => 5)`.
+"""
+autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
+autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
+autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
+
+_replaceunderscore(e, s) = e == :_ ? s : e
+_replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)
 
 mutable struct LazyLayer
   str::String
@@ -301,19 +301,10 @@ mutable struct LazyLayer
 end
 
 function (l::LazyLayer)(x::AbstractArray)
-  if l.layer != nothing
-    return l.layer(x)
-  end
-  # s = channelsize(x)
-  s = size(x, max(1, ndims(x)-1))
-  lay = l.make(s)
-  y = try
-    lay(x)
-  catch e
-    @error l.str
-    return nothing
-  end
-  l.layer = striplazy(lay)  # is this a good idea?
+  l.layer == nothing || return l.layer(x)
+  lay = l.make(x)
+  y = lay(x)
+  l.layer = lay  # mutate after we know that call worked
   return y
 end
 
@@ -329,30 +320,9 @@ Flux.outputsize(Dense(2=>3), (4,))  # no nice error
 @autosize (3,5,6) LayerNorm(_,_)  # no complaint, but
 ans(rand(3,5,6))  # this fails
 
-
-
-```
-julia> Flux.outputsize(LayerNorm(2), (3,))
-(3,)
-
-julia> LayerNorm(2)(rand(Float32, 3))
-ERROR: DimensionMismatch: arrays could not be broadcast to a common size; got a dimension with lengths 2 and 3
-
-julia> BatchNorm(2)(fill(Flux.nil, 3)) |> size
-(3,)
-
-julia> BatchNorm(2)(rand(3))
-ERROR: arraysize: dimension out of range
-```
-
-
 =#
 
-# channelsize(x) = size(x, max(1, ndims(x)-1))
-
-using Functors: functor, @functor
-
-@functor LazyLayer # (layer,)
+@functor LazyLayer
 
 function striplazy(x)
   fs, re = functor(x)
@@ -360,8 +330,8 @@ function striplazy(x)
 end
 striplazy(l::LazyLayer) = l.layer == nothing ? error("should be initialised!") : l.layer
 
-# Could make LazyLayer usable outside of @autosize
-# For instance allow @lazy
+# Could make LazyLayer usable outside of @autosize, for instance allow Chain(@lazy Dense(_ => 2))?
+# But then it will survive to produce weird structural gradients etc. 
 
 function Base.show(io::IO, l::LazyLayer)
   printstyled(io, "LazyLayer(", color=:light_black)
