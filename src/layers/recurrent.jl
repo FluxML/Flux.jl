@@ -102,27 +102,23 @@ julia> rnn.state
 1×1 Matrix{Int64}:
  5
 
-julia> out = rnn(reshape(1:10, 1, 1, :));  # apply to a sequence of (features, batch, time)
+julia> out = rnn(reshape(1:6, 1, 1, :));  # apply to a sequence of (features, batch, time)
 
 julia> out |> size
-(1, 1, 10)
+(1, 1, 6)
 
 julia> vec(out)
-10-element Vector{Int64}:
+6-element Vector{Int64}:
   1
   2
   3
   4
   5
   6
-  7
-  8
-  9
- 10
 
 julia> rnn.state
 1×1 Matrix{Int64}:
- 60
+ 26
 ```
 """
 mutable struct Recur{T,S}
@@ -134,9 +130,24 @@ function (m::Recur)(x)
   m.state, y = m.cell(m.state, x)
   return y
 end
+function (m::Recur)(x::AbstractArray{T, 3}) where T
+  h = [m(x_t) for x_t in eachlastdim(x)]
+  sze = size(h[1])
+  reshape(reduce(hcat, h), sze[1], sze[2], length(h))  # stack?
+end
 
 @functor Recur
 trainable(a::Recur) = (; cell = a.cell)
+
+function ChainRulesCore.rrule(cfg::RuleConfig{>:HasReverseMode}, m::Recur, x)
+  (m.state, y), back = rrule_via_ad(cfg, m.cell, m.state, x)
+  function Recur_pullback(dy)
+    cell, state, dx = back((NoTangent(), dy))
+    Tangent{Recur}(; cell, state), dx
+  end
+  return y, Recur_pullback
+end
+ChainRulesCore.@opt_out rrule(cfg::RuleConfig{>:HasReverseMode}, m::Recur, x::AbstractArray{T, 3}) where T
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -180,12 +191,6 @@ reset!(m::Recur) = (m.state = m.cell.state0)
 reset!(m) = foreach(reset!, functor(m)[1])
 
 flip(f, xs) = reverse([f(x) for x in reverse(xs)])
-
-function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(x_t) for x_t in eachlastdim(x)]
-  sze = size(h[1])
-  reshape(reduce(hcat, h), sze[1], sze[2], length(h))
-end
 
 # Vanilla RNN
 
