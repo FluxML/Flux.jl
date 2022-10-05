@@ -261,16 +261,6 @@ function _underscoredepth(ex::Expr)
 end
 _underscoredepth(ex) = Int(ex == :_)
 
-#=
-
-@autosize (3,) Chain(one = Dense(_ => 4), two = softmax)  # needs kw
-@autosize (3, 45) Maxout(() -> Dense(_ => 6, tanh), 2)    # needs ->, block
-
-# here Parallel gets two inputs, no problem:
-@autosize (3,) Chain(SkipConnection(Dense(_ => 4), Parallel(vcat, Dense(_ => 5), Dense(_ => 6))), Flux.Scale(_))
-
-=#
-
 function _makefun(ex)
   T = Meta.isexpr(ex, :call) ? ex.args[1] : Type
   @gensym x s
