@@ -25,13 +25,13 @@ x = hcat(digits.(0:3, base=2, pad=2)...) |> gpu  # let's solve the XOR problem!
 y = Flux.onehotbatch(xor.(eachrow(x)...), 0:1) |> gpu
 data = ((Float32.(x), y) for _ in 1:100)  # an iterator making Tuples
 
-model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2), softmax) |> gpu
+model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2)) |> gpu
 optim = Adam(0.1, (0.7, 0.95))
-loss(x, y) = Flux.crossentropy(model(x), y)
+loss(x, y) = Flux.logitcrossentropy(model(x), y)
 
 Flux.train!(loss, Flux.params(model), data, optim)  # updates model & optim
 
-all((model(x) .> 0.5) .== y)  # usually 100% accuracy.
+all((softmax(model(x)) .> 0.5) .== y)  # usually 100% accuracy.
 ```
 
 See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
