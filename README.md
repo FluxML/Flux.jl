@@ -27,9 +27,9 @@ data = ((Float32.(x), y) for _ in 1:100)  # an iterator making Tuples
 
 model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2)) |> gpu
 optim = Adam(0.1, (0.7, 0.95))
-loss(x, y) = Flux.logitcrossentropy(model(x), y)
+mloss(x, y) = Flux.logitcrossentropy(model(x), y)  # closes over model
 
-Flux.train!(loss, Flux.params(model), data, optim)  # updates model & optim
+Flux.train!(mloss, Flux.params(model), data, optim)  # updates model & optim
 
 all((softmax(model(x)) .> 0.5) .== y)  # usually 100% accuracy.
 ```
