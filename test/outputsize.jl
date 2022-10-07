@@ -169,7 +169,7 @@ end
   m = @autosize (3,) Dense(_ => 4)
   @test randn(3) |> m |> size == (4,)
 
-  m = @autosize (3, 1) Chain(Dense(_ => 4), Dense(4 => 10), softmax)
+  m = @autosize (3, 1) Chain(Dense(_, 4), Dense(4 => 10), softmax)
   @test randn(3, 5) |> m |> size == (10, 5)
   
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
@@ -201,6 +201,9 @@ end
   m = @autosize (3, 1) Flux.Bilinear(_ => 10)
   @test randn(3, 4) |> m |> size == (10, 4)
   
+  m = @autosize (3,) SkipConnection(Dense(_ => _), Flux.Bilinear(_ => 10))  # Bilinear gets two inputs
+  @test randn(3, 4) |> m |> size == (10, 4)
+  
   @test_throws Exception @eval @autosize (3,) Flux.Bilinear((_,3) => 10)
   
   # first docstring example
@@ -219,4 +222,23 @@ end
          Dense(_ => 10),
       ) |> gpu                                      # moves to GPU after initialisation
   @test randn(Float32, img..., 1, 32) |> gpu |> m |> size == (10, 32)
+end
+
+@testset "LazyLayer" begin
+  # This is what `@autosize` uses, ideally nobody should make these by hand!
+  # Implicitly testeed by the macro, explicitly here too: 
+  ld = Flux.LazyLayer("Dense(_ => 3, relu; init=??)", x -> Dense(Flux.autosizefor(Dense, x) => 3, relu, init=ones), nothing)
+
+  lm = Chain(ld, Flux.Scale(3))
+  @test string(ld) == "LazyLayer(Dense(_ => 3, relu; init=??))"
+  @test_throws Exception Flux.striplazy(lm)
+
+  @test lm([1,2]) == [3,3,3]
+
+  @test string(ld) == "LazyLayer(Dense(2 => 3, relu))"
+  @test Flux.striplazy(ld) isa Dense
+
+  @test_throws Exception Flux.params(lm)
+  @test_throws Exception gradient(x -> sum(abs2, lm(x)), [1,2])
+  @test_throws Exception gradient(m -> sum(abs2, Flux.striplazy(m)([1,2])), ld)
 end

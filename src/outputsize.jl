@@ -255,11 +255,11 @@ _makelazy(x) = x
 function _underscoredepth(ex::Expr)
   # Meta.isexpr(ex, :tuple) && :_ in ex.args && return 10
   ex.head in (:call, :kw, :(->), :block) || return 0
-  ex.args[1] == :(=>) && ex.args[2] == :_ && return 1
+  ex.args[1] === :(=>) && ex.args[2] === :_ && return 1
   m = maximum(_underscoredepth, ex.args)
   m == 0 ? 0 : m+1
 end
-_underscoredepth(ex) = Int(ex == :_)
+_underscoredepth(ex) = Int(ex === :_)
 
 function _makefun(ex)
   T = Meta.isexpr(ex, :call) ? ex.args[1] : Type
@@ -281,7 +281,7 @@ autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
 autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
 
-_replaceunderscore(e, s) = e == :_ ? s : e
+_replaceunderscore(e, s) = e === :_ ? s : e
 _replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)
 
 mutable struct LazyLayer
@@ -290,45 +290,42 @@ mutable struct LazyLayer
   layer
 end
 
-function (l::LazyLayer)(x::AbstractArray)
-  l.layer == nothing || return l.layer(x)
-  lay = l.make(x)
-  y = lay(x)
-  l.layer = lay  # mutate after we know that call worked
+@functor LazyLayer
+
+function (l::LazyLayer)(x::AbstractArray, ys::AbstractArray...)
+  l.layer === nothing || return l.layer(x, ys...)
+  made = l.make(x)  # for something like `Bilinear((_,__) => 7)`, perhaps need `make(xy...)`, later.
+  y = made(x, ys...)
+  l.layer = made  # mutate after we know that call worked
   return y
 end
 
-#=
-
-Flux.outputsize(Chain(Dense(2=>3)), (4,))  # nice error
-Flux.outputsize(Dense(2=>3), (4,))  # no nice error
-@autosize (4,) Dense(2=>3)  # no nice error
-
-@autosize (3,) Dense(2 => _)  # shouldn't work, weird error
-
-
-@autosize (3,5,6) LayerNorm(_,_)  # no complaint, but
-ans(rand(3,5,6))  # this fails
-
-=#
-
-@functor LazyLayer
-
-function striplazy(x)
-  fs, re = functor(x)
+function striplazy(m)
+  fs, re = functor(m)
   re(map(striplazy, fs))
 end
-striplazy(l::LazyLayer) = l.layer == nothing ? error("should be initialised!") : l.layer
+function striplazy(l::LazyLayer)
+  l.layer === nothing || return l.layer
+  error("LazyLayer should be initialised, e.g. by outputsize(model, size), before using stiplazy")
+end
 
 # Could make LazyLayer usable outside of @autosize, for instance allow Chain(@lazy Dense(_ => 2))?
 # But then it will survive to produce weird structural gradients etc. 
 
+function ChainRulesCore.rrule(l::LazyLayer, x)
+  l(x), _ -> error("LazyLayer should never be used within a gradient. Call striplazy(model) first to remove all.")
+end
+function ChainRulesCore.rrule(::typeof(striplazy), m)
+  striplazy(m), _ -> error("striplazy should never be used within a gradient")
+end
+
+params!(p::Params, x::LazyLayer, seen = IdSet()) = error("LazyLayer should never be used within params(m). Call striplazy(m) first.")
 function Base.show(io::IO, l::LazyLayer)
   printstyled(io, "LazyLayer(", color=:light_black)
   if l.layer == nothing
-    printstyled(io, l.str, color=:red)
+    printstyled(io, l.str, color=:magenta)
   else
-    printstyled(io, l.layer, color=:green)
+    printstyled(io, l.layer, color=:cyan)
   end
   printstyled(io, ")", color=:light_black)
 end
