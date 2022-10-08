@@ -1,4 +1,4 @@
-# Flux Overview: Fitting a Straight Line
+# [Flux Overview: Fitting a Straight Line](@id man-overview)
 
 Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
 

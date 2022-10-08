@@ -1,4 +1,4 @@
-# A Neural Network in One Minute
+# [A Neural Network in One Minute](@id man-quickstart)
 
 If you have used neural networks before, then this simple example might be helpful for seeing how the major parts of Flux work together. Try pasting the code into the REPL prompt.
 
@@ -47,9 +47,9 @@ mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
 using Plots  # to draw the above figure
 
-p_true = Plots.scatter(noisy[1,:], noisy[2,:], zcolor=truth, legend=false, title="True classification")
-p_raw = Plots.scatter(noisy[1,:], noisy[2,:], zcolor=out1[1,:], label="", title="Untrained network")
-p_done = Plots.scatter(noisy[1,:], noisy[2,:], zcolor=out2[1,:], legend=false, title="Trained network")
+p_true = scatter(noisy[1,:], noisy[2,:], zcolor=truth, title="True classification", legend=false)
+p_raw =  scatter(noisy[1,:], noisy[2,:], zcolor=out1[1,:], title="Untrained network", label="", clims=(0,1))
+p_done = scatter(noisy[1,:], noisy[2,:], zcolor=out2[1,:], title="Trained network", legend=false)
 
 plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))
 ```
@@ -66,6 +66,14 @@ Some things to notice in this example are:
 
 * The `model` can be called like a function, `y = model(x)`. It encapsulates the parameters (and state).
 
-* But the model does not contain the loss function, nor the optimisation rule. Instead `Adam()` stores between iterations the momenta it needs.
+* But the model does not contain the loss function, nor the optimisation rule. Instead the [`Adam()`](@ref Adam) object stores between iterations the momenta it needs.
 
-* The function `train!` likes data as an iterator generating Tuples. You can use lower-level functions instead.
+* The function [`train!`](@ref) likes data as an iterator generating `Tuple`s, here produced by [`DataLoader`](@ref). This mutates both the `model` and the optimiser state inside `opt`.
+
+There are other ways to train Flux models, for more control than `train!` provides:
+
+* Within Flux, you can easily write a training loop, calling [`gradient`](@ref) and [`update!`](@ref).
+
+* For a lower-level way, see the package [Optimisers.jl](https://github.com/FluxML/Optimisers.jl).
+
+* For higher-level ways, see [FluxTraining.jl](https://github.com/FluxML/FluxTraining.jl) and [FastAI.jl](https://github.com/FluxML/FastAI.jl).

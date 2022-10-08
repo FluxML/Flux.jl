@@ -1,7 +1,7 @@
-# Flat vs. Nested Structures
+# [Flat vs. Nested Structures](@id man-destructure)
 
 
-A Flux model is a nested structure, with parameters stored within many layers. Sometimes you may want a flat representation of them, to interact with functions expecting just one vector. This is provided by `destructure`.
+A Flux model is a nested structure, with parameters stored within many layers. Sometimes you may want a flat representation of them, to interact with functions expecting just one vector. This is provided by `destructure`:
 
 ```julia
 julia> model = Chain(Dense(2=>1, tanh), Dense(1=>1))
@@ -20,9 +20,9 @@ Chain(
 )                   # Total: 4 arrays, 5 parameters, 276 bytes.
 ```
 
-This can be used within gradient computations. For instance, this computes the Hessian `∂²L/∂θᵢ∂θⱼ` of some loss function, with respect to all parameters of the Flux model. The resulting matrix has off-diagonal entries, which cannot really be expressed in a nested structure:
+Both `destructure` and the `Restructure` function can be used within gradient computations. For instance, this computes the Hessian `∂²L/∂θᵢ∂θⱼ` of some loss function, with respect to all parameters of the Flux model. The resulting matrix has off-diagonal entries, which cannot really be expressed in a nested structure:
 
-```
+```julia
 julia> x = rand(Float32, 2, 16);
 
 julia> grad = gradient(m -> sum(abs2, m(x)), model)  # nested gradient

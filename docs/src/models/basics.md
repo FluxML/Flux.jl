@@ -1,4 +1,4 @@
-# How Flux Works: Gradients and Layers
+# [How Flux Works: Gradients and Layers](@id man-basics)
 
 ## Taking Gradients
 
