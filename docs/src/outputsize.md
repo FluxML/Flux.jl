@@ -27,7 +27,7 @@ The function `outputsize` works by passing a "dummy" array into the model, which
 It should work for all layers, including custom layers, out of the box.
 
 An example of how to automate model building is this:
-```julia
+```jldoctest; output = false
 """
     make_model(width, height, [inchannels, nclasses; layer_config])
 
@@ -57,6 +57,10 @@ end
 m = make_model(28, 28, 3, layer_config = [9, 17, 33, 65])
 
 Flux.outputsize(m, (28, 28, 3, 42)) == (10, 42) == size(m(randn(Float32, 28, 28, 3, 42)))
+
+# output
+
+true
 ```
 
 Alternatively, using the macro, the definition of `make_model` could end with:
