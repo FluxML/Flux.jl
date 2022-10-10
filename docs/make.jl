@@ -18,7 +18,6 @@ makedocs(
         "Building Models" => [
             "Built-in Layers 📚" => "models/layers.md",
             "Recurrence" => "models/recurrence.md",
-            "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
             "Activation Functions 📚" => "models/activation.md",
             "NNlib.jl 📚 (`softmax`, `conv`, ...)" => "models/nnlib.md",
          ],
@@ -44,8 +43,9 @@ makedocs(
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
-         # "Tutorials" => [  # TODO, maybe
-         # ],
+         "Tutorials" => [  # TODO, maybe
+             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
+         ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,
