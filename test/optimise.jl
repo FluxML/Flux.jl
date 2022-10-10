@@ -91,7 +91,7 @@ end
   m = Dense(1 => 1)
   m.weight .= 0
   CNT = 0
-  Flux.train!(Flux.params(m), 1:100, Descent(0.1)) do i
+  @test_throws DomainError Flux.train!(Flux.params(m), 1:100, Descent(0.1)) do i
     CNT += 1
     (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
   end
