@@ -27,7 +27,7 @@ The function `outputsize` works by passing a "dummy" array into the model, which
 It should work for all layers, including custom layers, out of the box.
 
 An example of how to automate model building is this:
-```jldoctest; output = false
+```jldoctest; output = false, setup = :(using Flux)
 """
     make_model(width, height, [inchannels, nclasses; layer_config])
 
