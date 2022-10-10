@@ -222,7 +222,7 @@ Flux.@functor Affine
 Finally, most Flux layers make bias optional, and allow you to supply the function used for generating random weights. We can easily add these refinements to the `Affine` layer as follows:
 
 ```
-function Affine((in, out)::Pair; bias = true, init=Flux.randn32)
+function Affine((in, out)::Pair; bias=true, init=Flux.randn32)
   W = init(out, in)
   b = Flux.create_bias(W, bias, out)
   Affine(W, b)
@@ -231,7 +231,7 @@ end
 Affine(3 => 1, bias=false, init=ones) |> gpu
 ```
 
-```@doc
+```@docs
 Functors.@functor
 Flux.create_bias
 ```
