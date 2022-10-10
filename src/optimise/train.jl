@@ -105,8 +105,10 @@ The optimiser should be from the `Flux.Optimise` module (see [Optimisers](@ref))
 Different optimisers can be combined using [`Flux.Optimise.Optimiser`](@ref Flux.Optimiser).
 
 This training loop iterates through `data` once.
+It will stop with a `DomainError` if the loss is `NaN` or infinite.
+
 You can use [`@epochs`](@ref) to do this several times, or 
-use for instance `Iterators.repeat` to make a longer `data` iterator.
+use for instance `Itertools.ncycle` to make a longer `data` iterator.
 
 ## Callbacks
 
@@ -130,8 +132,7 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
         loss(batchmemaybe(d)...)
       end
       if !isfinite(l)
-        @warn "Loss is $l on item $i, stopping training"
-        break
+        throw(DomainError("Loss is $l on data item $i, stopping training"))
       end
       update!(opt, ps, gs)
       cb()
