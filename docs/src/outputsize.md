@@ -35,7 +35,7 @@ Create a CNN for a given set of configuration parameters. Arguments:
 - `width`, `height`: the input image size in pixels
 - `inchannels`: the number of channels in the input image, default `1`
 - `nclasses`: the number of output classes, default `10`
-- Keyword `layer_config`: a vector of the number of filters per layer, default `[16, 16, 32, 64]`
+- Keyword `layer_config`: a vector of the number of channels per layer, default `[16, 16, 32, 64]`
 """
 function make_model(width, height, inchannels = 1, nclasses = 10;
                     layer_config = [16, 16, 32, 64])
