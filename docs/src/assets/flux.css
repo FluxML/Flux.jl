@@ -101,14 +101,12 @@ article pre {
   padding: 1em;
   border-radius: 10px 0px 0px 10px;
   /* negative spacing removes indent of code within blocks at top level */
-  margin-left: -1em;
-  margin-right: -2em;
+  margin-left: -0.5em;
 }
 
 article .docstring pre {
   /* cancel negative spacing inside a docstring, as it collides with outer box */
   margin-left: 0em;
-  margin-right: 0em;
 }
 
 .hljs-comment {
