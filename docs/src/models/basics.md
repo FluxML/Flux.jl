@@ -213,12 +213,25 @@ m(5) # => 26
 
 ## Layer Helpers
 
-Flux provides a set of helpers for custom layers, which you can enable by calling
+There is still one problem with this `Affine` layer, that Flux does not know to look inside it. This means that [`Flux.train!`](@ref) won't see its parameters, nor will [`gpu`](@ref) be able to move them to your GPU. These features are enabled by the `@functor` macro:
 
-```julia
+```
 Flux.@functor Affine
 ```
 
-This enables a useful extra set of functionality for our `Affine` layer, such as [collecting its parameters](../training/optimisers.md) or [moving it to the GPU](../gpu.md).
+Finally, most Flux layers make bias optional, and allow you to supply the function used for generating random weights. We can easily add these refinements to the `Affine` layer as follows:
 
-For some more helpful tricks, including parameter freezing, please checkout the [advanced usage guide](advanced.md).
+```
+function Affine((in, out)::Pair; bias = true, init=Flux.randn32)
+  W = init(out, in)
+  b = Flux.create_bias(W, bias, out)
+  Affine(W, b)
+end
+
+Affine(3 => 1, bias=false, init=ones) |> gpu
+```
+
+```@doc
+Functors.@functor
+Flux.create_bias
+```
