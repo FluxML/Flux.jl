@@ -55,6 +55,7 @@ include("layers/show.jl")
 include("loading.jl")
 
 include("outputsize.jl")
+export @autosize
 
 include("data/Data.jl")
 using .Data

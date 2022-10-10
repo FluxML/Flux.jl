@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.13.7
+* Added [`@autosize` macro](https://github.com/FluxML/Flux.jl/pull/2078)
+
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)
 

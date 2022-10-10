@@ -147,8 +147,12 @@ outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chai
 
 ## bypass statistics in normalization layers
 
-for layer in (:LayerNorm, :BatchNorm, :InstanceNorm, :GroupNorm)
-  @eval (l::$layer)(x::AbstractArray{Nil}) = x
+for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
+  @eval function (l::$layer)(x::AbstractArray{Nil})
+    l.chs == size(x, ndims(x)-1) || throw(DimensionMismatch(
+      string($layer, " expected ", l.chs, " channels, but got size(x) == ", size(x))))
+    x
+  end
 end
 
 ## fixes for layers that don't work out of the box
@@ -168,3 +172,162 @@ for (fn, Dims) in ((:conv, DenseConvDims),)
     end
   end
 end
+
+
+"""
+    @autosize (size...,) Chain(Layer(_ => 2), Layer(_), ...)
+
+Returns the specified model, with each `_` replaced by an inferred number,
+for input of the given `size`.
+
+The unknown sizes are usually the second-last dimension of that layer's input,
+which Flux regards as the channel dimension.
+(A few layers, `Dense` & [`LayerNorm`](@ref), instead always use the first dimension.)
+The underscore may appear as an argument of a layer, or inside a `=>`.
+It may be used in further calculations, such as `Dense(_ => _÷4)`.
+
+# Examples
+```
+julia> @autosize (3, 1) Chain(Dense(_ => 2, sigmoid), BatchNorm(_, affine=false))
+Chain(
+  Dense(3 => 2, σ),                     # 8 parameters
+  BatchNorm(2, affine=false),
+) 
+
+julia> img = [28, 28];
+
+julia> @autosize (img..., 1, 32) Chain(              # size is only needed at runtime
+          Chain(c = Conv((3,3), _ => 5; stride=2, pad=SamePad()),
+                p = MeanPool((3,3)),
+                b = BatchNorm(_),
+                f = Flux.flatten),
+          Dense(_ => _÷4, relu, init=Flux.rand32),   # can calculate output size _÷4
+          SkipConnection(Dense(_ => _, relu), +),
+          Dense(_ => 10),
+       ) |> gpu                                      # moves to GPU after initialisation
+Chain(
+  Chain(
+    c = Conv((3, 3), 1 => 5, pad=1, stride=2),  # 50 parameters
+    p = MeanPool((3, 3)),
+    b = BatchNorm(5),                   # 10 parameters, plus 10
+    f = Flux.flatten,
+  ),
+  Dense(80 => 20, relu),                # 1_620 parameters
+  SkipConnection(
+    Dense(20 => 20, relu),              # 420 parameters
+    +,
+  ),
+  Dense(20 => 10),                      # 210 parameters
+)         # Total: 10 trainable arrays, 2_310 parameters,
+          # plus 2 non-trainable, 10 parameters, summarysize 10.469 KiB.
+
+julia> outputsize(ans, (28, 28, 1, 32))
+(10, 32)
+```
+
+Limitations:
+* While `@autosize (5, 32) Flux.Bilinear(_ => 7)` is OK, something like `Bilinear((_, _) => 7)` will fail.
+* While `Scale(_)` and `LayerNorm(_)` are fine (and use the first dimension), `Scale(_,_)` and `LayerNorm(_,_)`
+  will fail if `size(x,1) != size(x,2)`.
+* RNNs won't work: `@autosize (7, 11) LSTM(_ => 5)` fails, because `outputsize(RNN(3=>7), (3,))` also fails, a known issue.
+"""
+macro autosize(size, model)
+  Meta.isexpr(size, :tuple) || error("@autosize's first argument must be a tuple, the size of the input")
+  Meta.isexpr(model, :call) || error("@autosize's second argument must be something like Chain(layers...)")
+  ex = _makelazy(model)
+  @gensym m
+  quote
+    $m = $ex
+    $outputsize($m, $size)
+    $striplazy($m)
+  end |> esc
+end
+
+function _makelazy(ex::Expr)
+  n = _underscoredepth(ex)
+  n == 0 && return ex
+  n == 1 && error("@autosize doesn't expect an underscore here: $ex")
+  n == 2 && return :($LazyLayer($(string(ex)), $(_makefun(ex)), nothing))
+  n > 2 && return Expr(ex.head, ex.args[1], map(_makelazy, ex.args[2:end])...)
+end
+_makelazy(x) = x
+
+function _underscoredepth(ex::Expr)
+  # Meta.isexpr(ex, :tuple) && :_ in ex.args && return 10
+  ex.head in (:call, :kw, :(->), :block) || return 0
+  ex.args[1] === :(=>) && ex.args[2] === :_ && return 1
+  m = maximum(_underscoredepth, ex.args)
+  m == 0 ? 0 : m+1
+end
+_underscoredepth(ex) = Int(ex === :_)
+
+function _makefun(ex)
+  T = Meta.isexpr(ex, :call) ? ex.args[1] : Type
+  @gensym x s
+  Expr(:(->), x, Expr(:block, :($s = $autosizefor($T, $x)), _replaceunderscore(ex, s)))
+end
+
+"""
+    autosizefor(::Type, x)
+
+If an `_` in your layer's constructor, used within `@autosize`, should
+*not* mean the 2nd-last dimension, then you can overload this.
+
+For instance `autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)`
+is needed to make `@autosize (2,3,4) Dense(_ => 5)` return 
+`Dense(2 => 5)` rather than `Dense(3 => 5)`.
+"""
+autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
+autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
+autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
+
+_replaceunderscore(e, s) = e === :_ ? s : e
+_replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)
+
+mutable struct LazyLayer
+  str::String
+  make::Function
+  layer
+end
+
+@functor LazyLayer
+
+function (l::LazyLayer)(x::AbstractArray, ys::AbstractArray...)
+  l.layer === nothing || return l.layer(x, ys...)
+  made = l.make(x)  # for something like `Bilinear((_,__) => 7)`, perhaps need `make(xy...)`, later.
+  y = made(x, ys...)
+  l.layer = made  # mutate after we know that call worked
+  return y
+end
+
+function striplazy(m)
+  fs, re = functor(m)
+  re(map(striplazy, fs))
+end
+function striplazy(l::LazyLayer)
+  l.layer === nothing || return l.layer
+  error("LazyLayer should be initialised, e.g. by outputsize(model, size), before using stiplazy")
+end
+
+# Could make LazyLayer usable outside of @autosize, for instance allow Chain(@lazy Dense(_ => 2))?
+# But then it will survive to produce weird structural gradients etc. 
+
+function ChainRulesCore.rrule(l::LazyLayer, x)
+  l(x), _ -> error("LazyLayer should never be used within a gradient. Call striplazy(model) first to remove all.")
+end
+function ChainRulesCore.rrule(::typeof(striplazy), m)
+  striplazy(m), _ -> error("striplazy should never be used within a gradient")
+end
+
+params!(p::Params, x::LazyLayer, seen = IdSet()) = error("LazyLayer should never be used within params(m). Call striplazy(m) first.")
+function Base.show(io::IO, l::LazyLayer)
+  printstyled(io, "LazyLayer(", color=:light_black)
+  if l.layer == nothing
+    printstyled(io, l.str, color=:magenta)
+  else
+    printstyled(io, l.layer, color=:cyan)
+  end
+  printstyled(io, ")", color=:light_black)
+end
+
+_big_show(io::IO, l::LazyLayer, indent::Int=0, name=nothing) = _layer_show(io, l, indent, name)
