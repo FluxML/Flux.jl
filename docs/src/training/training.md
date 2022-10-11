@@ -1,4 +1,4 @@
-# Training
+# [Training](@id man-training)
 
 To actually train a model we need four things:
 

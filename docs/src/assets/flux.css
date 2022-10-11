@@ -100,8 +100,6 @@ article pre {
   max-width: none;
   padding: 1em;
   border-radius: 10px 0px 0px 10px;
-  margin-left: -1em;
-  margin-right: -2em;
 }
 
 .hljs-comment {

@@ -1,13 +1,13 @@
 # Automatic Differentiation using Zygote.jl
 
-Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particulat listing some [limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
+Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
 
 ### Implicit style
 
 Flux uses primarily what Zygote calls "implicit" gradients, [described here](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) in its documentation. 
 
 ```@docs
-Zygote.gradient(f, pars::Zygote.Params)
+Zygote.gradient
 Zygote.Params
 Zygote.Grads
 ```

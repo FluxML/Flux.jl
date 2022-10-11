@@ -1,4 +1,4 @@
-# Loss Functions
+# [Loss Functions](@id man-losses)
 
 Flux provides a large number of common loss functions used for training machine learning models.
 They are grouped together in the `Flux.Losses` module.

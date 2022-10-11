@@ -1,19 +1,21 @@
-# Flux Overview
+# [Flux Overview: Fitting a Straight Line](@id man-overview)
 
 Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
 
-- Provide training and test data
-- Build a model with configurable *parameters* to make predictions
-- Iteratively train the model by tweaking the parameters to improve predictions
-- Verify your model
+1. Provide training and test data
+2. Build a model with configurable *parameters* to make predictions
+3. Iteratively train the model by tweaking the parameters to improve predictions
+4. Verify your model
 
 Under the hood, Flux uses a technique called automatic differentiation to take gradients that help improve predictions. Flux is also fully written in Julia so you can easily replace any layer of Flux with your own code to improve your understanding or satisfy special requirements.
 
 Here's how you'd use Flux to build and train the most basic of models, step by step.
 
-## Make a Trivial Prediction
+### A Trivial Prediction
 
-This example will predict the output of the function `4x + 2`. First, import `Flux` and define the function we want to simulate:
+This example will predict the output of the function `4x + 2`. Making such predictions is called "linear regression", and is really too simple to *need* a neural network. But it's a nice toy example.
+
+First, import `Flux` and define the function we want to simulate:
 
 ```jldoctest overview
 julia> using Flux
@@ -24,7 +26,7 @@ actual (generic function with 1 method)
 
 This example will build a model to approximate the `actual` function.
 
-## Provide Training and Test Data
+## 1. Provide Training and Test Data
 
 Use the `actual` function to build sets of data for training and verification:
 
@@ -36,9 +38,9 @@ julia> y_train, y_test = actual.(x_train), actual.(x_test)
 ([2 6 … 18 22], [26 30 … 38 42])
 ```
 
-Normally, your training and test data come from real world observations, but this function will simulate real-world observations.
+Normally, your training and test data come from real world observations, but here we simulate them.
 
-## Build a Model to Make Predictions
+## 2. Build a Model to Make Predictions
 
 Now, build a model to make predictions with `1` input and `1` output:
 
@@ -83,7 +85,7 @@ julia> loss(x_train, y_train)
 
 More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/). Flux works by iteratively reducing the loss through *training*.
 
-## Improve the Prediction
+## 3. Improve the Prediction
 
 Under the hood, the Flux [`Flux.train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
 
@@ -122,7 +124,6 @@ These are the parameters Flux will change, one step at a time, to improve predic
 ```jldoctest overview
 julia> predict.weight in parameters, predict.bias in parameters
 (true, true)
-
 ```
 
 The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
@@ -149,7 +150,7 @@ Params([Float32[7.5777884], Float32[1.9466728]])
 
 The parameters have changed. This single step is the essence of machine learning.
 
-## Iteratively Train the Model
+## 3+. Iteratively Train the Model
 
 In the previous section, we made a single call to `train!` which iterates over the data we passed in just once. An *epoch* refers to one pass over the dataset. Typically, we will run the training for multiple epochs to drive the loss down even further. Let's run it a few more times:
 
@@ -167,7 +168,7 @@ Params([Float32[4.0178537], Float32[2.0050256]])
 
 After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.
 
-## Verify the Results
+## 4. Verify the Results
 
 Now, let's verify the predictions:
 
