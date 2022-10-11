@@ -66,13 +66,13 @@ Some things to notice in this example are:
 
 * The `model` can be called like a function, `y = model(x)`. It encapsulates the parameters (and state).
 
-* But the model does not contain the loss function, nor the optimisation rule. Instead the [`Adam()`](@ref Adam) object stores between iterations the momenta it needs.
+* But the model does not contain the loss function, nor the optimisation rule. Instead the [`Adam()`](@ref Flux.Adam) object stores between iterations the momenta it needs.
 
-* The function [`train!`](@ref) likes data as an iterator generating `Tuple`s, here produced by [`DataLoader`](@ref). This mutates both the `model` and the optimiser state inside `opt`.
+* The function [`train!`](@ref Flux.train!) likes data as an iterator generating `Tuple`s, here produced by [`DataLoader`](@ref). This mutates both the `model` and the optimiser state inside `opt`.
 
 There are other ways to train Flux models, for more control than `train!` provides:
 
-* Within Flux, you can easily write a training loop, calling [`gradient`](@ref) and [`update!`](@ref).
+* Within Flux, you can easily write a training loop, calling [`gradient`](@ref) and [`update!`](@ref Flux.update!).
 
 * For a lower-level way, see the package [Optimisers.jl](https://github.com/FluxML/Optimisers.jl).
 
