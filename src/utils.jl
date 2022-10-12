@@ -504,7 +504,7 @@ randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
 randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
 
 """
-    _create_bias(weights, bias, size...)
+    create_bias(weights, bias, size...)
 
 Return a bias parameter for a layer, based on the value given
 to the constructor's keyword `bias=bias`.
@@ -514,16 +514,13 @@ to the constructor's keyword `bias=bias`.
 * `bias::AbstractArray` uses the array provided, provided it has the correct size.
   It does not at present correct the `eltype` to match that of `weights`.
 """
-function _create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
+function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
   bias ? fill!(similar(weights, dims...), 0) : false
 end
-function _create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
+function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
   bias
 end
-
-# TODO figure out whether we want to document or deprecate this
-const create_bias = _create_bias
 
 
 # Other
