@@ -48,7 +48,7 @@ function mse(ŷ, y; agg = mean)
 end
 
 """
-    msle(ŷ, y; agg = mean, ϵ = eps(ŷ))
+    msle(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
 
 The loss corresponding to mean squared logarithmic errors, calculated as
 
@@ -66,9 +66,9 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 0.011100831f0
 ```
 """
-function msle(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
+function msle(ŷ, y; agg = mean, eps = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
+  agg((log.((ŷ .+ eps) ./ (y .+ eps))) .^2 )
 end
 
 """
@@ -167,12 +167,12 @@ function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int =
 end
 
 """
-    crossentropy(ŷ, y; dims = 1, ϵ = eps(ŷ), agg = mean)
+    crossentropy(ŷ, y; dims = 1, eps = eps(eltype(ŷ)), agg = mean)
 
 Return the cross entropy between the given probability distributions;
 calculated as
 
-    agg(-sum(y .* log.(ŷ .+ ϵ); dims))
+    agg(-sum(y .* log.(ŷ .+ eps); dims))
 
 Cross entropy is typically used as a loss in multi-class classification,
 in which case the labels `y` are given in a one-hot format.
@@ -222,9 +222,9 @@ julia> Flux.crossentropy(y_model, y_smooth)
 1.5776052f0
 ```
 """
-function crossentropy(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
+function crossentropy(ŷ, y; dims = 1, agg = mean, eps = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
+  agg(.-sum(xlogy.(y, ŷ .+ eps); dims))
 end
 
 """
@@ -267,7 +267,7 @@ function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
 end
 
 """
-    binarycrossentropy(ŷ, y; agg = mean, ϵ = eps(ŷ))
+    binarycrossentropy(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
 
 Return the binary cross-entropy loss, computed as
 
@@ -310,9 +310,9 @@ julia> Flux.crossentropy(y_prob, y_hot)
 0.43989f0
 ```
 """
-function binarycrossentropy(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
+function binarycrossentropy(ŷ, y; agg = mean, eps = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
+  agg(@.(-xlogy(y, ŷ + eps) - xlogy(1 - y, 1 - ŷ + eps)))
 end
 
 """
@@ -346,7 +346,7 @@ function logitbinarycrossentropy(ŷ, y; agg = mean)
 end
 
 """
-    kldivergence(ŷ, y; agg = mean, ϵ = eps(ŷ))
+    kldivergence(ŷ, y; agg = mean, eps = eps(eltype(ŷ)))
 
 Return the
 [Kullback-Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence)
@@ -373,17 +373,17 @@ true
 julia> Flux.kldivergence(p2, p1; agg = sum) ≈ 2log(2)
 true
 
-julia> Flux.kldivergence(p2, p2; ϵ = 0)  # about -2e-16 with the regulator
+julia> Flux.kldivergence(p2, p2; eps = 0)  # about -2e-16 with the regulator
 0.0
 
-julia> Flux.kldivergence(p1, p2; ϵ = 0)  # about 17.3 with the regulator
+julia> Flux.kldivergence(p1, p2; eps = 0)  # about 17.3 with the regulator
 Inf
 ```
 """
-function kldivergence(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
+function kldivergence(ŷ, y; dims = 1, agg = mean, eps = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y), dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims = dims, agg = agg, ϵ = ϵ)
+  entropy = agg(sum(xlogx.(y), dims))
+  cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
   return entropy + cross_entropy
 end
 
@@ -526,7 +526,7 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
 end
 
 """
-    binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=eps(ŷ))
+    binary_focal_loss(ŷ, y; agg=mean, γ=2, eps=eps(eltype(ŷ)))
 
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
@@ -553,18 +553,18 @@ julia> Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
 true
 ```
 """
-function binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=epseltype(ŷ))
+function binary_focal_loss(ŷ, y; agg=mean, γ=2, eps=epseltype(ŷ))
     _check_sizes(ŷ, y)
-    ŷ = ŷ .+ ϵ
-    p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
-    ce = -log.(p_t)
+    ŷϵ = ŷ .+ eps
+    p_t = y .* ŷϵ  + (1 .- y) .* (1 .- ŷϵ)
+    ce = .-log.(p_t)
     weight = (1 .- p_t) .^ γ
     loss = weight .* ce
     agg(loss)
 end
 
 """
-    focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=eps(ŷ))
+    focal_loss(ŷ, y; dims=1, agg=mean, γ=2, eps=eps(eltype(ŷ)))
 
 Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
@@ -597,10 +597,10 @@ true
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
+function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, eps=epseltype(ŷ))
     _check_sizes(ŷ, y)
-    ŷ = ŷ .+ ϵ
-    agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
+    ŷϵ = ŷ .+ eps
+    agg(sum(@. -y * (1 - ŷϵ)^γ * log(ŷϵ); dims))
 end
 
 """
