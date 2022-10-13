@@ -82,3 +82,65 @@ Base.@deprecate_binding ADAGrad AdaGrad
 Base.@deprecate_binding ADADelta AdaDelta
 
 @deprecate rng_from_array() default_rng_value()
+
+#=
+  # Valid method in Optimise, old implicit style, is:
+  train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
+  # Valid methods in Train, new explict style, are:
+  train!(loss, model, data, opt)
+  train!(loss, model, data, opt::Optimisers.AbstractRule)
+  # ... and 3-arg:
+  train!(loss, model, opt)
+  train!(loss, model, opt::Optimisers.AbstractRule)
+  # Provide friendly errors for what happens if you mix these up:
+=#
+import .Optimise: train!
+train!(loss, ps::Params, data, opt) = error("can't mix implict Params with explict state")
+train!(loss, ps::Params, opt) = error("can't mix implict Params with explict state")
+
+train!(loss, ps::Params, data, opt::Optimisers.AbstractRule) = error("can't mix implict Params with explict rule")
+train!(loss, ps::Params, opt::Optimisers.AbstractRule) = error("can't mix implict Params with explict rule")
+
+train!(loss, model, data, opt::Optimise.AbstractOptimiser) = train!(loss, model, data, _old_to_new(opt))
+train!(loss, model, opt::Optimise.AbstractOptimiser) = train!(loss, model, _old_to_new(opt))
+
+train!(loss, ps::Params, opt::Optimise.AbstractOptimiser; cb=0) = error("3-arg train does not exist for implicit mode")
+
+# train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
+#   """On Flux 0.14, `train!` no longer accepts implicit `Zygote.Params`.
+#   Instead of `train!(loss_xy, Flux.params(model), data, Adam())`
+#   it now needs `opt = Flux.setup(Adam(), model); train!(loss_mxy, model, data, opt)`
+#   where `loss_mxy` accepts the model as its first argument.
+#   """
+# ))
+
+# Next, to use the new `setup` with the still-exported old-style Adam etc:
+import .Train: setup
+setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
+
+for T in [:Descent, :Adam, :Momentum, :Nesterov,
+   	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief,
+   	      # :InvDecay, :ExpDecay, 
+          ]
+  @eval function _old_to_new(rule::$T)
+    args = map(f -> getfield(rule, f), fieldnames(Optimisers.$T))
+    Optimisers.$T(args...)
+  end
+end
+_old_to_new(rule::Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
+const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
+_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called gamma now
+_old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thesh)  # called omega, and there are more fields 
+_old_to_new(rule::ClipValue) = Optimisers.ClipGrad(rule.thesh)  # called delta now, and struct name differs
+const ClipGrad = Optimise.ClipValue
+_old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
+
+_old_to_new(rule) = error("Flux.setup does not know how to translate this old-style implicit rule to a new-style Optimisers.jl explicit rule")
+
+Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = error("please use Flux.setup not Optimisers.setup, it may be able to translate this rule")
+
+# v0.14 deprecations
+
+# Enable these when 0.14 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
+# Base.@deprecate_binding Optimiser OptimiserChain
+# Base.@deprecate_binding ClipValue ClipGrad

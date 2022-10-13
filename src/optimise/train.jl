@@ -1,16 +1,23 @@
 using ProgressLogging: @progress, @withprogress, @logprogress
 import Zygote: Params, gradient, withgradient
 
+# Add methods to Optimisers.jl's function, so that there is just one Flux.update!
+# for both explicit and implicit parameters.
+import Optimisers.update!
 
 """
     update!(opt, p, g)
     update!(opt, ps::Params, gs)
 
 Perform an update step of the parameters `ps` (or the single parameter `p`)
-according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
+according to optimizer `opt::AbstractOptimiser`  and the gradients `gs` (the gradient `g`).
 
 As a result, the parameters are mutated and the optimizer's internal state may change.
 The gradient could be mutated as well.
+
+!!! note
+    This method for implicit `Params` (and `AbstractOptimiser`) will be removed from Flux 0.14.
+    The explicit method `update!(opt, model, grad)` from Optimisers.jl will remain.
 """
 function update!(opt::AbstractOptimiser, x, x̄)
   x̄r = copyto!(similar(x̄), x̄)  # Flux.Optimise assumes it can mutate the gradient. This is not
@@ -87,6 +94,10 @@ batchmemaybe(x::Tuple) = x
         
 Uses a `loss` function and training `data` to improve the 
 model's parameters according to a particular optimisation rule `opt`.
+
+!!! note
+    This method with implicit `Params` will be removed from Flux 0.14.
+    It should be replaced with the explicit method `train!(loss, model, data, opt)`.
 
 For each `d in data`, first the gradient of the `loss` is computed like this:
 ```

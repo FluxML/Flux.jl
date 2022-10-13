@@ -34,6 +34,10 @@ export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
 
+include("train.jl")
+using .Train
+# using .Train: setup, @train_autodiff
+
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
