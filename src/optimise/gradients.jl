@@ -21,6 +21,3 @@ AD.@primitive pullback_function(ad::ZygoteExplicitBackend, f, xs...) =
 # this is a hack to get around
 # https://github.com/JuliaDiff/AbstractDifferentiation.jl/issues/63#issuecomment-1225959150
 AD.gradient(::ZygoteExplicitBackend, f, xs...) = Zygote.gradient(f, xs...)
-
-# this is to work around AD.TrackerBackend only supporting vectors of params
-AD.gradient(::AD.TrackerBackend, f, xs...) = Tracker.withgradient(f, xs...).grad
