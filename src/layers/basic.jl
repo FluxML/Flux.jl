@@ -654,25 +654,32 @@ The input to the layer can be a vocabulary index in `1:in`, an array of indices,
 or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
 
 For indices `x`, the result is of size `(out, size(x)...)`, allowing several batch dimensions.
-For one-hot `x`, the result is of size `(out, size(x)[2:end]...)`.
+For one-hot `ohx`, the result is of size `(out, size(ohx)[2:end]...)`.
 
 # Examples
 ```jldoctest
-julia> vocab_size, embed_size = 1000, 4;
+julia> emb = Embedding(26 => 4, init=Flux.identity_init(gain=22))
+Embedding(26 => 4)  # 104 parameters
 
-julia> model = Flux.Embedding(vocab_size => embed_size)
-Embedding(1000 => 4)  # 4_000 parameters
+julia> emb(2)  # one column of e.weight (here not random!)
+4-element Vector{Float32}:
+  0.0
+ 22.0
+  0.0
+  0.0
 
-julia> vocab_idxs = [1, 722, 53, 220, 3];
+julia> emb([3, 1, 20, 14, 4, 15, 7])  # vocabulary indices, in 1:26
+4×7 Matrix{Float32}:
+  0.0  22.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0   0.0  0.0  0.0
+ 22.0   0.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0  22.0  0.0  0.0
 
-julia> x = Flux.onehotbatch(vocab_idxs, 1:vocab_size); summary(x)
-"1000×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool"
-
-julia> model(x) |> summary
-"4×5 Matrix{Float32}"
-
-julia> model(vocab_idxs) == model(x)
+julia> ans == emb(Flux.onehotbatch("cat&dog", 'a':'z', 'n'))
 true
+
+julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
+(4, 10, 1, 12)
 ```
 """
 struct Embedding{W}
