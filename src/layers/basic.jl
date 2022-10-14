@@ -644,14 +644,17 @@ function Base.show(io::IO, m::PairwiseFusion)
 end
 
 """
-    Embedding(in => out; init=randn)
+    Embedding(in => out; init=randn32)
 
 A lookup table that stores embeddings of dimension `out` 
-for a vocabulary of size `in`.
+for a vocabulary of size `in`, as a trainable matrix.
 
 This layer is often used to store word embeddings and retrieve them using indices. 
-The input to the layer can be either a vector of indexes
-or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch). 
+The input to the layer can be a vocabulary index in `1:in`, an array of indices,
+or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
+
+For indices `x`, the result is of size `(out, size(x)...)`, allowing several batch dimensions.
+For one-hot `x`, the result is of size `(out, size(x)[2:end]...)`.
 
 # Examples
 ```jldoctest
@@ -684,10 +687,9 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
-function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
-  return m(onecold(x))
-end
+(m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
+(m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
+(m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
