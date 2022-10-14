@@ -4,6 +4,7 @@ using Flux
 using MacroTools: @forward
 import Zygote
 import Zygote: Params, gradient
+import Tracker
 using AbstractDifferentiation
 import Optimisers
 import Optimisers: update, update!
