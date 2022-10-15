@@ -204,7 +204,7 @@ julia> @autosize (img..., 1, 32) Chain(              # size is only needed at ru
           Dense(_ => _÷4, relu, init=Flux.rand32),   # can calculate output size _÷4
           SkipConnection(Dense(_ => _, relu), +),
           Dense(_ => 10),
-       ) |> gpu                                      # moves to GPU after initialisation
+       )
 Chain(
   Chain(
     c = Conv((3, 3), 1 => 5, pad=1, stride=2),  # 50 parameters
@@ -290,8 +290,6 @@ mutable struct LazyLayer
   layer
 end
 
-@functor LazyLayer
-
 function (l::LazyLayer)(x::AbstractArray, ys::AbstractArray...)
   l.layer === nothing || return l.layer(x, ys...)
   made = l.make(x)  # for something like `Bilinear((_,__) => 7)`, perhaps need `make(xy...)`, later.
@@ -320,6 +318,9 @@ function ChainRulesCore.rrule(::typeof(striplazy), m)
 end
 
 params!(p::Params, x::LazyLayer, seen = IdSet()) = error("LazyLayer should never be used within params(m). Call striplazy(m) first.")
+
+Functors.functor(::Type{<:LazyLayer}, x) = error("LazyLayer should not be walked with Functors.jl, as the arrays which Flux.gpu wants to move may not exist yet.")
+
 function Base.show(io::IO, l::LazyLayer)
   printstyled(io, "LazyLayer(", color=:light_black)
   if l.layer == nothing

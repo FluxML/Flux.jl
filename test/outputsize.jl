@@ -220,8 +220,8 @@ end
          Dense(_ => _÷4, relu, init=Flux.rand32),   # can calculate output size _÷4
          SkipConnection(Dense(_ => _, relu), +),
          Dense(_ => 10),
-      ) |> gpu                                      # moves to GPU after initialisation
-  @test randn(Float32, img..., 1, 32) |> gpu |> m |> size == (10, 32)
+      )
+  @test randn(Float32, img..., 1, 32) |> m |> size == (10, 32)
 end
 
 @testset "LazyLayer" begin
@@ -241,4 +241,7 @@ end
   @test_throws Exception Flux.params(lm)
   @test_throws Exception gradient(x -> sum(abs2, lm(x)), [1,2])
   @test_throws Exception gradient(m -> sum(abs2, Flux.striplazy(m)([1,2])), ld)
+  
+  # Can't let |> gpu act before the arrays are materialized... so it's an error: 
+  @test_throws ErrorException @eval @autosize (1,2,3) Dense(_=>2) |> f64
 end
