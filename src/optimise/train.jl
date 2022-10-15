@@ -94,7 +94,7 @@ _gradient_only(x) = error("Expected gradient w.r.t. single argument (or Zygote.G
 
 """
     train!(loss, pars::Params, data, opt::AbstractOptimiser; [cb])
-        
+
 Uses a `loss` function and training `data` to improve the 
 model's parameters according to a particular optimisation rule `opt`.
 
