@@ -5,6 +5,8 @@
   m = Dense(10, 5)
   @test_throws DimensionMismatch outputsize(m, (5, 2)) == (5, 1)
   @test outputsize(m, (10,); padbatch=true) == (5, 1)
+  @test outputsize(m, (10,)) == (5,)
+  @test outputsize(m, (10, 6, 7)) == (5, 6, 7)
 
   m = Chain(Dense(10, 8, σ), Dense(8, 5), Dense(5, 2))
   @test outputsize(m, (10,); padbatch=true) == (2, 1)
@@ -39,6 +41,19 @@
 
   m = Parallel((mx, x) -> cat(mx, x; dims = 3), Conv((3, 3), 3 => 16; pad = 1), identity)
   @test outputsize(m, (10, 10, 3, 1)) == (10, 10, 19, 1)
+end
+
+@testset "embeddings" begin
+  # Here outputsize expects indices, not one-hot representation:
+  m = Embedding(3 => 4)
+  @test outputsize(m, (3, 7)) == (4, 3, 7) == size(m(rand(1:3, 3, 7)))
+  @test outputsize(m, (5, 6, 7)) == (4, 5, 6, 7) == size(m(rand(1:3, 5, 6, 7)))
+
+  m = Chain(x -> Flux.onehotbatch(x, 1:5), Embedding(5 => 7))
+  @test size(m([3,4])) == (7, 2)
+  @test outputsize(m, (2,)) == (7, 2)
+  # This works because Flux.onehotbatch([nil, nil], 1:5) makes a 5×2 OneHotMatrix
+  # But e.g. Flux.onehotbatch([nil, nil], 'a':'e') will not work.
 end
 
 @testset "multiple inputs" begin

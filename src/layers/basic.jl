@@ -655,13 +655,14 @@ or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
 
 For indices `x`, the result is of size `(out, size(x)...)`, allowing several batch dimensions.
 For one-hot `ohx`, the result is of size `(out, size(ohx)[2:end]...)`.
+Note that [`outputsize`](@ref Flux.outputsize) expects `size(x)`, the indices not the one-hot array.
 
 # Examples
 ```jldoctest
 julia> emb = Embedding(26 => 4, init=Flux.identity_init(gain=22))
 Embedding(26 => 4)  # 104 parameters
 
-julia> emb(2)  # one column of e.weight (here not random!)
+julia> emb(2)  # one column of emb.weight (here not random!)
 4-element Vector{Float32}:
   0.0
  22.0
@@ -680,6 +681,9 @@ true
 
 julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
 (4, 10, 1, 12)
+
+julia> Flux.outputsize(emb, (10, 1, 12))  # outputsize wants indices, not OneHotArray
+(4, 10, 1, 12)
 ```
 """
 struct Embedding{W<:AbstractMatrix}
@@ -691,8 +695,11 @@ end
 Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
 
 (m::Embedding)(x::Integer) = m.weight[:, x]
-(m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
-(m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
+(m::Embedding)(x::AbstractVector{<:Integer}) = NNlib.gather(m.weight, x)
+(m::Embedding)(x::AbstractArray{<:Integer}) = reshape(m(vec(x)), :, size(x)...)
+
+(m::Embedding)(x::Nil) = similar(m.weight, Nil, size(m.weight, 1))
+(m::Embedding)(x::AbstractArray{Nil}) = similar(m.weight, Nil, size(m.weight, 1), size(x)...)
 
 (m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
 (m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix

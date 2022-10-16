@@ -87,6 +87,12 @@ DimensionMismatch("Input channels must match! (7 vs. 3)")
 julia> outputsize([Dense(10 => 4), Dense(4 => 2)], (10, 1)) # Vector of layers becomes a Chain
 (2, 1)
 ```
+
+Limitations:
+* `Embedding` accepts either integers or one-hot arrays, and `ohx = onehotbatch(x, ...)`
+  has one more dimension than `x`. Here `outputsize` uses `size(x)`.
+* At present `outputsize` does not work with recurrent layers,
+  `outputsize(RNN(2 => 3), (2, 1))` gives an error. This is a bug.
 """
 function outputsize(m, inputsizes::Tuple...; padbatch=false)
   x = nil_input(padbatch, inputsizes...)
