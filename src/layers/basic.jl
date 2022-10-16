@@ -698,9 +698,6 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 (m::Embedding)(x::AbstractVector{<:Integer}) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray{<:Integer}) = reshape(m(vec(x)), :, size(x)...)
 
-(m::Embedding)(x::Nil) = similar(m.weight, Nil, size(m.weight, 1))
-(m::Embedding)(x::AbstractArray{Nil}) = similar(m.weight, Nil, size(m.weight, 1), size(x)...)
-
 (m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
 (m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
 (m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)

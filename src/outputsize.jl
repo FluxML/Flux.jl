@@ -163,6 +163,9 @@ end
 
 ## fixes for layers that don't work out of the box
 
+(m::Embedding)(x::Nil) = similar(m.weight, Nil, size(m.weight, 1))
+(m::Embedding)(x::AbstractArray{Nil}) = similar(m.weight, Nil, size(m.weight, 1), size(x)...)
+
 for (fn, Dims) in ((:conv, DenseConvDims),)
   @eval begin
     function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
