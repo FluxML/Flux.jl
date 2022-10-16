@@ -174,11 +174,19 @@ end
   
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
   @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
-  
+
+  @test_broken begin  # outputsize fails on Embedding
+    m = @autosize (2, 3, 4, 5) Embedding(_ => 10)  # goes by first dim, not 2nd-last
+    @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
+  end
+
   m = @autosize (9,) Dense(_ => div(_,2))
   @test randn(9) |> m |> size == (4,)
 
   m = @autosize (3,) Chain(one = Dense(_ => 4), two = softmax)  # needs kw
+  @test randn(3) |> m |> size == (4,)
+  
+  m = @autosize (3,) Chain(; one = Dense(_ => 4), two = softmax)  # needs parameters
   @test randn(3) |> m |> size == (4,)
 
   m = @autosize (3, 45) Maxout(() -> Dense(_ => 6, tanh), 2)    # needs ->, block
@@ -222,6 +230,10 @@ end
          Dense(_ => 10),
       )
   @test randn(Float32, img..., 1, 32) |> m |> size == (10, 32)
+  
+  # https://github.com/FluxML/Flux.jl/issues/2086
+  m = @autosize (3, 1) Chain(; c = Dense(_ => 2, sigmoid), b = BatchNorm(_, affine=false))
+  @test randn(Float32, 3, 32) |> m |> size == (2, 32)
 end
 
 @testset "LazyLayer" begin
