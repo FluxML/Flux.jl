@@ -87,6 +87,18 @@ end
   Flux.train!(loss, Flux.params(r), (r,), Descent())
 end
 
+@testset "Stop on NaN" begin
+  m = Dense(1 => 1)
+  m.weight .= 0
+  CNT = 0
+  @test_throws DomainError Flux.train!(Flux.params(m), 1:100, Descent(0.1)) do i
+    CNT += 1
+    (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
+  end
+  @test CNT == 51  # stopped early
+  @test m.weight[1] ≈ -5  # did not corrupt weights
+end
+
 @testset "ExpDecay" begin
 
   @testset "Sanity Check" begin
