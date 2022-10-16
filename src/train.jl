@@ -90,8 +90,6 @@ The built-in loss functions accept 3 arguments, allowing for instance `train!(Fl
 
 Callback functions are not supported. But see 3-argument `train!(loss, model, opt)` for an
 easy way to construct more complicated training loops.
-
-To change the package used to calculate gradients, use [`Flux.@train_autodiff`](@ref).
 """
 function train!(loss, model, data, opt)
   losses = Float32[]
@@ -144,8 +142,6 @@ for (i, d) in enumerate(data)
 end
 ```
 
-To change the package used to calculate gradients, use [`Flux.@train_autodiff`](@ref).
-
 !!! note
     This method has no implicit `Params` analog in Flux ≤ 0.13.
 """
@@ -177,57 +173,5 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
 end
 
 explicit_withgradient(f, args...) = Zygote.withgradient(f, args...)  # can overload this to use e.g. Yota / Diffractor
-
-"""
-    Flux.@train_autodiff Tracker
-    Flux.@train_autodiff Zygote
-    Flux.@train_autodiff Yota
-    Flux.@train_autodiff Diffractor
-
-This macro allows the use of `train!` with various automatic differentiation (AD) packages,
-instead of the default Zygote.jl.
-
-You should load AD package, and then call this macro with the chosen name.
-The macro overwrites a method withing Flux, thus is a global setting, lasting until you re-start Julia.
-
-Only works with [Yota.jl](https://github.com/dfdx/Yota.jl),
-[Tracker.jl](https://github.com/FluxML/Tracker.jl) (Flux's old AD),
-[Diffractor.jl](https://github.com/JuliaDiff/Diffractor.jl) (which is not yet registered),
-and with the default [Zygote.jl](https://github.com/FluxML/Zygote.jl).
-
-!!! note
-    This is mechanism is experimental! And there are known bugs, in particular Tracker will not automatically switch to training mode for `Dropout` etc.
-"""
-macro train_autodiff(pkg)
-  if pkg == :Diffractor
-    return quote
-      Diffractor.gradient(sin, 0.0)[1] ≈ 1.0  # ensures an error if not loaded
-      function Flux.Train.explicit_withgradient(f, args...)
-        y, back = Diffractor.∂⃖¹(f, args...)
-        dy1 = Flux.Zygote.sensitivity(y)  # Zygote is loaded, and this gives nice errors
-        return (; value = y, gradient = Base.tail(back(dy1)))
-      end
-    end |> esc
-  elseif pkg == :Yota
-    return quote
-      Yota.grad(sin, 0.0) # [2][1] ≈ 1.0
-      function Flux.Train.explicit_withgradient(f, args...)
-        value, (_, gradient...) = Yota.grad(f, args...)
-        return (; value, gradient)
-      end
-    end |> esc
-  elseif pkg == :Tracker
-    return quote
-      Tracker.withgradient(sum, [1.0]).val == 1.0  # ensures an error if too-old version
-      Flux.Train.explicit_withgradient(f, args...) = Tracker.withgradient(f, args...)
-    end |> esc
-  elseif pkg == :Zygote
-    return quote
-      Flux.Train.explicit_withgradient(f, args...) = Flux.Zygote.withgradient(f, args...)
-    end |> esc
-  else
-    throw("@train_autodiff expects one of Tracker, Zygote, Yota, or Diffractor. No other arguments are understood.")
-  end
-end
 
 end # module
