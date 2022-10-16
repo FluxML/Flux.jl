@@ -279,6 +279,7 @@ is needed to make `@autosize (2,3,4) Dense(_ => 5)` return
 """
 autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
 autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
+autosizefor(::Type{<:Embedding}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
 
 _replaceunderscore(e, s) = e === :_ ? s : e

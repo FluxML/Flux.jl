@@ -174,7 +174,12 @@ end
   
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
   @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
-  
+
+  @test_broken begin  # outputsize fails on Embedding
+    m = @autosize (2, 3, 4, 5) Embedding(_ => 10)  # goes by first dim, not 2nd-last
+    @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
+  end
+
   m = @autosize (9,) Dense(_ => div(_,2))
   @test randn(9) |> m |> size == (4,)
 
