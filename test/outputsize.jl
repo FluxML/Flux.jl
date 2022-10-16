@@ -190,11 +190,6 @@ end
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
   @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
 
-  @test_broken begin  # outputsize fails on Embedding
-    m = @autosize (2, 3, 4, 5) Embedding(_ => 10)  # goes by first dim, not 2nd-last
-    @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
-  end
-
   m = @autosize (9,) Dense(_ => div(_,2))
   @test randn(9) |> m |> size == (4,)
 
@@ -249,6 +244,11 @@ end
   # https://github.com/FluxML/Flux.jl/issues/2086
   m = @autosize (3, 1) Chain(; c = Dense(_ => 2, sigmoid), b = BatchNorm(_, affine=false))
   @test randn(Float32, 3, 32) |> m |> size == (2, 32)
+
+  # Embedding takes a vocab size, not an array size
+  @test_throws ErrorException @autosize (2, 3) Embedding(_ => 10)
+  m = @autosize (3,) Chain(Embedding(26 => 10), Dense(_, 4))
+  @test rand(1:26, 3) |> m |> size == (4, 3)
 end
 
 @testset "LazyLayer" begin
