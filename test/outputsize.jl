@@ -180,6 +180,9 @@ end
 
   m = @autosize (3,) Chain(one = Dense(_ => 4), two = softmax)  # needs kw
   @test randn(3) |> m |> size == (4,)
+  
+  m = @autosize (3,) Chain(; one = Dense(_ => 4), two = softmax)  # needs parameters
+  @test randn(3) |> m |> size == (4,)
 
   m = @autosize (3, 45) Maxout(() -> Dense(_ => 6, tanh), 2)    # needs ->, block
   @test randn(3, 45) |> m |> size == (6, 45)
@@ -222,6 +225,10 @@ end
          Dense(_ => 10),
       )
   @test randn(Float32, img..., 1, 32) |> m |> size == (10, 32)
+  
+  # https://github.com/FluxML/Flux.jl/issues/2086
+  m = @autosize (3, 1) Chain(; c = Dense(_ => 2, sigmoid), b = BatchNorm(_, affine=false))
+  @test randn(Float32, 3, 32) |> m |> size == (2, 32)
 end
 
 @testset "LazyLayer" begin

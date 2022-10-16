@@ -248,13 +248,13 @@ function _makelazy(ex::Expr)
   n == 0 && return ex
   n == 1 && error("@autosize doesn't expect an underscore here: $ex")
   n == 2 && return :($LazyLayer($(string(ex)), $(_makefun(ex)), nothing))
-  n > 2 && return Expr(ex.head, ex.args[1], map(_makelazy, ex.args[2:end])...)
+  n > 2 && return Expr(ex.head, map(_makelazy, ex.args)...)
 end
 _makelazy(x) = x
 
 function _underscoredepth(ex::Expr)
   # Meta.isexpr(ex, :tuple) && :_ in ex.args && return 10
-  ex.head in (:call, :kw, :(->), :block) || return 0
+  ex.head in (:call, :kw, :(->), :block, :parameters)  || return 0
   ex.args[1] === :(=>) && ex.args[2] === :_ && return 1
   m = maximum(_underscoredepth, ex.args)
   m == 0 ? 0 : m+1
