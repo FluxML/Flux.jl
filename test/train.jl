@@ -22,22 +22,6 @@ using Random
     @test loss(model, rand(10, 10)) < 0.01
   end
 
-  # Test 3-arg `Flux.train!` method:
-  @testset for rule in [Descent(0.1), Adam(), AdamW()]
-
-    loss(m) = let x = rand(10)
-      Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-    end
-    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
-    @test loss(model) > 1
-
-    opt = Flux.setup(rule, model)
-    for i in 1:10^5
-      Flux.train!(loss, model, opt)
-    end
-    @test loss(model) < 0.01
-  end
-
   # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
   @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
     loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)

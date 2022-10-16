@@ -89,22 +89,14 @@ Base.@deprecate_binding ADADelta AdaDelta
   # Valid methods in Train, new explict style, are:
   train!(loss, model, data, opt)
   train!(loss, model, data, opt::Optimisers.AbstractRule)
-  # ... and 3-arg:
-  train!(loss, model, opt)
-  train!(loss, model, opt::Optimisers.AbstractRule)
   # Provide friendly errors for what happens if you mix these up:
 =#
 import .Optimise: train!
 train!(loss, ps::Params, data, opt) = error("can't mix implict Params with explict state")
-train!(loss, ps::Params, opt) = error("can't mix implict Params with explict state")
 
 train!(loss, ps::Params, data, opt::Optimisers.AbstractRule) = error("can't mix implict Params with explict rule")
-train!(loss, ps::Params, opt::Optimisers.AbstractRule) = error("can't mix implict Params with explict rule")
 
 train!(loss, model, data, opt::Optimise.AbstractOptimiser) = train!(loss, model, data, _old_to_new(opt))
-train!(loss, model, opt::Optimise.AbstractOptimiser) = train!(loss, model, _old_to_new(opt))
-
-train!(loss, ps::Params, opt::Optimise.AbstractOptimiser; cb=0) = error("3-arg train does not exist for implicit mode")
 
 # train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
 #   """On Flux 0.14, `train!` no longer accepts implicit `Zygote.Params`.

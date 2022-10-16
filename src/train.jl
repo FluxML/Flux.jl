@@ -47,9 +47,6 @@ function setup(rule::Optimisers.AbstractRule, model)
     state
 end
 
-# opt = Flux.setup(Adam(), model); train!(model, opt) do m ... 
-setup(model, rule::Optimisers.AbstractRule) = setup(rule, model)
-
 """
     train!(loss, model, data, opt)
 
@@ -112,55 +109,9 @@ function train!(loss, model, data, opt)
   return losses  # Not entirely sure returning losses is a good idea
 end
 
-"""
-    train!(loss, model, opt)
-    
-Uses a `loss` function improve the `model`'s parameters.
-
-While the 4-argument method of `train!` iterates over a dataset,
-this 3-argument method is for a single datapoint, and calls `gradient` just once.
-It expects a function `loss` which takes just one argument, the model.
-For example:
-```
-opt = Flux.setup(Adam(), model)   # explicit setup
-train!(model, opt) do m           # the model is passed to the function as `m`
-    Flux.crossentropy(m(x1), y1)  # but the data point `(x1, y1)` is closed over.
-end
-```
-This calls `Zygote.withgradient(m -> Flux.crossentropy(m(x1), y1), model)`.
-(The `do` block is another syntax for this anonymous function.)
-Then it updates the parameters contained within `model` according to `opt`.
-Finally it returns the value of the loss function.
-
-To iterate over a dataset, writing a loop allows more control than
-calling 4-argument `train!`. For example, this adds printing and an early stop:
-```
-data = Flux.DataLoader((Xtrain, Ytrain), batchsize=32)
-opt = Flux.setup(Adam(), model)
-for (i, d) in enumerate(data)
-    x, y = d
-    ell = Flux.train!(m -> Flux.crossentropy(m(x), y), model, opt)
-    i%10==0 && println("on step \$i, the loss was \$ell")  # prints every 10th step
-    ell<0.1 && break                                     # stops training
-end
-```
-
-!!! note
-    This method has no implicit `Params` analog in Flux ≤ 0.13.
-"""
-function train!(loss, model, opt)
-  l, (g, _...) = explicit_withgradient(loss, model)
-  isfinite(l) || return l
-  _, model = Optimisers.update!(opt, model, g)
-  return l
-end
-
-# These methods let you use Optimisers.Descent() without setup, when there is no state
+# This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule)
   train!(loss, model, data, _rule_to_state(model, rule))
-end
-function train!(loss, model, rule::Optimisers.AbstractRule)
-  train!(loss, model, _rule_to_state(model, rule))
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
