@@ -8,7 +8,7 @@ import ..Flux.Optimise: train!, update!  # during 0.13, we add methods to the ol
 
 export setup, @train_autodiff
 
-using ProgressLogging: @progress, @withprogress, @logprogress  # TODO add progress logging again
+using ProgressLogging: @progress, @withprogress, @logprogress
 using Zygote: Zygote, Params
 
 """
@@ -94,8 +94,6 @@ Note that the built-in loss functions accept 3 arguments, allowing for instance
 Note that callback functions are not supported. But arbitrary code can be inserted into the loop.
 """
 function train!(loss, model, data, opt)
-  Base.issingletontype(typeof(loss)) || error("""train! with explicit parameter expects a pure loss function.
-                                                 It must not close over the model, like loss(x,y) = mse(model(x), y). """)
   losses = Float32[]
   @withprogress for (i,d) in enumerate(data)
     d isa Tuple || error("""train! expects as data an iterator producing tuples, but got $(typeof(d)).
