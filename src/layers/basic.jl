@@ -644,35 +644,45 @@ function Base.show(io::IO, m::PairwiseFusion)
 end
 
 """
-    Embedding(in => out; init=randn)
+    Embedding(in => out; init=randn32)
 
 A lookup table that stores embeddings of dimension `out` 
-for a vocabulary of size `in`.
+for a vocabulary of size `in`, as a trainable matrix.
 
 This layer is often used to store word embeddings and retrieve them using indices. 
-The input to the layer can be either a vector of indexes
-or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch). 
+The input to the layer can be a vocabulary index in `1:in`, an array of indices,
+or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
+
+For indices `x`, the result is of size `(out, size(x)...)`, allowing several batch dimensions.
+For one-hot `ohx`, the result is of size `(out, size(ohx)[2:end]...)`.
 
 # Examples
 ```jldoctest
-julia> vocab_size, embed_size = 1000, 4;
+julia> emb = Embedding(26 => 4, init=Flux.identity_init(gain=22))
+Embedding(26 => 4)  # 104 parameters
 
-julia> model = Flux.Embedding(vocab_size => embed_size)
-Embedding(1000 => 4)  # 4_000 parameters
+julia> emb(2)  # one column of e.weight (here not random!)
+4-element Vector{Float32}:
+  0.0
+ 22.0
+  0.0
+  0.0
 
-julia> vocab_idxs = [1, 722, 53, 220, 3];
+julia> emb([3, 1, 20, 14, 4, 15, 7])  # vocabulary indices, in 1:26
+4×7 Matrix{Float32}:
+  0.0  22.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0   0.0  0.0  0.0
+ 22.0   0.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0  22.0  0.0  0.0
 
-julia> x = Flux.onehotbatch(vocab_idxs, 1:vocab_size); summary(x)
-"1000×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool"
-
-julia> model(x) |> summary
-"4×5 Matrix{Float32}"
-
-julia> model(vocab_idxs) == model(x)
+julia> ans == emb(Flux.onehotbatch("cat&dog", 'a':'z', 'n'))
 true
+
+julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
+(4, 10, 1, 12)
 ```
 """
-struct Embedding{W}
+struct Embedding{W<:AbstractMatrix}
   weight::W
 end
 
@@ -684,10 +694,9 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
-function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
-  return m(onecold(x))
-end
+(m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
+(m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
+(m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
