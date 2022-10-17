@@ -682,7 +682,7 @@ julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
 (4, 10, 1, 12)
 ```
 """
-struct Embedding{W}
+struct Embedding{W<:AbstractMatrix}
   weight::W
 end
 
