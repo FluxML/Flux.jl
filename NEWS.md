@@ -2,7 +2,7 @@
 
 ## v0.13.7
 * Added [`@autosize` macro](https://github.com/FluxML/Flux.jl/pull/2078)
-* New method of `train!` using Zygote's "explicit" mode, allows changing AD back-end.
+* New method of `train!` using Zygote's "explicit" mode. Part of a move away from "implicit" `Params`.
 
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)
