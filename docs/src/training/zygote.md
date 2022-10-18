@@ -1,6 +1,6 @@
 # Automatic Differentiation using Zygote.jl
 
-Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
+Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref Flux.train!) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
 
 ## Implicit style
 
@@ -21,6 +21,7 @@ The other way of using Zygote, and using most other AD packages, is to explicitl
 Zygote.gradient(f, args...)
 Zygote.withgradient(f, args...)
 Zygote.jacobian(f, args...)
+Zygote.withgradient
 ```
 
 
@@ -37,17 +38,4 @@ To manually supply the gradient for one function, you should define a method of 
 
 ```@docs
 ChainRulesCore.rrule
-```
-
-## Utilities
-
-Zygote provides a user with some friendly utility functions.
-All the utility functions are available in [Zygote's documentation](https://fluxml.ai/Zygote.jl/latest/utils/).
-
-```@docs
-Zygote.hessian
-Zygote.hessian_reverse
-Zygote.diaghessian
-Zygote.withjacobian
-Zygote.withgradient
 ```
