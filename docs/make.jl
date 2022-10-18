@@ -11,9 +11,10 @@ makedocs(
     pages = [
         "Getting Started" => [
             "Welcome" => "index.md",
-            "Quick Start" => "models/quickstart.md",
-            "Fitting a Line" => "models/overview.md",
-            "Gradients and Layers" => "models/basics.md",
+            "Quick Start" => "getting_started/quickstart.md",
+            "Fitting a Line" => "getting_started/overview.md",
+            "Gradients and Layers" => "getting_started/basics.md",
+            "Linear Regression" => "getting_started/linear_regression.md"
         ],
         "Building Models" => [
             "Built-in Layers 📚" => "models/layers.md",

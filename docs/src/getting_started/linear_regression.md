@@ -1,4 +1,4 @@
-# Linear Regression
+# [Linear Regression](@id man-linear-regression)
 
 Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
 
