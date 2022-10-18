@@ -49,17 +49,19 @@ rng_from_array(::CuArray) = CUDA.default_rng()
 @non_differentiable rng_from_array(::Any)
 
 if VERSION >= v"1.7"
-  @doc """
-      default_rng_value()
-
-  Create an instance of the default RNG depending on Julia's version.
-  - Julia version is < 1.7: `Random.GLOBAL_RNG`
-  - Julia version is >= 1.7: `Random.default_rng()`
-  """
   default_rng_value() = Random.default_rng()
 else
   default_rng_value() = Random.GLOBAL_RNG
 end
+
+"""
+    default_rng_value()
+
+Create an instance of the default RNG depending on Julia's version.
+- Julia version is < 1.7: `Random.GLOBAL_RNG`
+- Julia version is >= 1.7: `Random.default_rng()`
+"""
+default_rng_value
 
 """
     glorot_uniform([rng = default_rng_value()], size...; gain = 1) -> Array
