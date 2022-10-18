@@ -273,7 +273,7 @@ Return the binary cross-entropy loss, computed as
 
     agg(@.(-y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)))
 
-Where typically, the prediction `ŷ` is given by the output of a [sigmoid](@ref Activation-Functions) activation.
+Where typically, the prediction `ŷ` is given by the output of a [sigmoid](@ref Activation-Functions-from-NNlib.jl) activation.
 The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
 over `binarycrossentropy` for numerical stability.
 
