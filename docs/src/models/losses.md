@@ -10,21 +10,20 @@ In Flux's convention, the target is the last argumemt:
 loss(ŷ, y)
 ```
 
-All loss functions have a method which takes the model as the first argument, and calculates the prediction `ŷ = model(x)`.
+All loss functions in Flux have a method which takes the model as the first argument, and calculates the prediction `ŷ = model(x)`.
 This is convenient for [`train!`](@ref Flux.train)`(loss, model, [(x,y), (x2,y2), ...], opt)`:
 
 ```julia
 loss(model, x, y) = loss(model(x), y)
 ```
 
-Most loss functions in Flux have an optional argument `agg`, denoting the type of aggregation performed over the
-batch:
+Most loss functions in Flux have an optional keyword argument `agg`, which is the aggregation function used over the batch:
 
 ```julia
-loss(ŷ, y)                         # defaults to `mean`
-loss(ŷ, y, agg=sum)                # use `sum` instead
-loss(ŷ, y, agg=x->mean(w .* x))    # weighted mean
-loss(ŷ, y, agg=x->sum(x, dims=2))  # partial reduction, returns an array
+loss(ŷ, y)                           # defaults to `Statistics.mean`
+loss(ŷ, y; agg = sum)                # use `sum` instead
+loss(ŷ, y; agg = x->mean(w .* x))    # weighted mean
+loss(ŷ, y; agg = x->sum(x, dims=2))  # partial reduction, returns an array
 ```
 
 ### Function listing
