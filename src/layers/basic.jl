@@ -9,7 +9,7 @@ and if names are given, `m[:name] == m[1]` etc.
 # Examples
 
 ```jldoctest
-julia> m = Chain(x -> x^2, x -> x+1);
+julia> m = Chain(x -> x^2, x -> x + 1);
 
 julia> m(5) == 26
 true
@@ -21,7 +21,7 @@ julia> x = rand(10, 32);
 julia> m(x) == m[2](m[1](x))
 true
 
-julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10 => 5, tanh)), 
+julia> m2 = Chain(enc = Chain(Flux.flatten, Dense(10 => 5, tanh)),
                   dec = Dense(5 => 2));
 
 julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
@@ -32,51 +32,57 @@ For large models, there is a special type-unstable path which can reduce compila
 times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
 This feature is somewhat experimental, beware!
 """
-struct Chain{T<:Union{Tuple, NamedTuple, AbstractVector}}
-  layers::T
+struct Chain{T <: Union{Tuple, NamedTuple, AbstractVector}}
+    layers::T
 end
 
 Chain(xs...) = Chain(xs)
 function Chain(; kw...)
-  :layers in keys(kw) && throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
-  isempty(kw) && return Chain(())
-  Chain(values(kw))
+    :layers in keys(kw) &&
+        throw(ArgumentError("a Chain cannot have a named layer called `layers`"))
+    isempty(kw) && return Chain(())
+    return Chain(values(kw))
 end
 
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
-  Base.iterate, Base.lastindex, Base.keys, Base.firstindex
+                      Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
 @functor Chain
 
 (c::Chain)(x) = _applychain(c.layers, x)
 
-@generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
-  symbols = vcat(:x, [gensym() for _ in 1:N])
-  calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
-  Expr(:block, calls...)
+@generated function _applychain(layers::Tuple{Vararg{<:Any, N}}, x) where {N}
+    symbols = vcat(:x, [gensym() for _ in 1:N])
+    calls = [:($(symbols[i + 1]) = layers[$i]($(symbols[i]))) for i in 1:N]
+    return Expr(:block, calls...)
 end
 
 _applychain(layers::NamedTuple, x) = _applychain(Tuple(layers), x)
 
 function _applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
-  for f in layers
-    x = f(x)
-  end
-  x
+    for f in layers
+        x = f(x)
+    end
+    return x
 end
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
-Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
-  Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
+function Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray)
+    return Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
+end
 function Base.show(io::IO, c::Chain)
-  print(io, "Chain(")
-  _show_layers(io, c.layers)
-  print(io, ")")
+    print(io, "Chain(")
+    _show_layers(io, c.layers)
+    return print(io, ")")
 end
 
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
-_show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
-_show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
+function _show_layers(io, layers::NamedTuple)
+    return join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+end
+function _show_layers(io, layers::AbstractVector)
+    return (print(io, "["); join(io, layers, ", "); print(io, "]"))
+end
 
 # This is a temporary and naive implementation
 # it might be replaced in the future for better performance
@@ -93,7 +99,7 @@ Like calling a `Chain`, but saves the result of each layer as an output.
 ```jldoctest
 julia> using Flux: activations
 
-julia> c = Chain(x -> x + 1, x -> x * 2, x -> x ^ 3);
+julia> c = Chain(x -> x + 1, x -> x * 2, x -> x^3);
 
 julia> activations(c, 1)
 (2, 4, 64)
@@ -103,11 +109,10 @@ activations(c::Chain, input) = _extraChain(Tuple(c.layers), input)
 
 # Calculates the forward results of each layer provided in a `Tuple` with `x` as model input.
 function _extraChain(fs::Tuple, x)
-  res = first(fs)(x)
-  return (res, _extraChain(Base.tail(fs), res)...)
+    res = first(fs)(x)
+    return (res, _extraChain(Base.tail(fs), res)...)
 end
 _extraChain(::Tuple{}, x) = ()
-
 
 """
     Dense(in => out, σ=identity; bias=true, init=glorot_uniform)
@@ -128,6 +133,7 @@ given to keyword `init`, with default [`glorot_uniform`](@ref Flux.glorot_unifor
 The weight matrix and/or the bias vector (of length `out`) may also be provided explicitly.
 
 # Examples
+
 ```jldoctest
 julia> d = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
@@ -150,36 +156,35 @@ julia> Flux.params(d1)  # no trainable bias
 Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
 ```
 """
-struct Dense{F, M<:AbstractMatrix, B}
-  weight::M
-  bias::B
-  σ::F
-  function Dense(W::M, bias = true, σ::F = identity) where {M<:AbstractMatrix, F}
-    b = create_bias(W, bias, size(W,1))
-    new{F,M,typeof(b)}(W, b, σ)
-  end
+struct Dense{F, M <: AbstractMatrix, B}
+    weight::M
+    bias::B
+    σ::F
+    function Dense(W::M, bias = true, σ::F = identity) where {M <: AbstractMatrix, F}
+        b = create_bias(W, bias, size(W, 1))
+        return new{F, M, typeof(b)}(W, b, σ)
+    end
 end
 
 function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
                init = glorot_uniform, bias = true)
-  Dense(init(out, in), bias, σ)
+    return Dense(init(out, in), bias, σ)
 end
 
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
-  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(a.weight * x .+ a.bias)
+    σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
+    return σ.(a.weight * x .+ a.bias)
 end
 
-(a::Dense)(x::AbstractArray) = 
-  reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+(a::Dense)(x::AbstractArray) = reshape(a(reshape(x, size(x, 1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
-  print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
-  l.σ == identity || print(io, ", ", l.σ)
-  l.bias == false && print(io, "; bias=false")
-  print(io, ")")
+    print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
+    l.σ == identity || print(io, ", ", l.σ)
+    l.bias == false && print(io, "; bias=false")
+    return print(io, ")")
 end
 
 """
@@ -191,14 +196,15 @@ Create an element-wise layer, whose forward pass is given by:
     y = σ.(scale .* x .+ bias)
 
 This uses `.*` instead of matrix multiplication `*` of [`Dense`](@ref).
-    
+
 The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
-with `init=ones32` by default. You may specify the function `init`, 
+with `init=ones32` by default. You may specify the function `init`,
 turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
 
 Used by [`LayerNorm`](@ref) with `affine=true`.
 
 # Examples
+
 ```jldoctest
 julia> a = Flux.Scale(2)
 Scale(2)            # 4 parameters
@@ -223,31 +229,37 @@ julia> Flux.params(b)
 Params([[1 2 3 4]])
 ```
 """
-struct Scale{F, A<:AbstractArray, B}
-  scale::A
-  bias::B
-  σ::F
-  function Scale(scale::A, bias::B = true, σ::F = identity) where {A<:AbstractArray, B<:Union{Bool, AbstractArray}, F}
-    b = create_bias(scale, bias, size(scale)...)
-    new{F, A, typeof(b)}(scale, b, σ)
-  end
+struct Scale{F, A <: AbstractArray, B}
+    scale::A
+    bias::B
+    σ::F
+    function Scale(scale::A, bias::B = true,
+                   σ::F = identity) where {A <: AbstractArray,
+                                           B <: Union{Bool, AbstractArray}, F}
+        b = create_bias(scale, bias, size(scale)...)
+        return new{F, A, typeof(b)}(scale, b, σ)
+    end
 end
 
-Scale(s1::Integer, s23::Integer...; bias = true, init = ones32, _act = identity) = Scale(init(s1, s23...), bias, _act)
-Scale(size_act...; bias = true, init = ones32) = Scale(size_act[1:end-1]...; bias, init, _act = size_act[end])
+function Scale(s1::Integer, s23::Integer...; bias = true, init = ones32, _act = identity)
+    return Scale(init(s1, s23...), bias, _act)
+end
+function Scale(size_act...; bias = true, init = ones32)
+    return Scale(size_act[1:(end - 1)]...; bias, init, _act = size_act[end])
+end
 
 @functor Scale
 
 function (a::Scale)(x::AbstractArray)
-  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  σ.(a.scale .* x .+ a.bias)
+    σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
+    return σ.(a.scale .* x .+ a.bias)
 end
 
 function Base.show(io::IO, l::Scale)
-  print(io, "Scale(", join(size(l.scale), ", "))
-  l.σ == identity || print(io, ", ", l.σ)
-  l.bias == false && print(io, "; bias=false")
-  print(io, ")")
+    print(io, "Scale(", join(size(l.scale), ", "))
+    l.σ == identity || print(io, ", ", l.σ)
+    l.bias == false && print(io, "; bias=false")
+    return print(io, ")")
 end
 
 """
@@ -261,12 +273,13 @@ Instead of defining layers individually, you can provide a zero-argument functio
 which constructs them, and the number to construct.
 
 Maxout over linear dense layers satisfies the univeral approximation theorem.
-See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks" 
+See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks"
 [https://arxiv.org/abs/1302.4389](https://arxiv.org/abs/1302.4389).
 
 See also [`Parallel`](@ref) to reduce with other operators.
 
 # Examples
+
 ```jldoctest
 julia> m = Maxout(x -> abs2.(x), x -> x .* 3);
 
@@ -285,8 +298,8 @@ julia> Flux.outputsize(m3, (5, 11))
 (7, 11)
 ```
 """
-struct Maxout{T<:Tuple}
-  layers::T
+struct Maxout{T <: Tuple}
+    layers::T
 end
 Maxout(layers...) = Maxout(layers)
 Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
@@ -294,17 +307,16 @@ Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
 @functor Maxout
 
 function (mo::Maxout)(input::AbstractArray)
-  # Perhaps surprisingly, pairwise max broadcast is often faster,
-  # even with Zygote. See #698 and #1794
-  mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.layers)
+    # Perhaps surprisingly, pairwise max broadcast is often faster,
+    # even with Zygote. See #698 and #1794
+    return mapreduce(f -> f(input), (acc, out) -> max.(acc, out), mo.layers)
 end
 
 function Base.show(io::IO, mo::Maxout)
-  print(io, "Maxout(")
-  _show_layers(io, mo.layers)
-  print(io, ")")
+    print(io, "Maxout(")
+    _show_layers(io, mo.layers)
+    return print(io, ")")
 end
-
 
 """
     SkipConnection(layer, connection)
@@ -317,15 +329,16 @@ will be propagated through the given `layer` while the second is the unchanged,
 
 The simplest "ResNet"-type connection is just `SkipConnection(layer, +)`.
 Here is a more complicated example:
+
 ```jldoctest
-julia> m = Conv((3,3), 4 => 7, pad=(1,1));
+julia> m = Conv((3, 3), 4 => 7, pad = (1, 1));
 
 julia> x = ones(Float32, 5, 5, 4, 10);
 
 julia> size(m(x)) == (5, 5, 7, 10)
 true
 
-julia> sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims=3));
+julia> sm = SkipConnection(m, (mx, x) -> cat(mx, x, dims = 3));
 
 julia> size(sm(x)) == (5, 5, 11, 10)
 true
@@ -333,19 +346,19 @@ true
 
 See also [`Parallel`](@ref), [`Maxout`](@ref).
 """
-struct SkipConnection{T,F}
-  layers::T
-  connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
+struct SkipConnection{T, F}
+    layers::T
+    connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
 @functor SkipConnection
 
 function (skip::SkipConnection)(input)
-  skip.connection(skip.layers(input), input)
+    return skip.connection(skip.layers(input), input)
 end
 
 function Base.show(io::IO, b::SkipConnection)
-  print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
+    return print(io, "SkipConnection(", b.layers, ", ", b.connection, ")")
 end
 
 """
@@ -373,6 +386,7 @@ By default the bias vector is `zeros(Float32, out)`, option `bias=false` will sw
 trainable bias. Either of these may be provided explicitly.
 
 # Examples
+
 ```jldoctest
 julia> x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
 
@@ -382,71 +396,76 @@ Bilinear(5 => 7)    # 182 parameters
 julia> B(x) |> size  # interactions based on one input
 (7, 32)
 
-julia> B(x,y) == B((x,y))  # two inputs, may be given as a tuple
+julia> B(x, y) == B((x, y))  # two inputs, may be given as a tuple
 true
 
-julia> sc = SkipConnection(
-                Chain(Dense(5 => 20, tanh), Dense(20 => 9, tanh)),
-                Flux.Bilinear((9, 5) => 3, bias=false),
-            );  # used as the recombinator, with skip as the second input
+julia> sc = SkipConnection(Chain(Dense(5 => 20, tanh), Dense(20 => 9, tanh)),
+                           Flux.Bilinear((9, 5) => 3, bias = false));  # used as the recombinator, with skip as the second input
 
 julia> sc(x) |> size
 (3, 32)
 
-julia> Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
+julia> Flux.Bilinear(rand(4, 8, 16), false, tanh)  # first dim of weight is the output
 Bilinear((8, 16) => 4, tanh; bias=false)  # 512 parameters
 ```
 """
-struct Bilinear{F,A,B}
-  weight::A
-  bias::B
-  σ::F
-  function Bilinear(W::A, bias = true, σ::F = identity) where {A<:AbstractArray, F}
-    ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
-    b = create_bias(W, bias, size(W,1))
-    new{F,A,typeof(b)}(W, b, σ)
-  end
+struct Bilinear{F, A, B}
+    weight::A
+    bias::B
+    σ::F
+    function Bilinear(W::A, bias = true, σ::F = identity) where {A <: AbstractArray, F}
+        ndims(A) == 3 || throw(ArgumentError("expected a 3-array of weights"))
+        b = create_bias(W, bias, size(W, 1))
+        return new{F, A, typeof(b)}(W, b, σ)
+    end
 end
 
 @functor Bilinear
 
 function Bilinear(((in1, in2), out)::Pair{<:Tuple, <:Integer}, σ = identity;
                   bias = true, init = glorot_uniform)
-  Bilinear(init(out, in1, in2), bias, σ)
+    return Bilinear(init(out, in1, in2), bias, σ)
 end
-Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear((in12, in12) => out, σ; kw...)
+function Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...)
+    return Bilinear((in12, in12) => out, σ; kw...)
+end
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
-  W, b, σ = a.weight, a.bias, a.σ
+    W, b, σ = a.weight, a.bias, a.σ
 
-  d_z, d_x, d_y = size(W)
-  d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
-  size(x,2) == size(y,2) || throw(DimensionMismatch("Data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
+    d_z, d_x, d_y = size(W)
+    d_x == size(x, 1) && d_y == size(y, 1) ||
+        throw(DimensionMismatch("number of rows in data must match W"))
+    size(x, 2) == size(y, 2) ||
+        throw(DimensionMismatch("Data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
 
-  # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
-  Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
+    # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
+    Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
 
-  # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
-  Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
-  Z = reshape(Wyx, (d_z, :))
+    # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
+    Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
+    Z = reshape(Wyx, (d_z, :))
 
-  # @einsum out[o,s] := σ(Z[o,i] + b[o])
-  σ.(Z .+ b)
+    # @einsum out[o,s] := σ(Z[o,i] + b[o])
+    return σ.(Z .+ b)
 end
 
 (a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
-(a::Bilinear)(x::AbstractVector, y::AbstractVector) = vec(a(reshape(x, :,1), reshape(y, :,1)))
+function (a::Bilinear)(x::AbstractVector, y::AbstractVector)
+    return vec(a(reshape(x, :, 1), reshape(y, :, 1)))
+end
 (a::Bilinear)(x::NTuple{2, AbstractArray}) = a(x[1], x[2])
 
 function Base.show(io::IO, l::Bilinear)
-  if size(l.weight, 2) == size(l.weight, 3)
-    print(io, "Bilinear(", size(l.weight, 2), " => ", size(l.weight, 1))
-  else
-    print(io, "Bilinear((", size(l.weight, 2), ", ", size(l.weight, 3), ") => ", size(l.weight, 1))
-  end
-  l.σ == identity || print(io, ", ", l.σ)
-  l.bias === false && print(io, "; bias=false")
-  print(io, ")")
+    if size(l.weight, 2) == size(l.weight, 3)
+        print(io, "Bilinear(", size(l.weight, 2), " => ", size(l.weight, 1))
+    else
+        print(io, "Bilinear((", size(l.weight, 2), ", ", size(l.weight, 3), ") => ",
+              size(l.weight, 1))
+    end
+    l.σ == identity || print(io, ", ", l.σ)
+    l.bias === false && print(io, "; bias=false")
+    return print(io, ")")
 end
 
 """
@@ -492,19 +511,19 @@ julia> model2[:β] == model2[2]
 true
 ```
 """
-struct Parallel{F, T<:Union{Tuple, NamedTuple}}
-  connection::F
-  layers::T
+struct Parallel{F, T <: Union{Tuple, NamedTuple}}
+    connection::F
+    layers::T
 end
 
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
-  layers = NamedTuple(kw)
-  if :layers in keys(layers) || :connection in keys(layers)
-    throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
-  end
-  isempty(layers) && return Parallel(connection, ())
-  Parallel(connection, layers)
+    layers = NamedTuple(kw)
+    if :layers in keys(layers) || :connection in keys(layers)
+        throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
+    end
+    isempty(layers) && return Parallel(connection, ())
+    return Parallel(connection, layers)
 end
 
 @functor Parallel
@@ -513,30 +532,31 @@ end
 (m::Parallel)(xs::Tuple) = m(xs...)
 
 function _parallel_check(layers, xs)
-  nl = length(layers)
-  nx = length(xs) 
-  if (nl != nx)
-    throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
-  end
+    nl = length(layers)
+    nx = length(xs)
+    if (nl != nx)
+        throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+    end
 end
 ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
 
 function (m::Parallel)(xs...)
-  _parallel_check(m.layers, xs)
-  m.connection(map(|>, xs, Tuple(m.layers))...)
+    _parallel_check(m.layers, xs)
+    return m.connection(map(|>, xs, Tuple(m.layers))...)
 end
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
-Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector) =
-  Parallel(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+function Base.getindex(m::Parallel{<:Any, <:NamedTuple}, i::AbstractVector)
+    return Parallel(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+end
 
 Base.keys(m::Parallel) = keys(getfield(m, :layers))
 
 function Base.show(io::IO, m::Parallel)
-  print(io, "Parallel(", m.connection, ", ")
-  _show_layers(io, m.layers)
-  print(io, ")")
+    print(io, "Parallel(", m.connection, ", ")
+    _show_layers(io, m.layers)
+    return print(io, ")")
 end
 
 """
@@ -544,37 +564,40 @@ end
 
 ## Arguments
 
-- `connection`: A function taking 2 inputs and combining them into a single output 
-- `layers`: The layers whose outputs are combined
+  - `connection`: A function taking 2 inputs and combining them into a single output
+  - `layers`: The layers whose outputs are combined
 
 ## Inputs
 
 This layer behaves differently based on input type:
 
-1. If input `x` is a tuple of length N (or the input is `xs` with N `x`'s), matching the number of `layers`, 
-  then each layer receives a new input `x[i]` combined with the previous output `y[i-1]` using `connection`.
-  Thus `(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
-  may be drawn as:
+ 1. If input `x` is a tuple of length N (or the input is `xs` with N `x`'s), matching the number of `layers`,
+    then each layer receives a new input `x[i]` combined with the previous output `y[i-1]` using `connection`.
+    Thus `(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
+    may be drawn as:
+
 ```
 x1 → layer1 → y1 ↘
                   connection → layer2 → y2 ↘
               x2 ↗                          connection → layer3 → y3
                                         x3 ↗
 ```
+
 ... or written as:
+
 ```julia
 y1 = layer1(x1)
 y2 = layer2(connection(x2, y1))
 y3 = layer3(connection(x3, y2))
 ```
 
-2. With just one input, each layer receives the same `x` combined with the previous output.
-   Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
+ 2. With just one input, each layer receives the same `x` combined with the previous output.
+    Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
 
 ```julia
 y[1] == layers[1](x)
 for i in 2:length(layers)
-    y[i] == connection(x, layers[i](y[i-1]))
+    y[i] == connection(x, layers[i](y[i - 1]))
 end
 ```
 
@@ -582,74 +605,81 @@ end
 
 A tuple of length N with the output of each fusion ((`y1`, `y2`, ..., `yN`) in the example above).
 """
-struct PairwiseFusion{F, T<:Union{Tuple, NamedTuple}}
-  connection::F
-  layers::T
+struct PairwiseFusion{F, T <: Union{Tuple, NamedTuple}}
+    connection::F
+    layers::T
 end
 
 PairwiseFusion(connection, layers...) = PairwiseFusion(connection, layers)
 function PairwiseFusion(connection; kw...)
-  layers = NamedTuple(kw)
-  if :layers in keys(layers) || :connection in keys(layers)
-    throw(ArgumentError("a PairwiseFusion layer cannot have a named sub-layer called `connection` or `layers`"))
-  end
-  isempty(layers) && return PairwiseFusion(connection, ())
-  PairwiseFusion(connection, layers)
+    layers = NamedTuple(kw)
+    if :layers in keys(layers) || :connection in keys(layers)
+        throw(ArgumentError("a PairwiseFusion layer cannot have a named sub-layer called `connection` or `layers`"))
+    end
+    isempty(layers) && return PairwiseFusion(connection, ())
+    return PairwiseFusion(connection, layers)
 end
 
 function _pairwise_check(x, layers, T)
-  lx = length(x)
-  N = length(layers)
-  if T <: Tuple && lx != N
-    throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
-  end
+    lx = length(x)
+    N = length(layers)
+    if T <: Tuple && lx != N
+        throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
+    end
 end
 ChainRulesCore.@non_differentiable _pairwise_check(lx, N, T)
 
 function (m::PairwiseFusion)(x::T) where {T}
-  _pairwise_check(x, m.layers, T)
-  applypairwisefusion(m.layers, m.connection, x)
+    _pairwise_check(x, m.layers, T)
+    return applypairwisefusion(m.layers, m.connection, x)
 end
 (m::PairwiseFusion)(xs...) = m(xs)
 
-@generated function applypairwisefusion(layers::Tuple{Vararg{<:Any,N}}, connection, x::T) where {N, T}
-  y_symbols = [gensym() for _ in 1:(N + 1)]
-  getinput(i) = T <: Tuple ? :(x[$i]) : :x
-  calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
-  for i in 1:N - 1
-    push!(calls, quote
-      $(y_symbols[i]) = layers[$i]($(y_symbols[N + 1]))
-      $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))
-    end)
-  end
-  push!(calls, :($(y_symbols[N]) = layers[$N]($(y_symbols[N + 1]))))
-  push!(calls, :(return tuple($(Tuple(y_symbols[1:N])...))))
-  return Expr(:block, calls...)
+@generated function applypairwisefusion(layers::Tuple{Vararg{<:Any, N}}, connection,
+                                        x::T) where {N, T}
+    y_symbols = [gensym() for _ in 1:(N + 1)]
+    getinput(i) = T <: Tuple ? :(x[$i]) : :x
+    calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
+    for i in 1:(N - 1)
+        push!(calls,
+              quote
+                  $(y_symbols[i]) = layers[$i]($(y_symbols[N + 1]))
+                  $(y_symbols[N + 1]) = connection($(y_symbols[i]), $(getinput(i + 1)))
+              end)
+    end
+    push!(calls, :($(y_symbols[N]) = layers[$N]($(y_symbols[N + 1]))))
+    push!(calls, :(return tuple($(Tuple(y_symbols[1:N])...))))
+    return Expr(:block, calls...)
 end
-applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tuple(layers), connection, x)
+function applypairwisefusion(layers::NamedTuple, connection, x)
+    return applypairwisefusion(Tuple(layers), connection, x)
+end
 
 @functor PairwiseFusion
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
-Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
-Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
-  PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+function Base.getindex(m::PairwiseFusion, i::AbstractVector)
+    return PairwiseFusion(m.connection, m.layers[i])
+end
+function Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector)
+    return PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
+end
 
 Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
 
 function Base.show(io::IO, m::PairwiseFusion)
-  print(io, "PairwiseFusion(", m.connection, ", ")
-  _show_layers(io, m.layers)
-  print(io, ")")
+    print(io, "PairwiseFusion(", m.connection, ", ")
+    _show_layers(io, m.layers)
+    return print(io, ")")
 end
 
 """
     Embedding(in => out; init=randn32)
 
-A lookup table that stores embeddings of dimension `out` 
+A lookup table that stores embeddings of dimension `out`
 for a vocabulary of size `in`, as a trainable matrix.
 
-This layer is often used to store word embeddings and retrieve them using indices. 
+This layer is often used to store word embeddings and retrieve them using indices.
 The input to the layer can be a vocabulary index in `1:in`, an array of indices,
 or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
 
@@ -657,8 +687,9 @@ For indices `x`, the result is of size `(out, size(x)...)`, allowing several bat
 For one-hot `ohx`, the result is of size `(out, size(ohx)[2:end]...)`.
 
 # Examples
+
 ```jldoctest
-julia> emb = Embedding(26 => 4, init=Flux.identity_init(gain=22))
+julia> emb = Embedding(26 => 4, init = Flux.identity_init(gain = 22))
 Embedding(26 => 4)  # 104 parameters
 
 julia> emb(2)  # one column of e.weight (here not random!)
@@ -682,8 +713,8 @@ julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
 (4, 10, 1, 12)
 ```
 """
-struct Embedding{W<:AbstractMatrix}
-  weight::W
+struct Embedding{W <: AbstractMatrix}
+    weight::W
 end
 
 @functor Embedding
@@ -696,8 +727,10 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 
 (m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
 (m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
-(m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+function (m::Embedding)(x::AbstractArray{Bool})
+    return reshape(m(reshape(x, size(x, 1), :)), :, size(x)[2:end]...)
+end
 
 function Base.show(io::IO, m::Embedding)
-  print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
+    return print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end

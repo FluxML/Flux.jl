@@ -11,6 +11,7 @@ Return the loss corresponding to mean absolute error:
     agg(abs.(ŷ .- y))
 
 # Example
+
 ```jldoctest
 julia> y_model = [1.1, 1.9, 3.1];
 
@@ -19,8 +20,8 @@ julia> Flux.mae(y_model, 1:3)
 ```
 """
 function mae(ŷ, y; agg = mean)
-  _check_sizes(ŷ, y)
-  agg(abs.(ŷ .- y))
+    _check_sizes(ŷ, y)
+    return agg(abs.(ŷ .- y))
 end
 
 """
@@ -33,6 +34,7 @@ Return the loss corresponding to mean square error:
 See also: [`mae`](@ref), [`msle`](@ref), [`crossentropy`](@ref).
 
 # Example
+
 ```jldoctest
 julia> y_model = [1.1, 1.9, 3.1];
 
@@ -43,8 +45,8 @@ julia> Flux.mse(y_model, y_true)
 ```
 """
 function mse(ŷ, y; agg = mean)
-  _check_sizes(ŷ, y)
-  agg(abs2.(ŷ .- y))
+    _check_sizes(ŷ, y)
+    return agg(abs2.(ŷ .- y))
 end
 
 """
@@ -58,6 +60,7 @@ The `ϵ` term provides numerical stability.
 Penalizes an under-estimation more than an over-estimatation.
 
 # Example
+
 ```jldoctest
 julia> Flux.msle(Float32[1.1, 2.2, 3.3], 1:3)
 0.009084041f0
@@ -67,8 +70,8 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 ```
 """
 function msle(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
-  _check_sizes(ŷ, y)
-  agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
+    _check_sizes(ŷ, y)
+    return agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^ 2)
 end
 
 """
@@ -82,23 +85,24 @@ given the prediction `ŷ` and true values `y`.
                  |  δ * (|ŷ - y| - 0.5 * δ), otherwise
 
 # Example
+
 ```jldoctest
 julia> ŷ = [1.1, 2.1, 3.1];
 
 julia> Flux.huber_loss(ŷ, 1:3)  # default δ = 1 > |ŷ - y|
 0.005000000000000009
 
-julia> Flux.huber_loss(ŷ, 1:3, δ=0.05)  # changes behaviour as |ŷ - y| > δ
+julia> Flux.huber_loss(ŷ, 1:3, δ = 0.05)  # changes behaviour as |ŷ - y| > δ
 0.003750000000000005
 ```
 """
 function huber_loss(ŷ, y; agg = mean, δ = ofeltype(ŷ, 1))
-   _check_sizes(ŷ, y)
-   abs_error = abs.(ŷ .- y)
-   #TODO: remove dropgrad when Zygote can handle this function with CuArrays
-   temp = Zygote.dropgrad(abs_error .<  δ)
-   x = ofeltype(ŷ, 0.5)
-   agg(((abs_error .^ 2) .* temp) .* x .+ δ * (abs_error .- x * δ) .* (1 .- temp))
+    _check_sizes(ŷ, y)
+    abs_error = abs.(ŷ .- y)
+    #TODO: remove dropgrad when Zygote can handle this function with CuArrays
+    temp = Zygote.dropgrad(abs_error .< δ)
+    x = ofeltype(ŷ, 0.5)
+    return agg(((abs_error .^ 2) .* temp) .* x .+ δ * (abs_error .- x * δ) .* (1 .- temp))
 end
 
 """
@@ -124,6 +128,7 @@ value of α larger the smoothing of `y`.
 of label smoothing to binary distributions encoded in a single number.
 
 # Example
+
 ```jldoctest
 julia> y = Flux.onehotbatch([1, 1, 1, 0, 1, 0], 0:1)
 2×6 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
@@ -135,12 +140,12 @@ julia> y_smoothed = Flux.label_smoothing(y, 0.2f0)
  0.1  0.1  0.1  0.9  0.1  0.9
  0.9  0.9  0.9  0.1  0.9  0.1
 
-julia> y_sim = softmax(y .* log(2f0))
+julia> y_sim = softmax(y .* log(2.0f0))
 2×6 Matrix{Float32}:
  0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
  0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
 
-julia> y_dis = vcat(y_sim[2,:]', y_sim[1,:]')
+julia> y_dis = vcat(y_sim[2, :]', y_sim[1, :]')
 2×6 Matrix{Float32}:
  0.666667  0.666667  0.666667  0.333333  0.666667  0.333333
  0.333333  0.333333  0.333333  0.666667  0.333333  0.666667
@@ -152,14 +157,14 @@ julia> Flux.crossentropy(y_dis, y) > Flux.crossentropy(y_dis, y_smoothed)
 true
 ```
 """
-function label_smoothing(y::Union{AbstractArray,Number}, α::Number; dims::Int = 1)
+function label_smoothing(y::Union{AbstractArray, Number}, α::Number; dims::Int = 1)
     if !(0 < α < 1)
         throw(ArgumentError("α must be between 0 and 1"))
     end
     if dims == 0
-        y_smoothed = y .* (1 - α) .+ α*1//2
+        y_smoothed = y .* (1 - α) .+ α * 1 // 2
     elseif dims == 1
-        y_smoothed = y .* (1 - α) .+ α* 1 // size(y, 1)
+        y_smoothed = y .* (1 - α) .+ α * 1 // size(y, 1)
     else
         throw(ArgumentError("`dims` should be either 0 or 1"))
     end
@@ -189,6 +194,7 @@ computing the loss.
 See also: [`logitcrossentropy`](@ref), [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref).
 
 # Example
+
 ```jldoctest
 julia> y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
 3×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
@@ -196,20 +202,20 @@ julia> y_label = Flux.onehotbatch([0, 1, 2, 1, 0], 0:2)
  ⋅  1  ⋅  1  ⋅
  ⋅  ⋅  1  ⋅  ⋅
 
-julia> y_model = softmax(reshape(-7:7, 3, 5) .* 1f0)
+julia> y_model = softmax(reshape(-7:7, 3, 5) .* 1.0f0)
 3×5 Matrix{Float32}:
  0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
  0.244728   0.244728   0.244728   0.244728   0.244728
  0.665241   0.665241   0.665241   0.665241   0.665241
 
-julia> sum(y_model; dims=1)
+julia> sum(y_model; dims = 1)
 1×5 Matrix{Float32}:
  1.0  1.0  1.0  1.0  1.0
 
 julia> Flux.crossentropy(y_model, y_label)
 1.6076053f0
 
-julia> 5 * ans ≈ Flux.crossentropy(y_model, y_label; agg=sum)
+julia> 5 * ans ≈ Flux.crossentropy(y_model, y_label; agg = sum)
 true
 
 julia> y_smooth = Flux.label_smoothing(y_label, 0.15f0)
@@ -223,8 +229,8 @@ julia> Flux.crossentropy(y_model, y_smooth)
 ```
 """
 function crossentropy(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
-  _check_sizes(ŷ, y)
-  agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
+    _check_sizes(ŷ, y)
+    return agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
 end
 
 """
@@ -241,6 +247,7 @@ and [softmax](@ref Softmax) separately.
 See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref).
 
 # Example
+
 ```jldoctest
 julia> y_label = Flux.onehotbatch(collect("abcabaa"), 'a':'c')
 3×7 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
@@ -262,8 +269,8 @@ julia> Flux.crossentropy(softmax(y_model), y_label)
 ```
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
-  _check_sizes(ŷ, y)
-  agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
+    _check_sizes(ŷ, y)
+    return agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end
 
 """
@@ -283,22 +290,23 @@ computing the loss.
 See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
+
 ```jldoctest
-julia> y_bin = Bool[1,0,1]
+julia> y_bin = Bool[1, 0, 1]
 3-element Vector{Bool}:
  1
  0
  1
 
-julia> y_prob = softmax(reshape(vcat(1:3, 3:5), 2, 3) .* 1f0)
+julia> y_prob = softmax(reshape(vcat(1:3, 3:5), 2, 3) .* 1.0f0)
 2×3 Matrix{Float32}:
  0.268941  0.5  0.268941
  0.731059  0.5  0.731059
 
-julia> Flux.binarycrossentropy(y_prob[2,:], y_bin)
+julia> Flux.binarycrossentropy(y_prob[2, :], y_bin)
 0.43989f0
 
-julia> all(p -> 0 < p < 1, y_prob[2,:])  # else DomainError
+julia> all(p -> 0 < p < 1, y_prob[2, :])  # else DomainError
 true
 
 julia> y_hot = Flux.onehotbatch(y_bin, 0:1)
@@ -311,8 +319,8 @@ julia> Flux.crossentropy(y_prob, y_hot)
 ```
 """
 function binarycrossentropy(ŷ, y; agg = mean, ϵ = epseltype(ŷ))
-  _check_sizes(ŷ, y)
-  agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
+    _check_sizes(ŷ, y)
+    return agg(@.(-xlogy(y, ŷ + ϵ)-xlogy(1 - y, 1 - ŷ + ϵ)))
 end
 
 """
@@ -324,8 +332,9 @@ Mathematically equivalent to
 See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
+
 ```jldoctest
-julia> y_bin = Bool[1,0,1];
+julia> y_bin = Bool[1, 0, 1];
 
 julia> y_model = Float32[2, -1, pi]
 3-element Vector{Float32}:
@@ -341,8 +350,8 @@ julia> Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
 ```
 """
 function logitbinarycrossentropy(ŷ, y; agg = mean)
-  _check_sizes(ŷ, y)
-  agg(@.((1 - y) * ŷ - logσ(ŷ)))
+    _check_sizes(ŷ, y)
+    return agg(@.((1 - y) * ŷ-logσ(ŷ)))
 end
 
 """
@@ -356,6 +365,7 @@ The KL divergence is a measure of how much one probability distribution is diffe
 from the other. It is always non-negative, and zero only when both the distributions are equal.
 
 # Example
+
 ```jldoctest
 julia> p1 = [1 0; 0 1]
 2×2 Matrix{Int64}:
@@ -381,10 +391,10 @@ Inf
 ```
 """
 function kldivergence(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
-  _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y), dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims = dims, agg = agg, ϵ = ϵ)
-  return entropy + cross_entropy
+    _check_sizes(ŷ, y)
+    entropy = agg(sum(xlogx.(y), dims = dims))
+    cross_entropy = crossentropy(ŷ, y; dims = dims, agg = agg, ϵ = ϵ)
+    return entropy + cross_entropy
 end
 
 """
@@ -398,6 +408,7 @@ distribution `y`; calculated as -
 [More information.](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/poisson).
 
 # Example
+
 ```jldoctest
 julia> y_model = [1, 3, 3];  # data should only take integral values
 
@@ -406,8 +417,8 @@ julia> Flux.poisson_loss(y_model, 1:3)
 ```
 """
 function poisson_loss(ŷ, y; agg = mean)
-  _check_sizes(ŷ, y)
-  agg(ŷ .- xlogy.(y, ŷ))
+    _check_sizes(ŷ, y)
+    return agg(ŷ .- xlogy.(y, ŷ))
 end
 
 """
@@ -422,6 +433,7 @@ Usually used with classifiers like Support Vector Machines.
 See also: [`squared_hinge_loss`](@ref)
 
 # Example
+
 ```jldoctest
 julia> y_true = [1, -1, 1, 1];
 
@@ -441,8 +453,8 @@ true
 ```
 """
 function hinge_loss(ŷ, y; agg = mean)
-  _check_sizes(ŷ, y)
-  agg(max.(0, 1 .- ŷ .* y))
+    _check_sizes(ŷ, y)
+    return agg(max.(0, 1 .- ŷ .* y))
 end
 
 """
@@ -457,6 +469,7 @@ Usually used with classifiers like Support Vector Machines.
 See also: [`hinge_loss`](@ref)
 
 # Example
+
 ```jldoctes
 julia> y_true = [1, -1, 1, 1];
 
@@ -476,8 +489,8 @@ true
 ```
 """
 function squared_hinge_loss(ŷ, y; agg = mean)
-  _check_sizes(ŷ, y)
-  agg((max.(0, 1 .- ŷ .* y)) .^ 2)
+    _check_sizes(ŷ, y)
+    return agg((max.(0, 1 .- ŷ .* y)) .^ 2)
 end
 
 """
@@ -491,6 +504,7 @@ The dice coefficient is similar to the F1_score. Loss calculated as:
     1 - 2*sum(|ŷ .* y| + smooth) / (sum(ŷ.^2) + sum(y.^2) + smooth)
 
 # Example
+
 ```jldoctest
 julia> y_pred = [1.1, 2.1, 3.1];
 
@@ -502,8 +516,8 @@ julia> 1 - Flux.dice_coeff_loss(y_pred, 1:3)  # ~ F1 score for image segmentatio
 ```
 """
 function dice_coeff_loss(ŷ, y; smooth = ofeltype(ŷ, 1.0))
-  _check_sizes(ŷ, y)
-  1 - (2 * sum(y .* ŷ) + smooth) / (sum(y .^ 2) + sum(ŷ .^ 2) + smooth) #TODO agg
+    _check_sizes(ŷ, y)
+    return 1 - (2 * sum(y .* ŷ) + smooth) / (sum(y .^ 2) + sum(ŷ .^ 2) + smooth) #TODO agg
 end
 
 """
@@ -515,14 +529,13 @@ Larger β weigh recall more than precision (by placing more emphasis on false ne
 Calculated as:
 
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
-
 """
 function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
     _check_sizes(ŷ, y)
     #TODO add agg
     num = sum(y .* ŷ) + 1
     den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
-    1 - num / den
+    return 1 - num / den
 end
 
 """
@@ -536,15 +549,16 @@ For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentr
 See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
 # Example
+
 ```jldoctest
-julia> y = [0  1  0
-            1  0  1]
+julia> y = [0 1 0
+            1 0 1]
 2×3 Matrix{Int64}:
  0  1  0
  1  0  1
 
-julia> ŷ = [0.268941  0.5  0.268941
-            0.731059  0.5  0.731059]
+julia> ŷ = [0.268941 0.5 0.268941
+            0.731059 0.5 0.731059]
 2×3 Matrix{Float64}:
  0.268941  0.5  0.268941
  0.731059  0.5  0.731059
@@ -553,14 +567,14 @@ julia> Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
 true
 ```
 """
-function binary_focal_loss(ŷ, y; agg=mean, γ=2, ϵ=epseltype(ŷ))
+function binary_focal_loss(ŷ, y; agg = mean, γ = 2, ϵ = epseltype(ŷ))
     _check_sizes(ŷ, y)
     ŷ = ŷ .+ ϵ
-    p_t = y .* ŷ  + (1 .- y) .* (1 .- ŷ)
+    p_t = y .* ŷ + (1 .- y) .* (1 .- ŷ)
     ce = -log.(p_t)
     weight = (1 .- p_t) .^ γ
     loss = weight .* ce
-    agg(loss)
+    return agg(loss)
 end
 
 """
@@ -575,16 +589,17 @@ The modulating factor, `γ`, controls the down-weighting strength.
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
 
 # Example
+
 ```jldoctest
-julia> y = [1  0  0  0  1
-            0  1  0  1  0
-            0  0  1  0  0]
+julia> y = [1 0 0 0 1
+            0 1 0 1 0
+            0 0 1 0 0]
 3×5 Matrix{Int64}:
  1  0  0  0  1
  0  1  0  1  0
  0  0  1  0  0
 
-julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1.0f0)
 3×5 Matrix{Float32}:
  0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
  0.244728   0.244728   0.244728   0.244728   0.244728
@@ -595,25 +610,25 @@ true
 ```
 
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
-
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
+function focal_loss(ŷ, y; dims = 1, agg = mean, γ = 2, ϵ = epseltype(ŷ))
     _check_sizes(ŷ, y)
     ŷ = ŷ .+ ϵ
-    agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
+    return agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims = dims))
 end
 
 """
     siamese_contrastive_loss(ŷ, y; margin = 1, agg = mean)
-                                    
+
 Return the [contrastive loss](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf)
 which can be useful for training Siamese Networks. It is given by
-                                    
+
     agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)                           
-                                 
+
 Specify `margin` to set the baseline for distance at which pairs are dissimilar.
 
 # Example
+
 ```jldoctest
 julia> ŷ = [0.5, 1.5, 2.5];
 

@@ -14,21 +14,21 @@ struct Nil <: Real end
 @doc @doc(Nil)
 const nil = Nil()
 
-Nil(::T) where T<:Number = nil
-(::Type{T})(::Nil) where T<:Number = nil
+Nil(::T) where {T <: Number} = nil
+(::Type{T})(::Nil) where {T <: Number} = nil
 Base.convert(::Type{Nil}, ::Number) = nil
 
 Base.float(::Type{Nil}) = Nil
 
 for f in [:copy, :zero, :one, :oneunit,
-          :+, :-, :abs, :abs2, :inv,
-          :exp, :log, :log1p, :log2, :log10,
-          :sqrt, :tanh, :conj]
-  @eval Base.$f(::Nil) = nil
+    :+, :-, :abs, :abs2, :inv,
+    :exp, :log, :log1p, :log2, :log10,
+    :sqrt, :tanh, :conj]
+    @eval Base.$f(::Nil) = nil
 end
 
 for f in [:+, :-, :*, :/, :^, :mod, :div, :rem]
-  @eval Base.$f(::Nil, ::Nil) = nil
+    @eval Base.$f(::Nil, ::Nil) = nil
 end
 
 Base.:<(::Nil, ::Nil) = true
@@ -62,10 +62,11 @@ which should work out of the box for custom layers.
 If `m` is a `Tuple` or `Vector`, its elements are applied in sequence, like `Chain(m...)`.
 
 # Examples
+
 ```julia-repl
 julia> using Flux: outputsize
 
-julia> outputsize(Dense(10 => 4), (10,); padbatch=true)
+julia> outputsize(Dense(10 => 4), (10,); padbatch = true)
 (4, 1)
 
 julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
@@ -73,13 +74,17 @@ julia> m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32));
 julia> m(randn(Float32, 10, 10, 3, 64)) |> size
 (6, 6, 32, 64)
 
-julia> outputsize(m, (10, 10, 3); padbatch=true)
+julia> outputsize(m, (10, 10, 3); padbatch = true)
 (6, 6, 32, 1)
 
 julia> outputsize(m, (10, 10, 3, 64))
 (6, 6, 32, 64)
 
-julia> try outputsize(m, (10, 10, 7, 64)) catch e println(e) end
+julia> try
+           outputsize(m, (10, 10, 7, 64))
+       catch e
+           println(e)
+       end
 ┌ Error: layer Conv((3, 3), 3=>16), index 1 in Chain, gave an error with input of size (10, 10, 7, 64)
 └ @ Flux ~/.julia/dev/Flux/src/outputsize.jl:114
 DimensionMismatch("Input channels must match! (7 vs. 3)")
@@ -88,27 +93,27 @@ julia> outputsize([Dense(10 => 4), Dense(4 => 2)], (10, 1)) # Vector of layers b
 (2, 1)
 ```
 """
-function outputsize(m, inputsizes::Tuple...; padbatch=false)
-  x = nil_input(padbatch, inputsizes...)
-  return size(m(x))
+function outputsize(m, inputsizes::Tuple...; padbatch = false)
+    x = nil_input(padbatch, inputsizes...)
+    return size(m(x))
 end
 
-nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s...,1)) : fill(nil, s)
+nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s..., 1)) : fill(nil, s)
 nil_input(pad::Bool, multi::Tuple{Vararg{Integer}}...) = nil_input.(pad, multi)
 nil_input(pad::Bool, tup::Tuple{Vararg{Tuple}}) = nil_input(pad, tup...)
 
-function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch=false)
-  x = nil_input(padbatch, inputsizes...)
-  for (i,lay) in enumerate(m.layers)
-    try
-      x = lay(x)
-    catch err
-      str = x isa AbstractArray ? "with input of size $(size(x))" : ""
-      @error "layer $lay, index $i in Chain, gave an error $str"
-      rethrow(err)
+function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch = false)
+    x = nil_input(padbatch, inputsizes...)
+    for (i, lay) in enumerate(m.layers)
+        try
+            x = lay(x)
+        catch err
+            str = x isa AbstractArray ? "with input of size $(size(x))" : ""
+            @error "layer $lay, index $i in Chain, gave an error $str"
+            rethrow(err)
+        end
     end
-  end
-  return size(x)
+    return size(x)
 end
 
 """
@@ -118,6 +123,7 @@ For model or layer `m` accepting multiple arrays as input,
 this returns `size(m((x, y, ...)))` given `size_x = size(x)`, etc.
 
 # Examples
+
 ```jldoctest
 julia> x, y = rand(Float32, 5, 64), rand(Float32, 7, 64);
 
@@ -128,12 +134,13 @@ julia> Flux.outputsize(par, (5, 64), (7, 64))
 
 julia> m = Chain(par, Dense(20 => 13), softmax);
 
-julia> Flux.outputsize(m, (5,), (7,); padbatch=true)
+julia> Flux.outputsize(m, (5,), (7,); padbatch = true)
 (13, 1)
 
 julia> par(x, y) == par((x, y)) == Chain(par, identity)((x, y))
 true
 ```
+
 Notice that `Chain` only accepts multiple arrays as a tuple,
 while `Parallel` also accepts them as multiple arguments;
 `outputsize` always supplies the tuple.
@@ -142,37 +149,42 @@ outputsize
 
 ## make tuples and vectors be like Chains
 
-outputsize(m::Tuple, input::Tuple...; padbatch=false) = outputsize(Chain(m...), input...; padbatch=padbatch)
-outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chain(m...), input...; padbatch=padbatch)
+function outputsize(m::Tuple, input::Tuple...; padbatch = false)
+    return outputsize(Chain(m...), input...; padbatch = padbatch)
+end
+function outputsize(m::AbstractVector, input::Tuple...; padbatch = false)
+    return outputsize(Chain(m...), input...; padbatch = padbatch)
+end
 
 ## bypass statistics in normalization layers
 
 for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
-  @eval function (l::$layer)(x::AbstractArray{Nil})
-    l.chs == size(x, ndims(x)-1) || throw(DimensionMismatch(
-      string($layer, " expected ", l.chs, " channels, but got size(x) == ", size(x))))
-    x
-  end
+    @eval function (l::$layer)(x::AbstractArray{Nil})
+        l.chs == size(x, ndims(x) - 1) ||
+            throw(DimensionMismatch(string($layer, " expected ", l.chs,
+                                           " channels, but got size(x) == ", size(x))))
+        return x
+    end
 end
 
 ## fixes for layers that don't work out of the box
 
 for (fn, Dims) in ((:conv, DenseConvDims),)
-  @eval begin
-    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
-      fill(nil, NNlib.output_size(dims)..., NNlib.channels_out(dims), size(a)[end])
-    end
+    @eval begin
+        function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{Nil}, dims::$Dims)
+            return fill(nil, NNlib.output_size(dims)..., NNlib.channels_out(dims),
+                        size(a)[end])
+        end
 
-    function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims)
-      NNlib.$fn(fill(nil, size(a)), b, dims)
-    end
+        function NNlib.$fn(a::AbstractArray{<:Real}, b::AbstractArray{Nil}, dims::$Dims)
+            return NNlib.$fn(fill(nil, size(a)), b, dims)
+        end
 
-    function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims)
-      NNlib.$fn(a, fill(nil, size(b)), dims)
+        function NNlib.$fn(a::AbstractArray{Nil}, b::AbstractArray{<:Real}, dims::$Dims)
+            return NNlib.$fn(a, fill(nil, size(b)), dims)
+        end
     end
-  end
 end
-
 
 """
     @autosize (size...,) Chain(Layer(_ => 2), Layer(_), ...)
@@ -187,6 +199,7 @@ The underscore may appear as an argument of a layer, or inside a `=>`.
 It may be used in further calculations, such as `Dense(_ => _÷4)`.
 
 # Examples
+
 ```
 julia> @autosize (3, 1) Chain(Dense(_ => 2, sigmoid), BatchNorm(_, affine=false))
 Chain(
@@ -226,45 +239,49 @@ julia> outputsize(ans, (28, 28, 1, 32))
 ```
 
 Limitations:
-* While `@autosize (5, 32) Flux.Bilinear(_ => 7)` is OK, something like `Bilinear((_, _) => 7)` will fail.
-* While `Scale(_)` and `LayerNorm(_)` are fine (and use the first dimension), `Scale(_,_)` and `LayerNorm(_,_)`
-  will fail if `size(x,1) != size(x,2)`.
-* RNNs won't work: `@autosize (7, 11) LSTM(_ => 5)` fails, because `outputsize(RNN(3=>7), (3,))` also fails, a known issue.
+
+  - While `@autosize (5, 32) Flux.Bilinear(_ => 7)` is OK, something like `Bilinear((_, _) => 7)` will fail.
+  - While `Scale(_)` and `LayerNorm(_)` are fine (and use the first dimension), `Scale(_,_)` and `LayerNorm(_,_)`
+    will fail if `size(x,1) != size(x,2)`.
+  - RNNs won't work: `@autosize (7, 11) LSTM(_ => 5)` fails, because `outputsize(RNN(3=>7), (3,))` also fails, a known issue.
 """
 macro autosize(size, model)
-  Meta.isexpr(size, :tuple) || error("@autosize's first argument must be a tuple, the size of the input")
-  Meta.isexpr(model, :call) || error("@autosize's second argument must be something like Chain(layers...)")
-  ex = _makelazy(model)
-  @gensym m
-  quote
-    $m = $ex
-    $outputsize($m, $size)
-    $striplazy($m)
-  end |> esc
+    Meta.isexpr(size, :tuple) ||
+        error("@autosize's first argument must be a tuple, the size of the input")
+    Meta.isexpr(model, :call) ||
+        error("@autosize's second argument must be something like Chain(layers...)")
+    ex = _makelazy(model)
+    @gensym m
+    return quote
+        $m = $ex
+        $outputsize($m, $size)
+        $striplazy($m)
+    end |> esc
 end
 
 function _makelazy(ex::Expr)
-  n = _underscoredepth(ex)
-  n == 0 && return ex
-  n == 1 && error("@autosize doesn't expect an underscore here: $ex")
-  n == 2 && return :($LazyLayer($(string(ex)), $(_makefun(ex)), nothing))
-  n > 2 && return Expr(ex.head, map(_makelazy, ex.args)...)
+    n = _underscoredepth(ex)
+    n == 0 && return ex
+    n == 1 && error("@autosize doesn't expect an underscore here: $ex")
+    n == 2 && return :($LazyLayer($(string(ex)), $(_makefun(ex)), nothing))
+    n > 2 && return Expr(ex.head, map(_makelazy, ex.args)...)
 end
 _makelazy(x) = x
 
 function _underscoredepth(ex::Expr)
-  # Meta.isexpr(ex, :tuple) && :_ in ex.args && return 10
-  ex.head in (:call, :kw, :(->), :block, :parameters)  || return 0
-  ex.args[1] === :(=>) && ex.args[2] === :_ && return 1
-  m = maximum(_underscoredepth, ex.args)
-  m == 0 ? 0 : m+1
+    # Meta.isexpr(ex, :tuple) && :_ in ex.args && return 10
+    ex.head in (:call, :kw, :(->), :block, :parameters) || return 0
+    ex.args[1] === :(=>) && ex.args[2] === :_ && return 1
+    m = maximum(_underscoredepth, ex.args)
+    return m == 0 ? 0 : m + 1
 end
 _underscoredepth(ex) = Int(ex === :_)
 
 function _makefun(ex)
-  T = Meta.isexpr(ex, :call) ? ex.args[1] : Type
-  @gensym x s
-  Expr(:(->), x, Expr(:block, :($s = $autosizefor($T, $x)), _replaceunderscore(ex, s)))
+    T = Meta.isexpr(ex, :call) ? ex.args[1] : Type
+    @gensym x s
+    return Expr(:(->), x,
+                Expr(:block, :($s = $autosizefor($T, $x)), _replaceunderscore(ex, s)))
 end
 
 """
@@ -274,62 +291,71 @@ If an `_` in your layer's constructor, used within `@autosize`, should
 *not* mean the 2nd-last dimension, then you can overload this.
 
 For instance `autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)`
-is needed to make `@autosize (2,3,4) Dense(_ => 5)` return 
+is needed to make `@autosize (2,3,4) Dense(_ => 5)` return
 `Dense(2 => 5)` rather than `Dense(3 => 5)`.
 """
-autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
+autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x) - 1))
 autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:Embedding}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
 
 _replaceunderscore(e, s) = e === :_ ? s : e
-_replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)
+function _replaceunderscore(ex::Expr, s)
+    return Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)
+end
 
 mutable struct LazyLayer
-  str::String
-  make::Function
-  layer
+    str::String
+    make::Function
+    layer::Any
 end
 
 function (l::LazyLayer)(x::AbstractArray, ys::AbstractArray...)
-  l.layer === nothing || return l.layer(x, ys...)
-  made = l.make(x)  # for something like `Bilinear((_,__) => 7)`, perhaps need `make(xy...)`, later.
-  y = made(x, ys...)
-  l.layer = made  # mutate after we know that call worked
-  return y
+    l.layer === nothing || return l.layer(x, ys...)
+    made = l.make(x)  # for something like `Bilinear((_,__) => 7)`, perhaps need `make(xy...)`, later.
+    y = made(x, ys...)
+    l.layer = made  # mutate after we know that call worked
+    return y
 end
 
 function striplazy(m)
-  fs, re = functor(m)
-  re(map(striplazy, fs))
+    fs, re = functor(m)
+    return re(map(striplazy, fs))
 end
 function striplazy(l::LazyLayer)
-  l.layer === nothing || return l.layer
-  error("LazyLayer should be initialised, e.g. by outputsize(model, size), before using stiplazy")
+    l.layer === nothing || return l.layer
+    return error("LazyLayer should be initialised, e.g. by outputsize(model, size), before using stiplazy")
 end
 
 # Could make LazyLayer usable outside of @autosize, for instance allow Chain(@lazy Dense(_ => 2))?
 # But then it will survive to produce weird structural gradients etc. 
 
 function ChainRulesCore.rrule(l::LazyLayer, x)
-  l(x), _ -> error("LazyLayer should never be used within a gradient. Call striplazy(model) first to remove all.")
+    return l(x),
+           _ -> error("LazyLayer should never be used within a gradient. Call striplazy(model) first to remove all.")
 end
 function ChainRulesCore.rrule(::typeof(striplazy), m)
-  striplazy(m), _ -> error("striplazy should never be used within a gradient")
+    return striplazy(m), _ -> error("striplazy should never be used within a gradient")
 end
 
-params!(p::Params, x::LazyLayer, seen = IdSet()) = error("LazyLayer should never be used within params(m). Call striplazy(m) first.")
+function params!(p::Params, x::LazyLayer, seen = IdSet())
+    return error("LazyLayer should never be used within params(m). Call striplazy(m) first.")
+end
 
-Functors.functor(::Type{<:LazyLayer}, x) = error("LazyLayer should not be walked with Functors.jl, as the arrays which Flux.gpu wants to move may not exist yet.")
+function Functors.functor(::Type{<:LazyLayer}, x)
+    return error("LazyLayer should not be walked with Functors.jl, as the arrays which Flux.gpu wants to move may not exist yet.")
+end
 
 function Base.show(io::IO, l::LazyLayer)
-  printstyled(io, "LazyLayer(", color=:light_black)
-  if l.layer == nothing
-    printstyled(io, l.str, color=:magenta)
-  else
-    printstyled(io, l.layer, color=:cyan)
-  end
-  printstyled(io, ")", color=:light_black)
+    printstyled(io, "LazyLayer(", color = :light_black)
+    if l.layer == nothing
+        printstyled(io, l.str, color = :magenta)
+    else
+        printstyled(io, l.layer, color = :cyan)
+    end
+    return printstyled(io, ")", color = :light_black)
 end
 
-_big_show(io::IO, l::LazyLayer, indent::Int=0, name=nothing) = _layer_show(io, l, indent, name)
+function _big_show(io::IO, l::LazyLayer, indent::Int = 0, name = nothing)
+    return _layer_show(io, l, indent, name)
+end

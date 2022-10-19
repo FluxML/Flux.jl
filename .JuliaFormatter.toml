@@ -1,0 +1,9 @@
+style = "sciml"
+whitespace_in_kwargs = true
+format_docstrings = true
+always_for_in = true
+join_lines_based_on_source = true
+separate_kwargs_with_semicolon = false
+always_use_return = true
+margin = 92
+indent = 4

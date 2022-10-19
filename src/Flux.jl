@@ -14,7 +14,9 @@ using Zygote: Params, @adjoint, gradient, pullback, @nograd
 export gradient
 
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
-Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
+function Optimisers.base(dx::Zygote.Grads)
+    return error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
+end
 
 export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion,
        RNN, LSTM, GRU, GRUv3,
@@ -30,19 +32,21 @@ using .Optimise
 using .Optimise: @epochs
 using .Optimise: skip
 export Descent, Adam, Momentum, Nesterov, RMSProp,
-  AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
-  AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
-  WeightDecay, ClipValue, ClipNorm
+       AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
+       AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
+       WeightDecay, ClipValue, ClipNorm
 
 using CUDA
-const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
+const use_cuda = Ref{Union{Nothing, Bool}}(nothing)
 
 using Adapt, Functors, OneHotArrays
 include("utils.jl")
 include("functor.jl")
 
 # Pirate error to catch a common mistake.
-Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
+function Functors.functor(::Type{<:MLUtils.DataLoader}, x)
+    return error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
+end
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
@@ -59,7 +63,6 @@ export @autosize
 
 include("data/Data.jl")
 using .Data
-
 
 include("losses/Losses.jl")
 using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12

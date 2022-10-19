@@ -3,36 +3,39 @@ using Flux
 using CUDA
 using Zygote: pullback, ignore
 
-
 fw(m, x) = m(x)
-bw(back) = back(1f0)
+bw(back) = back(1.0f0)
 fwbw(m, ps, x) = gradient(() -> sum(fw(m, x)), ps)
 pb(m, ps, x) = pullback(() -> sum(fw(m, x)), ps)
 
-function run_benchmark(model, x; cuda=true)
-    
-    if cuda 
+function run_benchmark(model, x; cuda = true)
+    if cuda
         model = model |> gpu
         x = x |> gpu
     end
 
     ps = Flux.params(model)
-    y, back =  pb(model, ps, x)
-
+    y, back = pb(model, ps, x)
 
     if cuda
         CUDA.allowscalar(false)
         # CUDA.device!(3)
         println("  forward")
-        fw(model, x); GC.gc(); CUDA.reclaim(); #warmup
+        fw(model, x)
+        GC.gc()
+        CUDA.reclaim() #warmup
         @btime CUDA.@sync(fw($model, $x)) teardown=(GC.gc(); CUDA.reclaim())
 
         println("  backward")
-        bw(back); GC.gc(); CUDA.reclaim(); #warmup
+        bw(back)
+        GC.gc()
+        CUDA.reclaim() #warmup
         @btime CUDA.@sync(bw($back)) teardown=(GC.gc(); CUDA.reclaim())
-        
+
         println("  forw and back")
-        fwbw(model, ps, x); GC.gc(); CUDA.reclaim(); #warmup
+        fwbw(model, ps, x)
+        GC.gc()
+        CUDA.reclaim() #warmup
         @btime CUDA.@sync(fwbw($model, $ps, $x)) teardown=(GC.gc(); CUDA.reclaim())
     else
         println("  forward")

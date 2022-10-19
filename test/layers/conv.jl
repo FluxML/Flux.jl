@@ -3,115 +3,114 @@ using Flux: maxpool, meanpool
 using Flux: gradient
 
 @testset "Pooling" begin
-  x = randn(Float32, 10, 10, 3, 2)
-  y = randn(Float32, 20, 20, 3, 2)
-  ampx = AdaptiveMaxPool((5,5))
-  @test ampx(x) == maxpool(x, PoolDims(x, 2))
-  ampx = AdaptiveMeanPool((5,5))
-  @test ampx(x) == meanpool(x, PoolDims(x, 2))
-  ampy = AdaptiveMaxPool((10, 5))
-  @test ampy(y) == maxpool(y, PoolDims(y, (2, 4)))
-  ampy = AdaptiveMeanPool((10, 5))
-  @test ampy(y) == meanpool(y, PoolDims(y, (2, 4)))
-  gmp = GlobalMaxPool()
-  @test size(gmp(x)) == (1, 1, 3, 2)
-  gmp = GlobalMeanPool()
-  @test size(gmp(x)) == (1, 1, 3, 2)
-  mp = MaxPool((2, 2))
-  @test mp(x) == maxpool(x, PoolDims(x, 2))
-  mp = MeanPool((2, 2))
-  @test mp(x) == meanpool(x, PoolDims(x, 2))
+    x = randn(Float32, 10, 10, 3, 2)
+    y = randn(Float32, 20, 20, 3, 2)
+    ampx = AdaptiveMaxPool((5, 5))
+    @test ampx(x) == maxpool(x, PoolDims(x, 2))
+    ampx = AdaptiveMeanPool((5, 5))
+    @test ampx(x) == meanpool(x, PoolDims(x, 2))
+    ampy = AdaptiveMaxPool((10, 5))
+    @test ampy(y) == maxpool(y, PoolDims(y, (2, 4)))
+    ampy = AdaptiveMeanPool((10, 5))
+    @test ampy(y) == meanpool(y, PoolDims(y, (2, 4)))
+    gmp = GlobalMaxPool()
+    @test size(gmp(x)) == (1, 1, 3, 2)
+    gmp = GlobalMeanPool()
+    @test size(gmp(x)) == (1, 1, 3, 2)
+    mp = MaxPool((2, 2))
+    @test mp(x) == maxpool(x, PoolDims(x, 2))
+    mp = MeanPool((2, 2))
+    @test mp(x) == meanpool(x, PoolDims(x, 2))
 end
 
 @testset "CNN" begin
-  r = zeros(Float32, 28, 28, 1, 5)
-  m = Chain(
-    Conv((2, 2), 1 => 16, relu),
-    MaxPool((2,2)),
-    Conv((2, 2), 16 => 8, relu),
-    MaxPool((2,2)),
-    x -> reshape(x, :, size(x, 4)),
-    Dense(288, 10), softmax)
+    r = zeros(Float32, 28, 28, 1, 5)
+    m = Chain(Conv((2, 2), 1 => 16, relu),
+              MaxPool((2, 2)),
+              Conv((2, 2), 16 => 8, relu),
+              MaxPool((2, 2)),
+              x -> reshape(x, :, size(x, 4)),
+              Dense(288, 10), softmax)
 
-  @test size(m(r)) == (10, 5)
+    @test size(m(r)) == (10, 5)
 
-  # Test bias switch
-  bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
-  ip = zeros(Float32, 28,28,1,1)
+    # Test bias switch
+    bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
+    ip = zeros(Float32, 28, 28, 1, 1)
 
-  op = bias(ip)
-  @test sum(op) == prod(size(op))
-
-  @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
-    bias = Conv((2,2), 1=>3, bias = false) |> lmap
     op = bias(ip)
-    @test sum(op) ≈ 0.f0
-    gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-    @test bias.bias ∉ gs.params
-  end
+    @test sum(op) == prod(size(op))
 
-  # Train w/o bias and make sure no convergence happens
-  # when only bias can be converged
-  bias = Conv((2, 2), 1=>3, bias = false);
-  ip = zeros(Float32, 28,28,1,1)
-  op = zeros(Float32, 27,27,3,1) .+ 2.f0
-  opt = Descent()
-
-  for _ = 1:10^3
-    gs = gradient(Flux.params(bias)) do
-      Flux.Losses.mse(bias(ip), op)
+    @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
+        bias = Conv((2, 2), 1 => 3, bias = false) |> lmap
+        op = bias(ip)
+        @test sum(op) ≈ 0.0f0
+        gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
+        @test bias.bias ∉ gs.params
     end
-    Flux.Optimise.update!(opt, params(bias), gs)
-  end
 
-  @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
+    # Train w/o bias and make sure no convergence happens
+    # when only bias can be converged
+    bias = Conv((2, 2), 1 => 3, bias = false)
+    ip = zeros(Float32, 28, 28, 1, 1)
+    op = zeros(Float32, 27, 27, 3, 1) .+ 2.0f0
+    opt = Descent()
 
-  @testset "Grouped Conv" begin
-    ip = rand(Float32, 28, 100, 2)
-    c = Conv((3,), 100 => 25, groups = 5)
-    @test size(c.weight) == (3, 20, 25)
-    @test size(c(ip)) == (26, 25, 2)
+    for _ in 1:(10^3)
+        gs = gradient(Flux.params(bias)) do
+            return Flux.Losses.mse(bias(ip), op)
+        end
+        Flux.Optimise.update!(opt, params(bias), gs)
+    end
 
-    ip = rand(Float32, 28, 28, 100, 2)
-    c = Conv((3,3), 100 => 25, groups = 5)
-    @test size(c.weight) == (3, 3, 20, 25)
-    @test size(c(ip)) == (26, 26, 25, 2)
+    @test Flux.Losses.mse(bias(ip), op) ≈ 4.0f0
 
-    ip = rand(Float32, 10, 11, 12, 100, 2)
-    c = Conv((3,4,5), 100 => 25, groups = 5)
-    @test size(c.weight) == (3,4,5, 20, 25)
-    @test size(c(ip)) == (8,8,8, 25, 2)
+    @testset "Grouped Conv" begin
+        ip = rand(Float32, 28, 100, 2)
+        c = Conv((3,), 100 => 25, groups = 5)
+        @test size(c.weight) == (3, 20, 25)
+        @test size(c(ip)) == (26, 25, 2)
 
-    # Test that we cannot ask for non-integer multiplication factors
-    @test_throws AssertionError Conv((2, 2), 3=>10, groups=2)
-    @test_throws AssertionError Conv((2, 2), 2=>9, groups=2)
-  end
+        ip = rand(Float32, 28, 28, 100, 2)
+        c = Conv((3, 3), 100 => 25, groups = 5)
+        @test size(c.weight) == (3, 3, 20, 25)
+        @test size(c(ip)) == (26, 26, 25, 2)
+
+        ip = rand(Float32, 10, 11, 12, 100, 2)
+        c = Conv((3, 4, 5), 100 => 25, groups = 5)
+        @test size(c.weight) == (3, 4, 5, 20, 25)
+        @test size(c(ip)) == (8, 8, 8, 25, 2)
+
+        # Test that we cannot ask for non-integer multiplication factors
+        @test_throws AssertionError Conv((2, 2), 3 => 10, groups = 2)
+        @test_throws AssertionError Conv((2, 2), 2 => 9, groups = 2)
+    end
 end
 
 @testset "_channels_in, _channels_out" begin
     _channels_in = Flux._channels_in
     _channels_out = Flux._channels_out
-    @test _channels_in(Conv((3,)   , 2=>4)) == 2
-    @test _channels_in(Conv((5,6,) , 2=>4)) == 2
-    @test _channels_in(Conv((1,2,3), 2=>4)) == 2
-    @test _channels_out(Conv((3,)   , 2=>4)) == 4
-    @test _channels_out(Conv((5,6,) , 2=>4)) == 4
-    @test _channels_out(Conv((1,2,3), 2=>4)) == 4
+    @test _channels_in(Conv((3,), 2 => 4)) == 2
+    @test _channels_in(Conv((5, 6), 2 => 4)) == 2
+    @test _channels_in(Conv((1, 2, 3), 2 => 4)) == 2
+    @test _channels_out(Conv((3,), 2 => 4)) == 4
+    @test _channels_out(Conv((5, 6), 2 => 4)) == 4
+    @test _channels_out(Conv((1, 2, 3), 2 => 4)) == 4
 
-    @test _channels_in( ConvTranspose((3,)   , 1=>4)) == 1
-    @test _channels_in( ConvTranspose((5,6,) , 2=>4)) == 2
-    @test _channels_in( ConvTranspose((1,2,3), 3=>4)) == 3
-    @test _channels_out(ConvTranspose((3,)   , 2=>1)) == 1
-    @test _channels_out(ConvTranspose((5,6,) , 2=>2)) == 2
-    @test _channels_out(ConvTranspose((1,2,3), 2=>3)) == 3
+    @test _channels_in(ConvTranspose((3,), 1 => 4)) == 1
+    @test _channels_in(ConvTranspose((5, 6), 2 => 4)) == 2
+    @test _channels_in(ConvTranspose((1, 2, 3), 3 => 4)) == 3
+    @test _channels_out(ConvTranspose((3,), 2 => 1)) == 1
+    @test _channels_out(ConvTranspose((5, 6), 2 => 2)) == 2
+    @test _channels_out(ConvTranspose((1, 2, 3), 2 => 3)) == 3
 
-    @test _channels_in( ConvTranspose((6,)   , 8=>4, groups=4)) == 8
-    @test _channels_in( ConvTranspose((5,6,) , 2=>4, groups=2)) == 2
-    @test _channels_in( ConvTranspose((1,2,3), 3=>6, groups=3)) == 3
+    @test _channels_in(ConvTranspose((6,), 8 => 4, groups = 4)) == 8
+    @test _channels_in(ConvTranspose((5, 6), 2 => 4, groups = 2)) == 2
+    @test _channels_in(ConvTranspose((1, 2, 3), 3 => 6, groups = 3)) == 3
 
-    @test _channels_out(ConvTranspose((1,)   , 10=>15, groups=5)) == 15
-    @test _channels_out(ConvTranspose((3,2)   , 10=>15, groups=5)) == 15
-    @test _channels_out(ConvTranspose((5,6,) , 2=>2, groups=2)) == 2
+    @test _channels_out(ConvTranspose((1,), 10 => 15, groups = 5)) == 15
+    @test _channels_out(ConvTranspose((3, 2), 10 => 15, groups = 5)) == 15
+    @test _channels_out(ConvTranspose((5, 6), 2 => 2, groups = 2)) == 2
 
     for Layer in [Conv, ConvTranspose]
         for _ in 1:10
@@ -119,170 +118,173 @@ end
             kernel_size = Tuple(rand(1:5) for _ in rand(1:3))
             cin = rand(1:5) * groups
             cout = rand(1:5) * groups
-            @test _channels_in(Layer(kernel_size, cin=>cout; groups)) == cin
-            @test _channels_out(Layer(kernel_size, cin=>cout; groups)) == cout
+            @test _channels_in(Layer(kernel_size, cin => cout; groups)) == cin
+            @test _channels_out(Layer(kernel_size, cin => cout; groups)) == cout
         end
     end
 end
 
 @testset "asymmetric padding" begin
-  r = ones(Float32, 28, 28, 1, 1)
-  m = Conv((3, 3), 1=>1, relu; pad=(0,1,1,2))
-  m.weight[:] .= 1.0
-  m.bias[:] .= 0.0
-  y_hat = m(r)[:,:,1,1]
-  @test size(y_hat) == (27, 29)
-  @test y_hat[1, 1] ≈ 6.0
-  @test y_hat[2, 2] ≈ 9.0
-  @test y_hat[end, 1] ≈ 4.0
-  @test y_hat[1, end] ≈ 3.0
-  @test y_hat[1, end-1] ≈ 6.0
-  @test y_hat[end, end] ≈ 2.0
+    r = ones(Float32, 28, 28, 1, 1)
+    m = Conv((3, 3), 1 => 1, relu; pad = (0, 1, 1, 2))
+    m.weight[:] .= 1.0
+    m.bias[:] .= 0.0
+    y_hat = m(r)[:, :, 1, 1]
+    @test size(y_hat) == (27, 29)
+    @test y_hat[1, 1] ≈ 6.0
+    @test y_hat[2, 2] ≈ 9.0
+    @test y_hat[end, 1] ≈ 4.0
+    @test y_hat[1, end] ≈ 3.0
+    @test y_hat[1, end - 1] ≈ 6.0
+    @test y_hat[end, end] ≈ 2.0
 end
 
 @testset "Depthwise Conv" begin
-  r = zeros(Float32, 28, 28, 3, 5)
-  m1 = DepthwiseConv((2, 2), 3=>15)
-  @test size(m1(r), 3) == 15
+    r = zeros(Float32, 28, 28, 3, 5)
+    m1 = DepthwiseConv((2, 2), 3 => 15)
+    @test size(m1(r), 3) == 15
 
-  m2 = DepthwiseConv((2, 3), 3=>9)
-  @test size(m2(r), 3) == 9
+    m2 = DepthwiseConv((2, 3), 3 => 9)
+    @test size(m2(r), 3) == 9
 
-  m3 = DepthwiseConv((2, 3), 3=>9; bias=false)
-  @test size(m2(r), 3) == 9
+    m3 = DepthwiseConv((2, 3), 3 => 9; bias = false)
+    @test size(m2(r), 3) == 9
 
-  # Test that we cannot ask for non-integer multiplication factors
-  @test_throws AssertionError DepthwiseConv((2,2), 3=>10)
+    # Test that we cannot ask for non-integer multiplication factors
+    @test_throws AssertionError DepthwiseConv((2, 2), 3 => 10)
 end
 
 @testset "ConvTranspose" begin
-  x = zeros(Float32, 5, 5, 1, 1)
-  y = Conv((3,3), 1 => 1)(x)
-  x_hat1 = ConvTranspose((3, 3), 1 => 1)(y)
-  x_hat2 = ConvTranspose((3, 3), 1 => 1, bias=false)(y)
-  @test size(x_hat1) == size(x_hat2) == size(x)
+    x = zeros(Float32, 5, 5, 1, 1)
+    y = Conv((3, 3), 1 => 1)(x)
+    x_hat1 = ConvTranspose((3, 3), 1 => 1)(y)
+    x_hat2 = ConvTranspose((3, 3), 1 => 1, bias = false)(y)
+    @test size(x_hat1) == size(x_hat2) == size(x)
 
-  m = ConvTranspose((3,3), 1=>1)
-  # Test that the gradient call does not throw: #900
-  @test gradient(()->sum(m(x)), Flux.params(m)) isa Flux.Zygote.Grads
+    m = ConvTranspose((3, 3), 1 => 1)
+    # Test that the gradient call does not throw: #900
+    @test gradient(() -> sum(m(x)), Flux.params(m)) isa Flux.Zygote.Grads
 
-  x = zeros(Float32, 5, 5, 2, 4)
-  m = ConvTranspose((3,3), 2=>3)
-  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+    x = zeros(Float32, 5, 5, 2, 4)
+    m = ConvTranspose((3, 3), 2 => 3)
+    @test gradient(() -> sum(m(x)), params(m)) isa Flux.Zygote.Grads
 
-  # test ConvTranspose supports groups argument
-  x = randn(Float32, 10, 10, 2, 3)
-  m1 = ConvTranspose((3,3), 2=>4, pad=SamePad())
-  @test size(m1.weight) == (3,3,4,2)
-  @test size(m1(x)) == (10,10,4,3)
-  m2 = ConvTranspose((3,3), 2=>4, groups=2, pad=SamePad())
-  @test size(m2.weight) == (3,3,2,2)
-  @test size(m1(x)) == size(m2(x))
-  @test gradient(()->sum(m2(x)), params(m2)) isa Flux.Zygote.Grads
+    # test ConvTranspose supports groups argument
+    x = randn(Float32, 10, 10, 2, 3)
+    m1 = ConvTranspose((3, 3), 2 => 4, pad = SamePad())
+    @test size(m1.weight) == (3, 3, 4, 2)
+    @test size(m1(x)) == (10, 10, 4, 3)
+    m2 = ConvTranspose((3, 3), 2 => 4, groups = 2, pad = SamePad())
+    @test size(m2.weight) == (3, 3, 2, 2)
+    @test size(m1(x)) == size(m2(x))
+    @test gradient(() -> sum(m2(x)), params(m2)) isa Flux.Zygote.Grads
 
-  x = randn(Float32, 10, 2,1)
-  m = ConvTranspose((3,), 2=>4, pad=SamePad(), groups=2)
-  @test size(m(x)) === (10,4,1)
-  @test length(m.weight) == (3)*(2*4) / 2
+    x = randn(Float32, 10, 2, 1)
+    m = ConvTranspose((3,), 2 => 4, pad = SamePad(), groups = 2)
+    @test size(m(x)) === (10, 4, 1)
+    @test length(m.weight) == (3) * (2 * 4) / 2
 
-  x = randn(Float32, 10, 11, 4,2)
-  m = ConvTranspose((3,5), 4=>4, pad=SamePad(), groups=4)
-  @test size(m(x)) === (10,11, 4,2)
-  @test length(m.weight) == (3*5)*(4*4)/4
+    x = randn(Float32, 10, 11, 4, 2)
+    m = ConvTranspose((3, 5), 4 => 4, pad = SamePad(), groups = 4)
+    @test size(m(x)) === (10, 11, 4, 2)
+    @test length(m.weight) == (3 * 5) * (4 * 4) / 4
 
-  x = randn(Float32, 10, 11, 12, 3,2)
-  m = ConvTranspose((3,5,3), 3=>6, pad=SamePad(), groups=3)
-  @test size(m(x)) === (10,11, 12, 6,2)
-  @test length(m.weight) == (3*5*3) * (3*6) / 3
+    x = randn(Float32, 10, 11, 12, 3, 2)
+    m = ConvTranspose((3, 5, 3), 3 => 6, pad = SamePad(), groups = 3)
+    @test size(m(x)) === (10, 11, 12, 6, 2)
+    @test length(m.weight) == (3 * 5 * 3) * (3 * 6) / 3
 
-  @test occursin("groups=2", sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
-  @test occursin("2 => 4"  , sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
+    @test occursin("groups=2", sprint(show, ConvTranspose((3, 3), 2 => 4, groups = 2)))
+    @test occursin("2 => 4", sprint(show, ConvTranspose((3, 3), 2 => 4, groups = 2)))
 end
 
 @testset "CrossCor" begin
-  x = rand(Float32, 28, 28, 1, 1)
-  w = rand(Float32, 2,2,1,1)
-  y = CrossCor(w, [0.0])
+    x = rand(Float32, 28, 28, 1, 1)
+    w = rand(Float32, 2, 2, 1, 1)
+    y = CrossCor(w, [0.0])
 
-  @test sum(w .* x[1:2, 1:2, :, :]) ≈ y(x)[1, 1, 1, 1]  rtol=2e-7
+    @test sum(w .* x[1:2, 1:2, :, :])≈y(x)[1, 1, 1, 1] rtol=2e-7
 
-  r = zeros(Float32, 28, 28, 1, 5)
-  m = Chain(
-    CrossCor((2, 2), 1=>16, relu),
-    MaxPool((2,2)),
-    CrossCor((2, 2), 16=>8, relu; bias=false),
-    MaxPool((2,2)),
-    x -> reshape(x, :, size(x, 4)),
-    Dense(288, 10), softmax)
+    r = zeros(Float32, 28, 28, 1, 5)
+    m = Chain(CrossCor((2, 2), 1 => 16, relu),
+              MaxPool((2, 2)),
+              CrossCor((2, 2), 16 => 8, relu; bias = false),
+              MaxPool((2, 2)),
+              x -> reshape(x, :, size(x, 4)),
+              Dense(288, 10), softmax)
 
-  @test size(m(r)) == (10, 5)
-  @test y(x) != Conv(w, [0.0])(x)
-  @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x) ≈ Conv(w, [0.0])(x)  rtol=1e-7
+    @test size(m(r)) == (10, 5)
+    @test y(x) != Conv(w, [0.0])(x)
+    @test CrossCor(w[end:-1:1, end:-1:1, :, :], [0.0])(x)≈Conv(w, [0.0])(x) rtol=1e-7
 end
 
 @testset "Conv with non quadratic window #700" begin
-  data = zeros(Float32, 7,7,1,1)
-  data[4,4,1,1] = 1
+    data = zeros(Float32, 7, 7, 1, 1)
+    data[4, 4, 1, 1] = 1
 
-  l = Conv((3,3), 1=>1)
-  expected = zeros(eltype(l.weight),5,5,1,1)
-  expected[2:end-1,2:end-1,1,1] = l.weight
-  @test expected ≈ l(data)
+    l = Conv((3, 3), 1 => 1)
+    expected = zeros(eltype(l.weight), 5, 5, 1, 1)
+    expected[2:(end - 1), 2:(end - 1), 1, 1] = l.weight
+    @test expected ≈ l(data)
 
-  l = Conv((3,1), 1=>1)
-  expected = zeros(eltype(l.weight),5,7,1,1)
-  expected[2:end-1,4,1,1] = l.weight
-  @test expected ≈ l(data)
+    l = Conv((3, 1), 1 => 1)
+    expected = zeros(eltype(l.weight), 5, 7, 1, 1)
+    expected[2:(end - 1), 4, 1, 1] = l.weight
+    @test expected ≈ l(data)
 
-  l = Conv((1,3), 1=>1)
-  expected = zeros(eltype(l.weight),7,5,1,1)
-  expected[4,2:end-1,1,1] = l.weight
-  @test expected ≈ l(data)
+    l = Conv((1, 3), 1 => 1)
+    expected = zeros(eltype(l.weight), 7, 5, 1, 1)
+    expected[4, 2:(end - 1), 1, 1] = l.weight
+    @test expected ≈ l(data)
 
-  @test begin
-    # we test that the next expression does not throw
-    randn(Float32, 10,10,1,1) |> Conv((6,1), 1=>1, Flux.σ)
-    true
-  end
+    @test begin
+        # we test that the next expression does not throw
+        randn(Float32, 10, 10, 1, 1) |> Conv((6, 1), 1 => 1, Flux.σ)
+        true
+    end
 end
 
-@testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
-  data = ones(Float32, (k .+ 3)..., 1,1)
-  l = ltype(k, 1=>1, pad=SamePad())
-  @test size(l(data)) == size(data)
+@testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv,
+                                                      CrossCor),
+                                            k in ((1,), (2,), (3,), (4, 5), (6, 7, 8))
 
-  l = ltype(k, 1=>1, pad=SamePad(), dilation = k .÷ 2)
-  @test size(l(data)) == size(data)
+    data = ones(Float32, (k .+ 3)..., 1, 1)
+    l = ltype(k, 1 => 1, pad = SamePad())
+    @test size(l(data)) == size(data)
 
-  stride = 3
-  l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
-  if ltype == ConvTranspose
-    @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2]
-  else
-    @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], stride)
-  end
+    l = ltype(k, 1 => 1, pad = SamePad(), dilation = k .÷ 2)
+    @test size(l(data)) == size(data)
+
+    stride = 3
+    l = ltype(k, 1 => 1, pad = SamePad(), stride = stride)
+    if ltype == ConvTranspose
+        @test size(l(data))[1:(end - 2)] == stride .* size(data)[1:(end - 2)]
+    else
+        @test size(l(data))[1:(end - 2)] == cld.(size(data)[1:(end - 2)], stride)
+    end
 end
 
-@testset "$ltype SamePad windowsize $k" for ltype in (MeanPool, MaxPool), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
-  data = ones(Float32, (k .+ 3)..., 1,1)
+@testset "$ltype SamePad windowsize $k" for ltype in (MeanPool, MaxPool),
+                                            k in ((1,), (2,), (3,), (4, 5), (6, 7, 8))
 
-  l = ltype(k, pad=SamePad())
-  @test size(l(data))[1:end-2] == cld.(size(data)[1:end-2], k)
+    data = ones(Float32, (k .+ 3)..., 1, 1)
+
+    l = ltype(k, pad = SamePad())
+    @test size(l(data))[1:(end - 2)] == cld.(size(data)[1:(end - 2)], k)
 end
 
 @testset "bugs fixed" begin
-  # https://github.com/FluxML/Flux.jl/issues/1421
-  @test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64}
-end
+# https://github.com/FluxML/Flux.jl/issues/1421
+@test Conv((5, 5), 10 => 20, identity; init = Base.randn).bias isa Vector{Float64} end
 
 @testset "constructors: $fun" for fun in [Conv, CrossCor, ConvTranspose, DepthwiseConv]
-  @test fun(rand(2,3,4)).bias isa Vector{Float64}
-  @test fun(rand(2,3,4,5), false).bias === false
-  if fun == Conv
-    @test fun(rand(2,3,4,5,6), rand(6)).bias isa Vector{Float64}
-    @test_skip fun(rand(2,3,4,5,6), 1:6).bias isa Vector{Float64}
-  elseif fun == DepthwiseConv
-    @test fun(rand(2,3,4,5,6), rand(30)).bias isa Vector{Float64}
-  end
-  @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
+    @test fun(rand(2, 3, 4)).bias isa Vector{Float64}
+    @test fun(rand(2, 3, 4, 5), false).bias === false
+    if fun == Conv
+        @test fun(rand(2, 3, 4, 5, 6), rand(6)).bias isa Vector{Float64}
+        @test_skip fun(rand(2, 3, 4, 5, 6), 1:6).bias isa Vector{Float64}
+    elseif fun == DepthwiseConv
+        @test fun(rand(2, 3, 4, 5, 6), rand(30)).bias isa Vector{Float64}
+    end
+    @test_throws DimensionMismatch fun(rand(2, 3, 4), rand(6))
 end
