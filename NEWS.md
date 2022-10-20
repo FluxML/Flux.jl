@@ -2,6 +2,7 @@
 
 ## v0.13.7
 * Added [`@autosize` macro](https://github.com/FluxML/Flux.jl/pull/2078)
+* All loss functions now [accept 3 arguments](https://github.com/FluxML/Flux.jl/pull/2090), `loss(model, x, y) == loss(model(x), y)`.
 
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)

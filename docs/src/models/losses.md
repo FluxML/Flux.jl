@@ -4,26 +4,28 @@ Flux provides a large number of common loss functions used for training machine 
 They are grouped together in the `Flux.Losses` module.
 
 Loss functions for supervised learning typically expect as inputs a target `y`, and a prediction `ŷ` from your model.
-In Flux's convention, the target is the last argumemt:
+In Flux's convention, the target is the last argumemt, so a new loss function could be defined:
 
 ```julia
-loss(ŷ, y)
+newloss(ŷ, y) = sum(abs2, ŷ .- y)  # total squared error
 ```
 
 All loss functions in Flux have a method which takes the model as the first argument, and calculates the prediction `ŷ = model(x)`.
-This is convenient for [`train!`](@ref Flux.train)`(loss, model, [(x,y), (x2,y2), ...], opt)`:
+This is convenient for [`train!`](@ref Flux.train)`(loss, model, [(x,y), (x2,y2), ...], opt)`.
+For our example it could be defined:
 
 ```julia
-loss(model, x, y) = loss(model(x), y)
+newloss(model, x, y) = newloss(model(x), y)
 ```
 
-Most loss functions in Flux have an optional keyword argument `agg`, which is the aggregation function used over the batch:
+Most loss functions in Flux have an optional keyword argument `agg`, which is the aggregation function used over the batch.
+Thus you may call, for example:
 
 ```julia
-loss(ŷ, y)                           # defaults to `Statistics.mean`
-loss(ŷ, y; agg = sum)                # use `sum` instead
-loss(ŷ, y; agg = x->mean(w .* x))    # weighted mean
-loss(ŷ, y; agg = x->sum(x, dims=2))  # partial reduction, returns an array
+crossentropy(ŷ, y)                           # defaults to `Statistics.mean`
+crossentropy(ŷ, y; agg = sum)                # use `sum` instead
+crossentropy(ŷ, y; agg = x->mean(w .* x))    # weighted mean
+crossentropy(ŷ, y; agg = x->sum(x, dims=2))  # partial reduction, returns an array
 ```
 
 ### Function listing
