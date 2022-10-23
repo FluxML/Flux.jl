@@ -68,4 +68,13 @@ include("deprecations.jl")
 
 include("cuda/cuda.jl")
 
+include("precompile.jl")
+using SnoopPrecompile
+@precompile_all_calls begin
+  using .Precompile
+  Precompile.readme()
+  Precompile.conv()
+  Precompile.pretty()
+end
+
 end # module

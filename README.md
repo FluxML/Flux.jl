@@ -23,7 +23,7 @@ Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a
 using Flux  # should install everything for you, including CUDA
 
 x = hcat(digits.(0:3, base=2, pad=2)...) |> gpu  # let's solve the XOR problem!
-y = Flux.onehotbatch(xor.(eachrow(x)...), 0:1) |> gpu
+y = Flux.onehotbatch(xor.(eachrow(cpu(x))...), 0:1) |> gpu
 data = ((Float32.(x), y) for _ in 1:100)  # an iterator making Tuples
 
 model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2)) |> gpu
