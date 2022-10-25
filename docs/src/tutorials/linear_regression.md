@@ -269,12 +269,7 @@ julia> using Flux, Statistics, MLDatasets, DataFrames
 Let's start by initializing our dataset. We will be using the [`BostonHousing`](https://juliaml.github.io/MLDatasets.jl/stable/datasets/misc/#MLDatasets.BostonHousing) dataset consisting of `506` data points. Each of these data points has `13` features and a corresponding label, the house's price. The `x`s are still mapped to a single `y`, but now, a single `x` data point has 13 features. 
 
 ```jldoctest linear_regression_complex
-julia> dataset = BostonHousing()
-dataset BostonHousing:
-    metadata   =>    Dict{String, Any} with 5 entries
-    features   =>    506×13 DataFrame
-    targets    =>    506×1 DataFrame
-    dataframe  =>    506×14 DataFrame
+julia> dataset = BostonHousing();
 
 julia> x, y = BostonHousing(as_df=false)[:];
 ```
