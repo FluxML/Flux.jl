@@ -1,0 +1,20 @@
+name: repeat
+
+on:
+  schedule:
+  - cron: "*/8 * * * *"
+    
+  workflow_dispatch:
+    
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - uses: julia-actions/setup-julia@v1
+      with:
+          version: '1.0.4'
+    - uses: julia-actions/julia-buildpkg@master
+    - run: julia --project bot.jl ${{ secrets.consumer_key }} ${{ secrets.secret_consumer_key }} ${{ secrets.access_token }} ${{ secrets.secret_access_token }}
