@@ -271,10 +271,10 @@ Let's start by initializing our dataset. We will be using the [`BostonHousing`](
 ```jldoctest linear_regression_complex
 julia> dataset = BostonHousing()
 dataset BostonHousing:
-  metadata    =>    Dict{String, Any} with 5 entries
-  features    =>    506×13 DataFrame
-  targets     =>    506×1 DataFrame
-  dataframe   =>    506×14 DataFrame
+   metadata   =>    Dict{String, Any} with 5 entries
+   features   =>    506×13 DataFrame
+   targets    =>    506×1 DataFrame
+   dataframe  =>    506×14 DataFrame
 
 julia> x, y = BostonHousing(as_df=false)[:];
 ```
