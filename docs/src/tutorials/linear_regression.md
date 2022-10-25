@@ -11,7 +11,8 @@ Under the hood, Flux uses a technique called automatic differentiation to take g
 
 The following page contains a step-by-step walkthrough of the linear regression algorithm in `Julia` using `Flux`! We will start by creating a simple linear regression model for dummy data and then move on to a real dataset. The first part would involve writing some parts of the model on our own, which will later be replaced by `Flux`.
 
-## A simple linear regression model
+---
+
 Let us start by building a simple linear regression model. This model would be trained on the data points of the form `(x₁, y₁), (x₂, y₂), ... , (xₙ, yₙ)`. In the real world, these `x`s can have multiple features, and the `y`s denote a label. In our example, each `x` has a single feature; hence, our data would have `n` data points, each point mapping a single feature to a single label.
 
 Importing the required `Julia` packages -
@@ -20,8 +21,9 @@ Importing the required `Julia` packages -
 julia> using Flux, Plots
 ```
 
-### Generating a dataset
-The data usually comes from the real world, which we will be exploring in the last part of this guide, but we don't want to jump straight to the relatively harder part. Here we will generate the `x`s of our data points and map them to the respective `y`s using a simple function. Remember, here each `x` is equivalent to a feature, and each `y` is the corresponding label. Combining all the `x`s and `y`s would create the complete dataset.
+## Generating a dataset
+
+The data usually comes from the real world, which we will be exploring in the last part of this tutorial, but we don't want to jump straight to the relatively harder part. Here we will generate the `x`s of our data points and map them to the respective `y`s using a simple function. Remember, here each `x` is equivalent to a feature, and each `y` is the corresponding label. Combining all the `x`s and `y`s would create the complete dataset.
 
 ```jldoctest linear_regression_simple
 julia> x = hcat(collect(Float32, -3:0.1:3)...)
@@ -60,7 +62,7 @@ The data looks random enough now! The `x` and `y` values are still somewhat corr
 
 We can now proceed ahead and build a model for our dataset!
 
-### Building a model
+## Building a model
 
 A linear regression model is defined mathematically as -
 
@@ -149,7 +151,7 @@ julia> flux_loss(flux_model, x, y)
 22.74856f0
 ```
 
-Everything works as before! It almost feels like `Flux` provides us with smart wrappers for the functions we could have written on our own. Now, as the last step of this section, let's see how different the `flux_model` is from our custom `model`. A good way to go about this would be to fix the parameters of both models to be the same. Let's change the parameters of our custom `model` to match that of the `flux_model` -
+Everything works as before! It almost feels like `Flux` provides us with smart wrappers for the functions we could have written on our own. Now, as the last step of this section, let's see how different the `flux_model` is from our `custom_model`. A good way to go about this would be to fix the parameters of both models to be the same. Let's change the parameters of our `custom_model` to match that of the `flux_model` -
 
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
@@ -165,7 +167,9 @@ julia> custom_loss(W, b, x, y), flux_loss(flux_model, x, y)
 (22.74856f0, 22.74856f0)
 ```
 
-The losses are identical! This means that our `model` and the `flux_model` are identical on some level, and the loss functions are completely identical! The difference in models would be that `Flux`'s [`Dense`](@ref) layer supports many other arguments that can be used to customize the layer further. But, for this guide, let us stick to our simple custom `model`.
+The losses are identical! This means that our `model` and the `flux_model` are identical on some level, and the loss functions are completely identical! The difference in models would be that `Flux`'s [`Dense`](@ref) layer supports many other arguments that can be used to customize the layer further. But, for this tutorial, let us stick to our simple `custom_model`.
+
+## Training the model
 
 Let's train our model using the classic Gradient Descent algorithm. According to the gradient descent algorithm, the weights and biases should be iteratively updated using the following mathematical equations -
 
@@ -237,8 +241,9 @@ There was a significant reduction in loss, and the parameters were updated!
 
 We can train the model even more or tweak the hyperparameters to achieve the desired result faster, but let's stop here. We trained our model for 42 epochs, and loss went down from `22.74856` to `7.6680417f`. Time for some visualization!
 
-### Results
-The main objective of this guide was to fit a line to our dataset using the linear regression algorithm. The training procedure went well, and the loss went down significantly! Let's see what the fitted line looks like. Remember, `Wx + b` is nothing more than a line's equation, with `slope = W[1]` and `y-intercept = b[1]` (indexing at `1` as `W` and `b` are iterable).
+## Results
+
+The main objective of this tutorial was to fit a line to our dataset using the linear regression algorithm. The training procedure went well, and the loss went down significantly! Let's see what the fitted line looks like. Remember, `Wx + b` is nothing more than a line's equation, with `slope = W[1]` and `y-intercept = b[1]` (indexing at `1` as `W` and `b` are iterable).
 
 Plotting the line and the data points using `Plot.jl` -
 ```jldoctest linear_regression_simple
@@ -252,14 +257,15 @@ julia> plot!((x) -> b[1] + W[1] * x, -3, 3, label="Custom model", lw=2);
 
 The line fits well! There is room for improvement, but we leave that up to you! You can play with the optimisers, the number of epochs, learning rate, etc. to improve the fitting and reduce the loss!
 
-## Linear regression model on a real dataset
+### Linear regression model on a real dataset
+
 We now move on to a relatively complex linear regression model. Here we will use a real dataset from [`MLDatasets.jl`](https://github.com/JuliaML/MLDatasets.jl), which will not confine our data points to have only one feature. Let's start by importing the required packages -
 
 ```jldoctest linear_regression_complex
 julia> using Flux, Statistics, MLDatasets, DataFrames
 ```
 
-### Data
+## Gathering real data
 Let's start by initializing our dataset. We will be using the [`BostonHousing`](https://juliaml.github.io/MLDatasets.jl/stable/datasets/misc/#MLDatasets.BostonHousing) dataset consisting of `506` data points. Each of these data points has `13` features and a corresponding label, the house's price. The `x`s are still mapped to a single `y`, but now, a single `x` data point has 13 features. 
 
 ```jldoctest linear_regression_complex
@@ -300,7 +306,7 @@ julia> std(x_train_n)
 
 The standard deviation is now close to one! Our data is ready!
 
-### Model
+## Building a Flux model
 We can now directly use `Flux` and let it do all the work internally! Let's define a model that takes in 13 inputs (13 features) and gives us a single output (the label). We will then pass our entire data through this model in one go, and `Flux` will handle everything for us! Remember, we could have declared a model in plain `Julia` as well. The model will have 14 parameters: 13 weights and 1 bias.
 
 ```jldoctest linear_regression_complex
@@ -322,7 +328,8 @@ julia> loss(model, x_train_n, y_train)
 
 We can now proceed to the training phase!
 
-### Training
+## Training the Flux model
+
 The training procedure would make use of the same mathematics, but now we can pass in the model inside the `gradient` call and let `Flux` and `Zygote` handle the derivatives!
 
 ```jldoctest linear_regression_complex
@@ -333,7 +340,7 @@ julia> function train_model()
        end;
 ```
 
-Contrary to our last training procedure, let's say that this time we don't want to hardcode the number of epochs. We want the training procedure to stop when the loss converges, that is, when `change in loss < δ`. The quantity `δ` can be altered according to a user's need, but let's fix it to `10⁻³` for this guide.
+Contrary to our last training procedure, let's say that this time we don't want to hardcode the number of epochs. We want the training procedure to stop when the loss converges, that is, when `change in loss < δ`. The quantity `δ` can be altered according to a user's need, but let's fix it to `10⁻³` for this tutorial.
 
 We can write such custom training loops effortlessly using `Flux` and plain `Julia`!
 ```jldoctest linear_regression_complex
@@ -366,8 +373,9 @@ julia> loss(model, x_train_n, y_train)
 
 The loss went down significantly! It can be minimized further by choosing an even smaller `δ`.
 
-### Testing
-The last step of this guide would be to test our model using the testing data. We will first normalise the testing data and then calculate the corresponding loss.
+## Testing the Flux model
+
+The last step of this tutorial would be to test our model using the testing data. We will first normalise the testing data and then calculate the corresponding loss.
 
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> x_test_n = Flux.normalise(x_test);
@@ -380,100 +388,8 @@ The loss is not as small as the loss of the training data, but it looks good! Th
 
 ---
 
-Summarising this guide, we started by generating a random yet correlated dataset for our custom model. We then saw how a simple linear regression model could be built with and without `Flux`, and how they were almost identical. 
+Summarising this tutorial, we started by generating a random yet correlated dataset for our `custom model`. We then saw how a simple linear regression model could be built with and without `Flux`, and how they were almost identical. 
 
 Next, we trained the model by manually writing down the Gradient Descent algorithm and optimising the loss. We also saw how `Flux` provides various wrapper functionalities and keeps the API extremely intuitive and simple for the users. 
 
 After getting familiar with the basics of `Flux` and `Julia`, we moved ahead to build a machine learning model for a real dataset. We repeated the exact same steps, but this time with a lot more features and data points, and by harnessing `Flux`'s full capabilities. In the end, we developed a training loop that was smarter than the hardcoded one and ran the model on our normalised dataset to conclude the tutorial.
-
-## Copy-pastable code
-### Dummy dataset
-```julia
-using Flux, Plots
-
-# data
-x = hcat(collect(Float32, -3:0.1:3)...)
-f(x) = @. 3x + 2
-y = f(x)
-x = x .* reshape(rand(Float32, 61), (1, 61))
-
-# plot the data
-plot(reshape(x, (61, 1)), reshape(y, (61, 1)), lw = 3, seriestype = :scatter, label = "", title = "Generated data", xlabel = "x", ylabel= "y")
-
-# custom model and parameters
-custom_model(W, b, x) = @. W*x + b
-W = rand(Float32, 1, 1)
-b = [0.0f0]
-
-# loss function
-function custom_loss(W, b, x, y)
-    ŷ = custom_model(W, b, x)
-    sum((y .- ŷ).^2) / length(x)
-end;
-
-print("Initial loss: ", custom_loss(W, b, x, y), "\n")
-
-# train
-function train_custom_model()
-    dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, y)
-    @. W = W - 0.1 * dLdW
-    @. b = b - 0.1 * dLdb
-end
-
-for i = 1:40
-    train_custom_model()
-end
-
-print("Final loss: ", custom_loss(W, b, x, y), "\n")
-
-# plot data and results
-plot(reshape(x, (61, 1)), reshape(y, (61, 1)), lw = 3, seriestype = :scatter, label = "", title = "Simple Linear Regression", xlabel = "x", ylabel= "y")
-plot!((x) -> b[1] + W[1] * x, -3, 3, label="Custom model", lw=2)
-```
-### Real dataset
-```julia
-using Flux, Statistics, MLDatasets
-
-# data
-x, y = BostonHousing(as_df=false)[:]
-x_train, x_test, y_train, y_test = x[:, 1:400], x[:, 401:end], y[:, 1:400], y[:, 401:end]
-x_train_n = Flux.normalise(x_train)
-
-# model
-model = Dense(13 => 1)
-
-# loss function
-function loss(model, x, y)
-    ŷ = model(x)
-    Flux.mse(ŷ, y)
-end;
-
-print("Initial loss: ", loss(model, x_train_n, y_train), "\n")
-
-# train
-function train_custom_model()
-    dLdm, _, _ = gradient(loss, model, x_train_n, y_train)
-    @. model.weight = model.weight - 0.000001 * dLdm.weight
-    @. model.bias = model.bias - 0.000001 * dLdm.bias
-end
-
-loss_init = Inf;
-while true
-    train_custom_model()
-    if loss_init == Inf
-        loss_init = loss(model, x_train_n, y_train)
-        continue
-    end
-    if abs(loss_init - loss(model, x_train_n, y_train)) < 1e-4
-        break
-    else
-        loss_init = loss(model, x_train_n, y_train)
-    end
-end
-
-print("Final loss: ", loss(model, x_train_n, y_train), "\n")
-
-# test
-x_test_n = Flux.normalise(x_test);
-print("Test loss: ", loss(model, x_test_n, y_test), "\n")
-```
