@@ -1,6 +1,6 @@
 for ch in [1, 3, 16, 64]
     x = rand(Float32, 64, 64, ch, 64)
-    model = Conv((16,16), ch=>ch)
+    model = Conv((64,64), ch=>ch)
     println("CPU ch=$ch")
     run_benchmark(model, x, cuda=false)
     println("CUDA ch=$ch")
