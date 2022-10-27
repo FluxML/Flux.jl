@@ -11,9 +11,9 @@ makedocs(
     pages = [
         "Getting Started" => [
             "Welcome" => "index.md",
-            "Quick Start" => "getting_started/quickstart.md",
-            "Fitting a Line" => "getting_started/overview.md",
-            "Gradients and Layers" => "getting_started/basics.md",
+            "Quick Start" => "models/quickstart.md",
+            "Fitting a Line" => "models/overview.md",
+            "Gradients and Layers" => "models/basics.md",
         ],
         "Building Models" => [
             "Built-in Layers 📚" => "models/layers.md",
@@ -43,7 +43,7 @@ makedocs(
          ],
          "Tutorials" => [
             "Linear Regression" => "tutorials/linear_regression.md",
-            "Custom Layers" => "tutorials/advanced.md",  # TODO move freezing to Training
+            "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
          ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",

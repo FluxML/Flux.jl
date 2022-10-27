@@ -1,4 +1,4 @@
-# Defining Customised Layers
+# [Defining Customised Layers](@id man-advanced)
 
 Here we will try and describe usage of some more advanced features that Flux provides to give more control over model building.
 
@@ -34,7 +34,7 @@ For an intro to Flux and automatic differentiation, see this [tutorial](https://
 
 ## Customising Parameter Collection for a Model
 
-Taking reference from our example `Affine` layer from the [basics](../getting_started/basics.md#Building-Layers-1).
+Taking reference from our example `Affine` layer from the [basics](@ref man-basics).
 
 By default all the fields in the `Affine` type are collected as its parameters, however, in some cases it may be desired to hold other metadata in our "layers" that may not be needed for training, and are hence supposed to be ignored while the parameters are collected. With Flux, it is possible to mark the fields of our layers that are trainable in two ways.
 
