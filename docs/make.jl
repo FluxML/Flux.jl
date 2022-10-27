@@ -15,9 +15,6 @@ makedocs(
             "Fitting a Line" => "getting_started/overview.md",
             "Gradients and Layers" => "getting_started/basics.md",
         ],
-        "Tutorials" => [
-            "Linear Regression" => "tutorials/linear_regression.md",
-        ],
         "Building Models" => [
             "Built-in Layers 📚" => "models/layers.md",
             "Recurrence" => "models/recurrence.md",
@@ -44,11 +41,12 @@ makedocs(
              "Flat vs. Nested 📚" => "destructure.md",
              "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
          ],
+         "Tutorials" => [
+            "Linear Regression" => "tutorials/linear_regression.md",
+            "Custom Layers" => "tutorials/advanced.md",  # TODO move freezing to Training
+         ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
-         "Tutorials" => [  # TODO, maybe
-             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
-         ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,

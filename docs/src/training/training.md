@@ -36,7 +36,7 @@ Flux.Optimise.train!
 ```
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo), and
-more information can be found on [Custom Training Loops](../models/advanced.md).
+more information can be found on [Custom Training Loops](../tutorials/advanced.md).
 
 ## Loss Functions
 
@@ -68,7 +68,7 @@ The model to be trained must have a set of tracked parameters that are used to c
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 
-Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../getting_started/basics.md) section. Also, for freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
+Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](../getting_started/basics.md) section. Also, for freezing model parameters, see the [Advanced Usage Guide](../tutorials/advanced.md).
 
 ```@docs
 Flux.params

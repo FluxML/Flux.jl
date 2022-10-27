@@ -16,9 +16,9 @@ Other closely associated packages, also installed automatically, include [Zygote
 
 ## Learning Flux
 
-The [quick start](models/quickstart.md) page trains a simple neural network.
+The [quick start](getting_started/quickstart.md) page trains a simple neural network.
 
-This rest of this documentation provides a from-scratch introduction to Flux's take on models and how they work, starting with [fitting a line](models/overview.md). Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
+This rest of this documentation provides a from-scratch introduction to Flux's take on models and how they work, starting with [fitting a line](getting_started/overview.md). Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
 
 Sections with 📚 contain API listings. The same text is avalable at the Julia prompt, by typing for example `?gpu`.
 
