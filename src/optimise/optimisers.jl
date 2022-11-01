@@ -1,6 +1,3 @@
-using Flux
-using MacroTools: @forward
-
 abstract type AbstractOptimiser end
 
 const EPS = 1e-8

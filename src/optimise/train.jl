@@ -1,7 +1,3 @@
-using ProgressLogging: @progress, @withprogress, @logprogress
-import Zygote: Params, gradient, withgradient
-
-
 """
     update!(opt, p, g)
     update!(opt, ps::Params, gs)
@@ -12,18 +8,23 @@ according to optimizer `opt`  and the gradients `gs` (the gradient `g`).
 As a result, the parameters are mutated and the optimizer's internal state may change.
 The gradient could be mutated as well.
 """
-function update!(opt::AbstractOptimiser, x, x̄)
+function Optimisers.update!(opt::AbstractOptimiser, x, x̄)
   x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
                                           # output are not mutable, see #1510 
   x .-= apply!(opt, x, x̄r)
+
+  return opt, x
 end
 
-function update!(opt::AbstractOptimiser, xs::Params, gs)
+function Optimisers.update!(opt::AbstractOptimiser, xs::Params, gs)
   for x in xs
     isnothing(gs[x]) && continue
     update!(opt, x, gs[x])
   end
+
+  return opt, xs
 end
+Optimisers.update(opt::AbstractOptimiser, xs::Params, gs) = update!(opt, xs, gs)
 
 # Callback niceties
 call(f, xs...) = f(xs...)
@@ -82,6 +83,16 @@ end
 batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
+_build_loss(::AD.AbstractBackend, loss, data) = function _loss(m)
+  return loss(m, data...)
+end
+_build_loss(::ZygoteImplicitBackend, loss, data) = function _loss()
+  return loss(data...)
+end
+_gradient_only(x::Zygote.Grads) = x
+_gradient_only(x::NTuple{1}) = x[1]
+_gradient_only(x) = error("Expected gradient w.r.t. single argument (or Zygote.Grads) but got $x")
+
 """
     train!(loss, pars::Params, data, opt::AbstractOptimiser; [cb])
         
@@ -122,19 +133,18 @@ The callback can call [`Flux.stop`](@ref) to interrupt the training loop.
 
 Multiple callbacks can be passed to `cb` as array.
 """
-function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
+function train!(loss, ad::AD.AbstractBackend, model, data, optstate; cb = () -> ())
   cb = runall(cb)
   itrsz = Base.IteratorSize(typeof(data))
   n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
   @withprogress for (i, d) in enumerate(data)
     try
-      l, gs = withgradient(ps) do
-        loss(batchmemaybe(d)...)
-      end
+      _loss = _build_loss(ad, loss, batchmemaybe(d))
+      l, gs = AD.valud_and_gradient(ad, _loss, model)
       if !isfinite(l)
         throw(DomainError("Loss is $l on data item $i, stopping training"))
       end
-      update!(opt, ps, gs)
+      optstate, model = update(optstate, model, _gradient_only(gs))
       cb()
     catch ex
       if ex isa StopException
@@ -147,7 +157,11 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
     end
     @logprogress iszero(n) ? nothing : i / n
   end
+
+  return optstate, model
 end
+train!(loss, model, data, optstate; kwargs...) =
+  train!(loss, ZygoteImplicitBackend(), model, data, optstate; kwargs...)
 
 """
     @epochs N body

@@ -1,7 +1,15 @@
 module Optimise
 
+using Flux
+using MacroTools: @forward
+import Zygote
+import Zygote: Params, gradient
+using AbstractDifferentiation
+import Optimisers
+import Optimisers: update, update!
 using LinearAlgebra
 import ArrayInterface
+using ProgressLogging: @progress, @withprogress, @logprogress
 
 export train!, update!,
 	Descent, Adam, Momentum, Nesterov, RMSProp,
@@ -10,6 +18,7 @@ export train!, update!,
 	ClipValue, ClipNorm
 
 include("optimisers.jl")
+include("gradients.jl")
 include("train.jl")
 
 end

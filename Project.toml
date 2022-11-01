@@ -1,8 +1,9 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.13.7"
+version = "0.13.8-DEV"
 
 [deps]
+AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
@@ -26,6 +27,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+AbstractDifferentiation = "0.4.3"
 Adapt = "3.0"
 ArrayInterface = "3.1, 4, 5, 6"
 CUDA = "3"
