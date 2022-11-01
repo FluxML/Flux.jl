@@ -5,7 +5,9 @@ using Flux: params
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
+import Tracker
 using Zygote
+using AbstractDifferentiation
 using CUDA
 
 Random.seed!(0)

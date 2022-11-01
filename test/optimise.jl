@@ -1,5 +1,5 @@
 using Flux.Optimise
-using Flux.Optimise: runall
+using Flux.Optimise: runall, ZygoteImplicitBackend, ZygoteExplicitBackend
 using Flux: Params, gradient
 import FillArrays, ComponentArrays
 using Test
@@ -42,6 +42,36 @@ end
       Optimise.update!(opt, θ, θ̄)
     end
     @test loss(rand(10, 10)) < 0.01
+  end
+end
+
+@testset "AD backends" begin
+  # this is hack to make Tracker work
+  AD.gradient(::AD.TrackerBackend, f, xs...) = Tracker.withgradient(f, xs...).grad
+  AD.value_and_gradient(::AD.TrackerBackend, f, xs...) = Tracker.withgradient(f, xs...)
+
+  function _loss_and_model(::ZygoteImplicitBackend, loss, model)
+    return () -> loss(model), Flux.params(model)
+  end
+  _loss_and_model(ad, loss, model) = loss, model
+
+  function _check_gradient(::ZygoteImplicitBackend, model, grad)
+    return grad[model[1].weight] == 2 .* Flux.ones32(5, 10) &&
+           grad[model[2].weight] == 10 .* Flux.ones32(2, 5)
+  end
+  function _check_gradient(ad, model, grad)
+    return grad[1].layers[1].weight == 2 .* Flux.ones32(5, 10) &&
+           grad[1].layers[2].weight == 10 .* Flux.ones32(2, 5)
+  end
+
+  @testset for ad in [ZygoteImplicitBackend(), ZygoteExplicitBackend(), AD.TrackerBackend()]
+    model = Chain(Dense(Flux.ones32(5, 10), false), Dense(Flux.ones32(2, 5), false))
+    x = Flux.ones32(10)
+    _loss, _model = _loss_and_model(ad, m -> sum(m(x)), model)
+    val, grad = AD.value_and_gradient(ad, _loss, _model)
+    @test val == sum(model(x))
+    @test _check_gradient(ad, model, grad)
+    @test _check_gradient(ad, model, AD.gradient(ad, _loss, _model))
   end
 end
 
