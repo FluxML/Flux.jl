@@ -24,7 +24,6 @@ function Optimisers.update!(opt::AbstractOptimiser, xs::Params, gs)
 
   return opt, xs
 end
-Optimisers.update(opt::AbstractOptimiser, xs::Params, gs) = update!(opt, xs, gs)
 
 # Callback niceties
 call(f, xs...) = f(xs...)
@@ -144,7 +143,7 @@ function train!(loss, ad::AD.AbstractBackend, model, data, optstate; cb = () -> 
       if !isfinite(l)
         throw(DomainError("Loss is $l on data item $i, stopping training"))
       end
-      optstate, model = update(optstate, model, _gradient_only(gs))
+      optstate, model = update!(optstate, model, _gradient_only(gs))
       cb()
     catch ex
       if ex isa StopException

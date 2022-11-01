@@ -6,7 +6,7 @@ import Zygote
 import Zygote: Params, gradient
 using AbstractDifferentiation
 import Optimisers
-import Optimisers: update, update!
+import Optimisers: update!
 using LinearAlgebra
 import ArrayInterface
 using ProgressLogging: @progress, @withprogress, @logprogress
