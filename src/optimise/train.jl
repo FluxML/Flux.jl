@@ -139,7 +139,7 @@ function train!(loss, ad::AD.AbstractBackend, model, data, optstate; cb = () -> 
   @withprogress for (i, d) in enumerate(data)
     try
       _loss = _build_loss(ad, loss, batchmemaybe(d))
-      l, gs = AD.valud_and_gradient(ad, _loss, model)
+      l, gs = AD.value_and_gradient(ad, _loss, model)
       if !isfinite(l)
         throw(DomainError("Loss is $l on data item $i, stopping training"))
       end
