@@ -13,8 +13,8 @@ As a result, the parameters are mutated and the optimizer's internal state may c
 The gradient could be mutated as well.
 """
 function update!(opt::AbstractOptimiser, x, x̄)
-  x̄r = ArrayInterface.restructure(x, x̄) # address some cases where Zygote's
-                                          # output are not mutable, see #1510 
+  x̄r = copyto!(similar(x̄), x̄)  # Flux.Optimise assumes it can mutate the gradient. This is not
+                               # safe due to aliasing, nor guaranteed to be possible, e.g. Fill.
   x .-= apply!(opt, x, x̄r)
 end
 
