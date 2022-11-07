@@ -493,6 +493,12 @@ julia> model2[:α](rand(10)) |> size
 
 julia> model2[:β] == model2[2]
 true
+
+julia> model3 = Chain(Parallel(+, Dense(5 => 4), Embedding(15=>4)),
+                      Dense(4 => 17));
+
+julia> model3(randn(5, 10), rand(1:15, 10)) |> size
+(17, 10)
 ```
 """
 struct Parallel{F, T<:Union{Tuple, NamedTuple}}
