@@ -48,18 +48,21 @@ end
 
 @functor Chain
 
-(c::Chain)(x) = _applychain(c.layers, x)
+(c::Chain)(inputs...) = _applychain(c.layers, inputs...)
 
-@generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
-  symbols = vcat(:x, [gensym() for _ in 1:N])
-  calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
-  Expr(:block, calls...)
+@generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, inputs...) where {N}
+  symbols = [gensym() for _ in 1:N]
+  calls = [:($(symbols[i]) = layers[$i]($(symbols[i-1]))) for i in 2:N]
+  Expr(:block,
+       :($(symbols[1]) = layers[1](inputs...)),
+       calls...)
 end
 
-_applychain(layers::NamedTuple, x) = _applychain(Tuple(layers), x)
+_applychain(layers::NamedTuple, inputs...) = _applychain(Tuple(layers), inputs...)
 
-function _applychain(layers::AbstractVector, x)  # type-unstable path, helps compile times
-  for f in layers
+function _applychain(layers::AbstractVector, inputs...)  # type-unstable path, helps compile times
+  x = layers[1](inputs...)
+  for f in @view(layers[2:end])
     x = f(x)
   end
   x
@@ -99,11 +102,11 @@ julia> activations(c, 1)
 (2, 4, 64)
 ```
 """
-activations(c::Chain, input) = _extraChain(Tuple(c.layers), input)
+activations(c::Chain, inputs...) = _extraChain(Tuple(c.layers), inputs...)
 
 # Calculates the forward results of each layer provided in a `Tuple` with `x` as model input.
-function _extraChain(fs::Tuple, x)
-  res = first(fs)(x)
+function _extraChain(fs::Tuple, inputs...)
+  res = first(fs)(inputs...)
   return (res, _extraChain(Base.tail(fs), res)...)
 end
 _extraChain(::Tuple{}, x) = ()

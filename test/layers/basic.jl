@@ -1,5 +1,5 @@
 using Test, Random
-import Flux: activations
+import Flux: activations, OneHotArray, OneHotMatrix, OneHotVector, onehotbatch, params, Zygote
 
 @testset "basic" begin
   @testset "helpers" begin
@@ -214,6 +214,11 @@ import Flux: activations
       input = randn(10, 2)
       @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
       @test size(Parallel(hcat, one = Dense(10, 10), two = identity)(input)) == (10, 4)
+    end
+
+    @testset "parallel chain" begin
+      inputs = (randn(2, 10), randn(3, 10))
+      @test size(Chain(Parallel(vcat, Dense(2, 5), identity), Dense(8, 4))(inputs...)) == (4, 10)
     end
 
     @testset "vararg input" begin
