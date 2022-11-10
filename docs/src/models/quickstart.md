@@ -18,26 +18,36 @@ model = Chain(Dense(2 => 3, tanh), BatchNorm(3), Dense(3 => 2), softmax)
 # The model encapsulates parameters, randomly initialised. Its initial output is:
 out1 = model(noisy)                                               # 2×1000 Matrix{Float32}
 
-# To train the model, we use batches of 64 samples:
-mat = Flux.onehotbatch(truth, [true, false])                      # 2×1000 OneHotMatrix
-data = Flux.DataLoader((noisy, mat), batchsize=64, shuffle=true);
-first(data) .|> summary                                           # ("2×64 Matrix{Float32}", "2×64 Matrix{Bool}")
+# To train the model, we use batches of 64 samples, and one-hot encoding:
+target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
+loader = Flux.DataLoader((noisy, target), batchsize=64, shuffle=true);
+first(loader) .|> summary                                         # ("2×64 Matrix{Float32}", "2×64 Matrix{Bool}")
 
 pars = Flux.params(model)  # contains references to arrays in model
 opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 
 # Training loop, using the whole data set 1000 times:
 for epoch in 1:1_000
-    Flux.train!(pars, data, opt) do x, y
-        # First argument of train! is a loss function, here defined by a `do` block.
-        # This gets x and y, each a 2×64 Matrix, from data, and compares:
-        Flux.crossentropy(model(x), y)
+    losses = []
+    for (x, y) in loader
+        loss, grad = Flux.withgradient(pars) do
+            # Evaluate model and loss inside gradient context:
+            y_hat = model(x)
+            Flux.crossentropy(y_hat, y)  # could use just sum(abs2, y_hat .- y)
+        end
+        # Use the gradient to update the model's parameters (and momentum):
+        Flux.update!(opt, pars, grad)
+        # Logging code, outside gradient context:
+        push!(losses, loss)
+    end
+    if isinteger(log2(epoch))
+        println("after epoch $epoch, loss is ", mean(losses))
     end
 end
 
-pars  # has changed!
+pars  # parameters, momenta and output have all changed
 opt
-out2 = model(noisy)
+out2 = model(noisy)  # first row is prob. of true, second row p(false)
 
 mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
@@ -62,18 +72,10 @@ Since then things have developed a little.
 
 Some things to notice in this example are:
 
-* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2.
+* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. Flux defaults to `Float32`, but most of Julia to `Float64`.
 
-* The `model` can be called like a function, `y = model(x)`. It encapsulates the parameters (and state).
+* The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref ) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref)).
 
-* But the model does not contain the loss function, nor the optimisation rule. Instead the [`Adam()`](@ref Flux.Adam) object stores between iterations the momenta it needs.
+* But the model does not contain the loss function, nor the optimisation rule. The [`Adam`](@ref Flux.Adam) object stores between iterations the momenta it needs. And [`Flux.crossentropy`](@ref Flux.Losses.crossentropy) is an ordinary function.
 
-* The function [`train!`](@ref Flux.train!) likes data as an iterator generating `Tuple`s, here produced by [`DataLoader`](@ref). This mutates both the `model` and the optimiser state inside `opt`.
-
-There are other ways to train Flux models, for more control than `train!` provides:
-
-* Within Flux, you can easily write a training loop, calling [`gradient`](@ref) and [`update!`](@ref Flux.update!).
-
-* For a lower-level way, see the package [Optimisers.jl](https://github.com/FluxML/Optimisers.jl).
-
-* For higher-level ways, see [FluxTraining.jl](https://github.com/FluxML/FluxTraining.jl) and [FastAI.jl](https://github.com/FluxML/FastAI.jl).
+* Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!) which we could use. However, to do anything extra (like logging the loss) an explicit loop is usually clearest.

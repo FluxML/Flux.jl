@@ -18,12 +18,12 @@
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
-Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a simple example to try it out:
+Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
 using Flux  # should install everything for you, including CUDA
 
 x = hcat(digits.(0:3, base=2, pad=2)...) |> gpu  # let's solve the XOR problem!
-y = Flux.onehotbatch(xor.(eachrow(x)...), 0:1) |> gpu
+y = Flux.onehotbatch(xor.(eachrow(cpu(x))...), 0:1) |> gpu
 data = ((Float32.(x), y) for _ in 1:100)  # an iterator making Tuples
 
 model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2)) |> gpu
@@ -35,6 +35,6 @@ Flux.train!(mloss, Flux.params(model), data, optim)  # updates model & optim
 all((softmax(model(x)) .> 0.5) .== y)  # usually 100% accuracy.
 ```
 
-See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
+The [quickstart page](https://fluxml.ai/Flux.jl/stable/models/quickstart/) has a longer version. See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
 
 If you use Flux in your research, please [cite](CITATION.bib) our work.
