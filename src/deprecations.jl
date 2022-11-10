@@ -103,7 +103,7 @@ train!(loss, ps::Params, data, opt) = error(
 
 train!(loss, ps::Params, data, opt::Optimisers.AbstractRule) = error(
   """can't mix implict Params with explict rule from Optimisers.jl
-  To use `Flux.params(m)` in `train!`, the 4th argument must be from the old `Flux.Optimise` sub-mo$
+  To use `Flux.params(m)` in `train!`, the 4th argument must be from the old `Flux.Optimise` sub-module.
   But better to use the new explicit style, in which `m` itself is the 2nd argument.
   """)
 
