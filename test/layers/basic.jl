@@ -338,7 +338,7 @@ import Flux: activations
 
     @testset for reduction in [sum, Statistics.mean, maximum]
       vocab_size, embed_size = 10, 4
-      emb_bag = EmbeddingBag(vocab_size => embed_size, reduction)
+      emb_bag = Flux.EmbeddingBag(vocab_size => embed_size, reduction)
       emb = Flux.Embedding(emb_bag.weight)
       @test size(emb_bag.weight) == (embed_size, vocab_size)
       @test_throws ErrorException emb_bag(2)
