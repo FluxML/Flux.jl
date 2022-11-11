@@ -341,10 +341,7 @@ import Flux: activations
       emb_bag = EmbeddingBag(vocab_size => embed_size, reduction)
       emb = Flux.Embedding(emb_bag.weight)
       @test size(emb_bag.weight) == (embed_size, vocab_size)
-
-      # scalar bag
-      @test emb_bag(2) ≈ emb_bag.weight[:,2]
-      @test emb_bag(3) ≈ emb(3)
+      @test_throws ErrorException emb_bag(2)
 
       # single bag (input as a vector)
       x = rand(1:vocab_size, 3)
