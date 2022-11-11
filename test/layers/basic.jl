@@ -336,9 +336,9 @@ import Flux: activations
     @test_throws ArgumentError  Flux._splitat(data, offsets_non_one)
     @test_throws ArgumentError  Flux._splitat(data, offsets_too_large)
 
-    for reduction in [sum, Statistics.mean, maximum]
+    @testset for reduction in [sum, Statistics.mean, maximum]
       vocab_size, embed_size = 10, 4
-      emb_bag = Flux.EmbeddingBag(vocab_size => embed_size, reduction)
+      emb_bag = EmbeddingBag(vocab_size => embed_size, reduction)
       emb = Flux.Embedding(emb_bag.weight)
       @test size(emb_bag.weight) == (embed_size, vocab_size)
 
@@ -377,17 +377,15 @@ import Flux: activations
       @test y ≈ emb_bag(xvec)
       @test y ≈ z
 
-      # one hot bags. should be identical to Embedding, since the bags
-      # are of size 1.
-      @test emb_bag(Flux.OneHotVector(3, vocab_size)) ≈ emb_bag.weight[:,3]
-      @test emb_bag(Flux.OneHotVector(4, vocab_size)) ≈ emb(Flux.OneHotVector(4, vocab_size))
-      @test_throws DimensionMismatch emb_bag(Flux.OneHotVector(3, 1000))
+      # a one-hot matrix is a bag, but a one-hot vector is not.
+      @test_throws ErrorException emb_bag(Flux.OneHotVector(3, vocab_size))
 
-      x2 = Flux.OneHotMatrix(rand(1:vocab_size, 3), vocab_size)
+      i2 = rand(1:vocab_size, 3)
+      x2 = Flux.OneHotMatrix(i2, vocab_size)
       y2 = emb_bag(x2)
-      z2 = emb(x2)
+      z2 = emb(i2)
       @test y2 isa Matrix{Float32}
-      @test y2 ≈ z2
+      @test y2 ≈ mean(z2, dims=2)
       @test_throws DimensionMismatch emb_bag(Flux.OneHotMatrix(1:5, 1000))
     end
   end

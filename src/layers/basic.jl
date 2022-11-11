@@ -782,16 +782,17 @@ EmbeddingBag(weight) = EmbeddingBag(weight, mean)
 function (m::EmbeddingBag)(data::AbstractVector, offsets::AbstractVector)
   return m(_splitat(data, offsets))
 end
-(m::EmbeddingBag)(idx::Integer) = m.weight[:, idx]
-(m::EmbeddingBag)(bag::AbstractVector{<:Integer}) = vec(m.reduction(NNlib.gather(m.weight, bag), dims=2))
+(m::EmbeddingBag)(inds::AbstractArray{<:Integer}) = dropdims(m.reduction(Embedding(m.weight)(inds), dims=2), dims=2)
+(m::EmbeddingBag)(ind::Integer) = error("EmbeddingBag expects an array of indices, not just one")
 
-# TODO: replace these with `mapreduce(m, hcat, bags)` when
-# optimized versions are available. See #2031 for discussion.
+(m::EmbeddingBag)(hot::AbstractArray{Bool}) = dropdims(m.reduction(Embedding(m.weight)(hot), dims=2), dims=2)
+(m::EmbeddingBag)(hot::AbstractVector{Bool}) = error("EmbeddingBag not defined for a one-hot vector")
+
+# These two could be stack(m, bags), but no AD support yet. (Gradient for weight quite inefficient here.)
 (m::EmbeddingBag)(bags::AbstractVector{<:AbstractVector}) = reduce(hcat, m.(bags))
-(m::EmbeddingBag)(bags::AbstractMatrix) = reduce(hcat, map(m, eachcol(bags)))
+(m::EmbeddingBag)(bags::AbstractArray{<:AbstractVector}) = reshape(m(vec(bags)), :, size(bags)...)
 
-(m::EmbeddingBag)(x::OneHotVector) = m.weight * x
-(m::EmbeddingBag)(x::OneHotMatrix) = m.reduction(m.weight * x, dims = 3)
+(m::EmbeddingBag)(bags::AbstractArray{<:AbstractMatrix{Bool}}) = reshape(reduce(hcat, m.(vec(bags))), :, size(bags)...)
 
 function Base.show(io::IO, m::EmbeddingBag)
   print(io, "EmbeddingBag(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
