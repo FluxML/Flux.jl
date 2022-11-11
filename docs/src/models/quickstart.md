@@ -10,10 +10,14 @@ using Flux, Statistics
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
-truth = map(col -> xor(col...), eachcol(noisy .> 0.5))            # 1000-element Vector{Bool}
+truth = [xor(col[1]>0.5, col[2]>0.5) for col in eachcol(noisy)]   # 1000-element Vector{Bool}
 
 # Define our model, a multi-layer perceptron with one hidden layer of size 3:
-model = Chain(Dense(2 => 3, tanh), BatchNorm(3), Dense(3 => 2), softmax)
+model = Chain(
+    Dense(2 => 3, tanh),   # activation function inside...
+    BatchNorm(3),
+    Dense(3 => 2),
+    softmax)               # ... but softmax outside a layer.
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
 out1 = model(noisy)                                               # 2×1000 Matrix{Float32}
@@ -21,7 +25,7 @@ out1 = model(noisy)                                               # 2×1000 Matr
 # To train the model, we use batches of 64 samples, and one-hot encoding:
 target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
 loader = Flux.DataLoader((noisy, target), batchsize=64, shuffle=true);
-first(loader) .|> summary                                         # ("2×64 Matrix{Float32}", "2×64 Matrix{Bool}")
+# 16-element DataLoader with first element: (2×64 Matrix{Float32}, 2×64 OneHotMatrix)
 
 pars = Flux.params(model)  # contains references to arrays in model
 opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
@@ -74,8 +78,10 @@ Some things to notice in this example are:
 
 * The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. Flux defaults to `Float32`, but most of Julia to `Float64`.
 
-* The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref ) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref)).
+* The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
 
 * But the model does not contain the loss function, nor the optimisation rule. The [`Adam`](@ref Flux.Adam) object stores between iterations the momenta it needs. And [`Flux.crossentropy`](@ref Flux.Losses.crossentropy) is an ordinary function.
 
-* Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!) which we could use. However, to do anything extra (like logging the loss) an explicit loop is usually clearest.
+* Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!) which could replace the `for (x, y) in loader` loop. However, to do anything extra (like logging the loss) an explicit loop is usually clearest.
+
+* The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
