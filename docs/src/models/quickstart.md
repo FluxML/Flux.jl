@@ -76,12 +76,14 @@ Since then things have developed a little.
 
 Some things to notice in this example are:
 
-* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. Flux defaults to `Float32`, but most of Julia to `Float64`.
+* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. 
+
+* Flux defaults to `Float32`, but most of Julia to `Float64`.
 
 * The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
 
 * But the model does not contain the loss function, nor the optimisation rule. The [`Adam`](@ref Flux.Adam) object stores between iterations the momenta it needs. And [`Flux.crossentropy`](@ref Flux.Losses.crossentropy) is an ordinary function.
 
-* Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!) which could replace the `for (x, y) in loader` loop. However, to do anything extra (like logging the loss) an explicit loop is usually clearest.
-
 * The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
+
+Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!) which could replace the `for (x, y) in loader` loop. However, to do anything extra (like logging the loss) an explicit loop is usually clearest.
