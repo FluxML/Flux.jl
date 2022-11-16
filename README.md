@@ -20,17 +20,19 @@ Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, a
 
 Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
-using Flux  # should install everything for you, including CUDA
+using Flux, Zygote  # should install everything for you, including CUDA
 
-x = hcat(digits.(0:3, base=2, pad=2)...) |> gpu  # let's solve the XOR problem!
-y = Flux.onehotbatch(xor.(eachrow(cpu(x))...), 0:1) |> gpu
-data = ((Float32.(x), y) for _ in 1:100)  # an iterator making Tuples
+x = hcat(digits.(0:3, base=2, pad=2)...)  # data for the XOR problem
+y = Flux.onehotbatch(xor.(eachrow(x)...), 0:1)
 
-model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2)) |> gpu
+model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2))
+pars = Flux.params(model)  # a dictionary of arrays in model
 optim = Adam(0.1, (0.7, 0.95))
-mloss(x, y) = Flux.logitcrossentropy(model(x), y)  # closes over model
 
-Flux.train!(mloss, Flux.params(model), data, optim)  # updates model & optim
+for _ in 1:100
+    grad = gradient(() -> Flux.logitcrossentropy(model(x), y), pars)
+    Flux.update!(optim, pars, grad)  # this changes model & optim
+end
 
 all((softmax(model(x)) .> 0.5) .== y)  # usually 100% accuracy.
 ```
@@ -38,3 +40,7 @@ all((softmax(model(x)) .> 0.5) .== y)  # usually 100% accuracy.
 The [quickstart page](https://fluxml.ai/Flux.jl/stable/models/quickstart/) has a longer version. See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
 
 If you use Flux in your research, please [cite](CITATION.bib) our work.
+
+
+
+
