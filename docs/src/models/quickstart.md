@@ -6,7 +6,7 @@ If you haven't, then you might prefer the [Fitting a Straight Line](overview.md)
 
 ```julia
 # With Julia 1.7+, this will prompt if neccessary to install everything, including CUDA:
-using Flux, Statistics
+using Flux, Zygote, Statistics
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
@@ -14,10 +14,10 @@ truth = [xor(col[1]>0.5, col[2]>0.5) for col in eachcol(noisy)]   # 1000-element
 
 # Define our model, a multi-layer perceptron with one hidden layer of size 3:
 model = Chain(
-    Dense(2 => 3, tanh),   # activation function inside...
+    Dense(2 => 3, tanh),   # activation function inside layer
     BatchNorm(3),
     Dense(3 => 2),
-    softmax)               # ... but softmax outside a layer.
+    softmax)
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
 out1 = model(noisy)                                               # 2×1000 Matrix{Float32}
@@ -34,15 +34,13 @@ opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 for epoch in 1:1_000
     losses = []
     for (x, y) in loader
-        loss, grad = Flux.withgradient(pars) do
+        loss, grad = Zygote.withgradient(pars) do
             # Evaluate model and loss inside gradient context:
             y_hat = model(x)
-            Flux.crossentropy(y_hat, y)  # could use just sum(abs2, y_hat .- y)
+            Flux.crossentropy(y_hat, y)
         end
-        # Use the gradient to update the model's parameters (and momentum):
         Flux.update!(opt, pars, grad)
-        # Logging code, outside gradient context:
-        push!(losses, loss)
+        push!(losses, loss)  # logging, outside gradient context
     end
     if isinteger(log2(epoch))
         println("after epoch $epoch, loss is ", mean(losses))
