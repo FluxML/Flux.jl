@@ -9,8 +9,8 @@ using CUDA
 using NNlib: logsoftmax, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
 import Base.Broadcast: broadcasted
 
-export mse, mae, msle,
-    label_smoothing,
+export label_smoothing,
+    mse, mae, msle,
     crossentropy, logitcrossentropy,
     binarycrossentropy, logitbinarycrossentropy,
     kldivergence,
@@ -19,9 +19,33 @@ export mse, mae, msle,
     dice_coeff_loss,
     poisson_loss,
     hinge_loss, squared_hinge_loss,
-    binary_focal_loss, focal_loss, siamese_contrastive_loss
+    binary_focal_loss, focal_loss,
+    siamese_contrastive_loss
 
 include("utils.jl")
 include("functions.jl")
+
+for loss in Symbol.([
+  mse, mae, msle,
+  crossentropy, logitcrossentropy,
+  binarycrossentropy, logitbinarycrossentropy,
+  kldivergence,
+  huber_loss,
+  tversky_loss,
+  dice_coeff_loss,
+  poisson_loss,
+  hinge_loss, squared_hinge_loss,
+  binary_focal_loss, focal_loss,
+  siamese_contrastive_loss,
+  ])
+  @eval begin
+    """
+        $($loss)(model, x, y)
+  
+    This method calculates `ŷ = model(x)`. Accepts the same keyword arguments.
+    """
+    $loss(f, x::AbstractArray, y::AbstractArray; kw...) = $loss(f(x), y; kw...)
+  end
+end
 
 end #module
