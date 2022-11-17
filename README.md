@@ -20,7 +20,7 @@ Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, a
 
 Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
-using Flux, Zygote  # should install everything for you, including CUDA
+using Flux  # should install everything for you, including CUDA
 
 x = hcat(digits.(0:3, base=2, pad=2)...)  # data for the XOR problem
 y = Flux.onehotbatch(xor.(eachrow(x)...), 0:1)

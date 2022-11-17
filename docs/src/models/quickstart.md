@@ -6,7 +6,7 @@ If you haven't, then you might prefer the [Fitting a Straight Line](overview.md)
 
 ```julia
 # With Julia 1.7+, this will prompt if neccessary to install everything, including CUDA:
-using Flux, Zygote, Statistics
+using Flux, Statistics
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
@@ -34,7 +34,7 @@ opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 for epoch in 1:1_000
     losses = []
     for (x, y) in loader
-        loss, grad = Zygote.withgradient(pars) do
+        loss, grad = withgradient(pars) do
             # Evaluate model and loss inside gradient context:
             y_hat = model(x)
             Flux.crossentropy(y_hat, y)
