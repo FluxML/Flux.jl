@@ -31,9 +31,6 @@ julia> x1, y1 = [0.2, -0.3], [0.4];  # use the same data for two steps:
 julia> Flux.train!(model, [(x1, y1), (x1, y1)], opt) do m, x, y
          sum(abs.(m(x) .- y)) * 100
        end
-2-element Vector{Float32}:
- 40.1
- 38.7
 
 julia> model.bias  # was zero, mutated by Flux.train!
 1-element Vector{Float32}:
@@ -81,8 +78,6 @@ It adds only a few featurs to the loop above:
 
 * Stop with a `DomainError` if the loss is infinite or `NaN` at any point.
 
-* Return a vector containing the value of the loss function at each datapoint.
-
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
 Note that the built-in loss functions accept 3 arguments, allowing for instance
@@ -117,7 +112,6 @@ function train!(loss, model, data, opt; cb = nothing)
     push!(losses, l)
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
-  return losses  # Not entirely sure returning losses is a good idea, as it may conflict with later returning immutable models alla Optimisers.jl
 end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state

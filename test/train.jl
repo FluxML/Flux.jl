@@ -35,5 +35,4 @@ end
 @testset "Explicit Flux.train! features" begin
   # Test errors from wrong kind of iterator
   # Test NaN / Inf early stop
-  # Test that loss is returned
 end
