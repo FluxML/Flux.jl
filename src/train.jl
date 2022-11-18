@@ -101,15 +101,14 @@ Note that the built-in loss functions accept 3 arguments, allowing for instance
 function train!(loss, model, data, opt; cb = nothing)
   isnothing(cb) || error("""train! does not support callback functions.
                             For more control use a loop with `gradient` and `update!`.""")
-  losses = Float32[]
   @withprogress for (i,d) in enumerate(data)
     d isa Tuple || error("""train! expects as data an iterator producing tuples, but got $(typeof(d)).
                             Pass it `((d,) for d in data)`, or use `gradient` and `update!` for more control.""")
-    # l, (g, _...) = explicit_withgradient(loss, model, d...)  # BTW this un-thunks gradient w.r.t. data. Could avoid that
-    l, (g, _...) = explicit_withgradient(m -> loss(m, d...), model)
-    isfinite(l) || throw(DomainError("loss function returned $l, stopping training"))
-    opt, model = Optimisers.update!(opt, model, g)
-    push!(losses, l)
+    l, gs = Zygote.withgradient(m -> loss(m, d...), model)
+    if !isfinite(l)
+      throw(DomainError("Loss is $l on data item $i, stopping training"))
+    end
+    opt, model = Optimisers.update!(opt, model, gs[1])
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
 end
@@ -130,7 +129,5 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
   end
   state
 end
-
-explicit_withgradient(f, args...) = Zygote.withgradient(f, args...)  # can overload this to use e.g. Yota / Diffractor
 
 end # module
