@@ -18,7 +18,6 @@ makedocs(
             "Fitting a Line" => "models/overview.md",
             "Gradients and Layers" => "models/basics.md",
             "Training" => "training/training.md",
-            "Regularisation" => "models/regularisation.md",  # consolidated in #2114
             "Recurrence" => "models/recurrence.md",
             "GPU Support" => "gpu.md",
             "Saving & Loading" => "saving.md",
@@ -31,7 +30,7 @@ makedocs(
             "Activation Functions" => "models/activation.md",
             "Weight Initialisation" => "utilities.md",
             "Loss Functions" => "models/losses.md",
-            "Optimisation Rules" => "training/optimisers.md",  # TODO move optimiser intro up to Training
+            "Optimisation Rules" => "training/optimisers.md",
             "Shape Inference" => "outputsize.md",
             "Flat vs. Nested" => "destructure.md",
             "Callback Helpers" => "training/callbacks.md",
