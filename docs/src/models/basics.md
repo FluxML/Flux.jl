@@ -1,6 +1,6 @@
 # [How Flux Works: Gradients and Layers](@id man-basics)
 
-## Taking Gradients
+## [Taking Gradients](@id man-taking-gradients)
 
 Flux's core feature is taking gradients of Julia code. The `gradient` function takes another Julia function `f` and a set of arguments, and returns the gradient with respect to each argument. (It's a good idea to try pasting these examples in the Julia terminal.)
 
@@ -29,35 +29,77 @@ julia> gradient(f, [2, 1], [2, 0])
 ([0.0, 2.0], [-0.0, -2.0])
 ```
 
-These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model. 
+These gradients are based on `x` and `y`. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model.
 
-
-Machine learning often can have *hundreds* of parameters, so Flux lets you work with collections of parameters, via the `params` functions. You can get the gradient of all parameters used in a program without explicitly passing them in.
+Machine learning often can have *hundreds* of parameter arrays.
+Instead of passing them to `gradient` individually, we can store them together in a structure.
+The simplest example is a named tuple, created by the following syntax:
 
 ```jldoctest basics
-julia> x = [2, 1];
+julia> nt = (a = [2, 1], b = [2, 0], c = abs2);
 
-julia> y = [2, 0];
+julia> g(x::NamedTuple) = sum(abs2, x.a .- x.b);
 
-julia> gs = gradient(Flux.params(x, y)) do
-         f(x, y)
-       end
-Grads(...)
+julia> g(nt)
+1
 
-julia> gs[x]
-2-element Vector{Float64}:
- 0.0
- 2.0
-
-julia> gs[y]
-2-element Vector{Float64}:
- -0.0
- -2.0
+julia> dg_nt = gradient(g, nt)[1]
+(a = [0.0, 2.0], b = [-0.0, -2.0], c = nothing)
 ```
 
-Here, `gradient` takes a zero-argument function; no arguments are necessary because the `params` tell it what to differentiate.
+Notice that `gradient` has returned a matching structure. The field `dg_nt.a` is the gradient
+for `nt.a`, and so on. Some fields have no gradient, indicated by `nothing`. 
 
-This will come in really handy when dealing with big, complicated models. For now, though, let's start with something simple.
+Rather than define a function like `g` every time (and think up a name for it),
+it is often useful to use anonymous functions: this one is `x -> sum(abs2, x.a .- x.b)`.
+Anonymous functions can be defined either with `->` or with `do`,
+and such `do` blocks are often useful if you have a few steps to perform:
+
+```jldoctest basics
+julia> gradient((x, y) -> sum(abs2, x.a ./ y .- x.b), nt, [1, 2])
+((a = [0.0, 0.5], b = [-0.0, -1.0], c = nothing), [-0.0, -0.25])
+
+julia> gradient(nt, [1, 2]) do x, y
+         z = x.a ./ y
+         sum(x.c, z .- x.b)
+       end
+((a = [0.0, 0.5], b = [-0.0, -1.0], c = nothing), [-0.0, -0.25])
+```
+
+Sometimes you may want to know the value of the function, as well as its gradient.
+Rather than calling the function a second time, you can call [`withgradient`](@ref Zygote.withgradient) instead:
+
+```
+julia> Flux.withgradient(g, nt)
+(val = 1, grad = ((a = [0.0, 2.0], b = [-0.0, -2.0], c = nothing),))
+```
+
+!!! note
+    Flux used to handle many parameters in a different way, using the [`params`](@ref Flux.params) function.
+    This uses a method of `gradient` which takes a zero-argument function, and returns a dictionary
+    through which the resulting gradients can be looked up:
+
+    ```jldoctest basics
+    julia> x = [2, 1];
+
+    julia> y = [2, 0];
+
+    julia> gs = gradient(Flux.params(x, y)) do
+             f(x, y)
+           end
+    Grads(...)
+
+    julia> gs[x]
+    2-element Vector{Float64}:
+     0.0
+     2.0
+
+    julia> gs[y]
+    2-element Vector{Float64}:
+     -0.0
+     -2.0
+    ```
+
 
 ## Building Simple Models
 
