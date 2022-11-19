@@ -74,7 +74,7 @@ julia> Flux.withgradient(g, nt)
 (val = 1, grad = ((a = [0.0, 2.0], b = [-0.0, -2.0], c = nothing),))
 ```
 
-!!! note
+!!! note "Implicit gradients"
     Flux used to handle many parameters in a different way, using the [`params`](@ref Flux.params) function.
     This uses a method of `gradient` which takes a zero-argument function, and returns a dictionary
     through which the resulting gradients can be looked up:

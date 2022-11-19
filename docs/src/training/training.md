@@ -59,7 +59,7 @@ structures are what Zygote calls "explicit" gradients.
 It is important that the execution of the model takes place inside the call to `gradient`,
 in order for the influence of the model's parameters to be observed by Zygote.
 
-!!! note
+!!! note "Explicit vs implicit gradients"
     Flux used to use Zygote's "implicit" mode, which looks like this:
     ```
     pars = Flux.params(model)
@@ -79,10 +79,10 @@ within the call to `gradient`. For instance, we could define a function
 loss(y_hat, y) = sum((y_hat .- y).^2)
 ```
 or write this directly inside the `do` block above. Many commonly used functions,
-like `mse` for mean squared error or `crossentropy` for cross-entropy loss,
+like [`mse`](@ref Flux.Losses.mse) for mean-squared error or [`crossentropy`](@ref Flux.Losses.crossentropy) for cross-entropy loss,
 are available from the [`Flux.Losses`](../models/losses.md) module.
 
-!!! note
+!!! note "Implicit-style loss functions"
     Flux used to need a loss function which closed over a reference to the model,
     instead of being a pure function. Thus in old code you may see something like
     ```
@@ -110,14 +110,14 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-This is wrapped up as a function `update!`, which can be used as follows:
+This is wrapped up as a function [`update!`](@ref Flux.Optimise.update!), which can be used as follows:
 
 ```julia
 Flux.update!(Descent(0.01), model, grads[1])
 ```
 
 There are many other optimisation rules, which adjust the step size and direction.
-Most require some memory of the gradients from earlier steps. The function `setup`
+Most require some memory of the gradients from earlier steps. The function [`setup`](@ref Flux.Train.setup)
 creates the necessary storage for this, for a particular model. This should be done
 once, before training, and looks like this: 
 
@@ -133,11 +133,11 @@ for data in train_set
 end
 ```
 
-Many commonly used optimisation rules, such as `Adam`, are built-in.
+Many commonly used optimisation rules, such as [`Adam`](@ref Flux.Optimise.Adam), are built-in.
 These are listed on the [optimisers](@ref man-optimisers) page.
 
 
-!!! note
+!!! note "Implicit-style optimiser state"
     This `setep` makes another tree-like structure. Old versions of Flux did not do this,
     and instead stored a dictionary-like structure within the optimiser `Adam(0.001)`.
     This was initialised on first use of the version of `update!` for "implicit" parameters.
@@ -183,8 +183,6 @@ the two words mean the same thing) both for efficiency and for better results.
 This can be easily done using the [`DataLoader`](@ref Flux.Data.DataLoader):
 
 ```julia
-X = rand(28, 28, 60_000)
-Y = rand(0:9, 60_000)
 data = Flux.DataLoader((X, Y), batchsize=32)
 
 x1, y1 = first(data)
@@ -209,7 +207,7 @@ train!(model, train_set, opt) do m, x, y
 end
 ```
 
-!!! note
+!!! note "Implicit-style `train!`"
     This is the "explicit" method of `train!`, which takes the result of `setup` as its 4th argument.
     The 1st argument (from the `do` block) is a function which accepts the model itself.
     Old Flux versions provided a method of `train!` for "implicit" parameters,
