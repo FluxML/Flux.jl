@@ -1,4 +1,4 @@
-# Random Weight Initialisation
+# [Random Weight Initialisation](@id man-init-funcs)
 
 Flux initialises convolutional layers and recurrent cells with `glorot_uniform` by default.
 Most layers accept a function as an `init` keyword, which replaces this default. For example:

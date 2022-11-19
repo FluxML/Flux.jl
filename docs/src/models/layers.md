@@ -1,18 +1,21 @@
 # Built-in Layer Types
 
-If you started at the beginning, then you have already met the basic [`Dense`](@ref) layer, and seen [`Chain`](@ref) for combining layers. These core layers form the foundation of almost all neural networks. 
+If you started at the beginning of the guide, then you have already met the
+basic [`Dense`](@ref) layer, and seen [`Chain`](@ref) for combining layers.
+These core layers form the foundation of almost all neural networks.
 
-The `Dense` layer 
+The `Dense` exemplifies several features:
 
-* Weight matrices are created ... Many layers take an `init` keyword, accepts a function acting like `rand`. That is, `init(2,3,4)` creates an array of this size.  ... always on the CPU. 
+* It contains an an [activation function](@ref man-activations), which is broadcasted over the output. Because this broadcast can be fused with other operations, doing so is more efficient than applying the activation function separately.
 
-* An activation function. This is broadcast over the output: `Flux.Scale(3, tanh)([1,2,3]) ≈ tanh.(1:3)`
+* It take an `init` keyword, which accepts a function acting like `rand`. That is, `init(2,3,4)` should create an array of this size. Flux has [many such functions](@ref man-init-funcs) built-in. All make a CPU array, moved later with [gpu](@ref Flux.gpu) if desired.
 
-* The bias vector is always intialised `Flux.zeros32`. The keyword `bias=false` will turn this off.
+* The bias vector is always intialised [`Flux.zeros32`](@ref). The keyword `bias=false` will turn this off, i.e. keeping the bias permanently zero.
 
+* It is annotated with [`@layer`](@ref Flux.@layer), which means that [`params`](@ref Flux.params) will see the contents, and [gpu](@ref Flux.gpu) will move their arrays to the GPU.
 
-* All layers are annotated with `@layer`, which means that `params` will see the contents, and `gpu` will move their arrays to the GPU.
-
+By contrast, `Chain` itself contains no parameters, but connects other layers together.
+The section on [dataflow layers](@ref man-dataflow-layers) introduces others like this,
 
 ## Fully Connected
 
@@ -32,7 +35,7 @@ They all expect images in what is called WHCN order: a batch of 32 colour images
 
 Besides images, 2D data, they also work with 1D data, where for instance stereo sound recording with 1000 samples might have `size(x) == (1000, 2, 1)`. They will also work with 3D data, `ndims(x) == 5`, where again the last two dimensions are channel and batch.
 
-To understand how `stride` ?? there's a cute article.
+To understand how strides and padding work, the article by [Dumoulin & Visin](https://arxiv.org/abs/1603.07285) has great illustrations.
 
 ```@docs
 Conv
@@ -77,9 +80,9 @@ Flux.Embedding
 Flux.EmbeddingBag
 ```
 
-## Dataflow Layers, or Containers
+## [Dataflow Layers, or Containers](@id man-dataflow-layers)
 
-The basic `Chain(F, G, H)` applies the layers it contains in sequence, equivalent to `H ∘ G ∘ F`. Flux has some other layers which contain layers, but connect them up in a more complicated way: `SkipConnection` allows ResNet's ??residual connection.
+The basic `Chain(F, G, H)` applies the layers it contains in sequence, equivalent to `H ∘ G ∘ F`. Flux has some other layers which contain layers, but connect them up in a more complicated way: `SkipConnection` allows ResNet's residual connection.
 
 These are all defined with [`@layer`](@ref)` :exand TypeName`, which tells the pretty-printing code that they contain other layers.
 
