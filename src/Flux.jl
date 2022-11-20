@@ -34,9 +34,11 @@ export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
 
+export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
+
 include("train.jl")
 using .Train
-# using .Train: setup, @train_autodiff
+using .Train: setup
 
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)

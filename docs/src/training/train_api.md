@@ -1,10 +1,16 @@
 # Training API
 
-
 ```@docs
 Flux.Train.setup
-Flux.Train.update!
-Flux.Train.train!
+Flux.Optimise.train!(loss, model, data, opt; cb)
+```
+
+The new version of Flux's training code was written as an independent package, called Optimisers.jl.
+However, at present all Flux models contain parameter arrays (such as `Array`s and `CuArray`s)
+which can be updated in-place. Thus objects returned by `update!` can be ignored.
+
+```@docs
+Optimisers.update!
 ```
 
 ## Implicit style
@@ -15,13 +21,11 @@ Flux 0.13 is the transitional version which supports both.
 
 For full details on how to use the implicit style, see [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
 
-
 ```@docs
 Flux.params
-Flux.Optimise.update!
-Flux.Optimise.train!
+Optimisers.update!(opt::Flux.Optimise.AbstractOptimiser, xs::Flux.Params, gs)
+Flux.Optimise.train!(loss, ps::Flux.Params, data, opt::Flux.Optimise.AbstractOptimiser; cb)
 ```
-
 
 Note that, by default, `train!` only loops over the data once (a single "epoch").
 A convenient way to run multiple epochs from the REPL is provided by `@epochs`.
@@ -69,3 +73,4 @@ cb = function ()
   accuracy() > 0.9 && Flux.stop()
 end
 ```
+

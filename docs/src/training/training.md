@@ -1,4 +1,4 @@
-# [Training](@id man-training)
+# [Training a Flux Model](@id man-training)
 
 Training refers to the process of slowly adjusting the parameters of a model to make it work better.
 Besides the model itself, we will need three things:
