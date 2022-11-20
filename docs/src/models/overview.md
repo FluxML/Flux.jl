@@ -127,7 +127,7 @@ julia> train!(loss, predict, data, opt)
 And check the loss:
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> loss(x_train, y_train)
+julia> loss(predict, x_train, y_train)
 116.38745f0
 ```
 
