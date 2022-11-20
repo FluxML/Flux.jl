@@ -34,18 +34,23 @@ end
 
 @testset "Explicit Flux.train! features" begin
   @testset "Stop on NaN" begin
-    m = Dense(1 => 1)
-    m.weight .= 0
+    m1 = Dense(1 => 1)
+    m1.weight .= 0
     CNT = 0
-    @test_throws DomainError Flux.train!(m, tuple.(1:100), Descent(0.1)) do (i,)
+    @test_throws DomainError Flux.train!(m1, tuple.(1:100), Descent(0.1)) do m, i
       CNT += 1
       (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
     end
     @test CNT == 51  # stopped early
-    @test m.weight[1] ≈ -5  # did not corrupt weights
+    @test m1.weight[1] ≈ -5  # did not corrupt weights
   end
   @testset "data must give tuples" begin
-    m = Dense(1 => 1)
-    @test_throws ErrorException Flux.train!((args...,) -> 1, m, [(x=1, y=2) for _ in 1:3], Descent(0.1))
+    m1 = Dense(1 => 1)
+    @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(x=1, y=2) for _ in 1:3], Descent(0.1))
+  end
+  @testset "callbacks give helpful error" begin
+    m1 = Dense(1 => 1)
+    cb = () -> println("this should not be printed")
+    @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
   end
 end
