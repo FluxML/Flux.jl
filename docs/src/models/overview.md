@@ -17,7 +17,7 @@ This example will predict the output of the function `4x + 2`. Making such predi
 
 First, import `Flux` and define the function we want to simulate:
 
-```jldoctest overview setup = :(using Statistics)
+```jldoctest overview
 julia> using Flux
 
 julia> actual(x) = 4x + 2
@@ -77,7 +77,9 @@ julia> predict(x_train)
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> loss(model, x, y) = Statistics.mean(abs2.(model(x) .- y));
+julia> using Statistics
+
+julia> loss(model, x, y) = mean(abs2.(model(x) .- y));
 
 julia> loss(predict, x_train, y_train)
 122.64734f0
