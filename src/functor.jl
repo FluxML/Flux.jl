@@ -154,7 +154,7 @@ julia> typeof(m_cpu.W)
 Matrix{Float32}
 ```
 """
-cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x)
+cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x, exclude = _isleaf)
 
 _isbitsarray(::AbstractArray{<:Number}) = true
 _isbitsarray(::AbstractArray{T}) where T = isbitstype(T)

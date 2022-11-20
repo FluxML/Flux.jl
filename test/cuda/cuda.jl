@@ -165,4 +165,16 @@ end
   @test gpu(g2) isa CuArray
   @test gpu(g2) ≈ cu(Vector(g2))
   @test parent(gpu(g3)) isa CuArray
+
+
+  #Issue #2116  
+  struct A2116
+    x::Int
+    y::Int
+  end
+  x = [A2116(1,1), A2116(2,2)]
+  xgpu = gpu(x) 
+  @test xgpu isa CuVector{A2116}
+  @test cpu(xgpu) isa Vector{A2116} 
+  @test cpu(gpu([CartesianIndex(1)])) isa Vector
 end
