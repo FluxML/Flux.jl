@@ -382,7 +382,7 @@ import Flux: activations
       y2 = emb_bag(x2)
       z2 = emb(i2)
       @test y2 isa Vector{Float32}
-      @test y2 ≈ vec(mean(z2, dims=2))
+      @test y2 ≈ vec(reduction(z2, dims=2))
       @test_throws DimensionMismatch emb_bag(Flux.OneHotMatrix(1:5, 1000))
     end
   end
