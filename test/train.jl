@@ -54,3 +54,40 @@ end
     @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
   end
 end
+
+@testset "Explicit Flux.update! features" begin
+  m = Chain(Dense(2=>3, tanh), Dense(3=>1), only)
+  x = rand(2)
+  y1 = m(x)  # before
+
+  # Implicit gradient
+  gold = gradient(() -> m(x), Flux.params(m))
+  @test gold isa Flux.Zygote.Grads
+  @test_throws ErrorException Flux.update!(Flux.Adam(), m, gold)  # friendly
+  Flux.update!(Flux.Adam(), Flux.params(m), gold)
+  y2 = m(x)
+  @test y2 < y1
+
+  # Explicit gradient
+  gs = gradient(marg -> marg(x), m)
+  @test gs isa Tuple
+  @test_throws ErrorException Flux.update!(Flux.Adam(), Flux.params(m), gs) # friendly
+  @test_throws ErrorException Flux.update!(Flux.Adam(), Flux.params(m), gs[1]) # friendly
+  @test_throws ErrorException Flux.update!(Flux.Adam(), m, gs)  # friendly
+  @test_throws ErrorException Flux.update!(Flux.Adam(), m, gs[1])  # friendly
+  s = Flux.setup(Adam(), m)
+  @info "ignore this warning, just testing an upgrade path:"
+  Flux.update!(s, m, gs)  # Chain + Tuple can be unambiguously sorted out
+  y3 = m(x)
+  @test y3 < y2
+  Flux.update!(s, m, gs[1])  # finally, this is the correct thing
+  y4 = m(x)
+  @test y4 < y3
+
+  # Also check that if you import the new Adam, then Flux.setup does still work!
+  s2 = Flux.setup(Optimisers.Adam(), m)
+  Flux.update!(s2, m, gs[1])
+  y5 = m(x)
+  @test y5 < y4
+end
+

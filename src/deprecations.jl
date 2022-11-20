@@ -134,6 +134,43 @@ _old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon
 
 _old_to_new(rule) = error("Flux.setup does not know how to translate this old-style implicit rule to a new-style Optimisers.jl explicit rule")
 
+# Since `update!` should be called in a loop, it makes less sense to call `setup` for you if you forgot.
+# But let's make sure that such uses give a helpful error:
+import .Optimise: update!
+
+function update!(opt::Optimise.AbstractOptimiser, model, grad)
+  # This error method requires narrowing the main worker method of Flux.Optimise
+  # to accept only arrays. Remove if this causes problems!
+  # update!(opt::Flux.Optimise.AbstractOptimiser, x::AbstractArray, x̄)
+  error("""Invalid input to `update!`.
+    * For the implicit style, this needs `update(::AbstractOptimiser, ::Params, ::Grads)`
+    * For the explicit style, `update(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    """)
+end
+
+# An easy error to make is to pass result of explicit gradient(...), not gradient(...)[1]
+# Can't catch every case, but can catch many simple Flux models:
+
+function update!(opt, model::Chain, grads::Tuple)
+  # Zygote will make a NamedTuple{(:layers,)} for the gradient of Chain, Diffractor a Tangent
+  @warn """explicit `update!(opt, model, grad)` wants the gradient for the model alone,
+    not the whole tuple from `gradient(m -> loss(m, x, y), model)`. You probably want `grads[1]`."""
+  update!(opt, model, grads[1])
+end
+
+function update!(opt::Optimise.AbstractOptimiser, model::Chain, grads::Tuple)  # ambiguity
+  update!(opt, model, grads[1])  # calls error case "Invalid input" just above
+end
+
+# One more easy error to catch is using explicit gradient with `params(m)`:
+
+function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, NamedTuple})
+  error("""can't mix implicit Params with explicit gradients!
+    * For the implicit style, this needs `update(::AbstractOptimiser, ::Params, ::Grads)` with implicit gradient.
+    * For the explicit style, `update(state, model, grad)` needs the model itself, and `state = Flux.setup(opt, model)`.
+    """)
+end
+
 # v0.14 deprecations
 
 # Enable these when 0.14 is released, and delete const ClipGrad = Optimise.ClipValue etc: 

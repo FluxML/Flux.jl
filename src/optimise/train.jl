@@ -19,7 +19,7 @@ The gradient could be mutated as well.
     This method for implicit `Params` (and `AbstractOptimiser`) will be removed from Flux 0.14.
     The explicit method `update!(opt, model, grad)` from Optimisers.jl will remain.
 """
-function update!(opt::AbstractOptimiser, x, x̄)
+function update!(opt::AbstractOptimiser, x::AbstractArray, x̄)
   x̄r = copyto!(similar(x̄), x̄)  # Flux.Optimise assumes it can mutate the gradient. This is not
                                # safe due to aliasing, nor guaranteed to be possible, e.g. Fill.
   x .-= apply!(opt, x, x̄r)
