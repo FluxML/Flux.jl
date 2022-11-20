@@ -114,21 +114,9 @@ julia> predict.bias
  0.0
 ```
 
-The dimensions of these model parameters depend on the number of inputs and outputs. Since models can have hundreds of inputs and several layers, it helps to have a function to collect the parameters into the data structure Flux expects:
+The dimensions of these model parameters depend on the number of inputs and outputs.
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> parameters = Flux.params(predict)
-Params([Float32[0.9066542], Float32[0.0]])
-```
-
-These are the parameters Flux will change, one step at a time, to improve predictions. At each step, the contents of this `Params` object changes too, since it is just a collection of references to the mutable arrays inside the model: 
-
-```jldoctest overview
-julia> predict.weight in parameters, predict.bias in parameters
-(true, true)
-```
-
-The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
+Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
 
 This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`Flux.train!`](@ref) like this:
 
@@ -146,8 +134,8 @@ julia> loss(x_train, y_train)
 It went down. Why? 
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> parameters
-Params([Float32[7.5777884], Float32[1.9466728]])
+julia> predict.weight, predict.bias
+(Float32[7.5777884], Float32[1.9466728])
 ```
 
 The parameters have changed. This single step is the essence of machine learning.
@@ -165,7 +153,7 @@ julia> loss(predict, x_train, y_train)
 0.00339581f0
 
 julia> parameters
-Params([Float32[4.0178537], Float32[2.0050256]])
+(Float32[4.0178537], Float32[2.0050256])
 ```
 
 After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.
