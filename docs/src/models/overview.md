@@ -152,7 +152,7 @@ julia> for epoch in 1:200
 julia> loss(predict, x_train, y_train)
 0.00339581f0
 
-julia> parameters
+julia> predict.weight, predict.bias
 (Float32[4.0178537], Float32[2.0050256])
 ```
 
