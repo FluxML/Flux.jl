@@ -74,9 +74,7 @@ Since then things have developed a little.
 
 Some things to notice in this example are:
 
-* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. 
-
-* Flux defaults to `Float32`, but most of Julia to `Float64`.
+* The batch dimension of data is always the last one. Thus a `2×1000 Matrix` is a thousand observations, each a column of length 2. Flux defaults to `Float32`, but most of Julia to `Float64`.
 
 * The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
 
@@ -84,4 +82,13 @@ Some things to notice in this example are:
 
 * The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
 
-Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!) which could replace the `for (x, y) in loader` loop. However, to do anything extra (like logging the loss) an explicit loop is usually clearest.
+Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!). If we didn't want anything extra (like logging the loss), we could replace the training loop with the following:
+
+````julia
+for epoch in 1:1_000
+    train!(pars, loader, opt) do x, y
+        y_hat = model(x)
+        Flux.crossentropy(y_hat, y)
+    end
+end
+```
