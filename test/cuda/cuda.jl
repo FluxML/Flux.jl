@@ -176,5 +176,5 @@ end
   xgpu = gpu(x) 
   @test xgpu isa CuVector{A2116}
   @test cpu(xgpu) isa Vector{A2116} 
-  @test cpu(gpu([CartesianIndex(1)])) isa Vector
+  @test cpu(gpu([CartesianIndex(1)])) isa Vector{CartesianIndex}
 end
