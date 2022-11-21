@@ -21,9 +21,9 @@ Optimisers.update!
 
 Flux used to handle gradients, training, and optimisation rules quite differently.
 The new style described above is called "explicit" by Zygote, and the old style "implicit".
-Flux 0.13 is the transitional version which supports both.
+Flux 0.13 is the transitional version which supports both; Flux 0.14 will remove the old.
 
-For full details on how to use the implicit style, see [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
+For full details on the interface for implicit-style optimisers, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
 
 ```@docs
 Flux.params
@@ -51,9 +51,9 @@ julia> @epochs 2 Flux.train!(...)
 Flux.@epochs
 ```
 
-## Callbacks
+### Callbacks
 
-`train!` takes an additional argument, `cb`, that's used for callbacks so that you can observe the training process. For example:
+Implicit `train!` takes an additional argument, `cb`, that's used for callbacks so that you can observe the training process. For example:
 
 ```julia
 train!(objective, ps, data, opt, cb = () -> println("training"))
@@ -77,4 +77,6 @@ cb = function ()
   accuracy() > 0.9 && Flux.stop()
 end
 ```
+
+See the page about [callback helpers](@ref man-callback-helpers) for more.
 

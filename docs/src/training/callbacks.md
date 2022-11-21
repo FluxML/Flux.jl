@@ -1,4 +1,4 @@
-# Callback Helpers
+# [Callback Helpers](@id man-callback-helpers)
 
 ```@docs
 Flux.throttle

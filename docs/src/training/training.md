@@ -97,8 +97,8 @@ The simplest kind of optimisation using the gradient is termed *gradient descent
 (or sometimes *stochastic gradient descent* when it is applied to individual examples
 in a loop, not to the entire dataset at once).
 
-This needs a *learning rate* which is a small number describing how fast to walk downhill,
-usually written as the Greek letter "eta", `η`. 
+Gradient descent needs a *learning rate* which is a small number describing how fast to walk downhill,
+usually written as the Greek letter "eta", `η`. This is what it does:
 
 ```julia
 η = 0.01   # learning rate
@@ -110,16 +110,14 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-This is wrapped up as a function [`update!`](@ref Flux.Optimise.update!), which can be used as follows:
-
-```julia
-Flux.update!(Descent(0.01), model, grads[1])
-```
+This update of all parameters is wrapepd up as a function [`update!`](@ref Flux.Optimise.update!)`(opt, model, grads[1])`.
 
 There are many other optimisation rules, which adjust the step size and direction.
-Most require some memory of the gradients from earlier steps. The function [`setup`](@ref Flux.Train.setup)
-creates the necessary storage for this, for a particular model. This should be done
-once, before training, and looks like this: 
+Most require some memory of the gradients from earlier steps, rather than always
+walking straight downhill. The function [`setup`](@ref Flux.Train.setup) creates the
+necessary storage for this, for a particular model.
+It should be called once, before training, and returns a tree-like object which is the
+first argument of `update!`. Like this: 
 
 ```julia
 # Initialise momentum 
@@ -128,7 +126,7 @@ opt = Flux.setup(Adam(0.001), model)
 for data in train_set
   ...  
 
-  # 
+  # Update both model parameters and optimiser state:
   Flux.update!(opt, model, grads[1])
 end
 ```
@@ -138,7 +136,7 @@ These are listed on the [optimisers](@ref man-optimisers) page.
 
 
 !!! note "Implicit-style optimiser state"
-    This `setep` makes another tree-like structure. Old versions of Flux did not do this,
+    This `setup` makes another tree-like structure. Old versions of Flux did not do this,
     and instead stored a dictionary-like structure within the optimiser `Adam(0.001)`.
     This was initialised on first use of the version of `update!` for "implicit" parameters.
 
@@ -266,12 +264,14 @@ for epoch in 1:100
 end
 ```
 
-
 ## Implicit vs Explicit
 
 Flux used to handle gradients, training, and optimisation rules quite differently.
 The new style described above is called "explicit" by Zygote, and the old style "implicit".
 Flux 0.13 is the transitional version which supports both.
 
-For full details on the implicit style, see [Flux 0.13.6 documentation](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
+The blue boxes above describe the changes.
+For more details on training in the implicit style, see [Flux 0.13.6 documentation](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
+
+For details about the two gradient modes, see [Zygote's documentation](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1).
 
