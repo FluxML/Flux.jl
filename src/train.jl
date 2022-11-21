@@ -95,7 +95,6 @@ It adds only a few features to the loop above:
 """
 function train!(loss, model, data, opt; cb = x -> nothing)
   cb = runall(cb)
-  @show cb
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
     l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
