@@ -52,7 +52,7 @@ function setup(rule::Optimisers.AbstractRule, model)
 end
 
 """
-    train!(loss, model, data, opt; cb=nothing)
+    train!(loss, model, data, opt; [cb])
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule `opt`. Iterates through `data` once,
@@ -96,7 +96,7 @@ It adds only a few features to the loop above:
     * Callback functions are not supported.
       But any code can be included in the above `for` loop.
 """
-function train!(loss, model, data, opt; cb = nothing)
+function train!(loss, model, data, opt; cb = x -> nothing)
   cb = old_cb_deprecation(cb)
   cb = runall(cb)
   @withprogress for (i,d) in enumerate(data)
@@ -112,7 +112,7 @@ function train!(loss, model, data, opt; cb = nothing)
 end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb=nothing)
+function train!(loss, model, data, rule::Optimisers.AbstractRule; cb=x->nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
@@ -126,14 +126,16 @@ runall(fs::AbstractVector) = x -> foreach(call, fs, x)
 old_cb_deprecation(f::AbstractVector) = [old_cb_deprecation(f) for f in f]
 
 function old_cb_deprecation(f)
-  try
-    f(x)
-  catch e
-    if e isa MethodError
-      @warn "Callback functions must accept a named tuple argument. See the docs for `train!`."
-      f()
-    else
-      rethrow(e)
+  return x -> begin
+    try
+      f(x)
+    catch e
+      if e isa MethodError
+        @warn "Callback functions must accept a named tuple argument. See the docs for `train!`."
+        f()
+      else
+        rethrow(e)
+      end
     end
   end
 end

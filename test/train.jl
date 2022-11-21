@@ -52,14 +52,34 @@ end
     @test CNT == 51  # stopped early
     @test m1.weight[1] ≈ -5  # did not corrupt weights
   end
-  @testset "data must give tuples" begin
-    m1 = Dense(1 => 1)
-    @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(x=1, y=2) for _ in 1:3], Descent(0.1))
-  end
-  @testset "callbacks give helpful error" begin
+
+  @testset "deprecated callback style" begin
     m1 = Dense(1 => 1)
     cb = () -> println("this should not be printed")
-    @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
+    Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
+  end
+
+
+  @testset "callback" begin
+    m1 = Dense(1 => 1)
+    i = 0 
+    data = [rand(1) for _ in 1:5]
+    res = []
+    cb = x -> push!(res, x)
+    opt = Flux.setup(AdamW(), m1)
+    Flux.train!((m, x) -> sum(m(x)), m1, data, opt; cb)
+
+    @test length(res) == length(data)
+    for (i,x) in enumerate(res)
+      @test x isa NamedTuple
+      @test x.step == i
+      @test haskey(x, :loss)
+      @test x.gradient.weight isa Matrix
+      @test x.gradient.bias isa Vector
+      @test x.model === m1
+      @test haskey(x, :data)
+      @test x.opt === opt
+    end
   end
 end
 
