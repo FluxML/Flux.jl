@@ -56,11 +56,12 @@ end
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule `opt`. Iterates through `data` once,
-evaluating `loss(model, d...)` for each `d` in data.
+evaluating `loss(model, d...)` for each `d` in `data` in case of tuple iterates, 
+and `loss(model, d)` otherwise.
 
 For example, with these definitions...
 ```
-data = [(x1, y1), (x2, y2), (x3, y3)];  # each element must be a tuple
+data = [(x1, y1), (x2, y2), (x3, y3)]  
 
 loss3(m, x, y) = norm(m(x) .- y)        # the model is the first argument
 
@@ -76,7 +77,7 @@ end
 ```
 You can also write this loop yourself, if you need more flexibility.
 For this reason `train!` is not highly extensible.
-It adds only a few featurs to the loop above:
+It adds only a few features to the loop above:
 
 * Stop with a `DomainError` if the loss is infinite or `NaN` at any point.
 
@@ -88,9 +89,8 @@ It adds only a few featurs to the loop above:
       (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
     * Instead of `loss` being a function which accepts only the data,
       now it must also accept the `model` itself, as the first argument.
-    * `data` must iterate tuples, otherwise you get an error.
-      (Previously non-tuple types were not splatted into the loss. 
-      Pass in `((d,) for d in data)` to simulate this.)
+    * If `data` iterates over tuples, these will be splatted when passed to `loss`.
+      If you want to avoid the splatting, you can pass `((d,) for d in data)` instead.
     * `opt` should be the result of [`Flux.setup`](@ref). Using an optimiser
       such as `Adam()` without this step should give you a warning.
     * Callback functions are not supported.
@@ -100,8 +100,7 @@ function train!(loss, model, data, opt; cb = nothing)
   isnothing(cb) || error("""train! does not support callback functions.
                             For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
-    d isa Tuple || error("""train! expects as data an iterator producing tuples, but got $(typeof(d)).
-                            Pass it `((d,) for d in data)`, or use `gradient` and `update!` for more control.""")
+    d = batchmemaybe(d)
     l, gs = Zygote.withgradient(m -> loss(m, d...), model)
     if !isfinite(l)
       throw(DomainError("Loss is $l on data item $i, stopping training"))
@@ -115,6 +114,9 @@ end
 function train!(loss, model, data, rule::Optimisers.AbstractRule)
   train!(loss, model, data, _rule_to_state(model, rule))
 end
+
+batchmemaybe(x) = tuple(x)
+batchmemaybe(x::Tuple) = x
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
   state = setup(rule, model)

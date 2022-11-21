@@ -30,6 +30,14 @@ using Random
     Flux.train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
     @test loss(model, rand(10, 10)) < 0.01
   end
+
+  @testset "non-tuple data" begin
+    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+    model = (weight=copy(w2), bias=zeros(10))
+    opt = Flux.setup(AdamW(), model)
+    Flux.train!(loss, model, (rand(10) for _ in 1: 10^5), opt)
+    @test loss(model, rand(10, 10)) < 0.01
+  end
 end
 
 @testset "Explicit Flux.train! features" begin
