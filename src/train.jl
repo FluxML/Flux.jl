@@ -52,7 +52,7 @@ function setup(rule::Optimisers.AbstractRule, model)
 end
 
 """
-    train!(loss, model, data, opt)
+    train!(loss, model, data, opt; cb=nothing)
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule `opt`. Iterates through `data` once,
@@ -97,13 +97,14 @@ It adds only a few features to the loop above:
       But any code can be included in the above `for` loop.
 """
 function train!(loss, model, data, opt; cb = nothing)
-  isnothing(cb) || error("""train! does not support callback functions.
-                            For more control use a loop with `gradient` and `update!`.""")
+  cb = old_cb_deprecation(cb)
+  cb = runall(cb)
   @withprogress for (i,d) in enumerate(data)
-    d = batchmemaybe(d)
-    l, gs = Zygote.withgradient(m -> loss(m, d...), model)
+    ds = batchmemaybe(d)
+    l, gs = Zygote.withgradient(m -> loss(m, ds...), model)
+    cb((; model, data=d, opt, step=i, loss=l, gradient=gs[1]))
     if !isfinite(l)
-      throw(DomainError("Loss is $l on data item $i, stopping training"))
+      throw(DomainError("Loss is $(l) on data item $i, stopping training"))
     end
     opt, model = Optimisers.update!(opt, model, gs[1])
     @logprogress Base.haslength(data) ? i/length(data) : nothing
@@ -111,12 +112,31 @@ function train!(loss, model, data, opt; cb = nothing)
 end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule)
-  train!(loss, model, data, _rule_to_state(model, rule))
+function train!(loss, model, data, rule::Optimisers.AbstractRule; cb=nothing)
+  train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
 batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
+
+call(f, xs...) = f(xs...)
+runall(f) = f
+runall(fs::AbstractVector) = x -> foreach(call, fs, x)
+
+old_cb_deprecation(f::AbstractVector) = [old_cb_deprecation(f) for f in f]
+
+function old_cb_deprecation(f)
+  try
+    f(x)
+  catch e
+    if e isa MethodError
+      @warn "Callback functions must accept a named tuple argument. See the docs for `train!`."
+      f()
+    else
+      rethrow(e)
+    end
+  end
+end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
   state = setup(rule, model)
