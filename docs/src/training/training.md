@@ -275,3 +275,66 @@ For more details on training in the implicit style, see [Flux 0.13.6 documentati
 
 For details about the two gradient modes, see [Zygote's documentation](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1).
 
+## Regularisation
+
+The term *regularisation* covers a wide variety of techniques aiming to improve the
+result of training. This is often done to avoid overfitting.
+
+Some of these are can be implemented by simply modifying the loss function. 
+L2 or ... umm ... adds to the loss a penalty proportional to `θ^2` for every scalar parameter,
+and for a simple model could be implemented as follows:
+
+```julia
+Flux.gradient(model) do m
+  result = m(input)
+  penalty = sum(abs2, m.weight)/2 + sum(abs2, m.bias)/2
+  my_loss(result, label) + 0.42 * penalty
+end
+```
+
+Accessing each individual parameter array by hand won't work well for large models.
+Instead, we can use [`Flux.params`](@ref) to collect all of them,
+and then apply a function to each one, and sum the result:
+
+```julia
+pen_l2(x::AbstractArray) = sum(abs2, x)/2
+
+Flux.gradient(model) do m
+  result = m(input)
+  penalty = sum(pen_l2, Flux.params(m))
+  my_loss(result, label) + 0.42 * penalty
+end
+```
+
+However, the gradient of this penalty term is very simple: It is proportional to the original weights.
+So there is a simpler way to implement exactly the same thing, by modifying the optimiser
+instead of the loss function. This is done by replacing this:
+
+```julia
+opt = Flux.setup(Adam(0.1), model)
+```
+
+with this:
+
+```julia
+decay_opt = Flux.setup(OptimiserChain(WeightDecay(0.42), Adam(0.1)), model)
+```
+
+Flux's optimisers are really modifications applied to the gradient before using it to update
+the parameters, and `OptimiserChain` applies two such modifications.
+The first, [`WeightDecay`](@ref) adds `0.42` times original parameter to the gradient,
+matching the gradient of the penalty above (with the same, unrealistically large, constant).
+After that, in either case, [`Adam`](@ref) computes the final update.
+
+The same mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref ).
+
+Besides L2 / weight decay, another common and quite different kind of regularisation is
+provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some ... ??
+
+?? do we discuss test/train mode here too?
+
+## Freezing, Schedules
+
+?? maybe these also fit in here.
+
+
