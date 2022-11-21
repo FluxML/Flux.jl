@@ -5,6 +5,10 @@ Flux.Train.setup
 Flux.Optimise.train!(loss, model, data, opt; cb)
 ```
 
+`train!` uses [`@progress`](https://github.com/JuliaLogging/ProgressLogging.jl) which should show a progress bar in VSCode.
+To see one in a terminal, you will need to install [TerminalLoggers.jl](https://github.com/JuliaLogging/TerminalLoggers.jl)
+and follow its setup instructions.
+
 The new version of Flux's training code was written as an independent package, called Optimisers.jl.
 However, at present all Flux models contain parameter arrays (such as `Array`s and `CuArray`s)
 which can be updated in-place. Thus objects returned by `update!` can be ignored.
