@@ -89,12 +89,9 @@ It adds only a few features to the loop above:
       (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
     * Instead of `loss` being a function which accepts only the data,
       now it must also accept the `model` itself, as the first argument.
-    * If `data` iterates over tuples, these will be splatted when passed to `loss`.
-      If you want to avoid the splatting, you can pass `((d,) for d in data)` instead.
     * `opt` should be the result of [`Flux.setup`](@ref). Using an optimiser
       such as `Adam()` without this step should give you a warning.
-    * Callback functions are not supported.
-      But any code can be included in the above `for` loop.
+    * Callback functions now receive a named tuple as input.
 """
 function train!(loss, model, data, opt; cb = x -> nothing)
   cb = runall(cb)
