@@ -59,10 +59,8 @@ end
     Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
   end
 
-
-  @testset "callback" begin
+  @testset "single callback" begin
     m1 = Dense(1 => 1)
-    i = 0 
     data = [rand(1) for _ in 1:5]
     res = []
     cb = x -> push!(res, x)
@@ -80,6 +78,18 @@ end
       @test haskey(x, :data)
       @test x.opt === opt
     end
+  end
+
+  @testset "multiple callbacks" begin
+    m1 = Dense(1 => 1)
+    i1, i2 = 0, 0
+    data = [rand(1) for _ in 1:5]
+    cb1 = res -> i1 += 1
+    cb2 = res -> i2 += res.step
+    opt = Flux.setup(AdamW(), m1)
+    Flux.train!((m, x) -> sum(m(x)), m1, data, opt; cb = [cb1, cb2])
+    @test i1 == length(data)
+    @test i2 == sum(1:length(data))
   end
 end
 
