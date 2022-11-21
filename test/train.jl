@@ -51,12 +51,7 @@ end
     end
     @test CNT == 51  # stopped early
     @test m1.weight[1] ≈ -5  # did not corrupt weights
-  end
-
-  @testset "deprecated callback style" begin
-    m1 = Dense(1 => 1)
-    cb = () -> println("this should not be printed")
-    Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
+    
   end
 
   @testset "single callback" begin
@@ -91,6 +86,7 @@ end
     @test i1 == length(data)
     @test i2 == sum(1:length(data))
   end
+
 end
 
 @testset "Explicit Flux.update! features" begin
