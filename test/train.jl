@@ -30,14 +30,6 @@ using Random
     Flux.train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
     @test loss(model, rand(10, 10)) < 0.01
   end
-
-  @testset "non-tuple data" begin
-    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-    model = (weight=copy(w2), bias=zeros(10))
-    opt = Flux.setup(AdamW(), model)
-    Flux.train!(loss, model, (rand(10) for _ in 1: 10^5), opt)
-    @test loss(model, rand(10, 10)) < 0.01
-  end
 end
 
 @testset "Explicit Flux.train! features" begin
@@ -51,7 +43,20 @@ end
     end
     @test CNT == 51  # stopped early
     @test m1.weight[1] ≈ -5  # did not corrupt weights
-    
+  end
+
+  @testset "non-tuple data" begin
+    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+    model = (weight=copy(w2), bias=zeros(10))
+    opt = Flux.setup(AdamW(), model)
+    Flux.train!(loss, model, (rand(10) for _ in 1: 10^5), opt)
+    @test loss(model, rand(10, 10)) < 0.01
+  end
+
+  @testset "callbacks give helpful error" begin
+    m1 = Dense(1 => 1)
+    cb = () -> println("this should not be printed")
+    @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
   end
 end
 

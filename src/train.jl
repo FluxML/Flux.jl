@@ -61,7 +61,7 @@ or else   `loss(model, d)` for other `d`.
 
 For example, with these definitions...
 ```
-data = [(x1, y1), (x2, y2), (x3, y3)]  
+data = [(x1, y1), (x2, y2), (x3, y3)]
 
 loss3(m, x, y) = norm(m(x) .- y)        # the model is the first argument
 
