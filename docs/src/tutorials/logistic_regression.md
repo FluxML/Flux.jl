@@ -14,10 +14,10 @@ Let's start by importing a dataset from `MLDatasets.jl`! We will use the `Iris` 
 ```jldoctest logistic_regression
 julia> Iris()
 dataset Iris:
-  metadata    =>    Dict{String, Any} with 4 entries
-  features    =>    150×4 DataFrame
-  targets     =>    150×1 DataFrame
-  dataframe   =>    150×5 DataFrame
+  metadata   =>    Dict{String, Any} with 4 entries
+  features   =>    150×4 DataFrame
+  targets    =>    150×1 DataFrame
+  dataframe  =>    150×5 DataFrame
 
 julia> x, y = Iris(as_df=false)[:];
 ```
