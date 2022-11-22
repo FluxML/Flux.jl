@@ -52,7 +52,7 @@ function setup(rule::Optimisers.AbstractRule, model)
 end
 
 """
-    train!(loss, model, data, opt; [cb])
+    train!(loss, model, data, opt)
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule `opt`. Iterates through `data` once,
@@ -91,16 +91,17 @@ It adds only a few features to the loop above:
       now it must also accept the `model` itself, as the first argument.
     * `opt` should be the result of [`Flux.setup`](@ref). Using an optimiser
       such as `Adam()` without this step should give you a warning.
-    * Callback functions now receive a named tuple as input.
+    * Callback functions are not supported.
+      But any code can be included in the above `for` loop.
 """
-function train!(loss, model, data, opt; cb = x -> nothing)
-  cb = runall(cb)
+function train!(loss, model, data, opt; cb = nothing)
+  isnothing(cb) || error("""train! does not support callback functions.
+                            For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
     l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
-    cb((; model, data=d, opt, step=i, loss=l, gradient=gs[1]))
     if !isfinite(l)
-      throw(DomainError("Loss is $(l) on data item $i, stopping training"))
+      throw(DomainError("Loss is $l on data item $i, stopping training"))
     end
     opt, model = Optimisers.update!(opt, model, gs[1])
     @logprogress Base.haslength(data) ? i/length(data) : nothing
@@ -108,14 +109,9 @@ function train!(loss, model, data, opt; cb = x -> nothing)
 end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = x -> nothing)
+function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
-
-call(f, xs...) = f(xs...)
-runall(f) = f
-
-runall(fs::AbstractVector) = x -> [f(x) for f in fs]
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
   state = setup(rule, model)
