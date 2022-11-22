@@ -1,5 +1,4 @@
-
-# Activation Functions from NNlib.jl
+# [Activation Functions from NNlib.jl](@id man-activations)
 
 These non-linearities used between layers of your model are exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package.
 

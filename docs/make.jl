@@ -1,10 +1,10 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Statistics
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Statistics],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames],
     doctest = false,
     sitename = "Flux",
     # strict = [:cross_references,],
@@ -41,11 +41,12 @@ makedocs(
              "Flat vs. Nested 📚" => "destructure.md",
              "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
          ],
+         "Tutorials" => [
+            "Linear Regression" => "tutorials/linear_regression.md",
+            "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
+         ],
          "Performance Tips" => "performance.md",
          "Flux's Ecosystem" => "ecosystem.md",
-         "Tutorials" => [  # TODO, maybe
-             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
-         ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,

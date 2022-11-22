@@ -36,12 +36,12 @@ Flux.Optimise.train!
 ```
 
 There are plenty of examples in the [model zoo](https://github.com/FluxML/model-zoo), and
-more information can be found on [Custom Training Loops](../models/advanced.md).
+more information can be found on [Custom Training Loops](@ref man-advanced).
 
 ## Loss Functions
 
-The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](../models/basics.md) will work as an objective.
-In addition to custom losses, a model can be trained in conjunction with
+The objective function must return a number representing how far the model is from its target – the *loss* of the model. The `loss` function that we defined in [basics](@ref man-basics) will work as an objective.
+In addition to custom losses, model can be trained in conjuction with
 the commonly used losses that are grouped under the `Flux.Losses` module.
 We can also define an objective in terms of some model:
 
@@ -64,11 +64,11 @@ At first glance, it may seem strange that the model that we want to train is not
 
 ## Model parameters
 
-The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](../models/basics.md) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `Flux.params(m)`.
+The model to be trained must have a set of tracked parameters that are used to calculate the gradients of the objective function. In the [basics](@ref man-basics) section it is explained how to create models with such parameters. The second argument of the function `Flux.train!` must be an object containing those parameters, which can be obtained from a model `m` as `Flux.params(m)`.
 
 Such an object contains a reference to the model's parameters, not a copy, such that after their training, the model behaves according to their updated values.
 
-Handling all the parameters on a layer-by-layer basis is explained in the [Layer Helpers](../models/basics.md) section. For freezing model parameters, see the [Advanced Usage Guide](../models/advanced.md).
+Handling all the parameters on a layer by layer basis is explained in the [Layer Helpers](@ref man-basics) section. Also, for freezing model parameters, see the [Advanced Usage Guide](@ref man-advanced).
 
 ```@docs
 Flux.params
