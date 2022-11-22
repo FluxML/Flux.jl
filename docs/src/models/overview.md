@@ -77,13 +77,15 @@ julia> predict(x_train)
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> loss(x, y) = Flux.Losses.mse(predict(x), y);
+julia> using Statistics
 
-julia> loss(x_train, y_train)
+julia> loss(model, x, y) = mean(abs2.(model(x) .- y));
+
+julia> loss(predict, x_train, y_train)
 122.64734f0
 ```
 
-More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/). Flux works by iteratively reducing the loss through *training*.
+More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/) (and built-in as [`mse`](@ref Flux.Losses.mse)). Flux works by iteratively reducing the loss through *training*.
 
 ## 3. Improve the Prediction
 
@@ -112,40 +114,28 @@ julia> predict.bias
  0.0
 ```
 
-The dimensions of these model parameters depend on the number of inputs and outputs. Since models can have hundreds of inputs and several layers, it helps to have a function to collect the parameters into the data structure Flux expects:
+The dimensions of these model parameters depend on the number of inputs and outputs.
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> parameters = Flux.params(predict)
-Params([Float32[0.9066542], Float32[0.0]])
-```
-
-These are the parameters Flux will change, one step at a time, to improve predictions. At each step, the contents of this `Params` object changes too, since it is just a collection of references to the mutable arrays inside the model: 
-
-```jldoctest overview
-julia> predict.weight in parameters, predict.bias in parameters
-(true, true)
-```
-
-The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
+Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
 
 This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`Flux.train!`](@ref) like this:
 
 ```jldoctest overview
-julia> train!(loss, parameters, data, opt)
+julia> train!(loss, predict, data, opt)
 ```
 
 And check the loss:
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> loss(x_train, y_train)
+julia> loss(predict, x_train, y_train)
 116.38745f0
 ```
 
 It went down. Why? 
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> parameters
-Params([Float32[7.5777884], Float32[1.9466728]])
+julia> predict.weight, predict.bias
+(Float32[7.5777884], Float32[1.9466728])
 ```
 
 The parameters have changed. This single step is the essence of machine learning.
@@ -156,14 +146,14 @@ In the previous section, we made a single call to `train!` which iterates over t
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for epoch in 1:200
-         train!(loss, parameters, data, opt)
+         train!(loss, predict, data, opt)
        end
 
-julia> loss(x_train, y_train)
+julia> loss(predict, x_train, y_train)
 0.00339581f0
 
-julia> parameters
-Params([Float32[4.0178537], Float32[2.0050256]])
+julia> predict.weight, predict.bias
+(Float32[4.0178537], Float32[2.0050256])
 ```
 
 After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.
@@ -188,7 +178,7 @@ First, we gathered real-world data into the variables `x_train`, `y_train`, `x_t
 
 Then, we built a single input, single output predictive model, `predict = Dense(1 => 1)`. The initial predictions weren't accurate, because we had not trained the model yet.
 
-After building the model, we trained it with `train!(loss, parameters, data, opt)`. The loss function is first, followed by the `parameters` holding the weights and biases of the model, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
+After building the model, we trained it with `train!(loss, predict, data, opt)`. The loss function is first, followed by the model itself, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
 
 After we trained the model, we verified it with the test data to verify the results. 
 
