@@ -275,8 +275,8 @@ function _track_stats!(
   μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
   σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
 
-  bn.μ = res_mtm .* bn.μ .+ mtm .* μnew
-  bn.σ² = res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new
+  bn.μ .= value.(res_mtm .* bn.μ .+ mtm .* μnew)
+  bn.σ² .= value.(res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new)
   return nothing
 end
 

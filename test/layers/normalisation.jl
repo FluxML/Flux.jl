@@ -1,5 +1,5 @@
 using Flux, Test, Statistics
-using Zygote: pullback
+using Zygote: pullback, ForwardDiff
 
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
@@ -463,3 +463,13 @@ end
   m1 = Dropout(0.5)
   @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
 end
+
+@testset "ForwardDiff" begin
+  bn = BatchNorm(3)
+  @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
+  iszero(bn.μ)  # true, but ideally it would automatically choose trainmode
+  Flux.trainmode!(bn)
+  @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
+  @test !iszero(bn.μ)
+end
+

@@ -11,6 +11,7 @@ import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owne
 
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
+using Zygote.ForwardDiff: value
 export gradient
 
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
