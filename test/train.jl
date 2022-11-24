@@ -46,6 +46,8 @@ end
   end
 
   @testset "non-tuple data" begin
+    w = randn(10, 10)
+    w2 = randn(10, 10)
     loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
     model = (weight=copy(w2), bias=zeros(10))
     opt = Flux.setup(AdamW(), model)
