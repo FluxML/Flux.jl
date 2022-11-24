@@ -42,7 +42,14 @@ makedocs(
              "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
          ],
          "Tutorials" => [
+             # Roughly in order of increasing complexity? Not chronological.
             "Linear Regression" => "tutorials/linear_regression.md",
+            "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
+            "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
+            "Simple ConvNet" => "tutorials/2021-02-07-convnet.md",
+            "Generative Adversarial Net" => "tutorials/2021-10-14-vanilla-gan.md",
+            "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
+            # Not really sure where this belongs... some in Fluxperimental, aim to delete?
             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
          ],
          "Performance Tips" => "performance.md",
