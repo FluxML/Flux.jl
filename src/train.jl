@@ -57,7 +57,7 @@ end
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule `opt`. Iterates through `data` once,
 evaluating for each `d in data` either `loss(model, d...)` if `d isa Tuple`,
-or else   `loss(model, d)` for other `d`.
+or else `loss(model, d)` for other `d`.
 
 For example, with these definitions...
 ```
