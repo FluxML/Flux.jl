@@ -43,8 +43,7 @@ using Statistics
 using Random
 using Images
 using Parameters: @with_kw
-using Flux
-using Flux.Data: DataLoader
+using Flux: params, DataLoader
 using Flux.Optimise: update!
 using Flux.Losses: logitbinarycrossentropy
 using MLDatasets: MNIST
