@@ -7,7 +7,7 @@ This is a beginner level tutorial for generating images of handwritten digits us
 
 A GAN is composed of two sub-models - the **generator** and the **discriminator** acting against one another. The generator can be considered as an artist who draws (generates) new images that look real, whereas the discriminator is a critic who learns to tell real images apart from fakes.
 
-![](../../assets/tutorialposts/2021-10-8-dcgan-mnist/cat_gan.png)
+![](https://fluxml.ai/assets/tutorialposts/2021-10-08-dcgan-mnist/cat_gan.png)
 
 The GAN starts with a generator and discriminator which have very little or no idea about the underlying data. During training, the generator progressively becomes better at creating images that look real, while the discriminator becomes better at telling them apart. The process reaches equilibrium when the discriminator can no longer distinguish real images from fakes.
 
@@ -18,12 +18,7 @@ The GAN starts with a generator and discriminator which have very little or no i
 
 This tutorial demonstrates the process of training a DC-GAN on the [MNIST dataset for handwritten digits](http://yann.lecun.com/exdb/mnist/). The following animation shows a series of images produced by the generator as it was trained for 25 epochs. The images begin as random noise, but over time, the images become increasingly similar to handwritten numbers.
 
-~~~
-<br><br>
-<p align="center">
-<img src="../../assets/tutorialposts/2021-10-8-dcgan-mnist/output.gif" align="middle" width="200">
-</p>
-~~~
+![](https://fluxml.ai/assets/tutorialposts/2021-10-08-dcgan-mnist/output.gif)
 
 ## Setup
 
@@ -94,7 +89,7 @@ To learn more about loading images in Flux, you can check out [this tutorial](ht
 ## Create the models
 
 
-### The generator
+### Generator
 
 Our generator, a.k.a. the artist, is a neural network that maps low dimensional data to a high dimensional form.
 
@@ -350,12 +345,10 @@ gif_mat = cat(images..., dims=3)
 save("./output.gif", gif_mat)
 ```
 
-<p align="center">
-<img src="../../assets/tutorialposts/2021-10-8-dcgan-mnist/output.gif" align="middle" width="200">
-</p>
+![](https://fluxml.ai/assets/tutorialposts/2021-10-08-dcgan-mnist/output.gif)
 
 ## Resources & References
-- [The DCGAN implementation in Model Zoo.](http=s://github.com/FluxML/model-zoo/blob/master/vision/dcgan_mnist/dcgan_mnist.jl)
+- [The DCGAN implementation in the Model Zoo.](https://github.com/FluxML/model-zoo/blob/master/vision/dcgan_mnist/dcgan_mnist.jl)
 
 !!! info
     Originally published at [fluxml.ai](https://fluxml.ai/tutorials/) on 8 October 2021,
