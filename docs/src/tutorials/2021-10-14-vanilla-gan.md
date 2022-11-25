@@ -1,4 +1,4 @@
-# Tutorial: Generative Adversarial Networks
+# [Tutorial: Generative Adversarial Networks](](@id man-gan-tutorial))
 
 This tutorial describes how to implement a vanilla Generative Adversarial
 Network using Flux and how train it on the MNIST dataset. It is based on this

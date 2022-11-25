@@ -1,4 +1,4 @@
-# Tutorial: Deep Convolutional Generative Adversarial Network (DCGAN)
+# Deep Convolutional Generative Adversarial Network (DCGAN)
 
 This is a beginner level tutorial for generating images of handwritten digits using a [Deep Convolutional Generative Adversarial Network](https://arxiv.org/pdf/1511.06434.pdf) inspired by the [TensorFlow tutorial on DCGAN](https://www.tensorflow.org/tutorials/generative/dcgan).
 
