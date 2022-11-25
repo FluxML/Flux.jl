@@ -42,7 +42,6 @@ using Printf
 using Statistics
 using Random
 using Images
-using Parameters: @with_kw
 using Flux: params, DataLoader
 using Flux.Optimise: update!
 using Flux.Losses: logitbinarycrossentropy
@@ -53,7 +52,7 @@ using CUDA
 Now we set default values for the learning rates, batch size, epochs, the usage of a GPU (if available) and other hyperparameters for our model.
 
 ```julia
-@with_kw struct HyperParams
+Base.@kwdef struct HyperParams
     batch_size::Int = 128
     latent_dim::Int = 100
     epochs::Int = 25
