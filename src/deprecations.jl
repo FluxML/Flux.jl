@@ -82,7 +82,7 @@ Base.@deprecate_binding ADAGrad AdaGrad
 Base.@deprecate_binding ADADelta AdaDelta
 
 # Remove sub-module Data, while making sure Flux.Data.DataLoader keeps working
-Base.@deprecate_binding Data Flux
+Base.@deprecate_binding Data Flux false "Sub-module Flux.Data has been removed. The only thing it contained may be accessed as Flux.DataLoader"
 
 @deprecate rng_from_array() default_rng_value()
 
