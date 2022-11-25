@@ -270,6 +270,20 @@ end
   @test size.(Flux.params(m)) == [(2,), (1, 2)]
 end
 
+@testset "params gradient" begin
+  m = (x=[1,2.0], y=[3.0]);
+
+  # Explicit -- was broken by #2054
+  gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
+  @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
+  @test gnew.y ≈ [1.0]
+
+  # Implicit
+  gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
+  @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
+  @test gold[m.y] ≈ [1.0]
+end
+
 @testset "Precision" begin
   m = Chain(Dense(10, 5, relu), Dense(5, 2))
   x64 = rand(Float64, 10)
