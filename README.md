@@ -21,17 +21,17 @@ Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, a
 Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
 using Flux, Plots
-data = [([x], x-cbrt(x)) for x in range(-2, 2, 100)]
+data = [([x], 2x-x^3) for x in -2:0.1f0:2]
 
-model = Chain(Dense(1 => 10, tanh), Dense(10 => 1), only)
+model = Chain(Dense(1 => 23, tanh), Dense(23 => 1, bias=false), only)
 
-loss(x,y) = abs2(model(x) - y)
+loss(x,y) = (model(x) - y)^2
 optim = Flux.Adam()
 for epoch in 1:1000
   Flux.train!(loss, Flux.params(model), data, optim)
 end
 
-plot(x -> x-cbrt(x), -2, 2, legend=false)
+plot(x -> 2x-x^3, -2, 2, legend=false)
 scatter!(-2:0.1:2, [model([x]) for x in -2:0.1:2])
 ```
 
