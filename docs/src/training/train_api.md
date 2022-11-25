@@ -9,13 +9,27 @@ Flux.Optimise.train!(loss, model, data, opt; cb)
 To see one in a terminal, you will need to install [TerminalLoggers.jl](https://github.com/JuliaLogging/TerminalLoggers.jl)
 and follow its setup instructions.
 
-The new version of Flux's training code was written as an independent package, called Optimisers.jl.
-However, at present all Flux models contain parameter arrays (such as `Array`s and `CuArray`s)
+The new version of Flux's training code was written as an independent package, [Optimisers.jl](https://github.com/FluxML/Optimisers.jl).
+This is designed to allow for immutable objects.
+But at present all Flux models contain parameter arrays (such as `Array`s and `CuArray`s)
 which can be updated in-place. Thus objects returned by `update!` can be ignored.
 
 ```@docs
 Optimisers.update!
 ```
+
+### Modifiers
+
+The state returned by `setup` can be modified to temporarily prevent training of
+some parts of the model, or to change the learning rate uses.
+The functions for doing so may be accessed as `Flux.freeze!`, `Flux.thaw!`, and `Flux.adjust`:
+
+```@docs
+Optimisers.adjust
+Optimisers.freeze!
+Optimisers.thaw!
+```
+
 
 ## Implicit style
 

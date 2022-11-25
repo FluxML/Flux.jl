@@ -8,6 +8,7 @@ using MacroTools: @forward
 @reexport using NNlib
 using MLUtils
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
+using Optimisers: freeze!, thaw!, adjust
 
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd

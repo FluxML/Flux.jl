@@ -326,15 +326,27 @@ The first, [`WeightDecay`](@ref) adds `0.42` times original parameter to the gra
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
 After that, in either case, [`Adam`](@ref) computes the final update.
 
-The same mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref ).
+The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref ).
 
 Besides L2 / weight decay, another common and quite different kind of regularisation is
-provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some ... ??
-
-?? do we discuss test/train mode here too?
+provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some outputs of the
+previous layer during training.
+It should switch automatically, but see [trainmode!](@ref Flux.trainmode!) / [testmode!](@ref Flux.testmode!) to manually enable or disable this layer.
 
 ## Freezing, Schedules
 
-?? maybe these also fit in here.
+Finer control of training 
 
+```julia
+model = Chain(enc = encoder, dec = decoder)
+
+opt = Flux.setup(Adam(), model)
+
+Flux.freeze!(opt.layers.enc)  # corresponds to model.layers.end
+```
+
+!!! note
+    This `freeze!` goes with the "explicit" style. 
+    The earlier "implicit" equivalent was to pass to `gradient` an object referencing only
+    part of the model, such as `Flux.params(model.layers.enc)`.
 
