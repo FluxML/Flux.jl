@@ -53,7 +53,7 @@ mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 
 ![](../assets/oneminute.png)
 
-```
+```julia
 using Plots  # to draw the above figure
 
 p_true = scatter(noisy[1,:], noisy[2,:], zcolor=truth, title="True classification", legend=false)
@@ -67,7 +67,7 @@ This XOR ("exclusive or") problem is a variant of the famous one which drove Min
 
 Since then things have developed a little. 
 
-## Features of Note
+## Features to Note
 
 Some things to notice in this example are:
 
@@ -81,7 +81,7 @@ Some things to notice in this example are:
 
 Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!). If we didn't want anything extra (like logging the loss), we could replace the training loop with the following:
 
-````julia
+```julia
 for epoch in 1:1_000
     train!(pars, loader, opt) do x, y
         y_hat = model(x)
