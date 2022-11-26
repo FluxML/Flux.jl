@@ -6,7 +6,7 @@ If you haven't, then you might prefer the [Fitting a Straight Line](overview.md)
 
 ```julia
 # With Julia 1.7+, this will prompt if neccessary to install everything, including CUDA:
-using Flux, Statistics
+using Flux, Statistics, ProgressMeter
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
@@ -32,7 +32,7 @@ opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 
 # Training loop, using the whole data set 1000 times:
 losses = []
-for epoch in 1:1_000
+@showprogress for epoch in 1:1_000
     for (x, y) in loader
         loss, grad = Flux.withgradient(pars) do
             # Evaluate model and loss inside gradient context:
@@ -61,6 +61,14 @@ p_raw =  scatter(noisy[1,:], noisy[2,:], zcolor=out1[1,:], title="Untrained netw
 p_done = scatter(noisy[1,:], noisy[2,:], zcolor=out2[1,:], title="Trained network", legend=false)
 
 plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))
+```
+
+Here's the loss during training:
+
+```julia
+plot(losses; xaxis=(:log10, "iteration"), yaxis="loss", label="per batch")
+n = length(loader)
+plot!(n:n:length(losses), mean.(Iterators.partition(losses, n)), label="epoch mean")
 ```
 
 This XOR ("exclusive or") problem is a variant of the famous one which drove Minsky and Papert to invent deep neural networks in 1969. For small values of "deep" -- this has one hidden layer, while earlier perceptrons had none. (What they call a hidden layer, Flux calls the output of the first layer, `model[1](noisy)`.)
