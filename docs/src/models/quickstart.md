@@ -31,8 +31,8 @@ pars = Flux.params(model)  # contains references to arrays in model
 opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 
 # Training loop, using the whole data set 1000 times:
+losses = []
 for epoch in 1:1_000
-    losses = []
     for (x, y) in loader
         loss, grad = withgradient(pars) do
             # Evaluate model and loss inside gradient context:
@@ -41,9 +41,6 @@ for epoch in 1:1_000
         end
         Flux.update!(opt, pars, grad)
         push!(losses, loss)  # logging, outside gradient context
-    end
-    if isinteger(log2(epoch))
-        println("after epoch $epoch, loss is ", mean(losses))
     end
 end
 
