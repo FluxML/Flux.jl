@@ -25,10 +25,10 @@ data = [([x], 2x-x^3) for x in -2:0.1f0:2]
 
 model = Chain(Dense(1 => 23, tanh), Dense(23 => 1, bias=false), only)
 
-loss(x,y) = (model(x) - y)^2
+mloss(x,y) = (model(x) - y)^2
 optim = Flux.Adam()
 for epoch in 1:1000
-  Flux.train!(loss, Flux.params(model), data, optim)
+  Flux.train!(mloss, Flux.params(model), data, optim)
 end
 
 plot(x -> 2x-x^3, -2, 2, legend=false)
@@ -38,7 +38,3 @@ scatter!(-2:0.1:2, [model([x]) for x in -2:0.1:2])
 The [quickstart page](https://fluxml.ai/Flux.jl/stable/models/quickstart/) has a longer example. See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
 
 If you use Flux in your research, please [cite](CITATION.bib) our work.
-
-
-
-

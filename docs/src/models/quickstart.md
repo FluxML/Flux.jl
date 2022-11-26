@@ -51,7 +51,7 @@ out2 = model(noisy |> gpu) |> cpu  # first row is prob. of true, second row p(fa
 mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
 
-![](../assets/oneminute.png)
+![](../assets/quickstart/oneminute.png)
 
 ```julia
 using Plots  # to draw the above figure
@@ -63,12 +63,18 @@ p_done = scatter(noisy[1,:], noisy[2,:], zcolor=out2[1,:], title="Trained networ
 plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))
 ```
 
+```@raw html
+<img align="right" width="300px" src="../assets/quickstart/loss.png">
+```
+
 Here's the loss during training:
 
 ```julia
-plot(losses; xaxis=(:log10, "iteration"), yaxis="loss", label="per batch")
+plot(losses; xaxis=(:log10, "iteration"),
+    yaxis="loss", label="per batch")
 n = length(loader)
-plot!(n:n:length(losses), mean.(Iterators.partition(losses, n)), label="epoch mean")
+plot!(n:n:length(losses), mean.(Iterators.partition(losses, n)),
+    label="epoch mean", dpi=200)
 ```
 
 This XOR ("exclusive or") problem is a variant of the famous one which drove Minsky and Papert to invent deep neural networks in 1969. For small values of "deep" -- this has one hidden layer, while earlier perceptrons had none. (What they call a hidden layer, Flux calls the output of the first layer, `model[1](noisy)`.)
