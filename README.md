@@ -19,20 +19,78 @@
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
 Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a simple example to try it out:
+
 ```julia
-using Flux  # should install everything for you, including CUDA
+using Flux
 
-x = hcat(digits.(0:3, base=2, pad=2)...) |> gpu  # let's solve the XOR problem!
-y = Flux.onehotbatch(xor.(eachrow(x)...), 0:1) |> gpu
-data = ((Float32.(x), y) for _ in 1:100)  # an iterator making Tuples
+# We wish to learn this function:
+f(x) = cos(x[1] * 5) - 0.2 * x[2]
 
-model = Chain(Dense(2 => 3, sigmoid), BatchNorm(3), Dense(3 => 2)) |> gpu
-optim = Adam(0.1, (0.7, 0.95))
-mloss(x, y) = Flux.logitcrossentropy(model(x), y)  # closes over model
+# Generate dataset:
+n = 10000
+X = rand(2, n)  # In Julia, the batch axis is last!
+Y = [f(X[:, i]) for i=1:n]
+Y = reshape(Y, 1, n)
 
-Flux.train!(mloss, Flux.params(model), data, optim)  # updates model & optim
+# Move to GPU (no need to delete; this is a no-op if you don't have one)
+X = gpu(X)
+Y = gpu(Y)
 
-all((softmax(model(x)) .> 0.5) .== y)  # usually 100% accuracy.
+# Create dataloader
+loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true)
+
+# Create a simple fully-connected network (multi-layer perceptron):
+n_in = 2
+n_out = 1
+model = Chain(
+    Dense(n_in, 32), relu,
+    Dense(32, 32), relu,
+    Dense(32, 32), relu,
+    Dense(32, n_out)
+)
+model = gpu(model)
+
+# Create our optimizer:
+optim = Adam(1e-3)
+p = Flux.params(model)
+
+# Let's train for 10 epochs:
+for i in 1:10
+    losses = []
+    for (x, y) in loader
+    
+        # Compute gradient of the following code
+        # with respect to parameters:
+        loss, grad = Flux.withgradient(p) do
+            # Forward pass:
+            y_pred = model(x)
+    
+            # Square error loss
+            sum((y_pred .- y) .^ 2)
+        end
+    
+        # Step with this gradient:
+        Flux.update!(optim, p, grad)
+
+        # Logging:
+        push!(losses, loss)
+    end
+    println(sum(losses)/length(losses))
+end
+```
+
+We can visualize our predictions with `Plots.jl`:
+
+```julia
+using Plots
+
+# Generate test dataset:
+Xtest = rand(2, 100)
+Ytest = mapslices(f, Xtest; dims=1)  # Alternative syntax to apply the function `f`
+
+# View the predictions:
+Ypredicted = model(Xtest)
+scatter(Ytest[1, :], Ypredicted[1, :], xlabel="true", ylabel="predicted")
 ```
 
 See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
