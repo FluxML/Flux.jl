@@ -17,14 +17,14 @@ model = Chain(
     Dense(2 => 3, tanh),   # activation function inside layer
     BatchNorm(3),
     Dense(3 => 2),
-    softmax)
+    softmax) |> gpu        # move model to GPU, if available
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
-out1 = model(noisy)                                               # 2×1000 Matrix{Float32}
+out1 = model(noisy |> gpu) |> cpu                                 # 2×1000 Matrix{Float32}
 
 # To train the model, we use batches of 64 samples, and one-hot encoding:
 target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
-loader = Flux.DataLoader((noisy, target), batchsize=64, shuffle=true);
+loader = Flux.DataLoader((noisy, target) |> gpu, batchsize=64, shuffle=true);
 # 16-element DataLoader with first element: (2×64 Matrix{Float32}, 2×64 OneHotMatrix)
 
 pars = Flux.params(model)  # contains references to arrays in model
@@ -34,7 +34,7 @@ opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
 losses = []
 for epoch in 1:1_000
     for (x, y) in loader
-        loss, grad = withgradient(pars) do
+        loss, grad = Flux.withgradient(pars) do
             # Evaluate model and loss inside gradient context:
             y_hat = model(x)
             Flux.crossentropy(y_hat, y)
@@ -46,7 +46,7 @@ end
 
 pars  # parameters, momenta and output have all changed
 opt
-out2 = model(noisy)  # first row is prob. of true, second row p(false)
+out2 = model(noisy |> gpu) |> cpu  # first row is prob. of true, second row p(false)
 
 mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
