@@ -76,6 +76,8 @@ AlphaDropout
 LayerNorm
 InstanceNorm
 GroupNorm
+WeightNorm
+WeightNorm(::Dense)
 ```
 
 ### Testmode
