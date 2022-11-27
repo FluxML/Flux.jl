@@ -95,8 +95,7 @@ are available from the [`Flux.Losses`](../models/losses.md) module.
 ## Optimisation Rules
 
 The simplest kind of optimisation using the gradient is termed *gradient descent*
-(or sometimes *stochastic gradient descent* when it is applied to individual examples
-in a loop, not to the entire dataset at once).
+(or sometimes *stochastic gradient descent* when, as here, it is not applied to the entire dataset at once).
 
 Gradient descent needs a *learning rate* which is a small number describing how fast to walk downhill,
 usually written as the Greek letter "eta", `η`. This is what it does:
@@ -111,9 +110,11 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-This update of all parameters is wrapepd up as a function [`update!`](@ref Flux.Optimise.update!)`(opt, model, grads[1])`.
+A slightly more refined version of this loop to update all the parameters is wrapepd up as a function [`update!`](@ref Flux.Optimise.update!)`(opt, model, grads[1])`.
+And the learning rate is the only thing stored in the [`Descent`](@ref Flux.Optimise.Descent) struct.
 
-There are many other optimisation rules, which adjust the step size and direction.
+However, there are many other optimisation rules, which adjust the step size and
+direction in various clever ways.
 Most require some memory of the gradients from earlier steps, rather than always
 walking straight downhill. The function [`setup`](@ref Flux.Train.setup) creates the
 necessary storage for this, for a particular model.
@@ -125,16 +126,15 @@ first argument of `update!`. Like this:
 opt = Flux.setup(Adam(0.001), model)
 
 for data in train_set
-  ...  
+  grads = [...]
 
   # Update both model parameters and optimiser state:
   Flux.update!(opt, model, grads[1])
 end
 ```
 
-Many commonly used optimisation rules, such as [`Adam`](@ref Flux.Optimise.Adam), are built-in.
+Many commonly-used optimisation rules, such as [`Adam`](@ref Flux.Optimise.Adam), are built-in.
 These are listed on the [optimisers](@ref man-optimisers) page.
-
 
 !!! compat "Implicit-style optimiser state"
     This `setup` makes another tree-like structure. Old versions of Flux did not do this,

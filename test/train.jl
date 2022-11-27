@@ -126,7 +126,7 @@ end
     err + 0.33 * l2
   end
   diff2 = model.weight .- init_weight
-  @test_broken diff1 ≈ diff2
+  @test diff1 ≈ diff2
 
   # Take 3: using WeightDecay instead. Need the /2 above, to match exactly.
   model.weight .= init_weight
