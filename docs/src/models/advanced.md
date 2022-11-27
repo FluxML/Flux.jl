@@ -69,6 +69,10 @@ However, doing this requires the `struct` to have a corresponding constructor th
 
 When it is desired to not include all the model parameters (for e.g. transfer learning), we can simply not pass in those layers into our call to `params`.
 
+!!! compat "Flux ≤ 0.13"
+    The mechanism described here is for Flux's old "implicit" training style.
+    When upgrading for Flux 0.14, it should be replaced by [`freeze!`](@ref Flux.freeze!) and `thaw!`.
+
 Consider a simple multi-layer perceptron model where we want to avoid optimising the first two `Dense` layers. We can obtain
 this using the slicing features `Chain` provides:
 
@@ -154,6 +158,10 @@ xs = map(gpu, (rand(1), rand(1), rand(1)))
 model(xs)
 # returns a single float vector with one value
 ```
+
+!!! note
+    This `Join` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.
+
 
 #### Using `Parallel`
 
