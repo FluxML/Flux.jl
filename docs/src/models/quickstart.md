@@ -27,25 +27,23 @@ target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneH
 loader = Flux.DataLoader((noisy, target) |> gpu, batchsize=64, shuffle=true);
 # 16-element DataLoader with first element: (2×64 Matrix{Float32}, 2×64 OneHotMatrix)
 
-pars = Flux.params(model)  # contains references to arrays in model
-opt = Flux.Adam(0.01)      # will store optimiser momentum, etc.
+optim = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum, etc.
 
 # Training loop, using the whole data set 1000 times:
 losses = []
 @showprogress for epoch in 1:1_000
     for (x, y) in loader
-        loss, grad = Flux.withgradient(pars) do
+        loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
-            y_hat = model(x)
+            y_hat = m(x)
             Flux.crossentropy(y_hat, y)
         end
-        Flux.update!(opt, pars, grad)
+        Flux.update!(optim, model, grads[1])
         push!(losses, loss)  # logging, outside gradient context
     end
 end
 
-pars  # parameters, momenta and output have all changed
-opt
+optim # parameters, momenta and output have all changed
 out2 = model(noisy |> gpu) |> cpu  # first row is prob. of true, second row p(false)
 
 mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
@@ -89,7 +87,7 @@ Some things to notice in this example are:
 
 * The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
 
-* But the model does not contain the loss function, nor the optimisation rule. The [`Adam`](@ref Flux.Adam) object stores between iterations the momenta it needs. And [`Flux.crossentropy`](@ref Flux.Losses.crossentropy) is an ordinary function.
+* But the model does not contain the loss function, nor the optimisation rule. The momenta needed by [`Adam`](@ref Flux.Adam) are stored in the object returned by [setup](@ref Flux.Train.setup). And [`Flux.crossentropy`](@ref Flux.Losses.crossentropy) is an ordinary function.
 
 * The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
 
@@ -97,9 +95,18 @@ Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.
 
 ```julia
 for epoch in 1:1_000
-    Flux.train!(pars, loader, opt) do x, y
-        y_hat = model(x)
+    Flux.train!(model, loader, optim) do m, x, y
+        y_hat = m(x)
         Flux.crossentropy(y_hat, y)
     end
 end
 ```
+
+!!! note "Implicit-style training"
+    Until recently Flux's training looked a bit different. 
+    Any code which looks like `gradient(() -> loss(model, x, y), Flux.params(model))`
+    (gradient of a zero-argument function) or
+    `train!((x,y) -> loss(model, x, y), Flux.params(model), loader, optim)` 
+    is in the old "implicit" style.
+    This still works on Flux 0.13, but will be removed from Flux 0.14.
+    See the [training section](@ref man-training) for more details.
