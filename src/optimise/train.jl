@@ -15,7 +15,7 @@ according to optimizer `opt::AbstractOptimiser`  and the gradients `gs` (the gra
 As a result, the parameters are mutated and the optimizer's internal state may change.
 The gradient could be mutated as well.
 
-!!! note
+!!! compat "Deprecated"
     This method for implicit `Params` (and `AbstractOptimiser`) will be removed from Flux 0.14.
     The explicit method `update!(opt, model, grad)` from Optimisers.jl will remain.
 """
@@ -95,7 +95,7 @@ batchmemaybe(x::Tuple) = x
 Uses a `loss` function and training `data` to improve the 
 model's parameters according to a particular optimisation rule `opt`.
 
-!!! note
+!!! compat "Deprecated"
     This method with implicit `Params` will be removed from Flux 0.14.
     It should be replaced with the explicit method `train!(loss, model, data, opt)`.
 

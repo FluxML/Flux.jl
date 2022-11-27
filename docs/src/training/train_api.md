@@ -2,10 +2,10 @@
 
 ```@docs
 Flux.Train.setup
-Flux.Optimise.train!(loss, model, data, opt; cb)
+Flux.Train.train!(loss, model, data, opt; cb)
 ```
 
-`train!` uses [`@progress`](https://github.com/JuliaLogging/ProgressLogging.jl) which should show a progress bar in VSCode.
+`train!` uses [`@progress`](https://github.com/JuliaLogging/ProgressLogging.jl) which should show a progress bar in VSCode automatically.
 To see one in a terminal, you will need to install [TerminalLoggers.jl](https://github.com/JuliaLogging/TerminalLoggers.jl)
 and follow its setup instructions.
 
@@ -21,27 +21,31 @@ Optimisers.update!
 ### Modifiers
 
 The state returned by `setup` can be modified to temporarily prevent training of
-some parts of the model, or to change the learning rate uses.
-The functions for doing so may be accessed as `Flux.freeze!`, `Flux.thaw!`, and `Flux.adjust`:
+some parts of the model, or to change the learning rate or other hyperparameter.
+The functions for doing so may be accessed as `Flux.freeze!`, `Flux.thaw!`, and `Flux.adjust!`.
+All mutate the state (or part of it) and return `nothing`.
 
 ```@docs
-Optimisers.adjust
+Optimisers.adjust!
 Optimisers.freeze!
 Optimisers.thaw!
 ```
 
-
-## Implicit style
+## Implicit style (Flux ≤ 0.13)
 
 Flux used to handle gradients, training, and optimisation rules quite differently.
 The new style described above is called "explicit" by Zygote, and the old style "implicit".
 Flux 0.13 is the transitional version which supports both; Flux 0.14 will remove the old.
 
+!!! compat "How to upgrade"
+    The blue-green boxes in the [training section](@ref man-training) describe
+    the changes needed to upgrade old code.
+
 For full details on the interface for implicit-style optimisers, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
 
 ```@docs
 Flux.params
-Optimisers.update!(opt::Flux.Optimise.AbstractOptimiser, xs::Flux.Params, gs)
+Flux.Optimise.update!(opt::Flux.Optimise.AbstractOptimiser, xs::Flux.Params, gs)
 Flux.Optimise.train!(loss, ps::Flux.Params, data, opt::Flux.Optimise.AbstractOptimiser; cb)
 ```
 

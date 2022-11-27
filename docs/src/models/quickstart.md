@@ -103,10 +103,15 @@ end
 ```
 
 !!! note "Implicit-style training"
-    Until recently Flux's training looked a bit different. 
-    Any code which looks like `gradient(() -> loss(model, x, y), Flux.params(model))`
+    Until recently Flux's training worked a bit differently. 
+    Any code which looks like 
+    ```
+    gradient(() -> loss(model, x, y), Flux.params(model))
+    ```
     (gradient of a zero-argument function) or
-    `train!((x,y) -> loss(model, x, y), Flux.params(model), loader, optim)` 
-    is in the old "implicit" style.
+    ```
+    train!((x,y) -> loss(model, x, y), Flux.params(model), loader, optim)
+    ```
+    (with `Flux.params`) is in the old "implicit" style.
     This still works on Flux 0.13, but will be removed from Flux 0.14.
     See the [training section](@ref man-training) for more details.
