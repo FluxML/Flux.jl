@@ -275,6 +275,7 @@ function _track_stats!(
   μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
   σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
 
+  # ForwardDiff.value removes Dual, was an error, issue #2122
   bn.μ .= value.(res_mtm .* bn.μ .+ mtm .* μnew)
   bn.σ² .= value.(res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new)
   return nothing
