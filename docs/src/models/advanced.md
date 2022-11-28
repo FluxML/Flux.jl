@@ -231,3 +231,7 @@ function loss(x, ys, model)
   return sqrt(mean(Flux.mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
 end
 ```
+
+!!! note
+    This `Split` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.
+

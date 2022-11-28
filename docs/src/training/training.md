@@ -13,8 +13,7 @@ something like this:
 
 ```julia
 for data in train_set
-  # Unpack this element into the input and the
-  # desired result (for supervised training):
+  # Unpack this element (for supervised training):
   input, label = data
 
   # Calculate the gradient of the objective
@@ -154,25 +153,16 @@ data = [(x, y)]
 ```
 
 or `data = [(x, y), (x, y), (x, y)]` for the same values three times.
-To get data into this format, you might want `zip` to combine a list of different `x`s
-with a list of different `y`s:
+
+Very often, the initial data is large arrays which you need to slice into examples.
+To produce one iterator of pairs `(x, y)`, you might want `zip`:
 
 ```julia
-xs = [rand(28, 28), rand(28, 28), rand(28, 28)]
-ys = [rand(10), rand(10), rand(10)]
-data = zip(xs, ys)
-
-first(data) isa Tuple{Matrix, Vector}  # true
-```
-
-Very often, the initial data is large arrays which you need to slice into examples:
-
-```julia
-X = rand(28, 28, 60_000)
+X = rand(28, 28, 60_000);  # many images, each 28 × 28
 Y = rand(10, 60_000)
 data = zip(eachslice(X; dims=3), eachcol(Y))
 
-first(data) isa Tuple{Matrix, Vector}  # true
+first(data) isa Tuple{AbstractMatrix, AbstractVector}  # true
 ```
 
 Here each iteration will use one matrix `x` (an image, perhaps) and one vector `y`.
@@ -194,20 +184,25 @@ The batch index is always the last dimension.
 
 ## Training Loops
 
-Very simple training loops like the one above can be written compactly using
+Simple training loops like the one above can be written compactly using
 the [`train!`](@ref Flux.Train.train!) function. Including `setup`, this reads:
 
 ```julia
 opt = Flux.setup(Adam(), model)
 
-train!(model, train_set, opt) do m, x, y
-  loss(m(x), y)
+for epoch in 1:100
+  Flux.train!(model, train_set, opt) do m, x, y
+    loss(m(x), y)
+  end
 end
 ```
 
+Or explicitly writing the anonymous function which this `do` block creates,
+`train!((m,x,y) -> loss(m(x),y), model, train_set, opt)` is exactly equivalent.
+
 !!! compat "Implicit-style `train!`"
     This is the new "explicit" method of `train!`, which takes the result of `setup` as its 4th argument.
-    The 1st argument (from the `do` block) is a function which accepts the model itself.
+    The 1st argument is a function which accepts the model itself.
     Flux versions ≤ 0.13 provided a method of `train!` for "implicit" parameters,
     which works like this:
     ```
@@ -318,7 +313,7 @@ After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
 
 The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Flux.Optimise.ClipValue) or [`ClipNorm`](@ref Flux.Optimise.ClipNorm).
 
-Besides L₂ / weight decay, another common and quite different kind of regularisation is
+Besides L2 / weight decay, another common and quite different kind of regularisation is
 provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some outputs of the
 previous layer during training.
 It should switch automatically, but see [`trainmode!`](@ref Flux.trainmode!) / [`testmode!`](@ref Flux.testmode!) to manually enable or disable this layer.
