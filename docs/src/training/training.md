@@ -327,7 +327,7 @@ This can be done with [`adjust!`](@ref Flux.adjust!), like this:
 opt = Flux.setup(Adam(0.1), model)  # initialise once
 
 for epoch in 1:1000
-    train!([...], opt)  # train with η = 0.1 for first 100,
+    train!([...], opt)  # Train with η = 0.1 for first 100,
     if epoch == 100     # then change to use η = 0.01 for the rest.
         Flux.adjust!(opt, 0.01)
     end
@@ -343,11 +343,14 @@ And such modifications can be applied to just one part of the model.
 For instance, this sets a different learning rate for the encoder and the decoder:
 
 ```julia
-bimodel = Chain(enc = [...], dec = [...])  # some model with two parts
+# Consider some model with two parts:
+bimodel = Chain(enc = [...], dec = [...])
 
+# This returns a tree whose structure matches the model:
 opt = Flux.setup(Adam(0.02), bimodel)
 
-Flux.adjust!(opt.layers.enc, 0.03)  # corresponds to bimodel.layers.enc
+# Adjust the learning rate to be used for bimodel.layers.enc
+Flux.adjust!(opt.layers.enc, 0.03)
 ```
 
 To completely disable training of some part of the model, use [`freeze!`](@ref Flux.freeze!).
@@ -356,9 +359,11 @@ This is a temporary modification, reversed by `thaw!`:
 ```julia
 Flux.freeze!(opt.layers.enc)
 
-train!(loss, bimodel, data, opt)  # won't touch bimodel.layers.enc
+# Now training won't update parameters in bimodel.layers.enc
+train!(loss, bimodel, data, opt)
 
-Flux.thaw!(opt)  # this applies to the entire model
+# Un-freeze the entire model:
+Flux.thaw!(opt)
 ```
 
 !!! compat "Flux ≤ 0.13"
