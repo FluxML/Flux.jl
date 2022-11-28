@@ -97,7 +97,9 @@ The simplest kind of optimisation using the gradient is termed *gradient descent
 (or sometimes *stochastic gradient descent* when, as here, it is not applied to the entire dataset at once).
 
 Gradient descent needs a *learning rate* which is a small number describing how fast to walk downhill,
-usually written as the Greek letter "eta", `η`. This is what it does:
+usually written as the Greek letter "eta", `η`. This is often described as a *hyperparameter*,
+to distinguish it from the parameters which are being updated `θ = θ - η * ∂loss_∂θ`.
+We want to update all the parameters in the model, like this:
 
 ```julia
 η = 0.01   # learning rate
@@ -115,14 +117,14 @@ And the learning rate is the only thing stored in the [`Descent`](@ref Flux.Opti
 However, there are many other optimisation rules, which adjust the step size and
 direction in various clever ways.
 Most require some memory of the gradients from earlier steps, rather than always
-walking straight downhill. The function [`setup`](@ref Flux.Train.setup) creates the
-necessary storage for this, for a particular model.
+walking straight downhill -- [`Momentum`](@ref Flux.Optimise.Momentum) is the simplest.
+The function [`setup`](@ref Flux.Train.setup) creates the necessary storage for this, for a particular model.
 It should be called once, before training, and returns a tree-like object which is the
-first argument of `update!`. Like this: 
+first argument of `update!`. Like this:
 
 ```julia
 # Initialise momentum 
-opt = Flux.setup(Adam(0.001), model)
+opt = Flux.setup(Momentum(0.01, 0.9), model)
 
 for data in train_set
   grads = [...]
@@ -222,7 +224,7 @@ callback API. Here is an example, in which it may be helpful to note:
 ```julia
 opt = Flux.setup(Adam(), model)
 
-log = []
+my_log = []
 for epoch in 1:100
   losses = Float32[]
   for (i, data) in enumerate(train_set)
@@ -247,9 +249,9 @@ for epoch in 1:100
     Flux.update!(opt, model, grads[1])
   end
 
-  # Compute some accuracy, and save details to log
+  # Compute some accuracy, and save details as a NamedTuple
   acc = my_accuracy(model, train_set)
-  push!(log, (; acc, losses))
+  push!(my_log, (; acc, losses))
 
   # Stop training when some criterion is reached
   if  acc > 0.95
