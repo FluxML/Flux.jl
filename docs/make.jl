@@ -15,6 +15,7 @@ makedocs(
         # Aim is to cover each new concept exactly once (but not list all variants).
         # Hard to invent further divisions which aren't more confusing than helpful?
             "Quick Start" => "models/quickstart.md",
+            "Fitting a Line" => "models/overview.md",
             "Gradients and Layers" => "models/basics.md",
             "Training" => "training/training.md",
             # "Regularisation" => "models/regularisation.md",  # consolidated in #2114
@@ -44,7 +45,6 @@ makedocs(
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
         # All the website tutorials can move here, perhaps much of the model zoo too.
-            "Fitting a Line" => "models/overview.md",
             "Linear Regression" => "tutorials/linear_regression.md",
             "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
             "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
