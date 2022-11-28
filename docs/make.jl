@@ -1,10 +1,10 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames, CUDA
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames, CUDA],
     doctest = false,
     sitename = "Flux",
     # strict = [:cross_references,],
@@ -35,6 +35,7 @@ makedocs(
             "Shape Inference 📚" => "outputsize.md",
             "Flat vs. Nested 📚" => "destructure.md",
             "Callback Helpers 📚" => "training/callbacks.md",
+            "CUDA.jl 📚 (`cu`, `CuIterator`, ...)" => "CUDA.md",
             "NNlib.jl 📚 (`softmax`, `conv`, ...)" => "models/nnlib.md",
             "Zygote.jl 📚 (`gradient`, ...)" => "training/zygote.md",
             "MLUtils.jl 📚 (`DataLoader`, ...)" => "data/mlutils.md",
