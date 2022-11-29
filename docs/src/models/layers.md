@@ -12,7 +12,7 @@ The `Dense` exemplifies several features:
 
 * The bias vector is always intialised [`Flux.zeros32`](@ref). The keyword `bias=false` will turn this off, i.e. keeping the bias permanently zero.
 
-* It is annotated with [`@layer`](@ref Flux.@layer), which means that [`params`](@ref Flux.params) will see the contents, and [gpu](@ref Flux.gpu) will move their arrays to the GPU.
+* It is annotated with [`@functor`](@ref Functors.@functor), which means that [`params`](@ref Flux.params) will see the contents, and [gpu](@ref Flux.gpu) will move their arrays to the GPU.
 
 By contrast, `Chain` itself contains no parameters, but connects other layers together.
 The section on [dataflow layers](@ref man-dataflow-layers) introduces others like this,
@@ -83,8 +83,6 @@ Flux.EmbeddingBag
 ## [Dataflow Layers, or Containers](@id man-dataflow-layers)
 
 The basic `Chain(F, G, H)` applies the layers it contains in sequence, equivalent to `H ∘ G ∘ F`. Flux has some other layers which contain layers, but connect them up in a more complicated way: `SkipConnection` allows ResNet's residual connection.
-
-These are all defined with [`@layer`](@ref)` :exand TypeName`, which tells the pretty-printing code that they contain other layers.
 
 ```@docs
 Chain
