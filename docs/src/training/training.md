@@ -29,7 +29,6 @@ for data in train_set
 end
 ```
 
-It is important that every `update!` step receives a newly gradient computed gradient.
 This loop can also be written using the function [`train!`](@ref Flux.Train.train!),
 but it's helpful to undersand the pieces first:
 
@@ -43,8 +42,8 @@ end
 
 Fist recall from the section on [taking gradients](@ref man-taking-gradients) that 
 `Flux.gradient(f, a, b)` always calls `f(a, b)`, and returns a tuple `(∂f_∂a, ∂f_∂b)`.
-In the code above, the function `f` is an anonymous function with one argument,
-created by the `do` block, hence  `grads` is a tuple with one element.
+In the code above, the function `f` passed to `gradient` is an anonymous function with
+one argument, created by the `do` block, hence  `grads` is a tuple with one element.
 Instead of a `do` block, we could have written:
 
 ```julia
@@ -57,6 +56,9 @@ structures are what Zygote calls "explicit" gradients.
 
 It is important that the execution of the model takes place inside the call to `gradient`,
 in order for the influence of the model's parameters to be observed by Zygote.
+
+It is also important that every `update!` step receives a newly gradient computed gradient,
+as this will be change whenever the model's parameters are changed, and for each new data point.
 
 !!! compat "Explicit vs implicit gradients"
     Flux ≤ 0.13 used Zygote's "implicit" mode, in which `gradient` takes a zero-argument function.
