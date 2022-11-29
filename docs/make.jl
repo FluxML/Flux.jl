@@ -24,7 +24,7 @@ makedocs(
             "Saving & Loading" => "saving.md",
             "Performance Tips" => "performance.md",
         ],
-        "Flux's Ecosystem" => "ecosystem.md",  # This is a links page
+        "Ecosystem" => "ecosystem.md",  # This is a links page...
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
             "Built-in Layers" => "models/layers.md",
