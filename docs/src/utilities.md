@@ -42,6 +42,7 @@ Flux.ones32
 Flux.zeros32
 Flux.rand32
 Flux.randn32
+Flux.create_bias
 ```
 
 These functions call:
