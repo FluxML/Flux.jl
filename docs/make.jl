@@ -40,7 +40,6 @@ makedocs(
             "MLUtils.jl (`DataLoader`, ...)" => "data/mlutils.md",
             "Functors.jl (`fmap`, ...)" => "models/functors.md",
             "OneHotArrays.jl (`onehot`, ...)" => "data/onehot.md",
-            "CUDA.jl (`cu`, `CuIterator`, ...)" => "reference/CUDA.md",  # do we want this?
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
