@@ -9,7 +9,7 @@ See also academic work citing Flux or Zygote.
 
 ## Flux models
 
-Packages that are actual `Flux` models but are not available directly through the `Flux` package.
+Packages that are actual `Flux` models. See also Flux's [model-zoo](https://github.com/FluxML/model-zoo).
 
 ### Computer vision
 
@@ -109,3 +109,15 @@ Some useful and random packages!
 - [DrWatson.jl](https://github.com/JuliaDynamics/DrWatson.jl) is a scientific project assistant software.
 
 This tight integration among Julia packages is shown in some of the examples in the [model-zoo](https://github.com/FluxML/model-zoo) repository.
+
+
+## Alternatives to Flux
+
+Julia has several other libraries for making neural networks. 
+
+* [SimpleChains.jl](https://github.com/PumasAI/SimpleChains.jl) is focused on making small, simple, CPU-based, neural networks fast. Uses [LoopVectorization.jl](https://github.com/JuliaSIMD/LoopVectorization.jl). (Was `FastChain` in DiffEqFlux.jl) 
+
+* [Knet.jl](https://github.com/denizyuret/Knet.jl) is a neural network library built around [AutoGrad.jl](https://github.com/denizyuret/AutoGrad.jl), with beautiful documentation.
+
+* [Lux.jl](https://github.com/avik-pal/Lux.jl) (earlier ExplicitFluxLayers.jl) shares much of the design, use-case, and NNlib.jl / Optimisers.jl back-end of Flux. But instead of encapsulating all parameters within the model structure, it separates this into 3 components: a model, a tree of parameters, and a tree of model states.
+
