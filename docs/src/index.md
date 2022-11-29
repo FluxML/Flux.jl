@@ -6,11 +6,11 @@ Flux is a library for machine learning. It comes "batteries-included" with many 
 * **Extensible by default**. Flux is written to be highly flexible while being performant. Extending Flux is as simple as using your own code as part of the model you want - it is all [high-level Julia code](https://github.com/FluxML/Flux.jl/tree/master/src).
 * **Play nicely with others**. Flux works well with unrelated Julia libraries from [images](https://github.com/JuliaImages/Images.jl) to [differential equation solvers](https://github.com/SciML/DifferentialEquations.jl), rather than duplicating them.
 
-## Installation
+### Installation
 
 Download [Julia 1.6](https://julialang.org/downloads/) or later, preferably the current stable release. You can add Flux using Julia's package manager, by typing `] add Flux` in the Julia prompt. This will automatically install several other packages, including [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) which supports Nvidia GPUs.
 
-## Learning Flux
+### Learning Flux
 
 The **[quick start](@ref man-quickstart)** page trains a simple neural network.
 
@@ -20,7 +20,7 @@ There are some **tutorials** about building particular models. The **[model zoo]
 
 The **reference** section contains API listings, including some companion packages: [Zygote](https://github.com/FluxML/Zygote.jl) (automatic differentiation), [Optimisers](https://github.com/FluxML/Optimisers.jl) (training), [NNlib](https://github.com/FluxML/NNlib.jl) (misc functions) and more.
 
-## Community
+### Community
 
 Everyone is welcome to join our community on the [Julia discourse forum](https://discourse.julialang.org/), or the [slack chat](https://discourse.julialang.org/t/announcing-a-julia-slack/4866) (channel #machine-learning). If you have questions or issues we'll try to help you out.
 
