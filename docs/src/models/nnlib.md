@@ -1,6 +1,6 @@
 # Neural Network primitives from NNlib.jl
 
-Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package. This includes activation functions, described on the next page. Many of the functions on this page exist primarily as the internal implementation of Flux layer, but can also be used independently.
+Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package. This includes activation functions, described on [their own page](@ref man-activations). Many of the functions on this page exist primarily as the internal implementation of Flux layer, but can also be used independently.
 
 ## Softmax
 
