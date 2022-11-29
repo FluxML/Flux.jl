@@ -35,7 +35,7 @@ makedocs(
             "Shape Inference 📚" => "outputsize.md",
             "Flat vs. Nested 📚" => "destructure.md",
             "Callback Helpers 📚" => "training/callbacks.md",
-            "CUDA.jl 📚 (`cu`, `CuIterator`, ...)" => "CUDA.md",
+            "CUDA.jl 📚 (`cu`, `CuIterator`, ...)" => "reference/CUDA.md",  # not sure
             "NNlib.jl 📚 (`softmax`, `conv`, ...)" => "models/nnlib.md",
             "Zygote.jl 📚 (`gradient`, ...)" => "training/zygote.md",
             "MLUtils.jl 📚 (`DataLoader`, ...)" => "data/mlutils.md",
