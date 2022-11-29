@@ -24,6 +24,7 @@ makedocs(
             "Saving & Loading" => "saving.md",
             "Performance Tips" => "performance.md",
         ],
+        "Flux's Ecosystem" => "ecosystem.md",  # This is a links page
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
         # Probably the 📚 marker can be removed now.
@@ -42,16 +43,18 @@ makedocs(
             "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
             "OneHotArrays.jl 📚 (`onehot`, ...)" => "data/onehot.md",
          ],
-        "Flux's Ecosystem" => "ecosystem.md",  # This is a links page
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
-        # All the website tutorials can move here, perhaps much of the model zoo too.
+        # All the website tutorials can move here, perhaps much of the model zoo too?
+        # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
+            #=
             "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
             "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
             "Simple ConvNet" => "tutorials/2021-02-07-convnet.md",
             "Generative Adversarial Net" => "tutorials/2021-10-14-vanilla-gan.md",
             "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
+            =#
             # Not really sure where this belongs... some in Fluxperimental, aim to delete?
             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
         ],
