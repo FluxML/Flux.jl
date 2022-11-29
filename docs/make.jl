@@ -27,21 +27,20 @@ makedocs(
         "Flux's Ecosystem" => "ecosystem.md",  # This is a links page
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
-        # Probably the 📚 marker can be removed now.
-            "Built-in Layers 📚" => "models/layers.md",
-            "Activation Functions 📚" => "models/activation.md",
-            "Weight Initialisation 📚" => "utilities.md",
-            "Loss Functions 📚" => "models/losses.md",
-            "Optimisation Rules 📚" => "training/optimisers.md",  # TODO move optimiser intro up to Training
-            "Shape Inference 📚" => "outputsize.md",
-            "Flat vs. Nested 📚" => "destructure.md",
-            "Callback Helpers 📚" => "training/callbacks.md",
-            "CUDA.jl 📚 (`cu`, `CuIterator`, ...)" => "reference/CUDA.md",  # not sure
-            "NNlib.jl 📚 (`softmax`, `conv`, ...)" => "models/nnlib.md",
-            "Zygote.jl 📚 (`gradient`, ...)" => "training/zygote.md",
-            "MLUtils.jl 📚 (`DataLoader`, ...)" => "data/mlutils.md",
-            "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
-            "OneHotArrays.jl 📚 (`onehot`, ...)" => "data/onehot.md",
+            "Built-in Layers" => "models/layers.md",
+            "Activation Functions" => "models/activation.md",
+            "Weight Initialisation" => "utilities.md",
+            "Loss Functions" => "models/losses.md",
+            "Optimisation Rules" => "training/optimisers.md",  # TODO move optimiser intro up to Training
+            "Shape Inference" => "outputsize.md",
+            "Flat vs. Nested" => "destructure.md",
+            "Callback Helpers" => "training/callbacks.md",
+            "NNlib.jl (`softmax`, `conv`, ...)" => "models/nnlib.md",
+            "Zygote.jl (`gradient`, ...)" => "training/zygote.md",
+            "MLUtils.jl (`DataLoader`, ...)" => "data/mlutils.md",
+            "Functors.jl (`fmap`, ...)" => "models/functors.md",
+            "OneHotArrays.jl (`onehot`, ...)" => "data/onehot.md",
+            "CUDA.jl (`cu`, `CuIterator`, ...)" => "reference/CUDA.md",  # do we want this?
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
