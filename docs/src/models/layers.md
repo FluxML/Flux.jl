@@ -127,6 +127,11 @@ Flux.dropout
 
 Several normalisation layers behave differently under training and inference (testing). By default, Flux will automatically determine when a layer evaluation is part of training or inference. 
 
+!!! warning
+    This automatic train/test detection works best with Zygote, the default
+    automatic differentiation package. It may not work with other packages
+    such as Tracker, Yota, or ForwardDiff.
+
 The functions `Flux.trainmode!` and `Flux.testmode!` let you manually specify which behaviour you want. When called on a model, they will place all layers within the model into the specified mode.
 
 ```@docs
