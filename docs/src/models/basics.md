@@ -233,5 +233,4 @@ Affine(3 => 1, bias=false, init=ones) |> gpu
 
 ```@docs
 Functors.@functor
-Flux.create_bias
 ```

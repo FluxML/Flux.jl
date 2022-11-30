@@ -182,6 +182,9 @@ function Base.show(io::IO, l::Dense)
   print(io, ")")
 end
 
+Dense(W::LinearAlgebra.Diagonal, bias = true, σ = identity) =
+  Scale(W.diag, bias, σ)
+
 """
     Scale(size::Integer..., σ=identity; bias=true, init=ones32)
     Scale(scale::AbstractArray, [bias, σ])
