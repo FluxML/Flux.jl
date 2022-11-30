@@ -8,11 +8,11 @@ The `Dense` exemplifies several features:
 
 * It contains an an [activation function](@ref man-activations), which is broadcasted over the output. Because this broadcast can be fused with other operations, doing so is more efficient than applying the activation function separately.
 
-* It take an `init` keyword, which accepts a function acting like `rand`. That is, `init(2,3,4)` should create an array of this size. Flux has [many such functions](@ref man-init-funcs) built-in. All make a CPU array, moved later with [gpu](@ref Flux.gpu) if desired.
+* It take an `init` keyword, which accepts a function acting like `rand`. That is, `init(2,3,4)` should create an array of this size. Flux has [many such functions](@ref man-init-funcs) built-in. All make a CPU array, moved later with [`gpu`](@ref Flux.gpu) if desired.
 
 * The bias vector is always intialised [`Flux.zeros32`](@ref). The keyword `bias=false` will turn this off, i.e. keeping the bias permanently zero.
 
-* It is annotated with [`@functor`](@ref Functors.@functor), which means that [`params`](@ref Flux.params) will see the contents, and [gpu](@ref Flux.gpu) will move their arrays to the GPU.
+* It is annotated with [`@functor`](@ref Functors.@functor), which means that [`params`](@ref Flux.params) will see the contents, and [`gpu`](@ref Flux.gpu) will move their arrays to the GPU.
 
 By contrast, `Chain` itself contains no parameters, but connects other layers together.
 The section on [dataflow layers](@ref man-dataflow-layers) introduces others like this,
