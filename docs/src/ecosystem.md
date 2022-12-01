@@ -123,7 +123,7 @@ Julia has several other libraries for making neural networks.
 
 * [SimpleChains.jl](https://github.com/PumasAI/SimpleChains.jl) is focused on making small, simple, CPU-based, neural networks fast. Uses [LoopVectorization.jl](https://github.com/JuliaSIMD/LoopVectorization.jl). (Was `FastChain` in DiffEqFlux.jl) 
 
-* [Knet.jl](https://github.com/denizyuret/Knet.jl) is a neural network library built around [AutoGrad.jl](https://github.com/denizyuret/AutoGrad.jl), with beautiful documentation.
+* [Knet.jl](https://github.com/denizyuret/Knet.jl) is a neural network library built around [AutoGrad.jl](https://github.com/denizyuret/AutoGrad.jl).
 
 * [Lux.jl](https://github.com/avik-pal/Lux.jl) (earlier ExplicitFluxLayers.jl) shares much of the design, use-case, and NNlib.jl / Optimisers.jl back-end of Flux. But instead of encapsulating all parameters within the model structure, it separates this into 3 components: a model, a tree of parameters, and a tree of model states.
 
