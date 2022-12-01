@@ -18,7 +18,7 @@ This rest of the **guide** provides a from-scratch introduction to Flux's take o
 
 There are some **tutorials** about building particular models. The **[model zoo](https://github.com/FluxML/model-zoo/)** has starting points for many other common ones. And finally, the **[ecosystem page](ecosystem.md)** lists packages which define Flux models.
 
-The **reference** section contains API listings, including some companion packages: [Zygote](https://github.com/FluxML/Zygote.jl) (automatic differentiation), [Optimisers](https://github.com/FluxML/Optimisers.jl) (training), [NNlib](https://github.com/FluxML/NNlib.jl) (misc functions) and more.
+The **reference** section includes, beside Flux's own functions, those of some companion packages: [Zygote.jl](https://github.com/FluxML/Zygote.jl) (automatic differentiation), [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) (training) and others.
 
 ### Community
 
