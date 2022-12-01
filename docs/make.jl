@@ -1,10 +1,10 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames, CUDA
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
 
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames, CUDA],
+    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames],
     doctest = false,
     sitename = "Flux",
     # strict = [:cross_references,],
@@ -18,13 +18,13 @@ makedocs(
             "Fitting a Line" => "models/overview.md",
             "Gradients and Layers" => "models/basics.md",
             "Training" => "training/training.md",
-            # "Regularisation" => "models/regularisation.md",  # consolidated in #2114
+            "Regularisation" => "models/regularisation.md",  # consolidated in #2114
             "Recurrence" => "models/recurrence.md",
             "GPU Support" => "gpu.md",
             "Saving & Loading" => "saving.md",
             "Performance Tips" => "performance.md",
         ],
-        "Ecosystem" => "ecosystem.md",  # This is a links page...
+        "Ecosystem" => "ecosystem.md",
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
             "Built-in Layers" => "models/layers.md",
