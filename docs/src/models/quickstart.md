@@ -97,7 +97,7 @@ Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.
 
 ```julia
 for epoch in 1:1_000
-    train!(pars, loader, opt) do x, y
+    Flux.train!(pars, loader, opt) do x, y
         y_hat = model(x)
         Flux.crossentropy(y_hat, y)
     end
