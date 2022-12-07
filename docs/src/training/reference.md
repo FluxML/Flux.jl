@@ -16,7 +16,7 @@ see the [Optimisers documentation](https://fluxml.ai/Optimisers.jl/dev/) for det
 
 ```@docs
 Flux.Train.setup
-Flux.Train.train!(loss, model, data, opt; cb)
+Flux.Train.train!(loss, model, data, state; cb)
 Optimisers.update!
 ```
 
