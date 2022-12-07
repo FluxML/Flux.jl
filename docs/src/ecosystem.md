@@ -127,3 +127,11 @@ Julia has several other libraries for making neural networks.
 
 * [Lux.jl](https://github.com/avik-pal/Lux.jl) (earlier ExplicitFluxLayers.jl) shares much of the design, use-case, and NNlib.jl / Optimisers.jl back-end of Flux. But instead of encapsulating all parameters within the model structure, it separates this into 3 components: a model, a tree of parameters, and a tree of model states.
 
+!!! compat Explicit or explicit?
+    Flux's [training docs](@ref man-training) talk about changes from Zygote's implicit to
+    explicit gradients, dictionary-like to tree-like structures.
+    (See also [Zygote's description](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) of these.)
+    Lux also uses Zygote, but perhaps confusingly uses of the word "explicit" means
+    something completetly unrelated: storing the tree of parameters (and of state)
+    separately from the model.
+
