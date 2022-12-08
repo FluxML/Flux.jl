@@ -336,7 +336,7 @@ state = Flux.setup(Adam(0.1), model)  # initialise once
 
 for epoch in 1:1000
     train!([...], state)  # Train with η = 0.1 for first 100,
-    if epoch == 100     # then change to use η = 0.01 for the rest.
+    if epoch == 100       # then change to use η = 0.01 for the rest.
         Flux.adjust!(state, 0.01)
     end
 end
