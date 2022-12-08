@@ -470,7 +470,7 @@ end
 @testset "ForwardDiff" begin
   bn = BatchNorm(3)
   @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
-  iszero(bn.μ)  # true, but ideally it would automatically choose trainmode
+  # iszero(bn.μ)  # is true. But ideally would not be, if Flux would automatically choose trainmode
   Flux.trainmode!(bn)
   # This was an error, https://github.com/FluxML/Flux.jl/issues/2122
   @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
