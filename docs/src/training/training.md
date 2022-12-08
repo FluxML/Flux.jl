@@ -54,8 +54,9 @@ grads = Flux.gradient(m -> loss(m(input), label), model)
 ```
 
 Since the model is some nested set of layers, `grads[1]` is a similarly nested set of
-`NamedTuple`s, ultimately containing gradient components. These matching tree-like
-structures are what Zygote calls "explicit" gradients.
+`NamedTuple`s, ultimately containing gradient components. If (for example) 
+`θ = model.layers[1].weight[2,3]` is one scalar parameter, an entry in a matrix of weights,
+then the derivative of the loss with respect to it is `∂f_∂θ = grads[1].layers[1].weight[2,3]`.
 
 It is important that the execution of the model takes place inside the call to `gradient`,
 in order for the influence of the model's parameters to be observed by Zygote.
@@ -63,7 +64,7 @@ in order for the influence of the model's parameters to be observed by Zygote.
 It is also important that every `update!` step receives a newly gradient computed gradient,
 as this will be change whenever the model's parameters are changed, and for each new data point.
 
-!!! compat "Explicit vs implicit gradients"
+!!! compat "Implicit gradients"
     Flux ≤ 0.13 used Zygote's "implicit" mode, in which `gradient` takes a zero-argument function.
     It looks like this:
     ```
@@ -208,7 +209,7 @@ Or explicitly writing the anonymous function which this `do` block creates,
 `train!((m,x,y) -> loss(m(x),y), model, train_set, state)` is exactly equivalent.
 
 !!! compat "Implicit-style `train!`"
-    This is the new "explicit" method of `train!`, which takes the result of `setup` as its 4th argument.
+    This is a new method of `train!`, which takes the result of `setup` as its 4th argument.
     The 1st argument is a function which accepts the model itself.
     Flux versions ≤ 0.13 provided a method of `train!` for "implicit" parameters,
     which works like this:

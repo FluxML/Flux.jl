@@ -102,7 +102,7 @@ for epoch in 1:1_000
 end
 ```
 
-!!! note "Implicit-style training"
+!!! compat "Implicit-style training, Flux ≤ 0.13"
     Until recently Flux's training worked a bit differently. 
     Any code which looks like 
     ```
