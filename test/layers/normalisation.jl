@@ -1,5 +1,5 @@
 using Flux, Test, Statistics
-using Zygote: pullback
+using Zygote: pullback, ForwardDiff
 
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
@@ -462,4 +462,18 @@ end
 @testset "second derivatives" begin
   m1 = Dropout(0.5)
   @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
+
+  m2 = Chain(BatchNorm(3), sum)
+  @test Zygote.hessian_reverse(m2, Float32[1 2; 3 4; 5 6]) == zeros(Float32, 6, 6)
 end
+
+@testset "ForwardDiff" begin
+  bn = BatchNorm(3)
+  @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
+  # iszero(bn.μ)  # is true. But ideally would not be, if Flux would automatically choose trainmode
+  Flux.trainmode!(bn)
+  # This was an error, https://github.com/FluxML/Flux.jl/issues/2122
+  @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
+  @test !iszero(bn.μ)
+end
+
