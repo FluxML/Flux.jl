@@ -35,11 +35,11 @@ makedocs(
             "Shape Inference" => "outputsize.md",
             "Flat vs. Nested" => "destructure.md",
             "Callback Helpers" => "training/callbacks.md",
-            "NNlib.jl (`softmax`, `conv`, ...)" => "models/nnlib.md",
-            "Zygote.jl (`gradient`, ...)" => "training/zygote.md",
-            "MLUtils.jl (`DataLoader`, ...)" => "data/mlutils.md",
-            "Functors.jl (`fmap`, ...)" => "models/functors.md",
-            "OneHotArrays.jl (`onehot`, ...)" => "data/onehot.md",
+            "Gradients -- Zygote.jl" => "training/zygote.md",
+            "Batching Data -- MLUtils.jl" => "data/mlutils.md",
+            "OneHotArrays.jl" => "data/onehot.md",
+            "Low-level Operations -- NNlib.jl" => "models/nnlib.md",
+            "Nested Structures -- Functors.jl" => "models/functors.md",
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
