@@ -30,6 +30,7 @@ makedocs(
             "Activation Functions" => "models/activation.md",
             "Weight Initialisation" => "utilities.md",
             "Loss Functions" => "models/losses.md",
+            "Training API" => "training/reference.md",
             "Optimisation Rules" => "training/optimisers.md",
             "Shape Inference" => "outputsize.md",
             "Flat vs. Nested" => "destructure.md",
