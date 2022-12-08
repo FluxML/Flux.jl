@@ -32,7 +32,7 @@ type `add MLDatasets` or perform this operation with the Pkg module like this
 > Pkg.add(MLDatasets)
 ```
 
-While [UnicodePlots]() is not necessary, it can be used to plot generated samples
+While [UnicodePlots](https://github.com/JuliaPlots/UnicodePlots.jl) is not necessary, it can be used to plot generated samples
 into the terminal during training. Having direct feedback, instead of looking
 at plots in a separate window, use fantastic for debugging.
 

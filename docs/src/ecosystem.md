@@ -5,11 +5,11 @@ globally providing a rich and consistent user experience.
 
 This is a non-exhaustive list of Julia packages, nicely complementing `Flux` in typical
 machine learning and deep learning workflows. To add your project please send a [PR](https://github.com/FluxML/Flux.jl/pulls).
-See also academic work citing Flux or Zygote.
+See also academic work [citing Flux](https://scholar.google.com/scholar?cites=9731162218836700005&hl=en) or [citing Zygote](https://scholar.google.com/scholar?cites=11943854577624257878&hl=en).
 
 ## Flux models
 
-Packages that are actual `Flux` models but are not available directly through the `Flux` package.
+- Flux's [model-zoo](https://github.com/FluxML/model-zoo) contains examples from many domains.
 
 ### Computer vision
 
@@ -38,6 +38,8 @@ Packages that are actual `Flux` models but are not available directly through th
 
 - [FluxArchitectures.jl](https://github.com/sdobber/FluxArchitectures.jl) is a collection of advanced network architectures for time series forecasting.
 
+---
+
 ## Tools closely associated with Flux
 
 Utility tools you're unlikely to have met if you never used Flux!
@@ -64,8 +66,9 @@ Tools to put data into the right order for creating a model.
 
 ### Parameters
 
-- [Parameters.jl](https://github.com/mauro3/Parameters.jl) types with default field values, keyword constructors and (un-)pack macros.
 - [ParameterSchedulers.jl](https://github.com/darsnack/ParameterSchedulers.jl) standard scheduling policies for machine learning.
+
+---
 
 ## Differentiable programming
 
@@ -90,6 +93,7 @@ Packages based on differentiable programming but not necessarily related to Mach
 
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) provides single-pass algorithms for statistics.
 
+---
 
 ## Useful miscellaneous packages
 
@@ -104,8 +108,29 @@ Some useful and random packages!
 - [ProgressMeter.jl](https://github.com/timholy/ProgressMeter.jl) progress meters for long-running computations.
 - [TensorBoardLogger.jl](https://github.com/PhilipVinc/TensorBoardLogger.jl) easy peasy logging to [tensorboard](https://www.tensorflow.org/tensorboard) in Julia
 - [ArgParse.jl](https://github.com/carlobaldassi/ArgParse.jl) is a package for parsing command-line arguments to Julia programs.
+- [Parameters.jl](https://github.com/mauro3/Parameters.jl) types with default field values, keyword constructors and (un-)pack macros.
 - [BSON.jl](https://github.com/JuliaIO/BSON.jl) is a package for working with the Binary JSON serialisation format.
 - [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl) in-memory tabular data in Julia.
 - [DrWatson.jl](https://github.com/JuliaDynamics/DrWatson.jl) is a scientific project assistant software.
 
 This tight integration among Julia packages is shown in some of the examples in the [model-zoo](https://github.com/FluxML/model-zoo) repository.
+
+---
+
+## Alternatives to Flux
+
+Julia has several other libraries for making neural networks. 
+
+* [SimpleChains.jl](https://github.com/PumasAI/SimpleChains.jl) is focused on making small, simple, CPU-based, neural networks fast. Uses [LoopVectorization.jl](https://github.com/JuliaSIMD/LoopVectorization.jl). (Was `FastChain` in DiffEqFlux.jl) 
+
+* [Knet.jl](https://github.com/denizyuret/Knet.jl) is a neural network library built around [AutoGrad.jl](https://github.com/denizyuret/AutoGrad.jl).
+
+* [Lux.jl](https://github.com/avik-pal/Lux.jl) (earlier ExplicitFluxLayers.jl) shares much of the design, use-case, and NNlib.jl / Optimisers.jl back-end of Flux. But instead of encapsulating all parameters within the model structure, it separates this into 3 components: a model, a tree of parameters, and a tree of model states.
+
+!!! compat "Explicit or explicit?"
+    Flux's [training docs](@ref man-training) talk about changes from Zygote's implicit to
+    explicit gradients, dictionary-like to tree-like structures.
+    (See also [Zygote's description](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) of these.)
+    Lux also uses Zygote, but uses the word "explicit" to mean something unrelated,
+    namely storing the tree of parameters (and of state) separately from the model.
+

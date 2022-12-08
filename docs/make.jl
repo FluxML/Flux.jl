@@ -9,51 +9,53 @@ makedocs(
     sitename = "Flux",
     # strict = [:cross_references,],
     pages = [
-        "Getting Started" => [
-            "Welcome" => "index.md",
+        "Welcome" => "index.md",
+        "Guide" => [
+        # You could read this end-to-end, or skip to what you need.
+        # Aim is to cover each new concept exactly once (but not list all variants).
+        # Hard to invent further divisions which aren't more confusing than helpful?
             "Quick Start" => "models/quickstart.md",
             "Fitting a Line" => "models/overview.md",
             "Gradients and Layers" => "models/basics.md",
-        ],
-        "Building Models" => [
-            "Built-in Layers 📚" => "models/layers.md",
+            "Training" => "training/training.md",
+            "Regularisation" => "models/regularisation.md",  # consolidated in #2114
             "Recurrence" => "models/recurrence.md",
-            "Activation Functions 📚" => "models/activation.md",
-            "NNlib.jl 📚 (`softmax`, `conv`, ...)" => "models/nnlib.md",
+            "GPU Support" => "gpu.md",
+            "Saving & Loading" => "saving.md",
+            "Performance Tips" => "performance.md",
+        ],
+        "Ecosystem" => "ecosystem.md",
+        "Reference" => [
+        # This essentially collects docstrings, with a bit of introduction.
+            "Built-in Layers" => "models/layers.md",
+            "Activation Functions" => "models/activation.md",
+            "Weight Initialisation" => "utilities.md",
+            "Loss Functions" => "models/losses.md",
+            "Optimisation Rules" => "training/optimisers.md",  # TODO move optimiser intro up to Training
+            "Shape Inference" => "outputsize.md",
+            "Flat vs. Nested" => "destructure.md",
+            "Callback Helpers" => "training/callbacks.md",
+            "Gradients -- Zygote.jl" => "training/zygote.md",
+            "Batching Data -- MLUtils.jl" => "data/mlutils.md",
+            "OneHotArrays.jl" => "data/onehot.md",
+            "Low-level Operations -- NNlib.jl" => "models/nnlib.md",
+            "Nested Structures -- Functors.jl" => "models/functors.md",
          ],
-         "Handling Data" => [
-             "MLUtils.jl 📚 (`DataLoader`, ...)" => "data/mlutils.md",
-             "OneHotArrays.jl 📚 (`onehot`, ...)" => "data/onehot.md",
-         ],
-         "Training Models" => [
-             "Training" => "training/training.md",
-             "Regularisation" => "models/regularisation.md",
-             "Loss Functions 📚" => "models/losses.md",
-             "Optimisation Rules 📚" => "training/optimisers.md",  # TODO move optimiser intro up to Training
-             "Callback Helpers 📚" => "training/callbacks.md",
-             "Zygote.jl 📚 (`gradient`, ...)" => "training/zygote.md",
-         ],
-         "Model Tools" => [
-             "GPU Support" => "gpu.md",
-             "Saving & Loading" => "saving.md",
-             "Shape Inference 📚" => "outputsize.md",
-             "Weight Initialisation 📚" => "utilities.md",
-             "Flat vs. Nested 📚" => "destructure.md",
-             "Functors.jl 📚 (`fmap`, ...)" => "models/functors.md",
-         ],
-         "Tutorials" => [
-             # Roughly in order of increasing complexity? Not chronological.
+        "Tutorials" => [
+        # These walk you through various tasks. It's fine if they overlap quite a lot.
+        # All the website tutorials can move here, perhaps much of the model zoo too?
+        # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
+            #=
             "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
             "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
             "Simple ConvNet" => "tutorials/2021-02-07-convnet.md",
             "Generative Adversarial Net" => "tutorials/2021-10-14-vanilla-gan.md",
             "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
+            =#
             # Not really sure where this belongs... some in Fluxperimental, aim to delete?
             "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
-         ],
-         "Performance Tips" => "performance.md",
-         "Flux's Ecosystem" => "ecosystem.md",
+        ],
     ],
     format = Documenter.HTML(
         sidebar_sitename = false,
