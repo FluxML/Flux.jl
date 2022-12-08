@@ -15,7 +15,7 @@ The `Dense` exemplifies several features:
 * It is annotated with [`@functor`](@ref Functors.@functor), which means that [`params`](@ref Flux.params) will see the contents, and [`gpu`](@ref Flux.gpu) will move their arrays to the GPU.
 
 By contrast, `Chain` itself contains no parameters, but connects other layers together.
-The section on [dataflow layers](@ref man-dataflow-layers) introduces others like this,
+The section on [dataflow layers](@ref man-dataflow-layers) introduces others like this.
 
 ## Fully Connected
 
@@ -26,6 +26,11 @@ Flux.Scale
 ```
 
 Perhaps `Scale` isn't quite fully connected, but it may be thought of as `Dense(Diagonal(s.weights), s.bias)`, and LinearAlgebra's `Diagonal` is a matrix which just happens to contain many zeros.
+
+!!! compat "Flux ≤ 0.12"
+    Old versions of Flux accepted only `Dense(in, out, act)` and not `Dense(in => out, act)`.
+    This notation makes a `Pair` object. If you get an error like `MethodError: no method matching Dense(::Pair{Int64,Int64})`, this means that you should upgrade to Flux 0.13.
+
 
 ## Convolution Models
 

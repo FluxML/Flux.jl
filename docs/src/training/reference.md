@@ -49,6 +49,13 @@ Flux 0.13 is the transitional version which supports both; Flux 0.14 will remove
 
 For full details on the interface for implicit-style optimisers, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
 
+!!! compat "Flux ≤ 0.12"
+    Earlier versions of Flux exported `params`, thus allowing unqualified `params(model)`
+    after `using Flux`. This conflicted with too many other packages, and was removed in Flux 0.13.
+    If you get an error ``UndefVarError: `params` not defined``, this probably means that you are
+    following code for Flux 0.12 or earlier on a more recent version.
+
+
 ```@docs
 Flux.params
 Flux.Optimise.update!(opt::Flux.Optimise.AbstractOptimiser, xs::Flux.Params, gs)
