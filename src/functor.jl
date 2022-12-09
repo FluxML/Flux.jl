@@ -166,13 +166,13 @@ CuArray{Float32, 2}
 ```
 """
 function gpu(x)
-  if hasmethod(_gpu, Tuple{Any})
+  try
     _gpu(x)
-  else
+  catch
     @info """
     The GPU functionality is being called via `Flux.gpu` but `NNlibCUDA`
     must be loaded to access GPU functionality""" maxlog=1
-    x
+    return x
   end
 end
 
