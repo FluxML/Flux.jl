@@ -6,7 +6,10 @@ using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
+
+# Both required to trigger CUDAExt
 using CUDA
+using NNlibCUDA
 
 Random.seed!(0)
 

@@ -23,6 +23,10 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
+[weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+NNlibCUDA = "a00861dc-f156-4864-bf3c-e6376f28a68d"
+
 [compat]
 Adapt = "3.0"
 CUDA = "3"
@@ -41,13 +45,18 @@ StatsBase = "0.33"
 Zygote = "0.6.49"
 julia = "1.6"
 
+[extensions]
+CUDAExt = ["CUDA", "NNlibCUDA"]
+
 [extras]
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NNlibCUDA = "a00861dc-f156-4864-bf3c-e6376f28a68d"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]
+test = ["Test", "CUDA", "NNlibCUDA", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]

@@ -36,9 +36,6 @@ function dropout(rng, x, p; dims=:, active::Bool=true)
 end
 dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
-dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
-dropout_mask(rng, x::CuArray, p; kwargs...) =
-  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
 dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
 function _dropout_mask(rng, x, p; dims=:)
   realfptype = float(real(eltype(x)))
@@ -56,9 +53,9 @@ ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
 Dropout layer.
 
 While training, for each input, this layer either sets that input to `0` (with probability
-`p`) or scales it by `1 / (1 - p)`. To apply dropout along certain dimension(s), specify the 
+`p`) or scales it by `1 / (1 - p)`. To apply dropout along certain dimension(s), specify the
 `dims` keyword. e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
-(also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during 
+(also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during
 training.
 
 In the forward pass, this layer applies the [`Flux.dropout`](@ref) function. See that for more

@@ -90,24 +90,9 @@ end
 
 # Allows caching of the parameters when params is called within gradient() to fix #2040.
 # @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
-# That speeds up implicit use, and silently breaks explicit use. 
+# That speeds up implicit use, and silently breaks explicit use.
 # From @macroexpand Zygote.@nograd params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
 Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
-
-struct FluxCUDAAdaptor end
-adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
-adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
-if VERSION >= v"1.7"
-  adapt_storage(to::FluxCUDAAdaptor, x::Random.TaskLocalRNG) = CUDA.default_rng()
-else
-  adapt_storage(to::FluxCUDAAdaptor, x::Random._GLOBAL_RNG) = CUDA.default_rng()
-end
-adapt_storage(to::FluxCUDAAdaptor, x::CUDA.RNG) = x
-adapt_storage(to::FluxCUDAAdaptor, x::AbstractRNG) =
-  error("Cannot map RNG of type $(typeof(x)) to GPU. GPU execution only supports Random.default_rng().")
-
-# TODO: figure out the correct design for OneElement
-adapt_storage(to::FluxCUDAAdaptor, x::Zygote.OneElement) = CUDA.cu(collect(x))
 
 struct FluxCPUAdaptor end
 
@@ -115,19 +100,9 @@ struct FluxCPUAdaptor end
 adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
-adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.OneElement) = x
 adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
-adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
-
-function ChainRulesCore.rrule(::Type{Array}, x::CUDA.CuArray)
-  Array(x), dx -> (NoTangent(), CUDA.cu(unthunk(dx)),)
-end
-
-function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)),)
-end
 
 # CPU/GPU movement conveniences
 
@@ -166,8 +141,12 @@ _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 """
     gpu(x)
 
+Requires CUDA and NNlibCUDA to be loaded
+```julia-rept
+julia> using Flux, CUDA, NNlibCUDA
+```
 Moves `m` to the current GPU device, if available. It is a no-op otherwise.
-See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
+See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/)
 to help identify the current device.
 
 This works for functions, and any struct marked with [`@functor`](@ref).
@@ -187,23 +166,14 @@ CuArray{Float32, 2}
 ```
 """
 function gpu(x)
-  check_use_cuda()
-  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
-end
-
-function check_use_cuda()
-  if use_cuda[] === nothing
-    use_cuda[] = CUDA.functional()
-    if use_cuda[] && !CUDA.has_cudnn()
-      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
-    end
-    if !(use_cuda[])
-      @info """The GPU function is being called but the GPU is not accessible. 
-               Defaulting back to the CPU. (No action is required if you want to run on the CPU).""" maxlog=1
-    end
+  if hasmethod(_gpu, Tuple{Any})
+    _gpu(x)
+  else
+    error("CUDA not loaded. Load `CUDA` and `NNlibCUDA` to access GPU functionality")
   end
 end
-ChainRulesCore.@non_differentiable check_use_cuda()
+
+function _gpu end
 
 # Precision
 

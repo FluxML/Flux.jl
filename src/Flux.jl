@@ -39,9 +39,6 @@ include("train.jl")
 using .Train
 # using .Train: setup, @train_autodiff
 
-using CUDA
-const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
-
 using Adapt, Functors, OneHotArrays
 include("utils.jl")
 include("functor.jl")
@@ -67,6 +64,9 @@ using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
 
 include("deprecations.jl")
 
-include("cuda/cuda.jl")
+# If package extensions are not supported in this Julia version
+if !isdefined(Base, :get_extension)
+  include("../ext/CUDAExt/CUDAExt.jl")
+end
 
 end # module

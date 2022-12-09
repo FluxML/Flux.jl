@@ -44,7 +44,6 @@ The current defaults are:
   - Julia version is >= 1.7: `Random.default_rng()`
 """
 rng_from_array(::AbstractArray) = default_rng_value()
-rng_from_array(::CuArray) = CUDA.default_rng()
 
 @non_differentiable rng_from_array(::Any)
 
@@ -226,7 +225,7 @@ ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 """
     truncated_normal([rng = default_rng_value()], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
     truncated_normal([rng]; kw...) -> Function
-  
+
 Return an `Array{Float32}` of the given `size` where each element is drawn from a truncated normal distribution.
 The numbers are distributed like `filter(x -> lo<=x<=hi, mean .+ std .* randn(100))`.
 
@@ -393,7 +392,7 @@ Has the following behaviour
 *  2D: An identity matrix (useful for an identity matrix multiplication)
 *  More than 2D: A dense block array of center tap spatial filters (useful for an identity convolution)
 
-Some caveats: 
+Some caveats:
 * Not all layers will be identity mapping when used with this init. Exceptions
   include recurrent layers and normalization layers.
 
