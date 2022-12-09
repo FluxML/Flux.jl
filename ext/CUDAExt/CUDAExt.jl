@@ -4,7 +4,7 @@ using CUDA
 import NNlib, NNlibCUDA
 
 using Flux
-import Flux: adapt_storage, _gpu, FluxCPUAdaptor, _isleaf
+import Flux: adapt_storage, _gpu, FluxCPUAdaptor, _isleaf, dropout_mask
 
 using Adapt
 using ChainRulesCore
