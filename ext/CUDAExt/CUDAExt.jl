@@ -20,4 +20,8 @@ include("layers/normalise.jl")
 
 include("cudnn.jl")
 
+function __init__()
+    Flux.cuda_loaded[] = true
+end
+
 end # module

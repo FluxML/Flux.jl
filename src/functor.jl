@@ -138,6 +138,8 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
+const cuda_loaded = Ref{Bool}(false)
+
 """
     gpu(x)
 
@@ -166,9 +168,9 @@ CuArray{Float32, 2}
 ```
 """
 function gpu(x)
-  try
-    _gpu(x)
-  catch
+  if cuda_loaded[]
+    return _gpu(x)
+  else
     @info """
     The GPU functionality is being called via `Flux.gpu` but `NNlibCUDA`
     must be loaded to access GPU functionality""" maxlog=1
