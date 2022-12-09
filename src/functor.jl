@@ -169,7 +169,7 @@ function gpu(x)
   if hasmethod(_gpu, Tuple{Any})
     _gpu(x)
   else
-    @info """The GPU functionality is being called via `Flux.gpu` but `CUDA` and `NNlibCUDA` \
+    @info """The GPU functionality is being called via `Flux.gpu` but `NNlibCUDA` \
     must be loaded to access GPU functionality""" maxlog=1
     x
   end
