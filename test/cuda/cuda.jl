@@ -1,5 +1,5 @@
 using Flux, Test
-using Flux.CUDA
+using CUDA
 using Flux: cpu, gpu
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky
@@ -91,7 +91,7 @@ end
     struct SimpleBits
       field::Int32
     end
-    
+
     @test gpu((;a=ones(1))).a isa CuVector{Float32}
     @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
     @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
