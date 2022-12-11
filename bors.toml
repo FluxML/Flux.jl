@@ -1,4 +1,0 @@
-status = [
-  "buildkite/flux-dot-jl"
-]
-timeout-sec = 7200
