@@ -212,6 +212,14 @@ adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # pi
 paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
 """
+    f16(m)
+
+Converts the `eltype` of model's parameters to `Float16`.
+Recurses into structs marked with [`@functor`](@ref).
+"""
+f16(m) = paramtype(Float16, m)
+
+"""
     f32(m)
 
 Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).

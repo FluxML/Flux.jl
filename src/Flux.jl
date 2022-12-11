@@ -23,7 +23,7 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        Upsample, PixelShuffle,
-       fmap, cpu, gpu, f32, f64,
+       fmap, cpu, gpu, f16, f32, f64,
        testmode!, trainmode!
 
 include("optimise/Optimise.jl")
