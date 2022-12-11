@@ -27,7 +27,7 @@ target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneH
 loader = Flux.DataLoader((noisy, target) |> gpu, batchsize=64, shuffle=true);
 # 16-element DataLoader with first element: (2×64 Matrix{Float32}, 2×64 OneHotMatrix)
 
-state = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum, etc.
+optim = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum, etc.
 
 # Training loop, using the whole data set 1000 times:
 losses = []
@@ -38,12 +38,12 @@ losses = []
             y_hat = m(x)
             Flux.crossentropy(y_hat, y)
         end
-        Flux.update!(state, model, grads[1])
+        Flux.update!(optim, model, grads[1])
         push!(losses, loss)  # logging, outside gradient context
     end
 end
 
-state # parameters, momenta and output have all changed
+optim # parameters, momenta and output have all changed
 out2 = model(noisy |> gpu) |> cpu  # first row is prob. of true, second row p(false)
 
 mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
@@ -95,7 +95,7 @@ Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.
 
 ```julia
 for epoch in 1:1_000
-    Flux.train!(model, loader, state) do m, x, y
+    Flux.train!(model, loader, optim) do m, x, y
         y_hat = m(x)
         Flux.crossentropy(y_hat, y)
     end

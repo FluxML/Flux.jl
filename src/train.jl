@@ -12,7 +12,7 @@ using ProgressLogging: @progress, @withprogress, @logprogress
 using Zygote: Zygote, Params
 
 """
-    state = setup(rule, model)
+    opt_state = setup(rule, model)
 
 This is a version of `Optimisers.setup`, and is the first step before using [`train!`](@ref Flux.train!).
 It differs from `Optimisers.setup` in that it:
@@ -29,12 +29,12 @@ It differs from `Optimisers.setup` in that it:
 ```jldoctest
 julia> model = Dense(2=>1, leakyrelu; init=Flux.ones32);
 
-julia> state = Flux.setup(Momentum(0.1), model)  # this encodes the optimiser and its state
+julia> opt_state = Flux.setup(Momentum(0.1), model)  # this encodes the optimiser and its state
 (weight = Leaf(Momentum{Float64}(0.1, 0.9), Float32[0.0 0.0]), bias = Leaf(Momentum{Float64}(0.1, 0.9), Float32[0.0]), σ = ())
 
 julia> x1, y1 = [0.2, -0.3], [0.4];  # use the same data for two steps:
 
-julia> Flux.train!(model, [(x1, y1), (x1, y1)], state) do m, x, y
+julia> Flux.train!(model, [(x1, y1), (x1, y1)], opt_state) do m, x, y
          sum(abs.(m(x) .- y)) * 100
        end
 
@@ -42,7 +42,7 @@ julia> model.bias  # was zero, mutated by Flux.train!
 1-element Vector{Float32}:
  10.190001
 
-julia> state  # mutated by Flux.train!
+julia> opt_state  # mutated by Flux.train!
 (weight = Leaf(Momentum{Float64}(0.1, 0.9), Float32[-2.018 3.027]), bias = Leaf(Momentum{Float64}(0.1, 0.9), Float32[-10.09]), σ = ())
 ```
 """
@@ -56,10 +56,10 @@ function setup(rule::Optimisers.AbstractRule, model)
 end
 
 """
-    train!(loss, model, data, state)
+    train!(loss, model, data, opt_state)
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
-according to a particular optimisation rule encoded in `state`. 
+according to a particular optimisation rule encoded in `opt_state`. 
 Iterates through `data` once, evaluating for each `d in data` either
 `loss(model, d...)` if `d isa Tuple`, or else `loss(model, d)` for other `d`.
 
@@ -69,13 +69,13 @@ data = [(x1, y1), (x2, y2), (x3, y3)]
 
 loss3(m, x, y) = norm(m(x) .- y)        # the model is the first argument
 
-state = Flux.setup(Adam(), model)       # explicit setup of optimiser momenta
+opt_state = Flux.setup(Adam(), model)   # explicit setup of optimiser momenta
 ```
-...calling `Flux.train!(loss3, model, data, state)` runs a loop much like this:
+...calling `Flux.train!(loss3, model, data, opt_state)` runs a loop much like this:
 ```
 for d in data
     ∂L∂m = gradient(loss3, model, d...)[1]
-    update!(state, model, ∂L∂m)         # method for "explicit" gradient
+    update!(opt_state, model, ∂L∂m)
 end
 ```
 You can also write this loop yourself, if you need more flexibility.
@@ -93,7 +93,7 @@ It adds only a few features to the loop above:
       (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
     * Instead of `loss` being a function which accepts only the data,
       now it must also accept the `model` itself, as the first argument.
-    * `state` should be the result of [`Flux.setup`](@ref). Using an optimiser
+    * `opt_state` should be the result of [`Flux.setup`](@ref). Using an optimiser
       such as `Adam()` without this step should give you a warning.
     * Callback functions are not supported.
       (But any code can be included in the above `for` loop.)
