@@ -2,7 +2,7 @@
 CurrentModule = Flux
 ```
 
-# [Optimisers](@id man-optimisers)
+# [Optimisation Rules](@id man-optimisers)
 
 Flux builds in many optimisation rules for use with [`train!`](@ref Flux.Optimise.train!) and
 other training functions.
@@ -12,9 +12,9 @@ from "implicit" dictionary-based to "explicit" tree-like structures.
 At present, the same struct (such as `Adam`) can be used with either form,
 and will be automatically translated.
 
-For full details of how the new "explicit" interface works, see the [Optimisers.jl documentation](https://fluxml.ai/Optimisers.jl/dev/).
+For full details of how the new interface works, see the [Optimisers.jl documentation](https://fluxml.ai/Optimisers.jl/dev/).
 
-For full details on how the "implicit" interface worked, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/optimisers/#Optimiser-Interface).
+For full details on how the old "implicit" interface worked, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/optimisers/#Optimiser-Interface).
 
 
 ## Optimiser Reference
