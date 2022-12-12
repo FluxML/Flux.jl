@@ -36,7 +36,7 @@ Instead of passing them to `gradient` individually, we can store them together i
 The simplest example is a named tuple, created by the following syntax:
 
 ```jldoctest basics
-julia> nt = (a = [2, 1], b = [2, 0], c = abs2);
+julia> nt = (a = [2, 1], b = [2, 0], c = tanh);
 
 julia> g(x::NamedTuple) = sum(abs2, x.a .- x.b);
 
