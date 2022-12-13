@@ -368,10 +368,10 @@ This is a temporary modification, reversed by `thaw!`:
 Flux.freeze!(opt_state.layers.enc)
 
 # Now training won't update parameters in bimodel.layers.enc
-train!(loss, bimodel, data, state)
+train!(loss, bimodel, data, opt_state)
 
 # Un-freeze the entire model:
-Flux.thaw!(state)
+Flux.thaw!(opt_state)
 ```
 
 !!! compat "Flux ≤ 0.13"
