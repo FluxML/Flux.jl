@@ -18,7 +18,7 @@ julia> onehot(:c, [:a, :b, :c])
  1
 ```
 
-The inverse is `onecold` (which can take a general probability distribution, as well as just booleans).
+There is also a `onecold` function, which is an inverse of `onehot`. It can also be given an array of numbers instead of booleans, in which case it performs an `argmax`-like operation, returning the label with the highest corresponding weight.
 
 ```jldoctest onehot
 julia> onecold(ans, [:a, :b, :c])
