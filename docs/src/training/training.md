@@ -117,7 +117,7 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-A slightly more refined version of this loop to update all the parameters is wrapepd up as a function [`update!`](@ref Flux.Optimise.update!)`(opt_state, model, grads[1])`.
+A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref Flux.Optimise.update!)`(opt_state, model, grads[1])`.
 And the learning rate is the only thing stored in the [`Descent`](@ref Flux.Optimise.Descent) struct.
 
 However, there are many other optimisation rules, which adjust the step size and
@@ -335,10 +335,10 @@ This can be done with [`adjust!`](@ref Flux.adjust!), like this:
 opt_state = Flux.setup(Adam(0.1), model)  # initialise once
 
 for epoch in 1:1000
-    train!([...], state)  # Train with η = 0.1 for first 100,
-    if epoch == 100       # then change to use η = 0.01 for the rest.
-        Flux.adjust!(opt_state, 0.01)
-    end
+  train!([...], state)  # Train with η = 0.1 for first 100,
+  if epoch == 100       # then change to use η = 0.01 for the rest.
+    Flux.adjust!(opt_state, 0.01)
+  end
 end
 ```
 
