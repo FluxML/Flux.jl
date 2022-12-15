@@ -49,6 +49,12 @@ julia> Flux.destructure(grad)  # acts on non-models, too
 (Float32[10.339018, 11.379145, 22.845667, -29.565302, -37.644184], Restructure(Tuple, ..., 5))
 ```
 
+!!! compat "Flux ≤ 0.12"
+    Old versions of Flux had an entirely different implementation of `destructure`, which
+    had many bugs (and almost no tests). Many comments online still refer to that now-deleted
+    function, or to memories of it.
+
+
 ### All Parameters
 
 The function `destructure` now lives in [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl).

@@ -8,6 +8,7 @@ using MacroTools: @forward
 @reexport using NNlib
 using MLUtils
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
+using Optimisers: freeze!, thaw!, adjust!
 
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
@@ -35,9 +36,11 @@ export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
 
+export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
+
 include("train.jl")
 using .Train
-# using .Train: setup, @train_autodiff
+using .Train: setup
 
 using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
