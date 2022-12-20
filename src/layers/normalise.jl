@@ -210,7 +210,7 @@ true
 ```
 """
 struct LayerNorm{F,D,T,N}
-  λ::F
+  λ::F  # this field is not used
   diag::D
   ϵ::T
   size::NTuple{N,Int}
@@ -254,15 +254,15 @@ function _norm_layer_forward(
     end
   end
 
-  o = _norm_layer_forward(x, μ, σ², l.ϵ)
-  hasaffine(l) || return l.λ.(o)
-
-  γ = reshape(l.γ, affine_shape)
-  β = reshape(l.β, affine_shape)
-  return l.λ.(γ .* o .+ β)
+  s = (inv∘sqrt).(σ² .+ l.ϵ)  # faster to un-fuse this, smaller... ideally mean_var(x, ε)?
+  if hasaffine(l)
+    γ = reshape(l.γ, affine_shape)  # ideally reshape on construction, store Scale?
+    β = reshape(l.β, affine_shape)
+    return l.λ.(γ .* s .* (x .- μ) .+ β)
+  else
+    return l.λ.(s .* (x .- μ))
+  end
 end
-
-@inline _norm_layer_forward(x, μ, σ², ϵ) = (x .- μ) ./ sqrt.(σ² .+ ϵ)
 
 function _track_stats!(
   bn, x::AbstractArray{T, N}, μ, σ², reduce_dims,

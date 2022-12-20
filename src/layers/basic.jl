@@ -172,6 +172,9 @@ function (a::Dense)(x::AbstractVecOrMat)
   return σ.(a.weight * x .+ a.bias)
 end
 
+(a::Dense{typeof(identity), <:AbstractMatrix, Bool})(x::AbstractVecOrMat) =
+  a.weight * x  # fast path, no broadcast
+
 (a::Dense)(x::AbstractArray) = 
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
@@ -245,6 +248,9 @@ function (a::Scale)(x::AbstractArray)
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
   σ.(a.scale .* x .+ a.bias)
 end
+
+(a::Scale{typeof(identity), <:AbstractArray, Bool})(x::AbstractArray) =
+  a.scale .* x
 
 function Base.show(io::IO, l::Scale)
   print(io, "Scale(", join(size(l.scale), ", "))

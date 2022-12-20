@@ -199,6 +199,10 @@ function (c::Conv)(x::AbstractArray)
   cdims = conv_dims(c, x)
   σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
 end
+function (c::Conv{<:Any,<:Any,typeof(identity),<:AbstractArray,Bool})(x::AbstractArray)
+  cdims = conv_dims(c, x)
+  conv(x, c.weight, cdims)  # fast path, no broadcast
+end
 
 _channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
 _channels_out(l::Conv) = size(l.weight, ndims(l.weight))
@@ -331,6 +335,10 @@ function (c::ConvTranspose)(x::AbstractArray)
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
   σ.(∇conv_data(x, c.weight, cdims) .+ conv_reshape_bias(c))
+end
+function (c::ConvTranspose{<:Any,<:Any,typeof(identity),<:AbstractArray,Bool})(x::AbstractArray)
+  cdims = conv_transpose_dims(c, x)
+  ∇conv_data(x, c.weight, cdims)  # fast path, no broadcast
 end
 
 function Base.show(io::IO, l::ConvTranspose)
@@ -469,6 +477,10 @@ function (c::CrossCor)(x::AbstractArray)
   σ = NNlib.fast_act(c.σ, x)
   cdims = crosscor_dims(c, x)
   σ.(crosscor(x, c.weight, cdims) .+ conv_reshape_bias(c))
+end
+function (c::CrossCor{<:Any,<:Any,typeof(identity),<:AbstractArray,Bool})(x::AbstractArray)
+  cdims = crosscor_dims(c, x)
+  crosscor(x, c.weight, cdims)  # fast path, no broadcast
 end
 
 function Base.show(io::IO, l::CrossCor)
