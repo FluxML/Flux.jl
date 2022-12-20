@@ -637,8 +637,8 @@ true
 See also: [`Losses.focal_loss`](@ref)
 
 """
-function logit_focal_loss(ŷ, y; γ=2.0f0, agg=mean, dims=1, ϵ=Flux.epseltype(ŷ))
-    Flux.losses._check_sizes(ŷ, y)
+function logit_focal_loss(ŷ, y; γ=2.0f0, agg=mean, dims=1, ϵ=epseltype(ŷ))
+    _check_sizes(ŷ, y)
     logpt = logsoftmax(ŷ; dims=dims)
     logpt .+= ϵ
     loss = agg(sum(@. -y * (1 - exp.(logpt))^γ * logpt; dims=dims))
