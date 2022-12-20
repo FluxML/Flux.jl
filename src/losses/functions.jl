@@ -624,7 +624,7 @@ julia> y = [1  0  0  0  1
  0  1  0  1  0
  0  0  1  0  0
 
-julia> ŷ = softmax(reshape(-7:7, 3, 5) .* 1f0)
+julia> ŷ = reshape(-7:7, 3, 5) .* 1f0
 3×5 Matrix{Float32}:
  0.0900306  0.0900306  0.0900306  0.0900306  0.0900306
  0.244728   0.244728   0.244728   0.244728   0.244728
@@ -634,7 +634,7 @@ julia> Flux.logit_focal_loss(ŷ, y) ≈ 1.1277571935622628
 true
 ```
 
-See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
+See also: [`Losses.focal_loss`](@ref)
 
 """
 function logit_focal_loss(ŷ, y; γ=2.0f0, agg=mean, dims=1, ϵ=Flux.epseltype(ŷ))
