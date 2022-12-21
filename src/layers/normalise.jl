@@ -254,9 +254,9 @@ function _norm_layer_forward(
     end
   end
 
-  s = (inv∘sqrt).(σ² .+ l.ϵ)  # faster to un-fuse this, smaller... ideally mean_var(x, ε)?
+  s = (inv∘sqrt).(σ² .+ l.ϵ)  # faster to un-fuse this, fewer inv∘sqrt calls
   if hasaffine(l)
-    γ = reshape(l.γ, affine_shape)  # ideally reshape on construction, store Scale?
+    γ = reshape(l.γ, affine_shape)  # ideally reshape on construction?
     β = reshape(l.β, affine_shape)
     return l.λ.(γ .* s .* (x .- μ) .+ β)
   else
@@ -356,10 +356,9 @@ end
 @functor BatchNorm
 trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
 
-function (BN::BatchNorm)(x)
-  @assert size(x, ndims(x)-1) == BN.chs
-  N = ndims(x)
-  reduce_dims = [1:N-2; N]
+function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
+  size(x, N-1) == BN.chs || error("BatchNorm expected an input with $(BN.chs) channels, got size(x) == $(size(x))")
+  reduce_dims = ntuple(d -> d + (d==N-1), N-1)  # i.e. 1:N with N-1 removed
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
 end

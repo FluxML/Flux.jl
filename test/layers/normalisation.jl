@@ -166,11 +166,11 @@ end
   end
 
   # with activation function
-  let m = BatchNorm(2, sigmoid), x = [1.0 3.0 5.0;
-                                      2.0 4.0 6.0]
+  let m = BatchNorm(2, sigmoid)
+    x = Float32[1.0 3.0 5.0; 2.0 4.0 6.0]
     y = m(x)
     @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
-    @inferred m(x)
+    @inferred m(x)  # fails when x::Matrix{Float64}, do we care?
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)
