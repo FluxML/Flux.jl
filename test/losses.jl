@@ -1,5 +1,6 @@
 using Test
 using Flux: onehotbatch, σ
+using Statistics: mean
 
 using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
 using Flux.Losses: xlogx, xlogy
