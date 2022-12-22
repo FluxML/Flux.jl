@@ -88,8 +88,8 @@ y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
   @test crossentropy(ŷ, y_smoothed) ≈ lossvalue_smoothed
   @test crossentropy(ylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*log.(ylp))
   @test crossentropy(ylp, yl) ≈ -sum(yl.*log.(ylp))
-  @test iszero(crossentropy(y_same, ya, ϵ=0))
-  @test iszero(crossentropy(ya, ya, ϵ=0))
+  @test iszero(crossentropy(y_same, ya, ϵ=0))  # ε is deprecated
+  @test iszero(crossentropy(ya, ya, eps=0))
   @test crossentropy(y_sim, ya) < crossentropy(y_sim, ya_smoothed)
   @test crossentropy(y_dis, ya) > crossentropy(y_dis, ya_smoothed)
 end
@@ -105,7 +105,7 @@ yls = y.*(1-2sf).+sf
 
 @testset "binarycrossentropy" begin
   @test binarycrossentropy.(σ.(logŷ), label_smoothing(y, 2sf; dims=0); ϵ=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
-  @test binarycrossentropy(σ.(logŷ), y; ϵ=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
+  @test binarycrossentropy(σ.(logŷ), y; eps=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
   @test binarycrossentropy(σ.(logŷ), y) ≈ mean(-y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ))))
   @test binarycrossentropy([0.1,0.2,0.9], 1) ≈ -mean(log, [0.1,0.2,0.9])  # constant label
 end
@@ -208,7 +208,7 @@ end
           0.1 0.3]
     @test Flux.focal_loss(ŷ, y) ≈ 1.1277571935622628
     @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
-    @test Flux.focal_loss(ŷ, y; γ=0.0) ≈ Flux.crossentropy(ŷ, y)
+    @test Flux.focal_loss(ŷ, y; gamma=0) ≈ Flux.crossentropy(ŷ, y)
 end
   
 @testset "siamese_contrastive_loss" begin

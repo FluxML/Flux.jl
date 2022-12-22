@@ -54,7 +54,7 @@ The loss corresponding to mean squared logarithmic errors, calculated as
 
     agg((log.(ŷ .+ ϵ) .- log.(y .+ ϵ)) .^ 2)
 
-The `ϵ` term provides numerical stability.
+The `ϵ == eps` term provides numerical stability.
 Penalizes an under-estimation more than an over-estimatation.
 
 # Example
@@ -66,13 +66,14 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 0.011100831f0
 ```
 """
-function msle(ŷ, y; agg = mean, eps = epseltype(ŷ))
+function msle(ŷ, y; agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
+  ϵ = _greek_ascii_depwarn(ϵ => eps, :msle, "ϵ" => "eps")
   _check_sizes(ŷ, y)
-  agg((log.((ŷ .+ eps) ./ (y .+ eps))) .^2 )
+  agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
 end
 
 """
-    huber_loss(ŷ, y; δ = 1, agg = mean)
+    huber_loss(ŷ, y; delta = 1, agg = mean)
 
 Return the mean of the [Huber loss](https://en.wikipedia.org/wiki/Huber_loss)
 given the prediction `ŷ` and true values `y`.
@@ -82,17 +83,20 @@ given the prediction `ŷ` and true values `y`.
                  |  δ * (|ŷ - y| - 0.5 * δ), otherwise
 
 # Example
+
 ```jldoctest
 julia> ŷ = [1.1, 2.1, 3.1];
 
 julia> Flux.huber_loss(ŷ, 1:3)  # default δ = 1 > |ŷ - y|
 0.005000000000000009
 
-julia> Flux.huber_loss(ŷ, 1:3, δ=0.05)  # changes behaviour as |ŷ - y| > δ
+julia> Flux.huber_loss(ŷ, 1:3, delta=0.05)  # changes behaviour as |ŷ - y| > δ
 0.003750000000000005
 ```
 """
-function huber_loss(ŷ, y; agg = mean, δ = ofeltype(ŷ, 1))
+function huber_loss(ŷ, y; agg = mean, delta::Real = 1, δ = nothing)
+   delta_tmp = _greek_ascii_depwarn(δ => delta, :huber_loss, "δ" => "delta")
+   δ = ofeltype(ŷ, delta_tmp)
    _check_sizes(ŷ, y)
    abs_error = abs.(ŷ .- y)
    #TODO: remove ignore_derivatives when Zygote can handle this function with CuArrays
@@ -172,7 +176,7 @@ end
 Return the cross entropy between the given probability distributions;
 calculated as
 
-    agg(-sum(y .* log.(ŷ .+ eps); dims))
+    agg(-sum(y .* log.(ŷ .+ ϵ); dims))
 
 Cross entropy is typically used as a loss in multi-class classification,
 in which case the labels `y` are given in a one-hot format.
@@ -222,9 +226,10 @@ julia> Flux.crossentropy(y_model, y_smooth)
 1.5776052f0
 ```
 """
-function crossentropy(ŷ, y; dims = 1, agg = mean, eps = epseltype(ŷ))
+function crossentropy(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
+  ϵ = _greek_ascii_depwarn(ϵ => eps, :crossentropy, "ϵ" => "eps")
   _check_sizes(ŷ, y)
-  agg(.-sum(xlogy.(y, ŷ .+ eps); dims))
+  agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
 end
 
 """
@@ -274,7 +279,7 @@ Return the binary cross-entropy loss, computed as
     agg(@.(-y * log(ŷ + ϵ) - (1 - y) * log(1 - ŷ + ϵ)))
 
 Where typically, the prediction `ŷ` is given by the output of a [sigmoid](@ref man-activations) activation.
-The `ϵ` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
+The `ϵ == eps` term is included to avoid infinity. Using [`logitbinarycrossentropy`](@ref) is recomended
 over `binarycrossentropy` for numerical stability.
 
 Use [`label_smoothing`](@ref) to smooth the `y` value as preprocessing before
@@ -310,9 +315,10 @@ julia> Flux.crossentropy(y_prob, y_hot)
 0.43989f0
 ```
 """
-function binarycrossentropy(ŷ, y; agg = mean, eps = epseltype(ŷ))
+function binarycrossentropy(ŷ, y; agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
+  ϵ = _greek_ascii_depwarn(ϵ => eps, :binarycrossentropy, "ϵ" => "eps")
   _check_sizes(ŷ, y)
-  agg(@.(-xlogy(y, ŷ + eps) - xlogy(1 - y, 1 - ŷ + eps)))
+  agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
 end
 
 """
@@ -380,10 +386,11 @@ julia> Flux.kldivergence(p1, p2; eps = 0)  # about 17.3 with the regulator
 Inf
 ```
 """
-function kldivergence(ŷ, y; dims = 1, agg = mean, eps = epseltype(ŷ))
+function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
+  ϵ = _greek_ascii_depwarn(ϵ => eps, :kldivergence, "ϵ" => "eps")
   _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y), dims))
-  cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
+  entropy = agg(sum(xlogx.(y); dims = dims))
+  cross_entropy = crossentropy(ŷ, y; dims, agg, eps=ϵ)
   return entropy + cross_entropy
 end
 
@@ -501,23 +508,27 @@ julia> 1 - Flux.dice_coeff_loss(y_pred, 1:3)  # ~ F1 score for image segmentatio
 0.99900760833609
 ```
 """
-function dice_coeff_loss(ŷ, y; smooth = ofeltype(ŷ, 1.0))
+function dice_coeff_loss(ŷ, y; smooth = 1)
+  s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
-  1 - (2 * sum(y .* ŷ) + smooth) / (sum(y .^ 2) + sum(ŷ .^ 2) + smooth) #TODO agg
+  # TODO add agg
+  1 - (2 * sum(y .* ŷ) + s) / (sum(y .^ 2) + sum(ŷ .^ 2) + s)
 end
 
 """
-    tversky_loss(ŷ, y; β = 0.7)
+    tversky_loss(ŷ, y; beta = 0.7)
 
 Return the [Tversky loss](https://arxiv.org/abs/1706.05721).
 Used with imbalanced data to give more weight to false negatives.
-Larger β weigh recall more than precision (by placing more emphasis on false negatives).
+Larger `β == beta` weigh recall more than precision (by placing more emphasis on false negatives).
 Calculated as:
 
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
 
 """
-function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
+function tversky_loss(ŷ, y; beta::Real = 0.7, β = nothing)
+  beta_temp = _greek_ascii_depwarn(β => beta, :tversky_loss, "β" => "beta")
+  β = ofeltype(ŷ, beta_temp)
     _check_sizes(ŷ, y)
     #TODO add agg
     num = sum(y .* ŷ) + 1
@@ -526,12 +537,12 @@ function tversky_loss(ŷ, y; β = ofeltype(ŷ, 0.7))
 end
 
 """
-    binary_focal_loss(ŷ, y; agg=mean, γ=2, eps=eps(eltype(ŷ)))
+    binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps=eps(eltype(ŷ)))
 
 Return the [binary_focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
 
-For `γ == 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
+For `gamma = 0`, the loss is mathematically equivalent to [`Losses.binarycrossentropy`](@ref).
 
 See also: [`Losses.focal_loss`](@ref) for multi-class setting
 
@@ -553,9 +564,12 @@ julia> Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
 true
 ```
 """
-function binary_focal_loss(ŷ, y; agg=mean, γ=2, eps=epseltype(ŷ))
+function binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ = nothing, γ = nothing)
+    ϵ = _greek_ascii_depwarn(ϵ => eps, :binary_focal_loss, "ϵ" => "eps")
+    gamma_temp = _greek_ascii_depwarn(γ => gamma, :binary_focal_loss, "γ" => "gamma")
+    γ = gamma_temp isa Integer ? gamma_temp : ofeltype(ŷ, gamma_temp)
     _check_sizes(ŷ, y)
-    ŷϵ = ŷ .+ eps
+    ŷϵ = ŷ .+ ϵ
     p_t = y .* ŷϵ  + (1 .- y) .* (1 .- ŷϵ)
     ce = .-log.(p_t)
     weight = (1 .- p_t) .^ γ
@@ -564,14 +578,14 @@ function binary_focal_loss(ŷ, y; agg=mean, γ=2, eps=epseltype(ŷ))
 end
 
 """
-    focal_loss(ŷ, y; dims=1, agg=mean, γ=2, eps=eps(eltype(ŷ)))
+    focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps=eps(eltype(ŷ)))
 
 Return the [focal_loss](https://arxiv.org/pdf/1708.02002.pdf)
 which can be used in classification tasks with highly imbalanced classes.
 It down-weights well-classified examples and focuses on hard examples.
 The input, 'ŷ', is expected to be normalized (i.e. [softmax](@ref Softmax) output).
 
-The modulating factor, `γ`, controls the down-weighting strength.
+The modulating factor, `γ == gamma`, controls the down-weighting strength.
 For `γ == 0`, the loss is mathematically equivalent to [`Losses.crossentropy`](@ref).
 
 # Example
@@ -597,10 +611,13 @@ true
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, eps=epseltype(ŷ))
-    _check_sizes(ŷ, y)
-    ŷϵ = ŷ .+ eps
-    agg(sum(@. -y * (1 - ŷϵ)^γ * log(ŷϵ); dims))
+function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ=nothing, γ=nothing)
+  ϵ = _greek_ascii_depwarn(ϵ => eps, :focal_loss, "ϵ" => "eps")
+  gamma_temp = _greek_ascii_depwarn(γ => gamma, :focal_loss, "γ" => "gamma")
+  γ = gamma_temp isa Integer ? gamma_temp : ofeltype(ŷ, gamma_temp)
+  _check_sizes(ŷ, y)
+  ŷϵ = ŷ .+ ϵ
+  agg(sum(@. -y * (1 - ŷϵ)^γ * log(ŷϵ); dims))
 end
 
 """
