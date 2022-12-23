@@ -204,6 +204,15 @@ function (c::Conv{<:Any,<:Any,typeof(identity),<:AbstractArray,Bool})(x::Abstrac
   conv(x, c.weight, cdims)  # fast path, no broadcast
 end
 
+function (c::Conv{<:Any,<:Any,<:Any,<:AbstractArray{Float32}})(x::AbstractArray{<:Union{Float64,Integer}})
+  _warn_32_64(c, x)  # warning about a slow path
+  c(convert(AbstractArray{Float32}, x))
+end
+function (c::Conv{<:Any,<:Any,typeof(identity),<:AbstractArray{Float32},Bool})(x::AbstractArray{<:Union{Float64,Integer}})
+  _warn_32_64(c, x)
+  c(convert(AbstractArray{Float32}, x))
+end
+
 _channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
 _channels_out(l::Conv) = size(l.weight, ndims(l.weight))
 

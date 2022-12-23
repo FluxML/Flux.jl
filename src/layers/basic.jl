@@ -178,6 +178,22 @@ end
 (a::Dense)(x::AbstractArray) = 
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
+function (a::Dense{<:Any,<:AbstractMatrix{Float32}})(x::AbstractVecOrMat{<:Union{Float64,Integer}})
+  _warn_32_64(a, x)
+  a(convert(AbstractArray{Float32}, x))
+end
+function (a::Dense{typeof(identity),<:AbstractMatrix{Float32},Bool})(x::AbstractVecOrMat{<:Union{Float64,Integer}})  # solve ambiguity
+  _warn_32_64(a, x)
+  a(convert(AbstractArray{Float32}, x))
+end
+
+function _warn_32_64(layer, x::AbstractArray{Float64})
+  @warn "Layer with Float32 parameters got Float64 input.
+  The input will be converted, but any earlier layers may be very slow" layer summary(x) maxlog=1
+end
+_warn_32_64(layer, x::AbstractArray) = nothing  # silently fix integer input?
+ChainRulesCore.@non_differentiable _warn_32_64(::Any, ::Any)
+
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
   l.σ == identity || print(io, ", ", l.σ)
