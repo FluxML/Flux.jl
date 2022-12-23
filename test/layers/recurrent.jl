@@ -93,9 +93,10 @@ end
 @testset "RNN-input-state-eltypes" begin
   @testset for R in [RNN, GRU, LSTM, GRUv3]
     m = R(3 => 5)
-    x = rand(Float64, 3, 1)
+    x = rand(Float64, 3, 1)  # Float64 input is now converted
     Flux.reset!(m)
-    @test_throws MethodError m(x)
+    @test m(x) isa Array{Float32}
+    @test m.state isa Array{Float32}
   end
 end
 

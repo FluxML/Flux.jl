@@ -169,30 +169,15 @@ end
 
 function (a::Dense)(x::AbstractVecOrMat)
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(a.weight * x .+ a.bias)
+  xT = _match_eltype(a, eltype(a.weight), x)  # fixes Float64 input, etc.
+  return σ.(a.weight * xT .+ a.bias)
 end
 
 (a::Dense{typeof(identity), <:AbstractMatrix, Bool})(x::AbstractVecOrMat) =
-  a.weight * x  # fast path, no broadcast
+  a.weight * _match_eltype(a, eltype(a.weight), x)  # fast path, no broadcast
 
 (a::Dense)(x::AbstractArray) = 
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
-
-function (a::Dense{<:Any,<:AbstractMatrix{Float32}})(x::AbstractVecOrMat{<:Union{Float64,Integer}})
-  _warn_32_64(a, x)
-  a(convert(AbstractArray{Float32}, x))
-end
-function (a::Dense{typeof(identity),<:AbstractMatrix{Float32},Bool})(x::AbstractVecOrMat{<:Union{Float64,Integer}})  # solve ambiguity
-  _warn_32_64(a, x)
-  a(convert(AbstractArray{Float32}, x))
-end
-
-function _warn_32_64(layer, x::AbstractArray{Float64})
-  @warn "Layer with Float32 parameters got Float64 input.
-  The input will be converted, but any earlier layers may be very slow" layer summary(x) maxlog=1
-end
-_warn_32_64(layer, x::AbstractArray) = nothing  # silently fix integer input?
-ChainRulesCore.@non_differentiable _warn_32_64(::Any, ::Any)
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
@@ -203,6 +188,22 @@ end
 
 Dense(W::LinearAlgebra.Diagonal, bias = true, σ = identity) =
   Scale(W.diag, bias, σ)
+
+_match_eltype(layer, ::Type{T}, x::AbstractArray{T}) where {T} = x  # best case
+function _match_eltype(layer, ::Type{Float32}, x::AbstractArray{Float64})  # common mistake
+  @warn "Layer with Float32 parameters got Float64 input.
+  The input will be converted, but any earlier layers may be very slow" layer summary(x) maxlog=1
+  convert(AbstractArray{Float32}, x)
+end
+function _match_eltype(layer, ::Type{T}, x::AbstractArray{<:Union{AbstractFloat, Integer}}) where {T}
+  convert(AbstractArray{T}, x)
+end
+_match_eltype(layer, ::Type, x::OneHotLike) = x
+_match_eltype(layer, ::Type, x::AbstractArray) = x  # weird types
+
+function ChainRulesCore.rrule(::typeof(_match_eltype), layer, ::Type{T}, x::AbstractArray) where {T}
+  _match_eltype(layer, T, x), dx -> (NoTangent(), ZeroTangent(), NoTangent(), dx)  # does not un-thunk dx
+end
 
 """
     Scale(size::Integer..., σ=identity; bias=true, init=ones32)
@@ -443,6 +444,7 @@ Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Biline
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   W, b, σ = a.weight, a.bias, a.σ
+  xT = _match_eltype(a, eltype(a.weight), x)
 
   d_z, d_x, d_y = size(W)
   d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
@@ -452,7 +454,7 @@ function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
 
   # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
-  Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
+  Wyx = batched_mul(Wy, reshape(xT, (d_x, 1, :)))
   Z = reshape(Wyx, (d_z, :))
 
   # @einsum out[o,s] := σ(Z[o,i] + b[o])
