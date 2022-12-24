@@ -19,7 +19,7 @@ export gradient
 Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
 
 export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion,
-       RNN, LSTM, GRU, GRUv3,
+       RNN, LSTM, GRU, GRUv3, Attention,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
@@ -59,6 +59,7 @@ include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
 include("layers/show.jl")
+include("layers/transformers.jl")
 
 include("loading.jl")
 
