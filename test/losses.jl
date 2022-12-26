@@ -248,3 +248,12 @@ end
   @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
 end
+
+
+
+labels = rand(1:10, 256)
+y = Flux.onehotbatch(labels, 1:10)
+ŷ = randn(Float32, 10, 256)
+
+@btime Flux.logitcrossentropy(ŷ, y);
+@btime Flux.logitcrossentropy(ŷ, labels);

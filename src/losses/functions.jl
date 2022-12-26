@@ -263,8 +263,34 @@ julia> Flux.crossentropy(softmax(y_model), y_label)
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
   _check_sizes(ŷ, y)
-  agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
+  agg(.-sum(y .* logsoftmax(ŷ; dims); dims))
 end
+
+function logitcrossentropy(ŷ::AbstractMatrix, y::AbstractVector{<:Integer}; dims = 1 , agg = mean)
+    n = length(y)
+    @assert dims ∈ (1, 2)
+    @assert length(y) == (dims == 1 ? size(ŷ, 2) : size(ŷ, 1))
+    logits = logsoftmax(ŷ; dims)
+    if dims == 1
+        ŷgold = NNlib.gather(logits, y, 1:n)
+    else
+        ŷgold = NNlib.gather(logits, 1:n, y)
+    end
+    return -agg(ŷgold)
+end
+
+
+function NNlib.gather(src::AbstractArray{Tsrc, Nsrc},
+                I::AbstractVector{<:Integer},
+                J::AbstractVector{<:Integer},
+                Ks::AbstractVector{<:Integer}...) where {Nsrc, Tsrc}
+
+    return NNlib.gather(src, to_cartesian_index(I, J, Ks...))
+end
+
+to_cartesian_index(IJK...) = CartesianIndex.(IJK...)
+
+@non_differentiable to_cartesian_index(::Any...)
 
 """
     binarycrossentropy(ŷ, y; agg = mean, ϵ = eps(ŷ))
