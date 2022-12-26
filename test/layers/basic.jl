@@ -65,6 +65,7 @@ import Flux: activations
 
       @test_throws MethodError Dense(10, 10.5)
       @test_throws MethodError Dense(10, 10.5, tanh)
+      @test_throws ArgumentError Dense(3 => 4, false)
       @test_throws DimensionMismatch Dense(3,4; bias=rand(5))
       @test_throws DimensionMismatch Dense(rand(4,3), rand(5))
       @test_throws MethodError Dense(rand(5))

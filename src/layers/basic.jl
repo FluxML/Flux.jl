@@ -162,6 +162,7 @@ end
 
 function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
                init = glorot_uniform, bias = true)
+  σ isa Number && throw(ArgumentError("can't use $σ as an activation function!"))
   Dense(init(out, in), bias, σ)
 end
 
