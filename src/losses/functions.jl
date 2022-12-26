@@ -183,6 +183,10 @@ as would be the case with the output of a [softmax](@ref Softmax) operation.
 For numerical stability, it is recommended to use [`logitcrossentropy`](@ref)
 rather than `softmax` followed by `crossentropy` .
 
+The target array `y` has to be in the same shape as the prediction array `ŷ`
+and represent one-hot encoded labels or probabilities.
+As an alternative, `y` can also be a vector of integers containing the labels. 
+
 Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
 computing the loss.
 
@@ -227,6 +231,19 @@ function crossentropy(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
   agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
 end
 
+function crossentropy(ŷ::AbstractMatrix, y::AbstractVector{<:Integer}; dims = 1, agg = mean, ϵ = epseltype(ŷ))
+    n = length(y)
+    dims ∈ (1, 2) || ArgumentError("Only dims = 1 and 2 are supported at the moment. Pass a one-hot encoded vector y for generic dims.")
+    n == (dims == 1 ? size(ŷ, 2) : size(ŷ, 1)) || ArgumentError("The length of y should be the same as the batch dimension of ŷ.")
+    logits = log.(ŷ .+ ϵ)
+    if dims == 1
+        ŷgold = NNlib.gather(logits, y, 1:n)
+    else
+        ŷgold = NNlib.gather(logits, 1:n, y)
+    end
+    return -agg(ŷgold)
+end
+
 """
     logitcrossentropy(ŷ, y; dims = 1, agg = mean)
 
@@ -234,13 +251,18 @@ Return the cross entropy calculated by
 
     agg(-sum(y .* logsoftmax(ŷ; dims); dims))
 
-This is mathematically equivalent to `crossentropy(softmax(ŷ), y)`,
+This is mathematically equivalent to `crossentropy(softmax(ŷ; dims), y; dims)`,
 but is more numerically stable than using functions [`crossentropy`](@ref)
 and [softmax](@ref Softmax) separately.
 
+The target array `y` has to be in the same shape as the prediction array `ŷ`
+and represent one-hot encoded labels or probabilities.
+As an alternative, `y` can also be a vector of integers containing the labels. 
+
 See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref).
 
-# Example
+# Examples
+
 ```jldoctest
 julia> y_label = Flux.onehotbatch(collect("abcabaa"), 'a':'c')
 3×7 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
@@ -268,29 +290,18 @@ end
 
 function logitcrossentropy(ŷ::AbstractMatrix, y::AbstractVector{<:Integer}; dims = 1 , agg = mean)
     n = length(y)
-    @assert dims ∈ (1, 2)
-    @assert length(y) == (dims == 1 ? size(ŷ, 2) : size(ŷ, 1))
+    dims ∈ (1, 2) || ArgumentError("Only dims = 1 and 2 are supported at the moment. Pass a one-hot encoded vector y for generic dims.")
+    n == (dims == 1 ? size(ŷ, 2) : size(ŷ, 1)) || ArgumentError("The length of y should be the same as the batch dimension of ŷ.")
     logits = logsoftmax(ŷ; dims)
     if dims == 1
         ŷgold = NNlib.gather(logits, y, 1:n)
+        ŷgold = reshape(ŷgold, 1, :)
     else
         ŷgold = NNlib.gather(logits, 1:n, y)
+        ŷgold = reshape(ŷgold, :, 1)
     end
     return -agg(ŷgold)
 end
-
-
-function NNlib.gather(src::AbstractArray{Tsrc, Nsrc},
-                I::AbstractVector{<:Integer},
-                J::AbstractVector{<:Integer},
-                Ks::AbstractVector{<:Integer}...) where {Nsrc, Tsrc}
-
-    return NNlib.gather(src, to_cartesian_index(I, J, Ks...))
-end
-
-to_cartesian_index(IJK...) = CartesianIndex.(IJK...)
-
-@non_differentiable to_cartesian_index(::Any...)
 
 """
     binarycrossentropy(ŷ, y; agg = mean, ϵ = eps(ŷ))
@@ -350,6 +361,7 @@ Mathematically equivalent to
 See also: [`crossentropy`](@ref), [`logitcrossentropy`](@ref).
 
 # Examples
+
 ```jldoctest
 julia> y_bin = Bool[1,0,1];
 

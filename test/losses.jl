@@ -92,6 +92,22 @@ y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
   @test iszero(crossentropy(ya, ya, ϵ=0))
   @test crossentropy(y_sim, ya) < crossentropy(y_sim, ya_smoothed)
   @test crossentropy(y_dis, ya) > crossentropy(y_dis, ya_smoothed)
+
+
+  labels = rand(1:10, 20)
+  y = Flux.onehotbatch(labels, 1:10)
+  ŷ = softmax(randn(Float32, 10, 20), dims=1)
+  l1 = crossentropy(ŷ, y)
+  l2 = crossentropy(ŷ, labels)
+  @test l1 ≈ l2
+
+  labels = rand(1:20, 10)
+  y = Flux.onehotbatch(labels, 1:20)
+  ŷ = softmax(randn(Float32, 10, 20), dims=2)
+  l1 = crossentropy(ŷ, y', dims=2, agg=identity)
+  l2 = crossentropy(ŷ, labels, dims=2, agg=identity)
+  @test size(l1) == size(l2) == (10, 1)
+  @test l1 ≈ l2
 end
 
 @testset "logitcrossentropy" begin
@@ -104,6 +120,14 @@ end
   ŷ = randn(Float32, 10, 20)
   l1 = logitcrossentropy(ŷ, y)
   l2 = logitcrossentropy(ŷ, labels)
+  @test l1 ≈ l2
+
+  labels = rand(1:20, 10)
+  y = Flux.onehotbatch(labels, 1:20)
+  ŷ = randn(Float32, 10, 20)
+  l1 = logitcrossentropy(ŷ, y', dims=2, agg=identity)
+  l2 = logitcrossentropy(ŷ, labels, dims=2, agg=identity)
+  @test size(l1) == size(l2) == (10, 1)
   @test l1 ≈ l2
 end
 
