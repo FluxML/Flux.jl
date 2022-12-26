@@ -98,6 +98,13 @@ end
   @test logitcrossentropy(logŷ, y) ≈ lossvalue
   @test logitcrossentropy(logylp, yl) ≈ -sum(yl.*logsoftmax(logylp))
   @test logitcrossentropy(logylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*logsoftmax(logylp))
+  
+  labels = rand(1:10, 20)
+  y = Flux.onehotbatch(labels, 1:10)
+  ŷ = randn(Float32, 10, 20)
+  l1 = logitcrossentropy(ŷ, y)
+  l2 = logitcrossentropy(ŷ, labels)
+  @test l1 ≈ l2
 end
 
 logŷ, y = randn(3), rand(3)
@@ -248,12 +255,3 @@ end
   @test_throws DomainError(-0.5, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ1, y1, margin = -0.5)
   @test_throws DomainError(-1, "Margin must be non-negative") Flux.siamese_contrastive_loss(ŷ, y, margin = -1)
 end
-
-
-
-labels = rand(1:10, 256)
-y = Flux.onehotbatch(labels, 1:10)
-ŷ = randn(Float32, 10, 256)
-
-@btime Flux.logitcrossentropy(ŷ, y);
-@btime Flux.logitcrossentropy(ŷ, labels);
