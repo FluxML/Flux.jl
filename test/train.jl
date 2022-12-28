@@ -139,3 +139,10 @@ end
   @test diff1 ≈ diff3
 end
 
+@testset "Flux.setup bugs" begin
+  # https://github.com/FluxML/Flux.jl/issues/2144
+  @test Flux.setup(Flux.Adam(), Embedding(3 => 1)).weight isa Optimisers.Leaf
+  # Typo in 0.13.9's deprecation
+  @test Flux.setup(Flux.ClipValue(1), Dense(2 => 3)).weight.rule isa Optimisers.ClipGrad
+  @test Flux.setup(Flux.ClipNorm(1), Dense(2 => 3)).weight.rule isa Optimisers.ClipNorm
+end
