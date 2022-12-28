@@ -223,7 +223,7 @@ julia> Flux.crossentropy(y_model, y_smooth)
 """
 function crossentropy(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  return agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
+  return agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims))
 end
 
 """
@@ -262,7 +262,7 @@ julia> Flux.crossentropy(softmax(y_model), y_label)
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
   _check_sizes(ŷ, y)
-  return agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
+  return agg(.-sum(y .* logsoftmax(ŷ; dims); dims))
 end
 
 """
@@ -381,8 +381,8 @@ Inf
 """
 function kldivergence(ŷ, y; dims = 1, agg = mean, ϵ = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  entropy = agg(sum(xlogx.(y), dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims = dims, agg = agg, ϵ = ϵ)
+  entropy = agg(sum(xlogx.(y); dims))
+  cross_entropy = crossentropy(ŷ, y; dims, agg, ϵ)
   return entropy + cross_entropy
 end
 
@@ -596,10 +596,10 @@ true
 See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
-function focal_loss(ŷ, y; dims=1, agg=mean, γ=2, ϵ=epseltype(ŷ))
+function focal_loss(ŷ, y; dims = 1, agg = mean, γ = 2, ϵ = epseltype(ŷ))
   _check_sizes(ŷ, y)
   ŷ = ŷ .+ ϵ
-  return agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims=dims))
+  return agg(sum(@. -y * (1 - ŷ)^γ * log(ŷ); dims))
 end
 
 """
