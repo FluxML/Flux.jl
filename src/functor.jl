@@ -121,13 +121,27 @@ adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
 adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
+# PIRACY, should be defined in CUDA.jl
 function ChainRulesCore.rrule(::Type{Array}, x::CUDA.CuArray)
-  Array(x), dx -> (NoTangent(), CUDA.cu(unthunk(dx)),)
+  Array(x), dx -> (NoTangent(), CUDA.cu(unthunk(dx)))
 end
 
 function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)),)
+  adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)))
 end
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AnyCuArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCUDAAdaptor(), unthunk(Δ)))
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), unthunk(Δ))
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AnyCuArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), unthunk(Δ))
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AbstractArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCPUAdaptor(), unthunk(Δ)))
+
 
 # CPU/GPU movement conveniences
 

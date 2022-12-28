@@ -20,7 +20,7 @@ using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray
   m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
   cm = gpu(m)
 
-  @test all(p isa CuArray for p in params(cm))
+  @test all(p isa CuArray for p in Flux.params(cm))
   @test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
   xs = rand(5, 5)
@@ -65,7 +65,7 @@ end
 end
 
 @testset "onehot forward map to broadcast" begin
-  oa = OneHotArray(rand(1:10, 5, 5), 10) |> gpu
+  oa = Flux.OneHotArray(rand(1:10, 5, 5), 10) |> gpu
   @test all(map(identity, oa) .== oa)
   @test all(map(x -> 2 * x, oa) .== 2 .* oa)
 end
@@ -110,14 +110,14 @@ end
   # This test should really not go through indirections and pull out Fills for efficiency
   # but we forcefully materialise. TODO: remove materialising CuArray here
   @test gradient(x -> sum(cpu(x)), ca)[1] isa CuArray # This involves FillArray, which should be GPU compatible
-  @test gradient(x -> sum(cpu(x)), ca')[1] isa LinearAlgebra.Adjoint
+  @test gradient(x -> sum(cpu(x)), ca')[1] isa CuArray
 
   # Even more trivial: no movement
   @test gradient(x -> sum(abs, cpu(x)), a)[1] isa Matrix
   @test gradient(x -> sum(abs, cpu(x)), a')[1] isa Matrix
   @test gradient(x -> sum(cpu(x)), a)[1] isa typeof(gradient(sum, a)[1]) # FillArray
   @test gradient(x -> sum(abs, gpu(x)), ca)[1] isa CuArray
-  @test_skip gradient(x -> sum(abs, gpu(x)), ca')[1] isa CuArray # KernelError: passing and using non-bitstype argument
+  @test gradient(x -> sum(abs, gpu(x)), ca')[1] isa CuArray
 
   # More complicated, Array * CuArray is an error
   g0 = gradient(x -> sum(abs, (a * (a * x))), a)[1]
