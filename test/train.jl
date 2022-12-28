@@ -24,6 +24,7 @@ using Random
 
   # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
   @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
+    opt isa Optimisers.Adam && @info "should see a warning about discarded state"
     loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
     model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
     @test loss(model, rand(10, 10)) > 1
