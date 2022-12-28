@@ -12,24 +12,24 @@ Random.seed!(0)
 
 @testset verbose=true "Flux.jl" begin
 
-  # @testset "Utils" begin
-  #   include("utils.jl")
-  # end
+  @testset "Utils" begin
+    include("utils.jl")
+  end
 
-  # @testset "Optimise / Train" begin
-  #   include("optimise.jl")
-  #   include("train.jl")
-  # end
+  @testset "Optimise / Train" begin
+    include("optimise.jl")
+    include("train.jl")
+  end
 
-  # @testset "Data" begin
-  #   include("data.jl")
-  # end
+  @testset "Data" begin
+    include("data.jl")
+  end
 
-  # @testset "Losses" begin
-  #   include("losses.jl")
-  #   include("ctc.jl")
-  #   CUDA.functional() && include("ctc-gpu.jl")
-  # end
+  @testset "Losses" begin
+    include("losses.jl")
+    include("ctc.jl")
+    CUDA.functional() && include("ctc-gpu.jl")
+  end
 
   @testset "Layers" begin
     include("layers/basic.jl")
