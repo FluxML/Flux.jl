@@ -134,10 +134,10 @@ ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AnyCuArray) =
   adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCUDAAdaptor(), unthunk(Δ)))
 
 ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
-  adapt(a, x), Δ -> (NoTangent(), NoTangent(), unthunk(Δ))
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
 
 ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AnyCuArray) =
-  adapt(a, x), Δ -> (NoTangent(), NoTangent(), unthunk(Δ))
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
 
 ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AbstractArray) =
   adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCPUAdaptor(), unthunk(Δ)))
