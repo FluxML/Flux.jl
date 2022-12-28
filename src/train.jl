@@ -2,7 +2,7 @@ module Train
 
 using LinearAlgebra
 using Optimisers: Optimisers
-using Functors: fmap
+using Functors: fmap, fmapstructure
 
 import ..Flux.Optimise: train!, update!  # during 0.13, we add methods to the old functions
 
@@ -48,7 +48,8 @@ julia> opt_state  # mutated by Flux.train!
 """
 function setup(rule::Optimisers.AbstractRule, model)
     state = Optimisers.setup(rule, model)
-    fmap(model, exclude = Optimisers.isnumeric) do x
+    # This check only needs foreach; using fmap caused https://github.com/FluxML/Flux.jl/issues/2144
+    fmapstructure(model, exclude = Optimisers.isnumeric) do x
       Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
                                          If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
     end
