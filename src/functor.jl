@@ -130,6 +130,9 @@ function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor,
   adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)))
 end
 
+# The following rrules for adapt are here to avoid double wrapping issues
+# as seen in https://github.com/FluxML/Flux.jl/pull/2117#discussion_r1027321801
+
 ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AnyCuArray) =
   adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCUDAAdaptor(), unthunk(Δ)))
 
