@@ -1,9 +1,9 @@
-using Flux, Test, LinearAlgebra, Random, Statistics
-using CUDA, CUDAKernels, LoopVectorization
+using Flux, Functors, Test, LinearAlgebra, Random, Statistics
+using CUDA, CUDAKernels, KernelAbstractions, LoopVectorization
 using Tullio
 using NeuralAttentionlib
 using BenchmarkTools
-
+CUDA.allowscalar(false)
 const A3{T} = AbstractArray{T, 3}
 
 """
@@ -144,11 +144,6 @@ function perf(dim, len, batch_size, num_heads)
   mha = MultiHeadAttention(dim, num_heads)  
   x = rand(Float32, (dim, len, batch_size))
 
-  y = mha(x, x, x)
-  @test y isa Array{Float32, 3}
-  @test size(y) == (dim, len, batch_size)
-
-  
   println("tullio")
   @btime $mha($x, v=:tullio);
   @btime gradient(m -> sum(m($x, v=:tullio)), $mha);
@@ -172,4 +167,29 @@ function perf(dim, len, batch_size, num_heads)
   return nothing
 end
 
-perf(64, 100, 32, 8)
+function test(dim, len, batch_size, num_heads)
+  mha = MultiHeadAttention(dim, num_heads)  
+  x = rand(Float32, (dim, len, batch_size))
+  y = mha(x, v=:tullio)
+  @test y isa Array{Float32, 3}
+  @test size(y) == (dim, len, batch_size)
+  y2 = mha(x, v=:nnalib)
+  @test size(y) == size(y2)
+  @test y2 ≈ y
+  
+  if CUDA.functional()
+    mha_gpu = mha |> gpu
+    x_gpu = x |> gpu
+
+    y_gpu = mha_gpu(x_gpu, v=:tullio)
+    y_gpu2 = mha_gpu(x_gpu, v=:nnalib)
+    @test Array(y_gpu) ≈ Array(y_gpu2)
+    @test Array(y_gpu) ≈ y
+  end
+  return nothing
+end
+
+
+test(12, 3, 2, 4)
+
+perf(64, 100, 32, 4)
