@@ -146,7 +146,7 @@ end
 function dot_product_attention_weights(q::A4{T}, k::A4{T}; 
             dropout=nothing, mask=nothing, bias=nothing) where T
 
-  q  = q ./ T(√size(q, 1))
+  q  = q ./ √T(size(q, 1))
   @tullio α[j, i, h, b] := q[d, h, i, b] * k[d, h, j, b]
   # [α] = [kv_len, q_len, num_heads, batch_size]
 
@@ -173,10 +173,9 @@ end
 
 function QKVProj(dims; bias = false, init=glorot_uniform)
   return QKVProj(
-        Dense(dims.q_in => dims.qk; bias, init),
-        Dense(dims.k_in => dims.qk; bias, init),
-        Dense(dims.v_in => dims.v; bias, init)
-      )
+            Dense(dims.q_in => dims.qk; bias, init),
+            Dense(dims.k_in => dims.qk; bias, init),
+            Dense(dims.v_in => dims.v; bias, init))
 end
 
 function (proj::QKVProj)(q_in, k_in, v_in)
@@ -224,32 +223,35 @@ function perf(dim, len, batch_size, num_heads)
 end
 
 function test(dim, num_heads, len, batch_size)
-  mha = MultiHeadAttention(dim, num_heads)  
-  x = rand(Float32, (dim, len, batch_size))
-  y, α = mha(x, impl=:tullio, with_weights=true)
+  mha = MultiHeadAttention(dim, num_heads)
+  q = rand(Float32, (dim, len, batch_size))
+  k = rand(Float32, (dim, len, batch_size))
+  v = rand(Float32, (dim, len, batch_size))
+  
+  y, α = mha(q, k, v, impl=:tullio, with_weights=true)
   @test y isa Array{Float32, 3}
   @test size(y) == (dim, len, batch_size)
   @test α isa Array{Float32, 4}
   @test size(α) == (len, len, num_heads, batch_size)
 
-  y2, α2 = mha(x, impl=:nalib, with_weights=true)
+  y2, α2 = mha(q, k, v, impl=:nalib, with_weights=true)
   @test size(y) == size(y2)
   @test y2 ≈ y
   @test size(α) == size(α2)
   @test α2 ≈ α
 
-  mask = make_causal_mask(x)
-  y3, α3 = mha(x; impl=:tullio, with_weights=true, mask)
-  y4, α4 = mha(x, impl=:nalib, with_weights=true, mask=NeuralAttentionlib.CausalMask())
-  @test y ≈ y2
-  @test α ≈ α2
+  mask = make_causal_mask(q)
+  y3, α3 = mha(q, k, v; impl=:tullio, with_weights=true, mask)
+  y4, α4 = mha(q, k, v, impl=:nalib, with_weights=true, mask=NeuralAttentionlib.CausalMask())
+  @test y3 ≈ y4
+  @test α3 ≈ α4
 
   if CUDA.functional()
     mha_gpu = mha |> gpu
-    x_gpu = x |> gpu
-
-    y_gpu = mha_gpu(x_gpu, impl=:tullio)
-    y_gpu2 = mha_gpu(x_gpu, impl=:nalib)
+    q_gpu, k_gpu, v_gpu = q |> gpu, k |> gpu, v |> gpu
+    
+    y_gpu = mha_gpu(q_gpu, k_gpu, v_gpu, impl=:tullio)
+    y_gpu2 = mha_gpu(q_gpu, k_gpu, v_gpu, impl=:nalib)
     @test Array(y_gpu) ≈ Array(y_gpu2)
     @test Array(y_gpu) ≈ y
   end
