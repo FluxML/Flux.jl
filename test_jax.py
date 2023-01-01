@@ -9,6 +9,7 @@ from flax import linen as nn           # The Linen API
 #import tensorflow_datasets as tfds     # TFDS for MNIST
 # %%
 x = jnp.arange(16).reshape(1,2,2,4) / 16
+alpha = nn.dot_product_attention_weights(x, x)
 y = nn.dot_product_attention(x, x, x)
 yt = y.transpose((3,2,1,0))
 
