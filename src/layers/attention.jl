@@ -6,6 +6,7 @@ using NeuralAttentionlib: score_returning
 using BenchmarkTools
 using Flux: glorot_uniform
 using MLUtils
+using ChainRulesCore
 CUDA.allowscalar(false)
 
 const A3{T} = AbstractArray{T, 3}
@@ -112,7 +113,7 @@ function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3;
   if impl == :tullio
     x, α = dot_product_attention(m.num_heads, q, k, v; mask, dropout=m.attn_drop)
   elseif impl == :nalib
-    x, α = NeuralAttentionlib.multihead_qkv_attention(score_returning, m.num_heads, q, k, v)
+    x, α = NeuralAttentionlib.multihead_qkv_attention(score_returning, m.num_heads, q, k, v, mask)
   else
     error("Unknown attention implementation")
   end
@@ -184,11 +185,16 @@ end
 
 function make_causal_mask(x::A3)
   d, len, batch_size = size(x)
-  mask = tril(ones_like(x, (len, len)))
+  mask = triu(trues_like(x, (len, len)))
   return mask
 end
 
+trues_like(x::AbstractArray, sz=size(x)) = fill!(similar(x, Bool, sz), true)
+falses_like(x::AbstractArray, sz=size(x)) = fill!(similar(x, Bool, sz), false)
+
 @non_differentiable make_causal_mask(x)
+@non_differentiable trues_like(::Any...)
+@non_differentiable falses_like(::Any...)
 
 function perf(dim, len, batch_size, num_heads)
   mha = MultiHeadAttention(dim, num_heads)  
@@ -231,7 +237,13 @@ function test(dim, num_heads, len, batch_size)
   @test y2 ≈ y
   @test size(α) == size(α2)
   @test α2 ≈ α
-  
+
+  mask = make_causal_mask(x)
+  y3, α3 = mha(x; impl=:tullio, with_weights=true, mask)
+  y4, α4 = mha(x, impl=:nalib, with_weights=true, mask=NeuralAttentionlib.CausalMask())
+  @test y ≈ y2
+  @test α ≈ α2
+
   if CUDA.functional()
     mha_gpu = mha |> gpu
     x_gpu = x |> gpu
@@ -244,8 +256,7 @@ function test(dim, num_heads, len, batch_size)
   return nothing
 end
 
-
-test(4, 2, 2, 1)
+test(4, 2, 3, 1)
 
 perf(128, 8, 128, 32)
 # tullio
@@ -267,3 +278,9 @@ perf(128, 8, 128, 32)
 #   165.109 μs (411 allocations: 18.05 KiB)
 #   659.685 μs (1527 allocations: 86.09 KiB)
 
+dim = 2; len = 3; batch_size = 1; num_heads = 1
+mha = MultiHeadAttention(dim, num_heads)  
+x = rand(Float32, (dim, len, batch_size))
+mask = make_causal_mask(x)
+y, α = mha(x; impl=:tullio, with_weights=true, mask)
+y2, α2 = mha(x; impl=:nalib, with_weights=true, mask=NeuralAttentionlib.CausalMask())
