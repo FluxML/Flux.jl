@@ -2,8 +2,10 @@ using Flux, Functors, Test, LinearAlgebra, Random, Statistics
 using CUDA
 using CUDAKernels, KernelAbstractions, LoopVectorization, Tullio
 using NeuralAttentionlib
+using NeuralAttentionlib: score_returning
 using BenchmarkTools
 using Flux: glorot_uniform
+using MLUtils
 CUDA.allowscalar(false)
 
 const A3{T} = AbstractArray{T, 3}
@@ -18,19 +20,22 @@ Multi-head dot-product attention layer.
 # Arguments
 
 - `dims`: ...
-- `nheads`: number of heads
+- `num_heads`: number of heads.
 - `init`: weight initializer for the Dense layers.
 - `bias` : whether pointwise QKVO dense transforms use bias.
 - `attn_dropout_prob`: dropout probability after the self-attention layer
 - `proj_dropout_prob`: dropout probability after the projection layer
 
 # Forward
+    
+    (::MultiHeadAttention)(q_in, k_in, v_in; [mask, with_weights])
 
-- `in_q`: input tensor of shape `(batch_size, seq_len, dims)
-- `in_k`: input tensor of shape `(batch_size, seq_len, dims)
-- `in_v`: input tensor of shape `(batch_size, seq_len, dims)
-- `mask`: input tensor of shape `(batch_size, seq_len, seq_len)`
-- `return_weights`: whether to return the attention weights
+- `q_in`: input array of size `( seq_len, dims)
+- `k_in`: input array of size `( seq_len, dims)
+- `v_in`: input array of size `( seq_len, dims)
+- `mask`: input array broadcastable to size 
+   `(kv_len, q_len, num_heads, batch_size)`. Default `nothing`.
+- `with_weights`: Whether to return the attention weights. Default `false`.
 
 # Examples
 
@@ -68,28 +73,33 @@ end
 #  8 => (8, 8) => 8
 #  (8, 8, 8) => (8, 8) => 8  # (q_in, k_in, v_in) => (qk, v) => out
 mha_process_dims(dims::Int) = 
-  (; q_in = dims, k_in = dims, v_in = dims, 
-     qk = dims, v = dims, out = dims)
+  (; q_in=dims, k_in=dims, v_in=dims, qk=dims, v=dims, out=dims)
 
-mha_process_dims((in, (qkv, out))::Pair{Int, <:Pair{Int, Int}}) = 
-  (; q_in = in, k_in = in, v_in = in, 
-     qk = qkv, v = qkv, out)
+const TuplInt2 = Union{Int, Tuple{Int, Int}}
+const TuplInt3 = Union{Int, Tuple{Int, Int, Int}}
 
-mha_process_dims((in, (qkv, out))::Pair{<:Tuple, <:Pair{Int, Int}}) = 
-  (; q_in = in[1], k_in = in[2], v_in = in[3], 
-     qk = qkv, v = qkv, out)
-
-mha_process_dims((in, ((qk, v), out))::Pair{<:Tuple, <:Pair{<:Tuple, Int}}) = 
-  (; q_in = in[1], k_in = in[2], v_in = in[3], qk, v, out)
-
-mha_process_dims((in, ((qk, v), out))::Pair{Int, <:Pair{<:Tuple, Int}}) = 
-  (; q_in = in, k_in = in, v_in = in, qk, v, out)
-
+function mha_process_dims((in, (qkv, out))::Pair{<:TuplInt3, <:Pair{<:TuplInt2, Int}})
+  if in isa Int
+    q_in = k_in = v_in = in
+  else
+    q_in, k_in, v_in = in
+  end
+  if qkv isa Int
+    qk = v = qkv
+  else
+    qk, v = qkv
+  end
+  return (; q_in, k_in, v_in, qk, v, out)
+end
 
 # self-attention
-(m::MultiHeadAttention)(x; kws...) = m(x, x, x; kws...)
+(m::MultiHeadAttention)(qkv; kws...) = m(qkv, qkv, qkv; kws...)
 
-function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3; with_weights=false, impl=:tullio)
+# key and value are the same
+(m::MultiHeadAttention)(q, kv; kws...) = m(q, kv, kv; kws...)
+
+function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3; 
+      with_weights=false, mask=nothing, impl=:tullio)
   ## [q_in] = [q_in_dim, q_len, batch_size]
   ## [k_in] = [k_in_dim, kv_len, batch_size] 
   ## [v_in] = [v_in_dim, kv_len, batch_size]
@@ -100,11 +110,9 @@ function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3; with_weights=fals
   # [v] = [v_dim, kv_len, batch_size]
 
   if impl == :tullio
-    x, α = dot_product_attention(m.num_heads, q, k, v; dropout=m.attn_drop)
+    x, α = dot_product_attention(m.num_heads, q, k, v; mask, dropout=m.attn_drop)
   elseif impl == :nalib
-    x, α = NeuralAttentionlib.multihead_qkv_attention(
-              NeuralAttentionlib.score_returning, 
-              m.num_heads, q, k, v)
+    x, α = NeuralAttentionlib.multihead_qkv_attention(score_returning, m.num_heads, q, k, v)
   else
     error("Unknown attention implementation")
   end
@@ -114,14 +122,8 @@ function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3; with_weights=fals
   return with_weights ? (x, α) : x
 end
 
-# Inspired by https://flax.readthedocs.io/en/latest/api_reference/_autosummary/flax.linen.dot_product_attention.html
-function dot_product_attention(q::A4, k::A4, v::A4; dropout=nothing)
-  α = dot_product_attention_weights(q, k; dropout)
-  # [α] = [kv_len, q_len, num_heads, batch_size]
-  @tullio x[d, h, i, b] := α[j, i, h, b] * v[d, h, j, b]
-  # [x] = [kv_dim ÷ num_heads, num_heads, q_len, batch_size]
-  return x, α
-end
+reshape_heads(x, num_heads) = reshape(x, size(x, 1) ÷ num_heads, num_heads, size(x)[2:end]...)
+flatten_heads(x) = reshape(x, :, size(x)[3:end]...)
 
 function dot_product_attention(num_heads::Int, q::A3, k::A3, v::A3; kws...)
   q, k, v = reshape_heads.((q, k, v), num_heads)
@@ -129,14 +131,32 @@ function dot_product_attention(num_heads::Int, q::A3, k::A3, v::A3; kws...)
   return flatten_heads(x), α
 end
 
-reshape_heads(x, num_heads) = reshape(x, size(x, 1) ÷ num_heads, num_heads, size(x)[2:end]...)
-flatten_heads(x) = reshape(x, :, size(x)[3:end]...)
+# Inspired by https://flax.readthedocs.io/en/latest/api_reference/_autosummary/flax.linen.dot_product_attention.html
+function dot_product_attention(q::A4, k::A4, v::A4; 
+            dropout=nothing, bias=nothing, mask=nothing)
+
+  α = dot_product_attention_weights(q, k; dropout, bias, mask)
+  # [α] = [kv_len, q_len, num_heads, batch_size]
+  @tullio x[d, h, i, b] := α[j, i, h, b] * v[d, h, j, b]
+  # [x] = [kv_dim ÷ num_heads, num_heads, q_len, batch_size]
+  return x, α
+end
 
 function dot_product_attention_weights(q::A4{T}, k::A4{T}; 
-      dropout=nothing) where T
+            dropout=nothing, mask=nothing, bias=nothing) where T
+
   q  = q ./ T(√size(q, 1))
   @tullio α[j, i, h, b] := q[d, h, i, b] * k[d, h, j, b]
   # [α] = [kv_len, q_len, num_heads, batch_size]
+
+  if bias !== nothing
+    α = α .+ bias
+  end
+  if mask !== nothing
+    neginf = typemin(eltype(α))
+    α = ifelse.(mask, α, neginf)
+  end
+
   α = softmax(α, dims=1)
   return dropout === nothing ? α : dropout(α)
 end
@@ -162,6 +182,13 @@ function (proj::QKVProj)(q_in, k_in, v_in)
   return (proj.q_proj(q_in), proj.k_proj(k_in), proj.v_proj(v_in))
 end
 
+function make_causal_mask(x::A3)
+  d, len, batch_size = size(x)
+  mask = tril(ones_like(x, (len, len)))
+  return mask
+end
+
+@non_differentiable make_causal_mask(x)
 
 function perf(dim, len, batch_size, num_heads)
   mha = MultiHeadAttention(dim, num_heads)  
@@ -222,14 +249,21 @@ test(4, 2, 2, 1)
 
 perf(128, 8, 128, 32)
 # tullio
-#   5.862 ms (85 allocations: 6.75 MiB)
-#   14.291 ms (1046 allocations: 17.17 MiB)
+#   5.475 ms (80 allocations: 7.25 MiB)
+#   13.073 ms (1172 allocations: 18.18 MiB)
+# tullio - 6 threads
+#   4.818 ms (192 allocations: 7.26 MiB)
+#   10.927 ms (1398 allocations: 18.19 MiB)
 # nalib
-#   6.331 ms (90 allocations: 7.75 MiB)
-#   16.186 ms (690 allocations: 16.17 MiB)
+#   6.040 ms (91 allocations: 7.75 MiB)
+#   14.542 ms (696 allocations: 16.17 MiB)
+# nalib - 6 threads
+#   7.832 ms (187 allocations: 7.76 MiB)
+#   29.823 ms (988 allocations: 16.19 MiB)
 # tullio - gpu
-#   141.365 μs (499 allocations: 22.81 KiB)
-#   804.018 μs (2228 allocations: 113.45 KiB)
+#   147.746 μs (523 allocations: 24.59 KiB)
+#   957.111 μs (2413 allocations: 127.88 KiB)
 # nalib - gpu
-#   163.487 μs (410 allocations: 18.02 KiB)
-#   673.463 μs (1521 allocations: 84.64 KiB)
+#   165.109 μs (411 allocations: 18.05 KiB)
+#   659.685 μs (1527 allocations: 86.09 KiB)
+
