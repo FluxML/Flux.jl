@@ -73,6 +73,12 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
       @test cpu(m).rng === only(values(rng_kwargs))
     end
   end
+
+  for active in (true, false)
+    m = Dropout(0.5, :, active)
+    _, back = @inferred pullback(m, rand(10)) # _, DropoutPullback{Array{Float64}}
+    @inferred back(ones(10)) # Array{Float64}
+  end
 end
 
 @testset "AlphaDropout" begin
@@ -343,8 +349,13 @@ end
   @test LayerNorm(2)(x) ≈ Flux.normalise(x, dims=1)
   x = rand(2,3,4,5)
   @test LayerNorm(2)(x) ≈ Flux.normalise(x, dims=1)
+
   x = rand(2)
-  @test LayerNorm(2, tanh)(x) ≈ tanh.(Flux.normalise(x, dims=1))
+  m = LayerNorm(2, tanh)
+  @test m(x) ≈ tanh.(Flux.normalise(x, dims=1))
+  _, back = @inferred pullback(|>, x, m)
+  # TODO needs https://github.com/FluxML/Zygote.jl/pull/1248
+  # @inferred back(1.0)
 
   x = rand(2,3,4,5)
   @test LayerNorm((2,3))(x) ≈ Flux.normalise(x, dims=(1,2))

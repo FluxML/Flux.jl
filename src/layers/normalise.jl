@@ -2,7 +2,14 @@ istraining() = false
 
 ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
 
-_isactive(m) = isnothing(m.active) ? istraining() : m.active
+_isactive(m) = Bool(something(m.active, istraining()))
+
+# Avoids instabilities from differentiating through getproperty(m, :active)
+function ChainRulesCore.rrule(::typeof(_isactive), m)
+  training, _ = rrule(istraining)
+  _isactive_pullback(_) = (NoTangent(), NoTangent())
+  return Bool(something(m.active, training)), _isactive_pullback
+end
 
 _dropout_shape(s, ::Colon) = size(s)
 _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
@@ -29,18 +36,43 @@ automatically managed using the [`Dropout`](@ref) layer instead of the
 
 The [`Dropout`](@ref) layer is what you should use in most scenarios.
 """
-function dropout(rng, x, p; dims=:, active::Bool=true)
-  active || return x
-  y = dropout_mask(rng, x, p, dims=dims)
-  return x .* y
-end
+dropout(rng, x, p; dims=:, active::Bool=true) = _dropout(rng, x, p, dims, active)
 dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
 
-dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
-dropout_mask(rng, x::CuArray, p; kwargs...) =
-  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
-dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
-function _dropout_mask(rng, x, p; dims=:)
+# Internal function without kwargs to keep Zygote generated code type stable
+function _dropout(rng, x, p, dims, active)
+  mask = active ? dropout_mask(rng, x, p, dims) : nothing
+  return _apply_mask(x, mask)
+end
+
+function ChainRulesCore.rrule(::typeof(_dropout), rng, x, p, dims, active)
+  mask = active ? dropout_mask(rng, x, p, dims) : nothing
+  # Required because we don't always call dropout_mask
+  MT = Core.Compiler.return_type(dropout_mask, Tuple{typeof(rng),typeof(x),typeof(p),typeof(dims)})
+  project_x = ProjectTo(x)
+  return _apply_mask(x, mask), DropoutPullback{MT,typeof(project_x)}(mask, project_x)
+end
+
+# Also needed for type stability. Otherwise inference lifts the Union into a
+# Union{pullback{Nothing}, pullback{AbstractArray}}
+struct DropoutPullback{M<:AbstractArray,P<:ProjectTo{AbstractArray}}
+  mask::Union{Nothing,M}
+  project::P
+end
+
+function (pb::DropoutPullback)(dy)
+  dx = pb.project(_apply_mask(dy, pb.mask))
+  return (NoTangent(), NoTangent(), dx, NoTangent(), NoTangent(), NoTangent())
+end
+
+_apply_mask(x, ::Nothing) = x
+_apply_mask(x, mask) = x .* mask
+
+dropout_mask(rng::CUDA.RNG, x::CuArray, p, dims) = _dropout_mask(rng, x, p, dims)
+dropout_mask(rng, x::CuArray, p, dims) =
+  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only supports CUDA.RNG for CuArrays."))
+dropout_mask(rng, x, p, dims) = _dropout_mask(rng, x, p, dims)
+function _dropout_mask(rng, x, p, dims)
   realfptype = float(real(eltype(x)))
   y = rand!(rng, similar(x, realfptype, _dropout_shape(x, dims)))
   y .= _dropout_kernel.(y, p, 1 - p)
@@ -48,7 +80,7 @@ function _dropout_mask(rng, x, p; dims=:)
 end
 
 # TODO move this to NNlib
-ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
+ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any, ::Any)
 
 """
     Dropout(p; dims=:, rng = default_rng_value())
@@ -106,10 +138,7 @@ end
 @functor Dropout
 trainable(a::Dropout) = (;)
 
-function (a::Dropout)(x)
-  _isactive(a) || return x
-  return dropout(a.rng, x, a.p; dims=a.dims, active=true)
-end
+(a::Dropout)(x) = _dropout(a.rng, x, a.p, a.dims, _isactive(a))
 
 testmode!(m::Dropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
@@ -226,7 +255,7 @@ LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]
 
 @functor LayerNorm
 
-(a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
+(a::LayerNorm)(x) = a.diag(_normalize(x, 1:length(a.size), a.ϵ))
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", join(l.size, ", "))

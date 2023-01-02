@@ -10,7 +10,9 @@ using MLUtils
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
 using Optimisers: freeze!, thaw!, adjust!
 
-using Zygote, ChainRulesCore
+using ChainRulesCore
+
+using Zygote
 using Zygote: Params, @adjoint, gradient, pullback, @nograd
 using Zygote.ForwardDiff: value
 export gradient
