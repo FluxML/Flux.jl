@@ -44,11 +44,11 @@ Multi-head dot-product attention layer.
 mha = MultiHeadAttention(64, 8)
 ```
 """
-struct MultiHeadAttention
+struct MultiHeadAttention{P1, D, P2}
   num_heads::Int
-  qkv_proj
-  attn_drop
-  out_proj
+  qkv_proj::P1
+  attn_drop::D
+  out_pro::P2
 end
 
 @functor MultiHeadAttention
@@ -56,14 +56,13 @@ end
 function MultiHeadAttention(dims, num_heads::Int; 
                      bias::Bool = false,
                      init = glorot_uniform,                    
-                     attn_dropout_prob = 0.0, 
-                     out_proj_dropout_prob = 0.0)
+                     attn_dropout_prob = 0.0)
 
   dims = mha_process_dims(dims)
   @assert dims.qk % num_heads == 0 "qk_dim should be divisible by num_heads"
   qkv_proj = QKVProj(dims; bias, init)
   attn_drop = Dropout(attn_dropout_prob)
-  out_proj = Chain(Dense(dims.v => dims.out; bias, init), Dropout(out_proj_dropout_prob))
+  out_proj = Dense(dims.v => dims.out; bias, init)
   return MultiHeadAttention(num_heads, qkv_proj, attn_drop, out_proj)
 end
 
@@ -100,7 +99,7 @@ end
 (m::MultiHeadAttention)(q, kv; kws...) = m(q, kv, kv; kws...)
 
 function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3; 
-      with_weights=false, mask=nothing, impl=:tullio)
+      with_weights=false, mask=nothing, impl=:native)
   ## [q_in] = [q_in_dim, q_len, batch_size]
   ## [k_in] = [k_in_dim, kv_len, batch_size] 
   ## [v_in] = [v_in_dim, kv_len, batch_size]
@@ -115,7 +114,7 @@ function (m::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3;
   elseif impl == :nalib
     x, α = NeuralAttentionlib.multihead_qkv_attention(score_returning, m.num_heads, q, k, v, mask)
   elseif impl == :native
-    x, α = dot_product_attention_native(m.num_heads, q, k, v; mask, dropout=m.attn_drop)
+    x, α = dot_product_attention(m.num_heads, q, k, v; mask, dropout=m.attn_drop)
   else
     error("Unknown attention implementation")
   end
@@ -134,11 +133,6 @@ function dot_product_attention_tullio(num_heads::Int, q::A3, k::A3, v::A3; kws..
   return flatten_heads(x), α
 end
 
-function dot_product_attention_native(num_heads::Int, q::A3, k::A3, v::A3; kws...)
-  q, k, v = reshape_heads.((q, k, v), num_heads)
-  x, α = dot_product_attention_native(q, k, v; kws...)
-  return flatten_heads(x), α
-end
 
 # Inspired by https://flax.readthedocs.io/en/latest/api_reference/_autosummary/flax.linen.dot_product_attention.html
 function dot_product_attention_tullio(q::A4, k::A4, v::A4; 
@@ -179,12 +173,20 @@ function NNlib.batched_mul(x::AbstractArray{T1,N}, y::AbstractArray{T2,N}) where
   return reshape(z, size(z, 1), size(z, 2), sz...)
 end
 
-function dot_product_attention_native(q::A4, k::A4, v::A4; 
+function dot_product_attention(num_heads::Int, q::A3, k::A3, v::A3; kws...)
+  q, k, v = reshape_heads.((q, k, v), num_heads)
+  x, α = dot_product_attention(q, k, v; kws...)
+  return flatten_heads(x), α
+end
+
+function dot_product_attention(q::A4, k::A4, v::A4; 
             dropout=nothing, bias=nothing, mask=nothing)
 
-  α = dot_product_attention_weights_native(q, k; dropout, bias, mask)
+  α = dot_product_attention_weights(q, k; dropout, bias, mask)
   # [α] = [kv_len, q_len, num_heads, batch_size]
   
+  # The following permutations and batched_mul are equivalent to
+  # @tullio x[d, h, i, b] := α[j, i, h, b] * v[d, h, j, b]
   vt = permutedims(v, (1, 3, 2, 4))
   x = NNlib.batched_mul(vt, α)
   x = permutedims(x, (1, 3, 2, 4))
@@ -192,10 +194,13 @@ function dot_product_attention_native(q::A4, k::A4, v::A4;
   return x, α
 end
 
-function dot_product_attention_weights_native(q::A4{T}, k::A4{T}; 
+function dot_product_attention_weights(q::A4{T}, k::A4{T}; 
             dropout=nothing, mask=nothing, bias=nothing) where T
 
   q  = q ./ √T(size(q, 1))
+  
+  # The following permutations and batched_mul are equivalent to
+  # @tullio α[j, i, h, b] := q[d, h, i, b] * k[d, h, j, b]
   kt = permutedims(k, (3, 1, 2, 4))
   qt = permutedims(q, (1, 3, 2, 4))
   α = NNlib.batched_mul(kt, qt)
@@ -204,7 +209,11 @@ function dot_product_attention_weights_native(q::A4{T}, k::A4{T};
   if bias !== nothing
     α = α .+ bias
   end
+
   if mask !== nothing
+    if mask === :causal
+      mask = make_causal_mask(α)
+    end
     neginf = typemin(eltype(α))
     α = ifelse.(mask, α, neginf)
   end
@@ -329,15 +338,9 @@ perf(128, 8, 128, 32)
 # tullio
 #   5.475 ms (80 allocations: 7.25 MiB)
 #   13.073 ms (1172 allocations: 18.18 MiB)
-# tullio - 6 threads
-#   4.818 ms (192 allocations: 7.26 MiB)
-#   10.927 ms (1398 allocations: 18.19 MiB)
 # nalib
 #   6.040 ms (91 allocations: 7.75 MiB)
 #   14.542 ms (696 allocations: 16.17 MiB)
-# nalib - 6 threads
-#   7.832 ms (187 allocations: 7.76 MiB)
-#   29.823 ms (988 allocations: 16.19 MiB)
 # native
 #   6.269 ms (90 allocations: 9.25 MiB)
 #   15.492 ms (1250 allocations: 22.19 MiB)
@@ -351,9 +354,16 @@ perf(128, 8, 128, 32)
 #   158.396 μs (443 allocations: 20.06 KiB)
 #   920.633 μs (2308 allocations: 118.78 KiB)
 
-# dim = 2; len = 3; batch_size = 1; num_heads = 1
+# perf(384, 12, 256, 32)
+
+
+# dim, len, batch_size, num_heads = 128, 8, 128, 32;
+# # dim = 384; len = 128; batch_size = 32; num_heads = 12
 # mha = MultiHeadAttention(dim, num_heads)  
 # x = rand(Float32, (dim, len, batch_size))
-# mask = make_causal_mask(x)
-# y, α = mha(x; impl=:tullio, with_weights=true, mask)
+# @btime mha(x, impl=:tullio);
+# @btime mha(x, impl=:native);
+# @profview mha(x, impl=:tullio);
+# @profview [mha(x, impl=:native) for _ in 1:100];
+# y, α = mha(x; impl=:native, with_weights=true, mask)
 # y2, α2 = mha(x; impl=:nalib, with_weights=true, mask=NeuralAttentionlib.CausalMask())
