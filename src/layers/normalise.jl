@@ -432,10 +432,6 @@ function InstanceNorm(chs::Int, λ=identity;
                     affine=false, track_stats=false,
                     ϵ=1f-5, momentum=0.1f0)
 
-  if track_stats
-    Base.depwarn("`track_stats=true` will be removed from InstanceNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :InstanceNorm)
-  end
-
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
   μ = track_stats ? zeros32(chs) : nothing
