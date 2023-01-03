@@ -4,41 +4,55 @@ _isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 """
     Dropout(p; dims=:, rng = default_rng_value())
 
-Dropout layer.
+Layer implementing [dropout](https://arxiv.org/abs/1207.0580) with the given probability.
+This is used as a regularisation, i.e. to reduce overfitting.
 
-While training, for each input, this layer either sets that input to `0` (with probability
-`p`) or scales it by `1 / (1 - p)`. To apply dropout along certain dimension(s), specify the 
-`dims` keyword. e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
-(also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during 
-training.
+While training, it sets each input to `0` (with probability `p`)
+or else scales it by `1 / (1 - p)`, using the [`NNlib.dropout`](@ref) function.
+While testing, it has no effect.
 
-In the forward pass, this layer applies the [`Flux.dropout`](@ref) function. See that for more
-details.
+By defaul the mode will switch automatically, but it can also
+be controlled manually via [`Flux.testmode!`](@ref).
 
-Specify `rng` to use a custom RNG instead of the default.
-Custom RNGs are only supported on the CPU.
+By default every input is treated independently. The `dims` keyword
+instead takes a random choice only along that dimension.
+For example `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
+(also called 2D dropout).
 
-Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
+Keyword `rng` lets you specify a custom random number generator.
+(Only supported on the CPU.)
 
 # Examples
-```jldoctest
-julia> m = Chain(Dense(1 => 1), Dropout(1));
+```julia
+julia> m = Chain(Dense(ones(3,2)), Dropout(0.4))
+Chain(
+  Dense(2 => 3),                        # 9 parameters
+  Dropout(0.4),
+)
 
-julia> Flux.trainmode!(m);
+julia> m(ones(2, 7))  # test mode, no effect
+3×7 Matrix{Float64}:
+ 2.0  2.0  2.0  2.0  2.0  2.0  2.0
+ 2.0  2.0  2.0  2.0  2.0  2.0  2.0
+ 2.0  2.0  2.0  2.0  2.0  2.0  2.0
 
-julia> y = m([1]);
+julia> Flux.trainmode!(m);  # would happen within gradient
 
-julia> y == [0]
-true
+julia> m(ones(2, 7))
+3×7 Matrix{Float64}:
+ 0.0      0.0      3.33333  0.0      0.0      0.0  0.0
+ 3.33333  0.0      3.33333  0.0      3.33333  0.0  3.33333
+ 3.33333  3.33333  0.0      3.33333  0.0      0.0  3.33333
 
-julia> m = Chain(Dense(1000 => 1000), Dropout(0.5));
+julia> y = m(ones(2, 10_000));
 
-julia> Flux.trainmode!(m);
+julia> using Statistics
 
-julia> y = m(ones(1000));
+julia> mean(y)  # is about 2.0, as for test mode
+1.9892222222222182
 
-julia> isapprox(count(==(0), y) / length(y), 0.5, atol=0.1)
-true
+julia> mean(iszero, y)  # is about 0.4
+0.40323333333333333
 ```
 """
 mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
