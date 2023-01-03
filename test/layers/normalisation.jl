@@ -1,4 +1,4 @@
-using Flux, Test, Statistics
+using Flux, Test, Statistics, Random
 using Zygote: pullback, ForwardDiff
 
 evalwgrad(f, x...) = pullback(f, x...)[1]

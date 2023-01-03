@@ -185,6 +185,18 @@ function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, 
     """)
 end
 
+
+function dropout(rng, x, p; dims=:, active::Bool=true)
+  if active
+    NNlib.dropout(rng, x, p; dims)
+  else
+    Base.depwarn("Flux.dropout(...; active=false) is deprecated. Please branch outside the function, or call dropout(x, 0) if you must.", :dropout)
+    return x
+  end
+end
+dropout(x, p; kwargs...) = dropout(NNlib._rng_from_array(x), x, p; kwargs...)
+
+
 # v0.14 deprecations
 
 # Enable these when 0.14 is released, and delete const ClipGrad = Optimise.ClipValue etc: 

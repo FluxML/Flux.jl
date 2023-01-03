@@ -123,7 +123,7 @@ LayerNorm
 InstanceNorm
 GroupNorm
 Flux.normalise
-Flux.dropout
+NNlib.dropout
 ```
 
 ### Test vs. Train
