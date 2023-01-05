@@ -238,6 +238,46 @@ perf(128, 8, 128, 32)
 #   3.166 ms (81 allocations: 9.13 MiB)
 #   16.082 ms (1049 allocations: 20.58 MiB)
 
+## Threadripper, NNlib v0.8.12 
+# tullio
+#   5.658 ms (77 allocations: 7.25 MiB)
+#   22.373 ms (1124 allocations: 16.71 MiB)
+# nalib
+#   6.187 ms (89 allocations: 7.75 MiB)
+#   23.723 ms (604 allocations: 14.70 MiB)
+# nnlib
+#   6.473 ms (87 allocations: 9.25 MiB)
+#   24.966 ms (1055 allocations: 20.71 MiB)
+# tullio - gpu
+#   145.332 μs (520 allocations: 24.52 KiB)
+#   902.020 μs (2221 allocations: 117.19 KiB)
+# nalib - gpu
+#   162.354 μs (410 allocations: 18.03 KiB)
+#   604.111 μs (1263 allocations: 71.78 KiB)
+# nnlib - gpu
+#   156.383 μs (440 allocations: 20.00 KiB)
+#   835.374 μs (1969 allocations: 100.58 KiB)
+
+## Threadripper, NNlib v0.8.13 (fast_maximum)
+# tullio
+#   4.599 ms (71 allocations: 7.13 MiB)
+#   20.699 ms (1118 allocations: 16.59 MiB)
+# nalib
+#   5.049 ms (84 allocations: 7.63 MiB)
+#   22.252 ms (599 allocations: 14.57 MiB)
+# nnlib
+#   5.378 ms (81 allocations: 9.13 MiB)
+#   23.453 ms (1049 allocations: 20.58 MiB)
+# tullio - gpu
+#   145.824 μs (520 allocations: 24.52 KiB)
+#   915.305 μs (2221 allocations: 117.19 KiB)
+# nalib - gpu
+#   164.789 μs (410 allocations: 18.03 KiB)
+#   610.835 μs (1263 allocations: 71.78 KiB)
+# nnlib - gpu
+#   157.785 μs (440 allocations: 20.00 KiB)
+#   852.087 μs (1969 allocations: 100.58 KiB)
+
 
 # function prof()
   # dim, len, batch_size, nheads = 128, 8, 128, 32;
