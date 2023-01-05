@@ -238,8 +238,10 @@ function crossentropy(ŷ::AbstractMatrix, y::AbstractVector{<:Integer}; dims = 
     logits = log.(ŷ .+ ϵ)
     if dims == 1
         ŷgold = NNlib.gather(logits, y, 1:n)
+        ŷgold = reshape(ŷgold, 1, :)
     else
         ŷgold = NNlib.gather(logits, 1:n, y)
+        ŷgold = reshape(ŷgold, :, 1)
     end
     return -agg(ŷgold)
 end

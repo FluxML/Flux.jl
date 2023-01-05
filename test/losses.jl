@@ -59,14 +59,14 @@ y = [123.0,456.0,789.0]
 end
 
 # Now onehot y's
-y = onehotbatch([1, 1, 0, 0], 0:1)
+y = Flux.onehotbatch([1, 1, 0, 0], 0:1)
 y_smoothed = label_smoothing(y, 0.1)
 ŷ = [.1 .9; .9 .1; .9 .1; .1 .9]'
 v = log(.1 / .9)
 logŷ = [v 0.0; 0.0 v; 0.0 v; v 0.0]'
 lossvalue = 1.203972804325936
 lossvalue_smoothed = 1.2039728043259348
-yl = onehotbatch([1], 0:1)
+yl = Flux.onehotbatch([1], 0:1)
 sf = 0.1
 yls = [sf (1-sf)]'  # Effective y after label smoothing
 ylp = [0.9 0.1]'
@@ -75,7 +75,7 @@ logylp = [0.0 v]'
 # Construct `sim`ilar and `dis`imilar versions of the dataset so we can test effect of smoothing
 # smoothing should decrease loss on disimilar and increase the loss on similar, compared to
 # the loss without smoothing
-ya = onehotbatch([1, 1, 1, 0, 0], 0:1)
+ya = Flux.onehotbatch([1, 1, 1, 0, 0], 0:1)
 ya_smoothed = label_smoothing(ya, 2sf)
 y_same = Float32.(ya)
 y_sim = y_same .* (1-2*sf) .+ sf
@@ -95,17 +95,21 @@ y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
 
 
   labels = rand(1:10, 20)
-  y = Flux.onehotbatch(labels, 1:10)
-  ŷ = softmax(randn(Float32, 10, 20), dims=1)
-  l1 = crossentropy(ŷ, y)
-  l2 = crossentropy(ŷ, labels)
+  yc = Flux.onehotbatch(labels, 1:10)
+  ŷc = softmax(randn(Float32, 10, 20), dims=1)
+  l1 = crossentropy(ŷc, yc)
+  l2 = crossentropy(ŷc, labels)
+  @test l1 ≈ l2
+  l1 = crossentropy(ŷc, yc, agg=identity)
+  l2 = crossentropy(ŷc, labels, agg=identity)
+  @test size(l1) == size(l2) == (1, 20)
   @test l1 ≈ l2
 
   labels = rand(1:20, 10)
-  y = Flux.onehotbatch(labels, 1:20)
-  ŷ = softmax(randn(Float32, 10, 20), dims=2)
-  l1 = crossentropy(ŷ, y', dims=2, agg=identity)
-  l2 = crossentropy(ŷ, labels, dims=2, agg=identity)
+  yd = Flux.onehotbatch(labels, 1:20)
+  ŷd = softmax(randn(Float32, 10, 20), dims=2)
+  l1 = crossentropy(ŷd, yd', dims=2, agg=identity)
+  l2 = crossentropy(ŷd, labels, dims=2, agg=identity)
   @test size(l1) == size(l2) == (10, 1)
   @test l1 ≈ l2
 end
@@ -116,17 +120,21 @@ end
   @test logitcrossentropy(logylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*logsoftmax(logylp))
   
   labels = rand(1:10, 20)
-  y = Flux.onehotbatch(labels, 1:10)
-  ŷ = randn(Float32, 10, 20)
-  l1 = logitcrossentropy(ŷ, y)
-  l2 = logitcrossentropy(ŷ, labels)
+  yc = Flux.onehotbatch(labels, 1:10)
+  ŷc = randn(Float32, 10, 20)
+  l1 = logitcrossentropy(ŷc, yc)
+  l2 = logitcrossentropy(ŷc, labels)
+  @test l1 ≈ l2
+  l1 = logitcrossentropy(ŷc, yc, agg=identity)
+  l2 = logitcrossentropy(ŷc, labels, agg=identity)
+  @test size(l1) == size(l2) == (1,20)
   @test l1 ≈ l2
 
   labels = rand(1:20, 10)
-  y = Flux.onehotbatch(labels, 1:20)
-  ŷ = randn(Float32, 10, 20)
-  l1 = logitcrossentropy(ŷ, y', dims=2, agg=identity)
-  l2 = logitcrossentropy(ŷ, labels, dims=2, agg=identity)
+  yd = Flux.onehotbatch(labels, 1:20)
+  ŷd = randn(Float32, 10, 20)
+  l1 = logitcrossentropy(ŷd, yd', dims=2, agg=identity)
+  l2 = logitcrossentropy(ŷd, labels, dims=2, agg=identity)
   @test size(l1) == size(l2) == (10, 1)
   @test l1 ≈ l2
 end
