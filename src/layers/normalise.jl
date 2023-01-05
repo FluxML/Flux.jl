@@ -64,7 +64,10 @@ end
 Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
 
 function Dropout(p::Real; dims=:, rng = default_rng_value())
-  0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expexts 0 ≤ p ≤ 1"))
+  0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expexts 0 ≤ p ≤ 1, got p = $p"))
+  if p isa Integer  # Dropout(0)
+    return p==0 ? identity : zero
+  end
   Dropout(p, dims, nothing, rng)
 end
 
