@@ -202,8 +202,7 @@ RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_
 
 function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,I,H,V,T}
   Wi, Wh, b = m.Wi, m.Wh, m.b
-  σ = NNlib.fast_act(m.σ, x)
-  h = σ.(Wi*x .+ Wh*h .+ b)
+  h = bias_act!(m.σ, Wi*x, muladd(Wh, h, b))
   return h, reshape_cell_output(h, x)
 end
 

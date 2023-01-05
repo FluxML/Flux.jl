@@ -163,7 +163,7 @@ end
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
             init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groups = 1,
             bias = true) where N
-    
+
   weight = convfilter(k, ch; init, groups)
   Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
@@ -195,9 +195,9 @@ conv_dims(c::Conv, x::AbstractArray) =
 ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
 
 function (c::Conv)(x::AbstractArray)
-  σ = NNlib.fast_act(c.σ, x)
   cdims = conv_dims(c, x)
-  σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
+  y = conv(x, c.weight, cdims)
+  bias_act!(c.σ, y, conv_reshape_bias(c))
 end
 
 _channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
@@ -328,9 +328,9 @@ end
 ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
-  σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
-  σ.(∇conv_data(x, c.weight, cdims) .+ conv_reshape_bias(c))
+  y = ∇conv_data(x, c.weight, cdims)
+  bias_act!(c.σ, y, conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::ConvTranspose)
@@ -466,9 +466,9 @@ crosscor_dims(c::CrossCor, x::AbstractArray) =
 ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
 
 function (c::CrossCor)(x::AbstractArray)
-  σ = NNlib.fast_act(c.σ, x)
   cdims = crosscor_dims(c, x)
-  σ.(crosscor(x, c.weight, cdims) .+ conv_reshape_bias(c))
+  y = crosscor(x, c.weight, cdims)
+  bias_act!(c.σ, y, conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::CrossCor)

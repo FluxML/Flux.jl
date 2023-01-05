@@ -167,12 +167,12 @@ end
 
 @functor Dense
 
-function (a::Dense)(x::AbstractVecOrMat)
-  σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(a.weight * x .+ a.bias)
-end
+(a::Dense)(x::AbstractVecOrMat) = bias_act!(a.σ, a.weight * x, a.bias)
 
-(a::Dense)(x::AbstractArray) = 
+(a::Dense{typeof(identity), <:AbstractMatrix, <:AbstractVector})(x::AbstractVecOrMat) =
+  muladd(a.weight, x, a.bias)  # fast path, fuse addition
+
+(a::Dense)(x::AbstractArray) =
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, l::Dense)
@@ -194,7 +194,7 @@ Create an element-wise layer, whose forward pass is given by:
     y = σ.(scale .* x .+ bias)
 
 This uses `.*` instead of matrix multiplication `*` of [`Dense`](@ref).
-    
+
 The learnable scale & bias are initialised `init(size...)` and `zeros32(size...)`,
 with `init=ones32` by default. You may specify the function `init`, 
 turn off trainable bias with `bias=false`, or provide the array(s) explicitly.
@@ -434,7 +434,7 @@ function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
   Z = reshape(Wyx, (d_z, :))
 
   # @einsum out[o,s] := σ(Z[o,i] + b[o])
-  σ.(Z .+ b)
+  bias_act!(σ, Z, b)
 end
 
 (a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
