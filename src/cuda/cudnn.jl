@@ -8,7 +8,7 @@ function (BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}},
   @assert length(BN.β) == size(x, ndims(x)-1) "BatchNorm: input has wrong number of channels"
   return BN.λ.(batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum; 
                   cache=cache, alpha=1, beta=0, eps=BN.ϵ, 
-                  training=Flux._isactive(BN)))
+                  training=Flux._isactive(BN, x)))
 end
 
 function ChainRulesCore.rrule(::typeof(batchnorm), g, b, x, running_mean, running_var, momentum; kw...)
