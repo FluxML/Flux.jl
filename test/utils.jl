@@ -385,18 +385,6 @@ end
     @test_skip typeof(l1.bias) === typeof(l2.bias)
   end
 
-  @testset "loadparams!" begin
-    pars(w, b) = [w, b]
-    pars(l) = pars(l.weight, l.bias)
-    pararray(m) = mapreduce(pars, vcat, m)
-    weights(m) = mapreduce(l -> [l.weight], vcat, m)
-    @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
-      m = dm(bt)
-      Flux.loadparams!(m, params(m))
-      testdense(m, bt)
-    end
-  end
-
   @testset "loadmodel!(dst, src)" begin
     m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
     m2 = Chain(Dense(10, 5), Dense(5, 2))
