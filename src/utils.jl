@@ -36,32 +36,12 @@ epseltype(x) = eps(float(eltype(x)))
 """
     rng_from_array([x])
 
-Create an instance of the RNG most appropriate for `x`.
-The current defaults are:
-- `x isa CuArray`: `CUDA.default_rng()`, else:
-- `x isa AbstractArray`, or no `x` provided:
-  - Julia version is < 1.7: `Random.GLOBAL_RNG`
-  - Julia version is >= 1.7: `Random.default_rng()`
+Create an instance of the RNG most appropriate for array `x`.
+If `x isa CuArray` then this is `CUDA.default_rng()`,
+otherwise `Random.default_rng()`.
 """
-rng_from_array(::AbstractArray) = default_rng_value()
-rng_from_array(::CuArray) = CUDA.default_rng()
+rng_from_array(x::AbstractArray) = NNlib._rng_from_array(x)
 
-@non_differentiable rng_from_array(::Any)
-
-if VERSION >= v"1.7"
-  default_rng_value() = Random.default_rng()
-else
-  default_rng_value() = Random.GLOBAL_RNG
-end
-
-"""
-    default_rng_value()
-
-Create an instance of the default RNG depending on Julia's version.
-- Julia version is < 1.7: `Random.GLOBAL_RNG`
-- Julia version is >= 1.7: `Random.default_rng()`
-"""
-default_rng_value
 
 """
     glorot_uniform([rng = default_rng_value()], size...; gain = 1) -> Array

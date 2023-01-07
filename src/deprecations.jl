@@ -84,8 +84,6 @@ Base.@deprecate_binding ADADelta AdaDelta
 # Remove sub-module Data, while making sure Flux.Data.DataLoader keeps working
 Base.@deprecate_binding Data Flux false "Sub-module Flux.Data has been removed. The only thing it contained may be accessed as Flux.DataLoader"
 
-@deprecate rng_from_array() default_rng_value()
-
 function istraining()
   Base.depwarn("Flux.istraining() is deprecated, use NNlib.within_gradient(x) instead", :istraining)
   false
@@ -185,17 +183,8 @@ function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, 
     """)
 end
 
-
-function dropout(rng, x, p; dims=:, active::Bool=true)
-  if active
-    NNlib.dropout(rng, x, p; dims)
-  else
-    Base.depwarn("Flux.dropout(...; active=false) is deprecated. Please branch outside the function, or call dropout(x, 0) if you must.", :dropout)
-    return x
-  end
-end
-dropout(x, p; kwargs...) = dropout(NNlib._rng_from_array(x), x, p; kwargs...)
-
+@deprecate rng_from_array() default_rng_value()
+@deprecate default_rng_value() Random.default_rng()
 
 # v0.14 deprecations
 
