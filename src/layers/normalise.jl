@@ -1,8 +1,5 @@
-istraining() = false
 
-ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
-
-_isactive(m) = isnothing(m.active) ? istraining() : m.active
+_isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 
 _dropout_shape(s, ::Colon) = size(s)
 _dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
@@ -107,7 +104,7 @@ end
 trainable(a::Dropout) = (;)
 
 function (a::Dropout)(x)
-  _isactive(a) || return x
+  _isactive(a, x) || return x
   return dropout(a.rng, x, a.p; dims=a.dims, active=true)
 end
 
@@ -162,7 +159,7 @@ AlphaDropout(p; rng = default_rng_value()) = AlphaDropout(p, nothing, rng)
 trainable(a::AlphaDropout) = (;)
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
-  _isactive(a) || return x
+  _isactive(a, x) || return x
   p = a.p
   iszero(p) && return x
   isone(p) && return sign.(x) .* T(0)
@@ -242,7 +239,7 @@ end
 function _norm_layer_forward(
   l, x::AbstractArray{T, N}; reduce_dims, affine_shape,
 ) where {T, N}
-  if !_isactive(l) && l.track_stats # testmode with tracked stats
+  if !_isactive(l, x) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)

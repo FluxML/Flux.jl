@@ -86,6 +86,17 @@ Base.@deprecate_binding Data Flux false "Sub-module Flux.Data has been removed. 
 
 @deprecate rng_from_array() default_rng_value()
 
+function istraining()
+  Base.depwarn("Flux.istraining() is deprecated, use NNlib.within_gradient(x) instead", :istraining)
+  false
+end
+ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
+
+function _isactive(m)
+  Base.depwarn("_isactive(m) is deprecated, use _isactive(m,x)", :_isactive, force=true)
+  _isactive(m, 1:0)
+end
+
 #=
   # Valid method in Optimise, old implicit style, is:
   train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())

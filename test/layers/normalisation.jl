@@ -475,5 +475,20 @@ end
   # This was an error, https://github.com/FluxML/Flux.jl/issues/2122
   @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
   @test !iszero(bn.μ)
+
+  # Easy case of 2122, gradient with x
+  x5 = rand(Float32, 5, 3)
+  bn1 = BatchNorm(5, relu)
+  bn2 = BatchNorm(5, relu)
+  g1 = Zygote.gradient(x -> sum(abs2, bn1(x)), x5)[1]
+  g2 = ForwardDiff.gradient(x -> sum(abs2, bn2(x)), x5)
+  @test g1 ≈ g2
+
+  # Harder case? 
+  v1, re1 = Flux.destructure(BatchNorm(5, relu));
+  g1 = Zygote.gradient(v -> sum(abs2, re1(v)(x5)), v1)[1]
+
+  v2, re2 = Flux.destructure(BatchNorm(5, relu));
+  g2 = ForwardDiff.gradient(v -> sum(abs2, re2(v)(x5)), v2)
 end
 
