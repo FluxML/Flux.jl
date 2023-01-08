@@ -514,14 +514,14 @@ to the constructor's keyword `bias=bias`.
 * `bias == true` creates a trainable array of the given size, of the same type as `weights`, initialised to zero.
 * `bias == false` returns `false`, which is understood by AD to be non-differentiable.
 * `bias::AbstractArray` uses the array provided, provided it has the correct size.
-  It does not at present correct the `eltype` to match that of `weights`.
+  It will also correct the `eltype` to match that of `weights`.
 """
 function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
   bias ? fill!(similar(weights, dims...), 0) : false
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
-  bias
+  convert(AbstractArray{eltype(weights)}, bias)
 end
 
 
