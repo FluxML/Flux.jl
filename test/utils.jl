@@ -290,8 +290,8 @@ end
   x32 = rand(Float32, 10)
   @test eltype(m[1].weight) == Float32
   @test eltype(m(x32)) == Float32
-  @test eltype(m(x64)) == Float64
-  @test eltype(f64(m)(x32)) == Float64
+  @test eltype(m(x64)) == Float32  # fixed by _match_eltype
+  @test eltype(f64(m)(x32)) == Float64  # _match_eltype promotes, Julia would too
   @test eltype(f64(m)(x64)) == Float64
   @test eltype(f64(m)[1].weight) == Float64
   @test eltype(f32(f64(m))[1].weight) == Float32

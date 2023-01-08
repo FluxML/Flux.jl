@@ -90,15 +90,6 @@ end
   end
 end
 
-@testset "RNN-input-state-eltypes" begin
-  @testset for R in [RNN, GRU, LSTM, GRUv3]
-    m = R(3 => 5)
-    x = rand(Float64, 3, 1)
-    Flux.reset!(m)
-    @test_throws MethodError m(x)
-  end
-end
-
 @testset "multigate" begin
   x = rand(6, 5)
   res, (dx,) = Flux.withgradient(x) do x
