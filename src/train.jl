@@ -27,7 +27,7 @@ It differs from `Optimisers.setup` in that it:
 
 # Example
 ```jldoctest
-julia> model = Dense(2=>1, leakyrelu; init=Flux.ones32);
+julia> model = Dense(2=>1, leakyrelu; init=ones32);
 
 julia> opt_state = Flux.setup(Momentum(0.1), model)  # this encodes the optimiser and its state
 (weight = Leaf(Momentum{Float64}(0.1, 0.9), Float32[0.0 0.0]), bias = Leaf(Momentum{Float64}(0.1, 0.9), Float32[0.0]), σ = ())
