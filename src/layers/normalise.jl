@@ -11,7 +11,7 @@ While training, it sets each input to `0` (with probability `p`)
 or else scales it by `1 / (1 - p)`, using the [`NNlib.dropout`](@ref) function.
 While testing, it has no effect.
 
-By defaul the mode will switch automatically, but it can also
+By default the mode will switch automatically, but it can also
 be controlled manually via [`Flux.testmode!`](@ref).
 
 By default every input is treated independently. The `dims` keyword
