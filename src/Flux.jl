@@ -2,7 +2,6 @@ module Flux
 
 using Base: tail
 using LinearAlgebra, Statistics, Random  # standard lib
-using Random: default_rng
 using MacroTools, Reexport, ProgressLogging, SpecialFunctions
 using MacroTools: @forward
 

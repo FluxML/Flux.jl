@@ -2,7 +2,7 @@
 _isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 
 """
-    Dropout(p; dims=:, rng = default_rng())
+    Dropout(p; dims=:, rng = default_rng_value())
 
 Layer implementing [dropout](https://arxiv.org/abs/1207.0580) with the given probability.
 This is used as a regularisation, i.e. to reduce overfitting.
@@ -61,9 +61,9 @@ mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng())
+Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
 
-function Dropout(p::Real; dims=:, rng = default_rng())
+function Dropout(p::Real; dims=:, rng = default_rng_value())
   0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expexts 0 ≤ p ≤ 1, got p = $p"))
   if p isa Integer  # Dropout(0)
     return p==0 ? identity : zero
@@ -92,7 +92,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p; rng = default_rng())
+    AlphaDropout(p; rng = default_rng_value())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -126,8 +126,8 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
     new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
-AlphaDropout(p, active) = AlphaDropout(p, active, default_rng())
-AlphaDropout(p; rng = default_rng()) = AlphaDropout(p, nothing, rng)
+AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
+AlphaDropout(p; rng = default_rng_value()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
 trainable(a::AlphaDropout) = (;)

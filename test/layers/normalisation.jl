@@ -56,10 +56,10 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     y = m(x)
     @test count(a->a == 0, y) > 50
 
-    y = Flux.dropout(values(rng_kwargs)..., x, 0.9) # , active=true)
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=true)
     @test count(a->a == 0, y) > 50
 
-    y = Flux.dropout(values(rng_kwargs)..., x, 0.9 * 0) #, active=false)
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=false)
     @test count(a->a == 0, y) == 0
 
     # CPU RNGs map onto CPU ok
