@@ -169,7 +169,8 @@ end
 
 function (a::Dense)(x::AbstractVecOrMat)
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(a.weight * x .+ a.bias)
+  xT = _match_eltype(a, x)  # fixes Float64 input, etc.
+  return σ.(a.weight * xT .+ a.bias)
 end
 
 (a::Dense)(x::AbstractArray) = 

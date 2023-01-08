@@ -200,10 +200,11 @@ end
 RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) =
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {F,I,H,V,T}
+function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {F,I,H,V,T}
   Wi, Wh, b = m.Wi, m.Wh, m.b
   σ = NNlib.fast_act(m.σ, x)
-  h = σ.(Wi*x .+ Wh*h .+ b)
+  xT = _match_eltype(m, T, x)
+  h = σ.(Wi*xT .+ Wh*h .+ b)
   return h, reshape_cell_output(h, x)
 end
 
@@ -305,9 +306,10 @@ function LSTMCell((in, out)::Pair;
   return cell
 end
 
-function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{T},OneHotArray}) where {I,H,V,T}
+function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,T}
   b, o = m.b, size(h, 1)
-  g = muladd(m.Wi, x, muladd(m.Wh, h, b))
+  xT = _match_eltype(m, T, x)
+  g = muladd(m.Wi, xT, muladd(m.Wh, h, b))
   input, forget, cell, output = multigate(g, o, Val(4))
   c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
   h′ = @. sigmoid_fast(output) * tanh_fast(c′)
@@ -376,9 +378,10 @@ end
 GRUCell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
-function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {I,H,V,T}
+function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,T}
   Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
-  gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
+  xT = _match_eltype(m, T, x)
+  gxs, ghs, bs = multigate(Wi*xT, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
   h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
   h′ = @. (1 - z) * h̃ + z * h
@@ -444,9 +447,10 @@ GRUv3Cell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = 
   GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3),
             init(out, out), init_state(out,1))
 
-function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{T},OneHotArray}) where {I,H,V,HH,T}
+function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,HH,T}
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
-  gxs, ghs, bs = multigate(Wi*x, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
+  xT = _match_eltype(m, T, x)
+  gxs, ghs, bs = multigate(Wi*xT, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
   r, z = _gru_output(gxs, ghs, bs)
   h̃ = tanh_fast.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
   h′ = @. (1 - z) * h̃ + z * h

@@ -89,6 +89,23 @@ import Flux: activations
       @test Dense(10, 2, identity, init = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
       @test Dense(10, 2, identity, init = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
     end
+    @testset "type matching" begin
+       d1 = Dense(2 => 3)
+       d2 = Dense(d1.weight, false)
+       x1 = randn(Float32, 2, 4)
+       @test d1(x1) ≈ d2(x1) ≈ d1.weight * x1
+       x2 = Float64.(x1)
+       @test d1(x2) ≈ d2(x2) ≈ d1.weight * x2
+       @test d1(x2) isa Array{Float32}  # tests _match_eltype, will print a warning
+       @test d2(x2) isa Array{Float32}
+
+       x3 = rand(-5:5, 2, 4)
+       @test d1(x3) ≈ d2(x3) ≈ d1.weight * x3
+       x4 = rand(Bool, 2, 4)
+       @test d1(x4) ≈ d2(x4) ≈ d1.weight * x4
+       x5 = Flux.onehotbatch(rand(Bool, 5), (true, false))
+       @test d1(x5) ≈ d2(x5) ≈ d1.weight * x5
+     end
   end
 
   @testset "Scale" begin

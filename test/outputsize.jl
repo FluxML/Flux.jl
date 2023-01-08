@@ -257,3 +257,10 @@ end
   # Can't let |> gpu act before the arrays are materialized... so it's an error: 
   @test_throws ErrorException @eval @autosize (1,2,3) Dense(_=>2) |> f64
 end
+
+@testset "type matching" begin
+  # Check that _match_eltype doesn't replace this with an array of Float32:
+  @test Flux._match_eltype(Dense(2=>3), fill(Flux.Nil(),2,4)) isa Matrix{Flux.Nil}
+  # For RNN etc there's a special path:
+  @test RNN(2=>3)(fill(Flux.Nil(),2,4)) isa Matrix{Flux.Nil}
+end
