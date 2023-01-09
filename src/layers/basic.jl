@@ -158,6 +158,10 @@ struct Dense{F, M<:AbstractMatrix, B}
     b = create_bias(W, bias, size(W,1))
     new{F,M,typeof(b)}(W, b, σ)
   end
+
+  function Dense(W::M, bias::N, σ::F = identity) where {M<:AbstractMatrix, N<:AbstractArray, F}
+    new{F, M, N}(W, bias, σ)
+  end
 end
 
 function Dense((in, out)::Pair{<:Integer, <:Integer}, σ = identity;
