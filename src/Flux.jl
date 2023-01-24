@@ -21,7 +21,7 @@ Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zyg
 export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion,
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
-       AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
+       AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, GlobalLPNormPool, MaxPool, MeanPool, LPNormPool,
        Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
        Upsample, PixelShuffle,
        fmap, cpu, gpu, f32, f64, rand32, randn32, zeros32, ones32,
