@@ -595,10 +595,6 @@ function (g::GlobalMaxPool)(x)
   return maxpool(x, pdims)
 end
 
-function Base.show(io::IO, g::GlobalMaxPool)
-  print(io, "GlobalMaxPool()")
-end
-
 """
     GlobalMeanPool()
 
@@ -629,12 +625,8 @@ function (g::GlobalMeanPool)(x)
   return meanpool(x, pdims)
 end
 
-function Base.show(io::IO, g::GlobalMeanPool)
-  print(io, "GlobalMeanPool()")
-end
-
 """
-    GlobalLPNormPool
+    GlobalLPNormPool(p::Float64)
 
 Global lp norm pooling layer.
 
@@ -646,14 +638,14 @@ See also [`LPNormPool`](@ref).
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50)
 
-julia> m = Chain(Conv((3,3), 3 => 7), GlobalLPNormPool())
+julia> m = Chain(Conv((3,3), 3 => 7), GlobalLPNormPool(2.0))
 
 julia> m(xs) |> size
 (1, 1, 7, 50)
 ```
 """
 struct GlobalLPNormPool
-  p::Number
+  p::Float64
 end
 
 function (g::GlobalLPNormPool)(x)
@@ -661,10 +653,6 @@ function (g::GlobalLPNormPool)(x)
   k = x_size[1:end-2]
   pdims = PoolDims(x, k)
   return lpnormpool(x, pdims; p=g.p)
-end
-
-function Base.show(io::IO, g::GlobalLPNormPool)
-  print(io, "GlobalLPNormPool(p=", g.p, ")")
 end
 
 """
@@ -790,7 +778,7 @@ function Base.show(io::IO, m::MeanPool)
 end
 
 """
-    LPNormPool(window::NTuple, p::Number; pad=0, stride=window)
+    LPNormPool(window::NTuple, p::Float64; pad=0, stride=window)
 
 Lp norm pooling layer, calculating p-norm distance for each window,
 also known as LPPool in pytorch.
@@ -802,14 +790,15 @@ By default the window size is also the stride in each dimension.
 The keyword `pad` accepts the same options as for the `Conv` layer,
 including `SamePad()`.
 
-See also [`Conv`](@ref), [`MaxPool`](@ref), [`GlobalLPNormPool`](@ref).
+See also [`Conv`](@ref), [`MaxPool`](@ref), [`GlobalLPNormPool`](@ref),
+[`pytorch LPPool`](https://pytorch.org/docs/stable/generated/torch.nn.LPPool2d.html).
 
 # Examples
 
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
-julia> m = Chain(Conv((5,5), 3 => 7), LPNormPool((5,5), 2; pad=SamePad()))
+julia> m = Chain(Conv((5,5), 3 => 7), LPNormPool((5,5), 2.0; pad=SamePad()))
 Chain(
   Conv((5, 5), 3 => 7),                 # 532 parameters
   LPNormPool((5, 5), p=2, pad=2),
@@ -821,7 +810,7 @@ julia> m[1](xs) |> size
 julia> m(xs) |> size
 (20, 20, 7, 50)
 
-julia> layer = LPNormPool((5,), 2, pad=2, stride=(3,))  # one-dimensional window
+julia> layer = LPNormPool((5,), 2.0, pad=2, stride=(3,))  # one-dimensional window
 LPNormPool((5,), p=2, pad=2, stride=3)
 
 julia> layer(rand(Float32, 100, 7, 50)) |> size
@@ -830,12 +819,12 @@ julia> layer(rand(Float32, 100, 7, 50)) |> size
 """
 struct LPNormPool{N,M}
   k::NTuple{N,Int}
-  p::Number
+  p::Float64
   pad::NTuple{M,Int}
   stride::NTuple{N,Int}
 end
 
-function LPNormPool(k::NTuple{N,Integer}, p::Number; pad = 0, stride = k) where N
+function LPNormPool(k::NTuple{N,Integer}, p::Float64; pad = 0, stride = k) where N
   stride = expand(Val(N), stride)
   pad = calc_padding(LPNormPool, pad, k, 1, stride)
   return LPNormPool(k, p, pad, stride)
@@ -847,7 +836,7 @@ function (l::LPNormPool)(x)
 end
 
 function Base.show(io::IO, l::LPNormPool)
-  print(io, "LPNormPool(", l.k, ", p=", l.p)
+  print(io, "LPNormPool(", l.k, ", ", l.p)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
   l.stride == l.k || print(io, ", stride=", _maybetuple_string(l.stride))
   print(io, ")")
