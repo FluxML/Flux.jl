@@ -74,13 +74,7 @@ end
 @functor Dropout
 trainable(a::Dropout) = (;)
 
-function (a::Dropout)(x)
-  if _isactive(a, x) && a.p != 0
-    dropout(a.rng, x, a.p; dims=a.dims)
-  else
-    x
-  end
-end
+(a::Dropout)(x) = dropout(a.rng, x, a.p * _isactive(a, x); dims=a.dims)
 
 testmode!(m::Dropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
