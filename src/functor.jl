@@ -225,6 +225,7 @@ paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
 
 Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).
 Recurses into structs marked with [`@functor`](@ref).
+See also [`f64`](@ref) and [`f16`](@ref).
 """
 f32(m) = paramtype(Float32, m)
 
@@ -235,6 +236,32 @@ Converts the `eltype` of model's parameters to `Float64`.
 Recurses into structs marked with [`@functor`](@ref).
 """
 f64(m) = paramtype(Float64, m)
+
+"""
+    f16(m)
+
+Converts the `eltype` of model's parameters to `Float16`.
+Recurses into structs marked with [`@functor`](@ref).
+
+Support for `Float16` is limited on many CPUs. Julia may
+convert to `Float32` for each operation, which is slow.
+
+# Example
+```jldoctest
+julia> m = Chain(Dense(784, 2048, relu), Dense(2048, 10))
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 6.211 MiB.
+
+julia> m |> f16  # takes half the memory
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
+```
+"""
+f16(m) = paramtype(Float16, m)
 
 # Functors for certain Julia data structures
 @functor Cholesky
