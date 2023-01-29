@@ -273,7 +273,7 @@ julia> dataset = BostonHousing();
 
 julia> x, y = BostonHousing(as_df=false)[:];
 
-julia> x, y = Float32.(x), Float32.(y)
+julia> x, y = Float32.(x), Float32.(y);
 ```
 
 We can now split the obtained data into training and testing data -
