@@ -2,7 +2,7 @@
 _isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 
 """
-    Dropout(p; dims=:, rng = default_rng_value())
+    Dropout(p; [dims, rng])
 
 Layer implementing [dropout](https://arxiv.org/abs/1207.0580) with the given probability.
 This is used as a regularisation, i.e. to reduce overfitting.
@@ -14,8 +14,8 @@ While testing, it has no effect.
 By default the mode will switch automatically, but it can also
 be controlled manually via [`Flux.testmode!`](@ref).
 
-By default every input is treated independently. The `dims` keyword
-instead takes a random choice only along that dimension.
+By default every input is treated independently. With the `dims` keyword,
+instead it takes a random choice only along that dimension.
 For example `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
 (also called 2D dropout).
 
@@ -64,10 +64,7 @@ end
 Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
 
 function Dropout(p::Real; dims=:, rng = default_rng_value())
-  0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expexts 0 ≤ p ≤ 1, got p = $p"))
-  if p isa Integer  # Dropout(0)
-    return p==0 ? identity : zero
-  end
+  0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
   Dropout(p, dims, nothing, rng)
 end
 
