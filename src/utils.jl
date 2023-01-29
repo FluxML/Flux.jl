@@ -468,9 +468,6 @@ identity_init(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (args...;k
 
 ChainRulesCore.@non_differentiable identity_init(::Any...)
 
-ones32(dims::Integer...) = Base.ones(Float32, dims...)
-zeros32(dims::Integer...) = Base.zeros(Float32, dims...)
-
 """
     ones32(size...) = ones(Float32, size...)
 
