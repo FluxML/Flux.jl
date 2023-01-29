@@ -16,7 +16,7 @@ true
 
 julia> m = Chain(Dense(10 => 5, tanh), Dense(5 => 2));
 
-julia> x = rand(10, 32);
+julia> x = rand32(10, 32);
 
 julia> m(x) == m[2](m[1](x))
 true
@@ -132,11 +132,11 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 julia> d = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
 
-julia> d(rand(Float32, 5, 64)) |> size
+julia> d(rand32(5, 64)) |> size
 (2, 64)
 
-julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimensions
-(2, 1, 1, 64)
+julia> d(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
+(2, 6, 4, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5 => 2, tanh; bias=false)  # 10 parameters
@@ -476,7 +476,7 @@ julia> model = Chain(Dense(3 => 5),
                      Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
                      Dense(8 => 17));
 
-julia> model(rand(3)) |> size
+julia> model(rand32(3)) |> size
 (17,)
 
 julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
@@ -486,10 +486,10 @@ Parallel(
   β = Dense(5 => 2),                    # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
-julia> model2(rand(10), rand(5)) |> size
+julia> model2(rand32(10), rand32(5)) |> size
 (2,)
 
-julia> model2[:α](rand(10)) |> size
+julia> model2[:α](rand32(10)) |> size
 (2,)
 
 julia> model2[:β] == model2[2]

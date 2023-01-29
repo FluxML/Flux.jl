@@ -22,7 +22,7 @@ See also [`Conv`](@ref), [`MaxPool`](@ref).
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of images
+julia> xs = rand32(100, 100, 3, 50);  # a batch of images
 
 julia> layer = Conv((2,2), 3 => 7, pad=SamePad())
 Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0))  # 91 parameters
@@ -96,7 +96,7 @@ See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50); # a batch of images
+julia> xs = rand32(100, 100, 3, 50); # a batch of 50 RGB images
 
 julia> layer = Conv((5,5), 3 => 7, relu; bias = false)
 Conv((5, 5), 3 => 7, relu, bias=false)  # 525 parameters
@@ -238,7 +238,7 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
+julia> xs = rand32(100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> layer = ConvTranspose((5,5), 3 => 7, relu)
 ConvTranspose((5, 5), 3 => 7, relu)  # 532 parameters

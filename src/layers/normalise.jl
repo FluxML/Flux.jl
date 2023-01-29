@@ -96,7 +96,7 @@ Does nothing to the input once [`testmode!`](@ref) is true.
 ```jldoctest
 julia> using Statistics
 
-julia> x = randn(1000,1);
+julia> x = randn32(1000,1);
 
 julia> m = Chain(Dense(1000 => 1000, selu), AlphaDropout(0.2));
 
