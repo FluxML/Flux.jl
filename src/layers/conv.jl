@@ -420,6 +420,8 @@ struct CrossCor{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
+_channels_in(l::CrossCor) = size(l.weight, ndims(l.weight)-1)
+
 """
     CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
