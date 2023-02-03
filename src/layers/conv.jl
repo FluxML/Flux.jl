@@ -195,6 +195,7 @@ conv_dims(c::Conv, x::AbstractArray) =
 ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
 
 function (c::Conv)(x::AbstractArray)
+  _size_check(c, x, ndims(x)-1 => _channels_in(c))
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_dims(c, x)
   xT = _match_eltype(c, x)
@@ -329,6 +330,7 @@ end
 ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
+  _size_check(c, x, ndims(x)-1 => _channels_in(c))
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
   xT = _match_eltype(c, x)
@@ -468,6 +470,7 @@ crosscor_dims(c::CrossCor, x::AbstractArray) =
 ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
 
 function (c::CrossCor)(x::AbstractArray)
+  _size_check(c, x, ndims(x)-1 => _channels_in(c))
   σ = NNlib.fast_act(c.σ, x)
   cdims = crosscor_dims(c, x)
   xT = _match_eltype(c, x)

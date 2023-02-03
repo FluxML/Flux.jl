@@ -188,7 +188,14 @@ LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]
 
 @functor LayerNorm
 
-(a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
+function (a::LayerNorm)(x::AbstractArray)
+  ChainRulesCore.@ignore_derivatives if a.diag isa Scale
+    for d in 1:ndims(a.diag.scale)
+      _size_check(a, x, d => size(a.diag.scale, d))
+    end
+  end
+  a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
+end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", join(l.size, ", "))
@@ -318,9 +325,8 @@ end
 @functor BatchNorm
 trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
 
-function (BN::BatchNorm)(x)
-  @assert size(x, ndims(x)-1) == BN.chs
-  N = ndims(x)
+function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
+  _size_check(BN, x, N-1 => BN.chs)
   reduce_dims = [1:N-2; N]
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
@@ -408,10 +414,8 @@ end
 @functor InstanceNorm
 trainable(in::InstanceNorm) = hasaffine(in) ? (β = in.β, γ = in.γ) : (;)
 
-function (l::InstanceNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == l.chs
-  N = ndims(x)
+function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
+  _size_check(l, x, N-1 => l.chs)
   reduce_dims = 1:N-2
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   return _norm_layer_forward(l, x; reduce_dims, affine_shape)
@@ -511,13 +515,10 @@ end
             nothing, chs)
 end
 
-function (gn::GroupNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == gn.chs
-  N = ndims(x)
+function (gn::GroupNorm)(x::AbstractArray{T,N}) where {T,N}
+  _size_check(gn, x, N-1 => gn.chs)
   sz = size(x)
   x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
-  N = ndims(x)
   reduce_dims = 1:N-2
   affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
   x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)

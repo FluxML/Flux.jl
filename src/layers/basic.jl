@@ -168,13 +168,16 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
+  _size_check(a, x, 1 => size(a.weight, 2))
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
   xT = _match_eltype(a, x)  # fixes Float64 input, etc.
   return σ.(a.weight * xT .+ a.bias)
 end
 
-(a::Dense)(x::AbstractArray) = 
+function (a::Dense)(x::AbstractArray)
+  _size_check(a, x, 1 => size(a.weight, 2))
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+end
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
@@ -185,6 +188,12 @@ end
 
 Dense(W::LinearAlgebra.Diagonal, bias = true, σ = identity) =
   Scale(W.diag, bias, σ)
+
+function _size_check(layer, x::AbstractArray, (d, n)::Pair)
+  size(x, d) == n || throw(DimensionMismatch(string("layer ", layer,
+    " expects size(x, $d) == $n, but got x = ", summary(x))))
+end
+ChainRulesCore.@non_differentiable _size_check(::Any...)
 
 """
     Scale(size::Integer..., σ=identity; bias=true, init=ones32)
