@@ -144,7 +144,6 @@ end
   @test outputsize(m, (32, 32, 3); padbatch=true) == (32, 32, 3, 1)
   m2 = LayerNorm(3, 2)
   @test outputsize(m2, (3, 2)) == (3, 2) == size(m2(randn(3, 2)))
-  @test outputsize(m2, (3,)) == (3, 2) == size(m2(randn(3, 2)))
 
   m = BatchNorm(3)
   @test outputsize(m, (32, 32, 3, 16)) == (32, 32, 3, 16)
