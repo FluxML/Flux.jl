@@ -1,6 +1,6 @@
 # Flux Release Notes
 
-## v0.13.8
+## v0.13.12
 * CUDA.jl 4.0 compatibility.
 
 ## v0.13.7
