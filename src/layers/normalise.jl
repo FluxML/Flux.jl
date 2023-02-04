@@ -515,14 +515,15 @@ end
             nothing, chs)
 end
 
-function (gn::GroupNorm)(x::AbstractArray{T,N}) where {T,N}
-  _size_check(gn, x, N-1 => gn.chs)
+function (gn::GroupNorm)(x::AbstractArray)
+  _size_check(gn, x, ndims(x)-1 => gn.chs) 
   sz = size(x)
-  x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
+  x2 = reshape(x, sz[1:end-2]..., sz[end-1]÷gn.G, gn.G, sz[end])
+  N = ndims(x2)  # == ndims(x)+1
   reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
-  x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
-  return reshape(x, sz)
+  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x2, i) : 1, N)
+  x3 = _norm_layer_forward(gn, x2; reduce_dims, affine_shape)
+  return reshape(x3, sz)
 end
 
 testmode!(m::GroupNorm, mode = true) =
