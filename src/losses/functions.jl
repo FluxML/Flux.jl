@@ -95,8 +95,8 @@ julia> Flux.huber_loss(ŷ, 1:3, δ=0.05)  # changes behaviour as |ŷ - y| > δ
 function huber_loss(ŷ, y; agg = mean, δ = ofeltype(ŷ, 1))
    _check_sizes(ŷ, y)
    abs_error = abs.(ŷ .- y)
-   #TODO: remove dropgrad when Zygote can handle this function with CuArrays
-   temp = Zygote.dropgrad(abs_error .<  δ)
+   #TODO: remove ignore_derivatives when Zygote can handle this function with CuArrays
+   temp = Zygote.ignore_derivatives(abs_error .<  δ)
    x = ofeltype(ŷ, 0.5)
    agg(((abs_error .^ 2) .* temp) .* x .+ δ * (abs_error .- x * δ) .* (1 .- temp))
 end

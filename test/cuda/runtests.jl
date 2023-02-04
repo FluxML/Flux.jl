@@ -11,7 +11,7 @@ include("cuda.jl")
 include("losses.jl")
 include("layers.jl")
 
-if CUDA.has_cudnn()
+if CUDA.functional()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")
