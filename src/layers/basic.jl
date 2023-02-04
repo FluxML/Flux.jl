@@ -190,8 +190,10 @@ Dense(W::LinearAlgebra.Diagonal, bias = true, σ = identity) =
   Scale(W.diag, bias, σ)
 
 function _size_check(layer, x::AbstractArray, (d, n)::Pair)
+  d > 0 || throw(DimensionMismatch(string("layer ", layer,
+    " expects ndims(input) > ", ndims(x)-d, ", but got ", summary(x))))
   size(x, d) == n || throw(DimensionMismatch(string("layer ", layer,
-    " expects size(x, $d) == $n, but got x = ", summary(x))))
+    " expects size(input, $d) == $n, but got ", summary(x))))
 end
 ChainRulesCore.@non_differentiable _size_check(::Any...)
 
