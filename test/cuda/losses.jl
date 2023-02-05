@@ -1,6 +1,5 @@
 using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy, binary_focal_loss, focal_loss
 
-
 @testset "Losses" begin
 
 x = [1.,2.,3.]
@@ -26,13 +25,32 @@ y = [1  0  0  0  1
      0  0  1  0  0]
 @test focal_loss(x, y) ≈ focal_loss(gpu(x), gpu(y))
 
-@testset "GPU grad tests" begin
-  x = rand(Float32, 3,3)
-  y = rand(Float32, 3,3)
+@testset "GPU ssim tests" begin
+  for N=1:3
+      @testset "num_dims=$N" begin
+          x = rand(Float32, 16*ones(Int, N)..., 2, 2)
+          y = rand(Float32, 16*ones(Int, N)..., 2, 2)
+          
+          for f in (Flux.ssim, Flux.ssim_loss, Flux.ssim_loss_fast)
+              @test f(x, y) ≈ f(gpu(x), gpu(y)) 
+              gpu_autodiff_test(f, x, y)
+          end
 
-  for loss in ALL_LOSSES
-    gpu_autodiff_test(loss, x, y)
+          x = gpu(x)
+          @test Flux.ssim(x, x) ≈ 1
+          @test Flux.ssim_loss(x, x) ≈ 0
+          @test Flux.ssim_loss_fast(x, x) ≈ 0
+      end
   end
+end
+
+@testset "GPU grad tests" begin
+    x = rand(Float32, 3,3)
+    y = rand(Float32, 3,3)
+
+    for loss in ALL_LOSSES
+        gpu_autodiff_test(loss, x, y)
+    end
 end
 
 end #testset
