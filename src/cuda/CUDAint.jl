@@ -4,6 +4,7 @@ import ..Flux: Flux
 using Flux: FluxCPUAdaptor
 using ChainRulesCore
 using CUDA
+import cuDNN
 using Random
 import NNlib, NNlibCUDA
 using Functors
