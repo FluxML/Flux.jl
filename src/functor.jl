@@ -94,52 +94,22 @@ end
 # From @macroexpand Zygote.@nograd params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
 Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
-struct FluxCUDAAdaptor end
-adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
-adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
-if VERSION >= v"1.7"
-  adapt_storage(to::FluxCUDAAdaptor, x::Random.TaskLocalRNG) = CUDA.default_rng()
-else
-  adapt_storage(to::FluxCUDAAdaptor, x::Random._GLOBAL_RNG) = CUDA.default_rng()
-end
-adapt_storage(to::FluxCUDAAdaptor, x::CUDA.RNG) = x
-adapt_storage(to::FluxCUDAAdaptor, x::AbstractRNG) =
-  error("Cannot map RNG of type $(typeof(x)) to GPU. GPU execution only supports Random.default_rng().")
-
-# TODO: figure out the correct design for OneElement
-adapt_storage(to::FluxCUDAAdaptor, x::Zygote.OneElement) = CUDA.cu(collect(x))
-
 struct FluxCPUAdaptor end
 
 # define rules for handling structured arrays
 adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
-adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::Zygote.OneElement) = x
 adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
-adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
-function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)))
-end
 
 # The following rrules for adapt are here to avoid double wrapping issues
 # as seen in https://github.com/FluxML/Flux.jl/pull/2117#discussion_r1027321801
 
-ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AnyCuArray) =
-  adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCUDAAdaptor(), unthunk(Δ)))
-
 ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
   adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
-
-ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AnyCuArray) =
-  adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
-
-ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AbstractArray) =
-  adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCPUAdaptor(), unthunk(Δ)))
-
 
 # CPU/GPU movement conveniences
 
@@ -175,6 +145,7 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
+
 """
     gpu(x)
 
@@ -198,21 +169,7 @@ julia> typeof(m_gpu.W) # notice the type of the array changed to a CuArray
 CuArray{Float32, 2}
 ```
 """
-function gpu(x)
-  check_use_cuda()
-  use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
-end
-
-function check_use_cuda()
-  if use_cuda[] === nothing
-    use_cuda[] = CUDA.functional()
-    if !(use_cuda[])
-      @info """The GPU function is being called but the GPU is not accessible. 
-               Defaulting back to the CPU. (No action is required if you want to run on the CPU).""" maxlog=1
-    end
-  end
-end
-ChainRulesCore.@non_differentiable check_use_cuda()
+function gpu end  # defined in the CUDAint sub-module
 
 # Precision
 

@@ -1,6 +1,6 @@
 using Flux, Test
-using Flux.CUDA
 using Flux: cpu, gpu
+using CUDA
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky
 using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray

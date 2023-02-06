@@ -44,7 +44,6 @@ The current defaults are:
   - Julia version is >= 1.7: `Random.default_rng()`
 """
 rng_from_array(::AbstractArray) = default_rng_value()
-rng_from_array(::CuArray) = CUDA.default_rng()
 
 @non_differentiable rng_from_array(::Any)
 

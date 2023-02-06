@@ -42,7 +42,6 @@ include("train.jl")
 using .Train
 using .Train: setup
 
-using CUDA
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
 using Adapt, Functors, OneHotArrays
@@ -70,6 +69,8 @@ using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
 
 include("deprecations.jl")
 
-include("cuda/cuda.jl")
+include("cuda/CUDAint.jl")
+using .CUDAint
+
 
 end # module

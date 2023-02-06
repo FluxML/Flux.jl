@@ -22,11 +22,13 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [compat]
 Adapt = "3.0"
 CUDA = "3, 4"
 ChainRulesCore = "1.12"
+cuDNN = "1.0.1"
 Functors = "0.3, 0.4"
 MLUtils = "0.2, 0.3.1, 0.4"
 MacroTools = "0.5"
