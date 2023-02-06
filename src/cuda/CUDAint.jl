@@ -6,6 +6,7 @@ using ChainRulesCore
 using CUDA
 using Random
 import NNlib, NNlibCUDA
+using Functors
 using Adapt
 import Adapt: adapt_storage
 import Zygote

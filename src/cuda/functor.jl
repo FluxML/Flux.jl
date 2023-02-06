@@ -64,16 +64,16 @@ CuArray{Float32, 2}
 """
 function Flux.gpu(x)
   check_use_cuda()
-  use_cuda[] ? fmap(x -> adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
+  Flux.use_cuda[] ? fmap(x -> adapt(FluxCUDAAdaptor(), x), x; exclude = Flux._isleaf) : x
 end
 
 function check_use_cuda()
-  if use_cuda[] === nothing
-    use_cuda[] = CUDA.functional()
-    if use_cuda[] && !cuDNN.has_cudnn()
+  if Flux.use_cuda[] === nothing
+    Flux.use_cuda[] = CUDA.functional()
+    if Flux.use_cuda[] && !cuDNN.has_cudnn()
       @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
     end
-    if !(use_cuda[])
+    if !(Flux.use_cuda[])
       @info """The GPU function is being called but the GPU is not accessible. 
                Defaulting back to the CPU. (No action is required if you want to run on the CPU).""" maxlog=1
     end
