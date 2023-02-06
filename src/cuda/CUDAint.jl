@@ -10,8 +10,6 @@ using Adapt
 import Adapt: adapt_storage
 import Zygote
 
-export gpu
-
 include("utils.jl")
 include("functor.jl")
 include("cudnn.jl")
