@@ -36,7 +36,7 @@ julia> m(ones(2, 7))  # test mode, no effect
  2.0  2.0  2.0  2.0  2.0  2.0  2.0
  2.0  2.0  2.0  2.0  2.0  2.0  2.0
 
-julia> Flux.trainmode!(m);  # would happen within gradient
+julia> Flux.trainmode!(m);  # equivalent to use within gradient
 
 julia> m(ones(2, 7))
 3×7 Matrix{Float64}:
@@ -48,11 +48,11 @@ julia> y = m(ones(2, 10_000));
 
 julia> using Statistics
 
-julia> mean(y)  # is about 2.0, as for test mode
-1.9892222222222182
+julia> mean(y)  # is about 2.0, same as in test mode
+1.9989999999999961
 
 julia> mean(iszero, y)  # is about 0.4
-0.40323333333333333
+0.4003
 ```
 """
 mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
@@ -96,7 +96,7 @@ Does nothing to the input once [`testmode!`](@ref) is true.
 ```jldoctest
 julia> using Statistics
 
-julia> x = randn(1000,1);
+julia> x = randn32(1000,1);
 
 julia> m = Chain(Dense(1000 => 1000, selu), AlphaDropout(0.2));
 

@@ -173,6 +173,16 @@ for (fn, Dims) in ((:conv, DenseConvDims),)
   end
 end
 
+# Recurrent layers: just convert to the type they like & convert back.
+
+for Cell in [:RNNCell, :LSTMCell, :GRUCell, :GRUv3Cell]
+  @eval function (m::Recur{<:$Cell})(x::AbstractArray{Nil})
+    xT = fill!(similar(m.cell.Wi, size(x)), 0)
+    _, y = m.cell(m.state, xT)  # discard the new state
+    return similar(x, size(y))
+  end
+end
+
 
 """
     @autosize (size...,) Chain(Layer(_ => 2), Layer(_), ...)
@@ -229,7 +239,6 @@ Limitations:
 * While `@autosize (5, 32) Flux.Bilinear(_ => 7)` is OK, something like `Bilinear((_, _) => 7)` will fail.
 * While `Scale(_)` and `LayerNorm(_)` are fine (and use the first dimension), `Scale(_,_)` and `LayerNorm(_,_)`
   will fail if `size(x,1) != size(x,2)`.
-* RNNs won't work: `@autosize (7, 11) LSTM(_ => 5)` fails, because `outputsize(RNN(3=>7), (3,))` also fails, a known issue.
 """
 macro autosize(size, model)
   Meta.isexpr(size, :tuple) || error("@autosize's first argument must be a tuple, the size of the input")
