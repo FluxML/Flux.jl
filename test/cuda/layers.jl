@@ -290,3 +290,39 @@ end
     @test gpu(m).rng isa CUDA.RNG
   end
 end
+
+@testset "Misc. Float16" begin
+  x = randn(Float16, 3, 4)
+  gx = gpu(x)
+
+  # Dense
+  m1 = f16(Dense(3 => 4, tanh))
+  gm1 = gpu(m1)
+
+  y1, back1 = Zygote.pullback(|>, x, m1)
+  gy1, gback1 = Zygote.pullback(|>, gx, gm1)
+
+  @test y1 ≈ m1(x) ≈ cpu(gy1)
+  @test eltype(y1) == eltype(m1(x)) == eltype(gy1) == Float16
+
+  @test back1(one.(y1))[2].weight ≈ cpu(gback1(one.(gy1))[2].weight)
+  @test eltype(gback1(one.(gy1))[2].bias) == Float16
+
+  # A fake loss with Float32
+  f1(x) = sum((Float32.(x) .- 1).^2)
+  @test gradient(f1, x)[1] ≈ cpu(gradient(f1, gx)[1])
+  @test eltype(gradient(f1, gx)[1]) == Float16
+
+  # Normalisation
+  m2 = Chain(LayerNorm(3), Dropout(0.1)) |> f16
+  gm2 = m2 |> gpu
+  @test m2(x) ≈ cpu(gm2(gx))
+  @test_broken eltype(m2(x)) == Float16  # LayerNorm's ϵ=1.0f-5 is the problem
+  @test_broken eltype(gm2(gx)) == Float16
+
+  # Pooling
+  for pool in [MaxPool((2,)), MeanPool((2,))]
+    pool(reshape(x,3,4,1)) ≈ cpu(pool(reshape(gx,3,4,1)))
+    @test eltype(pool(reshape(gx,3,4,1))) == Float16
+  end
+end
