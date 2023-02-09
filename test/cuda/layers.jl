@@ -317,8 +317,8 @@ end
   m2 = Chain(LayerNorm(3), Dropout(0.1)) |> f16
   gm2 = m2 |> gpu
   @test m2(x) ≈ cpu(gm2(gx))
-  @test_broken eltype(m2(x)) == Float16  # LayerNorm's ϵ=1.0f-5 is the problem
-  @test_broken eltype(gm2(gx)) == Float16
+  @test eltype(m2(x)) == Float16
+  @test eltype(gm2(gx)) == Float16
 
   # Pooling
   for pool in [MaxPool((2,)), MeanPool((2,))]

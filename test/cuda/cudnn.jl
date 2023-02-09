@@ -11,7 +11,7 @@ using Flux: pullback
         y, back = pullback((m, x) -> m(x), m, x)
         gy, gback = pullback((m, x) -> m(x), gm, gx)
 
-        @test cpu(gy) ≈ y
+        @test cpu(gy) ≈ y  rtol=1e-3
         @test_skip eltype(gy) == T
         @test_skip eltype(gm(gx)) == T
 

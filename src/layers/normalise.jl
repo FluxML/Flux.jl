@@ -194,7 +194,8 @@ function (a::LayerNorm)(x::AbstractArray)
       _size_check(a, x, d => size(a.diag.scale, d))
     end
   end
-  a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
+  eps = float(eltype(x))(a.ϵ))
+  a.diag(normalise(x, dims=1:length(a.size), ϵ=eps)
 end
 
 function Base.show(io::IO, l::LayerNorm)
