@@ -226,9 +226,12 @@ ChainRulesCore.@non_differentiable check_use_cuda()
 
 # Precision
 
-adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # piracy
+struct FluxEltypeAdaptor{T} end
 
-paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Number}) where T = convert(AbstractArray{T}, x)
+
+_paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
+_paramtype(::Type{T}, x::AbstractArray{<:Real}) where {T} = convert(AbstractArray{T}, x)
 
 """
     f32(m)
@@ -237,7 +240,7 @@ Converts the `eltype` of model's parameters to `Float32` (which is Flux's defaul
 Recurses into structs marked with [`@functor`](@ref).
 See also [`f64`](@ref) and [`f16`](@ref).
 """
-f32(m) = paramtype(Float32, m)
+f32(m) = _paramtype(Float32, m)
 
 """
     f64(m)
@@ -245,7 +248,7 @@ f32(m) = paramtype(Float32, m)
 Converts the `eltype` of model's parameters to `Float64`.
 Recurses into structs marked with [`@functor`](@ref).
 """
-f64(m) = paramtype(Float64, m)
+f64(m) = _paramtype(Float64, m)
 
 """
     f16(m)
@@ -271,7 +274,7 @@ Chain(
 )                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
 ```
 """
-f16(m) = paramtype(Float16, m)
+f16(m) = _paramtype(Float16, m)
 
 # Functors for certain Julia data structures
 @functor Cholesky
