@@ -292,6 +292,8 @@ end
 end
 
 @testset "Misc. Float16" begin
+  # These tests are very far from exhaustive!
+
   x = randn(Float16, 3, 4)
   gx = gpu(x)
 
@@ -319,6 +321,16 @@ end
   @test m2(x) ≈ cpu(gm2(gx))
   @test eltype(m2(x)) == Float16
   @test eltype(gm2(gx)) == Float16
+
+  # Conv
+  x3 = randn(Float16, 7, 2, 1)
+  m3 = Conv((3,), 2=>1, sigmoid, pad=1, stride=2) |> f16
+  @test m3(x3) ≈ f16(f32(m3)(f32(x3))) ≈ cpu(gpu(m3)(gpu(x3)))
+  @test eltype(m3(x3)) == Float16
+  dw = gradient((m,x) -> sum(abs2, m(x)), m3, x3)[1].weight
+  @test dw ≈ f16(gradient((m,x) -> sum(abs2, m(x)), f32(m3), f32(x3))[1].weight)
+  @test dw ≈ cpu(gradient((m,x) -> sum(abs2, m(x)), gpu(m3), gpu(x3))[1].weight)
+  @test eltype(dw) == Float16
 
   # Pooling
   for pool in [MaxPool((2,)), MeanPool((2,))]
