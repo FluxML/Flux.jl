@@ -224,7 +224,8 @@ function _norm_layer_forward(
     end
   end
 
-  o = _norm_layer_forward(x, μ, σ², l.ϵ)
+  eps = convert(float(T), l.ϵ)
+  o = _norm_layer_forward(x, μ, σ², eps)
   hasaffine(l) || return l.λ.(o)
 
   γ = reshape(l.γ, affine_shape)

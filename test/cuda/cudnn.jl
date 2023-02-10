@@ -12,8 +12,8 @@ using Flux: pullback
         gy, gback = pullback((m, x) -> m(x), gm, gx)
 
         @test cpu(gy) ≈ y  rtol=1e-3
-        @test_skip eltype(gy) == T
-        @test_skip eltype(gm(gx)) == T
+        @test eltype(gy) == T
+        @test eltype(gm(gx)) == T
 
         Δ = randn(T, size(y))
         dm, dx = back(Δ)
