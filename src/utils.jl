@@ -502,20 +502,6 @@ randn32(dims::Integer...) = Base.randn(Float32, dims...)
 randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
 randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
 
-# The same for Float16:
-
-ones16(dims...) = Base.ones(Float16, dims...)
-zeros16(dims...) = Base.ones(Float16, dims...)
-
-rand16(dims::Integer...) = Base.rand(Float16, dims...)
-rand16(rng::AbstractRNG, dims::Integer...) = Base.rand(rng, Float16, dims...)
-rand16(rng::AbstractRNG) = (dims...,) -> Base.rand(rng, Float16, dims...)
-
-randn16(dims::Integer...) = Base.randn(Float16, dims...)
-randn16(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float16, dims...)
-randn16(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float16, dims...)
-
-
 """
     create_bias(weights, bias, size...)
 
