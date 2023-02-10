@@ -202,6 +202,7 @@ RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_
 
 function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {F,I,H,V,T}
   Wi, Wh, b = m.Wi, m.Wh, m.b
+  _size_check(m, x, 1 => size(Wi,2))
   σ = NNlib.fast_act(m.σ, x)
   xT = _match_eltype(m, T, x)
   h = σ.(Wi*xT .+ Wh*h .+ b)
@@ -307,6 +308,7 @@ function LSTMCell((in, out)::Pair;
 end
 
 function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,T}
+  _size_check(m, x, 1 => size(m.Wi,2))
   b, o = m.b, size(h, 1)
   xT = _match_eltype(m, T, x)
   g = muladd(m.Wi, xT, muladd(m.Wh, h, b))
@@ -379,6 +381,7 @@ GRUCell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = ze
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
 function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,T}
+  _size_check(m, x, 1 => size(m.Wi,2))
   Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
   xT = _match_eltype(m, T, x)
   gxs, ghs, bs = multigate(Wi*xT, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
@@ -448,6 +451,7 @@ GRUv3Cell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = 
             init(out, out), init_state(out,1))
 
 function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,HH,T}
+  _size_check(m, x, 1 => size(m.Wi,2))
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
   xT = _match_eltype(m, T, x)
   gxs, ghs, bs = multigate(Wi*xT, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))

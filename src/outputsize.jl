@@ -62,7 +62,7 @@ which should work out of the box for custom layers.
 If `m` is a `Tuple` or `Vector`, its elements are applied in sequence, like `Chain(m...)`.
 
 # Examples
-```julia-repl
+```jldoctest
 julia> using Flux: outputsize
 
 julia> outputsize(Dense(10 => 4), (10,); padbatch=true)
@@ -80,9 +80,7 @@ julia> outputsize(m, (10, 10, 3, 64))
 (6, 6, 32, 64)
 
 julia> try outputsize(m, (10, 10, 7, 64)) catch e println(e) end
-┌ Error: layer Conv((3, 3), 3=>16), index 1 in Chain, gave an error with input of size (10, 10, 7, 64)
-└ @ Flux ~/.julia/dev/Flux/src/outputsize.jl:114
-DimensionMismatch("Input channels must match! (7 vs. 3)")
+DimensionMismatch("layer Conv((3, 3), 3 => 16) expects size(input, 3) == 3, but got 10×10×7×64 Array{Flux.NilNumber.Nil, 4}")
 
 julia> outputsize([Dense(10 => 4), Dense(4 => 2)], (10, 1)) # Vector of layers becomes a Chain
 (2, 1)
@@ -97,19 +95,6 @@ nil_input(pad::Bool, s::Tuple{Vararg{Integer}}) = pad ? fill(nil, (s...,1)) : fi
 nil_input(pad::Bool, multi::Tuple{Vararg{Integer}}...) = nil_input.(pad, multi)
 nil_input(pad::Bool, tup::Tuple{Vararg{Tuple}}) = nil_input(pad, tup...)
 
-function outputsize(m::Chain, inputsizes::Tuple{Vararg{Integer}}...; padbatch=false)
-  x = nil_input(padbatch, inputsizes...)
-  for (i,lay) in enumerate(m.layers)
-    try
-      x = lay(x)
-    catch err
-      str = x isa AbstractArray ? "with input of size $(size(x))" : ""
-      @error "layer $lay, index $i in Chain, gave an error $str"
-      rethrow(err)
-    end
-  end
-  return size(x)
-end
 
 """
     outputsize(m, x_size, y_size, ...; padbatch=false)
@@ -148,9 +133,8 @@ outputsize(m::AbstractVector, input::Tuple...; padbatch=false) = outputsize(Chai
 ## bypass statistics in normalization layers
 
 for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
-  @eval function (l::$layer)(x::AbstractArray{Nil})
-    l.chs == size(x, ndims(x)-1) || throw(DimensionMismatch(
-      string($layer, " expected ", l.chs, " channels, but got size(x) == ", size(x))))
+  @eval function (l::$layer)(x::AbstractArray{Nil,N}) where N
+    _size_check(l, x, N-1 => l.chs)
     x
   end
 end
