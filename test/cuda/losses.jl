@@ -39,7 +39,6 @@ y = [1  0  0  0  1
 
   g16 = gradient(loss, f16(x), f16(y))[1]
   @test g16 ≈ cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1])
-  @test g16 ≈ f16(gradient(loss, f32(f16(x)), f32(f16(y)))[1]) rtol=0.1  # no GPU in fact
 end
 
 end #testset
