@@ -115,7 +115,7 @@ dropout_layers = [Dropout, AlphaDropout]
 gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu = false) # dropout is not deterministic
 
 layer_norm = [LayerNorm]
-gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 1, test_cpu = false) #TODO fix errors
+gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 28, test_cpu = false) #TODO fix errors
 gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
 
 upsample = [x -> Upsample(scale=x)]

@@ -272,6 +272,8 @@ Let's start by initializing our dataset. We will be using the [`BostonHousing`](
 julia> dataset = BostonHousing();
 
 julia> x, y = BostonHousing(as_df=false)[:];
+
+julia> x, y = Float32.(x), Float32.(y);
 ```
 
 We can now split the obtained data into training and testing data -
@@ -287,7 +289,7 @@ This data contains a diverse number of features, which means that the features h
 
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> std(x_train)
-134.06784844377117
+134.06786f0
 ```
 
 The data is indeed not normalised. We can use the [`Flux.normalise`](@ref) function to normalise the training data.
@@ -296,7 +298,7 @@ The data is indeed not normalised. We can use the [`Flux.normalise`](@ref) funct
 julia> x_train_n = Flux.normalise(x_train);
 
 julia> std(x_train_n)
-1.0000843694328236
+1.0000844f0
 ```
 
 The standard deviation is now close to one! Our data is ready!
@@ -318,7 +320,7 @@ julia> function loss(model, x, y)
        end;
 
 julia> loss(model, x_train_n, y_train)
-676.165591625047
+676.1656f0
 ```
 
 We can now proceed to the training phase!
@@ -363,7 +365,7 @@ Let's have a look at the loss -
 
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> loss(model, x_train_n, y_train)
-27.127200028562164
+27.1272f0
 ```
 
 The loss went down significantly! It can be minimized further by choosing an even smaller `δ`.
@@ -376,7 +378,7 @@ The last step of this tutorial would be to test our model using the testing data
 julia> x_test_n = Flux.normalise(x_test);
 
 julia> loss(model, x_test_n, y_test)
-66.91014769713368
+66.91015f0
 ```
 
 The loss is not as small as the loss of the training data, but it looks good! This also shows that our model is not overfitting!

@@ -22,7 +22,7 @@ See also [`Conv`](@ref), [`MaxPool`](@ref).
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of images
+julia> xs = rand32(100, 100, 3, 50);  # a batch of images
 
 julia> layer = Conv((2,2), 3 => 7, pad=SamePad())
 Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0))  # 91 parameters
@@ -96,7 +96,7 @@ See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50); # a batch of images
+julia> xs = rand32(100, 100, 3, 50); # a batch of 50 RGB images
 
 julia> layer = Conv((5,5), 3 => 7, relu; bias = false)
 Conv((5, 5), 3 => 7, relu, bias=false)  # 525 parameters
@@ -195,9 +195,11 @@ conv_dims(c::Conv, x::AbstractArray) =
 ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
 
 function (c::Conv)(x::AbstractArray)
+  _size_check(c, x, ndims(x)-1 => _channels_in(c))
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_dims(c, x)
-  σ.(conv(x, c.weight, cdims) .+ conv_reshape_bias(c))
+  xT = _match_eltype(c, x)
+  σ.(conv(xT, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 _channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
@@ -237,7 +239,7 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 
 # Examples
 ```jldoctest
-julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
+julia> xs = rand32(100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> layer = ConvTranspose((5,5), 3 => 7, relu)
 ConvTranspose((5, 5), 3 => 7, relu)  # 532 parameters
@@ -328,9 +330,11 @@ end
 ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
+  _size_check(c, x, ndims(x)-1 => _channels_in(c))
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
-  σ.(∇conv_data(x, c.weight, cdims) .+ conv_reshape_bias(c))
+  xT = _match_eltype(c, x)
+  σ.(∇conv_data(xT, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::ConvTranspose)
@@ -416,6 +420,8 @@ struct CrossCor{N,M,F,A,V}
   dilation::NTuple{N,Int}
 end
 
+_channels_in(l::CrossCor) = size(l.weight, ndims(l.weight)-1)
+
 """
     CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
@@ -466,9 +472,11 @@ crosscor_dims(c::CrossCor, x::AbstractArray) =
 ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
 
 function (c::CrossCor)(x::AbstractArray)
+  _size_check(c, x, ndims(x)-1 => _channels_in(c))
   σ = NNlib.fast_act(c.σ, x)
   cdims = crosscor_dims(c, x)
-  σ.(crosscor(x, c.weight, cdims) .+ conv_reshape_bias(c))
+  xT = _match_eltype(c, x)
+  σ.(crosscor(xT, c.weight, cdims) .+ conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::CrossCor)

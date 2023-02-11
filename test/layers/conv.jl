@@ -290,3 +290,20 @@ end
   end
   @test_throws DimensionMismatch fun(rand(2,3,4), rand(6))
 end
+
+@testset "type matching" begin
+  x = rand(Float64, 10,2,5)
+  xi = rand(-3:3, 10,2,5)
+  c1 = Conv((3,), 2=>4, relu)
+  @test @inferred(c1(x)) isa Array{Float32, 3}
+  @test c1(xi) isa Array{Float32, 3}
+
+  c2 = CrossCor((3,), 2=>1, relu)
+  @test @inferred(c2(x)) isa Array{Float32, 3}
+
+  c3 = ConvTranspose((3,), 2=>4, relu)
+  @test c3(x) isa Array{Float32, 3}
+  if VERSION >= v"1.8"
+    @test (@inferred c3(x); true)  # fails on 1.6
+  end
+end
