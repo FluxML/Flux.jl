@@ -178,3 +178,10 @@ end
   @test cpu(xgpu) isa Vector{A2116} 
   @test cpu(gpu([CartesianIndex(1)])) isa Vector{CartesianIndex{1}}
 end
+
+@testset "gpu(::DataLoader)" begin
+  dl = Flux.DataLoader((x = ones32(2,10),), batchsize=3)
+  @test first(dl) isa NamedTuple{(:x,), Tuple{Matrix{Float32}}}
+  @test gpu(dl) isa CuIterator
+  @test first(gpu(dl)) isa NamedTuple{(:x,), <:Tuple{CuArray}}
+end

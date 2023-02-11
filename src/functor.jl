@@ -214,6 +214,55 @@ function check_use_cuda()
 end
 ChainRulesCore.@non_differentiable check_use_cuda()
 
+"""
+    gpu(data::DataLoader)
+
+Wraps ths given `DataLoader` in a `CuIterator`, which will
+move each batch of data to the GPU as required.
+
+(If no GPU is available, it does nothing.)
+
+# Example
+
+```julia-repl
+julia> dl = Flux.DataLoader((x = Flux.ones32(2,10),), batchsize=3)
+4-element DataLoader(::NamedTuple{(:x,), Tuple{Matrix{Float32}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 Matrix{Float32})
+
+julia> first(dl)
+(x = Float32[1.0 1.0 1.0; 1.0 1.0 1.0],)
+
+julia> cdl = gpu(dl)
+CuIterator{MLUtils.DataLoader{NamedTuple{(:x,), Tuple{Matrix{Float32}}}, Random._GLOBAL_RNG, Val{nothing}}}(DataLoader(::NamedTuple{(:x,), Tuple{Matrix{Float32}}}, batchsize=3), #undef)
+
+julia> first(cdl).x
+2×3 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 1.0  1.0  1.0
+ 1.0  1.0  1.0
+```
+
+This is usually preferred over moving all the data to
+the GPU before creating the `DataLoader`. For example:
+
+```julia-repl
+julia> Flux.DataLoader((x = Flux.ones32(2,10),) |> gpu, batchsize=3)
+4-element DataLoader(::NamedTuple{(:x,), Tuple{CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer})
+```
+
+!!! warning
+    This only works if `gpu` is applied directly to the `DataLoader`.
+    While `gpu` acts recursively on Flux models and many basic Julia structs,
+    it will not work on (say) a tuple of `DataLoader`s.
+"""
+function gpu(d::MLUtils.DataLoader)
+  check_use_cuda()
+  use_cuda[] ? CUDA.CuIterator(d) : d
+end
+
+
 # Precision
 
 adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # piracy
