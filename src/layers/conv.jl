@@ -634,7 +634,7 @@ function (g::GlobalMeanPool)(x)
 end
 
 """
-    GlobalLPNormPool(p::T)
+    GlobalLPNormPool(p::Real)
 
 Global lp norm pooling layer.
 
@@ -652,8 +652,8 @@ julia> m(xs) |> size
 (1, 1, 7, 50)
 ```
 """
-struct GlobalLPNormPool{T<:Number}
-  p::T
+struct GlobalLPNormPool
+  p::Real
 end
 
 function (g::GlobalLPNormPool)(x)
@@ -786,7 +786,7 @@ function Base.show(io::IO, m::MeanPool)
 end
 
 """
-    LPNormPool(window::NTuple, p::T; pad=0, stride=window)
+    LPNormPool(window::NTuple, p::Real; pad=0, stride=window)
 
 Lp norm pooling layer, calculating p-norm distance for each window,
 also known as LPPool in pytorch.
@@ -825,14 +825,14 @@ julia> layer(rand(Float32, 100, 7, 50)) |> size
 (34, 7, 50)
 ```
 """
-struct LPNormPool{N,M,T<:Number}
+struct LPNormPool{N,M}
   k::NTuple{N,Int}
-  p::T
+  p::Real
   pad::NTuple{M,Int}
   stride::NTuple{N,Int}
 end
 
-function LPNormPool(k::NTuple{N,Integer}, p::T; pad = 0, stride = k) where {N,T}
+function LPNormPool(k::NTuple{N,Integer}, p::Real; pad = 0, stride = k) where {N}
   stride = expand(Val(N), stride)
   pad = calc_padding(LPNormPool, pad, k, 1, stride)
   return LPNormPool(k, p, pad, stride)
