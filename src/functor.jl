@@ -146,24 +146,26 @@ ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AbstractArray) =
 """
     cpu(m)
 
-Moves `m` onto the CPU, the opposite of [`gpu`](@ref).
+Copies `m` onto the CPU, the opposite of [`gpu`](@ref).
 Recurses into structs marked [`@functor`](@ref).
 
+# Example
 ```julia-repl
-julia> m = Dense(1,2)
-Dense(1, 2)
+julia> m_gpu = Dense(CUDA.randn(2, 5))
+Dense(5 => 2)       # 12 parameters
 
-julia> m_gpu = gpu(m)
-Dense(1, 2)
+julia> m_gpu.bias  # matches the given weight matrix
+2-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.0
+ 0.0
 
-julia> typeof(m_gpu.W)
-CuArray{Float32, 2}
+julia> m = m_gpu |> cpu
+Dense(5 => 2)       # 12 parameters
 
-julia> m_cpu = cpu(m_gpu)
-Dense(1, 2)
-
-julia> typeof(m_cpu.W)
-Matrix{Float32}
+julia> m.bias
+2-element Vector{Float32}:
+ 0.0
+ 0.0
 ```
 """
 cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x, exclude = _isleaf)
@@ -178,24 +180,32 @@ _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 """
     gpu(x)
 
-Moves `m` to the current GPU device, if available. It is a no-op otherwise.
+Copies `m` to the current GPU device, if one is available.
+If no GPU is available, it does nothing (but prints a warning the first time).
+
+On arrays, this calls CUDA's `cu`, which also changes arrays
+with Float64 elements to Float32 while copying them to the device.
+To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
+
+Use [`cpu`](@ref) to copy back to ordinary `Array`s.
+See also [`f32`](@ref) and [`f16`](@ref) to change element type only.
+
 See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
 to help identify the current device.
 
-This works for functions, and any struct marked with [`@functor`](@ref).
-
+# Example
 ```julia-repl
-julia> m = Dense(1,2)
-Dense(1, 2)
+julia> m = Dense(rand(2, 3))  # constructed with Float64 weight matrix
+Dense(3 => 2)       # 8 parameters
 
-julia> typeof(m.W)
-Matrix{Float32}
+julia> typeof(m.weight)
+Matrix{Float64} (alias for Array{Float64, 2})
 
-julia> m_gpu = gpu(m)
-Dense(1, 2)
+julia> m_gpu = gpu(m)  # can equivalently be written m_gpu = m |> gpu
+Dense(3 => 2)       # 8 parameters
 
-julia> typeof(m_gpu.W) # notice the type of the array changed to a CuArray
-CuArray{Float32, 2}
+julia> typeof(m_gpu.weight)
+CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 function gpu(x)
@@ -216,17 +226,21 @@ ChainRulesCore.@non_differentiable check_use_cuda()
 
 # Precision
 
-adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # piracy
+struct FluxEltypeAdaptor{T} end
 
-paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Number}) where T = convert(AbstractArray{T}, x)
+
+_paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
+_paramtype(::Type{T}, x::AbstractArray{<:Real}) where {T} = convert(AbstractArray{T}, x)
 
 """
     f32(m)
 
 Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).
 Recurses into structs marked with [`@functor`](@ref).
+See also [`f64`](@ref) and [`f16`](@ref).
 """
-f32(m) = paramtype(Float32, m)
+f32(m) = _paramtype(Float32, m)
 
 """
     f64(m)
@@ -234,7 +248,33 @@ f32(m) = paramtype(Float32, m)
 Converts the `eltype` of model's parameters to `Float64`.
 Recurses into structs marked with [`@functor`](@ref).
 """
-f64(m) = paramtype(Float64, m)
+f64(m) = _paramtype(Float64, m)
+
+"""
+    f16(m)
+
+Converts the `eltype` of model's parameters to `Float16`.
+Recurses into structs marked with [`@functor`](@ref).
+
+Support for `Float16` is limited on many CPUs. Julia may
+convert to `Float32` for each operation, which is slow.
+
+# Example
+```jldoctest
+julia> m = Chain(Dense(784, 2048, relu), Dense(2048, 10))  # all Float32
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 6.211 MiB.
+
+julia> m |> f16  # takes half the memory
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
+```
+"""
+f16(m) = _paramtype(Float16, m)
 
 # Functors for certain Julia data structures
 @functor Cholesky

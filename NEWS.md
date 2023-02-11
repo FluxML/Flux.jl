@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.13.13
+* Added `f16` which changes precision to `Float16`, recursively.
+
 ## v0.13.12
 * CUDA.jl 4.0 compatibility.
 

@@ -161,16 +161,24 @@ end
     @inferred m(x)
   end
 
-  let m = BatchNorm(2; track_stats=false), x = [1.0 3.0 5.0; 2.0 4.0 6.0]
-    @inferred m(x)
+  let m = BatchNorm(2; track_stats=false), x = Float32[1.0 3.0 5.0; 2.0 4.0 6.0]
+    y = @inferred m(x)
+    m16 = f16(m)
+    y16 = @inferred m16(f16(x))
+    @test eltype(y16) == Float16
+    @test y16 ≈ y  atol=1e-3
   end
 
   # with activation function
-  let m = BatchNorm(2, sigmoid), x = [1.0 3.0 5.0;
-                                      2.0 4.0 6.0]
+  let m = BatchNorm(2, sigmoid), x = Float32[1.0 3.0 5.0;
+                                             2.0 4.0 6.0]
     y = m(x)
     @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
     @inferred m(x)
+    m16 = f16(m)
+    y16 = @inferred m16(f16(x))
+    @test eltype(y16) == Float16
+    @test y16 ≈ y  atol=1e-3
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)

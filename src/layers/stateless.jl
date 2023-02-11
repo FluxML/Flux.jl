@@ -79,6 +79,13 @@ function _match_eltype(layer, ::Type{Float32}, x::AbstractArray{Float64})
   convert(AbstractArray{Float32}, x)
 end
 
+# Bug in Float16 use?
+function _match_eltype(layer, ::Type{Float16}, x::AbstractArray{Float32})
+  @warn "Layer with Float16 parameters got Float32 input.
+  The input will be converted, but may indicate a problem in earlier layers." layer summary(x) maxlog=1
+  convert(AbstractArray{Float16}, x)
+end
+
 # Allow OneHot to reach specialisation of * etc:
 _match_eltype(layer, ::Type, x::OneHotLike) = x
 

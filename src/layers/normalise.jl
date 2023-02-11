@@ -194,7 +194,8 @@ function (a::LayerNorm)(x::AbstractArray)
       _size_check(a, x, d => size(a.diag.scale, d))
     end
   end
-  a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
+  eps = convert(float(eltype(x)), a.ϵ)  # avoids promotion for Float16 data, but should ε chage too?
+  a.diag(normalise(x, dims=1:length(a.size), ϵ=eps))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -223,7 +224,8 @@ function _norm_layer_forward(
     end
   end
 
-  o = _norm_layer_forward(x, μ, σ², l.ϵ)
+  eps = convert(float(T), l.ϵ)
+  o = _norm_layer_forward(x, μ, σ², eps)
   hasaffine(l) || return l.λ.(o)
 
   γ = reshape(l.γ, affine_shape)
