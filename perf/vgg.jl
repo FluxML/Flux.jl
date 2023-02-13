@@ -38,7 +38,7 @@ function vgg16()
         Conv((3, 3), 512 => 512, relu, pad=(1, 1), stride=(1, 1)),
         BatchNorm(512),
         MaxPool((2,2)),
-        flatten,
+        Flux.flatten,
         Dense(512, 4096, relu),
         Dropout(0.5),
         Dense(4096, 4096, relu),
