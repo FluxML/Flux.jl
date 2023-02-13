@@ -285,16 +285,26 @@ end
 end
 
 @testset "Precision" begin
-  m = Chain(Dense(10, 5, relu), Dense(5, 2))
+  m = Chain(Dense(10, 5, relu; bias=false), Dense(5, 2))
   x64 = rand(Float64, 10)
   x32 = rand(Float32, 10)
+
+  # Models
   @test eltype(m[1].weight) == Float32
   @test eltype(m(x32)) == Float32
-  @test eltype(m(x64)) == Float64
-  @test eltype(f64(m)(x32)) == Float64
+  @test eltype(m(x64)) == Float32  # fixed by _match_eltype
+  @test eltype(f64(m)(x32)) == Float64  # _match_eltype promotes, Julia would too
   @test eltype(f64(m)(x64)) == Float64
   @test eltype(f64(m)[1].weight) == Float64
   @test eltype(f32(f64(m))[1].weight) == Float32
+
+  # Arrays
+  @test f32(x64) isa Vector{Float32}
+  @test f16(x64') isa Adjoint{Float16}  # adapt goes inside the Adjoint
+  @test f32(x32) === x32  # doesn't copy when eltype is OK
+  @test f32(x32') === x32'
+  @test gradient(x -> sum(f16(x)), x32)[1] isa Vector{Float32}
+  @test gradient(x -> sum(f64(x)), x32')[1] isa Adjoint{Float32}
 end
 
 @testset "zero bias" begin

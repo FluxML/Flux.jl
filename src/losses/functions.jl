@@ -630,6 +630,49 @@ function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
     return agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)
 end
 
+# Gaussian kernel std=1.5, length=11
+const SSIM_KERNEL = 
+  [0.00102838008447911,
+  0.007598758135239185,
+  0.03600077212843083,
+  0.10936068950970002,
+  0.2130055377112537,
+  0.26601172486179436,
+  0.2130055377112537,
+  0.10936068950970002,
+  0.03600077212843083,
+  0.007598758135239185,
+  0.00102838008447911]
+
+"""
+    ssim_kernel(T, N)
+
+Return Gaussian kernel with σ=1.5 and side-length 11 for use in [`ssim`](@ref).
+Returned kernel will be `N-2` dimensional of type `T`.
+"""
+function ssim_kernel(T::Type, N::Integer)
+  if N-2 == 1
+    kernel = SSIM_KERNEL
+  elseif N-2 == 2
+    kernel = SSIM_KERNEL*SSIM_KERNEL' 
+  elseif N-2 == 3
+    ks = length(SSIM_KERNEL)
+    kernel = reshape(SSIM_KERNEL*SSIM_KERNEL', 1, ks, ks).*SSIM_KERNEL
+  else
+    throw("SSIM is only implemented for 3D/4D/5D inputs, dimension=$N provided.")
+  end
+  return reshape(T.(kernel), size(kernel)..., 1, 1)
+end
+
+"""
+    ssim_kernel(x::AbstractArray{T, N}) where {T, N}
+
+Return Gaussian kernel with σ=1.5 and side-length 11 for use in [`ssim`](@ref). 
+Returned array will be on the same device as `x`.
+"""
+ssim_kernel(x::Array{T, N}) where {T, N} = ssim_kernel(T, N)
+ssim_kernel(x::AnyCuArray{T, N}) where {T, N} = cu(ssim_kernel(T, N))
+
 """
     ssim(x, y, kernel=ssim_kernel(x); peakval=1, crop=true, dims=:)
                                     
@@ -655,42 +698,42 @@ for grayscale and RGB images (i.e. x, y both of size (N1, N2, 1, B) and (N1, N2,
 See also [`ssim_loss`](@ref), [`ssim_loss_fast`](@ref).
 """
 function ssim(x::AbstractArray{T,N}, y::AbstractArray{T,N}, kernel=ssim_kernel(x); peakval=T(1.0), crop=true, dims=:) where {T,N}
-    _check_sizes(x, y)
+  _check_sizes(x, y)
 
-    # apply same kernel on each channel dimension separately via groups=in_channels
-    groups = size(x, N-1)
-    kernel = repeat(kernel, ones(Int, N-1)..., groups)
+  # apply same kernel on each channel dimension separately via groups=in_channels
+  groups = size(x, N-1)
+  kernel = repeat(kernel, ones(Int, N-1)..., groups)
 
-    # constants to avoid division by zero
-    SSIM_K = (0.01, 0.03) 
-    C₁, C₂ = @. T(peakval * SSIM_K)^2
+  # constants to avoid division by zero
+  SSIM_K = (0.01, 0.03) 
+  C₁, C₂ = @. T(peakval * SSIM_K)^2
 
-    # crop==true -> valid-sized conv (do nothing), 
-    # otherwise, pad for same-sized conv
-    if !crop
-        # from src/layers/conv.jl (calc_padding)
-        padding = Tuple(mapfoldl(i -> [cld(i, 2), fld(i,2)], vcat, size(kernel)[1:N-2] .- 1))
-        x = pad_symmetric(x, padding) 
-        y = pad_symmetric(y, padding) 
-    end
+  # crop==true -> valid-sized conv (do nothing), 
+  # otherwise, pad for same-sized conv
+  if !crop
+    # from src/layers/conv.jl (calc_padding)
+    padding = Tuple(mapfoldl(i -> [cld(i, 2), fld(i,2)], vcat, size(kernel)[1:N-2] .- 1))
+    x = pad_symmetric(x, padding) 
+    y = pad_symmetric(y, padding) 
+  end
 
-    μx  = conv(x, kernel; groups=groups)
-    μy  = conv(y, kernel; groups=groups)
-    μx² = μx.^2
-    μy² = μy.^2
-    μxy = μx.*μy
-    σx² = conv(x.^2, kernel; groups=groups) .- μx²
-    σy² = conv(y.^2, kernel; groups=groups) .- μy²
-    σxy = conv(x.*y, kernel; groups=groups) .- μxy
+  μx  = conv(x, kernel; groups=groups)
+  μy  = conv(y, kernel; groups=groups)
+  μx² = μx.^2
+  μy² = μy.^2
+  μxy = μx.*μy
+  σx² = conv(x.^2, kernel; groups=groups) .- μx²
+  σy² = conv(y.^2, kernel; groups=groups) .- μy²
+  σxy = conv(x.*y, kernel; groups=groups) .- μxy
 
-    ssim_map = @. (2μxy + C₁)*(2σxy + C₂)/((μx² + μy² + C₁)*(σx² + σy² + C₂))
-    return mean(ssim_map, dims=dims)
+  ssim_map = @. (2μxy + C₁)*(2σxy + C₂)/((μx² + μy² + C₁)*(σx² + σy² + C₂))
+  return mean(ssim_map, dims=dims)
 end
 
 """
     ssim_loss(ŷ, y, kernel=ssim_kernel(x); peakval=1, crop=true, dims=:)
 
-Computes the 1-ssim(ŷ,y), suitable for use as a loss function with gradient descent.
+Computes `1 - ssim(ŷ, y)`, suitable for use as a loss function with gradient descent.
 For faster training, it is recommended to store a kernel and reuse it, ex.,
 ```julia
 kernel = Flux.Losses.ssim_kernel(Float32, 2) |> gpu
@@ -698,12 +741,12 @@ kernel = Flux.Losses.ssim_kernel(Float32, 2) |> gpu
 # kernel = ones(Float32, 5, 5, 1, num_channels) |> gpu
 
 for (x, y) in dataloader
-    x, y = (x, y) .|> gpu
-    grads = Flux.gradient(model) do m
-        ŷ = m(x)
-        Flux.ssim_loss(ŷ, y, kernel)
-    end
-    # update the model ...
+  x, y = (x, y) .|> gpu
+  grads = Flux.gradient(model) do m
+    ŷ = m(x)
+    Flux.ssim_loss(ŷ, y, kernel)
+  end
+  # update the model ...
 end
 ```
 See [`ssim`](@ref) for a detailed description of SSIM and the above arguments.
@@ -722,8 +765,8 @@ detailed description of SSIM and the above arguments.
 See also [`ssim_loss`](@ref).
 """
 function ssim_loss_fast(ŷ, y; kernel_length=5, kws...)
-    kernel = ones_like(y, (kernel_length*ones(Int, ndims(y)-2)..., 1, 1))
-    return ssim_loss(ŷ, y, kernel; kws...)
+  kernel = ones_like(y, (kernel_length*ones(Int, ndims(y)-2)..., 1, 1))
+  return ssim_loss(ŷ, y, kernel; kws...)
 end
 
 ```@meta

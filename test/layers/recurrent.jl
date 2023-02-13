@@ -90,15 +90,6 @@ end
   end
 end
 
-@testset "RNN-input-state-eltypes" begin
-  @testset for R in [RNN, GRU, LSTM, GRUv3]
-    m = R(3 => 5)
-    x = rand(Float64, 3, 1)
-    Flux.reset!(m)
-    @test_throws MethodError m(x)
-  end
-end
-
 @testset "multigate" begin
   x = rand(6, 5)
   res, (dx,) = Flux.withgradient(x) do x
@@ -168,4 +159,28 @@ end
     Flux.reset!(m)
     @test size(m(x3)) == (5, 1, 2)
   end
+end
+
+@testset "type matching" begin
+  x = rand(Float64, 2, 4)
+  m1 = RNN(2=>3)
+  @test m1(x) isa Matrix{Float32}  # uses _match_eltype, may print a warning
+  @test m1.state isa Matrix{Float32}
+  @test (@inferred m1(x); true)
+  @test Flux.outputsize(m1, size(x)) == size(m1(x))
+
+  m2 = LSTM(2=>3)
+  @test m2(x) isa Matrix{Float32}
+  @test (@inferred m2(x); true)
+  @test Flux.outputsize(m2, size(x)) == size(m2(x))
+
+  m3 = GRU(2=>3)
+  @test m3(x) isa Matrix{Float32}
+  @test (@inferred m3(x); true)
+  @test Flux.outputsize(m3, size(x)) == size(m3(x))
+
+  m4 = GRUv3(2=>3)
+  @test m4(x) isa Matrix{Float32}
+  @test (@inferred m4(x); true)
+  @test Flux.outputsize(m4, size(x)) == size(m4(x))
 end

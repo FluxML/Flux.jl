@@ -27,30 +27,44 @@ y = [1  0  0  0  1
 
 @testset "GPU ssim tests" begin
   for N=1:3
-      @testset "num_dims=$N" begin
-          x = rand(Float32, 16*ones(Int, N)..., 2, 2)
-          y = rand(Float32, 16*ones(Int, N)..., 2, 2)
-          
-          for f in (Flux.ssim, Flux.ssim_loss, Flux.ssim_loss_fast)
-              @test f(x, y) ≈ f(gpu(x), gpu(y)) 
-              gpu_autodiff_test(f, x, y)
-          end
+    @testset "num_dims=$N" begin
+      x = rand(Float32, 16*ones(Int, N)..., 2, 2)
+      y = rand(Float32, 16*ones(Int, N)..., 2, 2)
+      
+      for loss in (Flux.ssim, Flux.ssim_loss, Flux.ssim_loss_fast)
+        @test loss(x, y) ≈ loss(gpu(x), gpu(y)) 
+        gpu_autodiff_test(loss, x, y)
 
-          x = gpu(x)
-          @test Flux.ssim(x, x) ≈ 1
-          @test Flux.ssim_loss(x, x) ≈ 0
-          @test Flux.ssim_loss_fast(x, x) ≈ 0
+        # Float16 tests
+        @test loss(f16(x), f16(y)) ≈ loss(gpu(f16(x)), gpu(f16(y)))
+        @test loss(f16(x), f16(y)) ≈ Float16(loss(x, y))  rtol=0.1  # no GPU in fact
+
+        g16 = gradient(loss, f16(x), f16(y))[1]
+        @test g16 ≈ cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1])
       end
+
+      # sanity checks
+      x = gpu(x)
+      @test Flux.ssim(x, x) ≈ 1
+      @test Flux.ssim_loss(x, x) ≈ 0
+      @test Flux.ssim_loss_fast(x, x) ≈ 0
+    end
   end
 end
 
-@testset "GPU grad tests" begin
-    x = rand(Float32, 3,3)
-    y = rand(Float32, 3,3)
+@testset "GPU: $loss" for loss in ALL_LOSSES
+  x = rand(Float32, 3,4)
+  y = rand(Float32, 3,4)
+  @test loss(x, y) ≈ loss(gpu(x), gpu(y))
 
-    for loss in ALL_LOSSES
-        gpu_autodiff_test(loss, x, y)
-    end
+  gpu_autodiff_test(loss, x, y)
+
+  # Float16 tests
+  @test loss(f16(x), f16(y)) ≈ loss(gpu(f16(x)), gpu(f16(y)))
+  @test loss(f16(x), f16(y)) ≈ Float16(loss(x, y))  rtol=0.1  # no GPU in fact
+
+  g16 = gradient(loss, f16(x), f16(y))[1]
+  @test g16 ≈ cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1])
 end
 
 end #testset

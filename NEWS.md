@@ -1,5 +1,9 @@
 # Flux Release Notes
 
+## v0.13.13
+* Added `f16` which changes precision to `Float16`, recursively.
+* Added [`ssim`, `ssim_loss`, `ssim_loss_fast`](https://github.com/FluxML/Flux.jl/pull/2178) which compute the Structural Similarity Index Measure and corresponding loss function.
+
 ## v0.13.12
 * CUDA.jl 4.0 compatibility.
 

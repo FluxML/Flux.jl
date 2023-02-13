@@ -58,10 +58,10 @@ import Flux: activations
       @test Dense(rand(100,10), false, tanh).σ == tanh
       @test Dense(rand(100,10), rand(100)).σ == identity
       @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
-      @test_skip Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
+      @test Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
       @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
-      @test_skip Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
+      @test Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
 
       @test_throws MethodError Dense(10, 10.5)
       @test_throws MethodError Dense(10, 10.5, tanh)
@@ -89,6 +89,23 @@ import Flux: activations
       @test Dense(10, 2, identity, init = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
       @test Dense(10, 2, identity, init = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
     end
+    @testset "type matching" begin
+       d1 = Dense(2 => 3)
+       d2 = Dense(d1.weight, false)
+       x1 = randn(Float32, 2, 4)
+       @test d1(x1) ≈ d2(x1) ≈ d1.weight * x1
+       x2 = Float64.(x1)
+       @test d1(x2) ≈ d2(x2) ≈ d1.weight * x2
+       @test d1(x2) isa Array{Float32}  # tests _match_eltype, will print a warning
+       @test d2(x2) isa Array{Float32}
+
+       x3 = rand(-5:5, 2, 4)
+       @test d1(x3) ≈ d2(x3) ≈ d1.weight * x3
+       x4 = rand(Bool, 2, 4)
+       @test d1(x4) ≈ d2(x4) ≈ d1.weight * x4
+       x5 = Flux.onehotbatch(rand(Bool, 5), (true, false))
+       @test d1(x5) ≈ d2(x5) ≈ d1.weight * x5
+     end
   end
 
   @testset "Scale" begin
