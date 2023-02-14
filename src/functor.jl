@@ -280,3 +280,19 @@ f16(m) = _paramtype(Float16, m)
 @functor Cholesky
 trainable(c::Cholesky) = ()
 
+# AMDGPU extension.
+
+const amdgpu_loaded = Ref{Bool}(false)
+
+function amd(x)
+    if amdgpu_loaded[]
+        return _amd(x)
+    else
+        @info """
+        The AMDGPU functionality is being called via `Flux.amd` but
+        `AMDGPU` must be loaded to access it.
+        """ maxlog=1
+    end
+end
+
+function _amd end

@@ -23,8 +23,15 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
+[weakdeps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+
+[extensions]
+AMDGPUExt = "AMDGPU"
+
 [compat]
 Adapt = "3.0"
+AMDGPU = "0.4.8"
 CUDA = "3, 4"
 ChainRulesCore = "1.12"
 Functors = "0.3, 0.4"
