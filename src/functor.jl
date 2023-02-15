@@ -282,10 +282,10 @@ trainable(c::Cholesky) = ()
 
 # AMDGPU extension.
 
-const amdgpu_loaded = Ref{Bool}(false)
+const AMDGPU_LOADED = Ref{Bool}(false)
 
 function amd(x)
-    if amdgpu_loaded[]
+    if AMDGPU_LOADED[]
         return _amd(x)
     else
         @info """

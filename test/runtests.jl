@@ -60,4 +60,19 @@ Random.seed!(0)
       doctest(Flux)
     end
   end
+
+    if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
+        using AMDGPU
+        AMDGPU.versioninfo()
+        if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
+            @show AMDGPU.MIOpen.version()
+            @testset "AMDGPU" begin
+                include("amd/runtests.jl")
+            end
+        else
+            @info "AMDGPU.jl package is not functional. Skipping AMDGPU tests."
+        end
+    else
+        @info "Skipping AMDGPU tests, set FLUX_TEST_CUDA=true to run them."
+    end
 end

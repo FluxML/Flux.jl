@@ -1,13 +1,20 @@
-struct FluxAMDGPUAdaptor end
+struct FluxAMDAdaptor end
 
-adapt_storage(::FluxAMDGPUAdaptor, x) = ROCArray(x)
-adapt_storage(::FluxAMDGPUAdaptor, x::Zygote.FillArrays.AbstractFill) =
+# Convert Float64 to Float32, but preserve Float16.
+adapt_storage(::FluxAMDAdaptor, x::T) where T <: AbstractArray =
+    isbits(x) ? x : ROCArray(x)
+adapt_storage(::FluxAMDAdaptor, x::AbstractArray{T, N}) where {T <: AbstractFloat, N} =
+    isbits(x) ? x : ROCArray{Float32, N}(x)
+adapt_storage(::FluxAMDAdaptor, x::AbstractArray{Float16, N}) where N =
+    isbits(x) ? x : ROCArray{Float16, N}(x)
+
+adapt_storage(::FluxAMDAdaptor, x::Zygote.FillArrays.AbstractFill) =
     ROCArray(collect(x))
-adapt_storage(::FluxAMDGPUAdaptor, x::Zygote.OneElement) = ROCArray(collect(x))
-adapt_storage(::FluxAMDGPUAdaptor, x::Random.TaskLocalRNG) =
+adapt_storage(::FluxAMDAdaptor, x::Zygote.OneElement) = ROCArray(collect(x))
+adapt_storage(::FluxAMDAdaptor, x::Random.TaskLocalRNG) =
     AMDGPU.rocRAND.default_rng()
-adapt_storage(::FluxAMDGPUAdaptor, x::AMDGPU.rocRAND.RNG) = x
-adapt_storage(::FluxAMDGPUAdaptor, x::AbstractRNG) = error("""
+adapt_storage(::FluxAMDAdaptor, x::AMDGPU.rocRAND.RNG) = x
+adapt_storage(::FluxAMDAdaptor, x::AbstractRNG) = error("""
     Cannot map RNG of type $(typeof(x)) to AMDGPU.
     AMDGPU execution only supports Random.default_rng().""")
 
@@ -24,28 +31,12 @@ function ChainRulesCore.rrule(
 )
     adapt_storage(to, x), dx -> (
         NoTangent(), NoTangent(),
-        adapt_storage(FluxAMDGPUAdaptor(), unthunk(dx)))
+        adapt_storage(FluxAMDAdaptor(), unthunk(dx)))
 end
 
 function _amd(x)
     check_use_amdgpu()
-    use_amdgpu[] ? fmap(x -> Adapt.adapt(FluxAMDGPUAdaptor(), x)) : x
+    USE_AMDGPU[] ?
+        fmap(x -> Adapt.adapt(FluxAMDAdaptor(), x), x; exclude=_isleaf) :
+        x
 end
-
-function check_use_amdgpu()
-    use_amdgpu[] === nothing || return
-
-    use_amdgpu[] = AMDGPU.functional()
-    if use_amdgpu[]
-        if !AMDGPU.functional(:MIOpen)
-            @warn "MIOpen is not functional in AMDGPU.jl, some functionality will not be available."
-        end
-    else
-        @info """
-        The AMDGPU function is being called but the AMDGPU is not functional.
-        Defaulting back to the CPU. (No action is required if you want to run on the CPU).
-        """ maxlog=1
-    end
-    return
-end
-ChainRulesCore.@non_differentiable check_use_amdgpu()

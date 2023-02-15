@@ -57,4 +57,4 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]
+test = ["AMDGPU", "Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]
