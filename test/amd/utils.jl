@@ -1,4 +1,4 @@
-function amdgputest(model, xs...; checkgrad=true, atol=1e-6, kws...)
+function amdgputest(model, xs...; checkgrad=true, atol=1e-6)
     cpu_model = model
     gpu_model = Flux.amd(model)
 
