@@ -78,6 +78,12 @@ end
     @test Flux.onecold(y, l) == ['a', 'a', 'a']
 end
 
+@testset "Batchnorm" begin
+    bn = BatchNorm(3, σ)
+    x = rand(Float32, 16, 16, 3, 4)
+    amdgputest(bn, x; atol=1f-3)
+end
+
 # FIXME scalar indexing. Needs NNlib.scatter?
 # @testset "Flux.onehot gpu" begin
 #     y = Flux.onehotbatch(ones(3), 1:2) |> Flux.amd

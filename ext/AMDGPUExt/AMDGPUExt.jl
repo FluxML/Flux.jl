@@ -1,6 +1,7 @@
 module AMDGPUExt
 
 import ChainRulesCore
+import ChainRulesCore: NoTangent
 import Flux
 import Flux: FluxCPUAdaptor, _amd, _isleaf, adapt_storage, fmap
 
@@ -9,6 +10,7 @@ using Adapt
 using Random
 using Zygote
 
+const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
 function check_use_amdgpu()
