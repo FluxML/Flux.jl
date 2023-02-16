@@ -18,24 +18,6 @@ adapt_storage(::FluxAMDAdaptor, x::AbstractRNG) = error("""
     Cannot map RNG of type $(typeof(x)) to AMDGPU.
     AMDGPU execution only supports Random.default_rng().""")
 
-function adapt_storage(to::FluxAMDAdaptor, m::Flux.Conv)
-    Flux.Conv(
-        Adapt.adapt(to, m.σ),
-        Adapt.adapt(to, m.weight[end:-1:1, end:-1:1, :, :]),
-        Adapt.adapt(to, m.bias),
-        m.stride, m.pad, m.dilation, m.groups)
-end
-
-# # Don't adapt again.
-# function adapt_storage(
-#     to::FluxAMDAdaptor, m::Flux.Conv{N, M, F, A, V},
-# ) where {N, M, F, A <: ROCArray, V}
-#     return m
-# end
-
-# TODO GPU -> CPU adaptor
-# TODO don't adapt again when already on AMDGPU
-
 adapt_storage(::FluxCPUAdaptor, x::AMDGPU.rocRAND.RNG) = Random.default_rng()
 
 function ChainRulesCore.rrule(::Type{Array}, x::ROCArray)
@@ -57,11 +39,44 @@ function _amd(x)
         x
 end
 
-function _amd(m::Flux.Conv)
-    to = FluxAMDAdaptor()
+# Since MIOpen supports only cross-correlation as convolution,
+# for the actual convolution, we flip horizontally and vertically the weights.
+# Same for CPU -> GPU & GPU -> CPU movements.
+# Note, that gradients are also flipped.
+
+# CPU -> GPU
+
+function adapt_storage(to::FluxAMDAdaptor, m::Flux.Conv)
+    flipped_weight = reverse(m.weight; dims=ntuple(i -> i, ndims(m.weight) - 2))
     Flux.Conv(
         Adapt.adapt(to, m.σ),
-        Adapt.adapt(to, m.weight[end:-1:1, end:-1:1, :, :]),
+        Adapt.adapt(to, flipped_weight),
+        Adapt.adapt(to, m.bias),
+        m.stride, m.pad, m.dilation, m.groups)
+end
+
+# Don't adapt again.
+function adapt_storage(
+    to::FluxAMDAdaptor, m::Flux.Conv{N, M, F, A, V},
+) where {N, M, F, A <: ROCArray, V}
+    return m
+end
+
+_amd(m::Flux.Conv) = adapt_storage(FluxAMDAdaptor(), m)
+
+# GPU -> CPU
+
+function Flux.cpu(m::Flux.Conv{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
+    adapt_storage(FluxCPUAdaptor(), m)
+end
+
+function adapt_storage(
+    to::FluxCPUAdaptor, m::Flux.Conv{N, M, F, A, V},
+) where {N, M, F, A <: ROCArray, V}
+    dims = ntuple(i -> i, ndims(m.weight) - 2)
+    Flux.Conv(
+        Adapt.adapt(to, m.σ),
+        reverse(Adapt.adapt(to, m.weight); dims),
         Adapt.adapt(to, m.bias),
         m.stride, m.pad, m.dilation, m.groups)
 end
