@@ -1,9 +1,9 @@
 function amdgputest(model, xs...; checkgrad=true, atol=1e-6)
     cpu_model = model
-    gpu_model = Flux.amd(model)
+    gpu_model = Flux.gpu(model)
 
     cpu_in = xs
-    gpu_in = Flux.amd.(xs)
+    gpu_in = Flux.gpu.(xs)
 
     cpu_out = cpu_model(cpu_in...)
     gpu_out = gpu_model(gpu_in...)

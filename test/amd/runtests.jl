@@ -1,3 +1,5 @@
+Flux.gpu_backend!("AMD")
+
 include("utils.jl")
 
 AMDGPU.allowscalar(false)

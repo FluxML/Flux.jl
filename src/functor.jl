@@ -209,6 +209,10 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 function gpu(x)
+    gpu(GPU_BACKEND[], x)
+end
+
+function gpu(::FluxCUDAAdaptor, x)
   check_use_cuda()
   use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
 end
@@ -282,9 +286,11 @@ trainable(c::Cholesky) = ()
 
 # AMDGPU extension.
 
+struct FluxAMDAdaptor end
+
 const AMDGPU_LOADED = Ref{Bool}(false)
 
-function amd(x)
+function gpu(::FluxAMDAdaptor, x)
     if AMDGPU_LOADED[]
         return _amd(x)
     else

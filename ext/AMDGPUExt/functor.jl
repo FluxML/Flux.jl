@@ -1,5 +1,3 @@
-struct FluxAMDAdaptor end
-
 # Convert Float64 to Float32, but preserve Float16.
 adapt_storage(::FluxAMDAdaptor, x::T) where T <: AbstractArray =
     isbits(x) ? x : ROCArray(x)

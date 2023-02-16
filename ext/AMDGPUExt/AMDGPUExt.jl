@@ -3,7 +3,7 @@ module AMDGPUExt
 import ChainRulesCore
 import ChainRulesCore: NoTangent
 import Flux
-import Flux: FluxCPUAdaptor, _amd, _isleaf, adapt_storage, fmap
+import Flux: FluxCPUAdaptor, FluxAMDAdaptor, _amd, _isleaf, adapt_storage, fmap
 
 using AMDGPU
 using Adapt
