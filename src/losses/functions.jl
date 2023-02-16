@@ -766,6 +766,7 @@ See also [`ssim_loss`](@ref).
 """
 function ssim_loss_fast(ŷ, y; kernel_length=5, kws...)
   kernel = ones_like(y, (kernel_length*ones(Int, ndims(y)-2)..., 1, 1))
+  kernel = kernel ./ sum(kernel)
   return ssim_loss(ŷ, y, kernel; kws...)
 end
 
