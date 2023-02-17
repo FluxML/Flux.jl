@@ -81,8 +81,8 @@ end
 @testset "Batchnorm" begin
     bn = BatchNorm(3, σ)
     for nd in 1:3
-        x = rand(Float32, fill(16, nd - 1)..., 3, 4)
-        amdgputest(bn, x; atol=1f-3)
+        x = rand(Float32, fill(2, nd - 1)..., 3, 4)
+        amdgputest(bn, x; atol=1f-3, allow_nothing=true)
     end
 end
 

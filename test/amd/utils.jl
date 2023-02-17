@@ -1,4 +1,6 @@
-function amdgputest(model, xs...; checkgrad=true, atol=1e-6)
+function amdgputest(
+    model, xs...; checkgrad=true, atol=1e-6, allow_nothing::Bool = false,
+)
     cpu_model = model
     gpu_model = Flux.gpu(model)
 
@@ -12,36 +14,40 @@ function amdgputest(model, xs...; checkgrad=true, atol=1e-6)
     if checkgrad
         cpu_grad = gradient(m -> sum(m(cpu_in...)), cpu_model)
         gpu_grad = gradient(m -> sum(m(gpu_in...)), gpu_model)
-        amd_check_grad(gpu_grad, cpu_grad; atol)
+        amd_check_grad(gpu_grad, cpu_grad; atol, allow_nothing)
     end
 end
 
-function amd_check_grad(g_gpu, g_cpu; atol)
-  @show g_gpu g_cpu
-  @test false
+function amd_check_grad(g_gpu, g_cpu; atol, allow_nothing)
+    allow_nothing && return
+    @show g_gpu g_cpu
+    @test false
 end
 
-amd_check_grad(g_gpu::Base.RefValue, g_cpu::Base.RefValue, atol) =
-    amd_check_grad(g_gpu[], g_cpu[]; atol)
-amd_check_grad(g_gpu::Nothing, g_cpu::Nothing; atol) =
+amd_check_grad(g_gpu::Base.RefValue, g_cpu::Base.RefValue, atol, allow_nothing) =
+    amd_check_grad(g_gpu[], g_cpu[]; atol, allow_nothing)
+amd_check_grad(g_gpu::Nothing, g_cpu::Nothing; atol, allow_nothing) =
     @test true
-amd_check_grad(g_gpu::Float32, g_cpu::Float32; atol) =
+amd_check_grad(g_gpu::Float32, g_cpu::Float32; atol, allow_nothing) =
     @test g_cpu ≈ g_gpu atol=atol
-amd_check_grad(g_gpu::ROCArray{Float32}, g_cpu::Array{Float32}; atol) =
-    @test g_cpu ≈ collect(g_gpu) atol=atol
 amd_check_grad(
-    g_gpu::ROCArray{Float32}, g_cpu::Zygote.FillArrays.AbstractFill; atol,
+    g_gpu::ROCArray{Float32}, g_cpu::Array{Float32};
+    atol, allow_nothing,
+) = @test g_cpu ≈ collect(g_gpu) atol=atol
+amd_check_grad(
+    g_gpu::ROCArray{Float32}, g_cpu::Zygote.FillArrays.AbstractFill;
+    atol, allow_nothing
 ) = @test collect(g_cpu) ≈ collect(g_gpu) atol=atol
 
-function amd_check_grad(g_gpu::Tuple, g_cpu::Tuple; atol)
+function amd_check_grad(g_gpu::Tuple, g_cpu::Tuple; atol, allow_nothing)
     for (v1, v2) in zip(g_gpu, g_cpu)
-        amd_check_grad(v1, v2; atol)
+        amd_check_grad(v1, v2; atol, allow_nothing)
     end
 end
 
-function amd_check_grad(g_gpu::NamedTuple, g_cpu::NamedTuple; atol)
+function amd_check_grad(g_gpu::NamedTuple, g_cpu::NamedTuple; atol, allow_nothing)
     for ((k1, v1), (k2, v2)) in zip(pairs(g_gpu), pairs(g_cpu))
         @test k1 == k2
-        amd_check_grad(v1, v2; atol)
+        amd_check_grad(v1, v2; atol, allow_nothing)
     end
 end

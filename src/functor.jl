@@ -177,6 +177,30 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
+const GPU_BACKENDS = ("CUDA", "AMD")
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
+
+function gpu_backend!(backend::String)
+    if backend == GPU_BACKEND
+        @info """
+        GPU backend is already set to: $backend.
+        No need to do anything else.
+        """
+        return
+    end
+
+    backend in GPU_BACKENDS || throw(ArgumentError("""
+    Unsupported GPU backend: $backend.
+    Supported backends are: $GPU_BACKENDS.
+    """))
+
+    @set_preferences!("gpu_backend" => backend)
+    @info """
+    New GPU backend set: $backend.
+    Restart your Julia session for this change to take effect!
+    """
+end
+
 """
     gpu(x)
 
@@ -209,7 +233,16 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 function gpu(x)
-    gpu(GPU_BACKEND[], x)
+    @static if GPU_BACKEND == "CUDA"
+        gpu(FluxCUDAAdaptor(), x)
+    elseif GPU_BACKEND == "AMD"
+        gpu(FluxAMDAdaptor(), x)
+    else
+        error("""
+        Unsupported GPU backend: $GPU_BACKEND.
+        Supported backends are: $GPU_BACKENDS.
+        """)
+    end
 end
 
 function gpu(::FluxCUDAAdaptor, x)

@@ -4,6 +4,8 @@ import ChainRulesCore
 import ChainRulesCore: NoTangent
 import Flux
 import Flux: FluxCPUAdaptor, FluxAMDAdaptor, _amd, _isleaf, adapt_storage, fmap
+import Flux: DenseConvDims, Conv, conv, conv_reshape_bias
+import NNlib
 
 using AMDGPU
 using Adapt
@@ -32,6 +34,8 @@ end
 ChainRulesCore.@non_differentiable check_use_amdgpu()
 
 include("functor.jl")
+include("batchnorm.jl")
+include("conv.jl")
 
 function __init__()
     Flux.AMDGPU_LOADED[] = true

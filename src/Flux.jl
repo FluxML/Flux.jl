@@ -73,22 +73,4 @@ include("deprecations.jl")
 
 include("cuda/cuda.jl")
 
-const GPU_BACKENDS = Dict(
-    "CUDA" => FluxCUDAAdaptor(),
-    "AMD" => FluxAMDAdaptor())
-
-const GPU_BACKEND = Ref{Union{FluxCUDAAdaptor, FluxAMDAdaptor}}(
-    GPU_BACKENDS[@load_preference("gpu_backend", "CUDA")])
-
-function gpu_backend!(backend::String)
-    backend in keys(GPU_BACKENDS) || throw(ArgumentError("""
-    Unsupported GPU backend: $backend.
-    Supported backends are: $(keys(GPU_BACKENDS)).
-    """))
-
-    @set_preferences!("gpu_backend" => backend)
-    GPU_BACKEND[] = GPU_BACKENDS[@load_preference("gpu_backend")]
-    return
-end
-
 end # module
