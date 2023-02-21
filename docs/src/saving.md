@@ -76,13 +76,13 @@ This can be done as
 
 ```julia
 using Flux: loadmodel!
-using BSON: @load
+using BSON
 
 # some predefined model
 model = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
 
 # load one model into another
-model = loadmodel!(model, @load("mymodel.bson"))
+model = loadmodel!(model, BSON.load("mymodel.bson")[:model])
 ```
 
 This ensures that the model loaded from `"mymodel.bson"` matches the structure of `model`. [`Flux.loadmodel!`](@ref) is also convenient for copying parameters between models in memory.
