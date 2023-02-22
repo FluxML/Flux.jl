@@ -187,6 +187,8 @@ function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, 
     """)
 end
 
+# https://github.com/FluxML/Flux.jl/issues/2195
+const flatten = MLUtils.flatten
 
 # v0.14 deprecations
 
