@@ -8,6 +8,7 @@ using StatsBase: var, std
 using Statistics, LinearAlgebra
 using Random
 using Test
+using BSON
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
@@ -557,6 +558,17 @@ end
       m0 = Flux.loadmodel!(m0, m2)
       @test iszero(m0[1].bias)  # obviously unchanged
       @test sum(m0[1].weight) == 21
+    end
+  end
+
+  @testset "loadmodel!(dst, src) with BSON" begin
+    m1 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
+    m2 = Chain(Dense(Float32[0 0; 0 0; 0 0], Float32[0, 0, 0]), Dense(3 => 1))
+    @test m1[1].weight != m2[1].weight
+    mktempdir() do dir
+      BSON.@save joinpath(dir, "test.bson") m1
+      m2 = Flux.loadmodel!(m2, BSON.load(joinpath(dir, "test.bson"))[:m1])
+      @test m1[1].weight == m2[1].weight
     end
   end
 

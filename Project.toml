@@ -48,6 +48,7 @@ FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays"]
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays", "BSON"]
