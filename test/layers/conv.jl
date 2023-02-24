@@ -17,10 +17,14 @@ using Flux: gradient
   @test size(gmp(x)) == (1, 1, 3, 2)
   gmp = GlobalMeanPool()
   @test size(gmp(x)) == (1, 1, 3, 2)
+  glmp = GlobalLPNormPool(2.0)
+  @test size(glmp(x)) == (1, 1, 3, 2)
   mp = MaxPool((2, 2))
   @test mp(x) == maxpool(x, PoolDims(x, 2))
   mp = MeanPool((2, 2))
   @test mp(x) == meanpool(x, PoolDims(x, 2))
+  lnp = LPNormPool((2,2), 2.0)
+  @test lnp(x) == lpnormpool(x, PoolDims(x, 2); p=2.0)
 end
 
 @testset "CNN" begin
