@@ -21,7 +21,7 @@ end
 @testset "Chain of Dense layers" begin
     m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax) |> f32
     x = rand(Float32, 10, 10)
-    amdgputest(m, x)
+    gpu_autodiff_test(m, x)
 end
 
 @testset "Convolution" begin
@@ -30,7 +30,7 @@ end
         x = rand(Float32, fill(10, nd)..., 3, 5)
 
         # Ensure outputs are the same.
-        amdgputest(m, x; atol=1f-3, checkgrad=false)
+        gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
 
         # Gradients are flipped as well.
         md, xd = Flux.gpu.((m, x))
@@ -49,7 +49,7 @@ end
 @testset "Cross-correlation" begin
     m = CrossCor((2, 2), 3 => 4) |> f32
     x = rand(Float32, 10, 10, 3, 2)
-    amdgputest(m, x; atol=1f-3)
+    gpu_autodiff_test(m, x)
 end
 
 @testset "Restructure" begin
@@ -82,6 +82,6 @@ end
     bn = BatchNorm(3, σ)
     for nd in 1:3
         x = rand(Float32, fill(2, nd - 1)..., 3, 4)
-        amdgputest(bn, x; atol=1f-3, allow_nothing=true)
+        gpu_autodiff_test(bn, x; atol=1f-3, allow_nothing=true)
     end
 end

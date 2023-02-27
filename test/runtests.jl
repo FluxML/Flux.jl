@@ -7,6 +7,8 @@ using IterTools: ncycle
 using Zygote
 using CUDA
 
+include("test_utils.jl")
+
 Random.seed!(0)
 
 @testset verbose=true "Flux.jl" begin
