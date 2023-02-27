@@ -25,8 +25,8 @@ end
 end
 
 @testset "Convolution" begin
-    for nd in 1:3
-        m = Conv(tuple(fill(2, nd)...), 3 => 4) |> f32
+    for conv_type in (Conv, ConvTranspose), nd in 1:3
+        m = conv_type(tuple(fill(2, nd)...), 3 => 4) |> f32
         x = rand(Float32, fill(10, nd)..., 3, 5)
 
         # Ensure outputs are the same.
@@ -85,10 +85,3 @@ end
         amdgputest(bn, x; atol=1f-3, allow_nothing=true)
     end
 end
-
-# FIXME scalar indexing. Needs NNlib.scatter?
-# @testset "Flux.onehot gpu" begin
-#     y = Flux.onehotbatch(ones(3), 1:2) |> Flux.gpu
-#     x = rand(3, 2) |> Flux.gpu
-#     @test gradient(x -> sum(x * y), x)[1] isa ROCArray
-# end

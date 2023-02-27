@@ -4,7 +4,7 @@ import ChainRulesCore
 import ChainRulesCore: NoTangent
 import Flux
 import Flux: FluxCPUAdaptor, FluxAMDAdaptor, _amd, _isleaf, adapt_storage, fmap
-import Flux: DenseConvDims, Conv, conv, conv_reshape_bias
+import Flux: DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
 import NNlib
 
 using AMDGPU

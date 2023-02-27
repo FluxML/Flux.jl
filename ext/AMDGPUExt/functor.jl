@@ -44,9 +44,12 @@ end
 
 # CPU -> GPU
 
-function adapt_storage(to::FluxAMDAdaptor, m::Flux.Conv)
+_conv_basetype(c::Type{C}) where C <: Conv = Conv
+_conv_basetype(c::Type{C}) where C <: ConvTranspose = ConvTranspose
+
+function adapt_storage(to::FluxAMDAdaptor, m::C) where C <: Union{Conv, ConvTranspose}
     flipped_weight = reverse(m.weight; dims=ntuple(i -> i, ndims(m.weight) - 2))
-    Flux.Conv(
+    _conv_basetype(C)(
         Adapt.adapt(to, m.σ),
         Adapt.adapt(to, flipped_weight),
         Adapt.adapt(to, m.bias),
@@ -55,26 +58,43 @@ end
 
 # Don't adapt again.
 function adapt_storage(
-    to::FluxAMDAdaptor, m::Flux.Conv{N, M, F, A, V},
+    to::FluxAMDAdaptor, m::Conv{N, M, F, A, V},
 ) where {N, M, F, A <: ROCArray, V}
     return m
 end
 
-_amd(m::Flux.Conv) = adapt_storage(FluxAMDAdaptor(), m)
+function adapt_storage(
+    to::FluxAMDAdaptor, m::ConvTranspose{N, M, F, A, V},
+) where {N, M, F, A <: ROCArray, V}
+    return m
+end
+
+_amd(m::Union{Conv, ConvTranspose}) = adapt_storage(FluxAMDAdaptor(), m)
 
 # GPU -> CPU
 
-function Flux.cpu(m::Flux.Conv{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
+function Flux.cpu(m::Conv{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
+    adapt_storage(FluxCPUAdaptor(), m)
+end
+
+function Flux.cpu(m::ConvTranspose{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
     adapt_storage(FluxCPUAdaptor(), m)
 end
 
 function adapt_storage(
-    to::FluxCPUAdaptor, m::Flux.Conv{N, M, F, A, V},
+    to::FluxCPUAdaptor, m::Conv{N, M, F, A, V},
 ) where {N, M, F, A <: ROCArray, V}
     dims = ntuple(i -> i, ndims(m.weight) - 2)
-    Flux.Conv(
-        Adapt.adapt(to, m.σ),
-        reverse(Adapt.adapt(to, m.weight); dims),
-        Adapt.adapt(to, m.bias),
-        m.stride, m.pad, m.dilation, m.groups)
+    Conv(
+        Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
+        Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
+end
+
+function adapt_storage(
+    to::FluxCPUAdaptor, m::ConvTranspose{N, M, F, A, V},
+) where {N, M, F, A <: ROCArray, V}
+    dims = ntuple(i -> i, ndims(m.weight) - 2)
+    ConvTranspose(
+        Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
+        Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end

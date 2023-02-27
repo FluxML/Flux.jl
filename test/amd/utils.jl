@@ -37,7 +37,7 @@ amd_check_grad(
 amd_check_grad(
     g_gpu::ROCArray{Float32}, g_cpu::Zygote.FillArrays.AbstractFill;
     atol, allow_nothing
-) = @test collect(g_cpu) ≈ collect(g_gpu) atol=atol
+) = @test g_cpu ≈ collect(g_gpu) atol=atol
 
 function amd_check_grad(g_gpu::Tuple, g_cpu::Tuple; atol, allow_nothing)
     for (v1, v2) in zip(g_gpu, g_cpu)
