@@ -204,11 +204,11 @@ end
 """
     gpu(x)
 
-Copies `m` to the current GPU device, if one is available.
+Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
 
 On arrays, this calls CUDA's `cu`, which also changes arrays
-with Float64 elements to Float32 while copying them to the device.
+with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
 To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
 
 Use [`cpu`](@ref) to copy back to ordinary `Array`s.
