@@ -1,5 +1,8 @@
 # Flux Release Notes
 
+## v0.13.14
+* Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.
+
 ## v0.13.13
 * Added `f16` which changes precision to `Float16`, recursively.
 
