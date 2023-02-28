@@ -50,7 +50,7 @@ end
 
 (c::Chain)(x) = _applychain(c.layers, x)
 
-@generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+@generated function _applychain(layers::Tuple{Vararg{Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
   calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
   Expr(:block, calls...)
@@ -627,7 +627,7 @@ function (m::PairwiseFusion)(x::T) where {T}
 end
 (m::PairwiseFusion)(xs...) = m(xs)
 
-@generated function applypairwisefusion(layers::Tuple{Vararg{<:Any,N}}, connection, x::T) where {N, T}
+@generated function applypairwisefusion(layers::Tuple{Vararg{Any,N}}, connection, x::T) where {N, T}
   y_symbols = [gensym() for _ in 1:(N + 1)]
   getinput(i) = T <: Tuple ? :(x[$i]) : :x
   calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
