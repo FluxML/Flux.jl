@@ -14,6 +14,7 @@ NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 NNlibCUDA = "a00861dc-f156-4864-bf3c-e6376f28a68d"
 OneHotArrays = "0b1bfda6-eb8a-41d2-88d8-f5af5cad476f"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
+Preferences = "21216c6a-2e73-6563-6e65-726566657250"
 ProgressLogging = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
@@ -23,14 +24,21 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
+[weakdeps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+
+[extensions]
+AMDGPUExt = "AMDGPU"
+
 [compat]
+AMDGPU = "0.4.8"
 Adapt = "3.0"
 CUDA = "3, 4"
 ChainRulesCore = "1.12"
 Functors = "0.3, 0.4"
 MLUtils = "0.2, 0.3.1, 0.4"
 MacroTools = "0.5"
-NNlib = "0.8.15"
+NNlib = "0.8.19"
 NNlibCUDA = "0.2.6"
 OneHotArrays = "0.1, 0.2"
 Optimisers = "0.2.12"
@@ -42,6 +50,7 @@ Zygote = "0.6.49"
 julia = "1.6"
 
 [extras]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"

@@ -177,14 +177,38 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
+const GPU_BACKENDS = ("CUDA", "AMD")
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
+
+function gpu_backend!(backend::String)
+    if backend == GPU_BACKEND
+        @info """
+        GPU backend is already set to: $backend.
+        No need to do anything else.
+        """
+        return
+    end
+
+    backend in GPU_BACKENDS || throw(ArgumentError("""
+    Unsupported GPU backend: $backend.
+    Supported backends are: $GPU_BACKENDS.
+    """))
+
+    @set_preferences!("gpu_backend" => backend)
+    @info """
+    New GPU backend set: $backend.
+    Restart your Julia session for this change to take effect!
+    """
+end
+
 """
     gpu(x)
 
-Copies `m` to the current GPU device, if one is available.
+Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
 
 On arrays, this calls CUDA's `cu`, which also changes arrays
-with Float64 elements to Float32 while copying them to the device.
+with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
 To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
 
 Use [`cpu`](@ref) to copy back to ordinary `Array`s.
@@ -209,6 +233,19 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 function gpu(x)
+    @static if GPU_BACKEND == "CUDA"
+        gpu(FluxCUDAAdaptor(), x)
+    elseif GPU_BACKEND == "AMD"
+        gpu(FluxAMDAdaptor(), x)
+    else
+        error("""
+        Unsupported GPU backend: $GPU_BACKEND.
+        Supported backends are: $GPU_BACKENDS.
+        """)
+    end
+end
+
+function gpu(::FluxCUDAAdaptor, x)
   check_use_cuda()
   use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
 end
@@ -280,3 +317,21 @@ f16(m) = _paramtype(Float16, m)
 @functor Cholesky
 trainable(c::Cholesky) = ()
 
+# AMDGPU extension.
+
+struct FluxAMDAdaptor end
+
+const AMDGPU_LOADED = Ref{Bool}(false)
+
+function gpu(::FluxAMDAdaptor, x)
+    if AMDGPU_LOADED[]
+        return _amd(x)
+    else
+        @info """
+        The AMDGPU functionality is being called via `Flux.amd` but
+        `AMDGPU` must be loaded to access it.
+        """ maxlog=1
+    end
+end
+
+function _amd end

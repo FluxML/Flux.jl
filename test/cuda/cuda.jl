@@ -91,7 +91,7 @@ end
     struct SimpleBits
       field::Int32
     end
-    
+
     @test gpu((;a=ones(1))).a isa CuVector{Float32}
     @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
     @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
@@ -167,14 +167,14 @@ end
   @test parent(gpu(g3)) isa CuArray
 
 
-  #Issue #2116  
+  #Issue #2116
   struct A2116
     x::Int
     y::Int
   end
   x = [A2116(1,1), A2116(2,2)]
-  xgpu = gpu(x) 
+  xgpu = gpu(x)
   @test xgpu isa CuVector{A2116}
-  @test cpu(xgpu) isa Vector{A2116} 
+  @test cpu(xgpu) isa Vector{A2116}
   @test cpu(gpu([CartesianIndex(1)])) isa Vector{CartesianIndex{1}}
 end
