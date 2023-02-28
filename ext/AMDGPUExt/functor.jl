@@ -18,10 +18,6 @@ adapt_storage(::FluxAMDAdaptor, x::AbstractRNG) = error("""
 
 adapt_storage(::FluxCPUAdaptor, x::AMDGPU.rocRAND.RNG) = Random.default_rng()
 
-function ChainRulesCore.rrule(::Type{Array}, x::ROCArray)
-    Array(x), dx -> (NoTangent(), ROCArray(unthunk(dx)))
-end
-
 function ChainRulesCore.rrule(
     ::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::AMDGPU.AnyROCArray,
 )
@@ -32,9 +28,8 @@ end
 
 function _amd(x)
     check_use_amdgpu()
-    USE_AMDGPU[] ?
-        fmap(x -> Adapt.adapt(FluxAMDAdaptor(), x), x; exclude=_isleaf) :
-        x
+    USE_AMDGPU[] || return x
+    fmap(x -> Adapt.adapt(FluxAMDAdaptor(), x), x; exclude=_isleaf)
 end
 
 # Since MIOpen supports only cross-correlation as convolution,
