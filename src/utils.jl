@@ -625,14 +625,17 @@ true
 """
 modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 
-@nograd modules # TODO: is this correct? might fail with explicit parameters.
+@non_differentiable modules(::Any...) # TODO: is this correct? might fail with explicit parameters.
 function ChainRulesCore.rrule(::typeof(modules), m)
   modules(m), dm -> error("Flux.modules is not at present differentiable, sorry")
 end
 
 isleaflike(x) = Functors.isleaf(x)
-isleaflike(::Tuple{Vararg{<:Number}}) = true
-isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
+
+# these are, essentially, Tuple{Vararg{<:T}} using the special property
+# of tuples that they are type covariant.  Using <: here causes warning or error
+isleaflike(::Tuple{Vararg{Number}}) = true
+isleaflike(::Tuple{Vararg{AbstractArray{<:Number}}}) = true
 
 """
     patience(predicate, wait)

@@ -91,7 +91,7 @@ end
 # Allows caching of the parameters when params is called within gradient() to fix #2040.
 # @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
 # That speeds up implicit use, and silently breaks explicit use. 
-# From @macroexpand Zygote.@nograd params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
+# From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
 Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
 struct FluxCUDAAdaptor end

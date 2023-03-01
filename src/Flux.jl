@@ -12,7 +12,7 @@ import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owne
 using Optimisers: freeze!, thaw!, adjust!
 
 using Zygote, ChainRulesCore
-using Zygote: Params, @adjoint, gradient, pullback, @nograd
+using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
 export gradient
 
