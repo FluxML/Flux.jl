@@ -44,6 +44,7 @@ using .Train
 using .Train: setup
 
 using CUDA
+import cuDNN
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
 using Adapt, Functors, OneHotArrays

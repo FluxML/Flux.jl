@@ -23,6 +23,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [compat]
 AMDGPU = "0.4.8"
@@ -42,6 +43,7 @@ Reexport = "0.2, 1.0"
 SpecialFunctions = "1.8.2, 2.1.2"
 StatsBase = "0.33"
 Zygote = "0.6.49"
+cuDNN = "1"
 julia = "1.6"
 
 [extensions]
