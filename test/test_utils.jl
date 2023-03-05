@@ -82,3 +82,17 @@ function gpu_autodiff_test(
         end
     end
 end
+
+
+test_grad_type(g::Nothing, x) = nothing
+
+function test_grad_type(g::AbstractArray{T1}, x::AbstractArray{T2}) where {T1, T2}
+    @test T1 == T2
+    @test size(g) == size(x)
+end
+
+function test_grad_type(g::NamedTuple, x::T) where T
+    for f in fieldnames(T)
+        test_grad_type(g[f], getfield(x, f))
+    end
+end
