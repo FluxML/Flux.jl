@@ -38,7 +38,7 @@ at plots in a separate window, use fantastic for debugging.
 
 
 Next, let us define values for learning rate, batch size, epochs, and other
-hyper-parameters. While we are at it, we also define optimizers for the generator
+hyper-parameters. While we are at it, we also define optimisers for the generator
 and discriminator network. More on what these are later.
 
 ```julia
@@ -49,8 +49,8 @@ and discriminator network. More on what these are later.
     output_period = 100 # Period length for plots of generator samples
     n_features = 28 * 28# Number of pixels in each sample of the MNIST dataset
     latent_dim = 100    # Dimension of latent space
-    opt_dscr = ADAM(lr_d)# Optimizer for the discriminator
-    opt_gen = ADAM(lr_g) # Optimizer for the generator
+    opt_dscr = ADAM(lr_d)# Optimiser for the discriminator
+    opt_gen = ADAM(lr_g) # Optimiser for the generator
 ```
 
 

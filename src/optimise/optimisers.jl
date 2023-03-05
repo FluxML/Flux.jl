@@ -45,7 +45,7 @@ end
 """
     Momentum(η = 0.01, ρ = 0.9)
 
-Gradient descent optimizer with learning rate `η` and momentum `ρ`.
+Gradient descent optimiser with learning rate `η` and momentum `ρ`.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
@@ -78,7 +78,7 @@ end
 """
     Nesterov(η = 0.001, ρ = 0.9)
 
-Gradient descent optimizer with learning rate `η` and Nesterov momentum `ρ`.
+Gradient descent optimiser with learning rate `η` and Nesterov momentum `ρ`.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
@@ -191,7 +191,7 @@ end
 """
     RAdam(η = 0.001, β::Tuple = (0.9, 0.999), ϵ = $EPS)
 
-[Rectified Adam](https://arxiv.org/abs/1908.03265) optimizer.
+[Rectified Adam](https://arxiv.org/abs/1908.03265) optimiser.
 
 # Parameters
 - Learning rate (`η`): Amount by which gradients are discounted before updating
@@ -328,7 +328,7 @@ end
 """
     AdaGrad(η = 0.1, ϵ = $EPS)
 
-[AdaGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimizer. It has
+[AdaGrad](http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf) optimiser. It has
 parameter specific learning rates based on how frequently it is updated.
 Parameters don't need tuning.
 
@@ -540,7 +540,7 @@ function apply!(o::AdaBelief, x, Δ)
   #= st is a variance and can go to zero. This is in contrast to Adam, which uses the
   second moment which is usually far enough from zero. This is problematic, since st
   can be slightly negative due to numerical error, and the square root below will fail.
-  Also, if we want to differentiate through the optimizer, √0 is not differentiable.
+  Also, if we want to differentiate through the optimiser, √0 is not differentiable.
   To protect against this, we add a small number, st -> st + eps2.
   The original implementation (https://github.com/juntang-zhuang/Adabelief-Optimizer)
   uses the square of Adam's epsilon, which we do here.
@@ -556,7 +556,7 @@ function apply!(o::AdaBelief, x, Δ)
 end
 
 
-# Compose optimizers
+# Compose optimisers
 
 """
     Optimiser(a, b, c...)
@@ -598,7 +598,7 @@ for more general scheduling techniques.
 
 # Examples
 
-`InvDecay` is typically composed  with other optimizers 
+`InvDecay` is typically composed  with other optimisers 
 as the last transformation of the gradient:
 
 ```julia
@@ -643,13 +643,13 @@ for more general scheduling techniques.
 
 # Examples
 
-`ExpDecay` is typically composed  with other optimizers 
+`ExpDecay` is typically composed  with other optimisers 
 as the last transformation of the gradient:
 ```julia
 opt = Optimiser(Adam(), ExpDecay(1.0))
 ```
 Note: you may want to start with `η=1` in `ExpDecay` when combined with other
-optimizers (`Adam` in this case) that have their own learning rate.
+optimisers (`Adam` in this case) that have their own learning rate.
 """
 mutable struct ExpDecay <: AbstractOptimiser
   eta::Float64
@@ -677,7 +677,7 @@ end
     WeightDecay(λ = 0)
 
 Decay weights by ``λ``. 
-Typically composed  with other optimizers as the first transformation to the gradient,
+Typically composed  with other optimisers as the first transformation to the gradient,
 making it equivalent to adding ``L_2`` regularization 
 with coefficient  ``λ`` to the loss.
 

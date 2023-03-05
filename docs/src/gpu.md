@@ -138,12 +138,12 @@ In order to train the model using the GPU both model and the training data have 
 1. Iterating over the batches in a [DataLoader](@ref) object transferring each one of the training batches at a time to the GPU. 
    ```julia
    train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
-   # ... model, optimizer and loss definitions
+   # ... model, optimiser and loss definitions
    for epoch in 1:nepochs
        for (xtrain_batch, ytrain_batch) in train_loader
            x, y = gpu(xtrain_batch), gpu(ytrain_batch)
            gradients = gradient(() -> loss(x, y), parameters)
-           Flux.Optimise.update!(optimizer, parameters, gradients)
+           Flux.Optimise.update!(optimiser, parameters, gradients)
        end
    end
    ```
@@ -166,7 +166,7 @@ In order to train the model using the GPU both model and the training data have 
    ```julia
    using CUDA: CuIterator
    train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
-   # ... model, optimizer and loss definitions
+   # ... model, optimiser and loss definitions
    for epoch in 1:nepochs
        for (xtrain_batch, ytrain_batch) in CuIterator(train_loader)
           # ...
