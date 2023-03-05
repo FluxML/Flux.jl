@@ -96,3 +96,16 @@ function test_grad_type(g::NamedTuple, x::T) where T
         test_grad_type(g[f], getfield(x, f))
     end
 end
+
+test_grad_equal(g1::Nothing, g2::Nothing) = nothing
+
+function test_grad_equal(g1::AnyCuArray{T}, g2::Array{T}; atol=1e-4) where T 
+    @test Array(g1) ≈ g2 atol=atol
+end
+
+function test_grad_equal(g1::T1, g2::T2) where {T1 <: NamedTuple, T2 <: NamedTuple}
+    @test fieldnames(T1) == fieldnames(T2)
+    for f in fieldnames(T1)
+        test_grad_equal(g1[f], g2[f])
+    end
+end

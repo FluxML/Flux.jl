@@ -338,3 +338,29 @@ end
     @test eltype(pool(reshape(gx,3,4,1))) == Float16
   end
 end
+
+@testset "MultiHeadAttention" begin
+  dim = 4; nheads = 2; len = 3; batch_size = 5
+  mha_cpu = MultiHeadAttention(dim; nheads)
+  x_cpu = rand(Float32, (dim, len, batch_size))
+  y_cpu, α_cpu = mha_cpu(x_cpu, withscores=true)
+
+  mha_gpu = mha_cpu |> gpu
+  x_gpu = x_cpu |> gpu
+  y_gpu, α_gpu = mha_gpu(x_gpu, withscores=true)
+  @test y_gpu isa CuArray{Float32}
+  @test α_gpu isa CuArray{Float32}
+  @test Array(y_gpu) ≈ y_cpu atol=1e-4
+  @test Array(α_gpu) ≈ α_cpu atol=1e-4
+
+  gm_cpu, gx_cpu = gradient(mha_cpu, x_cpu) do mha, x
+    y, α = mha(x, withscores=true)
+    return sum(y.^2) + sum(α.^2)
+  end
+  gm_gpu, gx_gpu = gradient(mha_gpu, x_gpu) do mha, x
+    y, α = mha(x, withscores=true)
+    return sum(y.^2) + sum(α.^2)
+  end
+  test_grad_equal(gm_gpu, gm_cpu)
+  test_grad_equal(gx_gpu, gx_cpu)
+end
