@@ -68,7 +68,7 @@ include("outputsize.jl")
 export @autosize
 
 include("losses/Losses.jl")
-using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
+using .Losses
 
 include("deprecations.jl")
 
