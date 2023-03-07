@@ -67,6 +67,7 @@ include("outputsize.jl")
 export @autosize
 
 include("losses/Losses.jl")
+using .Losses
 
 include("deprecations.jl")
 
