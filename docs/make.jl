@@ -1,7 +1,9 @@
 using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
 
 
-DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
+DocMeta.setdocmeta!(Flux, :DocTestSetup, 
+    :(using Flux; using Flux: flatten); 
+    recursive = true)
 
 makedocs(
     modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames],
