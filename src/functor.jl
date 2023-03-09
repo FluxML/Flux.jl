@@ -202,7 +202,7 @@ function gpu_backend!(backend::String)
 end
 
 """
-    gpu(x)
+    gpu(m)
 
 Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
