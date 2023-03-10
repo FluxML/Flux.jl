@@ -29,14 +29,22 @@ Returns the transformed input sequnce and the attention scores.
     
     (mha::MultiHeadAttention)(q_in, k_in, v_in, [bias]; [mask])
 
-- `q_in`: input query array of size `(q_in_dim, q_len, batch_size...)`.
-- `k_in`: input key array of size `(k_in_dim, kv_len, batch_size...)`.
-- `v_in`: input value array of size `(v_in_dim, kv_len, batch_size...)`.
-- `mask`: input array broadcastable to size 
-          `(kv_len, q_len, nheads, batch_size)`. Default `nothing`.
+The arguments of the forward pass are:
 
-In alternative, `mha(q_in)` is equivalent to `mha(q_in, q_in, q_in)` (self-attention) 
-and `mha(q_in, k_in)` is equivalent to `mha(q_in, k_in, k_in)` (key and value are the same).
+- `q_in`: Input query array of size `(q_in_dim, q_len, batch_size)`.
+- `k_in`: Input key array of size `(k_in_dim, kv_len, batch_size)`.
+- `v_in`: Input value array of size `(v_in_dim, kv_len, batch_size)`.
+- `bias`: Bias array broadcastable to size `(kv_len, q_len, nheads, batch_size)`. 
+          It will be added to the attention scores before the softmax.
+          Default `nothing`.
+- `mask`: Input array broadcastable to size 
+          `(kv_len, q_len, nheads, batch_size)`. 
+          The mask is applied to the attention scores just before the softmax. 
+          See [`NNlib.make_causal_mask`](@ref) for creating causal masks. 
+          Default `nothing`.
+
+Alternative calling signatures are `mha(q_in)`, equivalent to `mha(q_in, q_in, q_in)` (self-attention),
+and `mha(q_in, k_in)`, equivalent to `mha(q_in, k_in, k_in)` (key and value are the same).
 
 See also [`NNlib.dot_product_attention`](@ref).
 
