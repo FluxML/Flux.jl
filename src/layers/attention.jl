@@ -7,17 +7,19 @@ const IntOrDims{N} = Union{Int, Dims{N}}
 
 The multi-head dot-product attention layer used in Transformer architectures [1].
 
+Returns the transformed input sequnce and the attention scores.
+
 [1] Vaswani et al. "Attention is all you need." Advances in Neural Information Processing Systems. 2017.
 
 # Arguments
 
 - `dims`: The embedding dimensions of inputs, intermediate tensors and outputs.
           In the most general case, it is given as 
-          `(q_in_dim, k_in_dim, v_in_dim) => (qk_dim, v_dim) => out_dim`.
+          a) `(q_in_dim, k_in_dim, v_in_dim) => (qk_dim, v_dim) => out_dim`.
           Can take also simpler forms as
-          `dims::Int`, `in_dim::Int => (qk_dim, v_dim) => out_dim`,
-          `in_dim::Int => qkv_dim => out_dim`.
-
+          b) `dims::Int`;
+          c) `in_dim::Int => (qk_dim, v_dim) => out_dim`;
+          d) `in_dim::Int => qkv_dim => out_dim`.
 - `nheads`: number of heads. Default `8`.
 - `init`: weight initializer for the Dense layers. Default `glorot_uniform`.
 - `bias` : whether pointwise QKVO dense transforms use bias. Default `false`.
@@ -25,18 +27,16 @@ The multi-head dot-product attention layer used in Transformer architectures [1]
 
 # Forward
     
-    (mha::MultiHeadAttention)(q_in, k_in, v_in, [bias]; [mask, withscores])
+    (mha::MultiHeadAttention)(q_in, k_in, v_in, [bias]; [mask])
 
 - `q_in`: input query array of size `(q_in_dim, q_len, batch_size...)`.
 - `k_in`: input key array of size `(k_in_dim, kv_len, batch_size...)`.
 - `v_in`: input value array of size `(v_in_dim, kv_len, batch_size...)`.
 - `mask`: input array broadcastable to size 
           `(kv_len, q_len, nheads, batch_size)`. Default `nothing`.
-- `withscores`: Whether to return the attention scores. Default `false`.
 
 In alternative, `mha(q_in)` is equivalent to `mha(q_in, q_in, q_in)` (self-attention) 
 and `mha(q_in, k_in)` is equivalent to `mha(q_in, k_in, k_in)` (key and value are the same).
-
 
 See also [`NNlib.dot_product_attention`](@ref).
 
@@ -47,10 +47,14 @@ mha = MultiHeadAttention(64, nheads = 8)
 q = rand(Float32, (64, 10, 32))
 k = rand(Float32, (64, 20, 32))
 v = rand(Float32, (64, 20, 32))
-y = mha(q, k, v) # [y] = [64, 10, 32]
+y, α = mha(q, k, v) 
+# [y] = [64, 10, 32]
+# [α] = [20, 10, 8, 32]
 
 mha = MultiHeadAttention(64 => 1024 => 1024, nheads = 8)
-y = mha(q) # self-attention; [y] = [1024, 10, 32]
+y, α = mha(q) # self-attention
+# [y] = [1024, 10, 32]
+# [α] = [10, 10, 8, 32]
 ```
 """
 struct MultiHeadAttention{P1, D, P2}
@@ -105,8 +109,8 @@ end
 # key and value are the same
 (mha::MultiHeadAttention)(q, kv; kws...) = mha(q, kv, kv; kws...)
 
-function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3, bias=nothing; 
-                                withscores=false, mask=nothing)
+function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3, 
+                                  bias=nothing; mask=nothing)
   ## [q_in] = [q_in_dim, q_len, batch_size]
   ## [k_in] = [k_in_dim, kv_len, batch_size] 
   ## [v_in] = [v_in_dim, kv_len, batch_size]
@@ -117,5 +121,5 @@ function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3, bias=nothing;
   x = mha.out_proj(x)
   # [x] = [out_dim, q_len, batch_size]
   # [α] = [kv_len, q_len, nheads, batch_size]
-  return withscores ? (x, α) : x
+  return x, α
 end
