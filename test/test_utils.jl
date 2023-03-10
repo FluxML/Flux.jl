@@ -1,27 +1,33 @@
-function check_grad(g_gpu, g_cpu, atol, rtol; allow_nothing::Bool)
+function check_grad(g_gpu, g_cpu;
+            rtol=1e-4, atol=1e-4,
+            allow_nothing::Bool=false)
     allow_nothing && return
     @show g_gpu g_cpu
     @test false
 end
-check_grad(g_gpu::Base.RefValue, g_cpu::Base.RefValue, atol, rtol; allow_nothing::Bool) =
-    check_grad(g_gpu[], g_cpu[], atol, rtol; allow_nothing)
-check_grad(g_gpu::Nothing, g_cpu::Nothing, atol, rtol; allow_nothing::Bool) =
+
+check_grad(g_gpu::Base.RefValue, g_cpu::Base.RefValue; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
+    check_grad(g_gpu[], g_cpu[]; rtol, atol, allow_nothing)
+
+check_grad(g_gpu::Nothing, g_cpu::Nothing; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
     @test true
-check_grad(g_gpu::Float32, g_cpu::Float32, atol, rtol; allow_nothing::Bool) =
+
+check_grad(g_gpu::Float32, g_cpu::Float32; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
     @test g_cpu ≈ g_gpu rtol=rtol atol=atol
-check_grad(g_gpu::CuArray{Float32}, g_cpu::Array{Float32}, atol, rtol; allow_nothing::Bool) =
+
+check_grad(g_gpu::CuArray{Float32}, g_cpu::Array{Float32}; rtol=eps32, allow_nothing::Bool=false) =
     @test g_cpu ≈ collect(g_gpu) rtol=rtol atol=atol
 
-function check_grad(g_gpu::Tuple, g_cpu::Tuple, atol, rtol; allow_nothing::Bool)
+function check_grad(g_gpu::Tuple, g_cpu::Tuple; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false)
     for (v1, v2) in zip(g_gpu, g_cpu)
-        check_grad(v1, v2, atol, rtol; allow_nothing)
+        check_grad(v1, v2; rtol, atol, allow_nothing)
     end
 end
 
-function check_grad(g_gpu::NamedTuple, g_cpu::NamedTuple, atol, rtol; allow_nothing::Bool)
+function check_grad(g_gpu::NamedTuple, g_cpu::NamedTuple; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false)
     for ((k1,v1), (k2,v2)) in zip(pairs(g_gpu), pairs(g_cpu))
         @test k1 == k2
-        check_grad(v1, v2, atol, rtol; allow_nothing)
+        check_grad(v1, v2; rtol, atol, allow_nothing)
     end
 end
 
@@ -31,10 +37,14 @@ check_type(x::CuArray{Float32}) = true
 check_type(x::Array{Float32}) = true
 
 function gpu_autodiff_test(
-    f_cpu, xs_cpu::Array{Float32}...;
-    test_equal=true, rtol=1e-4, atol=1e-4,
-    checkgrad::Bool = true, allow_nothing::Bool = false,
-)
+            f_cpu, 
+            xs_cpu::Array{Float32}...;
+            test_equal=true, 
+            rtol=1e-4, atol=1e-4,
+            checkgrad::Bool = true, 
+            allow_nothing::Bool = false,
+        )
+
     # Compare CPU & GPU function outputs.
     f_gpu = f_cpu |> gpu
     xs_gpu = gpu.(xs_cpu)
@@ -60,7 +70,7 @@ function gpu_autodiff_test(
     if test_equal
         @test collect(y_cpu) ≈ collect(y_gpu) rtol=rtol atol=atol
         for (g_gpu, g_cpu) in zip(gs_gpu, gs_cpu)
-            check_grad(g_gpu, g_cpu, atol, rtol; allow_nothing)
+            check_grad(g_gpu, g_cpu; atol, rtol, allow_nothing)
         end
     end
 
@@ -78,34 +88,22 @@ function gpu_autodiff_test(
         @test collect(y_cpu) ≈ collect(y_gpu) rtol=rtol atol=atol
         @assert length(ps_gpu) == length(ps_cpu)
         for (p_gpu, p_cpu) in zip(ps_gpu, ps_cpu)
-            check_grad(gs_gpu[p_gpu], gs_cpu[p_cpu], atol, rtol; allow_nothing)
+            check_grad(gs_gpu[p_gpu], gs_cpu[p_cpu]; atol, rtol, allow_nothing)
         end
     end
 end
 
+# check_grad_type checks that the gradient type matches the primal type.
 
-test_grad_type(g::Nothing, x) = nothing
+check_grad_type(g::Nothing, x) = nothing
 
-function test_grad_type(g::AbstractArray{T1}, x::AbstractArray{T2}) where {T1, T2}
+function check_grad_type(g::AbstractArray{T1}, x::AbstractArray{T2}) where {T1, T2}
     @test T1 == T2
     @test size(g) == size(x)
 end
 
-function test_grad_type(g::NamedTuple, x::T) where T
+function check_grad_type(g::NamedTuple, x::T) where T
     for f in fieldnames(T)
         test_grad_type(g[f], getfield(x, f))
-    end
-end
-
-test_grad_equal(g1::Nothing, g2::Nothing) = nothing
-
-function test_grad_equal(g1::AnyCuArray{T}, g2::Array{T}; atol=1e-4) where T 
-    @test Array(g1) ≈ g2 atol=atol
-end
-
-function test_grad_equal(g1::T1, g2::T2) where {T1 <: NamedTuple, T2 <: NamedTuple}
-    @test fieldnames(T1) == fieldnames(T2)
-    for f in fieldnames(T1)
-        test_grad_equal(g1[f], g2[f])
     end
 end

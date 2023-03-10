@@ -361,6 +361,6 @@ end
     y, α = mha(x, withscores=true)
     return sum(y.^2) + sum(α.^2)
   end
-  test_grad_equal(gm_gpu, gm_cpu)
-  test_grad_equal(gx_gpu, gx_cpu)
+  check_grad(gm_gpu, gm_cpu)
+  check_grad(gx_gpu, gx_cpu)
 end

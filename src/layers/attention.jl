@@ -1,7 +1,5 @@
 
 const A3{T} = AbstractArray{T, 3}
-const TuplInt2 = Union{Int, Tuple{Int, Int}}
-const TuplInt3 = Union{Int, Tuple{Int, Int, Int}}
 
 """
     MultiHeadAttention(dims; [nheads, bias, init, dropout_prob])
@@ -86,7 +84,7 @@ end
 normalize_mha_dims(dims::Int) = 
   (; q_in=dims, k_in=dims, v_in=dims, qk=dims, v=dims, out=dims)
 
-function normalize_mha_dims((in, (qkv, out))::Pair{<:TuplInt3, <:Pair{<:TuplInt2, Int}})
+function normalize_mha_dims((in, (qkv, out))::Pair{<:Dims{3}, <:Pair{<:Dims{2}, Int}})
   if in isa Int
     q_in = k_in = v_in = in
   else
