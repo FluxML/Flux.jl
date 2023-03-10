@@ -15,7 +15,7 @@ check_grad(g_gpu::Nothing, g_cpu::Nothing; rtol=1e-4, atol=1e-4, allow_nothing::
 check_grad(g_gpu::Float32, g_cpu::Float32; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
     @test g_cpu ≈ g_gpu rtol=rtol atol=atol
 
-check_grad(g_gpu::CuArray{Float32}, g_cpu::Array{Float32}; rtol=eps32, allow_nothing::Bool=false) =
+check_grad(g_gpu::CuArray{Float32}, g_cpu::Array{Float32}; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
     @test g_cpu ≈ collect(g_gpu) rtol=rtol atol=atol
 
 function check_grad(g_gpu::Tuple, g_cpu::Tuple; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false)
@@ -104,6 +104,6 @@ end
 
 function check_grad_type(g::NamedTuple, x::T) where T
     for f in fieldnames(T)
-        test_grad_type(g[f], getfield(x, f))
+        check_grad_type(g[f], getfield(x, f))
     end
 end

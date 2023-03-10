@@ -56,8 +56,8 @@
       y, α = mha(q, withscores=true)
       return sum(y.^2) + sum(α.^2)
     end
-    test_grad_type(gm, mha)
-    test_grad_type(gq, q)
+    check_grad_type(gm, mha)
+    check_grad_type(gq, q)
   end
 end
 
