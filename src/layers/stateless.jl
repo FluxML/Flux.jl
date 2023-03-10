@@ -83,6 +83,12 @@ end
 
 # We have to define our own flatten in order 
 # to load previously saved models. 
-# See #2195 #2204 
-@doc (@doc MLUtils.flatten)
+# See #2195 #2204
+"""
+  flatten(x)
+
+Same as [`MLUtils.flatten`](@ref), which 
+should be prefered to this method existing 
+only for backward compatibility.
+"""
 flatten(x) = MLUtils.flatten(x)
