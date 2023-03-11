@@ -23,7 +23,9 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
-       Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
+       Dropout, AlphaDropout,
+       LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
+       MultiHeadAttention,
        Upsample, PixelShuffle,
        fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
@@ -60,6 +62,7 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
+include("layers/attention.jl")
 include("layers/show.jl")
 
 include("loading.jl")

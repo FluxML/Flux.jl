@@ -33,6 +33,7 @@ Random.seed!(0)
   end
 
   @testset "Layers" begin
+    include("layers/attention.jl")
     include("layers/basic.jl")
     include("layers/normalisation.jl")
     include("layers/stateless.jl")
