@@ -42,8 +42,8 @@ Before you start contributing to Flux, you need the following tools:
 If you need to learn about Julia and Flux, then you can check out the following resources:
 
 * [JuliaAcademy](https://juliaacademy.com/) introductory courses to Julia and Flux
-* Flux’s official [Getting Started](https://fluxml.ai/getting_started.html) tutorial
-* [Deep Learning with Flux - A 60 Minute Blitz](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html): a quick intro to Flux loosely based on PyTorch’s tutorial
+* Flux’s official [Getting Started](https://docs.flux.ai/Introduction/flux-walkthrough-project) tutorial
+* [Deep Learning with Flux - A 60 Minute Blitz](http://fluxml.ai/Flux.jl/stable/tutorials/2020-09-15-deep-learning-flux/): a quick intro to Flux loosely based on PyTorch’s tutorial
 * [Flux Model Zoo](https://github.com/FluxML/model-zoo) showcases various demonstrations of models that you can reuse with your own data
 * [Flux’s official documentation](https://fluxml.ai/Flux.jl/stable/)
 
