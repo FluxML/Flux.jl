@@ -73,3 +73,12 @@ end
   @test occursin("Dense(2 => 2)", adjoint_chain)
   @test occursin("Chain([", adjoint_chain)
 end
+
+# Bug when no children, https://github.com/FluxML/Flux.jl/issues/2208
+struct NoFields end
+Flux.@functor NoFields
+
+@testset "show with no fields" begin
+  str = repr("text/plain", Chain(Dense(1=>1), Dense(1=>1), NoFields()))
+  @test occursin("4 arrays, 4 parameters", str)
+end
