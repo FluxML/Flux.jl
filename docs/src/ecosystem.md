@@ -99,7 +99,7 @@ Packages based on differentiable programming but not necessarily related to Mach
 
 Some useful and random packages!
 
-- [AdversarialPrediction.jl](https://github.com/rizalzaf/AdversarialPrediction.jl) provides a way to easily optimize generic performance metrics in supervised learning settings using the [Adversarial Prediction](https://arxiv.org/abs/1812.07526) framework.
+- [AdversarialPrediction.jl](https://github.com/rizalzaf/AdversarialPrediction.jl) provides a way to easily optimise generic performance metrics in supervised learning settings using the [Adversarial Prediction](https://arxiv.org/abs/1812.07526) framework.
 - [Mill.jl](https://github.com/CTUAvastLab/Mill.jl) helps to prototype flexible multi-instance learning models.
 - [MLMetrics.jl](https://github.com/JuliaML/MLMetrics.jl) is a utility for scoring models in data science and machine learning.
 - [Torch.jl](https://github.com/FluxML/Torch.jl) exposes torch in Julia.

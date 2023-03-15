@@ -206,7 +206,7 @@ The generator's loss quantifies how well it was able to trick the discriminator.
 generator_loss(fake_output) = logitbinarycrossentropy(fake_output, 1)
 ```
 
-We also need optimizers for our network. Why you may ask? Read more [here](https://towardsdatascience.com/overview-of-various-optimizers-in-neural-networks-17c1be2df6d5). For both the generator and discriminator, we will use the [ADAM optimizer](https://fluxml.ai/Flux.jl/stable/training/optimisers/#Flux.Optimise.ADAM).
+We also need optimisers for our network. Why you may ask? Read more [here](https://towardsdatascience.com/overview-of-various-optimisers-in-neural-networks-17c1be2df6d5). For both the generator and discriminator, we will use the [ADAM optimiser](https://fluxml.ai/Flux.jl/stable/training/optimisers/#Flux.Optimise.ADAM).
 
 ## Utility functions
 
@@ -253,7 +253,7 @@ function train_generator!(gen, disc, fake_img, opt, ps, hparams)
 end
 ```
 
-Now that we have defined every function we need, we integrate everything into a single `train` function where we first set up all the models and optimizers and then train the GAN for a specified number of epochs.
+Now that we have defined every function we need, we integrate everything into a single `train` function where we first set up all the models and optimisers and then train the GAN for a specified number of epochs.
 
 ```julia
 function train(hparams)
@@ -278,7 +278,7 @@ function train(hparams)
     disc_ps = params(disc)
     gen_ps = params(gen)
 
-    # Initialize the ADAM optimizers for both the sub-models
+    # Initialize the ADAM optimisers for both the sub-models
     # with respective learning rates
     disc_opt = ADAM(hparams.disc_lr)
     gen_opt = ADAM(hparams.gen_lr)
