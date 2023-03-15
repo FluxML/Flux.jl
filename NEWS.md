@@ -1,6 +1,5 @@
 # Flux Release Notes
 
-* Make spelling of optimise consistent throughout the project.
 
 ## v0.13.14
 * Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.
