@@ -1,5 +1,76 @@
 using LinearAlgebra
 
+@testset "RNN gradients-implicit" begin
+    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
+    layer.cell.Wi .= 5.0
+    layer.cell.Wh .= 4.0
+    layer.cell.b .= 0.0f0
+    layer.cell.state0 .= 7.0
+    x = [[2.0f0], [3.0f0]]
+
+    # theoretical primal gradients
+    primal =
+        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
+        x[2] .* layer.cell.Wi
+    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
+    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
+    ∇b = layer.cell.Wh .+ 1
+    ∇state0 = layer.cell.Wh .^ 2
+
+    Flux.reset!(layer)
+    ps = Flux.params(layer)
+    e, g = Flux.withgradient(ps) do
+        out = [layer(xi) for xi in x]
+        sum(out[2])
+    end
+
+    @test primal[1] ≈ e
+    @test ∇Wi ≈ g[ps[1]]
+    @test ∇Wh ≈ g[ps[2]]
+    @test ∇b ≈ g[ps[3]]
+    @test ∇state0 ≈ g[ps[4]]
+
+end
+
+@testset "RNN gradients-explicit" begin
+    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
+    layer.cell.Wi .= 5.0f0
+    layer.cell.Wh .= 4.0f0
+    layer.cell.b .= 0.0f0
+    layer.cell.state0 .= 7.0f0
+    x = [[2.0f0], [3.0f0]]
+
+    # theoretical primal gradients
+    primal =
+        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
+        x[2] .* layer.cell.Wi
+    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
+    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
+    ∇b = layer.cell.Wh .+ 1
+    ∇state0 = layer.cell.Wh .^ 2
+
+    Flux.reset!(layer)
+    e, g = Flux.withgradient(layer) do m
+        out = [m(xi) for xi in x]
+        sum(out[2])
+    end
+    grads = g[1][:cell]
+
+    @test primal[1] ≈ e
+
+    if VERSION < v"1.7"
+        @test ∇Wi ≈ grads[:Wi]
+        @test ∇Wh ≈ grads[:Wh]
+        @test ∇b ≈ grads[:b]
+        @test_broken ∇state0 ≈ grads[:state0]
+    else
+        @test_broken ∇Wi ≈ grads[:Wi]
+        @test_broken ∇Wh ≈ grads[:Wh]
+        @test_broken ∇b ≈ grads[:b]
+        @test_broken ∇state0 ≈ grads[:state0]
+    end
+end
+
 # Ref FluxML/Flux.jl#1209 1D input
 @testset "BPTT-1D" begin
   seq = [rand(Float32, 2) for i = 1:3]
