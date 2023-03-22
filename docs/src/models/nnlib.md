@@ -72,7 +72,7 @@ pixel_shuffle
 
 ## Batched Operations
 
-`Flux`'s [`Bilinear`](@ref) layer uses [`NNlib.batched_mul`](@ref) internally.
+`Flux`'s [`Flux.Bilinear`](@ref) layer uses [`NNlib.batched_mul`](@ref) internally.
 
 ```@docs
 batched_mul
