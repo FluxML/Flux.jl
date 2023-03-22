@@ -58,7 +58,7 @@ For full details on the interface for implicit-style optimisers, see the [Flux 0
 
 ```@docs
 Flux.params
-Flux.Optimise.update!(opt::Flux.Optimise.AbstractOptimiser, xs::Flux.Params, gs)
+Flux.Optimise.update!(opt::Flux.Optimise.AbstractOptimiser, xs::AbstractArray, gs)
 Flux.Optimise.train!(loss, ps::Flux.Params, data, opt::Flux.Optimise.AbstractOptimiser; cb)
 ```
 

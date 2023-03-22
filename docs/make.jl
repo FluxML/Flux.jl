@@ -6,10 +6,8 @@ DocMeta.setdocmeta!(Flux, :DocTestSetup,
     recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames],
-    doctest = false,
+    modules = [Flux,  NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore],
     sitename = "Flux",
-    # strict = [:cross_references,],
     pages = [
         "Welcome" => "index.md",
         "Guide" => [
@@ -65,6 +63,21 @@ makedocs(
         assets = ["assets/flux.css"],
         prettyurls = get(ENV, "CI", nothing) == "true"
     ),
+    clean = true, 
+    doctest = false, 
+    # linkcheck = true,
+    checkdocs = :exports,
+    # strict = true,
+    # strict = [
+    #     :cross_references,
+    #     :missing_docs,
+    #     :doctest,
+    #     :linkcheck,
+    #     :parse_error,
+    #     :example_block,
+    #     :autodocs_block, :docs_block, :eval_block, :example_block, :footnote, :meta_block, :setup_block
+    # ],
+
 )
 
 deploydocs(

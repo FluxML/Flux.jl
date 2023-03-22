@@ -28,18 +28,21 @@ logsoftmax
 [`MaxPool`](@ref), and [`MeanPool`](@ref) use [`NNlib.PoolDims`](@ref), [`NNlib.maxpool`](@ref), and [`NNlib.meanpool`](@ref) as their backend.
 
 ```@docs
-PoolDims
-maxpool
-meanpool
+NNlib.PoolDims
+NNlib.lpnormpool
+NNlib.maxpool
+NNlib.meanpool
 ```
 
 ## Padding
 
 ```@docs
-pad_reflect
-pad_constant
-pad_repeat
-pad_zeros
+NNlib.pad_circular
+NNlib.pad_constant
+NNlib.pad_reflect
+NNlib.pad_repeat
+NNlib.pad_symmetric
+NNlib.pad_zeros
 ```
 
 ## Convolution
@@ -54,13 +57,19 @@ DepthwiseConvDims
 DenseConvDims
 ```
 
+## Dropout
+
+```@docs
+NNlib.dropout
+NNlib.dropout!
+```
+
 ## Upsampling
 
 `Flux`'s [`Upsample`](@ref) layer uses [`NNlib.upsample_nearest`](@ref), [`NNlib.upsample_bilinear`](@ref), and [`NNlib.upsample_trilinear`](@ref) as its backend. Additionally, `Flux`'s [`PixelShuffle`](@ref) layer uses [`NNlib.pixel_shuffle`](@ref) as its backend.
 
 ```@docs
 upsample_nearest
-∇upsample_nearest
 upsample_linear
 ∇upsample_linear
 upsample_bilinear
