@@ -2,14 +2,14 @@
 
 The following page contains a step-by-step walkthrough of the logistic regression algorithm in Julia using Flux. We will then create a simple logistic regression model without any usage of Flux and compare the different working parts with Flux's implementation. 
 
-Let's start by importing the required `Julia` packages!
+Let's start by importing the required Julia packages.
 
 ```jldoctest logistic_regression
 julia> using Flux, Statistics, MLDatasets, DataFrames, OneHotArrays
 ```
 
 ## Dataset
-Let's start by importing a dataset from `MLDatasets.jl`! We will use the `Iris` dataset that contains the data of three different `Iris` species. The data consists of 150 data points (`x`s), each having four features. Each of these `x` is mapped to `y`, the name of a particular `Iris` specie.
+Let's start by importing a dataset from MLDatasets.jl. We will use the `Iris` dataset that contains the data of three different `Iris` species. The data consists of 150 data points (`x`s), each having four features. Each of these `x` is mapped to `y`, the name of a particular `Iris` specie.
 
 ```jldoctest logistic_regression
 julia> Iris()
@@ -22,7 +22,7 @@ dataset Iris:
 julia> x, y = Iris(as_df=false)[:];
 ```
 
-Our next step would be to convert this data into a form that can be fed to a machine learning model. The `x` values are arranged in a matrix and thus don't need any alterations, but the labels must be one hot encoded. [Here](https://discourse.julialang.org/t/all-the-ways-to-do-one-hot-encoding/64807) is a great discourse thread on different techniques that can be used to one hot encode data with or without using any external `Julia` package.
+Our next step would be to convert this data into a form that can be fed to a machine learning model. The `x` values are arranged in a matrix and thus don't need any alterations, but the labels must be one hot encoded. [Here](https://discourse.julialang.org/t/all-the-ways-to-do-one-hot-encoding/64807) is a great discourse thread on different techniques that can be used to one hot encode data with or without using any external Julia package.
 
 ```jldoctest logistic_regression
 julia> y_r = reshape(y, (150, 1));
@@ -34,7 +34,7 @@ julia> custom_y_onehot = unique(y_r) .== permutedims(y_r)
  0  0  0  0  0  0  0  0  0  0  0  0  0     1  1  1  1  1  1  1  1  1  1  1  1
 ```
 
-This same operation can also be performed using [OneHotArrays](https://github.com/FluxML/OneHotArrays.jl)' `onehotbatch` function! We will use both of these outputs parallelly to show how intuitive `FluxML` is!
+This same operation can also be performed using [OneHotArrays](https://github.com/FluxML/OneHotArrays.jl)' `onehotbatch` function. We will use both of these outputs parallelly to show how intuitive FluxML is!
 
 ```jldoctest logistic_regression
 julia> flux_y_onehot = onehotbatch(y_r, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
@@ -45,7 +45,7 @@ julia> flux_y_onehot = onehotbatch(y_r, ["Iris-setosa", "Iris-versicolor", "Iris
  0  0  0  0  0  0  0  0  0  0  0  0  0     1  1  1  1  1  1  1  1  1  1  1  1
 ```
 
-Our data is ready! The next step would be to build a classifier for the same.
+Our data is ready. The next step would be to build a classifier for the same.
 
 ## Building a model
 
@@ -72,7 +72,7 @@ julia> W = rand(Float32, 3, 4);
 julia> b = [0.0f0, 0.0f0, 0.0f0];
 ```
 
-Now our model can take in the complete dataset and predict the class of each `x` in one go! But, we need to ensure that our model outputs the probabilities of an input belonging to the respective classes. As our model has three outputs, each would denote the probability of the input belonging to a particular class.
+Now our model can take in the complete dataset and predict the class of each `x` in one go. But, we need to ensure that our model outputs the probabilities of an input belonging to the respective classes. As our model has three outputs, each would denote the probability of the input belonging to a particular class.
 
 We will use an activation function to map our outputs to a probability value. It would make sense to use a `softmax` activation function here, which is defined mathematically as -
 
@@ -80,7 +80,7 @@ We will use an activation function to map our outputs to a probability value. It
 σ(\vec{x}) = \frac{\\e^{z_{i}}}{\\sum_{j=1}^{k} \\e^{z_{j}}}
 ```
 
-The `softmax` function scales down the outputs to probability values such that the sum of all the final outputs equals `1`. Let's implement this in `Julia`!
+The `softmax` function scales down the outputs to probability values such that the sum of all the final outputs equals `1`. Let's implement this in Julia.
 
 ```jldoctest logistic_regression
 julia> custom_softmax(x) = exp.(x) ./ sum(exp.(x), dims=1)
@@ -116,7 +116,7 @@ julia> sum(custom_model(W, b, x), dims=1)
 
 Every output value is between `0` and `1`, and every column adds to `1`!
 
-Let's convert our `custom_model` to a `Flux` model. `Flux` provides the users with a very elegant API that almost feels like writing your code!
+Let's convert our `custom_model` to a Flux model. Flux provides the users with a very elegant API that almost feels like writing your code!
 
 Note, all the `flux_*` variables in this tutorial would be general, that is, they can be used as it is with some other similar-looking dataset, but the `custom_*` variables will remain specific to this tutorial.
 
@@ -128,9 +128,9 @@ Chain(
 )
 ```
 
-A [`Dense(4 => 3)`](@ref Dense) layer denotes a layer with four inputs (four features in every data point) and three outputs (three classes or labels). This layer is the same as the mathematical model defined by us above! Under the hood, `Flux` too calculates the output using the same expression! But, we don't have to initialize the parameters ourselves this time, instead `Flux` does it for us.
+A [`Dense(4 => 3)`](@ref Dense) layer denotes a layer with four inputs (four features in every data point) and three outputs (three classes or labels). This layer is the same as the mathematical model defined by us above. Under the hood, Flux too calculates the output using the same expression, but we don't have to initialize the parameters ourselves this time, instead Flux does it for us.
 
-The `softmax` function provided by `NNLib.jl` is re-exported by `Flux`, which has been used here. Lastly, `Flux` provides users with a `Chain` struct which makes stacking layers seamless!
+The `softmax` function provided by NNLib.jl is re-exported by Flux, which has been used here. Lastly, Flux provides users with a `Chain` struct which makes stacking layers seamless.
 
 A model's weights and biases can be accessed as follows -
 
@@ -165,7 +165,7 @@ julia> custom_loss(W, b, x, custom_y_onehot)
 
 The loss function works!
 
-`Flux` provides us with many minimal yet elegant loss functions. In fact, the `custom_logitcrossentropy` defined above has been taken directly from `Flux`, the only difference being the functionalities provided by `Flux` is much more general. For example, you can use the `Flux.logitcrossentropy` with any dataset, but `custom_logitcrossentropy` is specific to this tutorial and would give weird results if used otherwise.
+Flux provides us with many minimal yet elegant loss functions. In fact, the `custom_logitcrossentropy` defined above has been taken directly from Flux, the only difference being the functionalities provided by Flux is much more general. For example, you can use the `Flux.logitcrossentropy` with any dataset, but `custom_logitcrossentropy` is specific to this tutorial and would give weird results if used otherwise.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function flux_loss(flux_model, x, y)
@@ -177,7 +177,7 @@ julia> flux_loss(flux_model, x, flux_y_onehot)
 1.2156688659673647
 ```
 
-Next, let's define an accuracy function, which we will try to maximize during our training procedure. Before jumping to accuracy, let's define a `onecold` function. The `onecold` function would convert our output, which remember, are probability values, to the actual class names!
+Next, let's define an accuracy function, which we will try to maximize during our training procedure. Before jumping to accuracy, let's define a `onecold` function. The `onecold` function would convert our output, which remember, are probability values, to the actual class names.
 
 We can divide this task into two parts -
 1. Identify the index of the maximum element of each column in the output matrix
@@ -200,7 +200,7 @@ julia> mxidx[1].I[1]
 1
 ```
 
-Now we can write a function that iterates over our output, calculates the indices of the maximum element in each column, and maps them to a class name!  
+Now we can write a function that iterates over our output, calculates the indices of the maximum element in each column, and maps them to a class name.  
 
 ```jldoctest logistic_regression
 julia> function custom_onecold(custom_y_onehot)
@@ -244,7 +244,7 @@ julia> custom_onecold(custom_y_onehot)
 
 It works!
 
-`Flux` provides users with the `onecold` function so that we don't have to write it on our own. Let's see how our `custom_onecold` function compares to `Flux.onecold`.
+Flux provides users with the `onecold` function so that we don't have to write it on our own. Let's see how our `custom_onecold` function compares to `Flux.onecold`.
 
 ```jldoctest logistic_regression
 julia> istrue = Flux.onecold(flux_y_onehot, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== custom_onecold(custom_y_onehot);
@@ -264,7 +264,7 @@ julia> custom_accuracy(W, b, x, y)
 0.3333333333333333
 ```
 
-Alternatively, we can use the functionalities provided by `Flux` to define the `flux_accuracy` function.
+Alternatively, we can use the functionalities provided by Flux to define the `flux_accuracy` function.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y_r);
@@ -286,9 +286,9 @@ b &= b - \eta * \frac{dL}{db}
 
 Here, `W` is the weight matrix, `b` is the bias vector, ``\eta`` is the learning rate, ``\frac{dL}{dW}`` is the derivative of the loss function with respect to the weight, and ``\frac{dL}{db}`` is the derivative of the loss function with respect to the bias.
 
-The derivatives are calculated using an Automatic Differentiation tool, and `Flux` uses [`Zygote.jl`](https://github.com/FluxML/Zygote.jl) for the same. Since `Zygote.jl` is an independent Julia package, it can be used outside of Flux as well! Refer to the documentation of `Zygote.jl` for more information on the same.
+The derivatives are calculated using an Automatic Differentiation tool, and Flux uses [`Zygote.jl`](https://github.com/FluxML/Zygote.jl) for the same. Since Zygote.jl is an independent Julia package, it can be used outside of Flux as well! Refer to the documentation of Zygote.jl for more information on the same.
 
-Our first step would be to obtain the gradient of the loss function with respect to the weights and the biases. `Flux` re-exports `Zygote`'s `gradient` function; hence, we don't need to import `Zygote` explicitly to use the functionality.
+Our first step would be to obtain the gradient of the loss function with respect to the weights and the biases. Flux re-exports Zygote's `gradient` function; hence, we don't need to import Zygote explicitly to use the functionality.
 
 ```jldoctest logistic_regression
 julia> dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, custom_y_onehot);
@@ -319,7 +319,7 @@ julia> function train_custom_model()
        end;
 ```
 
-We can plug the training function inside a loop and train the model for more epochs. The loop can be tailored to suit the user's needs, and the conditions can be specified in plain `Julia`! Here we will train the model for a maximum of `500` epochs, but to ensure that the model does not overfit, we will break as soon as our accuracy value crosses or becomes equal to 0.98. 
+We can plug the training function inside a loop and train the model for more epochs. The loop can be tailored to suit the user's needs, and the conditions can be specified in plain Julia. Here we will train the model for a maximum of `500` epochs, but to ensure that the model does not overfit, we will break as soon as our accuracy value crosses or becomes equal to `0.98`.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for i = 1:500
@@ -372,6 +372,10 @@ The accuracy went up! The loss went down! Everything worked again!
 
 ---
 
-Summarising this tutorial, we saw how we can run a logistic regression algorithm in `Julia` with and without using `Flux`. We started by importing the classic `Iris` dataset, and one hot encoded the labels. Next, we defined our model, the loss function, and the accuracy, all by ourselves!
+Summarising this tutorial, we saw how we can run a logistic regression algorithm in Julia with and without using Flux. We started by importing the classic `Iris` dataset, and one hot encoded the labels. Next, we defined our model, the loss function, and the accuracy, all by ourselves.
 
-Finally, we trained the model by manually writing down the Gradient Descent algorithm and optimising the loss. Interestingly, we implemented most of the functions on our own, and then parallelly compared them with the functionalities provided by `Flux`!
+Finally, we trained the model by manually writing down the Gradient Descent algorithm and optimising the loss. Interestingly, we implemented most of the functions on our own, and then parallelly compared them with the functionalities provided by Flux!
+
+!!! info
+    Originally published on TODO,
+    by Saransh Chopra.
