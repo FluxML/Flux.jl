@@ -1,6 +1,6 @@
 # Logistic Regression
 
-The following page contains a step-by-step walkthrough of the logistic regression algorithm in `Julia` using `Flux`! We will then create a simple logistic regression model without any usage of `Flux` and compare the different working parts with `Flux`'s implementation. 
+The following page contains a step-by-step walkthrough of the logistic regression algorithm in Julia using Flux. We will then create a simple logistic regression model without any usage of Flux and compare the different working parts with Flux's implementation. 
 
 Let's start by importing the required `Julia` packages!
 
@@ -87,7 +87,7 @@ julia> custom_softmax(x) = exp.(x) ./ sum(exp.(x), dims=1)
 custom_softmax (generic function with 1 method)
 ```
 
-The implementation looks straightforward enough! Note that we specify `dims=1` in the `sum` function to calculate the sum of probabilities across columns. Remember, we will have a `3X150` matrix (predicted `y`s) as the output of our model, where each column would be an output of a corresponding input.
+The implementation looks straightforward enough! Note that we specify `dims=1` in the `sum` function to calculate the sum of probabilities in each column. Remember, we will have a 3×150 matrix (predicted `y`s) as the output of our model, where each column would be an output of a corresponding input.
 
 Let's combine this `softmax` function with our model to construct the complete `custom_model`.
 
@@ -106,7 +106,7 @@ julia> custom_model(W, b, x) |> size
 It works! Let's check if the `softmax` function is working.
 
 ```jldoctest logistic_regression
-julia> all(custom_model(W, b, x) .< 1.0f0) && all(custom_model(W, b, x) .> 0.0f0)
+julia> all(0 .<= custom_model(x) .<= 1)
 true
 
 julia> sum(custom_model(W, b, x), dims=1)
