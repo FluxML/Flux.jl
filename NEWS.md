@@ -1,14 +1,16 @@
 # Flux Release Notes
 
+## v0.13.15
+* Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
 
 ## v0.13.14
 * Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.
+* Initial support for `AMDGPU` via extension mechanism.
+* Add `gpu_backend` preference to select GPU backend using `LocalPreference.toml`.
+* Add `Flux.gpu_backend!` method to switch between GPU backends.
 
 ## v0.13.13
 * Added `f16` which changes precision to `Float16`, recursively.
-* Initial support for AMDGPU via extension mechanism.
-* Add `gpu_backend` preference to select GPU backend using `LocalPreference.toml`.
-* Add `Flux.gpu_backend!` method to switch between GPU backends.
 
 ## v0.13.12
 * CUDA.jl 4.0 compatibility.
