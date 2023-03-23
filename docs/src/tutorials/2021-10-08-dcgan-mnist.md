@@ -101,7 +101,7 @@ We will be using the [relu](https://fluxml.ai/Flux.jl/stable/models/nnlib/#NNlib
 We will also apply the weight initialization method mentioned in the original DCGAN paper.
 
 ```julia
-# Function for intializing the model weights with values 
+# Function for initializing the model weights with values 
 # sampled from a Gaussian distribution with μ=0 and σ=0.02
 dcgan_init(shape...) = randn(Float32, shape) * 0.02f0
 ```
