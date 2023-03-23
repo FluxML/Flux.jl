@@ -1,20 +1,9 @@
 using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
 
-DocMeta.setdocmeta!(Flux, :DocTestSetup, 
-    :(using Flux); 
-    recursive = true)
-
-DocMeta.setdocmeta!(NNlib, :DocTestSetup, :(using NNlib); recursive=true)
-DocMeta.setdocmeta!(Functors, :DocTestSetup, :(using Functors); recursive=true)
-DocMeta.setdocmeta!(MLUtils, :DocTestSetup, :(using MLUtils); recursive=true)
-DocMeta.setdocmeta!(BSON, :DocTestSetup, :(using BSON); recursive=true)
-DocMeta.setdocmeta!(Optimisers, :DocTestSetup, :(using Optimisers); recursive=true)
-DocMeta.setdocmeta!(OneHotArrays, :DocTestSetup, :(using OneHotArrays); recursive=true)
-DocMeta.setdocmeta!(Zygote, :DocTestSetup, :(using Zygote); recursive=true)
-DocMeta.setdocmeta!(ChainRulesCore, :DocTestSetup, :(using ChainRulesCore, LinearAlgebra); recursive=true)
+DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux,  NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore],
+    modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore],
     sitename = "Flux",
     pages = [
         "Welcome" => "index.md",
@@ -85,6 +74,8 @@ makedocs(
     #     :autodocs_block, :docs_block, :eval_block, :example_block, :footnote, :meta_block, :setup_block
     # ],
 )
+
+doctest(Flux) # only test Flux modules
 
 deploydocs(
     repo = "github.com/FluxML/Flux.jl.git",
