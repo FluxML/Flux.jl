@@ -9,3 +9,7 @@ deps
 Manifest.toml
 LocalPreferences.toml
 .DS_Store
+<<<<<<< HEAD
+=======
+docs/mymodel.bson
+>>>>>>> 303f9929 (cleanup)
