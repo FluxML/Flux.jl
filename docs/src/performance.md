@@ -1,4 +1,4 @@
-# Performance Tips
+# [Performance Tips]((@id man-performance-tips))
 
 All the usual [Julia performance tips apply](https://docs.julialang.org/en/v1/manual/performance-tips/).
 As always [profiling your code](https://docs.julialang.org/en/v1/manual/profile/#Profiling-1) is generally a useful way of finding bottlenecks.

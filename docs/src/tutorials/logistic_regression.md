@@ -24,10 +24,10 @@ julia> x, y = Iris(as_df=false)[:];
 
 Let's have a look at our dataset -
 
-```jldoctest logitic_regression
+```jldoctest logistic_regression
 julia> y
 1×150 Matrix{InlineStrings.String15}:
- "Iris-setosa"  "Iris-setosa"  …  "Iris-virginica"
+ "Iris-setosa"  "Iris-setosa"  …  "Iris-virginica"  "Iris-virginica"
 
 julia> x |> summary
 "4×150 Matrix{Float64}"
@@ -35,9 +35,11 @@ julia> x |> summary
 
 The `y` values here corresponds to a type of iris plant, with a total of 150 data points. The `x` values depict the sepal length, sepal width, petal length, and petal width (all in `cm`) of 150 iris plant (hence the matrix size `4×150`). Different type of iris plants have different lengths and widths of sepals and petals associated with them, and there is a definitive pattern for this in nature. We can leverage this to train a simple classifier that outputs the type of iris plant using the length and width of sepals and petals as inputs.
 
-Our next step would be to convert this data into a form that can be fed to a machine learning model. The `x` values are arranged in a matrix and thus don't need any alterations, but the labels must be one hot encoded. [Here](https://discourse.julialang.org/t/all-the-ways-to-do-one-hot-encoding/64807) is a great discourse thread on different techniques that can be used to one hot encode data with or without using any external Julia package.
+Our next step would be to convert this data into a form that can be fed to a machine learning model. The `x` values are arranged in a matrix and should ideally be converted to `Float32` type (see [Performance tips](@ref man-performance-tips)), but the labels must be one hot encoded. [Here](https://discourse.julialang.org/t/all-the-ways-to-do-one-hot-encoding/64807) is a great discourse thread on different techniques that can be used to one hot encode data with or without using any external Julia package.
 
 ```jldoctest logistic_regression
+julia> x = Float32.(x);
+
 julia> y_r = reshape(y, (150, 1));
 
 julia> custom_y_onehot = unique(y_r) .== permutedims(y_r)
@@ -123,7 +125,7 @@ julia> all(0 .<= custom_model(W, b, x) .<= 1)
 true
 
 julia> sum(custom_model(W, b, x), dims=1)
-1×150 Matrix{Float64}:
+1×150 Matrix{Float32}:
  1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0  …  1.0  1.0  1.0  1.0  1.0  1.0  1.0
 ```
 
