@@ -9,7 +9,7 @@ julia> using Flux, Statistics, MLDatasets, DataFrames, OneHotArrays
 ```
 
 ## Dataset
-Let's start by importing a dataset from MLDatasets.jl. We will use the `Iris` dataset that contains the data of three different `Iris` species. The data consists of 150 data points (`x`s), each having four features. Each of these `x` is mapped to `y`, the name of a particular `Iris` specie.
+Let's start by importing a dataset from MLDatasets.jl. We will use the `Iris` dataset that contains the data of three different `Iris` species. The data consists of 150 data points (`x`s), each having four features. Each of these `x` is mapped to `y`, the name of a particular `Iris` specie. The following code will download the `Iris` dataset when run for the first time.
 
 ```jldoctest logistic_regression
 julia> Iris()
@@ -106,7 +106,7 @@ julia> custom_model(W, b, x) |> size
 It works! Let's check if the `softmax` function is working.
 
 ```jldoctest logistic_regression
-julia> all(0 .<= custom_model(x) .<= 1)
+julia> all(0 .<= custom_model(W, b, x) .<= 1)
 true
 
 julia> sum(custom_model(W, b, x), dims=1)
