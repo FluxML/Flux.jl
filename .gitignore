@@ -9,3 +9,4 @@ deps
 Manifest.toml
 LocalPreferences.toml
 .DS_Store
+docs/mymodel.bson

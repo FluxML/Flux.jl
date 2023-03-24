@@ -57,6 +57,7 @@ Note that these operations returned `OneHotVector` and `OneHotMatrix` rather tha
 OneHotArrays.onehot
 OneHotArrays.onecold
 OneHotArrays.onehotbatch
+OneHotArrays.OneHotArray
 OneHotArrays.OneHotVector
 OneHotArrays.OneHotMatrix
 ```

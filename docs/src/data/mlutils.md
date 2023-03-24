@@ -19,18 +19,39 @@ The utility functions are meant to be used while working with data;
 these functions help create inputs for your models or batch your dataset.
 
 ```@docs
-MLUtils.unsqueeze
+MLUtils.batch
+MLUtils.batchsize
+MLUtils.batchseq
+MLUtils.BatchView
+MLUtils.chunk
+MLUtils.eachobs
+MLUtils.fill_like
+MLUtils.filterobs
 MLUtils.flatten
-MLUtils.stack
-MLUtils.unstack
-MLUtils.numobs
 MLUtils.getobs
 MLUtils.getobs!
-MLUtils.chunk
+MLUtils.joinobs
 MLUtils.group_counts
 MLUtils.group_indices
-MLUtils.batch
+MLUtils.groupobs
+MLUtils.kfolds
+MLUtils.leavepout
+MLUtils.mapobs
+MLUtils.numobs
+MLUtils.normalise
+MLUtils.obsview
+MLUtils.ObsView
+MLUtils.ones_like
+MLUtils.oversample
+MLUtils.randobs
+MLUtils.rand_like
+MLUtils.randn_like
+MLUtils.rpad_constant
+MLUtils.shuffleobs
+MLUtils.splitobs
 MLUtils.unbatch
-MLUtils.batchseq
-MLUtils.rpad(v::AbstractVector, n::Integer, p)
+MLUtils.undersample
+MLUtils.unsqueeze
+MLUtils.unstack
+MLUtils.zeros_like
 ```

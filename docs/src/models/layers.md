@@ -91,7 +91,6 @@ These layers accept an index, and return a vector (or several indices, and sever
 
 ```@docs
 Flux.Embedding
-Flux.EmbeddingBag
 ```
 
 ## [Dataflow Layers, or Containers](@id man-dataflow-layers)
@@ -132,7 +131,6 @@ LayerNorm
 InstanceNorm
 GroupNorm
 Flux.normalise
-NNlib.dropout
 ```
 
 ### Test vs. Train

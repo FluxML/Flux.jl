@@ -13,9 +13,8 @@ celu
 elu
 gelu
 hardsigmoid
-sigmoid_fast
+hardswish
 hardtanh
-tanh_fast
 leakyrelu
 lisht
 logcosh
@@ -26,12 +25,13 @@ relu6
 rrelu
 selu
 sigmoid
+sigmoid_fast
 softplus
 softshrink
 softsign
 swish
-hardswish
 tanhshrink
+tanh_fast
 trelu
 ```
 
@@ -58,6 +58,3 @@ julia> lineplot(tanh, -3, 3, height=7)
            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀x⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀        
 ```
 
-```@docs
-tanh
-```

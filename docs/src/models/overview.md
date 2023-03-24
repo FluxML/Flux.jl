@@ -135,7 +135,7 @@ It went down. Why?
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict.weight, predict.bias
-(Float32[7.5777884], Float32[1.9466728])
+(Float32[7.246838;;], Float32[1.748103])
 ```
 
 The parameters have changed. This single step is the essence of machine learning.
@@ -153,7 +153,7 @@ julia> loss(predict, x_train, y_train)
 0.00339581f0
 
 julia> predict.weight, predict.bias
-(Float32[4.0178537], Float32[2.0050256])
+(Float32[4.0159144;;], Float32[2.004479])
 ```
 
 After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.

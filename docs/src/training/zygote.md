@@ -1,4 +1,4 @@
-# Automatic Differentiation using Zygote.jl
+# [Automatic Differentiation using Zygote.jl](@id autodiff-zygote)
 
 Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref Flux.train!) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
 
@@ -12,7 +12,10 @@ is to explicitly provide a function and its arguments.
 Zygote.gradient(f, args...)
 Zygote.withgradient(f, args...)
 Zygote.jacobian(f, args...)
-Zygote.withgradient
+Zygote.withjacobian(f, args...)
+Zygote.hessian
+Zygote.hessian_reverse
+Zygote.diaghessian
 ```
 
 ## Implicit style (Flux ≤ 0.13)
@@ -25,7 +28,7 @@ However, support for this will be removed from Flux 0.14.
     the changes needed to upgrade old code from implicit to explicit style.
 
 ```@docs
-Zygote.gradient
+Zygote.gradient(loss, ::Params)
 Zygote.Params
 Zygote.Grads
 Zygote.jacobian(loss, ::Params)
@@ -44,4 +47,8 @@ To manually supply the gradient for one function, you should define a method of 
 
 ```@docs
 ChainRulesCore.rrule
+ChainRulesCore.frule
+ChainRulesCore.@scalar_rule
+ChainRulesCore.NoTangent
+ChainRulesCore.ZeroTangent
 ```
