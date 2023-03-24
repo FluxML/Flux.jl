@@ -180,7 +180,7 @@ julia> custom_loss(W, b, x, custom_y_onehot)
 
 The loss function works!
 
-Flux provides us with many minimal yet elegant loss functions. In fact, the `custom_logitcrossentropy` defined above has been taken directly from Flux, the only difference being the functionalities provided by Flux is much more general. For example, you can use the `Flux.logitcrossentropy` with any dataset, but `custom_logitcrossentropy` is specific to this tutorial and would give weird results if used otherwise.
+Flux provides us with many minimal yet elegant loss functions. In fact, the `custom_logitcrossentropy` defined above has been taken directly from Flux. The functions present in Flux includes sanity checks, ensures efficient performance, and behaves well with the overall FluxML ecosystem.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function flux_loss(flux_model, x, y)
