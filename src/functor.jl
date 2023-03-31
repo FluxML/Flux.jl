@@ -7,32 +7,48 @@ using SparseArrays: AbstractSparseArray
 """
     testmode!(m, mode = true)
 
-Set a layer or model's test mode (see below).
-Using `:auto` mode will treat any gradient computation as training.
+Set a layer, or all layers in a model, to test mode.
+This disables the effect of [`Dropout`](@ref), and similar layers.
 
 _Note_: if you manually set a model into test mode, you need to manually place
 it back into train mode during training phase.
 
-Possible values include:
-- `false` for training
+Possible values of optional 2nd argument `mode` are:
 - `true` for testing
-- `:auto` or `nothing` for Flux to detect the mode automatically
+- `false` for training, same as [`trainmode!`](@ref)
+- `:auto` or `nothing` for Flux to detect training automatically.
+
+# Example
+
+```jldoctest
+julia> d = Dropout(0.3)
+Dropout(0.3)
+
+julia> testmode!(d)   # dropout is now always disabled
+Dropout(0.3, active=false)
+
+julia> trainmode!(d)  # dropout is now always enabled
+Dropout(0.3, active=true)
+
+julia> trainmode!(d, :auto)  # back to default
+Dropout(0.3)
+```
 """
 testmode!(m, mode = true) = (foreach(x -> testmode!(x, mode), trainable(m)); m)
 
 """
     trainmode!(m, mode = true)
 
-Set a layer of model's train mode (see below).
-Symmetric to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)`).
+Set a layer, or all layers in a model, to training mode.
+Opposite to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)`).
 
 _Note_: if you manually set a model into train mode, you need to manually place
 it into test mode during testing phase.
 
-Possible values include:
+Possible values of optional 2nd argument `mode` are:
 - `true` for training
 - `false` for testing
-- `:auto` or `nothing` for Flux to detect the mode automatically
+- `:auto` or `nothing` for Flux to detect training automatically
 """
 trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
 
