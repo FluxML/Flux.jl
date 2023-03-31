@@ -5,7 +5,7 @@ import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
 """
-    testmode!(m, mode = true)
+    testmode!(m, inactive = true)
 
 Set a layer, or all layers in a model, to test mode.
 This disables the effect of [`Dropout`](@ref), and similar layers.
@@ -13,9 +13,9 @@ This disables the effect of [`Dropout`](@ref), and similar layers.
 _Note_: if you manually set a model into test mode, you need to manually place
 it back into train mode during training phase.
 
-Possible values of optional 2nd argument `mode` are:
+Possible values of optional 2nd argument `inactive` are:
 - `true` for testing
-- `false` for training, same as [`trainmode!`](@ref)
+- `false` for training, same as [`trainmode!`](@ref)`(m)`
 - `:auto` or `nothing` for Flux to detect training automatically.
 
 # Example
@@ -34,23 +34,23 @@ julia> trainmode!(d, :auto)  # back to default
 Dropout(0.3)
 ```
 """
-testmode!(m, mode = true) = (foreach(x -> testmode!(x, mode), trainable(m)); m)
+testmode!(m, inactive = true) = (foreach(x -> testmode!(x, inactive), trainable(m)); m)
 
 """
-    trainmode!(m, mode = true)
+    trainmode!(m, active = true)
 
 Set a layer, or all layers in a model, to training mode.
-Opposite to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)`).
+Opposite to [`testmode!`](@ref) (i.e. `trainmode!(m, active) == testmode!(m, !active)`).
 
 _Note_: if you manually set a model into train mode, you need to manually place
 it into test mode during testing phase.
 
-Possible values of optional 2nd argument `mode` are:
+Possible values of optional 2nd argument `active` are:
 - `true` for training
 - `false` for testing
 - `:auto` or `nothing` for Flux to detect training automatically
 """
-trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
+trainmode!(m, active = true) = active isa Bool ? testmode!(m, !active) : testmode!(m, active)
 
 function params!(p::Params, x, seen = IdSet())
   if x isa AbstractArray{<:Number} && Functors.isleaf(x)
