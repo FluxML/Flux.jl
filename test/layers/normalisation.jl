@@ -26,6 +26,11 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     y = evalwgrad(m, x)
     @test count(a->a==0, y) > 50
 
+    # Keyword active=false
+    m2 = Dropout(0.9; active=false, rng_kwargs...)
+    y2 = evalwgrad(m2, x)
+    @test count(a->a==0, y2) == 0
+
     x = rand(Float32, 100)
     m = Chain(Dense(100,100),
               Dropout(0.9; rng_kwargs...))
@@ -73,6 +78,10 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
       @test cpu(m).rng === only(values(rng_kwargs))
     end
   end
+
+  @test Dropout(0.5; active=:auto).active === nothing
+  @test Dropout(0.5; active=true).active === true
+  @test_throws ArgumentError Dropout(0.5; active=:something_else)
 end
 
 @testset "AlphaDropout" begin
@@ -119,6 +128,10 @@ end
       @test cpu(m).rng === only(values(rng_kwargs))
     end
   end
+
+  @test AlphaDropout(0.5; active=:auto).active === nothing
+  @test AlphaDropout(0.5; active=true).active === true
+  @test_throws ArgumentError AlphaDropout(0.5; active=:something_else)
 end
 
 @testset "BatchNorm" begin
@@ -211,6 +224,10 @@ end
   @test length(Flux.params(BatchNorm(10))) == 2
   @test length(Flux.params(BatchNorm(10, affine=true))) == 2
   @test length(Flux.params(BatchNorm(10, affine=false))) == 0
+
+  @test BatchNorm(5; active=:auto).active === nothing
+  @test BatchNorm(5; active=true).active === true
+  @test_throws ArgumentError BatchNorm(5; active=:something_else)
 end
 
 @testset "InstanceNorm" begin
@@ -342,6 +359,10 @@ end
   @test length(Flux.params(InstanceNorm(10))) == 0
   @test length(Flux.params(InstanceNorm(10, affine=true))) == 2
   @test length(Flux.params(InstanceNorm(10, affine=false))) == 0
+
+  @test InstanceNorm(5; active=:auto).active === nothing
+  @test InstanceNorm(5; active=true).active === true
+  @test_throws ArgumentError InstanceNorm(5; active=:something_else)
 end
 
 @testset "LayerNorm" begin
@@ -465,6 +486,10 @@ end
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     @test BN(x) ≈ GN(x)
   end
+
+  @test GroupNorm(5, 5; active=:auto).active === nothing
+  @test GroupNorm(5, 5; active=true).active === true
+  @test_throws ArgumentError GroupNorm(5, 5; active=:something_else)
 end
 
 @testset "second derivatives" begin
