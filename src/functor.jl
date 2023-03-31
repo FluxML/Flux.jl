@@ -55,7 +55,7 @@ end
 
 Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
 
-This can be used with the `gradient` function, see [Taking Gradients](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
+This can be used with the `gradient` function, see the [training section of the manual](@ref man-training), or as input to the [`Flux.train!`](@ref Flux.train!) function.
 
 The behaviour of `params` on custom types can be customized using [`Functors.@functor`](@ref) or [`Flux.trainable`](@ref).
 
@@ -88,6 +88,12 @@ function params(m...)
   return ps
 end
 
+# Allows caching of the parameters when params is called within gradient() to fix #2040.
+# @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
+# That speeds up implicit use, and silently breaks explicit use. 
+# From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
+Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
+
 struct FluxCUDAAdaptor end
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
@@ -115,40 +121,54 @@ adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
 adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
 adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
 
-function ChainRulesCore.rrule(::typeof(Array), x::CUDA.CuArray)
-  Array(x), d -> (NoTangent(), CUDA.cu(d),)
+function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
+  adapt_storage(to, x), dx -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), unthunk(dx)))
 end
 
-function ChainRulesCore.rrule(::typeof(Adapt.adapt_storage), to::FluxCPUAdaptor, x::CUDA.AbstractGPUArray)
-  adapt_storage(to, x), d -> (NoTangent(), NoTangent(), adapt_storage(FluxCUDAAdaptor(), d),)
-end
+# The following rrules for adapt are here to avoid double wrapping issues
+# as seen in https://github.com/FluxML/Flux.jl/pull/2117#discussion_r1027321801
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AnyCuArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCUDAAdaptor(), unthunk(Δ)))
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AnyCuArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
+
+ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AbstractArray) =
+  adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCPUAdaptor(), unthunk(Δ)))
+
 
 # CPU/GPU movement conveniences
 
 """
     cpu(m)
 
-Moves `m` onto the CPU, the opposite of [`gpu`](@ref).
+Copies `m` onto the CPU, the opposite of [`gpu`](@ref).
 Recurses into structs marked [`@functor`](@ref).
 
+# Example
 ```julia-repl
-julia> m = Dense(1,2)
-Dense(1, 2)
+julia> m_gpu = Dense(CUDA.randn(2, 5))
+Dense(5 => 2)       # 12 parameters
 
-julia> m_gpu = gpu(m)
-Dense(1, 2)
+julia> m_gpu.bias  # matches the given weight matrix
+2-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.0
+ 0.0
 
-julia> typeof(m_gpu.W)
-CuArray{Float32, 2}
+julia> m = m_gpu |> cpu
+Dense(5 => 2)       # 12 parameters
 
-julia> m_cpu = cpu(m_gpu)
-Dense(1, 2)
-
-julia> typeof(m_cpu.W)
-Matrix{Float32}
+julia> m.bias
+2-element Vector{Float32}:
+ 0.0
+ 0.0
 ```
 """
-cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x)
+cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x, exclude = _isleaf)
 
 _isbitsarray(::AbstractArray{<:Number}) = true
 _isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
@@ -157,30 +177,75 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
-"""
-    gpu(x)
+const GPU_BACKENDS = ("CUDA", "AMD")
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
-Moves `m` to the current GPU device, if available. It is a no-op otherwise.
+function gpu_backend!(backend::String)
+    if backend == GPU_BACKEND
+        @info """
+        GPU backend is already set to: $backend.
+        No need to do anything else.
+        """
+        return
+    end
+
+    backend in GPU_BACKENDS || throw(ArgumentError("""
+    Unsupported GPU backend: $backend.
+    Supported backends are: $GPU_BACKENDS.
+    """))
+
+    @set_preferences!("gpu_backend" => backend)
+    @info """
+    New GPU backend set: $backend.
+    Restart your Julia session for this change to take effect!
+    """
+end
+
+"""
+    gpu(m)
+
+Copies `m` to the current GPU device (using current GPU backend), if one is available.
+If no GPU is available, it does nothing (but prints a warning the first time).
+
+On arrays, this calls CUDA's `cu`, which also changes arrays
+with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
+To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
+
+Use [`cpu`](@ref) to copy back to ordinary `Array`s.
+See also [`f32`](@ref) and [`f16`](@ref) to change element type only.
+
 See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
 to help identify the current device.
 
-This works for functions, and any struct marked with [`@functor`](@ref).
-
+# Example
 ```julia-repl
-julia> m = Dense(1,2)
-Dense(1, 2)
+julia> m = Dense(rand(2, 3))  # constructed with Float64 weight matrix
+Dense(3 => 2)       # 8 parameters
 
-julia> typeof(m.W)
-Matrix{Float32}
+julia> typeof(m.weight)
+Matrix{Float64} (alias for Array{Float64, 2})
 
-julia> m_gpu = gpu(m)
-Dense(1, 2)
+julia> m_gpu = gpu(m)  # can equivalently be written m_gpu = m |> gpu
+Dense(3 => 2)       # 8 parameters
 
-julia> typeof(m_gpu.W) # notice the type of the array changed to a CuArray
-CuArray{Float32, 2}
+julia> typeof(m_gpu.weight)
+CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 function gpu(x)
+    @static if GPU_BACKEND == "CUDA"
+        gpu(FluxCUDAAdaptor(), x)
+    elseif GPU_BACKEND == "AMD"
+        gpu(FluxAMDAdaptor(), x)
+    else
+        error("""
+        Unsupported GPU backend: $GPU_BACKEND.
+        Supported backends are: $GPU_BACKENDS.
+        """)
+    end
+end
+
+function gpu(::FluxCUDAAdaptor, x)
   check_use_cuda()
   use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
 end
@@ -188,8 +253,8 @@ end
 function check_use_cuda()
   if use_cuda[] === nothing
     use_cuda[] = CUDA.functional()
-    if use_cuda[] && !CUDA.has_cudnn()
-      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."
+    if use_cuda[] && !cuDNN.has_cudnn()
+      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."  maxlog=1
     end
     if !(use_cuda[])
       @info """The GPU function is being called but the GPU is not accessible. 
@@ -197,21 +262,26 @@ function check_use_cuda()
     end
   end
 end
+
 ChainRulesCore.@non_differentiable check_use_cuda()
 
 # Precision
 
-adapt_storage(T::Type{<:Real}, xs::AbstractArray{<:Real}) = convert.(T, xs) # piracy
+struct FluxEltypeAdaptor{T} end
 
-paramtype(T::Type{<:Real}, m) = fmap(x -> adapt(T, x), m)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Number}) where T = convert(AbstractArray{T}, x)
+
+_paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
+_paramtype(::Type{T}, x::AbstractArray{<:Real}) where {T} = convert(AbstractArray{T}, x)
 
 """
     f32(m)
 
 Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).
 Recurses into structs marked with [`@functor`](@ref).
+See also [`f64`](@ref) and [`f16`](@ref).
 """
-f32(m) = paramtype(Float32, m)
+f32(m) = _paramtype(Float32, m)
 
 """
     f64(m)
@@ -219,8 +289,53 @@ f32(m) = paramtype(Float32, m)
 Converts the `eltype` of model's parameters to `Float64`.
 Recurses into structs marked with [`@functor`](@ref).
 """
-f64(m) = paramtype(Float64, m)
+f64(m) = _paramtype(Float64, m)
+
+"""
+    f16(m)
+
+Converts the `eltype` of model's parameters to `Float16`.
+Recurses into structs marked with [`@functor`](@ref).
+
+Support for `Float16` is limited on many CPUs. Julia may
+convert to `Float32` for each operation, which is slow.
+
+# Example
+```jldoctest
+julia> m = Chain(Dense(784, 2048, relu), Dense(2048, 10))  # all Float32
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 6.211 MiB.
+
+julia> m |> f16  # takes half the memory
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
+```
+"""
+f16(m) = _paramtype(Float16, m)
 
 # Functors for certain Julia data structures
 @functor Cholesky
 trainable(c::Cholesky) = ()
+
+# AMDGPU extension.
+
+struct FluxAMDAdaptor end
+
+const AMDGPU_LOADED = Ref{Bool}(false)
+
+function gpu(::FluxAMDAdaptor, x)
+    if AMDGPU_LOADED[]
+        return _amd(x)
+    else
+        @info """
+        The AMDGPU functionality is being called via `Flux.amd` but
+        `AMDGPU` must be loaded to access it.
+        """ maxlog=1
+    end
+end
+
+function _amd end

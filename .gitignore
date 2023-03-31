@@ -7,4 +7,6 @@ docs/site/
 deps
 .vscode
 Manifest.toml
-
+LocalPreferences.toml
+.DS_Store
+docs/mymodel.bson

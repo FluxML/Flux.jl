@@ -1,5 +1,24 @@
 # Flux Release Notes
 
+## v0.13.15
+* Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
+
+## v0.13.14
+* Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.
+* Initial support for `AMDGPU` via extension mechanism.
+* Add `gpu_backend` preference to select GPU backend using `LocalPreference.toml`.
+* Add `Flux.gpu_backend!` method to switch between GPU backends.
+
+## v0.13.13
+* Added `f16` which changes precision to `Float16`, recursively.
+
+## v0.13.12
+* CUDA.jl 4.0 compatibility.
+
+## v0.13.7
+* Added [`@autosize` macro](https://github.com/FluxML/Flux.jl/pull/2078)
+* New method of `train!` using Zygote's "explicit" mode. Part of a move away from "implicit" `Params`.
+
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)
 
@@ -29,7 +48,7 @@ been removed in favour of MLDatasets.jl.
 * Fixed [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781)
 
 ## v0.12.8
-* Optimized inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1756)
+* Optimised inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1756)
 
 ## v0.12.7
 * Added support for [`GRUv3`](https://github.com/FluxML/Flux.jl/pull/1675)
@@ -83,7 +102,7 @@ been removed in favour of MLDatasets.jl.
 * Change to `DataLoader`'s [constructor](https://github.com/FluxML/Flux.jl/pull/1152)
 * Uniform loss [interface](https://github.com/FluxML/Flux.jl/pull/1150)
 * Loss functions now live in the `Flux.Losses` [module](https://github.com/FluxML/Flux.jl/pull/1264)
-* Optimistic ADAM (OADAM) optimizer for [adversarial training](https://github.com/FluxML/Flux.jl/pull/1246).
+* Optimistic ADAM (OADAM) optimiser for [adversarial training](https://github.com/FluxML/Flux.jl/pull/1246).
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
 * Added option to set `bias` to [Flux.Zeros](https://github.com/FluxML/Flux.jl/pull/873) to eliminating `bias` from being trained.
 * Added `GlobalMaxPool` and `GlobalMeanPool` [layers](https://github.com/FluxML/Flux.jl/pull/950) for performing global pooling operations.

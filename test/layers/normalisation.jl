@@ -1,5 +1,5 @@
-using Flux, Test, Statistics
-using Zygote: pullback
+using Flux, Test, Statistics, Random
+using Zygote: pullback, ForwardDiff
 
 evalwgrad(f, x...) = pullback(f, x...)[1]
 
@@ -56,10 +56,10 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     y = m(x)
     @test count(a->a == 0, y) > 50
 
-    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=true)
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9) # , active=true)
     @test count(a->a == 0, y) > 50
 
-    y = Flux.dropout(values(rng_kwargs)..., x, 0.9, active=false)
+    y = Flux.dropout(values(rng_kwargs)..., x, 0.9 * 0) # , active=false)
     @test count(a->a == 0, y) == 0
 
     # CPU RNGs map onto CPU ok
@@ -161,16 +161,24 @@ end
     @inferred m(x)
   end
 
-  let m = BatchNorm(2; track_stats=false), x = [1.0 3.0 5.0; 2.0 4.0 6.0]
-    @inferred m(x)
+  let m = BatchNorm(2; track_stats=false), x = Float32[1.0 3.0 5.0; 2.0 4.0 6.0]
+    y = @inferred m(x)
+    m16 = f16(m)
+    y16 = @inferred m16(f16(x))
+    @test eltype(y16) == Float16
+    @test y16 ≈ y  atol=1e-3
   end
 
   # with activation function
-  let m = BatchNorm(2, sigmoid), x = [1.0 3.0 5.0;
-                                      2.0 4.0 6.0]
+  let m = BatchNorm(2, sigmoid), x = Float32[1.0 3.0 5.0;
+                                             2.0 4.0 6.0]
     y = m(x)
     @test isapprox(y, sigmoid.((x .- m.μ) ./ sqrt.(m.σ² .+ m.ϵ)), atol = 1.0e-7)
     @inferred m(x)
+    m16 = f16(m)
+    y16 = @inferred m16(f16(x))
+    @test eltype(y16) == Float16
+    @test y16 ≈ y  atol=1e-3
   end
 
   let m = trainmode!(BatchNorm(2)), x = reshape(Float32.(1:6), 3, 2, 1)
@@ -462,4 +470,33 @@ end
 @testset "second derivatives" begin
   m1 = Dropout(0.5)
   @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
+
+  m2 = Chain(BatchNorm(3), sum)
+  @test Zygote.hessian_reverse(m2, Float32[1 2; 3 4; 5 6]) == zeros(Float32, 6, 6)
 end
+
+@testset "ForwardDiff" begin
+  bn = BatchNorm(3)
+  @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
+  # iszero(bn.μ)  # is true. But ideally would not be, if Flux would automatically choose trainmode
+  Flux.trainmode!(bn)
+  # This was an error, https://github.com/FluxML/Flux.jl/issues/2122
+  @test ForwardDiff.jacobian(bn, rand(Float32, 3, 4)) isa Matrix{Float32}
+  @test !iszero(bn.μ)
+
+  # Easy case of 2122, gradient with x
+  x5 = rand(Float32, 5, 3)
+  bn1 = BatchNorm(5, relu)
+  bn2 = BatchNorm(5, relu)
+  g1 = Zygote.gradient(x -> sum(abs2, bn1(x)), x5)[1]
+  g2 = ForwardDiff.gradient(x -> sum(abs2, bn2(x)), x5)
+  @test g1 ≈ g2
+
+  # Harder case? 
+  v1, re1 = Flux.destructure(BatchNorm(5, relu));
+  g1 = Zygote.gradient(v -> sum(abs2, re1(v)(x5)), v1)[1]
+
+  v2, re2 = Flux.destructure(BatchNorm(5, relu));
+  g2 = ForwardDiff.gradient(v -> sum(abs2, re2(v)(x5)), v2)
+end
+

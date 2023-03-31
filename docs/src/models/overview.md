@@ -1,19 +1,21 @@
-# Flux Overview
+# [Flux Overview: Fitting a Straight Line](@id man-overview)
 
 Flux is a pure Julia ML stack that allows you to build predictive models. Here are the steps for a typical Flux program:
 
-- Provide training and test data
-- Build a model with configurable *parameters* to make predictions
-- Iteratively train the model by tweaking the parameters to improve predictions
-- Verify your model
+1. Provide training and test data
+2. Build a model with configurable *parameters* to make predictions
+3. Iteratively train the model by tweaking the parameters to improve predictions
+4. Verify your model
 
 Under the hood, Flux uses a technique called automatic differentiation to take gradients that help improve predictions. Flux is also fully written in Julia so you can easily replace any layer of Flux with your own code to improve your understanding or satisfy special requirements.
 
 Here's how you'd use Flux to build and train the most basic of models, step by step.
 
-## Make a Trivial Prediction
+### A Trivial Prediction
 
-This example will predict the output of the function `4x + 2`. First, import `Flux` and define the function we want to simulate:
+This example will predict the output of the function `4x + 2`. Making such predictions is called "linear regression", and is really too simple to *need* a neural network. But it's a nice toy example.
+
+First, import `Flux` and define the function we want to simulate:
 
 ```jldoctest overview
 julia> using Flux
@@ -24,7 +26,7 @@ actual (generic function with 1 method)
 
 This example will build a model to approximate the `actual` function.
 
-## Provide Training and Test Data
+## 1. Provide Training and Test Data
 
 Use the `actual` function to build sets of data for training and verification:
 
@@ -36,13 +38,13 @@ julia> y_train, y_test = actual.(x_train), actual.(x_test)
 ([2 6 … 18 22], [26 30 … 38 42])
 ```
 
-Normally, your training and test data come from real world observations, but this function will simulate real-world observations.
+Normally, your training and test data come from real world observations, but here we simulate them.
 
-## Build a Model to Make Predictions
+## 2. Build a Model to Make Predictions
 
 Now, build a model to make predictions with `1` input and `1` output:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> model = Dense(1 => 1)
 Dense(1 => 1)       # 2 parameters
 
@@ -66,7 +68,7 @@ Dense(1 => 1)       # 2 parameters
 
 This model will already make predictions, though not accurate ones yet:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict(x_train)
 1×6 Matrix{Float32}:
  0.0  0.906654  1.81331  2.71996  3.62662  4.53327
@@ -74,16 +76,18 @@ julia> predict(x_train)
 
 In order to make better predictions, you'll need to provide a *loss function* to tell Flux how to objectively *evaluate* the quality of a prediction. Loss functions compute the cumulative distance between actual values and predictions. 
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> loss(x, y) = Flux.Losses.mse(predict(x), y);
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
+julia> using Statistics
 
-julia> loss(x_train, y_train)
+julia> loss(model, x, y) = mean(abs2.(model(x) .- y));
+
+julia> loss(predict, x_train, y_train)
 122.64734f0
 ```
 
-More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/). Flux works by iteratively reducing the loss through *training*.
+More accurate predictions will yield a lower loss. You can write your own loss functions or rely on those already provided by Flux. This loss function is called [mean squared error](https://www.statisticshowto.com/probability-and-statistics/statistics-definitions/mean-squared-error/) (and built-in as [`mse`](@ref Flux.Losses.mse)). Flux works by iteratively reducing the loss through *training*.
 
-## Improve the Prediction
+## 3. Improve the Prediction
 
 Under the hood, the Flux [`Flux.train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
 
@@ -100,7 +104,7 @@ julia> data = [(x_train, y_train)]
 
 Now, we have the optimiser and data we'll pass to `train!`. All that remains are the parameters of the model. Remember, each model is a Julia struct with a function and configurable parameters. Remember, the dense layer has weights and biases that depend on the dimensions of the inputs and outputs: 
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict.weight
 1×1 Matrix{Float32}:
  0.9066542
@@ -110,68 +114,55 @@ julia> predict.bias
  0.0
 ```
 
-The dimensions of these model parameters depend on the number of inputs and outputs. Since models can have hundreds of inputs and several layers, it helps to have a function to collect the parameters into the data structure Flux expects:
+The dimensions of these model parameters depend on the number of inputs and outputs.
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> parameters = Flux.params(predict)
-Params([Float32[0.9066542], Float32[0.0]])
-```
-
-These are the parameters Flux will change, one step at a time, to improve predictions. At each step, the contents of this `Params` object changes too, since it is just a collection of references to the mutable arrays inside the model: 
-
-```jldoctest overview
-julia> predict.weight in parameters, predict.bias in parameters
-(true, true)
-
-```
-
-The first parameter is the weight and the second is the bias. Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
+Flux will adjust predictions by iteratively changing these parameters according to the optimiser.
 
 This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`Flux.train!`](@ref) like this:
 
 ```jldoctest overview
-julia> train!(loss, parameters, data, opt)
+julia> train!(loss, predict, data, opt)
 ```
 
 And check the loss:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> loss(x_train, y_train)
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
+julia> loss(predict, x_train, y_train)
 116.38745f0
 ```
 
 It went down. Why? 
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
-julia> parameters
-Params([Float32[7.5777884], Float32[1.9466728]])
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
+julia> predict.weight, predict.bias
+(Float32[7.246838;;], Float32[1.748103])
 ```
 
 The parameters have changed. This single step is the essence of machine learning.
 
-## Iteratively Train the Model
+## 3+. Iteratively Train the Model
 
 In the previous section, we made a single call to `train!` which iterates over the data we passed in just once. An *epoch* refers to one pass over the dataset. Typically, we will run the training for multiple epochs to drive the loss down even further. Let's run it a few more times:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for epoch in 1:200
-         train!(loss, parameters, data, opt)
+         train!(loss, predict, data, opt)
        end
 
-julia> loss(x_train, y_train)
+julia> loss(predict, x_train, y_train)
 0.00339581f0
 
-julia> parameters
-Params([Float32[4.0178537], Float32[2.0050256]])
+julia> predict.weight, predict.bias
+(Float32[4.0159144;;], Float32[2.004479])
 ```
 
 After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.
 
-## Verify the Results
+## 4. Verify the Results
 
 Now, let's verify the predictions:
 
-```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+"
+```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict(x_test)
 1×5 Matrix{Float32}:
  26.1121  30.13  34.1479  38.1657  42.1836
@@ -187,7 +178,7 @@ First, we gathered real-world data into the variables `x_train`, `y_train`, `x_t
 
 Then, we built a single input, single output predictive model, `predict = Dense(1 => 1)`. The initial predictions weren't accurate, because we had not trained the model yet.
 
-After building the model, we trained it with `train!(loss, parameters, data, opt)`. The loss function is first, followed by the `parameters` holding the weights and biases of the model, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
+After building the model, we trained it with `train!(loss, predict, data, opt)`. The loss function is first, followed by the model itself, the training data, and the `Descent` optimiser provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
 
 After we trained the model, we verified it with the test data to verify the results. 
 

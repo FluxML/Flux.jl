@@ -1,3 +1,76 @@
+using LinearAlgebra
+
+@testset "RNN gradients-implicit" begin
+    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
+    layer.cell.Wi .= 5.0
+    layer.cell.Wh .= 4.0
+    layer.cell.b .= 0.0f0
+    layer.cell.state0 .= 7.0
+    x = [[2.0f0], [3.0f0]]
+
+    # theoretical primal gradients
+    primal =
+        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
+        x[2] .* layer.cell.Wi
+    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
+    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
+    ∇b = layer.cell.Wh .+ 1
+    ∇state0 = layer.cell.Wh .^ 2
+
+    Flux.reset!(layer)
+    ps = Flux.params(layer)
+    e, g = Flux.withgradient(ps) do
+        out = [layer(xi) for xi in x]
+        sum(out[2])
+    end
+
+    @test primal[1] ≈ e
+    @test ∇Wi ≈ g[ps[1]]
+    @test ∇Wh ≈ g[ps[2]]
+    @test ∇b ≈ g[ps[3]]
+    @test ∇state0 ≈ g[ps[4]]
+
+end
+
+@testset "RNN gradients-explicit" begin
+    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
+    layer.cell.Wi .= 5.0f0
+    layer.cell.Wh .= 4.0f0
+    layer.cell.b .= 0.0f0
+    layer.cell.state0 .= 7.0f0
+    x = [[2.0f0], [3.0f0]]
+
+    # theoretical primal gradients
+    primal =
+        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
+        x[2] .* layer.cell.Wi
+    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
+    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
+    ∇b = layer.cell.Wh .+ 1
+    ∇state0 = layer.cell.Wh .^ 2
+
+    Flux.reset!(layer)
+    e, g = Flux.withgradient(layer) do m
+        out = [m(xi) for xi in x]
+        sum(out[2])
+    end
+    grads = g[1][:cell]
+
+    @test primal[1] ≈ e
+
+    if VERSION < v"1.7"
+        @test ∇Wi ≈ grads[:Wi]
+        @test ∇Wh ≈ grads[:Wh]
+        @test ∇b ≈ grads[:b]
+        @test_broken ∇state0 ≈ grads[:state0]
+    else
+        @test_broken ∇Wi ≈ grads[:Wi]
+        @test_broken ∇Wh ≈ grads[:Wh]
+        @test_broken ∇b ≈ grads[:b]
+        @test_broken ∇state0 ≈ grads[:state0]
+    end
+end
+
 # Ref FluxML/Flux.jl#1209 1D input
 @testset "BPTT-1D" begin
   seq = [rand(Float32, 2) for i = 1:3]
@@ -88,15 +161,6 @@ end
   end
 end
 
-@testset "RNN-input-state-eltypes" begin
-  @testset for R in [RNN, GRU, LSTM, GRUv3]
-    m = R(3 => 5)
-    x = rand(Float64, 3, 1)
-    Flux.reset!(m)
-    @test_throws MethodError m(x)
-  end
-end
-
 @testset "multigate" begin
   x = rand(6, 5)
   res, (dx,) = Flux.withgradient(x) do x
@@ -137,4 +201,57 @@ end
                                                          x2, 
                                                          x3, 
                                                          zeros(x_size[1:end-1]); dims=ndims(x))
+end
+
+@testset "Different Internal Matrix Types" begin
+  R = Flux.Recur(Flux.RNNCell(tanh, rand(5, 3), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
+  # don't want to pull in SparseArrays just for this test, but there aren't any
+  # non-square structured matrix types in LinearAlgebra. so we will use a different
+  # eltype matrix, which would fail before when `W_i` and `W_h` were required to be the
+  # same type.
+  L = Flux.Recur(Flux.LSTMCell(rand(5*4, 3), rand(1:20, 5*4, 5), rand(5*4), (rand(5, 1), rand(5, 1))))
+  G = Flux.Recur(Flux.GRUCell(rand(5*3, 3), rand(1:20, 5*3, 5), rand(5*3), rand(5, 1)))
+  G3 = Flux.Recur(Flux.GRUv3Cell(rand(5*3, 3), rand(1:20, 5*2, 5), rand(5*3), Tridiagonal(rand(5, 5)), rand(5, 1)))
+
+  for m in [R, L, G, G3]
+
+    x1 = rand(3)
+    x2 = rand(3, 1)
+    x3 = rand(3, 1, 2)
+    Flux.reset!(m)
+    @test size(m(x1)) == (5,)
+    Flux.reset!(m)
+    @test size(m(x1)) == (5,) # repeat in case of effect from change in state shape
+    @test size(m(x2)) == (5, 1)
+    Flux.reset!(m)
+    @test size(m(x2)) == (5, 1)
+    Flux.reset!(m)
+    @test size(m(x3)) == (5, 1, 2)
+    Flux.reset!(m)
+    @test size(m(x3)) == (5, 1, 2)
+  end
+end
+
+@testset "type matching" begin
+  x = rand(Float64, 2, 4)
+  m1 = RNN(2=>3)
+  @test m1(x) isa Matrix{Float32}  # uses _match_eltype, may print a warning
+  @test m1.state isa Matrix{Float32}
+  @test (@inferred m1(x); true)
+  @test Flux.outputsize(m1, size(x)) == size(m1(x))
+
+  m2 = LSTM(2=>3)
+  @test m2(x) isa Matrix{Float32}
+  @test (@inferred m2(x); true)
+  @test Flux.outputsize(m2, size(x)) == size(m2(x))
+
+  m3 = GRU(2=>3)
+  @test m3(x) isa Matrix{Float32}
+  @test (@inferred m3(x); true)
+  @test Flux.outputsize(m3, size(x)) == size(m3(x))
+
+  m4 = GRUv3(2=>3)
+  @test m4(x) isa Matrix{Float32}
+  @test (@inferred m4(x); true)
+  @test Flux.outputsize(m4, size(x)) == size(m4(x))
 end

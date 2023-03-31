@@ -43,16 +43,28 @@ The current defaults are:
   - Julia version is < 1.7: `Random.GLOBAL_RNG`
   - Julia version is >= 1.7: `Random.default_rng()`
 """
-rng_from_array(::AbstractArray) = rng_from_array()
+rng_from_array(::AbstractArray) = default_rng_value()
 rng_from_array(::CuArray) = CUDA.default_rng()
+
+@non_differentiable rng_from_array(::Any)
+
 if VERSION >= v"1.7"
-  rng_from_array() = Random.default_rng()
+  default_rng_value() = Random.default_rng()
 else
-  rng_from_array() = Random.GLOBAL_RNG
+  default_rng_value() = Random.GLOBAL_RNG
 end
 
 """
-    glorot_uniform([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    default_rng_value()
+
+Create an instance of the default RNG depending on Julia's version.
+- Julia version is < 1.7: `Random.GLOBAL_RNG`
+- Julia version is >= 1.7: `Random.default_rng()`
+"""
+default_rng_value
+
+"""
+    glorot_uniform([rng = default_rng_value()], size...; gain = 1) -> Array
     glorot_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform
@@ -91,13 +103,13 @@ function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   scale = Float32(gain) * sqrt(24.0f0 / sum(nfan(dims...)))
   (rand(rng, Float32, dims...) .- 0.5f0) .* scale
 end
-glorot_uniform(dims::Integer...; kw...) = glorot_uniform(rng_from_array(), dims...; kw...)
-glorot_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
+glorot_uniform(dims::Integer...; kw...) = glorot_uniform(default_rng_value(), dims...; kw...)
+glorot_uniform(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
 """
-    glorot_normal([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    glorot_normal([rng = default_rng_value(), size...; gain = 1) -> Array
     glorot_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a normal
@@ -134,13 +146,13 @@ function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   std = Float32(gain) * sqrt(2.0f0 / sum(nfan(dims...)))
   randn(rng, Float32, dims...) .* std
 end
-glorot_normal(dims::Integer...; kwargs...) = glorot_normal(rng_from_array(), dims...; kwargs...)
-glorot_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
+glorot_normal(dims::Integer...; kwargs...) = glorot_normal(default_rng_value(), dims...; kwargs...)
+glorot_normal(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
 """
-    kaiming_uniform([rng=GLOBAL_RNG], size...; gain = √2) -> Array
+    kaiming_uniform([rng = default_rng_value()], size...; gain = √2) -> Array
     kaiming_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform distribution
@@ -169,13 +181,13 @@ function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain::Real = √2)
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
-kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(rng_from_array(), dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(default_rng_value(), dims...; kwargs...)
+kaiming_uniform(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
 """
-    kaiming_normal([rng=GLOBAL_RNG], size...; gain = √2) -> Array
+    kaiming_normal([rng = default_rng_value()], size...; gain = √2) -> Array
     kaiming_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers taken from a normal
@@ -206,13 +218,13 @@ function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain::Real = √2f0)
   return randn(rng, Float32, dims...) .* std
 end
 
-kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(rng_from_array(), dims...; kwargs...)
+kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(default_rng_value(), dims...; kwargs...)
 kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 
 """
-    truncated_normal([rng=GLOBAL_RNG], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
+    truncated_normal([rng = default_rng_value()], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
     truncated_normal([rng]; kw...) -> Function
   
 Return an `Array{Float32}` of the given `size` where each element is drawn from a truncated normal distribution.
@@ -252,13 +264,13 @@ function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1,
   return xs
 end
 
-truncated_normal(dims::Integer...; kwargs...) = truncated_normal(rng_from_array(), dims...; kwargs...)
-truncated_normal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+truncated_normal(dims::Integer...; kwargs...) = truncated_normal(default_rng_value(), dims...; kwargs...)
+truncated_normal(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
 """
-    orthogonal([rng=GLOBAL_RNG], size...; gain = 1) -> Array
+    orthogonal([rng = default_rng_value()], size...; gain = 1) -> Array
     orthogonal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` which is a (semi) orthogonal matrix, as described in [1].
@@ -313,13 +325,13 @@ function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
   return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
 end
 
-orthogonal(dims::Integer...; kwargs...) = orthogonal(rng_from_array(), dims...; kwargs...)
-orthogonal(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+orthogonal(dims::Integer...; kwargs...) = orthogonal(default_rng_value(), dims...; kwargs...)
+orthogonal(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable orthogonal(::Any...)
 
 """
-    sparse_init([rng=GLOBAL_RNG], rows, cols; sparsity, std = 0.01) -> Array
+    sparse_init([rng = default_rng_value()], rows, cols; sparsity, std = 0.01) -> Array
     sparse_init([rng]; kw...) -> Function
 
 Return a `Matrix{Float32}` of size `rows, cols` where each column contains a fixed fraction of
@@ -361,8 +373,8 @@ function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
   return mapslices(shuffle, sparse_array, dims=1)
 end
 
-sparse_init(dims::Integer...; kwargs...) = sparse_init(rng_from_array(), dims...; kwargs...)
-sparse_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+sparse_init(dims::Integer...; kwargs...) = sparse_init(default_rng_value(), dims...; kwargs...)
+sparse_init(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
@@ -452,36 +464,40 @@ end
 
 # For consistency, it accepts an RNG, but ignores it:
 identity_init(::AbstractRNG, dims::Integer...; kwargs...) = identity_init(dims...; kwargs...)
-identity_init(rng::AbstractRNG=rng_from_array(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+identity_init(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable identity_init(::Any...)
 
-ones32(dims::Integer...) = Base.ones(Float32, dims...)
-zeros32(dims::Integer...) = Base.zeros(Float32, dims...)
-
 """
     ones32(size...) = ones(Float32, size...)
-    zeros32(size...) = zeros(Float32, size...)
 
-Return an `Array{Float32}` of the given `size`.
+Return an `Array{Float32}` of the given `size` filled with 1s.
 """
 ones32(dims...) = Base.ones(Float32, dims...)
 
-@doc @doc(ones32)
+"""
+    zeros32(size...) = zeros(Float32, size...)
+
+Return an `Array{Float32}` of the given `size` filled with 0s.
+"""
 zeros32(dims...) = Base.zeros(Float32, dims...)
 
 """
     rand32([rng], size...)
-    randn32([rng], size...)
 
-Return an `Array{Float32}` of the given `size`, filled like `rand` or `randn`.
+Return an `Array{Float32}` of the given `size`, filled like `rand`.
 When the size is not provided, `rand32(rng::AbstractRNG)` returns a function.
 """
 rand32(dims::Integer...) = Base.rand(Float32, dims...)
 rand32(rng::AbstractRNG, dims::Integer...) = Base.rand(rng, Float32, dims...)
 rand32(rng::AbstractRNG) = (dims...,) -> Base.rand(rng, Float32, dims...)
 
-@doc @doc(rand32)
+"""
+    randn32([rng], size...)
+
+Return an `Array{Float32}` of the given `size`, filled like `randn`.
+When the size is not provided, `randn32(rng::AbstractRNG)` returns a function.
+"""
 randn32(dims::Integer...) = Base.randn(Float32, dims...)
 randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
 randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
@@ -495,14 +511,14 @@ to the constructor's keyword `bias=bias`.
 * `bias == true` creates a trainable array of the given size, of the same type as `weights`, initialised to zero.
 * `bias == false` returns `false`, which is understood by AD to be non-differentiable.
 * `bias::AbstractArray` uses the array provided, provided it has the correct size.
-  It does not at present correct the `eltype` to match that of `weights`.
+  It will also correct the `eltype` to match that of `weights`.
 """
 function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
   bias ? fill!(similar(weights, dims...), 0) : false
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
-  bias
+  convert(AbstractArray{eltype(weights)}, bias)
 end
 
 
@@ -518,6 +534,18 @@ Normally, the throttled function will run as much as it can, without ever
 going more than once per `wait` duration; but if you'd like to disable the
 execution on the leading edge, pass `leading=false`. To enable execution on
 the trailing edge, pass `trailing=true`.
+
+# Examples
+```jldoctest
+julia> a = Flux.throttle(() -> println("Flux"), 2);
+
+julia> for i = 1:4  # a called in alternate iterations
+           a()
+           sleep(1)
+       end
+Flux
+Flux
+```
 """
 function throttle(f, timeout; leading=true, trailing=false)
   cooldown = true
@@ -597,14 +625,17 @@ true
 """
 modules(m) = [x for x in Functors.fcollect(m) if !isleaflike(x)]
 
-@nograd modules # TODO: is this correct? might fail with explicit parameters.
+@non_differentiable modules(::Any...) # TODO: is this correct? might fail with explicit parameters.
 function ChainRulesCore.rrule(::typeof(modules), m)
   modules(m), dm -> error("Flux.modules is not at present differentiable, sorry")
 end
 
 isleaflike(x) = Functors.isleaf(x)
-isleaflike(::Tuple{Vararg{<:Number}}) = true
-isleaflike(::Tuple{Vararg{<:AbstractArray{<:Number}}}) = true
+
+# these are, essentially, Tuple{Vararg{<:T}} using the special property
+# of tuples that they are type covariant.  Using <: here causes warning or error
+isleaflike(::Tuple{Vararg{Number}}) = true
+isleaflike(::Tuple{Vararg{AbstractArray{<:Number}}}) = true
 
 """
     patience(predicate, wait)
@@ -621,7 +652,8 @@ julia> loss() = rand();
 julia> trigger = Flux.patience(() -> loss() < 1, 3);
 
 
-julia> Flux.@epochs 10 begin
+julia> for i in 1:10
+         @info "Epoch \$i"
          trigger() && break
        end
 [ Info: Epoch 1
@@ -658,7 +690,8 @@ julia> loss = let l = 0
 julia> es = Flux.early_stopping(loss, 3);
 
 
-julia> Flux.@epochs 10 begin
+julia> for i in 1:10
+         @info "Epoch \$i"
          es() && break
        end
 [ Info: Epoch 1
@@ -699,7 +732,8 @@ julia> f = let v = 10
 julia> trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
 
 
-julia> Flux.@epochs 10 begin
+julia> for i in 1:10
+         @info "Epoch \$i"
          trigger() && break
        end
 [ Info: Epoch 1

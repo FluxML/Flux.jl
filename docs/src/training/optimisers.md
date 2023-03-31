@@ -2,55 +2,26 @@
 CurrentModule = Flux
 ```
 
-# Optimisers
+# [Optimisation Rules](@id man-optimisers)
 
-Consider a [simple linear regression](../models/basics.md). We create some dummy data, calculate a loss, and backpropagate to calculate gradients for the parameters `W` and `b`.
+Flux builds in many optimisation rules for use with [`train!`](@ref Flux.Optimise.train!) and
+other training functions.
 
-```julia
-using Flux
+The mechanism by which these work is gradually being replaced as part of the change
+from "implicit" dictionary-based to "explicit" tree-like structures.
+At present, the same struct (such as `Adam`) can be used with either form,
+and will be automatically translated.
 
-W = rand(2, 5)
-b = rand(2)
+For full details of how the new interface works, see the [Optimisers.jl documentation](https://fluxml.ai/Optimisers.jl/dev/).
 
-predict(x) = (W * x) .+ b
-loss(x, y) = sum((predict(x) .- y).^2)
+For full details on how the old "implicit" interface worked, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/optimisers/#Optimiser-Interface).
 
-x, y = rand(5), rand(2) # Dummy data
-l = loss(x, y) # ~ 3
-
-θ = Flux.params(W, b)
-grads = gradient(() -> loss(x, y), θ)
-```
-
-We want to update each parameter, using the gradient, in order to improve (reduce) the loss. Here's one way to do that:
-
-```julia
-η = 0.1 # Learning Rate
-for p in (W, b)
-  p .-= η * grads[p]
-end
-```
-
-Running this will alter the parameters `W` and `b` and our loss should go down. Flux provides a more general way to do optimiser updates like this.
-
-```julia
-using Flux: update!
-
-opt = Descent(0.1) # Gradient descent with learning rate 0.1
-
-for p in (W, b)
-  update!(opt, p, grads[p])
-end
-```
-
-An optimiser `update!` accepts a parameter and a gradient, and updates the parameter according to the chosen rule. We can also pass `opt` to our [training loop](training.md), which will update all parameters of the model in a loop. However, we can now easily replace `Descent` with a more advanced optimiser such as `Adam`.
 
 ## Optimiser Reference
 
 All optimisers return an object that, when passed to `train!`, will update the parameters passed to it.
 
 ```@docs
-Flux.Optimise.update!
 Descent
 Momentum
 Nesterov
@@ -66,44 +37,6 @@ AdamW
 OAdam
 AdaBelief
 ```
-
-## Optimiser Interface
-
-Flux's optimisers are built around a `struct` that holds all the optimiser parameters along with a definition of how to apply the update rule associated with it. We do this via the `apply!` function which takes the optimiser as the first argument followed by the parameter and its corresponding gradient.
-
-In this manner Flux also allows one to create custom optimisers to be used seamlessly. Let's work on this with a simple example.
-
-```julia
-mutable struct Momentum
-  eta
-  rho
-  velocity
-end
-
-Momentum(eta::Real, rho::Real) = Momentum(eta, rho, IdDict())
-```
-
-The `Momentum` type will act as our optimiser in this case. Notice that we have added all the parameters as fields, along with the velocity which we will use as our state dictionary. Each parameter in our models will get an entry in there. We can now define the rule applied when this optimiser is invoked.
-
-```julia
-function Flux.Optimise.apply!(o::Momentum, x, Δ)
-  η, ρ = o.eta, o.rho
-  v = get!(o.velocity, x, zero(x))::typeof(x)
-  @. v = ρ * v - η * Δ
-  @. Δ = -v
-end
-```
-
-This is the basic definition of a Momentum update rule given by:
-
-```math
-v = ρ * v - η * Δ
-w = w - v
-```
-
-The `apply!` defines the update rules for an optimiser `opt`, given the parameters and gradients. It returns the updated gradients. Here, every parameter `x` is retrieved from the running state `v` and subsequently updates the state of the optimiser.
-
-Flux internally calls on this function via the `update!` function. It shares the API with `apply!` but ensures that multiple parameters are handled gracefully.
 
 ## Composing Optimisers
 
@@ -143,7 +76,7 @@ Flux.Optimise.Optimiser
 
 ## Scheduling Optimisers
 
-In practice, it is fairly common to schedule the learning rate of an optimiser to obtain faster convergence. There are a variety of popular scheduling policies, and you can find implementations of them in [ParameterSchedulers.jl](https://darsnack.github.io/ParameterSchedulers.jl/dev/README.html). The documentation for ParameterSchedulers.jl provides a more detailed overview of the different scheduling policies, and how to use them with Flux optimizers. Below, we provide a brief snippet illustrating a [cosine annealing](https://arxiv.org/pdf/1608.03983.pdf) schedule with a momentum optimiser.
+In practice, it is fairly common to schedule the learning rate of an optimiser to obtain faster convergence. There are a variety of popular scheduling policies, and you can find implementations of them in [ParameterSchedulers.jl](https://darsnack.github.io/ParameterSchedulers.jl/dev/README.html). The documentation for ParameterSchedulers.jl provides a more detailed overview of the different scheduling policies, and how to use them with Flux optimisers. Below, we provide a brief snippet illustrating a [cosine annealing](https://arxiv.org/pdf/1608.03983.pdf) schedule with a momentum optimiser.
 
 First, we import ParameterSchedulers.jl and initialize a cosine annealing schedule to vary the learning rate between `1e-4` and `1e-2` every 10 steps. We also create a new [`Momentum`](@ref) optimiser.
 ```julia
@@ -194,12 +127,4 @@ ClipValue
 ClipNorm
 ```
 
-# Optimisers.jl
 
-Flux re-exports some utility functions from [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl)
-and the complete `Optimisers` package under the `Flux.Optimisers` namespace.
-
-```@docs
-Optimisers.destructure
-Optimisers.trainable
-```

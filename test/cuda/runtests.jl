@@ -1,17 +1,16 @@
 using Flux, Test, CUDA
 using Zygote
 using Zygote: pullback
-using Random
+using Random, LinearAlgebra, Statistics
 
 @info "Testing GPU Support"
 CUDA.allowscalar(false)
 
-include("test_utils.jl")
 include("cuda.jl")
 include("losses.jl")
 include("layers.jl")
 
-if CUDA.has_cudnn()
+if CUDA.functional()
   @info "Testing Flux/CUDNN"
   include("cudnn.jl")
   include("curnn.jl")

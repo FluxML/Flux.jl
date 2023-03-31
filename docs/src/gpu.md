@@ -2,6 +2,8 @@
 
 NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) readme.
 
+AMD GPU support is available since Julia 1.9 on systems with ROCm and MIOpen installed. For more details refer to the [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl) repository.
+
 ## Checking GPU Availability
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
@@ -13,11 +15,45 @@ julia> CUDA.functional()
 true
 ```
 
+For AMD GPU:
+
+```julia
+julia> using AMDGPU
+
+julia> AMDGPU.functional()
+true
+
+julia> AMDGPU.functional(:MIOpen)
+true
+```
+
+## Selecting GPU backend
+
+Available GPU backends are: `CUDA`, `AMD`.
+
+Flux relies on [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl) for selecting default GPU backend to use.
+
+There are two ways you can specify it:
+
+- From the REPL/code in your project, call `Flux.gpu_backend!("AMD")` and restart (if needed) Julia session for the changes to take effect.
+- In `LocalPreferences.toml` file in you project directory specify:
+```toml
+[Flux]
+gpu_backend = "AMD"
+```
+
+Current GPU backend can be fetched from `Flux.GPU_BACKEND` variable:
+
+```julia
+julia> Flux.GPU_BACKEND
+"CUDA"
+```
+
 ## GPU Usage
 
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA](https://github.com/JuliaGPU/CUDA.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
-For example, we can use `CUDA.CuArray` (with the `cu` converter) to run our [basic example](models/basics.md) on an NVIDIA GPU.
+For example, we can use `CUDA.CuArray` (with the `cu` converter) to run our [basic example](@ref man-basics) on an NVIDIA GPU.
 
 (Note that you need to have CUDA available to use CUDA.CuArray – please see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) instructions for more details.)
 
@@ -102,12 +138,12 @@ In order to train the model using the GPU both model and the training data have 
 1. Iterating over the batches in a [DataLoader](@ref) object transferring each one of the training batches at a time to the GPU. 
    ```julia
    train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
-   # ... model, optimizer and loss definitions
+   # ... model, optimiser and loss definitions
    for epoch in 1:nepochs
        for (xtrain_batch, ytrain_batch) in train_loader
            x, y = gpu(xtrain_batch), gpu(ytrain_batch)
            gradients = gradient(() -> loss(x, y), parameters)
-           Flux.Optimise.update!(optimizer, parameters, gradients)
+           Flux.Optimise.update!(optimiser, parameters, gradients)
        end
    end
    ```
@@ -130,7 +166,7 @@ In order to train the model using the GPU both model and the training data have 
    ```julia
    using CUDA: CuIterator
    train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
-   # ... model, optimizer and loss definitions
+   # ... model, optimiser and loss definitions
    for epoch in 1:nepochs
        for (xtrain_batch, ytrain_batch) in CuIterator(train_loader)
           # ...
@@ -182,3 +218,4 @@ $ export CUDA_VISIBLE_DEVICES='0,1'
 
 
 More information for conditional use of GPUs in CUDA.jl can be found in its [documentation](https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use), and information about the specific use of the variable is described in the [Nvidia CUDA blog post](https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/).
+

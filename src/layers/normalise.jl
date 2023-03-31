@@ -1,115 +1,77 @@
-istraining() = false
-
-ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
-
-_isactive(m) = isnothing(m.active) ? istraining() : m.active
-
-_dropout_shape(s, ::Colon) = size(s)
-_dropout_shape(s, dims) = tuple((i ∉ dims ? 1 : si for (i, si) ∈ enumerate(size(s)))...)
-
-_dropout_kernel(y::T, p, q) where {T} = y > p ? T(1 / q) : T(0)
+# Internal function, used only for layers defined in this file.
+_isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 
 """
-    dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)
+    Dropout(p; [dims, rng])
 
-The dropout function. If `active` is `true`,
-for each input, either sets that input to `0` (with probability
-`p`) or scales it by `1 / (1 - p)`. `dims` specifies the unbroadcasted dimensions,
-e.g. `dims=1` applies dropout along columns and `dims=2` along rows.
-If `active` is `false`, it just returns the input `x`.
+Layer implementing [dropout](https://arxiv.org/abs/1207.0580) with the given probability.
+This is used as a regularisation, i.e. to reduce overfitting.
 
-Specify `rng` for custom RNGs instead of the default RNG.
-Note that custom RNGs are only supported on the CPU.
+While training, it sets each input to `0` (with probability `p`)
+or else scales it by `1 / (1 - p)`, using the [`NNlib.dropout`](@ref) function.
+While testing, it has no effect.
 
-Warning: when using this function, you have to manually manage the activation
-state. Usually in fact, dropout is used while training
-but is deactivated in the inference phase. This can be
-automatically managed using the [`Dropout`](@ref) layer instead of the
-`dropout` function.
+By default the mode will switch automatically, but it can also
+be controlled manually via [`Flux.testmode!`](@ref).
 
-The [`Dropout`](@ref) layer is what you should use in most scenarios.
-"""
-function dropout(rng, x, p; dims=:, active::Bool=true)
-  active || return x
-  y = dropout_mask(rng, x, p, dims=dims)
-  return x .* y
-end
-dropout(x, p; kwargs...) = dropout(rng_from_array(x), x, p; kwargs...)
+By default every input is treated independently. With the `dims` keyword,
+instead it takes a random choice only along that dimension.
+For example `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
+(also called 2D dropout).
 
-dropout_mask(rng::CUDA.RNG, x::CuArray, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
-dropout_mask(rng, x::CuArray, p; kwargs...) =
-  throw(ArgumentError("x isa CuArray, but rng isa $(typeof(rng)). dropout_mask only support CUDA.RNG for CuArrays."))
-dropout_mask(rng, x, p; kwargs...) = _dropout_mask(rng, x, p; kwargs...)
-function _dropout_mask(rng, x, p; dims=:)
-  realfptype = float(real(eltype(x)))
-  y = rand!(rng, similar(x, realfptype, _dropout_shape(x, dims)))
-  y .= _dropout_kernel.(y, p, 1 - p)
-  return y
-end
-
-# TODO move this to NNlib
-ChainRulesCore.@non_differentiable dropout_mask(::Any, ::Any, ::Any)
-
-"""
-    Dropout(p; dims=:, rng = rng_from_array())
-
-Dropout layer.
-
-While training, for each input, this layer either sets that input to `0` (with probability
-`p`) or scales it by `1 / (1 - p)`. To apply dropout along certain dimension(s), specify the 
-`dims` keyword. e.g. `Dropout(p; dims = 3)` will randomly zero out entire channels on WHCN input
-(also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during 
-training.
-
-In the forward pass, this layer applies the [`Flux.dropout`](@ref) function. See that for more
-details.
-
-Specify `rng` to use a custom RNG instead of the default.
-Custom RNGs are only supported on the CPU.
-
-Does nothing to the input once [`Flux.testmode!`](@ref) is `true`.
+Keyword `rng` lets you specify a custom random number generator.
+(Only supported on the CPU.)
 
 # Examples
-```jldoctest
-julia> m = Chain(Dense(1 => 1), Dropout(1));
+```julia
+julia> m = Chain(Dense(ones(3,2)), Dropout(0.4))
+Chain(
+  Dense(2 => 3),                        # 9 parameters
+  Dropout(0.4),
+)
 
-julia> Flux.trainmode!(m);
+julia> m(ones(2, 7))  # test mode, no effect
+3×7 Matrix{Float64}:
+ 2.0  2.0  2.0  2.0  2.0  2.0  2.0
+ 2.0  2.0  2.0  2.0  2.0  2.0  2.0
+ 2.0  2.0  2.0  2.0  2.0  2.0  2.0
 
-julia> y = m([1]);
+julia> Flux.trainmode!(m);  # equivalent to use within gradient
 
-julia> y == [0]
-true
+julia> m(ones(2, 7))
+3×7 Matrix{Float64}:
+ 0.0      0.0      3.33333  0.0      0.0      0.0  0.0
+ 3.33333  0.0      3.33333  0.0      3.33333  0.0  3.33333
+ 3.33333  3.33333  0.0      3.33333  0.0      0.0  3.33333
 
-julia> m = Chain(Dense(1000 => 1000), Dropout(0.5));
+julia> y = m(ones(2, 10_000));
 
-julia> Flux.trainmode!(m);
+julia> using Statistics
 
-julia> y = m(ones(1000));
+julia> mean(y)  # is about 2.0, same as in test mode
+1.9989999999999961
 
-julia> isapprox(count(==(0), y) / length(y), 0.5, atol=0.1)
-true
+julia> mean(iszero, y)  # is about 0.4
+0.4003
 ```
 """
-mutable struct Dropout{F,D,R<:AbstractRNG}
+mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
   p::F
   dims::D
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p, dims, active) = Dropout(p, dims, active, rng_from_array())
+Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
 
-function Dropout(p; dims=:, rng = rng_from_array())
-  @assert 0 ≤ p ≤ 1
+function Dropout(p::Real; dims=:, rng = default_rng_value())
+  0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
   Dropout(p, dims, nothing, rng)
 end
 
 @functor Dropout
 trainable(a::Dropout) = (;)
 
-function (a::Dropout)(x)
-  _isactive(a) || return x
-  return dropout(a.rng, x, a.p; dims=a.dims, active=true)
-end
+(a::Dropout)(x) = dropout(a.rng, x, a.p * _isactive(a, x); dims=a.dims)
 
 testmode!(m::Dropout, mode=true) =
   (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
@@ -121,7 +83,7 @@ function Base.show(io::IO, d::Dropout)
 end
 
 """
-    AlphaDropout(p; rng = rng_from_array())
+    AlphaDropout(p; rng = default_rng_value())
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -134,7 +96,7 @@ Does nothing to the input once [`testmode!`](@ref) is true.
 ```jldoctest
 julia> using Statistics
 
-julia> x = randn(1000,1);
+julia> x = randn32(1000,1);
 
 julia> m = Chain(Dense(1000 => 1000, selu), AlphaDropout(0.2));
 
@@ -155,14 +117,14 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
     new{typeof(p), typeof(rng)}(p, active, rng)
   end
 end
-AlphaDropout(p, active) = AlphaDropout(p, active, rng_from_array())
-AlphaDropout(p; rng = rng_from_array()) = AlphaDropout(p, nothing, rng)
+AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
+AlphaDropout(p; rng = default_rng_value()) = AlphaDropout(p, nothing, rng)
 
 @functor AlphaDropout
 trainable(a::AlphaDropout) = (;)
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
-  _isactive(a) || return x
+  _isactive(a, x) || return x
   p = a.p
   iszero(p) && return x
   isone(p) && return sign.(x) .* T(0)
@@ -226,7 +188,15 @@ LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]
 
 @functor LayerNorm
 
-(a::LayerNorm)(x) = a.diag(normalise(x, dims=1:length(a.size), ϵ=a.ϵ))
+function (a::LayerNorm)(x::AbstractArray)
+  ChainRulesCore.@ignore_derivatives if a.diag isa Scale
+    for d in 1:ndims(a.diag.scale)
+      _size_check(a, x, d => size(a.diag.scale, d))
+    end
+  end
+  eps = convert(float(eltype(x)), a.ϵ)  # avoids promotion for Float16 data, but should ε chage too?
+  a.diag(normalise(x, dims=1:length(a.size), ϵ=eps))
+end
 
 function Base.show(io::IO, l::LayerNorm)
   print(io, "LayerNorm(", join(l.size, ", "))
@@ -242,7 +212,7 @@ end
 function _norm_layer_forward(
   l, x::AbstractArray{T, N}; reduce_dims, affine_shape,
 ) where {T, N}
-  if !_isactive(l) && l.track_stats # testmode with tracked stats
+  if !_isactive(l, x) && l.track_stats # testmode with tracked stats
     stats_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
     μ = reshape(l.μ, stats_shape)
     σ² = reshape(l.σ², stats_shape)
@@ -254,7 +224,8 @@ function _norm_layer_forward(
     end
   end
 
-  o = _norm_layer_forward(x, μ, σ², l.ϵ)
+  eps = convert(float(T), l.ϵ)
+  o = _norm_layer_forward(x, μ, σ², eps)
   hasaffine(l) || return l.λ.(o)
 
   γ = reshape(l.γ, affine_shape)
@@ -275,8 +246,9 @@ function _track_stats!(
   μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
   σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
 
-  bn.μ = res_mtm .* bn.μ .+ mtm .* μnew
-  bn.σ² = res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new
+  # ForwardDiff.value removes Dual, was an error, issue #2122
+  bn.μ .= value.(res_mtm .* bn.μ .+ mtm .* μnew)
+  bn.σ² .= value.(res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new)
   return nothing
 end
 
@@ -355,9 +327,8 @@ end
 @functor BatchNorm
 trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
 
-function (BN::BatchNorm)(x)
-  @assert size(x, ndims(x)-1) == BN.chs
-  N = ndims(x)
+function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
+  _size_check(BN, x, N-1 => BN.chs)
   reduce_dims = [1:N-2; N]
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
@@ -445,10 +416,8 @@ end
 @functor InstanceNorm
 trainable(in::InstanceNorm) = hasaffine(in) ? (β = in.β, γ = in.γ) : (;)
 
-function (l::InstanceNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == l.chs
-  N = ndims(x)
+function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
+  _size_check(l, x, N-1 => l.chs)
   reduce_dims = 1:N-2
   affine_shape = ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
   return _norm_layer_forward(l, x; reduce_dims, affine_shape)
@@ -529,6 +498,10 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
               affine=true, track_stats=false,
               ϵ=1f-5, momentum=0.1f0)
 
+if track_stats
+  Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
+end
+
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
   β = affine ? initβ(chs) : nothing
@@ -544,17 +517,15 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
             nothing, chs)
 end
 
-function (gn::GroupNorm)(x)
-  @assert ndims(x) > 2
-  @assert size(x, ndims(x)-1) == gn.chs
-  N = ndims(x)
+function (gn::GroupNorm)(x::AbstractArray)
+  _size_check(gn, x, ndims(x)-1 => gn.chs) 
   sz = size(x)
-  x = reshape(x, sz[1:N-2]..., sz[N-1]÷gn.G, gn.G, sz[N])
-  N = ndims(x)
+  x2 = reshape(x, sz[1:end-2]..., sz[end-1]÷gn.G, gn.G, sz[end])
+  N = ndims(x2)  # == ndims(x)+1
   reduce_dims = 1:N-2
-  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x, i) : 1, N)
-  x = _norm_layer_forward(gn, x; reduce_dims, affine_shape)
-  return reshape(x, sz)
+  affine_shape = ntuple(i -> i ∈ (N-1, N-2) ? size(x2, i) : 1, N)
+  x3 = _norm_layer_forward(gn, x2; reduce_dims, affine_shape)
+  return reshape(x3, sz)
 end
 
 testmode!(m::GroupNorm, mode = true) =

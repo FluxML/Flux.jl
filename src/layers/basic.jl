@@ -16,7 +16,7 @@ true
 
 julia> m = Chain(Dense(10 => 5, tanh), Dense(5 => 2));
 
-julia> x = rand(10, 32);
+julia> x = rand32(10, 32);
 
 julia> m(x) == m[2](m[1](x))
 true
@@ -50,7 +50,7 @@ end
 
 (c::Chain)(x) = _applychain(c.layers, x)
 
-@generated function _applychain(layers::Tuple{Vararg{<:Any,N}}, x) where {N}
+@generated function _applychain(layers::Tuple{Vararg{Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
   calls = [:($(symbols[i+1]) = layers[$i]($(symbols[i]))) for i in 1:N]
   Expr(:block, calls...)
@@ -132,11 +132,11 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 julia> d = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
 
-julia> d(rand(Float32, 5, 64)) |> size
+julia> d(rand32(5, 64)) |> size
 (2, 64)
 
-julia> d(rand(Float32, 5, 1, 1, 64)) |> size  # treated as three batch dimensions
-(2, 1, 1, 64)
+julia> d(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
+(2, 6, 4, 64)
 
 julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5 => 2, tanh; bias=false)  # 10 parameters
@@ -168,12 +168,16 @@ end
 @functor Dense
 
 function (a::Dense)(x::AbstractVecOrMat)
+  _size_check(a, x, 1 => size(a.weight, 2))
   σ = NNlib.fast_act(a.σ, x)  # replaces tanh => tanh_fast, etc
-  return σ.(a.weight * x .+ a.bias)
+  xT = _match_eltype(a, x)  # fixes Float64 input, etc.
+  return σ.(a.weight * xT .+ a.bias)
 end
 
-(a::Dense)(x::AbstractArray) = 
+function (a::Dense)(x::AbstractArray)
+  _size_check(a, x, 1 => size(a.weight, 2))
   reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+end
 
 function Base.show(io::IO, l::Dense)
   print(io, "Dense(", size(l.weight, 2), " => ", size(l.weight, 1))
@@ -181,6 +185,17 @@ function Base.show(io::IO, l::Dense)
   l.bias == false && print(io, "; bias=false")
   print(io, ")")
 end
+
+Dense(W::LinearAlgebra.Diagonal, bias = true, σ = identity) =
+  Scale(W.diag, bias, σ)
+
+function _size_check(layer, x::AbstractArray, (d, n)::Pair)
+  d > 0 || throw(DimensionMismatch(string("layer ", layer,
+    " expects ndims(input) > ", ndims(x)-d, ", but got ", summary(x))))
+  size(x, d) == n || throw(DimensionMismatch(string("layer ", layer,
+    " expects size(input, $d) == $n, but got ", summary(x))))
+end
+ChainRulesCore.@non_differentiable _size_check(::Any...)
 
 """
     Scale(size::Integer..., σ=identity; bias=true, init=ones32)
@@ -472,7 +487,7 @@ julia> model = Chain(Dense(3 => 5),
                      Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
                      Dense(8 => 17));
 
-julia> model(rand(3)) |> size
+julia> model(rand32(3)) |> size
 (17,)
 
 julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
@@ -482,10 +497,10 @@ Parallel(
   β = Dense(5 => 2),                    # 12 parameters
 )                   # Total: 4 arrays, 34 parameters, 392 bytes.
 
-julia> model2(rand(10), rand(5)) |> size
+julia> model2(rand32(10), rand32(5)) |> size
 (2,)
 
-julia> model2[:α](rand(10)) |> size
+julia> model2[:α](rand32(10)) |> size
 (2,)
 
 julia> model2[:β] == model2[2]
@@ -612,7 +627,7 @@ function (m::PairwiseFusion)(x::T) where {T}
 end
 (m::PairwiseFusion)(xs...) = m(xs)
 
-@generated function applypairwisefusion(layers::Tuple{Vararg{<:Any,N}}, connection, x::T) where {N, T}
+@generated function applypairwisefusion(layers::Tuple{Vararg{Any,N}}, connection, x::T) where {N, T}
   y_symbols = [gensym() for _ in 1:(N + 1)]
   getinput(i) = T <: Tuple ? :(x[$i]) : :x
   calls = [:($(y_symbols[N + 1]) = $(getinput(1)))]
@@ -644,35 +659,45 @@ function Base.show(io::IO, m::PairwiseFusion)
 end
 
 """
-    Embedding(in => out; init=randn)
+    Embedding(in => out; init=randn32)
 
 A lookup table that stores embeddings of dimension `out` 
-for a vocabulary of size `in`.
+for a vocabulary of size `in`, as a trainable matrix.
 
 This layer is often used to store word embeddings and retrieve them using indices. 
-The input to the layer can be either a vector of indexes
-or the corresponding [`onehot encoding`](@ref Flux.onehotbatch). 
+The input to the layer can be a vocabulary index in `1:in`, an array of indices,
+or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
+
+For indices `x`, the result is of size `(out, size(x)...)`, allowing several batch dimensions.
+For one-hot `ohx`, the result is of size `(out, size(ohx)[2:end]...)`.
 
 # Examples
 ```jldoctest
-julia> vocab_size, embed_size = 1000, 4;
+julia> emb = Embedding(26 => 4, init=Flux.identity_init(gain=22))
+Embedding(26 => 4)  # 104 parameters
 
-julia> model = Flux.Embedding(vocab_size => embed_size)
-Embedding(1000 => 4)  # 4_000 parameters
+julia> emb(2)  # one column of e.weight (here not random!)
+4-element Vector{Float32}:
+  0.0
+ 22.0
+  0.0
+  0.0
 
-julia> vocab_idxs = [1, 722, 53, 220, 3];
+julia> emb([3, 1, 20, 14, 4, 15, 7])  # vocabulary indices, in 1:26
+4×7 Matrix{Float32}:
+  0.0  22.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0   0.0  0.0  0.0
+ 22.0   0.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0  22.0  0.0  0.0
 
-julia> x = Flux.onehotbatch(vocab_idxs, 1:vocab_size); summary(x)
-"1000×5 OneHotMatrix(::Vector{UInt32}) with eltype Bool"
-
-julia> model(x) |> summary
-"4×5 Matrix{Float32}"
-
-julia> model(vocab_idxs) == model(x)
+julia> ans == emb(Flux.onehotbatch("cat&dog", 'a':'z', 'n'))
 true
+
+julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
+(4, 10, 1, 12)
 ```
 """
-struct Embedding{W}
+struct Embedding{W<:AbstractMatrix}
   weight::W
 end
 
@@ -684,10 +709,9 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
-function (m::Embedding)(x::Union{OneHotVector{T,L}, OneHotMatrix{T,L}}) where {T,L}
-  size(m.weight, 2) == L || throw(DimensionMismatch("Matrix column must correspond with OneHot size: $(size(m.weight, 2)) != $L"))
-  return m(onecold(x))
-end
+(m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
+(m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
+(m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")

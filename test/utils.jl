@@ -1,12 +1,14 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
-             sparse_init, identity_init, stack, unstack, batch, unbatch,
-             unsqueeze, params, loadparams!, loadmodel!
+             sparse_init, identity_init, unstack, batch, unbatch,
+             unsqueeze, params, loadmodel!
+using MLUtils
 using StatsBase: var, std
 using Statistics, LinearAlgebra
 using Random
 using Test
+using BSON
 
 @testset "Throttle" begin
   @testset "default behaviour" begin
@@ -263,19 +265,47 @@ end
   r = Any[nothing,m]
   r[1] = r
   @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+
+  # Ensure functor explores inside Transpose but not SubArray
+  m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
+  @test size.(Flux.params(m)) == [(2,), (1, 2)]
+end
+
+@testset "params gradient" begin
+  m = (x=[1,2.0], y=[3.0]);
+
+  # Explicit -- was broken by #2054
+  gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
+  @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
+  @test gnew.y ≈ [1.0]
+
+  # Implicit
+  gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
+  @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
+  @test gold[m.y] ≈ [1.0]
 end
 
 @testset "Precision" begin
-  m = Chain(Dense(10, 5, relu), Dense(5, 2))
+  m = Chain(Dense(10, 5, relu; bias=false), Dense(5, 2))
   x64 = rand(Float64, 10)
   x32 = rand(Float32, 10)
+
+  # Models
   @test eltype(m[1].weight) == Float32
   @test eltype(m(x32)) == Float32
-  @test eltype(m(x64)) == Float64
-  @test eltype(f64(m)(x32)) == Float64
+  @test eltype(m(x64)) == Float32  # fixed by _match_eltype
+  @test eltype(f64(m)(x32)) == Float64  # _match_eltype promotes, Julia would too
   @test eltype(f64(m)(x64)) == Float64
   @test eltype(f64(m)[1].weight) == Float64
   @test eltype(f32(f64(m))[1].weight) == Float32
+
+  # Arrays
+  @test f32(x64) isa Vector{Float32}
+  @test f16(x64') isa Adjoint{Float16}  # adapt goes inside the Adjoint
+  @test f32(x32) === x32  # doesn't copy when eltype is OK
+  @test f32(x32') === x32'
+  @test gradient(x -> sum(f16(x)), x32)[1] isa Vector{Float32}
+  @test gradient(x -> sum(f64(x)), x32')[1] isa Adjoint{Float32}
 end
 
 @testset "zero bias" begin
@@ -322,14 +352,14 @@ end
 
 @testset "Stacking" begin
   x = randn(3,3)
-  stacked = stack([x, x], dims=2)
+  stacked = MLUtils.stack([x, x], dims=2)
   @test size(stacked) == (3,2,3)
 
   stacked_array=[ 8 9 3 5; 9 6 6 9; 9 1 7 2; 7 4 10 6 ]
   unstacked_array=[[8, 9, 9, 7], [9, 6, 1, 4], [3, 6, 7, 10], [5, 9, 2, 6]]
   @test unstack(stacked_array, dims=2) == unstacked_array
-  @test stack(unstacked_array, dims=2) == stacked_array
-  @test stack(unstack(stacked_array, dims=1), dims=1) == stacked_array
+  @test MLUtils.stack(unstacked_array, dims=2) == stacked_array
+  @test MLUtils.stack(unstack(stacked_array, dims=1), dims=1) == stacked_array
 end
 
 @testset "Batching" begin
@@ -366,17 +396,6 @@ end
     @test_skip typeof(l1.bias) === typeof(l2.bias)
   end
 
-  @testset "loadparams!" begin
-    pars(w, b) = [w, b]
-    pars(l) = pars(l.weight, l.bias)
-    pararray(m) = mapreduce(pars, vcat, m)
-    weights(m) = mapreduce(l -> [l.weight], vcat, m)
-    @testset "Bias type $bt" for bt in (Flux.zeros32, nobias)
-      m = dm(bt)
-      Flux.loadparams!(m, params(m))
-      testdense(m, bt)
-    end
-  end
 
   @testset "loadmodel!(dst, src)" begin
     m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
@@ -504,6 +523,53 @@ end
     # loading into tied weights with absent parameter is bad when the dst != zero
     m2[1].bias .= 1
     @test_throws ErrorException loadmodel!(m1, m2)
+
+    @testset "loadmodel! & filter" begin
+      m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
+      m2 = Chain(Dense(10, 5), Dropout(0.2), Dense(5, 2))
+      m3 = Chain(Dense(10, 5), Dense(5, 2, relu))
+
+      # this will not error cause Dropout is skipped
+      loadmodel!(m1, m2; filter = x -> !(x isa Dropout))
+      @test m1[1].weight == m2[1].weight
+      @test m1[2].weight == m2[3].weight
+
+      # this will not error cause Dropout is skipped
+      loadmodel!(m2, m3; filter = x -> !(x isa Dropout))
+      @test m3[1].weight == m2[1].weight
+      @test m3[2].weight == m2[3].weight
+    end
+
+    @testset "loadmodel! & absent bias" begin
+      m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
+      m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
+      m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
+    
+      Flux.loadmodel!(m1, m2)
+      @test m1[1].bias == 7:9
+      @test sum(m1[1].weight) == 21
+    
+      # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
+      m1 = Flux.loadmodel!(m1, m0)
+      @test iszero(m1[1].bias)
+      @test sum(m1[1].weight) == 6  # written before error
+    
+      # load into a model without bias -- should it ignore the parameter which has no home, or error?
+      m0 = Flux.loadmodel!(m0, m2)
+      @test iszero(m0[1].bias)  # obviously unchanged
+      @test sum(m0[1].weight) == 21
+    end
+  end
+
+  @testset "loadmodel!(dst, src) with BSON" begin
+    m1 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
+    m2 = Chain(Dense(Float32[0 0; 0 0; 0 0], Float32[0, 0, 0]), Dense(3 => 1))
+    @test m1[1].weight != m2[1].weight
+    mktempdir() do dir
+      BSON.@save joinpath(dir, "test.bson") m1
+      m2 = Flux.loadmodel!(m2, BSON.load(joinpath(dir, "test.bson"))[:m1])
+      @test m1[1].weight == m2[1].weight
+    end
   end
 
   @testset "destructure" begin
@@ -523,26 +589,6 @@ end
       @test ∇p ≈ destructure(∇m)[1]
     end
   end
-end
-
-@testset "loadmodel! & absent bias" begin
-  m0 = Chain(Dense(2 => 3; bias=false, init = Flux.ones32), Dense(3 => 1))
-  m1 = Chain(Dense(2 => 3; bias = Flux.randn32(3)), Dense(3 => 1))
-  m2 = Chain(Dense(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9]), Dense(3 => 1))
-
-  Flux.loadmodel!(m1, m2)
-  @test m1[1].bias == 7:9
-  @test sum(m1[1].weight) == 21
-
-  # load from a model without bias -- should ideally recognise the `false` but `Params` doesn't store it
-  m1 = Flux.loadmodel!(m1, m0)
-  @test iszero(m1[1].bias)
-  @test sum(m1[1].weight) == 6  # written before error
-
-  # load into a model without bias -- should it ignore the parameter which has no home, or error?
-  m0 = Flux.loadmodel!(m0, m2)
-  @test iszero(m0[1].bias)  # obviously unchanged
-  @test sum(m0[1].weight) == 21
 end
 
 @testset "Train and test mode" begin
@@ -765,5 +811,22 @@ end
     g = Flux.Zygote.ForwardDiff.gradient(pv -> loss(data, 1, pv), pvec)
     @test g ≈ Flux.Zygote.gradient(pv -> loss(data, 1, pv), pvec)[1]
   end
+end
 
+@testset "Rrule" begin
+  @testset "issue 2033" begin
+    if CUDA.functional()
+      struct Wrapped{T}
+          x::T
+      end
+      y, _ = Flux.pullback(Wrapped, cu(randn(3,3)))
+      @test y isa Wrapped{<:CuArray}
+    end
+  end
+end
+
+# make sure rng_from_array is non_differentiable
+@testset "rng_from_array" begin
+  m(x) = (rand(rng_from_array(x)) * x)[1]
+  gradient(m, ones(2))
 end

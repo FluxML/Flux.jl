@@ -2,24 +2,28 @@ using Flux, CUDA, Test
 using Flux: pullback
 
 @testset "CUDNN BatchNorm" begin
-    @testset "4D Input" begin
-        x = rand(Float32, 2, 2, 3, 4)
-        m = BatchNorm(3)
+    @testset "4D Input, $T" for (T,f) in [(Float32, identity), (Float16, f16)]
+        x = randn(T, 2, 2, 3, 4)
+        m = f(BatchNorm(3))
         gx = gpu(x)
         gm = gpu(m)
 
         y, back = pullback((m, x) -> m(x), m, x)
         gy, gback = pullback((m, x) -> m(x), gm, gx)
 
-        @test cpu(gy) ≈ y
+        @test cpu(gy) ≈ y  rtol=1e-3
+        @test eltype(gy) == T
+        @test eltype(gm(gx)) == T
 
-        Δ = randn(Float32, size(y))
+        Δ = randn(T, size(y))
         dm, dx = back(Δ)
-        gdm, gdx = gback(gpu(Δ))
+        gdm, gdx = gback(f(gpu(Δ)))
 
         @test dm[].γ ≈ cpu(gdm[].γ)
         @test dm[].β ≈ cpu(gdm[].β)
         @test dx ≈ cpu(gdx)
+        @test eltype(gdm[].γ) == T
+        @test eltype(gdx) == T
     end
 
     @testset "2D Input" begin

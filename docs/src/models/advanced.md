@@ -1,4 +1,4 @@
-# Advanced Model Building and Customisation
+# [Defining Customised Layers](@id man-advanced)
 
 Here we will try and describe usage of some more advanced features that Flux provides to give more control over model building.
 
@@ -34,7 +34,7 @@ For an intro to Flux and automatic differentiation, see this [tutorial](https://
 
 ## Customising Parameter Collection for a Model
 
-Taking reference from our example `Affine` layer from the [basics](basics.md#Building-Layers-1).
+Taking reference from our example `Affine` layer from the [basics](@ref man-basics).
 
 By default all the fields in the `Affine` type are collected as its parameters, however, in some cases it may be desired to hold other metadata in our "layers" that may not be needed for training, and are hence supposed to be ignored while the parameters are collected. With Flux, it is possible to mark the fields of our layers that are trainable in two ways.
 
@@ -68,6 +68,10 @@ However, doing this requires the `struct` to have a corresponding constructor th
 ## Freezing Layer Parameters
 
 When it is desired to not include all the model parameters (for e.g. transfer learning), we can simply not pass in those layers into our call to `params`.
+
+!!! compat "Flux ≤ 0.13"
+    The mechanism described here is for Flux's old "implicit" training style.
+    When upgrading for Flux 0.14, it should be replaced by [`freeze!`](@ref Flux.freeze!) and `thaw!`.
 
 Consider a simple multi-layer perceptron model where we want to avoid optimising the first two `Dense` layers. We can obtain
 this using the slicing features `Chain` provides:
@@ -155,6 +159,10 @@ model(xs)
 # returns a single float vector with one value
 ```
 
+!!! note
+    This `Join` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.
+
+
 #### Using `Parallel`
 
 Flux already provides [`Parallel`](@ref) that can offer the same functionality. In this case, `Join` is going to just be syntactic sugar for `Parallel`.
@@ -223,3 +231,7 @@ function loss(x, ys, model)
   return sqrt(mean(Flux.mse(y, ŷ) for (y, ŷ) in zip(ys, ŷs)))
 end
 ```
+
+!!! note
+    This `Split` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.
+
