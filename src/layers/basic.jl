@@ -739,58 +739,93 @@ end
 """
     EmbeddingBag(in => out, reduction=mean; init=Flux.randn32)
 
-A lookup table that stores embeddings of dimension `out` for a vocabulary of size 
-`in`. Similar to [`Embedding`](@ref) but can take multiple inputs in a "bag", and the reduce each bag's embeddings to a single embedding based on `reduction`.
-Typically, `reduction` is `mean`, `sum`, or `maximum`. 
+A lookup table that stores embeddings of dimension `out` for a vocabulary of size `in`.
+Differs from [`Embedding`](@ref) in that, instead of acting on a single vocabulary index,
+it always acts a vector of indices which it calls a "bag".
+Their individual embedding vectors are reduced to one, using `mean` or some other function.
 
-This layer is often used to store word embeddings and retrieve them using indices. 
-The inputs can take several forms:
-  - A scalar := single bag with a single item
-  - A vector := single bag with multiple items
-  - A matrix := multiple bags with multiple items (each column is a bag)
-  - A vector of vectors := multiple bags with multiple items (each inner vector is a bag)
-  - A "data" vector and an "offsets" vector := Explained below.
+Instead of acting on one "bag", such as `x::Vector{Int}`, the layer can also act on several:
 
-  The `data`/`offsets` input type is similar to PyTorch's implementation. `data` should be
-  a vector of class indices and `offsets` should be a vector representing the starting index of a bag in the `inputs` vector. The first element of `offsets` must be `1`, and `offsets` must be monotonically increasing with no duplicates.
+* Acting on a vector of "bags", it produces a matrix whose columns are the reduced vectors.
+  More generally on `x::Array{Vector{Int}}`, its output is of size `(out, size(x)...)`.
 
-  This format is useful for dealing with flattened representations of "ragged" tensors. E.g., if you have a flat vector of class labels that need to be grouped in a non-uniform way. However, under the hood, it is just syntactic sugar for the vector-of-vectors input style.
+* Any higher-rank array of integers is interpreted as a collection of "bags" each along the first dimension.
+  Thus the output is `mapslices(e, x; dims=1)` when `e::EmbeddingBag` and `x::Array{Int,N}`.
+  This method is more efficient, but requires that all "bags" have the same length.
 
-  For example, the `data`/`offsets` pair `[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`/`[1, 5, 6, 8]`
-  is equivalent to the bags `[[1, 2, 3, 4], [5], [6, 7], [8, 9, 10]]`, since the first bag starts at index `1` and goes up to index `5`, non-inclusive. The next bag starts at index `5` and goes up to index `6`, non-inclusive, etc.
+* A vector of "bags" may also be produced by splitting a vector of indices at specified points.
+  For this case the layer takes two inputs, both vectors of integers. See details below.
 
-# Examples 
+The "bag" may equivalently be represented as a `OneHotMatrix`. A collection of these,
+or one higher-rank `OneHotArray`, again produce a stack of embeddings. See details below.
+
+# Examples
+```jldoctest
+julia> vocab_size = 26;  # embed into 3 dimensions, with non-random vectors:
+
+julia> eb = EmbeddingBag(vocab_size => 3, init=Flux.identity_init(gain=100))
+EmbeddingBag(26 => 3)  # 78 parameters
+
+julia> eb([2])  # one bag of 1 item
+3-element Vector{Float32}:
+   0.0
+ 100.0
+   0.0
+
+julia> eb([3,3,1])  # one bag of 3 items, one mean embedding
+3-element Vector{Float32}:
+ 33.333332
+  0.0
+ 66.666664
+
+julia> eb([[3,1,3], [2,1]])  # two bags
+3×2 Matrix{Float32}:
+ 33.3333  50.0
+  0.0     50.0
+ 66.6667   0.0
+
+julia> eb([1 1 1 1; 1 2 3 4])  # 4 bags each of 2 items, eachcol([1 1 1 1; 1 2 3 4])
+3×4 Matrix{Float32}:
+ 100.0  50.0  50.0  50.0
+   0.0  50.0   0.0   0.0
+   0.0   0.0  50.0   0.0
+
+julia> eb(rand(1:26, 10, 5, 5)) |> size  # 25 bags each of 10 items
+(3, 5, 5)
+```
+
+Another way to specify "many bags of many items" is to provide a vector `data` (each in `1:in`)
+and a vector `at` stating where to split that up into "bags".
+The first bag starts with `data[at[1]]`, the second at `data[at[2]]`, and so on, 
+with no overlaps and nothing left out (thus it requires `at[1]==1`).
 
 ```jldoctest
-julia> vocab_size, embed_size = 10, 8;
+julia> data = [11, 1, 12, 2, 13, 3, 14];
 
-julia> model = Flux.EmbeddingBag(vocab_size => embed_size)
-EmbeddingBag(10 => 8)  # 80 parameters
+julia> Flux._splitat(data, [1, 4]) |> println  # internal function, makes data[1:3], data[4:end]
+[[11, 1, 12], [2, 13, 3, 14]]
 
-julia> model(5) |> summary # a single bag of one item
-"8-element Vector{Float32}"
+julia> eb(data, [1, 4])  # two bags, of 3 and 4 items
+3×2 Matrix{Float32}:
+ 33.3333   0.0
+  0.0     25.0
+  0.0     25.0
+```
 
-julia> model([1, 2, 2, 4]) |> summary # one bag several items
-"8-element Vector{Float32}"
+Finally, each bag may also be also be represented as a [`OneHotMatrix`](@ref OneHotArrays.onehotbatch).
 
-julia> model([1 2 3; 4 5 6]) |> summary  # 2 bags each with 3 items
-"8×3 Matrix{Float32}"
+```jldoctest
+julia> eb(Flux.onehotbatch("bba", 'a':'z'))  # same as [2,2,1], one bag of 3 items
+3-element Vector{Float32}:
+ 33.333332
+ 66.666664
+  0.0
 
-julia> model([[1, 2], [3], [4], [5, 6, 7]]) |> summary  # 4 bags with different number of items
-"8×4 Matrix{Float32}"
-
-julia> data = [1, 4, 5, 2, 3];
-
-julia> offsets = [1, 3, 4]; # 3 bags of sizes [2, 1, 2]
-
-julia> model(data, offsets) |> summary
-"8×3 Matrix{Float32}"
-
-julia> model(Flux.OneHotVector(2, vocab_size)) |> summary # single bag with one item
-"8-element Vector{Float32}"
-
-julia> model(Flux.OneHotMatrix([2, 3, 5, 7], vocab_size)) |> summary # 4 bags, each with one item
-"8×4 Matrix{Float32}"
+julia> eb([Flux.onehotbatch("bba", 'a':'z'), Flux.onehotbatch("cc", 'a':'z')])  # two bags
+3×2 Matrix{Float32}:
+ 33.3333    0.0
+ 66.6667    0.0
+  0.0     100.0
 ```
 """
 struct EmbeddingBag{F, W<:AbstractMatrix}
