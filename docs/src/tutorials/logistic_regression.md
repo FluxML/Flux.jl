@@ -40,9 +40,9 @@ Our next step would be to convert this data into a form that can be fed to a mac
 ```jldoctest logistic_regression
 julia> x = Float32.(x);
 
-julia> y_r = reshape(y, (150, 1));
+julia> y = vec(y);
 
-julia> custom_y_onehot = unique(y_r) .== permutedims(y_r)
+julia> custom_y_onehot = unique(y) .== permutedims(y)
 3×150 BitMatrix:
  1  1  1  1  1  1  1  1  1  1  1  1  1  …  0  0  0  0  0  0  0  0  0  0  0  0
  0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
@@ -52,12 +52,11 @@ julia> custom_y_onehot = unique(y_r) .== permutedims(y_r)
 This same operation can also be performed using [OneHotArrays](https://github.com/FluxML/OneHotArrays.jl)' `onehotbatch` function. We will use both of these outputs parallelly to show how intuitive FluxML is!
 
 ```jldoctest logistic_regression
-julia> flux_y_onehot = onehotbatch(y_r, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
-3×150×1 OneHotArray(::Matrix{UInt32}) with eltype Bool:
-[:, :, 1] =
- 1  1  1  1  1  1  1  1  1  1  1  1  1  …  0  0  0  0  0  0  0  0  0  0  0  0
- 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
- 0  0  0  0  0  0  0  0  0  0  0  0  0     1  1  1  1  1  1  1  1  1  1  1  1
+julia> flux_y_onehot = onehotbatch(y, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
+3×150 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
+ 1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  …  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
+ ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅     ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
+ ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅     1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
 ```
 
 Our data is ready. The next step would be to build a classifier for the same.
@@ -198,7 +197,7 @@ We can divide this task into two parts -
 1. Identify the index of the maximum element of each column in the output matrix
 2. Convert this index to a class name
 
-The maximum index should be calculated along the columns (remember, each column is the output of a single `x` data point). We can use `Julia`'s `findmax` function to achieve this.
+The maximum index should be calculated along the columns (remember, each column is the output of a single `x` data point). We can use Julia's `findmax` function to achieve this.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> findmax(custom_y_onehot, dims=1)
@@ -273,7 +272,7 @@ Both the functions act identically!
 We now move to the `accuracy` metric and run it with the untrained `custom_model`.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> custom_accuracy(W, b, x, y) = mean(custom_onecold(custom_model(W, b, x)) .== y_r);
+julia> custom_accuracy(W, b, x, y) = mean(custom_onecold(custom_model(W, b, x)) .== y);
 
 julia> custom_accuracy(W, b, x, y)
 0.3333333333333333
@@ -282,7 +281,7 @@ julia> custom_accuracy(W, b, x, y)
 We could also have used Flux's built-in functionality to define this accuracy function.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y_r);
+julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y);
 
 julia> flux_accuracy(x, y)
 0.24
@@ -303,7 +302,7 @@ Here, `W` is the weight matrix, `b` is the bias vector, ``\eta`` is the learning
 
 The derivatives are calculated using an Automatic Differentiation tool, and Flux uses [`Zygote.jl`](https://github.com/FluxML/Zygote.jl) for the same. Since Zygote.jl is an independent Julia package, it can be used outside of Flux as well! Refer to the documentation of Zygote.jl for more information on the same.
 
-Our first step would be to obtain the gradient of the loss function with respect to the weights and the biases. Flux re-exports Zygote's `gradient` function; hence, we don't need to import Zygote explicitly to use the functionality.
+Our first step would be to obtain the gradient of the loss function with respect to the weights and the biases. Flux re-exports Zygote's `gradient` function; hence, we don't need to import Zygote explicitly to use the functionality. `gradient` takes in a function and its arguments, and returns a tuple containing `∂f/∂x` for each argument x. Let's pass in `custom_loss` and the arguments required by `custom_loss` to `gradient`. We will require the derivatives of the loss function (`custom_loss`) with respect to the weights (`∂f/∂w`) and the bias (`∂f/∂b`) to carry out gradient descent, but we can ignore the partial derivatives of the loss function (`custom_loss`) with respect to `x` (`∂f/∂x`) and one hot encoded `y` (`∂f/∂y`).
 
 ```jldoctest logistic_regression
 julia> dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, custom_y_onehot);
