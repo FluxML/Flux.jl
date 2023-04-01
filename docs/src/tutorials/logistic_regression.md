@@ -197,39 +197,31 @@ We can divide this task into two parts -
 1. Identify the index of the maximum element of each column in the output matrix
 2. Convert this index to a class name
 
-The maximum index should be calculated along the columns (remember, each column is the output of a single `x` data point). We can use Julia's `findmax` function to achieve this.
+The maximum index should be calculated along the columns (remember, each column is the output of a single `x` data point). We can use Julia's `argmax` function to achieve this.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> findmax(custom_y_onehot, dims=1)
-(Bool[1 1 … 1 1], CartesianIndex{2}[CartesianIndex(1, 1) CartesianIndex(1, 2) … CartesianIndex(3, 149) CartesianIndex(3, 150)])
-
-julia> mxidx = findmax(custom_y_onehot, dims=1)[2]
+julia> argmax(custom_y_onehot, dims=1)  # calculate the cartesian index of max element column-wise
 1×150 Matrix{CartesianIndex{2}}:
  CartesianIndex(1, 1)  CartesianIndex(1, 2)  …  CartesianIndex(3, 150)
 
-julia> mxidx[1].I
-(1, 1)
+julia> max_el = Tuple.(argmax(custom_y_onehot, dims=1))
+1×150 Matrix{Tuple{Int64, Int64}}:
+ (1, 1)  (1, 2)  (1, 3)  (1, 4)  (1, 5)  …  (3, 148)  (3, 149)  (3, 150)
 
-julia> mxidx[1].I[1]
-1
+julia> max_el = [x[1] for x in max_el]
+1×150 Matrix{Int64}:
+ 1  1  1  1  1  1  1  1  1  1  1  1  1  …  3  3  3  3  3  3  3  3  3  3  3  3
 ```
 
-Now we can write a function that iterates over our output, calculates the indices of the maximum element in each column, and maps them to a class name.  
+Now we can write a function that calculates the indices of the maximum element in each column, and maps them to a class name.
 
 ```jldoctest logistic_regression
 julia> function custom_onecold(custom_y_onehot)
-           mxidx = findmax(custom_y_onehot, dims=1)[2]
-           custom_y_cold = Vector{String}(undef, size(custom_y_onehot)[2])
-           for i = 1:size(custom_y_onehot)[2]
-               if mxidx[i].I[1] == 1
-                   custom_y_cold[i] = "Iris-setosa"
-               elseif mxidx[i].I[1] == 2
-                   custom_y_cold[i] = "Iris-versicolor"
-               elseif mxidx[i].I[1] == 3
-                   custom_y_cold[i] = "Iris-virginica"
-               end
-           end
-           custom_y_cold
+           max_el = string.([x[1] for x in Tuple.(argmax(custom_y_onehot, dims=1))])
+           max_el[max_el.=="1"] .= "Iris-setosa"
+           max_el[max_el.=="2"] .= "Iris-versicolor"
+           max_el[max_el.=="3"] .= "Iris-virginica"
+           vec(max_el)
        end;
 
 julia> custom_onecold(custom_y_onehot)
@@ -391,5 +383,5 @@ Summarising this tutorial, we saw how we can run a logistic regression algorithm
 Finally, we trained the model by manually writing down the Gradient Descent algorithm and optimising the loss. Interestingly, we implemented most of the functions on our own, and then parallelly compared them with the functionalities provided by Flux!
 
 !!! info
-    Originally published on TODO,
+    Originally published on 1st April 2023,
     by Saransh Chopra.
