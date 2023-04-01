@@ -279,7 +279,7 @@ julia> custom_accuracy(W, b, x, y)
 0.3333333333333333
 ```
 
-Alternatively, we can use the functionalities provided by Flux to define the `flux_accuracy` function.
+We could also have used Flux's built-in functionality to define this accuracy function.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y_r);
@@ -383,7 +383,7 @@ julia> flux_loss(flux_model, x, flux_y_onehot)
 0.6952386604624324
 ```
 
-The accuracy went up! The loss went down! Everything worked again!
+We see a very similar final loss and accuracy.
 
 ---
 
