@@ -204,11 +204,7 @@ julia> argmax(custom_y_onehot, dims=1)  # calculate the cartesian index of max e
 1×150 Matrix{CartesianIndex{2}}:
  CartesianIndex(1, 1)  CartesianIndex(1, 2)  …  CartesianIndex(3, 150)
 
-julia> max_el = Tuple.(argmax(custom_y_onehot, dims=1))
-1×150 Matrix{Tuple{Int64, Int64}}:
- (1, 1)  (1, 2)  (1, 3)  (1, 4)  (1, 5)  …  (3, 148)  (3, 149)  (3, 150)
-
-julia> max_el = [x[1] for x in max_el]
+julia> max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
 1×150 Matrix{Int64}:
  1  1  1  1  1  1  1  1  1  1  1  1  1  …  3  3  3  3  3  3  3  3  3  3  3  3
 ```
@@ -217,11 +213,9 @@ Now we can write a function that calculates the indices of the maximum element i
 
 ```jldoctest logistic_regression
 julia> function custom_onecold(custom_y_onehot)
-           max_el = string.([x[1] for x in Tuple.(argmax(custom_y_onehot, dims=1))])
-           max_el[max_el.=="1"] .= "Iris-setosa"
-           max_el[max_el.=="2"] .= "Iris-versicolor"
-           max_el[max_el.=="3"] .= "Iris-virginica"
-           vec(max_el)
+           max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
+           classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
+           vec(classes[max_idx])
        end;
 
 julia> custom_onecold(custom_y_onehot)
