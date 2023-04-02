@@ -49,7 +49,7 @@ trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
     testmode!(model, inactive)
 
 This two-argument method is largely internal. It recurses into the `model`,
-and until a method like `testmode!(d::Dropout, mode)` alters the activity of a layer.
+and until a method like `testmode!(d::Dropout, inactive)` alters the activity of a layer.
 
 Possible values of  `inactive` are:
 - `true` for testing, i.e. `active=false`
@@ -57,7 +57,7 @@ Possible values of  `inactive` are:
 - `:auto` or `nothing` for Flux to detect training automatically.
 """
 function testmode!(m, mode)
-  if inactive isa Symbol && mode !== :auto
+  if mode isa Symbol && mode !== :auto
     throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
   end
   foreach(x -> testmode!(x, mode), trainable(m))
