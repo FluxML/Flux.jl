@@ -73,9 +73,9 @@ mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
 end
 Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
 
-function Dropout(p::Real; dims=:, active = nothing, rng = default_rng_value())
+function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng_value())
   0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
-  Dropout(p, dims, _tidy_active(active), rng)
+  Dropout(p, dims, active, rng)
 end
 
 @functor Dropout
@@ -123,13 +123,13 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
   active::Union{Bool, Nothing}
   rng::R
-  function AlphaDropout(p, active, rng)
-    @assert 0 ≤ p ≤ 1
-    new{typeof(p), typeof(rng)}(p, _tidy_active(active), rng)
-  end
 end
+
 AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
-AlphaDropout(p; rng = default_rng_value(), active=nothing) = AlphaDropout(p, active, rng)
+function AlphaDropout(p; rng = default_rng_value(), active::Union{Bool,Nothing} = nothing)
+  0 ≤ p ≤ 1 || throw(ArgumentError("AlphaDropout expects 0 ≤ p ≤ 1, got p = $p"))
+  AlphaDropout(p, active, rng)
+end
 
 @functor AlphaDropout
 trainable(a::AlphaDropout) = (;)
@@ -268,7 +268,7 @@ ChainRulesCore.@non_differentiable _track_stats!(::Any...)
 """
     BatchNorm(channels::Integer, λ=identity;
               initβ=zeros32, initγ=ones32,
-              affine=true, track_stats=true, active=:auto,
+              affine=true, track_stats=true, active=nothing,
               ϵ=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
@@ -321,7 +321,7 @@ end
 
 function BatchNorm(chs::Int, λ=identity;
           initβ=zeros32, initγ=ones32,
-          affine=true, track_stats=true, active=nothing,
+          affine=true, track_stats=true, active::Union{Bool,Nothing}=nothing,
           ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
@@ -332,7 +332,7 @@ function BatchNorm(chs::Int, λ=identity;
   return BatchNorm(λ, β, γ,
             μ, σ², ϵ, momentum,
             affine, track_stats,
-            _tidy_active(active), chs)
+            active, chs)
 end
 
 @functor BatchNorm
@@ -411,7 +411,7 @@ end
 
 function InstanceNorm(chs::Int, λ=identity;
                     initβ=zeros32, initγ=ones32,
-                    affine=false, track_stats=false, active=nothing,
+                    affine=false, track_stats=false, active::Union{Bool,Nothing}=nothing,
                     ϵ=1f-5, momentum=0.1f0)
 
   β = affine ? initβ(chs) : nothing
@@ -422,7 +422,7 @@ function InstanceNorm(chs::Int, λ=identity;
   return InstanceNorm(λ, β, γ,
             μ, σ², ϵ, momentum,
             affine, track_stats,
-            _tidy_active(active), chs)
+            active, chs)
 end
 
 @functor InstanceNorm
@@ -508,7 +508,7 @@ trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,
-              affine=true, track_stats=false, active=nothing,
+              affine=true, track_stats=false, active::Union{Bool,Nothing}=nothing,
               ϵ=1f-5, momentum=0.1f0)
 
 if track_stats
@@ -527,7 +527,7 @@ end
             μ, σ²,
             ϵ, momentum,
             affine, track_stats,
-            _tidy_active(active), chs)
+            active, chs)
 end
 
 function (gn::GroupNorm)(x::AbstractArray)
