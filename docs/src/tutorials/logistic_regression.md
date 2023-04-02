@@ -52,7 +52,9 @@ julia> custom_y_onehot = unique(y) .== permutedims(y)
 This same operation can also be performed using [OneHotArrays](https://github.com/FluxML/OneHotArrays.jl)' `onehotbatch` function. We will use both of these outputs parallelly to show how intuitive FluxML is!
 
 ```jldoctest logistic_regression
-julia> flux_y_onehot = onehotbatch(y, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"])
+julia> const classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"];
+
+julia> flux_y_onehot = onehotbatch(y, classes)
 3×150 OneHotMatrix(::Vector{UInt32}) with eltype Bool:
  1  1  1  1  1  1  1  1  1  1  1  1  1  …  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅     ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅  ⋅
@@ -214,7 +216,6 @@ Now we can write a function that calculates the indices of the maximum element i
 ```jldoctest logistic_regression
 julia> function custom_onecold(custom_y_onehot)
            max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
-           classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
            vec(classes[max_idx])
        end;
 
@@ -247,7 +248,7 @@ It works!
 Flux provides users with the `onecold` function so that we don't have to write it on our own. Let's see how our `custom_onecold` function compares to `Flux.onecold`.
 
 ```jldoctest logistic_regression
-julia> istrue = Flux.onecold(flux_y_onehot, ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== custom_onecold(custom_y_onehot);
+julia> istrue = Flux.onecold(flux_y_onehot, classes) .== custom_onecold(custom_y_onehot);
 
 julia> all(istrue)
 true
@@ -267,7 +268,7 @@ julia> custom_accuracy(W, b, x, y)
 We could also have used Flux's built-in functionality to define this accuracy function.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]) .== y);
+julia> flux_accuracy(x, y) = mean(Flux.onecold(flux_model(x), classes) .== y);
 
 julia> flux_accuracy(x, y)
 0.24
