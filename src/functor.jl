@@ -5,18 +5,17 @@ import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
 """
-    testmode!(m, inactive = true)
+    testmode!(m, [mode])
 
 Set a layer, or all layers in a model, to test mode.
-This disables the effect of [`Dropout`](@ref), and similar layers.
+This disables the effect of [`Dropout`](@ref) and
+some other regularisation layers.
 
-_Note_: if you manually set a model into test mode, you need to manually place
-it back into train mode during training phase.
+If you manually set a model into test mode, you need to manually place
+it back into train mode during training phase, using [`trainmode!`](@ref).
 
-Possible values of optional 2nd argument `inactive` are:
-- `true` for testing
-- `false` for training, same as [`trainmode!`](@ref)`(m)`
-- `:auto` or `nothing` for Flux to detect training automatically.
+There is an optional second argument, which takes a symbol `:auto` to
+reset all layers back to the default automatic mode.
 
 # Example
 
@@ -34,23 +33,36 @@ julia> trainmode!(d, :auto)  # back to default
 Dropout(0.3)
 ```
 """
-testmode!(m, inactive = true) = (foreach(x -> testmode!(x, inactive), trainable(m)); m)
+testmode!(m) = testmode!(m, true)
 
 """
-    trainmode!(m, active = true)
+    trainmode!(m)
 
 Set a layer, or all layers in a model, to training mode.
-Opposite to [`testmode!`](@ref) (i.e. `trainmode!(m, active) == testmode!(m, !active)`).
-
-_Note_: if you manually set a model into train mode, you need to manually place
-it into test mode during testing phase.
-
-Possible values of optional 2nd argument `active` are:
-- `true` for training
-- `false` for testing
-- `:auto` or `nothing` for Flux to detect training automatically
+Opposite to [`testmode!`](@ref), see further details there.
 """
-trainmode!(m, active = true) = active isa Bool ? testmode!(m, !active) : testmode!(m, active)
+trainmode!(m) = testmode!(m, false)
+trainmode!(m, mode::Symbol) = testmode!(m, mode)
+trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
+
+"""
+    testmode!(model, inactive)
+
+This two-argument method is largely internal. It recurses into the `model`,
+and until a method like `testmode!(d::Dropout, mode)` alters the activity of a layer.
+
+Possible values of  `inactive` are:
+- `true` for testing, i.e. `active=false`
+- `false` for training, same as [`trainmode!`](@ref)`(m)`
+- `:auto` or `nothing` for Flux to detect training automatically.
+"""
+function testmode!(m, mode)
+  if inactive isa Symbol && mode !== :auto
+    throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
+  end
+  foreach(x -> testmode!(x, mode), trainable(m))
+  m
+end
 
 function params!(p::Params, x, seen = IdSet())
   if x isa AbstractArray{<:Number} && Functors.isleaf(x)

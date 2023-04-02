@@ -187,6 +187,23 @@ function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, 
     """)
 end
 
+""" 
+    trainmode!(m, active)
+
+!!! warning
+    This two-argument method is deprecated.
+
+Possible values of  `active` are:
+- `true` for training, or 
+- `false` for testing, same as [`testmode!`](@ref)`(m)`
+- `:auto` or `nothing` for Flux to detect training automatically.
+"""
+function trainmode!(m, active::Bool)
+  Base.depwarn("trainmode!(m, active::Bool) is deprecated", :trainmode)
+  testmode!(m, !active)
+end
+
+
 # v0.14 deprecations
 
 # Enable these when 0.14 is released, and delete const ClipGrad = Optimise.ClipValue etc: 

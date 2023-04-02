@@ -145,6 +145,7 @@ Several normalisation layers behave differently under training and inference (te
 The functions `Flux.trainmode!` and `Flux.testmode!` let you manually specify which behaviour you want. When called on a model, they will place all layers within the model into the specified mode.
 
 ```@docs
-Flux.testmode!
+testmode!(::Any)
+testmode!(::Any, ::Any)
 trainmode!
 ```
