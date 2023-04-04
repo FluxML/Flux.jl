@@ -244,7 +244,7 @@ loss(x, y) = sum(Flux.crossentropy(m(x), y))
 Flux.train!(loss, params(m), [(data,labels)], opt)
 ```
 
-You don't have to use `train!`. In cases where aribtrary logic might be better suited, you could open up this training loop like so:
+You don't have to use `train!`. In cases where arbitrary logic might be better suited, you could open up this training loop like so:
 
 ```julia
   for d in training_set # assuming d looks like (data, labels)
