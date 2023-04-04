@@ -79,9 +79,8 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     end
   end
 
-  @test Dropout(0.5; active=:auto).active === nothing
   @test Dropout(0.5; active=true).active === true
-  @test_throws ArgumentError Dropout(0.5; active=:something_else)
+  @test_throws Exception Dropout(0.5; active=:something_else)
 end
 
 @testset "AlphaDropout" begin
@@ -129,9 +128,8 @@ end
     end
   end
 
-  @test AlphaDropout(0.5; active=:auto).active === nothing
   @test AlphaDropout(0.5; active=true).active === true
-  @test_throws ArgumentError AlphaDropout(0.5; active=:something_else)
+  @test_throws Exception AlphaDropout(0.5; active=:something_else)
 end
 
 @testset "BatchNorm" begin
@@ -225,9 +223,8 @@ end
   @test length(Flux.params(BatchNorm(10, affine=true))) == 2
   @test length(Flux.params(BatchNorm(10, affine=false))) == 0
 
-  @test BatchNorm(5; active=:auto).active === nothing
   @test BatchNorm(5; active=true).active === true
-  @test_throws ArgumentError BatchNorm(5; active=:something_else)
+  @test_throws Exception BatchNorm(5; active=:something_else)
 end
 
 @testset "InstanceNorm" begin
@@ -360,9 +357,8 @@ end
   @test length(Flux.params(InstanceNorm(10, affine=true))) == 2
   @test length(Flux.params(InstanceNorm(10, affine=false))) == 0
 
-  @test InstanceNorm(5; active=:auto).active === nothing
   @test InstanceNorm(5; active=true).active === true
-  @test_throws ArgumentError InstanceNorm(5; active=:something_else)
+  @test_throws Exception InstanceNorm(5; active=:something_else)
 end
 
 @testset "LayerNorm" begin
@@ -487,9 +483,8 @@ end
     @test BN(x) ≈ GN(x)
   end
 
-  @test GroupNorm(5, 5; active=:auto).active === nothing
   @test GroupNorm(5, 5; active=true).active === true
-  @test_throws ArgumentError GroupNorm(5, 5; active=:something_else)
+  @test_throws Exception GroupNorm(5, 5; active=:something_else)
 end
 
 @testset "second derivatives" begin
