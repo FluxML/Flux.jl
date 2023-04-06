@@ -43,6 +43,7 @@ makedocs(
         # All the website tutorials can move here, perhaps much of the model zoo too?
         # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
+            "Logistic Regression" => "tutorials/logistic_regression.md",
             #=
             "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
             "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
