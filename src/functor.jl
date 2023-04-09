@@ -29,7 +29,7 @@ Dropout(0.3, active=false)
 julia> trainmode!(d)  # dropout is now always enabled
 Dropout(0.3, active=true)
 
-julia> trainmode!(d, :auto)  # back to default
+julia> testmode!(d, :auto)  # back to default
 Dropout(0.3)
 ```
 """
