@@ -29,7 +29,7 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     # Keyword active=false
     m2 = Dropout(0.9; active=false, rng_kwargs...)
     y2 = evalwgrad(m2, x)
-    @test count(a->a==0, y2) == 0
+    @test count(iszero, y2) == 0
 
     x = rand(Float32, 100)
     m = Chain(Dense(100,100),
