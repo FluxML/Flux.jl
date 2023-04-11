@@ -21,7 +21,7 @@ Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, a
 Works best with [Julia 1.8](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
 using Flux, Plots
-data = [([x], 2x-x^3) for x in -2:0.1f0:2]
+data = [([Float32(x)], Float32(2x-x^3)) for x in -2:0.1f0:2]
 
 model = Chain(Dense(1 => 23, tanh), Dense(23 => 1, bias=false), only)
 
