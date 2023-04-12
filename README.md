@@ -31,7 +31,7 @@ for epoch in 1:1000
 end
 
 plot(x -> 2x-x^3, -2, 2, legend=false)
-scatter!(-2:0.1f0:2, [model([x]) for x in -2:0.1f0:2])
+scatter!(-2:0.1:2, [model([x]) for x in -2:0.1f0:2])
 ```
 
 The [quickstart page](https://fluxml.ai/Flux.jl/stable/models/quickstart/) has a longer example. See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
