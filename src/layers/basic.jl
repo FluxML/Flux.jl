@@ -719,21 +719,31 @@ end
 
 
 """
-    _splitat(data::AbstractVector, offsets::AbstractVector{Int})
+    _splitat(data::AbstractVector, at::AbstractVector{Int})
 
-Splits a vector of data into a vector of vectors based on offsets. Each offset
-specifies the next sub-vectors starting index in the `data` vector. In otherwords,
-the `data` vector is chuncked into vectors from `offsets[1]` to `offsets[2]` (not including the element at `offsets[2]`), `offsets[2]` to `offsets[3]`, etc.
-The last offset specifies a bag that contains everything to the right of it.
+Partitions `data` into a vector of views.
 
-The `offsets` vector must begin with `1` and be monotonically increasing. The last element of `offsets` must be at most `length(data)`.
+Each index `i in at` specifies that a view starts with `data[i]`.
+These indices must be strictly increasing, and start at `1`.
+The resulting views do not overlap, and are never empty.
+The last view always ends with `data[end]`.
+
+### Example
+```jldoctest
+julia> Flux._splitat(collect('A':'Z'), [1, 3, 4, 13])
+4-element Vector{SubArray{Char, 1, Vector{Char}, Tuple{UnitRange{Int64}}, true}}:
+ ['A', 'B']
+ ['C']
+ ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
+ ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+```
 """
-function _splitat(data::AbstractVector, offsets::AbstractVector{Int})
-  offsets[firstindex(offsets)] == 1 || throw(ArgumentError("`offsets` must begin with 1."))
-  offsets[end] <= length(data) || throw(ArgumentError("The last element in `offsets` must be at most the length of `data`."))
-  issorted(offsets, lt = <=) || throw(ArgumentError("`offsets` must be monotonically increasing with no duplicates."))
-  newoffsets = vcat(offsets, [lastindex(data)])
-  return [data[offsets[i]:(i+1 > lastindex(offsets) ? end : offsets[i+1]-1)] for i in eachindex(offsets)]
+function _splitat(data::AbstractVector, at::AbstractVector{<:Integer})
+  at[begin] == firstindex(data) || throw(ArgumentError("The first element in `at` must be 1."))
+  at[end] <= lastindex(data) || throw(ArgumentError("The last element in `at` must be at most the length of `data`."))
+  issorted(at, lt = <=) || throw(ArgumentError("`at` must be monotonically increasing with no duplicates."))
+  iplus = vcat(at, lastindex(data)+1)
+  return [view(data, iplus[n]:(iplus[n+1]-1)) for n in eachindex(at)]
 end
 
 """
@@ -836,11 +846,9 @@ end
 @functor EmbeddingBag
 
 EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
-EmbeddingBag(weight) = EmbeddingBag(weight, mean)
+EmbeddingBag(weight::AbstractMatrix) = EmbeddingBag(weight, mean)
 
-function (m::EmbeddingBag)(data::AbstractVector, offsets::AbstractVector)
-  return m(_splitat(data, offsets))
-end
+(m::EmbeddingBag)(data::AbstractVector, at::AbstractVector) = m(_splitat(data, at))
 (m::EmbeddingBag)(inds::AbstractArray{<:Integer}) = dropdims(m.reduction(Embedding(m.weight)(inds), dims=2), dims=2)
 (m::EmbeddingBag)(ind::Integer) = error("EmbeddingBag expects an array of indices, not just one")
 
