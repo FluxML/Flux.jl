@@ -269,16 +269,24 @@ ChainRulesCore.@non_differentiable check_use_cuda()
 
 struct FluxEltypeAdaptor{T} end
 
-Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Number}) where T = convert(AbstractArray{T}, x)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{T}, x)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{Complex{T}}, x)
 
 _paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
-_paramtype(::Type{T}, x::AbstractArray{<:Real}) where {T} = convert(AbstractArray{T}, x)
+
+# fastpath for arrays
+_paramtype(::Type{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{T}, x)
+_paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{Complex{T}}, x)
 
 """
     f32(m)
 
 Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).
-Recurses into structs marked with [`@functor`](@ref).
+Recurses into structs marked with [`@functor`](@ref). Preserves integer arrays.
 See also [`f64`](@ref) and [`f16`](@ref).
 """
 f32(m) = _paramtype(Float32, m)
@@ -287,7 +295,8 @@ f32(m) = _paramtype(Float32, m)
     f64(m)
 
 Converts the `eltype` of model's parameters to `Float64`.
-Recurses into structs marked with [`@functor`](@ref).
+Recurses into structs marked with [`@functor`](@ref). Preserves integer arrays.
+See also [`f32`](@ref) and [`f16`](@ref).
 """
 f64(m) = _paramtype(Float64, m)
 
@@ -295,7 +304,7 @@ f64(m) = _paramtype(Float64, m)
     f16(m)
 
 Converts the `eltype` of model's parameters to `Float16`.
-Recurses into structs marked with [`@functor`](@ref).
+Recurses into structs marked with [`@functor`](@ref). Preserves integer arrays.
 
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
