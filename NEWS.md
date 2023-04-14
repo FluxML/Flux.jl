@@ -1,5 +1,9 @@
 # Flux Release Notes
 
+## v0.13.16
+* `f16, f32, f64` now preserve integer arrays.
+* `f16, f32, f64` can now handle `Complex` arrays.
+
 ## v0.13.15
 * Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
 
