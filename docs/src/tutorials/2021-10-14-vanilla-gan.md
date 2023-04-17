@@ -29,7 +29,7 @@ type `add MLDatasets` or perform this operation with the Pkg module like this
 
 ```julia
 > import Pkg
-> Pkg.add(MLDatasets)
+> Pkg.add("MLDatasets")
 ```
 
 While [UnicodePlots](https://github.com/JuliaPlots/UnicodePlots.jl) is not necessary, it can be used to plot generated samples
