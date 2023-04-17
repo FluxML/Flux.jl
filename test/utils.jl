@@ -289,6 +289,8 @@ end
   m = Chain(Dense(10, 5, relu; bias=false), Dense(5, 2))
   x64 = rand(Float64, 10)
   x32 = rand(Float32, 10)
+  i64 = rand(Int64, 10)
+  i32 = rand(Int32, 10)
 
   # Models
   @test eltype(m[1].weight) == Float32
@@ -299,13 +301,35 @@ end
   @test eltype(f64(m)[1].weight) == Float64
   @test eltype(f32(f64(m))[1].weight) == Float32
 
-  # Arrays
+  # Float Arrays
   @test f32(x64) isa Vector{Float32}
   @test f16(x64') isa Adjoint{Float16}  # adapt goes inside the Adjoint
   @test f32(x32) === x32  # doesn't copy when eltype is OK
   @test f32(x32') === x32'
   @test gradient(x -> sum(f16(x)), x32)[1] isa Vector{Float32}
   @test gradient(x -> sum(f64(x)), x32')[1] isa Adjoint{Float32}
+
+  # Int Arrays
+  @test f32(i64) === i64
+  @test f32(i32) === i32
+
+  @testset "complex numbers" begin
+    c32 = rand(ComplexF32, 2,2)
+    c64 = rand(ComplexF64, 2,2)
+    @test f32(c32) === c32
+    @test f32(c64) isa Matrix{ComplexF32}
+    nt = (a = c64, b = c32)
+    @test f64(nt) isa NamedTuple{(:a, :b), Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}}
+    @test f16(nt) isa NamedTuple{(:a, :b), Tuple{Matrix{ComplexF16}, Matrix{ComplexF16}}}
+
+    # integers are not converted
+    ci32 = ones(Complex{Int32}, 2,2)
+    ci64 = zeros(Complex{Int64}, 2,2)
+    @test f32(ci32) === ci32
+    @test f32(ci64) === ci64    
+    nt = (a = ci64, b = ci32)
+    @test f16(nt) === nt
+  end
 end
 
 @testset "zero bias" begin
