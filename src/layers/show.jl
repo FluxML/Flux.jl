@@ -59,7 +59,7 @@ _show_children(p::Parallel) = (p.connection, p.layers...)
 _show_children(f::PairwiseFusion) = (f.connection, f.layers...)
 
 for T in [
-    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding,
+    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding, :EmbeddingBag,
     :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)

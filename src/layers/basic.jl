@@ -716,3 +716,151 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 function Base.show(io::IO, m::Embedding)
   print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
+
+
+"""
+    _splitat(data::AbstractVector, at::AbstractVector{Int})
+
+Partitions `data` into a vector of views.
+
+Each index `i in at` specifies that a view starts with `data[i]`.
+These indices must be strictly increasing, and start at `1`.
+The resulting views do not overlap, and are never empty.
+The last view always ends with `data[end]`.
+
+### Example
+```jldoctest
+julia> Flux._splitat(collect('A':'Z'), [1, 3, 4, 13])
+4-element Vector{SubArray{Char, 1, Vector{Char}, Tuple{UnitRange{Int64}}, true}}:
+ ['A', 'B']
+ ['C']
+ ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
+ ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+```
+"""
+function _splitat(data::AbstractVector, at::AbstractVector{<:Integer})
+  at[begin] == firstindex(data) || throw(ArgumentError("The first element in `at` must be 1."))
+  at[end] <= lastindex(data) || throw(ArgumentError("The last element in `at` must be at most the length of `data`."))
+  issorted(at, lt = <=) || throw(ArgumentError("`at` must be monotonically increasing with no duplicates."))
+  iplus = vcat(at, lastindex(data)+1)
+  return [view(data, iplus[n]:(iplus[n+1]-1)) for n in eachindex(at)]
+end
+
+"""
+    EmbeddingBag(in => out, reduction=mean; init=Flux.randn32)
+
+A lookup table that stores embeddings of dimension `out` for a vocabulary of size `in`.
+Differs from [`Embedding`](@ref) in that, instead of acting on a single vocabulary index,
+it always acts a vector of indices which it calls a "bag".
+Their individual embedding vectors are reduced to one, using `mean` or some other function.
+
+Instead of acting on one "bag", such as `x::Vector{Int}`, the layer can also act on several:
+
+* Acting on a vector of "bags", it produces a matrix whose columns are the reduced vectors.
+  More generally on `x::Array{Vector{Int}}`, its output is of size `(out, size(x)...)`.
+
+* Any higher-rank array of integers is interpreted as a collection of "bags" each along the first dimension.
+  Thus the output is `mapslices(e, x; dims=1)` when `e::EmbeddingBag` and `x::Array{Int,N}`.
+  This method is more efficient, but requires that all "bags" have the same length.
+
+* A vector of "bags" may also be produced by splitting a vector of indices at specified points.
+  For this case the layer takes two inputs, both vectors of integers. See details below.
+
+The "bag" may equivalently be represented as a `OneHotMatrix`. A collection of these,
+or one higher-rank `OneHotArray`, again produce a stack of embeddings. See details below.
+
+# Examples
+```jldoctest
+julia> vocab_size = 26;  # embed into 3 dimensions, with non-random vectors:
+
+julia> eb = EmbeddingBag(vocab_size => 3, init=Flux.identity_init(gain=100))
+EmbeddingBag(26 => 3)  # 78 parameters
+
+julia> eb([2])  # one bag of 1 item
+3-element Vector{Float32}:
+   0.0
+ 100.0
+   0.0
+
+julia> eb([3,3,1])  # one bag of 3 items, one mean embedding
+3-element Vector{Float32}:
+ 33.333332
+  0.0
+ 66.666664
+
+julia> eb([[3,1,3], [2,1]])  # two bags
+3×2 Matrix{Float32}:
+ 33.3333  50.0
+  0.0     50.0
+ 66.6667   0.0
+
+julia> eb([1 1 1 1; 1 2 3 4])  # 4 bags each of 2 items, eachcol([1 1 1 1; 1 2 3 4])
+3×4 Matrix{Float32}:
+ 100.0  50.0  50.0  50.0
+   0.0  50.0   0.0   0.0
+   0.0   0.0  50.0   0.0
+
+julia> eb(rand(1:26, 10, 5, 5)) |> size  # 25 bags each of 10 items
+(3, 5, 5)
+```
+
+Another way to specify "many bags of many items" is to provide a vector `data` (each in `1:in`)
+and a vector `at` stating where to split that up into "bags".
+The first bag starts with `data[at[1]]`, the second at `data[at[2]]`, and so on, 
+with no overlaps and nothing left out (thus it requires `at[1]==1`).
+
+```jldoctest
+julia> data = [11, 1, 12, 2, 13, 3, 14];
+
+julia> Flux._splitat(data, [1, 4]) |> println  # internal function, makes data[1:3], data[4:end]
+[[11, 1, 12], [2, 13, 3, 14]]
+
+julia> eb(data, [1, 4])  # two bags, of 3 and 4 items
+3×2 Matrix{Float32}:
+ 33.3333   0.0
+  0.0     25.0
+  0.0     25.0
+```
+
+Finally, each bag may also be also be represented as a [`OneHotMatrix`](@ref OneHotArrays.onehotbatch).
+
+```jldoctest
+julia> eb(Flux.onehotbatch("bba", 'a':'z'))  # same as [2,2,1], one bag of 3 items
+3-element Vector{Float32}:
+ 33.333332
+ 66.666664
+  0.0
+
+julia> eb([Flux.onehotbatch("bba", 'a':'z'), Flux.onehotbatch("cc", 'a':'z')])  # two bags
+3×2 Matrix{Float32}:
+ 33.3333    0.0
+ 66.6667    0.0
+  0.0     100.0
+```
+"""
+struct EmbeddingBag{F, W<:AbstractMatrix}
+  weight::W
+  reduction::F
+end
+
+@functor EmbeddingBag
+
+EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
+EmbeddingBag(weight::AbstractMatrix) = EmbeddingBag(weight, mean)
+
+(m::EmbeddingBag)(data::AbstractVector, at::AbstractVector) = m(_splitat(data, at))
+(m::EmbeddingBag)(inds::AbstractArray{<:Integer}) = dropdims(m.reduction(Embedding(m.weight)(inds), dims=2), dims=2)
+(m::EmbeddingBag)(ind::Integer) = error("EmbeddingBag expects an array of indices, not just one")
+
+(m::EmbeddingBag)(hot::AbstractArray{Bool}) = dropdims(m.reduction(Embedding(m.weight)(hot), dims=2), dims=2)
+(m::EmbeddingBag)(hot::AbstractVector{Bool}) = error("EmbeddingBag not defined for a one-hot vector")
+
+# These two could be stack(m, bags), but no AD support yet. (Gradient for weight quite inefficient here.)
+(m::EmbeddingBag)(bags::AbstractVector{<:AbstractVector}) = reduce(hcat, m.(bags))
+(m::EmbeddingBag)(bags::AbstractArray{<:AbstractVector}) = reshape(m(vec(bags)), :, size(bags)...)
+
+(m::EmbeddingBag)(bags::AbstractArray{<:AbstractMatrix{Bool}}) = reshape(reduce(hcat, m.(vec(bags))), :, size(bags)...)
+
+function Base.show(io::IO, m::EmbeddingBag)
+  print(io, "EmbeddingBag(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
+end
