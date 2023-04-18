@@ -1,11 +1,10 @@
 # Flux Release Notes
 
-## v0.13.16
-* `f16, f32, f64` now specifically target floating point arrays (i.e. integers arrays and other types are preserved).
-* `f16, f32, f64` can now handle `Complex{<:AbstractFloat}` arrays.
-
 ## v0.13.15
 * Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
+* `f16, f32, f64` now specifically target floating point arrays (i.e. integers arrays and other types are preserved).
+* `f16, f32, f64` can now handle `Complex{<:AbstractFloat}` arrays.
+* Added `EmbeddingBag` layer
 
 ## v0.13.14
 * Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.
