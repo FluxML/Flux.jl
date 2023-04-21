@@ -66,9 +66,10 @@ Random.seed!(0)
 
   if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
     using AMDGPU
-    AMDGPU.versioninfo()
+    Flux.gpu_backend!("AMD")
+    AMDGPU.allowscalar(false)
+
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
-      @show AMDGPU.MIOpen.version()
       @testset "AMDGPU" begin
         include("amd/runtests.jl")
       end

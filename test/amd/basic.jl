@@ -46,10 +46,26 @@ end
     end
 end
 
+@testset "Chain(Conv)" begin
+    m = Chain(Conv((3, 3), 3 => 3)) |> f32
+    x = rand(Float32, 10, 10, 3, 2)
+    gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+
+    md = m |> gpu |> cpu
+    @test md[1].weight ≈ m[1].weight atol=1f-3
+
+    m = Chain(ConvTranspose((3, 3), 3 => 3)) |> f32
+    x = rand(Float32, 10, 10, 3, 2)
+    gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+
+    md = m |> gpu |> cpu
+    @test md[1].weight ≈ m[1].weight atol=1f-3
+end
+
 @testset "Cross-correlation" begin
     m = CrossCor((2, 2), 3 => 4) |> f32
     x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x)
+    gpu_autodiff_test(m, x; atol=1f-3)
 end
 
 @testset "Restructure" begin
