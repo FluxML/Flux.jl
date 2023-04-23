@@ -31,19 +31,19 @@ end
 # Same for CPU -> GPU & GPU -> CPU movements.
 # Note, that gradients are also flipped.
 
-function Flux._isleaf(::X) where {
-    X <: Union{Flux.Conv{N, M, F, A, V}, Flux.ConvTranspose{N, M, F, A, V}}
-} where {N, M, F, A <: ROCArray, V}
-    return true
-end
+const FLUX_CONV{M} = Union{
+    Flux.Conv{<:Any, <:Any, <:Any, <:M, <:Any},
+    Flux.ConvTranspose{<:Any, <:Any, <:Any, <:M, <:Any}}
+const CPU_CONV = FLUX_CONV{Array}
+const AMD_CONV = FLUX_CONV{ROCArray}
+
+_conv_basetype(c::C) where C <: Conv = Conv
+_conv_basetype(c::C) where C <: ConvTranspose = ConvTranspose
+
+Flux._isleaf(::AMD_CONV) = return true
 
 _exclude(x) = _isleaf(x)
-
-function _exclude(::X) where {
-    X <: Union{Conv{N, M, F, A, V}, ConvTranspose{N, M, F, A, V}}
-} where {N, M, F, A <: Array, V}
-    true
-end
+_exclude(::CPU_CONV) = true
 
 function _amd(x)
     check_use_amdgpu()
@@ -53,12 +53,9 @@ end
 
 # CPU -> GPU
 
-_conv_basetype(c::Type{C}) where C <: Conv = Conv
-_conv_basetype(c::Type{C}) where C <: ConvTranspose = ConvTranspose
-
-function Adapt.adapt_structure(to::FluxAMDAdaptor, m::C) where C <: Union{Flux.Conv, Flux.ConvTranspose}
+function Adapt.adapt_structure(to::FluxAMDAdaptor, m::CPU_CONV)
     flipped_weight = reverse(m.weight; dims=ntuple(i -> i, ndims(m.weight) - 2))
-    _conv_basetype(C)(
+    _conv_basetype(m)(
         Adapt.adapt(to, m.σ),
         Adapt.adapt(to, flipped_weight),
         Adapt.adapt(to, m.bias),
@@ -67,42 +64,13 @@ end
 
 # Don't adapt again.
 
-function Adapt.adapt_structure(to::FluxAMDAdaptor, m::Conv{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
-    return m
-end
-
-function Adapt.adapt_structure(to::FluxAMDAdaptor, m::ConvTranspose{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
-    return m
-end
-
-function _amd(m::M) where M <: Union{Conv, ConvTranspose}
-    Adapt.adapt_structure(FluxAMDAdaptor(), m)
-end
+Adapt.adapt_structure(to::FluxAMDAdaptor, m::AMD_CONV) = return m
 
 # GPU -> CPU
 
-function Flux.cpu(m::Conv{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
-    Adapt.adapt_structure(FluxCPUAdaptor(), m)
-end
-
-function Flux.cpu(m::ConvTranspose{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
-    Adapt.adapt_structure(FluxCPUAdaptor(), m)
-end
-
-function Adapt.adapt_structure(
-    to::FluxCPUAdaptor, m::Conv{N, M, F, A, V},
-) where {N, M, F, A <: ROCArray, V}
+function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMD_CONV)
     dims = ntuple(i -> i, ndims(m.weight) - 2)
-    Conv(
-        Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
-        Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
-end
-
-function Adapt.adapt_structure(
-    to::FluxCPUAdaptor, m::ConvTranspose{N, M, F, A, V},
-) where {N, M, F, A <: ROCArray, V}
-    dims = ntuple(i -> i, ndims(m.weight) - 2)
-    ConvTranspose(
+    _conv_basetype(m)(
         Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
         Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end
