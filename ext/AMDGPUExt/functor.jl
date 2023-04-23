@@ -37,10 +37,10 @@ const FLUX_CONV{M} = Union{
 const CPU_CONV = FLUX_CONV{Array}
 const AMD_CONV = FLUX_CONV{ROCArray}
 
-_conv_basetype(c::C) where C <: Conv = Conv
-_conv_basetype(c::C) where C <: ConvTranspose = ConvTranspose
+_conv_basetype(::Conv) = Conv
+_conv_basetype(::ConvTranspose) = ConvTranspose
 
-Flux._isleaf(::AMD_CONV) = return true
+Flux._isleaf(::AMD_CONV) = true
 
 _exclude(x) = _isleaf(x)
 _exclude(::CPU_CONV) = true
@@ -64,7 +64,7 @@ end
 
 # Don't adapt again.
 
-Adapt.adapt_structure(to::FluxAMDAdaptor, m::AMD_CONV) = return m
+Adapt.adapt_structure(to::FluxAMDAdaptor, m::AMD_CONV) = m
 
 # GPU -> CPU
 
