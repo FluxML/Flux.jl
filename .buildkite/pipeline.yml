@@ -5,7 +5,9 @@ steps:
           version: "1"
       - JuliaCI/julia-test#v1: ~
       - JuliaCI/julia-coverage#v1:
-          codecov: true
+          dirs:
+            - src
+            - ext
     agents:
       queue: "juliagpu"
       cuda: "*"
