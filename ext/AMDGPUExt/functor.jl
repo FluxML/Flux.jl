@@ -26,25 +26,36 @@ function ChainRulesCore.rrule(
         adapt_storage(FluxAMDAdaptor(), unthunk(dx)))
 end
 
-function _amd(x)
-    check_use_amdgpu()
-    USE_AMDGPU[] || return x
-    fmap(x -> Adapt.adapt(FluxAMDAdaptor(), x), x; exclude=_isleaf)
-end
-
 # Since MIOpen supports only cross-correlation as convolution,
 # for the actual convolution, we flip horizontally and vertically the weights.
 # Same for CPU -> GPU & GPU -> CPU movements.
 # Note, that gradients are also flipped.
 
+const FLUX_CONV{M} = Union{
+    Flux.Conv{<:Any, <:Any, <:Any, <:M, <:Any},
+    Flux.ConvTranspose{<:Any, <:Any, <:Any, <:M, <:Any}}
+const CPU_CONV = FLUX_CONV{Array}
+const AMD_CONV = FLUX_CONV{ROCArray}
+
+_conv_basetype(::Conv) = Conv
+_conv_basetype(::ConvTranspose) = ConvTranspose
+
+Flux._isleaf(::AMD_CONV) = true
+
+_exclude(x) = _isleaf(x)
+_exclude(::CPU_CONV) = true
+
+function _amd(x)
+    check_use_amdgpu()
+    USE_AMDGPU[] || return x
+    fmap(x -> Adapt.adapt(FluxAMDAdaptor(), x), x; exclude=_exclude)
+end
+
 # CPU -> GPU
 
-_conv_basetype(c::Type{C}) where C <: Conv = Conv
-_conv_basetype(c::Type{C}) where C <: ConvTranspose = ConvTranspose
-
-function adapt_storage(to::FluxAMDAdaptor, m::C) where C <: Union{Conv, ConvTranspose}
+function Adapt.adapt_structure(to::FluxAMDAdaptor, m::CPU_CONV)
     flipped_weight = reverse(m.weight; dims=ntuple(i -> i, ndims(m.weight) - 2))
-    _conv_basetype(C)(
+    _conv_basetype(m)(
         Adapt.adapt(to, m.σ),
         Adapt.adapt(to, flipped_weight),
         Adapt.adapt(to, m.bias),
@@ -52,44 +63,14 @@ function adapt_storage(to::FluxAMDAdaptor, m::C) where C <: Union{Conv, ConvTran
 end
 
 # Don't adapt again.
-function adapt_storage(
-    to::FluxAMDAdaptor, m::Conv{N, M, F, A, V},
-) where {N, M, F, A <: ROCArray, V}
-    return m
-end
 
-function adapt_storage(
-    to::FluxAMDAdaptor, m::ConvTranspose{N, M, F, A, V},
-) where {N, M, F, A <: ROCArray, V}
-    return m
-end
-
-_amd(m::Union{Conv, ConvTranspose}) = adapt_storage(FluxAMDAdaptor(), m)
+Adapt.adapt_structure(to::FluxAMDAdaptor, m::AMD_CONV) = m
 
 # GPU -> CPU
 
-function Flux.cpu(m::Conv{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
-    adapt_storage(FluxCPUAdaptor(), m)
-end
-
-function Flux.cpu(m::ConvTranspose{N, M, F, A, V}) where {N, M, F, A <: ROCArray, V}
-    adapt_storage(FluxCPUAdaptor(), m)
-end
-
-function adapt_storage(
-    to::FluxCPUAdaptor, m::Conv{N, M, F, A, V},
-) where {N, M, F, A <: ROCArray, V}
+function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMD_CONV)
     dims = ntuple(i -> i, ndims(m.weight) - 2)
-    Conv(
-        Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
-        Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
-end
-
-function adapt_storage(
-    to::FluxCPUAdaptor, m::ConvTranspose{N, M, F, A, V},
-) where {N, M, F, A <: ROCArray, V}
-    dims = ntuple(i -> i, ndims(m.weight) - 2)
-    ConvTranspose(
+    _conv_basetype(m)(
         Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
         Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end

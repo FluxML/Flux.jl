@@ -2,6 +2,7 @@ function check_grad(g_gpu, g_cpu;
             rtol=1e-4, atol=1e-4,
             allow_nothing::Bool=false)
     allow_nothing && return
+    @warn "Unsupported types in `check_grad`: $(typeof(g_gpu)), $(typeof(g_cpu))"
     @show g_gpu g_cpu
     @test false
 end
