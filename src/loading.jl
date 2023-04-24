@@ -104,3 +104,32 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
 
   return dst
 end
+
+"""
+    state(x; full=false)
+
+Return an object with the same nested structure as `x`
+according to `Functors.children()`, but made only of
+basic containers (e.g. named tuples, tuples, arrays, and dictionaries).
+
+If `full` is `false` (default), then only arrays and scalar original leaves are used as leaf values in the return, 
+with the other leaves being replaced by `nothing`.
+
+This method is particularly useful for saving and loading models, since it doesn't
+require the user to specify the model type.
+The returned state, can be passed to `loadmodel!` to restore the model.
+"""
+function state(x; full=false)
+  if Functors.isleaf(x)
+    if full
+      return x
+    else
+      return x isa Union{Number, AbstractArray} ? x : nothing
+    end
+  else
+    return valuemap(c -> state(c; full), Functors.children(x))
+  end
+end
+
+valuemap(f, x) = map(f, x)
+valuemap(f, x::Dict) = Dict(k => f(v) for (k, v) in x)

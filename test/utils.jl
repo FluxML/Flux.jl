@@ -612,6 +612,23 @@ end
       @test ∇p ≈ destructure(∇m)[1]
     end
   end
+
+  @testset "state" begin
+    m1 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5 => 2)))
+    m2 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.zeros32(2, 5), Flux.ones32(2)), Dense(5 => 2)))
+    s = Flux.state(m5)
+    @test s isa NamedTuple
+    @test fieldnames(typeof(s)) == (:layers,)
+    @test s.layers isa Tuple
+    @test length(s.layers) == 2
+    @test s.layers[1].weight === m5[1].weight
+    @test s.layers[1].σ === nothing
+    @test s.layers[2].layers[1].weight === m5[2].layers[1].weight
+
+    Flux.loadmodel!(m6, s)
+    @test m6[1].weight == m5[1].weight
+    @test all(m6[2].layers[1].bias .== m5[2].layers[1].bias)
+  end
 end
 
 @testset "Train and test mode" begin
