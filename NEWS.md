@@ -1,5 +1,6 @@
 # Flux Release Notes
 
+<<<<<<< HEAD
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
 ## v0.13.16
@@ -7,12 +8,13 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
   Thus `LayerNorm(3; ϵ=1e-4)` (not `ε`!) should become `LayerNorm(3; eps=1e-4)`.
  * `DataLoader(...) |> gpu` will now produce a special iterator, moving each batch as needed,
   instead of giving an error.
+* Added `Flux.state` returning the internal state of the model for serialization.
 
 ## v0.13.15
 * Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
 * `f16, f32, f64` now specifically target floating point arrays (i.e. integers arrays and other types are preserved).
 * `f16, f32, f64` can now handle `Complex{<:AbstractFloat}` arrays.
-* Added `EmbeddingBag` layer
+* Added `EmbeddingBag` layer.
 
 ## v0.13.14
 * Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.

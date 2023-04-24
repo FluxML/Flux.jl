@@ -138,3 +138,7 @@ exactly where you left off. BSON is smart enough to [cache values](https://githu
 opt = Adam()
 @save "model-$(now()).bson" model opt
 ```
+
+## Saving the state only
+
+An alternative

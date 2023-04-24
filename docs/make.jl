@@ -35,6 +35,7 @@ makedocs(
             "Gradients -- Zygote.jl" => "training/zygote.md",
             "Batching Data -- MLUtils.jl" => "data/mlutils.md",
             "OneHotArrays.jl" => "data/onehot.md",
+            "Saving and Loading" => "models/saving.md"
             "Low-level Operations -- NNlib.jl" => "models/nnlib.md",
             "Nested Structures -- Functors.jl" => "models/functors.md",
          ],
