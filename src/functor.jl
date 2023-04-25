@@ -5,7 +5,7 @@ import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
 """
-    testmode!(m, [mode])
+    testmode!(model, [mode]) -> model
 
 Set a layer, or all layers in a model, to test mode.
 This disables the effect of [`Dropout`](@ref) and
@@ -36,7 +36,7 @@ Dropout(0.3)
 testmode!(m) = testmode!(m, true)
 
 """
-    trainmode!(m)
+    trainmode!(model) -> model
 
 Set a layer, or all layers in a model, to training mode.
 Opposite to [`testmode!`](@ref), see further details there.
@@ -50,17 +50,28 @@ trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
 
 This two-argument method is largely internal. It recurses into the `model`,
 and until a method like `testmode!(d::Dropout, inactive)` alters the activity of a layer.
+Custom layers can support manual `testmode!` / `trainmode!` switching
+by defining such a method.
 
 Possible values of  `inactive` are:
 - `true` for testing, i.e. `active=false`
 - `false` for training, same as [`trainmode!`](@ref)`(m)`
 - `:auto` or `nothing` for Flux to detect training automatically.
+
+!!! compat
+    This method may be removed in a future breaking change, to separate
+    the user-facing `testmode!` from the internal recursion.
 """
 function testmode!(m, mode)
-  if mode isa Symbol && mode !== :auto
-    throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
+  inactive = if mode isa Symbol
+    mode === :auto || throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
+    nothing
+  elseif mode isa Union{Bool,Nothing}
+    mode
+  else
+    throw(ArgumentError("testmode! does not accept $(repr(mode)) as the 2nd argument"))
   end
-  foreach(x -> testmode!(x, mode), trainable(m))
+  foreach(x -> testmode!(x, inactive), trainable(m))
   m
 end
 
