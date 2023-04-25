@@ -98,7 +98,7 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
       push!(cache, ldst)
       loadleaf!(ldst, lsrc)
     else # this isn't a leaf
-      loadmodel!(ldst, lsrc; cache = cache)
+      loadmodel!(ldst, lsrc; filter, cache)
     end
   end
 
