@@ -32,6 +32,9 @@ _tie_check(dst, src) = true
 
 _bool_tie_check(dst, src) = true
 
+_filter_children(f, children::NamedTuple) =
+  NamedTuple(filter(kv -> f(kv[2]), pairs(children)))
+_filter_children(f, children) = filter(f, children)
 
 """
     loadmodel!(dst, src)
@@ -82,13 +85,11 @@ however, attempting to copy a non-zero array to an inactive parameter will throw
 Likewise, copying a `src` value of `false` to any `dst` array is valid,
 but copying a `src` value of `true` will error.
 """
-function loadmodel!(dst, src; cache = Base.IdSet())
-  ldsts = Functors.children(dst)
-  lsrcs = Functors.children(src)
-  kdsts = keys(ldsts)
-  ksrcs = keys(lsrcs)
-  (kdsts == ksrcs) ||
-    throw(ArgumentError("Tried to load $ksrcs into $kdsts but the structures do not match."))
+function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
+  ldsts = _filter_children(filter, Functors.children(dst))
+  lsrcs = _filter_children(filter, Functors.children(src))
+  (keys(ldsts) == keys(lsrcs)) ||
+    throw(ArgumentError("Tried to load $(keys(lsrcs)) into $(keys(ldsts)) but the structures do not match."))
 
   foreach(ldsts, lsrcs) do ldst, lsrc
     if ldst in cache # we already loaded this parameter before
