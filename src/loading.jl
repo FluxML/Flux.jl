@@ -106,30 +106,47 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
 end
 
 """
-    state(x; full=false)
+    state(x; keep = leaf -> !(leaf isa Function))
 
 Return an object with the same nested structure as `x`
-according to `Functors.children()`, but made only of
+according to `Functors.children`, but made only of
 basic containers (e.g. named tuples, tuples, arrays, and dictionaries).
 
-If `full` is `false` (default), then only arrays and scalar original leaves are used as leaf values in the return, 
-with the other leaves being replaced by `nothing`.
+This method is particularly useful for saving and loading models, 
+since it doesn't require the user to specify the model type.
+The state can be passed to `loadmodel!` to restore the model.
 
-This method is particularly useful for saving and loading models, since it doesn't
-require the user to specify the model type.
-The returned state, can be passed to `loadmodel!` to restore the model.
+The `keep` function is applied on the leaves of `x`.
+If `keep(leaf)` is `false` , the leaf is replaced by `nothing`,
+otherwise it is left as is. By default, all functions are excluded.
+
+# Examples
+
+```julia-repl
+julia> m1 = Chain(Dense(1, 2, tanh), Dense(2, 1));
+
+julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1));
+
+julia> s = Flux.state(m1)
+layers = ((weight = Float32[-0.56867087; 1.229064;;], bias = Float32[0.0, 0.0], σ = nothing), (weight = Float32[0.23323897 -0.5561147], bias = Float32[0.0], σ = nothing)),)
+
+julia> Flux.loadmodel!(m2, s);
+
+julia> m2[1].weight == m1[1].weight
+true
+```
 """
-function state(x; full=false)
+function state(x; keep = _state_keep)
   if Functors.isleaf(x)
-    if full
-      return x
-    else
-      return x isa Union{Number, AbstractArray} ? x : nothing
-    end
+    return keep(x) ? x : nothing
   else
-    return valuemap(c -> state(c; full), Functors.children(x))
+    return _valuemap(c -> state(c; keep), Functors.children(x))
   end
 end
 
-valuemap(f, x) = map(f, x)
-valuemap(f, x::Dict) = Dict(k => f(v) for (k, v) in x)
+_state_keep(x::Function) = false
+_state_keep(x) = true
+
+# map for tuples, namedtuples, and dicts
+_valuemap(f, x) = map(f, x)
+_valuemap(f, x::Dict) = Dict(k => f(v) for (k, v) in x)
