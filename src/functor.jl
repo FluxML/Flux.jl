@@ -5,36 +5,75 @@ import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
 """
-    testmode!(m, mode = true)
+    testmode!(model, [mode]) -> model
 
-Set a layer or model's test mode (see below).
-Using `:auto` mode will treat any gradient computation as training.
+Set a layer, or all layers in a model, to test mode.
+This disables the effect of [`Dropout`](@ref) and
+some other regularisation layers.
 
-_Note_: if you manually set a model into test mode, you need to manually place
-it back into train mode during training phase.
+If you manually set a model into test mode, you need to manually place
+it back into train mode during training phase, using [`trainmode!`](@ref).
 
-Possible values include:
-- `false` for training
-- `true` for testing
-- `:auto` or `nothing` for Flux to detect the mode automatically
+There is an optional second argument, which takes a symbol `:auto` to
+reset all layers back to the default automatic mode.
+
+# Example
+
+```jldoctest
+julia> d = Dropout(0.3)
+Dropout(0.3)
+
+julia> testmode!(d)   # dropout is now always disabled
+Dropout(0.3, active=false)
+
+julia> trainmode!(d)  # dropout is now always enabled
+Dropout(0.3, active=true)
+
+julia> testmode!(d, :auto)  # back to default
+Dropout(0.3)
+```
 """
-testmode!(m, mode = true) = (foreach(x -> testmode!(x, mode), trainable(m)); m)
+testmode!(m) = testmode!(m, true)
 
 """
-    trainmode!(m, mode = true)
+    trainmode!(model) -> model
 
-Set a layer of model's train mode (see below).
-Symmetric to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)`).
-
-_Note_: if you manually set a model into train mode, you need to manually place
-it into test mode during testing phase.
-
-Possible values include:
-- `true` for training
-- `false` for testing
-- `:auto` or `nothing` for Flux to detect the mode automatically
+Set a layer, or all layers in a model, to training mode.
+Opposite to [`testmode!`](@ref), see further details there.
 """
-trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
+trainmode!(m) = testmode!(m, false)
+trainmode!(m, mode::Symbol) = testmode!(m, mode)
+trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
+
+"""
+    testmode!(model, inactive)
+
+This two-argument method is largely internal. It recurses into the `model`,
+and until a method like `testmode!(d::Dropout, inactive)` alters the activity of a layer.
+Custom layers can support manual `testmode!` / `trainmode!` switching
+by defining such a method.
+
+Possible values of  `inactive` are:
+- `true` for testing, i.e. `active=false`
+- `false` for training, same as [`trainmode!`](@ref)`(m)`
+- `:auto` or `nothing` for Flux to detect training automatically.
+
+!!! compat
+    This method may be removed in a future breaking change, to separate
+    the user-facing `testmode!` from the internal recursion.
+"""
+function testmode!(m, mode)
+  inactive = if mode isa Symbol
+    mode === :auto || throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
+    nothing
+  elseif mode isa Union{Bool,Nothing}
+    mode
+  else
+    throw(ArgumentError("testmode! does not accept $(repr(mode)) as the 2nd argument"))
+  end
+  foreach(x -> testmode!(x, inactive), trainable(m))
+  m
+end
 
 function params!(p::Params, x, seen = IdSet())
   if x isa AbstractArray{<:Number} && Functors.isleaf(x)

@@ -1,5 +1,5 @@
 using Test, Random
-import Flux: activations
+using Flux: activations
 
 @testset "basic" begin
   @testset "helpers" begin
@@ -16,11 +16,11 @@ import Flux: activations
   end
 
   @testset "Chain" begin
-    @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn(10))
-    @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn(10))
+    @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn32(10))
+    @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn32(10))
     # numeric test should be put into testset of corresponding layer
 
-    @test_nowarn Chain(first = Dense(10, 5, σ), second = Dense(5, 2))(randn(10))
+    @test_nowarn Chain(first = Dense(10, 5, σ), second = Dense(5, 2))(randn32(10))
     m = Chain(first = Dense(10, 5, σ), second = Dense(5, 2))
     @test m[:first] == m[1]
     @test m[1:2] == m
@@ -72,10 +72,10 @@ import Flux: activations
       @test_throws MethodError Dense(rand(5), rand(5), tanh)
     end
     @testset "dimensions" begin
-      @test  length(Dense(10, 5)(randn(10))) == 5
-      @test_throws DimensionMismatch Dense(10, 5)(randn(1))
-      @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
-      @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+      @test  length(Dense(10 => 5)(randn32(10))) == 5
+      @test_throws DimensionMismatch Dense(10 => 5)(randn32(1))
+      @test_throws MethodError Dense(10 => 5)(1) # avoid broadcasting
+      @test_throws MethodError Dense(10 => 5).(randn32(10)) # avoid broadcasting
       @test size(Dense(10, 5)(randn(10))) == (5,)
       @test size(Dense(10, 5)(randn(10,2))) == (5,2)
       @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
@@ -333,7 +333,7 @@ import Flux: activations
     y = m(x)
     @test y isa Array{Float32, 3}
     @test size(y) == (embed_size, 3, 4)
-    x3 = onehotbatch(x, 1:1:vocab_size)
+    x3 = Flux.onehotbatch(x, 1:1:vocab_size)
     @test size(x3) == (vocab_size, 3, 4)
     y3 = m(x3)
     @test size(y3) == (embed_size, 3, 4)
