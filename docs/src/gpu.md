@@ -125,6 +125,7 @@ julia> x |> cpu
 ```@docs
 cpu
 gpu
+gpu(::Flux.DataLoader)
 ```
 
 ## Common GPU Workflows

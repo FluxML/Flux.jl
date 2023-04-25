@@ -1,5 +1,7 @@
 # Flux Release Notes
 
+* `DataLoader(...) |> gpu` will now produce a special iterator, instead of an error.
+
 ## v0.13.15
 * Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
 * `f16, f32, f64` now specifically target floating point arrays (i.e. integers arrays and other types are preserved).

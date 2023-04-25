@@ -391,3 +391,109 @@ function gpu(::FluxAMDAdaptor, x)
 end
 
 function _amd end
+
+"""
+    gpu(data::DataLoader)
+
+Wraps ths given `DataLoader` in a special `DeviceIterator`, which will move
+each batch of data to the GPU as required, and clean up afterwards.
+
+(If no GPU is available, it does nothing.)
+
+# Example
+
+```julia-repl
+julia> dl = Flux.DataLoader((x = Flux.ones32(2,10), y='a':'j'), batchsize=3)
+4-element DataLoader(::NamedTuple{(:x, :y), Tuple{Matrix{Float32}, StepRange{Char, Int64}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 Matrix{Float32}, y = 3-element StepRange{Char, Int64})
+
+julia> first(dl)
+(x = Float32[1.0 1.0 1.0; 1.0 1.0 1.0], y = 'a':1:'c')
+
+julia> c_dl = gpu(dl)
+4-element DeviceIterator(..., DataLoader(::NamedTuple{(:x, :y), Tuple{Matrix{Float32}, StepRange{Char, Int64}}}, batchsize=3))
+  with first element:
+  (; x = 2×3 CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}, y = 3-element StepRange{Char, Int64})
+
+julia> first(c_dl).x
+2×3 CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 1.0  1.0  1.0
+ 1.0  1.0  1.0
+```
+
+This is usually preferred over moving all the data to
+the GPU before creating the `DataLoader`. For example:
+
+```julia-repl
+julia> Flux.DataLoader((x = Flux.ones32(2,10), y=2:11) |> gpu, batchsize=3)
+4-element DataLoader(::NamedTuple{(:x, :y), Tuple{CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}, UnitRange{Int64}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}, y = 3-element UnitRange{Int64})
+```
+
+!!! warning
+    This only works if `gpu` is applied directly to the `DataLoader`.
+    While `gpu` acts recursively on Flux models and many basic Julia structs,
+    it will not work on (say) a tuple of `DataLoader`s.
+"""
+gpu(a::FluxCUDAAdaptor, d::MLUtils.DataLoader) = DeviceIterator(a, d)
+gpu(a::FluxAMDAdaptor, d::MLUtils.DataLoader) = DeviceIterator(a, d)
+
+mutable struct DeviceIterator{A,B}
+  adaptor::A
+  batches::B
+  previous::Any
+  DeviceIterator(adaptor::A, batches::B) where {A,B} = new{A,B}(adaptor, batches)
+end
+
+# Based on CUDA.CuIterator
+function Base.iterate(c::DeviceIterator, state...)
+  item = iterate(c.batches, state...)
+  isdefined(c, :previous) && fmapstructure(adapt(DeviceIteratorFree()), c.previous; exclude = _isleaf)
+  item === nothing && return nothing
+  batch, next_state = item
+  cubatch = gpu(c.adaptor, batch)
+  c.previous = cubatch
+  return cubatch, next_state
+end
+
+Base.IteratorSize(::Type{DeviceIterator{A,B}}) where {A,B} = Base.IteratorSize(B)
+Base.length(c::DeviceIterator) = length(c.batches)  # required for HasLength
+Base.axes(c::DeviceIterator) = axes(c.batches)  # required for HasShape{N}
+Base.IteratorEltype(::Type{DeviceIterator{A,B}}) where {A,B} = Base.IteratorEltype(B)
+Base.eltype(c::DeviceIterator) = eltype(c.batches)  # required for HasEltype
+
+# This struct exists to control adapt for clean-up-afterwards step:
+struct DeviceIteratorFree end
+Adapt.adapt_storage(::Type{DeviceIteratorFree}, x::AbstractArray{<:Number}) = finalize(x)
+
+# Pretty printing code from https://github.com/JuliaML/MLUtils.jl/blob/main/src/eachobs.jl
+function Base.showarg(io::IO, e::DeviceIterator, toplevel)
+    print(io, "DeviceIterator(..., ")
+    Base.showarg(io, e.batches, false)
+    print(io, ")")
+end
+
+Base.show(io::IO, e::DataLoader) = Base.showarg(io, e, false)
+
+function Base.show(io::IO, m::MIME"text/plain", e::DeviceIterator)
+    if Base.haslength(e)
+        print(io, length(e), "-element ")
+    else
+        print(io, "Unknown-length ")
+    end
+    Base.showarg(io, e, false)
+    print(io, "\n  with first element:")
+    print(io, "\n  ", _expanded_summary(first(e)))
+end
+
+_expanded_summary(x) = summary(x)
+function _expanded_summary(xs::Tuple)
+  parts = [_expanded_summary(x) for x in xs]
+  "(" * join(parts, ", ") * ",)"
+end
+function _expanded_summary(xs::NamedTuple)
+  parts = ["$k = "*_expanded_summary(x) for (k,x) in zip(keys(xs), xs)]
+  "(; " * join(parts, ", ") * ")"
+end
