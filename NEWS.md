@@ -5,6 +5,8 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 ## v0.13.16
 * Most greek-letter keyword arguments are deprecated in favour of ascii.
   Thus `LayerNorm(3; ϵ=1e-4)` (not `ε`!) should become `LayerNorm(3; eps=1e-4)`.
+ * `DataLoader(...) |> gpu` will now produce a special iterator, moving each batch as needed,
+  instead of giving an error.
 
 ## v0.13.15
 * Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
