@@ -70,10 +70,10 @@ include("loading.jl")
 include("outputsize.jl")
 export @autosize
 
+include("deprecations.jl")
+
 include("losses/Losses.jl")
 using .Losses
-
-include("deprecations.jl")
 
 include("cuda/cuda.jl")
 

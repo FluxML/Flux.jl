@@ -192,7 +192,7 @@ struct LayerNorm{F,D,T,N}
 end
 
 function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5, ϵ=nothing)
-  ε = Losses._greek_ascii_depwarn(ϵ => eps, :LayerNorm, "ϵ" => "eps")
+  ε = _greek_ascii_depwarn(ϵ => eps, :LayerNorm, "ϵ" => "eps")
   diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
   return LayerNorm(λ, diag, ε, size, affine)
 end
@@ -326,7 +326,7 @@ function BatchNorm(chs::Int, λ=identity;
           affine::Bool=true, track_stats::Bool=true, active::Union{Bool,Nothing}=nothing,
           eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
 
-  ε = Losses._greek_ascii_depwarn(ϵ => eps, :BatchNorm, "ϵ" => "eps")
+  ε = _greek_ascii_depwarn(ϵ => eps, :BatchNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -418,7 +418,7 @@ function InstanceNorm(chs::Int, λ=identity;
                     affine::Bool=false, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
                     eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
 
-  ε = Losses._greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
+  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -520,7 +520,7 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
   if track_stats
   Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
   end
-  ε = Losses._greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
+  ε = _greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
