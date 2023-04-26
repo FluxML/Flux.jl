@@ -475,7 +475,7 @@ function Base.showarg(io::IO, e::DeviceIterator, toplevel)
     print(io, ")")
 end
 
-Base.show(io::IO, e::DataLoader) = Base.showarg(io, e, false)
+Base.show(io::IO, e::DeviceIterator) = Base.showarg(io, e, false)
 
 function Base.show(io::IO, m::MIME"text/plain", e::DeviceIterator)
     if Base.haslength(e)
