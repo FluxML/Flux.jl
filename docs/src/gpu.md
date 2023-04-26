@@ -122,11 +122,6 @@ julia> x |> cpu
  0.7766742
 ```
 
-```@docs
-cpu
-gpu
-```
-
 ## Common GPU Workflows
 
 Some of the common workflows involving the use of GPUs are presented below.
