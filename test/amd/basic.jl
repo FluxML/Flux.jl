@@ -101,3 +101,16 @@ end
         gpu_autodiff_test(bn, x; atol=1f-3, allow_nothing=true)
     end
 end
+
+@testset "gpu(::DataLoader)" begin
+    X = randn(Float64, 3, 33)
+    pre1 = Flux.DataLoader(X |> Flux.gpu; batchsize=13, shuffle=false)
+    post1 = Flux.DataLoader(X; batchsize=13, shuffle=false) |> Flux.gpu
+    for epoch in 1:2
+        for (p, q) in zip(pre1, post1)
+            @test p isa ROCArray{Float32}
+            @test q isa ROCArray{Float32}
+            @test p ≈ q
+        end
+    end
+end

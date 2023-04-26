@@ -437,8 +437,11 @@ julia> Flux.DataLoader((x = Flux.ones32(2,10), y=2:11) |> gpu, batchsize=3)
     While `gpu` acts recursively on Flux models and many basic Julia structs,
     it will not work on (say) a tuple of `DataLoader`s.
 """
-gpu(a::FluxCUDAAdaptor, d::MLUtils.DataLoader) = DeviceIterator(a, d)
-gpu(a::FluxAMDAdaptor, d::MLUtils.DataLoader) = DeviceIterator(a, d)
+function gpu(a::FluxCUDAAdaptor, d::MLUtils.DataLoader)
+  check_use_cuda()
+  use_cuda[] ? DeviceIterator(a, d) : d
+end
+_amd(d::MLUtils.DataLoader) = DeviceIterator(a, d)
 
 mutable struct DeviceIterator{A,B}
   adaptor::A
@@ -451,7 +454,7 @@ end
 function Base.iterate(c::DeviceIterator, state...)
   item = iterate(c.batches, state...)
   isdefined(c, :previous) && fmapstructure(adapt(DeviceIteratorFree()), c.previous; exclude = _isleaf)
-  item === nothing && return nothing
+  isnothing(item) && return nothing
   batch, next_state = item
   cubatch = gpu(c.adaptor, batch)
   c.previous = cubatch
@@ -464,9 +467,11 @@ Base.axes(c::DeviceIterator) = axes(c.batches)  # required for HasShape{N}
 Base.IteratorEltype(::Type{DeviceIterator{A,B}}) where {A,B} = Base.IteratorEltype(B)
 Base.eltype(c::DeviceIterator) = eltype(c.batches)  # required for HasEltype
 
-# This struct exists to control adapt for clean-up-afterwards step:
 struct DeviceIteratorFree end
-Adapt.adapt_storage(::Type{DeviceIteratorFree}, x::AbstractArray{<:Number}) = finalize(x)
+function Adapt.adapt_storage(::DeviceIteratorFree, x::AbstractArray{<:Number})
+  finalize(x)
+  x
+end
 
 # Pretty printing code from https://github.com/JuliaML/MLUtils.jl/blob/main/src/eachobs.jl
 function Base.showarg(io::IO, e::DeviceIterator, toplevel)
