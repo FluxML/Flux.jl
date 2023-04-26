@@ -72,8 +72,8 @@ end
   q2.x.storage === nothing
   q2.y.indices.storage === nothing
 
-  @test collect(pre2) isa Vector{NamedTuple{(:x, :y)}}
-  @test_broken collect(post2) isa Vector{NamedTuple{(:x, :y)}}  # collect makes no sense, but check eltype?
+  @test collect(pre2) isa Vector{<:NamedTuple{(:x, :y)}}
+  @test_broken collect(post2) isa Vector{<:NamedTuple{(:x, :y)}}  # collect makes no sense, but check eltype?
 
   @test_throws Exception gpu(((x = Flux.DataLoader(X), y = Y),))
 end
