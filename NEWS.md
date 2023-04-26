@@ -1,6 +1,8 @@
 # Flux Release Notes
 
-* `DataLoader(...) |> gpu` will now produce a special iterator, instead of an error.
+## 0.13.16
+* `DataLoader(...) |> gpu` will now produce a special iterator, moving each batch as needed,
+  instead of giving an error.
 
 ## v0.13.15
 * Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
