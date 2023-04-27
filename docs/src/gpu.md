@@ -49,7 +49,7 @@ julia> Flux.GPU_BACKEND
 "CUDA"
 ```
 
-## GPU Usage
+## Basic GPU Usage
 
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA](https://github.com/JuliaGPU/CUDA.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
@@ -122,13 +122,9 @@ julia> x |> cpu
  0.7766742
 ```
 
-## Common GPU Workflows
+## Transferring Training Data
 
-Some of the common workflows involving the use of GPUs are presented below.
-
-### Transferring Training Data
-
-In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the [`gpu`](@ref) function in two different ways:
+In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. Moving the data can be done in two different ways:
 
 1. Iterating over the batches in a [DataLoader](@ref) object transferring each one of the training batches at a time to the GPU. This is recommended for large datasets. Done hand, it might look like this:
    ```julia
@@ -146,7 +142,7 @@ In order to train the model using the GPU both model and the training data have 
    Rather than write this every time, there is a method of `gpu(::DataLoader)` which does it for you:
    ```julia
    gpu_train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true) |> gpu
-   # ...
+   # ... model definition, optimiser setup
    for epoch in 1:epochs
        for (x, y) in gpu_train_loader
            grads = gradient(m -> loss(m, x, y), model)
@@ -155,11 +151,7 @@ In order to train the model using the GPU both model and the training data have 
    end
    ```
    This is equivalent to `DataLoader(MLUtils.mapobs(gpu, (xtrain, ytrain)); keywords...)`.
-   [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator)
-   ```julia
-   gpu_train_loader = CUDA.CuIterator(train_loader)
-   ```
-   Note that `CuIterator` works with a limited number of data types: `first(train_loader)` should be a tuple (or `NamedTuple`) of arrays.
+   Something similar can also be done with [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator), `gpu_train_loader = CUDA.CuIterator(train_loader)`. However, this only works with a limited number of data types: `first(train_loader)` should be a tuple (or `NamedTuple`) of arrays.
 
 2. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory.
    ```julia
@@ -171,7 +163,7 @@ In order to train the model using the GPU both model and the training data have 
    ```
    Here `(xtrain, ytrain) |> gpu` applies [`gpu`](@ref) to both arrays -- it recurses into not just tuples, as here, but also whole Flux models.
 
-### Saving GPU-Trained Models
+## Saving GPU-Trained Models
 
 After the training process is done, one must always transfer the trained model back to the `cpu` memory scope before serializing or saving to disk. This can be done, as described in the previous section, with:
 ```julia

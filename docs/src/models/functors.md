@@ -22,6 +22,6 @@ Flux provides some convenience functions based on `fmap`. Some ([`f16`](@ref Flu
 
 ```@docs
 cpu
-gpu
+gpu(::Any)
 gpu(::Flux.DataLoader)
 ```
