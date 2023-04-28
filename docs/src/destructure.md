@@ -74,9 +74,9 @@ Another kind of flat view of a nested model is provided by the `modules` command
 Flux.modules
 ```
 
-### Saving and Loading
+### Save and Load
 
 ```@docs
-Flux.loadmodel!
 Flux.state
+Flux.loadmodel!
 ```

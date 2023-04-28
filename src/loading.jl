@@ -47,6 +47,8 @@ Non-array elements (such as activation functions) are not copied and need not ma
 Zero bias vectors and `bias=false` are considered equivalent
 (see extended help for more details).
 
+See also [`Flux.state`](@ref).
+
 # Examples
 ```julia
 julia> dst = Chain(Dense(Flux.ones32(2, 5), Flux.ones32(2), tanh), Dense(2 => 1; bias = [1f0]))
@@ -106,23 +108,28 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
 end
 
 """
-    state(x; keep = leaf -> !(leaf isa Function))
+    state(x)
 
-Return an object with the same nested structure as `x`
-according to `Functors.children`, but made only of
-basic containers (e.g. named tuples, tuples, arrays, and dictionaries).
+Return an object with the same nested structure as `x` according to `Functors.children`, 
+but made only of basic containers (e.g. named tuples, tuples, arrays, and dictionaries).
+
+Besides trainable and non-trainable arrays, the state will contain leaf nodes that are not arrays,
+such as numbers, symbols, strings, and nothing values. The leaf types that end up in the state
+could increase in the future.
 
 This method is particularly useful for saving and loading models, 
-since it doesn't require the user to specify the model type.
-The state can be passed to `loadmodel!` to restore the model.
+since the state contain only simple data types that can be easily serialized.
 
-The `keep` function is applied on the leaves of `x`.
-If `keep(leaf)` is `false` , the leaf is replaced by `nothing`,
-otherwise it is left as is. By default, all functions are excluded.
+The state can be passed to [`loadmodel!`](@ref) to restore the model.
 
 # Examples
 
+## Copy the state into another model
+
 ```julia-repl
+julia> s = Flux.state(Dense(1, 2, tanh))
+(weight = Float32[0.5058468; 1.2398405;;], bias = Float32[0.0, 0.0], σ = missing)
+
 julia> m1 = Chain(Dense(1, 2, tanh), Dense(2, 1));
 
 julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1));
@@ -135,18 +142,29 @@ julia> Flux.loadmodel!(m2, s);
 julia> m2[1].weight == m1[1].weight
 true
 ```
+
+## Save and load with BSON
+```julia-repl
+julia> using BSON
+
+julia> BSON.@save "checkpoint.bson" model_state = s
+
+julia> Flux.loadmodel!(m2, BSON.load("checkpoint.bson")[:model_state])
+```
+
+## Save and load with JLD2
+
+```julia-repl
+julia> using JLD2
+
+julia> JLD2.jldsave("checkpoint.jld2", model_state = s)
+
+julia> Flux.loadmodel!(m2, JLD2.load("checkpoint.jld2", "model_state"))
+```
 """
-function state(x; keep = _state_keep)
-  if Functors.isleaf(x)
-    return keep(x) ? x : nothing
-  else
-    return _valuemap(c -> state(c; keep), Functors.children(x))
-  end
-end
+state(x) = Functors.fmapstructure(x -> _state_keep(x) ? x : missing, x)
 
-_state_keep(x::Function) = false
-_state_keep(x) = true
+const STATE_TYPES = Union{AbstractArray, Number, Nothing, AbstractString, Symbol}
 
-# map for tuples, namedtuples, and dicts
-_valuemap(f, x) = map(f, x)
-_valuemap(f, x::Dict) = Dict(k => f(v) for (k, v) in x)
+_state_keep(x::STATE_TYPES) = true
+_state_keep(x) = false

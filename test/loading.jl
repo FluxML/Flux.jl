@@ -199,7 +199,7 @@ end
   @test s.layers isa Tuple
   @test length(s.layers) == 2
   @test s.layers[1].weight === m1[1].weight
-  @test s.layers[1].σ === nothing
+  @test s.layers[1].σ === missing
   @test s.layers[2].layers[1].weight === m1[2].layers[1].weight
 
   Flux.loadmodel!(m2, s)
@@ -212,16 +212,16 @@ end
     s = Flux.state(m3)
     @test s.layers[2].active == true
     @test s.layers[2].p == 0.2
-    @test s.layers[4] == (λ = nothing, β = Float32[0.0, 0.0], γ = Float32[1.0, 1.0], 
-                          μ = Float32[0.0, 0.0], σ² = Float32[1.0, 1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, 
-                          track_stats = true, active = true, chs = 2)
+    @test s.layers[4].λ === missing
+    for k in (:β, :γ, :μ, :σ², :ϵ, :momentum, :affine, :track_stats, :active, :chs)
+      @test s.layers[4][k] === getfield(m3[4], k)
+    end
   end
 
-  @testset "keep" begin
-    s = Flux.state(m1, keep = x -> x isa AbstractArray)
-    @test s.layers[1].weight isa AbstractArray
-    @test s.layers[1].σ === nothing
-    @test s.layers[2].connection === nothing
-    @test s.layers[2].layers[1].bias === nothing
+  @testset "saved types" begin
+    m = (num = 1, cnum = Complex(1.2, 2), str = "hello", arr = [1, 2, 3], 
+        dict = Dict(:a => 1, :b => 2), tup = (1, 2, 3), sym = :a, nth = nothing)
+    s = Flux.state(m)
+    @test s == m
   end
 end
