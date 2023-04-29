@@ -152,11 +152,12 @@ testmode!(m::AlphaDropout, mode=true) =
   (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
 
 """
-    LayerNorm(size..., λ=identity; affine=true, ϵ=1fe-5)
+    LayerNorm(size..., λ=identity; affine=true, eps=1f-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states.
 The argument `size` should be an integer or a tuple of integers.
+
 In the forward pass, the layer normalises the mean and standard
 deviation of the input, then applies the elementwise activation `λ`.
 The input is normalised along the first `length(size)` dimensions
@@ -190,9 +191,10 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
+function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5, ϵ=nothing)
+  ε = _greek_ascii_depwarn(ϵ => eps, :LayerNorm, "ϵ" => "eps")
   diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
-  return LayerNorm(λ, diag, ϵ, size, affine)
+  return LayerNorm(λ, diag, ε, size, affine)
 end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
@@ -269,7 +271,7 @@ ChainRulesCore.@non_differentiable _track_stats!(::Any...)
     BatchNorm(channels::Integer, λ=identity;
               initβ=zeros32, initγ=ones32,
               affine=true, track_stats=true, active=nothing,
-              ϵ=1f-5, momentum= 0.1f0)
+              eps=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -321,8 +323,10 @@ end
 
 function BatchNorm(chs::Int, λ=identity;
           initβ=zeros32, initγ=ones32,
-          affine=true, track_stats=true, active::Union{Bool,Nothing}=nothing,
-          ϵ=1f-5, momentum=0.1f0)
+          affine::Bool=true, track_stats::Bool=true, active::Union{Bool,Nothing}=nothing,
+          eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
+
+  ε = _greek_ascii_depwarn(ϵ => eps, :BatchNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -330,7 +334,7 @@ function BatchNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return BatchNorm(λ, β, γ,
-            μ, σ², ϵ, momentum,
+            μ, σ², ε, momentum,
             affine, track_stats,
             active, chs)
 end
@@ -361,7 +365,7 @@ end
     InstanceNorm(channels::Integer, λ=identity;
                  initβ=zeros32, initγ=ones32,
                  affine=false, track_stats=false,
-                 ϵ=1f-5, momentum=0.1f0)
+                 eps=1f-5, momentum=0.1f0)
 
 [Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -411,8 +415,10 @@ end
 
 function InstanceNorm(chs::Int, λ=identity;
                     initβ=zeros32, initγ=ones32,
-                    affine=false, track_stats=false, active::Union{Bool,Nothing}=nothing,
-                    ϵ=1f-5, momentum=0.1f0)
+                    affine::Bool=false, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
+                    eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
+
+  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -420,7 +426,7 @@ function InstanceNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return InstanceNorm(λ, β, γ,
-            μ, σ², ϵ, momentum,
+            μ, σ², ε, momentum,
             affine, track_stats,
             active, chs)
 end
@@ -450,7 +456,7 @@ end
     GroupNorm(channels::Integer, G::Integer, λ=identity;
               initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0)
+              eps=1f-5, momentum=0.1f0)
 
 [Group Normalization](https://arxiv.org/abs/1803.08494) layer.
 
@@ -508,12 +514,13 @@ trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,
-              affine=true, track_stats=false, active::Union{Bool,Nothing}=nothing,
-              ϵ=1f-5, momentum=0.1f0)
+              affine::Bool=true, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
+              eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
 
-if track_stats
+  if track_stats
   Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
-end
+  end
+  ε = _greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
@@ -525,7 +532,7 @@ end
   return GroupNorm(G, λ,
             β, γ,
             μ, σ²,
-            ϵ, momentum,
+            ε, momentum,
             affine, track_stats,
             active, chs)
 end
