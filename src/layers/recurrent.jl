@@ -275,16 +275,16 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
     ```
 
 # Note:
-  `RNNCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type, but if `Wh` is `dxd`, then `Wi` should be of shape `dxN`.
+`RNNCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type, but if `Wh` is `dxd`, then `Wi` should be of shape `dxN`.
 
-  ```julia
-  julia> using LinearAlgebra
+```julia
+julia> using LinearAlgebra
 
-  julia> r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
+julia> r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
 
-  julia> r(rand(4, 10)) |> size # batch size of 10
-  (5, 10)
-  ```
+julia> r(rand(4, 10)) |> size # batch size of 10
+(5, 10)
+```
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
