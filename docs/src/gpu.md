@@ -49,7 +49,7 @@ julia> Flux.GPU_BACKEND
 "CUDA"
 ```
 
-## GPU Usage
+## Basic GPU Usage
 
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA](https://github.com/JuliaGPU/CUDA.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
@@ -122,61 +122,48 @@ julia> x |> cpu
  0.7766742
 ```
 
-```@docs
-cpu
-gpu
-```
+## Transferring Training Data
 
-## Common GPU Workflows
+In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. Moving the data can be done in two different ways:
 
-Some of the common workflows involving the use of GPUs are presented below.
-
-### Transferring Training Data
-
-In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the `gpu` function in two different ways:
-
-1. Iterating over the batches in a [DataLoader](@ref) object transferring each one of the training batches at a time to the GPU. 
+1. Iterating over the batches in a [`DataLoader`](@ref) object transferring each one of the training batches at a time to the GPU. This is recommended for large datasets. Done by hand, it might look like this:
    ```julia
-   train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
-   # ... model, optimiser and loss definitions
-   for epoch in 1:nepochs
-       for (xtrain_batch, ytrain_batch) in train_loader
-           x, y = gpu(xtrain_batch), gpu(ytrain_batch)
-           gradients = gradient(() -> loss(x, y), parameters)
-           Flux.Optimise.update!(optimiser, parameters, gradients)
+   train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true)
+   # ... model definition, optimiser setup
+   for epoch in 1:epochs
+       for (x_cpu, y_cpu) in train_loader
+           x = gpu(x_cpu)
+           y = gpu(y_cpu)
+           grads = gradient(m -> loss(m, x, y), model)
+           Flux.update!(opt_state, model, grads[1])
        end
    end
    ```
+   Rather than write this out every time, you can just call `gpu(::DataLoader)`:
+   ```julia
+   gpu_train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true) |> gpu
+   # ... model definition, optimiser setup
+   for epoch in 1:epochs
+       for (x, y) in gpu_train_loader
+           grads = gradient(m -> loss(m, x, y), model)
+           Flux.update!(opt_state, model, grads[1])
+       end
+   end
+   ```
+   This is equivalent to `DataLoader(MLUtils.mapobs(gpu, (X, Y)); keywords...)`.
+   Something similar can also be done with [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator), `gpu_train_loader = CUDA.CuIterator(train_loader)`. However, this only works with a limited number of data types: `first(train_loader)` should be a tuple (or `NamedTuple`) of arrays.
 
-2. Transferring all training data to the GPU at once before creating the [DataLoader](@ref) object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possibilities are:
+2. Transferring all training data to the GPU at once before creating the `DataLoader`. This is usually performed for smaller datasets which are sure to fit in the available GPU memory.
    ```julia
-   gpu_train_loader = Flux.DataLoader((xtrain |> gpu, ytrain |> gpu), batchsize = 32)
-   ```
-   ```julia
-   gpu_train_loader = Flux.DataLoader((xtrain, ytrain) |> gpu, batchsize = 32)
-   ```
-   Note that both `gpu` and `cpu` are smart enough to recurse through tuples and namedtuples. Another possibility is to use [`MLUtils.mapsobs`](https://juliaml.github.io/MLUtils.jl/dev/api/#MLUtils.mapobs) to push the data movement invocation into the background thread:
-   ```julia
-   using MLUtils: mapobs
+   gpu_train_loader = Flux.DataLoader((X, Y) |> gpu, batchsize = 32)
    # ...
-   gpu_train_loader = Flux.DataLoader(mapobs(gpu, (xtrain, ytrain)), batchsize = 16)
+   for epoch in 1:epochs
+       for (x, y) in gpu_train_loader
+           # ...
    ```
+   Here `(X, Y) |> gpu` applies [`gpu`](@ref) to both arrays, as it recurses into structures.
 
-3. Wrapping the `DataLoader` in [`CUDA.CuIterator`](https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator) to efficiently move data to GPU on demand:
-   ```julia
-   using CUDA: CuIterator
-   train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
-   # ... model, optimiser and loss definitions
-   for epoch in 1:nepochs
-       for (xtrain_batch, ytrain_batch) in CuIterator(train_loader)
-          # ...
-       end
-   end
-   ```
-
-   Note that this works with a limited number of data types. If `iterate(train_loader)` returns anything other than arrays, approach 1 or 2 is preferred.
-
-### Saving GPU-Trained Models
+## Saving GPU-Trained Models
 
 After the training process is done, one must always transfer the trained model back to the `cpu` memory scope before serializing or saving to disk. This can be done, as described in the previous section, with:
 ```julia
