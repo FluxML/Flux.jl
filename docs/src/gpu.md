@@ -126,7 +126,7 @@ julia> x |> cpu
 
 In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. Moving the data can be done in two different ways:
 
-1. Iterating over the batches in a [`DataLoader`](@ref) object transferring each one of the training batches at a time to the GPU. This is recommended for large datasets. Done hand, it might look like this:
+1. Iterating over the batches in a [`DataLoader`](@ref) object transferring each one of the training batches at a time to the GPU. This is recommended for large datasets. Done by hand, it might look like this:
    ```julia
    train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true)
    # ... model definition, optimiser setup
@@ -139,7 +139,7 @@ In order to train the model using the GPU both model and the training data have 
        end
    end
    ```
-   Rather than write this every time, there is a method of `gpu(::DataLoader)` which does it for you:
+   Rather than write this out every time, you can just call `gpu(::DataLoader)`:
    ```julia
    gpu_train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true) |> gpu
    # ... model definition, optimiser setup
@@ -161,7 +161,7 @@ In order to train the model using the GPU both model and the training data have 
        for (x, y) in gpu_train_loader
            # ...
    ```
-   Here `(X, Y) |> gpu` applies [`gpu`](@ref) to both arrays -- it recurses into not just tuples, as here, but also whole Flux models.
+   Here `(X, Y) |> gpu` applies [`gpu`](@ref) to both arrays, as it recurses into structures.
 
 ## Saving GPU-Trained Models
 
