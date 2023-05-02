@@ -4,7 +4,6 @@ using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              sparse_init, identity_init, unstack, batch, unbatch,
              unsqueeze, params, loadmodel!
 using MLUtils
-using StatsBase: var, std
 using Statistics, LinearAlgebra
 using Random
 using Test
