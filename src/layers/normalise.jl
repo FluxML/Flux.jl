@@ -208,7 +208,7 @@ function (a::LayerNorm)(x::AbstractArray)
     end
   end
   eps = convert(float(eltype(x)), a.ϵ)  # avoids promotion for Float16 data, but should ε chage too?
-  a.diag(normalise(x, dims=1:length(a.size), ϵ=eps))
+  a.diag(normalise(x; dims=1:length(a.size), eps))
 end
 
 function Base.show(io::IO, l::LayerNorm)
