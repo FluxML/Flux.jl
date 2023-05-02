@@ -1,10 +1,10 @@
 
 """
-    normalise(x; dims=ndims(x), ϵ=1e-5)
+    normalise(x; dims=ndims(x), eps=1e-5)
 
 Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
 Per default, `dims` is the last dimension. 
-`ϵ` is a small additive factor added to the denominator for numerical stability.
+`eps` is a small term added to the denominator for numerical stability.
 
 # Examples
 ```jldoctest
@@ -25,10 +25,11 @@ julia> isapprox(std(y, dims=1), ones(1, 2), atol=0.2) && std(y, dims=1) != std(x
 true
 ```
 """
-@inline function normalise(x::AbstractArray; dims=ndims(x), ϵ=ofeltype(x, 1e-5))
+@inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5), ϵ=nothing)
+  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
   μ = mean(x, dims=dims)
   σ = std(x, dims=dims, mean=μ, corrected=false)
-  return @. (x - μ) / (σ + ϵ)
+  return @. (x - μ) / (σ + ε)
 end
 
 """
