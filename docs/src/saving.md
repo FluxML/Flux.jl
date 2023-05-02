@@ -51,7 +51,7 @@ julia> Flux.loadmodel!(model, model_state);
 
 ## Checkpointing
 
-In longer training runs it's a good idea to periodically save your model, so that you can resume if training is interrupted (for example, if there's a power cut). You can do this by saving the model in the [callback provided to `train!`](training/training.md).
+In longer training runs it's a good idea to periodically save your model, so that you can resume if training is interrupted (for example, if there's a power cut). 
 
 ```jldoctest saving
 julia> using Flux: throttle
@@ -64,12 +64,13 @@ Chain(
   Dense(5 => 2),                        # 12 parameters
 )                   # Total: 4 arrays, 67 parameters, 524 bytes.
 
-julia> evalcb = throttle(30) do
+julia> for epoch in 1:10
+          # ... train model ...
           jldsave("model-checkpoint.jld2", model_state = Flux.state(m))
        end;
 ```
 
-This will update the `"model-checkpoint.jld2"` file every thirty seconds.
+This will update the `"model-checkpoint.jld2"` every epoch.
 
 You can get more advanced by saving a series of models throughout training, for example
 
