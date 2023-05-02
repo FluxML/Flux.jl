@@ -27,8 +27,8 @@ true
 """
 @inline function normalise(x::AbstractArray; dims=ndims(x), ϵ=ofeltype(x, 1e-5))
   μ = mean(x, dims=dims)
-  σ² = var(x, dims=dims, mean=μ, corrected=false)
-  return @. (x - μ) / sqrt(σ² + ϵ)
+  σ = std(x, dims=dims, mean=μ, corrected=false)
+  return @. (x - μ) / (σ + ϵ)
 end
 
 """
