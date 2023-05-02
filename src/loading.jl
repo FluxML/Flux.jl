@@ -126,24 +126,30 @@ The state can be passed to [`loadmodel!`](@ref) to restore the model.
 
 ## Copy the state into another model
 
-```julia-repl
-julia> s = Flux.state(Dense(1, 2, tanh))
-(weight = Float32[0.5058468; 1.2398405;;], bias = Float32[0.0, 0.0], σ = missing)
-
-julia> m1 = Chain(Dense(1, 2, tanh), Dense(2, 1));
-
-julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1));
+```jldoctest
+julia> m1 = Chain(Dense(1, 2, tanh; init=ones), Dense(2, 1; init=ones));
 
 julia> s = Flux.state(m1)
-layers = ((weight = Float32[-0.56867087; 1.229064;;], bias = Float32[0.0, 0.0], σ = nothing), (weight = Float32[0.23323897 -0.5561147], bias = Float32[0.0], σ = nothing)),)
+(layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0], σ = missing), (weight = [1.0 1.0], bias = [0.0], σ = missing)),)
+
+julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1; bias=false));  # weights are random numbers
 
 julia> Flux.loadmodel!(m2, s);
 
-julia> m2[1].weight == m1[1].weight
-true
+julia> m2[1].weight   # now the weights of m2 are the same as m1
+2×1 Matrix{Float32}:
+ 1.0
+ 1.0
+
+julia> Flux.state(trainmode!(Dropout(0.2)))  # contains p & activity, but not RNG state
+(p = 0.2, dims = missing, active = true, rng = missing)
+
+julia> Flux.state(BatchNorm(1))  # contains non-trainable arrays μ, σ²
+(λ = missing, β = Float32[0.0], γ = Float32[1.0], μ = Float32[0.0], σ² = Float32[1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, track_stats = true, active = nothing, chs = 1)
 ```
 
 ## Save and load with BSON
+
 ```julia-repl
 julia> using BSON
 
@@ -162,9 +168,9 @@ julia> JLD2.jldsave("checkpoint.jld2", model_state = s)
 julia> Flux.loadmodel!(m2, JLD2.load("checkpoint.jld2", "model_state"))
 ```
 """
-state(x) = Functors.fmapstructure(x -> _state_keep(x) ? x : missing, x)
+state(x) = Functors.fmapstructure(_state, x)
 
 const STATE_TYPES = Union{AbstractArray, Number, Nothing, AbstractString, Symbol}
 
-_state_keep(x::STATE_TYPES) = true
-_state_keep(x) = false
+_state(x::STATE_TYPES) = x
+_state(x) = missing

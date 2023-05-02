@@ -220,7 +220,9 @@ end
 
   @testset "saved types" begin
     m = (num = 1, cnum = Complex(1.2, 2), str = "hello", arr = [1, 2, 3], 
-        dict = Dict(:a => 1, :b => 2), tup = (1, 2, 3), sym = :a, nth = nothing)
+        bool = true, dict = Dict(:a => 1, :b => 2), tup = (1, 2, 3), 
+        sym = :a, nth = nothing)
+
     s = Flux.state(m)
     @test s == m
   end
