@@ -1,34 +1,44 @@
 
 """
-    normalise(x; dims=ndims(x), ϵ=1e-5)
+    normalise(x; dims=ndims(x), eps=1e-5)
 
 Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
 Per default, `dims` is the last dimension. 
-`ϵ` is a small additive factor added to the denominator for numerical stability.
+`eps` is a small term added to the denominator for numerical stability.
 
 # Examples
 ```jldoctest
 julia> using Statistics
 
-julia> x = [9, 10, 20, 60];
+julia> x = [90, 100, 110, 130, 70];
 
-julia> y = Flux.normalise(x);
+julia> mean(x), std(x; corrected=false)
+(100.0, 20.0)
 
-julia> isapprox(std(y), 1, atol=0.2) && std(y) != std(x)
+julia> y = Flux.normalise(x)
+5-element Vector{Float64}:
+ -0.49999975000012503
+  0.0
+  0.49999975000012503
+  1.499999250000375
+ -1.499999250000375
+
+julia> isapprox(std(y; corrected=false), 1, atol=1e-5)
 true
 
-julia> x = rand(1:100, 10, 2);
+julia> x = rand(10:100, 10, 10);
 
 julia> y = Flux.normalise(x, dims=1);
 
-julia> isapprox(std(y, dims=1), ones(1, 2), atol=0.2) && std(y, dims=1) != std(x, dims=1)
+julia> isapprox(std(y; dims=1, corrected=false), ones(1, 10), atol=1e-5)
 true
 ```
 """
-@inline function normalise(x::AbstractArray; dims=ndims(x), ϵ=ofeltype(x, 1e-5))
+@inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5), ϵ=nothing)
+  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
   μ = mean(x, dims=dims)
   σ = std(x, dims=dims, mean=μ, corrected=false)
-  return @. (x - μ) / (σ + ϵ)
+  return @. (x - μ) / (σ + ε)
 end
 
 """
