@@ -18,7 +18,7 @@ julia> struct MyModel
 
 julia> Flux.@functor MyModel
 
-julia> MyModel() = MyModel(Chain(Dense(10, 5, relu), Dense(5, 2)))
+julia> MyModel() = MyModel(Chain(Dense(10, 5, relu), Dense(5, 2)));
 
 julia> model = MyModel()
 MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)))
@@ -35,7 +35,7 @@ Load it again in a new session using [`Flux.loadmodel!`](@ref):
 ```jldoctest saving
 julia> using Flux, JLD2
 
-julia> model_state = JLD2.load("mymodel.jld2", "model_state")
+julia> model_state = JLD2.load("mymodel.jld2", "model_state");
 
 julia> model = MyModel(); # MyModel definition must be available
 

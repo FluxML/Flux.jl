@@ -90,10 +90,10 @@ but copying a `src` value of `true` will error.
 function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
   ldsts = _filter_children(filter, Functors.children(dst))
   lsrcs = _filter_children(filter, Functors.children(src))
-  (keys(ldsts) == keys(lsrcs)) ||
-    throw(ArgumentError("Tried to load $(keys(lsrcs)) into $(keys(ldsts)) but the structures do not match."))
-
-  foreach(ldsts, lsrcs) do ldst, lsrc
+  keys_ldsts = keys(ldsts)
+  for k in keys(lsrcs)
+    k ∈ keys_ldsts || throw(ArgumentError("Tried to load $(keys(lsrcs)) into $(keys(ldsts)) but the structures do not match."))
+    lsrc, ldst = lsrcs[k], ldsts[k]
     if ldst in cache # we already loaded this parameter before
       _tie_check(ldst, lsrc) && return ldst
     elseif Functors.isleaf(ldst) # our first time loading this leaf
@@ -130,7 +130,7 @@ The state can be passed to [`loadmodel!`](@ref) to restore the model.
 julia> m1 = Chain(Dense(1, 2, tanh; init=ones), Dense(2, 1; init=ones));
 
 julia> s = Flux.state(m1)
-(layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0], σ = missing), (weight = [1.0 1.0], bias = [0.0], σ = missing)),)
+(layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0]), (weight = [1.0 1.0], bias = [0.0])),)
 
 julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1; bias=false));  # weights are random numbers
 
@@ -142,10 +142,10 @@ julia> m2[1].weight   # now the weights of m2 are the same as m1
  1.0
 
 julia> Flux.state(trainmode!(Dropout(0.2)))  # contains p & activity, but not RNG state
-(p = 0.2, dims = missing, active = true, rng = missing)
+(p = 0.2, active = true)
 
 julia> Flux.state(BatchNorm(1))  # contains non-trainable arrays μ, σ²
-(λ = missing, β = Float32[0.0], γ = Float32[1.0], μ = Float32[0.0], σ² = Float32[1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, track_stats = true, active = nothing, chs = 1)
+(β = Float32[0.0], γ = Float32[1.0], μ = Float32[0.0], σ² = Float32[1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, track_stats = true, active = nothing, chs = 1)
 ```
 
 ## Save and load with BSON
@@ -168,9 +168,21 @@ julia> JLD2.jldsave("checkpoint.jld2", model_state = s)
 julia> Flux.loadmodel!(m2, JLD2.load("checkpoint.jld2", "model_state"))
 ```
 """
-state(x) = Functors.fmapstructure(_state, x)
+state(x) = Functors.fmapstructure(_state, x) |> prune_missing
 
 const STATE_TYPES = Union{AbstractArray, Number, Nothing, AbstractString, Symbol}
 
 _state(x::STATE_TYPES) = x
 _state(x) = missing
+
+prune_missing(x) = x
+
+prune_missing(nt::NamedTuple) =
+  (; (k => prune_missing(v) for (k,v) in pairs(nt) if !ismissing(v))...)
+
+prune_missing(d::Dict) =
+  Dict(k => prune_missing(v) for (k,v) in pairs(d) if !ismissing(v))
+
+# we preserve missings in tuples to avoid ambiguities
+prune_missing(t::Tuple) = prune_missing.(t) 
+
