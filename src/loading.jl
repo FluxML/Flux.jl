@@ -91,11 +91,13 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
   ldsts = _filter_children(filter, Functors.children(dst))
   lsrcs = _filter_children(filter, Functors.children(src))
   keys_ldsts = keys(ldsts)
-  for k in keys(lsrcs)
-    k ∈ keys_ldsts || throw(ArgumentError("Tried to load $(keys(lsrcs)) into $(keys(ldsts)) but the structures do not match."))
+  keys_lsrcs = keys(lsrcs)
+  
+  for k in keys_lsrcs
+    k ∈ keys_ldsts || throw(ArgumentError("Tried to load $(keys_lsrcs) into $(keys_ldsts) but the structures do not match."))
     lsrc, ldst = lsrcs[k], ldsts[k]
     if ldst in cache # we already loaded this parameter before
-      _tie_check(ldst, lsrc) && return ldst
+      _tie_check(ldst, lsrc)
     elseif Functors.isleaf(ldst) # our first time loading this leaf
       push!(cache, ldst)
       loadleaf!(ldst, lsrc)
