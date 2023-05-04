@@ -183,6 +183,7 @@ prune_missing(nt::NamedTuple) =
 prune_missing(d::Dict) =
   Dict(k => prune_missing(v) for (k,v) in pairs(d) if !ismissing(v))
 
-# we preserve missings in tuples to avoid ambiguities
-prune_missing(t::Tuple) = prune_missing.(t) 
+# we replace missings with () in tuples instead 
+# of dropping them to avoid ambiguities
+prune_missing(t::Tuple) = ((ismissing(x) ? () : prune_missing(x) for x in t)...,) 
 

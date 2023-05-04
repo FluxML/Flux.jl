@@ -1,6 +1,5 @@
 # Flux Release Notes
 
-<<<<<<< HEAD
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
 ## v0.13.16
