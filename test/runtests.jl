@@ -7,6 +7,8 @@ using IterTools: ncycle
 using Zygote
 using CUDA
 
+include("test_utils.jl")
+
 Random.seed!(0)
 
 @testset verbose=true "Flux.jl" begin
@@ -31,6 +33,7 @@ Random.seed!(0)
   end
 
   @testset "Layers" begin
+    include("layers/attention.jl")
     include("layers/basic.jl")
     include("layers/normalisation.jl")
     include("layers/stateless.jl")
@@ -59,5 +62,21 @@ Random.seed!(0)
       DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
       doctest(Flux)
     end
+  end
+
+  if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
+    using AMDGPU
+    Flux.gpu_backend!("AMD")
+    AMDGPU.allowscalar(false)
+
+    if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
+      @testset "AMDGPU" begin
+        include("amd/runtests.jl")
+      end
+    else
+      @info "AMDGPU.jl package is not functional. Skipping AMDGPU tests."
+    end
+  else
+    @info "Skipping AMDGPU tests, set FLUX_TEST_AMDGPU=true to run them."
   end
 end

@@ -10,7 +10,7 @@ The `Dense` exemplifies several features:
 
 * It take an `init` keyword, which accepts a function acting like `rand`. That is, `init(2,3,4)` should create an array of this size. Flux has [many such functions](@ref man-init-funcs) built-in. All make a CPU array, moved later with [`gpu`](@ref Flux.gpu) if desired.
 
-* The bias vector is always intialised [`Flux.zeros32`](@ref). The keyword `bias=false` will turn this off, i.e. keeping the bias permanently zero.
+* The bias vector is always initialised [`Flux.zeros32`](@ref). The keyword `bias=false` will turn this off, i.e. keeping the bias permanently zero.
 
 * It is annotated with [`@functor`](@ref Functors.@functor), which means that [`params`](@ref Flux.params) will see the contents, and [`gpu`](@ref Flux.gpu) will move their arrays to the GPU.
 
@@ -53,6 +53,15 @@ DepthwiseConv
 SamePad
 Flux.flatten
 ```
+
+## MultiHeadAttention
+
+The basic blocks needed to implement [Transformer](https://arxiv.org/abs/1706.03762) architectures. See also the functional counterparts
+documented in NNlib's [Attention](@ref) section.
+
+```@docs
+MultiHeadAttention
+``` 
 
 ### Pooling
 
@@ -123,7 +132,6 @@ LayerNorm
 InstanceNorm
 GroupNorm
 Flux.normalise
-NNlib.dropout
 ```
 
 ### Test vs. Train
@@ -138,6 +146,7 @@ Several normalisation layers behave differently under training and inference (te
 The functions `Flux.trainmode!` and `Flux.testmode!` let you manually specify which behaviour you want. When called on a model, they will place all layers within the model into the specified mode.
 
 ```@docs
-Flux.testmode!
+testmode!(::Any)
+testmode!(::Any, ::Any)
 trainmode!
 ```

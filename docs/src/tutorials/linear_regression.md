@@ -126,7 +126,7 @@ A [`Dense(1 => 1)`](@ref Dense) layer denotes a layer of one neuron with one inp
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> flux_model.weight, flux_model.bias
-(Float32[1.1412252], Float32[0.0])
+(Float32[-1.2678515;;], Float32[0.0])
 ```
 
 Now we can check if our model is acting right. We can pass the complete data in one go, with each `x` having exactly one feature (one input) -

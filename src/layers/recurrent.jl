@@ -200,7 +200,7 @@ end
 RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) =
   RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
 
-function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {F,I,H,V,T}
+function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where {F,I,H,V,T}
   Wi, Wh, b = m.Wi, m.Wh, m.b
   _size_check(m, x, 1 => size(Wi,2))
   σ = NNlib.fast_act(m.σ, x)
@@ -275,16 +275,16 @@ julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
     ```
 
 # Note:
-  `RNNCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type, but if `Wh` is `dxd`, then `Wi` should be of shape `dxN`.
+`RNNCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type, but if `Wh` is `dxd`, then `Wi` should be of shape `dxN`.
 
-  ```julia
-  julia> using LinearAlgebra
+```julia
+julia> using LinearAlgebra
 
-  julia> r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
+julia> r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
 
-  julia> r(rand(4, 10)) |> size # batch size of 10
-  (5, 10)
-  ```
+julia> r(rand(4, 10)) |> size # batch size of 10
+(5, 10)
+```
 """
 RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
 Recur(m::RNNCell) = Recur(m, m.state0)
@@ -307,7 +307,7 @@ function LSTMCell((in, out)::Pair;
   return cell
 end
 
-function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,T}
+function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::AbstractVecOrMat) where {I,H,V,T}
   _size_check(m, x, 1 => size(m.Wi,2))
   b, o = m.b, size(h, 1)
   xT = _match_eltype(m, T, x)
@@ -380,7 +380,7 @@ end
 GRUCell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
 
-function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,T}
+function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where {I,H,V,T}
   _size_check(m, x, 1 => size(m.Wi,2))
   Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
   xT = _match_eltype(m, T, x)
@@ -450,7 +450,7 @@ GRUv3Cell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = 
   GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3),
             init(out, out), init_state(out,1))
 
-function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::Union{AbstractVecOrMat{<:AbstractFloat},OneHotArray}) where {I,H,V,HH,T}
+function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where {I,H,V,HH,T}
   _size_check(m, x, 1 => size(m.Wi,2))
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
   xT = _match_eltype(m, T, x)

@@ -91,7 +91,7 @@ end
     struct SimpleBits
       field::Int32
     end
-    
+
     @test gpu((;a=ones(1))).a isa CuVector{Float32}
     @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
     @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
@@ -167,14 +167,40 @@ end
   @test parent(gpu(g3)) isa CuArray
 
 
-  #Issue #2116  
+  #Issue #2116
   struct A2116
     x::Int
     y::Int
   end
   x = [A2116(1,1), A2116(2,2)]
-  xgpu = gpu(x) 
+  xgpu = gpu(x)
   @test xgpu isa CuVector{A2116}
-  @test cpu(xgpu) isa Vector{A2116} 
+  @test cpu(xgpu) isa Vector{A2116}
   @test cpu(gpu([CartesianIndex(1)])) isa Vector{CartesianIndex{1}}
+end
+
+@testset "gpu(::DataLoader)" begin
+  X = randn(Float64, 3, 33)
+  pre1 = Flux.DataLoader(X |> gpu; batchsize=13, shuffle=false)
+  post1 = Flux.DataLoader(X; batchsize=13, shuffle=false) |> gpu
+  for epoch in 1:2
+    for (p, q) in zip(pre1, post1)
+      @test p isa CuArray{Float32}
+      @test q isa CuArray{Float32}
+      @test p ≈ q
+    end
+  end
+
+  Y = Flux.onehotbatch(rand(0:2, 33), 0:2)
+  pre2 = Flux.DataLoader((x=X, y=Y) |> gpu; batchsize=7, shuffle=false)
+  post2 = Flux.DataLoader((x=X, y=Y); batchsize=7, shuffle=false) |> gpu
+  for (p, q) in zip(pre2, post2)
+    @test p.x == q.x
+    @test_skip p.y == q.y  # https://github.com/FluxML/OneHotArrays.jl/issues/28 -- MethodError: getindex(::OneHotArrays.OneHotMatrix{UInt32, CuArray{UInt32, 1, CUDA.Mem.DeviceBuffer}}, ::Int64, ::Int64) is ambiguous
+  end
+
+  @test collect(pre2) isa Vector{<:NamedTuple{(:x, :y)}}
+  @test collect(post2) isa Vector{<:NamedTuple{(:x, :y)}}  # collect makes no sense, but check eltype?
+
+  @test_throws Exception gpu(((x = Flux.DataLoader(X), y = Y),))
 end

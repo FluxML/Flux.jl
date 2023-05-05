@@ -1,24 +1,60 @@
 # Flux Release Notes
 
+See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
+
+## v0.13.16
+* Most greek-letter keyword arguments are deprecated in favour of ascii.
+  Thus `LayerNorm(3; ϵ=1e-4)` (not `ε`!) should become `LayerNorm(3; eps=1e-4)`.
+ * `DataLoader(...) |> gpu` will now produce a special iterator, moving each batch as needed,
+  instead of giving an error.
+* Added [`ssim`, `ssim_loss`, `ssim_loss_fast`](https://github.com/FluxML/Flux.jl/pull/2178) which compute the Structural Similarity Index Measure and corresponding loss function.
+
+## v0.13.15
+* Added [MultiHeadAttention](https://github.com/FluxML/Flux.jl/pull/2146) layer.
+* `f16, f32, f64` now specifically target floating point arrays (i.e. integers arrays and other types are preserved).
+* `f16, f32, f64` can now handle `Complex{<:AbstractFloat}` arrays.
+* Added `EmbeddingBag` layer
+
+## v0.13.14
+* Fixed various deprecation warnings, from `Zygone.@nograd` and `Vararg`.
+* Initial support for `AMDGPU` via extension mechanism.
+* Add `gpu_backend` preference to select GPU backend using `LocalPreference.toml`.
+* Add `Flux.gpu_backend!` method to switch between GPU backends.
+
 ## v0.13.13
 * Added `f16` which changes precision to `Float16`, recursively.
-* Added [`ssim`, `ssim_loss`, `ssim_loss_fast`](https://github.com/FluxML/Flux.jl/pull/2178) which compute the Structural Similarity Index Measure and corresponding loss function.
+<<<<<<< HEAD
+=======
+* Most layers standardise their input to `eltype(layer.weight)`, [#2156](https://github.com/FluxML/Flux.jl/pull/2156),
+  to limit the cost of accidental Float64 promotion.
+* Friendlier errors from size mismatches [#2176](https://github.com/FluxML/Flux.jl/pull/2176).
 
 ## v0.13.12
 * CUDA.jl 4.0 compatibility.
+* Use `dropout` from NNlib as back-end for `Dropout` layer.
+
+## v0.13.9
+* New method of `train!` using Zygote's "explicit" mode. Part of a move away from "implicit" `Params`.
+* Added [Flux.setup](https://github.com/FluxML/Flux.jl/pull/2082), which is `Optimisers.setup` with extra checks,
+  and translation from deprecated "implicit" optimisers like `Flux.Optimise.Adam` to new ones from Optimisers.jl.
 
 ## v0.13.7
-* Added [`@autosize` macro](https://github.com/FluxML/Flux.jl/pull/2078)
-* New method of `train!` using Zygote's "explicit" mode. Part of a move away from "implicit" `Params`.
+* Added [`@autosize` macro](https://github.com/FluxML/Flux.jl/pull/2078), as another way to use `outputsize`.
+* Export `Embedding`.
+
+## v0.13.6
+* Use the package [OneHotArrays.jl](https://github.com/FluxML/OneHotArrays.jl) instead of having the same code here.
 
 ## v0.13.4
 * Added [`PairwiseFusion` layer](https://github.com/FluxML/Flux.jl/pull/1983)
+* Re-name `ADAM` to `Adam`, etc (with deprecations).
 
-## v0.13
+## v0.13 (April 2022)
+
 * After a deprecations cycle, the datasets in `Flux.Data` have
-been removed in favour of MLDatasets.jl.
+  been removed in favour of [MLDatasets.jl](https://github.com/JuliaML/MLDatasets.jl).
 * `params` is not exported anymore since it is a common name and is also exported by Distributions.jl
-* `flatten` is not exported anymore due to clash with Iterators.flatten.
+* `flatten` is not exported anymore due to clash with `Iterators.flatten`.
 * Remove Juno.jl progress bar support as it is now obsolete.
 * `Dropout` gained improved compatibility with Int and Complex arrays and is now twice-differentiable.
 * Notation `Dense(2 => 3, σ)` for channels matches `Conv`; the equivalent `Dense(2, 3, σ)` still works.
@@ -40,7 +76,7 @@ been removed in favour of MLDatasets.jl.
 * Fixed [AlphaDropout](https://github.com/FluxML/Flux.jl/pull/1781)
 
 ## v0.12.8
-* Optimized inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1756)
+* Optimised inference and gradient calculation of OneHotMatrix[pr](https://github.com/FluxML/Flux.jl/pull/1756)
 
 ## v0.12.7
 * Added support for [`GRUv3`](https://github.com/FluxML/Flux.jl/pull/1675)
@@ -59,7 +95,7 @@ been removed in favour of MLDatasets.jl.
 * CUDA.jl 3.0 support
 * Bug fixes and optimizations.
 
-## v0.12.0
+## v0.12 (March 2021)
 
 * Add [identity_init](https://github.com/FluxML/Flux.jl/pull/1524).
 * Add [Orthogonal Matrix initialization](https://github.com/FluxML/Flux.jl/pull/1496) as described in [Exact solutions to the nonlinear dynamics of learning in deep linear neural networks](https://arxiv.org/abs/1312.6120).
@@ -84,7 +120,7 @@ been removed in favour of MLDatasets.jl.
 * Adds the [AdaBelief](https://arxiv.org/abs/2010.07468) optimiser.
 * Other new features and bug fixes (see GitHub releases page)
 
-## v0.11
+## v0.11 (July 2020)
 
 * Moved CUDA compatibility to use [CUDA.jl instead of CuArrays.jl](https://github.com/FluxML/Flux.jl/pull/1204)
 * Add [kaiming initialization](https://arxiv.org/abs/1502.01852) methods: [kaiming_uniform and kaiming_normal](https://github.com/FluxML/Flux.jl/pull/1243)
@@ -94,7 +130,7 @@ been removed in favour of MLDatasets.jl.
 * Change to `DataLoader`'s [constructor](https://github.com/FluxML/Flux.jl/pull/1152)
 * Uniform loss [interface](https://github.com/FluxML/Flux.jl/pull/1150)
 * Loss functions now live in the `Flux.Losses` [module](https://github.com/FluxML/Flux.jl/pull/1264)
-* Optimistic ADAM (OADAM) optimizer for [adversarial training](https://github.com/FluxML/Flux.jl/pull/1246).
+* Optimistic ADAM (OADAM) optimiser for [adversarial training](https://github.com/FluxML/Flux.jl/pull/1246).
 * Add option for [same padding](https://github.com/FluxML/Flux.jl/pull/901) to conv and pooling layers by setting `pad=SamePad()`.
 * Added option to set `bias` to [Flux.Zeros](https://github.com/FluxML/Flux.jl/pull/873) to eliminating `bias` from being trained.
 * Added `GlobalMaxPool` and `GlobalMeanPool` [layers](https://github.com/FluxML/Flux.jl/pull/950) for performing global pooling operations.
@@ -105,14 +141,14 @@ been removed in favour of MLDatasets.jl.
 * Functors have now moved to [Functors.jl](https://github.com/FluxML/Flux.jl/pull/1174) to allow for their use outside of Flux.
 * Added [helper functions](https://github.com/FluxML/Flux.jl/pull/873) `Flux.convfilter` and `Flux.depthwiseconvfilter` to construct weight arrays for convolutions outside of layer constructors so as to not have to depend on the default layers for custom implementations.
 * `dropout` function now has a mandatory [active](https://github.com/FluxML/Flux.jl/pull/1263)
-keyword argument. The `Dropout` struct *whose behavior is left unchanged) is the recommended choice for common usage.
+keyword argument. The `Dropout` struct (whose behavior is left unchanged) is the recommended choice for common usage.
 * and many more fixes and additions...
 
 ## v0.10.1 - v0.10.4
 
 See GitHub's releases.
 
-## v0.10.0
+## v0.10.0 (November 2019)
 
 * The default AD engine has switched from [Tracker to Zygote.jl](https://github.com/FluxML/Flux.jl/pull/669)
   - The dependency on Tracker.jl has been removed.

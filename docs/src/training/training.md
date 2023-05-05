@@ -43,7 +43,7 @@ end
 
 ## Model Gradients
 
-Fist recall from the section on [taking gradients](@ref man-taking-gradients) that 
+Fist recall from the section on [taking gradients](@ref man-training) that 
 `Flux.gradient(f, a, b)` always calls `f(a, b)`, and returns a tuple `(∂f_∂a, ∂f_∂b)`.
 In the code above, the function `f` passed to `gradient` is an anonymous function with
 one argument, created by the `do` block, hence  `grads` is a tuple with one element.

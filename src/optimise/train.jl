@@ -10,9 +10,9 @@ import Optimisers.update!
     update!(opt, ps::Params, gs)
 
 Perform an update step of the parameters `ps` (or the single parameter `p`)
-according to optimizer `opt::AbstractOptimiser`  and the gradients `gs` (the gradient `g`).
+according to optimiser `opt::AbstractOptimiser`  and the gradients `gs` (the gradient `g`).
 
-As a result, the parameters are mutated and the optimizer's internal state may change.
+As a result, the parameters are mutated and the optimiser's internal state may change.
 The gradient could be mutated as well.
 
 !!! compat "Deprecated"
@@ -108,7 +108,7 @@ Here `pars` is produced by calling [`Flux.params`](@ref) on your model.
 (Or just on the layers you want to train, like `train!(loss, params(model[1:end-2]), data, opt)`.)
 This is the "implicit" style of parameter handling.
 
-This gradient is then used by optimizer `opt` to update the parameters:
+This gradient is then used by optimiser `opt` to update the parameters:
 ```
     update!(opt, pars, grads)
 ```

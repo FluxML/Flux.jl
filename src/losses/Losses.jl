@@ -4,7 +4,7 @@ using Statistics
 using Zygote
 using Zygote: @adjoint
 using ChainRulesCore
-using ..Flux: ofeltype, epseltype
+using ..Flux: ofeltype, epseltype, _greek_ascii_depwarn
 using CUDA
 using Adapt
 using MLUtils: ones_like

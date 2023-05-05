@@ -31,19 +31,23 @@ y = [1  0  0  0  1
     y = rand(Float32, 16*ones(Int, N)..., 2, 2)
     
     @testset "$loss" for loss in (Flux.ssim, Flux.ssim_loss, Flux.ssim_loss_fast)
-      @testset "cpu-gpu" begin loss(x, y) ≈ loss(gpu(x), gpu(y)) end
+      @testset "cpu-gpu" begin 
+        @test loss(x, y) ≈ loss(gpu(x), gpu(y)) 
+      end
       @testset "autodiff" begin gpu_autodiff_test(loss, x, y) end
 
       # Float16 tests
       @testset "f16 cpu-gpu" begin 
-        @test isapprox(loss(f16(x), f16(y)), loss(gpu(f16(x)), gpu(f16(y))), rtol=0.1) broken=(N==3) 
+        # F16 cuda conv broken on 5D tensors: https://github.com/FluxML/NNlibCUDA.jl/issues/68
+        @test isapprox(loss(f16(x), f16(y)), loss(gpu(f16(x)), gpu(f16(y))), rtol=0.1) skip=(N==3) 
       end
       @testset "f16 cpu-cpu" begin 
-        isapprox(loss(f16(x), f16(y)), Float16(loss(x, y)); rtol=0.1)
+        @test isapprox(loss(f16(x), f16(y)), Float16(loss(x, y)); rtol=0.1)
       end 
       @testset "f16 grad" begin 
         g16 = gradient(loss, f16(x), f16(y))[1]
-        @test isapprox(g16, cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1]), rtol=0.1) broken=true 
+        # F16 cuda conv broken on 5D tensors: https://github.com/FluxML/NNlibCUDA.jl/issues/68
+        @test isapprox(g16, cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1]), rtol=0.1) skip=true
       end
     end
 

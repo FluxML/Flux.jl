@@ -1,8 +1,13 @@
 # Internal function, used only for layers defined in this file.
 _isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 
+# Internal function, used only in this file.
+_tidy_active(mode::Bool) = mode
+_tidy_active(::Nothing) = nothing
+_tidy_active(mode) = mode === :auto ? nothing : throw(ArgumentError("active = $(repr(mode)) is not accepted, must be true/false/nothing or :auto"))
+
 """
-    Dropout(p; [dims, rng])
+    Dropout(p; [dims, rng, active])
 
 Layer implementing [dropout](https://arxiv.org/abs/1207.0580) with the given probability.
 This is used as a regularisation, i.e. to reduce overfitting.
@@ -12,7 +17,8 @@ or else scales it by `1 / (1 - p)`, using the [`NNlib.dropout`](@ref) function.
 While testing, it has no effect.
 
 By default the mode will switch automatically, but it can also
-be controlled manually via [`Flux.testmode!`](@ref).
+be controlled manually via [`Flux.testmode!`](@ref),
+or by passing keyword `active=true` for training mode.
 
 By default every input is treated independently. With the `dims` keyword,
 instead it takes a random choice only along that dimension.
@@ -36,7 +42,11 @@ julia> m(ones(2, 7))  # test mode, no effect
  2.0  2.0  2.0  2.0  2.0  2.0  2.0
  2.0  2.0  2.0  2.0  2.0  2.0  2.0
 
-julia> Flux.trainmode!(m);  # equivalent to use within gradient
+julia> Flux.trainmode!(m)  # equivalent to use within gradient
+Chain(
+  Dense(2 => 3),                        # 9 parameters
+  Dropout(0.4, active=true),
+)
 
 julia> m(ones(2, 7))
 3×7 Matrix{Float64}:
@@ -63,9 +73,9 @@ mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
 end
 Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
 
-function Dropout(p::Real; dims=:, rng = default_rng_value())
+function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng_value())
   0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
-  Dropout(p, dims, nothing, rng)
+  Dropout(p, dims, active, rng)
 end
 
 @functor Dropout
@@ -74,16 +84,17 @@ trainable(a::Dropout) = (;)
 (a::Dropout)(x) = dropout(a.rng, x, a.p * _isactive(a, x); dims=a.dims)
 
 testmode!(m::Dropout, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+  (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
 
 function Base.show(io::IO, d::Dropout)
   print(io, "Dropout(", d.p)
-  d.dims != (:) && print(io, ", dims = $(repr(d.dims))")
+  d.dims != (:) && print(io, ", dims=", d.dims)
+  d.active == nothing || print(io, ", active=", d.active)
   print(io, ")")
 end
 
 """
-    AlphaDropout(p; rng = default_rng_value())
+    AlphaDropout(p; [rng, active])
 
 A dropout layer. Used in
 [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515).
@@ -112,13 +123,13 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
   p::F
   active::Union{Bool, Nothing}
   rng::R
-  function AlphaDropout(p, active, rng)
-    @assert 0 ≤ p ≤ 1
-    new{typeof(p), typeof(rng)}(p, active, rng)
-  end
 end
+
 AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
-AlphaDropout(p; rng = default_rng_value()) = AlphaDropout(p, nothing, rng)
+function AlphaDropout(p; rng = default_rng_value(), active::Union{Bool,Nothing} = nothing)
+  0 ≤ p ≤ 1 || throw(ArgumentError("AlphaDropout expects 0 ≤ p ≤ 1, got p = $p"))
+  AlphaDropout(p, active, rng)
+end
 
 @functor AlphaDropout
 trainable(a::AlphaDropout) = (;)
@@ -138,14 +149,15 @@ function (a::AlphaDropout)(x::AbstractArray{T}) where T
 end
 
 testmode!(m::AlphaDropout, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+  (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
 
 """
-    LayerNorm(size..., λ=identity; affine=true, ϵ=1fe-5)
+    LayerNorm(size..., λ=identity; affine=true, eps=1f-5)
 
 A [normalisation layer](https://arxiv.org/abs/1607.06450) designed to be
 used with recurrent hidden states.
 The argument `size` should be an integer or a tuple of integers.
+
 In the forward pass, the layer normalises the mean and standard
 deviation of the input, then applies the elementwise activation `λ`.
 The input is normalised along the first `length(size)` dimensions
@@ -179,9 +191,10 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, ϵ::Real=1f-5)
+function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5, ϵ=nothing)
+  ε = _greek_ascii_depwarn(ϵ => eps, :LayerNorm, "ϵ" => "eps")
   diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
-  return LayerNorm(λ, diag, ϵ, size, affine)
+  return LayerNorm(λ, diag, ε, size, affine)
 end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
@@ -195,7 +208,7 @@ function (a::LayerNorm)(x::AbstractArray)
     end
   end
   eps = convert(float(eltype(x)), a.ϵ)  # avoids promotion for Float16 data, but should ε chage too?
-  a.diag(normalise(x, dims=1:length(a.size), ϵ=eps))
+  a.diag(normalise(x; dims=1:length(a.size), eps))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -257,8 +270,8 @@ ChainRulesCore.@non_differentiable _track_stats!(::Any...)
 """
     BatchNorm(channels::Integer, λ=identity;
               initβ=zeros32, initγ=ones32,
-              affine = true, track_stats = true,
-              ϵ=1f-5, momentum= 0.1f0)
+              affine=true, track_stats=true, active=nothing,
+              eps=1f-5, momentum= 0.1f0)
 
 [Batch Normalization](https://arxiv.org/abs/1502.03167) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -310,8 +323,10 @@ end
 
 function BatchNorm(chs::Int, λ=identity;
           initβ=zeros32, initγ=ones32,
-          affine=true, track_stats=true,
-          ϵ=1f-5, momentum=0.1f0)
+          affine::Bool=true, track_stats::Bool=true, active::Union{Bool,Nothing}=nothing,
+          eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
+
+  ε = _greek_ascii_depwarn(ϵ => eps, :BatchNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -319,9 +334,9 @@ function BatchNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return BatchNorm(λ, β, γ,
-            μ, σ², ϵ, momentum,
+            μ, σ², ε, momentum,
             affine, track_stats,
-            nothing, chs)
+            active, chs)
 end
 
 @functor BatchNorm
@@ -335,12 +350,13 @@ function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
 end
 
 testmode!(m::BatchNorm, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+  (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::BatchNorm)
   print(io, "BatchNorm($(l.chs)")
   (l.λ == identity) || print(io, ", $(l.λ)")
   hasaffine(l) || print(io,  ", affine=false")
+  l.active == nothing || print(io, ", active=", l.active)
   print(io, ")")
 end
 
@@ -349,7 +365,7 @@ end
     InstanceNorm(channels::Integer, λ=identity;
                  initβ=zeros32, initγ=ones32,
                  affine=false, track_stats=false,
-                 ϵ=1f-5, momentum=0.1f0)
+                 eps=1f-5, momentum=0.1f0)
 
 [Instance Normalization](https://arxiv.org/abs/1607.08022) layer.
 `channels` should be the size of the channel dimension in your data (see below).
@@ -399,8 +415,10 @@ end
 
 function InstanceNorm(chs::Int, λ=identity;
                     initβ=zeros32, initγ=ones32,
-                    affine=false, track_stats=false,
-                    ϵ=1f-5, momentum=0.1f0)
+                    affine::Bool=false, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
+                    eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
+
+  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -408,9 +426,9 @@ function InstanceNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return InstanceNorm(λ, β, γ,
-            μ, σ², ϵ, momentum,
+            μ, σ², ε, momentum,
             affine, track_stats,
-            nothing, chs)
+            active, chs)
 end
 
 @functor InstanceNorm
@@ -424,12 +442,13 @@ function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
 end
 
 testmode!(m::InstanceNorm, mode=true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+  (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(l.chs)")
   l.λ == identity || print(io, ", $(l.λ)")
   hasaffine(l) || print(io,  ", affine=false")
+  l.active == nothing || print(io, ", active=", l.active)
   print(io, ")")
 end
 
@@ -437,7 +456,7 @@ end
     GroupNorm(channels::Integer, G::Integer, λ=identity;
               initβ=zeros32, initγ=ones32,
               affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0)
+              eps=1f-5, momentum=0.1f0)
 
 [Group Normalization](https://arxiv.org/abs/1803.08494) layer.
 
@@ -495,12 +514,13 @@ trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,
-              affine=true, track_stats=false,
-              ϵ=1f-5, momentum=0.1f0)
+              affine::Bool=true, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
+              eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
 
-if track_stats
+  if track_stats
   Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
-end
+  end
+  ε = _greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
@@ -512,9 +532,9 @@ end
   return GroupNorm(G, λ,
             β, γ,
             μ, σ²,
-            ϵ, momentum,
+            ε, momentum,
             affine, track_stats,
-            nothing, chs)
+            active, chs)
 end
 
 function (gn::GroupNorm)(x::AbstractArray)
@@ -529,13 +549,14 @@ function (gn::GroupNorm)(x::AbstractArray)
 end
 
 testmode!(m::GroupNorm, mode = true) =
-  (m.active = (isnothing(mode) || mode == :auto) ? nothing : !mode; m)
+  (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
 
 function Base.show(io::IO, l::GroupNorm)
   # print(io, "GroupNorm($(join(size(l.β), ", "))", ", ", l.G)
   print(io, "GroupNorm($(l.chs), $(l.G)")
   l.λ == identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io,  ", affine=false")
+  l.active == nothing || print(io, ", active=", l.active)
   print(io, ")")
 end
 

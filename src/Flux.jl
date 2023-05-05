@@ -1,6 +1,7 @@
 module Flux
 
 using Base: tail
+using Preferences
 using LinearAlgebra, Statistics, Random  # standard lib
 using MacroTools, Reexport, ProgressLogging, SpecialFunctions
 using MacroTools: @forward
@@ -11,7 +12,7 @@ import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owne
 using Optimisers: freeze!, thaw!, adjust!
 
 using Zygote, ChainRulesCore
-using Zygote: Params, @adjoint, gradient, pullback, @nograd
+using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
 export gradient
 
@@ -22,7 +23,9 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
-       Dropout, AlphaDropout, LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
+       Dropout, AlphaDropout,
+       LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
+       MultiHeadAttention,
        Upsample, PixelShuffle,
        fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
@@ -43,6 +46,7 @@ using .Train
 using .Train: setup
 
 using CUDA
+import cuDNN
 const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
 
 using Adapt, Functors, OneHotArrays
@@ -58,6 +62,7 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
+include("layers/attention.jl")
 include("layers/show.jl")
 
 include("loading.jl")
@@ -65,10 +70,10 @@ include("loading.jl")
 include("outputsize.jl")
 export @autosize
 
-include("losses/Losses.jl")
-using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
-
 include("deprecations.jl")
+
+include("losses/Losses.jl")
+using .Losses
 
 include("cuda/cuda.jl")
 

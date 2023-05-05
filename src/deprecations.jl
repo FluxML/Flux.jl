@@ -187,6 +187,33 @@ function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, 
     """)
 end
 
+""" 
+    trainmode!(m, active)
+
+!!! warning
+    This two-argument method is deprecated.
+
+Possible values of  `active` are:
+- `true` for training, or 
+- `false` for testing, same as [`testmode!`](@ref)`(m)`
+- `:auto` or `nothing` for Flux to detect training automatically.
+"""
+function trainmode!(m, active::Bool)
+  Base.depwarn("trainmode!(m, active::Bool) is deprecated", :trainmode)
+  testmode!(m, !active)
+end
+
+# Greek-letter keywords deprecated in Flux 0.13
+# Arguments (old => new, :function, "β" => "beta")
+function _greek_ascii_depwarn(βbeta::Pair, func = :loss, names = "" => "")
+  Base.depwarn("""function $func no longer accepts greek-letter keyword $(names.first)
+    please use ascii $(names.second) instead""", func)
+  βbeta.first
+end
+_greek_ascii_depwarn(βbeta::Pair{Nothing}, _...) = βbeta.second
+
+ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
+
 
 # v0.14 deprecations
 

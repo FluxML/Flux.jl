@@ -116,7 +116,7 @@ julia> predict.bias
 
 The dimensions of these model parameters depend on the number of inputs and outputs.
 
-Flux will adjust predictions by iteratively changing these parameters according to the optimizer.
+Flux will adjust predictions by iteratively changing these parameters according to the optimiser.
 
 This optimiser implements the classic gradient descent strategy. Now improve the parameters of the model with a call to [`Flux.train!`](@ref) like this:
 
@@ -135,7 +135,7 @@ It went down. Why?
 
 ```jldoctest overview; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> predict.weight, predict.bias
-(Float32[7.5777884], Float32[1.9466728])
+(Float32[7.246838;;], Float32[1.748103])
 ```
 
 The parameters have changed. This single step is the essence of machine learning.
@@ -153,7 +153,7 @@ julia> loss(predict, x_train, y_train)
 0.00339581f0
 
 julia> predict.weight, predict.bias
-(Float32[4.0178537], Float32[2.0050256])
+(Float32[4.0159144;;], Float32[2.004479])
 ```
 
 After 200 training steps, the loss went down, and the parameters are getting close to those in the function the model is built to predict.
@@ -178,7 +178,7 @@ First, we gathered real-world data into the variables `x_train`, `y_train`, `x_t
 
 Then, we built a single input, single output predictive model, `predict = Dense(1 => 1)`. The initial predictions weren't accurate, because we had not trained the model yet.
 
-After building the model, we trained it with `train!(loss, predict, data, opt)`. The loss function is first, followed by the model itself, the training data, and the `Descent` optimizer provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
+After building the model, we trained it with `train!(loss, predict, data, opt)`. The loss function is first, followed by the model itself, the training data, and the `Descent` optimiser provided by Flux. We ran the training step once, and observed that the parameters changed and the loss went down. Then, we ran the `train!` many times to finish the training process.
 
 After we trained the model, we verified it with the test data to verify the results. 
 

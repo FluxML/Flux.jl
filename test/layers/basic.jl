@@ -1,5 +1,5 @@
 using Test, Random
-import Flux: activations
+using Flux: activations
 
 @testset "basic" begin
   @testset "helpers" begin
@@ -16,11 +16,11 @@ import Flux: activations
   end
 
   @testset "Chain" begin
-    @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn(10))
-    @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn(10))
+    @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn32(10))
+    @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn32(10))
     # numeric test should be put into testset of corresponding layer
 
-    @test_nowarn Chain(first = Dense(10, 5, σ), second = Dense(5, 2))(randn(10))
+    @test_nowarn Chain(first = Dense(10, 5, σ), second = Dense(5, 2))(randn32(10))
     m = Chain(first = Dense(10, 5, σ), second = Dense(5, 2))
     @test m[:first] == m[1]
     @test m[1:2] == m
@@ -72,10 +72,10 @@ import Flux: activations
       @test_throws MethodError Dense(rand(5), rand(5), tanh)
     end
     @testset "dimensions" begin
-      @test  length(Dense(10, 5)(randn(10))) == 5
-      @test_throws DimensionMismatch Dense(10, 5)(randn(1))
-      @test_throws MethodError Dense(10, 5)(1) # avoid broadcasting
-      @test_throws MethodError Dense(10, 5).(randn(10)) # avoid broadcasting
+      @test  length(Dense(10 => 5)(randn32(10))) == 5
+      @test_throws DimensionMismatch Dense(10 => 5)(randn32(1))
+      @test_throws MethodError Dense(10 => 5)(1) # avoid broadcasting
+      @test_throws MethodError Dense(10 => 5).(randn32(10)) # avoid broadcasting
       @test size(Dense(10, 5)(randn(10))) == (5,)
       @test size(Dense(10, 5)(randn(10,2))) == (5,2)
       @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
@@ -333,10 +333,85 @@ import Flux: activations
     y = m(x)
     @test y isa Array{Float32, 3}
     @test size(y) == (embed_size, 3, 4)
-    x3 = onehotbatch(x, 1:1:vocab_size)
+    x3 = Flux.onehotbatch(x, 1:1:vocab_size)
     @test size(x3) == (vocab_size, 3, 4)
     y3 = m(x3)
     @test size(y3) == (embed_size, 3, 4)
+  end
+
+  @testset "EmbeddingBag" begin
+
+    # test _splitat
+    data = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    offsets_good = [1, 3, 6]
+    offsets_each = [1,2,3,4,5,6,7,8,9]
+    offsets_just_one = [1]
+    offsets_all_but_last = [1, 9]
+
+    @test Flux._splitat(data, offsets_good) == [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+    @test Flux._splitat(data, offsets_each) == [[1], [2], [3], [4], [5], [6], [7], [8], [9]]
+    @test Flux._splitat(data, offsets_just_one) == [[1,2,3,4,5,6,7,8,9]]
+    @test Flux._splitat(data, offsets_all_but_last) == [[1,2,3,4,5,6,7,8], [9]]
+
+    offsets_non_monotonic = [1, 2, 2, 5]
+    offsets_non_sorted = [1, 5, 2]
+    offsets_non_one = [2, 3, 5]
+    offsets_too_large = [1, 5, 11]
+
+    @test_throws ArgumentError  Flux._splitat(data, offsets_non_monotonic)
+    @test_throws ArgumentError  Flux._splitat(data, offsets_non_sorted)
+    @test_throws ArgumentError  Flux._splitat(data, offsets_non_one)
+    @test_throws ArgumentError  Flux._splitat(data, offsets_too_large)
+
+    @testset for reduction in [sum, Statistics.mean, maximum]
+      vocab_size, embed_size = 10, 4
+      emb_bag = Flux.EmbeddingBag(vocab_size => embed_size, reduction)
+      emb = Flux.Embedding(emb_bag.weight)
+      @test size(emb_bag.weight) == (embed_size, vocab_size)
+      @test_throws ErrorException emb_bag(2)
+
+      # single bag (input as a vector)
+      x = rand(1:vocab_size, 3)
+      y = emb_bag(x)
+      z = vec(reduction(emb(x), dims=2))
+      @test y isa Vector{Float32}
+      @test y ≈ z
+
+      # PyTorch style `input`/`offset` bagging
+      @test emb_bag([1,3,2,4,5,7], [1,3,5]) ≈ emb_bag([[1,3], [2,4], [5,7]])
+      @test emb_bag([1,3,2,4,5,7], [1,3,5]) ≈ emb_bag([1 2 5; 3 4 7])
+      @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [2, 4])
+      @test_throws ArgumentError emb_bag([1,2,3,4,5,6], [1, 12])
+
+      # docstring example
+      @test emb_bag([1,2,3,4,5,6,7,8,9,10], [1,5,6,8]) ≈ emb_bag([[1,2,3,4], [5], [6,7], [8,9,10]])
+
+      # multiple bags (input as a vector of vectors)
+      x = [rand(1:vocab_size, 3) for _ in 1:4]
+      y = emb_bag(x)
+      z = reduce(hcat, reduction.(emb.(x), dims=2))
+      @test y isa Matrix{Float32}
+      @test y ≈ z
+
+      # multiple bags (input as a matrix)
+      x = rand(1:vocab_size, (3, 5))
+      xvec = collect(eachcol(x))
+      y = emb_bag(x)
+      z = reduce(hcat, reduction.(emb.(xvec), dims=2))
+      @test y ≈ emb_bag(xvec)
+      @test y ≈ z
+
+      # a one-hot matrix is a bag, but a one-hot vector is not.
+      @test_throws ErrorException emb_bag(Flux.OneHotVector(3, vocab_size))
+
+      i2 = rand(1:vocab_size, 3)
+      x2 = Flux.OneHotMatrix(i2, vocab_size)
+      y2 = emb_bag(x2)
+      z2 = emb(i2)
+      @test y2 isa Vector{Float32}
+      @test y2 ≈ vec(reduction(z2, dims=2))
+      @test_throws DimensionMismatch emb_bag(Flux.OneHotMatrix(1:5, 1000))
+    end
   end
 end
 

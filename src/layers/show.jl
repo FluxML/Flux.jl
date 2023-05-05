@@ -45,8 +45,10 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
 end
 
 _show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
-_show_leaflike(::Tuple{Vararg{<:Number}}) = true         # e.g. stride of Conv
-_show_leaflike(::Tuple{Vararg{<:AbstractArray}}) = true  # e.g. parameters of LSTMcell
+
+# note the covariance of tuple, using <:T causes warning or error
+_show_leaflike(::Tuple{Vararg{Number}}) = true         # e.g. stride of Conv
+_show_leaflike(::Tuple{Vararg{AbstractArray}}) = true  # e.g. parameters of LSTMcell
 _show_leaflike(::Scale) = true                           # appears inside LayerNorm
 _show_leaflike(::AbstractArray{<:Number}) = true         # e.g. transposed arrays
 
@@ -57,7 +59,7 @@ _show_children(p::Parallel) = (p.connection, p.layers...)
 _show_children(f::PairwiseFusion) = (f.connection, f.layers...)
 
 for T in [
-    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding,
+    :Conv, :ConvTranspose, :CrossCor, :Dense, :Scale, :Bilinear, :Embedding, :EmbeddingBag,
     :BatchNorm, :LayerNorm, :InstanceNorm, :GroupNorm,
   ]
   @eval function Base.show(io::IO, m::MIME"text/plain", x::$T)
@@ -75,8 +77,9 @@ function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   print(io, " "^indent, str, indent==0 ? "" : ",")
   if !isempty(params(layer))
     print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
-    printstyled(io, "# ", underscorise(sum(length, params(layer))), " parameters"; color=:light_black)
-    nonparam = _childarray_sum(length, layer) - sum(length, params(layer))
+    printstyled(io, "# ", underscorise(sum(length, params(layer); init=0)), " parameters"; 
+color=:light_black)
+    nonparam = _childarray_sum(length, layer) - sum(length, params(layer), init=0)
     if nonparam > 0
       printstyled(io, ", plus ", underscorise(nonparam), indent==0 ? " non-trainable" : ""; color=:light_black)
     end
@@ -88,11 +91,11 @@ end
 function _big_finale(io::IO, m)
   ps = params(m)
   if length(ps) > 2
-    pars = underscorise(sum(length, ps))
+    pars = underscorise(sum(length, ps; init=0))
     bytes = Base.format_bytes(Base.summarysize(m))
     noncnt = _childarray_sum(_->1, m) - length(ps)
     if noncnt > 0
-      nonparam = underscorise(_childarray_sum(length, m) - sum(length, ps))
+      nonparam = underscorise(_childarray_sum(length, m) - sum(length, ps; init=0))
       printstyled(io, " "^08, "# Total: ", length(ps), " trainable arrays, "; color=:light_black)
       println(io, pars, " parameters,")
       printstyled(io, " "^10, "# plus ", noncnt, " non-trainable, ", nonparam, " parameters, summarysize "; color=:light_black)
@@ -105,7 +108,8 @@ function _big_finale(io::IO, m)
 end
 
 _childarray_sum(f, x::AbstractArray{<:Number}) = f(x)
-_childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x))
+_childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x), 
+init=0)
 
 # utility functions
 

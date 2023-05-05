@@ -76,13 +76,13 @@ This can be done as
 
 ```julia
 using Flux: loadmodel!
-using BSON: @load
+using BSON
 
 # some predefined model
 model = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
 
 # load one model into another
-model = loadmodel!(model, @load("mymodel.bson"))
+model = loadmodel!(model, BSON.load("mymodel.bson")[:model])
 ```
 
 This ensures that the model loaded from `"mymodel.bson"` matches the structure of `model`. [`Flux.loadmodel!`](@ref) is also convenient for copying parameters between models in memory.
@@ -129,10 +129,10 @@ revert to an older copy of the model if it starts to overfit.
 @save "model-$(now()).bson" model loss = testloss()
 ```
 
-Note that to resume a model's training, you might need to restore other stateful parts of your training loop. Possible examples are stateful optimizers (which usually utilize an `IdDict` to store their state), and the randomness used to partition the original data into the training and validation sets.
+Note that to resume a model's training, you might need to restore other stateful parts of your training loop. Possible examples are stateful optimisers (which usually utilize an `IdDict` to store their state), and the randomness used to partition the original data into the training and validation sets.
 
 You can store the optimiser state alongside the model, to resume training
-exactly where you left off. BSON is smart enough to [cache values](https://github.com/JuliaIO/BSON.jl/blob/v0.3.4/src/write.jl#L71) and insert links when saving, but only if it knows everything to be saved up front. Thus models and optimizers must be saved together to have the latter work after restoring.
+exactly where you left off. BSON is smart enough to [cache values](https://github.com/JuliaIO/BSON.jl/blob/v0.3.4/src/write.jl#L71) and insert links when saving, but only if it knows everything to be saved up front. Thus models and optimisers must be saved together to have the latter work after restoring.
 
 ```julia
 opt = Adam()

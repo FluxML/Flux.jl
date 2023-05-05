@@ -1,13 +1,10 @@
 using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
 
-
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Base, Plots, MLDatasets, Statistics, DataFrames],
-    doctest = false,
+    modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore],
     sitename = "Flux",
-    # strict = [:cross_references,],
     pages = [
         "Welcome" => "index.md",
         "Guide" => [
@@ -46,6 +43,7 @@ makedocs(
         # All the website tutorials can move here, perhaps much of the model zoo too?
         # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
+            "Logistic Regression" => "tutorials/logistic_regression.md",
             #=
             "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
             "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
@@ -63,7 +61,22 @@ makedocs(
         assets = ["assets/flux.css"],
         prettyurls = get(ENV, "CI", nothing) == "true"
     ),
+    doctest = false, 
+    # linkcheck = true,
+    checkdocs = :exports,
+    # strict = true,
+    # strict = [
+    #     :cross_references,
+    #     :missing_docs,
+    #     :doctest,
+    #     :linkcheck,
+    #     :parse_error,
+    #     :example_block,
+    #     :autodocs_block, :docs_block, :eval_block, :example_block, :footnote, :meta_block, :setup_block
+    # ],
 )
+
+doctest(Flux) # only test Flux modules
 
 deploydocs(
     repo = "github.com/FluxML/Flux.jl.git",

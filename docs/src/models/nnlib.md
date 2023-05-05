@@ -2,9 +2,20 @@
 
 Flux re-exports all of the functions exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package. This includes activation functions, described on [their own page](@ref man-activations). Many of the functions on this page exist primarily as the internal implementation of Flux layer, but can also be used independently.
 
+
+## Attention
+
+Primitives for the [`MultiHeadAttention`](ref) layer.
+
+```@docs
+NNlib.dot_product_attention
+NNlib.dot_product_attention_scores
+NNlib.make_causal_mask
+```
+
 ## Softmax
 
-`Flux`'s `logitcrossentropy` uses `NNlib.softmax` internally.
+`Flux`'s [`Flux.logitcrossentropy`](@ref) uses [`NNlib.logsoftmax`](@ref) internally.
 
 ```@docs
 softmax
@@ -13,26 +24,30 @@ logsoftmax
 
 ## Pooling
 
-`Flux`'s `AdaptiveMaxPool`, `AdaptiveMeanPool`, `GlobalMaxPool`, `GlobalMeanPool`, `MaxPool`, and `MeanPool` use `NNlib.PoolDims`, `NNlib.maxpool`, and `NNlib.meanpool` as their backend.
+`Flux`'s [`AdaptiveMaxPool`](@ref), [`AdaptiveMeanPool`](@ref), [`GlobalMaxPool`](@ref), [`GlobalMeanPool`](@ref), 
+[`MaxPool`](@ref), and [`MeanPool`](@ref) use [`NNlib.PoolDims`](@ref), [`NNlib.maxpool`](@ref), and [`NNlib.meanpool`](@ref) as their backend.
 
 ```@docs
-PoolDims
-maxpool
-meanpool
+NNlib.PoolDims
+NNlib.lpnormpool
+NNlib.maxpool
+NNlib.meanpool
 ```
 
 ## Padding
 
 ```@docs
-pad_reflect
-pad_constant
-pad_repeat
-pad_zeros
+NNlib.pad_circular
+NNlib.pad_constant
+NNlib.pad_reflect
+NNlib.pad_repeat
+NNlib.pad_symmetric
+NNlib.pad_zeros
 ```
 
 ## Convolution
 
-`Flux`'s `Conv` and `CrossCor` layers use `NNlib.DenseConvDims` and `NNlib.conv` internally. 
+`Flux`'s [`Conv`](@ref) and [`CrossCor`](@ref) layers use [`NNlib.DenseConvDims`](@ref) and [`NNlib.conv`](@ref) internally. 
 
 ```@docs
 conv
@@ -42,13 +57,19 @@ DepthwiseConvDims
 DenseConvDims
 ```
 
+## Dropout
+
+```@docs
+NNlib.dropout
+NNlib.dropout!
+```
+
 ## Upsampling
 
-`Flux`'s `Upsample` layer uses `NNlib.upsample_nearest`, `NNlib.upsample_bilinear`, and `NNlib.upsample_trilinear` as its backend. Additionally, `Flux`'s `PixelShuffle` layer uses `NNlib.pixel_shuffle` as its backend.
+`Flux`'s [`Upsample`](@ref) layer uses [`NNlib.upsample_nearest`](@ref), [`NNlib.upsample_bilinear`](@ref), and [`NNlib.upsample_trilinear`](@ref) as its backend. Additionally, `Flux`'s [`PixelShuffle`](@ref) layer uses [`NNlib.pixel_shuffle`](@ref) as its backend.
 
 ```@docs
 upsample_nearest
-∇upsample_nearest
 upsample_linear
 ∇upsample_linear
 upsample_bilinear
@@ -60,7 +81,7 @@ pixel_shuffle
 
 ## Batched Operations
 
-`Flux`'s `Bilinear` layer uses `NNlib.batched_mul` internally.
+`Flux`'s [`Flux.Bilinear`](@ref) layer uses [`NNlib.batched_mul`](@ref) internally.
 
 ```@docs
 batched_mul
@@ -72,7 +93,7 @@ batched_vec
 
 ## Gather and Scatter
 
-`Flux`'s `Embedding` layer uses `NNlib.gather` as its backend.
+`Flux`'s [`Embedding`](@ref) layer uses [`NNlib.gather`](@ref) as its backend.
 
 ```@docs
 NNlib.gather

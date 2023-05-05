@@ -5,36 +5,75 @@ import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
 
 """
-    testmode!(m, mode = true)
+    testmode!(model, [mode]) -> model
 
-Set a layer or model's test mode (see below).
-Using `:auto` mode will treat any gradient computation as training.
+Set a layer, or all layers in a model, to test mode.
+This disables the effect of [`Dropout`](@ref) and
+some other regularisation layers.
 
-_Note_: if you manually set a model into test mode, you need to manually place
-it back into train mode during training phase.
+If you manually set a model into test mode, you need to manually place
+it back into train mode during training phase, using [`trainmode!`](@ref).
 
-Possible values include:
-- `false` for training
-- `true` for testing
-- `:auto` or `nothing` for Flux to detect the mode automatically
+There is an optional second argument, which takes a symbol `:auto` to
+reset all layers back to the default automatic mode.
+
+# Example
+
+```jldoctest
+julia> d = Dropout(0.3)
+Dropout(0.3)
+
+julia> testmode!(d)   # dropout is now always disabled
+Dropout(0.3, active=false)
+
+julia> trainmode!(d)  # dropout is now always enabled
+Dropout(0.3, active=true)
+
+julia> testmode!(d, :auto)  # back to default
+Dropout(0.3)
+```
 """
-testmode!(m, mode = true) = (foreach(x -> testmode!(x, mode), trainable(m)); m)
+testmode!(m) = testmode!(m, true)
 
 """
-    trainmode!(m, mode = true)
+    trainmode!(model) -> model
 
-Set a layer of model's train mode (see below).
-Symmetric to [`testmode!`](@ref) (i.e. `trainmode!(m, mode) == testmode!(m, !mode)`).
-
-_Note_: if you manually set a model into train mode, you need to manually place
-it into test mode during testing phase.
-
-Possible values include:
-- `true` for training
-- `false` for testing
-- `:auto` or `nothing` for Flux to detect the mode automatically
+Set a layer, or all layers in a model, to training mode.
+Opposite to [`testmode!`](@ref), see further details there.
 """
-trainmode!(m, mode = true) = mode isa Bool ? testmode!(m, !mode) : testmode!(m, mode)
+trainmode!(m) = testmode!(m, false)
+trainmode!(m, mode::Symbol) = testmode!(m, mode)
+trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
+
+"""
+    testmode!(model, inactive)
+
+This two-argument method is largely internal. It recurses into the `model`,
+and until a method like `testmode!(d::Dropout, inactive)` alters the activity of a layer.
+Custom layers can support manual `testmode!` / `trainmode!` switching
+by defining such a method.
+
+Possible values of  `inactive` are:
+- `true` for testing, i.e. `active=false`
+- `false` for training, same as [`trainmode!`](@ref)`(m)`
+- `:auto` or `nothing` for Flux to detect training automatically.
+
+!!! compat
+    This method may be removed in a future breaking change, to separate
+    the user-facing `testmode!` from the internal recursion.
+"""
+function testmode!(m, mode)
+  inactive = if mode isa Symbol
+    mode === :auto || throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
+    nothing
+  elseif mode isa Union{Bool,Nothing}
+    mode
+  else
+    throw(ArgumentError("testmode! does not accept $(repr(mode)) as the 2nd argument"))
+  end
+  foreach(x -> testmode!(x, inactive), trainable(m))
+  m
+end
 
 function params!(p::Params, x, seen = IdSet())
   if x isa AbstractArray{<:Number} && Functors.isleaf(x)
@@ -55,7 +94,7 @@ end
 
 Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
 
-This can be used with the `gradient` function, see [Taking Gradients](@ref), or as input to the [`Flux.train!`](@ref Flux.train!) function.
+This can be used with the `gradient` function, see the [training section of the manual](@ref man-training), or as input to the [`Flux.train!`](@ref Flux.train!) function.
 
 The behaviour of `params` on custom types can be customized using [`Functors.@functor`](@ref) or [`Flux.trainable`](@ref).
 
@@ -91,7 +130,7 @@ end
 # Allows caching of the parameters when params is called within gradient() to fix #2040.
 # @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
 # That speeds up implicit use, and silently breaks explicit use. 
-# From @macroexpand Zygote.@nograd params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
+# From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
 Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
 struct FluxCUDAAdaptor end
@@ -177,14 +216,38 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
-"""
-    gpu(x)
+const GPU_BACKENDS = ("CUDA", "AMD")
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
-Copies `m` to the current GPU device, if one is available.
+function gpu_backend!(backend::String)
+    if backend == GPU_BACKEND
+        @info """
+        GPU backend is already set to: $backend.
+        No need to do anything else.
+        """
+        return
+    end
+
+    backend in GPU_BACKENDS || throw(ArgumentError("""
+    Unsupported GPU backend: $backend.
+    Supported backends are: $GPU_BACKENDS.
+    """))
+
+    @set_preferences!("gpu_backend" => backend)
+    @info """
+    New GPU backend set: $backend.
+    Restart your Julia session for this change to take effect!
+    """
+end
+
+"""
+    gpu(m)
+
+Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
 
 On arrays, this calls CUDA's `cu`, which also changes arrays
-with Float64 elements to Float32 while copying them to the device.
+with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
 To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
 
 Use [`cpu`](@ref) to copy back to ordinary `Array`s.
@@ -209,6 +272,19 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 function gpu(x)
+    @static if GPU_BACKEND == "CUDA"
+        gpu(FluxCUDAAdaptor(), x)
+    elseif GPU_BACKEND == "AMD"
+        gpu(FluxAMDAdaptor(), x)
+    else
+        error("""
+        Unsupported GPU backend: $GPU_BACKEND.
+        Supported backends are: $GPU_BACKENDS.
+        """)
+    end
+end
+
+function gpu(::FluxCUDAAdaptor, x)
   check_use_cuda()
   use_cuda[] ? fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude = _isleaf) : x
 end
@@ -216,28 +292,41 @@ end
 function check_use_cuda()
   if use_cuda[] === nothing
     use_cuda[] = CUDA.functional()
+    if use_cuda[] && !cuDNN.has_cudnn()
+      @warn "CUDA.jl found cuda, but did not find libcudnn. Some functionality will not be available."  maxlog=1
+    end
     if !(use_cuda[])
       @info """The GPU function is being called but the GPU is not accessible. 
                Defaulting back to the CPU. (No action is required if you want to run on the CPU).""" maxlog=1
     end
   end
 end
+
 ChainRulesCore.@non_differentiable check_use_cuda()
 
 # Precision
 
 struct FluxEltypeAdaptor{T} end
 
-Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Number}) where T = convert(AbstractArray{T}, x)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{T}, x)
+Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{Complex{T}}, x)
 
 _paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
-_paramtype(::Type{T}, x::AbstractArray{<:Real}) where {T} = convert(AbstractArray{T}, x)
+
+# fastpath for arrays
+_paramtype(::Type{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{T}, x)
+_paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
+  convert(AbstractArray{Complex{T}}, x)
 
 """
     f32(m)
 
-Converts the `eltype` of model's parameters to `Float32` (which is Flux's default).
+Converts the `eltype` of model's *floating point* parameters to `Float32` (which is Flux's default).
 Recurses into structs marked with [`@functor`](@ref).
+
 See also [`f64`](@ref) and [`f16`](@ref).
 """
 f32(m) = _paramtype(Float32, m)
@@ -245,19 +334,23 @@ f32(m) = _paramtype(Float32, m)
 """
     f64(m)
 
-Converts the `eltype` of model's parameters to `Float64`.
+Converts the `eltype` of model's *floating point* parameters to `Float64`.
 Recurses into structs marked with [`@functor`](@ref).
+
+See also [`f32`](@ref) and [`f16`](@ref).
 """
 f64(m) = _paramtype(Float64, m)
 
 """
     f16(m)
 
-Converts the `eltype` of model's parameters to `Float16`.
+Converts the `eltype` of model's *floating point* parameters to `Float16`.
 Recurses into structs marked with [`@functor`](@ref).
 
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
+
+See also [`f32`](@ref) and [`f64`](@ref).
 
 # Example
 ```jldoctest
@@ -280,3 +373,77 @@ f16(m) = _paramtype(Float16, m)
 @functor Cholesky
 trainable(c::Cholesky) = ()
 
+# AMDGPU extension.
+
+struct FluxAMDAdaptor end
+
+const AMDGPU_LOADED = Ref{Bool}(false)
+
+function gpu(::FluxAMDAdaptor, x)
+    if AMDGPU_LOADED[]
+        return _amd(x)
+    else
+        @info """
+        The AMDGPU functionality is being called via `Flux.amd` but
+        `AMDGPU` must be loaded to access it.
+        """ maxlog=1
+    end
+end
+
+function _amd end
+
+
+"""
+    gpu(data::DataLoader)
+
+Transforms a given `DataLoader` to apply `gpu` to each batch of data,
+when iterated over. (If no GPU is available, this does nothing.)
+
+# Example
+
+```julia-repl
+julia> dl = Flux.DataLoader((x = ones(2,10), y='a':'j'), batchsize=3)
+4-element DataLoader(::NamedTuple{(:x, :y), Tuple{Matrix{Float64}, StepRange{Char, Int64}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 Matrix{Float64}, y = 3-element StepRange{Char, Int64})
+
+julia> first(dl)
+(x = [1.0 1.0 1.0; 1.0 1.0 1.0], y = 'a':1:'c')
+
+julia> c_dl = gpu(dl)
+4-element DataLoader(::MLUtils.MappedData{:auto, typeof(gpu), NamedTuple{(:x, :y), Tuple{Matrix{Float64}, StepRange{Char, Int64}}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}, y = 3-element StepRange{Char, Int64})
+
+julia> first(c_dl).x
+2×3 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 1.0  1.0  1.0
+ 1.0  1.0  1.0
+```
+
+For large datasets, this is preferred over moving all the data to
+the GPU before creating the `DataLoader`, like this:
+
+```julia-repl
+julia> Flux.DataLoader((x = ones(2,10), y=2:11) |> gpu, batchsize=3)
+4-element DataLoader(::NamedTuple{(:x, :y), Tuple{CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}, UnitRange{Int64}}}, batchsize=3)
+  with first element:
+  (; x = 2×3 CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}, y = 3-element UnitRange{Int64})
+```
+
+!!! warning
+    This only works if `gpu` is applied directly to the `DataLoader`.
+    While `gpu` acts recursively on Flux models and many basic Julia structs,
+    it will not work on (say) a tuple of `DataLoader`s.
+"""
+function gpu(d::MLUtils.DataLoader)
+  MLUtils.DataLoader(MLUtils.mapobs(gpu, d.data),
+    d.batchsize,
+    d.buffer,
+    d.partial,
+    d.shuffle,
+    d.parallel,
+    d.collate,
+    d.rng,
+  )
+end

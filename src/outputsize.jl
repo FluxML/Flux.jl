@@ -17,6 +17,8 @@ const nil = Nil()
 Nil(::T) where T<:Number = nil
 (::Type{T})(::Nil) where T<:Number = nil
 Base.convert(::Type{Nil}, ::Number) = nil
+Base.convert(::Type{T}, ::Nil) where {T<:Number} = zero(T)
+Base.convert(::Type{Nil}, ::Nil) = nil
 
 Base.float(::Type{Nil}) = Nil
 
@@ -156,17 +158,6 @@ for (fn, Dims) in ((:conv, DenseConvDims),)
     end
   end
 end
-
-# Recurrent layers: just convert to the type they like & convert back.
-
-for Cell in [:RNNCell, :LSTMCell, :GRUCell, :GRUv3Cell]
-  @eval function (m::Recur{<:$Cell})(x::AbstractArray{Nil})
-    xT = fill!(similar(m.cell.Wi, size(x)), 0)
-    _, y = m.cell(m.state, xT)  # discard the new state
-    return similar(x, size(y))
-  end
-end
-
 
 """
     @autosize (size...,) Chain(Layer(_ => 2), Layer(_), ...)
