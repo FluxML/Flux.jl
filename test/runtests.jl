@@ -17,6 +17,10 @@ Random.seed!(0)
     include("utils.jl")
   end
 
+  @testset "Loading" begin
+    include("loading.jl")
+  end
+
   @testset "Optimise / Train" begin
     include("optimise.jl")
     include("train.jl")

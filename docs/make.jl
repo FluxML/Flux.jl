@@ -1,4 +1,6 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, DataFrames
+using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
+      OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
+      DataFrames, JLD2
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 

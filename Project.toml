@@ -24,6 +24,12 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
+[weakdeps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+
+[extensions]
+AMDGPUExt = "AMDGPU"
+
 [compat]
 AMDGPU = "0.4.13"
 Adapt = "3.0"
@@ -44,9 +50,6 @@ Zygote = "0.6.49"
 cuDNN = "1"
 julia = "1.6"
 
-[extensions]
-AMDGPUExt = "AMDGPU"
-
 [extras]
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -59,6 +62,3 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays", "BSON"]
-
-[weakdeps]
-AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
