@@ -199,17 +199,21 @@ end
   @test s.layers isa Tuple
   @test length(s.layers) == 2
   @test s.layers[1].weight === m1[1].weight
-  @test !hasfield(typeof(s.layers[1]), :σ)
+  @test s.layers[1].σ === ()
   @test s.layers[2].layers[1].weight === m1[2].layers[1].weight
 
   Flux.loadmodel!(m2, s)
   @test m2[1].weight == m1[1].weight
   @test all(m2[2].layers[1].bias .== m1[2].layers[1].bias)
 
-  @testset "non-state elements are dropped or replaced with empty tuple" begin
+  @testset "non-state elements are replaced with empty tuple" begin
     @test Flux.state((1, tanh)) == (1, ())
-    @test Flux.state((a=1, b=tanh)) == (; a=1)
-    @test Flux.state(Dict(:a=>1, :b=>tanh)) == Dict(:a=>1)
+    @test Flux.state((a=1, b=tanh)) == (; a=1, b=())
+    @test Flux.state(Dict(:a=>1, :b=>tanh)) == Dict(:a=>1, :b=>())
+    X, Y = Flux.ones32(3, 2), Flux.zeros32(2, 2)
+    tree = Dict(:a=>1, :b=>(; c=X, d=(Y, 1, (tanh,)), e=sin))
+    state_tree = Dict(:a=>1, :b=>(; c=X, d=(Y, 1, ((),)), e=()))
+    @test Flux.state(tree) == state_tree
   end
 
   @testset "track active state and batch norm params" begin
@@ -218,13 +222,13 @@ end
     s = Flux.state(m3)
     @test s.layers[2].active == true
     @test s.layers[2].p == 0.2
-    @test !hasfield(typeof(s.layers[4]), :λ)
+    @test s.layers[4].λ === ()
     for k in (:β, :γ, :μ, :σ², :ϵ, :momentum, :affine, :track_stats, :active, :chs)
       @test s.layers[4][k] === getfield(m3[4], k)
     end
   end
 
-  @testset "saved types" begin
+  @testset "preservation of saved types" begin
     m = (num = 1, cnum = Complex(1.2, 2), str = "hello", arr = [1, 2, 3], 
         bool = true, dict = Dict(:a => 1, :b => 2), tup = (1, 2, 3), 
         sym = :a, nth = nothing)

@@ -132,7 +132,7 @@ The state can be passed to [`loadmodel!`](@ref) to restore the model.
 julia> m1 = Chain(Dense(1, 2, tanh; init=ones), Dense(2, 1; init=ones));
 
 julia> s = Flux.state(m1)
-(layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0]), (weight = [1.0 1.0], bias = [0.0])),)
+(layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0], σ = ()), (weight = [1.0 1.0], bias = [0.0], σ = ())),)
 
 julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1; bias=false));  # weights are random numbers
 
@@ -144,10 +144,10 @@ julia> m2[1].weight   # now the weights of m2 are the same as m1
  1.0
 
 julia> Flux.state(trainmode!(Dropout(0.2)))  # contains p & activity, but not RNG state
-(p = 0.2, active = true)
+(p = 0.2, dims = (), active = true, rng = ())
 
 julia> Flux.state(BatchNorm(1))  # contains non-trainable arrays μ, σ²
-(β = Float32[0.0], γ = Float32[1.0], μ = Float32[0.0], σ² = Float32[1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, track_stats = true, active = nothing, chs = 1)
+(λ = (), β = Float32[0.0], γ = Float32[1.0], μ = Float32[0.0], σ² = Float32[1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, track_stats = true, active = nothing, chs = 1)
 ```
 
 ## Save and load with BSON
@@ -170,22 +170,9 @@ julia> JLD2.jldsave("checkpoint.jld2", model_state = s)
 julia> Flux.loadmodel!(m2, JLD2.load("checkpoint.jld2", "model_state"))
 ```
 """
-state(x) = Functors.fmapstructure(_state, x) |> prune_missing
+state(x) = Functors.fmapstructure(_state, x)
 
 const STATE_TYPES = Union{AbstractArray, Number, Nothing, AbstractString, Symbol}
 
 _state(x::STATE_TYPES) = x
-_state(x) = missing
-
-prune_missing(x) = x
-
-prune_missing(nt::NamedTuple) =
-  (; (k => prune_missing(v) for (k,v) in pairs(nt) if !ismissing(v))...)
-
-prune_missing(d::Dict) =
-  Dict(k => prune_missing(v) for (k,v) in pairs(d) if !ismissing(v))
-
-# we replace missings with () in tuples instead 
-# of dropping them to avoid ambiguities
-prune_missing(t::Tuple) = ((ismissing(x) ? () : prune_missing(x) for x in t)...,) 
-
+_state(x) = ()
