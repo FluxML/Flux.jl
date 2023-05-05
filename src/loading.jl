@@ -92,9 +92,9 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
   lsrcs = _filter_children(filter, Functors.children(src))
   keys_ldsts = keys(ldsts)
   keys_lsrcs = keys(lsrcs)
+  collect(keys_ldsts) == collect(keys_lsrcs) || throw(ArgumentError("Tried to load $(keys_lsrcs) into $(keys_ldsts) but the structures do not match."))
   
   for k in keys_lsrcs
-    k ∈ keys_ldsts || throw(ArgumentError("Tried to load $(keys_lsrcs) into $(keys_ldsts) but the structures do not match."))
     lsrc, ldst = lsrcs[k], ldsts[k]
     if ldst in cache # we already loaded this parameter before
       _tie_check(ldst, lsrc)
