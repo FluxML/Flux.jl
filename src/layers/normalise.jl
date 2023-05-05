@@ -238,12 +238,14 @@ function _norm_layer_forward(
   end
 
   eps = convert(float(T), l.ϵ)
-  o = _norm_layer_forward(x, μ, σ², eps)
-  hasaffine(l) || return l.λ.(o)
+  hasaffine(l) || return l.λ.(_norm_layer_forward(x, μ, σ², eps))
 
   γ = reshape(l.γ, affine_shape)
   β = reshape(l.β, affine_shape)
-  return l.λ.(γ .* o .+ β)
+
+  scale = γ ./ sqrt.(σ² .+ eps)
+  bias = -scale .* μ .+ β
+  l.λ.(scale .* x .+ bias)
 end
 
 @inline _norm_layer_forward(x, μ, σ², ϵ) = (x .- μ) ./ sqrt.(σ² .+ ϵ)
