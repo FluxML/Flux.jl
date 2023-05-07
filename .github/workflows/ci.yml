@@ -13,7 +13,6 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.allow_failure }}
     strategy:
       fail-fast: false
       matrix:
@@ -22,20 +21,13 @@ jobs:
           - '1'
         os: [ubuntu-latest]
         arch: [x64]
-        allow_failure: [false]
         include:
-          - os: ubuntu-latest
-            version: 'nightly'
-            arch: x64
-            allow_failure: true
           - os: windows-latest
             version: '1'
             arch: x64
-            allow_failure: false
           - os: macOS-latest
             version: '1'
             arch: x64
-            allow_failure: false
     steps:
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
