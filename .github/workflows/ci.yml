@@ -19,11 +19,8 @@ jobs:
         version:
           - '1.6' # Replace this with the minimum Julia version that your package supports.
           - '1'
-          - 'nightly'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+        os: [ubuntu-latest]
+        arch: [x64]
         include:
           - os: windows-latest
             version: '1'
