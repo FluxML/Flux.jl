@@ -5,19 +5,6 @@ using Statistics: mean
 using Flux.Losses: mse, label_smoothing, crossentropy, logitcrossentropy, binarycrossentropy, logitbinarycrossentropy
 using Flux.Losses: xlogx, xlogy
 
-# group here all losses, used in tests
-const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
-                    Flux.Losses.crossentropy, Flux.Losses.logitcrossentropy,
-                    Flux.Losses.binarycrossentropy, Flux.Losses.logitbinarycrossentropy,
-                    Flux.Losses.kldivergence,
-                    Flux.Losses.huber_loss,
-                    Flux.Losses.tversky_loss,
-                    Flux.Losses.dice_coeff_loss,
-                    Flux.Losses.poisson_loss,
-                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss]
-
-
 @testset "xlogx & xlogy" begin
   @test iszero(xlogx(0))
   @test isnan(xlogx(NaN))

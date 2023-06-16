@@ -42,7 +42,7 @@ _conv_basetype(::ConvTranspose) = ConvTranspose
 
 Flux._isleaf(::AMD_CONV) = true
 
-_exclude(x) = _isleaf(x)
+_exclude(x) = Flux._isleaf(x)
 _exclude(::CPU_CONV) = true
 
 function _amd(x)

@@ -61,7 +61,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; te
             if isnothing(gs_cpu[p_cpu])
               @test isnothing(gs_gpu[p_gpu])
             else
-              @test gs_gpu[p_gpu] isa Flux.CUDA.CuArray
+              @test gs_gpu[p_gpu] isa CuArray
               if test_cpu
                 @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
               end
@@ -259,7 +259,7 @@ end
     input = randn(10, 10, 10, 10) |> gpu
     layer_gpu = Parallel(+, zero, identity) |> gpu
     @test layer_gpu(input) == input
-    @test layer_gpu(input) isa Flux.CUDA.CuArray
+    @test layer_gpu(input) isa CuArray
   end
 
   @testset "vararg input" begin

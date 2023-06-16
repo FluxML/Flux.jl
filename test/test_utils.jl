@@ -1,3 +1,17 @@
+# group here all losses, used in tests
+const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
+                    Flux.Losses.crossentropy, Flux.Losses.logitcrossentropy,
+                    Flux.Losses.binarycrossentropy, Flux.Losses.logitbinarycrossentropy,
+                    Flux.Losses.kldivergence,
+                    Flux.Losses.huber_loss,
+                    Flux.Losses.tversky_loss,
+                    Flux.Losses.dice_coeff_loss,
+                    Flux.Losses.poisson_loss,
+                    Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss]
+
+
+
 function check_grad(g_gpu, g_cpu;
             rtol=1e-4, atol=1e-4,
             allow_nothing::Bool=false)
@@ -16,9 +30,6 @@ check_grad(g_gpu::Nothing, g_cpu::Nothing; rtol=1e-4, atol=1e-4, allow_nothing::
 check_grad(g_gpu::Float32, g_cpu::Float32; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
     @test g_cpu ≈ g_gpu rtol=rtol atol=atol
 
-check_grad(g_gpu::CuArray{Float32}, g_cpu::Array{Float32}; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
-    @test g_cpu ≈ collect(g_gpu) rtol=rtol atol=atol
-
 function check_grad(g_gpu::Tuple, g_cpu::Tuple; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false)
     for (v1, v2) in zip(g_gpu, g_cpu)
         check_grad(v1, v2; rtol, atol, allow_nothing)
@@ -34,7 +45,6 @@ end
 
 check_type(x) = false
 check_type(x::Float32) = true
-check_type(x::CuArray{Float32}) = true
 check_type(x::Array{Float32}) = true
 
 function gpu_autodiff_test(

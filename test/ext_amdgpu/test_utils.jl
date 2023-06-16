@@ -13,7 +13,3 @@ function check_grad(
 end
 
 check_type(x::ROCArray{Float32}) = true
-
-@testset "Basic" begin
-    include("basic.jl")
-end

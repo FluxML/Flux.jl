@@ -1,5 +1,4 @@
 using Flux, Test
-using Flux.CUDA
 using Flux: cpu, gpu
 using Statistics: mean
 using LinearAlgebra: I, cholesky, Cholesky

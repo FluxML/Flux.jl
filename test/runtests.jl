@@ -5,7 +5,9 @@ using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
-using CUDA
+
+# ENV["FLUX_TEST_AMDGPU"] = "true"
+ENV["FLUX_TEST_CUDA"] = "true"
 
 
 # ENV["FLUX_TEST_METAL"] = "true"
@@ -43,7 +45,6 @@ Random.seed!(0)
   @testset "Losses" begin
     include("losses.jl")
     include("ctc.jl")
-    CUDA.functional() && include("ctc-gpu.jl")
   end
 
   @testset "Layers" begin
@@ -62,15 +63,8 @@ Random.seed!(0)
     include("outputsize.jl")
   end
 
-  @testset "CUDA" begin
-    if CUDA.functional()
-      include("cuda/runtests.jl")
-    else
-      @warn "CUDA unavailable, not testing GPU support"
-    end
-  end
 
-  @static if VERSION == v"1.6"
+  @static if VERSION == v"1.9"
     using Documenter
     @testset "Docs" begin
       DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
@@ -78,14 +72,28 @@ Random.seed!(0)
     end
   end
 
+  if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
+    using CUDA
+    # Flux.gpu_backend!("CUDA")
+    @testset "CUDA" begin
+      if CUDA.functional()
+        @info "Testing CUDA Support"
+        include("ext_cuda/runtests.jl")
+      else
+        @warn "CUDA.jl package is not functional. Skipping CUDA tests."
+      end
+    end
+  else
+    @info "Skipping CUDA tests, set FLUX_TEST_CUDA=true to run them."
+  end
+
   if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
     using AMDGPU
     Flux.gpu_backend!("AMD")
-    AMDGPU.allowscalar(false)
 
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
-        include("amd/runtests.jl")
+        include("ext_amdgpu/runtests.jl")
       end
     else
       @info "AMDGPU.jl package is not functional. Skipping AMDGPU tests."

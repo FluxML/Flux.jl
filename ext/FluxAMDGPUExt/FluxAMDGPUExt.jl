@@ -1,9 +1,9 @@
-module AMDGPUExt
+module FluxAMDGPUExt
 
 import ChainRulesCore
 import ChainRulesCore: NoTangent
 import Flux
-import Flux: FluxCPUAdaptor, FluxAMDAdaptor, _amd, _isleaf, adapt_storage, fmap
+import Flux: FluxCPUAdaptor, FluxAMDAdaptor, _amd, adapt_storage, fmap
 import Flux: DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
 import NNlib
 
@@ -13,10 +13,14 @@ using Random
 using Zygote
 
 const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
+
+# Set to boolean on the first call to check_use_amdgpu
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
 function check_use_amdgpu()
-    isnothing(USE_AMDGPU[]) || return
+    if !isnothing(USE_AMDGPU[])
+        return
+    end
 
     USE_AMDGPU[] = AMDGPU.functional()
     if USE_AMDGPU[]
@@ -25,12 +29,13 @@ function check_use_amdgpu()
         end
     else
         @info """
-        The AMDGPU function is being called but the AMDGPU is not functional.
+        The AMDGPU function is being called but AMDGPU.jl is not functional.
         Defaulting back to the CPU. (No action is required if you want to run on the CPU).
         """ maxlog=1
     end
     return
 end
+
 ChainRulesCore.@non_differentiable check_use_amdgpu()
 
 include("functor.jl")
