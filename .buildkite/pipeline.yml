@@ -52,6 +52,8 @@ steps:
           Pkg.resolve()'
     if: build.message !~ /\[skip tests\]/
     timeout_in_minutes: 60
+    env:
+      FLUX_TEST_METAL: 'true'
     matrix:
       setup:
         julia:

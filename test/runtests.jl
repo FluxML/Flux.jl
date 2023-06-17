@@ -7,6 +7,9 @@ using IterTools: ncycle
 using Zygote
 using CUDA
 
+
+# ENV["FLUX_TEST_METAL"] = "true"
+
 include("test_utils.jl")
 
 Random.seed!(0)
@@ -82,5 +85,20 @@ Random.seed!(0)
     end
   else
     @info "Skipping AMDGPU tests, set FLUX_TEST_AMDGPU=true to run them."
+  end
+
+  if get(ENV, "FLUX_TEST_METAL", "false") == "true"
+    using Metal
+    Flux.gpu_backend!("Metal")
+
+    if Metal.functional()
+      @testset "Metal" begin
+        include("ext_metal/runtests.jl")
+      end
+    else
+      @info "Metal.jl package is not functional. Skipping Metal tests."
+    end
+  else
+    @info "Skipping Metal tests, set FLUX_TEST_METAL=true to run them."
   end
 end
