@@ -11,6 +11,7 @@ using CUDA
 # ENV["FLUX_TEST_METAL"] = "true"
 
 if VERSION >= v"1.9"
+  using Pkg
   Pkg.add("Metal") # Hack to allow testing on julia 1.6 
                    # since Metal is not registered for julia < 1.8
                    # When 1.6 is dropped, remove this and add Metal to test targets in Project.toml
