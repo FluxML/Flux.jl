@@ -4,6 +4,8 @@ NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN ins
 
 AMD GPU support is available since Julia 1.9 on systems with ROCm and MIOpen installed. For more details refer to the [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl) repository.
 
+Metal GPU acceleration is available on Apple Silicon hardware. For more details refer to the [Metal.jl](https://github.com/JuliaGPU/Metal.jl) repository. Metal support in Flux is experimental and many features are not yet available.
+
 ## Checking GPU Availability
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
@@ -27,9 +29,18 @@ julia> AMDGPU.functional(:MIOpen)
 true
 ```
 
+For Metal GPU:
+
+```julia
+julia> using Metal
+
+julia> Metal.functional()
+true
+```
+
 ## Selecting GPU backend
 
-Available GPU backends are: `CUDA`, `AMD`.
+Available GPU backends are: `CUDA`, `AMD` and `Metal`.
 
 Flux relies on [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl) for selecting default GPU backend to use.
 
@@ -49,9 +60,12 @@ julia> Flux.GPU_BACKEND
 "CUDA"
 ```
 
+The current backend will affect the behaviour of methods like the method `gpu` described below.
+
 ## Basic GPU Usage
 
-Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA](https://github.com/JuliaGPU/CUDA.jl). Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
+Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl), [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl), and [Metal.jl](https://github.com/JuliaGPU/Metal.jl).
+Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
 For example, we can use `CUDA.CuArray` (with the `cu` converter) to run our [basic example](@ref man-basics) on an NVIDIA GPU.
 
@@ -85,7 +99,7 @@ m = fmap(cu, m)
 m(cu(rand(10)))
 ```
 
-As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing. So, you can safely call `gpu` on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If the GPU library (CUDA.jl) loads successfully, `gpu` will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a `CuArray`.
+As a convenience, Flux provides the `gpu` function to convert models and data to the GPU if one is available. By default, it'll do nothing. So, you can safely call `gpu` on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If a GPU library (e.g. CUDA) loads successfully, `gpu` will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a `CuArray`.
 
 ```julia
 julia> using Flux, CUDA

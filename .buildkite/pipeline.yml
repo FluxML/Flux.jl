@@ -35,5 +35,33 @@ steps:
   #     queue: "juliagpu"
   #     cuda: "*"
   #   timeout_in_minutes: 60
+  - label: "Metal with julia {{matrix.julia}}"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "{{matrix.julia}}"
+      - JuliaCI/julia-test#v1:
+          test_args: "--quickfail"
+    agents:
+      queue: "juliaecosystem"
+      os: "macos"
+      arch: "aarch64"
+    commands: |
+      julia --project -e '
+          # make sure the 1.8-era Manifest works on this Julia version
+          using Pkg
+          Pkg.resolve()'
+    commands: |
+      printf "[Flux]\ngpu_backend = \"Metal\"" > LocalPreferences.toml
+
+    if: build.message !~ /\[skip tests\]/
+    timeout_in_minutes: 60
+    env:
+      FLUX_TEST_METAL: 'true'
+    matrix:
+      setup:
+        julia:
+          # - "1.9"
+          - "1"
+          # - "nightly"
 env:
   SECRET_CODECOV_TOKEN: "fAV/xwuaV0l5oaIYSAXRQIor8h7yHdlrpLUZFwNVnchn7rDk9UZoz0oORG9vlKLc1GK2HhaPRAy+fTkJ3GM/8Y0phHh3ANK8f5UsGm2DUTNsnf6u9izgnwnoRTcsWu+vSO0fyYrxBvBCoJwljL+yZbDFz3oE16DP7HPIzxfQagm+o/kMEszVuoUXhuLXXH0LxT6pXl214qjqs04HfMRmKIIiup48NB6fBLdhGlQz64MdMNHBfgDa/fafB7eNvn0X6pEOxysoy6bDQLUhKelOXgcDx1UsTo34Yiqr+QeJPAeKcO//PWurwQhPoUoHfLad2da9DN4uQk4YQLqAlcIuAA==;U2FsdGVkX1+mRXF2c9soCXT7DYymY3msM+vrpaifiTp8xA+gMpbQ0G63WY3tJ+6V/fJcVnxYoKZVXbjcg8fl4Q=="
