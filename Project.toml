@@ -65,4 +65,5 @@ Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays", "BSON"]
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", 
+        "ComponentArrays", "BSON", "Metal"]
