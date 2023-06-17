@@ -8,7 +8,7 @@ using Zygote
 using CUDA
 
 
-# ENV["FLUX_TEST_METAL"] = "true"
+ENV["FLUX_TEST_METAL"] = "true"
 
 if VERSION >= v"1.9"
   using Pkg
