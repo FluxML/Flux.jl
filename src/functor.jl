@@ -216,7 +216,7 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
-const GPU_BACKENDS = ("CUDA", "AMD")
+const GPU_BACKENDS = ("CUDA", "AMD", "Metal")
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 function gpu_backend!(backend::String)
@@ -276,6 +276,8 @@ function gpu(x)
         gpu(FluxCUDAAdaptor(), x)
     elseif GPU_BACKEND == "AMD"
         gpu(FluxAMDAdaptor(), x)
+    elseif GPU_BACKEND == "Metal"
+        gpu(FluxMetalAdaptor(), x)
     else
         error("""
         Unsupported GPU backend: $GPU_BACKEND.
@@ -391,6 +393,25 @@ function gpu(::FluxAMDAdaptor, x)
 end
 
 function _amd end
+
+# Metal extension.
+
+struct FluxMetalAdaptor end
+
+const METAL_LOADED = Ref{Bool}(false)
+
+function gpu(::FluxMetalAdaptor, x)
+    if METAL_LOADED[]
+        return _metal(x)
+    else
+        @info """
+        The Metal functionality is being called but
+        `Metal.jl` must be loaded to access it.
+        """ maxlog=1
+    end
+end
+
+function _metal end
 
 
 """
