@@ -1,0 +1,2 @@
+[Flux]
+gpu_backend = "Metal"

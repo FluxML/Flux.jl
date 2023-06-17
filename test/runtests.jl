@@ -8,9 +8,9 @@ using Zygote
 using CUDA
 
 
-ENV["FLUX_TEST_METAL"] = "true"
+# ENV["FLUX_TEST_METAL"] = "true"
 
-if VERSION >= v"1.9"
+if VERSION >= v"1.9" && get(ENV, "FLUX_TEST_METAL", "false") == "true"
   using Pkg
   Pkg.add("Metal") # Hack to allow testing on julia 1.6 
                    # since Metal is not registered for julia < 1.8
