@@ -2,9 +2,8 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
-## v0.14.0 (tentative June 2023)
-* Apple's Metal GPU acceleration preliminary support
-  via the extension mechanism. 
+## v0.13.17
+* Apple's Metal GPU acceleration preliminary support via the extension mechanism. 
 
 ## v0.13.16
 * Most greek-letter keyword arguments are deprecated in favour of ascii.
