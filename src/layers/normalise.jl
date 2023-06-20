@@ -309,10 +309,10 @@ julia> isapprox(std(m(xs)), 1, atol=0.1) && std(xs) != std(m(xs))
 true
 ```
 """
-mutable struct BatchNorm{F,V,N,W}
+mutable struct BatchNorm{F,B,S,N,W}
   λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
+  β::B  # bias
+  γ::S  # scale
   μ::W     # moving mean
   σ²::W    # moving var
   ϵ::N
@@ -401,10 +401,10 @@ julia> isapprox(std(y, dims=1:2), ones(1, 1, 3, 2), atol=0.2) && std(y, dims=1:2
 true
 ```
 """
-mutable struct InstanceNorm{F,V,N,W}
+mutable struct InstanceNorm{F,B,S,N,W}
   λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
+  β::B  # bias
+  γ::S  # scale
   μ::W  # moving mean
   σ²::W  # moving var
   ϵ::N
@@ -496,11 +496,11 @@ julia> isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) && std(xs[:, :, 3:4, 2]) != s
 true
 ```
 """
-mutable struct GroupNorm{F,V,N,W}
+mutable struct GroupNorm{F,B,S,N,W}
   G::Int  # number of groups
   λ::F  # activation function
-  β::V  # bias
-  γ::V  # scale
+  β::B  # bias
+  γ::S  # scale
   μ::W     # moving mean
   σ²::W    # moving std
   ϵ::N
