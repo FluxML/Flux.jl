@@ -15,7 +15,7 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.dice_coeff_loss,
                     Flux.Losses.poisson_loss,
                     Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss]
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss, Flux.Losses.logit_focal_loss]
 
 
 @testset "xlogx & xlogy" begin
@@ -211,7 +211,20 @@ end
     @test Flux.focal_loss(ŷ1, y1) ≈ 0.45990566879720157
     @test Flux.focal_loss(ŷ, y; gamma=0) ≈ Flux.crossentropy(ŷ, y)
 end
-  
+
+@testset "logit_focal_loss" begin
+    rng = Random.seed!(Random.default_rng(), 5)
+    y = rand(rng, Float32, 6, 40, 2)
+    yhat = rand(rng, Float32, 6, 40, 2)
+
+    @test logit_focal_loss(yhat, y; γ=0) ≈
+          Flux.Losses.logitcrossentropy(yhat, y)
+
+
+    @test logit_focal_loss(yhat, y; γ=2) ==
+          Flux.Losses.focal_loss(Flux.softmax(yhat; dims=1), y; γ=2)
+end
+
 @testset "siamese_contrastive_loss" begin
   y = [1 0
        0 0
