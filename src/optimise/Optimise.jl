@@ -4,7 +4,7 @@ using LinearAlgebra
 
 export train!, update!,
 	Descent, Adam, Momentum, Nesterov, RMSProp,
-	AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, AdamW,RAdam, OAdam, AdaBelief,
+	AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, AdamW,RAdam, OAdam, AdaBelief, PAdam,
 	InvDecay, ExpDecay, WeightDecay, stop, skip, Optimiser,
 	ClipValue, ClipNorm
 
