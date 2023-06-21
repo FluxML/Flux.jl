@@ -36,7 +36,7 @@ using .Optimise: @epochs
 using .Optimise: skip
 export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
-  AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
+  AdamW, RAdam, AdaBelief, PAdam, InvDecay, ExpDecay,
   WeightDecay, ClipValue, ClipNorm
 
 export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
