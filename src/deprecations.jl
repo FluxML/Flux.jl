@@ -132,7 +132,7 @@ setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
 Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
 
 for T in [:Descent, :Adam, :Momentum, :Nesterov,
-   	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief,
+   	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief, :PAdam,
    	      # :InvDecay, :ExpDecay, 
           ]
   @eval function _old_to_new(rule::$T)
