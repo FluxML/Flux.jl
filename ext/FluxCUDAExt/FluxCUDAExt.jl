@@ -36,14 +36,14 @@ include("functor.jl")
 function __init__()
     Flux.CUDA_LOADED[] = true
 
-    try
+    # try
        Base.require(@__MODULE__, :cuDNN)
-    catch
-        @warn """Package cuDNN not found in current path.
-        - Run `import Pkg; Pkg.add(\"cuDNN\")` to install the cuDNN package, then restart julia.
-        - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
-        """
-    end
+    # catch
+    #     @warn """Package cuDNN not found in current path.
+    #     - Run `import Pkg; Pkg.add(\"cuDNN\")` to install the cuDNN package, then restart julia.
+    #     - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
+    #     """
+    # end
 end
 
 end 

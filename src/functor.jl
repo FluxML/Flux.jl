@@ -366,8 +366,7 @@ end
 
 function _amd end
 
-<<<<<<< HEAD
-# Metal extension.
+# Metal extension. ######
 
 struct FluxMetalAdaptor end
 
@@ -386,9 +385,7 @@ end
 
 function _metal end
 
-=======
 ################################
->>>>>>> 3d9a0d28 (add CUDACUDNN extension)
 
 """
     gpu(data::DataLoader)
