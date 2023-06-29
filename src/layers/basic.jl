@@ -579,8 +579,8 @@ x1 → layer1 → y1 ↘
 ... or written as:
 ```julia
 y1 = layer1(x1)
-y2 = layer2(connection(x2, y1))
-y3 = layer3(connection(x3, y2))
+y2 = layer2(connection(y1, x2))
+y3 = layer3(connection(y2, x3))
 ```
 
 2. With just one input, each layer receives the same `x` combined with the previous output.
@@ -589,7 +589,7 @@ y3 = layer3(connection(x3, y2))
 ```julia
 y[1] == layers[1](x)
 for i in 2:length(layers)
-    y[i] == connection(x, layers[i](y[i-1]))
+    y[i] == connection(layers[i](y[i-1]), x)
 end
 ```
 
