@@ -75,6 +75,8 @@ steps:
       queue: "juliagpu"
       rocm: "*"
       rocmgpu: "*"
+    commands: |
+      printf "[Flux]\ngpu_backend = \"AMD\"" > LocalPreferences.toml
     timeout_in_minutes: 60
     env:
       JULIA_AMDGPU_CORE_MUST_LOAD: "1"

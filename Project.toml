@@ -68,6 +68,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", 
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra",
         "FillArrays", "ComponentArrays", "BSON", "Pkg",
-        "CUDA", "cuDNN", "Metal"]
+        "CUDA", "cuDNN", "Metal", "AMDGPU"]
