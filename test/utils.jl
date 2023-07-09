@@ -660,18 +660,6 @@ end
   end
 end
 
-@testset "Rrule" begin
-  @testset "issue 2033" begin
-    if CUDA.functional()
-      struct Wrapped{T}
-          x::T
-      end
-      y, _ = Flux.pullback(Wrapped, cu(randn(3,3)))
-      @test y isa Wrapped{<:CuArray}
-    end
-  end
-end
-
 # make sure rng_from_array is non_differentiable
 @testset "rng_from_array" begin
   m(x) = (rand(rng_from_array(x)) * x)[1]

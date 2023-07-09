@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.6' # Replace this with the minimum Julia version that your package supports.
+          # - '1.9' # Uncomment when 1.10 is out. Replace this with the minimum Julia version that your package supports. 
           - '1'
         os: [ubuntu-latest]
         arch: [x64]
@@ -47,17 +47,17 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - name: "Run test without coverage report"
         uses: julia-actions/julia-runtest@v1
-        if: ${{ !contains(fromJson('["1", "1.6"]'), matrix.version) || matrix.os != 'ubuntu-latest' }}
+        if: ${{ !contains(fromJson('["1", "1.9"]'), matrix.version) || matrix.os != 'ubuntu-latest' }}
         with:
           coverage: false
 
       - name: "Run test with coverage report"
         uses: julia-actions/julia-runtest@v1
-        if: contains(fromJson('["1", "1.6"]'), matrix.version) && matrix.os == 'ubuntu-latest'
+        if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
       - uses: julia-actions/julia-processcoverage@v1
-        if: contains(fromJson('["1", "1.6"]'), matrix.version) && matrix.os == 'ubuntu-latest'
+        if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
       - uses: codecov/codecov-action@v3
-        if: contains(fromJson('["1", "1.6"]'), matrix.version) && matrix.os == 'ubuntu-latest'
+        if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
         with:
           file: lcov.info
 

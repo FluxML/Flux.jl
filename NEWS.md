@@ -2,6 +2,12 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
+## v0.14.0
+* Flux now requires julia v1.9 or later.
+* CUDA.jl is not a hard dependency anymore. CUDA support is now provided through the extension mechanism. In order to unlock the CUDA 
+functionalities user are required to load CUDA, e.g. with `using CUDA`.
+The package `cuDNN.jl` also needs to be installed in the environment.
+
 ## v0.13.17
 * Apple's Metal GPU acceleration preliminary support via the extension mechanism. 
 

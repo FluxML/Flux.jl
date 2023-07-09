@@ -45,10 +45,6 @@ include("train.jl")
 using .Train
 using .Train: setup
 
-using CUDA
-import cuDNN
-const use_cuda = Ref{Union{Nothing,Bool}}(nothing)
-
 using Adapt, Functors, OneHotArrays
 include("utils.jl")
 include("functor.jl")
@@ -75,6 +71,5 @@ include("deprecations.jl")
 include("losses/Losses.jl")
 using .Losses
 
-include("cuda/cuda.jl")
 
 end # module

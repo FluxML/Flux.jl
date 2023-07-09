@@ -5,7 +5,6 @@ using Zygote
 using Zygote: @adjoint
 using ChainRulesCore
 using ..Flux: ofeltype, epseltype, _greek_ascii_depwarn
-using CUDA
 using NNlib: logsoftmax, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
 import Base.Broadcast: broadcasted
 
