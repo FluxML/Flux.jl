@@ -37,7 +37,7 @@ function __init__()
     Flux.CUDA_LOADED[] = true
 
     try
-       Base.require(Flux, :cuDNN)
+       Base.require(Main, :cuDNN)
     catch
         @warn """Package cuDNN not found in current path.
         - Run `import Pkg; Pkg.add(\"cuDNN\")` to install the cuDNN package, then restart julia.
