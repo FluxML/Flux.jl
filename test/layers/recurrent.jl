@@ -58,17 +58,10 @@ end
 
     @test primal[1] ≈ e
 
-    if VERSION < v"1.7"
-        @test ∇Wi ≈ grads[:Wi]
-        @test ∇Wh ≈ grads[:Wh]
-        @test ∇b ≈ grads[:b]
-        @test_broken ∇state0 ≈ grads[:state0]
-    else
-        @test_broken ∇Wi ≈ grads[:Wi]
-        @test_broken ∇Wh ≈ grads[:Wh]
-        @test_broken ∇b ≈ grads[:b]
-        @test_broken ∇state0 ≈ grads[:state0]
-    end
+    @test_broken ∇Wi ≈ grads[:Wi]
+    @test_broken ∇Wh ≈ grads[:Wh]
+    @test_broken ∇b ≈ grads[:b]
+    @test_broken ∇state0 ≈ grads[:state0]
 end
 
 # Ref FluxML/Flux.jl#1209 1D input

@@ -69,11 +69,7 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
 
     # CPU RNGs map onto CPU ok
     if isempty(rng_kwargs)
-      if VERSION >= v"1.7"
-        @test cpu(m).rng isa Random.TaskLocalRNG
-      else
-        @test cpu(m).rng isa Random._GLOBAL_RNG
-      end
+      @test cpu(m).rng isa Random.TaskLocalRNG
     else
       @test cpu(m).rng === only(values(rng_kwargs))
     end
@@ -118,11 +114,7 @@ end
 
     # CPU RNGs map onto CPU ok
     if isempty(rng_kwargs)
-      if VERSION >= v"1.7"
-        @test cpu(m).rng isa Random.TaskLocalRNG
-      else
-        @test cpu(m).rng isa Random._GLOBAL_RNG
-      end
+      @test cpu(m).rng isa Random.TaskLocalRNG
     else
       @test cpu(m).rng === only(values(rng_kwargs))
     end

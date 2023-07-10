@@ -47,11 +47,7 @@ rng_from_array(::AbstractArray) = default_rng_value()
 
 @non_differentiable rng_from_array(::Any)
 
-if VERSION >= v"1.7"
-  default_rng_value() = Random.default_rng()
-else
-  default_rng_value() = Random.GLOBAL_RNG
-end
+default_rng_value() = Random.GLOBAL_RNG
 
 """
     default_rng_value()
