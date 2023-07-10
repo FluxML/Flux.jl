@@ -34,14 +34,14 @@ FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
 FluxMetalExt = "Metal"
 
 [compat]
-AMDGPU = "0.4.13"
+AMDGPU = "0.5"
 Adapt = "3.0"
 CUDA = "4"
 ChainRulesCore = "1.12"
 Functors = "0.4"
 MLUtils = "0.4"
 MacroTools = "0.5"
-Metal = "0.4"
+Metal = "0.5"
 NNlib = "0.9.1"
 OneHotArrays = "0.2.4"
 Optimisers = "0.2.12"
@@ -68,6 +68,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", 
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra",
         "FillArrays", "ComponentArrays", "BSON", "Pkg",
-        "CUDA", "cuDNN", "Metal"]
+        "CUDA", "cuDNN", "Metal", "AMDGPU"]
