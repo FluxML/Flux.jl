@@ -70,7 +70,7 @@ Base.@deprecate_binding Data Flux false "Sub-module Flux.Data has been removed. 
 
 @deprecate paramtype(T,m) _paramtype(T,m) false  # internal method, renamed to make this clear
 
-@deprecate rng_from_array() default_rng_value()
+@deprecate rng_from_array() Random.default_rng()
 
 function istraining()
   Base.depwarn("Flux.istraining() is deprecated, use NNlib.within_gradient(x) instead", :istraining)
@@ -200,6 +200,10 @@ ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
 
 
 # v0.14 deprecations
+@deprecate default_rng_value() Random.default_rng()
+
+
+# v0.15 deprecations
 
 # Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
 # Base.@deprecate_binding Optimiser OptimiserChain

@@ -71,9 +71,9 @@ mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
+Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng())
 
-function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng_value())
+function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng())
   0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
   Dropout(p, dims, active, rng)
 end
@@ -125,8 +125,8 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
   rng::R
 end
 
-AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
-function AlphaDropout(p; rng = default_rng_value(), active::Union{Bool,Nothing} = nothing)
+AlphaDropout(p, active) = AlphaDropout(p, active, default_rng())
+function AlphaDropout(p; rng = default_rng(), active::Union{Bool,Nothing} = nothing)
   0 ≤ p ≤ 1 || throw(ArgumentError("AlphaDropout expects 0 ≤ p ≤ 1, got p = $p"))
   AlphaDropout(p, active, rng)
 end
