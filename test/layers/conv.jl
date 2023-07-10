@@ -299,5 +299,5 @@ end
 
   c3 = ConvTranspose((3,), 2=>4, relu)
   @test c3(x) isa Array{Float32, 3}
-  @test (@inferred c3(x); true)  # fails on 1.6
+  @test (@inferred c3(x); true)
 end
