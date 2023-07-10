@@ -10,7 +10,7 @@ using MacroTools: @forward
 using MLUtils
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
 using Optimisers: freeze!, thaw!, adjust!
-
+using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
