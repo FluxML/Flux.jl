@@ -5,8 +5,8 @@ If you have used neural networks before, then this simple example might be helpf
 If you haven't, then you might prefer the [Fitting a Straight Line](overview.md) page.
 
 ```julia
-# With Julia 1.7+, this will prompt if neccessary to install everything, including CUDA:
-using Flux, Statistics, ProgressMeter
+# This will prompt if neccessary to install everything, including CUDA:
+using Flux, CUDA, Statistics, ProgressMeter
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
