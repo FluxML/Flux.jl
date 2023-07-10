@@ -10,7 +10,7 @@ Because of this:
 * Flux defines its own version of `setup` which checks this assumption.
   (Using instead `Optimisers.setup` will also work, they return the same thing.)
 
-The new implementation of rules such as Adam in the Optimisers is quite different from the old one in `Flux.Optimise`. In Flux 0.13, `Flux.Adam()` returns the old one, with supertype `Flux.Optimise.AbstractOptimiser`, but `setup` will silently translate it to its new counterpart.
+The new implementation of rules such as Adam in the Optimisers is quite different from the old one in `Flux.Optimise`. In Flux 0.14, `Flux.Adam()` returns the old one, with supertype `Flux.Optimise.AbstractOptimiser`, but `setup` will silently translate it to its new counterpart.
 The available rules are listed the [optimisation rules](@ref man-optimisers) page here;
 see the [Optimisers documentation](https://fluxml.ai/Optimisers.jl/dev/) for details on how the new rules work.
 
@@ -37,11 +37,11 @@ Optimisers.freeze!
 Optimisers.thaw!
 ```
 
-## Implicit style (Flux ≤ 0.13)
+## Implicit style (Flux ≤ 0.14)
 
 Flux used to handle gradients, training, and optimisation rules quite differently.
 The new style described above is called "explicit" by Zygote, and the old style "implicit".
-Flux 0.13 is the transitional version which supports both; Flux 0.14 will remove the old.
+Flux 0.13 and 0.14 are the transitional version which supports both; Flux 0.15 will remove the old.
 
 !!! compat "How to upgrade"
     The blue-green boxes in the [training section](@ref man-training) describe

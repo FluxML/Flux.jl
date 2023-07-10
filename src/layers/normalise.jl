@@ -520,7 +520,7 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
               eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
 
   if track_stats
-  Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
+    Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.15. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
   end
   ε = _greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
 
