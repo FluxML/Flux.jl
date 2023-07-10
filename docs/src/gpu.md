@@ -14,6 +14,10 @@ Metal GPU acceleration is available on Apple Silicon hardware. For more details 
 In order to trigger GPU support in Flux, you need to call `using CUDA`, `using AMDGPU` or `using Metal`
 in your code. Notice that for CUDA, explicitely loading also `cuDNN` is not required, but the package has to be installed in the environment. 
 
+
+!!! compat "Flux ≤ 0.13"
+    Old versions of Flux automatically installed CUDA.jl to provide GPU support. Starting from Flux v0.14, CUDA.jl is not a dependency anymore and has to be installed manually.
+
 ## Checking GPU Availability
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
