@@ -32,8 +32,6 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
 
 include("optimise/Optimise.jl")
 using .Optimise
-using .Optimise: @epochs
-using .Optimise: skip
 export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,

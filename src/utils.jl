@@ -47,7 +47,7 @@ rng_from_array(::AbstractArray) = Random.default_rng()
 
 
 """
-    glorot_uniform([rng = default_rng()], size...; gain = 1) -> Array
+    glorot_uniform([rng], size...; gain = 1) -> Array
     glorot_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform
@@ -92,7 +92,7 @@ glorot_uniform(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwarg
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
 """
-    glorot_normal([rng = default_rng(), size...; gain = 1) -> Array
+    glorot_normal([rng], size...; gain = 1) -> Array
     glorot_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a normal
@@ -135,7 +135,7 @@ glorot_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
 """
-    kaiming_uniform([rng = default_rng()], size...; gain = √2) -> Array
+    kaiming_uniform([rng], size...; gain = √2) -> Array
     kaiming_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform distribution
@@ -170,7 +170,7 @@ kaiming_uniform(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwar
 ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
 """
-    kaiming_normal([rng = default_rng()], size...; gain = √2) -> Array
+    kaiming_normal([rng], size...; gain = √2) -> Array
     kaiming_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers taken from a normal
@@ -207,7 +207,7 @@ kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaimi
 ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 
 """
-    truncated_normal([rng = default_rng()], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
+    truncated_normal([rng], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
     truncated_normal([rng]; kw...) -> Function
   
 Return an `Array{Float32}` of the given `size` where each element is drawn from a truncated normal distribution.
@@ -253,7 +253,7 @@ truncated_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwa
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
 """
-    orthogonal([rng = default_rng()], size...; gain = 1) -> Array
+    orthogonal([rng], size...; gain = 1) -> Array
     orthogonal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` which is a (semi) orthogonal matrix, as described in [1].
@@ -314,7 +314,7 @@ orthogonal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims::Integer...; 
 ChainRulesCore.@non_differentiable orthogonal(::Any...)
 
 """
-    sparse_init([rng = default_rng()], rows, cols; sparsity, std = 0.01) -> Array
+    sparse_init([rng], rows, cols; sparsity, std = 0.01) -> Array
     sparse_init([rng]; kw...) -> Function
 
 Return a `Matrix{Float32}` of size `rows, cols` where each column contains a fixed fraction of

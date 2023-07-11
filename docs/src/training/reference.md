@@ -62,26 +62,6 @@ Flux.Optimise.update!(opt::Flux.Optimise.AbstractOptimiser, xs::AbstractArray, g
 Flux.Optimise.train!(loss, ps::Flux.Params, data, opt::Flux.Optimise.AbstractOptimiser; cb)
 ```
 
-Note that, by default, `train!` only loops over the data once (a single "epoch").
-A convenient way to run multiple epochs from the REPL is provided by `@epochs`.
-
-```julia
-julia> using Flux: @epochs
-
-julia> @epochs 2 println("hello")
-[ Info: Epoch 1
-hello
-[ Info: Epoch 2
-hello
-
-julia> @epochs 2 Flux.train!(...)
-# Train for two epochs
-```
-
-```@docs
-Flux.@epochs
-```
-
 ## Callbacks
 
 Implicit `train!` takes an additional argument, `cb`, that's used for callbacks so that you can observe the training process. For example:
@@ -98,14 +78,9 @@ A more typical callback might look like this:
 test_x, test_y = # ... create single batch of test data ...
 evalcb() = @show(loss(test_x, test_y))
 throttled_cb = throttle(evalcb, 5)
-Flux.@epochs 20 Flux.train!(objective, ps, data, opt, cb = throttled_cb)
-```
-
-Calling `Flux.stop()` in a callback will exit the training loop early.
-
-```julia
-cb = function ()
-  accuracy() > 0.9 && Flux.stop()
+for epoch in 1:20
+  @info "Epoch $epoch"
+  Flux.train!(objective, ps, data, opt, cb = throttled_cb)
 end
 ```
 

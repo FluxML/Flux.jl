@@ -2,8 +2,6 @@
 
 ```@docs
 Flux.throttle
-Flux.stop
-Flux.skip
 ```
 
 ## Patience Helpers
@@ -26,7 +24,7 @@ end
 es = early_stopping(loss, 2; init_score = 9)
 
 # this will stop at the 6th (4 decreasing + 2 increasing calls) epoch
-@epochs 10 begin
+for epoch in 1:10
   es() && break
 end
 ```
@@ -43,7 +41,7 @@ end
 es = early_stopping(acc, 3; delta = (best_score, score) -> score - best_score)
 
 # this will iterate until the 10th epoch
-@epochs 10 begin
+for epoch in 1:10
   es() && break
 end
 ```
@@ -60,12 +58,12 @@ Both `predicate` in `patience` and `f` in `early_stopping` / `plateau` can accep
 trigger = patience((a; b) -> a > b, 3)
 
 # this will iterate until the 10th epoch
-@epochs 10 begin
+for epoch in 1:10
   trigger(1; b = 2) && break
 end
 
 # this will stop at the 3rd epoch
-@epochs 10 begin
+for epoch in 1:10
   trigger(3; b = 2) && break
 end
 ```
