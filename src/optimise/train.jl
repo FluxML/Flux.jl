@@ -88,24 +88,15 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
   itrsz = Base.IteratorSize(typeof(data))
   n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
   @withprogress for (i, d) in enumerate(data)
-    try
-      l, gs = withgradient(ps) do
-        loss(batchmemaybe(d)...)
-      end
-      if !isfinite(l)
-        throw(DomainError("Loss is $l on data item $i, stopping training"))
-      end
-      update!(opt, ps, gs)
-      cb()
-    catch ex
-      if ex isa StopException
-        break
-      elseif ex isa SkipException
-        continue
-      else
-        rethrow(ex)
-      end
+    l, gs = withgradient(ps) do
+      loss(batchmemaybe(d)...)
     end
+    if !isfinite(l)
+      throw(DomainError("Loss is $l on data item $i, stopping training"))
+    end
+    update!(opt, ps, gs)
+    cb()
+
     @logprogress iszero(n) ? nothing : i / n
   end
 end
