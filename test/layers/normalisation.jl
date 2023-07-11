@@ -380,7 +380,7 @@ end
   # begin tests
   squeeze(x) = dropdims(x, dims = tuple(findall(size(x) .== 1)...)) # To remove all singular dimensions
 
-  let m = GroupNorm(4,2, track_stats=true), sizes = (3,4,2),
+  let m = GroupNorm(4,2), sizes = (3,4,2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
       @test length(Flux.params(m)) == 2
@@ -388,47 +388,19 @@ end
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)
 
-      y = evalwgrad(m, x)
+      ŷ = evalwgrad(m, x)
+    
+      @test m.μ === nothing
+      @test m.σ² === nothing
+      ŷ = m(x)
+      y = [-1.4638476 0.29276943 -1.4638476 0.29276943; -0.87830865 0.87830853 -0.8783088 0.8783083; -0.29276967 1.4638474 -0.2927699 1.4638472;;; -1.4638476 0.29276943 -1.4638472 0.29276943; -0.8783083 0.8783083 -0.8783083 0.8783083; -0.29276943 1.4638472 -0.29276943 1.4638472]
 
-      #julia> x
-      #[:, :, 1]  =
-      # 1.0  4.0  7.0  10.0
-      # 2.0  5.0  8.0  11.0
-      # 3.0  6.0  9.0  12.0
-      #
-      #[:, :, 2] =
-      # 13.0  16.0  19.0  22.0
-      # 14.0  17.0  20.0  23.0
-      # 15.0  18.0  21.0  24.0
-      #
-      # μ will be
-      # (1. + 2. + 3. + 4. + 5. + 6.) / 6 = 3.5
-      # (7. + 8. + 9. + 10. + 11. + 12.) / 6 = 9.5
-      #
-      # (13. + 14. + 15. + 16. + 17. + 18.) / 6 = 15.5
-      # (19. + 20. + 21. + 22. + 23. + 24.) / 6 = 21.5
-      #
-      # μ =
-      # 3.5   15.5
-      # 9.5   21.5
-      #
-      # ∴ update rule with momentum:
-      # (1. - .1) * 0 + .1 * (3.5 + 15.5) / 2 = 0.95
-      # (1. - .1) * 0 + .1 * (9.5 + 21.5) / 2 = 1.55
-      @test m.μ ≈ [0.95, 1.55]
-      n = prod(size(x)) ÷ m.G ÷ size(x)[end]
-      corr = n / (n-1)
-      z = reshape(x,3,2,2,2)
-      σ² = var(z, dims=(1,2), corrected=false)
-      @test m.σ² ≈ 0.1*corr*vec(mean(σ², dims=4)) .+ 0.9 * 1
-
-      y = m(x)
-      out = (z .- reshape(m.μ, 1,1,2,1)) ./ sqrt.(reshape(m.σ², 1,1,2,1) .+ 1f-5)
-      @test y ≈ reshape(out, size(x))   atol=1.0e-5
+      @test ŷ ≈ y   atol=1.0e-5
   end
   # with activation function
-  let m = GroupNorm(4,2, sigmoid, track_stats=true), sizes = (3, 4, 2),
+  let m = GroupNorm(4,2, sigmoid), sizes = (3, 4, 2),
       x = reshape(collect(1:prod(sizes)), sizes)
+    
     x = Float32.(x)
     μ_affine_shape = ones(Int,length(sizes) + 1)
     μ_affine_shape[end-1] = 2 # Number of groups
@@ -441,26 +413,16 @@ end
 
     og_shape = size(x)
 
-    y = m(x)
-    x_ = reshape(x,affine_shape...)
-    out = reshape(sigmoid.((x_ .- reshape(m.μ,μ_affine_shape...)) ./ sqrt.(reshape(m.σ²,μ_affine_shape...) .+ m.ϵ)),og_shape)
-    @test y ≈ out   atol=1e-7
+    ŷ = m(x)
+    y = [0.18787955 0.57267404 0.18787955 0.57267404; 0.2935284 0.70647156 0.29352835 0.70647156; 0.42732593 0.81212044 0.42732587 0.8121204;;; 0.18787955 0.57267404 0.1878796 0.57267404; 0.29352847 0.70647156 0.29352847 0.70647156; 0.42732602 0.8121204 0.42732602 0.8121204]
+    @test ŷ ≈ y   atol=1e-7
   end
 
-  let m = trainmode!(GroupNorm(2,2, track_stats=true)), sizes = (2, 4, 1, 2, 3),
+  let m = trainmode!(GroupNorm(2,2)), sizes = (2, 4, 1, 2, 3),
       x = Float32.(reshape(collect(1:prod(sizes)), sizes))
     y = reshape(permutedims(x, [3, 1, 2, 4, 5]), :, 2, 3)
     y = reshape(m(y), sizes...)
     @test m(x) == y
-  end
-
-  # check that μ, σ², and the output are the correct size for higher rank tensors
-  let m = GroupNorm(4,2, track_stats=true), sizes = (5, 5, 3, 4, 4, 6),
-      x = Float32.(reshape(collect(1:prod(sizes)), sizes))
-    y = evalwgrad(m, x)
-    @test size(m.μ) == (m.G,)
-    @test size(m.σ²) == (m.G,)
-    @test size(y) == sizes
   end
 
   # show that group norm is the same as instance norm when the group size is the same as the number of channels
