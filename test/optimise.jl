@@ -11,7 +11,7 @@ using Random
   Random.seed!(84)
   w = randn(10, 10)
   @testset for opt in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
-                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
+                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(), PAdam(),
                        Nesterov(), RMSProp(), Momentum()]
     Random.seed!(42)
     w′ = randn(10, 10)
@@ -194,7 +194,7 @@ end
 # a simple optimization is montonically decreasing (up to learning step effects)
 @testset "Momentum Optimisers and complex values" begin
   # Test every optimiser that has momentum internally
-  for opt_ctor in [Adam, RMSProp, RAdam, OAdam, AdaGrad, AdaDelta, NAdam, AdaBelief]
+  for opt_ctor in [Adam, RMSProp, RAdam, OAdam, AdaGrad, AdaDelta, NAdam, AdaBelief, PAdam]
     # Our "model" is just a complex number
     w = zeros(ComplexF32, 1)
 
