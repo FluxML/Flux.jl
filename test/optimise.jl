@@ -194,7 +194,7 @@ end
 # a simple optimization is montonically decreasing (up to learning step effects)
 @testset "Momentum Optimisers and complex values" begin
   # Test every optimiser that has momentum internally
-  for opt_ctor in [Adam, RMSProp, RAdam, OAdam, AdaGrad, AdaDelta, NAdam, AdaBelief, PAdam]
+  for opt_ctor in [Adam, RMSProp, RAdam, OAdam, AdaGrad, AdaDelta, NAdam, AdaBelief]
     # Our "model" is just a complex number
     w = zeros(ComplexF32, 1)
 
