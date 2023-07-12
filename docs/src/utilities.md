@@ -49,7 +49,6 @@ These functions call:
 
 ```@docs
 Flux.rng_from_array
-Flux.default_rng_value
 Flux.nfan
 ```
 

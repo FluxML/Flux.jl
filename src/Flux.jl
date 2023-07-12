@@ -10,7 +10,7 @@ using MacroTools: @forward
 using MLUtils
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
 using Optimisers: freeze!, thaw!, adjust!
-
+using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
@@ -32,8 +32,6 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
 
 include("optimise/Optimise.jl")
 using .Optimise
-using .Optimise: @epochs
-using .Optimise: skip
 export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,

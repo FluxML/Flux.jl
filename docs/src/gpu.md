@@ -1,10 +1,21 @@
 # GPU Support
 
-NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) readme.
+Starting with v0.14, Flux doesn't force a specific GPU backend and the corresponding package dependencies on the users. 
+Thanks to the [package extension mechanism](
+https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)) introduced in julia v1.9, Flux conditionally load GPU specific code once a GPU package is made available (e.g. through `using CUDA`).
+
+NVIDIA GPU support requires the packages `CUDA.jl` and `cuDNN.jl` to be installed in the environment. In the julia REPL, type `] add CUDA, cuDNN` to install them. For more details see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) readme.
 
 AMD GPU support is available since Julia 1.9 on systems with ROCm and MIOpen installed. For more details refer to the [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl) repository.
 
 Metal GPU acceleration is available on Apple Silicon hardware. For more details refer to the [Metal.jl](https://github.com/JuliaGPU/Metal.jl) repository. Metal support in Flux is experimental and many features are not yet available.
+
+In order to trigger GPU support in Flux, you need to call `using CUDA`, `using AMDGPU` or `using Metal`
+in your code. Notice that for CUDA, explicitely loading also `cuDNN` is not required, but the package has to be installed in the environment. 
+
+
+!!! compat "Flux ≤ 0.13"
+    Old versions of Flux automatically installed CUDA.jl to provide GPU support. Starting from Flux v0.14, CUDA.jl is not a dependency anymore and has to be installed manually.
 
 ## Checking GPU Availability
 

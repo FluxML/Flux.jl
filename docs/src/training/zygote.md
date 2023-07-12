@@ -18,10 +18,10 @@ Zygote.hessian_reverse
 Zygote.diaghessian
 ```
 
-## Implicit style (Flux ≤ 0.13)
+## Implicit style (Flux ≤ 0.14)
 
 Flux used to use what Zygote calls "implicit" gradients, [described here](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) in its documentation.
-However, support for this will be removed from Flux 0.14.
+However, support for this will be removed from Flux 0.15.
 
 !!! compat "Training"
     The blue-green boxes in the [training section](@ref man-training) describe

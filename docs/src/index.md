@@ -8,7 +8,8 @@ Flux is a library for machine learning. It comes "batteries-included" with many 
 
 ### Installation
 
-Download [Julia 1.9](https://julialang.org/downloads/) or later, preferably the current stable release. You can add Flux using Julia's package manager, by typing `] add Flux` in the Julia prompt. This will automatically install several other packages, including [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) for Nvidia GPU support.
+Download [Julia 1.9](https://julialang.org/downloads/) or later, preferably the current stable release. You can add Flux using Julia's package manager, by typing `] add Flux` in the Julia prompt. 
+For Nvidia GPU support, you will also need to install the `CUDA` and the `cuDNN` packages. For AMD GPU support, install the `AMDGPU` package. For acceleration on Apple Silicon, install the `Metal` package.
 
 ### Learning Flux
 

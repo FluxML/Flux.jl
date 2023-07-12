@@ -34,36 +34,20 @@ ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
 
 """
-    rng_from_array([x])
+    rng_from_array(x)
 
 Create an instance of the RNG most appropriate for `x`.
 The current defaults are:
-- `x isa CuArray`: `CUDA.default_rng()`, else:
-- `x isa AbstractArray`, or no `x` provided:
-  - Julia version is < 1.7: `Random.GLOBAL_RNG`
-  - Julia version is >= 1.7: `Random.default_rng()`
+- `x isa CuArray`: `CUDA.default_rng()`
+- `x isa AbstractArray`: `Random.default_rng()
 """
-rng_from_array(::AbstractArray) = default_rng_value()
+rng_from_array(::AbstractArray) = Random.default_rng()
 
 @non_differentiable rng_from_array(::Any)
 
-if VERSION >= v"1.7"
-  default_rng_value() = Random.default_rng()
-else
-  default_rng_value() = Random.GLOBAL_RNG
-end
 
 """
-    default_rng_value()
-
-Create an instance of the default RNG depending on Julia's version.
-- Julia version is < 1.7: `Random.GLOBAL_RNG`
-- Julia version is >= 1.7: `Random.default_rng()`
-"""
-default_rng_value
-
-"""
-    glorot_uniform([rng = default_rng_value()], size...; gain = 1) -> Array
+    glorot_uniform([rng], size...; gain = 1) -> Array
     glorot_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform
@@ -102,13 +86,13 @@ function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   scale = Float32(gain) * sqrt(24.0f0 / sum(nfan(dims...)))
   (rand(rng, Float32, dims...) .- 0.5f0) .* scale
 end
-glorot_uniform(dims::Integer...; kw...) = glorot_uniform(default_rng_value(), dims...; kw...)
-glorot_uniform(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
+glorot_uniform(dims::Integer...; kw...) = glorot_uniform(default_rng(), dims...; kw...)
+glorot_uniform(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
 """
-    glorot_normal([rng = default_rng_value(), size...; gain = 1) -> Array
+    glorot_normal([rng], size...; gain = 1) -> Array
     glorot_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a normal
@@ -145,13 +129,13 @@ function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   std = Float32(gain) * sqrt(2.0f0 / sum(nfan(dims...)))
   randn(rng, Float32, dims...) .* std
 end
-glorot_normal(dims::Integer...; kwargs...) = glorot_normal(default_rng_value(), dims...; kwargs...)
-glorot_normal(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
+glorot_normal(dims::Integer...; kwargs...) = glorot_normal(default_rng(), dims...; kwargs...)
+glorot_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
 """
-    kaiming_uniform([rng = default_rng_value()], size...; gain = √2) -> Array
+    kaiming_uniform([rng], size...; gain = √2) -> Array
     kaiming_uniform([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform distribution
@@ -180,13 +164,13 @@ function kaiming_uniform(rng::AbstractRNG, dims::Integer...; gain::Real = √2)
   return (rand(rng, Float32, dims...) .- 0.5f0) .* 2bound
 end
 
-kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(default_rng_value(), dims...; kwargs...)
-kaiming_uniform(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
+kaiming_uniform(dims::Integer...; kwargs...) = kaiming_uniform(default_rng(), dims...; kwargs...)
+kaiming_uniform(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> kaiming_uniform(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_uniform(::Any...)
 
 """
-    kaiming_normal([rng = default_rng_value()], size...; gain = √2) -> Array
+    kaiming_normal([rng], size...; gain = √2) -> Array
     kaiming_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers taken from a normal
@@ -217,13 +201,13 @@ function kaiming_normal(rng::AbstractRNG, dims::Integer...; gain::Real = √2f0)
   return randn(rng, Float32, dims...) .* std
 end
 
-kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(default_rng_value(), dims...; kwargs...)
+kaiming_normal(dims::Integer...; kwargs...) = kaiming_normal(default_rng(), dims...; kwargs...)
 kaiming_normal(rng::AbstractRNG; init_kwargs...) = (dims...; kwargs...) -> kaiming_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 
 """
-    truncated_normal([rng = default_rng_value()], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
+    truncated_normal([rng], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
     truncated_normal([rng]; kw...) -> Function
   
 Return an `Array{Float32}` of the given `size` where each element is drawn from a truncated normal distribution.
@@ -263,13 +247,13 @@ function truncated_normal(rng::AbstractRNG, dims::Integer...; mean = 0, std = 1,
   return xs
 end
 
-truncated_normal(dims::Integer...; kwargs...) = truncated_normal(default_rng_value(), dims...; kwargs...)
-truncated_normal(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
+truncated_normal(dims::Integer...; kwargs...) = truncated_normal(default_rng(), dims...; kwargs...)
+truncated_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
 
 """
-    orthogonal([rng = default_rng_value()], size...; gain = 1) -> Array
+    orthogonal([rng], size...; gain = 1) -> Array
     orthogonal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` which is a (semi) orthogonal matrix, as described in [1].
@@ -324,13 +308,13 @@ function orthogonal(rng::AbstractRNG, d1::Integer, ds::Integer...; kwargs...)
   return reshape(orthogonal(rng, rows, cols; kwargs...), dims)
 end
 
-orthogonal(dims::Integer...; kwargs...) = orthogonal(default_rng_value(), dims...; kwargs...)
-orthogonal(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
+orthogonal(dims::Integer...; kwargs...) = orthogonal(default_rng(), dims...; kwargs...)
+orthogonal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims::Integer...; kwargs...) -> orthogonal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable orthogonal(::Any...)
 
 """
-    sparse_init([rng = default_rng_value()], rows, cols; sparsity, std = 0.01) -> Array
+    sparse_init([rng], rows, cols; sparsity, std = 0.01) -> Array
     sparse_init([rng]; kw...) -> Function
 
 Return a `Matrix{Float32}` of size `rows, cols` where each column contains a fixed fraction of
@@ -372,8 +356,8 @@ function sparse_init(rng::AbstractRNG, dims::Integer...; sparsity, std = 0.01)
   return mapslices(shuffle, sparse_array, dims=1)
 end
 
-sparse_init(dims::Integer...; kwargs...) = sparse_init(default_rng_value(), dims...; kwargs...)
-sparse_init(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
+sparse_init(dims::Integer...; kwargs...) = sparse_init(default_rng(), dims...; kwargs...)
+sparse_init(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> sparse_init(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable sparse_init(::Any...)
 
@@ -463,7 +447,7 @@ end
 
 # For consistency, it accepts an RNG, but ignores it:
 identity_init(::AbstractRNG, dims::Integer...; kwargs...) = identity_init(dims...; kwargs...)
-identity_init(rng::AbstractRNG=default_rng_value(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
+identity_init(rng::AbstractRNG=default_rng(); init_kwargs...) = (args...;kwargs...) -> identity_init(rng, args...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable identity_init(::Any...)
 

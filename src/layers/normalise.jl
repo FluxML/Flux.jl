@@ -71,9 +71,9 @@ mutable struct Dropout{F<:Real,D,R<:AbstractRNG}
   active::Union{Bool, Nothing}
   rng::R
 end
-Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng_value())
+Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng())
 
-function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng_value())
+function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng())
   0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
   Dropout(p, dims, active, rng)
 end
@@ -125,8 +125,8 @@ mutable struct AlphaDropout{F,R<:AbstractRNG}
   rng::R
 end
 
-AlphaDropout(p, active) = AlphaDropout(p, active, default_rng_value())
-function AlphaDropout(p; rng = default_rng_value(), active::Union{Bool,Nothing} = nothing)
+AlphaDropout(p, active) = AlphaDropout(p, active, default_rng())
+function AlphaDropout(p; rng = default_rng(), active::Union{Bool,Nothing} = nothing)
   0 ≤ p ≤ 1 || throw(ArgumentError("AlphaDropout expects 0 ≤ p ≤ 1, got p = $p"))
   AlphaDropout(p, active, rng)
 end
@@ -455,10 +455,12 @@ function Base.show(io::IO, l::InstanceNorm)
 end
 
 """
-    GroupNorm(channels::Integer, G::Integer, λ=identity;
-              initβ=zeros32, initγ=ones32,
-              affine=true, track_stats=false,
-              eps=1f-5, momentum=0.1f0)
+    GroupNorm(channels::Int, G::Int, λ = identity;
+              initβ = zeros32, 
+              initγ = ones32,
+              affine = true, 
+              eps = 1f-5, 
+              momentum = 0.1f0)
 
 [Group Normalization](https://arxiv.org/abs/1803.08494) layer.
 
@@ -476,8 +478,6 @@ For `WHCN` images it's the usual channel dimension.
 If `affine=true`, it also applies  a shift and a rescale to the input
 through to learnable per-channel bias `β` and scale `γ` parameters.
 
-If `track_stats=true`, accumulates mean and var statistics in training phase
-that will be used to renormalize the input in test phase.
 
 # Examples
 ```jldoctest
@@ -496,13 +496,13 @@ julia> isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) && std(xs[:, :, 3:4, 2]) != s
 true
 ```
 """
-mutable struct GroupNorm{F,V,N,W}
+mutable struct GroupNorm{F,V,N}
   G::Int  # number of groups
   λ::F  # activation function
   β::V  # bias
   γ::V  # scale
-  μ::W     # moving mean
-  σ²::W    # moving std
+  μ::Nothing     # moving mean
+  σ²::Nothing    # moving std
   ϵ::N
   momentum::N
   affine::Bool
@@ -516,20 +516,18 @@ trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,
-              affine::Bool=true, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
+              affine::Bool=true, active::Union{Bool,Nothing}=nothing,
               eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
 
-  if track_stats
-  Base.depwarn("`track_stats=true` will be removed from GroupNorm in Flux 0.14. The default value is `track_stats=false`, which will work as before.", :GroupNorm)
-  end
   ε = _greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
-  μ = track_stats ? zeros32(G) : nothing
-  σ² = track_stats ? ones32(G) : nothing
+  μ = nothing
+  σ² = nothing
+  track_stats = false
 
   return GroupNorm(G, λ,
             β, γ,

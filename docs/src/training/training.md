@@ -65,14 +65,14 @@ It is also important that every `update!` step receives a newly gradient compute
 as this will be change whenever the model's parameters are changed, and for each new data point.
 
 !!! compat "Implicit gradients"
-    Flux ≤ 0.13 used Zygote's "implicit" mode, in which `gradient` takes a zero-argument function.
+    Flux ≤ 0.14 used Zygote's "implicit" mode, in which `gradient` takes a zero-argument function.
     It looks like this:
     ```
     pars = Flux.params(model)
     grad = gradient(() -> loss(model(input), label), pars)
     ```
     Here `pars::Params` and `grad::Grads` are two dictionary-like structures.
-    Support for this will be removed from Flux 0.14, and these blue (teal?) boxes
+    Support for this will be removed from Flux 0.15, and these blue (teal?) boxes
     explain what needs to change.
 
 ## Loss Functions
@@ -90,7 +90,7 @@ like [`mse`](@ref Flux.Losses.mse) for mean-squared error or [`crossentropy`](@r
 are available from the [`Flux.Losses`](../models/losses.md) module.
 
 !!! compat "Implicit-style loss functions"
-    Flux ≤ 0.13 needed a loss function which closed over a reference to the model,
+    Flux ≤ 0.14 needed a loss function which closed over a reference to the model,
     instead of being a pure function. Thus in old code you may see something like
     ```
     loss(x, y) = sum((model(x) .- y).^2)
@@ -211,7 +211,7 @@ Or explicitly writing the anonymous function which this `do` block creates,
 !!! compat "Implicit-style `train!`"
     This is a new method of `train!`, which takes the result of `setup` as its 4th argument.
     The 1st argument is a function which accepts the model itself.
-    Flux versions ≤ 0.13 provided a method of `train!` for "implicit" parameters,
+    Flux versions ≤ 0.14 provided a method of `train!` for "implicit" parameters,
     which works like this:
     ```
     train!((x,y) -> loss(model(x), y), Flux.params(model), train_set, Adam())
@@ -342,7 +342,7 @@ for epoch in 1:1000
 end
 ```
 
-!!! compat "Flux ≤ 0.13"
+!!! compat "Flux ≤ 0.14"
     With the old "implicit" optimiser, `opt = Adam(0.1)`, the equivalent was to
     directly mutate the `Adam` struct, `opt.eta = 0.001`. 
 
@@ -374,7 +374,7 @@ train!(loss, bimodel, data, opt_state)
 Flux.thaw!(opt_state)
 ```
 
-!!! compat "Flux ≤ 0.13"
+!!! compat "Flux ≤ 0.14"
     The earlier "implicit" equivalent was to pass to `gradient` an object referencing only
     part of the model, such as `Flux.params(bimodel.layers.enc)`.
 
@@ -383,7 +383,7 @@ Flux.thaw!(opt_state)
 
 Flux used to handle gradients, training, and optimisation rules quite differently.
 The new style described above is called "explicit" by Zygote, and the old style "implicit".
-Flux 0.13 is the transitional version which supports both.
+Flux 0.13 and 0.14 are the transitional versions which support both.
 
 The blue-green boxes above describe the changes.
 For more details on training in the implicit style, see [Flux 0.13.6 documentation](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).

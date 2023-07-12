@@ -1,19 +1,3 @@
-# v0.12 deprecations
-
-function ones(dims...)
-  Base.depwarn("Flux.ones(size...) is deprecated, please use Flux.ones32(size...) or Base.ones(Float32, size...)", :ones, force=true)
-  Base.ones(Float32, dims...)
-end
-ones(T::Type, dims...) = Base.ones(T, dims...)
-
-function zeros(dims...)
-  Base.depwarn("Flux.zeros(size...) is deprecated, please use Flux.zeros32(size...) or Base.zeros(Float32, size...)", :zeros, force=true)
-  Base.zeros(Float32, dims...)
-end
-zeros(T::Type, dims...) = Base.zeros(T, dims...)
-
-ones32(::Type, dims...) = throw(ArgumentError("Flux.ones32 is always Float32, use Base.ones to specify the element type"))
-zeros32(::Type, dims...) = throw(ArgumentError("Flux.zeros32 is always Float32, use Base.zeros to specify the element type"))
 
 # v0.13 deprecations
 
@@ -59,7 +43,7 @@ function loadparams!(m, xs)
 end
 
 # Channel notation: Changed to match Conv, but very softly deprecated!
-# Perhaps change to @deprecate for v0.14, but there is no plan to remove these.
+# Perhaps change to @deprecate for v0.15, but there is no plan to remove these.
 Dense(in::Integer, out::Integer, σ = identity; kw...) =
   Dense(in => out, σ; kw...)
 Bilinear(in1::Integer, in2::Integer, out::Integer, σ = identity; kw...) =
@@ -86,7 +70,7 @@ Base.@deprecate_binding Data Flux false "Sub-module Flux.Data has been removed. 
 
 @deprecate paramtype(T,m) _paramtype(T,m) false  # internal method, renamed to make this clear
 
-@deprecate rng_from_array() default_rng_value()
+@deprecate rng_from_array() Random.default_rng()
 
 function istraining()
   Base.depwarn("Flux.istraining() is deprecated, use NNlib.within_gradient(x) instead", :istraining)
@@ -216,13 +200,17 @@ ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
 
 
 # v0.14 deprecations
+@deprecate default_rng_value() Random.default_rng()
 
-# Enable these when 0.14 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
+
+# v0.15 deprecations
+
+# Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
 # Base.@deprecate_binding Optimiser OptimiserChain
 # Base.@deprecate_binding ClipValue ClipGrad
 
 # train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
-#   """On Flux 0.14, `train!` no longer accepts implicit `Zygote.Params`.
+#   """On Flux 0.15, `train!` no longer accepts implicit `Zygote.Params`.
 #   Instead of `train!(loss_xy, Flux.params(model), data, Adam())`
 #   it now needs `opt = Flux.setup(Adam(), model); train!(loss_mxy, model, data, opt)`
 #   where `loss_mxy` accepts the model as its first argument.

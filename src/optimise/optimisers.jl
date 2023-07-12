@@ -566,7 +566,7 @@ that will be fed into the next, and this is finally applied to the parameter as
 usual.
 
 !!! note
-    This will be replaced by `Optimisers.OptimiserChain` in Flux 0.14.
+    This will be replaced by `Optimisers.OptimiserChain` in Flux 0.15.
 """
 mutable struct Optimiser <: AbstractOptimiser
   os::Vector{Any}
@@ -704,7 +704,7 @@ end
 Clip gradients when their absolute value exceeds `thresh`.
 
 !!! note
-    This will be replaced by `Optimisers.ClipGrad` in Flux 0.14.
+    This will be replaced by `Optimisers.ClipGrad` in Flux 0.15.
 """
 mutable struct ClipValue{T} <: AbstractOptimiser
     thresh::T

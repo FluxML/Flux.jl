@@ -5,8 +5,8 @@ If you have used neural networks before, then this simple example might be helpf
 If you haven't, then you might prefer the [Fitting a Straight Line](overview.md) page.
 
 ```julia
-# With Julia 1.7+, this will prompt if neccessary to install everything, including CUDA:
-using Flux, Statistics, ProgressMeter
+# This will prompt if neccessary to install everything, including CUDA:
+using Flux, CUDA, Statistics, ProgressMeter
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
@@ -102,7 +102,7 @@ for epoch in 1:1_000
 end
 ```
 
-!!! compat "Implicit-style training, Flux ≤ 0.13"
+!!! compat "Implicit-style training, Flux ≤ 0.14"
     Until recently Flux's training worked a bit differently. 
     Any code which looks like 
     ```
@@ -113,5 +113,5 @@ end
     train!((x,y) -> loss(model, x, y), Flux.params(model), loader, opt)
     ```
     (with `Flux.params`) is in the old "implicit" style.
-    This still works on Flux 0.13, but will be removed from Flux 0.14.
+    This still works on Flux 0.14, but will be removed from Flux 0.15.
     See the [training section](@ref man-training) for more details.
