@@ -41,7 +41,7 @@ Optimisers.thaw!
 
 Flux used to handle gradients, training, and optimisation rules quite differently.
 The new style described above is called "explicit" by Zygote, and the old style "implicit".
-Flux 0.13 and 0.14 are the transitional version which supports both; Flux 0.15 will remove the old.
+Flux 0.13 and 0.14 are the transitional versions which support both; Flux 0.15 will remove the old.
 
 !!! compat "How to upgrade"
     The blue-green boxes in the [training section](@ref man-training) describe
