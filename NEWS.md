@@ -2,11 +2,11 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
-## v0.14.0
+## v0.14.0 (July 2023)
 * Flux now requires julia v1.9 or later.
-* CUDA.jl is not a hard dependency anymore. CUDA support is now provided through the extension mechanism. In order to unlock the CUDA 
-functionalities user are required to load CUDA, e.g. with `using CUDA`.
-The package `cuDNN.jl` also needs to be installed in the environment.
+* CUDA.jl is not a hard dependency anymore. Support is now provided through the extension mechanism, by loading `using Flux, CUDA`.
+  The package cuDNN.jl also needs to be installed in the environment. (You will get instructions if this is missing.)
+* After a deprecations cycle, the macro `@epochs` and the functions `Flux.stop`, `Flux.skip`, `Flux.zeros`, `Flux.ones` have been removed.
 
 ## v0.13.17
 * Apple's Metal GPU acceleration preliminary support via the extension mechanism. 
@@ -14,7 +14,7 @@ The package `cuDNN.jl` also needs to be installed in the environment.
 ## v0.13.16
 * Most greek-letter keyword arguments are deprecated in favour of ascii.
   Thus `LayerNorm(3; ϵ=1e-4)` (not `ε`!) should become `LayerNorm(3; eps=1e-4)`.
- * `DataLoader(...) |> gpu` will now produce a special iterator, moving each batch as needed,
+* `DataLoader(...) |> gpu` will now produce a special iterator, moving each batch as needed,
   instead of giving an error.
 * Added `Flux.state` returning the internal state of the model for serialization.
 
