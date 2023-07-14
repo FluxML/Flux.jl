@@ -67,7 +67,7 @@ julia> Flux.params(Affine(true, [10, 11, 12.0]))
 Params([])
 ```
 
-It is also possible to further restrict what fields are seen by writing `@functor Affine (W,)`. However, this is not recommended. This requires the `struct` to have a corresponding constructor that accepts those parameters. And the contentes `gpu`
+It is also possible to further restrict what fields are seen by writing `@functor Affine (W,)`. However, this is not recommended. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument, and the ignored fields will not be seen by functions like `gpu` (which is usually undesired).
 
 ## Freezing Layer Parameters
 
