@@ -195,7 +195,8 @@ const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 Sets the gpu backend in `LocalPreferences.toml`. 
 Possible `backend` values are "CUDA", "AMD", and "Metal".
-The selected backend affects the data movement through [`Flux.gpu`](@ref).
+The selected backend affects the data movement in [`Flux.gpu`](@ref).
+Current backend is stored in `Flux.GPU_BACKEND`.
 """
 function gpu_backend!(backend::String)
     if backend == GPU_BACKEND
