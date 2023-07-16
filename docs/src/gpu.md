@@ -46,7 +46,7 @@ Flux relies on [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl
 
 There are two ways you can specify it:
 
-- From the REPL/code in your project, call `Flux.gpu_backend!("AMD")` and restart (if needed) Julia session for the changes to take effect.
+- From the REPL/code in your project, call [`Flux.gpu_backend!`](ref)`("AMD")` and restart (if needed) Julia session for the changes to take effect.
 - In `LocalPreferences.toml` file in you project directory specify:
 ```toml
 [Flux]

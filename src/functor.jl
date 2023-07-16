@@ -190,6 +190,13 @@ _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 const GPU_BACKENDS = ("CUDA", "AMD", "Metal")
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
+"""
+    gpu_backend!(backend::String)
+
+Sets the gpu backend in `LocalPreferences.toml`. 
+Possible `backend` values are "CUDA", "AMD", and "Metal".
+The selected backend affects the data movement through [`Flux.gpu`](@ref).
+"""
 function gpu_backend!(backend::String)
     if backend == GPU_BACKEND
         @info """
