@@ -56,6 +56,9 @@ Random.seed!(0)
     include("outputsize.jl")
   end
 
+  @testset "functors" begin
+    include("functors.jl")
+  end
 
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
     using CUDA
