@@ -341,6 +341,7 @@ function gpu(::FluxCUDAAdaptor, x)
         `CUDA.jl` must be loaded to access it.
         Add `using CUDA` or `import CUDA` to your code.
         """ maxlog=1
+        return x
     end
 end
 
@@ -361,6 +362,7 @@ function gpu(::FluxAMDAdaptor, x)
         `AMDGPU.jl` must be loaded to access it.
         Add `using AMDGPU` or `import AMDGPU` to your code.
         """ maxlog=1
+        return x
     end
 end
 
@@ -380,6 +382,7 @@ function gpu(::FluxMetalAdaptor, x)
         The Metal functionality is being called but
         `Metal.jl` must be loaded to access it.
         """ maxlog=1
+        return x
     end
 end
 
