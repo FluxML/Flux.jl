@@ -153,27 +153,6 @@ ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
 
 # CPU/GPU movement conveniences
 
-abstract type AbstractDevice <: Function end
-
-struct FluxCPUDevice <: AbstractDevice end
-
-Base.@kwdef struct FluxCUDADevice <: AbstractDevice
-    name::String = "CUDA"
-end
-
-Base.@kwdef struct FluxAMDDevice <: AbstractDevice
-    name::String = "AMD"
-end
-
-Base.@kwdef struct FluxMetalDevice <: AbstractDevice
-    name::String = "Metal"
-end
-
-(::FluxCPUDevice)(x) = cpu(x)
-(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
-(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
-(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
-
 """
     cpu(m)
 
@@ -464,4 +443,82 @@ function gpu(d::MLUtils.DataLoader)
     d.collate,
     d.rng,
   )
+end
+
+abstract type AbstractDevice <: Function end
+
+Base.@kwdef struct FluxCPUDevice <: AbstractDevice
+	name::String = "CPU"
+end
+
+Base.@kwdef struct FluxCUDADevice <: AbstractDevice
+    name::String = "CUDA"
+    pkgid::PkgId = PkgId(UUID("052768ef-5323-5732-b1bb-66c8b64840ba"), "CUDA")
+end
+
+Base.@kwdef struct FluxAMDDevice <: AbstractDevice
+    name::String = "AMD"
+    pkgid::PkgId = PkgId(UUID("21141c5a-9bdb-4563-92ae-f87d6854732e"), "AMDGPU")
+end
+
+Base.@kwdef struct FluxMetalDevice <: AbstractDevice
+    name::String = "Metal"
+    pkgid::PkgId = PkgId(UUID("dde4c033-4e86-420c-a63e-0dd931031962"), "Metal")
+end
+
+(::FluxCPUDevice)(x) = cpu(x)
+(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
+(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
+(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
+
+function _get_device_name(t::T) where {T <: AbstractDevice}
+    return hasfield(T, :name) ? t.name : ""
+end
+
+const DEVICES = (FluxCUDADevice(), FluxAMDDevice(), FluxMetalDevice(), FluxCPUDevice())
+supported_devices() = map(_get_device_name, DEVICES)
+
+function get_device()::AbstractDevice
+    backend = @load_preference("gpu_backend", nothing) 
+    if backend !== nothing
+        allowed_backends = supported_devices()
+        idx = findfirst(isequal(backend), allowed_backends)
+        if backend ∉  allowed_backends
+            @warn """
+                `gpu_backend` preference is set to $backend, which is not allowed.
+                Defaulting to automatic device selection.
+            """ maxlog=1
+        else
+            @info "Using backend set in preferences: $backend."
+            device = DEVICES[idx] 
+
+            if _get_device_name(device) !== "CPU" && !haskey(Base.loaded_modules, device.pkgid)
+                @warn """
+                Trying to use backend $(_get_device_name(device)) but package $(device.pkgid) is not loaded.
+                Please load the package and call this function again to respect the preferences backend.
+                """ maxlog=1
+            else 
+                if _get_device_name(device) == "CPU" || getproperty(Base.loaded_modules[device.pkgid], :functional)()
+                    @info "Using backend: $(_get_device_name(device))"
+                    return device
+                else
+                    @warn "Backend: $(_get_device_name(device)) from the set preferences is not functional. Defaulting to autmatic device selection." maxlog=1
+                end
+            end
+        end
+    end
+
+    @info "Running automatic device selection..."
+    for device in DEVICES 
+        if _get_device_name(device) == "CPU" || haskey(Base.loaded_modules, device.pkgid)
+            @debug "Trying backend: $(_get_device_name(device))."
+            if _get_device_name(device) == "CPU" || getproperty(Base.loaded_modules[device.pkgid], :functional)()
+                @debug "Using backend: $(_get_device_name(device))."
+                return device
+            end
+            @debug "Backend: $(_get_device_name(device)) is not functional."
+        else
+            @debug "Trigger package for backend ($(_get_device_name(device))): $((device.pkgid)) not loaded."
+        end
+    end
 end

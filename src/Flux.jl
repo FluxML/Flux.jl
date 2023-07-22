@@ -5,6 +5,7 @@ using Preferences
 using LinearAlgebra, Statistics, Random  # standard lib
 using MacroTools, Reexport, ProgressLogging, SpecialFunctions
 using MacroTools: @forward
+import Base: PkgId, UUID
 
 @reexport using NNlib
 using MLUtils
