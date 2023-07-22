@@ -153,6 +153,27 @@ ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
 
 # CPU/GPU movement conveniences
 
+abstract type AbstractDevice <: Function end
+
+struct FluxCPUDevice <: AbstractDevice end
+
+Base.@kwdef struct FluxCUDADevice <: AbstractDevice
+    name::String = "CUDA"
+end
+
+Base.@kwdef struct FluxAMDDevice <: AbstractDevice
+    name::String = "AMD"
+end
+
+Base.@kwdef struct FluxMetalDevice <: AbstractDevice
+    name::String = "Metal"
+end
+
+(::FluxCPUDevice)(x) = cpu(x)
+(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
+(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
+(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
+
 """
     cpu(m)
 
