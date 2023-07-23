@@ -533,7 +533,7 @@ If there is no preference, then for each of the `"CUDA"`, `"AMD"`, `"Metal"` and
 # Examples
 For the example given below, the backend preference was set to `"AMD"` via the [`gpu_backend!`](@ref) function.
 
-```jldoctest
+```julia-repl
 julia> using Flux;
 
 julia> model = Dense(2 => 3)
@@ -559,7 +559,7 @@ julia> model.weight
 
 Here is the same example, but using `"CUDA"`:
 
-```jldoctest
+```julia-repl
 julia> using Flux, CUDA;
 
 julia> model = Dense(2 => 3)
@@ -616,14 +616,14 @@ function get_device()::AbstractDevice
     @info "Running automatic device selection..."
     for device in DEVICES 
         if _get_device_name(device) == "CPU" || haskey(Base.loaded_modules, device.pkgid)
-            @debug "Trying backend: $(_get_device_name(device))."
+            @info "Trying backend: $(_get_device_name(device))."
             if _get_device_name(device) == "CPU" || getproperty(Base.loaded_modules[device.pkgid], :functional)()
                 @debug "Using backend: $(_get_device_name(device))."
                 return device
             end
-            @debug "Backend: $(_get_device_name(device)) is not functional."
+            @info "Backend: $(_get_device_name(device)) is not functional."
         else
-            @debug "Trigger package for backend ($(_get_device_name(device))): $((device.pkgid)) not loaded."
+            @info "Trigger package for backend ($(_get_device_name(device))): $((device.pkgid)) not loaded."
         end
     end
 end
