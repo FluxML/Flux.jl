@@ -187,7 +187,7 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
-const GPU_BACKENDS = ("CUDA", "AMD", "Metal")
+const GPU_BACKENDS = ("CUDA", "AMD", "Metal", "CPU")
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 function gpu_backend!(backend::String)
@@ -249,6 +249,8 @@ function gpu(x)
         gpu(FluxAMDAdaptor(), x)
     elseif GPU_BACKEND == "Metal"
         gpu(FluxMetalAdaptor(), x)
+    elseif GPU_BACKEND == "CPU"
+        cpu(x)
     else
         error("""
         Unsupported GPU backend: $GPU_BACKEND.
@@ -524,9 +526,9 @@ supported_devices() = map(_get_device_name, DEVICES)
 
 Returns a `device` object for the most appropriate backend for the current Julia session. 
 
-First, the function checks whether a backend preference has been set via the `gpu_backend!` function. If so, then an attempt is made to load this backend. If the corresponding trigger package has been loaded and the backend is functional, a `device` corresponding to the given backend is loaded. Otherwise, an appropriate backend is chosen.
+First, the function checks whether a backend preference has been set via the `gpu_backend!` function. If so, an attempt is made to load this backend. If the corresponding trigger package has been loaded and the backend is functional, a `device` corresponding to the given backend is loaded. Otherwise, the backend is chosen automatically. To update the backend preference, use [gpu_backend!](@ref).
 
-If there is no preference, then each of the `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"` backends in the given order, this function checks whether the given backend has been loaded via the corresponding trigger package, and whether the backend is functional. If so, the `device` corresponding to the backend is returned. If no GPU backend is available, a `Flux.FluxCPUDevice` is returned.
+If there is no preference, then for each of the `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"` backends in the given order, this function checks whether the given backend has been loaded via the corresponding trigger package, and whether the backend is functional. If so, the `device` corresponding to the backend is returned. If no GPU backend is available, a `Flux.FluxCPUDevice` is returned.
 
 # Examples
 For the example given below, the backend preference was set to `"AMD"` via the [`gpu_backend!`](@ref) function.
