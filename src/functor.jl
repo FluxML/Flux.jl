@@ -498,6 +498,25 @@ end
 (::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
 (::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
 
+# Applying device to DataLoader
+function _apply_to_dataloader(device::T, d::MLUtils.DataLoader) where {T <: AbstractDevice}
+    MLUtils.DataLoader(MLUtils.mapobs(device, d.data),
+        d.batchsize,
+        d.buffer,
+        d.partial,
+        d.shuffle,
+        d.parallel,
+        d.collate,
+        d.rng,
+    )
+end
+
+(device::FluxCPUDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
+(device::FluxCUDADevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
+(device::FluxAMDDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
+(device::FluxMetalDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
+
+
 function _get_device_name(t::T) where {T <: AbstractDevice}
     return hasfield(T, :name) ? t.name : ""
 end
