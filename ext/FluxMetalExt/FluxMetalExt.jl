@@ -12,6 +12,9 @@ using Zygote
 
 const USE_METAL = Ref{Union{Nothing, Bool}}(nothing)
 
+Flux.isavailable(device::Flux.FluxMetalDevice) = true
+Flux.isfunctional(devuce::Flux.FluxMetalDevice) = Metal.functional()
+
 function check_use_metal()
     isnothing(USE_METAL[]) || return
 

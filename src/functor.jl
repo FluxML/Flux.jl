@@ -470,7 +470,6 @@ A type representing `device` objects for the `"CUDA"` backend for Flux.
 """
 Base.@kwdef struct FluxCUDADevice <: AbstractDevice
     name::String = "CUDA"
-    pkgid::PkgId = PkgId(UUID("052768ef-5323-5732-b1bb-66c8b64840ba"), "CUDA")
 end
 
 """
@@ -480,7 +479,6 @@ A type representing `device` objects for the `"AMD"` backend for Flux.
 """
 Base.@kwdef struct FluxAMDDevice <: AbstractDevice
     name::String = "AMD"
-    pkgid::PkgId = PkgId(UUID("21141c5a-9bdb-4563-92ae-f87d6854732e"), "AMDGPU")
 end
 
 """
@@ -490,7 +488,6 @@ A type representing `device` objects for the `"Metal"` backend for Flux.
 """
 Base.@kwdef struct FluxMetalDevice <: AbstractDevice
     name::String = "Metal"
-    pkgid::PkgId = PkgId(UUID("dde4c033-4e86-420c-a63e-0dd931031962"), "Metal")
 end
 
 (::FluxCPUDevice)(x) = cpu(x)
@@ -515,11 +512,16 @@ end
 (device::FluxCUDADevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
 (device::FluxAMDDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
 (device::FluxMetalDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
-
-
 function _get_device_name(t::T) where {T <: AbstractDevice}
     return hasfield(T, :name) ? t.name : ""
 end
+
+## check device availability; more definitions in corresponding extensions
+isavailable(device::AbstractDevice) = false
+isfunctional(device::AbstractDevice) = false
+
+isavailable(device::FluxCPUDevice) = true
+isfunctional(device::FluxCPUDevice) = true
 
 # below order is important
 const DEVICES = (FluxCUDADevice(), FluxAMDDevice(), FluxMetalDevice(), FluxCPUDevice())
@@ -616,13 +618,13 @@ function get_device()::AbstractDevice
             @info "Using backend set in preferences: $backend."
             device = DEVICES[idx] 
 
-            if _get_device_name(device) !== "CPU" && !haskey(Base.loaded_modules, device.pkgid)
+            if !isavailable(device)
                 @warn """
-                Trying to use backend $(_get_device_name(device)) but package $(device.pkgid) is not loaded.
+                Trying to use backend $(_get_device_name(device)) but it's trigger package is not loaded.
                 Please load the package and call this function again to respect the preferences backend.
                 """ maxlog=1
             else 
-                if _get_device_name(device) == "CPU" || getproperty(Base.loaded_modules[device.pkgid], :functional)()
+                if isfunctional(device)
                     @info "Using backend: $(_get_device_name(device))"
                     return device
                 else
@@ -634,15 +636,15 @@ function get_device()::AbstractDevice
 
     @info "Running automatic device selection..."
     for device in DEVICES 
-        if _get_device_name(device) == "CPU" || haskey(Base.loaded_modules, device.pkgid)
+        if isavailable(device)
             @info "Trying backend: $(_get_device_name(device))."
-            if _get_device_name(device) == "CPU" || getproperty(Base.loaded_modules[device.pkgid], :functional)()
+            if isfunctional(device)
                 @debug "Using backend: $(_get_device_name(device))."
                 return device
             end
             @info "Backend: $(_get_device_name(device)) is not functional."
         else
-            @info "Trigger package for backend ($(_get_device_name(device))): $((device.pkgid)) not loaded."
+            @info "Trigger package for backend ($(_get_device_name(device))) is not loaded."
         end
     end
 end

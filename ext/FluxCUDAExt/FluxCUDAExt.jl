@@ -14,6 +14,9 @@ import Adapt: adapt_storage
 
 const USE_CUDA = Ref{Union{Nothing, Bool}}(nothing)
 
+Flux.isavailable(device::Flux.FluxCUDADevice) = true
+Flux.isfunctional(device::Flux.FluxCUDADevice) = CUDA.functional()
+
 function check_use_cuda()
     if !isnothing(USE_CUDA[])
         return
