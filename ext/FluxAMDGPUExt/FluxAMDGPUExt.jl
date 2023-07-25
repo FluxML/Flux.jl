@@ -17,8 +17,8 @@ const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
 # Set to boolean on the first call to check_use_amdgpu
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
-Flux.isavailable(device::Flux.FluxAMDGPUDevice) = true
-Flux.isfunctional(device::Flux.FluxAMDGPUDevice) = AMDGPU.functional()
+Flux.isavailable(device::Flux.FluxAMDDevice) = true
+Flux.isfunctional(device::Flux.FluxAMDDevice) = AMDGPU.functional()
 
 function check_use_amdgpu()
     if !isnothing(USE_AMDGPU[])
