@@ -187,7 +187,16 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
-const GPU_BACKENDS = ("CUDA", "AMD", "Metal", "CPU")
+const GPU_BACKEND_ORDER = sort(
+    Dict(
+        "CUDA" => 1,
+        "AMD" => 2,
+        "Metal" => 3,
+        "CPU" => 4,
+    ),
+    byvalue = true
+) 
+const GPU_BACKENDS = tuple(collect(keys(GPU_BACKEND_ORDER))...)
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 function gpu_backend!(backend::String)
@@ -447,56 +456,16 @@ function gpu(d::MLUtils.DataLoader)
   )
 end
 
+# Defining device interfaces.
 """
     Flux.AbstractDevice <: Function
 
-An abstract type representing `device` objects for different GPU backends. The currently supported backends are `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"`; the `"CPU"` backend is the fallback case when no GPU is available.
+An abstract type representing `device` objects for different GPU backends. The currently supported backends are `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"`; the `"CPU"` backend is the fallback case when no GPU is available. GPU extensions of Flux define subtypes of this type.
+
 """
 abstract type AbstractDevice <: Function end
 
-"""
-    Flux.FluxCPUDevice <: Flux.AbstractDevice
-
-A type representing `device` objects for the `"CPU"` backend for Flux. This is the fallback case when no GPU is available to Flux.
-"""
-Base.@kwdef struct FluxCPUDevice <: AbstractDevice
-	name::String = "CPU"
-end
-
-"""
-    Flux.FluxCUDADevice <: Flux.AbstractDevice
-
-A type representing `device` objects for the `"CUDA"` backend for Flux.
-"""
-Base.@kwdef struct FluxCUDADevice <: AbstractDevice
-    name::String = "CUDA"
-end
-
-"""
-    Flux.FluxAMDDevice <: Flux.AbstractDevice
-
-A type representing `device` objects for the `"AMD"` backend for Flux.
-"""
-Base.@kwdef struct FluxAMDDevice <: AbstractDevice
-    name::String = "AMD"
-end
-
-"""
-    Flux.FluxMetalDevice <: Flux.AbstractDevice
-
-A type representing `device` objects for the `"Metal"` backend for Flux.
-"""
-Base.@kwdef struct FluxMetalDevice <: AbstractDevice
-    name::String = "Metal"
-end
-
-(::FluxCPUDevice)(x) = cpu(x)
-(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
-(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
-(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
-
-# Applying device to DataLoader
-function _apply_to_dataloader(device::T, d::MLUtils.DataLoader) where {T <: AbstractDevice}
+function (device::AbstractDevice)(d::MLUtils.DataLoader)
     MLUtils.DataLoader(MLUtils.mapobs(device, d.data),
         d.batchsize,
         d.buffer,
@@ -508,23 +477,32 @@ function _apply_to_dataloader(device::T, d::MLUtils.DataLoader) where {T <: Abst
     )
 end
 
-(device::FluxCPUDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
-(device::FluxCUDADevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
-(device::FluxAMDDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
-(device::FluxMetalDevice)(d::MLUtils.DataLoader) = _apply_to_dataloader(device, d)
-function _get_device_name(t::T) where {T <: AbstractDevice}
-    return hasfield(T, :name) ? t.name : ""
-end
+function _get_device_name(::T)::String where {T <: AbstractDevice} end
 
 ## check device availability; more definitions in corresponding extensions
-isavailable(device::AbstractDevice) = false
-isfunctional(device::AbstractDevice) = false
+isavailable(::Nothing) = false
+isfunctional(::Nothing) = false
 
-isavailable(device::FluxCPUDevice) = true
-isfunctional(device::FluxCPUDevice) = true
+isavailable(::AbstractDevice) = false
+isfunctional(::AbstractDevice) = false
 
-# below order is important
-const DEVICES = (FluxCUDADevice(), FluxAMDDevice(), FluxMetalDevice(), FluxCPUDevice())
+"""
+    Flux.FluxCPUDevice <: Flux.AbstractDevice
+
+A type representing `device` objects for the `"CPU"` backend for Flux. This is the fallback case when no GPU is available to Flux.
+"""
+Base.@kwdef struct FluxCPUDevice <: AbstractDevice end
+
+(::FluxCPUDevice)(x) = cpu(x)
+isavailable(::FluxCPUDevice) = true
+isfunctional(::FluxCPUDevice) = true
+_get_device_name(::FluxCPUDevice) = "CPU"
+
+## device list. order is important
+const DEVICES = Ref{Vector{Union{Nothing, AbstractDevice}}}(Vector{Union{Nothing, AbstractDevice}}(nothing, length(GPU_BACKENDS)))
+DEVICES[][GPU_BACKEND_ORDER["CPU"]] = FluxCPUDevice()
+
+## get device
 
 """
     Flux.supported_devices()
@@ -540,7 +518,7 @@ julia> Flux.supported_devices()
 ("CUDA", "AMD", "Metal", "CPU")
 ```
 """
-supported_devices() = map(_get_device_name, DEVICES)
+supported_devices() = GPU_BACKENDS
 
 """
     Flux.get_device()::AbstractDevice
@@ -606,6 +584,7 @@ julia> model.weight
 """
 function get_device()::AbstractDevice
     backend = @load_preference("gpu_backend", nothing) 
+
     if backend !== nothing
         allowed_backends = supported_devices()
         idx = findfirst(isequal(backend), allowed_backends)
@@ -616,35 +595,36 @@ function get_device()::AbstractDevice
             """ maxlog=1
         else
             @info "Using backend set in preferences: $backend."
-            device = DEVICES[idx] 
+            device = DEVICES[][idx] 
 
             if !isavailable(device)
                 @warn """
-                Trying to use backend $(_get_device_name(device)) but it's trigger package is not loaded.
+                Trying to use backend: $backend but it's trigger package is not loaded.
                 Please load the package and call this function again to respect the preferences backend.
-                """ maxlog=1
+                """
             else 
                 if isfunctional(device)
-                    @info "Using backend: $(_get_device_name(device))"
+                    @info "Using backend: $backend"
                     return device
                 else
-                    @warn "Backend: $(_get_device_name(device)) from the set preferences is not functional. Defaulting to autmatic device selection." maxlog=1
+                    @warn "Backend: $backend from the set preferences is not functional. Defaulting to autmatic device selection."
                 end
             end
         end
     end
 
     @info "Running automatic device selection..."
-    for device in DEVICES 
+    for backend in GPU_BACKENDS 
+        device = DEVICES[][GPU_BACKEND_ORDER[backend]]
         if isavailable(device)
-            @info "Trying backend: $(_get_device_name(device))."
+            @info "Trying backend: $backend."
             if isfunctional(device)
-                @debug "Using backend: $(_get_device_name(device))."
+                @info "Using backend: $backend."
                 return device
             end
-            @info "Backend: $(_get_device_name(device)) is not functional."
+            @info "Backend: $backend is not functional."
         else
-            @info "Trigger package for backend ($(_get_device_name(device))) is not loaded."
+            @info "Trigger package for backend: $backend is not loaded."
         end
     end
 end

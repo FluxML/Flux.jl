@@ -12,8 +12,19 @@ using Zygote
 
 const USE_METAL = Ref{Union{Nothing, Bool}}(nothing)
 
-Flux.isavailable(device::Flux.FluxMetalDevice) = true
-Flux.isfunctional(device::Flux.FluxMetalDevice) = Metal.functional()
+"""
+    FluxMetalExt.FluxMetalDevice <: Flux.AbstractDevice
+
+A type representing `device` objects for the `"Metal"` backend for Flux.
+"""
+Base.@kwdef struct FluxMetalDevice <: Flux.AbstractDevice
+    deviceID::MTLDevice
+end
+
+(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
+Flux.isavailable(::FluxMetalDevice) = true
+Flux.isfunctional(::FluxMetalDevice) = Metal.functional()
+Flux._get_device_name(::FluxMetalDevice) = "Metal"
 
 function check_use_metal()
     isnothing(USE_METAL[]) || return
@@ -33,6 +44,7 @@ include("functor.jl")
 
 function __init__()
     Flux.METAL_LOADED[] = true
+    Flux.DEVICES[Flux.GPU_BACKEND_ORDER["Meta"]] = FluxMetalDevice(Metal.current_device())
 end
 
 end
