@@ -738,3 +738,7 @@ function plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
 
   return patience(is_plateau, width)
 end
+
+function lecun_normal(rng::AbstractRNG, dims::Integer...)
+  return truncated_normal(rng,dims...,std = sqrt(1/first(nfan(dims...))))
+end
