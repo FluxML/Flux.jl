@@ -231,3 +231,71 @@ $ export CUDA_VISIBLE_DEVICES='0,1'
 
 More information for conditional use of GPUs in CUDA.jl can be found in its [documentation](https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use), and information about the specific use of the variable is described in the [Nvidia CUDA blog post](https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/).
 
+## Using device objects
+
+As a more convenient syntax, Flux allows the usage of GPU `device` objects which can be used to easily transfer models to GPUs (and defaulting to using the CPU if no GPU backend is available). This syntax has a few advantages including automatic selection of the GPU backend and type stability of data movement. To do this, the [`Flux.get_device`](@ref) function can be used.
+
+`Flux.get_device` first checks for a GPU preference, and if possible returns a device for the preference backend. For instance, consider the following example, where we load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) package to use an NVIDIA GPU (`"CUDA"` is the default preference):
+
+```julia-repl
+julia> using Flux, CUDA;
+
+julia> device = Flux.get_device()   # returns handle to an NVIDIA GPU
+[ Info: Using backend set in preferences: CUDA.
+[ Info: Using backend: CUDA
+(::FluxCUDAExt.FluxCUDADevice) (generic function with 1 method)
+
+julia> device.deviceID      # check the id of the GPU
+CuDevice(0): NVIDIA GeForce GTX 1650
+
+julia> model = Dense(2 => 3);
+
+julia> model.weight     # the model initially lives in CPU memory
+3×2 Matrix{Float32}:
+ -0.984794  -0.904345
+  0.720379  -0.486398
+  0.851011  -0.586942
+
+julia> model = model |> device      # transfer model to the GPU
+Dense(2 => 3)       # 9 parameters
+
+julia> model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ -0.984794  -0.904345
+  0.720379  -0.486398
+  0.851011  -0.586942
+
+```
+
+The device preference can also be set via the [`gpu_backend!`](@ref) function. For instance, below we first set our device preference to `"CPU"`:
+
+```julia-repl
+julia> using Flux; Flux.gpu_backend!("CPU")
+┌ Info: New GPU backend set: CPU.
+└ Restart your Julia session for this change to take effect!
+```
+
+Then, after restarting the Julia session, `Flux.get_device` returns a handle to the `"CPU"`:
+
+```julia-repl
+julia> using Flux, CUDA;    # even if CUDA is loaded, we'll still get a CPU device
+
+julia> device = Flux.get_device()   # get a CPU device
+[ Info: Using backend set in preferences: CPU.
+[ Info: Using backend: CPU
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+
+julia> model = Dense(2 => 3);
+
+julia> model = model |> device
+Dense(2 => 3)       # 9 parameters
+
+julia> model.weight     # no change; model still lives on CPU
+3×2 Matrix{Float32}:
+ -0.942968   0.856258
+  0.440009   0.714106
+ -0.419192  -0.471838
+```
+Clearly, this means that the same code will work for any GPU backend and the CPU. 
+
+If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMD or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. For detailed information about how the backend is selected, check the documentation for [`Flux.get_device`](@ref).
