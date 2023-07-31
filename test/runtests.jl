@@ -5,8 +5,6 @@ using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
-using CUDA
-using cuDNN
 
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 ENV["FLUX_TEST_CUDA"] = "true"
@@ -61,14 +59,24 @@ Random.seed!(0)
   end
 
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
-    using CUDA
+    using CUDA, cuDNN
     Flux.gpu_backend!("CUDA")
+
+    @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]]) <: Flux.FluxCUDADevice
+    device = Flux.get_device()
+
     @testset "CUDA" begin
       if CUDA.functional()
+        @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]].deviceID) <: CUDA.CuDevice
+        @test typeof(device) <: Flux.FluxCUDADevice
+        @test typeof(device.deviceID) <: CUDA.CuDevice
+        @test Flux._get_device_name(device) in Flux.supported_device()
+
         @info "Testing CUDA Support"
         include("ext_cuda/runtests.jl")
       else
         @warn "CUDA.jl package is not functional. Skipping CUDA tests."
+        @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]].deviceID) <: Nothing 
       end
     end
   else
@@ -79,12 +87,21 @@ Random.seed!(0)
     using AMDGPU
     Flux.gpu_backend!("AMD")
 
+    @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMD"]]) <: Flux.FluxAMDDevice
+    device = Flux.get_device()
+
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
+      @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMD"]].deviceID) <: AMDGPU.HIPDevice 
+      @test typeof(device) <: Flux.FluxAMDDevice
+      @test typeof(device.deviceID) <: AMDGPU.HIPDevice
+      @test Flux._get_device_name(device) in Flux.supported_device()
+
       @testset "AMDGPU" begin
         include("ext_amdgpu/runtests.jl")
       end
     else
       @info "AMDGPU.jl package is not functional. Skipping AMDGPU tests."
+      @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMD"]].deviceID) <: nothing 
     end
   else
     @info "Skipping AMDGPU tests, set FLUX_TEST_AMDGPU=true to run them."
@@ -94,12 +111,21 @@ Random.seed!(0)
     using Metal
     Flux.gpu_backend!("Metal")
 
+    @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]) <: Flux.FluxAMDDevice
+    device = Flux.get_device()
+
     if Metal.functional()
+      @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]].deviceID) <: Metal.MTLDevice
+      @test typeof(device) <: Flux.FluxMetalDevice
+      @test typeof(device.deviceID) <: Metal.MTLDevice
+      @test Flux._get_device_name(device) in Flux.supported_device()
+
       @testset "Metal" begin
         include("ext_metal/runtests.jl")
       end
     else
       @info "Metal.jl package is not functional. Skipping Metal tests."
+      @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]].deviceID) <: Nothing 
     end
   else
     @info "Skipping Metal tests, set FLUX_TEST_METAL=true to run them."
