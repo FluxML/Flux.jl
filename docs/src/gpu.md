@@ -240,7 +240,7 @@ As a more convenient syntax, Flux allows the usage of GPU `device` objects which
 ```julia-repl
 julia> using Flux, CUDA;
 
-julia> device = Flux.get_device()   # returns handle to an NVIDIA GPU
+julia> device = Flux.get_device(; verbose=true)   # returns handle to an NVIDIA GPU
 [ Info: Using backend set in preferences: CUDA.
 (::Flux.FluxCUDADevice) (generic function with 1 method)
 
@@ -279,7 +279,7 @@ Then, after restarting the Julia session, `Flux.get_device` returns a handle to 
 ```julia-repl
 julia> using Flux, CUDA;    # even if CUDA is loaded, we'll still get a CPU device
 
-julia> device = Flux.get_device()   # get a CPU device
+julia> device = Flux.get_device(; verbose=true)   # get a CPU device
 [ Info: Using backend set in preferences: CPU.
 (::Flux.FluxCPUDevice) (generic function with 1 method)
 
@@ -301,7 +301,7 @@ If the preference backend isn't available or isn't functional, then [`Flux.get_d
 ```julia-repl
 julia> using Flux;      # preference is CUDA, but CUDA.jl not loaded
 
-julia> device = Flux.get_device()       # this will resort to automatic device selection
+julia> device = Flux.get_device(; verbose=true)       # this will resort to automatic device selection
 [ Info: Using backend set in preferences: CUDA.
 ┌ Warning: Trying to use backend: CUDA but it's trigger package is not loaded.
 │ Please load the package and call this function again to respect the preferences backend.

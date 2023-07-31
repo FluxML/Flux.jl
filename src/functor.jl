@@ -557,13 +557,15 @@ julia> Flux.supported_devices()
 supported_devices() = GPU_BACKENDS
 
 """
-    Flux.get_device()::AbstractDevice
+    Flux.get_device(; verbose=false)::AbstractDevice
 
 Returns a `device` object for the most appropriate backend for the current Julia session. 
 
 First, the function checks whether a backend preference has been set via the [`Flux.gpu_backend!`](@ref) function. If so, an attempt is made to load this backend. If the corresponding trigger package has been loaded and the backend is functional, a `device` corresponding to the given backend is loaded. Otherwise, the backend is chosen automatically. To update the backend preference, use [`Flux.gpu_backend!`](@ref).
 
 If there is no preference, then for each of the `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"` backends in the given order, this function checks whether the given backend has been loaded via the corresponding trigger package, and whether the backend is functional. If so, the `device` corresponding to the backend is returned. If no GPU backend is available, a `Flux.FluxCPUDevice` is returned.
+
+If `verbose` is set to `true`, then the function prints informative log messages.
 
 # Examples
 For the example given below, the backend preference was set to `"AMD"` via the [`gpu_backend!`](@ref) function.
@@ -574,7 +576,7 @@ julia> using Flux;
 julia> model = Dense(2 => 3)
 Dense(2 => 3)       # 9 parameters
 
-julia> device = Flux.get_device()       # this will just load the CPU device
+julia> device = Flux.get_device(; verbose=true)       # this will just load the CPU device
 [ Info: Using backend set in preferences: AMD.
 ┌ Warning: Trying to use backend: AMD but it's trigger package is not loaded.
 │ Please load the package and call this function again to respect the preferences backend.
@@ -600,7 +602,7 @@ julia> using Flux, CUDA;
 julia> model = Dense(2 => 3)
 Dense(2 => 3)       # 9 parameters
 
-julia> device = Flux.get_device()
+julia> device = Flux.get_device(; verbose=true)
 [ Info: Using backend set in preferences: AMD.
 ┌ Warning: Trying to use backend: AMD but it's trigger package is not loaded.
 │ Please load the package and call this function again to respect the preferences backend.
@@ -618,7 +620,7 @@ julia> model.weight
   0.290744  -0.0592499
 ```
 """
-function get_device()::AbstractDevice
+function get_device(; verbose=false)::AbstractDevice
     backend = @load_preference("gpu_backend", nothing) 
 
     if backend !== nothing
@@ -630,7 +632,7 @@ function get_device()::AbstractDevice
                 Defaulting to automatic device selection.
             """ maxlog=1
         else
-            @info "Using backend set in preferences: $backend."
+            verbose && @info "Using backend set in preferences: $backend."
             device = DEVICES[][idx] 
 
             if !_isavailable(device)
@@ -652,7 +654,7 @@ function get_device()::AbstractDevice
         device = DEVICES[][GPU_BACKEND_ORDER[backend]]
         if _isavailable(device)
             if _isfunctional(device)
-                @info "Using backend: $backend."
+                verbose && @info "Using backend: $backend."
                 return device
             end
         end
