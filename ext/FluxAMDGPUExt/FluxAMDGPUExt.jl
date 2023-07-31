@@ -27,8 +27,8 @@ Base.@kwdef struct FluxAMDDevice <: Flux.AbstractDevice
 end
 
 (::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
-Flux.isavailable(::FluxAMDDevice) = true
-Flux.isfunctional(::FluxAMDDevice) = AMDGPU.functional()
+Flux._isavailable(::FluxAMDDevice) = true
+Flux._isfunctional(::FluxAMDDevice) = AMDGPU.functional()
 Flux._get_device_name(::FluxAMDDevice) = "AMD"
 
 function check_use_amdgpu()

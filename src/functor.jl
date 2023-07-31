@@ -480,11 +480,11 @@ end
 function _get_device_name(::T)::String where {T <: AbstractDevice} end
 
 ## check device availability; more definitions in corresponding extensions
-isavailable(::Nothing) = false
-isfunctional(::Nothing) = false
+_isavailable(::Nothing) = false
+_isfunctional(::Nothing) = false
 
-isavailable(::AbstractDevice) = false
-isfunctional(::AbstractDevice) = false
+_isavailable(::AbstractDevice) = false
+_isfunctional(::AbstractDevice) = false
 
 """
     Flux.FluxCPUDevice <: Flux.AbstractDevice
@@ -494,8 +494,8 @@ A type representing `device` objects for the `"CPU"` backend for Flux. This is t
 Base.@kwdef struct FluxCPUDevice <: AbstractDevice end
 
 (::FluxCPUDevice)(x) = cpu(x)
-isavailable(::FluxCPUDevice) = true
-isfunctional(::FluxCPUDevice) = true
+_isavailable(::FluxCPUDevice) = true
+_isfunctional(::FluxCPUDevice) = true
 _get_device_name(::FluxCPUDevice) = "CPU"
 
 ## device list. order is important
@@ -597,13 +597,13 @@ function get_device()::AbstractDevice
             @info "Using backend set in preferences: $backend."
             device = DEVICES[][idx] 
 
-            if !isavailable(device)
+            if !_isavailable(device)
                 @warn """
                 Trying to use backend: $backend but it's trigger package is not loaded.
                 Please load the package and call this function again to respect the preferences backend.
                 """
             else 
-                if isfunctional(device)
+                if _isfunctional(device)
                     @info "Using backend: $backend"
                     return device
                 else
@@ -616,9 +616,9 @@ function get_device()::AbstractDevice
     @info "Running automatic device selection..."
     for backend in GPU_BACKENDS 
         device = DEVICES[][GPU_BACKEND_ORDER[backend]]
-        if isavailable(device)
+        if _isavailable(device)
             @info "Trying backend: $backend."
-            if isfunctional(device)
+            if _isfunctional(device)
                 @info "Using backend: $backend."
                 return device
             end

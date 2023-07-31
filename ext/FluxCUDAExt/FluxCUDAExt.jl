@@ -24,8 +24,8 @@ Base.@kwdef struct FluxCUDADevice <: Flux.AbstractDevice
 end
 
 (::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
-Flux.isavailable(::FluxCUDADevice) = true
-Flux.isfunctional(::FluxCUDADevice) = CUDA.functional()
+Flux._isavailable(::FluxCUDADevice) = true
+Flux._isfunctional(::FluxCUDADevice) = CUDA.functional()
 Flux._get_device_name(::FluxCUDADevice) = "CUDA"
 
 function check_use_cuda()

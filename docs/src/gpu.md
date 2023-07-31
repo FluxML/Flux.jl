@@ -299,3 +299,7 @@ julia> model.weight     # no change; model still lives on CPU
 Clearly, this means that the same code will work for any GPU backend and the CPU. 
 
 If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMD or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. For detailed information about how the backend is selected, check the documentation for [`Flux.get_device`](@ref).
+
+```@docs
+Flux.get_device
+```

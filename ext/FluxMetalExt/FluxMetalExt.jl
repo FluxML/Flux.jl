@@ -22,8 +22,8 @@ Base.@kwdef struct FluxMetalDevice <: Flux.AbstractDevice
 end
 
 (::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
-Flux.isavailable(::FluxMetalDevice) = true
-Flux.isfunctional(::FluxMetalDevice) = Metal.functional()
+Flux._isavailable(::FluxMetalDevice) = true
+Flux._isfunctional(::FluxMetalDevice) = Metal.functional()
 Flux._get_device_name(::FluxMetalDevice) = "Metal"
 
 function check_use_metal()
