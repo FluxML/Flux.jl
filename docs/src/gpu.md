@@ -298,8 +298,32 @@ julia> model.weight     # no change; model still lives on CPU
 ```
 Clearly, this means that the same code will work for any GPU backend and the CPU. 
 
-If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMD or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. For detailed information about how the backend is selected, check the documentation for [`Flux.get_device`](@ref).
+If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMD or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. In the below example, the GPU preference is `"CUDA"`:
+
+```julia-repl
+julia> using Flux;      # preference is CUDA, but CUDA.jl not loaded
+
+julia> device = Flux.get_device()       # this will resort to automatic device selection
+[ Info: Using backend set in preferences: CUDA.
+┌ Warning: Trying to use backend: CUDA but it's trigger package is not loaded.
+│ Please load the package and call this function again to respect the preferences backend.
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
+[ Info: Running automatic device selection...
+[ Info: Trigger package for backend: CUDA is not loaded.
+[ Info: Trigger package for backend: AMD is not loaded.
+[ Info: Trigger package for backend: Metal is not loaded.
+[ Info: Trying backend: CPU.
+[ Info: Using backend: CPU.
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+```
+For detailed information about how the backend is selected, check the documentation for [`Flux.get_device`](@ref).
 
 ```@docs
+Flux.AbstractDevice
+Flux.FluxCPUDevice
+Flux.FluxCUDADevice
+Flux.FluxAMDDevice
+Flux.FluxMetalDevice
+Flux.supported_devices
 Flux.get_device
 ```
