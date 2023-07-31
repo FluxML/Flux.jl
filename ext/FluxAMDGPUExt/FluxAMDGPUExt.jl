@@ -47,7 +47,7 @@ include("conv.jl")
 
 function __init__()
     Flux.AMDGPU_LOADED[] = true
-    Flux.DEVICES[Flux.GPU_BACKEND_ORDER["AMD"]] = AMDGPU.functional() ? Flux.FluxAMDDevice(AMDGPU.device()) : Flux.FluxAMDDevice(nothing)
+    Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMD"]] = AMDGPU.functional() ? Flux.FluxAMDDevice(AMDGPU.device()) : Flux.FluxAMDDevice(nothing)
 end
 
 # TODO
