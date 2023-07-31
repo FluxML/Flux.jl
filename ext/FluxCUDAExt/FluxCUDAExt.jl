@@ -40,7 +40,7 @@ function __init__()
     Flux.CUDA_LOADED[] = true
 
     ## add device to available devices
-    Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]] = Flux.FluxCUDADevice(CUDA.device())
+    Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]] = CUDA.functional() ? Flux.FluxCUDADevice(CUDA.device()) : Flux.FluxCUDADevice(nothing)
 
     try
        Base.require(Main, :cuDNN)
