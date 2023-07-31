@@ -14,19 +14,8 @@ import Adapt: adapt_storage
 
 const USE_CUDA = Ref{Union{Nothing, Bool}}(nothing)
 
-"""
-    FluxCUDAExt.FluxCUDADevice <: Flux.AbstractDevice
-
-A type representing `device` objects for the `"CUDA"` backend for Flux.
-"""
-Base.@kwdef struct FluxCUDADevice <: Flux.AbstractDevice
-    deviceID::CUDA.CuDevice
-end
-
-(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
-Flux._isavailable(::FluxCUDADevice) = true
-Flux._isfunctional(::FluxCUDADevice) = CUDA.functional()
-Flux._get_device_name(::FluxCUDADevice) = "CUDA"
+Flux._isavailable(::Flux.FluxCUDADevice) = true
+Flux._isfunctional(::Flux.FluxCUDADevice) = CUDA.functional()
 
 function check_use_cuda()
     if !isnothing(USE_CUDA[])
@@ -51,7 +40,7 @@ function __init__()
     Flux.CUDA_LOADED[] = true
 
     ## add device to available devices
-    Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]] = FluxCUDADevice(CUDA.device())
+    Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]] = Flux.FluxCUDADevice(CUDA.device())
 
     try
        Base.require(Main, :cuDNN)

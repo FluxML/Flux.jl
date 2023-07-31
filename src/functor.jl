@@ -498,6 +498,42 @@ _isavailable(::FluxCPUDevice) = true
 _isfunctional(::FluxCPUDevice) = true
 _get_device_name(::FluxCPUDevice) = "CPU"
 
+"""
+    FluxCUDADevice <: AbstractDevice
+
+A type representing `device` objects for the `"CUDA"` backend for Flux.
+"""
+Base.@kwdef struct FluxCUDADevice <: AbstractDevice
+    deviceID
+end
+
+(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
+_get_device_name(::FluxCUDADevice) = "CUDA"
+
+"""
+    FluxAMDDevice <: AbstractDevice
+
+A type representing `device` objects for the `"AMD"` backend for Flux.
+"""
+Base.@kwdef struct FluxAMDDevice <: AbstractDevice
+    deviceID
+end
+
+(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
+_get_device_name(::FluxAMDDevice) = "AMD"
+
+"""
+    FluxMetalDevice <: AbstractDevice
+
+A type representing `device` objects for the `"Metal"` backend for Flux.
+"""
+Base.@kwdef struct FluxMetalDevice <: AbstractDevice
+    deviceID
+end
+
+(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
+_get_device_name(::FluxMetalDevice) = "Metal"
+
 ## device list. order is important
 const DEVICES = Ref{Vector{Union{Nothing, AbstractDevice}}}(Vector{Union{Nothing, AbstractDevice}}(nothing, length(GPU_BACKENDS)))
 DEVICES[][GPU_BACKEND_ORDER["CPU"]] = FluxCPUDevice()
