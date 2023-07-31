@@ -644,7 +644,7 @@ function get_device(; verbose=false)::AbstractDevice
                 if _isfunctional(device)
                     return device
                 else
-                    @warn "Backend: $backend from the set preferences is not functional. Defaulting to autmatic device selection."
+                    @warn "Backend: $backend from the set preferences is not functional. Defaulting to automatic device selection."
                 end
             end
         end
