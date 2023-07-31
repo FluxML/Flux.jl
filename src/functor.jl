@@ -576,10 +576,10 @@ Dense(2 => 3)       # 9 parameters
 
 julia> device = Flux.get_device()       # this will just load the CPU device
 [ Info: Using backend set in preferences: AMD.
-┌ Warning: Trying to use backend AMD but package AMDGPU [21141c5a-9bdb-4563-92ae-f87d6854732e] is not loaded.
+┌ Warning: Trying to use backend: AMD but it's trigger package is not loaded.
 │ Please load the package and call this function again to respect the preferences backend.
-└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:496
-[ Info: Running automatic device selection...
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:638
+[ Info: Using backend: CPU.
 (::Flux.FluxCPUDevice) (generic function with 1 method)
 
 julia> model = model |> device
@@ -602,10 +602,10 @@ Dense(2 => 3)       # 9 parameters
 
 julia> device = Flux.get_device()
 [ Info: Using backend set in preferences: AMD.
-┌ Warning: Trying to use backend AMD but package AMDGPU [21141c5a-9bdb-4563-92ae-f87d6854732e] is not loaded.
+┌ Warning: Trying to use backend: AMD but it's trigger package is not loaded.
 │ Please load the package and call this function again to respect the preferences backend.
-└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:496
-[ Info: Running automatic device selection...
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
+[ Info: Using backend: CUDA.
 (::Flux.FluxCUDADevice) (generic function with 1 method)
 
 julia> model = model |> device
@@ -640,7 +640,6 @@ function get_device()::AbstractDevice
                 """
             else 
                 if _isfunctional(device)
-                    @info "Using backend: $backend"
                     return device
                 else
                     @warn "Backend: $backend from the set preferences is not functional. Defaulting to autmatic device selection."
@@ -649,18 +648,13 @@ function get_device()::AbstractDevice
         end
     end
 
-    @info "Running automatic device selection..."
     for backend in GPU_BACKENDS 
         device = DEVICES[][GPU_BACKEND_ORDER[backend]]
         if _isavailable(device)
-            @info "Trying backend: $backend."
             if _isfunctional(device)
                 @info "Using backend: $backend."
                 return device
             end
-            @info "Backend: $backend is not functional."
-        else
-            @info "Trigger package for backend: $backend is not loaded."
         end
     end
 end

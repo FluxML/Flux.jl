@@ -242,8 +242,7 @@ julia> using Flux, CUDA;
 
 julia> device = Flux.get_device()   # returns handle to an NVIDIA GPU
 [ Info: Using backend set in preferences: CUDA.
-[ Info: Using backend: CUDA
-(::FluxCUDAExt.FluxCUDADevice) (generic function with 1 method)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
 
 julia> device.deviceID      # check the id of the GPU
 CuDevice(0): NVIDIA GeForce GTX 1650
@@ -282,7 +281,6 @@ julia> using Flux, CUDA;    # even if CUDA is loaded, we'll still get a CPU devi
 
 julia> device = Flux.get_device()   # get a CPU device
 [ Info: Using backend set in preferences: CPU.
-[ Info: Using backend: CPU
 (::Flux.FluxCPUDevice) (generic function with 1 method)
 
 julia> model = Dense(2 => 3);
@@ -308,11 +306,6 @@ julia> device = Flux.get_device()       # this will resort to automatic device s
 ┌ Warning: Trying to use backend: CUDA but it's trigger package is not loaded.
 │ Please load the package and call this function again to respect the preferences backend.
 └ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
-[ Info: Running automatic device selection...
-[ Info: Trigger package for backend: CUDA is not loaded.
-[ Info: Trigger package for backend: AMD is not loaded.
-[ Info: Trigger package for backend: Metal is not loaded.
-[ Info: Trying backend: CPU.
 [ Info: Using backend: CPU.
 (::Flux.FluxCPUDevice) (generic function with 1 method)
 ```
