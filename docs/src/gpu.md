@@ -267,7 +267,7 @@ julia> model.weight
 
 ```
 
-The device preference can also be set via the [`gpu_backend!`](@ref) function. For instance, below we first set our device preference to `"CPU"`:
+The device preference can also be set via the [`Flux.gpu_backend!`](@ref) function. For instance, below we first set our device preference to `"CPU"`:
 
 ```julia-repl
 julia> using Flux; Flux.gpu_backend!("CPU")
