@@ -63,7 +63,7 @@ Random.seed!(0)
     Flux.gpu_backend!("CUDA")
 
     @testset "CUDA" begin
-      include("ext_cuda/device_selection.jl")
+      include("ext_cuda/get_devices.jl")
 
       if CUDA.functional()
         @info "Testing CUDA Support"
@@ -80,7 +80,7 @@ Random.seed!(0)
     using AMDGPU
     Flux.gpu_backend!("AMD")
 
-    include("ext_amdgpu/device_selection.jl")
+    include("ext_amdgpu/get_devices.jl")
 
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
@@ -97,7 +97,7 @@ Random.seed!(0)
     using Metal
     Flux.gpu_backend!("Metal")
 
-    include("ext_metal/device_selection.jl")
+    include("ext_metal/get_devices.jl")
 
     if Metal.functional()
       @testset "Metal" begin

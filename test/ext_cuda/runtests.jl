@@ -28,6 +28,3 @@ end
 @testset "ctc" begin
   include("ctc.jl")
 end
-@testset "get_device" begin
-  include("get_device.jl")
-end
