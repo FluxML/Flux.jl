@@ -187,7 +187,16 @@ _isbitsarray(x) = false
 _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
-const GPU_BACKENDS = ("CUDA", "AMD", "Metal")
+const GPU_BACKEND_ORDER = sort(
+    Dict(
+        "CUDA" => 1,
+        "AMD" => 2,
+        "Metal" => 3,
+        "CPU" => 4,
+    ),
+    byvalue = true
+) 
+const GPU_BACKENDS = tuple(collect(keys(GPU_BACKEND_ORDER))...)
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 function gpu_backend!(backend::String)
@@ -249,6 +258,8 @@ function gpu(x)
         gpu(FluxAMDAdaptor(), x)
     elseif GPU_BACKEND == "Metal"
         gpu(FluxMetalAdaptor(), x)
+    elseif GPU_BACKEND == "CPU"
+        cpu(x)
     else
         error("""
         Unsupported GPU backend: $GPU_BACKEND.
@@ -443,4 +454,209 @@ function gpu(d::MLUtils.DataLoader)
     d.collate,
     d.rng,
   )
+end
+
+# Defining device interfaces.
+"""
+    Flux.AbstractDevice <: Function
+
+An abstract type representing `device` objects for different GPU backends. The currently supported backends are `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"`; the `"CPU"` backend is the fallback case when no GPU is available. GPU extensions of Flux define subtypes of this type.
+
+"""
+abstract type AbstractDevice <: Function end
+
+function (device::AbstractDevice)(d::MLUtils.DataLoader)
+    MLUtils.DataLoader(MLUtils.mapobs(device, d.data),
+        d.batchsize,
+        d.buffer,
+        d.partial,
+        d.shuffle,
+        d.parallel,
+        d.collate,
+        d.rng,
+    )
+end
+
+function _get_device_name(::T)::String where {T <: AbstractDevice} end
+
+## check device availability; more definitions in corresponding extensions
+_isavailable(::Nothing) = false
+_isfunctional(::Nothing) = false
+
+_isavailable(::AbstractDevice) = false
+_isfunctional(::AbstractDevice) = false
+
+"""
+    Flux.FluxCPUDevice <: Flux.AbstractDevice
+
+A type representing `device` objects for the `"CPU"` backend for Flux. This is the fallback case when no GPU is available to Flux.
+"""
+Base.@kwdef struct FluxCPUDevice <: AbstractDevice end
+
+(::FluxCPUDevice)(x) = cpu(x)
+_isavailable(::FluxCPUDevice) = true
+_isfunctional(::FluxCPUDevice) = true
+_get_device_name(::FluxCPUDevice) = "CPU"
+
+"""
+    FluxCUDADevice <: AbstractDevice
+
+A type representing `device` objects for the `"CUDA"` backend for Flux.
+"""
+Base.@kwdef struct FluxCUDADevice <: AbstractDevice
+    deviceID
+end
+
+(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
+_get_device_name(::FluxCUDADevice) = "CUDA"
+
+"""
+    FluxAMDDevice <: AbstractDevice
+
+A type representing `device` objects for the `"AMD"` backend for Flux.
+"""
+Base.@kwdef struct FluxAMDDevice <: AbstractDevice
+    deviceID
+end
+
+(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
+_get_device_name(::FluxAMDDevice) = "AMD"
+
+"""
+    FluxMetalDevice <: AbstractDevice
+
+A type representing `device` objects for the `"Metal"` backend for Flux.
+"""
+Base.@kwdef struct FluxMetalDevice <: AbstractDevice
+    deviceID
+end
+
+(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
+_get_device_name(::FluxMetalDevice) = "Metal"
+
+## device list. order is important
+const DEVICES = Ref{Vector{Union{Nothing, AbstractDevice}}}(Vector{Union{Nothing, AbstractDevice}}(nothing, length(GPU_BACKENDS)))
+DEVICES[][GPU_BACKEND_ORDER["CPU"]] = FluxCPUDevice()
+
+## get device
+
+"""
+    Flux.supported_devices()
+
+Get all supported backends for Flux, in order of preference.
+
+# Example
+
+```jldoctest
+julia> using Flux;
+
+julia> Flux.supported_devices()
+("CUDA", "AMD", "Metal", "CPU")
+```
+"""
+supported_devices() = GPU_BACKENDS
+
+"""
+    Flux.get_device(; verbose=false)::AbstractDevice
+
+Returns a `device` object for the most appropriate backend for the current Julia session. 
+
+First, the function checks whether a backend preference has been set via the [`Flux.gpu_backend!`](@ref) function. If so, an attempt is made to load this backend. If the corresponding trigger package has been loaded and the backend is functional, a `device` corresponding to the given backend is loaded. Otherwise, the backend is chosen automatically. To update the backend preference, use [`Flux.gpu_backend!`](@ref).
+
+If there is no preference, then for each of the `"CUDA"`, `"AMD"`, `"Metal"` and `"CPU"` backends in the given order, this function checks whether the given backend has been loaded via the corresponding trigger package, and whether the backend is functional. If so, the `device` corresponding to the backend is returned. If no GPU backend is available, a `Flux.FluxCPUDevice` is returned.
+
+If `verbose` is set to `true`, then the function prints informative log messages.
+
+# Examples
+For the example given below, the backend preference was set to `"AMD"` via the [`gpu_backend!`](@ref) function.
+
+```julia-repl
+julia> using Flux;
+
+julia> model = Dense(2 => 3)
+Dense(2 => 3)       # 9 parameters
+
+julia> device = Flux.get_device(; verbose=true)       # this will just load the CPU device
+[ Info: Using backend set in preferences: AMD.
+┌ Warning: Trying to use backend: AMD but it's trigger package is not loaded.
+│ Please load the package and call this function again to respect the preferences backend.
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:638
+[ Info: Using backend: CPU.
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+
+julia> model = model |> device
+Dense(2 => 3)       # 9 parameters
+
+julia> model.weight
+3×2 Matrix{Float32}:
+ -0.304362  -0.700477
+ -0.861201   0.67825
+ -0.176017   0.234188
+```
+
+Here is the same example, but using `"CUDA"`:
+
+```julia-repl
+julia> using Flux, CUDA;
+
+julia> model = Dense(2 => 3)
+Dense(2 => 3)       # 9 parameters
+
+julia> device = Flux.get_device(; verbose=true)
+[ Info: Using backend set in preferences: AMD.
+┌ Warning: Trying to use backend: AMD but it's trigger package is not loaded.
+│ Please load the package and call this function again to respect the preferences backend.
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
+[ Info: Using backend: CUDA.
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia> model = model |> device
+Dense(2 => 3)       # 9 parameters
+
+julia> model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+  0.820013   0.527131
+ -0.915589   0.549048
+  0.290744  -0.0592499
+```
+"""
+function get_device(; verbose=false)::AbstractDevice
+    backend = @load_preference("gpu_backend", nothing) 
+
+    if backend !== nothing
+        allowed_backends = supported_devices()
+        idx = findfirst(isequal(backend), allowed_backends)
+        if backend ∉  allowed_backends
+            @warn """
+                `gpu_backend` preference is set to $backend, which is not allowed.
+                Defaulting to automatic device selection.
+            """ maxlog=1
+        else
+            verbose && @info "Using backend set in preferences: $backend."
+            device = DEVICES[][idx] 
+
+            if !_isavailable(device)
+                @warn """
+                Trying to use backend: $backend but it's trigger package is not loaded.
+                Please load the package and call this function again to respect the preferences backend.
+                """
+            else 
+                if _isfunctional(device)
+                    return device
+                else
+                    @warn "Backend: $backend from the set preferences is not functional. Defaulting to automatic device selection."
+                end
+            end
+        end
+    end
+
+    for backend in GPU_BACKENDS 
+        device = DEVICES[][GPU_BACKEND_ORDER[backend]]
+        if _isavailable(device)
+            if _isfunctional(device)
+                verbose && @info "Using backend: $backend."
+                return device
+            end
+        end
+    end
 end

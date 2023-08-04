@@ -5,8 +5,6 @@ using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
-using CUDA
-using cuDNN
 
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 ENV["FLUX_TEST_CUDA"] = "true"
@@ -61,9 +59,12 @@ Random.seed!(0)
   end
 
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
-    using CUDA
+    using CUDA, cuDNN
     Flux.gpu_backend!("CUDA")
+
     @testset "CUDA" begin
+      include("ext_cuda/get_devices.jl")
+
       if CUDA.functional()
         @info "Testing CUDA Support"
         include("ext_cuda/runtests.jl")
@@ -79,6 +80,8 @@ Random.seed!(0)
     using AMDGPU
     Flux.gpu_backend!("AMD")
 
+    include("ext_amdgpu/get_devices.jl")
+
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
         include("ext_amdgpu/runtests.jl")
@@ -93,6 +96,8 @@ Random.seed!(0)
   if get(ENV, "FLUX_TEST_METAL", "false") == "true"
     using Metal
     Flux.gpu_backend!("Metal")
+
+    include("ext_metal/get_devices.jl")
 
     if Metal.functional()
       @testset "Metal" begin
