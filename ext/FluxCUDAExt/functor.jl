@@ -30,3 +30,9 @@ function _cuda(x)
   USE_CUDA[] || return x
   fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude=Flux._isleaf)
 end
+
+function Flux.get_device(::Type{CUDA.CUDABackend}, ordinal::UInt)
+    CUDA.device!(ordinal) do
+        return Flux.FluxCUDADevice(CUDA.device())
+    end
+end

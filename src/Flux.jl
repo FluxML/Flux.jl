@@ -14,6 +14,7 @@ using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
+import KernelAbstractions
 export gradient
 
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
