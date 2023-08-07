@@ -13,13 +13,13 @@ include("test_utils.jl")
 end
 
 @testset "Huber Loss test" begin
-    X = Flux.gpu(Float32[1,1])
-    Y = Flux.gpu(Float32[1,1])
+    X = Flux.gpu(Float32[0,1])
+    Y = Flux.gpu(Float32[1,0])
 
     grad = Flux.gradient(X, Y) do a,b
         Flux.Losses.huber_loss(a,b)
     end
 
-    @test Flux.cpu(grad[1]) == [0, 0.5]
-    @test Flux.cpu(grad[2]) == [0, -0.5]
+    @test Flux.cpu(grad[1]) == [-0.5, 0.5]
+    @test Flux.cpu(grad[2]) == [0.5, -0.5]
 end
