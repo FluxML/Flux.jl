@@ -72,6 +72,13 @@ function msle(ŷ, y; agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
   agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
 end
 
+function _huber_metric(abs_error, δ)
+    #TODO: remove ignore_derivatives when Zygote can handle this function with CuArrays
+    temp = Zygote.ignore_derivatives(abs_error .<  δ)
+    x = ofeltype(abs_error, 0.5)
+    ((abs_error * abs_error) * temp) * x + δ * (abs_error - x * δ) * (1 - temp)
+end
+
 """
     huber_loss(ŷ, y; delta = 1, agg = mean)
 
@@ -94,17 +101,14 @@ julia> Flux.huber_loss(ŷ, 1:3, delta=0.05)  # changes behaviour as |ŷ - y| >
 0.003750000000000005
 ```
 """
-function huber_loss(ŷ, y; agg = mean, delta::Real = 1, δ = nothing)
-   delta_tmp = _greek_ascii_depwarn(δ => delta, :huber_loss, "δ" => "delta")
-   δ = ofeltype(ŷ, delta_tmp)
-   _check_sizes(ŷ, y)
-   abs_error = abs.(ŷ .- y)
-   #TODO: remove ignore_derivatives when Zygote can handle this function with CuArrays
-   temp = Zygote.ignore_derivatives(abs_error .<  δ)
-   x = ofeltype(ŷ, 0.5)
-   agg(((abs_error .^ 2) .* temp) .* x .+ δ * (abs_error .- x * δ) .* (1 .- temp))
-end
+function huber_loss_alternate(ŷ, y; agg = mean, delta::Real = 1, δ = nothing)
+    delta_tmp = _greek_ascii_depwarn(δ => delta, :huber_loss, "δ" => "delta")
+    δ = ofeltype(ŷ, delta_tmp)
+    _check_sizes(ŷ, y)
+    abs_error = abs.(ŷ .- y)
 
+    agg(_huber_metric.(abs_error, δ))
+ end
 """
     label_smoothing(y::Union{Number, AbstractArray}, α; dims::Int=1)
 
