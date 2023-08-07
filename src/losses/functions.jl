@@ -101,7 +101,7 @@ julia> Flux.huber_loss(ŷ, 1:3, delta=0.05)  # changes behaviour as |ŷ - y| >
 0.003750000000000005
 ```
 """
-function huber_loss_alternate(ŷ, y; agg = mean, delta::Real = 1, δ = nothing)
+function huber_loss(ŷ, y; agg = mean, delta::Real = 1, δ = nothing)
     delta_tmp = _greek_ascii_depwarn(δ => delta, :huber_loss, "δ" => "delta")
     δ = ofeltype(ŷ, delta_tmp)
     _check_sizes(ŷ, y)
