@@ -333,13 +333,15 @@ trainable(c::Cholesky) = ()
 
 # CUDA extension. ########
 
-struct FluxCUDAAdaptor end
+Base.@kwdef struct FluxCUDAAdaptor
+    ordinal::Union{Nothing, UInt} = nothing
+end
 
 const CUDA_LOADED = Ref{Bool}(false)
 
-function gpu(::FluxCUDAAdaptor, x)
+function gpu(to::FluxCUDAAdaptor, x)
     if CUDA_LOADED[]
-        return _cuda(x)
+        return _cuda(to.ordinal, x)
     else
         @info """
         The CUDA functionality is being called but
@@ -501,7 +503,13 @@ Base.@kwdef struct FluxCUDADevice <: AbstractDevice
     deviceID
 end
 
-(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
+function (device::FluxCUDADevice)(x)
+    if typeof(device.deviceID) <: Nothing
+        return gpu(FluxCUDAAdaptor(), x)
+    else
+        return gpu(FluxCUDAAdaptor(UInt(device.deviceID.handle)), x)
+    end
+end
 _get_device_name(::FluxCUDADevice) = "CUDA"
 
 """

@@ -1,5 +1,27 @@
-
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
+function adapt_storage(to::FluxCUDAAdaptor, x::AbstractArray)
+    typeof(to.ordinal) <: Nothing && return CUDA.cu(x)
+
+    # remember current device
+    old_ordinal = CUDA.device().handle
+
+    if !(x isa CuArray)
+        CUDA.device!(to.ordinal)
+        x_new = CUDA.cu(x)
+        CUDA.device!(old_ordinal)
+        return x_new
+    else
+        if CUDA.device(x).handle == to.ordinal
+            return x
+        else
+            CUDA.device!(to.ordinal)
+            x_new = CUDA.rand(size(x)...)
+            copy!(x_new, x)
+            CUDA.device!(old_ordinal)
+            return x_new
+        end
+    end
+end
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.FillArrays.AbstractFill) = CUDA.cu(collect(x))
 adapt_storage(to::FluxCUDAAdaptor, x::Random.TaskLocalRNG) = CUDA.default_rng()
 adapt_storage(to::FluxCUDAAdaptor, x::CUDA.RNG) = x
@@ -25,14 +47,16 @@ ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AnyCuArray) =
 ChainRulesCore.rrule(::typeof(adapt), a::FluxCUDAAdaptor, x::AbstractArray) =
   adapt(a, x), Δ -> (NoTangent(), NoTangent(), adapt(FluxCPUAdaptor(), unthunk(Δ)))
 
-function _cuda(x)
+function _cuda(ordinal::Union{Nothing, UInt}, x)
   check_use_cuda()
   USE_CUDA[] || return x
-  fmap(x -> Adapt.adapt(FluxCUDAAdaptor(), x), x; exclude=Flux._isleaf)
+  fmap(x -> Adapt.adapt(FluxCUDAAdaptor(ordinal), x), x; exclude=Flux._isleaf)
 end
 
 function Flux.get_device(::Type{CUDA.CUDABackend}, ordinal::UInt)
-    CUDA.device!(ordinal) do
-        return Flux.FluxCUDADevice(CUDA.device())
-    end
+    old_ordinal = CUDA.device().handle
+    CUDA.device!(ordinal)
+    device = Flux.FluxCUDADevice(CUDA.device())
+    CUDA.device!(old_ordinal)
+    return device
 end
