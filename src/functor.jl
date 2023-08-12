@@ -663,6 +663,10 @@ function get_device(; verbose=false)::AbstractDevice
     end
 end
 
-function get_device(backend::String, ordinal::Int)
-    get_device(Val(Symbol(backend)), ordinal)
+function get_device(backend::String, ordinal::Int = 0)
+    if backend == "CPU"
+        return FluxCPUDevice()
+    else
+        return get_device(Val(Symbol(backend)), ordinal)
+    end
 end
