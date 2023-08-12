@@ -1,6 +1,5 @@
 import Adapt: adapt, adapt_storage
 using  LinearAlgebra: Cholesky
-using NNlib: KernelAbstractions
 using Zygote: IdSet
 import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
