@@ -334,7 +334,7 @@ trainable(c::Cholesky) = ()
 # CUDA extension. ########
 
 Base.@kwdef struct FluxCUDAAdaptor
-    ordinal::Union{Nothing, UInt} = nothing
+    ordinal::Union{Nothing, Int} = nothing
 end
 
 const CUDA_LOADED = Ref{Bool}(false)
@@ -663,4 +663,6 @@ function get_device(; verbose=false)::AbstractDevice
     end
 end
 
-function get_device(::Type{<:KernelAbstractions.GPU}, ::UInt) end
+function get_device(backend::String, ordinal::Int)
+    get_device(Val(Symbol(backend)), ordinal)
+end
