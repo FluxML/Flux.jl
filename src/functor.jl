@@ -378,13 +378,15 @@ function _amd end
 
 # Metal extension. ######
 
-struct FluxMetalAdaptor end
+Base.@kwdef struct FluxMetalAdaptor
+    ordinal::Union{Nothing, Int} = nothing
+end
 
 const METAL_LOADED = Ref{Bool}(false)
 
-function gpu(::FluxMetalAdaptor, x)
+function gpu(to::FluxMetalAdaptor, x)
     if METAL_LOADED[]
-        return _metal(x)
+        return _metal(to.ordinal, x)
     else
         @info """
         The Metal functionality is being called but
@@ -504,15 +506,6 @@ Base.@kwdef struct FluxCUDADevice <: AbstractDevice
     deviceID
 end
 
-function (device::FluxCUDADevice)(x)
-    if typeof(device.deviceID) <: Nothing
-        return gpu(FluxCUDAAdaptor(), x)
-    else
-        return gpu(FluxCUDAAdaptor(UInt(device.deviceID.handle)), x)
-    end
-end
-_get_device_name(::FluxCUDADevice) = "CUDA"
-
 """
     FluxAMDDevice <: AbstractDevice
 
@@ -522,9 +515,6 @@ Base.@kwdef struct FluxAMDDevice <: AbstractDevice
     deviceID
 end
 
-(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
-_get_device_name(::FluxAMDDevice) = "AMD"
-
 """
     FluxMetalDevice <: AbstractDevice
 
@@ -533,9 +523,6 @@ A type representing `device` objects for the `"Metal"` backend for Flux.
 Base.@kwdef struct FluxMetalDevice <: AbstractDevice
     deviceID
 end
-
-(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
-_get_device_name(::FluxMetalDevice) = "Metal"
 
 ## device list. order is important
 const DEVICES = Ref{Vector{Union{Nothing, AbstractDevice}}}(Vector{Union{Nothing, AbstractDevice}}(nothing, length(GPU_BACKENDS)))

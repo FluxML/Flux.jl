@@ -12,6 +12,14 @@ using Zygote
 
 const USE_METAL = Ref{Union{Nothing, Bool}}(nothing)
 
+function (device::Flux.FluxMetalDevice)(x)
+    if typeof(device.deviceId) <: Nothing
+        Flux.gpu(Flux.FluxMetalAdaptor(), x)
+    else
+        return Flux.gpu(Flux.FluxMetalAdaptor(device.deviceId.registryID), x)
+    end
+end
+Flux._get_device_name(::Flux.FluxMetalDevice) = "Metal"
 Flux._isavailable(::Flux.FluxMetalDevice) = true
 Flux._isfunctional(::Flux.FluxMetalDevice) = Metal.functional()
 

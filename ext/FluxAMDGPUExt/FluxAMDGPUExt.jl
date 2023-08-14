@@ -17,6 +17,14 @@ const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
 # Set to boolean on the first call to check_use_amdgpu
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
+function (device::Flux.FluxAMDDevice)(x)
+    if typeof(device.deviceId) <: Nothing
+        Flux.gpu(Flux.FluxAMDAdaptor(), x)
+    else
+        return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceId)))
+    end
+end
+Flux._get_device_name(::Flux.FluxAMDDevice) = "AMD"
 Flux._isavailable(::Flux.FluxAMDDevice) = true
 Flux._isfunctional(::Flux.FluxAMDDevice) = AMDGPU.functional()
 
