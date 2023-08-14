@@ -1,10 +1,41 @@
 # Convert Float64 to Float32, but preserve Float16.
-adapt_storage(::FluxMetalAdaptor, x::T) where T <: AbstractArray =
-    isbits(x) ? x : MtlArray(x)
-adapt_storage(::FluxMetalAdaptor, x::AbstractArray{T, N}) where {T <: AbstractFloat, N} =
-    isbits(x) ? x : MtlArray{Float32, N}(x)
-adapt_storage(::FluxMetalAdaptor, x::AbstractArray{Float16, N}) where N =
-    isbits(x) ? x : MtlArray{Float16, N}(x)
+function adapt_storage(to::FluxMetalAdaptor, x::AbstractArray)
+    if typeof(to.ordinal) <: Nothing
+        if (typeof(x) <: AbstractArray{Float16, N} where N)
+            N = length(size(x))
+            return isbits(x) ? x : MtlArray{Float16, N}(x)
+        elseif (typeof(x) <: AbstractArray{T, N} where {T <: AbstractFloat, N})
+            N = length(size(x))
+            return isbits(x) ? x : MtlArray{Float32, N}(x)
+        else
+            return isbits(x) ? x : MtlArray(x)
+        end
+    end
+
+    old_device = Metal.current_device()
+
+    if !(x isa MtlArray)
+        Metal.device!(Metal.devices()[to.ordinal])
+        if (typeof(x) <: AbstractArray{Float16, N} where N)
+            N = length(size(x))
+            x_new = isbits(x) ? x : MtlArray{Float16, N}(x)
+        elseif (typeof(x) <: AbstractArray{T, N} where {T <: AbstractFloat, N})
+            N = length(size(x))
+            x_new = isbits(x) ? x : MtlArray{Float32, N}(x)
+        else
+            x_new = isbits(x) ? x : MtlArray(x)
+        end
+        Metal.device!(old_device)
+        return x_new
+    elseif Metal.device(x).registryID == Metal.devices()[to.ordinal].registryID
+        return x
+    else
+        Metal.device!(Metal.devices()[to.ordinal])
+        x_new = copy(x)
+        Metal.device!(old_device)
+        return x_new
+    end
+end
 
 adapt_storage(::FluxMetalAdaptor, x::Zygote.FillArrays.AbstractFill) =
     MtlArray(collect(x))
