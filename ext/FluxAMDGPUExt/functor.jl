@@ -74,3 +74,11 @@ function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMD_CONV)
         Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
         Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end
+
+function Flux.get_device(::Val{:AMD}, ordinal::Int)
+    old_ordinal = AMDGPU.device_id(AMDGPU.device())
+    AMDGPU.device_id!(ordinal)
+    device = Flux.FluxAMDDevice(AMDGPU.device())
+    AMDGPU.device_id!(old_ordinal)
+    return device
+end
