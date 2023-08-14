@@ -21,7 +21,7 @@ function (device::Flux.FluxAMDDevice)(x)
     if typeof(device.deviceId) <: Nothing
         Flux.gpu(Flux.FluxAMDAdaptor(), x)
     else
-        return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceId)))
+        return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceID)))
     end
 end
 Flux._get_device_name(::Flux.FluxAMDDevice) = "AMD"

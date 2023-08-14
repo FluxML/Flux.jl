@@ -16,7 +16,7 @@ function (device::Flux.FluxMetalDevice)(x)
     if typeof(device.deviceId) <: Nothing
         Flux.gpu(Flux.FluxMetalAdaptor(), x)
     else
-        return Flux.gpu(Flux.FluxMetalAdaptor(device.deviceId.registryID), x)
+        return Flux.gpu(Flux.FluxMetalAdaptor(device.deviceID.registryID), x)
     end
 end
 Flux._get_device_name(::Flux.FluxMetalDevice) = "Metal"
