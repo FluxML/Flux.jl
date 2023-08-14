@@ -27,8 +27,8 @@ function ChainRulesCore.rrule(
 end
 
 
-function _metal(x)
+function _metal(ordinal::Union{Nothing, Int}, x)
     check_use_metal()
     USE_METAL[] || return x
-    fmap(x -> Adapt.adapt(FluxMetalAdaptor(), x), x; exclude=_isleaf)
+    fmap(x -> Adapt.adapt(FluxMetalAdaptor(ordinal), x), x; exclude=_isleaf)
 end
