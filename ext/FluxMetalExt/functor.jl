@@ -32,3 +32,11 @@ function _metal(ordinal::Union{Nothing, Int}, x)
     USE_METAL[] || return x
     fmap(x -> Adapt.adapt(FluxMetalAdaptor(ordinal), x), x; exclude=_isleaf)
 end
+
+function Flux.get_device(::Val{:Metal}, ordinal::Int)
+    old_device = Metal.current_device()
+    Metal.device!(Metal.devices()[ordinal])
+    device = Flux.FluxMetalDevice(Metal.device())
+    Metal.device!(old_device)
+    return device
+end
