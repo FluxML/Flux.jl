@@ -355,13 +355,15 @@ function _cuda end
 
 # AMDGPU extension. ########
 
-struct FluxAMDAdaptor end
+Base.@kwdef struct FluxAMDAdaptor
+    ordinal::Union{Nothing, Int} = nothing
+end
 
 const AMDGPU_LOADED = Ref{Bool}(false)
 
-function gpu(::FluxAMDAdaptor, x)
+function gpu(to::FluxAMDAdaptor, x)
     if AMDGPU_LOADED[]
-        return _amd(x)
+        return _amd(to.ordinal, x)
     else
         @info """
         The AMDGPU functionality is being called but
