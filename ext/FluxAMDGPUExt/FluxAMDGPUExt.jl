@@ -18,10 +18,10 @@ const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
 function (device::Flux.FluxAMDDevice)(x)
-    if typeof(device.deviceId) <: Nothing
+    if typeof(device.deviceID) <: Nothing
         Flux.gpu(Flux.FluxAMDAdaptor(), x)
     else
-        return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceID)))
+        return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceID)), x)
     end
 end
 Flux._get_device_name(::Flux.FluxAMDDevice) = "AMD"
