@@ -378,15 +378,13 @@ function _amd end
 
 # Metal extension. ######
 
-Base.@kwdef struct FluxMetalAdaptor
-    ordinal::Union{Nothing, Int} = nothing
-end
+struct FluxMetalAdaptor end
 
 const METAL_LOADED = Ref{Bool}(false)
 
-function gpu(to::FluxMetalAdaptor, x)
+function gpu(::FluxMetalAdaptor, x)
     if METAL_LOADED[]
-        return _metal(to.ordinal, x)
+        return _metal(x)
     else
         @info """
         The Metal functionality is being called but
