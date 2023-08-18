@@ -12,3 +12,7 @@ device = Flux.get_device()
 @test typeof(device) <: Flux.FluxCPUDevice
 @test device(x) == x
 @test Flux._get_device_name(device) in Flux.supported_devices()
+
+# specifically getting CPU device
+device = Flux.get_device("CPU")
+@test typeof(device) <: Flux.FluxCPUDevice
