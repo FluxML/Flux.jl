@@ -15,7 +15,7 @@ function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
     old_ordinal = AMDGPU.device_id(AMDGPU.device())
 
     if !(x isa ROCArray)
-        AMDGPU.device!(AMDGPU.devices()[to.ordinal])
+        AMDGPU.device!(AMDGPU.devices()[to.ordinal + 1])    # adding 1 because ordinals start from 0
         if (typeof(x) <: AbstractArray{Float16, N} where N)
             N = length(size(x))
             x_new = isbits(x) ? x : ROCArray{Float16, N}(x)
@@ -25,14 +25,14 @@ function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
         else
             x_new = isbits(x) ? x : ROCArray(x)
         end
-        AMDGPU.device!(AMDGPU.devices()[old_ordinal])
+        AMDGPU.device!(AMDGPU.devices()[old_ordinal + 1])
         return x_new
     elseif AMDGPU.device_id(AMDGPU.device(x)) == to.ordinal
         return x
     else
-        AMDGPU.device!(AMDGPU.devices()[to.ordinal])
+        AMDGPU.device!(AMDGPU.devices()[to.ordinal + 1])
         x_new = copy(x)
-        AMDGPU.device!(AMDGPU.devices()[old_ordinal])
+        AMDGPU.device!(AMDGPU.devices()[old_ordinal + 1])
         return x_new
     end
 end
@@ -108,8 +108,8 @@ end
 
 function Flux.get_device(::Val{:AMD}, ordinal::Int)
     old_ordinal = AMDGPU.device_id(AMDGPU.device())
-    AMDGPU.device!(AMDGPU.devices()[ordinal])
+    AMDGPU.device!(AMDGPU.devices()[ordinal + 1])       # adding 1 because ordinals start from 0
     device = Flux.FluxAMDDevice(AMDGPU.device())
-    AMDGPU.device!(AMDGPU.devices()[old_ordinal])
+    AMDGPU.device!(AMDGPU.devices()[old_ordinal + 1])
     return device
 end
