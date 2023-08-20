@@ -9,6 +9,10 @@ else
     @test typeof(amd_device.deviceID) <: Nothing
 end
 
+# testing get_device
+dense_model = Dense(2 => 3)     # initially lives on CPU
+weight = copy(dense_model.weight)           # store the weight
+bias = copy(dense_model.bias)               # store the bias
 if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
   amd_device = Flux.get_device()
 
@@ -23,15 +27,12 @@ if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
   @test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(amd_device.deviceID)
 
   # moving models to specific NVIDIA devices
-  dense_model = Dense(2 => 3)     # initially lives on CPU
-  weight = copy(dense_model.weight)           # store the weight
-  bias = copy(dense_model.bias)               # store the bias
   for ordinal in 0:(length(AMDGPU.devices()) - 1)
-    amd_device = Flux.get_device("AMD", ordinal)
-    @test typeof(amd_device.deviceID) <: AMDGPU.HIPDevice
-    @test AMDGPU.device_id(amd_device.deviceID) == ordinal + 1
+    current_amd_device = Flux.get_device("AMD", ordinal)
+    @test typeof(current_amd_device.deviceID) <: AMDGPU.HIPDevice
+    @test AMDGPU.device_id(current_amd_device.deviceID) == ordinal + 1
 
-    dense_model = dense_model |> amd_device
+    global dense_model = dense_model |> current_amd_device
     @test dense_model.weight isa AMDGPU.ROCArray
     @test dense_model.bias isa AMDGPU.ROCArray
     @test ADMGPU.device_id(AMDGPU.device(dense_model.weight)) == ordinal + 1

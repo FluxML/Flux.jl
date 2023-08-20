@@ -10,6 +10,9 @@ else
 end
 
 # testing get_device
+dense_model = Dense(2 => 3)                 # initially lives on CPU
+weight = copy(dense_model.weight)           # store the weight
+bias = copy(dense_model.bias)               # store the bias
 if CUDA.functional()
   cuda_device = Flux.get_device()
 
@@ -24,15 +27,12 @@ if CUDA.functional()
   @test CUDA.device(cx).handle == cuda_device.deviceID.handle
 
   # moving models to specific NVIDIA devices
-  dense_model = Dense(2 => 3)                 # initially lives on CPU
-  weight = copy(dense_model.weight)           # store the weight
-  bias = copy(dense_model.bias)               # store the bias
   for ordinal in 0:(length(CUDA.devices()) - 1)
-    cuda_device = Flux.get_device("CUDA", ordinal)
-    @test typeof(cuda_device.deviceID) <: CUDA.CuDevice
-    @test cuda_device.deviceID.handle == ordinal
+    current_cuda_device = Flux.get_device("CUDA", ordinal)
+    @test typeof(current_cuda_device.deviceID) <: CUDA.CuDevice
+    @test current_cuda_device.deviceID.handle == ordinal
 
-    dense_model = dense_model |> cuda_device
+    global dense_model = dense_model |> current_cuda_device
     @test dense_model.weight isa CUDA.CuArray
     @test dense_model.bias isa CUDA.CuArray
     @test CUDA.device(dense_model.weight).handle == ordinal
