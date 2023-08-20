@@ -15,7 +15,7 @@ import Adapt: adapt_storage
 const USE_CUDA = Ref{Union{Nothing, Bool}}(nothing)
 
 function (device::Flux.FluxCUDADevice)(x)
-    if typeof(device.deviceID) <: Nothing
+    if device.deviceID === nothing
         return Flux.gpu(Flux.FluxCUDAAdaptor(), x)
     else
         return Flux.gpu(Flux.FluxCUDAAdaptor(device.deviceID.handle), x)

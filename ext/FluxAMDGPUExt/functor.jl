@@ -1,6 +1,6 @@
 # Convert Float64 to Float32, but preserve Float16.
 function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
-    if typeof(to.ordinal) <: Nothing
+    if to.ordinal === nothing
         if (typeof(x) <: AbstractArray{Float16, N} where N)
             N = length(size(x))
             return isbits(x) ? x : ROCArray{Float16, N}(x)

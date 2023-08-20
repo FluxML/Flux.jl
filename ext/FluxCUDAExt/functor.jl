@@ -1,6 +1,6 @@
 adapt_storage(to::FluxCUDAAdaptor, x) = CUDA.cu(x)
 function adapt_storage(to::FluxCUDAAdaptor, x::AbstractArray)
-    typeof(to.ordinal) <: Nothing && return CUDA.cu(x)
+    to.ordinal === nothing && return CUDA.cu(x)
 
     # remember current device
     old_ordinal = CUDA.device().handle

@@ -18,7 +18,7 @@ const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
 function (device::Flux.FluxAMDDevice)(x)
-    if typeof(device.deviceID) <: Nothing
+    if device.deviceID === nothing
         Flux.gpu(Flux.FluxAMDAdaptor(), x)
     else
         return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceID) - 1), x)  # subtracting 1, because device_id returns a positive integer
