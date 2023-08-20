@@ -35,8 +35,8 @@ if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
     global dense_model = dense_model |> current_amd_device
     @test dense_model.weight isa AMDGPU.ROCArray
     @test dense_model.bias isa AMDGPU.ROCArray
-    @test ADMGPU.device_id(AMDGPU.device(dense_model.weight)) == ordinal + 1
-    @test ADMGPU.device_id(AMDGPU.device(dense_model.bias)) == ordinal + 1
+    @test AMDGPU.device_id(AMDGPU.device(dense_model.weight)) == ordinal + 1
+    @test AMDGPU.device_id(AMDGPU.device(dense_model.bias)) == ordinal + 1
     @test isequal(Flux.cpu(dense_model.weight), weight)
     @test isequal(Flux.cpu(dense_model.bias), bias)
   end
