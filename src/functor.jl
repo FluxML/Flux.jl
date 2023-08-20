@@ -653,7 +653,7 @@ end
     Flux.get_device(backend::String, ordinal::Int = 0)::Flux.AbstractDevice
 
 Get a device object for a backend specified by the string `backend` and `ordinal`. The currently supported values
-of `backend` are `"CUDA"`, `"AMD"` and `"CPU"`.
+of `backend` are `"CUDA"`, `"AMD"` and `"CPU"`. `ordinal` must be an integer value between `0` and the number of available devices.
 
 # Examples
 
