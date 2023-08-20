@@ -106,7 +106,7 @@ function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMD_CONV)
         Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end
 
-function Flux.get_device(::Val{:AMD}, ordinal::Int)
+function Flux.get_device(::Val{:AMD}, ordinal::Int)     # ordinal should start from 0
     old_ordinal = AMDGPU.device_id(AMDGPU.device())
     AMDGPU.device!(AMDGPU.devices()[ordinal + 1])       # adding 1 because ordinals start from 0
     device = Flux.FluxAMDDevice(AMDGPU.device())
