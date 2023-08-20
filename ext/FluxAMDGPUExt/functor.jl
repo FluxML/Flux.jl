@@ -12,7 +12,7 @@ function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
         end
     end
 
-    old_ordinal = AMDGPU.device_id(AMDGPU.device())
+    old_ordinal = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ordinals start from 0
 
     if !(x isa ROCArray)
         AMDGPU.device!(AMDGPU.devices()[to.ordinal + 1])    # adding 1 because ordinals start from 0
