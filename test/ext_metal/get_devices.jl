@@ -11,15 +11,15 @@ end
 
 # testing get_device
 if Metal.functional()
-  device = Flux.get_device()
+  metal_device = Flux.get_device()
 
-  @test typeof(device) <: Flux.FluxMetalDevice
-  @test typeof(device.deviceID) <: Metal.MTLDevice
-  @test Flux._get_device_name(device) in Flux.supported_devices()
+  @test typeof(metal_device) <: Flux.FluxMetalDevice
+  @test typeof(metal_device.deviceID) <: Metal.MTLDevice
+  @test Flux._get_device_name(metal_device) in Flux.supported_devices()
 
   # correctness of data transfer
   x = randn(5, 5)
-  cx = x |> device
+  cx = x |> metal_device
   @test cx isa Metal.MtlArray
-  @test Metal.device(cx).registryID == device.deviceID.registryID
+  @test Metal.device(cx).registryID == metal_device.deviceID.registryID
 end

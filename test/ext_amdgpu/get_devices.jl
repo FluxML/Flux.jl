@@ -10,39 +10,39 @@ else
 end
 
 if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
-  device = Flux.get_device()
+  amd_device = Flux.get_device()
 
-  @test typeof(device) <: Flux.FluxAMDDevice
-  @test typeof(device.deviceID) <: AMDGPU.HIPDevice
-  @test Flux._get_device_name(device) in Flux.supported_devices()
+  @test typeof(amd_device) <: Flux.FluxAMDDevice
+  @test typeof(amd_device.deviceID) <: AMDGPU.HIPDevice
+  @test Flux._get_device_name(amd_device) in Flux.supported_devices()
 
   # correctness of data transfer
   x = randn(5, 5)
-  cx = x |> device
+  cx = x |> amd_device
   @test cx isa AMDGPU.ROCArray
-  @test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(device.deviceID)
+  @test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(amd_device.deviceID)
 
   # moving models to specific NVIDIA devices
-  m = Dense(2 => 3)     # initially lives on CPU
-  weight = copy(m.weight)           # store the weight
-  bias = copy(m.bias)               # store the bias
+  dense_model = Dense(2 => 3)     # initially lives on CPU
+  weight = copy(dense_model.weight)           # store the weight
+  bias = copy(dense_model.bias)               # store the bias
   for ordinal in 0:(length(AMDGPU.devices()) - 1)
-    device = Flux.get_device("AMD", ordinal)
-    @test typeof(device.deviceID) <: AMDGPU.HIPDevice
-    @test AMDGPU.device_id(device.deviceID) == ordinal
+    amd_device = Flux.get_device("AMD", ordinal)
+    @test typeof(amd_device.deviceID) <: AMDGPU.HIPDevice
+    @test AMDGPU.device_id(amd_device.deviceID) == ordinal
 
-    m = m |> device
-    @test m.weight isa AMDGPU.ROCArray
-    @test m.bias isa AMDGPU.ROCArray
-    @test ADMGPU.device_id(AMDGPU.device(m.weight)) == ordinal
-    @test ADMGPU.device_id(AMDGPU.device(m.bias)) == ordinal
-    @test isequal(Flux.cpu(m.weight), weight)
-    @test isequal(Flux.cpu(m.bias), bias)
+    dense_model = dense_model |> amd_device
+    @test dense_model.weight isa AMDGPU.ROCArray
+    @test dense_model.bias isa AMDGPU.ROCArray
+    @test ADMGPU.device_id(AMDGPU.device(dense_model.weight)) == ordinal
+    @test ADMGPU.device_id(AMDGPU.device(dense_model.bias)) == ordinal
+    @test isequal(Flux.cpu(dense_model.weight), weight)
+    @test isequal(Flux.cpu(dense_model.bias), bias)
   end
   # finally move to CPU, and see if things work
   cpu_device = Flux.get_device("CPU")
-  m = cpu_device(m)
-  @test m.weight isa Matrix
-  @test m.bias isa Vector
+  dense_model = cpu_device(dense_model)
+  @test dense_model.weight isa Matrix
+  @test dense_model.bias isa Vector
 
 end
