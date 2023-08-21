@@ -8,7 +8,11 @@ end
 @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]) <: Nothing
 @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CPU"]]) <: Flux.FluxCPUDevice
 
-device = Flux.get_device()
-@test typeof(device) <: Flux.FluxCPUDevice
-@test device(x) == x
-@test Flux._get_device_name(device) in Flux.supported_devices()
+dev = Flux.get_device()
+@test typeof(dev) <: Flux.FluxCPUDevice
+@test dev(x) == x
+@test Flux._get_device_name(dev) in Flux.supported_devices()
+
+# specifically getting CPU device
+dev = Flux.get_device("CPU")
+@test typeof(dev) <: Flux.FluxCPUDevice

@@ -311,6 +311,71 @@ julia> device = Flux.get_device(; verbose=true)       # this will resort to auto
 ```
 For detailed information about how the backend is selected, check the documentation for [`Flux.get_device`](@ref).
 
+## Data movement across GPU devices
+
+Flux also supports getting handles to specific GPU devices, and transferring models from one GPU device to another GPU
+device from the same backend. Let's try it out for NVIDIA GPUs. First, we list all the available devices:
+
+```julia-repl
+julia> using Flux, CUDA;
+
+julia> CUDA.devices()
+CUDA.DeviceIterator() for 3 devices:
+0. GeForce RTX 2080 Ti
+1. GeForce RTX 2080 Ti
+2. TITAN X (Pascal)
+
+```
+
+Then, let's select the device with ordinal `0`:
+
+```julia-repl
+julia> device0 = Flux.get_device("CUDA", 0)        # the currently supported values for backend are "CUDA" and "AMD"
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+```
+
+Then, let's move a simple dense layer to the GPU represented by `device0`:
+
+```julia-repl
+julia> dense_model = Dense(2 => 3)
+Dense(2 => 3)       # 9 parameters
+
+julia> dense_model = dense_model |> device0;
+
+julia> dense_model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+  0.695662   0.816299
+ -0.204763  -0.10232
+ -0.955829   0.538412
+
+julia> CUDA.device(dense_model.weight)      # check the GPU to which dense_model is attached
+CuDevice(0): GeForce RTX 2080 Ti
+
+```
+
+Next, we'll get a handle to the device with ordinal `1`, and move `dense_model` to that device:
+
+```julia-repl
+julia> device1 = Flux.get_device("CUDA", 1)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia> dense_model = dense_model |> device1;    # don't directly print the model; see warning below
+
+julia> CUDA.device(dense_model.weight)
+CuDevice(1): GeForce RTX 2080 Ti
+
+```
+
+Due to a limitation in `Metal.jl`, currently this kind of data movement across devices is only supported for `CUDA` and `AMD` backends.
+
+!!! warning "Printing models after moving to a different device"
+    
+    Due to a limitation in how GPU packages currently work, printing
+    models on the REPL after moving them to a GPU device which is different
+    from the current device will lead to an error.
+
+
 ```@docs
 Flux.AbstractDevice
 Flux.FluxCPUDevice

@@ -332,13 +332,15 @@ trainable(c::Cholesky) = ()
 
 # CUDA extension. ########
 
-struct FluxCUDAAdaptor end
+Base.@kwdef struct FluxCUDAAdaptor
+    ordinal::Union{Nothing, Int} = nothing
+end
 
 const CUDA_LOADED = Ref{Bool}(false)
 
-function gpu(::FluxCUDAAdaptor, x)
+function gpu(to::FluxCUDAAdaptor, x)
     if CUDA_LOADED[]
-        return _cuda(x)
+        return _cuda(to.ordinal, x)
     else
         @info """
         The CUDA functionality is being called but
@@ -353,13 +355,15 @@ function _cuda end
 
 # AMDGPU extension. ########
 
-struct FluxAMDAdaptor end
+Base.@kwdef struct FluxAMDAdaptor
+    ordinal::Union{Nothing, Int} = nothing
+end
 
 const AMDGPU_LOADED = Ref{Bool}(false)
 
-function gpu(::FluxAMDAdaptor, x)
+function gpu(to::FluxAMDAdaptor, x)
     if AMDGPU_LOADED[]
-        return _amd(x)
+        return _amd(to.ordinal, x)
     else
         @info """
         The AMDGPU functionality is being called but
@@ -500,9 +504,6 @@ Base.@kwdef struct FluxCUDADevice <: AbstractDevice
     deviceID
 end
 
-(::FluxCUDADevice)(x) = gpu(FluxCUDAAdaptor(), x)
-_get_device_name(::FluxCUDADevice) = "CUDA"
-
 """
     FluxAMDDevice <: AbstractDevice
 
@@ -512,9 +513,6 @@ Base.@kwdef struct FluxAMDDevice <: AbstractDevice
     deviceID
 end
 
-(::FluxAMDDevice)(x) = gpu(FluxAMDAdaptor(), x)
-_get_device_name(::FluxAMDDevice) = "AMD"
-
 """
     FluxMetalDevice <: AbstractDevice
 
@@ -523,9 +521,6 @@ A type representing `device` objects for the `"Metal"` backend for Flux.
 Base.@kwdef struct FluxMetalDevice <: AbstractDevice
     deviceID
 end
-
-(::FluxMetalDevice)(x) = gpu(FluxMetalAdaptor(), x)
-_get_device_name(::FluxMetalDevice) = "Metal"
 
 ## device list. order is important
 const DEVICES = Ref{Vector{Union{Nothing, AbstractDevice}}}(Vector{Union{Nothing, AbstractDevice}}(nothing, length(GPU_BACKENDS)))
@@ -550,7 +545,7 @@ julia> Flux.supported_devices()
 supported_devices() = GPU_BACKENDS
 
 """
-    Flux.get_device(; verbose=false)::AbstractDevice
+    Flux.get_device(; verbose=false)::Flux.AbstractDevice
 
 Returns a `device` object for the most appropriate backend for the current Julia session. 
 
@@ -651,5 +646,47 @@ function get_device(; verbose=false)::AbstractDevice
                 return device
             end
         end
+    end
+end
+
+"""
+    Flux.get_device(backend::String, ordinal::Int = 0)::Flux.AbstractDevice
+
+Get a device object for a backend specified by the string `backend` and `ordinal`. The currently supported values
+of `backend` are `"CUDA"`, `"AMD"` and `"CPU"`. `ordinal` must be an integer value between `0` and the number of available devices.
+
+# Examples
+
+```julia-repl
+julia> using Flux, CUDA;
+
+julia> CUDA.devices()
+CUDA.DeviceIterator() for 3 devices:
+0. GeForce RTX 2080 Ti
+1. GeForce RTX 2080 Ti
+2. TITAN X (Pascal)
+
+julia> device0 = Flux.get_device("CUDA", 0)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia> device0.deviceID
+CuDevice(0): GeForce RTX 2080 Ti
+
+julia> device1 = Flux.get_device("CUDA", 1)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia> device1.deviceID
+CuDevice(1): GeForce RTX 2080 Ti
+
+julia> cpu_device = Flux.get_device("CPU")
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+
+```
+"""
+function get_device(backend::String, ordinal::Int = 0)
+    if backend == "CPU"
+        return FluxCPUDevice()
+    else
+        return get_device(Val(Symbol(backend)), ordinal)
     end
 end

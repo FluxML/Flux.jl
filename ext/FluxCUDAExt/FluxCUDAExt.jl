@@ -14,6 +14,14 @@ import Adapt: adapt_storage
 
 const USE_CUDA = Ref{Union{Nothing, Bool}}(nothing)
 
+function (device::Flux.FluxCUDADevice)(x)
+    if device.deviceID === nothing
+        return Flux.gpu(Flux.FluxCUDAAdaptor(), x)
+    else
+        return Flux.gpu(Flux.FluxCUDAAdaptor(device.deviceID.handle), x)
+    end
+end
+Flux._get_device_name(::Flux.FluxCUDADevice) = "CUDA"
 Flux._isavailable(::Flux.FluxCUDADevice) = true
 Flux._isfunctional(::Flux.FluxCUDADevice) = CUDA.functional()
 
