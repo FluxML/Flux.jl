@@ -44,7 +44,11 @@ MacroTools = "0.5"
 Metal = "0.5"
 NNlib = "0.9.1"
 OneHotArrays = "0.2.4"
+<<<<<<< HEAD
 Optimisers = "0.2.12, 0.3.0"
+=======
+Optimisers = "0.2.12, 3.0"
+>>>>>>> c92671aa (Update Project.toml)
 Preferences = "1"
 ProgressLogging = "0.1"
 Reexport = "1.0"
