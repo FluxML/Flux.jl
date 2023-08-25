@@ -38,6 +38,10 @@ See also academic work [citing Flux](https://scholar.google.com/scholar?cites=97
 
 - [FluxArchitectures.jl](https://github.com/sdobber/FluxArchitectures.jl) is a collection of advanced network architectures for time series forecasting.
 
+### Robust networks
+
+- [RobustNeuralNetworks.jl](https://github.com/acfr/RobustNeuralNetworks.jl) includes classes of neural networks that are constructed to naturally satisfy robustness constraints.
+
 ---
 
 ## Tools closely associated with Flux
