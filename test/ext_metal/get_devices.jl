@@ -7,8 +7,7 @@
   @test typeof(metal_device.deviceID) <: Metal.MTLDevice 
 end
 
-@testset "get_devices()" begin
-  # testing get_device
+@testset "get_device()" begin
   metal_device = Flux.get_device()
 
   @test typeof(metal_device) <: Flux.FluxMetalDevice
@@ -22,8 +21,7 @@ end
   @test Metal.device(cx).registryID == metal_device.deviceID.registryID
 end
 
-@testset "get_devices(Metal)" begin
-  # testing get_device
+@testset "get_device(Metal)" begin
   metal_device = Flux.get_device("Metal")
 
   @test typeof(metal_device) <: Flux.FluxMetalDevice
