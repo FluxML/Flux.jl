@@ -650,10 +650,10 @@ function get_device(; verbose=false)::AbstractDevice
 end
 
 """
-    Flux.get_device(backend::String, ordinal::Int = 0)::Flux.AbstractDevice
+    Flux.get_device(backend::String, idx::Int = 0)::Flux.AbstractDevice
 
-Get a device object for a backend specified by the string `backend` and `ordinal`. The currently supported values
-of `backend` are `"CUDA"`, `"AMD"` and `"CPU"`. `ordinal` must be an integer value between `0` and the number of available devices.
+Get a device object for a backend specified by the string `backend` and `idx`. The currently supported values
+of `backend` are `"CUDA"`, `"AMD"` and `"CPU"`. `idx` must be an integer value between `0` and the number of available devices.
 
 # Examples
 
@@ -683,10 +683,15 @@ julia> cpu_device = Flux.get_device("CPU")
 
 ```
 """
-function get_device(backend::String, ordinal::Int = 0)
+function get_device(backend::String, idx::Int = 0)
     if backend == "CPU"
         return FluxCPUDevice()
     else
-        return get_device(Val(Symbol(backend)), ordinal)
+        return get_device(Val(Symbol(backend)), idx)
     end
+end
+
+# Fallback
+function get_device(::Val{D}, idx) where D
+    error("Unsupported backend: $(D). Try importing the corresponding package.")
 end
