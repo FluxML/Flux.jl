@@ -327,7 +327,7 @@ CUDA.DeviceIterator() for 3 devices:
 
 ```
 
-Then, let's select the device with ordinal `0`:
+Then, let's select the device with id `0`:
 
 ```julia-repl
 julia> device0 = Flux.get_device("CUDA", 0)        # the currently supported values for backend are "CUDA" and "AMD"
@@ -354,7 +354,7 @@ CuDevice(0): GeForce RTX 2080 Ti
 
 ```
 
-Next, we'll get a handle to the device with ordinal `1`, and move `dense_model` to that device:
+Next, we'll get a handle to the device with id `1`, and move `dense_model` to that device:
 
 ```julia-repl
 julia> device1 = Flux.get_device("CUDA", 1)

@@ -23,16 +23,16 @@ cx = x |> amd_device
 @test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(amd_device.deviceID)
 
 # moving models to specific NVIDIA devices
-for ordinal in 0:(length(AMDGPU.devices()) - 1)
-  current_amd_device = Flux.get_device("AMD", ordinal)
+for id in 0:(length(AMDGPU.devices()) - 1)
+  current_amd_device = Flux.get_device("AMD", id)
   @test typeof(current_amd_device.deviceID) <: AMDGPU.HIPDevice
-  @test AMDGPU.device_id(current_amd_device.deviceID) == ordinal + 1
+  @test AMDGPU.device_id(current_amd_device.deviceID) == id + 1
 
   global dense_model = dense_model |> current_amd_device
   @test dense_model.weight isa AMDGPU.ROCArray
   @test dense_model.bias isa AMDGPU.ROCArray
-  @test AMDGPU.device_id(AMDGPU.device(dense_model.weight)) == ordinal + 1
-  @test AMDGPU.device_id(AMDGPU.device(dense_model.bias)) == ordinal + 1
+  @test AMDGPU.device_id(AMDGPU.device(dense_model.weight)) == id + 1
+  @test AMDGPU.device_id(AMDGPU.device(dense_model.bias)) == id + 1
   @test isequal(Flux.cpu(dense_model.weight), weight)
   @test isequal(Flux.cpu(dense_model.bias), bias)
 end

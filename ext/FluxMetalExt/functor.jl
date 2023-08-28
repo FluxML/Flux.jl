@@ -33,8 +33,8 @@ function _metal(x)
     fmap(x -> Adapt.adapt(FluxMetalAdaptor(), x), x; exclude=_isleaf)
 end
 
-function Flux.get_device(::Val{:Metal}, idx::Int)
-    @assert idx == 0 # Metal only supports one device at the moment
+function Flux.get_device(::Val{:Metal}, id::Int)
+    @assert id == 0 # Metal only supports one device at the moment
     return Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]
 end
 

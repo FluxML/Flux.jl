@@ -333,14 +333,14 @@ trainable(c::Cholesky) = ()
 # CUDA extension. ########
 
 Base.@kwdef struct FluxCUDAAdaptor
-    ordinal::Union{Nothing, Int} = nothing
+    id::Union{Nothing, Int} = nothing
 end
 
 const CUDA_LOADED = Ref{Bool}(false)
 
 function gpu(to::FluxCUDAAdaptor, x)
     if CUDA_LOADED[]
-        return _cuda(to.ordinal, x)
+        return _cuda(to.id, x)
     else
         @info """
         The CUDA functionality is being called but
@@ -356,14 +356,14 @@ function _cuda end
 # AMDGPU extension. ########
 
 Base.@kwdef struct FluxAMDAdaptor
-    ordinal::Union{Nothing, Int} = nothing
+    id::Union{Nothing, Int} = nothing
 end
 
 const AMDGPU_LOADED = Ref{Bool}(false)
 
 function gpu(to::FluxAMDAdaptor, x)
     if AMDGPU_LOADED[]
-        return _amd(to.ordinal, x)
+        return _amd(to.id, x)
     else
         @info """
         The AMDGPU functionality is being called but

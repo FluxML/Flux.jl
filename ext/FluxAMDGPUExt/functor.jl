@@ -1,6 +1,6 @@
 # Convert Float64 to Float32, but preserve Float16.
 function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
-    if to.ordinal === nothing
+    if to.id === nothing
         if (typeof(x) <: AbstractArray{Float16, N} where N)
             N = length(size(x))
             return isbits(x) ? x : ROCArray{Float16, N}(x)
@@ -12,10 +12,10 @@ function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
         end
     end
 
-    old_ordinal = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ordinals start from 0
+    old_id = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ids start from 0
 
     if !(x isa ROCArray)
-        AMDGPU.device!(AMDGPU.devices()[to.ordinal + 1])    # adding 1 because ordinals start from 0
+        AMDGPU.device!(AMDGPU.devices()[to.id + 1])    # adding 1 because ids start from 0
         if (typeof(x) <: AbstractArray{Float16, N} where N)
             N = length(size(x))
             x_new = isbits(x) ? x : ROCArray{Float16, N}(x)
@@ -25,14 +25,14 @@ function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
         else
             x_new = isbits(x) ? x : ROCArray(x)
         end
-        AMDGPU.device!(AMDGPU.devices()[old_ordinal + 1])
+        AMDGPU.device!(AMDGPU.devices()[old_id + 1])
         return x_new
-    elseif AMDGPU.device_id(AMDGPU.device(x)) == to.ordinal
+    elseif AMDGPU.device_id(AMDGPU.device(x)) == to.id
         return x
     else
-        AMDGPU.device!(AMDGPU.devices()[to.ordinal + 1])
+        AMDGPU.device!(AMDGPU.devices()[to.id + 1])
         x_new = copy(x)
-        AMDGPU.device!(AMDGPU.devices()[old_ordinal + 1])
+        AMDGPU.device!(AMDGPU.devices()[old_id + 1])
         return x_new
     end
 end
@@ -76,10 +76,10 @@ Flux._isleaf(::AMD_CONV) = true
 _exclude(x) = Flux._isleaf(x)
 _exclude(::CPU_CONV) = true
 
-function _amd(ordinal::Union{Nothing, Int}, x)
+function _amd(id::Union{Nothing, Int}, x)
     check_use_amdgpu()
     USE_AMDGPU[] || return x
-    fmap(x -> Adapt.adapt(FluxAMDAdaptor(ordinal), x), x; exclude=_exclude)
+    fmap(x -> Adapt.adapt(FluxAMDAdaptor(id), x), x; exclude=_exclude)
 end
 
 # CPU -> GPU
@@ -106,10 +106,10 @@ function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMD_CONV)
         Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end
 
-function Flux.get_device(::Val{:AMD}, ordinal::Int)     # ordinal should start from 0
-    old_ordinal = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ordinals start from 0
-    AMDGPU.device!(AMDGPU.devices()[ordinal + 1])           # adding 1 because ordinals start from 0
+function Flux.get_device(::Val{:AMD}, id::Int)     # id should start from 0
+    old_id = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ids start from 0
+    AMDGPU.device!(AMDGPU.devices()[id + 1])           # adding 1 because ids start from 0
     device = Flux.FluxAMDDevice(AMDGPU.device())
-    AMDGPU.device!(AMDGPU.devices()[old_ordinal + 1])
+    AMDGPU.device!(AMDGPU.devices()[old_id + 1])
     return device
 end

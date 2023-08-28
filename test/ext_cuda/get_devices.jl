@@ -23,16 +23,16 @@ cx = x |> cuda_device
 @test CUDA.device(cx).handle == cuda_device.deviceID.handle
 
 # moving models to specific NVIDIA devices
-for ordinal in 0:(length(CUDA.devices()) - 1)
-  current_cuda_device = Flux.get_device("CUDA", ordinal)
+for id in 0:(length(CUDA.devices()) - 1)
+  current_cuda_device = Flux.get_device("CUDA", id)
   @test typeof(current_cuda_device.deviceID) <: CUDA.CuDevice
-  @test current_cuda_device.deviceID.handle == ordinal
+  @test current_cuda_device.deviceID.handle == id
 
   global dense_model = dense_model |> current_cuda_device
   @test dense_model.weight isa CUDA.CuArray
   @test dense_model.bias isa CUDA.CuArray
-  @test CUDA.device(dense_model.weight).handle == ordinal
-  @test CUDA.device(dense_model.bias).handle == ordinal
+  @test CUDA.device(dense_model.weight).handle == id
+  @test CUDA.device(dense_model.bias).handle == id
   @test isequal(Flux.cpu(dense_model.weight), weight)
   @test isequal(Flux.cpu(dense_model.bias), bias)
 end
