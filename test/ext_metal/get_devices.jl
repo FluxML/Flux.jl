@@ -1,16 +1,13 @@
-metal_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]
+@testset "Flux.DEVICES" begin 
+  metal_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]
 
-# should pass, whether or not Metal is functional
-@test typeof(metal_device) <: Flux.FluxMetalDevice
+  # should pass, whether or not Metal is functional
+  @test typeof(metal_device) <: Flux.FluxMetalDevice
 
-if Metal.functional()
-    @test typeof(metal_device.deviceID) <: Metal.MTLDevice 
-else
-    @test typeof(metal_device.deviceID) <: Nothing
+  @test typeof(metal_device.deviceID) <: Metal.MTLDevice 
 end
 
-# testing get_device
-if Metal.functional()
+@testset "get_device()" begin
   metal_device = Flux.get_device()
 
   @test typeof(metal_device) <: Flux.FluxMetalDevice
@@ -23,3 +20,18 @@ if Metal.functional()
   @test cx isa Metal.MtlArray
   @test Metal.device(cx).registryID == metal_device.deviceID.registryID
 end
+
+@testset "get_device(Metal)" begin
+  metal_device = Flux.get_device("Metal")
+
+  @test typeof(metal_device) <: Flux.FluxMetalDevice
+  @test typeof(metal_device.deviceID) <: Metal.MTLDevice
+  @test Flux._get_device_name(metal_device) in Flux.supported_devices()
+
+  metal_device = Flux.get_device("Metal", 0)
+
+  @test typeof(metal_device) <: Flux.FluxMetalDevice
+  @test typeof(metal_device.deviceID) <: Metal.MTLDevice
+  @test Flux._get_device_name(metal_device) in Flux.supported_devices()
+end
+

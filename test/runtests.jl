@@ -7,7 +7,7 @@ using IterTools: ncycle
 using Zygote
 
 # ENV["FLUX_TEST_AMDGPU"] = "true"
-ENV["FLUX_TEST_CUDA"] = "true"
+# ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
 # ENV["FLUX_TEST_CPU"] = "false"
 
@@ -74,15 +74,12 @@ Random.seed!(0)
     using CUDA, cuDNN
     Flux.gpu_backend!("CUDA")
 
-    @testset "CUDA" begin
-      include("ext_cuda/get_devices.jl")
-
-      if CUDA.functional()
-        @info "Testing CUDA Support"
+    if CUDA.functional()
+      @testset "CUDA" begin
         include("ext_cuda/runtests.jl")
-      else
-        @warn "CUDA.jl package is not functional. Skipping CUDA tests."
       end
+    else
+      @warn "CUDA.jl package is not functional. Skipping CUDA tests."
     end
   else
     @info "Skipping CUDA tests, set FLUX_TEST_CUDA=true to run them."
@@ -91,8 +88,6 @@ Random.seed!(0)
   if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
     using AMDGPU
     Flux.gpu_backend!("AMD")
-
-    include("ext_amdgpu/get_devices.jl")
 
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
@@ -108,8 +103,6 @@ Random.seed!(0)
   if get(ENV, "FLUX_TEST_METAL", "false") == "true"
     using Metal
     Flux.gpu_backend!("Metal")
-
-    include("ext_metal/get_devices.jl")
 
     if Metal.functional()
       @testset "Metal" begin

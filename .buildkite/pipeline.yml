@@ -1,18 +1,5 @@
 steps:
-  # - label: "GPU integration with julia v1.9"
-  #   plugins:
-  #     - JuliaCI/julia#v1:
-  #         # Drop default "registries" directory, so it is not persisted from execution to execution
-  #         # Taken from https://github.com/JuliaLang/julia/blob/v1.7.2/.buildkite/pipelines/main/platforms/package_linux.yml#L11-L12
-  #         persist_depot_dirs: packages,artifacts,compiled
-  #         version: "1.9"
-  #     - JuliaCI/julia-test#v1: ~
-  #   agents:
-  #     queue: "juliagpu"
-  #     cuda: "*"
-  #   timeout_in_minutes: 60
-
-  - label: "GPU integration with julia v1"
+  - label: "CUDA GPU with julia v1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
@@ -24,6 +11,7 @@ steps:
       cuda: "*"
     env:
       JULIA_CUDA_USE_BINARYBUILDER: "true"
+      FLUX_TEST_CUDA: "true"
       FLUX_TEST_CPU: "false"
     timeout_in_minutes: 60
 
@@ -36,6 +24,7 @@ steps:
   #     queue: "juliagpu"
   #     cuda: "*"
   #   timeout_in_minutes: 60
+
   - label: "Metal with julia {{matrix.julia}}"
     plugins:
       - JuliaCI/julia#v1:
@@ -57,7 +46,7 @@ steps:
     if: build.message !~ /\[skip tests\]/
     timeout_in_minutes: 60
     env:
-      FLUX_TEST_METAL: 'true'
+      FLUX_TEST_METAL: "true"
       FLUX_TEST_CPU: "false"
     matrix:
       setup:
@@ -84,7 +73,7 @@ steps:
       JULIA_AMDGPU_CORE_MUST_LOAD: "1"
       JULIA_AMDGPU_HIP_MUST_LOAD: "1"
       JULIA_AMDGPU_DISABLE_ARTIFACTS: "1"
-      FLUX_TEST_AMDGPU: true
+      FLUX_TEST_AMDGPU: "true"
       FLUX_TEST_CPU: "false"
       JULIA_NUM_THREADS: 4
 env:
