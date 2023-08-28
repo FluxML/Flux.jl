@@ -34,7 +34,7 @@ function _metal(x)
 end
 
 function Flux.get_device(::Val{:Metal}, id::Int)
-    @assert id == 0 # Metal only supports one device at the moment
+    @assert id == 0 "Metal backend only supports one device at the moment"
     return Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]
 end
 
