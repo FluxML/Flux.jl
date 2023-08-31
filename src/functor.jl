@@ -192,6 +192,14 @@ const GPU_BACKENDS = ["CUDA", "AMD", "Metal", "CPU"]
 const GPU_BACKEND_ORDER = Dict(collect(zip(GPU_BACKENDS, 1:length(GPU_BACKENDS))))
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
+"""
+    gpu_backend!(backend::String)
+
+Sets the gpu backend in `LocalPreferences.toml`. 
+Possible `backend` values are "CUDA", "AMD", and "Metal".
+The selected backend affects the data movement in [`Flux.gpu`](@ref).
+Current backend is stored in `Flux.GPU_BACKEND`.
+"""
 function gpu_backend!(backend::String)
     if backend == GPU_BACKEND
         @info """
@@ -219,8 +227,10 @@ end
 Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
 
-On arrays, this calls CUDA's `cu`, which also changes arrays
-with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
+When the backed is set to "CUDA", when called on arrays it calls `CUDA.cu`, 
+which also changes arrays with Float64 elements to Float32 while copying them to the device. 
+Similar conversions happen for "AMDGPU" and "Metal" backends.
+
 To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
 
 Use [`cpu`](@ref) to copy back to ordinary `Array`s.
@@ -228,6 +238,8 @@ See also [`f32`](@ref) and [`f16`](@ref) to change element type only.
 
 See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
 to help identify the current device.
+
+See [`Flux.gpu_backend!`](@ref) for setting the backend.
 
 # Example
 ```julia-repl
