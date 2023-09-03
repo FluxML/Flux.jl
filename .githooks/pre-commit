@@ -1,1 +1,2 @@
+#!/bin/sh
 julia --color=yes dev/flux_format.jl --verbose .
