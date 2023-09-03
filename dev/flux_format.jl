@@ -1,6 +1,5 @@
 using Pkg
-Pkg.activate(@__DIR__)
-Pkg.instantiate()
+Pkg.activate(@__DIR__)      # no need to instantiate here
 
 using JuliaFormatter
 

@@ -1,3 +1,8 @@
+# instantiate the environment
+using Pkg
+Pkg.activate(@__DIR__)
+Pkg.instantiate()
+
 # setup the custom git hook
 using Git
 

@@ -1,4 +1,3 @@
 [deps]
-Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Git = "d7ba0133-e1db-5d97-8f8c-041e4b3a1eb2"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
