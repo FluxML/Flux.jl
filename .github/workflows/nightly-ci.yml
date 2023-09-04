@@ -20,7 +20,7 @@ jobs:
         os: [ubuntu-latest]
         arch: [x64]
     steps:
-      - uses: actions/checkout@v3.6.0
+      - uses: actions/checkout@v4.0.0
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
