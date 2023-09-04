@@ -155,3 +155,19 @@ The following table shows how the Flux code is organized:
 | paper  | Paper that describes Flux |
 | src    |  Source for Flux  |
 | test   |  Test suites  |
+
+### Julia Formatter
+
+Flux also uses it's own formatting style (see `dev/flux_format.jl`), with the style defined in the `.JuliaFormatter.toml` config file. All contributors must make sure to conform to this formatting style. To do this, run the following setup file on your local repository:
+
+```julia
+julia dev/setup.jl
+```
+
+This will setup the tooling environment (defined in the `dev/` directory), and will set up a hook to run the formatter before any changes are committed. You can also manually format the codebase by running
+
+```julia
+julia dev/flux_format.jl --verbose .
+```
+
+Flux's CI will also test whether any changes you make conform to this formatting style whenever any pull request is made.
