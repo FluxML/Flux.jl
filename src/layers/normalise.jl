@@ -245,7 +245,7 @@ function _norm_layer_forward(
   β = reshape(l.β, affine_shape)
 
   scale = γ ./ sqrt.(σ² .+ eps)
-  bias = -scale .* μ .+ β
+  bias = .-scale .* μ .+ β
   l.λ.(scale .* x .+ bias)
 end
 
