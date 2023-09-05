@@ -53,4 +53,5 @@ else
     filenames = ARGS
 end
 
+write(stdout, "Formatting in progress.\n")
 format(filenames; options...)
