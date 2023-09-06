@@ -1,5 +1,5 @@
 # Convert Float64 to Float32, but preserve Float16.
-function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
+function adapt_storage(to::FluxAMDGPUAdaptor, x::AbstractArray)
     if to.id === nothing
         if (typeof(x) <: AbstractArray{Float16, N} where N)
             N = length(size(x))
@@ -37,13 +37,13 @@ function adapt_storage(to::FluxAMDAdaptor, x::AbstractArray)
     end
 end
 
-adapt_storage(::FluxAMDAdaptor, x::Zygote.FillArrays.AbstractFill) =
+adapt_storage(::FluxAMDGPUAdaptor, x::Zygote.FillArrays.AbstractFill) =
     ROCArray(collect(x))
-adapt_storage(::FluxAMDAdaptor, x::Zygote.OneElement) = ROCArray(collect(x))
-adapt_storage(::FluxAMDAdaptor, x::Random.TaskLocalRNG) =
+adapt_storage(::FluxAMDGPUAdaptor, x::Zygote.OneElement) = ROCArray(collect(x))
+adapt_storage(::FluxAMDGPUAdaptor, x::Random.TaskLocalRNG) =
     AMDGPU.rocRAND.default_rng()
-adapt_storage(::FluxAMDAdaptor, x::AMDGPU.rocRAND.RNG) = x
-adapt_storage(::FluxAMDAdaptor, x::AbstractRNG) = error("""
+adapt_storage(::FluxAMDGPUAdaptor, x::AMDGPU.rocRAND.RNG) = x
+adapt_storage(::FluxAMDGPUAdaptor, x::AbstractRNG) = error("""
     Cannot map RNG of type $(typeof(x)) to AMDGPU.
     AMDGPU execution only supports Random.default_rng().""")
 
@@ -54,7 +54,7 @@ function ChainRulesCore.rrule(
 )
     adapt_storage(to, x), dx -> (
         NoTangent(), NoTangent(),
-        adapt_storage(FluxAMDAdaptor(), unthunk(dx)))
+        adapt_storage(FluxAMDGPUAdaptor(), unthunk(dx)))
 end
 
 # Since MIOpen supports only cross-correlation as convolution,
@@ -66,12 +66,12 @@ const FLUX_CONV{M} = Union{
     Flux.Conv{<:Any, <:Any, <:Any, <:M, <:Any},
     Flux.ConvTranspose{<:Any, <:Any, <:Any, <:M, <:Any}}
 const CPU_CONV = FLUX_CONV{Array}
-const AMD_CONV = FLUX_CONV{ROCArray}
+const AMDGPU_CONV = FLUX_CONV{ROCArray}
 
 _conv_basetype(::Conv) = Conv
 _conv_basetype(::ConvTranspose) = ConvTranspose
 
-Flux._isleaf(::AMD_CONV) = true
+Flux._isleaf(::AMDGPU_CONV) = true
 
 _exclude(x) = Flux._isleaf(x)
 _exclude(::CPU_CONV) = true
@@ -79,12 +79,12 @@ _exclude(::CPU_CONV) = true
 function _amd(id::Union{Nothing, Int}, x)
     check_use_amdgpu()
     USE_AMDGPU[] || return x
-    fmap(x -> Adapt.adapt(FluxAMDAdaptor(id), x), x; exclude=_exclude)
+    fmap(x -> Adapt.adapt(FluxAMDGPUAdaptor(id), x), x; exclude=_exclude)
 end
 
 # CPU -> GPU
 
-function Adapt.adapt_structure(to::FluxAMDAdaptor, m::CPU_CONV)
+function Adapt.adapt_structure(to::FluxAMDGPUAdaptor, m::CPU_CONV)
     flipped_weight = reverse(m.weight; dims=ntuple(i -> i, ndims(m.weight) - 2))
     _conv_basetype(m)(
         Adapt.adapt(to, m.σ),
@@ -95,11 +95,11 @@ end
 
 # Don't adapt again.
 
-Adapt.adapt_structure(to::FluxAMDAdaptor, m::AMD_CONV) = m
+Adapt.adapt_structure(to::FluxAMDGPUAdaptor, m::AMDGPU_CONV) = m
 
 # GPU -> CPU
 
-function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMD_CONV)
+function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMDGPU_CONV)
     dims = ntuple(i -> i, ndims(m.weight) - 2)
     _conv_basetype(m)(
         Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),

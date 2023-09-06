@@ -248,7 +248,7 @@ function gpu(x)
     @static if GPU_BACKEND == "CUDA"
         gpu(FluxCUDAAdaptor(), x)
     elseif GPU_BACKEND == "AMDGPU" || GPU_BACKEND == "AMD" # "AMD" is deprecated
-        gpu(FluxAMDAdaptor(), x)
+        gpu(FluxAMDGPUAdaptor(), x)
     elseif GPU_BACKEND == "Metal"
         gpu(FluxMetalAdaptor(), x)
     elseif GPU_BACKEND == "CPU"
@@ -355,13 +355,13 @@ function _cuda end
 
 # AMDGPU extension. ########
 
-Base.@kwdef struct FluxAMDAdaptor
+Base.@kwdef struct FluxAMDGPUAdaptor
     id::Union{Nothing, Int} = nothing
 end
 
 const AMDGPU_LOADED = Ref{Bool}(false)
 
-function gpu(to::FluxAMDAdaptor, x)
+function gpu(to::FluxAMDGPUAdaptor, x)
     if AMDGPU_LOADED[]
         return _amd(to.id, x)
     else

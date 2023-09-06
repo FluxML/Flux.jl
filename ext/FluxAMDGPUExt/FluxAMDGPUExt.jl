@@ -3,7 +3,7 @@ module FluxAMDGPUExt
 import ChainRulesCore
 import ChainRulesCore: NoTangent
 import Flux
-import Flux: FluxCPUAdaptor, FluxAMDAdaptor, _amd, adapt_storage, fmap
+import Flux: FluxCPUAdaptor, FluxAMDGPUAdaptor, _amd, adapt_storage, fmap
 import Flux: DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
 import NNlib
 
@@ -19,9 +19,9 @@ const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
 function (device::Flux.FluxAMDGPUDevice)(x)
     if device.deviceID === nothing
-        Flux.gpu(Flux.FluxAMDAdaptor(), x)
+        Flux.gpu(Flux.FluxAMDGPUAdaptor(), x)
     else
-        return Flux.gpu(Flux.FluxAMDAdaptor(AMDGPU.device_id(device.deviceID) - 1), x)  # subtracting 1, because device_id returns a positive integer
+        return Flux.gpu(Flux.FluxAMDGPUAdaptor(AMDGPU.device_id(device.deviceID) - 1), x)  # subtracting 1, because device_id returns a positive integer
     end
 end
 Flux._get_device_name(::Flux.FluxAMDGPUDevice) = "AMDGPU"
