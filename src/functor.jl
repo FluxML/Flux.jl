@@ -247,7 +247,10 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 function gpu(x)
     @static if GPU_BACKEND == "CUDA"
         gpu(FluxCUDAAdaptor(), x)
-    elseif GPU_BACKEND == "AMDGPU" || GPU_BACKEND == "AMD" # "AMD" is deprecated
+    elseif GPU_BACKEND == "AMD"
+        @warning "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead."
+        gpu(FluxAMDGPUAdaptor(), x)
+    elseif GPU_BACKEND == "AMDGPU"
         gpu(FluxAMDGPUAdaptor(), x)
     elseif GPU_BACKEND == "Metal"
         gpu(FluxMetalAdaptor(), x)
