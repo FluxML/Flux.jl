@@ -1,34 +1,34 @@
-amd_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMD"]]
+amdgpu_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMDGPU"]]
 
 # should pass, whether or not AMDGPU is functional
-@test typeof(amd_device) <: Flux.FluxAMDDevice
+@test typeof(amdgpu_device) <: Flux.FluxAMDGPUDevice
 
-@test typeof(amd_device.deviceID) <: AMDGPU.HIPDevice 
+@test typeof(amdgpu_device.deviceID) <: AMDGPU.HIPDevice 
 
 # testing get_device
 dense_model = Dense(2 => 3)     # initially lives on CPU
 weight = copy(dense_model.weight)           # store the weight
 bias = copy(dense_model.bias)               # store the bias
 
-amd_device = Flux.get_device()
+amdgpu_device = Flux.get_device()
 
-@test typeof(amd_device) <: Flux.FluxAMDDevice
-@test typeof(amd_device.deviceID) <: AMDGPU.HIPDevice
-@test Flux._get_device_name(amd_device) in Flux.supported_devices()
+@test typeof(amdgpu_device) <: Flux.FluxAMDGPUDevice
+@test typeof(amdgpu_device.deviceID) <: AMDGPU.HIPDevice
+@test Flux._get_device_name(amdgpu_device) in Flux.supported_devices()
 
 # correctness of data transfer
 x = randn(5, 5)
-cx = x |> amd_device
+cx = x |> amdgpu_device
 @test cx isa AMDGPU.ROCArray
-@test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(amd_device.deviceID)
+@test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(amdgpu_device.deviceID)
 
 # moving models to specific NVIDIA devices
 for id in 0:(length(AMDGPU.devices()) - 1)
-  current_amd_device = Flux.get_device("AMD", id)
-  @test typeof(current_amd_device.deviceID) <: AMDGPU.HIPDevice
-  @test AMDGPU.device_id(current_amd_device.deviceID) == id + 1
+  current_amdgpu_device = Flux.get_device("AMDGPU", id)
+  @test typeof(current_amdgpu_device.deviceID) <: AMDGPU.HIPDevice
+  @test AMDGPU.device_id(current_amdgpu_device.deviceID) == id + 1
 
-  global dense_model = dense_model |> current_amd_device
+  global dense_model = dense_model |> current_amdgpu_device
   @test dense_model.weight isa AMDGPU.ROCArray
   @test dense_model.bias isa AMDGPU.ROCArray
   @test AMDGPU.device_id(AMDGPU.device(dense_model.weight)) == id + 1

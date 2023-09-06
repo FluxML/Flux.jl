@@ -87,7 +87,7 @@ Random.seed!(0)
 
   if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
     using AMDGPU
-    Flux.gpu_backend!("AMD")
+    Flux.gpu_backend!("AMDGPU")
 
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
