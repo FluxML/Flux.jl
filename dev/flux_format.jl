@@ -30,7 +30,7 @@ for (index, arg) in enumerate(ARGS)
         push!(indices_to_remove, index)
     elseif arg in ["-h", "--help"] 
         opt = :help 
-        push!(indices_to_remove)
+        push!(indices_to_remove, index)
     else
         error("Option $arg is not supported.")
     end
