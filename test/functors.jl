@@ -4,7 +4,7 @@ if !(Flux.CUDA_LOADED[] || Flux.AMDGPU_LOADED[] || Flux.METAL_LOADED[])
 end
 
 @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]]) <: Nothing
-@test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMD"]]) <: Nothing
+@test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMDGPU"]]) <: Nothing
 @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]) <: Nothing
 @test typeof(Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CPU"]]) <: Flux.FluxCPUDevice
 

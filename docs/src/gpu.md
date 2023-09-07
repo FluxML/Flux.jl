@@ -51,17 +51,17 @@ true
 
 ## Selecting GPU backend
 
-Available GPU backends are: `CUDA`, `AMD` and `Metal`.
+Available GPU backends are: `CUDA`, `AMDGPU` and `Metal`.
 
 Flux relies on [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl) for selecting default GPU backend to use.
 
 There are two ways you can specify it:
 
-- From the REPL/code in your project, call `Flux.gpu_backend!("AMD")` and restart (if needed) Julia session for the changes to take effect.
+- From the REPL/code in your project, call `Flux.gpu_backend!("AMDGPU")` and restart (if needed) Julia session for the changes to take effect.
 - In `LocalPreferences.toml` file in you project directory specify:
 ```toml
 [Flux]
-gpu_backend = "AMD"
+gpu_backend = "AMDGPU"
 ```
 
 Current GPU backend can be fetched from `Flux.GPU_BACKEND` variable:
@@ -296,7 +296,7 @@ julia> model.weight     # no change; model still lives on CPU
 ```
 Clearly, this means that the same code will work for any GPU backend and the CPU. 
 
-If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMD or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. In the below example, the GPU preference is `"CUDA"`:
+If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMDGPU or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. In the below example, the GPU preference is `"CUDA"`:
 
 ```julia-repl
 julia> using Flux;      # preference is CUDA, but CUDA.jl not loaded
@@ -330,7 +330,7 @@ CUDA.DeviceIterator() for 3 devices:
 Then, let's select the device with id `0`:
 
 ```julia-repl
-julia> device0 = Flux.get_device("CUDA", 0)        # the currently supported values for backend are "CUDA" and "AMD"
+julia> device0 = Flux.get_device("CUDA", 0)        # the currently supported values for backend are "CUDA" and "AMDGPU"
 (::Flux.FluxCUDADevice) (generic function with 1 method)
 
 ```
@@ -367,7 +367,7 @@ CuDevice(1): GeForce RTX 2080 Ti
 
 ```
 
-Due to a limitation in `Metal.jl`, currently this kind of data movement across devices is only supported for `CUDA` and `AMD` backends.
+Due to a limitation in `Metal.jl`, currently this kind of data movement across devices is only supported for `CUDA` and `AMDGPU` backends.
 
 !!! warning "Printing models after moving to a different device"
     
@@ -380,7 +380,7 @@ Due to a limitation in `Metal.jl`, currently this kind of data movement across d
 Flux.AbstractDevice
 Flux.FluxCPUDevice
 Flux.FluxCUDADevice
-Flux.FluxAMDDevice
+Flux.FluxAMDGPUDevice
 Flux.FluxMetalDevice
 Flux.supported_devices
 Flux.get_device
