@@ -248,7 +248,7 @@ function gpu(x)
     @static if GPU_BACKEND == "CUDA"
         gpu(FluxCUDAAdaptor(), x)
     elseif GPU_BACKEND == "AMD"
-        @warning "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead."
+        @warn "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead." maxlog=1
         gpu(FluxAMDGPUAdaptor(), x)
     elseif GPU_BACKEND == "AMDGPU"
         gpu(FluxAMDGPUAdaptor(), x)
@@ -687,6 +687,10 @@ julia> cpu_device = Flux.get_device("CPU")
 ```
 """
 function get_device(backend::String, idx::Int = 0)
+    if backend == "AMD"
+        @warn "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead." maxlog=1
+        backend = "AMDGPU"
+    end
     if backend == "CPU"
         return FluxCPUDevice()
     else

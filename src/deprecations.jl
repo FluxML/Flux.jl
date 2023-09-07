@@ -202,6 +202,7 @@ ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
 # v0.14 deprecations
 @deprecate default_rng_value() Random.default_rng()
 
+Base.@deprecate_binding FluxAMDAdaptor FluxAMDGPUAdaptor
 
 # v0.15 deprecations
 
