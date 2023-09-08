@@ -701,7 +701,7 @@ end
 # Fallback
 function get_device(::Val{D}, idx) where D
     if D ∈ (:CUDA, :AMDGPU, :Metal)
-        error("Unaivailable backend: $(D). Try importing the corresponding package with `using $D`.")
+        error("Unavailable backend: $(D). Try importing the corresponding package with `using $D`.")
     else
         error("Unsupported backend: $(D). Supported backends are $(GPU_BACKENDS).")
     end
