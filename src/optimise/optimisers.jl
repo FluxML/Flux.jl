@@ -681,6 +681,12 @@ Typically composed  with other optimisers as the first transformation to the gra
 making it equivalent to adding ``L_2`` regularization 
 with coefficient  ``λ`` to the loss.
 
+    WeightDecay(λ, α)
+
+Second argument turns on ``L_1`` regularization, adding `λ * (α * sign(x) + (1 - α) * x)`
+to the gradient. The case `α = 1` is equivalent to adding `sum(abs, x) == norm(x, 1)` to the 
+loss function, while `0 < α < 1` mixes L1 and L2.
+
 # Examples
 
 ```julia
@@ -689,13 +695,16 @@ opt = Optimiser(WeightDecay(1f-4), Adam())
 """
 mutable struct WeightDecay <: AbstractOptimiser
   wd::Real
+  alpha::Real
 end
 
-WeightDecay() = WeightDecay(0)
+WeightDecay(λ = 0f0) = WeightDecay(λ, 0f0)
 
 function apply!(o::WeightDecay, x, Δ)
-  wd = o.wd
-  @. Δ += wd * x
+  wd, α = o.wd, o.alpha
+  l2 = (1-α) * wd
+  l1 = α * wd
+  @. Δ += l2 * x + l1 * sign(x)
 end
 
 """
