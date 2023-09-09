@@ -225,6 +225,9 @@ callback API. Here is an example, in which it may be helpful to note:
   returns the value of the function, for logging or diagnostic use.
 * Logging or printing is best done outside of the `gradient` call,
   as there is no need to differentiate these commands.
+* To use `result` for logging purposes, you could change the `do` block to end with 
+  `return my_loss(result, label), result`, i.e. make the function passed to `withgradient`
+  return a tuple. The first element is always the loss.
 * Julia's `break` and `continue` keywords let you exit from parts of the loop.
 
 ```julia
@@ -319,9 +322,11 @@ The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times original par
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
 After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
 
+The same trick works for *L₁ regularisation* (also called Lasso), where the penalty is `pen_l1(x::AbstractArray) = sum(abs, x)` instead. This is implemented by `WeightDecay(0.42, 1)`.
+
 The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Flux.Optimise.ClipValue) or [`ClipNorm`](@ref Flux.Optimise.ClipNorm).
 
-Besides L2 / weight decay, another common and quite different kind of regularisation is
+Besides L1 / L2 / weight decay, another common and quite different kind of regularisation is
 provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some outputs of the
 previous layer during training.
 It should switch automatically, but see [`trainmode!`](@ref Flux.trainmode!) / [`testmode!`](@ref Flux.testmode!) to manually enable or disable this layer.
