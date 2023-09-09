@@ -126,9 +126,9 @@ for T in [:Descent, :Adam, :Momentum, :Nesterov,
 end
 _old_to_new(rule::Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
 const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
+_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called gamma now
 _old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
 _old_to_new(rule::ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
-_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd, rule.alpha)  # wd is called lambda now
 const ClipGrad = Optimise.ClipValue
 _old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
 
