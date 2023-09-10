@@ -1,0 +1,40 @@
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  format:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v2.2.0
+
+    - uses: dorny/paths-filter@v2.9.1
+      id: filter
+      with:
+        filters: |
+          julia_file_change:
+            - added|modified: '**.jl'
+
+    - uses: julia-actions/setup-julia@latest
+      if: steps.filter.outputs.julia_file_change == 'true'
+      with:
+        version: 1.9
+
+    - name: Apply JuliaFormatter
+      if: steps.filter.outputs.julia_file_change == 'true'
+      run: |
+        julia --color=yes dev/flux_format.jl --verbose .
+
+    - name: Check formatting diff
+      if: steps.filter.outputs.julia_file_change == 'true'
+      run: |
+        git diff --color=always --exit-code
