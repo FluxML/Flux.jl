@@ -34,7 +34,7 @@ FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
 FluxMetalExt = "Metal"
 
 [compat]
-AMDGPU = "0.5"
+AMDGPU = "0.5, 0.6"
 Adapt = "3.0"
 CUDA = "4"
 ChainRulesCore = "1.12"
