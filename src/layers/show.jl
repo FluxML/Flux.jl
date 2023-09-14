@@ -93,7 +93,8 @@ function _big_finale(io::IO, m)
   if length(ps) > 2
     pars = underscorise(sum(length, ps; init=0))
     bytes = Base.format_bytes(Base.summarysize(m))
-    noncnt = _childarray_sum(_->1, m) - length(ps)
+    unique_params = IdSet()
+    noncnt = _childarray_sum(x -> unique_param!(x, unique_params), m) - length(ps)
     if noncnt > 0
       nonparam = underscorise(_childarray_sum(length, m) - sum(length, ps; init=0))
       printstyled(io, " "^08, "# Total: ", length(ps), " trainable arrays, "; color=:light_black)
@@ -115,6 +116,15 @@ init=0)
 
 underscorise(n::Integer) =
   join(reverse(join.(reverse.(Iterators.partition(digits(n), 3)))), '_')
+
+function unique_param!(x::AbstractArray{<:Number}, idset::Base.IdSet)
+    if x in idset
+        0
+    else
+        push!(idset, x)
+        1
+    end
+end
 
 function _nan_show(io::IO, x)
   if !isempty(x) && _all(iszero, x)
