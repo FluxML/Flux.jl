@@ -71,7 +71,7 @@ for T in [
   end
 end
 
-function _layer_show(io::IO, layer, indent::Int=1, name=nothing)
+function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   _str = isnothing(name) ? "" : "$name = "
   str = _str * sprint(show, layer, context=io)
   print(io, " "^indent, str, indent==0 ? "" : ",")
