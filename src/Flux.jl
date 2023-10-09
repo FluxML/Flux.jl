@@ -30,6 +30,17 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
        fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
 
+isdefined(Base, :ispublic) && eval(Expr(:public,
+  # modules
+  :Losses,
+
+  # layers -- unexported only!
+  :Bilinear, :Scale, :dropout,
+
+  # utils
+  :outputsize, :state,
+))
+
 include("optimise/Optimise.jl")
 using .Optimise
 export Descent, Adam, Momentum, Nesterov, RMSProp,
@@ -46,6 +57,17 @@ using .Train: setup
 using Adapt, Functors, OneHotArrays
 include("utils.jl")
 include("functor.jl")
+
+isdefined(Base, :ispublic) && eval(Expr(:public,
+  # from Optimise/Train/Optimisers
+  :setup, :update!, :destructure, :freeze!, :adjust!, :params, :trainable,
+
+  # from OneHotArrays
+  :onehot, :onehotbatch, :onecold,
+
+  # from Functors
+  :functor, # Symbol("@functor"),
+))
 
 # Pirate error to catch a common mistake.
 Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
@@ -68,6 +90,38 @@ include("deprecations.jl")
 
 include("losses/Losses.jl")
 using .Losses
+
+isdefined(Base, :ispublic) && eval(Expr(:public,
+  # init
+  :glorot_uniform,
+  :glorot_normal,
+  :kaiming_uniform,
+  :kaiming_normal,
+  :truncated_normal,
+  :orthogonal,
+  :sparse_init,
+  :identity_init,
+
+  # Losses
+  :binary_focal_loss,
+  :binarycrossentropy,
+  :crossentropy,
+  :dice_coeff_loss,
+  :focal_loss,
+  :hinge_loss,
+  :huber_loss,
+  :kldivergence,
+  :label_smoothing,
+  :logitbinarycrossentropy,
+  :logitcrossentropy,
+  :mae,
+  :mse,
+  :msle,
+  :poisson_loss,
+  :siamese_contrastive_loss,
+  :squared_hinge_loss,
+  :tversky_loss,
+))
 
 
 end # module
