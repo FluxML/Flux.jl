@@ -49,7 +49,7 @@ Preferences = "1"
 ProgressLogging = "0.1"
 Reexport = "1.0"
 SpecialFunctions = "2.1.2"
-Zygote = "0.6.49"
+Zygote = "0.6.67"
 cuDNN = "1"
 julia = "1.9"
 
