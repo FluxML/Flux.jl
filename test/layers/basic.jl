@@ -421,7 +421,7 @@ end
 
   m1v = Chain([m1[1], m1[2]])  # vector of layers
   @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_dual(sum∘m1, [1,2,3])
-  @test_broken Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1v, [1,2,3])
+  @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1v, [1,2,3])
 
   # NNlib's softmax gradient writes in-place
   m2 = Chain(Dense(3,4,tanh), Dense(4,2), softmax)
