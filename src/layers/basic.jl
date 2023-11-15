@@ -270,7 +270,7 @@ end
     Maxout(f, n_alts)
 
 This contains a number of internal layers, each of which receives the same input.
-Its output is the elementwise maximum of the the internal layers' outputs.
+Its output is the elementwise maximum of the internal layers' outputs.
 
 Instead of defining layers individually, you can provide a zero-argument function
 which constructs them, and the number to construct.
