@@ -270,12 +270,12 @@ end
     Maxout(f, n_alts)
 
 This contains a number of internal layers, each of which receives the same input.
-Its output is the elementwise maximum of the the internal layers' outputs.
+Its output is the elementwise maximum of the internal layers' outputs.
 
 Instead of defining layers individually, you can provide a zero-argument function
 which constructs them, and the number to construct.
 
-Maxout over linear dense layers satisfies the univeral approximation theorem.
+Maxout over linear dense layers satisfies the universal approximation theorem.
 See Goodfellow, Warde-Farley, Mirza, Courville & Bengio "Maxout Networks" 
 [https://arxiv.org/abs/1302.4389](https://arxiv.org/abs/1302.4389).
 

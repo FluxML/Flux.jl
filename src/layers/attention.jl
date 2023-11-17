@@ -7,7 +7,7 @@ const IntOrDims{N} = Union{Int, Dims{N}}
 
 The multi-head dot-product attention layer used in Transformer architectures [1].
 
-Returns the transformed input sequnce and the attention scores.
+Returns the transformed input sequence and the attention scores.
 
 [1] Vaswani et al. "Attention is all you need." Advances in Neural Information Processing Systems. 2017.
 
