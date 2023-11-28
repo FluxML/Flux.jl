@@ -110,9 +110,12 @@ end
 
 _layer_string(io::IO, layer) = sprint(show, layer, context=io)
 # _layer_string(::IO, a::AbstractArray) = summary(layer)  # sometimes too long e.g. CuArray
-_layer_string(::IO, a::AbstractArray) = Base.dims2string(size(a)) * " " * String(typeof(a).name.name)
-# _layer_string(::IO, a::Array{T}) where T = Base.dims2string(size(a)) * " Array{$T}"
-# _layer_string(::IO, a::AbstractArray{T}) where T = Base.dims2string(size(a)) * " AbstractArray{$T}"
+function _layer_string(::IO, a::AbstractArray)
+  full = string(typeof(a))
+  comma = findfirst(',', full)
+  short = isnothing(comma) ? full : full[1:comma] * "...}"
+  Base.dims2string(size(a)) * " " * short
+end
 
 function _big_finale(io::IO, m)
   ps = params(m)
