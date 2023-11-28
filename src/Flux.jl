@@ -57,9 +57,14 @@ using Adapt, Functors, OneHotArrays
 include("utils.jl")
 include("functor.jl")
 
-@compat public onehot, onehotbatch, onecold, # from OneHotArrays  
-  functor, @functor, # from Functors
-  setup, update!, destructure, freeze!, adjust!, params, trainable # from Optimise/Train/Optimisers  
+@compat(public, (
+  # from OneHotArrays.jl
+  onehot, onehotbatch, onecold,  
+  # from Functors.jl
+  functor, @functor,
+  # from Optimise/Train/Optimisers.jl
+  setup, update!, destructure, freeze!, adjust!, params, trainable
+))
 
 # Pirate error to catch a common mistake.
 Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
