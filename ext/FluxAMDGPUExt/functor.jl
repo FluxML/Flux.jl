@@ -40,8 +40,7 @@ end
 adapt_storage(::FluxAMDGPUAdaptor, x::Zygote.FillArrays.AbstractFill) =
     ROCArray(collect(x))
 adapt_storage(::FluxAMDGPUAdaptor, x::Zygote.OneElement) = ROCArray(collect(x))
-adapt_storage(::FluxAMDGPUAdaptor, x::Random.TaskLocalRNG) =
-    AMDGPU.rocRAND.default_rng()
+adapt_storage(::FluxAMDGPUAdaptor, x::Random.TaskLocalRNG) = AMDGPU.rocrand_rng()
 adapt_storage(::FluxAMDGPUAdaptor, x::AMDGPU.rocRAND.RNG) = x
 adapt_storage(::FluxAMDGPUAdaptor, x::AbstractRNG) = error("""
     Cannot map RNG of type $(typeof(x)) to AMDGPU.
