@@ -88,7 +88,7 @@ end
 
 @testset "cpu and gpu on RNGs" begin
     crng = Random.default_rng()
-    grng = gpu(rng)
+    grng = gpu(crng)
     @test grng isa AMDGPU.rocRAND.RNG
     @test cpu(grng) === crng
 end
