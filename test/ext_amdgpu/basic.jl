@@ -86,6 +86,13 @@ end
     @test parent(Flux.gpu(g3)) isa ROCMatrix{Float32}
 end
 
+@testset "cpu and gpu on RNGs" begin
+    crng = Random.default_rng()
+    grng = gpu(crng)
+    @test grng isa AMDGPU.rocRAND.RNG
+    @test cpu(grng) === crng
+end
+
 @testset "Flux.onecold gpu" begin
     y = Flux.onehotbatch(ones(3), 1:10) |> Flux.gpu
     l = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
