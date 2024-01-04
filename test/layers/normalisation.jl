@@ -1,7 +1,7 @@
 using Flux, Test, Statistics, Random
 using Zygote: pullback, ForwardDiff
 
-global evalwgrad(f, x...) = pullback(f, x...)[1]
+evalwgrad(f, x...) = pullback(f, x...)[1]
 
 @testset "Dropout" begin
   @testset for rng_kwargs in ((), (; rng = MersenneTwister()))
