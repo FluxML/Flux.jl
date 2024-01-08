@@ -29,6 +29,10 @@ adapt_storage(to::FluxCUDAAdaptor, x::AbstractRNG) =
 
 # TODO: figure out the correct design for OneElement
 adapt_storage(to::FluxCUDAAdaptor, x::Zygote.OneElement) = CUDA.cu(collect(x))
+# Patch for GPU support until we can make OneElement smarter
+if isdefined(Zygote.ChainRules, :OneElement)
+    adapt_storage(to::FluxCUDAAdaptor, x::Zygote.ChainRules.OneElement) = CUDA.cu(collect(x))
+end
 
 adapt_storage(to::FluxCPUAdaptor, x::T) where T <: CUDA.CUSPARSE.CUDA.CUSPARSE.AbstractCuSparseMatrix = adapt(Array, x)
 adapt_storage(to::FluxCPUAdaptor, x::CUDA.RNG) = Random.default_rng()
