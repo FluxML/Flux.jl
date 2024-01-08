@@ -10,7 +10,6 @@ steps:
       queue: "juliagpu"
       cuda: "*"
     env:
-      JULIA_CUDA_USE_BINARYBUILDER: "true"
       FLUX_TEST_CUDA: "true"
       FLUX_TEST_CPU: "false"
     timeout_in_minutes: 60
