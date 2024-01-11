@@ -5,7 +5,9 @@ steps:
           version: "1"
       - JuliaCI/julia-test#v1: ~
       - JuliaCI/julia-coverage#v1:
-          codecov: true
+          dirs:
+            - src
+            - ext
     agents:
       queue: "juliagpu"
       cuda: "*"
@@ -30,6 +32,10 @@ steps:
           version: "{{matrix.julia}}"
       - JuliaCI/julia-test#v1:
           test_args: "--quickfail"
+      - JuliaCI/julia-coverage#v1:
+          dirs:
+            - src
+            - ext
     agents:
       queue: "juliaecosystem"
       os: "macos"
@@ -60,7 +66,9 @@ steps:
           version: "1.10"
       - JuliaCI/julia-test#v1:
       - JuliaCI/julia-coverage#v1:
-          codecov: true
+          dirs:
+            - src
+            - ext
     agents:
       queue: "juliagpu"
       rocm: "*"
