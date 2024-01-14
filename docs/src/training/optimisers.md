@@ -36,6 +36,7 @@ NAdam
 AdamW
 OAdam
 AdaBelief
+PAdam
 ```
 
 ## Composing Optimisers

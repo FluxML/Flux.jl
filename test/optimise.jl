@@ -11,7 +11,7 @@ using Random
   Random.seed!(84)
   w = randn(10, 10)
   @testset for opt in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
-                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
+                       NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(), PAdam(),
                        Nesterov(), RMSProp(), Momentum()]
     Random.seed!(42)
     w′ = randn(10, 10)
