@@ -32,3 +32,7 @@ end
 @testset "ctc" begin
   include("ctc.jl")
 end
+@testset "utils" begin
+  include("utils.jl")
+end
+  
