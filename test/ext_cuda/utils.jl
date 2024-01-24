@@ -9,3 +9,9 @@
     @test y isa Wrapped{<:CuArray}
   end
 end
+
+@testset "rng_from_array" begin
+    x = cu(randn(2,2))
+    rng = Flux.rng_from_array(x)
+    @test rng == CUDA.default_rng()
+end
