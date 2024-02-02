@@ -27,6 +27,22 @@ julia> Dense(4 => 5, tanh; init=Flux.randn32(MersenneTwister(1)))
 Dense(4 => 5, tanh)  # 25 parameters
 ```
 
+All of the initialisation functions may be multiplied by a number
+to scale their output:
+
+```jldoctest; setup = :(using Flux, Random)
+julia> lay = Dense(3 => 1, relu; init=42*Flux.ones32)
+Dense(3 => 1, relu)  # 4 parameters
+
+julia> lay.weight
+1×3 Matrix{Float32}:
+ 42.0  42.0  42.0
+
+julia> lay.bias
+1-element Vector{Float32}:
+ 0.0
+```
+
 ## Initialisation functions
 
 ```@docs

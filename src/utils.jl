@@ -47,6 +47,57 @@ rng_from_array(::AbstractArray) = Random.default_rng()
 
 
 """
+    FixRNG(init, [rng, scale; kw...])
+
+This is a bit like `Base.Fix1` in that `FixRNG(randn, rng)` makes a function,
+but also allows for scaling by a factor.
+
+It exists to allow modifying initialisation functions:
+```
+julia> 2 * randn32
+Flux.FixRNG(randn32, 2.0)
+
+julia> Dense(3 => 1, init=pi*ones32)
+Dense(3 => 1)       # 4 parameters
+
+julia> ans.weight
+1×3 Matrix{Float32}:
+ 3.14159  3.14159  3.14159
+```
+
+The struct itself is not part of Flux's API, so using it directly is not recommended. 
+"""
+struct FixRNG{F<:Function, R<:Tuple, K<:NamedTuple} <: Function
+  fun::F
+  args::R
+  kwargs::K
+  scale::Float32
+end
+FixRNG(f::Function, scale::Real=1f0; kw...) = FixRNG(f, (), NamedTuple(kw), scale)
+FixRNG(f::Function, rng::AbstractRNG, scale::Real=1f0; kw...) = FixRNG(f, (rng,), NamedTuple(kw), scale)
+
+function (init::FixRNG)(args...; kw...)
+  raw = init.fun(init.args..., args...; kw...)
+  if isone(init.scale)
+    return raw
+  elseif raw isa Array{<:AbstractFloat}
+    return lmul!(init.scale, raw)  # premature optimisation to save alloc!
+  else
+    return @. oftype(float(raw), init.scale * raw)
+  end
+end
+
+Base.:*(λ::Real, init::FixRNG) = FixRNG(init.fun, init.args, init.kwargs, Float32(λ * init.scale))
+
+function Base.show(io::IO, init::FixRNG)
+  print(io, "Flux.FixRNG(", init.fun)
+  isempty(init.args) || print(io, ", ", join(init.args, ", "))
+  isone(init.scale) || print(io, ", ", init.scale)
+  print(io, ")")
+end
+Base.show(io::IO, ::MIME"text/plain", init::FixRNG) = Base.show(io, init)  # needed because of <:Function
+
+"""
     glorot_uniform([rng], size...; gain = 1) -> Array
     glorot_uniform([rng]; kw...) -> Function
 
@@ -87,7 +138,7 @@ function glorot_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   (rand(rng, Float32, dims...) .- 0.5f0) .* scale
 end
 glorot_uniform(dims::Integer...; kw...) = glorot_uniform(default_rng(), dims...; kw...)
-glorot_uniform(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> glorot_uniform(rng, dims...; init_kwargs..., kwargs...)
+glorot_uniform(rng::AbstractRNG=default_rng(); init_kwargs...) = FixRNG(glorot_uniform, rng; init_kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_uniform(::Any...)
 
@@ -130,7 +181,7 @@ function glorot_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
   randn(rng, Float32, dims...) .* std
 end
 glorot_normal(dims::Integer...; kwargs...) = glorot_normal(default_rng(), dims...; kwargs...)
-glorot_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> glorot_normal(rng, dims...; init_kwargs..., kwargs...)
+glorot_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = FixRNG(glorot_normal, rng; init_kwargs...)
 
 ChainRulesCore.@non_differentiable glorot_normal(::Any...)
 
@@ -455,6 +506,9 @@ ChainRulesCore.@non_differentiable identity_init(::Any...)
     ones32(size...) = ones(Float32, size...)
 
 Return an `Array{Float32}` of the given `size` filled with 1s.
+
+Multiplying by a number scales the output. Thus `init = 10 * ones32` is a function
+with makes an array with all values `10f0`.
 """
 ones32(dims...) = Base.ones(Float32, dims...)
 
@@ -473,17 +527,26 @@ When the size is not provided, `rand32(rng::AbstractRNG)` returns a function.
 """
 rand32(dims::Integer...) = Base.rand(Float32, dims...)
 rand32(rng::AbstractRNG, dims::Integer...) = Base.rand(rng, Float32, dims...)
-rand32(rng::AbstractRNG) = (dims...,) -> Base.rand(rng, Float32, dims...)
+rand32(rng::AbstractRNG) = FixRNG(rand32, rng)
 
 """
     randn32([rng], size...)
 
 Return an `Array{Float32}` of the given `size`, filled like `randn`.
 When the size is not provided, `randn32(rng::AbstractRNG)` returns a function.
+
+Multiplying by a number scales the output. Thus `init = 10 * randn32` is a function
+with makes an array of mean zero and standard deviation 10.
 """
 randn32(dims::Integer...) = Base.randn(Float32, dims...)
 randn32(rng::AbstractRNG, dims::Integer...) = Base.randn(rng, Float32, dims...)
-randn32(rng::AbstractRNG) = (dims...,) -> Base.randn(rng, Float32, dims...)
+randn32(rng::AbstractRNG) = FixRNG(randn32, rng)
+
+for fun in [ones32, zeros32, rand32, randn32]
+  @eval Base.:*(λ::Real, fun::typeof($fun)) = λ * FixRNG($fun)
+  @eval Base.:*(fun::typeof($fun), λ::Real) = λ * FixRNG($fun)
+  @eval Base.:/(fun::typeof($fun), λ::Real) = (1/λ) * FixRNG($fun)
+end
 
 """
     create_bias(weights, bias, size...)
