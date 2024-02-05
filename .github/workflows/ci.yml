@@ -56,7 +56,7 @@ jobs:
         if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
       - uses: julia-actions/julia-processcoverage@v1
         if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
         with:
           file: lcov.info
