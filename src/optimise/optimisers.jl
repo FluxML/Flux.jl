@@ -699,6 +699,29 @@ function apply!(o::WeightDecay, x, Δ)
 end
 
 """
+    SignDecay(λ = 1e-3)
+
+Version of `WeightDecay` which implements ``L_1`` regularisation,
+when composed  with other optimisers as the first transformation to the gradient.
+
+# Examples
+
+```julia
+opt = Optimiser(SignDecay(1e-4), Adam())
+```
+"""
+mutable struct SignDecay <: AbstractOptimiser
+  lambda::Float32
+end
+
+WeightDecay() = SignDecay(1f-3)
+
+function apply!(o::SignDecay, x, Δ)
+  λ = o.lambda
+  @. Δ += λ * sign(x)
+end
+
+"""
     ClipValue(thresh)
 
 Clip gradients when their absolute value exceeds `thresh`.
