@@ -714,7 +714,7 @@ mutable struct SignDecay <: AbstractOptimiser
   lambda::Float32
 end
 
-WeightDecay() = SignDecay(1f-3)
+SignDecay() = SignDecay(1f-3)
 
 function apply!(o::SignDecay, x, Δ)
   λ = o.lambda
