@@ -30,7 +30,7 @@ end
 @testset "Optimiser" begin
   Random.seed!(84)
   w = randn(10, 10)
-  @testset for Opt in [InvDecay, WeightDecay, ExpDecay]
+  @testset for Opt in [InvDecay, WeightDecay, ExpDecay, SignDecay]
     Random.seed!(42)
     w′ = randn(10, 10)
     loss(x) = Flux.Losses.mse(w*x, w′*x)

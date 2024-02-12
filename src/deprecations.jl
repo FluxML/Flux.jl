@@ -118,6 +118,7 @@ Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(ru
 for T in [:Descent, :Adam, :Momentum, :Nesterov,
    	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief,
    	      # :InvDecay, :ExpDecay, 
+          :SignDecay,
           ]
   @eval function _old_to_new(rule::$T)
     args = map(f -> getfield(rule, f), fieldnames(Optimisers.$T))
@@ -126,13 +127,18 @@ for T in [:Descent, :Adam, :Momentum, :Nesterov,
 end
 _old_to_new(rule::Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
 const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
-_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called gamma now
+_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called lambda now
 _old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
 _old_to_new(rule::ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
 const ClipGrad = Optimise.ClipValue
 _old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
 
 _old_to_new(rule) = error("Flux.setup does not know how to translate this old-style implicit rule to a new-style Optimisers.jl explicit rule")
+
+# This allows you to mix and match, like Flux.setup(OptimiserChain(Optimisers.SignDecay(), Flux.Descent()), [1,2,3.])
+Optimisers.OptimiserChain(rules::Union{Optimisers.AbstractRule, Optimise.AbstractOptimiser}...) =
+  Optimisers.OptimiserChain(map(_old_to_new, rules))
+_old_to_new(rule::Optimisers.AbstractRule) = rule
 
 # Since `update!` should be called in a loop, it makes less sense to call `setup` for you if you forgot.
 # But let's make sure that such uses give a helpful error:

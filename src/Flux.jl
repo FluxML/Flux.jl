@@ -45,7 +45,7 @@ using .Optimise
 export Descent, Adam, Momentum, Nesterov, RMSProp,
   AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
   AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
-  WeightDecay, ClipValue, ClipNorm
+  WeightDecay, SignDecay, ClipValue, ClipNorm
 
 export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
 
