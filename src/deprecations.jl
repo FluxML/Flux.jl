@@ -135,7 +135,7 @@ _old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon
 
 _old_to_new(rule) = error("Flux.setup does not know how to translate this old-style implicit rule to a new-style Optimisers.jl explicit rule")
 
-# This allows you to mix and match, like Flux.setup(OptimiserChain(SignDecay(), Flux.Descent()), [1,2,3.])
+# This allows you to mix and match, like Flux.setup(OptimiserChain(Optimisers.SignDecay(), Flux.Descent()), [1,2,3.])
 Optimisers.OptimiserChain(rules::Union{Optimisers.AbstractRule, Optimise.AbstractOptimiser}...) =
   Optimisers.OptimiserChain(map(_old_to_new, rules))
 _old_to_new(rule::Optimisers.AbstractRule) = rule
