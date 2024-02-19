@@ -7,8 +7,6 @@ data from [MLUtils](https://github.com/JuliaML/MLUtils.jl).
 
 The `DataLoader` can be used to create mini-batches of data, in the format [`train!`](@ref Flux.train!) expects.
 
-`Flux`'s website has a [dedicated tutorial](https://fluxml.ai/tutorials/2021/01/21/data-loader.html) on `DataLoader` for more information. 
-
 ```@docs
 MLUtils.DataLoader
 ```
