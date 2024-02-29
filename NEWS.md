@@ -6,6 +6,9 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 * New macro `Flux.@layer` which should be used in place of `@functor`.
   This also adds `show` methods for pretty printing.
 
+## v0.14.12
+* New `SignDecay` optimiser, like `` WeightNorm` but for L1 norm.
+
 ## v0.14.0 (July 2023)
 * Flux now requires julia v1.9 or later.
 * CUDA.jl is not a hard dependency anymore. Support is now provided through the extension mechanism, by loading `using Flux, CUDA`.

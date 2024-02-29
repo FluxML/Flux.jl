@@ -131,18 +131,20 @@ function _default_functor(::Type{T}, x) where {T}
      F = fieldnames(T)
      args = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
      C = Base.typename(T).wrapper  # constructor
-     recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
+     # recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
+     recon = :(Base.splat($C))
      :((NamedTuple{$F}(($(args...),)), $recon))
    else
      # Getting this parameterless type takes about 2μs, every time:
-     spl = VERSION > v"1.9-" ? Splat : Base.splat
+     # spl = VERSION > v"1.9-" ? Splat : Base.splat
+     spl = Base.splat
      namedtuple(x), spl(Base.typename(T).wrapper)
    end
 end
 
 function _custom_functor(::Type{T}, x, ::Val{which}) where {T,which}
    if false
-     # TODO write the @generated version
+     # TODO write the @generated version. Or decide we don't care, or should forbid this?
    else
      remake(nt) = Base.typename(T).wrapper(map(f -> f in which ? getfield(nt, f) : getfield(x, f), fieldnames(T))...)
      NamedTuple{which}(map(s -> getfield(x, s), which)), remake
