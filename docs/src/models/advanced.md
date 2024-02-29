@@ -69,46 +69,6 @@ Params([])
 
 It is also possible to further restrict what fields are seen by writing `@functor Affine (W,)`. However, this is not recommended. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument, and the ignored fields will not be seen by functions like `gpu` (which is usually undesired).
 
-## Freezing Layer Parameters
-
-When it is desired to not include all the model parameters (for e.g. transfer learning), we can simply not pass in those layers into our call to `params`.
-
-!!! compat "Flux ≤ 0.14"
-    The mechanism described here is for Flux's old "implicit" training style.
-    When upgrading for Flux 0.15, it should be replaced by [`freeze!`](@ref Flux.freeze!) and `thaw!`.
-
-Consider a simple multi-layer perceptron model where we want to avoid optimising the first two `Dense` layers. We can obtain
-this using the slicing features `Chain` provides:
-
-```julia
-m = Chain(
-      Dense(784 => 64, relu),
-      Dense(64 => 64, relu),
-      Dense(32 => 10)
-    );
-
-ps = Flux.params(m[3:end])
-```
-
-The `Zygote.Params` object `ps` now holds a reference to only the parameters of the layers passed to it.
-
-During training, the gradients will only be computed for (and applied to) the last `Dense` layer, therefore only that would have its parameters changed.
-
-`Flux.params` also takes multiple inputs to make it easy to collect parameters from heterogenous models with a single call. A simple demonstration would be if we wanted to omit optimising the second `Dense` layer in the previous example. It would look something like this:
-
-```julia
-Flux.params(m[1], m[3:end])
-```
-
-Sometimes, a more fine-tuned control is needed.
-We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`,
-by simply deleting it from `ps`:
-
-```julia
-ps = Flux.params(m)
-delete!(ps, m[2].bias) 
-```
-
 ## Custom multiple input or output layer
 
 Sometimes a model needs to receive several separate inputs at once or produce several separate outputs at once. In other words, there multiple paths within this high-level layer, each processing a different input or producing a different output. A simple example of this in machine learning literature is the [inception module](https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Szegedy_Rethinking_the_Inception_CVPR_2016_paper.pdf).

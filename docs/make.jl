@@ -54,7 +54,8 @@ makedocs(
             "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
             =#
             # Not really sure where this belongs... some in Fluxperimental, aim to delete?
-            "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
+            "Custom Layers" => "models/advanced.md",
+            "Freezing model params" => "models/freezing-params.md",
         ],
     ],
     format = Documenter.HTML(
