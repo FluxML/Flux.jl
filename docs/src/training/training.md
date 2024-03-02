@@ -322,7 +322,8 @@ The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times original par
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
 After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
 
-The same trick works for *L₁ regularisation* (also called Lasso), where the penalty is `pen_l1(x::AbstractArray) = sum(abs, x)` instead. This is implemented by `WeightDecay(0.42, 1)`.
+The same trick works for *L₁ regularisation* (also called Lasso), where the penalty is 
+`pen_l1(x::AbstractArray) = sum(abs, x)` instead. This is implemented by `SignDecay(0.42)`.
 
 The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Flux.Optimise.ClipValue) or [`ClipNorm`](@ref Flux.Optimise.ClipNorm).
 
