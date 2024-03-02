@@ -3,19 +3,16 @@
     @layer Dense
     @layer :expand Chain
     @layer BatchNorm trainable=(β,γ)
-    @layer Struct children=(α,β) trainable=(β,)
 
 This macro replaces most uses of `@functor`. Its basic purpose is the same:
 When you define a new layer, this tells Flux to explore inside it
 to see the parameters it trains, and also to move them to the GPU, change precision, etc.
 Like `@functor`, this assumes your struct has the default constructor, to enable re-building.
 
-Some keywords allow you to limit this exploration, instead of visiting all `fieldnames(T)`.
+The keyword `trainable` allows you to limit this exploration, instead of visiting all `fieldnames(T)`.
 Note that it is never necessary to tell Flux to ignore non-array objects such as functions or sizes.
 * If some fields look like parameters but should not be trained,
   then `trainable` lets you specify which fields to include, while the rest are ignored.
-* You can likewise add restrictions to Functors's `children` (although this is seldom a good idea),
-  equivalent to `@functor Struct (α,β)`. Any `trainable` limitation must then be a subset of `children`.
 
 The macro also handles overloads of `show` for pretty printing.
 * By default, it adds methods to 3-arg `Base.show` to treat your layer much like `Dense` or `Conv`.
@@ -69,21 +66,14 @@ macro layer(exs...)
   # This function exists only for depwarns when you use @functor directly
   push!(out.args, :(Flux._check_new_macro(::$(esc(type))) = nothing))
   
-  i = findfirst(ex -> Meta.isexpr(ex, :(=)) && ex.args[1] == :children, rest)
-  if isnothing(i)  # then default like @functor Layer
-    push!(out.args, _macro_functor(esc(type)))
-  else
-    push!(out.args, _macro_functor(esc(type), rest[i].args[2]))
-  end
+  push!(out.args, _macro_functor(esc(type)))
+
   for j in 1:length(rest)
-    j == i && continue
     ex = rest[j]
     Meta.isexpr(ex, :(=)) || error("The macro `@layer` expects here `keyword = (fields...,)`, got $ex")
 
     name = if ex.args[1] == :trainable
       :(Optimisers.trainable)
-    elseif ex.args[1] == :functor
-      error("Can't use `functor=(...)` as a keyword to `@layer`. Use `childen=(...)` to define a method for `functor`.")
     else
       error("`@layer` cannot define a method for `$(ex.args[1])` at the moment, sorry.")
       # @warn "Trying to define a method for `$(ex.args[1])` in your scope... this is experimental" maxlog=1
@@ -139,15 +129,6 @@ function _default_functor(::Type{T}, x) where {T}
      # spl = VERSION > v"1.9-" ? Splat : Base.splat
      spl = Base.splat
      namedtuple(x), spl(Base.typename(T).wrapper)
-   end
-end
-
-function _custom_functor(::Type{T}, x, ::Val{which}) where {T,which}
-   if false
-     # TODO write the @generated version. Or decide we don't care, or should forbid this?
-   else
-     remake(nt) = Base.typename(T).wrapper(map(f -> f in which ? getfield(nt, f) : getfield(x, f), fieldnames(T))...)
-     NamedTuple{which}(map(s -> getfield(x, s), which)), remake
    end
 end
  
