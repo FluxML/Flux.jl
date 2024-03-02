@@ -501,8 +501,11 @@ function create_bias(weights::AbstractArray, bias::Bool, dims::Integer...)
 end
 function create_bias(weights::AbstractArray, bias::AbstractArray, dims::Integer...)
   size(bias) == dims || throw(DimensionMismatch("expected bias of size $(dims), got size $(size(bias))"))
-  convert(AbstractArray{eltype(weights)}, bias)
+  convert(AbstractArray{_eltype(weights)}, bias)
 end
+
+# This avoids the issue that Tracker.TrackedArray{Float64} declares eltype() = TrackedReal
+_eltype(::AbstractArray{T}) where T = T
 
 
 # Other

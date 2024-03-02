@@ -81,7 +81,8 @@ end
 _match_eltype(layer, ::Type, x::AbstractArray) = x
 
 # 2-arg method, for common layers with layer.weight
-_match_eltype(layer, x) = _match_eltype(layer, eltype(layer.weight), x)
+# NB using _eltype gets Float64 from Tracker.TrackedArray{Float64}, not TrackedReal
+_match_eltype(layer, x) = _match_eltype(layer, _eltype(layer.weight), x)
 
 # Trivial rule:
 function ChainRulesCore.rrule(::typeof(_match_eltype), layer, ::Type{T}, x::AbstractArray) where {T}
