@@ -73,14 +73,7 @@ The exact same method of `trainable` can also be defined using the macro, for co
 Flux.@layer Affine trainable=(W,)
 ```
 
-There is a second, more severe, kind of restriction possible:
-
-```
-Flux.@layer Affine children=(W,)
-```
-
-This is equivalent to `Functors.@functor Affine (W,)`. It means that all no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This is not usually recommended.
- This is generally not recommended. It requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
+There is a second, more severe, kind of restriction possible. This is not recommended, but is included here for completeness. Calling `Functors.@functor Affine (W,)` means that all no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
 
 
 ## Freezing Layer Parameters
