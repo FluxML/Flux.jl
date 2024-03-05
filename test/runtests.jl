@@ -48,6 +48,7 @@ Random.seed!(0)
       include("layers/conv.jl")
       include("layers/upsample.jl")
       include("layers/show.jl")
+      include("layers/macro.jl")
     end
 
     @testset "outputsize" begin

@@ -9,6 +9,7 @@ using MacroTools: @forward
 
 @reexport using NNlib
 using MLUtils
+const stack = MLUtils.stack  # now exported by Base
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
 using Optimisers: freeze!, thaw!, adjust!
 using Random: default_rng
@@ -69,6 +70,9 @@ include("functor.jl")
 # Pirate error to catch a common mistake.
 Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
 
+include("layers/show.jl")
+include("layers/macro.jl")
+
 include("layers/stateless.jl")
 include("layers/basic.jl")
 include("layers/conv.jl")
@@ -76,7 +80,6 @@ include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
 include("layers/attention.jl")
-include("layers/show.jl")
 
 include("loading.jl")
 

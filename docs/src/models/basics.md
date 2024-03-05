@@ -257,8 +257,8 @@ m(5) # => 26
 
 There is still one problem with this `Affine` layer, that Flux does not know to look inside it. This means that [`Flux.train!`](@ref) won't see its parameters, nor will [`gpu`](@ref) be able to move them to your GPU. These features are enabled by the [`@functor`](@ref Functors.@functor) macro:
 
-```
-Flux.@functor Affine
+```julia
+Flux.@layer Affine
 ```
 
 Finally, most Flux layers make bias optional, and allow you to supply the function used for generating random weights. We can easily add these refinements to the `Affine` layer as follows, using the helper function [`create_bias`](@ref Flux.create_bias):
@@ -271,4 +271,9 @@ function Affine((in, out)::Pair; bias=true, init=Flux.randn32)
 end
 
 Affine(3 => 1, bias=false, init=ones) |> gpu
+```
+
+```@docs
+Flux.@layer
+Flux.create_bias
 ```

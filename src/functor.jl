@@ -81,6 +81,7 @@ function params!(p::Params, x, seen = IdSet())
   elseif x in seen
     nothing
   else
+    _check_new_macro(x)  # complains if you used @functor not @layer
     push!(seen, x)
     for child in trainable(x)
       params!(p, child, seen)
