@@ -182,11 +182,14 @@ end
   X = randn(Float64, 3, 33)
   pre1 = Flux.DataLoader(X |> gpu; batchsize=13, shuffle=false)
   post1 = Flux.DataLoader(X; batchsize=13, shuffle=false) |> gpu
+  rev1 = pre1 |> cpu  # inverse operation
   for epoch in 1:2
-    for (p, q) in zip(pre1, post1)
+    for (p, q, a) in zip(pre1, post1, rev1)
       @test p isa CuArray{Float32}
       @test q isa CuArray{Float32}
       @test p ≈ q
+      @test a isa Array{Float32}
+      @test a ≈ Array(p)
     end
   end
 

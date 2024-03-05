@@ -1,3 +1,4 @@
+using Flux: DataLoader
 using Random
 
 @testset "DataLoader" begin
@@ -13,6 +14,11 @@ using Random
     @test batches[1] == X[:,1:2]
     @test batches[2] == X[:,3:4]
     @test batches[3] == X[:,5:5]
+
+    d_cpu = d |> cpu  # does nothing but shouldn't error
+    @test d_cpu isa DataLoader
+    @test first(d_cpu) == X[:,1:2]
+    @test length(d_cpu) == 3
 
     d = DataLoader(X, batchsize=2, partial=false)
     # @inferred first(d)
