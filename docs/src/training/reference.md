@@ -10,10 +10,6 @@ Because of this:
 * Flux defines its own version of `setup` which checks this assumption.
   (Using instead `Optimisers.setup` will also work, they return the same thing.)
 
-The new implementation of rules such as Adam in the Optimisers is quite different from the old one in `Flux.Optimise`. In Flux 0.14, `Flux.Adam()` returns the old one, with supertype `Flux.Optimise.AbstractOptimiser`, but `setup` will silently translate it to its new counterpart.
-The available rules are listed the [optimisation rules](@ref man-optimisers) page here;
-see the [Optimisers documentation](https://fluxml.ai/Optimisers.jl/dev/) for details on how the new rules work.
-
 ```@docs
 Flux.Train.setup
 Flux.Train.train!(loss, model, data, state; cb)
@@ -47,10 +43,16 @@ Flux 0.13 and 0.14 are the transitional versions which support both; Flux 0.15 w
     The blue-green boxes in the [training section](@ref man-training) describe
     the changes needed to upgrade old code.
 
+The available rules are listed the [optimisation rules](@ref man-optimisers) page here.
+
+!!! compat "Old & new rules"
+    The new implementation of rules such as Adam in the Optimisers is quite different from the old one in `Flux.Optimise`. In Flux 0.14, `Flux.Adam()` still returns the old one, with supertype `Flux.Optimise.AbstractOptimiser`, but `setup` will silently translate it to its new counterpart.
+
 For full details on the interface for implicit-style optimisers, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
+See the [Optimisers documentation](https://fluxml.ai/Optimisers.jl/dev/) for details on how the new rules work.
 
 !!! compat "Flux ≤ 0.12"
-    Earlier versions of Flux exported `params`, thus allowing unqualified `params(model)`
+    Much earlier versions of Flux exported `params`, thus allowing unqualified `params(model)`
     after `using Flux`. This conflicted with too many other packages, and was removed in Flux 0.13.
     If you get an error `UndefVarError: params not defined`, this probably means that you are
     following code for Flux 0.12 or earlier on a more recent version.
