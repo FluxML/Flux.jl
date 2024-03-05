@@ -403,8 +403,9 @@ function _metal end
 
 """
     gpu(data::DataLoader)
+    cpu(data::DataLoader)
 
-Transforms a given `DataLoader` to apply `gpu` to each batch of data,
+Transforms a given `DataLoader` to apply `gpu` or `cpu` to each batch of data,
 when iterated over. (If no GPU is available, this does nothing.)
 
 # Example
@@ -446,6 +447,18 @@ julia> Flux.DataLoader((x = ones(2,10), y=2:11) |> gpu, batchsize=3)
 """
 function gpu(d::MLUtils.DataLoader)
   MLUtils.DataLoader(MLUtils.mapobs(gpu, d.data),
+    d.batchsize,
+    d.buffer,
+    d.partial,
+    d.shuffle,
+    d.parallel,
+    d.collate,
+    d.rng,
+  )
+end
+
+function cpu(d::MLUtils.DataLoader)
+  MLUtils.DataLoader(MLUtils.mapobs(cpu, d.data),
     d.batchsize,
     d.buffer,
     d.partial,
