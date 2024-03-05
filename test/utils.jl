@@ -616,7 +616,7 @@ end
         a::A
         b::A
     end
-    Flux.@functor Model
+    Flux.@layer Model
     (m::Model)(x) = m.a(x) .+ m.b(x)
 
     d = Dense(1, 1)

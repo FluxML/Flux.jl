@@ -135,8 +135,7 @@ function (m::Recur)(x)
   return y
 end
 
-@functor Recur
-trainable(a::Recur) = (; cell = a.cell)
+@layer :expand Recur trainable=(cell,)
 
 Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
 
@@ -209,7 +208,7 @@ function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where
   return h, reshape_cell_output(h, x)
 end
 
-@functor RNNCell
+@layer RNNCell  # state0 is trainable, see issue 807 about this.
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), " => ", size(l.Wi, 1))
@@ -318,7 +317,7 @@ function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::AbstractV
   return (h′, c′), reshape_cell_output(h′, x)
 end
 
-@functor LSTMCell
+@layer LSTMCell
 
 Base.show(io::IO, l::LSTMCell) =
   print(io, "LSTMCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷4, ")")
@@ -391,7 +390,7 @@ function (m::GRUCell{I,H,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where {
   return h′, reshape_cell_output(h′, x)
 end
 
-@functor GRUCell
+@layer GRUCell
 
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
@@ -461,7 +460,7 @@ function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) wh
   return h′, reshape_cell_output(h′, x)
 end
 
-@functor GRUv3Cell
+@layer GRUv3Cell
 
 Base.show(io::IO, l::GRUv3Cell) =
   print(io, "GRUv3Cell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")

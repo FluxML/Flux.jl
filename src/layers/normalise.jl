@@ -78,8 +78,7 @@ function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = d
   Dropout(p, dims, active, rng)
 end
 
-@functor Dropout
-trainable(a::Dropout) = (;)
+@layer Dropout trainable=()
 
 (a::Dropout)(x) = dropout(a.rng, x, a.p * _isactive(a, x); dims=a.dims)
 
@@ -131,8 +130,7 @@ function AlphaDropout(p; rng = default_rng(), active::Union{Bool,Nothing} = noth
   AlphaDropout(p, active, rng)
 end
 
-@functor AlphaDropout
-trainable(a::AlphaDropout) = (;)
+@layer AlphaDropout trainable=()
 
 function (a::AlphaDropout)(x::AbstractArray{T}) where T
   _isactive(a, x) || return x
@@ -150,6 +148,8 @@ end
 
 testmode!(m::AlphaDropout, mode=true) =
   (m.active = isnothing(_tidy_active(mode)) ? nothing : !mode; m)
+
+Base.show(io::IO, d::AlphaDropout) = print(io, "AlphaDropout(", d.p, ")")
 
 """
     LayerNorm(size..., λ=identity; affine=true, eps=1f-5)
@@ -199,7 +199,7 @@ end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
 
-@functor LayerNorm
+@layer LayerNorm
 
 function (a::LayerNorm)(x::AbstractArray)
   ChainRulesCore.@ignore_derivatives if a.diag isa Scale
@@ -343,8 +343,7 @@ function BatchNorm(chs::Int, λ=identity;
             active, chs)
 end
 
-@functor BatchNorm
-trainable(bn::BatchNorm) = hasaffine(bn) ? (β = bn.β, γ = bn.γ) : (;)
+@layer BatchNorm trainable=(β,γ)
 
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(BN, x, N-1 => BN.chs)
@@ -437,8 +436,7 @@ function InstanceNorm(chs::Int, λ=identity;
             active, chs)
 end
 
-@functor InstanceNorm
-trainable(in::InstanceNorm) = hasaffine(in) ? (β = in.β, γ = in.γ) : (;)
+@layer InstanceNorm trainable=(β,γ)
 
 function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(l, x, N-1 => l.chs)
@@ -517,8 +515,7 @@ mutable struct GroupNorm{F,V,N}
   chs::Int # number of channels
 end
 
-@functor GroupNorm
-trainable(gn::GroupNorm) = hasaffine(gn) ? (β = gn.β, γ = gn.γ) : (;)
+@layer GroupNorm trainable=(β,γ)
 
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,
