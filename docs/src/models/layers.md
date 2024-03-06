@@ -12,7 +12,7 @@ The `Dense` exemplifies several features:
 
 * The bias vector is always initialised [`Flux.zeros32`](@ref). The keyword `bias=false` will turn this off, i.e. keeping the bias permanently zero.
 
-* It is annotated with [`@layer`](@ref Flux.@layer), which means that [`params`](@ref Flux.params) will see the contents, and [`gpu`](@ref Flux.gpu) will move their arrays to the GPU.
+* It is annotated with [`@layer`](@ref Flux.@layer), which means that [`Flux.setup`](@ref Flux.setup) will see the contents, and [`gpu`](@ref Flux.gpu) will move their arrays to the GPU.
 
 By contrast, `Chain` itself contains no parameters, but connects other layers together.
 The section on [dataflow layers](@ref man-dataflow-layers) introduces others like this.
