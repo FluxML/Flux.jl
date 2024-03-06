@@ -384,6 +384,9 @@ Flux.thaw!(opt_state)
     The earlier "implicit" equivalent was to pass to `gradient` an object referencing only
     part of the model, such as `Flux.params(bimodel.layers.enc)`.
 
+While `adjust!` and `freeze!`/`thaw!` make temporary modifications to the optimiser state,
+permanently removing some fields of a new layer type from training is usually done
+when defining the layer, by calling for example [`@layer`](@ref Flux.@layer)` NewLayer trainable=(weight,)`.
 
 ## Implicit or Explicit?
 
