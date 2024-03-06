@@ -7,12 +7,12 @@
 This macro replaces most uses of `@functor`. Its basic purpose is the same:
 When you define a new layer, this tells Flux to explore inside it
 to see the parameters it trains, and also to move them to the GPU, change precision, etc.
+
 Like `@functor`, this assumes your struct has the default constructor, to enable re-building.
+If you define an inner constructor (i.e. a function within the `struct` block) things may break.
 
 The keyword `trainable` allows you to limit this exploration, instead of visiting all `fieldnames(T)`.
 Note that it is never necessary to tell Flux to ignore non-array objects such as functions or sizes.
-* If some fields look like parameters but should not be trained,
-  then `trainable` lets you specify which fields to include, while the rest are ignored.
 
 The macro also handles overloads of `show` for pretty printing.
 * By default, it adds methods to 3-arg `Base.show` to treat your layer much like `Dense` or `Conv`.
@@ -21,7 +21,7 @@ The macro also handles overloads of `show` for pretty printing.
 
 (You probably still want to define 2-arg `show(io::IO, x::Layer)`, the macro does not touch this.)
 
-Note that re-running the macro with different options may not overwrite all methods, you will need to restart.
+Note that re-running the macro with different options may not remove all methods, you will need to restart.
 
 # Example
 ```jldoctest

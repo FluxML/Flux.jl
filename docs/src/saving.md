@@ -16,7 +16,7 @@ julia> struct MyModel
            net
        end
 
-julia> Flux.@functor MyModel
+julia> Flux.@layer MyModel
 
 julia> MyModel() = MyModel(Chain(Dense(10, 5, relu), Dense(5, 2)));
 
