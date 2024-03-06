@@ -38,7 +38,7 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
   # layers
   Bilinear, Scale, dropout,
   # utils
-  outputsize, state, create_bias,
+  outputsize, state, create_bias, @layer,
 ))
 
 include("optimise/Optimise.jl")
