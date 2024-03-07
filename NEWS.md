@@ -7,7 +7,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
   This also adds `show` methods for pretty printing.
 
 ## v0.14.12
-* New `SignDecay` optimiser, like `` WeightNorm` but for L1 norm.
+* New `SignDecay` optimiser, like `WeightDecay` but for L1 norm.
 
 ## v0.14.0 (July 2023)
 * Flux now requires julia v1.9 or later.

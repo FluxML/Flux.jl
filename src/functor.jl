@@ -286,7 +286,7 @@ _paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:Ab
     f32(m)
 
 Converts the `eltype` of model's *floating point* parameters to `Float32` (which is Flux's default).
-Recurses into structs marked with [`@functor`](@ref).
+Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
 See also [`f64`](@ref) and [`f16`](@ref).
 """
@@ -296,7 +296,7 @@ f32(m) = _paramtype(Float32, m)
     f64(m)
 
 Converts the `eltype` of model's *floating point* parameters to `Float64`.
-Recurses into structs marked with [`@functor`](@ref).
+Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
 See also [`f32`](@ref) and [`f16`](@ref).
 """
@@ -306,7 +306,7 @@ f64(m) = _paramtype(Float64, m)
     f16(m)
 
 Converts the `eltype` of model's *floating point* parameters to `Float16`.
-Recurses into structs marked with [`@functor`](@ref).
+Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
@@ -330,7 +330,7 @@ Chain(
 """
 f16(m) = _paramtype(Float16, m)
 
-# Functors for certain Julia data structures
+# Functors for certain Julia data structures -- PIRACY, should move to Functors.jl
 @functor Cholesky
 trainable(c::Cholesky) = ()
 

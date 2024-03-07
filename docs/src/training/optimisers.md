@@ -112,6 +112,7 @@ Similar to optimisers, Flux also defines some simple decays that can be used in 
 ExpDecay
 InvDecay
 WeightDecay
+SignDecay
 ```
 
 ## Gradient Clipping

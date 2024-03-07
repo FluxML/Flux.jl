@@ -34,11 +34,11 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
 
 @compat(public, ( # mark unexported symbols as API, on Julia 1.11
   # modules
-  Losses,
+  Losses, Train,
   # layers
   Bilinear, Scale, dropout,
   # utils
-  outputsize, state,
+  outputsize, state, create_bias, @layer,
 ))
 
 include("optimise/Optimise.jl")

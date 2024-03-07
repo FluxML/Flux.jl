@@ -102,7 +102,7 @@ Join(combine, paths...) = Join(combine, paths)
 ```
 Notice that we parameterized the type of the `paths` field. This is necessary for fast Julia code; in general, `T` might be a `Tuple` or `Vector`, but we don't need to pay attention to what it specifically is. The same goes for the `combine` field.
 
-The next step is to use [`Functors.@layer`](@ref) to make our struct behave like a Flux layer. This is important so that calling `params` on a `Join` returns the underlying weight arrays on each path.
+The next step is to use [`Flux.@layer`](@ref) to make our struct behave like a Flux layer. This is important so that calling `Flux.setup` on a `Join` maps over the underlying trainable arrays on each path.
 ```julia
 Flux.@layer Join
 ```
