@@ -116,4 +116,9 @@ Random.seed!(0)
     @info "Skipping Metal tests, set FLUX_TEST_METAL=true to run them."
   end
 
+  @testset "Enzyme" begin
+    import Enzyme
+    include("ext_enzyme/enzyme.jl")
+  end
+
 end

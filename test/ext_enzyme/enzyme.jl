@@ -1,9 +1,7 @@
 using Test
 using Flux
 using Enzyme
-using EnzymeTestUtils
 using Functors
-# using EnzymeCore
 
 Enzyme.API.runtimeActivity!(true) # for Enzyme debugging 
 
