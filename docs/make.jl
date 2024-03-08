@@ -55,7 +55,7 @@ makedocs(
             =#
             # Not really sure where this belongs... some in Fluxperimental, aim to delete?
             "Custom Layers" => "models/advanced.md",
-            "Freezing model params" => "models/freezing-params.md",
+            "Advanced tweaking of models" => "tutorials/misc-model-tweaking.md",
         ],
     ],
     format = Documenter.HTML(
