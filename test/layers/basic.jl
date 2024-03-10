@@ -234,11 +234,14 @@ using Flux: activations
     end
 
     @testset "vararg input" begin
-      inputs = randn(10), randn(5), randn(4)
+      inputs = randn32(10), randn32(5), randn32(4)
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
       @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
       @test_throws ArgumentError Parallel(+, sin, cos)(1,2,3)  # wrong number of inputs
-      @test Parallel(+, sin, cos)(pi/2) ≈ 1
+      @test Parallel(+, sin, cos)(pi/2) ≈ 1  # one input, several layers
+      @test Parallel(/, abs)(3, -4) ≈ 3/4    # one layer, several inputs
+      @test Parallel(/, abs)((3, -4)) ≈ 3/4
+      @test Parallel(/; f=abs)(3, -4) ≈ 3/4
     end
 
     @testset "named access" begin
@@ -270,6 +273,8 @@ using Flux: activations
       @test CNT[] == 2
       Parallel(f_cnt, sin)(1)
       @test CNT[] == 3
+      Parallel(f_cnt, sin)(1,2,3)
+      @test CNT[] == 4
     end
 
     # Ref https://github.com/FluxML/Flux.jl/issues/1673

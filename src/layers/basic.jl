@@ -475,8 +475,11 @@ end
 Create a layer which passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
-Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
-If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+Obeys the similar rules to broadcasting:
+* Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
+* With multiple `inputs` and just one layer, it is instead `connection([layer(x) for x in inputs]...)`.
+* With multiple inputs and multiple layers, one input is passed to each layer,
+  thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
@@ -528,22 +531,31 @@ end
 
 @layer :expand Parallel
 
-(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
-(m::Parallel)(xs::Tuple) = m(xs...)
+(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)  # one argument
 
 function _parallel_check(layers, xs)
   nl = length(layers)
   nx = length(xs) 
   if (nl != nx)
-    throw(ArgumentError(lazy"Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+    throw(ArgumentError(lazy"Parallel with $nl > 1 sub-layers can take one input or $nl inputs, but got $nx inputs"))
   end
 end
 ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
 
+(m::Parallel)(xs::Tuple) = m(xs...)
+
 function (m::Parallel)(xs...)
-  _parallel_check(m.layers, xs)
-  m.connection(map(|>, xs, Tuple(m.layers))...)
+  if length(m.layers) == 1
+    f = only(m.layers)
+    m.connection(map(x -> f(x), xs)...)  # multiple arguments, one layer
+  else
+    _parallel_check(m.layers, xs)
+    m.connection(map(|>, xs, Tuple(m.layers))...)  # multiple arguments & multiple layers
+  end
 end
+
+# (m::Parallel{<:Any, <:Union{Tuple{Any}, NamedTuple{<:Any, <:Tuple{Any}}}})(xs...) =
+#   m.connection(map(x -> only(m.layers)(x), xs)...)  # multiple arguments, one layer
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
