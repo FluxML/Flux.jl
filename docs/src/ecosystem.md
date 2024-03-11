@@ -52,6 +52,7 @@ Utility tools you're unlikely to have met if you never used Flux!
 
 - [FastAI.jl](https://github.com/FluxML/FastAI.jl) is a Julia port of Python's fast.ai library.
 - [FluxTraining.jl](https://github.com/FluxML/FluxTraining.jl) is a package for using and writing powerful, extensible training loops for deep learning models. It supports callbacks for many common use cases like hyperparameter scheduling, metrics tracking and logging, checkpointing, early stopping, and more. It powers training in FastAI.jl
+- [Ignite.jl](https://github.com/jondeuce/Ignite.jl) is a Julia port of the Python library `ignite` for simplifying neural network training and validation loops, using events and handlers.
 
 ### Datasets
 
