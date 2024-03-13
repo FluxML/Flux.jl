@@ -261,8 +261,15 @@ using Flux: activations
     end
 
     @testset "trivial cases" begin
+      # zero inputs, always an error
+      @test_throws ArgumentError Parallel(hcat)()
+      @test_throws ArgumentError Parallel(hcat, inv)()
+      @test_throws ArgumentError Parallel(hcat, inv, sqrt)()
+
+      # zero layers -- not useful... can we make this an error without a breaking change?
       @test Parallel(hcat) isa Parallel{typeof(hcat), Tuple{}}  # not a NamedTuple
       @test Parallel(hcat)(1) == hcat()
+
       @test Parallel(hcat, inv)(2) == hcat(1/2)  # still calls connection once.
     end
 

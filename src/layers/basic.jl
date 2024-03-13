@@ -572,7 +572,8 @@ end
 
 function _parallel_check(layers, xs)
   nl = length(layers)
-  nx = length(xs) 
+  @assert nl > 1  # dispatch handles nl==1 cases
+  nx = length(xs)
   if (nl != nx)
     throw(ArgumentError(lazy"Parallel with $nl > 1 sub-layers can take one input or $nl inputs, but got $nx inputs"))
   end
@@ -590,6 +591,8 @@ end
 
 (m::Parallel)(xs::Tuple) = m(xs...)  # tuple is always splatted
 (m::_ParallelONE)(xs::Tuple) = m(xs...)  # solves an ambiguity
+
+(m::Parallel)() = throw(ArgumentError("Parallel layer cannot take 0 inputs"))
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
