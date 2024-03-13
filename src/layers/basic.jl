@@ -28,6 +28,20 @@ julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
 
+A chain may be called with multiple arguments, which is equivalent to calling it
+with one tuple of these arguments. Such a tuple is understood by [`Parallel`](@ref)
+to mean the same as several arguments:
+
+```jldoctest
+julia> Chain(println, println)(1, 2, 3)  # three arguments become a tuple
+(1, 2, 3)
+nothing
+
+julia> Chain(x->@show(x), Parallel(+, inv, abs2))(4, 5)  # returns 1/4 + 5^2
+x = (4, 5)
+25.25
+```
+
 For large models, there is a special type-unstable path which can reduce compilation
 times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
 This feature is somewhat experimental, beware!
@@ -46,9 +60,10 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
-@layer :expand Chain  # the + opts-in to container-style pretty-printing
+@layer :expand Chain  # the option :expand opts-in to container-style pretty-printing
 
 (c::Chain)(x) = _applychain(c.layers, x)
+(c::Chain)(x, ys...) = _applychain(c.layers, (x, ys...))
 
 @generated function _applychain(layers::Tuple{Vararg{Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
@@ -68,6 +83,7 @@ end
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
+
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)

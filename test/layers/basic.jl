@@ -35,6 +35,8 @@ using Flux: activations
     c = Chain(Dense(10, 5, σ), Dense(5, 2), Dense(2, 1, relu))
     @test c[1] == c[begin]
     @test c[3] == c[end]
+
+    @test Chain(identity)(1,2,3) == (1,2,3)  # multiple args become a tuple
   end
 
   @testset "Activations" begin
