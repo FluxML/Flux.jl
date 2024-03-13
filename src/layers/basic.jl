@@ -506,6 +506,25 @@ and [`Maxout`](@ref) which reduces by broadcasting `max`.
 # Examples
 
 ```jldoctest
+julia> p = Parallel(+, abs2, sqrt);
+
+julia> p(3, 4)  # == 3^2 + √4, two functions two inputs
+11.0
+
+julia> p((3, 4))  # tuple is always splatted
+11.0
+
+julia> p(4, 4)  # == 4^2 + √4, one input used twice
+18.0
+
+julia> Parallel(hcat, inv)(1, 2, 4)  # one function three inputs
+1×3 Matrix{Float64}:
+ 1.0  0.5  0.25
+```
+
+With Flux layers:
+
+```jldoctest
 julia> model = Chain(Dense(3 => 5),
                      Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
                      Dense(8 => 17));
