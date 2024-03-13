@@ -514,7 +514,7 @@ julia> p(3, 4)  # == 3^2 + √4, two functions two inputs
 julia> p((3, 4))  # tuple is always splatted
 11.0
 
-julia> p(4, 4)  # == 4^2 + √4, one input used twice
+julia> p(4)  # == 4^2 + √4, one input used twice
 18.0
 
 julia> Parallel(hcat, inv)(1, 2, 4)  # one function three inputs
