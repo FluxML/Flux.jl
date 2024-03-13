@@ -562,9 +562,10 @@ function Parallel(connection; kw...)
   if :layers in keys(layers) || :connection in keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
   end
-  isempty(layers) && return Parallel(connection, ())
   Parallel(connection, layers)
 end
+Parallel(connection, layers::Union{Tuple{}, @NamedTuple{}}) =
+    throw(ArgumentError("cannot construct a Parallel layer with no sub-layers"))
 
 @layer :expand Parallel
 
