@@ -554,6 +554,8 @@ struct Parallel{F, T<:Union{Tuple, NamedTuple}}
   layers::T
 end
 
+_ParallelONE{T} = Parallel{T, <:Union{Tuple{Any}, NamedTuple{<:Any, <:Tuple{Any}}}}
+
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
   layers = NamedTuple(kw)
@@ -577,20 +579,17 @@ function _parallel_check(layers, xs)
 end
 ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
 
-(m::Parallel)(xs::Tuple) = m(xs...)
-
-function (m::Parallel)(xs...)
-  if length(m.layers) == 1
-    f = only(m.layers)
-    m.connection(map(x -> f(x), xs)...)  # multiple arguments, one layer
-  else
-    _parallel_check(m.layers, xs)
-    m.connection(map(|>, xs, Tuple(m.layers))...)  # multiple arguments & multiple layers
-  end
+function (m::Parallel)(x, ys...)
+  xs = (x, ys...)
+  _parallel_check(m.layers, xs)
+  m.connection(map(|>, xs, Tuple(m.layers))...)  # multiple arguments & multiple layers
 end
 
-# (m::Parallel{<:Any, <:Union{Tuple{Any}, NamedTuple{<:Any, <:Tuple{Any}}}})(xs...) =
-#   m.connection(map(x -> only(m.layers)(x), xs)...)  # multiple arguments, one layer
+(m::_ParallelONE)(x, ys...) =
+  m.connection(map(z -> only(m.layers)(z), (x, ys...))...)  # multiple arguments, one layer
+
+(m::Parallel)(xs::Tuple) = m(xs...)  # tuple is always splatted
+(m::_ParallelONE)(xs::Tuple) = m(xs...)  # solves an ambiguity
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])

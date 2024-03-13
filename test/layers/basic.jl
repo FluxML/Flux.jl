@@ -230,7 +230,7 @@ using Flux: activations
     end
 
     @testset "concat size" begin
-      input = randn(10, 2)
+      input = randn32(10, 2)
       @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
       @test size(Parallel(hcat, one = Dense(10, 10), two = identity)(input)) == (10, 4)
     end
