@@ -1,0 +1,102 @@
+
+[1332974] signal (11.1): Segmentation fault
+in expression starting at /home/lucibello/.julia/dev/Flux/t.jl:4
+typekeyvalue_hash at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/jltypes.c:1622 [inlined]
+lookup_typevalue at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/jltypes.c:1059
+jl_inst_arg_tuple_type at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/jltypes.c:2157
+jl_f_tuple at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/builtins.c:868 [inlined]
+jl_f_tuple at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/builtins.c:863
+absint at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/absint.jl:116
+abs_typeof at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/absint.jl:302
+unknown function (ip: 0x7f98b76ac15e)
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+check_ir! at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler/validation.jl:500
+check_ir! at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler/validation.jl:208
+check_ir! at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler/validation.jl:178
+check_ir at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler/validation.jl:157 [inlined]
+#codegen#488 at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:4376
+codegen at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:4340 [inlined]
+_thunk at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:5430
+_thunk at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:5430 [inlined]
+cached_compilation at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:5464 [inlined]
+#532 at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:5530
+JuliaContext at /home/lucibello/.julia/packages/GPUCompiler/U36Ed/src/driver.jl:47
+unknown function (ip: 0x7f99113c1265)
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+#s1883#531 at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/compiler.jl:5482 [inlined]
+#s1883#531 at ./none:0
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+GeneratedFunctionStub at ./boot.jl:602
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+jl_call_staged at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/method.c:540
+ijl_code_for_staged at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/method.c:593
+get_staged at ./compiler/utilities.jl:123
+retrieve_code_info at ./compiler/utilities.jl:135 [inlined]
+InferenceState at ./compiler/inferencestate.jl:430
+typeinf_edge at ./compiler/typeinfer.jl:920
+abstract_call_method at ./compiler/abstractinterpretation.jl:629
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:95
+abstract_call_known at ./compiler/abstractinterpretation.jl:2087
+abstract_call at ./compiler/abstractinterpretation.jl:2169
+abstract_call at ./compiler/abstractinterpretation.jl:2162
+abstract_call at ./compiler/abstractinterpretation.jl:2354
+abstract_eval_call at ./compiler/abstractinterpretation.jl:2370
+abstract_eval_statement_expr at ./compiler/abstractinterpretation.jl:2380
+abstract_eval_statement at ./compiler/abstractinterpretation.jl:2624
+abstract_eval_basic_statement at ./compiler/abstractinterpretation.jl:2889
+typeinf_local at ./compiler/abstractinterpretation.jl:3098
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:3186
+_typeinf at ./compiler/typeinfer.jl:247
+typeinf at ./compiler/typeinfer.jl:216
+typeinf_ext at ./compiler/typeinfer.jl:1051
+typeinf_ext_toplevel at ./compiler/typeinfer.jl:1082
+typeinf_ext_toplevel at ./compiler/typeinfer.jl:1078
+jfptr_typeinf_ext_toplevel_45276.1 at /home/lucibello/.julia/juliaup/julia-1.10.2+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+jl_apply at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/julia.h:1982 [inlined]
+jl_type_infer at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:394
+jl_generate_fptr_impl at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/jitlayers.cpp:502
+jl_compile_method_internal at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2480 [inlined]
+jl_compile_method_internal at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2368
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2886 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+autodiff at /home/lucibello/.julia/packages/Enzyme/wR2t7/src/Enzyme.jl:224
+unknown function (ip: 0x7f9911360dca)
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+jl_apply at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/julia.h:1982 [inlined]
+do_call at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/interpreter.c:126
+eval_value at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/interpreter.c:223
+eval_stmt_value at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/interpreter.c:174 [inlined]
+eval_body at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/interpreter.c:617
+jl_interpret_toplevel_thunk at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/interpreter.c:775
+jl_toplevel_eval_flex at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/toplevel.c:934
+jl_toplevel_eval_flex at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/toplevel.c:877
+ijl_toplevel_eval_in at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/toplevel.c:985
+eval at ./boot.jl:385 [inlined]
+include_string at ./loading.jl:2076
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+_include at ./loading.jl:2136
+include at ./Base.jl:495
+jfptr_include_46403.1 at /home/lucibello/.julia/juliaup/julia-1.10.2+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+exec_options at ./client.jl:318
+_start at ./client.jl:552
+jfptr__start_82738.1 at /home/lucibello/.julia/juliaup/julia-1.10.2+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+_jl_invoke at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:2894 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/gf.c:3076
+jl_apply at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/julia.h:1982 [inlined]
+true_main at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/jlapi.c:582
+jl_repl_entrypoint at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/src/jlapi.c:731
+main at /cache/build/builder-amdci5-1/julialang/julia-release-1-dot-10/cli/loader_exe.c:58
+unknown function (ip: 0x7f9928680d8f)
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+unknown function (ip: 0x4010b8)
+Allocations: 159273970 (Pool: 159095605; Big: 178365); GC: 99
