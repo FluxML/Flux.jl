@@ -39,7 +39,7 @@ function gradient_ez(f, x...)
     return g
 end
 
-function check_grad(g1, g2; broken=false)
+function test_grad(g1, g2; broken=false)
     fmap_with_path(g1, g2) do kp, x, y
         :state ∈ kp && return # ignore RNN and LSTM state
         if x isa AbstractArray{<:Number}
@@ -59,8 +59,8 @@ function test_enzyme_grad(loss, model, x)
     grads_flux = Flux.gradient(loss, model, x) |> cpu
     grads_enzyme = gradient_ez(loss, model, x) |> cpu
 
-    # check_grad(grads_flux, grads_enzyme)
-    check_grad(grads_fd, grads_enzyme)
+    # test_grad(grads_flux, grads_enzyme)
+    test_grad(grads_fd, grads_enzyme)
 end
 
 @testset "gradient_ez" begin
