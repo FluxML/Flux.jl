@@ -70,7 +70,7 @@ macro layer(exs...)
 
   for j in 1:length(rest)
     ex = rest[j]
-    Meta.isexpr(ex, :(=)) || error("The macro `@layer` expects here `keyword = (fields...,)`, got $ex")
+    Meta.isexpr(ex, :(=)) || error("The macro `@layer` expects here `keyword = (fields...,)`, got ", ex)
 
     name = if ex.args[1] == :trainable
       :(Optimisers.trainable)
@@ -153,4 +153,4 @@ _macro_trainable(type, fun, field::Union{Symbol,QuoteNode}) = _macro_trainable(t
 
 _noquotenode(s::Symbol) = s
 _noquotenode(q::QuoteNode) = q.value  # lets you write trainable=(:x,:y) instead of (x,y)
-_noquotenode(ex) = error("expected a symbol here, as a field name, but got $ex")
+_noquotenode(ex) = error("expected a symbol here, as a field name, but got ", ex)

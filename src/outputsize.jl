@@ -230,7 +230,7 @@ end
 function _makelazy(ex::Expr)
   n = _underscoredepth(ex)
   n == 0 && return ex
-  n == 1 && error("@autosize doesn't expect an underscore here: $ex")
+  n == 1 && error("@autosize doesn't expect an underscore here: ", ex)
   n == 2 && return :($LazyLayer($(string(ex)), $(_makefun(ex)), nothing))
   n > 2 && return Expr(ex.head, map(_makelazy, ex.args)...)
 end

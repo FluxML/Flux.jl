@@ -75,7 +75,7 @@ function Base.show(io::IO, c::Chain)
 end
 
 _show_layers(io, layers::Tuple) = join(io, layers, ", ")
-_show_layers(io, layers::NamedTuple) = join(io, ["$k = $v" for (k, v) in pairs(layers)], ", ")
+_show_layers(io, layers::NamedTuple) = join(io, [lazy"$k = $v" for (k, v) in pairs(layers)], ", ")
 _show_layers(io, layers::AbstractVector) = (print(io, "["); join(io, layers, ", "); print(io, "]"))
 
 # This is a temporary and naive implementation
@@ -531,7 +531,7 @@ function _parallel_check(layers, xs)
   nl = length(layers)
   nx = length(xs) 
   if (nl != nx)
-    throw(ArgumentError("Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+    throw(ArgumentError(lazy"Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
   end
 end
 ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
@@ -616,7 +616,7 @@ function _pairwise_check(x, layers, T)
   lx = length(x)
   N = length(layers)
   if T <: Tuple && lx != N
-    throw(ArgumentError("PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
+    throw(ArgumentError(lazy"PairwiseFusion with $N sub-layers can take one input or $N inputs, but got $lx inputs"))
   end
 end
 ChainRulesCore.@non_differentiable _pairwise_check(lx, N, T)

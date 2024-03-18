@@ -106,7 +106,7 @@ function train!(loss, model, data, opt; cb = nothing)
     d_splat = d isa Tuple ? d : (d,)
     l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
     if !isfinite(l)
-      throw(DomainError("Loss is $l on data item $i, stopping training"))
+      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
     opt, model = Optimisers.update!(opt, model, gs[1])
     @logprogress Base.haslength(data) ? i/length(data) : nothing

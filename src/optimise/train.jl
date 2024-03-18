@@ -92,7 +92,7 @@ function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
       loss(batchmemaybe(d)...)
     end
     if !isfinite(l)
-      throw(DomainError("Loss is $l on data item $i, stopping training"))
+      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
     update!(opt, ps, gs)
     cb()

@@ -64,12 +64,12 @@ Possible values of  `inactive` are:
 """
 function testmode!(m, mode)
   inactive = if mode isa Symbol
-    mode === :auto || throw(ArgumentError("testmode! accepts only the symbol :auto, got :$mode"))
+    mode === :auto || throw(ArgumentError(lazy"testmode! accepts only the symbol :auto, got :$mode"))
     nothing
   elseif mode isa Union{Bool,Nothing}
     mode
   else
-    throw(ArgumentError("testmode! does not accept $(repr(mode)) as the 2nd argument"))
+    throw(ArgumentError(lazy"testmode! does not accept $(repr(mode)) as the 2nd argument"))
   end
   foreach(x -> testmode!(x, inactive), trainable(m))
   m
