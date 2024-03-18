@@ -196,7 +196,7 @@ end
 # Greek-letter keywords deprecated in Flux 0.13
 # Arguments (old => new, :function, "β" => "beta")
 function _greek_ascii_depwarn(βbeta::Pair, func = :loss, names = "" => "")
-  Base.depwarn(LazyString("function $func no longer accepts greek-letter keyword ", names.first, """
+  Base.depwarn(LazyString("function ", func, " no longer accepts greek-letter keyword ", names.first, """
     please use ascii """, names.second, " instead"), func)
   βbeta.first
 end
