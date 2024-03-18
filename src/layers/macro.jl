@@ -89,7 +89,7 @@ end
 
 function _check_new_macro(x::T) where T
   Functors.isleaf(x) && return
-  Base.depwarn("This type should probably now use `Flux.@layer` instead of `@functor`: $T", Symbol("@functor"))
+  Base.depwarn(LazyString("This type should probably now use `Flux.@layer` instead of `@functor`: ", T), Symbol("@functor"))
 end
 _check_new_macro(::Tuple) = nothing  # defined by Functors.jl, not by users
 _check_new_macro(::NamedTuple) = nothing
