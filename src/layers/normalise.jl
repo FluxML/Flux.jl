@@ -4,7 +4,7 @@ _isactive(m, x) = isnothing(m.active) ? NNlib.within_gradient(x) : m.active
 # Internal function, used only in this file.
 _tidy_active(mode::Bool) = mode
 _tidy_active(::Nothing) = nothing
-_tidy_active(mode) = mode === :auto ? nothing : throw(ArgumentError("active = $(repr(mode)) is not accepted, must be true/false/nothing or :auto"))
+_tidy_active(mode) = mode === :auto ? nothing : throw(ArgumentError(lazy"active = $(repr(mode)) is not accepted, must be true/false/nothing or :auto"))
 
 """
     Dropout(p; [dims, rng, active])
@@ -74,7 +74,7 @@ end
 Dropout(p::Real, dims, active) = Dropout(p, dims, active, default_rng())
 
 function Dropout(p::Real; dims=:, active::Union{Bool,Nothing} = nothing, rng = default_rng())
-  0 ≤ p ≤ 1 || throw(ArgumentError("Dropout expects 0 ≤ p ≤ 1, got p = $p"))
+  0 ≤ p ≤ 1 || throw(ArgumentError(lazy"Dropout expects 0 ≤ p ≤ 1, got p = $p"))
   Dropout(p, dims, active, rng)
 end
 
@@ -126,7 +126,7 @@ end
 
 AlphaDropout(p, active) = AlphaDropout(p, active, default_rng())
 function AlphaDropout(p; rng = default_rng(), active::Union{Bool,Nothing} = nothing)
-  0 ≤ p ≤ 1 || throw(ArgumentError("AlphaDropout expects 0 ≤ p ≤ 1, got p = $p"))
+  0 ≤ p ≤ 1 || throw(ArgumentError(lazy"AlphaDropout expects 0 ≤ p ≤ 1, got p = $p"))
   AlphaDropout(p, active, rng)
 end
 
