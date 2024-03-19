@@ -524,6 +524,7 @@ struct AdaptiveMaxPool{S, O}
 end
 
 function (a::AdaptiveMaxPool{S})(x::AbstractArray{T, S}) where {S, T}
+  _pool_size_check(a, a.out, x)
   insize = size(x)[1:end-2]
   outsize = a.out
   stride = insize .÷ outsize
@@ -565,6 +566,7 @@ struct AdaptiveMeanPool{S, O}
 end
 
 function (a::AdaptiveMeanPool{S})(x::AbstractArray{T, S}) where {S, T}
+  _pool_size_check(a, a.out, x)
   insize = size(x)[1:end-2]
   outsize = a.out
   stride = insize .÷ outsize
@@ -703,6 +705,7 @@ function MaxPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
 end
 
 function (m::MaxPool)(x)
+  _pool_size_check(m, m.k, x)
   pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
   return maxpool(x, pdims)
 end
@@ -762,6 +765,7 @@ function MeanPool(k::NTuple{N,Integer}; pad = 0, stride = k) where N
 end
 
 function (m::MeanPool)(x)
+  _pool_size_check(m, m.k, x)
   pdims = PoolDims(x, m.k; padding=m.pad, stride=m.stride)
   return meanpool(x, pdims)
 end
@@ -772,3 +776,11 @@ function Base.show(io::IO, m::MeanPool)
   m.stride == m.k || print(io, ", stride=", _maybetuple_string(m.stride))
   print(io, ")")
 end
+
+function _pool_size_check(layer, tup::Tuple, x::AbstractArray)
+  N = length(tup) + 2
+  ndims(x) == N || throw(ArgumentError(LazyString("layer ", layer,
+    " expects ndims(input) == ", N, ", but got ", summary(x))))
+end
+ChainRulesCore.@non_differentiable _pool_size_check(::Any, ::Any)
+
