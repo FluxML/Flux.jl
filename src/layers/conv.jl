@@ -488,7 +488,7 @@ function Base.show(io::IO, l::CrossCor)
 end
 
 function _conv_size_check(layer, x::AbstractArray)
-  ndims(x) == ndims(layer.weight) || throw(ArgumentError(LazyString("layer ", layer,
+  ndims(x) == ndims(layer.weight) || throw(DimensionMismatch(LazyString("layer ", layer,
     " expects ndims(input) == ", ndims(layer.weight), ", but got ", summary(x))))
   d = ndims(x)-1
   n = _channels_in(layer)
@@ -779,7 +779,7 @@ end
 
 function _pool_size_check(layer, tup::Tuple, x::AbstractArray)
   N = length(tup) + 2
-  ndims(x) == N || throw(ArgumentError(LazyString("layer ", layer,
+  ndims(x) == N || throw(DimensionMismatch(LazyString("layer ", layer,
     " expects ndims(input) == ", N, ", but got ", summary(x))))
 end
 ChainRulesCore.@non_differentiable _pool_size_check(::Any, ::Any)
