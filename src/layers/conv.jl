@@ -195,7 +195,7 @@ conv_dims(c::Conv, x::AbstractArray) =
 ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
 
 function (c::Conv)(x::AbstractArray)
-  _size_check(c, x, ndims(x)-1 => _channels_in(c))
+  _conv_size_check(c, x)
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_dims(c, x)
   xT = _match_eltype(c, x)
@@ -331,7 +331,7 @@ end
 ChainRulesCore.@non_differentiable conv_transpose_dims(::Any, ::Any)
 
 function (c::ConvTranspose)(x::AbstractArray)
-  _size_check(c, x, ndims(x)-1 => _channels_in(c))
+  _conv_size_check(c, x)
   σ = NNlib.fast_act(c.σ, x)
   cdims = conv_transpose_dims(c, x)
   xT = _match_eltype(c, x)
@@ -473,7 +473,7 @@ crosscor_dims(c::CrossCor, x::AbstractArray) =
 ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
 
 function (c::CrossCor)(x::AbstractArray)
-  _size_check(c, x, ndims(x)-1 => _channels_in(c))
+  _conv_size_check(c, x)
   σ = NNlib.fast_act(c.σ, x)
   cdims = crosscor_dims(c, x)
   xT = _match_eltype(c, x)
@@ -487,6 +487,15 @@ function Base.show(io::IO, l::CrossCor)
   print(io, ")")
 end
 
+function _conv_size_check(layer, x::AbstractArray)
+  ndims(x) == ndims(layer.weight) || throw(ArgumentError(LazyString("layer ", layer,
+    " expects ndims(input) == ", ndims(layer.weight), ", but got ", summary(x))))
+  d = ndims(x)-1
+  n = _channels_in(layer)
+  size(x,d) == n || throw(DimensionMismatch(LazyString("layer ", layer,
+    lazy" expects size(input, $d) == $n, but got ", summary(x))))
+end
+ChainRulesCore.@non_differentiable _conv_size_check(::Any, ::Any)
 """
     AdaptiveMaxPool(out::NTuple)
 
