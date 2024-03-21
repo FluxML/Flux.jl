@@ -28,6 +28,7 @@ Random.seed!(0)
     @testset "Optimise / Train" begin
       include("optimise.jl")
       include("train.jl")
+      include("tracker.jl")
     end
 
     @testset "Data" begin
