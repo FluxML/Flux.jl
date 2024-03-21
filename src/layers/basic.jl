@@ -193,7 +193,7 @@ function _size_check(layer, x::AbstractArray, (d, n)::Pair)
   d > 0 || throw(DimensionMismatch(string("layer ", layer,
     " expects ndims(input) > ", ndims(x)-d, ", but got ", summary(x))))
   size(x, d) == n || throw(DimensionMismatch(string("layer ", layer,
-    " expects size(input, $d) == $n, but got ", summary(x))))
+    lazy" expects size(input, $d) == $n, but got ", summary(x))))
 end
 ChainRulesCore.@non_differentiable _size_check(::Any...)
 
