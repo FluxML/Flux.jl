@@ -864,3 +864,33 @@ EmbeddingBag(weight::AbstractMatrix) = EmbeddingBag(weight, mean)
 function Base.show(io::IO, m::EmbeddingBag)
   print(io, "EmbeddingBag(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
 end
+
+
+"""
+    RepeatVector(n::Int)
+
+Repeat the input `n` times along the last dimension.
+
+# Examples
+```jldoctest
+julia> rv = RepeatVector(3)
+julia> rv([1, 2, 3])
+3×3 Matrix{Int64}:
+ 1  1  1
+ 2  2  2
+ 3  3  3
+```
+"""
+struct RepeatVector
+  n::Int
+end
+
+@layer RepeatVector
+
+function (rv::RepeatVector)(x::AbstractArray{T}) where {T}
+  expanded = reshape(x, (size(x)..., 1))
+  repeated = repeat(expanded, outer = (1, rv.n, 1))
+  return repeated
+end
+
+Base.show(io::IO, rv::RepeatVector) = print(io, "RepeatVector($(rv.n))")
