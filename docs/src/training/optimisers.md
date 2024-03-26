@@ -41,7 +41,7 @@ opt = OptimiserChain(WeightDecay(1e-4), Descent())
 ```
 
 Here we apply the weight decay to the `Descent` optimiser. 
-The resultin optimser `opt` can be used as any optimiser.
+The resulting optimiser `opt` can be used as any optimiser.
 
 ```julia
 w = [randn(10, 10), randn(10, 10)]

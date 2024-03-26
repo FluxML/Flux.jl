@@ -117,13 +117,13 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref Flux.Optimise.update!)`(opt_state, model, grads[1])`.
-And the learning rate is the only thing stored in the [`Descent`](@ref Flux.Optimise.Descent) struct.
+A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref)`(opt_state, model, grads[1])`.
+And the learning rate is the only thing stored in the [`Descent`](@ref) struct.
 
 However, there are many other optimisation rules, which adjust the step size and
 direction in various clever ways.
 Most require some memory of the gradients from earlier steps, rather than always
-walking straight downhill -- [`Momentum`](@ref Flux.Optimise.Momentum) is the simplest.
+walking straight downhill -- [`Momentum`](@ref) is the simplest.
 The function [`setup`](@ref Flux.Train.setup) creates the necessary storage for this, for a particular model.
 It should be called once, before training, and returns a tree-like object which is the
 first argument of `update!`. Like this:
@@ -140,7 +140,7 @@ for data in train_set
 end
 ```
 
-Many commonly-used optimisation rules, such as [`Adam`](@ref Flux.Optimise.Adam), are built-in.
+Many commonly-used optimisation rules, such as [`Adam`](@ref), are built-in.
 These are listed on the [optimisers](@ref man-optimisers) page.
 
 !!! compat "Implicit-style optimiser state"
@@ -325,7 +325,7 @@ After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
 The same trick works for *L₁ regularisation* (also called Lasso), where the penalty is 
 `pen_l1(x::AbstractArray) = sum(abs, x)` instead. This is implemented by `SignDecay(0.42)`.
 
-The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Flux.Optimise.ClipValue) or [`ClipNorm`](@ref Flux.Optimise.ClipNorm).
+The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref) or [`ClipNorm`](@ref).
 
 Besides L1 / L2 / weight decay, another common and quite different kind of regularisation is
 provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some outputs of the
