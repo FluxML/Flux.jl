@@ -60,8 +60,8 @@ See the [Optimisers documentation](https://fluxml.ai/Optimisers.jl/dev/) for det
 
 ```@docs
 Flux.params
-Flux.Optimise.update!(opt::Flux.Optimise.AbstractOptimiser, xs::AbstractArray, gs)
-Flux.Optimise.train!(loss, ps::Flux.Params, data, opt::Flux.Optimise.AbstractOptimiser; cb)
+Flux.update!(opt::Flux.Optimise.AbstractOptimiser, xs::AbstractArray, gs)
+Flux.train!(loss, ps::Flux.Params, data, opt::Flux.Optimise.AbstractOptimiser; cb)
 ```
 
 ## Callbacks
