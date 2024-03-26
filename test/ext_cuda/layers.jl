@@ -247,7 +247,7 @@ end
 @testset "Two-streams Bilinear" begin
   x = zeros(Float32,10,9) |> gpu
   y = zeros(Float32,2,9) |> gpu
-  b = Flux.Bilinear(10, 2, 3) |> gpu
+  b = Flux.Bilinear((10, 2) => 3) |> gpu
   @test size(b(x,y)) == (3,9)
   @test sum(abs2, b(x,y)) ≈ 0f0
   gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
@@ -268,7 +268,7 @@ end
 
   @testset "vararg input" begin
     inputs = (randn(10), randn(5), randn(4)) .|> gpu
-    layer = Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2)) |> gpu
+    layer = Parallel(+, Dense(10 => 2), Dense(5 => 2), Dense(4 => 2)) |> gpu
     @test size(layer(inputs)) == (2,)
   end
 

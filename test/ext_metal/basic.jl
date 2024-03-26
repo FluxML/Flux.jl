@@ -20,7 +20,7 @@ end
 end
 
 @testset "Chain of Dense layers" begin
-    m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
+    m = Chain(Dense(10 => 5, tanh), Dense(5 => 2), softmax)
     x = rand(Float32, 10, 10) 
     @test (m|>gpu)(x|>gpu) isa MtlArray{Float32, 2}
     gpu_autodiff_test(m, x)

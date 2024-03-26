@@ -191,7 +191,7 @@ This comes in handy when working with *layers*. A layer is just a handy containe
 ```julia
 using Flux
 
-m = Dense(10, 5)
+m = Dense(10 =>  5)
 
 x = rand(Float32, 10)
 ```
@@ -206,7 +206,7 @@ This makes it very easy to calculate the gradient for all parameters in a networ
 
 ```julia
 x = rand(Float32, 10)
-m = Chain(Dense(10, 5, relu), Dense(5, 2), softmax)
+m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
 l(x) = sum(Flux.crossentropy(m(x), [0.5, 0.5]))
 grads = gradient(params(m)) do
     l(x)
@@ -321,9 +321,9 @@ m = Chain(
   Conv((5,5), 16=>8, relu),
   MaxPool((2,2)),
   x -> reshape(x, :, size(x, 4)),
-  Dense(200, 120),
-  Dense(120, 84),
-  Dense(84, 10),
+  Dense(200 => 120),
+  Dense(120 => 84),
+  Dense(84 => 10),
   softmax) |> gpu
 ```
 

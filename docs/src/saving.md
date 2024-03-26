@@ -18,7 +18,7 @@ julia> struct MyModel
 
 julia> Flux.@layer MyModel
 
-julia> MyModel() = MyModel(Chain(Dense(10, 5, relu), Dense(5, 2)));
+julia> MyModel() = MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)));
 
 julia> model = MyModel()
 MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)))  # 67 parameters
@@ -113,7 +113,7 @@ Save a model:
 ```jldoctest saving
 julia> using Flux
 
-julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2));
+julia> model = Chain(Dense(10 =>  5, NNlib.relu), Dense(5 =>  2));
 
 julia> using BSON: @save
 
