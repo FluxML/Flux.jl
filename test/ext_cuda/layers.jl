@@ -268,7 +268,7 @@ end
 
   @testset "vararg input" begin
     inputs = (randn(10), randn(5), randn(4)) .|> gpu
-    layer = Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2)) |> gpu
+    layer = Parallel(+, Dense(10 => 2), Dense(5 => 2), Dense(4 => 2)) |> gpu
     @test size(layer(inputs)) == (2,)
   end
 

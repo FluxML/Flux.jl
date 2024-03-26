@@ -109,7 +109,7 @@ dcgan_init(shape...) = randn(Float32, shape) * 0.02f0
 ```julia
 function Generator(latent_dim)
     Chain(
-        Dense(latent_dim, 7*7*256, bias=false),
+        Dense(latent_dim  => 7*7*256, bias=false),
         BatchNorm(7*7*256, relu),
 
         x -> reshape(x, 7, 7, 256, :),

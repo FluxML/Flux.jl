@@ -315,7 +315,7 @@ See also [`f32`](@ref) and [`f64`](@ref).
 
 # Example
 ```jldoctest
-julia> m = Chain(Dense(784, 2048, relu), Dense(2048, 10))  # all Float32
+julia> m = Chain(Dense(784 => 2048, relu), Dense(2048 => 10))  # all Float32
 Chain(
   Dense(784 => 2048, relu),             # 1_607_680 parameters
   Dense(2048 => 10),                    # 20_490 parameters

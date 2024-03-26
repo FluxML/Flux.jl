@@ -49,8 +49,8 @@ and discriminator network. More on what these are later.
     output_period = 100 # Period length for plots of generator samples
     n_features = 28 * 28# Number of pixels in each sample of the MNIST dataset
     latent_dim = 100    # Dimension of latent space
-    opt_dscr = Adam(lr_d)# Optimiser for the discriminator
-    opt_gen = Adam(lr_g) # Optimiser for the generator
+    opt_dscr = ADAM(lr_d)# Optimiser for the discriminator
+    opt_gen = ADAM(lr_g) # Optimiser for the generator
 ```
 
 
@@ -96,13 +96,13 @@ calling the model in a gradient context. As a final non-linearity, we use the
 `sigmoid` activation function.
 
 ```julia
-discriminator = Chain(Dense(n_features, 1024, x -> leakyrelu(x, 0.2f0)),
+discriminator = Chain(Dense(n_features => 1024, x -> leakyrelu(x, 0.2f0)),
                         Dropout(0.3),
-                        Dense(1024, 512, x -> leakyrelu(x, 0.2f0)),
+                        Dense(1024 => 512, x -> leakyrelu(x, 0.2f0)),
                         Dropout(0.3),
-                        Dense(512, 256, x -> leakyrelu(x, 0.2f0)),
+                        Dense(512 => 256, x -> leakyrelu(x, 0.2f0)),
                         Dropout(0.3),
-                        Dense(256, 1, sigmoid)) |> gpu
+                        Dense(256 => 1, sigmoid)) |> gpu
 ```
 
 Let's define the generator in a similar fashion. This network maps a latent
@@ -113,9 +113,9 @@ the training data onto.
 
 ```julia
 generator = Chain(Dense(latent_dim, 256, x -> leakyrelu(x, 0.2f0)),
-                    Dense(256, 512, x -> leakyrelu(x, 0.2f0)),
-                    Dense(512, 1024, x -> leakyrelu(x, 0.2f0)),
-                    Dense(1024, n_features, tanh)) |> gpu
+                    Dense(256 => 512, x -> leakyrelu(x, 0.2f0)),
+                    Dense(512 => 1024, x -> leakyrelu(x, 0.2f0)),
+                    Dense(1024 => n_features, tanh)) |> gpu
 ```
 
 

@@ -490,7 +490,7 @@ julia> model = Chain(Dense(3 => 5),
 julia> model(rand32(3)) |> size
 (17,)
 
-julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
+julia> model2 = Parallel(+; α = Dense(10 => 2, tanh), β = Dense(5 => 2))
 Parallel(
   +,
   α = Dense(10 => 2, tanh),             # 22 parameters
