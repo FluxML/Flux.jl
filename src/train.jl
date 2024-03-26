@@ -4,7 +4,6 @@ using LinearAlgebra
 using Optimisers: Optimisers
 using Functors: fmap, fmapstructure
 using ..Flux: Flux # used only in docstring 
-import ..Flux.Optimise: train!, update!  # during 0.13, we add methods to the old functions
 
 export setup, train!
 

@@ -10,8 +10,8 @@ using MacroTools: @forward
 @reexport using NNlib
 using MLUtils
 const stack = MLUtils.stack  # now exported by Base
-import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
-using Optimisers: freeze!, thaw!, adjust!
+@reexport using Optimisers
+import Optimisers: trainable
 using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
@@ -41,13 +41,6 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
   outputsize, state, create_bias, @layer,
 ))
 
-include("optimise/Optimise.jl")
-using .Optimise
-export Descent, Adam, Momentum, Nesterov, RMSProp,
-  AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
-  AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
-  WeightDecay, SignDecay, ClipValue, ClipNorm
-
 export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
 
 include("train.jl")
@@ -63,8 +56,8 @@ include("functor.jl")
   onehot, onehotbatch, onecold,  
   # from Functors.jl
   functor, @functor,
-  # from Optimise/Train/Optimisers.jl
-  setup, update!, destructure, freeze!, adjust!, params, trainable
+  # from Train/Optimisers.jl
+  setup, update!, destructure, freeze!, thaw!, adjust!, params, trainable
 ))
 
 # Pirate error to catch a common mistake.
