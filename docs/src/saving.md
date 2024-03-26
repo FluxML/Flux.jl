@@ -113,7 +113,7 @@ Save a model:
 ```jldoctest saving
 julia> using Flux
 
-julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2));
+julia> model = Chain(Dense(10 =>  5, NNlib.relu), Dense(5 =>  2));
 
 julia> using BSON: @save
 

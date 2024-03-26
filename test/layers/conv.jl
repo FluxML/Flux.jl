@@ -31,7 +31,7 @@ end
     Conv((2, 2), 16 => 8, relu),
     MaxPool((2,2)),
     x -> reshape(x, :, size(x, 4)),
-    Dense(288, 10), softmax)
+    Dense(288 => 10), softmax)
 
   @test size(m(r)) == (10, 5)
 
@@ -213,7 +213,7 @@ end
     CrossCor((2, 2), 16=>8, relu; bias=false),
     MaxPool((2,2)),
     x -> reshape(x, :, size(x, 4)),
-    Dense(288, 10), softmax)
+    Dense(288 => 10), softmax)
 
   @test size(m(r)) == (10, 5)
   @test y(x) != Conv(w, [0.0])(x)

@@ -26,7 +26,7 @@ Notice that we parameterized the type of the `chain` field. This is necessary fo
 You can then use the model like:
 
 ```julia
-chain = Chain(Dense(10, 10))
+chain = Chain(Dense(10 => 10))
 model = CustomModel(chain)
 model(rand(10))
 ```

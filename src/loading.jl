@@ -129,12 +129,12 @@ The state can be passed to [`loadmodel!`](@ref) to restore the model.
 ## Copy the state into another model
 
 ```jldoctest
-julia> m1 = Chain(Dense(1, 2, tanh; init=ones), Dense(2, 1; init=ones));
+julia> m1 = Chain(Dense(1 => 2, tanh; init=ones), Dense(2 => 1; init=ones));
 
 julia> s = Flux.state(m1)
 (layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0], σ = ()), (weight = [1.0 1.0], bias = [0.0], σ = ())),)
 
-julia> m2 = Chain(Dense(1, 2, tanh), Dense(2, 1; bias=false));  # weights are random numbers
+julia> m2 = Chain(Dense(1 => 2, tanh), Dense(2 => 1; bias=false));  # weights are random numbers
 
 julia> Flux.loadmodel!(m2, s);
 

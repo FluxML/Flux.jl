@@ -36,6 +36,7 @@ end
     w′ = randn(10, 10)
     loss(x) = Flux.mse(w*x, w′*x)
     opt = OptimiserChain(Opt(), Adam(0.001))
+    opt_st
     for t = 1:10^5
       θ = Params([w′])
       x = rand(10)

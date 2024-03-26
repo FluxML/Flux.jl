@@ -1,9 +1,9 @@
 
 @testset "layer printing" begin # 2-arg show, defined with layes
 
-  @test repr(Dense(2,3)) == "Dense(2 => 3)"
-  @test repr(Chain(Dense(2,3))) == "Chain(Dense(2 => 3))"
-  @test repr(Chain(lay=Dense(2,3))) == "Chain(lay = Dense(2 => 3))"
+  @test repr(Dense(2 => 3)) == "Dense(2 => 3)"
+  @test repr(Chain(Dense(2 => 3))) == "Chain(Dense(2 => 3))"
+  @test repr(Chain(lay=Dense(2 => 3))) == "Chain(lay = Dense(2 => 3))"
 
 end
 @testset "nested model printing" begin # 3-arg show, defined in show.jl
