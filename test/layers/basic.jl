@@ -60,8 +60,8 @@ using Flux: activations
       @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
       @test Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
-      @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
-      @test Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
+      @test Dense(3 => 4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      @test Dense(3 => 4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
 
       @test_throws MethodError Dense(10 => 10.5)
       @test_throws MethodError Dense(10 => 10.5, tanh)
@@ -177,8 +177,8 @@ using Flux: activations
 
   @testset "Bilinear" begin
     @testset "SkipConnection recombinator" begin
-      d = Dense(10, 10)
-      b = Flux.Bilinear(10, 10, 5)
+      d = Dense(10 => 10)
+      b = Flux.Bilinear((10, 10) => 5)
       x = randn(Float32,10,9)
       sc = SkipConnection(d, b)
       @test size(sc(x)) == (5,9)
@@ -187,14 +187,14 @@ using Flux: activations
     @testset "Two-streams zero sum" begin
       x = zeros(Float32,10,9)
       y = zeros(Float32,2,9)
-      b = Flux.Bilinear(10, 2, 3)
+      b = Flux.Bilinear((10, 2) => 3)
       @test size(b(x,y)) == (3,9)
       @test sum(abs2, b(x,y)) == 0f0
     end
 
     @testset "Inner interactions" begin
       x = randn(Float32,11,7)
-      b = Flux.Bilinear(11, 11, 3)
+      b = Flux.Bilinear((11, 11) => 3)
       @test size(b(x)) == (3,7)
       @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
     end
@@ -212,7 +212,7 @@ using Flux: activations
       @test b3.bias isa Vector{Float16}
       @test size(b3(rand(4), rand(5))) == (3,)
 
-      b4 = Flux.Bilinear(3,3,7; bias=1:7, init=Flux.zeros32)
+      b4 = Flux.Bilinear((3,3) => 7; bias=1:7, init=Flux.zeros32)
       @test_skip  b4.bias isa Vector{Float32}
 
       @test_throws ArgumentError Flux.Bilinear(rand(3)) # expects a 3-array
@@ -235,19 +235,19 @@ using Flux: activations
 
     @testset "vararg input" begin
       inputs = randn(10), randn(5), randn(4)
-      @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
-      @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
+      @test size(Parallel(+, Dense(10 => 2), Dense(5 => 2), Dense(4 => 2))(inputs)) == (2,)
+      @test size(Parallel(+; a = Dense(10 => 2), b = Dense(5 => 2), c = Dense(4 => 2))(inputs)) == (2,)
       @test_throws ArgumentError Parallel(+, sin, cos)(1,2,3)  # wrong number of inputs
       @test Parallel(+, sin, cos)(pi/2) ≈ 1
     end
 
     @testset "named access" begin
-      m = Parallel(hcat, one = Dense(10, 10), two = identity)
+      m = Parallel(hcat, one = Dense(10 => 10), two = identity)
       @test m[1] == m[:one]
       @test m[1:2] == m
 
-      @test_throws ArgumentError Parallel(hcat, layers = Dense(10, 10), two = identity) # reserved names
-      @test_throws ArgumentError Parallel(hcat, connection = Dense(10, 10), two = identity)
+      @test_throws ArgumentError Parallel(hcat, layers = Dense(10 => 10), two = identity) # reserved names
+      @test_throws ArgumentError Parallel(hcat, connection = Dense(10 => 10), two = identity)
 
       @test m == fmap(identity, m)  # does not forget names
 
@@ -306,7 +306,7 @@ using Flux: activations
 
   @testset "Embedding" begin
     vocab_size, embed_size = 10, 4
-    m = Embedding(vocab_size, embed_size)
+    m = Embedding(vocab_size => embed_size)
     @test size(m.weight) == (embed_size, vocab_size)
     
     # one index
@@ -416,7 +416,7 @@ using Flux: activations
 end
 
 @testset "second derivatives" begin
-  m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
+  m1 = Chain(Dense(3 => 4,tanh; bias=false), Dense(4 => 2))
   @test Zygote.hessian_dual(sum∘m1, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1, [1,2,3])
 
   m1v = Chain([m1[1], m1[2]])  # vector of layers
@@ -424,17 +424,17 @@ end
   @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1v, [1,2,3])
 
   # NNlib's softmax gradient writes in-place
-  m2 = Chain(Dense(3,4,tanh), Dense(4,2), softmax)
+  m2 = Chain(Dense(3 => 4,tanh), Dense(4 => 2), softmax)
   @test_broken Zygote.hessian_dual(sum∘m2, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m2, [1,2,3])
 
   # https://github.com/FluxML/NNlib.jl/issues/362
-  m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2,2))
+  m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2 => 2))
   x3 = cat(Float32[1 2; 3 4; 5 6; 7 8]; dims=3)
   @test Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
 end
 
 @testset "gradients of Chain{Vector}" begin
-  m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
+  m1 = Chain(Dense(3 => 4,tanh; bias=false), Dense(4 => 2))
   m1v = Chain([m1[1], m1[2]])
   @test sum(length, params(m1)) == sum(length, params(m1v))
 
@@ -455,14 +455,14 @@ end
 
 @testset "PairwiseFusion" begin
   x = (rand(1, 10), rand(30, 10))
-  layer = PairwiseFusion(+,  Dense(1, 30),  Dense(30, 10))
+  layer = PairwiseFusion(+,  Dense(1 => 30),  Dense(30 => 10))
   y = layer(x)
   @test length(y) == 2
   @test size(y[1]) == (30, 10)
   @test size(y[2]) == (10, 10)
 
   x = rand(1, 10)
-  layer = PairwiseFusion(.+,  Dense(1, 10),  Dense(10, 1))
+  layer = PairwiseFusion(.+,  Dense(1 => 10),  Dense(10 => 1))
   y = layer(x)
   @test length(y) == 2
   @test size(y[1]) == (10, 10)

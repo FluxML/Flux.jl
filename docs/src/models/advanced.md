@@ -25,7 +25,7 @@ Flux.@layer CustomModel
 You can then use the model like:
 
 ```julia
-chain = Chain(Dense(10, 10))
+chain = Chain(Dense(10 => 10))
 model = CustomModel(chain)
 model(rand(10))
 ```
