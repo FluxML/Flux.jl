@@ -191,10 +191,9 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5, ϵ=nothing)
-  ε = _greek_ascii_depwarn(ϵ => eps, :LayerNorm, "ϵ" => "eps")
+function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5)
   diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
-  return LayerNorm(λ, diag, ε, size, affine)
+  return LayerNorm(λ, diag, eps, size, affine)
 end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
@@ -561,7 +560,7 @@ function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(l.chs), $(l.G)")
   l.λ == identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io,  ", affine=false")
-  l.active == nothing || print(io, ", active=", l.active)
+  l.active === nothing || print(io, ", active=", l.active)
   print(io, ")")
 end
 
