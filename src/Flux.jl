@@ -41,8 +41,6 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
   outputsize, state, create_bias, @layer,
 ))
 
-export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
-
 include("train.jl")
 using .Train
 using .Train: setup

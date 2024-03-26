@@ -67,7 +67,6 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 ```
 """
 function msle(ŷ, y; agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
-  ϵ = _greek_ascii_depwarn(ϵ => eps, :msle, "ϵ" => "eps")
   _check_sizes(ŷ, y)
   agg((log.((ŷ .+ ϵ) ./ (y .+ ϵ))) .^2 )
 end
@@ -101,9 +100,8 @@ julia> Flux.huber_loss(ŷ, 1:3, delta=0.05)  # changes behaviour as |ŷ - y| >
 0.003750000000000005
 ```
 """
-function huber_loss(ŷ, y; agg = mean, delta::Real = 1, δ = nothing)
-    delta_tmp = _greek_ascii_depwarn(δ => delta, :huber_loss, "δ" => "delta")
-    δ = ofeltype(ŷ, delta_tmp)
+function huber_loss(ŷ, y; agg = mean, delta::Real = 1)
+    δ = ofeltype(ŷ, delta)
     _check_sizes(ŷ, y)
     abs_error = abs.(ŷ .- y)
 
@@ -231,9 +229,8 @@ julia> Flux.crossentropy(y_model, y_smooth)
 ```
 """
 function crossentropy(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
-  ϵ = _greek_ascii_depwarn(ϵ => eps, :crossentropy, "ϵ" => "eps")
   _check_sizes(ŷ, y)
-  agg(.-sum(xlogy.(y, ŷ .+ ϵ); dims = dims))
+  agg(.-sum(xlogy.(y, ŷ .+ eps); dims = dims))
 end
 
 """
@@ -319,10 +316,9 @@ julia> Flux.crossentropy(y_prob, y_hot)
 0.43989f0
 ```
 """
-function binarycrossentropy(ŷ, y; agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
-  ϵ = _greek_ascii_depwarn(ϵ => eps, :binarycrossentropy, "ϵ" => "eps")
+function binarycrossentropy(ŷ, y; agg = mean, eps::Real = epseltype(ŷ))
   _check_sizes(ŷ, y)
-  agg(@.(-xlogy(y, ŷ + ϵ) - xlogy(1 - y, 1 - ŷ + ϵ)))
+  agg(@.(-xlogy(y, ŷ + eps) - xlogy(1 - y, 1 - ŷ + eps)))
 end
 
 """
@@ -390,11 +386,10 @@ julia> Flux.kldivergence(p1, p2; eps = 0)  # about 17.3 with the regulator
 Inf
 ```
 """
-function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ), ϵ = nothing)
-  ϵ = _greek_ascii_depwarn(ϵ => eps, :kldivergence, "ϵ" => "eps")
+function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   _check_sizes(ŷ, y)
   entropy = agg(sum(xlogx.(y); dims = dims))
-  cross_entropy = crossentropy(ŷ, y; dims, agg, eps=ϵ)
+  cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
   return entropy + cross_entropy
 end
 
@@ -530,14 +525,13 @@ Calculated as:
     1 - sum(|y .* ŷ| + 1) / (sum(y .* ŷ + (1 - β)*(1 .- y) .* ŷ + β*y .* (1 .- ŷ)) + 1)
 
 """
-function tversky_loss(ŷ, y; beta::Real = 0.7, β = nothing)
-  beta_temp = _greek_ascii_depwarn(β => beta, :tversky_loss, "β" => "beta")
-  β = ofeltype(ŷ, beta_temp)
+function tversky_loss(ŷ, y; beta::Real = 0.7)
+    β = ofeltype(ŷ, beta)
     _check_sizes(ŷ, y)
     #TODO add agg
     num = sum(y .* ŷ) + 1
     den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
-    1 - num / den
+    return 1 - num / den
 end
 
 """
@@ -568,17 +562,15 @@ julia> Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
 true
 ```
 """
-function binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ = nothing, γ = nothing)
-    ϵ = _greek_ascii_depwarn(ϵ => eps, :binary_focal_loss, "ϵ" => "eps")
-    gamma_temp = _greek_ascii_depwarn(γ => gamma, :binary_focal_loss, "γ" => "gamma")
-    γ = gamma_temp isa Integer ? gamma_temp : ofeltype(ŷ, gamma_temp)
+function binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps::Real=epseltype(ŷ))
+    γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
     _check_sizes(ŷ, y)
-    ŷϵ = ŷ .+ ϵ
+    ŷϵ = ŷ .+ eps
     p_t = y .* ŷϵ  + (1 .- y) .* (1 .- ŷϵ)
     ce = .-log.(p_t)
     weight = (1 .- p_t) .^ γ
     loss = weight .* ce
-    agg(loss)
+    return agg(loss)
 end
 
 """
@@ -616,11 +608,9 @@ See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 
 """
 function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ=nothing, γ=nothing)
-  ϵ = _greek_ascii_depwarn(ϵ => eps, :focal_loss, "ϵ" => "eps")
-  gamma_temp = _greek_ascii_depwarn(γ => gamma, :focal_loss, "γ" => "gamma")
-  γ = gamma_temp isa Integer ? gamma_temp : ofeltype(ŷ, gamma_temp)
+  γ = gamma_temp isa Integer ? gamma : ofeltype(ŷ, gamma)
   _check_sizes(ŷ, y)
-  ŷϵ = ŷ .+ ϵ
+  ŷϵ = ŷ .+ eps
   agg(sum(@. -y * (1 - ŷϵ)^γ * log(ŷϵ); dims))
 end
 

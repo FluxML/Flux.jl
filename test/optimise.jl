@@ -28,14 +28,14 @@ using Random
   end
 end
 
-@testset "Optimiser" begin
+@testset "OptimiserChain" begin
   Random.seed!(84)
   w = randn(10, 10)
-  @testset for Opt in [InvDecay, WeightDecay, ExpDecay, SignDecay]
+  @testset for Opt in [WeightDecay,]
     Random.seed!(42)
     w′ = randn(10, 10)
-    loss(x) = Flux.Losses.mse(w*x, w′*x)
-    opt = Optimiser(Opt(), Adam(0.001))
+    loss(x) = Flux.mse(w*x, w′*x)
+    opt = OptimiserChain(Opt(), Adam(0.001))
     for t = 1:10^5
       θ = Params([w′])
       x = rand(10)
