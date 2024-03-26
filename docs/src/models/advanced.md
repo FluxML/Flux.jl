@@ -40,33 +40,37 @@ Taking reference from our example `Affine` layer from the [basics](@ref man-basi
 By default all the fields in the `Affine` type are collected as its parameters, however, in some cases it may be desired to hold other metadata in our "layers" that may not be needed for training, and are hence supposed to be ignored while the parameters are collected. With Flux, the way to mark some fields of our layer as trainable is through overloading the `trainable` function:
 
 ```julia-repl
-julia> @layer Affine
+julia> struct Affine
+        W
+        b
+      end
+
+julia> Affine(in::Int, out::Int) = Affine(randn(out, in), randn(out));
+
+julia> (m::Affine)(x) = m.W * x .+ m.b;
+
+julia> Flux.@layer Affine
 
 julia> a = Affine(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9])
 Affine(Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0])
 
-julia> Flux.params(a) # default behavior
-Params([Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0]])
+julia> Flux.trainable(a) # default behavior
+(W = Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], b = Float32[7.0, 8.0, 9.0])
 
 julia> Flux.trainable(a::Affine) = (; W = a.W)  # returns a NamedTuple using the field's name
 
-julia> Flux.params(a)
-Params([Float32[1.0 2.0; 3.0 4.0; 5.0 6.0]])
+julia> Flux.trainable(a)
+(W = Float32[1.0 2.0; 3.0 4.0; 5.0 6.0],)
 ```
 
-Only the fields returned by `trainable` will be collected as trainable parameters of the layer when calling `Flux.params`, and only these fields will be seen by `Flux.setup` and `Flux.update!` for training. But all fields wil be seen by `gpu` and similar functions, for example:
+Only the fields returned by `trainable` will be seen by `Flux.setup` and `Flux.update!` for training. But all fields wil be seen by `gpu` and similar functions, for example:
 
 ```julia-repl
 julia> a |> f16
 Affine(Float16[1.0 2.0; 3.0 4.0; 5.0 6.0], Float16[7.0, 8.0, 9.0])
 ```
 
-Note that there is no need to overload `trainable` to hide fields which do not contain trainable parameters. (For example, activation functions, or Boolean flags.) These are always ignored by `params` and by training:
-
-```julia-repl
-julia> Flux.params(Affine(true, [10, 11, 12.0]))
-Params([])
-```
+Note that there is no need to overload `trainable` to hide fields which do not contain numerical array (for example, activation functions, or Boolean flags). These are always ignored by training.
 
 The exact same method of `trainable` can also be defined using the macro, for convenience:
 

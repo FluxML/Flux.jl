@@ -18,7 +18,7 @@ julia> struct MyModel
 
 julia> Flux.@layer MyModel
 
-julia> MyModel() = MyModel(Chain(Dense(10, 5, relu), Dense(5, 2)));
+julia> MyModel() = MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)));
 
 julia> model = MyModel()
 MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)))  # 67 parameters

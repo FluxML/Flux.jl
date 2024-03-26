@@ -35,10 +35,9 @@ true
 ```
 """
 @inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5), ϵ=nothing)
-  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
   μ = mean(x, dims=dims)
   σ = std(x, dims=dims, mean=μ, corrected=false)
-  return @. (x - μ) / (σ + ε)
+  return @. (x - μ) / (σ + eps)
 end
 
 """

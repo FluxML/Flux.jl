@@ -19,7 +19,7 @@ end
 end
 
 @testset "Chain of Dense layers" begin
-    m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax) |> f32
+    m = Chain(Dense(10 => 5, tanh), Dense(5 => 2), softmax) |> f32
     x = rand(Float32, 10, 10)
     gpu_autodiff_test(m, x)
 end
@@ -69,7 +69,7 @@ end
 end
 
 @testset "Restructure" begin
-    m = Dense(1, 1) |> Flux.gpu
+    m = Dense(1 => 1) |> Flux.gpu
     θ, m̂ = Flux.destructure(m)
     foo(x) = sum(re(p)(x))
 

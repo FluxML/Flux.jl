@@ -13,7 +13,7 @@ This function is mainly used by weight initializers, e.g., [`kaiming_normal`](@r
 # Examples
 
 ```jldoctest
-julia> layer = Dense(10, 20);
+julia> layer = Dense(10 => 20);
 
 julia> Flux.nfan(size(layer.weight))
 (10, 20)
@@ -580,9 +580,9 @@ over specific modules or subsets of the parameters
 # Examples
 
 ```jldoctest
-julia> m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu));
+julia> m1 = Chain(Dense(28^2 => 64), BatchNorm(64, relu));
 
-julia> m2 = Chain(m1, Dense(64, 10))
+julia> m2 = Chain(m1, Dense(64 => 10))
 Chain(
   Chain(
     Dense(784 => 64),                   # 50_240 parameters

@@ -10,37 +10,37 @@ end
 
   # Dense -- has parameter count, but not when inside a matrix:
 
-  toplevel_dense = repr("text/plain", Dense(2,3))
+  toplevel_dense = repr("text/plain", Dense(2 => 3))
   @test occursin("Dense(2 => 3)", toplevel_dense)
   @test occursin("# 9 parameters", toplevel_dense)
 
   @test Meta.isexpr(Meta.parse(toplevel_dense), :call)  # comment is ignored
 
-  vector_dense = repr("text/plain", [Dense(2,3), Dense(2,3)])
+  vector_dense = repr("text/plain", [Dense(2 => 3), Dense(2 => 3)])
   @test occursin("Dense(2 => 3)", vector_dense)
   @test occursin("# 9 parameters", vector_dense)
 
-  matrix_dense = repr("text/plain", fill(Dense(2,3), 3, 3))
+  matrix_dense = repr("text/plain", fill(Dense(2 => 3), 3, 3))
   @test occursin("Dense(2 => 3)", matrix_dense)
   @test !occursin("# 9 parameters", matrix_dense)
 
-  tuple_dense = repr("text/plain", tuple(Dense(2,3)))
+  tuple_dense = repr("text/plain", tuple(Dense(2 => 3)))
   @test occursin("Dense(2 => 3)", tuple_dense)
   @test !occursin("# 9 parameters", tuple_dense)
 
   # Chain -- gets split over lines at top level only
 
-  toplevel_chain = repr("text/plain", Chain(Dense(2,3)))
+  toplevel_chain = repr("text/plain", Chain(Dense(2 => 3)))
   @test occursin("Chain(\n  Dense(2 => 3)", toplevel_chain)
   @test occursin("# 9 parameters", toplevel_chain)
   @test !occursin("# Total:", toplevel_chain)
 
-  vector_chain = repr("text/plain", [Chain(Dense(2,3)), Chain(Dense(2,3))])
+  vector_chain = repr("text/plain", [Chain(Dense(2 => 3)), Chain(Dense(2 => 3))])
   @test occursin("Chain(Dense(2 => 3))", vector_chain)
   @test occursin("# 9 parameters", vector_chain)
   @test !occursin("# Total:", vector_chain)
 
-  matrix_chain = repr("text/plain", fill(Chain(Dense(2,3)), 3,3))
+  matrix_chain = repr("text/plain", fill(Chain(Dense(2 => 3)), 3,3))
   @test occursin("Chain(Dense(2 => 3))", matrix_chain)
   @test !occursin("# 9 parameters", matrix_chain)
   @test !occursin("# Total:", matrix_chain)

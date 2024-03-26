@@ -106,9 +106,9 @@ end
     end
 
     models_xs = [
-        (Dense(2, 4), randn(Float32, 2), "Dense"),
-        (Chain(Dense(2, 4, relu), Dense(4, 3)), randn(Float32, 2), "Chain(Dense, Dense)"),
-        (f64(Chain(Dense(2, 4), Dense(4, 2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
+        (Dense(2 => 4), randn(Float32, 2), "Dense"),
+        (Chain(Dense(2  =>  4, relu), Dense(4  => 3)), randn(Float32, 2), "Chain(Dense, Dense)"),
+        (f64(Chain(Dense(2 => 4), Dense(4 => 2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
         (Flux.Scale([1.0f0 2.0f0 3.0f0 4.0f0], true, abs2), randn(Float32, 2), "Flux.Scale"),
         (Conv((3, 3), 2 => 3), randn(Float32, 3, 3, 2, 1), "Conv"),
         (Chain(Conv((3, 3), 2 => 3, relu), Conv((3, 3), 3 => 1, relu)), rand(Float32, 5, 5, 2, 1), "Chain(Conv, Conv)"),
