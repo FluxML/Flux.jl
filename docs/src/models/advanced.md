@@ -7,8 +7,8 @@ Here we will try and describe usage of some more advanced features that Flux pro
 Here is a basic example of a custom model. It simply adds the input to the result from the neural network.
 
 ```julia
-struct CustomModel
-  chain::Chain
+struct CustomModel{T <: Chain} # Parameter to avoid type instability (see "Multiple inputs" section below)
+  chain::T
 end
 
 function (m::CustomModel)(x)
