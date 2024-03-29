@@ -539,10 +539,6 @@ Base.@kwdef struct FluxMetalDevice <: AbstractDevice
     deviceID
 end
 
-## device list. order is important
-const DEVICES = Ref{Vector{Union{Nothing, AbstractDevice}}}(Vector{Union{Nothing, AbstractDevice}}(nothing, length(GPU_BACKENDS)))
-DEVICES[][GPU_BACKEND_ORDER["CPU"]] = FluxCPUDevice()
-
 ## get device
 
 """
@@ -630,47 +626,44 @@ function get_device(; verbose=false)::AbstractDevice
 
     if backend !== nothing
         allowed_backends = supported_devices()
-        idx = findfirst(isequal(backend), allowed_backends)
         if backend ∉  allowed_backends
-            @warn """
-                `gpu_backend` preference is set to $backend, which is not allowed.
+            @warn lazy"""
+                `gpu_backend` preference is set to $backend, which is not supported by Flux.
                 Defaulting to automatic device selection.
             """ maxlog=1
+            backend = nothing
+        elseif !has_device(backend)
+                @warn lazy"""
+                `gpu_backend` preference is set to $backend, which is not available.
+                Defaulting to automatic device selection.
+            """ maxlog=1
+            backend = nothing
         else
-            verbose && @info "Using backend set in preferences: $backend."
-            device = DEVICES[][idx] 
+            verbose && @info lazy"Using backend set in preferences."
+        end
+    end
 
-            if !_isavailable(device)
-                @warn """
-                Trying to use backend: $backend but it's trigger package is not loaded.
-                Please load the package and call this function again to respect the preferences backend.
-                """
-            else 
-                if _isfunctional(device)
-                    return device
-                else
-                    @warn "Backend: $backend from the set preferences is not functional. Defaulting to automatic device selection."
-                end
+    if backend !== nothing # backend set in preference
+        verbose && @info lazy"Using backend: $backend."
+        return get_device(backend)
+    else
+        for back in GPU_BACKENDS 
+            if has_device(back)
+                verbose && @info lazy"Using backend: $back."
+                return get_device(back)
             end
         end
     end
 
-    for backend in GPU_BACKENDS 
-        device = DEVICES[][GPU_BACKEND_ORDER[backend]]
-        if _isavailable(device)
-            if _isfunctional(device)
-                verbose && @info "Using backend: $backend."
-                return device
-            end
-        end
-    end
 end
 
 """
-    Flux.get_device(backend::String, idx::Int = 0)::Flux.AbstractDevice
+    Flux.get_device(backend::String, [idx])::Flux.AbstractDevice
 
 Get a device object for a backend specified by the string `backend` and `idx`. The currently supported values
-of `backend` are `"CUDA"`, `"AMDGPU"` and `"CPU"`. `idx` must be an integer value between `0` and the number of available devices.
+of `backend` are `"CUDA"`, `"AMDGPU"` and `"CPU"`. 
+`idx` must be an integer value between `0` and the number of available devices.
+If not given, will be automatically
 
 # Examples
 
@@ -700,15 +693,13 @@ julia> cpu_device = Flux.get_device("CPU")
 
 ```
 """
-function get_device(backend::String, idx::Int = 0)
-    if backend == "AMD"
-        @warn "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead." maxlog=1
-        backend = "AMDGPU"
-    end
+function get_device(backend::String; idx=-1)
     if backend == "CPU"
         return FluxCPUDevice()
-    else
+    elseif idx >= 0
         return get_device(Val(Symbol(backend)), idx)
+    else
+        return get_device(Val(Symbol(backend)))
     end
 end
 
