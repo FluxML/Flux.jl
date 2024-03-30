@@ -56,10 +56,15 @@ function _cuda(id::Union{Nothing, Int}, x)
   fmap(x -> Adapt.adapt(FluxCUDAAdaptor(id), x), x; exclude=Flux._isleaf)
 end
 
-function Flux.get_device(::Val{:CUDA}, id::Int)
+function Flux.get_device(::Val{:CUDA}, id::Int = -1)
+  if id < 0 # return current device
+    # return CUDA.functional() ? Flux.FluxCUDADevice(CUDA.device()) : Flux.FluxCUDADevice(nothing)
+    return Flux.FluxCUDADevice(CUDA.device()) 
+  else
     old_id = CUDA.device().handle
     CUDA.device!(id)
     device = Flux.FluxCUDADevice(CUDA.device())
     CUDA.device!(old_id)
     return device
+  end
 end

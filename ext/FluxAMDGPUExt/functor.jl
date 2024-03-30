@@ -105,10 +105,16 @@ function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMDGPU_CONV)
         Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
 end
 
-function Flux.get_device(::Val{:AMDGPU}, id::Int)     # id should start from 0
-    old_id = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ids start from 0
-    AMDGPU.device!(AMDGPU.devices()[id + 1])           # adding 1 because ids start from 0
-    device = Flux.FluxAMDGPUDevice(AMDGPU.device())
-    AMDGPU.device!(AMDGPU.devices()[old_id + 1])
-    return device
+function Flux.get_device(::Val{:AMDGPU}, id::Int = -1)
+    if id < 0 # return current device
+        AMDGPU.functional() ? Flux.FluxAMDGPUDevice(AMDGPU.device()) : Flux.FluxAMDGPUDevice(nothing)
+        return Flux.FluxAMDGPUDevice(AMDGPU.device())
+    else
+        # id should start from 0
+        old_id = AMDGPU.device_id(AMDGPU.device()) - 1     # subtracting 1 because ids start from 0
+        AMDGPU.device!(AMDGPU.devices()[id + 1])           # adding 1 because ids start from 0
+        device = Flux.FluxAMDGPUDevice(AMDGPU.device())
+        AMDGPU.device!(AMDGPU.devices()[old_id + 1])
+        return device
+    end
 end

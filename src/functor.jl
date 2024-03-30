@@ -193,6 +193,16 @@ const GPU_BACKENDS = ["CUDA", "AMDGPU", "Metal", "CPU"]
 const GPU_BACKEND_ORDER = Dict(collect(zip(GPU_BACKENDS, 1:length(GPU_BACKENDS))))
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
+"""
+    gpu_backend!(backend::String)
+
+Sets preferences for the GPU backend to `backend`. 
+The backend must be one of `"CUDA"`, `"AMDGPU"`, `"Metal"`, or `"CPU"`.
+The preference will be saved in the preferences file and will be used in subsequent Julia sessions
+when calling [`Flux.get_device`](@ref) or [`Flux.gpu`](@ref).
+
+See also [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl) for more information.
+"""
 function gpu_backend!(backend::String)
     if backend == GPU_BACKEND
         @info """
@@ -230,7 +240,10 @@ See also [`f32`](@ref) and [`f16`](@ref) to change element type only.
 See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
 to help identify the current device.
 
-# Example
+See also [`get_device`](@ref) for more fine-grained control over device selection.
+
+# Examples
+
 ```julia-repl
 julia> m = Dense(rand(2, 3))  # constructed with Float64 weight matrix
 Dense(3 => 2)       # 8 parameters
@@ -258,7 +271,7 @@ function gpu(x)
     elseif GPU_BACKEND == "CPU"
         cpu(x)
     else
-        error("""
+        error(lazy"""
         Unsupported GPU backend: $GPU_BACKEND.
         Supported backends are: $GPU_BACKENDS.
         """)
@@ -517,8 +530,8 @@ _get_device_name(::FluxCPUDevice) = "CPU"
 
 A type representing `device` objects for the `"CUDA"` backend for Flux.
 """
-Base.@kwdef struct FluxCUDADevice <: AbstractDevice
-    deviceID
+Base.@kwdef struct FluxCUDADevice{D} <: AbstractDevice
+    deviceID::D
 end
 
 """
@@ -526,8 +539,8 @@ end
 
 A type representing `device` objects for the `"AMDGPU"` backend for Flux.
 """
-Base.@kwdef struct FluxAMDGPUDevice <: AbstractDevice
-    deviceID
+Base.@kwdef struct FluxAMDGPUDevice{D} <: AbstractDevice
+    deviceID::D
 end
 
 """
@@ -535,8 +548,8 @@ end
 
 A type representing `device` objects for the `"Metal"` backend for Flux.
 """
-Base.@kwdef struct FluxMetalDevice <: AbstractDevice
-    deviceID
+Base.@kwdef struct FluxMetalDevice{D} <: AbstractDevice
+    deviceID::D
 end
 
 ## get device
@@ -660,10 +673,11 @@ end
 """
     Flux.get_device(backend::String, [idx])::Flux.AbstractDevice
 
-Get a device object for a backend specified by the string `backend` and `idx`. The currently supported values
-of `backend` are `"CUDA"`, `"AMDGPU"` and `"CPU"`. 
+Get a device object for a backend specified by the string `backend` and `idx`. 
+The currently supported values of `backend` are `"CUDA"`, `"AMDGPU"`, `"Metal"`, and `"CPU"`. 
+
 `idx` must be an integer value between `0` and the number of available devices.
-If not given, will be automatically
+If `idx` is negative or not provided, the first available device is returned.
 
 # Examples
 
@@ -693,21 +707,31 @@ julia> cpu_device = Flux.get_device("CPU")
 
 ```
 """
-function get_device(backend::String; idx=-1)
-    if backend == "CPU"
-        return FluxCPUDevice()
-    elseif idx >= 0
+function get_device(backend::String, idx=-1)
+    if idx >= 0
         return get_device(Val(Symbol(backend)), idx)
     else
         return get_device(Val(Symbol(backend)))
     end
 end
 
+get_device(::Val{:CPU}, idx = 0) = FluxCPUDevice()
+
 # Fallback
-function get_device(::Val{D}, idx) where D
+function get_device(::Val{D}, idx = 0) where D
     if D ∈ (:CUDA, :AMDGPU, :Metal)
         error("Unavailable backend: $(D). Try importing the corresponding package with `using $D`.")
     else
         error("Unsupported backend: $(D). Supported backends are $(GPU_BACKENDS).")
     end
 end
+
+function has_device(backend::String, idx=-1)
+    if idx >= 0
+        return has_device(Val(Symbol(backend)), idx)
+    else
+        return has_device(Val(Symbol(backend)))
+    end
+end
+
+has_device(::Val{:CPU}, idx = 0) = true
