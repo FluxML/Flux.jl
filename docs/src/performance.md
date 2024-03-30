@@ -1,4 +1,4 @@
-# [Performance Tips]((@id man-performance-tips))
+# [Performance Tips](@id man-performance-tips)
 
 All the usual [Julia performance tips apply](https://docs.julialang.org/en/v1/manual/performance-tips/).
 As always [profiling your code](https://docs.julialang.org/en/v1/manual/profile/#Profiling-1) is generally a useful way of finding bottlenecks.
@@ -44,7 +44,7 @@ While one could change the activation function (e.g. to use `0.01f0*x`), the idi
 leaky_tanh(x) = oftype(x/1, 0.01)*x + tanh(x)
 ```
 
-## Evaluate batches as Matrices of features
+## Evaluate batches as matrices of features
 
 While it can sometimes be tempting to process your observations (feature vectors) one at a time
 e.g.

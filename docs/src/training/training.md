@@ -33,7 +33,7 @@ end
 ```
 
 This loop can also be written using the function [`train!`](@ref Flux.Train.train!),
-but it's helpful to undersand the pieces first:
+but it's helpful to understand the pieces first:
 
 ```julia
 train!(model, train_set, opt_state) do m, x, y
@@ -43,7 +43,7 @@ end
 
 ## Model Gradients
 
-Fist recall from the section on [taking gradients](@ref man-training) that 
+Fist recall from the section on [taking gradients](@ref man-taking-gradients) that
 `Flux.gradient(f, a, b)` always calls `f(a, b)`, and returns a tuple `(∂f_∂a, ∂f_∂b)`.
 In the code above, the function `f` passed to `gradient` is an anonymous function with
 one argument, created by the `do` block, hence  `grads` is a tuple with one element.
@@ -275,10 +275,10 @@ end
 The term *regularisation* covers a wide variety of techniques aiming to improve the
 result of training. This is often done to avoid overfitting.
 
-Some of these are can be implemented by simply modifying the loss function. 
+Some of these can be implemented by simply modifying the loss function.
 *L₂ regularisation* (sometimes called ridge regression) adds to the loss a penalty
 proportional to `θ^2` for every scalar parameter.
-For a very simple model could be implemented as follows:
+A very simple model could be implemented as follows:
 
 ```julia
 grads = Flux.gradient(densemodel) do m
@@ -318,7 +318,7 @@ decay_opt_state = Flux.setup(OptimiserChain(WeightDecay(0.42), Adam(0.1)), model
 
 Flux's optimisers are really modifications applied to the gradient before using it to update
 the parameters, and `OptimiserChain` applies two such modifications.
-The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times original parameter to the gradient,
+The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times the original parameter to the gradient,
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
 After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
 
