@@ -74,3 +74,7 @@ end
 
 When doing this kind of concatenation use `reduce(hcat, xs)` rather than `hcat(xs...)`.
 This will avoid the splatting penalty, and will hit the optimised `reduce` method.
+
+## Be aware of GPU memory inefficiencies
+
+Currently, GPU memory is not handled as well as system memory. If your training loop is allocating significantly on the GPU, you can quickly fill your GPU memory and the piecemeal reclamation and shuffling of data between GPU and system memory can become extremely slow. If profiling shows that a significant portion of time is spent in the `gpu` function and your data sizes are not large, this may be the cause. Running an incremental garbage collection manually (`GC.gc(false)`) at regular intervals can keep your GPU memory free and responsive. See other tips for CUDA memory management [here](https://cuda.juliagpu.org/stable/usage/memory/).
