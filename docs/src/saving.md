@@ -106,7 +106,7 @@ jldsave("checkpoint_epoch=42.jld2"; model_state, opt_state)
 Models are just normal Julia structs, so it's fine to use any Julia storage
 format to save the struct as it is instead of saving the state returned by [`Flux.state`](@ref). 
 [BSON.jl](https://github.com/JuliaIO/BSON.jl) is particularly convenient for this,
-since it can also save anynomous functions, which are sometimes part of a model definition.
+since it can also save anonymous functions, which are sometimes part of a model definition.
 
 Save a model:
 

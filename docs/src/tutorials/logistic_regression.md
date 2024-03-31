@@ -35,7 +35,7 @@ julia> x |> summary
 
 The `y` values here corresponds to a type of iris plant, with a total of 150 data points. The `x` values depict the sepal length, sepal width, petal length, and petal width (all in `cm`) of 150 iris plant (hence the matrix size `4×150`). Different type of iris plants have different lengths and widths of sepals and petals associated with them, and there is a definitive pattern for this in nature. We can leverage this to train a simple classifier that outputs the type of iris plant using the length and width of sepals and petals as inputs.
 
-Our next step would be to convert this data into a form that can be fed to a machine learning model. The `x` values are arranged in a matrix and should ideally be converted to `Float32` type (see [Performance tips](@ref id-man-performance-tips)), but the labels must be one hot encoded. [Here](https://discourse.julialang.org/t/all-the-ways-to-do-one-hot-encoding/64807) is a great discourse thread on different techniques that can be used to one hot encode data with or without using any external Julia package.
+Our next step would be to convert this data into a form that can be fed to a machine learning model. The `x` values are arranged in a matrix and should ideally be converted to `Float32` type (see [Performance tips](@ref man-performance-tips)), but the labels must be one hot encoded. [Here](https://discourse.julialang.org/t/all-the-ways-to-do-one-hot-encoding/64807) is a great discourse thread on different techniques that can be used to one hot encode data with or without using any external Julia package.
 
 ```jldoctest logistic_regression
 julia> x = Float32.(x);
