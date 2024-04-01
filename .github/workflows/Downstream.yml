@@ -31,7 +31,7 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'run downstream test')
     steps:
       - uses: actions/checkout@v4.1.2
-      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
           arch: x64
