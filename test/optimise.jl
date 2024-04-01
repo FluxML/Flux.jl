@@ -167,21 +167,19 @@ end
 @testset "update!: handle ComponentArrays" begin
   w = ComponentArrays.ComponentArray(a=1.0, b=[2, 1, 4], c=(a=2, b=[1, 2]))
   wold = deepcopy(w)
-  θ = Flux.params([w])
-  gs = gradient(() -> sum(w.a) + sum(w.c.b), θ)
-  opt = Descent(0.1)
-  Flux.update!(opt, θ, gs)
-  @test w.a ≈ wold.a .- 0.1
+  opt_state = Optimisers.setup(Optimisers.Descent(0.1), w)
+  gs = gradient(w -> w.a + sum(w.c.b), w)[1]
+  Flux.update!(opt_state, w, gs)
+  @test w.a ≈ wold.a - 0.1
   @test w.b ≈ wold.b
   @test w.c.b ≈ wold.c.b .- 0.1
   @test w.c.a ≈ wold.c.a
 
   w = ComponentArrays.ComponentArray(a=1.0, b=[2, 1, 4], c=(a=2, b=[1, 2]))
   wold = deepcopy(w)
-  θ = Flux.params([w])
-  gs = gradient(() -> sum(w), θ)
-  opt = Descent(0.1)
-  Flux.update!(opt, θ, gs)
+  opt_state = Optimisers.setup(Optimisers.Descent(0.1), w)
+  gs = gradient(w -> sum(w), w)[1]
+  Flux.update!(opt_state, w, gs)
   @test w ≈ wold .- 0.1
 end
 
