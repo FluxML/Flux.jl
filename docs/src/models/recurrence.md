@@ -173,7 +173,7 @@ Flux.reset!(m)
 [m(x) for x in seq_init]
 
 ps = Flux.params(m)
-opt= Adam(1e-3)
+opt = Adam(1e-3)
 Flux.train!(loss, ps, data, opt)
 ```
 

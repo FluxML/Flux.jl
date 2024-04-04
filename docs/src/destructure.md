@@ -49,20 +49,27 @@ julia> Flux.destructure(grad)  # acts on non-models, too
 (Float32[10.339018, 11.379145, 22.845667, -29.565302, -37.644184], Restructure(Tuple, ..., 5))
 ```
 
-!!! compat "Flux ≤ 0.12"
-    Old versions of Flux had an entirely different implementation of `destructure`, which
-    had many bugs (and almost no tests). Many comments online still refer to that now-deleted
-    function, or to memories of it.
+In order to collect all parameters of a model into a list instead, you can use the `trainables` function:
 
+```julia
+julia> Flux.trainables(model)
+5-element Vector{AbstractArray}:
+  [0.863101 1.2454957]
+  [0.0]
+  [1.290355429422727;;]
+  [0.0]
+```
+Any mutation of the elements of the resulting list will affect the model's parameters.
 
 ### All Parameters
 
-The function `destructure` now lives in [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl).
-(Be warned this package is unrelated to the `Flux.Optimisers` sub-module! The confusion is temporary.)
+The functions `destructure` and `trainables` live in [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl).
+
 
 ```@docs
 Optimisers.destructure
 Optimisers.trainable
+Optimisers.trainables
 Optimisers.isnumeric
 ```
 

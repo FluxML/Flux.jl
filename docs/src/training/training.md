@@ -332,7 +332,7 @@ provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some output
 previous layer during training.
 It should switch automatically, but see [`trainmode!`](@ref Flux.trainmode!) / [`testmode!`](@ref Flux.testmode!) to manually enable or disable this layer.
 
-## Freezing & Schedules
+## Learning Rate Schedules
 
 Finer control of training, you may wish to alter the learning rate mid-way through training.
 This can be done with [`adjust!`](@ref Flux.adjust!), like this:
@@ -366,6 +366,8 @@ opt_state = Flux.setup(Adam(0.02), bimodel)
 # Adjust the learning rate to be used for bimodel.layers.enc
 Flux.adjust!(opt_state.layers.enc, 0.03)
 ```
+
+## Freezing layer parameters
 
 To completely disable training of some part of the model, use [`freeze!`](@ref Flux.freeze!).
 This is a temporary modification, reversed by `thaw!`:

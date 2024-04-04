@@ -52,7 +52,7 @@ function setup(rule::Optimisers.AbstractRule, model)
       Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
                                          If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
     end
-    state
+    return state
 end
 
 """
@@ -89,7 +89,7 @@ It adds only a few features to the loop above:
 !!! compat "New"
     This method was added in Flux 0.13.9.
     It has significant changes from the one used by Flux ≤ 0.13:
-    * It now takes the `model` itself, not the result of [`Flux.params`](@ref).
+    * It now takes the `model` itself, not the result of Flux.params.
       (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
     * Instead of `loss` being a function which accepts only the data,
       now it must also accept the `model` itself, as the first argument.
@@ -98,9 +98,8 @@ It adds only a few features to the loop above:
     * Callback functions are not supported.
       (But any code can be included in the above `for` loop.)
 """
-function train!(loss, model, data, opt; cb = nothing)
-  isnothing(cb) || error("""train! does not support callback functions.
-                            For more control use a loop with `gradient` and `update!`.""")
+function train!(loss, model, data, opt)
+
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
     l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
@@ -113,8 +112,8 @@ function train!(loss, model, data, opt; cb = nothing)
 end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
-  train!(loss, model, data, _rule_to_state(model, rule); cb)
+function train!(loss, model, data, rule::Optimisers.AbstractRule)
+  return train!(loss, model, data, _rule_to_state(model, rule))
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
@@ -126,7 +125,7 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
                                         Please run `opt = Flux.setup($name(), model)` and pass this `opt` to `train!`.""" leaf maxlog=1 _id=warn_id
     leaf
   end
-  state
+  return state
 end
 
 end # module Train
