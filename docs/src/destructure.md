@@ -58,7 +58,7 @@ julia> Flux.destructure(grad)  # acts on non-models, too
 ### All Parameters
 
 The function `destructure` now lives in [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl).
-(Be warned this package is unrelated to the `Flux.Optimisers` sub-module! The confusion is temporary.)
+
 
 ```@docs
 Optimisers.destructure

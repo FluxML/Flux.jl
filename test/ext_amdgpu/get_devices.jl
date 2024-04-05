@@ -1,4 +1,4 @@
-amdgpu_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMDGPU"]]
+amdgpu_device = Flux.get_device("AMDGPU")
 
 # should pass, whether or not AMDGPU is functional
 @test typeof(amdgpu_device) <: Flux.FluxAMDGPUDevice

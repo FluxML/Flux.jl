@@ -1,4 +1,4 @@
-cuda_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]]
+cuda_device = get_device("CUDA")
 
 # should pass, whether or not CUDA is functional
 @test typeof(cuda_device) <: Flux.FluxCUDADevice

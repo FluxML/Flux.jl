@@ -1,11 +1,3 @@
-@testset "Flux.DEVICES" begin 
-  metal_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["Metal"]]
-
-  # should pass, whether or not Metal is functional
-  @test typeof(metal_device) <: Flux.FluxMetalDevice
-
-  @test typeof(metal_device.deviceID) <: Metal.MTLDevice 
-end
 
 @testset "get_device()" begin
   metal_device = Flux.get_device()
