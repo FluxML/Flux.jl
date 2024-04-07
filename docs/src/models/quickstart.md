@@ -101,17 +101,3 @@ for epoch in 1:1_000
     end
 end
 ```
-
-!!! compat "Implicit-style training, Flux ≤ 0.14"
-    Until recently Flux's training worked a bit differently. 
-    Any code which looks like 
-    ```
-    gradient(() -> loss(model, x, y), Flux.params(model))
-    ```
-    (gradient of a zero-argument function) or
-    ```
-    train!((x,y) -> loss(model, x, y), Flux.params(model), loader, opt)
-    ```
-    (with `Flux.params`) is in the old "implicit" style.
-    This still works on Flux 0.14, but will be removed from Flux 0.15.
-    See the [training section](@ref man-training) for more details.

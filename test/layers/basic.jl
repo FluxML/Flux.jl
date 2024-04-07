@@ -40,11 +40,11 @@ using Flux: activations
   @testset "Activations" begin
     c = Chain(Dense(3 => 5,relu), Dense(5 => 1,relu))
     X = Float32.([1.0; 1.0; 1.0])
-    @test_nowarn gradient(()->Flux.activations(c, X)[2][1], Flux.params(c))
+    @test_nowarn gradient(c -> Flux.activations(c, X)[2][1], c)
 
     c2 = Chain(enc = c[1], dec = c[2])
     @test Flux.activations(c, X) == Flux.activations(c2, X)
-    @test_nowarn gradient(()->Flux.activations(c2, X)[2][1], Flux.params(c2))
+    @test_nowarn gradient(c -> Flux.activations(c, X)[2][1], c2)
   end
 
   @testset "Dense" begin
@@ -196,7 +196,7 @@ using Flux: activations
       x = randn(Float32,11,7)
       b = Flux.Bilinear((11, 11) => 3)
       @test size(b(x)) == (3,7)
-      @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
+      @test_nowarn gs = gradient(b -> sum(abs2.(b(x))), b)
     end
 
     @testset "constructors" begin
@@ -436,16 +436,16 @@ end
 @testset "gradients of Chain{Vector}" begin
   m1 = Chain(Dense(3 => 4,tanh; bias=false), Dense(4 => 2))
   m1v = Chain([m1[1], m1[2]])
-  @test sum(length, params(m1)) == sum(length, params(m1v))
+  @test sum(length, trainables(m1)) == sum(length, trainables(m1v))
 
   x1 = randn(Float32,3,5)
   @test m1(x1) ≈ m1v(x1)
 
   y1 = rand(Bool,2,5)
-  g1 = gradient(() -> Flux.Losses.logitcrossentropy(m1(x1), y1), params(m1))
-  g1v = gradient(() -> Flux.Losses.logitcrossentropy(m1v(x1), y1), params(m1v))
-  @test g1[m1[1].weight] ≈ g1v[m1v[1].weight]
-  @test g1[m1[2].bias] ≈ g1v[m1v[2].bias]
+  g1 = gradient(m1 -> Flux.Losses.logitcrossentropy(m1(x1), y1), m1)[1]
+  g1v = gradient(m1v -> Flux.Losses.logitcrossentropy(m1v(x1), y1), m1v)[1]
+  @test g1.layers[1].weight ≈ g1v.layers[1].weight
+  @test g1.layers[1].bias === g1v.layers[1].bias === nothing
 
   @test Flux.destructure(m1)[1] ≈ Flux.destructure(m1v)[1]
   z1 = rand(22);

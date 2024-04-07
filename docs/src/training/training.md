@@ -64,16 +64,6 @@ in order for the influence of the model's parameters to be observed by Zygote.
 It is also important that every `update!` step receives a newly computed gradient,
 as it will change whenever the model's parameters are changed, and for each new data point.
 
-!!! compat "Implicit gradients"
-    Flux ≤ 0.14 used Zygote's "implicit" mode, in which `gradient` takes a zero-argument function.
-    It looks like this:
-    ```
-    pars = Flux.params(model)
-    grad = gradient(() -> loss(model(input), label), pars)
-    ```
-    Here `pars::Params` and `grad::Grads` are two dictionary-like structures.
-    Support for this will be removed from Flux 0.15, and these blue (teal?) boxes
-    explain what needs to change.
 
 ## Loss Functions
 
@@ -208,15 +198,6 @@ end
 Or explicitly writing the anonymous function which this `do` block creates,
 `train!((m,x,y) -> loss(m(x),y), model, train_set, opt_state)` is exactly equivalent.
 
-!!! compat "Implicit-style `train!`"
-    This is a new method of `train!`, which takes the result of `setup` as its 4th argument.
-    The 1st argument is a function which accepts the model itself.
-    Flux versions ≤ 0.14 provided a method of `train!` for "implicit" parameters,
-    which works like this:
-    ```
-    train!((x,y) -> loss(model(x), y), Flux.params(model), train_set, Adam())
-    ```
-
 Real training loops often need more flexibility, and the best way to do this is just
 to write the loop. This is ordinary Julia code, without any need to work through some
 callback API. Here is an example, in which it may be helpful to note:
@@ -284,12 +265,12 @@ A very simple model could be implemented as follows:
 grads = Flux.gradient(densemodel) do m
   result = m(input)
   penalty = sum(abs2, m.weight)/2 + sum(abs2, m.bias)/2
-  my_loss(result, label) + 0.42 * penalty
+  my_loss(result, label) + 0.42f0 * penalty
 end
 ```
 
 Accessing each individual parameter array by hand won't work well for large models.
-Instead, we can use [`Flux.params`](@ref) to collect all of them,
+Instead, we can use [`Flux.trainables`](@ref Optimisers.trainables) to collect all of them,
 and then apply a function to each one, and sum the result:
 
 ```julia
@@ -297,8 +278,8 @@ pen_l2(x::AbstractArray) = sum(abs2, x)/2
 
 grads = Flux.gradient(model) do m
   result = m(input)
-  penalty = sum(pen_l2, Flux.params(m))
-  my_loss(result, label) + 0.42 * penalty
+  penalty = sum(pen_l2, Flux.trainables(m))
+  my_loss(result, label) + 0.42f0 * penalty
 end
 ```
 
@@ -317,7 +298,7 @@ decay_opt_state = Flux.setup(OptimiserChain(WeightDecay(0.42), Adam(0.1)), model
 ```
 
 Flux's optimisers are really modifications applied to the gradient before using it to update
-the parameters, and `OptimiserChain` applies two such modifications.
+the parameters, and [`OptimiserChain`](@ref Optimisers.OptimiserChain) applies two such modifications.
 The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times the original parameter to the gradient,
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
 After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
@@ -347,10 +328,6 @@ for epoch in 1:1000
   end
 end
 ```
-
-!!! compat "Flux ≤ 0.14"
-    With the old "implicit" optimiser, `opt = Adam(0.1)`, the equivalent was to
-    directly mutate the `Adam` struct, `opt.eta = 0.001`. 
 
 Other hyper-parameters can also be adjusted, such as `Flux.adjust!(opt_state, beta = (0.8, 0.99))`.
 And such modifications can be applied to just one part of the model.
@@ -382,21 +359,7 @@ train!(loss, bimodel, data, opt_state)
 Flux.thaw!(opt_state)
 ```
 
-!!! compat "Flux ≤ 0.14"
-    The earlier "implicit" equivalent was to pass to `gradient` an object referencing only
-    part of the model, such as `Flux.params(bimodel.layers.enc)`.
-
 While `adjust!` and `freeze!`/`thaw!` make temporary modifications to the optimiser state,
 permanently removing some fields of a new layer type from training is usually done
 when defining the layer, by calling for example [`@layer`](@ref Flux.@layer)` NewLayer trainable=(weight,)`.
 
-## Implicit or Explicit?
-
-Flux used to handle gradients, training, and optimisation rules quite differently.
-The new style described above is called "explicit" by Zygote, and the old style "implicit".
-Flux 0.13 and 0.14 are the transitional versions which support both.
-
-The blue-green boxes above describe the changes.
-For more details on training in the implicit style, see [Flux 0.13.6 documentation](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
-
-For details about the two gradient modes, see [Zygote's documentation](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1).

@@ -78,18 +78,6 @@ It adds only a few features to the loop above:
 * Stop with a `DomainError` if the loss is infinite or `NaN` at any point.
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
-
-!!! compat "New"
-    This method was added in Flux 0.13.9.
-    It has significant changes from the one used by Flux ≤ 0.13:
-    * It now takes the `model` itself, not the result of Flux.params.
-      (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
-    * Instead of `loss` being a function which accepts only the data,
-      now it must also accept the `model` itself, as the first argument.
-    * `opt_state` should be the result of [`Flux.setup`](@ref). Using an optimiser
-      such as `Adam()` without this step should give you a warning.
-    * Callback functions are not supported.
-      (But any code can be included in the above `for` loop.)
 """
 function train!(loss, model, data, opt)
 

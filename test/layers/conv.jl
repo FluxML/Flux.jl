@@ -164,11 +164,11 @@ end
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
-  @test gradient(()->sum(m(x)), Flux.params(m)) isa Flux.Zygote.Grads
+  gradient(m -> sum(m(x)), m)
 
   x = zeros(Float32, 5, 5, 2, 4)
-  m = ConvTranspose((3,3), 2=>3)
-  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+  m = ConvTranspose((3, 3), 2 => 3)
+  gradient(m -> sum(m(x)), m)
 
   # test ConvTranspose supports groups argument
   x = randn(Float32, 10, 10, 2, 3)
@@ -178,7 +178,7 @@ end
   m2 = ConvTranspose((3,3), 2=>4, groups=2, pad=SamePad())
   @test size(m2.weight) == (3,3,2,2)
   @test size(m1(x)) == size(m2(x))
-  @test gradient(()->sum(m2(x)), params(m2)) isa Flux.Zygote.Grads
+  gradient(m2 -> sum(m2(x)), m2)
 
   x = randn(Float32, 10, 2,1)
   m = ConvTranspose((3,), 2=>4, pad=SamePad(), groups=2)

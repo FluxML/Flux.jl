@@ -15,12 +15,9 @@ import Optimisers: trainable
 using Optimisers: update!, trainables
 using Random: default_rng
 using Zygote, ChainRulesCore
-using Zygote: Params, @adjoint, gradient, pullback
+using Zygote: @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
 export gradient
-
-# Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
-Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
 
 export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion,
        RNN, LSTM, GRU, GRUv3,

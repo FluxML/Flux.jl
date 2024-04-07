@@ -335,28 +335,12 @@ end
     o = ones(s)
     z = zeros(s)
 
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
-      g = gfun(o, z)
-      @test gfun(o, false) == (g[1], nothing)
+    gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
+    g = gfun(o, z)
+    @test gfun(o, false) == (g[1], nothing)
 
-      g = gfun(z, o)
-      @test gfun(false, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
-      g = gfun(o, z)
-
-      gres = gfun(o, false)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-
-      g = gfun(z, o)
-      gres = gfun(false, o)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-    end
+    g = gfun(z, o)
+    @test gfun(false, o) == (nothing, g[2])
   end
 end
 
@@ -556,10 +540,10 @@ end
 @testset "Shared parameters" begin
   mat = [1 2; 3 4.0]
   simple = ((nothing, mat, (3, mat, 4)))
-  @test length(Flux.params(simple)) == 1
+  @test length(Flux.trainables(simple)) == 1
   
   oneadj = (nt = (m = mat, a = mat'))
-  @test length(Flux.params(oneadj)) == 1  # needs Functors@0.3
+  @test length(Flux.trainables(oneadj)) == 1  # needs Functors@0.3
   
   @test Flux.destructure(simple)[1] == Flux.destructure(oneadj)[1] == [1, 3, 2, 4]
 end
@@ -620,14 +604,12 @@ end
     # Sharing the parameters
     model = Model(d, d)
 
-    # Works
-    g1 = Flux.gradient(() -> sum(model(x)), Flux.params(model))
+    g1 = Flux.gradient(model -> sum(model(x)), model)[1]
 
     p, re = Flux.destructure(model)
-    # Fails
-    g2 = Flux.gradient(p -> sum(re(p)(x)), p)
+    g2 = Flux.gradient(p -> sum(re(p)(x)), p)[1]
 
-    @test g2[1] ≈ vcat(g1[d.weight], g1[d.bias])
+    @test g2 ≈ vcat(vec(g1.a.weight) + vec(g1.b.weight), g1.a.bias + g1.b.bias)
   end
 
   @testset "issue 1826" begin

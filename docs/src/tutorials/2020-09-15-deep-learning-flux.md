@@ -167,26 +167,8 @@ gradient(myloss, W, b, x)
 
 Now we get gradients for each of the inputs `W`, `b` and `x`, which will come in handy when we want to train models.
 
-Because ML models can contain hundreds of parameters, Flux provides a slightly different way of writing `gradient`. We instead mark arrays with `param` to indicate that we want their derivatives. `W` and `b` represent the weight and bias respectively.
-
-```julia
-using Flux: params
-
-W = randn(3, 5)
-b = zeros(3)
-x = rand(5)
-
-y(x) = sum(W * x .+ b)
-
-grads = gradient(()->y(x), params([W, b]))
-
-grads[W], grads[b]
-```
-
-
-We can now grab the gradients of `W` and `b` directly from those parameters.
-
-This comes in handy when working with *layers*. A layer is just a handy container for some parameters. For example, `Dense` does a linear transform for you.
+ML models can contain hundreds of parameter arrays, therefore it is handy to group them into **layers**.
+A layer is just a handy container for some parameters. For example, `Dense` does a linear transform for you.
 
 ```julia
 using Flux
@@ -196,23 +178,22 @@ m = Dense(10 =>  5)
 x = rand(Float32, 10)
 ```
 
-We can easily get the parameters of any layer or model with params with `params`.
+We can easily get the parameters of any layer or model with `trainables`.
 
 ```julia
-params(m)
+trainables(m)
 ```
 
-This makes it very easy to calculate the gradient for all parameters in a network, even if it has many parameters.
+It very easy to calculate the gradient for all parameters in a network, even if it has many parameters.
+The function `gradient` is not limited to array but can compute the gradient with respect to generic composite types.
 
 ```julia
 x = rand(Float32, 10)
-m = Chain(Dense(10 => 5, relu), Dense(5 => 2), softmax)
-l(x) = sum(Flux.crossentropy(m(x), [0.5, 0.5]))
-grads = gradient(params(m)) do
-    l(x)
-end
-for p in params(m)
-    println(grads[p])
+model = Chain(Dense(10 => 5, relu), Dense(5 => 2))
+loss(model, x) = Flux.logitcrossentropy(model(x), [0.5, 0.5])
+grad = gradient(m -> loss(m, x), model)[1]
+for (k, p) in trainables(model, path=true)
+    println("$k  => $(getkeypath(grad, k))")
 end
 ```
 
@@ -221,27 +202,26 @@ You don't have to use layers, but they can be convient for many simple kinds of 
 The next step is to update our weights and perform optimisation. As you might be familiar, *Gradient Descent* is a simple algorithm that takes the weights and steps using a learning rate and the gradients. `weights = weights - learning_rate * gradient`.
 
 ```julia
-using Flux.Optimise: update!, Descent
 η = 0.1
-for p in params(m)
-  update!(p, -η * grads[p])
+for (k, p) in trainables(m)
+  p .+= -η * getkeypath(grads, p)
 end
 ```
 
 While this is a valid way of updating our weights, it can get more complicated as the algorithms we use get more involved.
 
-Flux comes with a bunch of pre-defined optimisers and makes writing our own really simple. We just give it the learning rate η:
+Flux comes with a bunch of pre-defined optimisers and makes writing our own really simple. We just give it the learning rate `η`:
 
 ```julia
-opt = Descent(0.01)
+opt_state = Flux.setup(Descent(η), model)
 ```
 
-`Training` a network reduces down to iterating on a dataset mulitple times, performing these steps in order. Just for a quick implementation, let’s train a network that learns to predict `0.5` for every input of 10 floats. `Flux` defines the `train!` function to do it for us.
+Training a network reduces down to iterating on a dataset mulitple times, performing these steps in order. Just for a quick implementation, let’s train a network that learns to predict `0.5` for every input of 10 floats. `Flux` defines the `train!` function to do it for us.
 
 ```julia
 data, labels = rand(10, 100), fill(0.5, 2, 100)
-loss(x, y) = sum(Flux.crossentropy(m(x), y))
-Flux.train!(loss, params(m), [(data,labels)], opt)
+loss(m, x, y) = Flux.logitcrossentropy(m(x), y)
+Flux.train!(loss, model, [(data, labels)], opt)
 ```
 
 You don't have to use `train!`. In cases where arbitrary logic might be better suited, you could open up this training loop like so:
@@ -249,10 +229,10 @@ You don't have to use `train!`. In cases where arbitrary logic might be better s
 ```julia
   for d in training_set # assuming d looks like (data, labels)
     # our super logic
-    gs = gradient(params(m)) do #m is our model
-      l = loss(d...)
+    g = gradient(model) do model
+      l = loss(model, d...)
     end
-    update!(opt, params(m), gs)
+    Flux.update!(opt_state, model, g)
   end
 ```
 
@@ -272,7 +252,7 @@ We will do the following steps in order:
 
 ```julia
 using Statistics
-using Flux, Flux.Optimise
+using Flux
 using MLDatasets: CIFAR10
 using Images.ImageCore
 using Flux: onehotbatch, onecold
@@ -323,16 +303,15 @@ m = Chain(
   x -> reshape(x, :, size(x, 4)),
   Dense(200 => 120),
   Dense(120 => 84),
-  Dense(84 => 10),
-  softmax) |> gpu
+  Dense(84 => 10)) |> gpu
 ```
 
 We will use a crossentropy loss and an Momentum optimiser here. Crossentropy will be a good option when it comes to working with mulitple independent classes. Momentum gradually lowers the learning rate as we proceed with the training. It helps maintain a bit of adaptivity in our optimisation, preventing us from over shooting from our desired destination.
 
 ```julia
-using Flux: crossentropy, Momentum
+using Flux: logitcrossentropy, Momentum
 
-loss(x, y) = sum(crossentropy(m(x), y))
+loss(m, x, y) = logitcrossentropy(m(x), y)
 opt = Momentum(0.01)
 ```
 

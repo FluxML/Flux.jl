@@ -129,25 +129,26 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 
 # Examples
 ```jldoctest
-julia> d = Dense(5 => 2)
+julia> model = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
 
-julia> d(rand32(5, 64)) |> size
+julia> model(rand32(5, 64)) |> size
 (2, 64)
 
-julia> d(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
+julia> model(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
 (2, 6, 4, 64)
 
-julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
+julia> model2 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
-julia> d1(ones(5))
+julia> model2(ones(5))
 2-element Vector{Float64}:
  0.9999092042625951
  0.9999092042625951
 
-julia> Flux.params(d1)  # no trainable bias
-Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
+ julia> trainables(model2)  # no trainable bias
+ 1-element Vector{AbstractArray}:
+  [1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]
 ```
 """
 struct Dense{F, M<:AbstractMatrix, B}
@@ -218,24 +219,27 @@ Used by [`LayerNorm`](@ref) with `affine=true`.
 julia> a = Flux.Scale(2)
 Scale(2)            # 4 parameters
 
-julia> Flux.params(a)
-Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
+julia> Flux.trainables(a)
+2-element Vector{AbstractArray}:
+ Float32[1.0, 1.0]
+ Float32[0.0, 0.0]
 
 julia> a([1 2 3])
 2×3 Matrix{Float32}:
  1.0  2.0  3.0
  1.0  2.0  3.0
 
-julia> b = Flux.Scale([1 2 3 4], false, abs2)
+julia> b = Flux.Scale(Float32[1 2 3 4], false, abs2)
 Scale(1, 4, abs2; bias=false)  # 4 parameters
 
 julia> b([1, 10])
-2×4 Matrix{Int64}:
-   1    4    9    16
- 100  400  900  1600
+2×4 Matrix{Float32}:
+   1.0    4.0    9.0    16.0
+ 100.0  400.0  900.0  1600.0
 
-julia> Flux.params(b)
-Params([[1 2 3 4]])
+julia> Flux.trainables(b)
+1-element Vector{AbstractArray}:
+ Float32[1.0 2.0 3.0 4.0]
 ```
 """
 struct Scale{F, A<:AbstractArray, B}

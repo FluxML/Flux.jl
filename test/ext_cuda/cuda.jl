@@ -19,7 +19,7 @@ using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray
   m = Chain(Dense(10 => 5, tanh), Dense(5 => 2), softmax)
   cm = gpu(m)
 
-  @test all(p isa CuArray for p in Flux.params(cm))
+  @test all(p isa CuArray for p in Flux.trainables(cm))
   @test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
   xs = rand(5, 5)

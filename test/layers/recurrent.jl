@@ -39,9 +39,10 @@ end
   for r ∈ [RNN,]
     rnn = r(2 => 3)
     Flux.reset!(rnn)
-    grads_seq = gradient(Flux.params(rnn)) do
+    grads_seq = gradient(rnn) do rnn
         sum([rnn(s) for s in seq][3])
-    end
+    end[1]
+
     Flux.reset!(rnn);
     bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
                                   tanh.(rnn.cell.Wi * seq[2] + Wh *
@@ -51,7 +52,7 @@ end
                                   + rnn.cell.b)
                             + rnn.cell.b)),
                     rnn.cell.Wh)
-    @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+    @test grads_seq.cell.Wh ≈ bptt[1]
   end
 end
 
@@ -61,9 +62,9 @@ end
   for r ∈ [RNN,]
     rnn = r(2 => 3)
     Flux.reset!(rnn)
-    grads_seq = gradient(Flux.params(rnn)) do
+    grads_seq = gradient(rnn) do rnn
         sum([rnn(s) for s in seq][3])
-    end
+    end[1]
     Flux.reset!(rnn);
     bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
                                   tanh.(rnn.cell.Wi * seq[2] + Wh *
@@ -73,7 +74,7 @@ end
                                   + rnn.cell.b)
                             + rnn.cell.b)),
                     rnn.cell.Wh)
-    @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+    @test grads_seq.cell.Wh ≈ bptt[1]
   end
 end
 
@@ -81,9 +82,9 @@ end
   seq = rand(Float32, (2, 1, 3))
   rnn = RNN(2 => 3)
   Flux.reset!(rnn)
-  grads_seq = gradient(Flux.params(rnn)) do
+  grads_seq = gradient(rnn) do rnn
     sum(rnn(seq)[:, :, 3])
-  end
+  end[1]
   Flux.reset!(rnn);
   bptt = gradient(rnn.cell.Wh) do Wh
     # calculate state 1
@@ -100,7 +101,7 @@ end
                rnn.cell.b)
     sum(s3) # loss is sum of state 3
   end
-  @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+  @test grads_seq.cell.Wh ≈ bptt[1]
 end
 
 @testset "RNN-shapes" begin
