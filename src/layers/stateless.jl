@@ -4,7 +4,7 @@
 
 Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
 Per default, `dims` is the last dimension. 
-`eps` is a small term added to the denominator/square root for numerical stability.
+`eps` is a small term added to the variance for numerical stability.
 
 # Examples
 ```jldoctest
