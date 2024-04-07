@@ -36,35 +36,35 @@ end
   @test size(m(r)) == (10, 5)
 
   # Test bias switch
-  bias = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
+  m2 = Conv(ones(Float32, 2, 2, 1, 3), ones(Float32, 3))
   ip = zeros(Float32, 28,28,1,1)
 
-  op = bias(ip)
+  op = m2(ip)
   @test sum(op) == prod(size(op))
 
   @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
-    bias = Conv((2,2), 1=>3, bias = false) |> lmap
-    op = bias(ip)
+    m3 = Conv((2,2), 1=>3, bias = false) |> lmap
+    op = m3(ip)
     @test sum(op) ≈ 0.f0
-    gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-    @test bias.bias ∉ gs.params
+    gs = gradient(m -> sum(m(ip)), m3)[1]
+    @test gs.bias === nothing
   end
 
   # Train w/o bias and make sure no convergence happens
   # when only bias can be converged
-  bias = Conv((2, 2), 1=>3, bias = false);
+  m4 = Conv((2, 2), 1=>3, bias = false);
   ip = zeros(Float32, 28,28,1,1)
   op = zeros(Float32, 27,27,3,1) .+ 2.f0
-  opt = Descent()
+  opt_state = Flux.setup(Descent(), m4)
 
   for _ = 1:10^3
-    gs = gradient(Flux.params(bias)) do
-      Flux.Losses.mse(bias(ip), op)
-    end
-    Flux.Optimise.update!(opt, params(bias), gs)
+    gs = gradient(m4) do m
+      Flux.mse(m(ip), op)
+    end[1]
+    Flux.update!(opt_state, m4, gs)
   end
 
-  @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
+  @test Flux.Losses.mse(m4(ip), op) ≈ 4.f0
 
   @testset "Grouped Conv" begin
     ip = rand(Float32, 28, 100, 2)

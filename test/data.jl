@@ -80,18 +80,20 @@ using Random
     # test interaction with `train!`
     θ = ones(2)
     X = zeros(2, 10)
-    loss(x) = sum((x .- θ).^2)
+    loss(θ, x) = sum((x .- θ).^2)
     d  = DataLoader(X)
-    Flux.train!(loss, Params([θ]), ncycle(d, 10), Descent(0.1))
+    opt = Flux.setup(Descent(0.1), θ)
+    Flux.train!(loss, θ, ncycle(d, 10), opt)
     @test norm(θ) < 1e-4
 
     # test interaction with `train!`
     θ = zeros(2)
     X = ones(2, 10)
     Y = fill(2, 10)
-    loss(x, y) = sum((y - x'*θ).^2)
+    loss(θ, x, y) = sum((y - x'*θ).^2)
     d  = DataLoader((X, Y))
-    Flux.train!(loss, Params([θ]), ncycle(d, 10), Descent(0.1))
+    opt = Flux.setup(Descent(0.1), θ)
+    Flux.train!(loss, θ, ncycle(d, 10), opt)
     @test norm(θ .- 1) < 1e-10
 
     # specify the rng

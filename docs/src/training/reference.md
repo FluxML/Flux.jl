@@ -14,7 +14,7 @@ The available optimization rules are listed the [optimisation rules](@ref man-op
 
 ```@docs
 Flux.Train.setup
-Flux.Train.train!(loss, model, data, state; cb)
+Flux.Train.train!(loss, model, data, state)
 Optimisers.update!
 ```
 

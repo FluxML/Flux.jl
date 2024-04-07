@@ -2,11 +2,11 @@
   m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
   @test outputsize(m, (10, 10, 3, 1)) == (6, 6, 32, 1)
 
-  m = Dense(10, 5)
+  m = Dense(10 => 5)
   @test_throws DimensionMismatch outputsize(m, (5, 2)) == (5, 1)
   @test outputsize(m, (10,); padbatch=true) == (5, 1)
 
-  m = Chain(Dense(10, 8, σ), Dense(8 => 5), Dense(5 => 2))
+  m = Chain(Dense(10 => 8, σ), Dense(8 => 5), Dense(5 => 2))
   @test outputsize(m, (10,); padbatch=true) == (2, 1)
   @test outputsize(m, (10, 30)) == (2, 30)
 
@@ -168,7 +168,7 @@ end
   m = @autosize (3,) Dense(_ => 4)
   @test randn(3) |> m |> size == (4,)
 
-  m = @autosize (3, 1) Chain(Dense(_, 4), Dense(4 => 10), softmax)
+  m = @autosize (3, 1) Chain(Dense(_ => 4), Dense(4 => 10), softmax)
   @test randn(3, 5) |> m |> size == (10, 5)
   
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last

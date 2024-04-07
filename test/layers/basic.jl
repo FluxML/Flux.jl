@@ -80,7 +80,7 @@ using Flux: activations
       @test size(Dense(10 => 5)(randn(10,2))) == (5,2)
       @test size(Dense(10 => 5)(randn(10,2,3))) == (5,2,3)
       @test size(Dense(10 => 5)(randn(10,2,3,4))) == (5,2,3,4)
-      @test_throws DimensionMismatch Dense(10, 5)(randn(11,2,3))
+      @test_throws DimensionMismatch Dense(10 => 5)(randn(11,2,3))
     end
     @testset "zeros" begin
       @test Dense(10 => 1, identity, init = ones)(ones(10,1)) == 10*ones(1, 1)
@@ -156,9 +156,9 @@ using Flux: activations
       @test mo(input) == target
     end
 
-    @testset "params" begin
+    @testset "trainables" begin
       mo = Maxout(()->Dense(32 => 64), 4)
-      ps = Flux.params(mo)
+      ps = Flux.trainables(mo)
       @test length(ps) == 8  #4 alts, each with weight and bias
     end
   end

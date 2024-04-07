@@ -8,21 +8,14 @@ using ..Flux: Flux # used only in docstring
 export setup, train!
 
 using ProgressLogging: @progress, @withprogress, @logprogress
-using Zygote: Zygote, Params
+using Zygote: Zygote
 
 """
     opt_state = setup(rule, model)
 
 This is a version of `Optimisers.setup`, and is the first step before using [`train!`](@ref Flux.train!).
-It differs from `Optimisers.setup` in that it:
-* has one extra check for mutability (since Flux expects to mutate the model in-place,
-  while Optimisers.jl is designed to return an updated model)
-* has methods which accept Flux's old optimisers, and convert them.
-  (The old `Flux.Optimise.Adam` and new `Optimisers.Adam` are distinct types.)
-
-!!! compat "New"
-    This function was added in Flux 0.13.9. It was not used by the old "implicit"
-    interface, using `Flux.Optimise` module and [`Flux.params`](@ref).
+It differs from `Optimisers.setup` in that it has one extra check for mutability (since Flux expects to mutate the model in-place,
+  while Optimisers.jl is designed to return an updated model).
 
 # Example
 ```jldoctest

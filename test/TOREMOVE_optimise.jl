@@ -1,5 +1,3 @@
-using Flux.Optimise
-using Flux.Optimise: runall
 using Flux: Params, gradient
 import FillArrays, ComponentArrays
 import Optimisers

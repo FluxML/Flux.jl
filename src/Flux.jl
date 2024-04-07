@@ -12,6 +12,7 @@ using MLUtils
 const stack = MLUtils.stack  # now exported by Base
 @reexport using Optimisers
 import Optimisers: trainable
+using Optimisers: update!, trainables
 using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
@@ -43,7 +44,7 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
 
 include("train.jl")
 using .Train
-using .Train: setup
+using .Train: setup, train!
 
 using Adapt, Functors, OneHotArrays
 include("utils.jl")
@@ -55,7 +56,7 @@ include("functor.jl")
   # from Functors.jl
   functor, @functor,
   # from Train/Optimisers.jl
-  setup, update!, destructure, freeze!, thaw!, adjust!, params, trainable
+  setup, update!, destructure, freeze!, thaw!, adjust!, trainable, trainables
 ))
 
 # Pirate error to catch a common mistake.

@@ -469,7 +469,7 @@ end
   mod_par = Flux.modules(Parallel(Flux.Bilinear((2,2) => 2,cbrt), Dense(2 => 2,abs), Dense(2 => 2,abs2)))
   @test length(mod_par) == 5
 
-  mod_rnn = Flux.modules(Chain(Dense(2 => 3), BatchNorm(3), LSTM(3,4)))
+  mod_rnn = Flux.modules(Chain(Dense(2 => 3), BatchNorm(3), LSTM(3 => 4)))
   @test length(mod_rnn) == 6
   @test mod_rnn[end] isa Flux.LSTMCell
 
@@ -648,7 +648,7 @@ end
 
     data = rand(Float32, n_input, n_batch)
     model = Chain(
-        Dense(n_input, n_shared),
+        Dense(n_input => n_shared),
         Split(Dense(n_shared => n_outputs[1]), Dense(n_shared => n_outputs[2]))
     )
 
@@ -662,6 +662,6 @@ end
 
 # make sure rng_from_array is non_differentiable
 @testset "rng_from_array" begin
-  m(x) = (rand(rng_from_array(x)) * x)[1]
+  m(x) = (rand(Flux.rng_from_array(x)) * x)[1]
   gradient(m, ones(2))
 end
