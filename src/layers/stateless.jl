@@ -4,7 +4,7 @@
 
 Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
 Per default, `dims` is the last dimension. 
-`eps` is a small term added to the denominator for numerical stability.
+`eps` is a small term added to the denominator/square root for numerical stability.
 
 # Examples
 ```jldoctest
@@ -37,8 +37,8 @@ true
 @inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5), ϵ=nothing)
   ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
   μ = mean(x, dims=dims)
-  σ = std(x, dims=dims, mean=μ, corrected=false)
-  return @. (x - μ) / (σ + ε)
+  σ² = var(x, dims=dims, mean=μ, corrected=false)
+  return @. (x - μ) / sqrt(σ² + ε^2)
 end
 
 """
