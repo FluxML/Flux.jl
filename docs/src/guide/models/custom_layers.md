@@ -26,9 +26,9 @@ Notice that we parameterized the type of the `chain` field. This is necessary fo
 You can then use the model like:
 
 ```julia
-chain = Chain(Dense(10 => 10))
+chain = Chain(Dense(10 => 10, relu), Dense(10 => 10))
 model = CustomModel(chain)
-model(rand(10))
+model(rand(Float32, 10))
 ```
 
 For an intro to Flux and automatic differentiation, see this [tutorial](https://fluxml.ai/tutorials/2020/09/15/deep-learning-flux.html).
@@ -168,7 +168,7 @@ model(xs)
 
 Our custom `Split` layer will accept a single input, then pass the input through a separate path to produce multiple outputs.
 
-We start by following the same steps as the `Join` layer: define a struct, use [`@layer`](@ref), and define the forward pass.
+We start by following the same steps as the `Join` layer: define a struct, use [`Flux.@layer`](@ref), and define the forward pass.
 ```julia
 using Flux
 using CUDA

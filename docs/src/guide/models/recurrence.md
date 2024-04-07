@@ -4,7 +4,7 @@
 
 To introduce Flux's recurrence functionalities, we will consider the following vanilla recurrent neural network structure:
 
-![](../assets/rnn-basic.png)
+![](../../assets/rnn-basic.png)
 
 In the above, we have a sequence of length 3, where `x1` to `x3` represent the input at each step (could be a timestamp or a word in a sentence), and `y1` to `y3` are their respective outputs.
 
@@ -34,7 +34,7 @@ Notice how the above is essentially a `Dense` layer that acts on two inputs, `h`
 
 If you run the last line a few times, you'll notice the output `y` changing slightly even though the input `x` is the same.
 
-There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCell` and `GRUCell`, which are documented in the [layer reference](layers.md). The hand-written example above can be replaced with:
+There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCell` and `GRUCell`, which are documented in the [layer reference](../../reference/models/layers.md). The hand-written example above can be replaced with:
 
 ```julia
 using Flux

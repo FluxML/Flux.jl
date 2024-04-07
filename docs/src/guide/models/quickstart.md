@@ -49,7 +49,7 @@ probs2 = softmax(out2)      # normalise to get probabilities
 mean((probs2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
 
-![](../assets/quickstart/oneminute.png)
+![](../../assets/quickstart/oneminute.png)
 
 ```julia
 using Plots  # to draw the above figure
@@ -87,7 +87,7 @@ Some things to notice in this example are:
 
 * The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
 
-* But the model does not contain the loss function, nor the optimisation rule. The momenta needed by [`Adam`](@ref Flux.Adam) are stored in the object returned by [setup](@ref Flux.Train.setup). And [`Flux.logitcrossentropy`](@ref Flux.Losses.logitcrossentropy) is an ordinary function that combines the [`softmax`](@ref Flux.softmax) and [`crossentropy`](@ref Flux.crossentropy) functions.
+* But the model does not contain the loss function, nor the optimisation rule. The momenta needed by [`Adam`](@ref Optimisers.Adam) are stored in the object returned by [setup](@ref Flux.Train.setup). And [`Flux.logitcrossentropy`](@ref Flux.Losses.logitcrossentropy) is an ordinary function that combines the [`softmax`](@ref Flux.softmax) and [`crossentropy`](@ref Flux.crossentropy) functions.
 
 * The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
 

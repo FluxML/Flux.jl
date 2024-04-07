@@ -77,15 +77,8 @@ loss(y_hat, y) = sum((y_hat .- y).^2)
 ```
 or write this directly inside the `do` block above. Many commonly used functions,
 like [`mse`](@ref Flux.Losses.mse) for mean-squared error or [`crossentropy`](@ref Flux.Losses.crossentropy) for cross-entropy loss,
-are available from the [`Flux.Losses`](../models/losses.md) module.
+are available from the [`Flux.Losses`](../../reference/models/losses.md) module.
 
-!!! compat "Implicit-style loss functions"
-    Flux ≤ 0.14 needed a loss function which closed over a reference to the model,
-    instead of being a pure function. Thus in old code you may see something like
-    ```
-    loss(x, y) = sum((model(x) .- y).^2)
-    ```
-    which defines a function making reference to a particular global variable `model`.
 
 ## Optimisation Rules
 
@@ -107,13 +100,13 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref)`(opt_state, model, grads[1])`.
-And the learning rate is the only thing stored in the [`Descent`](@ref) struct.
+A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref Optimisers.update!)`(opt_state, model, grads[1])`.
+And the learning rate is the only thing stored in the [`Descent`](@ref Optimisers.Descent) struct.
 
 However, there are many other optimisation rules, which adjust the step size and
 direction in various clever ways.
 Most require some memory of the gradients from earlier steps, rather than always
-walking straight downhill -- [`Momentum`](@ref) is the simplest.
+walking straight downhill -- [`Momentum`](@ref Optimisers.Momentum) is the simplest.
 The function [`setup`](@ref Flux.Train.setup) creates the necessary storage for this, for a particular model.
 It should be called once, before training, and returns a tree-like object which is the
 first argument of `update!`. Like this:
@@ -130,7 +123,7 @@ for data in train_set
 end
 ```
 
-Many commonly-used optimisation rules, such as [`Adam`](@ref), are built-in.
+Many commonly-used optimisation rules, such as [`Adam`](@ref Optimisers.Adam), are built-in.
 These are listed on the [optimisers](@ref man-optimisers) page.
 
 !!! compat "Implicit-style optimiser state"
@@ -299,14 +292,14 @@ decay_opt_state = Flux.setup(OptimiserChain(WeightDecay(0.42), Adam(0.1)), model
 
 Flux's optimisers are really modifications applied to the gradient before using it to update
 the parameters, and [`OptimiserChain`](@ref Optimisers.OptimiserChain) applies two such modifications.
-The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times the original parameter to the gradient,
+The first, [`WeightDecay`](@ref Optimisers.WeightDecay) adds `0.42` times the original parameter to the gradient,
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
-After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
+After that, in either case, [`Adam`](@ref Optimisers.Adam) computes the final update.
 
 The same trick works for *L₁ regularisation* (also called Lasso), where the penalty is 
 `pen_l1(x::AbstractArray) = sum(abs, x)` instead. This is implemented by `SignDecay(0.42)`.
 
-The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref) or [`ClipNorm`](@ref).
+The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Optimisers.ClipGrad) or [`ClipNorm`](@ref Optimisers.ClipNorm).
 
 Besides L1 / L2 / weight decay, another common and quite different kind of regularisation is
 provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some outputs of the

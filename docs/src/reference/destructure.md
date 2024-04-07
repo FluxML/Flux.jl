@@ -87,3 +87,11 @@ Flux.modules
 Flux.state
 Flux.loadmodel!
 ```
+
+### KeyPath 
+
+```@docs
+Functors.KeyPath
+Functors.getkeypath
+Functors.haskeypath
+```

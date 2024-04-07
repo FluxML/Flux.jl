@@ -61,10 +61,10 @@ julia> Flux.glorot_uniform(3, 4) |> summary
 "3×4 Matrix{Float32}"
 
 julia> round.(extrema(Flux.glorot_uniform(10, 100)), digits=3)
-(-0.232f0, 0.234f0)
+(-0.233f0, 0.233f0)
 
 julia> round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
-(-0.233f0, 0.233f0)
+(-0.234f0, 0.233f0)
 
 julia> round.(extrema(Flux.glorot_uniform(100, 100)), digits=3)
 (-0.173f0, 0.173f0)
@@ -109,7 +109,7 @@ julia> round(std(Flux.glorot_normal(10, 1000)), digits=3)
 0.044f0
 
 julia> round(std(Flux.glorot_normal(1000, 10)), digits=3)
-0.044f0
+0.045f0
 
 julia> round(std(Flux.glorot_normal(1000, 1000)), digits=3)
 0.032f0
@@ -146,10 +146,10 @@ This method is described in [1] and also known as He initialization.
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> round.(extrema(Flux.kaiming_uniform(100, 10)), digits=3)
-(-0.774f0, 0.774f0)
+(-0.774f0, 0.773f0)
 
 julia> round.(extrema(Flux.kaiming_uniform(10, 100)), digits=3)
-(-0.245f0, 0.244f0)
+(-0.243f0, 0.245f0)
 
 julia> round.(extrema(Flux.kaiming_uniform(100, 100)), digits=3)
 (-0.245f0, 0.245f0)
@@ -183,10 +183,10 @@ This method is described in [1] and also known as He initialization.
 julia> using Statistics
 
 julia> round(std(Flux.kaiming_normal(10, 1000)), digits=3)
-0.045f0
+0.044f0
 
 julia> round(std(Flux.kaiming_normal(1000, 10)), digits=3)
-0.447f0
+0.449f0
 
 julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
 0.045f0

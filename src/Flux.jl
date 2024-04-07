@@ -11,7 +11,7 @@ using MacroTools: @forward
 using MLUtils
 const stack = MLUtils.stack  # now exported by Base
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
-using Optimisers: freeze!, thaw!, adjust!
+using Optimisers: freeze!, thaw!, adjust!, trainables
 using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
@@ -21,7 +21,8 @@ export gradient
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
 Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
 
-export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion,
+export Chain, Dense, Embedding, EmbeddingBag,
+       Maxout, SkipConnection, Parallel, PairwiseFusion,
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
@@ -64,7 +65,7 @@ include("functor.jl")
   # from Functors.jl
   functor, @functor,
   # from Optimise/Train/Optimisers.jl
-  setup, update!, destructure, freeze!, adjust!, params, trainable
+  setup, update!, destructure, freeze!, adjust!, params, trainable, trainables
 ))
 
 # Pirate error to catch a common mistake.

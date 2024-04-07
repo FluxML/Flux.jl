@@ -89,7 +89,7 @@ More accurate predictions will yield a lower loss. You can write your own loss f
 
 ## 3. Improve the Prediction
 
-Under the hood, the Flux [`Flux.train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../training/optimisers.md):
+Under the hood, the Flux [`Flux.train!`](@ref) function uses *a loss function* and *training data* to improve the *parameters* of your model based on a pluggable [`optimiser`](../../reference/training/optimisers.md):
 
 ```jldoctest overview
 julia> using Flux: train!

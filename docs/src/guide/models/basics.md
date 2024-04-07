@@ -245,7 +245,3 @@ end
 Affine(3 => 1, bias=false) |> gpu
 ```
 
-```@docs
-Flux.@layer
-Flux.create_bias
-```
