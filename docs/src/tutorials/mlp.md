@@ -8,13 +8,9 @@ To run this example, we need the following packages:
 using Flux, Statistics
 using Flux: DataLoader
 using Flux: onehotbatch, onecold, logitcrossentropy
-using CUDA
+# using CUDA # Uncomment this line if you have a nvidia GPU. Also AMDGPU and Metal are supported.
 using MLDatasets: MNIST
-
-if has_cuda()		# Check if CUDA is available
-    @info "CUDA is on"
-    CUDA.allowscalar(false)
-end
+using MLUtils
 ```
  
 We set default values for learning rate, batch size, epochs, and the usage of a GPU (if available) for our model:
@@ -153,6 +149,8 @@ function train(; kws...)
         @show accuracy(test_loader, model)
     end
 end
+
+train()
 ```
 
 
