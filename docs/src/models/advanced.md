@@ -26,7 +26,7 @@ Notice that we parameterized the type of the `chain` field. This is necessary fo
 You can then use the model like:
 
 ```julia
-chain = Chain(Dense(10, 10))
+chain = Chain(Dense(10 => 10))
 model = CustomModel(chain)
 model(rand(10))
 ```
@@ -40,33 +40,37 @@ Taking reference from our example `Affine` layer from the [basics](@ref man-basi
 By default all the fields in the `Affine` type are collected as its parameters, however, in some cases it may be desired to hold other metadata in our "layers" that may not be needed for training, and are hence supposed to be ignored while the parameters are collected. With Flux, the way to mark some fields of our layer as trainable is through overloading the `trainable` function:
 
 ```julia-repl
-julia> @layer Affine
+julia> struct Affine
+        W
+        b
+      end
+
+julia> Affine(in::Int, out::Int) = Affine(randn(out, in), randn(out));
+
+julia> (m::Affine)(x) = m.W * x .+ m.b;
+
+julia> Flux.@layer Affine
 
 julia> a = Affine(Float32[1 2; 3 4; 5 6], Float32[7, 8, 9])
 Affine(Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0])
 
-julia> Flux.params(a) # default behavior
-Params([Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], Float32[7.0, 8.0, 9.0]])
+julia> Flux.trainable(a) # default behavior
+(W = Float32[1.0 2.0; 3.0 4.0; 5.0 6.0], b = Float32[7.0, 8.0, 9.0])
 
 julia> Flux.trainable(a::Affine) = (; W = a.W)  # returns a NamedTuple using the field's name
 
-julia> Flux.params(a)
-Params([Float32[1.0 2.0; 3.0 4.0; 5.0 6.0]])
+julia> Flux.trainable(a)
+(W = Float32[1.0 2.0; 3.0 4.0; 5.0 6.0],)
 ```
 
-Only the fields returned by `trainable` will be collected as trainable parameters of the layer when calling `Flux.params`, and only these fields will be seen by `Flux.setup` and `Flux.update!` for training. But all fields wil be seen by `gpu` and similar functions, for example:
+Only the fields returned by `trainable` will be seen by `Flux.setup` and `Flux.update!` for training. But all fields wil be seen by `gpu` and similar functions, for example:
 
 ```julia-repl
 julia> a |> f16
 Affine(Float16[1.0 2.0; 3.0 4.0; 5.0 6.0], Float16[7.0, 8.0, 9.0])
 ```
 
-Note that there is no need to overload `trainable` to hide fields which do not contain trainable parameters. (For example, activation functions, or Boolean flags.) These are always ignored by `params` and by training:
-
-```julia-repl
-julia> Flux.params(Affine(true, [10, 11, 12.0]))
-Params([])
-```
+Note that there is no need to overload `trainable` to hide fields which do not contain numerical array (for example, activation functions, or Boolean flags). These are always ignored by training.
 
 The exact same method of `trainable` can also be defined using the macro, for convenience:
 
@@ -76,52 +80,14 @@ Flux.@layer Affine trainable=(W,)
 
 There is a second, more severe, kind of restriction possible. This is not recommended, but is included here for completeness. Calling `Functors.@functor Affine (W,)` means that all no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
 
-
-## Freezing Layer Parameters
-
-When it is desired to not include all the model parameters (for e.g. transfer learning), we can simply not pass in those layers into our call to `params`.
-
-!!! compat "Flux ≤ 0.14"
-    The mechanism described here is for Flux's old "implicit" training style.
-    When upgrading for Flux 0.15, it should be replaced by [`freeze!`](@ref Flux.freeze!) and `thaw!`.
-
-Consider a simple multi-layer perceptron model where we want to avoid optimising the first two `Dense` layers. We can obtain
-this using the slicing features `Chain` provides:
-
-```julia
-m = Chain(
-      Dense(784 => 64, relu),
-      Dense(64 => 64, relu),
-      Dense(32 => 10)
-    );
-
-ps = Flux.params(m[3:end])
-```
-
-The `Zygote.Params` object `ps` now holds a reference to only the parameters of the layers passed to it.
-
-During training, the gradients will only be computed for (and applied to) the last `Dense` layer, therefore only that would have its parameters changed.
-
-`Flux.params` also takes multiple inputs to make it easy to collect parameters from heterogenous models with a single call. A simple demonstration would be if we wanted to omit optimising the second `Dense` layer in the previous example. It would look something like this:
-
-```julia
-Flux.params(m[1], m[3:end])
-```
-
-Sometimes, a more fine-tuned control is needed.
-We can freeze a specific parameter of a specific layer which already entered a `Params` object `ps`,
-by simply deleting it from `ps`:
-
-```julia
-ps = Flux.params(m)
-delete!(ps, m[2].bias) 
-```
-
 ## Custom multiple input or output layer
 
 Sometimes a model needs to receive several separate inputs at once or produce several separate outputs at once. In other words, there multiple paths within this high-level layer, each processing a different input or producing a different output. A simple example of this in machine learning literature is the [inception module](https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Szegedy_Rethinking_the_Inception_CVPR_2016_paper.pdf).
 
-Naively, we could have a struct that stores the weights of along each path and implement the joining/splitting in the forward pass function. But that would mean a new struct any time the operations along each path changes. Instead, this guide will show you how to construct a high-level layer (like [`Chain`](@ref)) that is made of multiple sub-layers for each path.
+We could have a struct that stores the weights of along each path and implement the joining/splitting in the forward pass function. That would mean a new struct for each different block,
+e.g. one would have a `TransformerBlock` struct for a transformer block, and a `ResNetBlock` struct for a ResNet block, each block being composed by smaller sub-blocks. This is often the simplest and cleanest way to implement complex models.
+
+This guide instead will show you how to construct a high-level layer (like [`Chain`](@ref)) that is made of multiple sub-layers for each path.
 
 ### Multiple inputs: a custom `Join` layer
 
