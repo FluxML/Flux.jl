@@ -7,7 +7,7 @@ using Zygote
 
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
-# ENV["FLUX_TEST_METAL"] = "true"
+ENV["FLUX_TEST_METAL"] = "true"
 # ENV["FLUX_TEST_CPU"] = "false"
 
 include("test_utils.jl")
@@ -16,24 +16,30 @@ Random.seed!(0)
 
 @testset verbose=true "Flux.jl" begin
   if get(ENV, "FLUX_TEST_CPU", "true") == "true"
+    
     @testset "Utils" begin
+      @info "testing Utils"
       include("utils.jl")
     end
 
     @testset "Loading" begin
+      @info "testing Loading"
       include("loading.jl")
     end
 
-    @testset "Optimise / Train" begin
+    @testset "Train" begin
+      @info "testing Train"
       include("train.jl")
       include("tracker.jl")
     end
 
     @testset "Data" begin
+      @info "testing Data"
       include("data.jl")
     end
 
     @testset "Losses" begin
+      @info "testing Losses"
       include("losses.jl")
       include("ctc.jl")
     end
@@ -51,11 +57,13 @@ Random.seed!(0)
     end
 
     @testset "outputsize" begin
+      @info "testing outputsize"
       using Flux: outputsize
       include("outputsize.jl")
     end
 
     @testset "functors" begin
+      @info "testing functors"
       include("functors.jl")
     end
 
@@ -116,6 +124,7 @@ Random.seed!(0)
   end
 
   @testset "Enzyme" begin
+    @info "testing Enzyme"
     import Enzyme
     include("ext_enzyme/enzyme.jl")
   end

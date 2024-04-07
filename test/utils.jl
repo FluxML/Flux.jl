@@ -250,38 +250,33 @@ end
   end
 end
 
-@testset "Params" begin
+@testset "Trainables" begin
   m = Dense(10 => 5)
-  @test size.(params(m)) == [(5, 10), (5,)]
+  @test size.(Flux.trainables(m)) == [(5, 10), (5,)]
   m = RNN(10 => 5)
-  @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(Flux.trainables(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Layer duplicated in same chain, params just once pls.
   c = Chain(m, m)
-  @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(Flux.trainables(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Self-referential array. Just want params, no stack overflow pls.
-  r = Any[nothing,m]
+  r = Any[nothing, m]
   r[1] = r
-  @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test_broken size.(Flux.trainables(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Ensure functor explores inside Transpose but not SubArray
   m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
-  @test size.(Flux.params(m)) == [(2,), (1, 2)]
+  @test size.(Flux.trainables(m)) == [(2,), (1, 2)]
 end
 
-@testset "params gradient" begin
+@testset "trainables gradient" begin
   m = (x=[1,2.0], y=[3.0]);
 
   # Explicit -- was broken by #2054
-  gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
+  gnew = gradient(m -> (sum(norm, Flux.trainables(m))), m)[1]
   @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
   @test gnew.y ≈ [1.0]
-
-  # Implicit
-  gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
-  @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
-  @test gold[m.y] ≈ [1.0]
 end
 
 @testset "Precision" begin

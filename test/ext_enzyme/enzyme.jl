@@ -124,7 +124,7 @@ end
     
     for (model, x, name) in models_xs
         @testset "check grad $name" begin
-            println("testing $name")
+            # println("testing $name")
             test_enzyme_grad(loss, model, x)
         end
     end
@@ -170,7 +170,7 @@ end
 
     for (model, x, name) in models_xs
         @testset "check grad $name" begin
-            println("testing $name")
+            # println("testing $name")
             broken = false
             try
                 test_enzyme_grad(loss, model, x)

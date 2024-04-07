@@ -39,7 +39,7 @@ end
     CNT = 0
     @test_throws DomainError Flux.train!(m1, tuple.(1:100), Descent(0.1)) do m, i
       CNT += 1
-      (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
+      (i == 51 ? NaN32 : 1f0) * sum(m([1f0]))
     end
     @test CNT == 51  # stopped early
     @test m1.weight[1] ≈ -5  # did not corrupt weights
