@@ -47,14 +47,14 @@ makedocs(
         # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
             "Logistic Regression" => "tutorials/logistic_regression.md",
-            "Multi-layer Perceptron" => "tutorials/mlp.md",
+            "Model Zoo" => "tutorials/model_zoo.md",
             #=
-            "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
+            # "Multi-layer Perceptron" => "tutorials/mlp.md",
+            # "Julia & Flux: 60 Minute Blitz" => "tutorials/blitz.md",
             "Simple ConvNet" => "tutorials/2021-02-07-convnet.md",
             "Generative Adversarial Net" => "tutorials/2021-10-14-vanilla-gan.md",
             "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
             =#
-            # Not really sure where this belongs... some in Fluxperimental, aim to delete?
         ],
     ],
     format = Documenter.HTML(

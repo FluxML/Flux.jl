@@ -63,7 +63,7 @@ include("functor.jl")
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,  
   # from Functors.jl
-  functor, @functor,
+  functor, @functor, KeyPath, haskeypath, getkeypath,
   # from Optimise/Train/Optimisers.jl
   setup, update!, destructure, freeze!, adjust!, params, trainable, trainables
 ))
