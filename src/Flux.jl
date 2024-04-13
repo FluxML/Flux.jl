@@ -36,7 +36,7 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
   # modules
   Losses, Train,
   # layers
-  Bilinear, Scale, dropout,
+  Bilinear, Scale,
   # utils
   outputsize, state, create_bias, @layer,
 ))
