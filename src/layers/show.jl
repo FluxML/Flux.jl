@@ -90,21 +90,21 @@ function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   _str = isnothing(name) ? "" : "$name = "
   str = _str * sprint(show, layer, context=io)
   print(io, " "^indent, str, indent==0 ? "" : ",")
-  if !isempty(params(layer))
+  if !isempty(trainables(layer))
     print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
-    printstyled(io, "# ", underscorise(sum(length, params(layer); init=0)), " parameters"; 
+    printstyled(io, "# ", underscorise(sum(length, trainables(layer); init=0)), " parameters"; 
 color=:light_black)
-    nonparam = _childarray_sum(length, layer) - sum(length, params(layer), init=0)
+    nonparam = _childarray_sum(length, layer) - sum(length, trainables(layer), init=0)
     if nonparam > 0
       printstyled(io, ", plus ", underscorise(nonparam), indent==0 ? " non-trainable" : ""; color=:light_black)
     end
-    _nan_show(io, params(layer))
+    _nan_show(io, trainables(layer))
   end
   indent==0 || println(io)
 end
 
 function _big_finale(io::IO, m)
-  ps = params(m)
+  ps = trainables(m)
   if length(ps) > 2
     pars = underscorise(sum(length, ps; init=0))
     bytes = Base.format_bytes(Base.summarysize(m))

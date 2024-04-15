@@ -39,11 +39,11 @@ function vgg16()
         BatchNorm(512),
         MaxPool((2,2)),
         Flux.flatten,
-        Dense(512, 4096, relu),
+        Dense(512 => 4096, relu),
         Dropout(0.5),
-        Dense(4096, 4096, relu),
+        Dense(4096 => 4096, relu),
         Dropout(0.5),
-        Dense(4096, 10)
+        Dense(4096 => 10)
     )
 end
 

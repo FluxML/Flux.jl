@@ -76,7 +76,7 @@ y_dis[1,:], y_dis[2,:] = y_dis[2,:], y_dis[1,:]
   @test crossentropy(ŷ, y_smoothed) ≈ lossvalue_smoothed
   @test crossentropy(ylp, label_smoothing(yl, 2sf)) ≈ -sum(yls.*log.(ylp))
   @test crossentropy(ylp, yl) ≈ -sum(yl.*log.(ylp))
-  @test iszero(crossentropy(y_same, ya, ϵ=0))  # ε is deprecated
+  @test iszero(crossentropy(y_same, ya, eps=0))  # ε is deprecated
   @test iszero(crossentropy(ya, ya, eps=0))
   @test crossentropy(y_sim, ya) < crossentropy(y_sim, ya_smoothed)
   @test crossentropy(y_dis, ya) > crossentropy(y_dis, ya_smoothed)
@@ -92,15 +92,15 @@ logŷ, y = randn(3), rand(3)
 yls = y.*(1-2sf).+sf
 
 @testset "binarycrossentropy" begin
-  @test binarycrossentropy.(σ.(logŷ), label_smoothing(y, 2sf; dims=0); ϵ=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
+  @test binarycrossentropy.(σ.(logŷ), label_smoothing(y, 2sf; dims=0); eps=0) ≈ -yls.*log.(σ.(logŷ)) - (1 .- yls).*log.(1 .- σ.(logŷ))
   @test binarycrossentropy(σ.(logŷ), y; eps=0) ≈ mean(-y.*log.(σ.(logŷ)) - (1 .- y).*log.(1 .- σ.(logŷ)))
   @test binarycrossentropy(σ.(logŷ), y) ≈ mean(-y.*log.(σ.(logŷ) .+ eps.(σ.(logŷ))) - (1 .- y).*log.(1 .- σ.(logŷ) .+ eps.(σ.(logŷ))))
   @test binarycrossentropy([0.1,0.2,0.9], 1) ≈ -mean(log, [0.1,0.2,0.9])  # constant label
 end
 
 @testset "logitbinarycrossentropy" begin
-  @test logitbinarycrossentropy.(logŷ, label_smoothing(y, 0.2)) ≈ binarycrossentropy.(σ.(logŷ), label_smoothing(y, 0.2); ϵ=0)
-  @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(σ.(logŷ), y; ϵ=0)
+  @test logitbinarycrossentropy.(logŷ, label_smoothing(y, 0.2)) ≈ binarycrossentropy.(σ.(logŷ), label_smoothing(y, 0.2); eps=0)
+  @test logitbinarycrossentropy(logŷ, y) ≈ binarycrossentropy(σ.(logŷ), y; eps=0)
 end
 
 y = onehotbatch([1], 0:1)
@@ -152,7 +152,7 @@ end
 
 @testset "tversky_loss" begin
   @test Flux.tversky_loss(ŷ, y) ≈ -0.06772009029345383
-  @test Flux.tversky_loss(ŷ, y, β=0.8) ≈ -0.09490740740740744
+  @test Flux.tversky_loss(ŷ, y, beta=0.8) ≈ -0.09490740740740744
   @test Flux.tversky_loss(y, y) ≈ -0.5576923076923075
 end
 
@@ -180,7 +180,7 @@ end
           0.4 0.7]
     @test Flux.binary_focal_loss(ŷ, y) ≈ 0.0728675615927385
     @test Flux.binary_focal_loss(ŷ1, y1) ≈ 0.05691642237852222
-    @test Flux.binary_focal_loss(ŷ, y; γ=0.0) ≈ Flux.binarycrossentropy(ŷ, y)
+    @test Flux.binary_focal_loss(ŷ, y; gamma=0.0) ≈ Flux.binarycrossentropy(ŷ, y)
 end
 
 @testset "focal_loss" begin

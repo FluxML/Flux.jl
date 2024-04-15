@@ -4,75 +4,62 @@ CurrentModule = Flux
 
 # [Optimisation Rules](@id man-optimisers)
 
-Flux builds in many optimisation rules for use with [`train!`](@ref Flux.Optimise.train!) and
+Any optimization rule from Optimisers.jl can be used with [`train!`](@ref) and
 other training functions.
-
-The mechanism by which these work is gradually being replaced as part of the change
-from "implicit" dictionary-based to "explicit" tree-like structures.
-At present, the same struct (such as `Adam`) can be used with either form,
-and will be automatically translated.
 
 For full details of how the new interface works, see the [Optimisers.jl documentation](https://fluxml.ai/Optimisers.jl/dev/).
 
-For full details on how the old "implicit" interface worked, see the [Flux 0.13.6 manual](https://fluxml.ai/Flux.jl/v0.13.6/training/optimisers/#Optimiser-Interface).
 
-
-## Optimiser Reference
+## Optimisers Reference
 
 All optimisers return an object that, when passed to `train!`, will update the parameters passed to it.
 
 ```@docs
-Descent
-Momentum
-Nesterov
-RMSProp
-Adam
-RAdam
-AdaMax
-AdaGrad
-AdaDelta
-AMSGrad
-NAdam
-AdamW
-OAdam
-AdaBelief
+Optimisers.Descent
+Optimisers.Momentum
+Optimisers.Nesterov
+Optimisers.RMSProp
+Optimisers.Adam
+Optimisers.RAdam
+Optimisers.AdaMax
+Optimisers.AdaGrad
+Optimisers.AdaDelta
+Optimisers.AMSGrad
+Optimisers.NAdam
+Optimisers.AdamW
+Optimisers.OAdam
+Optimisers.AdaBelief
 ```
 
 ## Composing Optimisers
 
-Flux defines a special kind of optimiser simply called `Optimiser` which takes in arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
-that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Flux defines some basic decays including `ExpDecay`, `InvDecay` etc.
+Flux (through Optimisers.jl) defines a special kind of optimiser called `OptimiserChain` which takes in arbitrary optimisers as input. Its behaviour is similar to the usual optimisers, but differs in that it acts by calling the optimisers listed in it sequentially. Each optimiser produces a modified gradient
+that will be fed into the next, and the resultant update will be applied to the parameter as usual. A classic use case is where adding decays is desirable. Optimisers.jl defines the basic decay corresponding to an $L_2$ regularization in the loss as `WeighDecay`.
 
 ```julia
-opt = Optimiser(ExpDecay(1, 0.1, 1000, 1e-4), Descent())
+opt = OptimiserChain(WeightDecay(1e-4), Descent())
 ```
 
-Here we apply exponential decay to the `Descent` optimiser. The defaults of `ExpDecay` say that its learning rate will be decayed every 1000 steps.
-It is then applied like any optimiser.
+Here we apply the weight decay to the `Descent` optimiser. 
+The resulting optimiser `opt` can be used as any optimiser.
 
 ```julia
-w = randn(10, 10)
-w1 = randn(10,10)
-ps = Params([w, w1])
+w = [randn(10, 10), randn(10, 10)]
+opt_state = Flux.setup(opt, w)
 
-loss(x) = Flux.Losses.mse(w * x, w1 * x)
+loss(w, x) = Flux.mse(w[1] * x, w[2] * x)
 
-loss(rand(10)) # around 9
+loss(w, rand(10)) # around 0.9
 
 for t = 1:10^5
-  θ = Params([w, w1])
-  θ̄ = gradient(() -> loss(rand(10)), θ)
-  Flux.Optimise.update!(opt, θ, θ̄)
+  g = gradient(w -> loss(w[1], w[2], rand(10)), w)
+  Flux.update!(opt_state, w, g)
 end
 
-loss(rand(10)) # around 0.9
+loss(w, rand(10)) # around 0.9
 ```
 
 It is possible to compose optimisers for some added flexibility.
-
-```@docs
-Flux.Optimise.Optimiser
-```
 
 ## Scheduling Optimisers
 
@@ -109,10 +96,8 @@ ParameterSchedulers.jl allows for many more scheduling policies including arbitr
 Similar to optimisers, Flux also defines some simple decays that can be used in conjunction with other optimisers, or standalone.
 
 ```@docs
-ExpDecay
-InvDecay
-WeightDecay
 SignDecay
+WeightDecay
 ```
 
 ## Gradient Clipping
@@ -120,11 +105,11 @@ SignDecay
 Gradient clipping is useful for training recurrent neural networks, which have a tendency to suffer from the exploding gradient problem. An example usage is
 
 ```julia
-opt = Optimiser(ClipValue(1e-3), Adam(1e-3))
+opt = OptimiserChain(ClipValue(1e-3), Adam(1e-3))
 ```
 
 ```@docs
-ClipValue
+ClipGrad
 ClipNorm
 ```
 

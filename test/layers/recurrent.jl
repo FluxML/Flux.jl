@@ -1,39 +1,8 @@
 using LinearAlgebra
 
-@testset "RNN gradients-implicit" begin
-    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
-    layer.cell.Wi .= 5.0
-    layer.cell.Wh .= 4.0
-    layer.cell.b .= 0.0f0
-    layer.cell.state0 .= 7.0
-    x = [[2.0f0], [3.0f0]]
 
-    # theoretical primal gradients
-    primal =
-        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
-        x[2] .* layer.cell.Wi
-    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
-    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
-    ∇b = layer.cell.Wh .+ 1
-    ∇state0 = layer.cell.Wh .^ 2
-
-    Flux.reset!(layer)
-    ps = Flux.params(layer)
-    e, g = Flux.withgradient(ps) do
-        out = [layer(xi) for xi in x]
-        sum(out[2])
-    end
-
-    @test primal[1] ≈ e
-    @test ∇Wi ≈ g[ps[1]]
-    @test ∇Wh ≈ g[ps[2]]
-    @test ∇b ≈ g[ps[3]]
-    @test ∇state0 ≈ g[ps[4]]
-
-end
-
-@testset "RNN gradients-explicit" begin
-    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
+@testset "RNN gradients" begin
+    layer = Flux.Recur(Flux.RNNCell(1 => 1, identity))
     layer.cell.Wi .= 5.0f0
     layer.cell.Wh .= 4.0f0
     layer.cell.b .= 0.0f0
@@ -70,9 +39,10 @@ end
   for r ∈ [RNN,]
     rnn = r(2 => 3)
     Flux.reset!(rnn)
-    grads_seq = gradient(Flux.params(rnn)) do
+    grads_seq = gradient(rnn) do rnn
         sum([rnn(s) for s in seq][3])
-    end
+    end[1]
+
     Flux.reset!(rnn);
     bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
                                   tanh.(rnn.cell.Wi * seq[2] + Wh *
@@ -82,7 +52,7 @@ end
                                   + rnn.cell.b)
                             + rnn.cell.b)),
                     rnn.cell.Wh)
-    @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+    @test grads_seq.cell.Wh ≈ bptt[1]
   end
 end
 
@@ -92,9 +62,9 @@ end
   for r ∈ [RNN,]
     rnn = r(2 => 3)
     Flux.reset!(rnn)
-    grads_seq = gradient(Flux.params(rnn)) do
+    grads_seq = gradient(rnn) do rnn
         sum([rnn(s) for s in seq][3])
-    end
+    end[1]
     Flux.reset!(rnn);
     bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
                                   tanh.(rnn.cell.Wi * seq[2] + Wh *
@@ -104,7 +74,7 @@ end
                                   + rnn.cell.b)
                             + rnn.cell.b)),
                     rnn.cell.Wh)
-    @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+    @test grads_seq.cell.Wh ≈ bptt[1]
   end
 end
 
@@ -112,9 +82,9 @@ end
   seq = rand(Float32, (2, 1, 3))
   rnn = RNN(2 => 3)
   Flux.reset!(rnn)
-  grads_seq = gradient(Flux.params(rnn)) do
+  grads_seq = gradient(rnn) do rnn
     sum(rnn(seq)[:, :, 3])
-  end
+  end[1]
   Flux.reset!(rnn);
   bptt = gradient(rnn.cell.Wh) do Wh
     # calculate state 1
@@ -131,26 +101,22 @@ end
                rnn.cell.b)
     sum(s3) # loss is sum of state 3
   end
-  @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+  @test grads_seq.cell.Wh ≈ bptt[1]
 end
 
 @testset "RNN-shapes" begin
   @testset for R in [RNN, GRU, LSTM, GRUv3]
     m1 = R(3 => 5)
     m2 = R(3 => 5)
-    m3 = R(3, 5)  # leave one to test the silently deprecated "," not "=>" notation
     x1 = rand(Float32, 3)
     x2 = rand(Float32, 3, 1)
     x3 = rand(Float32, 3, 1, 2)
     Flux.reset!(m1)
     Flux.reset!(m2)
-    Flux.reset!(m3)
     @test size(m1(x1)) == (5,)
     @test size(m1(x1)) == (5,) # repeat in case of effect from change in state shape
     @test size(m2(x2)) == (5, 1)
     @test size(m2(x2)) == (5, 1)
-    @test size(m3(x3)) == (5, 1, 2)
-    @test size(m3(x3)) == (5, 1, 2)
   end
 end
 

@@ -302,8 +302,6 @@ function ChainRulesCore.rrule(::typeof(striplazy), m)
   striplazy(m), _ -> error("striplazy should never be used within a gradient")
 end
 
-params!(p::Params, x::LazyLayer, seen = IdSet()) = error("LazyLayer should never be used within params(m). Call striplazy(m) first.")
-
 Functors.functor(::Type{<:LazyLayer}, x) = error("LazyLayer should not be walked with Functors.jl, as the arrays which Flux.gpu wants to move may not exist yet.")
 
 function Base.show(io::IO, l::LazyLayer)

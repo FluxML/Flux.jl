@@ -35,7 +35,7 @@ julia> Flux.destructure(tri)  # parameters are not yet visible to Flux
 
 julia> Flux.@layer :expand Trio
 
-julia> Flux.destructure(tri)  # now gpu, params, train!, etc will see inside too
+julia> Flux.destructure(tri)  # now gpu, train!, etc will see inside too
 ([1.1, 2.2, 0.0, 3.3], Restructure(Trio, ..., 4))
 
 julia> tri  # and layer is printed like Chain

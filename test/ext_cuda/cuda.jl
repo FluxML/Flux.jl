@@ -16,10 +16,10 @@ using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray
   @test cx isa Flux.OneHotMatrix && cx.indices isa CuArray
   @test (cx .+ 1) isa CuArray
 
-  m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
+  m = Chain(Dense(10 => 5, tanh), Dense(5 => 2), softmax)
   cm = gpu(m)
 
-  @test all(p isa CuArray for p in Flux.params(cm))
+  @test all(p isa CuArray for p in Flux.trainables(cm))
   @test cm(gpu(rand(10, 10))) isa CuArray{Float32,2}
 
   xs = rand(5, 5)
@@ -70,7 +70,7 @@ end
 end
 
 @testset "restructure gpu" begin
-  dudt = Dense(1,1) |> gpu
+  dudt = Dense(1 => 1) |> gpu
   p,re = Flux.destructure(dudt)
   foo(x) = sum(re(p)(x))
   @test gradient(foo, cu(rand(1)))[1] isa CuArray

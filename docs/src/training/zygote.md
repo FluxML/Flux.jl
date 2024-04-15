@@ -18,22 +18,6 @@ Zygote.hessian_reverse
 Zygote.diaghessian
 ```
 
-## Implicit style (Flux ≤ 0.14)
-
-Flux used to use what Zygote calls "implicit" gradients, [described here](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) in its documentation.
-However, support for this will be removed from Flux 0.15.
-
-!!! compat "Training"
-    The blue-green boxes in the [training section](@ref man-training) describe
-    the changes needed to upgrade old code from implicit to explicit style.
-
-```@docs
-Zygote.gradient(loss, ::Params)
-Zygote.Params
-Zygote.Grads
-Zygote.jacobian(loss, ::Params)
-```
-
 ## ChainRules
 
 Sometimes it is necessary to exclude some code, or a whole function, from automatic differentiation. This can be done using [ChainRules](https://github.com/JuliaDiff/ChainRules.jl):

@@ -2,16 +2,16 @@
   m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
   @test outputsize(m, (10, 10, 3, 1)) == (6, 6, 32, 1)
 
-  m = Dense(10, 5)
+  m = Dense(10 => 5)
   @test_throws DimensionMismatch outputsize(m, (5, 2)) == (5, 1)
   @test outputsize(m, (10,); padbatch=true) == (5, 1)
 
-  m = Chain(Dense(10, 8, σ), Dense(8, 5), Dense(5, 2))
+  m = Chain(Dense(10 => 8, σ), Dense(8 => 5), Dense(5 => 2))
   @test outputsize(m, (10,); padbatch=true) == (2, 1)
   @test outputsize(m, (10, 30)) == (2, 30)
 
   @info "Don't mind the following error, it's for testing purpose."
-  m = Chain(Dense(10, 8, σ), Dense(8, 4), Dense(5, 2))
+  m = Chain(Dense(10 => 8, σ), Dense(8 => 4), Dense(5 => 2))
   @test_throws DimensionMismatch outputsize(m, (10,))
 
   m = Flux.Scale(10)
@@ -26,11 +26,11 @@
   m = Flux.unsqueeze(dims=3)
   @test outputsize(m, (5, 7, 13)) == (5, 7, 1, 13)
 
-  m = Flux.Bilinear(10, 10, 7)
+  m = Flux.Bilinear((10, 10) => 7)
   @test outputsize(m, (10,)) == (7,)
   @test outputsize(m, (10, 32)) == (7, 32)
 
-  m = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), flatten, Dense(1024, 10))
+  m = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), flatten, Dense(1024 => 10))
   @test outputsize(m, (10, 10, 3, 50)) == (10, 50)
   @test outputsize(m, (10, 10, 3, 2)) == (10, 2)
 
@@ -42,13 +42,13 @@
 end
 
 @testset "multiple inputs" begin
-  m = Parallel(vcat, Dense(2, 4, relu), Dense(3, 6, relu))
+  m = Parallel(vcat, Dense(2 => 4, relu), Dense(3 => 6, relu))
   @test outputsize(m, (2,), (3,)) == (10,)
   @test outputsize(m, ((2,), (3,))) == (10,)
   @test outputsize(m, (2,), (3,); padbatch=true) == (10, 1)
   @test outputsize(m, (2,7), (3,7)) == (10, 7)
 
-  m = Chain(m, Dense(10, 13, tanh), softmax)
+  m = Chain(m, Dense(10 => 13, tanh), softmax)
   @test outputsize(m, (2,), (3,)) == (13,)
   @test outputsize(m, ((2,), (3,))) == (13,)
   @test outputsize(m, (2,), (3,); padbatch=true) == (13, 1)
@@ -60,7 +60,7 @@ end
                      leakyrelu, lisht, logcosh, logσ, mish,
                      relu, relu6, rrelu, selu, σ, softplus,
                      softshrink, softsign, swish, tanhshrink, trelu]
-    @test outputsize(Dense(10, 5, f), (10, 1)) == (5, 1)
+    @test outputsize(Dense(10 => 5, f), (10, 1)) == (5, 1)
   end
 end
 
@@ -168,7 +168,7 @@ end
   m = @autosize (3,) Dense(_ => 4)
   @test randn(3) |> m |> size == (4,)
 
-  m = @autosize (3, 1) Chain(Dense(_, 4), Dense(4 => 10), softmax)
+  m = @autosize (3, 1) Chain(Dense(_ => 4), Dense(4 => 10), softmax)
   @test randn(3, 5) |> m |> size == (10, 5)
   
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
@@ -249,7 +249,6 @@ end
   @test string(ld) == "LazyLayer(Dense(2 => 3, relu))"
   @test Flux.striplazy(ld) isa Dense
 
-  @test_throws Exception Flux.params(lm)
   @test_throws Exception gradient(x -> sum(abs2, lm(x)), [1,2])
   @test_throws Exception gradient(m -> sum(abs2, Flux.striplazy(m)([1,2])), ld)
   
