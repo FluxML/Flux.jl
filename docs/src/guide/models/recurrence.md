@@ -4,7 +4,7 @@
 
 To introduce Flux's recurrence functionalities, we will consider the following vanilla recurrent neural network structure:
 
-![](../assets/rnn-basic.png)
+![](../../assets/rnn-basic.png)
 
 In the above, we have a sequence of length 3, where `x1` to `x3` represent the input at each step (could be a timestamp or a word in a sentence), and `y1` to `y3` are their respective outputs.
 
@@ -34,7 +34,7 @@ Notice how the above is essentially a `Dense` layer that acts on two inputs, `h`
 
 If you run the last line a few times, you'll notice the output `y` changing slightly even though the input `x` is the same.
 
-There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCell` and `GRUCell`, which are documented in the [layer reference](layers.md). The hand-written example above can be replaced with:
+There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCell` and `GRUCell`, which are documented in the [layer reference](../../reference/models/layers.md). The hand-written example above can be replaced with:
 
 ```julia
 using Flux
@@ -154,7 +154,7 @@ In such a model, only the last two outputs are used to compute the loss, hence t
 Alternatively, if one wants to perform some warmup of the sequence, it could be performed once, followed with a regular training where all the steps of the sequence would be considered for the gradient update:
 
 ```julia
-function loss(x, y)
+function loss(m, x, y)
   sum(mse(m(xi), yi) for (xi, yi) in zip(x, y))
 end
 
@@ -172,9 +172,8 @@ data = zip(X,Y)
 Flux.reset!(m)
 [m(x) for x in seq_init]
 
-ps = Flux.params(m)
-opt= Adam(1e-3)
-Flux.train!(loss, ps, data, opt)
+opt = Flux.setup(Adam(1e-3), m)
+Flux.train!(loss, m, data, opt)
 ```
 
 In this previous example, model's state is first reset with `Flux.reset!`. Then, there's a warmup that is performed over a sequence of length 1 by feeding it with `seq_init`, resulting in a warmup state. The model can then be trained for 1 epoch, where 2 batches are provided (`seq_1` and `seq_2`) and all the timesteps outputs are considered for the loss.

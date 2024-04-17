@@ -13,32 +13,33 @@ makedocs(
         # You could read this end-to-end, or skip to what you need.
         # Aim is to cover each new concept exactly once (but not list all variants).
         # Hard to invent further divisions which aren't more confusing than helpful?
-            "Quick Start" => "models/quickstart.md",
-            "Fitting a Line" => "models/overview.md",
-            "Gradients and Layers" => "models/basics.md",
-            "Training" => "training/training.md",
-            "Recurrence" => "models/recurrence.md",
-            "GPU Support" => "gpu.md",
-            "Saving & Loading" => "saving.md",
-            "Performance Tips" => "performance.md",
+            "Quick Start" => "guide/models/quickstart.md",
+            "Fitting a Line" => "guide/models/overview.md",
+            "Gradients and Layers" => "guide/models/basics.md",
+            "Custom Layers" => "guide/models/custom_layers.md",
+            "Training" => "guide/training/training.md",
+            "Recurrence" => "guide/models/recurrence.md",
+            "GPU Support" => "guide/gpu.md",
+            "Saving & Loading" => "guide/saving.md",
+            "Performance Tips" => "guide/performance.md",
         ],
         "Ecosystem" => "ecosystem.md",
         "Reference" => [
         # This essentially collects docstrings, with a bit of introduction.
-            "Built-in Layers" => "models/layers.md",
-            "Activation Functions" => "models/activation.md",
-            "Weight Initialisation" => "utilities.md",
-            "Loss Functions" => "models/losses.md",
-            "Training API" => "training/reference.md",
-            "Optimisation Rules" => "training/optimisers.md",
-            "Shape Inference" => "outputsize.md",
-            "Flat vs. Nested" => "destructure.md",
-            "Callback Helpers" => "training/callbacks.md",
-            "Gradients -- Zygote.jl" => "training/zygote.md",
-            "Batching Data -- MLUtils.jl" => "data/mlutils.md",
-            "OneHotArrays.jl" => "data/onehot.md",
-            "Low-level Operations -- NNlib.jl" => "models/nnlib.md",
-            "Nested Structures -- Functors.jl" => "models/functors.md",
+            "Built-in Layers" => "reference/models/layers.md",
+            "Activation Functions" => "reference/models/activation.md",
+            "Weight Initialisation" => "reference/utilities.md",
+            "Loss Functions" => "reference/models/losses.md",
+            "Training API" => "reference/training/reference.md",
+            "Optimisation Rules" => "reference/training/optimisers.md",
+            "Shape Inference" => "reference/outputsize.md",
+            "Flat vs. Nested" => "reference/destructure.md",
+            "Callback Helpers" => "reference/training/callbacks.md",
+            "Gradients -- Zygote.jl" => "reference/training/zygote.md",
+            "Batching Data -- MLUtils.jl" => "reference/data/mlutils.md",
+            "OneHotArrays.jl" => "reference/data/onehot.md",
+            "Low-level Operations -- NNlib.jl" => "reference/models/nnlib.md",
+            "Nested Structures -- Functors.jl" => "reference/models/functors.md",
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
@@ -46,15 +47,14 @@ makedocs(
         # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
             "Logistic Regression" => "tutorials/logistic_regression.md",
+            "Model Zoo" => "tutorials/model_zoo.md",
             #=
-            "Julia & Flux: 60 Minute Blitz" => "tutorials/2020-09-15-deep-learning-flux.md",
-            "Multi-layer Perceptron" => "tutorials/2021-01-26-mlp.md",
+            # "Multi-layer Perceptron" => "tutorials/mlp.md",
+            # "Julia & Flux: 60 Minute Blitz" => "tutorials/blitz.md",
             "Simple ConvNet" => "tutorials/2021-02-07-convnet.md",
             "Generative Adversarial Net" => "tutorials/2021-10-14-vanilla-gan.md",
             "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
             =#
-            # Not really sure where this belongs... some in Fluxperimental, aim to delete?
-            "Custom Layers" => "models/advanced.md",  # TODO move freezing to Training
         ],
     ],
     format = Documenter.HTML(
@@ -63,19 +63,10 @@ makedocs(
         assets = ["assets/flux.css"],
         prettyurls = get(ENV, "CI", nothing) == "true"
     ),
-    doctest = false, 
-    # linkcheck = true,
-    checkdocs = :exports,
-    # strict = true,
-    # strict = [
-    #     :cross_references,
-    #     :missing_docs,
-    #     :doctest,
-    #     :linkcheck,
-    #     :parse_error,
-    #     :example_block,
-    #     :autodocs_block, :docs_block, :eval_block, :example_block, :footnote, :meta_block, :setup_block
-    # ],
+    doctest = false,   # done later
+    checkdocs = :none, # :exports # Do not check if all functions appear in the docs
+                                  # since it considers all packages
+    warnonly = [:cross_references]
 )
 
 doctest(Flux) # only test Flux modules

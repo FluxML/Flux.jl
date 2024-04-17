@@ -5,7 +5,7 @@ Flux re-exports all of the functions exported by the [NNlib](https://github.com/
 
 ## Attention
 
-Primitives for the [`MultiHeadAttention`](ref) layer.
+Primitives for the [`MultiHeadAttention`](@ref) layer.
 
 ```@docs
 NNlib.dot_product_attention

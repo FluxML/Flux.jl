@@ -7,6 +7,8 @@ Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
+ImageCore = "a09fc81d-aa75-5fe9-8630-4744c3626534"
+ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
@@ -48,7 +50,7 @@ MacroTools = "0.5"
 Metal = "0.5, 1"
 NNlib = "0.9.1"
 OneHotArrays = "0.2.4"
-Optimisers = "0.3.2"
+Optimisers = "0.3.3"
 Preferences = "1"
 ProgressLogging = "0.1"
 Reexport = "1.0"
@@ -77,7 +79,4 @@ Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", 
-        "ComponentArrays", "BSON", "Pkg", "CUDA", "cuDNN", "Metal", "AMDGPU", 
-        "Enzyme", "FiniteDifferences", "Tracker"]
-
+test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays", "BSON", "Pkg", "CUDA", "cuDNN", "Metal", "AMDGPU", "Enzyme", "FiniteDifferences", "Tracker"]

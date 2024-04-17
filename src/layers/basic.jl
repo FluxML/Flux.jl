@@ -129,25 +129,26 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 
 # Examples
 ```jldoctest
-julia> d = Dense(5 => 2)
+julia> model = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
 
-julia> d(rand32(5, 64)) |> size
+julia> model(rand32(5, 64)) |> size
 (2, 64)
 
-julia> d(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
+julia> model(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
 (2, 6, 4, 64)
 
-julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
+julia> model2 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
-julia> d1(ones(5))
+julia> model2(ones(5))
 2-element Vector{Float64}:
  0.9999092042625951
  0.9999092042625951
 
-julia> Flux.params(d1)  # no trainable bias
-Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
+julia> Flux.trainables(model2)  # no trainable bias
+1-element Vector{AbstractArray}:
+ [1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]
 ```
 """
 struct Dense{F, M<:AbstractMatrix, B}
@@ -218,24 +219,27 @@ Used by [`LayerNorm`](@ref) with `affine=true`.
 julia> a = Flux.Scale(2)
 Scale(2)            # 4 parameters
 
-julia> Flux.params(a)
-Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
+julia> Flux.trainables(a)
+2-element Vector{AbstractArray}:
+ Float32[1.0, 1.0]
+ Float32[0.0, 0.0]
 
 julia> a([1 2 3])
 2×3 Matrix{Float32}:
  1.0  2.0  3.0
  1.0  2.0  3.0
 
-julia> b = Flux.Scale([1 2 3 4], false, abs2)
+julia> b = Flux.Scale(Float32[1 2 3 4], false, abs2)
 Scale(1, 4, abs2; bias=false)  # 4 parameters
 
 julia> b([1, 10])
-2×4 Matrix{Int64}:
-   1    4    9    16
- 100  400  900  1600
+2×4 Matrix{Float32}:
+   1.0    4.0    9.0    16.0
+ 100.0  400.0  900.0  1600.0
 
-julia> Flux.params(b)
-Params([[1 2 3 4]])
+julia> Flux.trainables(b)
+1-element Vector{AbstractArray}:
+ Float32[1.0 2.0 3.0 4.0]
 ```
 """
 struct Scale{F, A<:AbstractArray, B}
@@ -490,7 +494,7 @@ julia> model = Chain(Dense(3 => 5),
 julia> model(rand32(3)) |> size
 (17,)
 
-julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
+julia> model2 = Parallel(+; α = Dense(10 => 2, tanh), β = Dense(5 => 2))
 Parallel(
   +,
   α = Dense(10 => 2, tanh),             # 22 parameters
@@ -770,7 +774,7 @@ The "bag" may equivalently be represented as a `OneHotMatrix`. A collection of t
 or one higher-rank `OneHotArray`, again produce a stack of embeddings. See details below.
 
 # Examples
-```jldoctest
+```jldoctest ebag
 julia> vocab_size = 26;  # embed into 3 dimensions, with non-random vectors:
 
 julia> eb = EmbeddingBag(vocab_size => 3, init=Flux.identity_init(gain=100))
@@ -809,11 +813,11 @@ and a vector `at` stating where to split that up into "bags".
 The first bag starts with `data[at[1]]`, the second at `data[at[2]]`, and so on, 
 with no overlaps and nothing left out (thus it requires `at[1]==1`).
 
-```jldoctest
+```jldoctest ebag
 julia> data = [11, 1, 12, 2, 13, 3, 14];
 
-julia> Flux._splitat(data, [1, 4]) |> println  # internal function, makes data[1:3], data[4:end]
-[[11, 1, 12], [2, 13, 3, 14]]
+julia> data[1:3], data[4:end]
+([11, 1, 12], [2, 13, 3, 14])
 
 julia> eb(data, [1, 4])  # two bags, of 3 and 4 items
 3×2 Matrix{Float32}:
@@ -824,7 +828,7 @@ julia> eb(data, [1, 4])  # two bags, of 3 and 4 items
 
 Finally, each bag may also be also be represented as a [`OneHotMatrix`](@ref OneHotArrays.onehotbatch).
 
-```jldoctest
+```jldoctest ebag
 julia> eb(Flux.onehotbatch("bba", 'a':'z'))  # same as [2,2,1], one bag of 3 items
 3-element Vector{Float32}:
  33.333332
@@ -843,7 +847,7 @@ struct EmbeddingBag{F, W<:AbstractMatrix}
   reduction::F
 end
 
-@functor EmbeddingBag
+@layer EmbeddingBag
 
 EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
 EmbeddingBag(weight::AbstractMatrix) = EmbeddingBag(weight, mean)

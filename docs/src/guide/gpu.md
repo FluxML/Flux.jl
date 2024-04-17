@@ -1,8 +1,7 @@
 # GPU Support
 
 Starting with v0.14, Flux doesn't force a specific GPU backend and the corresponding package dependencies on the users. 
-Thanks to the [package extension mechanism](
-https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)) introduced in julia v1.9, Flux conditionally loads GPU specific code once a GPU package is made available (e.g. through `using CUDA`).
+Thanks to the [package extension mechanism](https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)) introduced in julia v1.9, Flux conditionally loads GPU specific code once a GPU package is made available (e.g. through `using CUDA`).
 
 NVIDIA GPU support requires the packages `CUDA.jl` and `cuDNN.jl` to be installed in the environment. In the julia REPL, type `] add CUDA, cuDNN` to install them. For more details see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) readme.
 
@@ -384,4 +383,5 @@ Flux.FluxAMDGPUDevice
 Flux.FluxMetalDevice
 Flux.supported_devices
 Flux.get_device
+Flux.gpu_backend!
 ```

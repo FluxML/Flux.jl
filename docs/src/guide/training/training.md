@@ -64,16 +64,6 @@ in order for the influence of the model's parameters to be observed by Zygote.
 It is also important that every `update!` step receives a newly computed gradient,
 as it will change whenever the model's parameters are changed, and for each new data point.
 
-!!! compat "Implicit gradients"
-    Flux ≤ 0.14 used Zygote's "implicit" mode, in which `gradient` takes a zero-argument function.
-    It looks like this:
-    ```
-    pars = Flux.params(model)
-    grad = gradient(() -> loss(model(input), label), pars)
-    ```
-    Here `pars::Params` and `grad::Grads` are two dictionary-like structures.
-    Support for this will be removed from Flux 0.15, and these blue (teal?) boxes
-    explain what needs to change.
 
 ## Loss Functions
 
@@ -87,15 +77,8 @@ loss(y_hat, y) = sum((y_hat .- y).^2)
 ```
 or write this directly inside the `do` block above. Many commonly used functions,
 like [`mse`](@ref Flux.Losses.mse) for mean-squared error or [`crossentropy`](@ref Flux.Losses.crossentropy) for cross-entropy loss,
-are available from the [`Flux.Losses`](../models/losses.md) module.
+are available from the [`Flux.Losses`](../../reference/models/losses.md) module.
 
-!!! compat "Implicit-style loss functions"
-    Flux ≤ 0.14 needed a loss function which closed over a reference to the model,
-    instead of being a pure function. Thus in old code you may see something like
-    ```
-    loss(x, y) = sum((model(x) .- y).^2)
-    ```
-    which defines a function making reference to a particular global variable `model`.
 
 ## Optimisation Rules
 
@@ -117,13 +100,13 @@ fmap(model, grads[1]) do p, g
 end
 ```
 
-A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref Flux.Optimise.update!)`(opt_state, model, grads[1])`.
-And the learning rate is the only thing stored in the [`Descent`](@ref Flux.Optimise.Descent) struct.
+A slightly more refined version of this loop to update all the parameters is wrapped up as a function [`update!`](@ref Optimisers.update!)`(opt_state, model, grads[1])`.
+And the learning rate is the only thing stored in the [`Descent`](@ref Optimisers.Descent) struct.
 
 However, there are many other optimisation rules, which adjust the step size and
 direction in various clever ways.
 Most require some memory of the gradients from earlier steps, rather than always
-walking straight downhill -- [`Momentum`](@ref Flux.Optimise.Momentum) is the simplest.
+walking straight downhill -- [`Momentum`](@ref Optimisers.Momentum) is the simplest.
 The function [`setup`](@ref Flux.Train.setup) creates the necessary storage for this, for a particular model.
 It should be called once, before training, and returns a tree-like object which is the
 first argument of `update!`. Like this:
@@ -140,7 +123,7 @@ for data in train_set
 end
 ```
 
-Many commonly-used optimisation rules, such as [`Adam`](@ref Flux.Optimise.Adam), are built-in.
+Many commonly-used optimisation rules, such as [`Adam`](@ref Optimisers.Adam), are built-in.
 These are listed on the [optimisers](@ref man-optimisers) page.
 
 !!! compat "Implicit-style optimiser state"
@@ -207,15 +190,6 @@ end
 
 Or explicitly writing the anonymous function which this `do` block creates,
 `train!((m,x,y) -> loss(m(x),y), model, train_set, opt_state)` is exactly equivalent.
-
-!!! compat "Implicit-style `train!`"
-    This is a new method of `train!`, which takes the result of `setup` as its 4th argument.
-    The 1st argument is a function which accepts the model itself.
-    Flux versions ≤ 0.14 provided a method of `train!` for "implicit" parameters,
-    which works like this:
-    ```
-    train!((x,y) -> loss(model(x), y), Flux.params(model), train_set, Adam())
-    ```
 
 Real training loops often need more flexibility, and the best way to do this is just
 to write the loop. This is ordinary Julia code, without any need to work through some
@@ -284,12 +258,12 @@ A very simple model could be implemented as follows:
 grads = Flux.gradient(densemodel) do m
   result = m(input)
   penalty = sum(abs2, m.weight)/2 + sum(abs2, m.bias)/2
-  my_loss(result, label) + 0.42 * penalty
+  my_loss(result, label) + 0.42f0 * penalty
 end
 ```
 
 Accessing each individual parameter array by hand won't work well for large models.
-Instead, we can use [`Flux.params`](@ref) to collect all of them,
+Instead, we can use [`Flux.trainables`](@ref Optimisers.trainables) to collect all of them,
 and then apply a function to each one, and sum the result:
 
 ```julia
@@ -297,8 +271,8 @@ pen_l2(x::AbstractArray) = sum(abs2, x)/2
 
 grads = Flux.gradient(model) do m
   result = m(input)
-  penalty = sum(pen_l2, Flux.params(m))
-  my_loss(result, label) + 0.42 * penalty
+  penalty = sum(pen_l2, Flux.trainables(m))
+  my_loss(result, label) + 0.42f0 * penalty
 end
 ```
 
@@ -317,22 +291,22 @@ decay_opt_state = Flux.setup(OptimiserChain(WeightDecay(0.42), Adam(0.1)), model
 ```
 
 Flux's optimisers are really modifications applied to the gradient before using it to update
-the parameters, and `OptimiserChain` applies two such modifications.
-The first, [`WeightDecay`](@ref Flux.WeightDecay) adds `0.42` times the original parameter to the gradient,
+the parameters, and [`OptimiserChain`](@ref Optimisers.OptimiserChain) applies two such modifications.
+The first, [`WeightDecay`](@ref Optimisers.WeightDecay) adds `0.42` times the original parameter to the gradient,
 matching the gradient of the penalty above (with the same, unrealistically large, constant).
-After that, in either case, [`Adam`](@ref Flux.Adam) computes the final update.
+After that, in either case, [`Adam`](@ref Optimisers.Adam) computes the final update.
 
 The same trick works for *L₁ regularisation* (also called Lasso), where the penalty is 
 `pen_l1(x::AbstractArray) = sum(abs, x)` instead. This is implemented by `SignDecay(0.42)`.
 
-The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Flux.Optimise.ClipValue) or [`ClipNorm`](@ref Flux.Optimise.ClipNorm).
+The same `OptimiserChain` mechanism can be used for other purposes, such as gradient clipping with [`ClipGrad`](@ref Optimisers.ClipGrad) or [`ClipNorm`](@ref Optimisers.ClipNorm).
 
 Besides L1 / L2 / weight decay, another common and quite different kind of regularisation is
 provided by the [`Dropout`](@ref Flux.Dropout) layer. This turns off some outputs of the
 previous layer during training.
 It should switch automatically, but see [`trainmode!`](@ref Flux.trainmode!) / [`testmode!`](@ref Flux.testmode!) to manually enable or disable this layer.
 
-## Freezing & Schedules
+## Learning Rate Schedules
 
 Finer control of training, you may wish to alter the learning rate mid-way through training.
 This can be done with [`adjust!`](@ref Flux.adjust!), like this:
@@ -347,10 +321,6 @@ for epoch in 1:1000
   end
 end
 ```
-
-!!! compat "Flux ≤ 0.14"
-    With the old "implicit" optimiser, `opt = Adam(0.1)`, the equivalent was to
-    directly mutate the `Adam` struct, `opt.eta = 0.001`. 
 
 Other hyper-parameters can also be adjusted, such as `Flux.adjust!(opt_state, beta = (0.8, 0.99))`.
 And such modifications can be applied to just one part of the model.
@@ -367,6 +337,8 @@ opt_state = Flux.setup(Adam(0.02), bimodel)
 Flux.adjust!(opt_state.layers.enc, 0.03)
 ```
 
+## Freezing layer parameters
+
 To completely disable training of some part of the model, use [`freeze!`](@ref Flux.freeze!).
 This is a temporary modification, reversed by `thaw!`:
 
@@ -380,21 +352,7 @@ train!(loss, bimodel, data, opt_state)
 Flux.thaw!(opt_state)
 ```
 
-!!! compat "Flux ≤ 0.14"
-    The earlier "implicit" equivalent was to pass to `gradient` an object referencing only
-    part of the model, such as `Flux.params(bimodel.layers.enc)`.
-
 While `adjust!` and `freeze!`/`thaw!` make temporary modifications to the optimiser state,
 permanently removing some fields of a new layer type from training is usually done
 when defining the layer, by calling for example [`@layer`](@ref Flux.@layer)` NewLayer trainable=(weight,)`.
 
-## Implicit or Explicit?
-
-Flux used to handle gradients, training, and optimisation rules quite differently.
-The new style described above is called "explicit" by Zygote, and the old style "implicit".
-Flux 0.13 and 0.14 are the transitional versions which support both.
-
-The blue-green boxes above describe the changes.
-For more details on training in the implicit style, see [Flux 0.13.6 documentation](https://fluxml.ai/Flux.jl/v0.13.6/training/training/).
-
-For details about the two gradient modes, see [Zygote's documentation](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1).

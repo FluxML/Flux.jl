@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # [Automatic Differentiation using Zygote.jl](@id autodiff-zygote)
 
 Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref Flux.train!) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
@@ -16,22 +20,7 @@ Zygote.withjacobian(f, args...)
 Zygote.hessian
 Zygote.hessian_reverse
 Zygote.diaghessian
-```
-
-## Implicit style (Flux ≤ 0.14)
-
-Flux used to use what Zygote calls "implicit" gradients, [described here](https://fluxml.ai/Zygote.jl/dev/#Explicit-and-Implicit-Parameters-1) in its documentation.
-However, support for this will be removed from Flux 0.15.
-
-!!! compat "Training"
-    The blue-green boxes in the [training section](@ref man-training) describe
-    the changes needed to upgrade old code from implicit to explicit style.
-
-```@docs
-Zygote.gradient(loss, ::Params)
-Zygote.Params
-Zygote.Grads
-Zygote.jacobian(loss, ::Params)
+Zygote.pullback
 ```
 
 ## ChainRules
@@ -51,4 +40,7 @@ ChainRulesCore.frule
 ChainRulesCore.@scalar_rule
 ChainRulesCore.NoTangent
 ChainRulesCore.ZeroTangent
+ChainRulesCore.RuleConfig
+ChainRulesCore.Tangent
+ChainRulesCore.canonicalize
 ```

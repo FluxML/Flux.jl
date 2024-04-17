@@ -18,7 +18,7 @@ julia> struct MyModel
 
 julia> Flux.@layer MyModel
 
-julia> MyModel() = MyModel(Chain(Dense(10, 5, relu), Dense(5, 2)));
+julia> MyModel() = MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)));
 
 julia> model = MyModel()
 MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)))  # 67 parameters
@@ -113,7 +113,7 @@ Save a model:
 ```jldoctest saving
 julia> using Flux
 
-julia> model = Chain(Dense(10, 5, NNlib.relu), Dense(5, 2));
+julia> model = Chain(Dense(10 =>  5, NNlib.relu), Dense(5 =>  2));
 
 julia> using BSON: @save
 
@@ -138,10 +138,3 @@ Chain(
     and across Flux versions if some of the Flux layers' internals are changed.
     It is therefore not recommended for long term storage, use [`Flux.state`](@ref) instead.
 
-!!! warning
-
-    Previous versions of Flux suggested saving only the model weights using
-    `@save "mymodel.bson" params(model)`.
-    This is no longer recommended and even strongly discouraged.
-    Saving models this way will only store the trainable parameters which
-    will result in incorrect behavior for layers like `BatchNorm`.

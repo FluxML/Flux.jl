@@ -189,10 +189,18 @@ _isleaf(::AbstractRNG) = true
 _isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
 # the order below is important
-const GPU_BACKENDS = ["CUDA", "AMDGPU", "Metal", "CPU"]
+const GPU_BACKENDS = ("CUDA", "AMDGPU", "Metal", "CPU")
 const GPU_BACKEND_ORDER = Dict(collect(zip(GPU_BACKENDS, 1:length(GPU_BACKENDS))))
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
+"""
+    gpu_backend!(backend::String)
+
+Set the GPU backend to `backend` in the `LocalPreferences.toml` file in you project directory. 
+After restarting Julia, the new backend will affect all subsequent calls to [`gpu`](@ref) and [`get_device`](@ref).
+
+The supported backends are `"CUDA"`, `"AMDGPU"`, `"Metal"` and `"CPU"`.
+"""
 function gpu_backend!(backend::String)
     if backend == GPU_BACKEND
         @info """

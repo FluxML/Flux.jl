@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # Recursive transformations from Functors.jl
 
 Flux models are deeply nested structures, and [Functors.jl](https://github.com/FluxML/Functors.jl) provides tools needed to explore such objects, apply functions to the parameters they contain, and re-build them.
@@ -11,13 +15,20 @@ Flux models are deeply nested structures, and [Functors.jl](https://github.com/F
 `Functors.jl` has its own [notes on basic usage](https://fluxml.ai/Functors.jl/stable/#Basic-Usage-and-Implementation) for more details. Additionally, the [Advanced Model Building and Customisation](@ref man-advanced) page covers the use cases of `Functors` in greater details.
 
 ```@docs
+Flux.@layer
 Functors.@functor
 Functors.fmap
+Functors.fmap_with_path
 Functors.isleaf
 Functors.children
 Functors.fcollect
 Functors.functor
 Functors.fmapstructure
+Functors.fmapstructure_with_path
+Functors.execute
+Functors.AbstractWalk
+Functors.ExcludeWalk
+Functors.CachedWalk
 ```
 
 ## Moving models, or data, to the GPU

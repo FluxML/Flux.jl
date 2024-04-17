@@ -16,11 +16,11 @@ truth = [xor(col[1]>0.5, col[2]>0.5) for col in eachcol(noisy)]   # 1000-element
 model = Chain(
     Dense(2 => 3, tanh),   # activation function inside layer
     BatchNorm(3),
-    Dense(3 => 2),
-    softmax) |> gpu        # move model to GPU, if available
+    Dense(3 => 2)) |> gpu        # move model to GPU, if available
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
 out1 = model(noisy |> gpu) |> cpu                                 # 2×1000 Matrix{Float32}
+probs1 = softmax(out1)      # normalise to get probabilities
 
 # To train the model, we use batches of 64 samples, and one-hot encoding:
 target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
@@ -36,7 +36,7 @@ losses = []
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             y_hat = m(x)
-            Flux.crossentropy(y_hat, y)
+            Flux.logitcrossentropy(y_hat, y)
         end
         Flux.update!(optim, model, grads[1])
         push!(losses, loss)  # logging, outside gradient context
@@ -45,18 +45,18 @@ end
 
 optim # parameters, momenta and output have all changed
 out2 = model(noisy |> gpu) |> cpu  # first row is prob. of true, second row p(false)
-
-mean((out2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
+probs2 = softmax(out2)      # normalise to get probabilities
+mean((probs2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
 
-![](../assets/quickstart/oneminute.png)
+![](../../assets/quickstart/oneminute.png)
 
 ```julia
 using Plots  # to draw the above figure
 
 p_true = scatter(noisy[1,:], noisy[2,:], zcolor=truth, title="True classification", legend=false)
-p_raw =  scatter(noisy[1,:], noisy[2,:], zcolor=out1[1,:], title="Untrained network", label="", clims=(0,1))
-p_done = scatter(noisy[1,:], noisy[2,:], zcolor=out2[1,:], title="Trained network", legend=false)
+p_raw =  scatter(noisy[1,:], noisy[2,:], zcolor=probs1[1,:], title="Untrained network", label="", clims=(0,1))
+p_done = scatter(noisy[1,:], noisy[2,:], zcolor=probs2[1,:], title="Trained network", legend=false)
 
 plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))
 ```
@@ -87,7 +87,7 @@ Some things to notice in this example are:
 
 * The `model` can be called like a function, `y = model(x)`. Each layer like [`Dense`](@ref Flux.Dense) is an ordinary `struct`, which encapsulates some arrays of parameters (and possibly other state, as for [`BatchNorm`](@ref Flux.BatchNorm)).
 
-* But the model does not contain the loss function, nor the optimisation rule. The momenta needed by [`Adam`](@ref Flux.Adam) are stored in the object returned by [setup](@ref Flux.Train.setup). And [`Flux.crossentropy`](@ref Flux.Losses.crossentropy) is an ordinary function.
+* But the model does not contain the loss function, nor the optimisation rule. The momenta needed by [`Adam`](@ref Optimisers.Adam) are stored in the object returned by [setup](@ref Flux.Train.setup). And [`Flux.logitcrossentropy`](@ref Flux.Losses.logitcrossentropy) is an ordinary function that combines the [`softmax`](@ref Flux.softmax) and [`crossentropy`](@ref Flux.crossentropy) functions.
 
 * The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
 
@@ -97,21 +97,7 @@ Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.
 for epoch in 1:1_000
     Flux.train!(model, loader, optim) do m, x, y
         y_hat = m(x)
-        Flux.crossentropy(y_hat, y)
+        Flux.logitcrossentropy(y_hat, y)
     end
 end
 ```
-
-!!! compat "Implicit-style training, Flux ≤ 0.14"
-    Until recently Flux's training worked a bit differently. 
-    Any code which looks like 
-    ```
-    gradient(() -> loss(model, x, y), Flux.params(model))
-    ```
-    (gradient of a zero-argument function) or
-    ```
-    train!((x,y) -> loss(model, x, y), Flux.params(model), loader, opt)
-    ```
-    (with `Flux.params`) is in the old "implicit" style.
-    This still works on Flux 0.14, but will be removed from Flux 0.15.
-    See the [training section](@ref man-training) for more details.
