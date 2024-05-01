@@ -14,7 +14,7 @@ jobs:
         julia-arch: [x86]
         os: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v4.1.3 # v1.0.0
+      - uses: actions/checkout@v4.1.4 # v1.0.0
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
