@@ -357,7 +357,7 @@ function gpu(to::FluxCUDAAdaptor, x)
         @info """
         The CUDA functionality is being called but
         `CUDA.jl` must be loaded to access it.
-        Add `using CUDA` or `import CUDA` to your code.
+        Add `using CUDA` or `import CUDA` to your code.  Alternatively, configure a different GPU backend by calling `Flux.gpu_backend!`.
         """ maxlog=1
         return x
     end
