@@ -185,7 +185,7 @@ _isleaf(x) = Functors.isleaf(x)
 
 _isleaf(::AbstractArray{<:Number}) = true
 _isleaf(::AbstractArray{T}) where T = isbitstype(T)
-_isleaf(::Union{Transpose, Adjoint}) = false
+_isleaf(::Union{Transpose, Adjoint, PermutedDimsArray}) = false
 
 _isleaf(::AbstractRNG) = true
 

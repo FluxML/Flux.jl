@@ -588,6 +588,7 @@ end
       @test Flux._isleaf([x])
       @test !Flux._isleaf([x]')
       @test !Flux._isleaf(transpose([x]))
+      @test !Flux._isleaf(PermutedDimsArray([x;;], (1, 2)))
     end
   end
 end
