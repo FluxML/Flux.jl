@@ -120,6 +120,8 @@ end
         (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
         (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),        
+        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+        (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
     ]
     
     for (model, x, name) in models_xs
@@ -154,32 +156,3 @@ end
         end
     end
 end
-
-@testset "Broken Models" begin
-    function loss(model, x)
-        Flux.reset!(model)
-        sum(model(x))
-    end
-
-    device = Flux.get_device()
-
-    models_xs = [
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
-        (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
-        ]
-
-    for (model, x, name) in models_xs
-        @testset "check grad $name" begin
-            println("testing $name")
-            broken = false
-            try
-                test_enzyme_grad(loss, model, x)
-            catch e
-                println(e)
-                broken = true
-            end
-            @test broken
-        end
-    end
-end
-
