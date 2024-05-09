@@ -181,12 +181,13 @@ julia> m.bias
 """
 cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x, exclude = _isleaf)
 
-_isbitsarray(::AbstractArray{<:Number}) = true
-_isbitsarray(::AbstractArray{T}) where T = isbitstype(T)
-_isbitsarray(x) = false
+_isleaf(x) = Functors.isleaf(x)
+
+_isleaf(::AbstractArray{<:Number}) = true
+_isleaf(::AbstractArray{T}) where T = isbitstype(T)
+_isleaf(::Union{Transpose, Adjoint, PermutedDimsArray}) = false
 
 _isleaf(::AbstractRNG) = true
-_isleaf(x) = _isbitsarray(x) || Functors.isleaf(x)
 
 # the order below is important
 const GPU_BACKENDS = ("CUDA", "AMDGPU", "Metal", "CPU")

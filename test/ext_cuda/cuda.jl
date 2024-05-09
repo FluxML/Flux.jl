@@ -109,7 +109,7 @@ end
   # This test should really not go through indirections and pull out Fills for efficiency
   # but we forcefully materialise. TODO: remove materialising CuArray here
   @test gradient(x -> sum(cpu(x)), ca)[1] isa CuArray # This involves FillArray, which should be GPU compatible
-  @test gradient(x -> sum(cpu(x)), ca')[1] isa CuArray
+  @test gradient(x -> sum(cpu(x)), ca')[1] isa Adjoint{Float32, <:CuArray}
 
   # Even more trivial: no movement
   @test gradient(x -> sum(abs, cpu(x)), a)[1] isa Matrix
