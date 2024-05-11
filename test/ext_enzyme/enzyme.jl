@@ -120,6 +120,7 @@ end
         (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
         (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),        
+        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
     ]
     
     for (model, x, name) in models_xs
@@ -164,7 +165,7 @@ end
     device = Flux.get_device()
 
     models_xs = [
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+        # Pending https://github.com/FluxML/NNlib.jl/issues/565 
         (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
         ]
 
