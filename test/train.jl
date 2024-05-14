@@ -5,7 +5,8 @@ import Optimisers
 using Test
 using Random
 
-@testset "Explicit Flux.train! with Zygote" begin
+for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme"))
+@testset "Explicit Flux.train! with $name" begin
   Random.seed!(84)
   w = randn(10, 10)
   w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
@@ -18,7 +19,7 @@ using Random
     @test loss(model, rand(10, 10)) > 1
 
     opt = Flux.setup(rule, model)
-    Flux.train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
+    trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
     @test loss(model, rand(10, 10)) < 0.01
   end
 
@@ -27,17 +28,19 @@ using Random
     loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
     model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
     @test loss(model, rand(10, 10)) > 1
-    Flux.train!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
+    trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
     @test loss(model, rand(10, 10)) < 0.01
   end
 end
+end
 
-@testset "Explicit Flux.train! features" begin
+for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme"))
+@testset "Explicit Flux.train! features with $name" begin
   @testset "Stop on NaN" begin
     m1 = Dense(1 => 1)
     m1.weight .= 0
     CNT = 0
-    @test_throws DomainError Flux.train!(m1, tuple.(1:100), Descent(0.1)) do m, i
+    @test_throws DomainError Flux.trainfn!(m1, tuple.(1:100), Descent(0.1)) do m, i
       CNT += 1
       (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
     end
@@ -51,15 +54,16 @@ end
     loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
     model = (weight=copy(w2), bias=zeros(10))
     opt = Flux.setup(AdamW(), model)
-    Flux.train!(loss, model, (rand(10) for _ in 1: 10^5), opt)
+    trainfn!(loss, model, (rand(10) for _ in 1: 10^5), opt)
     @test loss(model, rand(10, 10)) < 0.01
   end
 
   @testset "callbacks give helpful error" begin
     m1 = Dense(1 => 1)
     cb = () -> println("this should not be printed")
-    @test_throws ErrorException Flux.train!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
+    @test_throws ErrorException trainfn!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
   end
+end
 end
 
 @testset "Explicit Flux.update! features" begin
@@ -98,7 +102,8 @@ end
   @test y5 < y4
 end
 
-@testset "L2 regularisation" begin
+for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme"))
+@testset "L2 regularisation with $name" begin
   # New docs claim an exact equivalent. It's a bit long to put the example in there,
   # but perhaps the tests should contain it.
 
@@ -108,7 +113,7 @@ end
 
   # Take 1: explicitly add a penalty in the loss function
   opt = Flux.setup(Adam(0.1), model)
-  Flux.train!(model, data, opt) do m, x, y
+  trainfn!(model, data, opt) do m, x, y
     err = Flux.mse(m(x), y)
     l2 = sum(abs2, m.weight)/2 + sum(abs2, m.bias)/2
     err + 0.33 * l2
@@ -120,7 +125,7 @@ end
   model.bias .= 0
   pen2(x::AbstractArray) = sum(abs2, x)/2
   opt = Flux.setup(Adam(0.1), model)
-  Flux.train!(model, data, opt) do m, x, y
+  trainfn!(model, data, opt) do m, x, y
     err = Flux.mse(m(x), y)
     l2 = sum(pen2, Flux.params(m))
     err + 0.33 * l2
@@ -132,11 +137,12 @@ end
   model.weight .= init_weight
   model.bias .= 0
   decay_opt = Flux.setup(OptimiserChain(WeightDecay(0.33), Adam(0.1)), model);
-  Flux.train!(model, data, decay_opt) do m, x, y
+  trainfn!(model, data, decay_opt) do m, x, y
     Flux.mse(m(x), y)
   end
   diff3 = model.weight .- init_weight
   @test diff1 ≈ diff3
+end
 end
 
 @testset "Flux.setup bugs" begin
