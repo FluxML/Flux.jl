@@ -125,7 +125,7 @@ function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state)
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
     _make_zero!(model_and_shadow.dval)
-    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, applyloss, Enzyme.Active, Enzyme.Const(loss), model_and_shadow, map(Enzyme.Const, d_splat)...)
+    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, _applyloss, Enzyme.Active, Enzyme.Const(loss), model_and_shadow, map(Enzyme.Const, d_splat)...)
 
     if !isfinite(l)
       throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
