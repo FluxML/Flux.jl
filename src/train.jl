@@ -131,7 +131,7 @@ function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state)
       throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
     opt_state, model = Optimisers.update!(opt_state, model_and_shadow.val, model_and_shadow.dval)
-    model_and_shadow = Duplicated(model, model_and_shadow.dval)
+    model_and_shadow = Enzyme.Duplicated(model, model_and_shadow.dval)
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
 end
