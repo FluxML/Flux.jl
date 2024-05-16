@@ -110,30 +110,28 @@ function train!(loss, model, data, opt; cb = nothing)
   end
 end
 
-_make_zero!(x::AbstractArray) = fill!(x, 0)
-_make_zero!(x) = x
-make_zero!(model) = fmap(_make_zero!, model)
+_make_zero_internal!(x::AbstractArray) = fill!(x, 0)
+_make_zero_internal!(x) = x
+_make_zero!(model) = fmap(_make_zero_internal!, model)
 
-applyloss(loss, model, d...) = loss(model, d...)
+_applyloss(loss, model, d...) = loss(model, d...)
 
 """
-    train_enzyme!(loss, model, data, opt::AbstractOptimiser; [cb])
+    train_enzyme!(loss, model_and_shadow, data, opt_state)
 
 Like [`train!](@ref), but gradient computed in place using [Enzyme](github.com/EnzymeAD/Enzyme.jl)        
 """
-function train_enzyme!(loss, model, data, opt; cb = nothing)
-  isnothing(cb) || error("""train_enzyme! does not support callback functions.
-                            For more control use a loop with `gradient` and `update!`.""")
-  dmodel = Enzyme.make_zero(model)
+function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state)
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
-    make_zero!(dmodel)
-    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, applyloss, Enzyme.Active, Enzyme.Const(loss), Enzyme.Duplicated(model, dmodel), map(Enzyme.Const, d_splat)...)
+    _make_zero!(model_and_shadow.dval)
+    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, applyloss, Enzyme.Active, Enzyme.Const(loss), model_and_shadow, map(Enzyme.Const, d_splat)...)
 
     if !isfinite(l)
       throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
-    opt, model = Optimisers.update!(opt, model, dmodel)
+    opt_state, model = Optimisers.update!(opt_state, model_and_shadow.val, model_and_shadow.dval)
+    model_and_shadow = Duplicated(model, model_and_shadow.dval)
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
 end
@@ -141,11 +139,6 @@ end
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
-end
-
-# This method let you use Optimisers.Descent() without setup, when there is no state
-function train_enzyme!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
-  train_enzyme!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)

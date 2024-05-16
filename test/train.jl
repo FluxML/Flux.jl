@@ -4,8 +4,13 @@ import Optimisers
 
 using Test
 using Random
+using Enzyme
 
-for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme"))
+function train_enzyme!(fn, model, args...)
+    Flux.train!(fn, Duplicated(model, Enzyme.make_zero(model)), args...)
+end
+
+for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 @testset "Explicit Flux.train! with $name" begin
   Random.seed!(84)
   w = randn(10, 10)
@@ -34,7 +39,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme")
 end
 end
 
-for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme"))
+for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 @testset "Explicit Flux.train! features with $name" begin
   @testset "Stop on NaN" begin
     m1 = Dense(1 => 1)
@@ -102,7 +107,7 @@ end
   @test y5 < y4
 end
 
-for (trainfn!, name) in ((Flux.train!, "Zygote"), (Flux.train_enzyme!, "Enzyme"))
+for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 @testset "L2 regularisation with $name" begin
   # New docs claim an exact equivalent. It's a bit long to put the example in there,
   # but perhaps the tests should contain it.
