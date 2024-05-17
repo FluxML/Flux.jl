@@ -40,6 +40,7 @@ end
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
+@eval begin
 @testset "Explicit Flux.train! features with $name" begin
   @testset "Stop on NaN" begin
     m1 = Dense(1 => 1)
@@ -68,6 +69,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
     cb = () -> println("this should not be printed")
     @test_throws ErrorException trainfn!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
   end
+end
 end
 end
 
