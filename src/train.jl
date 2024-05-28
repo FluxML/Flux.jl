@@ -121,7 +121,7 @@ _applyloss(loss, model, d...) = loss(model, d...)
 
 Like [`train!](@ref), but gradient computed in place using [Enzyme](github.com/EnzymeAD/Enzyme.jl)        
 """
-function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state)
+function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state::T) where T
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
     _make_zero!(model_and_shadow.dval)
