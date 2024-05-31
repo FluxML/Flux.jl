@@ -136,6 +136,25 @@ function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state::T) w
   end
 end
 
+# Required per method ambiguity with
+#   train!(loss, model, data, opt::Flux.Optimise.AbstractOptimiser; cb)
+#      @ Flux ~/work/Flux.jl/Flux.jl/src/deprecations.jl:110
+function train!(loss, model_and_shadow::Enzyme.Duplicated, data, opt_state::Flux.Optimise.AbstractOptimiser)
+  @withprogress for (i,d) in enumerate(data)
+    d_splat = d isa Tuple ? d : (d,)
+    _make_zero!(model_and_shadow.dval)
+    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, _applyloss, Enzyme.Active, Enzyme.Const(loss), model_and_shadow, map(Enzyme.Const, d_splat)...)
+
+    if !isfinite(l)
+      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+    end
+    opt_state, model = Optimisers.update!(opt_state, model_and_shadow.val, model_and_shadow.dval)
+    model_and_shadow = Enzyme.Duplicated(model, model_and_shadow.dval)
+    @logprogress Base.haslength(data) ? i/length(data) : nothing
+  end
+end
+
+
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
