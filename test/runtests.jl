@@ -5,6 +5,7 @@ using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
+using Pkg
 
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
@@ -73,6 +74,7 @@ Random.seed!(0)
   end
 
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
+    Pkg.add(["CUDA", "cuDNN"])
     using CUDA, cuDNN
     Flux.gpu_backend!("CUDA")
 
@@ -88,6 +90,7 @@ Random.seed!(0)
   end
 
   if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
+    Pkg.add("AMDGPU")
     using AMDGPU
     Flux.gpu_backend!("AMDGPU")
 
@@ -103,6 +106,7 @@ Random.seed!(0)
   end
 
   if get(ENV, "FLUX_TEST_METAL", "false") == "true"
+    Pkg.add("Metal")
     using Metal
     Flux.gpu_backend!("Metal")
 
@@ -118,6 +122,7 @@ Random.seed!(0)
   end
 
   @testset "Enzyme" begin
+    Pkg.add(["CUDA", "cuDNN"])
     import Enzyme
     include("ext_enzyme/enzyme.jl")
   end

@@ -4,6 +4,7 @@ version = "0.14.16"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
@@ -35,13 +36,11 @@ FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
 FluxMetalExt = "Metal"
 
 [compat]
-AMDGPU = "0.8, 0.9.1"
+AMDGPU = "0.9.3"
 Adapt = "3, 4"
 CUDA = "4, 5"
 ChainRulesCore = "1.12"
 Compat = "4.10.0"
-Enzyme = "0.12.4"
-FiniteDifferences = "0.12"
 Functors = "0.4"
 MLUtils = "0.4"
 MacroTools = "0.5"
@@ -54,27 +53,6 @@ ProgressLogging = "0.1"
 Reexport = "1.0"
 SpecialFunctions = "2.1.2"
 Statistics = "1"
-Tracker = "0.2.33"
 Zygote = "0.6.67"
 cuDNN = "1"
 julia = "1.9"
-
-[extras]
-AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
-BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
-Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
-FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
-IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
-cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
-
-[targets]
-test = ["Test", "Documenter", "IterTools", "LinearAlgebra", "FillArrays", "ComponentArrays", "BSON", "Pkg", "CUDA", "cuDNN", "Metal", "AMDGPU", "Enzyme", "FiniteDifferences", "Tracker"]
