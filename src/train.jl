@@ -118,10 +118,10 @@ function train!(loss, model, data, opt; cb = nothing)
       if !isfinite(l)
         throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
       end
-      opt, model2 = Optimisers.update!(opt, model.val, gs[1])
+      opt, model2 = Optimisers.update!(opt, model.val, model.dval)
       model = Enzyme.Duplicated(model2, model.dval)
     else
-      Zygote.withgradient(m -> loss(m, d_splat...), model)
+      l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
 
       if !isfinite(l)
         throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
