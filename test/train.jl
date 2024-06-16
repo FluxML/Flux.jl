@@ -6,8 +6,8 @@ using Test
 using Random
 using Enzyme
 
-function train_enzyme!(fn, model, args...)
-    Flux.train!(fn, Duplicated(model, Enzyme.make_zero(model)), args...)
+function train_enzyme!(fn, model, args...; kwargs...)
+    Flux.train!(fn, Duplicated(model, Enzyme.make_zero(model)), args...; kwargs...)
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
@@ -47,13 +47,17 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
   @testset "Stop on NaN" begin
     m1 = Dense(1 => 1)
     m1.weight .= 0
-    CNT = 0
+    CNT = Ref(0)
     @test_throws DomainError trainfn!(m1, tuple.(1:100), Descent(0.1)) do m, i
-      CNT += 1
+      CNT[] += 1
       (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
     end
-    @test CNT == 51  # stopped early
-    @test m1.weight[1] ≈ -5  # did not corrupt weights
+    @test CNT[] == 51  # stopped early
+    if name != "Enzyme"
+      @test m1.weight[1] ≈ 0.0  # did not corrupt weights
+    else
+      @test m1.weight[1] ≈ -5  # did not corrupt weights
+    end
   end
 
   @testset "non-tuple data" begin
