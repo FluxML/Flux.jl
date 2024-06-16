@@ -38,6 +38,7 @@ FluxMetalExt = "Metal"
 [compat]
 AMDGPU = "0.9.3"
 Adapt = "3, 4"
+BSON = "0.3"
 CUDA = "4, 5"
 ChainRulesCore = "1.12"
 Compat = "4.10.0"
