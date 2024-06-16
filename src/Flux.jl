@@ -92,6 +92,11 @@ include("deprecations.jl")
 include("losses/Losses.jl")
 using .Losses
 
+# Distributed Training
+include("distributed/backend.jl")
+include("distributed/public_api.jl")
+export MPIBackend, NCCLBackend, DistributedUtils
+
 @compat(public, (
   # init
   glorot_uniform,
