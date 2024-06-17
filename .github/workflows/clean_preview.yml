@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v4.1.5
+        uses: actions/checkout@v4.1.7
         with:
           ref: gh-pages
       - name: Delete preview and history + push changes
