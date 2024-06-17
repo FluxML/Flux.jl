@@ -4,7 +4,6 @@ version = "0.14.16"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
@@ -38,7 +37,6 @@ FluxMetalExt = "Metal"
 [compat]
 AMDGPU = "0.9.3"
 Adapt = "3, 4"
-BSON = "0.3"
 CUDA = "4, 5"
 ChainRulesCore = "1.12"
 Compat = "4.10.0"
