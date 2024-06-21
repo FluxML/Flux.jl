@@ -90,45 +90,6 @@ function params!(p::Params, x, seen = IdSet())
   end
 end
 
-function Enzyme.EnzymeRules.augmented_primal(config, func::Enzyme.Const{typeof(params!)}, ::Type{RT},
-                                                        p::Enzyme.Annotation,
-                                                        x::Enzyme.Annotation,
-                                                        seen::Enzyme.Annotation) where {RT}
-
-    res = func.val(p.val, x.val, seen.val)
-
-    primal = if EnzymeRules.needs_primal(config)
-        res
-    else
-        nothing
-    end
-
-    sres = if EnzymeRules.width(config) == 1
-        func.val(p.dval, x.dval, seen isa Const ? IdSet() : seen.dval)
-    else
-        ntuple(Val(EnzymeRules.width(config))) do i
-            Base.@_inline_meta
-            func.val(p.dval[i], x.dval[i], seen isa Const ? IdSet() : seen.dval[i])
-        end
-    end
-
-    shadow = if EnzymeRules.needs_shadow(config)
-        sres
-    else
-        nothing
-    end
-
-    return EnzymeRules.AugmentedReturn(primal, shadow, nothing)
-end
-
-function Enzyme.EnzymeRules.reverse(config, func::Enzyme.Const{typeof(params!)}, ::Type{RT}, cache,
-                                      p::Enzyme.Annotation,
-                                      x::Enzyme.Annotation,
-                                      seen::Enzyme.Annotation) where {RT}
-
-    return (nothing, nothing, nothing)
-end
-
 """
     params(model)
     params(layers...)

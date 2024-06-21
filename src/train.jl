@@ -111,31 +111,41 @@ function train!(loss, model, data, opt; cb = nothing)
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
     
-    if model isa Enzyme.Duplicated
-      _make_zero!(model.dval)
-      _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, _applyloss, Enzyme.Active, Enzyme.Const(loss), model, map(Enzyme.Const, d_splat)...)
+    l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
 
-      if !isfinite(l)
-        throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
-      end
-      opt, model2 = Optimisers.update!(opt, model.val, model.dval)
-      model = Enzyme.Duplicated(model2, model.dval)
-    else
-      l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
-
-      if !isfinite(l)
-        throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
-      end
-
-      opt, model = Optimisers.update!(opt, model, gs[1])
-
+    if !isfinite(l)
+      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
+
+    opt, model = Optimisers.update!(opt, model, gs[1])
+
+    @logprogress Base.haslength(data) ? i/length(data) : nothing
+  end
+end
+function train!(loss, model::Enzyme.Duplicated, data, opt; cb = nothing)
+  isnothing(cb) || error("""train! does not support callback functions.
+                            For more control use a loop with `gradient` and `update!`.""")
+  @withprogress for (i,d) in enumerate(data)
+    d_splat = d isa Tuple ? d : (d,)
+    
+    _make_zero!(model.dval)
+    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, _applyloss, Enzyme.Active, Enzyme.Const(loss), model, map(Enzyme.Const, d_splat)...)
+
+    if !isfinite(l)
+      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+    end
+    opt, model2 = Optimisers.update!(opt, model.val, model.dval)
+    model = Enzyme.Duplicated(model2, model.dval)
+
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
 end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
+  train!(loss, model, data, _rule_to_state(model, rule); cb)
+end
+function train!(loss, model::Enzyme.Duplicated, data, rule::Optimisers.AbstractRule; cb = nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
