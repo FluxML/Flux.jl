@@ -39,7 +39,6 @@ struct NCCLBackend{C, M <: Union{Nothing, MPIBackend}} <: AbstractFluxDistribute
     end
 end
 
-# ### TODO check if needed
-# # Preferences for GPU-Aware MPI
-# const MPI_CUDA_AWARE = @load_preference("FluxDistributedMPICUDAAware", false)
-# const MPI_ROCM_AWARE = @load_preference("FluxDistributedMPIROCMAware", false)
+# Preferences for GPU-Aware MPI
+const MPI_CUDA_AWARE = @load_preference("FluxDistributedMPICUDAAware", false)
+const MPI_ROCM_AWARE = @load_preference("FluxDistributedMPIROCMAware", false)

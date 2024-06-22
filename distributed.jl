@@ -9,6 +9,11 @@
 
 ### FluxMPI.Init() ###########
 
+using Flux, MPI, NCCL
+
+DistributedUtils.initialize(MPIBackend)
+DistributedUtils.initialize(NCCLBackend)
+
 using MPI, Flux, CUDA
 using Dates
 CUDA.allowscalar(false) 

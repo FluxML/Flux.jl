@@ -17,8 +17,6 @@ function DistributedUtils.__initialize(
 
     local_rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-    ### TODO check if needed at all
-
     if cuda_devices !== missing && CUDA.functional()
         if cuda_devices === nothing
             set_device!(FluxCUDADevice, nothing, local_rank + 1)
