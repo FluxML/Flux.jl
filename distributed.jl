@@ -9,7 +9,7 @@
 
 ### FluxMPI.Init() ###########
 
-using Flux, MPI, NCCL
+using Flux, MPI, NCCL, CUDA
 
 DistributedUtils.initialize(MPIBackend)
 DistributedUtils.initialize(NCCLBackend)
