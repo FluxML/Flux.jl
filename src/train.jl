@@ -110,7 +110,7 @@ function train!(loss, model, data, opt; cb = nothing)
                             For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
-    
+
     l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
 
     if !isfinite(l)
@@ -127,7 +127,7 @@ function train!(loss, model::Enzyme.Duplicated, data, opt; cb = nothing)
                             For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
-    
+
     _make_zero!(model.dval)
     _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, _applyloss, Enzyme.Active, Enzyme.Const(loss), model, map(Enzyme.Const, d_splat)...)
 
