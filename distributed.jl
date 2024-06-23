@@ -14,6 +14,7 @@ using Random
 using Optimisers
 
 CUDA.device!(1)
+CUDA.allowscalar(false)
 
 DistributedUtils.initialize(MPIBackend)
 backend = DistributedUtils.get_distributed_backend(MPIBackend)

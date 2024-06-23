@@ -4,6 +4,7 @@ using Flux: MPIBackend, NCCLBackend, DistributedUtils, MPI_CUDA_AWARE,
            MPI_ROCM_AWARE, AbstractDevice, FluxCPUDevice, FluxCUDADevice, FluxAMDGPUDevice
 ### TODO __unwrap_val?
 ### devices: https://fluxml.ai/Flux.jl/stable/gpu/
+# using LuxDeviceUtils: set_device! as lux_set_device!
 # using FluxDeviceUtils: AbstractFluxDevice, FluxCUDADevice, FluxAMDGPUDevice, cpu_device,
 #                       set_device!, __is_functional
 using MPI: MPI
@@ -19,9 +20,9 @@ function DistributedUtils.__initialize(
 
     if cuda_devices !== missing && CUDA.functional()
         if cuda_devices === nothing
-            set_device!(FluxCUDADevice, nothing, local_rank + 1)
+            CUDA.device!((rank + 1) % length(CUDA.devices()))
         else
-            set_device!(FluxCUDADevice, cuda_devices[local_rank + 1])
+            CUDA.device!(cuda_devices[local_rank + 1])
         end
     elseif force_cuda
         error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
@@ -29,9 +30,9 @@ function DistributedUtils.__initialize(
 
     if amdgpu_devices !== missing && AMDGPU.functional()
         if amdgpu_devices === nothing
-            set_device!(FluxAMDGPUDevice, nothing, local_rank + 1)
+            AMDGPU.device!((rank + 1) % length(CUDA.devices()))
         else
-            set_device!(FluxAMDGPUDevice, amdgpu_devices[local_rank + 1])
+            AMDGPU.device!(amdgpu_devices[local_rank + 1])
         end
     elseif force_amdgpu
         error(lazy"AMDGPU devices are not functional and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
