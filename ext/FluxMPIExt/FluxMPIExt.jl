@@ -30,7 +30,7 @@ function DistributedUtils.__initialize(
 
     if amdgpu_devices !== missing && AMDGPU.functional()
         if amdgpu_devices === nothing
-            AMDGPU.device!((rank + 1) % length(CUDA.devices()))
+            AMDGPU.device!((rank + 1) % length(AMDGPU.devices()))
         else
             AMDGPU.device!(amdgpu_devices[local_rank + 1])
         end
