@@ -44,7 +44,7 @@ Possible values for `backend` are:
     communications.
 """
 function initialize(backend::Type{<:AbstractFluxDistributedBackend}; kwargs...)
-    initialized(backend) && return
+    # initialized(backend) && return
     __initialize(backend; kwargs...)
     return
 end

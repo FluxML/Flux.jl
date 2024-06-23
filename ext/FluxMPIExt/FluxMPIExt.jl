@@ -1,5 +1,7 @@
 module FluxMPIExt
 
+using CUDA
+# using AMGDPU ### TODO 
 using Flux: MPIBackend, NCCLBackend, DistributedUtils, MPI_CUDA_AWARE,
            MPI_ROCM_AWARE, AbstractDevice, FluxCPUDevice, FluxCUDADevice, FluxAMDGPUDevice
 ### TODO __unwrap_val?
@@ -17,26 +19,29 @@ function DistributedUtils.__initialize(
     DistributedUtils.MPI_Initialized[] = true
 
     local_rank = MPI.Comm_rank(MPI.COMM_WORLD)
+    println("s")
 
     if cuda_devices !== missing && CUDA.functional()
         if cuda_devices === nothing
-            CUDA.device!((rank + 1) % length(CUDA.devices()))
+            CUDA.device!((local_rank + 1) % length(CUDA.devices()))
+            println("cuda")
         else
             CUDA.device!(cuda_devices[local_rank + 1])
+            println("cuda")
         end
     elseif force_cuda
         error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
     end
 
-    if amdgpu_devices !== missing && AMDGPU.functional()
-        if amdgpu_devices === nothing
-            AMDGPU.device!((rank + 1) % length(AMDGPU.devices()))
-        else
-            AMDGPU.device!(amdgpu_devices[local_rank + 1])
-        end
-    elseif force_amdgpu
-        error(lazy"AMDGPU devices are not functional and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
-    end
+    # if amdgpu_devices !== missing && AMDGPU.functional()
+    #     if amdgpu_devices === nothing
+    #         AMDGPU.device!((rank + 1) % length(AMDGPU.devices()))
+    #     else
+    #         AMDGPU.device!(amdgpu_devices[local_rank + 1])
+    #     end
+    # elseif force_amdgpu
+    #     error(lazy"AMDGPU devices are not functional and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
+    # end
 
     return
 end
