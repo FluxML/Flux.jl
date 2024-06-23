@@ -10,9 +10,37 @@
 ### FluxMPI.Init() ###########
 
 using Flux, MPI, NCCL, CUDA
+using Random
+using Optimisers
+
+CUDA.device!(1)
 
 DistributedUtils.initialize(MPIBackend)
+backend = DistributedUtils.get_distributed_backend(MPIBackend)
+rank = DistributedUtils.local_rank(backend)
+
+model = Chain(Dense(1 => 256, tanh), Dense(256 => 1))
+
+rng = Random.default_rng()
+Random.seed!(rng, rank)
+
+model = DistributedUtils.synchronize!!(backend, model; root=0)
+
+x = rand(1, 16) |> gpu
+y = x .^ 3
+
+opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
+st_opt = Optimisers.setup(opt, model)
+
+loss(model) = sum(abs2, model(x) .- y)
+
+st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0)
+
+######
+
 DistributedUtils.initialize(NCCLBackend)
+
+######
 
 using MPI, Flux, CUDA
 using Dates
