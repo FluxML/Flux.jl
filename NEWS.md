@@ -2,7 +2,7 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
-## v0.14.14
+## v0.14.17
 * Add [support for Enzyme](https://github.com/FluxML/Flux.jl/pull/2446) with `Flux.train!`.
 
 ## v0.14.13
