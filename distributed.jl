@@ -43,7 +43,7 @@ model = Chain(Dense(1 => 256, tanh), Dense(256 => 1))
 rng = Random.default_rng()
 Random.seed!(rng, rank)
 
-model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) # MethodError: no method matching __bcast!(::NCCLBackend{Communicator, MPIBackend{…}}, ::Matrix{Float32}, ::LuxDeviceUtils.LuxCPUDevice; root::Int64)
+model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
 x = rand(1, 16) |> gpu
 y = x .^ 3
