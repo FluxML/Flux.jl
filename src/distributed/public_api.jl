@@ -188,6 +188,13 @@ function __reduce! end
 
 CRC.@non_differentiable reduce!(::Any...)
 
+## As Flux model is an arbitrary type it's not possible to dispatch `synchronize!!`
+## end user needs to wrap Flux model into `FluxDistributedModel`
+## e.g. model = DistributedUtils.synchronize!!(backend, FluxDistributedModel(model); root=0) 
+struct FluxDistributedModel{M}
+    model::M
+end
+
 # synchronize!
 """
     synchronize!!(backend::AbstractFluxDistributedBackend, ps; root::Int=0)
@@ -195,8 +202,8 @@ CRC.@non_differentiable reduce!(::Any...)
 Synchronize the given structure `ps` using the given backend. The value at `root` will be
 broadcasted to all other workers.
 """
-function synchronize!!(backend::AbstractFluxDistributedBackend, model; root::Int=0)
-    return fmap(x -> synchronize!!(backend, x; root), model)
+function synchronize!!(backend::AbstractFluxDistributedBackend, model::FluxDistributedModel; root::Int=0)
+    return fmap(x -> synchronize!!(backend, x; root), model.model)
 end
 
 function synchronize!!(backend::AbstractFluxDistributedBackend, ps::Tuple; root::Int=0)
@@ -220,11 +227,11 @@ function synchronize!!(
     return map(x -> synchronize!!(backend, x; root), ps)
 end
 
-### conflict with line 197 which is for model synchronisation
-# function synchronize!!(backend::AbstractFluxDistributedBackend, ps::T; root::Int=0) where {T}
-#     isbitstype(T) && return bcast!(backend, [ps]; root)[]
-#     return ps # If we don't know how to synchronize, just return the value. For ex, Symbol, String, etc.
-# end
+# if no method for a given type, just return the value
+function synchronize!!(backend::AbstractFluxDistributedBackend, ps::T; root::Int=0) where {T}
+    isbitstype(T) && return bcast!(backend, [ps]; root)[]
+    return ps 
+end
 
 # data container
 """
