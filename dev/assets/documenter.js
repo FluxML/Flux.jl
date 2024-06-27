@@ -485,6 +485,14 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
   }
 
   /**
+   * RegX escape function from MDN
+   * Refer: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#escaping
+   */
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  }
+
+  /**
    * Make the result component given a minisearch result data object and the value
    * of the search input as queryString. To view the result object structure, refer:
    * https://lucaong.github.io/minisearch/modules/_minisearch_.html#searchresult
@@ -502,8 +510,8 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
     if (result.page !== "") {
       display_link += ` (${result.page})`;
     }
-
-    let textindex = new RegExp(`${querystring}`, "i").exec(result.text);
+    searchstring = escapeRegExp(querystring);
+    let textindex = new RegExp(`${searchstring}`, "i").exec(result.text);
     let text =
       textindex !== null
         ? result.text.slice(
@@ -520,7 +528,7 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
     let display_result = text.length
       ? "..." +
         text.replace(
-          new RegExp(`${escape(querystring)}`, "i"), // For first occurrence
+          new RegExp(`${escape(searchstring)}`, "i"), // For first occurrence
           '<span class="search-result-highlight py-1">$&</span>'
         ) +
         "..."
@@ -566,6 +574,7 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
         // Only return relevant results
         return result.score >= 1;
       },
+      combineWith: "AND",
     });
 
     // Pre-filter to deduplicate and limit to 200 per category to the extent
