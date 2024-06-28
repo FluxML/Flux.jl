@@ -1,6 +1,7 @@
 using Flux, MPI, NCCL, CUDA
 using Random
 using Optimisers
+using Zygote
 
 CUDA.allowscalar(false)
 
@@ -28,6 +29,32 @@ st_opt = Optimisers.setup(opt, model)
 loss(model) = sum(abs2, model(x) .- y)
 
 st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0) 
+
+data = Flux.DataLoader((x, y) |> gpu, batchsize=64, shuffle=true);
+
+### approach 1
+
+for epoch in 1:16
+    Flux.train!(model, data, st_opt) do m, x, y
+      loss(m(x), y) # ERROR: ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
+    end
+end
+
+### approach 2
+
+gs_ = gradient(loss, model)[1] # ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
+Optimisers.update(st_opt, model, gs_)
+
+t1 = time()
+
+for epoch in 1:100
+  global model, st_opt
+  l, back = Zygote.pullback(loss, model) # ERROR: ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
+  gs = back(one(l))[1]
+  st_opt, model = Optimisers.update(st_opt, model, gs)
+end
+
+FluxMPI.fluxmpi_println(time() - t1)
 
 # ==============================================
 #               NNCCL backend
