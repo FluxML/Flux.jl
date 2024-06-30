@@ -9,6 +9,8 @@ CUDA.allowscalar(false)
 #               MPI backend
 # ==============================================
 
+CUDA.device!(0)
+
 DistributedUtils.initialize(MPIBackend)
 backend = DistributedUtils.get_distributed_backend(MPIBackend)
 rank = DistributedUtils.local_rank(backend)
@@ -32,16 +34,6 @@ st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0)
 
 data = Flux.DataLoader((x, y) |> gpu, batchsize=64, shuffle=true);
 
-### approach 1
-
-for epoch in 1:16
-    Flux.train!(model, data, st_opt) do m, x, y
-      loss(m(x), y) # ERROR: ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
-    end
-end
-
-### approach 2
-
 gs_ = gradient(loss, model)[1] # ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
 Optimisers.update(st_opt, model, gs_)
 
@@ -60,27 +52,27 @@ FluxMPI.fluxmpi_println(time() - t1)
 #               NNCCL backend
 # ==============================================
 
-DistributedUtils.initialize(NCCLBackend)
+# DistributedUtils.initialize(NCCLBackend)
 
-backend = DistributedUtils.get_distributed_backend(NCCLBackend) 
-rank = DistributedUtils.local_rank(backend)
+# backend = DistributedUtils.get_distributed_backend(NCCLBackend) 
+# rank = DistributedUtils.local_rank(backend)
 
-model = Chain(Dense(1 => 256, tanh), Dense(256 => 1))
+# model = Chain(Dense(1 => 256, tanh), Dense(256 => 1))
 
-rng = Random.default_rng()
-Random.seed!(rng, rank)
+# rng = Random.default_rng()
+# Random.seed!(rng, rank)
 
-model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
+# model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
-x = rand(1, 16) |> gpu
-y = x .^ 3
+# x = rand(1, 16) |> gpu
+# y = x .^ 3
 
-opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
-st_opt = Optimisers.setup(opt, model)
+# opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
+# st_opt = Optimisers.setup(opt, model)
 
-loss(model) = sum(abs2, model(x) .- y)
+# loss(model) = sum(abs2, model(x) .- y)
 
-st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0)
+# st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0)
 
 
 # ==============================================

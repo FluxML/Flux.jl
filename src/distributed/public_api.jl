@@ -5,13 +5,12 @@
 module DistributedUtils
 
 using ChainRulesCore: ChainRulesCore
-using ..Flux: AbstractFluxDistributedBackend, MPIBackend, NCCLBackend, AbstractDevice
+using ..Flux: AbstractFluxDistributedBackend, MPIBackend, NCCLBackend, AbstractDevice, get_device
 using Functors: fmap
 using MLUtils: MLUtils, numobs
 using Optimisers: Optimisers, AbstractRule, Leaf
 using Random: Random
 using Setfield: @set!
-using LuxDeviceUtils: get_device as lux_get_device
 ### see https://fluxml.ai/Flux.jl/stable/gpu/
 
 const CRC = ChainRulesCore
@@ -101,12 +100,13 @@ Backend Agnostic API to broadcast the given buffer `sendrecvbuf` or `sendbuf` to
 workers into `recvbuf`. The value at `root` will be broadcasted to all other workers.
 """
 function bcast!(backend::AbstractFluxDistributedBackend, sendrecvbuf; root::Int=0)
-    return __bcast!(backend, sendrecvbuf, lux_get_device(sendrecvbuf); root)
+    return __bcast!(backend, sendrecvbuf, get_device(); root)
 end
 
 function bcast!(backend::AbstractFluxDistributedBackend, sendbuf, recvbuf; root::Int=0)
-    send_dev = lux_get_device(sendbuf)
-    recv_dev = lux_get_device(recvbuf)
+    send_dev = get_device()
+    recv_dev = get_device()
+    println(get_device())
     if send_dev === recv_dev
         return __bcast!(backend, sendbuf, recvbuf, send_dev; root)
     else
@@ -134,13 +134,14 @@ Backend Agnostic API to perform an allreduce operation on the given buffer `send
 workers.
 """
 function allreduce!(backend::AbstractFluxDistributedBackend, sendrecvbuf, op::F) where {F}
-    return __allreduce!(backend, sendrecvbuf, op, lux_get_device(sendrecvbuf))
+    return __allreduce!(backend, sendrecvbuf, op, get_device())
 end
 
 function allreduce!(
         backend::AbstractFluxDistributedBackend, sendbuf, recvbuf, op::F) where {F}
-    send_dev = lux_get_device(sendbuf)
-    recv_dev = lux_get_device(recvbuf)
+    send_dev = get_device()
+    recv_dev = get_device()
+    println(get_device())
     if send_dev === recv_dev
         return __allreduce!(backend, sendbuf, recvbuf, op, send_dev)
     else
@@ -167,13 +168,14 @@ workers.
 """
 function reduce!(
         backend::AbstractFluxDistributedBackend, sendrecvbuf, op::F; root::Int=0) where {F}
-    return __reduce!(backend, sendrecvbuf, op, lux_get_device(sendrecvbuf); root)
+    return __reduce!(backend, sendrecvbuf, op, get_device(); root)
 end
 
 function reduce!(backend::AbstractFluxDistributedBackend,
         sendbuf, recvbuf, op::F; root::Int=0) where {F}
-    send_dev = lux_get_device(sendbuf)
-    recv_dev = lux_get_device(recvbuf)
+    send_dev = get_device()
+    recv_dev = get_device()
+    println(get_device())
     if send_dev === recv_dev
         return __reduce!(backend, sendbuf, recvbuf, op, send_dev; root)
     else
