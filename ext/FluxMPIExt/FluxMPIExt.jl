@@ -61,30 +61,31 @@ function DistributedUtils.__bcast!(
         dev; root)
 end
 
-for (aware, dType) in ((MPI_CUDA_AWARE, FluxCUDADevice), (MPI_ROCM_AWARE, LuxAMDGPUDevice))
-    if !aware
-        @eval begin
-            function DistributedUtils.__bcast!(
-                    backend::MPIBackend, sendrecvbuf, dev::$dType; root=0)
-                cdev = get_device("CPU")
-                sendrecvbuf_ = sendrecvbuf |> cdev
-                DistributedUtils.__bcast!(backend, sendrecvbuf_, cdev; root)
-                sendrecvbuf .= dev(sendrecvbuf_)
-                return sendrecvbuf
-            end
+# for (aware, dType) in ((MPI_CUDA_AWARE, FluxCUDADevice), (MPI_ROCM_AWARE, LuxAMDGPUDevice))
+#     if !aware
+#         @eval begin
+#             function DistributedUtils.__bcast!(
+#                     backend::MPIBackend, sendrecvbuf, dev::$dType; root=0)
+#                 cdev = get_device("CPU")
+#                 println(sendrecvbuf)
+#                 sendrecvbuf_ = sendrecvbuf |> cdev
+#                 DistributedUtils.__bcast!(backend, sendrecvbuf_, cdev; root)
+#                 sendrecvbuf .= dev(sendrecvbuf_)
+#                 return sendrecvbuf
+#             end
 
-            function DistributedUtils.__bcast!(
-                    backend::MPIBackend, sendbuf, recvbuf, dev::$dType; root=0)
-                cdev = get_device("CPU")
-                sendbuf_ = sendbuf |> cdev
-                recvbuf_ = recvbuf |> cdev
-                DistributedUtils.__bcast!(backend, sendbuf_, recvbuf_, cdev; root)
-                recvbuf .= dev(recvbuf_)
-                return recvbuf
-            end
-        end
-    end
-end
+#             function DistributedUtils.__bcast!(
+#                     backend::MPIBackend, sendbuf, recvbuf, dev::$dType; root=0)
+#                 cdev = get_device("CPU")
+#                 sendbuf_ = sendbuf |> cdev
+#                 recvbuf_ = recvbuf |> cdev
+#                 DistributedUtils.__bcast!(backend, sendbuf_, recvbuf_, cdev; root)
+#                 recvbuf .= dev(recvbuf_)
+#                 return recvbuf
+#             end
+#         end
+#     end
+# end
 
 # Allreduce
 function DistributedUtils.__allreduce!(

@@ -2,6 +2,7 @@ using Flux, MPI, NCCL, CUDA
 using Random
 using Optimisers
 using Zygote
+using Statistics
 
 CUDA.allowscalar(false)
 
@@ -21,31 +22,32 @@ model = model |> device
 
 model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
+
 x = rand(Float32, 1, 16) |> device
 y = x .^ 3 |> device
 
 opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
 st_opt = Optimisers.setup(opt, model)
 
-loss(model) = sum(abs2, model(x) .- y)
+loss(m, x, y) = mean((m(x) .- y).^2)
+g = gradient(m -> loss(m, x, y), model)[1]
 
 st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0) 
 
 data = Flux.DataLoader((x, y) |> gpu, batchsize=64, shuffle=true);
 
-gs_ = gradient(loss, model)[1] # ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
-Optimisers.update(st_opt, model, gs_)
+Optimisers.update(st_opt, model, g)
 
 t1 = time()
 
 for epoch in 1:100
   global model, st_opt
-  l, back = Zygote.pullback(loss, model) # ERROR: ArgumentError: Illegal conversion of a CUDA.DeviceMemory to a Ptr{Float32}
+  l, back = Zygote.pullback(loss, model) # MethodError: no method matching loss(::Chain{Tuple{Dense{typeof(identity), CuArray{…}, CuArray{…}}, Dense{typeof(identity), CuArray{…}, CuArray{…}}}})
   gs = back(one(l))[1]
   st_opt, model = Optimisers.update(st_opt, model, gs)
 end
 
-FluxMPI.fluxmpi_println(time() - t1)
+println(time() - t1)
 
 # ==============================================
 #               NNCCL backend
