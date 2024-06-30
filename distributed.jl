@@ -38,12 +38,12 @@ opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
 st_opt = Optimisers.setup(opt, model)
 st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0) 
 
-# # not working?
-# loss(m, x, y) = mean((m(x) .- y).^2)
-# g = gradient(m -> loss(m, x, y), model)[1] # MethodError: no method matching loss(::Chain{Tuple{Dense{typeof(identity), CuArray{…}, CuArray{…}}, Dense{typeof(identity), CuArray{…}, CuArray{…}}}})
 
-loss(model) = sum(abs2, model(x) .- y)
-g = gradient(loss, model)[1]
+loss(model) = mean((model(x) .- y).^2)
+g = gradient(m -> loss(m), model)[1] # MethodError: no method matching loss(::Chain{Tuple{Dense{typeof(identity), CuArray{…}, CuArray{…}}, Dense{typeof(identity), CuArray{…}, CuArray{…}}}})
+
+# loss(model) = sum(abs2, model(x) .- y)
+# g = gradient(loss, model)[1]
 
 for epoch in 1:100
   global model, st_opt
