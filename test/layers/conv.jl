@@ -197,6 +197,17 @@ end
 
   @test occursin("groups=2", sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
   @test occursin("2 => 4"  , sprint(show, ConvTranspose((3,3), 2=>4, groups=2)))
+
+  # test ConvTranspose outpad argument for stride > 1
+  x = randn(Float32, 10, 11, 3,2)
+  m1 = ConvTranspose((3,5), 3=>6, stride=3)
+  m2 = ConvTranspose((3,5), 3=>6, stride=3, outpad=(1,0))
+  @test size(m2(x))[1:2] == (size(m1(x))[1:2] .+ (1,0))
+
+  x = randn(Float32, 10, 11, 12, 3,2)
+  m1 = ConvTranspose((3,5,3), 3=>6, stride=3)
+  m2 = ConvTranspose((3,5,3), 3=>6, stride=3, outpad=(1,0,1))
+  @test size(m2(x))[1:3] == (size(m1(x))[1:3] .+ (1,0,1))
 end
 
 @testset "CrossCor" begin
