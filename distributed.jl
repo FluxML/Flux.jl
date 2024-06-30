@@ -40,7 +40,7 @@ st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0)
 
 
 loss(model) = mean((model(x) .- y).^2)
-g = gradient(m -> loss(m), model)[1] # MethodError: no method matching loss(::Chain{Tuple{Dense{typeof(identity), CuArray{…}, CuArray{…}}, Dense{typeof(identity), CuArray{…}, CuArray{…}}}})
+g = gradient(m -> loss(m), model)[1] 
 
 # loss(model) = sum(abs2, model(x) .- y)
 # g = gradient(loss, model)[1]
