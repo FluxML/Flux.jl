@@ -20,7 +20,7 @@ Random.seed!(rng, rank)
 
 model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
-x = rand(1, 16) |> gpu
+x = rand(Float32, 1, 16) |> gpu
 y = x .^ 3
 
 opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
