@@ -5,7 +5,6 @@ using Optimisers: Optimisers
 using Functors: fmap, fmapstructure
 using ..Flux: Flux # used only in docstring 
 import ..Flux.Optimise: train!, update!  # during 0.13, we add methods to the old functions
-import Enzyme
 
 export setup, train!
 
@@ -67,7 +66,7 @@ according to a particular optimisation rule encoded in `opt_state`.
 Iterates through `data` once, evaluating for each `d in data` either
 `loss(model, d...)` if `d isa Tuple`, or else `loss(model, d)` for other `d`.
 
-If `model` is an Enzyme.Duplicated, gradients will be computed with Enzyme,
+If `model` is an Enzyme.Duplicated and `Enzyme.jl` is loaded, gradients will be computed with Enzyme,
 otherwise they will be computed with Zygote.
 
 For example, with these definitions...
@@ -122,30 +121,10 @@ function train!(loss, model, data, opt; cb = nothing)
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
 end
-function train!(loss, model::Enzyme.Duplicated, data, opt; cb = nothing)
-  isnothing(cb) || error("""train! does not support callback functions.
-                            For more control use a loop with `gradient` and `update!`.""")
-  @withprogress for (i,d) in enumerate(data)
-    d_splat = d isa Tuple ? d : (d,)
 
-    _make_zero!(model.dval)
-    _, l = Enzyme.autodiff(Enzyme.ReverseWithPrimal, _applyloss, Enzyme.Active, Enzyme.Const(loss), model, map(Enzyme.Const, d_splat)...)
-
-    if !isfinite(l)
-      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
-    end
-    opt, model2 = Optimisers.update!(opt, model.val, model.dval)
-    model = Enzyme.Duplicated(model2, model.dval)
-
-    @logprogress Base.haslength(data) ? i/length(data) : nothing
-  end
-end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
-  train!(loss, model, data, _rule_to_state(model, rule); cb)
-end
-function train!(loss, model::Enzyme.Duplicated, data, rule::Optimisers.AbstractRule; cb = nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
