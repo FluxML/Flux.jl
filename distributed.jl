@@ -11,6 +11,12 @@ CUDA.allowscalar(false)
 # ==============================================
 
 CUDA.device!(0)
+### if not called yields
+# You are trying to use memory from GPU 0 on GPU 1.
+# P2P access between these devices is not possible; either switch to GPU 0
+# by calling `CUDA.device!(0)`, or copy the data to an array allocated on device 1.
+### seems to be GPU issue
+### https://forums.developer.nvidia.com/t/peer-access-not-supported-between-devices/54412/10
 
 DistributedUtils.initialize(MPIBackend)
 backend = DistributedUtils.get_distributed_backend(MPIBackend)
@@ -22,32 +28,30 @@ model = model |> device
 
 model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
+x = rand(Float32, 1, 16)
+y = x .^ 3
 
-x = rand(Float32, 1, 16) |> device
-y = x .^ 3 |> device
+x = x |> device
+y = y |> device
 
 opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
 st_opt = Optimisers.setup(opt, model)
-
-loss(m, x, y) = mean((m(x) .- y).^2)
-g = gradient(m -> loss(m, x, y), model)[1]
-
 st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0) 
 
-data = Flux.DataLoader((x, y) |> gpu, batchsize=64, shuffle=true);
+# # not working?
+# loss(m, x, y) = mean((m(x) .- y).^2)
+# g = gradient(m -> loss(m, x, y), model)[1] # MethodError: no method matching loss(::Chain{Tuple{Dense{typeof(identity), CuArray{…}, CuArray{…}}, Dense{typeof(identity), CuArray{…}, CuArray{…}}}})
 
-Optimisers.update(st_opt, model, g)
-
-t1 = time()
+loss(model) = sum(abs2, model(x) .- y)
+g = gradient(loss, model)[1]
 
 for epoch in 1:100
   global model, st_opt
-  l, back = Zygote.pullback(loss, model) # MethodError: no method matching loss(::Chain{Tuple{Dense{typeof(identity), CuArray{…}, CuArray{…}}, Dense{typeof(identity), CuArray{…}, CuArray{…}}}})
-  gs = back(one(l))[1]
-  st_opt, model = Optimisers.update(st_opt, model, gs)
+  l, back = Zygote.pullback(loss, model)
+  g = back(one(l))[1]
+  st_opt, model = Optimisers.update(st_opt, model, g)
 end
 
-println(time() - t1)
 
 # ==============================================
 #               NNCCL backend
