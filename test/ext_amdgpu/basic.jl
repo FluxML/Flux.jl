@@ -46,6 +46,21 @@ end
     end
 end
 
+@testset "Convolution with symmetric non-constant padding" begin
+    for conv_type in (Conv, ConvTranspose), nd in 1:3
+        kernel = tuple(fill(2, nd)...)
+        x = rand(Float32, fill(10, nd)..., 3, 5) |> gpu
+
+        pad = ntuple(i -> i, nd)
+        m = conv_type(kernel, 3 => 4, pad=pad) |> f32 |> gpu
+
+        expanded_pad = ntuple(i -> pad[(i - 1) ÷ 2 + 1], 2 * nd)
+        m_expanded = conv_type(kernel, 3 => 4, pad=expanded_pad) |> f32 |> gpu
+
+        @test size(m(x)) == size(m_expanded(x))
+    end
+end
+
 @testset "Chain(Conv)" begin
     m = Chain(Conv((3, 3), 3 => 3)) |> f32
     x = rand(Float32, 10, 10, 3, 2)
