@@ -15,15 +15,14 @@ DistributedUtils.initialize(MPIBackend)
 backend = DistributedUtils.get_distributed_backend(MPIBackend)
 rank = DistributedUtils.local_rank(backend)
 
+device = Flux.get_device()
 model = Chain(Dense(1 => 256, tanh), Dense(256 => 1))
-
-rng = Random.default_rng()
-Random.seed!(rng, rank)
+model = model |> device
 
 model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
-x = rand(Float32, 1, 16) |> gpu
-y = x .^ 3
+x = rand(Float32, 1, 16) |> device
+y = x .^ 3 |> device
 
 opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
 st_opt = Optimisers.setup(opt, model)
