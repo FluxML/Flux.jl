@@ -52,12 +52,6 @@ function setup(rule::Optimisers.AbstractRule, model)
     state
 end
 
-_make_zero_internal!(x::AbstractArray) = fill!(x, 0)
-_make_zero_internal!(x) = x
-_make_zero!(model) = fmap(_make_zero_internal!, model)
-
-_applyloss(loss, model, d...) = loss(model, d...)
-
 """
     train!(loss, model, data, opt_state)
 
