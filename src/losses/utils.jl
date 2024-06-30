@@ -1,4 +1,3 @@
-import Enzyme
 
 """
     xlogx(x)
@@ -38,4 +37,3 @@ end
 _check_sizes(ŷ, y) = nothing  # pass-through, for constant label e.g. y = 1
 
 ChainRulesCore.@non_differentiable _check_sizes(ŷ::Any, y::Any)
-Enzyme.EnzymeRules.inactive(::typeof(_check_sizes), args...) = true
