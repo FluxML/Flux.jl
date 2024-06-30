@@ -287,9 +287,6 @@ averages the gradients across the processes using Allreduce.
 
   - `optimizer`: An Optimizer compatible with the Optimisers.jl package
 
-!!! danger
-
-    `Optimisers.jl` must be installed and loaded before using this.
 """
 struct DistributedOptimizer{B <: AbstractFluxDistributedBackend} <: AbstractRule
     backend::B
