@@ -123,7 +123,7 @@ Random.seed!(0)
 
   @testset "Enzyme" begin
     Pkg.add(["CUDA", "cuDNN"])
-    using Enzyme
+    import Enzyme
     include("ext_enzyme/enzyme.jl")
   end
 
