@@ -6,7 +6,7 @@ using Functors
 using FiniteDifferences
 using CUDA
 
-make_zero(model) = Flux._make_zero!(model)
+using Enzyme: make_zero
 
 function gradient_fd(f, x...)
     x = [cpu(x) for x in x]
