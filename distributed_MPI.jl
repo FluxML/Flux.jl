@@ -4,6 +4,10 @@
 # `mpiexecjl --project=@. -n 3 julia distributed_MPI.jl`
 # =======================================================
 
+### only if your MPI is CUDA-aware
+# using Preferences
+# set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
+
 using Flux, MPI, NCCL, CUDA
 using Random
 using Optimisers
