@@ -11,7 +11,6 @@ using MLUtils: MLUtils, numobs
 using Optimisers: Optimisers, AbstractRule, Leaf
 using Random: Random
 using Setfield: @set!
-### see https://fluxml.ai/Flux.jl/stable/gpu/
 
 const CRC = ChainRulesCore
 
