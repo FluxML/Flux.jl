@@ -27,17 +27,17 @@ function DistributedUtils.__initialize(
         error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
     end
 
-    if Base.find_package("AMDGPU") !== nothing
-        if amdgpu_devices !== missing && AMDGPU.functional()
-            if amdgpu_devices === nothing
-                AMDGPU.device!((local_rank + 1) % length(AMDGPU.devices()))
-            else
-                AMDGPU.device!(amdgpu_devices[local_rank + 1])
-            end
-        elseif force_amdgpu
-            error(lazy"AMDGPU devices are not functional (or `LuxAMDGPU.jl` not loaded) and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
-        end
-    end
+    # if Base.find_package("AMDGPU") !== nothing
+    #     if amdgpu_devices !== missing && AMDGPU.functional()
+    #         if amdgpu_devices === nothing
+    #             AMDGPU.device!((local_rank + 1) % length(AMDGPU.devices()))
+    #         else
+    #             AMDGPU.device!(amdgpu_devices[local_rank + 1])
+    #         end
+    #     elseif force_amdgpu
+    #         error(lazy"AMDGPU devices are not functional (or `LuxAMDGPU.jl` not loaded) and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
+    #     end
+    # end
 
     return
 end
