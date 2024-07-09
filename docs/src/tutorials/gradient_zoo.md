@@ -100,12 +100,12 @@ Chain(
 While the type returned for `∂loss_∂model` varies, they all have the same nested structure, matching that of the model. This is all that Flux needs.
 
 ```julia
-julia> grads_z[1].layers[1].weight  # get the weight matrix
+julia> grads_z[1].layers[1].weight  # Zygote's gradient for model.layers[1].weight
 2×3 Matrix{Float64}:
  -0.181715  0.0  0.0
   0.181715  0.0  0.0
 
-julia> grad_e.layers[1].weight  # get the corresponding gradient matrix
+julia> grad_e.layers[1].weight  # Enzyme's gradient for the same weight matrix
 2×3 Matrix{Float64}:
  -0.181715  0.0  0.0
   0.181715  0.0  0.0
@@ -114,12 +114,12 @@ julia> grad_e.layers[1].weight  # get the corresponding gradient matrix
 Here's Flux updating the model using each gradient:
 
 ```julia
-julia> opt = Flux.setup(Descent(1/3), model)
+julia> opt_state = Flux.setup(Descent(1/3), model)  # opt_state is trivial here
 (layers = ((weight = Leaf(Descent(0.333333), nothing),), ()),)
 
 julia> model_z = deepcopy(model);
 
-julia> Flux.update!(opt, model_z, grads_z[1]);
+julia> Flux.update!(opt_state, model_z, grads_z[1]);
 
 julia> model_z.layers[1].weight  # updated weight matrix
 2×3 Matrix{Float64}:
@@ -128,7 +128,7 @@ julia> model_z.layers[1].weight  # updated weight matrix
 
 julia> model_e = deepcopy(model);
 
-julia> Flux.update!(opt, model_e, grad_e)[2][1].weight  # same update
+julia> Flux.update!(opt_state, model_e, grad_e)[2][1].weight  # same update
 2×3 Matrix{Float64}:
  1.06057  3.0  5.0
  1.93943  4.0  6.0
@@ -142,11 +142,11 @@ In this case they are all identical, but there are some caveats, explored below.
 
 Both Zygote and Tracker were written for Flux, and at present, Flux loads Zygote and exports `Zygote.gradient`, and calls this within `Flux.train!`. But apart from that, there is very little coupling between Flux and the automatic differentiation package.
 
-This page has very brief notes on how all these packages compare, as a guide for anyone wanting to experiment with them. We stress "experiment" since Zygote is (at present) by far the best-tested.
+This page has very brief notes on how all these packages compare, as a guide for anyone wanting to experiment with them. We stress "experiment" since Zygote is (at present) by far the best-tested. All notes are from February 2024, 
 
 ### [Zygote.jl](https://github.com/FluxML/Zygote.jl/issues)
 
-Source-to-source, within Julia. 
+Reverse-mode source-to-source automatic differentiation, written by hooking into Julis's compiler.
 
 * By far the best-tested option for Flux models.
 
@@ -156,7 +156,7 @@ Source-to-source, within Julia.
 
 * Custom rules via `ZygoteRules.@adjpoint` or better, `ChainRulesCore.rrule`.
 
-* Returns nested NamedTuples and Tuples, and uses `nothing` to mean zero.
+* Returns nested NamedTuples and Tuples, and uses `nothing` to mean zero. Does not track shared arrays, hence may return different contributions 
 
 
 !!! compat "Deprecated: Zygote's implicit mode"
@@ -230,7 +230,7 @@ New package which works on the LLVM code which Julia compiles down to.
 
 * Returns another struct of the same type as the model, such as `Chain` above. Non-differentiable objects are left alone, not replaced by a zero.
 
-### Tapir.jl
+### [Tapir.jl](https://github.com/withbayes/Tapir.jl)
 
 Another new AD to watch. Many similariries in its approach to Enzyme.jl, but operates all in Julia.
 
@@ -280,7 +280,6 @@ Forward mode is a different algorithm...
 * No support for GPU
 
 
-
 <hr/>
 
 ## Second-order
@@ -293,7 +292,7 @@ In principle this works but in practice... best start small.
 
 ### ForwardDiff over Zygote
 
-Zygote.hessian is like this.
+`Zygote.hessian` is like this.
 
 ### Enzyme.jl
 
@@ -307,7 +306,7 @@ Besides AD packages, several packages have been written aiming to provide a unif
 
 ### [AbstractDifferentiation.jl](https://github.com/JuliaDiff/AbstractDifferentiation.jl)
 
-The original meta-package?
+The original meta-package for calling any of several engines.
 
 ### [DifferentiationInterface.jl](https://github.com/gdalle/DifferentiationInterface.jl)
 
@@ -317,7 +316,7 @@ This year's new attempt to build a simpler one?
 
 Really `rrule_via_ad` is another mechanism, but only for 3 systems.
 
-
+Sold as an attempt at unification, but its design of extensible `rrule`s turned out to be too closely tied to Zygote/Diffractor style AD, and not a good fit for Enzyme/Tapir which therefore use their own rule systems. Also not a natural fit for Tracker/ReverseDiff/ForwardDiff style of operator overloading AD.
 
 
 
