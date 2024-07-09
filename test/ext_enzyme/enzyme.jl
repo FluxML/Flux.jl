@@ -1,12 +1,12 @@
 using Test
 using Flux
 
-using Enzyme
+using Enzyme: Enzyme, make_zero, Active, Duplicated, ReverseWithPrimal
+
 using Functors
 using FiniteDifferences
 using CUDA
 
-using Enzyme: make_zero
 
 function gradient_fd(f, x...)
     x = [cpu(x) for x in x]

@@ -1,7 +1,7 @@
 module FluxEnzymeExt
 
 using Flux
-import Flux.Train: train!
+import Flux.Train: train!, _rule_to_state
 import Flux.Optimise
 import Optimisers
 import Enzyme
@@ -16,6 +16,7 @@ _applyloss(loss, model, d...) = loss(model, d...)
 
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
+using Flux: _old_to_new  # from src/deprecations.jl
 train!(loss, model::Duplicated, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
   train!(loss, model, data, _old_to_new(opt); cb)
 

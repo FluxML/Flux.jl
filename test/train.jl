@@ -4,7 +4,7 @@ import Optimisers
 
 using Test
 using Random
-using Enzyme
+import Enzyme
 
 function train_enzyme!(fn, model, args...; kwargs...)
   Flux.train!(fn, Enzyme.Duplicated(model, Enzyme.make_zero(model)), args...; kwargs...)
