@@ -6,7 +6,6 @@ version = "0.14.17"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
-Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
@@ -26,6 +25,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 [weakdeps]
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
@@ -33,6 +33,7 @@ cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 FluxAMDGPUExt = "AMDGPU"
 FluxCUDAExt = "CUDA"
 FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
+FluxEnzymeExt = "Enzyme"
 FluxMetalExt = "Metal"
 
 [compat]

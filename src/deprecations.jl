@@ -109,8 +109,7 @@ train!(loss, ps::Params, data, opt::Optimisers.AbstractRule; cb=nothing) = error
 
 train!(loss, model, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
   train!(loss, model, data, _old_to_new(opt); cb)
-train!(loss, model::Enzyme.Duplicated, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
-  train!(loss, model, data, _old_to_new(opt); cb)
+
 
 # Next, to use the new `setup` with the still-exported old-style `Adam` etc:
 import .Train: setup

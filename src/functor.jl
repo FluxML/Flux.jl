@@ -3,7 +3,6 @@ using  LinearAlgebra: Cholesky
 using Zygote: IdSet
 import Functors: Functors, @functor, functor, fmap, isleaf
 using SparseArrays: AbstractSparseArray
-using Enzyme
 
 """
     testmode!(model, [mode]) -> model

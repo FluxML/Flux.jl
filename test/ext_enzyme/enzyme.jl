@@ -1,15 +1,12 @@
 using Test
 using Flux
 
-using Enzyme
+using Enzyme: Enzyme, make_zero, Active, Duplicated, ReverseWithPrimal
+
 using Functors
 using FiniteDifferences
 using CUDA
 
-_make_zero(x::Union{Number,AbstractArray}) = zero(x)
-_make_zero(x) = x
-make_zero(model) = fmap(_make_zero, model)
-## make_differential(model) = fmapstructure(make_zero, model) # NOT SUPPORTED, See https://github.com/EnzymeAD/Enzyme.jl/issues/1329
 
 function gradient_fd(f, x...)
     x = [cpu(x) for x in x]
