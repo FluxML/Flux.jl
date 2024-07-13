@@ -208,6 +208,16 @@ end
   m1 = ConvTranspose((3,5,3), 3=>6, stride=3)
   m2 = ConvTranspose((3,5,3), 3=>6, stride=3, outpad=(1,0,1))
   @test size(m2(x))[1:3] == (size(m1(x))[1:3] .+ (1,0,1))
+
+  # test ConvTranspose constructor with tuple padding
+  kernel_dims = (3, 3)
+  pad = (1, 0)
+  x = randn(Float32, 5, 6, 1, 16)
+  m = ConvTranspose(kernel_dims, 1=>1, pad=pad)
+  result = m(x)
+  # Formula obtained from https://makeyourownneuralnetwork.blogspot.com/2020/02/calculating-output-size-of-convolutions.html
+  output_dims(pad_dims, kernel_dim, input_dim, stride) = (input_dim.-1).*stride.-(pad_dims.*2).+(kernel_dim.-1).+1
+  @test output_dims(m.pad, kernel_dims, size(x)[1:2], m.stride) == size(result)[1:2]
 end
 
 @testset "CrossCor" begin

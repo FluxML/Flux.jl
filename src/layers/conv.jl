@@ -3,7 +3,7 @@ using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 # pad dims of x with dims of y until ndims(x) == ndims(y)
 _paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]...)
 
-expand(N, i::Tuple) = i
+#expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 
 conv_reshape_bias(c) = conv_reshape_bias(c.bias, c.stride)
@@ -44,8 +44,25 @@ julia> layer3(xs) |> size  # output size = `ceil(input_size/stride)` = 50
 ```
 """
 struct SamePad end
-
-calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
+calc_padding(lt, pad::Int, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
+function calc_padding(lt, pad::NTuple{Np, T}, k::NTuple{Nk, T}, dilation, stride) where {T, Nk, Np}
+  # calc_padding for when a tuple is passed as padding.
+  if  Nk == Np
+    # duplicate each dim
+    new_pad = []
+    for i in pad
+      push!(new_pad, i)
+      push!(new_pad, i)
+    end
+    return tuple(new_pad...)
+  elseif Nk == 2Np
+    # Copy as it is
+    return pad
+  else
+    # Error out
+    throw(ArgumentError("invalid padding dimensions"))
+  end
+end
 function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
