@@ -3,7 +3,7 @@ using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 # pad dims of x with dims of y until ndims(x) == ndims(y)
 _paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]...)
 
-#expand(N, i::Tuple) = i
+expand(N, i::Tuple) = i
 expand(N, i::Integer) = ntuple(_ -> i, N)
 
 conv_reshape_bias(c) = conv_reshape_bias(c.bias, c.stride)
