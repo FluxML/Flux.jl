@@ -103,17 +103,8 @@ function bcast!(backend::AbstractFluxDistributedBackend, sendrecvbuf; root::Int=
 end
 
 function bcast!(backend::AbstractFluxDistributedBackend, sendbuf, recvbuf; root::Int=0)
-    send_dev = get_device()
-    recv_dev = get_device()
-    println(get_device())
-    if send_dev === recv_dev
-        return __bcast!(backend, sendbuf, recvbuf, send_dev; root)
-    else
-        sendbuf_ = sendbuf |> recv_dev
-        @warn "`sendbuf` and `recvbuf` are on different devices." maxlog=1
-        __bcast!(backend, sendbuf_, recvbuf, recv_dev; root)
-        return recvbuf
-    end
+    dev = ifelse(get_device() == FluxCPUDevice, cpu, gpu)
+    return __bcast!(backend, sendbuf, recvbuf, dev; root)
 end
 
 function __bcast! end
@@ -138,17 +129,8 @@ end
 
 function allreduce!(
         backend::AbstractFluxDistributedBackend, sendbuf, recvbuf, op::F) where {F}
-    send_dev = get_device()
-    recv_dev = get_device()
-    println(get_device())
-    if send_dev === recv_dev
-        return __allreduce!(backend, sendbuf, recvbuf, op, send_dev)
-    else
-        sendbuf_ = sendbuf |> recv_dev
-        @warn "`sendbuf` and `recvbuf` are on different devices." maxlog=1
-        __allreduce!(backend, sendbuf_, recvbuf, op, recv_dev)
-        return recvbuf
-    end
+    dev = ifelse(get_device() == FluxCPUDevice, cpu, gpu)
+    return __allreduce!(backend, sendbuf, recvbuf, op, dev)
 end
 
 function __allreduce! end
@@ -172,17 +154,8 @@ end
 
 function reduce!(backend::AbstractFluxDistributedBackend,
         sendbuf, recvbuf, op::F; root::Int=0) where {F}
-    send_dev = get_device()
-    recv_dev = get_device()
-    println(get_device())
-    if send_dev === recv_dev
-        return __reduce!(backend, sendbuf, recvbuf, op, send_dev; root)
-    else
-        sendbuf_ = sendbuf |> recv_dev
-        @warn "`sendbuf` and `recvbuf` are on different devices." maxlog=1
-        __reduce!(backend, sendbuf_, recvbuf, op, recv_dev; root)
-        return recvbuf
-    end
+    dev = ifelse(get_device() == FluxCPUDevice, cpu, gpu)
+    return __reduce!(backend, sendbuf, recvbuf, op, dev; root)
 end
 
 function __reduce! end

@@ -4,7 +4,7 @@
 # `mpiexecjl --project=@. -n 3 julia distributed_MPI.jl`
 # =======================================================
 
-### only if your MPI is CUDA-aware
+### only if your MPI is CUDA-aware # import Pkg; Pkg.test("MPI"; test_args=["--backend=CUDA"])
 # using Preferences
 # set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
 
