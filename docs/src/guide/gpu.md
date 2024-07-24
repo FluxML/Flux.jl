@@ -475,4 +475,20 @@ Remember that in order to run it on multiple GPUs you have to run from CLI `mpie
 where `--project` is path to your Julia environment and `<np>` number of processes.
 
 By default `MPI.jl` MPI installation is CUDA-unaware so if you want to run it in CUDA-aware mode, read more [here](https://juliaparallel.org/MPI.jl/stable/usage/#CUDA-aware-MPI-support) on custom installation and rebuilding `MPI.jl`. 
-We don't run CUDA-aware tests so you're running it at own risk.
+Then test if your MPI is CUDA-aware by
+```julia
+import Pkg
+Pkg.test("MPI"; test_args=["--backend=CUDA"])
+```
+
+If it is, set your local preference as below
+```julia
+using Preferences
+set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
+```
+
+!!! warning "Experimental features"
+    
+    We don't run CUDA-aware tests so you're running it at own risk.
+    AMDGPU support is mostly experimental.
+
