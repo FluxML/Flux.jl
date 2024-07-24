@@ -4,13 +4,7 @@
 # `mpiexecjl --project=@. -n 3 julia distributed_NCCL.jl`
 # =======================================================
 
-using Flux, MPI, NCCL, CUDA
-using Random
-using Optimisers
-using Zygote
-using Statistics
-
-CUDA.allowscalar(false)
+using Flux, MPI, NCCL
 
 DistributedUtils.initialize(NCCLBackend)
 
@@ -19,11 +13,10 @@ rank = DistributedUtils.local_rank(backend)
 
 device = Flux.get_device()
 model = Chain(Dense(1 => 256, tanh), Dense(256 => 1)) |> gpu
-
-model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
-
 x = rand(Float32, 1, 16) |> gpu
 y = x .^ 3
+
+model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0) 
 
 opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
 st_opt = Optimisers.setup(opt, model)
