@@ -487,7 +487,7 @@ using Preferences
 set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
 ```
 
-!!! warning "Experimental features"
+!!! warning "Known shortcomings"
     
     We don't run CUDA-aware tests so you're running it at own risk.
     AMDGPU support is mostly experimental.
