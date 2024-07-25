@@ -16,9 +16,8 @@ import Optimisers: trainable
 
 using Random: default_rng
 using Zygote, ChainRulesCore
-using Zygote: @adjoint, gradient, pullback
+using Zygote: Params, @adjoint, pullback
 using Zygote.ForwardDiff: value
-export gradient
 
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
@@ -52,7 +51,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   # utils
   outputsize, state, create_bias, @layer,
   # from OneHotArrays.jl
-  onehot, onehotbatch, onecold,  
+  onehot, onehotbatch, onecold,
   # from Train
   setup, train!,
   # from Optimsers.jl
@@ -91,6 +90,10 @@ export Chain, Dense, Embedding, EmbeddingBag,
 include("train.jl")
 using .Train
 using .Train: setup
+
+include("gradient.jl")
+export gradient
+@compat(public, (withgradient,))
 
 using Adapt, Functors, OneHotArrays
 include("utils.jl")
