@@ -8,7 +8,7 @@ function Flux.conv_transpose_dims(c::ConvTranspose, x::T) where T <: ROCArray
     # Calculate size of "input", from ∇conv_data()'s perspective...
     combined_pad = (c.pad[1:2:end] .+ c.pad[2:2:end])
     I = (size(x)[1:end - 2] .- 1) .* c.stride .+ 1 .+
-        (size(c.weight)[1:end - 2] .- 1) .* c.dilation .- combined_pad
+        (size(c.weight)[1:end - 2] .- 1) .* c.dilation .- combined_pad .+ c.outpad
     C_in = size(c.weight)[end - 1] * c.groups
     batch_size = size(x)[end]
 

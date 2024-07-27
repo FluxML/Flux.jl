@@ -81,6 +81,9 @@ function _amd(id::Union{Nothing, Int}, x)
     fmap(x -> Adapt.adapt(FluxAMDGPUAdaptor(id), x), x; exclude=_exclude)
 end
 
+_other_args(m::Conv) = (m.stride, m.pad, m.dilation, m.groups)
+_other_args(m::ConvTranspose) = (m.stride, m.pad, m.outpad, m.dilation, m.groups)
+
 # CPU -> GPU
 
 function Adapt.adapt_structure(to::FluxAMDGPUAdaptor, m::CPU_CONV)
@@ -89,7 +92,7 @@ function Adapt.adapt_structure(to::FluxAMDGPUAdaptor, m::CPU_CONV)
         Adapt.adapt(to, m.σ),
         Adapt.adapt(to, flipped_weight),
         Adapt.adapt(to, m.bias),
-        m.stride, m.pad, m.dilation, m.groups)
+        _other_args(m)...)
 end
 
 # Don't adapt again.
@@ -102,7 +105,7 @@ function Adapt.adapt_structure(to::FluxCPUAdaptor, m::AMDGPU_CONV)
     dims = ntuple(i -> i, ndims(m.weight) - 2)
     _conv_basetype(m)(
         Adapt.adapt(to, m.σ), reverse(Adapt.adapt(to, m.weight); dims),
-        Adapt.adapt(to, m.bias), m.stride, m.pad, m.dilation, m.groups)
+        Adapt.adapt(to, m.bias), _other_args(m)...)
 end
 
 function Flux.get_device(::Val{:AMDGPU}, id::Int)     # id should start from 0

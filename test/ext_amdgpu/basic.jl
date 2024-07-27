@@ -46,6 +46,18 @@ end
     end
 end
 
+@testset "ConvTranspose output padding" begin
+    x = randn(Float32, 10, 11, 3, 2)
+    m = ConvTranspose((3, 5), 3=>6, stride=3, outpad=(1, 0))
+    md, xd = Flux.gpu.((m, x))
+    @test size(m(x)) == size(md(xd))
+
+    x = randn(Float32, 10, 11, 12, 3, 2)
+    m = ConvTranspose((3, 5, 3), 3=>6, stride=3, outpad=(1, 0, 1))
+    md, xd = Flux.gpu.((m, x))
+    @test size(m(x)) == size(md(xd))
+end
+
 @testset "Chain(Conv)" begin
     m = Chain(Conv((3, 3), 3 => 3)) |> f32
     x = rand(Float32, 10, 10, 3, 2)
