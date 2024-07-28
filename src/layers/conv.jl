@@ -321,12 +321,21 @@ end
 @layer ConvTranspose
 
 function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
+  # Calculate combined pad in each dimension
+  nd = ndims(x) - 2
+  if length(c.pad) == nd
+    # Handle symmetric non-constant padding
+    combined_pad = ntuple(i -> 2 * c.pad[i], nd)
+  else
+    combined_pad = ntuple(i -> c.pad[2i-1] + c.pad[2i], nd)
+  end
+
   # Calculate size of "input", from ∇conv_data()'s perspective...
   calc_dim(xsz, wsz, stride, dilation, pad, outpad) = (xsz - 1) * stride + 1 + (wsz - 1) * dilation - pad + outpad
-  combined_pad = ntuple(i -> c.pad[2i-1] + c.pad[2i], length(c.pad) ÷ 2)
   I = map(calc_dim, size(x)[1:end-2], size(c.weight)[1:end-2], c.stride, c.dilation, combined_pad, c.outpad)
   C_in = size(c.weight)[end-1] * c.groups
   batch_size = size(x)[end]
+
   # Create DenseConvDims() that looks like the corresponding conv()
   w_size = size(c.weight)
   return DenseConvDims((I..., C_in, batch_size), w_size;
