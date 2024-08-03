@@ -407,7 +407,6 @@ julia> using Flux, MPI, NCCL
 julia> DistributedUtils.initialize(NCCLBackend)
 
 julia> backend = DistributedUtils.get_distributed_backend(NCCLBackend)
-
 NCCLBackend{Communicator, MPIBackend{MPI.Comm}}(Communicator(Ptr{NCCL.LibNCCL.ncclComm} @0x000000000607a660), MPIBackend{MPI.Comm}(MPI.Comm(1140850688)))
 ```
 
