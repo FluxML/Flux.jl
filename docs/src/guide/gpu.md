@@ -399,7 +399,7 @@ julia> MPI.install_mpiexecjl()
 
 Now you can run your code with `mpiexecjl --project=. -n <np> julia <filename>.jl` from CLI.
 
-You can use two backends, `MPIBackend` and `NCCBackend`. First, initialize the respective backend with `DistributedUtils.initialize`, e.g.
+You can use either the `MPIBackend` or `NCCLBackend`, the latter only if also `NCCL.jl` is loaded. First, initialize a backend with `DistributedUtils.initialize`, e.g.
 
 ```julia-repl
 julia> using Flux, MPI, NCCL
