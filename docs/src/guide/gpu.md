@@ -454,10 +454,6 @@ st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0)
 
 Now you can define loss and train the model.
 ```julia
-loss(model) = mean((model(x) .- y).^2)
-g_ = gradient(m -> loss(m), model)[1] 
-Optimisers.update!(st_opt, model, g_)
-
 for epoch in 1:100
   global model, st_opt
   l, back = Zygote.pullback(loss, model)
