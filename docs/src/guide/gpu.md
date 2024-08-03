@@ -392,8 +392,6 @@ Flux supports now distributed data parallel training with `DistributedUtils` mod
 If you want to run your code on multiple GPUs, you have to install `MPI.jl` (see [docs](https://juliaparallel.org/MPI.jl/stable/usage/) for more info).
 
 ```julia-repl
-julia> using Pkg; add MPI
-
 julia> using MPI
 
 julia> MPI.install_mpiexecjl()
