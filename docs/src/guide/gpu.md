@@ -427,7 +427,7 @@ julia> y = x .^ 3
  0.0137076  0.0362744  0.791443  0.171815  0.620854  0.668804  0.53197  0.819654  0.108651  0.179971  0.312918  0.388508  0.907292  0.00155418  0.29  0.435899
 ```
 
-You can also use `DistributedUtils.DistributedDataContainer` to split the data uniformly accross processes.
+You can also use `DistributedUtils.DistributedDataContainer` to split the data uniformly across processes.
 
 ```julia-repl
 julia> data = DistributedUtils.DistributedDataContainer(backend, x)
