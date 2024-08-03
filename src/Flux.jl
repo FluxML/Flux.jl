@@ -14,9 +14,8 @@ import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owne
 using Optimisers: freeze!, thaw!, adjust!, trainables
 using Random: default_rng
 using Zygote, ChainRulesCore
-using Zygote: Params, @adjoint, gradient, pullback
+using Zygote: Params, @adjoint, pullback
 using Zygote.ForwardDiff: value
-export gradient
 
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
 Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
@@ -54,6 +53,10 @@ export ClipGrad, OptimiserChain  # these are const defined in deprecations, for 
 include("train.jl")
 using .Train
 using .Train: setup
+
+include("gradient.jl")
+export gradient
+@compat(public, (withgradient,))
 
 using Adapt, Functors, OneHotArrays
 include("utils.jl")

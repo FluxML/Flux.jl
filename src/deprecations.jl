@@ -212,6 +212,18 @@ ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
 
 Base.@deprecate_binding FluxAMDAdaptor FluxAMDGPUAdaptor
 
+function gradient(f, p::Zygote.Params)
+  Base.depwarn("""Implicit gradients such as `gradient(f, ::Params)` are deprecated!
+    Please see the docs for new explicit form.""", :gradient)
+  Zygote.gradient(f, args...)
+end
+
+function withgradient(f, p::Zygote.Params)
+  Base.depwarn("""Implicit gradients such as `withgradient(f, ::Params)` are deprecated!
+    Please see the docs for new explicit form.""", :withgradient)
+  Zygote.withgradient(f, args...)
+end
+
 # v0.15 deprecations
 
 # Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
