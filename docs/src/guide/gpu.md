@@ -456,10 +456,9 @@ Now you can define loss and train the model.
 ```julia
 for epoch in 1:100
   global model, st_opt
-  l, back = Zygote.pullback(loss, model)
+  l, grad = Zygote.withgradient(loss, model)
   println("Epoch $epoch: Loss $l")
-  g = back(one(l))[1]
-  st_opt, model = Optimisers.update(st_opt, model, g)
+  st_opt, model = Optimisers.update(st_opt, model, grad[1])
 end
 ```
 
