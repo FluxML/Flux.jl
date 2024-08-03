@@ -463,7 +463,7 @@ end
 ```
 
 Remember that in order to run it on multiple GPUs you have to run from CLI `mpiexecjl --project=. -n <np> julia <filename>.jl`,
-where `--project` is path to your Julia environment and `<np>` number of processes.
+where  `<np>` is the number of processes that you want to use. The number of processes should correspond to the number of gpus + 1.
 
 By default `MPI.jl` MPI installation is CUDA-unaware so if you want to run it in CUDA-aware mode, read more [here](https://juliaparallel.org/MPI.jl/stable/usage/#CUDA-aware-MPI-support) on custom installation and rebuilding `MPI.jl`. 
 Then test if your MPI is CUDA-aware by
