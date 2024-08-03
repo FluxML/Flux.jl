@@ -444,7 +444,7 @@ Chain(
 )                   # Total: 4 arrays, 769 parameters, 744 bytes.
 ```
 
-Time to set up optimizer by using `DistributedUtils.DistributedOptimizer` and synchronize it as well.
+Time to set up an optimizer by using `DistributedUtils.DistributedOptimizer` and synchronize it as well.
 ```julia
 using Optimisers
 opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
