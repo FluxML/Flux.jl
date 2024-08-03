@@ -413,7 +413,6 @@ NCCLBackend{Communicator, MPIBackend{MPI.Comm}}(Communicator(Ptr{NCCL.LibNCCL.nc
 Pass your model, as well as any data to GPU device.
 ```julia-repl
 julia> model = Chain(Dense(1 => 256, tanh), Dense(256 => 1)) |> gpu
-
 Chain(
   Dense(1 => 256, tanh),                # 512 parameters
   Dense(256 => 1),                      # 257 parameters
