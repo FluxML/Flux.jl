@@ -1,6 +1,6 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.14.17"
+version = "0.14.18"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -37,7 +37,7 @@ FluxEnzymeExt = "Enzyme"
 FluxMetalExt = "Metal"
 
 [compat]
-AMDGPU = "0.9.3"
+AMDGPU = "1"
 Adapt = "3, 4"
 CUDA = "4, 5"
 ChainRulesCore = "1.12"
@@ -47,7 +47,7 @@ Functors = "0.4"
 MLUtils = "0.4"
 MacroTools = "0.5"
 Metal = "0.5, 1"
-NNlib = "0.9.15"
+NNlib = "0.9.22"
 OneHotArrays = "0.2.4"
 Optimisers = "0.3.3"
 Preferences = "1"
