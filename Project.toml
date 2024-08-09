@@ -37,7 +37,7 @@ FluxEnzymeExt = "Enzyme"
 FluxMetalExt = "Metal"
 
 [compat]
-AMDGPU = "0.9.3"
+AMDGPU = "0.9.3, 1"
 Adapt = "3, 4"
 CUDA = "4, 5"
 ChainRulesCore = "1.12"
