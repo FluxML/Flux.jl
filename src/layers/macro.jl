@@ -1,3 +1,4 @@
+import EnzymeCore
 
 """
     @layer Dense
@@ -65,6 +66,9 @@ macro layer(exs...)
 
   # This function exists only for depwarns when you use @functor directly
   push!(out.args, :(Flux._check_new_macro(::$(esc(type))) = nothing))
+
+  # TODO this should probably make it zero first?
+  push!(out.args, :($EnzymeCore.Duplicated(m::$(esc(type))) = $EnzymeCore.Duplicated(m, $deepcopy(m))))
   
   push!(out.args, _macro_functor(esc(type)))
 
