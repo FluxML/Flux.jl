@@ -212,6 +212,12 @@ ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
 
 Base.@deprecate_binding FluxAMDAdaptor FluxAMDGPUAdaptor
 
+# Issue 2476, after ConvTranspose got a new field in 2462. Minimal fix to allow loading?
+function loadmodel!(dst::ConvTranspose, src::NamedTuple{(:σ, :weight, :bias, :stride, :pad, :dilation, :groups)}; kw...)
+  new_src = (; src.σ, src.weight, src.bias, src.stride, src.pad, dst.outpad, src.dilation, src.groups)
+  loadmodel!(dst, new_src; kw...)
+end
+
 # v0.15 deprecations
 
 # Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
