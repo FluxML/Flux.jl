@@ -257,6 +257,19 @@ end
   end
 end
 
+@testset "$ltype $(nd)D symmetric non-constant padding" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), nd in (1, 2, 3)
+  kernel = ntuple(Returns(3), nd)
+  data = ones(Float32, (kernel .+ 5)..., 1,1)
+
+  pad = ntuple(i -> i, nd)
+  l = ltype(kernel, 1=>1, pad=pad)
+
+  expanded_pad = ntuple(i -> pad[(i - 1) ÷ 2 + 1], 2 * nd)
+  l_expanded = ltype(kernel, 1=>1, pad=expanded_pad)
+
+  @test size(l(data)) == size(l_expanded(data))
+end
+
 @testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
   data = ones(Float32, (k .+ 3)..., 1,1)
   l = ltype(k, 1=>1, pad=SamePad())
