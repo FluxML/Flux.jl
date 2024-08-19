@@ -11,6 +11,8 @@ using Pkg
 # ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
 # ENV["FLUX_TEST_CPU"] = "false"
+# ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
+# ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 
 include("test_utils.jl")
 
@@ -119,6 +121,23 @@ Random.seed!(0)
     end
   else
     @info "Skipping Metal tests, set FLUX_TEST_METAL=true to run them."
+  end
+
+  if get(ENV, "FLUX_TEST_DISTRIBUTED_MPI", "false") == "true" || get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == true
+    Pkg.add(["MPI"])
+    using MPI
+
+    if get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "true"
+      Pkg.add(["NCCL"])
+      using NCCL
+    end
+
+    @testset "Distributed" begin
+      include("ext_distributed/runtests.jl")
+    end
+
+  else
+    @info "Skipping Distributed tests, set FLUX_TEST_DISTRIBUTED_MPI or FLUX_TEST_DISTRIBUTED_NCCL=true to run them."
   end
 
   @testset "Enzyme" begin

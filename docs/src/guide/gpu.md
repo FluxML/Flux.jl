@@ -385,3 +385,120 @@ Flux.supported_devices
 Flux.get_device
 Flux.gpu_backend!
 ```
+
+## Distributed data parallel training
+
+!!! danger "Experimental"
+    
+    Distributed support is experimental and could change in the future.
+
+
+Flux supports now distributed data parallel training with `DistributedUtils` module. 
+If you want to run your code on multiple GPUs, you have to install `MPI.jl` (see [docs](https://juliaparallel.org/MPI.jl/stable/usage/) for more info).
+
+```julia-repl
+julia> using MPI
+
+julia> MPI.install_mpiexecjl()
+```
+
+Now you can run your code with `mpiexecjl --project=. -n <np> julia <filename>.jl` from CLI.
+
+You can use either the `MPIBackend` or `NCCLBackend`, the latter only if also `NCCL.jl` is loaded. First, initialize a backend with `DistributedUtils.initialize`, e.g.
+
+```julia-repl
+julia> using Flux, MPI, NCCL, CUDA
+
+julia> CUDA.allowscalar(false)
+
+julia> DistributedUtils.initialize(NCCLBackend)
+
+julia> backend = DistributedUtils.get_distributed_backend(NCCLBackend)
+NCCLBackend{Communicator, MPIBackend{MPI.Comm}}(Communicator(Ptr{NCCL.LibNCCL.ncclComm} @0x000000000607a660), MPIBackend{MPI.Comm}(MPI.Comm(1140850688)))
+```
+
+Pass your model, as well as any data to GPU device.
+```julia-repl
+julia> model = Chain(Dense(1 => 256, tanh), Dense(256 => 1)) |> gpu
+Chain(
+  Dense(1 => 256, tanh),                # 512 parameters
+  Dense(256 => 1),                      # 257 parameters
+)                   # Total: 4 arrays, 769 parameters, 744 bytes.
+
+julia> x = rand(Float32, 1, 16) |> gpu
+1×16 CUDA.CuArray{Float32, 2, CUDA.DeviceMemory}:
+ 0.239324  0.331029  0.924996  0.55593  0.853093  0.874513  0.810269  0.935858  0.477176  0.564591  0.678907  0.729682  0.96809  0.115833  0.66191  0.75822
+
+julia> y = x .^ 3
+1×16 CUDA.CuArray{Float32, 2, CUDA.DeviceMemory}:
+ 0.0137076  0.0362744  0.791443  0.171815  0.620854  0.668804  0.53197  0.819654  0.108651  0.179971  0.312918  0.388508  0.907292  0.00155418  0.29  0.435899
+```
+
+In this case, we are training on a total of `16 * number of processes` samples. You can also use `DistributedUtils.DistributedDataContainer` to split the data uniformly across processes (or do it manually).
+
+```julia-repl
+julia> data = DistributedUtils.DistributedDataContainer(backend, x)
+Flux.DistributedUtils.DistributedDataContainer(Float32[0.23932439 0.33102947 … 0.66191036 0.75822026], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+```
+
+You have to wrap your model in `DistributedUtils.FluxDistributedModel` and synchronize it (broadcast accross all processes):
+```julia-repl
+julia> model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0)
+Chain(
+  Dense(1 => 256, tanh),                # 512 parameters
+
+  Dense(256 => 1),                      # 257 parameters
+)                   # Total: 4 arrays, 769 parameters, 744 bytes.
+```
+
+Time to set up an optimizer by using `DistributedUtils.DistributedOptimizer` and synchronize it as well.
+```julia-repl
+julia> using Optimisers
+
+julia> opt = DistributedUtils.DistributedOptimizer(backend, Optimisers.Adam(0.001f0))
+DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8))
+
+julia> st_opt = Optimisers.setup(opt, model)
+(layers = ((weight = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0; 0.0; … ; 0.0; 0.0;;], Float32[0.0; 0.0; … ; 0.0; 0.0;;], (0.9, 0.999))), bias = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], Float32[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], (0.9, 0.999))), σ = ()), (weight = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0 0.0 … 0.0 0.0], Float32[0.0 0.0 … 0.0 0.0], (0.9, 0.999))), bias = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0], Float32[0.0], (0.9, 0.999))), σ = ())),)
+
+julia> st_opt = DistributedUtils.synchronize!!(backend, st_opt; root=0) 
+(layers = ((weight = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0; 0.0; … ; 0.0; 0.0;;], Float32[0.0; 0.0; … ; 0.0; 0.0;;], (0.9, 0.999))), bias = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], Float32[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], (0.9, 0.999))), σ = ()), (weight = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0 0.0 … 0.0 0.0], Float32[0.0 0.0 … 0.0 0.0], (0.9, 0.999))), bias = Leaf(DistributedOptimizer{MPIBackend{Comm}}(MPIBackend{Comm}(Comm(1140850688)), Adam(0.001, (0.9, 0.999), 1.0e-8)), (Float32[0.0], Float32[0.0], (0.9, 0.999))), σ = ())),)
+```
+
+Now you can define loss and train the model.
+```julia-repl
+julia> loss(model) = mean((model(x) .- y).^2)
+loss (generic function with 1 method)
+
+julia> for epoch in 1:100
+           global model, st_opt
+           l, grad = Zygote.withgradient(loss, model)
+           println("Epoch $epoch: Loss $l")
+           st_opt, model = Optimisers.update(st_opt, model, grad[1])
+         end
+Epoch 1: Loss 0.011638729
+Epoch 2: Loss 0.0116432225
+Epoch 3: Loss 0.012763695
+...
+```
+
+Remember that in order to run it on multiple GPUs you have to run from CLI `mpiexecjl --project=. -n <np> julia <filename>.jl`,
+where  `<np>` is the number of processes that you want to use. The number of processes usually corresponds to the number of gpus.
+
+By default `MPI.jl` MPI installation is CUDA-unaware so if you want to run it in CUDA-aware mode, read more [here](https://juliaparallel.org/MPI.jl/stable/usage/#CUDA-aware-MPI-support) on custom installation and rebuilding `MPI.jl`. 
+Then test if your MPI is CUDA-aware by
+```julia-repl
+julia> import Pkg
+julia> Pkg.test("MPI"; test_args=["--backend=CUDA"])
+```
+
+If it is, set your local preference as below
+```julia-repl
+julia> using Preferences
+julia> set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
+```
+
+!!! warning "Known shortcomings"
+    
+    We don't run CUDA-aware tests so you're running it at own risk.
+
