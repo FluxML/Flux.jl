@@ -407,7 +407,9 @@ Now you can run your code with `mpiexecjl --project=. -n <np> julia <filename>.j
 You can use either the `MPIBackend` or `NCCLBackend`, the latter only if also `NCCL.jl` is loaded. First, initialize a backend with `DistributedUtils.initialize`, e.g.
 
 ```julia-repl
-julia> using Flux, MPI, NCCL
+julia> using Flux, MPI, NCCL, CUDA
+
+julia> CUDA.allowscalar(false)
 
 julia> DistributedUtils.initialize(NCCLBackend)
 
