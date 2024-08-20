@@ -140,10 +140,14 @@ Random.seed!(0)
     @info "Skipping Distributed tests, set FLUX_TEST_DISTRIBUTED_MPI or FLUX_TEST_DISTRIBUTED_NCCL=true to run them."
   end
 
-  @testset "Enzyme" begin
-    Pkg.add(["CUDA", "cuDNN"])
-    import Enzyme
-    include("ext_enzyme/enzyme.jl")
+  if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
+      @testset "Enzyme" begin
+        Pkg.add(["CUDA", "cuDNN"])
+        import Enzyme
+        include("ext_enzyme/enzyme.jl")
+      end
+  else
+    @info "Skipping Enzyme tests, set FLUX_TEST_CUDA=true to run them."
   end
 
 end
