@@ -27,7 +27,7 @@ jobs:
             arch: x64
           - os: macOS-latest
             version: '1'
-            arch: x64
+            arch: aarch64
     steps:
       - uses: actions/checkout@v4.1.7
       - uses: julia-actions/setup-julia@v2
