@@ -79,7 +79,6 @@ julia> Flux.withgradient(g, nt)
 Consider a simple linear regression, which tries to predict an output array `y` from an input `x`.
 
 ```julia
-
 predict(W, b, x) = W*x .+ b
 
 function loss(W, b, x, y)
