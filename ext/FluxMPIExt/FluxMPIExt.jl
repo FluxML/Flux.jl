@@ -1,6 +1,9 @@
 module FluxMPIExt
 
-using CUDA
+if Base.find_package("CUDA") !== nothing
+    using CUDA
+end
+
 using Flux: MPIBackend, NCCLBackend, DistributedUtils,
             AbstractDevice, FluxCUDADevice, FluxAMDGPUDevice, cpu, gpu,
             get_device, MPI_CUDA_AWARE, MPI_ROCM_AWARE
@@ -19,14 +22,16 @@ function DistributedUtils.__initialize(
 
     local_rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-    if cuda_devices !== missing && CUDA.functional()
-        if cuda_devices === nothing
-            CUDA.device!((local_rank + 1) % length(CUDA.devices()))
-        else
-            CUDA.device!(cuda_devices[local_rank + 1])
+    if Base.find_package("CUDA") !== nothing
+        if cuda_devices !== missing && CUDA.functional()
+            if cuda_devices === nothing
+                CUDA.device!((local_rank + 1) % length(CUDA.devices()))
+            else
+                CUDA.device!(cuda_devices[local_rank + 1])
+            end
+        elseif force_cuda
+            error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
         end
-    elseif force_cuda
-        error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
     end
 
     if Base.find_package("AMDGPU") !== nothing
