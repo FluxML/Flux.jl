@@ -18,6 +18,17 @@ using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
 export gradient
 
+@reexport using MLDataDevices: MLDataDevices, gpu_backend!, supported_gpu_backends, reset_gpu_device!,
+                    default_device_rng,
+                    gpu_device, cpu_device, xla_device,
+                    CPUDevice,
+                    CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
+                    XLADevice,
+                    # get_device, # we define get_device here for retrocompatibility
+                    get_device_type,
+                    DeviceIterator
+
+
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
 Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
 
@@ -91,6 +102,9 @@ include("deprecations.jl")
 
 include("losses/Losses.jl")
 using .Losses
+
+include("devices.jl")
+export get_device
 
 # Distributed Training
 include("distributed/backend.jl")

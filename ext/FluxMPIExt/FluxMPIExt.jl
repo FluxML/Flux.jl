@@ -1,17 +1,9 @@
 module FluxMPIExt
 
-if Base.find_package("CUDA") !== nothing
-    using CUDA
-end
-
 using Flux: MPIBackend, NCCLBackend, DistributedUtils,
-            AbstractDevice, FluxCUDADevice, FluxAMDGPUDevice, cpu, gpu,
-            get_device, MPI_CUDA_AWARE, MPI_ROCM_AWARE
+            MPI_CUDA_AWARE, MPI_ROCM_AWARE
 using MPI: MPI
-
-if Base.find_package("AMDGPU") !== nothing
-    using AMDGPU
-end
+using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_device!
 
 
 function DistributedUtils.__initialize(
@@ -22,28 +14,24 @@ function DistributedUtils.__initialize(
 
     local_rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-    if Base.find_package("CUDA") !== nothing
-        if cuda_devices !== missing && CUDA.functional()
-            if cuda_devices === nothing
-                CUDA.device!((local_rank + 1) % length(CUDA.devices()))
-            else
-                CUDA.device!(cuda_devices[local_rank + 1])
-            end
-        elseif force_cuda
-            error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
+    if cuda_devices !== missing && functional(CUDADevice)
+        if cuda_devices === nothing
+            set_device!(CUDADevice, nothing, local_rank + 1)
+        else
+            set_device!(CUDADevice, cuda_devices[local_rank + 1])
         end
+    elseif force_cuda
+        error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
     end
 
-    if Base.find_package("AMDGPU") !== nothing
-        if amdgpu_devices !== missing && AMDGPU.functional()
-            if amdgpu_devices === nothing
-                AMDGPU.device!((local_rank + 1) % length(AMDGPU.devices()))
-            else
-                AMDGPU.device!(amdgpu_devices[local_rank + 1])
-            end
-        elseif force_amdgpu
-            error(lazy"AMDGPU devices are not functional (or `LuxAMDGPU.jl` not loaded) and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
+    if amdgpu_devices !== missing && AMDGPU.functional()
+        if amdgpu_devices === nothing
+            set_device!(AMDGPUDevice, nothing, local_rank + 1)
+        else
+            set_device!(AMDGPUDevice, amdgpu_devices[local_rank + 1])
         end
+    elseif force_amdgpu
+        error(lazy"AMDGPU devices are not functional (or `LuxAMDGPU.jl` not loaded) and `force_amdgpu` is set to `true`. This is caused by backend: $(caller).")
     end
 
     return
@@ -56,16 +44,15 @@ DistributedUtils.local_rank(backend::MPIBackend) = MPI.Comm_rank(backend.comm)
 DistributedUtils.total_workers(backend::MPIBackend) = MPI.Comm_size(backend.comm)
 
 # Broadcast
-# Union with Function is because of Flux.cpu istypeof Function
 # We need CPU in case of non CUDA-aware implementation
 function DistributedUtils.__bcast!(
-        backend::MPIBackend, sendrecvbuf, dev::Union{AbstractDevice, Function}; root=0)
+        backend::MPIBackend, sendrecvbuf, dev::AbstractDevice; root=0)
     MPI.Bcast!(sendrecvbuf, backend.comm; root)
     return sendrecvbuf
 end
 
 function DistributedUtils.__bcast!(
-        backend::MPIBackend, sendbuf, recvbuf, dev::Union{AbstractDevice, Function}; root=0)
+        backend::MPIBackend, sendbuf, recvbuf, dev::AbstractDevice; root=0)
     return DistributedUtils.__bcast!(
         backend, ifelse(DistributedUtils.local_rank(backend) == root, sendbuf, recvbuf),
         dev; root)
@@ -73,24 +60,26 @@ end
 
 # if MPI implementation is not CUDA-aware
 # we have to move data to CPU first
-for (aware, dType) in ((MPI_CUDA_AWARE, FluxCUDADevice), (MPI_ROCM_AWARE, FluxAMDGPUDevice))
+for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevice))
     if !aware
         @eval begin
             function DistributedUtils.__bcast!(
                     backend::MPIBackend, sendrecvbuf, dev::$dType; root=0)
-                sendrecvbuf_ = sendrecvbuf |> cpu
-                DistributedUtils.__bcast!(backend, sendrecvbuf_, cpu; root)
-                sendrecvbuf |> gpu
-                return sendrecvbuf
+                cdev = cpu_device()
+                sendrecvbuf_ = sendrecvbuf |> cdev
+                DistributedUtils.__bcast!(backend, sendrecvbuf_, cdev; root)
+                copyto!(sendrecvbuf, sendrecvbuf_)
+                return
             end
 
             function DistributedUtils.__bcast!(
                     backend::MPIBackend, sendbuf, recvbuf, dev::$dType; root=0)
-                sendbuf_ = sendbuf |> cpu
-                recvbuf_ = recvbuf |> cpu
-                DistributedUtils.__bcast!(backend, sendbuf_, recvbuf_, cpu; root)
-                recvbuf |> gpu
-                return recvbuf
+                cdev = cpu_device()
+                sendbuf_ = sendbuf |> cdev
+                recvbuf_ = recvbuf |> cdev
+                DistributedUtils.__bcast!(backend, sendbuf_, recvbuf_, cdev; root)
+                copyto!(recvbuf, recvbuf_)
+                return
             end
         end
     end
@@ -99,7 +88,7 @@ end
 
 # Allreduce
 function DistributedUtils.__allreduce!(
-        backend::MPIBackend, sendrecvbuf, op::F, dev::Union{AbstractDevice, Function};) where {F}
+        backend::MPIBackend, sendrecvbuf, op::F, ::AbstractDevice) where {F}
     mpiop = ifelse(op === DistributedUtils.avg, +, op)
     MPI.Allreduce!(sendrecvbuf, mpiop, backend.comm)
     if op === DistributedUtils.avg
@@ -109,7 +98,7 @@ function DistributedUtils.__allreduce!(
 end
 
 function DistributedUtils.__allreduce!(
-        backend::MPIBackend, sendbuf, recvbuf, op::F, dev::Union{AbstractDevice, Function};) where {F}
+        backend::MPIBackend, sendbuf, recvbuf, op::F, ::AbstractDevice) where {F}
     mpiop = ifelse(op === DistributedUtils.avg, +, op)
     MPI.Allreduce!(sendbuf, recvbuf, mpiop, backend.comm)
     if op === DistributedUtils.avg
@@ -118,24 +107,26 @@ function DistributedUtils.__allreduce!(
     return recvbuf
 end
 
-for (aware, dType) in ((MPI_CUDA_AWARE, FluxCUDADevice), (MPI_ROCM_AWARE, FluxAMDGPUDevice))
+for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevice))
     if !aware
         @eval begin
             function DistributedUtils.__allreduce!(
                     backend::MPIBackend, sendrecvbuf, op::F, dev::$dType) where {F}
-                sendrecvbuf_ = sendrecvbuf |> cpu
-                DistributedUtils.__allreduce!(backend, sendrecvbuf_, op, cpu)
-                sendrecvbuf |> gpu
-                return sendrecvbuf
+                cdev = cpu_device()
+                sendrecvbuf_ = sendrecvbuf |> cdev
+                DistributedUtils.__allreduce!(backend, sendrecvbuf_, op, cdev)
+                copyto!(sendrecvbuf, sendrecvbuf_)
+                return
             end
 
             function DistributedUtils.__allreduce!(
                     backend::MPIBackend, sendbuf, recvbuf, op::F, dev::$dType) where {F}
-                sendbuf_ = sendbuf |> cpu
-                recvbuf_ = recvbuf |> cpu
-                DistributedUtils.__allreduce!(backend, sendbuf_, recvbuf_, op, cpu)
-                recvbuf |> gpu
-                return recvbuf
+                cdev = cpu_device()
+                sendbuf_ = sendbuf |> cdev
+                recvbuf_ = recvbuf |> cdev
+                DistributedUtils.__allreduce!(backend, sendbuf_, recvbuf_, op, cdev)
+                copyto!(recvbuf, recvbuf_)
+                return
             end
         end
     end
@@ -143,7 +134,7 @@ end
 
 # Reduce
 function DistributedUtils.__reduce!(backend::MPIBackend, sendrecvbuf, op::F,
-        dev::Union{AbstractDevice, Function}; root::Int) where {F}
+        dev::AbstractDevice; root::Int) where {F}
     mpiop = ifelse(op === DistributedUtils.avg, +, op)
     MPI.Reduce!(sendrecvbuf, mpiop, backend.comm; root)
     if op === DistributedUtils.avg
@@ -153,7 +144,7 @@ function DistributedUtils.__reduce!(backend::MPIBackend, sendrecvbuf, op::F,
 end
 
 function DistributedUtils.__reduce!(backend::MPIBackend, sendbuf, recvbuf, op::F,
-        dev::Union{AbstractDevice, Function}; root::Int) where {F}
+        dev::AbstractDevice; root::Int) where {F}
     mpiop = ifelse(op === DistributedUtils.avg, +, op)
     MPI.Reduce!(sendbuf, recvbuf, mpiop, backend.comm; root)
     if op === DistributedUtils.avg
@@ -162,24 +153,26 @@ function DistributedUtils.__reduce!(backend::MPIBackend, sendbuf, recvbuf, op::F
     return recvbuf
 end
 
-for (aware, dType) in ((MPI_CUDA_AWARE, FluxCUDADevice), (MPI_ROCM_AWARE, FluxAMDGPUDevice))
+for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevice))
     if !aware
         @eval begin
             function DistributedUtils.__reduce!(backend::MPIBackend, sendrecvbuf, op::F,
                     dev::$dType; root::Int) where {F}
-                sendrecvbuf_ = sendrecvbuf |> cpu
-                DistributedUtils.__reduce!(backend, sendrecvbuf_, op, cpu; root)
-                sendrecvbuf |> gpu
-                return sendrecvbuf
+                cdev = cpu_device()
+                sendrecvbuf_ = sendrecvbuf |> cdev
+                DistributedUtils.__reduce!(backend, sendrecvbuf_, op, cdev; root)
+                copyto!(sendrecvbuf, sendrecvbuf_)
+                return
             end
 
             function DistributedUtils.__reduce!(backend::MPIBackend, sendbuf, recvbuf,
                     op::F, dev::$dType; root::Int) where {F}
-                sendbuf_ = sendbuf |> cpu
-                recvbuf_ = recvbuf |> cpu
-                DistributedUtils.__reduce!(backend, sendbuf_, recvbuf_, op, cpu; root)
-                recvbuf |> gpu
-                return recvbuf
+                cdev = cpu_device()
+                sendbuf_ = sendbuf |> cdev
+                recvbuf_ = recvbuf |> cdev
+                DistributedUtils.__reduce!(backend, sendbuf_, recvbuf_, op, cdev; root)
+                copyto!(recvbuf, recvbuf_)
+                return
             end
         end
     end

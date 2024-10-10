@@ -218,6 +218,37 @@ function loadmodel!(dst::ConvTranspose, src::NamedTuple{(:σ, :weight, :bias, :s
   loadmodel!(dst, new_src; kw...)
 end
 
+function get_device(; verbose::Bool=false)
+  Base.depwarn("get_device() is deprecated. Use `gpu_device()` instead.", :get_device)
+  return MLDataDevices.gpu_device()
+end
+
+function get_device(backend::String, idx::Int = 0)
+  Base.depwarn("get_device(backend::String, idx::Int) is deprecated. Use `gpu_device(idx+1)` instead.", :get_device)
+  if backend == "AMD"
+      @warn "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead." maxlog=1
+      backend = "AMDGPU"
+  end
+  if backend == "CPU"
+      return MLDataDevices.CPUDevice()
+  else
+      return _get_device(Val(Symbol(backend)), idx)
+  end
+end
+
+function _get_device(::Val{D}, idx) where D 
+  if D ∈ (:CUDA, :AMDGPU, :Metal)
+      error(string("Unavailable backend: ", D,". Try importing the corresponding package with `using ", D, "`."))
+  else
+      error(string("Unsupported backend: ", D, ". Supported backends are ", (:CUDA, :AMDGPU, :Metal), "."))
+  end
+end
+
+function supported_devices()
+  Base.depwarn("supported_devices() is deprecated. Use `supported_gpu_backends()` instead.", :supported_devices)
+  return MLDataDevices.supported_gpu_backends()
+end
+
 # v0.15 deprecations
 
 # Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 

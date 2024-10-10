@@ -186,7 +186,7 @@ julia> round(std(Flux.kaiming_normal(10, 1000)), digits=3)
 0.044f0
 
 julia> round(std(Flux.kaiming_normal(1000, 10)), digits=3)
-0.449f0
+0.45f0
 
 julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
 0.045f0
@@ -590,7 +590,7 @@ Chain(
   ),
   Dense(64 => 10),                      # 650 parameters
 )         # Total: 6 trainable arrays, 51_018 parameters,
-          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB.
+          # plus 2 non-trainable, 128 parameters, summarysize 200.211 KiB.
 
 julia> Flux.modules(m2)
 7-element Vector{Any}:
