@@ -235,7 +235,7 @@ More information for conditional use of GPUs in CUDA.jl can be found in its [doc
 As a more convenient syntax, Flux allows the usage of GPU `device` objects which can be used to easily transfer models to GPUs (and defaulting to using the CPU if no GPU backend is available). This syntax has a few advantages including automatic selection of the GPU backend and type stability of data movement. 
 These features are provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl) package, that Flux's uses internally and re-exports.
 
-A `device` object can be created using the [`gpu_device`](@ref MLDataDevices.get_device) function. 
+A `device` object can be created using the [`gpu_device`](@ref MLDataDevices.gpu_device) function. 
 `gpu_device` first checks for a GPU preference, and if possible returns a device for the preference backend. For instance, consider the following example, where we load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) package to use an NVIDIA GPU (`"CUDA"` is the default preference):
 
 ```julia-repl
@@ -360,12 +360,6 @@ MLDataDevices.gpu_backend!
 MLDataDevices.get_device_type
 MLDataDevices.reset_gpu_device!
 MLDataDevices.supported_gpu_backends
-MLDataDevices.CPUDevice
-MLDataDevices.CUDADevice
-MLDataDevices.AMDGPUDevice
-MLDataDevices.MetalDevice
-MLDataDevices.oneAPIDevice
-MLDataDevices.XLADevice
 MLDataDevices.DeviceIterator
 ```
 
