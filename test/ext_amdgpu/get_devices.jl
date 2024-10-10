@@ -1,7 +1,7 @@
-amdgpu_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMDGPU"]]
+amdgpu_device = gpu_device()
 
 # should pass, whether or not AMDGPU is functional
-@test typeof(amdgpu_device) <: Flux.FluxAMDGPUDevice
+@test typeof(amdgpu_device) <: Flux.AMDGPUDevice
 
 @test typeof(amdgpu_device.deviceID) <: AMDGPU.HIPDevice 
 
@@ -17,7 +17,7 @@ amdgpu_device = Flux.get_device()
 @test Flux._get_device_name(amdgpu_device) in Flux.supported_devices()
 
 # correctness of data transfer
-x = randn(5, 5)
+x = randn(Float32, 5, 5)
 cx = x |> amdgpu_device
 @test cx isa AMDGPU.ROCArray
 @test AMDGPU.device_id(AMDGPU.device(cx)) == AMDGPU.device_id(amdgpu_device.deviceID)

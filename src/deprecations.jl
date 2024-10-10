@@ -224,7 +224,7 @@ function get_device(; verbose::Bool=false)
 end
 
 function get_device(backend::String, idx::Int = 0)
-  Base.depwarn("get_device(backend::String, idx::Int) is deprecated. Use `gpu_device(idx)` instead.", :get_device)
+  Base.depwarn("get_device(backend::String, idx::Int) is deprecated. Use `gpu_device(idx+1)` instead.", :get_device)
   if backend == "AMD"
       @warn "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead." maxlog=1
       backend = "AMDGPU"

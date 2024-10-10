@@ -1,7 +1,7 @@
-cuda_device = Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["CUDA"]]
+cuda_device = gpu_device()
 
 # should pass, whether or not CUDA is functional
-@test typeof(cuda_device) <: Flux.FluxCUDADevice
+@test typeof(cuda_device) <: Flux.CUDADevice
 
 @test typeof(cuda_device.deviceID) <: CUDA.CuDevice 
 
@@ -12,7 +12,7 @@ bias = copy(dense_model.bias)               # store the bias
 
 cuda_device = Flux.get_device()
 
-@test typeof(cuda_device) <: Flux.FluxCUDADevice
+@test typeof(cuda_device) <: Flux.CUDADevice
 @test typeof(cuda_device.deviceID) <: CUDA.CuDevice
 @test Flux._get_device_name(cuda_device) in Flux.supported_devices()
 
