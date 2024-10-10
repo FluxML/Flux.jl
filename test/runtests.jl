@@ -7,12 +7,14 @@ using IterTools: ncycle
 using Zygote
 using Pkg
 
+## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
-ENV["FLUX_TEST_CUDA"] = "true"
+# ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
+ENV["FLUX_TEST_ENZYME"] = "false"
 
 include("test_utils.jl")
 
@@ -140,14 +142,13 @@ Random.seed!(0)
     @info "Skipping Distributed tests, set FLUX_TEST_DISTRIBUTED_MPI or FLUX_TEST_DISTRIBUTED_NCCL=true to run them."
   end
 
-  if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
+  if get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
       @testset "Enzyme" begin
-        Pkg.add(["CUDA", "cuDNN"])
         import Enzyme
         include("ext_enzyme/enzyme.jl")
       end
   else
-    @info "Skipping Enzyme tests, set FLUX_TEST_CUDA=true to run them."
+    @info "Skipping Enzyme tests, set FLUX_TEST_ENZYME=true to run them."
   end
 
 end
