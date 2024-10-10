@@ -192,7 +192,7 @@ _isleaf(::AbstractRNG) = true
 # the order below is important
 const GPU_BACKENDS = ("CUDA", "AMDGPU", "Metal", "CPU")
 const GPU_BACKEND_ORDER = Dict(collect(zip(GPU_BACKENDS, 1:length(GPU_BACKENDS))))
-const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
+const GPU_BACKEND = load_preference(MLDataDevices, "gpu_backend", "CUDA")
 
 
 """

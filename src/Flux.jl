@@ -104,6 +104,7 @@ include("losses/Losses.jl")
 using .Losses
 
 include("devices.jl")
+export get_device
 
 # Distributed Training
 include("distributed/backend.jl")
