@@ -378,11 +378,11 @@ Due to a limitation in `Metal.jl`, currently this kind of data movement across d
 
 ```@docs
 Flux.AbstractDevice
-Flux.FluxCPUDevice
-Flux.FluxCUDADevice
-Flux.FluxAMDGPUDevice
-Flux.FluxMetalDevice
-Flux.supported_devices
+Flux.CPUDevice
+Flux.CUDADevice
+Flux.AMDGPUDevice
+Flux.MetalDevice
+Flux.supported_gpu_backends
 Flux.get_device
 Flux.gpu_backend!
 ```

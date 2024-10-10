@@ -1,6 +1,7 @@
 module FluxMPINCCLExt
 
-using Flux: MPIBackend, NCCLBackend, DistributedUtils, FluxCUDADevice, FluxAMDGPUDevice, AbstractDevice
+using Flux: MPIBackend, NCCLBackend, DistributedUtils
+using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_device!
 using MPI: MPI
 using NCCL: NCCL
 using Setfield: @set!
@@ -35,7 +36,7 @@ DistributedUtils.total_workers(backend::NCCLBackend) = NCCL.size(backend.comm)
 # For non-CUDA Arrays, fallback to MPI
 # Broadcast
 function DistributedUtils.__bcast!(
-        backend::NCCLBackend, sendrecvbuf::CuArray, ::FluxCUDADevice; root=0)
+        backend::NCCLBackend, sendrecvbuf::CuArray, ::CUDADevice; root=0)
     NCCL.Broadcast!(sendrecvbuf, backend.comm; root)
     return sendrecvbuf
 end
@@ -46,7 +47,7 @@ function DistributedUtils.__bcast!(
 end
 
 function DistributedUtils.__bcast!(
-        backend::NCCLBackend, sendbuf, recvbuf, ::FluxCUDADevice; root=0)
+        backend::NCCLBackend, sendbuf, recvbuf, ::CUDADevice; root=0)
     NCCL.Broadcast!(sendbuf, recvbuf, backend.comm; root)
     return recvbuf
 end
@@ -58,7 +59,7 @@ end
 
 # Allreduce
 function DistributedUtils.__allreduce!(
-        backend::NCCLBackend, sendrecvbuf::CuArray, op::F, dev::FluxCUDADevice) where {F}
+        backend::NCCLBackend, sendrecvbuf::CuArray, op::F, dev::CUDADevice) where {F}
     op = ifelse(op === DistributedUtils.avg, NCCL.avg, op)
     NCCL.Allreduce!(sendrecvbuf, op, backend.comm)
     return sendrecvbuf
@@ -70,7 +71,7 @@ function DistributedUtils.__allreduce!(
 end
 
 function DistributedUtils.__allreduce!(
-        backend::NCCLBackend, sendbuf, recvbuf, op::F, ::FluxCUDADevice) where {F}
+        backend::NCCLBackend, sendbuf, recvbuf, op::F, ::CUDADevice) where {F}
     op = ifelse(op === DistributedUtils.avg, NCCL.avg, op)
     NCCL.Allreduce!(sendbuf, recvbuf, op, backend.comm)
     return recvbuf
@@ -83,7 +84,7 @@ end
 
 # Reduce
 function DistributedUtils.__reduce!(
-        backend::NCCLBackend, sendrecvbuf, op::F, ::FluxCUDADevice; root::Int) where {F}
+        backend::NCCLBackend, sendrecvbuf, op::F, ::CUDADevice; root::Int) where {F}
     op = ifelse(op === DistributedUtils.avg, NCCL.avg, op)
     NCCL.Reduce!(sendrecvbuf, op, backend.comm; root)
     return sendrecvbuf
@@ -95,7 +96,7 @@ function DistributedUtils.__reduce!(backend::NCCLBackend, sendrecvbuf, op::F,
 end
 
 function DistributedUtils.__reduce!(
-        backend::NCCLBackend, sendbuf, recvbuf, op::F, ::FluxCUDADevice; root::Int) where {F}
+        backend::NCCLBackend, sendbuf, recvbuf, op::F, ::CUDADevice; root::Int) where {F}
     op = ifelse(op === DistributedUtils.avg, NCCL.avg, op)
     NCCL.Reduce!(sendbuf, recvbuf, op, backend.comm; root)
     return recvbuf

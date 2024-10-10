@@ -10,9 +10,9 @@ dense_model = Dense(2 => 3)     # initially lives on CPU
 weight = copy(dense_model.weight)           # store the weight
 bias = copy(dense_model.bias)               # store the bias
 
-amdgpu_device = Flux.get_device()
+amdgpu_device = gpu_device()
 
-@test typeof(amdgpu_device) <: Flux.FluxAMDGPUDevice
+@test typeof(amdgpu_device) <: Flux.AMDGPUDevice
 @test typeof(amdgpu_device.deviceID) <: AMDGPU.HIPDevice
 @test Flux._get_device_name(amdgpu_device) in Flux.supported_devices()
 
@@ -37,7 +37,7 @@ for id in 0:(length(AMDGPU.devices()) - 1)
   @test isequal(Flux.cpu(dense_model.bias), bias)
 end
 # finally move to CPU, and see if things work
-cpu_device = Flux.get_device("CPU")
-dense_model = cpu_device(dense_model)
+cdev = cpu_device()
+dense_model = cdev(dense_model)
 @test dense_model.weight isa Matrix
 @test dense_model.bias isa Vector

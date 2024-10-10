@@ -37,7 +37,7 @@ for id in 0:(length(CUDA.devices()) - 1)
   @test isequal(Flux.cpu(dense_model.bias), bias)
 end
 # finally move to CPU, and see if things work
-cpu_device = Flux.get_device("CPU")
-dense_model = cpu_device(dense_model)
+cdev = cpu_device()
+dense_model = cdev(dense_model)
 @test dense_model.weight isa Matrix
 @test dense_model.bias isa Vector
