@@ -232,7 +232,7 @@ julia> r = RNN(3 => 5)
 Recur(
   RNNCell(3 => 5, tanh),                # 50 parameters
 )         # Total: 4 trainable arrays, 50 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
+          # plus 1 non-trainable, 5 parameters, summarysize 424 bytes.
 
 julia> r(rand(Float32, 3)) |> size
 (5,)
@@ -341,7 +341,7 @@ julia> l = LSTM(3 => 5)
 Recur(
   LSTMCell(3 => 5),                     # 190 parameters
 )         # Total: 5 trainable arrays, 190 parameters,
-          # plus 2 non-trainable, 10 parameters, summarysize 1.062 KiB.
+          # plus 2 non-trainable, 10 parameters, summarysize 1.023 KiB.
 
 julia> l(rand(Float32, 3)) |> size
 (5,)
@@ -415,7 +415,7 @@ julia> g = GRU(3 => 5)
 Recur(
   GRUCell(3 => 5),                      # 140 parameters
 )         # Total: 4 trainable arrays, 140 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 792 bytes.
+          # plus 1 non-trainable, 5 parameters, summarysize 784 bytes.
 
 julia> g(rand(Float32, 3)) |> size
 (5,)
@@ -485,7 +485,7 @@ julia> g = GRUv3(3 => 5)
 Recur(
   GRUv3Cell(3 => 5),                    # 140 parameters
 )         # Total: 5 trainable arrays, 140 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 848 bytes.
+          # plus 1 non-trainable, 5 parameters, summarysize 840 bytes.
 
 julia> g(rand(Float32, 3)) |> size
 (5,)

@@ -298,7 +298,7 @@ Maxout(
   Dense(5 => 7, tanh),                  # 42 parameters
   Dense(5 => 7, tanh),                  # 42 parameters
   Dense(5 => 7, tanh),                  # 42 parameters
-)                   # Total: 6 arrays, 126 parameters, 888 bytes.
+)                   # Total: 6 arrays, 126 parameters, 816 bytes.
 
 julia> Flux.outputsize(m3, (5, 11))
 (7, 11)

@@ -62,7 +62,7 @@ julia> m = Chain(Dense(10 => 5, relu), Dense(5 => 2))
 Chain(
   Dense(10 => 5, relu),                 # 55 parameters
   Dense(5 => 2),                        # 12 parameters
-)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+)                   # Total: 4 arrays, 67 parameters, 476 bytes.
 
 julia> for epoch in 1:10
           # ... train model ...
@@ -131,7 +131,7 @@ julia> model
 Chain(
   Dense(10 => 5, relu),                 # 55 parameters
   Dense(5 => 2),                        # 12 parameters
-)                   # Total: 4 arrays, 67 parameters, 524 bytes.
+)                   # Total: 4 arrays, 67 parameters, 476 bytes.
 ```
 !!! warning
     Saving models this way could lead to compatibility issues across julia versions
