@@ -14,7 +14,7 @@ using Pkg
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
-ENV["FLUX_TEST_ENZYME"] = "false"
+ENV["FLUX_TEST_ENZYME"] = "false" # We temporarily disable Enzyme tests since they are failing
 
 include("test_utils.jl")
 
