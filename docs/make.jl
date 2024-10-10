@@ -1,11 +1,11 @@
 using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
-      DataFrames, JLD2
+      DataFrames, JLD2, MLDataDevices
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
-    modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore],
+    modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
     sitename = "Flux",
     pages = [
         "Welcome" => "index.md",
