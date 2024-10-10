@@ -8,7 +8,7 @@ using Zygote
 using Pkg
 
 # ENV["FLUX_TEST_AMDGPU"] = "true"
-# ENV["FLUX_TEST_CUDA"] = "true"
+ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"

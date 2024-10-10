@@ -3,7 +3,7 @@
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
 ## v0.14.22
-* Data movement between devices is now provided by [MLDataDevice.jl](https://github.com/LuxDL/MLDataDevices.jl).
+* Data movement between devices is now provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl).
 
 ## v0.14.18
 * Add [support for distributed data parallel training](https://github.com/FluxML/Flux.jl/pull/2446).

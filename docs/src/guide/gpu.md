@@ -232,20 +232,17 @@ More information for conditional use of GPUs in CUDA.jl can be found in its [doc
 
 ## Using device objects
 
-///// TODO ////
-As a more convenient syntax, Flux allows the usage of GPU `device` objects which can be used to easily transfer models to GPUs (and defaulting to using the CPU if no GPU backend is available). This syntax has a few advantages including automatic selection of the GPU backend and type stability of data movement. To do this, the [`Flux.get_device`](@ref) function can be used.
+As a more convenient syntax, Flux allows the usage of GPU `device` objects which can be used to easily transfer models to GPUs (and defaulting to using the CPU if no GPU backend is available). This syntax has a few advantages including automatic selection of the GPU backend and type stability of data movement. 
+These features are provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl) package, that Flux's uses internally and re-exports.
 
-`Flux.get_device` first checks for a GPU preference, and if possible returns a device for the preference backend. For instance, consider the following example, where we load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) package to use an NVIDIA GPU (`"CUDA"` is the default preference):
+A `device` object can be created using the [`gpu_device`](@ref MLDataDevices.get_device) function. 
+`gpu_device` first checks for a GPU preference, and if possible returns a device for the preference backend. For instance, consider the following example, where we load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) package to use an NVIDIA GPU (`"CUDA"` is the default preference):
 
 ```julia-repl
 julia> using Flux, CUDA;
 
-julia> device = Flux.get_device(; verbose=true)   # returns handle to an NVIDIA GPU
-[ Info: Using backend set in preferences: CUDA.
-(::Flux.FluxCUDADevice) (generic function with 1 method)
-
-julia> device.deviceID      # check the id of the GPU
-CuDevice(0): NVIDIA GeForce GTX 1650
+julia> device = gpu_device()   # returns handle to an NVIDIA GPU if available
+(::CUDADevice{Nothing}) (generic function with 4 methods)
 
 julia> model = Dense(2 => 3);
 
@@ -263,77 +260,57 @@ julia> model.weight
  -0.984794  -0.904345
   0.720379  -0.486398
   0.851011  -0.586942
-
 ```
 
-The device preference can also be set via the [`Flux.gpu_backend!`](@ref) function. For instance, below we first set our device preference to `"CPU"`:
+The device preference can also be set via the [`gpu_backend!`](@ref MLDataDevices.gpu_backend!) function. For instance, below we first set our device preference to `"AMDGPU"`:
 
 ```julia-repl
-julia> using Flux; Flux.gpu_backend!("CPU")
-┌ Info: New GPU backend set: CPU.
-└ Restart your Julia session for this change to take effect!
+julia> gpu_backend!("AMDGPU")
+[ Info: GPU backend has been set to AMDGPU. Restart Julia to use the new backend.
 ```
-
-Then, after restarting the Julia session, `Flux.get_device` returns a handle to the `"CPU"`:
+If no functional GPU backend is available, the device will default to a CPU device. 
+You can also explictly request a CPU device by calling the [`cpu_device`](@ref MLDataDevices.cpu_device) function.
 
 ```julia-repl
-julia> using Flux, CUDA;    # even if CUDA is loaded, we'll still get a CPU device
+julia> using Flux, MLDataDevices
 
-julia> device = Flux.get_device(; verbose=true)   # get a CPU device
-[ Info: Using backend set in preferences: CPU.
-(::Flux.FluxCPUDevice) (generic function with 1 method)
+julia> cdev = cpu_device()
+(::CPUDevice{Nothing}) (generic function with 4 methods)
 
-julia> model = Dense(2 => 3);
+julia> gdev = gpu_device(force=true)   # force GPU device, error if no GPU is available
+(::CUDADevice{Nothing}) (generic function with 4 methods)
 
-julia> model = model |> device
-Dense(2 => 3)       # 9 parameters
+julia> model = Dense(2 => 3);     # model in CPU memory
 
-julia> model.weight     # no change; model still lives on CPU
-3×2 Matrix{Float32}:
- -0.942968   0.856258
-  0.440009   0.714106
- -0.419192  -0.471838
+julia> gmodel = model |> gdev;    # transfer model to GPU
+
+julia> cmodel = gmodel |> cdev;   # transfer model back to CPU
 ```
-Clearly, this means that the same code will work for any GPU backend and the CPU. 
-
-If the preference backend isn't available or isn't functional, then [`Flux.get_device`](@ref) looks for a CUDA, AMDGPU or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. In the below example, the GPU preference is `"CUDA"`:
-
-```julia-repl
-julia> using Flux;      # preference is CUDA, but CUDA.jl not loaded
-
-julia> device = Flux.get_device(; verbose=true)       # this will resort to automatic device selection
-[ Info: Using backend set in preferences: CUDA.
-┌ Warning: Trying to use backend: CUDA but it's trigger package is not loaded.
-│ Please load the package and call this function again to respect the preferences backend.
-└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
-[ Info: Using backend: CPU.
-(::Flux.FluxCPUDevice) (generic function with 1 method)
-```
-For detailed information about how the backend is selected, check the documentation for [`Flux.get_device`](@ref).
 
 ## Data movement across GPU devices
 
-Flux also supports getting handles to specific GPU devices, and transferring models from one GPU device to another GPU
-device from the same backend. Let's try it out for NVIDIA GPUs. First, we list all the available devices:
+Flux also supports getting handles to specific GPU devices, and transferring models from one GPU device to another GPU device from the same backend. Let's try it out for NVIDIA GPUs. First, we list all the available devices:
 
 ```julia-repl
 julia> using Flux, CUDA;
 
 julia> CUDA.devices()
 CUDA.DeviceIterator() for 3 devices:
-0. GeForce RTX 2080 Ti
-1. GeForce RTX 2080 Ti
-2. TITAN X (Pascal)
-
+0. NVIDIA TITAN RTX
+1. NVIDIA TITAN RTX
+2. NVIDIA TITAN RTX
 ```
 
 Then, let's select the device with id `0`:
 
 ```julia-repl
-julia> device0 = Flux.get_device("CUDA", 0)        # the currently supported values for backend are "CUDA" and "AMDGPU"
-(::Flux.FluxCUDADevice) (generic function with 1 method)
+julia> device0 = gpu_device(1)
+(::CUDADevice{CuDevice}) (generic function with 4 methods)
 
+julia> device0.device
+CuDevice(0): NVIDIA TITAN RTX
 ```
+Notice that indexing starts from `0` in the `CUDA.devices()` output, but `gpu_device!` expects the device id starting from `1`.
 
 Then, let's move a simple dense layer to the GPU represented by `device0`:
 
@@ -344,27 +321,25 @@ Dense(2 => 3)       # 9 parameters
 julia> dense_model = dense_model |> device0;
 
 julia> dense_model.weight
-3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
-  0.695662   0.816299
- -0.204763  -0.10232
- -0.955829   0.538412
+3×2 CuArray{Float32, 2, CUDA.DeviceMemory}:
+ -0.142062  -0.131455
+ -0.828134  -1.06552
+  0.608595  -1.05375
 
 julia> CUDA.device(dense_model.weight)      # check the GPU to which dense_model is attached
-CuDevice(0): GeForce RTX 2080 Ti
-
+CuDevice(0): NVIDIA TITAN RTX
 ```
 
 Next, we'll get a handle to the device with id `1`, and move `dense_model` to that device:
 
 ```julia-repl
-julia> device1 = Flux.get_device("CUDA", 1)
-(::Flux.FluxCUDADevice) (generic function with 1 method)
+julia> device1 = gpu_device(2)
+(::CUDADevice{CuDevice}) (generic function with 4 methods)
 
 julia> dense_model = dense_model |> device1;    # don't directly print the model; see warning below
 
 julia> CUDA.device(dense_model.weight)
-CuDevice(1): GeForce RTX 2080 Ti
-
+CuDevice(1): NVIDIA TITAN RTX
 ```
 
 Due to a limitation in `Metal.jl`, currently this kind of data movement across devices is only supported for `CUDA` and `AMDGPU` backends.
@@ -377,14 +352,21 @@ Due to a limitation in `Metal.jl`, currently this kind of data movement across d
 
 
 ```@docs
-Flux.AbstractDevice
-Flux.CPUDevice
-Flux.CUDADevice
-Flux.AMDGPUDevice
-Flux.MetalDevice
-Flux.supported_gpu_backends
-Flux.get_device
-Flux.gpu_backend!
+MLDataDevices.cpu_device
+MLDataDevices.default_device_rng
+MLDataDevices.get_device
+MLDataDevices.gpu_device
+MLDataDevices.gpu_backend!
+MLDataDevices.get_device_type
+MLDataDevices.reset_gpu_device!
+MLDataDevices.supported_gpu_backends
+MLDataDevices.CPUDevice
+MLDataDevices.CUDADevice
+MLDataDevices.AMDGPUDevice
+MLDataDevices.MetalDevice
+MLDataDevices.oneAPIDevice
+MLDataDevices.XLADevice
+MLDataDevices.DeviceIterator
 ```
 
 ## Distributed data parallel training
