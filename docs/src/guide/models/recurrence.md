@@ -71,7 +71,7 @@ julia> RNN(2, 5)  # or equivalently RNN(2 => 5)
 Recur(
   RNNCell(2 => 5, tanh),                # 45 parameters
 )         # Total: 4 trainable arrays, 45 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 412 bytes.
+          # plus 1 non-trainable, 5 parameters, summarysize 404 bytes.
 ```
 
 Equivalent to the `RNN` stateful constructor, `LSTM` and `GRU` are also available. 

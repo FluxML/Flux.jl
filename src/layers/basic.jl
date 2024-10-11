@@ -499,7 +499,7 @@ Parallel(
   +,
   α = Dense(10 => 2, tanh),             # 22 parameters
   β = Dense(5 => 2),                    # 12 parameters
-)                   # Total: 4 arrays, 34 parameters, 392 bytes.
+)                   # Total: 4 arrays, 34 parameters, 344 bytes.
 
 julia> model2(rand32(10), rand32(5)) |> size
 (2,)
