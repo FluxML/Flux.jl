@@ -1,7 +1,13 @@
 name: CI
 
-
-on: [push, pull_request]
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+    tags: '*'
 
 # needed for julia-actions/cache to delete old caches
 permissions:
@@ -48,16 +54,16 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - name: "Run test without coverage report"
         uses: julia-actions/julia-runtest@v1
-        if: ${{ matrix.version != "1") || matrix.os != 'ubuntu-latest' }}
+        if: ${{ matrix.version != '1') || matrix.os != 'ubuntu-latest' }}
         with:
           coverage: false
       - name: "Run test with coverage report"
         uses: julia-actions/julia-runtest@v1
-        if: matrix.version == "1" && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
       - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.version == "1" && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
       - uses: codecov/codecov-action@v4
-        if: matrix.version == "1" && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
         with:
           file: lcov.info
 
