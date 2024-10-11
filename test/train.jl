@@ -161,10 +161,12 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
           l2 = sum(pen2, Flux.params(m))
           err + 0.33 * l2
         end
+
+        diff2 = model.weight .- init_weight
+        @test diff1 ≈ diff2
+  
+        true
       end
-      
-      diff2 = model.weight .- init_weight
-      @test diff1 ≈ diff2
     end
 
     # Take 3: using WeightDecay instead. Need the /2 above, to match exactly.

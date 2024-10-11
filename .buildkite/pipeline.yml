@@ -26,10 +26,10 @@ steps:
   #     cuda: "*"
   #   timeout_in_minutes: 60
 
-  - label: "Metal with julia {{matrix.julia}}"
+  - label: "Metal with julia v1"
     plugins:
       - JuliaCI/julia#v1:
-          version: "{{matrix.julia}}"
+          version: "1"
       - JuliaCI/julia-test#v1:
           test_args: "--quickfail"
       - JuliaCI/julia-coverage#v1:
