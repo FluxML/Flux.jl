@@ -17,16 +17,6 @@ const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
 # Set to boolean on the first call to check_use_amdgpu
 const USE_AMDGPU = Ref{Union{Nothing, Bool}}(nothing)
 
-function (device::Flux.FluxAMDGPUDevice)(x)
-    if device.deviceID === nothing
-        Flux.gpu(Flux.FluxAMDGPUAdaptor(), x)
-    else
-        return Flux.gpu(Flux.FluxAMDGPUAdaptor(AMDGPU.device_id(device.deviceID) - 1), x)  # subtracting 1, because device_id returns a positive integer
-    end
-end
-Flux._get_device_name(::Flux.FluxAMDGPUDevice) = "AMDGPU"
-Flux._isavailable(::Flux.FluxAMDGPUDevice) = true
-Flux._isfunctional(::Flux.FluxAMDGPUDevice) = AMDGPU.functional()
 
 function check_use_amdgpu()
     if !isnothing(USE_AMDGPU[])
@@ -55,7 +45,6 @@ include("conv.jl")
 
 function __init__()
     Flux.AMDGPU_LOADED[] = true
-    Flux.DEVICES[][Flux.GPU_BACKEND_ORDER["AMDGPU"]] = AMDGPU.functional() ? Flux.FluxAMDGPUDevice(AMDGPU.device()) : Flux.FluxAMDGPUDevice(nothing)
 end
 
 # TODO

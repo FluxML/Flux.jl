@@ -5,7 +5,8 @@
 module DistributedUtils
 
 using ChainRulesCore: ChainRulesCore
-using ..Flux: AbstractFluxDistributedBackend, MPIBackend, NCCLBackend, AbstractDevice, get_device
+using ..Flux: AbstractFluxDistributedBackend, MPIBackend, NCCLBackend
+using MLDataDevices: get_device, AbstractDevice
 using Functors: fmap
 using MLUtils: MLUtils, numobs
 using Optimisers: Optimisers, AbstractRule, Leaf
@@ -99,12 +100,19 @@ Backend Agnostic API to broadcast the given buffer `sendrecvbuf` or `sendbuf` to
 workers into `recvbuf`. The value at `root` will be broadcasted to all other workers.
 """
 function bcast!(backend::AbstractFluxDistributedBackend, sendrecvbuf; root::Int=0)
-    return __bcast!(backend, sendrecvbuf, get_device(); root)
+    return __bcast!(backend, sendrecvbuf, get_device(sendrecvbuf); root)
 end
 
 function bcast!(backend::AbstractFluxDistributedBackend, sendbuf, recvbuf; root::Int=0)
-    dev = ifelse(get_device() == FluxCPUDevice, cpu, gpu)
-    return __bcast!(backend, sendbuf, recvbuf, dev; root)
+    send_dev = get_device(sendbuf)
+    recv_dev = get_device(recvbuf)
+    if send_dev == recv_dev
+        return __bcast!(backend, sendbuf, recvbuf, send_dev; root)
+    else
+        sendbuf_ = sendbuf |> recv_dev
+        @warn "`sendbuf` and `recvbuf` are on different devices." maxlog=1
+        return __bcast!(backend, sendbuf_, recvbuf, recv_dev; root)
+    end
 end
 
 function __bcast! end
@@ -129,8 +137,16 @@ end
 
 function allreduce!(
         backend::AbstractFluxDistributedBackend, sendbuf, recvbuf, op::F) where {F}
-    dev = ifelse(get_device() == FluxCPUDevice, cpu, gpu)
-    return __allreduce!(backend, sendbuf, recvbuf, op, dev)
+        send_dev = get_device(sendbuf)
+    recv_dev = get_device(recvbuf)
+    if send_dev == recv_dev
+        __allreduce!(backend, sendbuf, recvbuf, op, send_dev)
+    else
+        sendbuf_ = sendbuf |> recv_dev
+        @warn "`sendbuf` and `recvbuf` are on different devices." maxlog=1
+        __allreduce!(backend, sendbuf_, recvbuf, op, recv_dev)
+    end
+    return
 end
 
 function __allreduce! end
@@ -149,13 +165,21 @@ workers.
 """
 function reduce!(
         backend::AbstractFluxDistributedBackend, sendrecvbuf, op::F; root::Int=0) where {F}
-    return __reduce!(backend, sendrecvbuf, op, get_device(); root)
+    return __reduce!(backend, sendrecvbuf, op, get_device(sendrecvbuf); root)
 end
 
 function reduce!(backend::AbstractFluxDistributedBackend,
         sendbuf, recvbuf, op::F; root::Int=0) where {F}
-    dev = ifelse(get_device() == FluxCPUDevice, cpu, gpu)
-    return __reduce!(backend, sendbuf, recvbuf, op, dev; root)
+    send_dev = get_device(sendbuf)
+    recv_dev = get_device(recvbuf)
+    if send_dev == recv_dev
+        __reduce!(backend, sendbuf, recvbuf, op, send_dev; root)
+    else
+        sendbuf_ = sendbuf |> recv_dev
+        @warn "`sendbuf` and `recvbuf` are on different devices." maxlog=1
+        __reduce!(backend, sendbuf_, recvbuf, op, recv_dev; root)
+    end
+    return
 end
 
 function __reduce! end

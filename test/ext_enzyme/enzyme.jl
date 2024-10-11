@@ -5,7 +5,6 @@ using Enzyme: Enzyme, make_zero, Active, Duplicated, ReverseWithPrimal
 
 using Functors
 using FiniteDifferences
-using CUDA
 
 
 function gradient_fd(f, x...)

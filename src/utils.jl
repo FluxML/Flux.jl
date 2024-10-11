@@ -37,14 +37,10 @@ epseltype(x) = eps(float(eltype(x)))
     rng_from_array(x)
 
 Create an instance of the RNG most appropriate for `x`.
-The current defaults are:
-- `x isa CuArray`: `CUDA.default_rng()`
-- `x isa AbstractArray`: `Random.default_rng()
+As an example, if `x` is a`CuArray`, it will return a `CUDA.default_rng()`.
+If `x` is an `Array` instead, it will return a `Random.default_rng()`.
 """
-rng_from_array(::AbstractArray) = Random.default_rng()
-
-@non_differentiable rng_from_array(::Any)
-
+rng_from_array(x) = MLDataDevices.default_device_rng(MLDataDevices.get_device(x))
 
 """
     glorot_uniform([rng], size...; gain = 1) -> Array
@@ -186,7 +182,7 @@ julia> round(std(Flux.kaiming_normal(10, 1000)), digits=3)
 0.044f0
 
 julia> round(std(Flux.kaiming_normal(1000, 10)), digits=3)
-0.449f0
+0.45f0
 
 julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
 0.045f0
@@ -590,7 +586,7 @@ Chain(
   ),
   Dense(64 => 10),                      # 650 parameters
 )         # Total: 6 trainable arrays, 51_018 parameters,
-          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB.
+          # plus 2 non-trainable, 128 parameters, summarysize 200.211 KiB.
 
 julia> Flux.modules(m2)
 7-element Vector{Any}:

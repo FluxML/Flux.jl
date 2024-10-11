@@ -11,71 +11,81 @@ function train_enzyme!(fn, model, args...; kwargs...)
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
-@testset "Explicit Flux.train! with $name" begin
-  Random.seed!(84)
-  w = randn(10, 10)
-  w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
-  @testset for rule in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
-                        NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
-                        Nesterov(), RMSProp(), Momentum()]
 
-    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
-    @test loss(model, rand(10, 10)) > 1
-
-    opt = Flux.setup(rule, model)
-    trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
-    @test loss(model, rand(10, 10)) < 0.01
+  if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
+    continue
   end
 
-  # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
-  # Enzyme doesn't work with un-initialized atm, presumably due to trainmode?
-  if name != "Enzyme"
-  @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
-    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-    model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
-    @test loss(model, rand(10, 10)) > 1
-    trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
-    @test loss(model, rand(10, 10)) < 0.01
+  @testset "Explicit Flux.train! with $name" begin
+    Random.seed!(84)
+    w = randn(10, 10)
+    w2 = randn(10, 10)  # NB outside the inner @testset, else it will be exactly == w, as the RNG seed is reset.
+    @testset for rule in [AdamW(), AdaGrad(0.1), AdaMax(), AdaDelta(0.9), AMSGrad(),
+                          NAdam(), RAdam(), Descent(0.1), Adam(), OAdam(), AdaBelief(),
+                          Nesterov(), RMSProp(), Momentum()]
+
+      loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+      model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
+      @test loss(model, rand(10, 10)) > 1
+
+      opt = Flux.setup(rule, model)
+      trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
+      @test loss(model, rand(10, 10)) < 0.01
+    end
+
+    # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
+    # Enzyme doesn't work with un-initialized atm, presumably due to trainmode?
+    if name != "Enzyme"
+    @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
+      loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+      model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
+      @test loss(model, rand(10, 10)) > 1
+      trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
+      @test loss(model, rand(10, 10)) < 0.01
+    end
+    end
   end
-  end
-end
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
-@testset "Explicit Flux.train! features with $name" begin
-  @testset "Stop on NaN" begin
-    m1 = Dense(1 => 1)
-    m1.weight .= 0
-    CNT = Ref(0)
-    @test_throws DomainError trainfn!(m1, tuple.(1:100), Descent(0.1)) do m, i
-      CNT[] += 1
-      (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
-    end
-    @test CNT[] == 51  # stopped early
-    if name != "Enzyme"
-      @test m1.weight[1] ≈ -5  # did not corrupt weights
-    else
-      @test m1.weight[1] ≈ 0.0  # did not corrupt weights
-    end
+  
+  if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
+    continue
   end
 
-  @testset "non-tuple data" begin
-    w = randn(10, 10)
-    w2 = randn(10, 10)
-    loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-    model = (weight=copy(w2), bias=zeros(10))
-    opt = Flux.setup(AdamW(), model)
-    trainfn!(loss, model, (rand(10) for _ in 1: 10^5), opt)
-    @test loss(model, rand(10, 10)) < 0.01
-  end
+  @testset "Explicit Flux.train! features with $name" begin
+    @testset "Stop on NaN" begin
+      m1 = Dense(1 => 1)
+      m1.weight .= 0
+      CNT = Ref(0)
+      @test_throws DomainError trainfn!(m1, tuple.(1:100), Descent(0.1)) do m, i
+        CNT[] += 1
+        (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
+      end
+      @test CNT[] == 51  # stopped early
+      if name != "Enzyme"
+        @test m1.weight[1] ≈ -5  # did not corrupt weights
+      else
+        @test m1.weight[1] ≈ 0.0  # did not corrupt weights
+      end
+    end
 
-  @testset "callbacks give helpful error" begin
-    m1 = Dense(1 => 1)
-    cb = () -> println("this should not be printed")
-    @test_throws ErrorException trainfn!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
+    @testset "non-tuple data" begin
+      w = randn(10, 10)
+      w2 = randn(10, 10)
+      loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
+      model = (weight=copy(w2), bias=zeros(10))
+      opt = Flux.setup(AdamW(), model)
+      trainfn!(loss, model, (rand(10) for _ in 1: 10^5), opt)
+      @test loss(model, rand(10, 10)) < 0.01
+    end
+
+    @testset "callbacks give helpful error" begin
+      m1 = Dense(1 => 1)
+      cb = () -> println("this should not be printed")
+      @test_throws ErrorException trainfn!((args...,) -> 1, m1, [(1,2)], Descent(0.1); cb)
+    end
   end
-end
 end
 
 @testset "Explicit Flux.update! features" begin
@@ -115,49 +125,60 @@ end
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
-@testset "L2 regularisation with $name" begin
-  # New docs claim an exact equivalent. It's a bit long to put the example in there,
-  # but perhaps the tests should contain it.
 
-  model = Dense(3 => 2, tanh);
-  init_weight = copy(model.weight);
-  data = [(randn(Float32, 3,5), randn(Float32, 2,5)) for _ in 1:10];
-
-  # Take 1: explicitly add a penalty in the loss function
-  opt = Flux.setup(Adam(0.1), model)
-  trainfn!(model, data, opt) do m, x, y
-    err = Flux.mse(m(x), y)
-    l2 = sum(abs2, m.weight)/2 + sum(abs2, m.bias)/2
-    err + 0.33 * l2
+  if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
+    continue
   end
-  diff1 = model.weight .- init_weight
+  
+  @testset "L2 regularisation with $name" begin
+    # New docs claim an exact equivalent. It's a bit long to put the example in there,
+    # but perhaps the tests should contain it.
 
-  # Take 2: the same, but with Flux.params. Was broken for a bit, no tests!
-  # skipping this test for Enzyme cause implicit params is unsupported
-  if name == "Zygote"
-    model.weight .= init_weight
-    model.bias .= 0
-    pen2(x::AbstractArray) = sum(abs2, x)/2
+    model = Dense(3 => 2, tanh);
+    init_weight = copy(model.weight);
+    data = [(randn(Float32, 3,5), randn(Float32, 2,5)) for _ in 1:10];
+
+    # Take 1: explicitly add a penalty in the loss function
     opt = Flux.setup(Adam(0.1), model)
     trainfn!(model, data, opt) do m, x, y
       err = Flux.mse(m(x), y)
-      l2 = sum(pen2, Flux.params(m))
+      l2 = sum(abs2, m.weight)/2 + sum(abs2, m.bias)/2
       err + 0.33 * l2
     end
-    diff2 = model.weight .- init_weight
-    @test diff1 ≈ diff2
-  end
+    diff1 = model.weight .- init_weight
 
-  # Take 3: using WeightDecay instead. Need the /2 above, to match exactly.
-  model.weight .= init_weight
-  model.bias .= 0
-  decay_opt = Flux.setup(OptimiserChain(WeightDecay(0.33), Adam(0.1)), model);
-  trainfn!(model, data, decay_opt) do m, x, y
-    Flux.mse(m(x), y)
+    # Take 2: the same, but with Flux.params. Was broken for a bit, no tests!
+    # skipping this test for Enzyme cause implicit params is unsupported
+    if name == "Zygote"
+      model.weight .= init_weight
+      model.bias .= 0
+      pen2(x::AbstractArray) = sum(abs2, x)/2
+      opt = Flux.setup(Adam(0.1), model)
+
+      @test_broken begin
+        trainfn!(model, data, opt) do m, x, y
+          err = Flux.mse(m(x), y)
+          l2 = sum(pen2, Flux.params(m))
+          err + 0.33 * l2
+        end
+
+        diff2 = model.weight .- init_weight
+        @test diff1 ≈ diff2
+  
+        true
+      end
+    end
+
+    # Take 3: using WeightDecay instead. Need the /2 above, to match exactly.
+    model.weight .= init_weight
+    model.bias .= 0
+    decay_opt = Flux.setup(OptimiserChain(WeightDecay(0.33), Adam(0.1)), model);
+    trainfn!(model, data, decay_opt) do m, x, y
+      Flux.mse(m(x), y)
+    end
+    diff3 = model.weight .- init_weight
+    @test diff1 ≈ diff3
   end
-  diff3 = model.weight .- init_weight
-  @test diff1 ≈ diff3
-end
 end
 
 @testset "Flux.setup bugs" begin

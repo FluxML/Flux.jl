@@ -26,10 +26,10 @@ steps:
   #     cuda: "*"
   #   timeout_in_minutes: 60
 
-  - label: "Metal with julia {{matrix.julia}}"
+  - label: "Metal with julia v1"
     plugins:
       - JuliaCI/julia#v1:
-          version: "{{matrix.julia}}"
+          version: "1"
       - JuliaCI/julia-test#v1:
           test_args: "--quickfail"
       - JuliaCI/julia-coverage#v1:
@@ -46,7 +46,7 @@ steps:
           using Pkg
           Pkg.resolve()'
     commands: |
-      printf "[Flux]\ngpu_backend = \"Metal\"" > LocalPreferences.toml
+      printf "[MLDataDevices]\ngpu_backend = \"Metal\"\n" > LocalPreferences.toml
 
     if: build.message !~ /\[skip tests\]/
     timeout_in_minutes: 60
@@ -74,7 +74,7 @@ steps:
       rocm: "*"
       rocmgpu: "*"
     commands: |
-      printf "[Flux]\ngpu_backend = \"AMDGPU\"" > LocalPreferences.toml
+      printf "[MLDataDevices]\ngpu_backend = \"AMDGPU\"\n" > LocalPreferences.toml
     timeout_in_minutes: 60
     env:
       JULIA_AMDGPU_CORE_MUST_LOAD: "1"
