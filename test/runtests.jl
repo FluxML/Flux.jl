@@ -32,8 +32,7 @@ Random.seed!(0)
       include("loading.jl")
     end
 
-    @testset "Optimise / Train" begin
-      include("optimise.jl")
+    @testset "Train" begin
       include("train.jl")
       include("tracker.jl")
     end

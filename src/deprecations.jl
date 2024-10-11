@@ -41,13 +41,20 @@ train!(loss, ps::Params, data, opt::Optimisers.AbstractRule; cb=nothing) = error
   """)
 
 train!(loss, model, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
-  train!(loss, model, data, _old_to_new(opt); cb)
+  train!(loss, model, data, __old_to_new(opt); cb)
 
 # Next, to use the new `setup` with the still-exported old-style `Adam` etc:
 import .Train: setup
-setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
+setup(rule::Optimise.AbstractOptimiser, model) = setup(__old_to_new(rule), model)
 # ... and allow accidental use of `Optimisers.setup` to do the same:
-Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
+Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = setup(__old_to_new(rule), model)
+
+
+function __old_to_new(rule)
+  Base.depwarn("""Optimisers from  Flux.Optimise module are deprecated. 
+                   Use optimisers from Optimisers.jl instead.""", :__old_to_new)
+  return _old_to_new(rule)
+end
 
 for T in [:Descent, :Adam, :Momentum, :Nesterov,
    	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief,

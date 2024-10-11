@@ -19,7 +19,6 @@ function finitediff_withgradient(f, x...)
     return y, FiniteDifferences.grad(fdm, f, x...)
 end
 
-
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b) do kp, x, y
         if x isa AbstractArray
@@ -29,7 +28,6 @@ function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
         end
     end
 end
-
 
 function test_gradients(
             f, 
