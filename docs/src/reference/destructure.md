@@ -94,4 +94,5 @@ Flux.loadmodel!
 Functors.KeyPath
 Functors.getkeypath
 Functors.haskeypath
+Functors.setkeypath!
 ```
