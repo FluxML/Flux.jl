@@ -446,7 +446,7 @@ end
   @test Zygote.hessian_reverse(sum∘m1, [1.0,2.0,3.0]) == zeros(3, 3)
 
   m2 = Chain(BatchNorm(3), sum)
-  @test_broken Zygote.hessian_reverse(m2, Float32[1 2; 3 4; 5 6]) == zeros(Float32, 6, 6)
+  @test Zygote.hessian_reverse(m2, Float32[1 2; 3 4; 5 6]) == zeros(Float32, 6, 6) broken = VERSION >= v"1.11"
 end
 
 @testset "ForwardDiff" begin

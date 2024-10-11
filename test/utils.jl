@@ -273,14 +273,14 @@ end
 @testset "params gradient" begin
   m = (x=[1,2.0], y=[3.0]);
 
-  @test_broken begin
-    # Explicit -- was broken by #2054 / then fixed / now broken again on julia v0.11
+  @test begin
+    # Explicit -- was broken by #2054 / then fixed / now broken again on julia v1.11
     gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
     @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
     @test gnew.y ≈ [1.0]
     true
-  end
-  
+  end broken = VERSION >= v"1.11"
+
   # Implicit
   gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
   @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
@@ -689,6 +689,6 @@ end
 
 # make sure rng_from_array is non_differentiable
 @testset "rng_from_array" begin
-  m(x) = (rand(rng_from_array(x)) * x)[1]
+  m(x) = (rand(Flux.rng_from_array(x)) * x)[1]
   gradient(m, ones(2))
 end

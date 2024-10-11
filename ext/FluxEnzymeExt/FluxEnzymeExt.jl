@@ -16,10 +16,6 @@ _applyloss(loss, model, d...) = loss(model, d...)
 
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
-using Flux: _old_to_new  # from src/deprecations.jl
-train!(loss, model::Duplicated, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
-  train!(loss, model, data, _old_to_new(opt); cb)
-
 function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb = nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
 end

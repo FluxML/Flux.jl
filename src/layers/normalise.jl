@@ -191,10 +191,9 @@ struct LayerNorm{F,D,T,N}
   affine::Bool
 end
 
-function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5, ϵ=nothing)
-  ε = _greek_ascii_depwarn(ϵ => eps, :LayerNorm, "ϵ" => "eps")
+function LayerNorm(size::Tuple{Vararg{Int}}, λ=identity; affine::Bool=true, eps::Real=1f-5)
   diag = affine ? Scale(size..., λ) : λ!=identity ? Base.Fix1(broadcast, λ) : identity
-  return LayerNorm(λ, diag, ε, size, affine)
+  return LayerNorm(λ, diag, eps, size, affine)
 end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
@@ -328,9 +327,8 @@ end
 function BatchNorm(chs::Int, λ=identity;
           initβ=zeros32, initγ=ones32,
           affine::Bool=true, track_stats::Bool=true, active::Union{Bool,Nothing}=nothing,
-          eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
+          eps::Real=1f-5, momentum::Real=0.1f0)
 
-  ε = _greek_ascii_depwarn(ϵ => eps, :BatchNorm, "ϵ" => "eps")
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -338,7 +336,7 @@ function BatchNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return BatchNorm(λ, β, γ,
-            μ, σ², ε, momentum,
+            μ, σ², eps, momentum,
             affine, track_stats,
             active, chs)
 end
@@ -421,9 +419,7 @@ end
 function InstanceNorm(chs::Int, λ=identity;
                     initβ=zeros32, initγ=ones32,
                     affine::Bool=false, track_stats::Bool=false, active::Union{Bool,Nothing}=nothing,
-                    eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
-
-  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
+                    eps::Real=1f-5, momentum::Real=0.1f0)
 
   β = affine ? initβ(chs) : nothing
   γ = affine ? initγ(chs) : nothing
@@ -431,7 +427,7 @@ function InstanceNorm(chs::Int, λ=identity;
   σ² = track_stats ? ones32(chs) : nothing
 
   return InstanceNorm(λ, β, γ,
-            μ, σ², ε, momentum,
+            μ, σ², eps, momentum,
             affine, track_stats,
             active, chs)
 end
@@ -520,9 +516,7 @@ end
 function GroupNorm(chs::Int, G::Int, λ=identity;
               initβ=zeros32, initγ=ones32,
               affine::Bool=true, active::Union{Bool,Nothing}=nothing,
-              eps::Real=1f-5, momentum::Real=0.1f0, ϵ=nothing)
-
-  ε = _greek_ascii_depwarn(ϵ => eps, :GroupNorm, "ϵ" => "eps")
+              eps::Real=1f-5, momentum::Real=0.1f0)
 
   chs % G == 0 || error("The number of groups ($(G)) must divide the number of channels ($chs)")
 
@@ -535,7 +529,7 @@ function GroupNorm(chs::Int, G::Int, λ=identity;
   return GroupNorm(G, λ,
             β, γ,
             μ, σ²,
-            ε, momentum,
+            eps, momentum,
             affine, track_stats,
             active, chs)
 end

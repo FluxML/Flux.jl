@@ -65,14 +65,6 @@ Random.seed!(0)
     @testset "functors" begin
       include("functors.jl")
     end
-
-    @static if VERSION == v"1.9"
-      using Documenter
-      @testset "Docs" begin
-        DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive=true)
-        doctest(Flux)
-      end
-    end
   else
       @info "Skipping CPU tests."
   end
@@ -143,10 +135,10 @@ Random.seed!(0)
   end
 
   if get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
-      @testset "Enzyme" begin
-        import Enzyme
-        include("ext_enzyme/enzyme.jl")
-      end
+    @testset "Enzyme" begin
+      import Enzyme
+      include("ext_enzyme/enzyme.jl")
+    end
   else
     @info "Skipping Enzyme tests, set FLUX_TEST_ENZYME=true to run them."
   end
