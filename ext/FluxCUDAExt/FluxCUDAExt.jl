@@ -32,7 +32,6 @@ end
 ChainRulesCore.@non_differentiable check_use_cuda()
 
 include("functor.jl")
-include("utils.jl")
 
 function __init__()
     Flux.CUDA_LOADED[] = true

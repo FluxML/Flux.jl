@@ -37,14 +37,10 @@ epseltype(x) = eps(float(eltype(x)))
     rng_from_array(x)
 
 Create an instance of the RNG most appropriate for `x`.
-The current defaults are:
-- `x isa CuArray`: `CUDA.default_rng()`
-- `x isa AbstractArray`: `Random.default_rng()
+As an example, if `x` is a`CuArray`, it will return a `CUDA.default_rng()`.
+If `x` is an `Array` instead, it will return a `Random.default_rng()`.
 """
-rng_from_array(::AbstractArray) = Random.default_rng()
-
-@non_differentiable rng_from_array(::Any)
-
+rng_from_array(x) = MLDataDevices.default_device_rng(MLDataDevices.get_device(x))
 
 """
     glorot_uniform([rng], size...; gain = 1) -> Array
