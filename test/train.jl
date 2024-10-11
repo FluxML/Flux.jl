@@ -90,38 +90,28 @@ end
 
 @testset "Explicit Flux.update! features" begin
   m = Chain(Dense(2=>3, tanh), Dense(3=>1), only)
-  x = rand(2)
+  x = rand(Float32, 2)
   y1 = m(x)  # before
-
-  # Implicit gradient
-  gold = Zygote.gradient(() -> m(x), Flux.params(m))
-  @test gold isa Flux.Zygote.Grads
-  @test_throws ErrorException Flux.update!(Flux.Adam(), m, gold)  # friendly
-  Flux.update!(Flux.Adam(), Flux.params(m), gold)
-  y2 = m(x)
-  @test y2 < y1
 
   # Explicit gradient
   gs = Zygote.gradient(marg -> marg(x), m)
   @test gs isa Tuple
-  @test_throws ErrorException Flux.update!(Flux.Adam(), Flux.params(m), gs) # friendly
-  @test_throws ErrorException Flux.update!(Flux.Adam(), Flux.params(m), gs[1]) # friendly
   @test_throws ErrorException Flux.update!(Flux.Adam(), m, gs)  # friendly
   @test_throws ErrorException Flux.update!(Flux.Adam(), m, gs[1])  # friendly
   s = Flux.setup(Adam(), m)
   @info "ignore this warning, just testing an upgrade path:"
   Flux.update!(s, m, gs)  # Chain + Tuple can be unambiguously sorted out
+  y2 = m(x)
+  @test y2 < y1
+  Flux.update!(s, m, gs[1])  # finally, this is the correct thing
   y3 = m(x)
   @test y3 < y2
-  Flux.update!(s, m, gs[1])  # finally, this is the correct thing
-  y4 = m(x)
-  @test y4 < y3
 
   # Also check that if you import the new Adam, then Flux.setup does still work!
   s2 = Flux.setup(Optimisers.Adam(), m)
   Flux.update!(s2, m, gs[1])
-  y5 = m(x)
-  @test y5 < y4
+  y4 = m(x)
+  @test y4 < y3
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
@@ -147,24 +137,20 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
     end
     diff1 = model.weight .- init_weight
 
-    # Take 2: the same, but with Flux.params. Was broken for a bit, no tests!
-    # skipping this test for Enzyme cause implicit params is unsupported
-    if name == "Zygote"
-      model.weight .= init_weight
-      model.bias .= 0
-      pen2(x::AbstractArray) = sum(abs2, x)/2
-      opt = Flux.setup(Adam(0.1), model)
+    # Take 2: the same, but with Optimisers.trainables. 
+    model.weight .= init_weight
+    model.bias .= 0
+    pen2(x::AbstractArray) = sum(abs2, x)/2
+    opt = Flux.setup(Adam(0.1), model)
 
-      trainfn!(model, data, opt) do m, x, y
-        err = Flux.mse(m(x), y)
-        l2 = sum(pen2, Flux.params(m))
-        err + 0.33 * l2
-      end
-
-      diff2 = model.weight .- init_weight
-      @test diff1 ≈ diff2
-
+    trainfn!(model, data, opt) do m, x, y
+      err = Flux.mse(m(x), y)
+      l2 = sum(pen2, Flux.trainables(m))
+      err + 0.33 * l2
     end
+
+    diff2 = model.weight .- init_weight
+    @test diff1 ≈ diff2
 
     # Take 3: using WeightDecay instead. Need the /2 above, to match exactly.
     model.weight .= init_weight

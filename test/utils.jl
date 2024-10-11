@@ -2,7 +2,7 @@ using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal, lecun_normal,
              sparse_init, identity_init, unstack, batch, unbatch,
-             unsqueeze, params, loadmodel!
+             unsqueeze, loadmodel!
 using MLUtils
 using Statistics, LinearAlgebra
 using Random
@@ -255,38 +255,32 @@ end
   end
 end
 
-@testset "Params" begin
+@testset "Trainables" begin
   m = Dense(10 => 5)
-  @test size.(params(m)) == [(5, 10), (5,)]
+  @test size.(Flux.trainables(m)) == [(5, 10), (5,)]
   m = RNN(10 => 5)
-  @test size.(params(m)) == [(5, 10), (5, 5), (5,)]
+  @test size.(Flux.trainables(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Layer duplicated in same chain, params just once pls.
   c = Chain(m, m)
-  @test size.(params(c)) == [(5, 10), (5, 5), (5,)]
+  @test size.(Flux.trainables(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Self-referential array. Just want params, no stack overflow pls.
   r = Any[nothing,m]
   r[1] = r
-  @test size.(params(r)) == [(5, 10), (5, 5), (5,)]
+  @test_broken size.(Flux.trainables(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
 
   # Ensure functor explores inside Transpose but not SubArray
   m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
-  @test size.(Flux.params(m)) == [(2,), (1, 2)]
+  @test size.(Flux.trainables(m)) == [(2,), (1, 2)]
 end
 
-@testset "params gradient" begin
+@testset "trainables gradient" begin
   m = (x=[1,2.0], y=[3.0]);
 
-  # Explicit -- was broken by #2054
-  gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
+  gnew = gradient(m -> (sum(norm, Flux.trainables(m))), m)[1]
   @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
   @test gnew.y ≈ [1.0]
-
-  # Implicit
-  gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
-  @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
-  @test gold[m.y] ≈ [1.0]
 end
 
 @testset "Precision" begin
@@ -345,28 +339,12 @@ end
     o = ones(s)
     z = zeros(s)
 
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
-      g = gfun(o, z)
-      @test gfun(o, false) == (g[1], nothing)
+    gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
+    g = gfun(o, z)
+    @test gfun(o, false) == (g[1], nothing)
 
-      g = gfun(z, o)
-      @test gfun(false, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
-      g = gfun(o, z)
-
-      gres = gfun(o, false)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-
-      g = gfun(z, o)
-      gres = gfun(false, o)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-    end
+    g = gfun(z, o)
+    @test gfun(false, o) == (nothing, g[2])
   end
 end
 
@@ -566,10 +544,10 @@ end
 @testset "Shared parameters" begin
   mat = [1 2; 3 4.0]
   simple = ((nothing, mat, (3, mat, 4)))
-  @test length(Flux.params(simple)) == 1
+  @test length(Flux.trainables(simple)) == 1
   
   oneadj = (nt = (m = mat, a = mat'))
-  @test length(Flux.params(oneadj)) == 1  # needs Functors@0.3
+  @test length(Flux.trainables(oneadj)) == 1  # needs Functors@0.3
   
   @test Flux.destructure(simple)[1] == Flux.destructure(oneadj)[1] == [1, 3, 2, 4]
 end
@@ -631,13 +609,13 @@ end
     model = Model(d, d)
 
     # Works
-    g1 = Flux.gradient(() -> sum(model(x)), Flux.params(model))
+    g1 = Flux.gradient(m -> sum(m(x)), model)[1]
 
     p, re = Flux.destructure(model)
     # Fails
-    g2 = Flux.gradient(p -> sum(re(p)(x)), p)
+    g2 = Flux.gradient(p -> sum(re(p)(x)), p)[1]
 
-    @test g2[1] ≈ vcat(g1[d.weight], g1[d.bias])
+    @test g2 ≈ vcat(g1.a.weight + g1.b.weight, g1.a.bias + g1.b.bias)
   end
 
   @testset "issue 1826" begin

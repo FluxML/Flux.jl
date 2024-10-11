@@ -129,7 +129,7 @@ end
                              2.0 4.0 6.0]
 
     @test Flux.hasaffine(m) == true
-    @test length(Flux.params(m)) == 2
+    @test length(Flux.trainables(m)) == 2
 
     @test m.β == [0, 0]  # initβ(2)
     @test m.γ == [1, 1]  # initγ(2)
@@ -211,9 +211,9 @@ end
     @inferred m(x)
   end
 
-  @test length(Flux.params(BatchNorm(10))) == 2
-  @test length(Flux.params(BatchNorm(10, affine=true))) == 2
-  @test length(Flux.params(BatchNorm(10, affine=false))) == 0
+  @test length(Flux.trainables(BatchNorm(10))) == 2
+  @test length(Flux.trainables(BatchNorm(10, affine=true))) == 2
+  @test length(Flux.trainables(BatchNorm(10, affine=false))) == 0
 
   @test BatchNorm(5; active=true).active === true
   @test_throws Exception BatchNorm(5; active=:something_else)
@@ -224,7 +224,7 @@ end
   let m = InstanceNorm(2; affine=true, track_stats=true), sizes = (3, 2, 2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
-      @test length(Flux.params(m)) == 2
+      @test length(Flux.trainables(m)) == 2
       x = Float32.(x)
       @test m.β == [0, 0]  # initβ(2)
       @test m.γ == [1, 1]  # initγ(2)
@@ -287,7 +287,7 @@ end
       x = reshape(collect(1:prod(sizes)), sizes)
 
     @test Flux.hasaffine(m) == true
-    @test length(Flux.params(m)) == 2
+    @test length(Flux.trainables(m)) == 2
     x = Float64.(x)
     y = m(x)
     μ = mean(x, dims=1)
@@ -300,7 +300,7 @@ end
   let m = InstanceNorm(2, sigmoid), sizes = (3, 2, 2),
       x = reshape(collect(1:prod(sizes)), sizes)
     @test Flux.hasaffine(m) == false
-    @test length(Flux.params(m)) == 0
+    @test length(Flux.trainables(m)) == 0
 
     x = Float64.(x)
     y = m(x)
@@ -345,9 +345,9 @@ end
     @inferred m(x)
   end
 
-  @test length(Flux.params(InstanceNorm(10))) == 0
-  @test length(Flux.params(InstanceNorm(10, affine=true))) == 2
-  @test length(Flux.params(InstanceNorm(10, affine=false))) == 0
+  @test length(Flux.trainables(InstanceNorm(10))) == 0
+  @test length(Flux.trainables(InstanceNorm(10, affine=true))) == 2
+  @test length(Flux.trainables(InstanceNorm(10, affine=false))) == 0
 
   @test InstanceNorm(5; active=true).active === true
   @test_throws Exception InstanceNorm(5; active=:something_else)
@@ -370,10 +370,10 @@ end
 
   m = LayerNorm((2,3,4))
   @test Flux.hasaffine(m) == true
-  @test length(Flux.params(m)) == 2
+  @test length(Flux.trainables(m)) == 2
   m = LayerNorm((2,3,4), affine=false)
   @test Flux.hasaffine(m) == false
-  @test length(Flux.params(m)) == 0
+  @test length(Flux.trainables(m)) == 0
 end
 
 @testset "GroupNorm" begin
@@ -383,7 +383,7 @@ end
   let m = GroupNorm(4,2), sizes = (3,4,2),
         x = reshape(collect(1:prod(sizes)), sizes)
 
-      @test length(Flux.params(m)) == 2
+      @test length(Flux.trainables(m)) == 2
       x = Float32.(x)
       @test m.β == [0, 0, 0, 0]  # initβ(32)
       @test m.γ == [1, 1, 1, 1]  # initγ(32)

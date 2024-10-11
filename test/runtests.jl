@@ -1,6 +1,5 @@
 using Flux
 using Flux: OneHotArray, OneHotMatrix, OneHotVector
-using Flux: params
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
@@ -32,8 +31,7 @@ Random.seed!(0)
       include("loading.jl")
     end
 
-    @testset "Optimise / Train" begin
-      include("optimise.jl")
+    @testset "Train" begin
       include("train.jl")
       include("tracker.jl")
     end
