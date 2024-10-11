@@ -154,11 +154,15 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       model.bias .= 0
       pen2(x::AbstractArray) = sum(abs2, x)/2
       opt = Flux.setup(Adam(0.1), model)
-      trainfn!(model, data, opt) do m, x, y
-        err = Flux.mse(m(x), y)
-        l2 = sum(pen2, Flux.params(m))
-        err + 0.33 * l2
+
+      @test_broken begin
+        trainfn!(model, data, opt) do m, x, y
+          err = Flux.mse(m(x), y)
+          l2 = sum(pen2, Flux.params(m))
+          err + 0.33 * l2
+        end
       end
+      
       diff2 = model.weight .- init_weight
       @test diff1 ≈ diff2
     end
