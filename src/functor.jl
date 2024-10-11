@@ -201,7 +201,7 @@ end
 const GPU_BACKENDS = ("CUDA", "AMDGPU", "Metal", "CPU")
 # const GPU_BACKEND = load_preference(MLDataDevices, "gpu_backend", "CUDA")
 # https://github.com/JuliaPackaging/Preferences.jl/issues/39
-const GPU_BACKEND = @load_preference!("Flux", "gpu_backend", "CUDA")
+const GPU_BACKEND = @load_preference("gpu_backend")
 
 """
     gpu(m)
