@@ -31,7 +31,7 @@ y = [1  0  0  0  1
   y = rand(Float32, 3,4)
   @test loss(x, y) ≈ loss(gpu(x), gpu(y))
 
-  gpu_autodiff_test(loss, x, y)
+  test_gradients(loss, x, y, test_gpu=true, test_grad_f = false)
 
   # Float16 tests
   @test loss(f16(x), f16(y)) ≈ loss(gpu(f16(x)), gpu(f16(y)))

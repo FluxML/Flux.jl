@@ -10,73 +10,23 @@
   @test gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
 end
 
-# TODO: These layers get into scalar indexing issues.
-const BROKEN_LAYERS = Union{}
 
 const ACTIVATIONS = [identity, relu, tanh,
                      sigmoid, exp, softplus,
                      elu, selu]
 
-function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true, test_mode = false)
-  isnothing(x_cpu) && error("Missing input to test the layers against.")
+function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; test_cpu = true, test_mode = false)
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer Layer GPU grad test" begin
 
         # compute output and grad of parameters
         l_cpu = layer(args...)
-        l_gpu = l_cpu |> gpu
         if test_mode
           testmode!(l_cpu)
-          testmode!(l_gpu)
         end
 
-        ps_cpu = Flux.params(l_cpu)
-        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
-        gs_cpu = back_cpu(1f0)
-
-        x_gpu = gpu(x_cpu)
-        ps_gpu = Flux.params(l_gpu)
-
-        if typeof(l_gpu) <: BROKEN_LAYERS
-          @test_broken gradient(() -> sum(l_gpu(x_gpu)), ps_gpu) isa Flux.Zygote.Grads
-        else
-          y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
-          gs_gpu = back_gpu(1f0) # TODO many layers error out when backprop int 1, should fix
-
-          # compute grad of input
-          xg_cpu = gradient(x -> sum(l_cpu(x)), x_cpu)[1]
-          xg_gpu = gradient(x -> sum(l_gpu(x)), x_gpu)[1]
-
-          # test
-          if test_cpu
-            if layer === GroupedConvTranspose
-              @test y_gpu ≈ y_cpu rtol=1f-2 atol=1f-3
-            else
-              @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            end
-            if isnothing(xg_cpu)
-              @test isnothing(xg_gpu)
-            else
-              if layer === GroupedConvTranspose
-                @test Array(xg_gpu) ≈ xg_cpu rtol = 2f-2 atol = 1f-3
-              else
-                @test Array(xg_gpu) ≈ xg_cpu rtol = 1f-3 atol = 1f-3
-              end
-            end
-          end
-          @test gs_gpu isa Flux.Zygote.Grads
-          for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
-            if isnothing(gs_cpu[p_cpu])
-              @test isnothing(gs_gpu[p_gpu])
-            else
-              @test gs_gpu[p_gpu] isa CuArray
-              if test_cpu
-                @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
-              end
-            end
-          end
-        end
+        test_gradients(l_cpu, x_cpu, test_gpu = true)
       end
     end
   end
@@ -150,22 +100,17 @@ gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix(
 
 @testset "function layers" begin
   x = rand(Float32, 3,3)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=2)), x)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
+  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x)
+  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x)
+  test_gradients(x -> sum(Flux.normalise(x)), x)
 end
 
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
   l = cl((2,2), 1=>3, bias = false) |> gpu
   ip = zeros(Float32, 28,28,1,1) |> gpu
-  if typeof(l) <: BROKEN_LAYERS
-    @test_broken sum(l(ip)) ≈ 0.f0
-    @test_broken gradient(() -> sum(l(ip)), Flux.params(l)) isa Flux.Zygote.Grads
-  else
-    @test sum(l(ip)) ≈ 0.f0
-    gs = gradient(() -> sum(l(ip)), Flux.params(l))
-    @test l.bias ∉ gs.params
-  end
+  @test sum(l(ip)) ≈ 0.f0
+  gs = gradient(() -> sum(l(ip)), Flux.params(l))
+  @test l.bias ∉ gs.params
 end
 
 @testset "Dense without bias" begin
@@ -366,14 +311,5 @@ end
   @test Array(y_gpu) ≈ y_cpu atol=1e-4
   @test Array(α_gpu) ≈ α_cpu atol=1e-4
 
-  gm_cpu, gx_cpu = gradient(mha_cpu, x_cpu) do mha, x
-    y, α = mha(x)
-    return sum(y.^2) + sum(α.^2)
-  end
-  gm_gpu, gx_gpu = gradient(mha_gpu, x_gpu) do mha, x
-    y, α = mha(x)
-    return sum(y.^2) + sum(α.^2)
-  end
-  check_grad(gm_gpu, gm_cpu)
-  check_grad(gx_gpu, gx_cpu)
+  test_gradients(mha_cpu, x_cpu, loss = o -> sum(o[1].^2) + sum(o[2].^2), test_gpu = true)
 end

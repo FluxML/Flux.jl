@@ -19,9 +19,9 @@ end
 end
 
 @testset "Chain of Dense layers" begin
-    m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax) |> f32
+    m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
     x = rand(Float32, 10, 10)
-    gpu_autodiff_test(m, x)
+    test_gradients(m, x, test_gpu=true)
 end
 
 @testset "Convolution" begin
@@ -29,11 +29,12 @@ end
         m = conv_type(tuple(fill(2, nd)...), 3 => 4) |> f32
         x = rand(Float32, fill(10, nd)..., 3, 5)
 
+        md, xd = Flux.gpu.((m, x))
+        y = m(x)
         # Ensure outputs are the same.
-        gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+        @test collect(md(xd)) ≈ y  atol=1f-3
 
         # Gradients are flipped as well.
-        md, xd = Flux.gpu.((m, x))
         gs = gradient(m -> sum(m(x)), m)
         gsd = gradient(m -> sum(m(xd)), md)
 
@@ -74,16 +75,18 @@ end
 end
 
 @testset "Chain(Conv)" begin
-    m = Chain(Conv((3, 3), 3 => 3)) |> f32
+    m = Chain(Conv((3, 3), 3 => 3))
     x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+    # gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+    test_gradients(m, x, test_gpu=true)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
 
-    m = Chain(ConvTranspose((3, 3), 3 => 3)) |> f32
+    m = Chain(ConvTranspose((3, 3), 3 => 3))
     x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+    # gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+    test_gradients(m, x, test_gpu=true)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
@@ -92,7 +95,7 @@ end
 @testset "Cross-correlation" begin
     m = CrossCor((2, 2), 3 => 4) |> f32
     x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x; atol=1f-3)
+    test_gradients(m, x, test_gpu=true)
 end
 
 @testset "Restructure" begin
@@ -132,7 +135,7 @@ end
     bn = BatchNorm(3, σ)
     for nd in 1:3
         x = rand(Float32, fill(2, nd - 1)..., 3, 4)
-        gpu_autodiff_test(bn, x; atol=1f-3, allow_nothing=true)
+        test_gradients(bn, x; test_gpu=true)
     end
 end
 

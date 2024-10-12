@@ -8,98 +8,79 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.dice_coeff_loss,
                     Flux.Losses.poisson_loss,
                     Flux.Losses.hinge_loss, Flux.Losses.squared_hinge_loss,
-                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss, Flux.Losses.siamese_contrastive_loss]
+                    Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss,
+                    Flux.Losses.siamese_contrastive_loss]
 
 
-
-function check_grad(g_gpu, g_cpu;
-            rtol=1e-4, atol=1e-4,
-            allow_nothing::Bool=false)
-    allow_nothing && return
-    @warn "Unsupported types in `check_grad`: $(typeof(g_gpu)), $(typeof(g_cpu))"
-    @show g_gpu g_cpu
-    @test false
+function finitediff_withgradient(f, x...)
+    y = f(x...)
+    fdm = central_fdm(5, 1)
+    return y, FiniteDifferences.grad(fdm, f, x...)
 end
 
-check_grad(g_gpu::Base.RefValue, g_cpu::Base.RefValue; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
-    check_grad(g_gpu[], g_cpu[]; rtol, atol, allow_nothing)
 
-check_grad(g_gpu::Nothing, g_cpu::Nothing; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
-    @test true
-
-check_grad(g_gpu::Float32, g_cpu::Float32; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false) =
-    @test g_cpu ≈ g_gpu rtol=rtol atol=atol
-
-function check_grad(g_gpu::Tuple, g_cpu::Tuple; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false)
-    for (v1, v2) in zip(g_gpu, g_cpu)
-        check_grad(v1, v2; rtol, atol, allow_nothing)
-    end
-end
-
-function check_grad(g_gpu::NamedTuple, g_cpu::NamedTuple; rtol=1e-4, atol=1e-4, allow_nothing::Bool=false)
-    for ((k1,v1), (k2,v2)) in zip(pairs(g_gpu), pairs(g_cpu))
-        @test k1 == k2
-        check_grad(v1, v2; rtol, atol, allow_nothing)
-    end
-end
-
-check_type(x) = false
-check_type(x::Float32) = true
-check_type(x::Array{Float32}) = true
-
-function gpu_autodiff_test(
-            f_cpu, 
-            xs_cpu::Array{Float32}...;
-            test_equal=true, 
-            rtol=1e-4, atol=1e-4,
-            checkgrad::Bool = true, 
-            allow_nothing::Bool = false,
-        )
-
-    # Compare CPU & GPU function outputs.
-    f_gpu = f_cpu |> gpu
-    xs_gpu = gpu.(xs_cpu)
-
-    y_cpu = f_cpu(xs_cpu...)
-    y_gpu = f_gpu(xs_gpu...)
-    @test collect(y_cpu) ≈ collect(y_gpu) atol=atol rtol=rtol
-
-    checkgrad || return
-
-    ### GRADIENT WITH RESPECT TO INPUT ###
-
-    y_cpu, back_cpu = pullback((x...) -> f_cpu(x...), xs_cpu...)
-    @test check_type(y_cpu)
-    Δ_cpu = size(y_cpu) == () ? randn(Float32) : randn(Float32, size(y_cpu))
-    gs_cpu = back_cpu(Δ_cpu)
-
-    Δ_gpu = Δ_cpu |> gpu
-    y_gpu, back_gpu = pullback((x...) -> f_gpu(x...), xs_gpu...)
-    @test check_type(y_gpu)
-    gs_gpu = back_gpu(Δ_gpu)
-
-    if test_equal
-        @test collect(y_cpu) ≈ collect(y_gpu) rtol=rtol atol=atol
-        for (g_gpu, g_cpu) in zip(gs_gpu, gs_cpu)
-            check_grad(g_gpu, g_cpu; atol, rtol, allow_nothing)
+function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4, check_eltype=true)
+    fmapstructure_with_path(a, b) do kp, x, y
+        if x isa AbstractArray
+            if check_eltype
+                @test eltype(x) == eltype(y)
+            end
+            @test x ≈ y rtol=rtol atol=atol
+        elseif x isa Number
+            @test x ≈ y rtol=rtol atol=atol
         end
     end
+end
 
-    ### GRADIENT WITH RESPECT TO f ###
 
-    ps_cpu = Flux.params(f_cpu)
-    y_cpu, back_cpu = pullback(() -> f_cpu(xs_cpu...), ps_cpu)
-    gs_cpu = back_cpu(Δ_cpu)
+function test_gradients(
+            f, 
+            xs::Array...;
+            rtol=1e-4, atol=1e-4,
+            test_gpu = false,
+            test_grad_f = true,
+            loss = sum
+            )
 
-    ps_gpu = Flux.params(f_gpu)
-    y_gpu, back_gpu = pullback(() -> f_gpu(xs_gpu...), ps_gpu)
-    gs_gpu = back_gpu(Δ_gpu)
+    # Use finite differences gradient as a reference.
+    y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f(xs...)), xs...)
 
-    if test_equal
-        @test collect(y_cpu) ≈ collect(y_gpu) rtol=rtol atol=atol
-        @assert length(ps_gpu) == length(ps_cpu)
-        for (p_gpu, p_cpu) in zip(ps_gpu, ps_cpu)
-            check_grad(gs_gpu[p_gpu], gs_cpu[p_cpu]; atol, rtol, allow_nothing)
+    # Zygote gradient with respect to input.
+    y, g = Zygote.withgradient((xs...) -> loss(f(xs...)), xs...)
+    @test y ≈ y_fd rtol=rtol atol=atol
+    check_equal_leaves(g, g_fd; rtol, atol)
+
+    if test_gpu
+        gpu_dev = gpu_device(force=true)
+        cpu_dev = cpu_device()
+        x_gpu = x |> gpu_dev
+        f_gpu = f |> gpu_dev
+
+        # Zygote gradient with respect to input on GPU.
+        y_gpu, g_gpu = Zygote.withgradient(x -> loss(f_gpu(x)), x_gpu)
+        @test get_device(g_gpu) == gpu_dev
+        @test y_gpu |> cpu_dev ≈ y rtol=rtol atol=atol
+        check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
+    end
+
+    if test_grad_f
+        # Use finite differences gradient as a reference.
+        # y_fd, g_fd = finitediff_withgradient(f -> loss(f(x)), f)
+        ps, re = Flux.destructure(f)
+        y_fd, g_fd = finitediff_withgradient(f -> loss(re(ps)(x)), ps)
+        g_fd = (re(g_fd[1]),)
+
+        # Zygote gradient with respect to f.
+        y, g = Zygote.withgradient(f -> loss(f(x)), f)
+        @test y ≈ y_fd rtol=rtol atol=atol
+        check_equal_leaves(g, g_fd; rtol, atol)
+
+        if test_gpu
+            # Zygote gradient with respect to input on GPU.
+            y_gpu, g_gpu = Zygote.withgradient(f -> loss(f(x_gpu)), f_gpu)
+            @test get_device(g_gpu) == gpu_dev
+            @test y_gpu |> cpu_dev ≈ y rtol=rtol atol=atol
+            check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
         end
     end
 end

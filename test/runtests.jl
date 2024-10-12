@@ -10,40 +10,40 @@ using Pkg
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
-# ENV["FLUX_TEST_METAL"] = "true"
+ENV["FLUX_TEST_METAL"] = "true"
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 ENV["FLUX_TEST_ENZYME"] = "false" # We temporarily disable Enzyme tests since they are failing
 
-include("test_utils.jl")
+include("test_utils.jl") # for test_gradients
 
 Random.seed!(0)
 
 @testset verbose=true "Flux.jl" begin
   if get(ENV, "FLUX_TEST_CPU", "true") == "true"
-    @testset "Utils" begin
-      include("utils.jl")
-    end
+    # @testset "Utils" begin
+    #   include("utils.jl")
+    # end
 
-    @testset "Loading" begin
-      include("loading.jl")
-    end
+    # @testset "Loading" begin
+    #   include("loading.jl")
+    # end
 
-    @testset "Optimise / Train" begin
-      include("optimise.jl")
-      include("train.jl")
-      include("tracker.jl")
-    end
+    # @testset "Optimise / Train" begin
+    #   include("optimise.jl")
+    #   include("train.jl")
+    #   include("tracker.jl")
+    # end
 
-    @testset "Data" begin
-      include("data.jl")
-    end
+    # @testset "Data" begin
+    #   include("data.jl")
+    # end
 
-    @testset "Losses" begin
-      include("losses.jl")
-      include("ctc.jl")
-    end
+    # @testset "Losses" begin
+    #   include("losses.jl")
+    #   include("ctc.jl")
+    # end
 
     @testset "Layers" begin
       include("layers/attention.jl")

@@ -5,8 +5,6 @@ using Random, Statistics
 using Zygote
 Flux.gpu_backend!("Metal") # needs a restart
 
-include("test_utils.jl")
-
 @testset "data movement" begin
     metal_device = Flux.gpu_device()
     cdev = cpu_device()
