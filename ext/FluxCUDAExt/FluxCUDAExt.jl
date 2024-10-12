@@ -10,6 +10,7 @@ using ChainRulesCore
 using Random
 using Adapt
 import Adapt: adapt_storage
+using MLDataDevices: MLDataDevices
 
 
 const USE_CUDA = Ref{Union{Nothing, Bool}}(nothing)

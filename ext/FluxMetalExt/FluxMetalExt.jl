@@ -4,7 +4,7 @@ import Flux
 import Flux: FluxCPUAdaptor, FluxMetalAdaptor, _metal, _isleaf, adapt_storage, fmap
 import NNlib
 using ChainRulesCore
-
+using MLDataDevices: MLDataDevices
 using Metal
 using Adapt
 using Random

@@ -155,7 +155,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       pen2(x::AbstractArray) = sum(abs2, x)/2
       opt = Flux.setup(Adam(0.1), model)
 
-      @test_broken begin
+      @test begin
         trainfn!(model, data, opt) do m, x, y
           err = Flux.mse(m(x), y)
           l2 = sum(pen2, Flux.params(m))
@@ -166,7 +166,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
         @test diff1 ≈ diff2
   
         true
-      end
+      end broken = VERSION >= v"1.11"
     end
 
     # Take 3: using WeightDecay instead. Need the /2 above, to match exactly.

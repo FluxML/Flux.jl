@@ -35,6 +35,6 @@ end
 
 function Flux._get_device(::Val{:Metal}, id::Int)
     @assert id == 0 "Metal backend only supports one device at the moment"
-    return MLDataDevices.gpu_device()
+    return MLDataDevices.gpu_device(force=true)
 end
 
