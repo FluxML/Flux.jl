@@ -6,6 +6,7 @@ using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
 using Pkg
+using FiniteDifferences: FiniteDifferences
 
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"

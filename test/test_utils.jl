@@ -14,7 +14,7 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
 
 function finitediff_withgradient(f, x...)
     y = f(x...)
-    fdm = central_fdm(5, 1)
+    fdm = FiniteDifferences.central_fdm(5, 1)
     return y, FiniteDifferences.grad(fdm, f, x...)
 end
 
