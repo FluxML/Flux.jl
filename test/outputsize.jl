@@ -10,7 +10,6 @@
   @test outputsize(m, (10,); padbatch=true) == (2, 1)
   @test outputsize(m, (10, 30)) == (2, 30)
 
-  @info "Don't mind the following error, it's for testing purpose."
   m = Chain(Dense(10, 8, σ), Dense(8, 4), Dense(5, 2))
   @test_throws DimensionMismatch outputsize(m, (10,))
 

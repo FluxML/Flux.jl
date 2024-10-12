@@ -76,7 +76,7 @@ end
 
 # Bug when no children, https://github.com/FluxML/Flux.jl/issues/2208
 struct NoFields end
-Flux.@functor NoFields
+Flux.@layer NoFields
 
 @testset "show with no fields" begin
   str = repr("text/plain", Chain(Dense(1=>1), Dense(1=>1), NoFields()))

@@ -9,16 +9,23 @@ on:
       - master
     tags: '*'
 
+# needed for julia-actions/cache to delete old caches
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         version:
-          # - '1.9' # Uncomment when 1.10 is out. Replace this with the minimum Julia version that your package supports. 
-          - '1'
+          - '1.10' # Replace this with the minimum Julia version that your package supports. 
+          - '1'    # latest stable 1.x releas
+          # - 'pre'  # latest stable prerelease
+          - 'nightly' # latest nightly release
         os: [ubuntu-latest]
         arch: [x64]
         include:
@@ -29,7 +36,7 @@ jobs:
             version: '1'
             arch: aarch64
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
@@ -47,17 +54,16 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - name: "Run test without coverage report"
         uses: julia-actions/julia-runtest@v1
-        if: ${{ !contains(fromJson('["1", "1.9"]'), matrix.version) || matrix.os != 'ubuntu-latest' }}
+        if: matrix.version != '1' || matrix.os != 'ubuntu-latest'
         with:
           coverage: false
-
       - name: "Run test with coverage report"
         uses: julia-actions/julia-runtest@v1
-        if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
       - uses: julia-actions/julia-processcoverage@v1
-        if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
       - uses: codecov/codecov-action@v4
-        if: contains(fromJson('["1", "1.9"]'), matrix.version) && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
         with:
           file: lcov.info
 

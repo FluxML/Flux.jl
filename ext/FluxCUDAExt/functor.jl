@@ -57,5 +57,5 @@ function _cuda(id::Union{Nothing, Int}, x)
 end
 
 function Flux._get_device(::Val{:CUDA}, id::Int)
-    return MLDataUtils.gpu_device(id+1, force=true)
+    return MLDataDevices.gpu_device(id+1, force=true)
 end

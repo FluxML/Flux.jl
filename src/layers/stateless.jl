@@ -34,11 +34,10 @@ julia> isapprox(std(y; dims=1, corrected=false), ones(1, 10), atol=1e-5)
 true
 ```
 """
-@inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5), ϵ=nothing)
-  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
+@inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5))
   μ = mean(x, dims=dims)
   σ = std(x, dims=dims, mean=μ, corrected=false)
-  return @. (x - μ) / (σ + ε)
+  return @. (x - μ) / (σ + eps)
 end
 
 """

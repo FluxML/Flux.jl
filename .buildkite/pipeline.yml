@@ -46,7 +46,7 @@ steps:
           using Pkg
           Pkg.resolve()'
     commands: |
-      printf "[MLDataDevices]\ngpu_backend = \"Metal\"\n" > LocalPreferences.toml
+      printf "[Flux]\ngpu_backend = \"Metal\"\n" > LocalPreferences.toml
 
     if: build.message !~ /\[skip tests\]/
     timeout_in_minutes: 60
@@ -63,7 +63,7 @@ steps:
   - label: "AMD GPU with Julia 1"
     plugins:
       - JuliaCI/julia#v1:
-          version: "1.10"
+          version: "1"
       - JuliaCI/julia-test#v1:
       - JuliaCI/julia-coverage#v1:
           dirs:
@@ -74,7 +74,7 @@ steps:
       rocm: "*"
       rocmgpu: "*"
     commands: |
-      printf "[MLDataDevices]\ngpu_backend = \"AMDGPU\"\n" > LocalPreferences.toml
+      printf "[Flux]\ngpu_backend = \"AMDGPU\"\n" > LocalPreferences.toml
     timeout_in_minutes: 60
     env:
       JULIA_AMDGPU_CORE_MUST_LOAD: "1"

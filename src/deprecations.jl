@@ -1,47 +1,6 @@
 
 # v0.13 deprecations
 
-function Broadcast.broadcasted(f::Recur, args...)
-  # This had an explicit @adjoint rule, calling Zygote.∇map(__context__, f, args...), until v0.12
-  Base.depwarn("""Broadcasting is not safe to use with RNNs, as it does not guarantee an iteration order.
-    Re-writing this as a comprehension would be better.""", :broadcasted)
-  map(f, args...)  # map isn't really safe either, but 
-end
-
-@deprecate frequencies(xs) group_counts(xs)
-
-struct Zeros
-  function Zeros()
-    Base.depwarn("Flux.Zeros is no more, has ceased to be, is bereft of life, is an ex-boondoggle... please use bias=false instead", :Zeros)
-    false
-  end
-end
-Zeros(args...) = Zeros()  # was used both Dense(10, 2, initb = Zeros) and Dense(rand(2,10), Zeros())
-
-function Optimise.update!(x::AbstractArray, x̄)
-  Base.depwarn("`Flux.Optimise.update!(x, x̄)` was not used internally and has been removed. Please write `x .-= x̄` instead.", :update!)
-  x .-= x̄
-end
-
-function Diagonal(size::Integer...; kw...)
-  Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
-  Scale(size...; kw...)
-end
-function Diagonal(size::Tuple; kw...)
-  Base.depwarn("Flux.Diagonal is now Flux.Scale, and also allows an activation function.", :Diagonal)
-  Scale(size...; kw...)
-end
-
-# Deprecate this eventually once saving models w/o structure is no more
-function loadparams!(m, xs)
-  Base.depwarn("loadparams! will be deprecated eventually. Use loadmodel! instead.", :loadparams!)
-  for (p, x) in zip(params(m), xs)
-    size(p) == size(x) ||
-      error("Expected param size $(size(p)), got $(size(x))")
-    copyto!(p, x)
-  end
-end
-
 # Channel notation: Changed to match Conv, but very softly deprecated!
 # Perhaps change to @deprecate for v0.15, but there is no plan to remove these.
 Dense(in::Integer, out::Integer, σ = identity; kw...) =
@@ -56,32 +15,6 @@ LSTMCell(in::Integer, out::Integer; kw...) = LSTMCell(in => out; kw...)
 GRUCell(in::Integer, out::Integer; kw...) = GRUCell(in => out; kw...)
 GRUv3Cell(in::Integer, out::Integer; kw...) = GRUv3Cell(in => out; kw...)
 
-# Optimisers with old naming convention
-Base.@deprecate_binding ADAM Adam
-Base.@deprecate_binding NADAM NAdam
-Base.@deprecate_binding ADAMW AdamW
-Base.@deprecate_binding RADAM RAdam
-Base.@deprecate_binding OADAM OAdam
-Base.@deprecate_binding ADAGrad AdaGrad
-Base.@deprecate_binding ADADelta AdaDelta
-
-# Remove sub-module Data, while making sure Flux.Data.DataLoader keeps working
-Base.@deprecate_binding Data Flux false "Sub-module Flux.Data has been removed. The only thing it contained may be accessed as Flux.DataLoader"
-
-@deprecate paramtype(T,m) _paramtype(T,m) false  # internal method, renamed to make this clear
-
-@deprecate rng_from_array() Random.default_rng()
-
-function istraining()
-  Base.depwarn("Flux.istraining() is deprecated, use NNlib.within_gradient(x) instead", :istraining)
-  false
-end
-ChainRulesCore.rrule(::typeof(istraining)) = true, _ -> (NoTangent(),)
-
-function _isactive(m)
-  Base.depwarn("_isactive(m) is deprecated, use _isactive(m,x)", :_isactive, force=true)
-  _isactive(m, 1:0)
-end
 
 #=
   # Valid method in Optimise, old implicit style, is:
@@ -109,7 +42,6 @@ train!(loss, ps::Params, data, opt::Optimisers.AbstractRule; cb=nothing) = error
 
 train!(loss, model, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
   train!(loss, model, data, _old_to_new(opt); cb)
-
 
 # Next, to use the new `setup` with the still-exported old-style `Adam` etc:
 import .Train: setup
@@ -178,33 +110,6 @@ function update!(opt::Optimise.AbstractOptimiser, ::Params, grads::Union{Tuple, 
     * For the explicit style, `update(state, model, grad)` needs the model itself, and `state = Flux.setup(opt, model)`.
     """)
 end
-
-""" 
-    trainmode!(m, active)
-
-!!! warning
-    This two-argument method is deprecated.
-
-Possible values of  `active` are:
-- `true` for training, or 
-- `false` for testing, same as [`testmode!`](@ref)`(m)`
-- `:auto` or `nothing` for Flux to detect training automatically.
-"""
-function trainmode!(m, active::Bool)
-  Base.depwarn("trainmode!(m, active::Bool) is deprecated", :trainmode)
-  testmode!(m, !active)
-end
-
-# Greek-letter keywords deprecated in Flux 0.13
-# Arguments (old => new, :function, "β" => "beta")
-function _greek_ascii_depwarn(βbeta::Pair, func = :loss, names = "" => "")
-  Base.depwarn(LazyString("function ", func, " no longer accepts greek-letter keyword ", names.first, """
-    please use ascii """, names.second, " instead"), func)
-  βbeta.first
-end
-_greek_ascii_depwarn(βbeta::Pair{Nothing}, _...) = βbeta.second
-
-ChainRulesCore.@non_differentiable _greek_ascii_depwarn(::Any...)
 
 
 # v0.14 deprecations

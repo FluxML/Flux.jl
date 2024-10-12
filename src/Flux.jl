@@ -18,13 +18,14 @@ using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
 export gradient
 
-@reexport using MLDataDevices: MLDataDevices, gpu_backend!, supported_gpu_backends, reset_gpu_device!,
+@reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
                     gpu_device, cpu_device, xla_device,
                     CPUDevice,
                     CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
                     XLADevice,
                     # get_device, # we define get_device here for retrocompatibility
+                    # gpu_backend!, # have to define here due to https://github.com/JuliaPackaging/Preferences.jl/issues/39
                     get_device_type,
                     DeviceIterator
 
@@ -104,7 +105,7 @@ include("losses/Losses.jl")
 using .Losses
 
 include("devices.jl")
-export get_device
+export get_device, gpu_backend!
 
 # Distributed Training
 include("distributed/backend.jl")

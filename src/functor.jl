@@ -189,11 +189,19 @@ _isleaf(::Union{Transpose, Adjoint, PermutedDimsArray}) = false
 
 _isleaf(::AbstractRNG) = true
 
+# Remove when 
+# https://github.com/JuliaPackaging/Preferences.jl/issues/39
+# is resolved
+function gpu_backend!(backend::String)
+    @set_preferences!("gpu_backend" => backend)
+    MLDataDevices.gpu_backend!(backend)
+end
+
 # the order below is important
 const GPU_BACKENDS = ("CUDA", "AMDGPU", "Metal", "CPU")
-const GPU_BACKEND_ORDER = Dict(collect(zip(GPU_BACKENDS, 1:length(GPU_BACKENDS))))
-const GPU_BACKEND = load_preference(MLDataDevices, "gpu_backend", "CUDA")
-
+# const GPU_BACKEND = load_preference(MLDataDevices, "gpu_backend", "CUDA")
+# https://github.com/JuliaPackaging/Preferences.jl/issues/39
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 """
     gpu(m)
