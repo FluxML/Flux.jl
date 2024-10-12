@@ -76,7 +76,7 @@ end
 
 @testset "Chain(Conv)" begin
     m = Chain(Conv((3, 3), 3 => 3))
-    x = rand(Float32, 10, 10, 3, 2)
+    x = rand(Float32, 5, 5, 3, 2)
     # gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
     test_gradients(m, x, test_gpu=true)
 
@@ -84,7 +84,7 @@ end
     @test md[1].weight ≈ m[1].weight atol=1f-3
 
     m = Chain(ConvTranspose((3, 3), 3 => 3))
-    x = rand(Float32, 10, 10, 3, 2)
+    x = rand(Float32, 5, 5, 3, 2)
     # gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
     test_gradients(m, x, test_gpu=true)
 
@@ -94,7 +94,7 @@ end
 
 @testset "Cross-correlation" begin
     m = CrossCor((2, 2), 3 => 4) |> f32
-    x = rand(Float32, 10, 10, 3, 2)
+    x = rand(Float32, 5, 5, 3, 2)
     test_gradients(m, x, test_gpu=true)
 end
 

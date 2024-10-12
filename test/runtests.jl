@@ -24,28 +24,28 @@ Random.seed!(0)
 
 @testset verbose=true "Flux.jl" begin
   if get(ENV, "FLUX_TEST_CPU", "true") == "true"
-    # @testset "Utils" begin
-    #   include("utils.jl")
-    # end
+    @testset "Utils" begin
+      include("utils.jl")
+    end
 
-    # @testset "Loading" begin
-    #   include("loading.jl")
-    # end
+    @testset "Loading" begin
+      include("loading.jl")
+    end
 
-    # @testset "Optimise / Train" begin
-    #   include("optimise.jl")
-    #   include("train.jl")
-    #   include("tracker.jl")
-    # end
+    @testset "Optimise / Train" begin
+      include("optimise.jl")
+      include("train.jl")
+      include("tracker.jl")
+    end
 
-    # @testset "Data" begin
-    #   include("data.jl")
-    # end
+    @testset "Data" begin
+      include("data.jl")
+    end
 
-    # @testset "Losses" begin
-    #   include("losses.jl")
-    #   include("ctc.jl")
-    # end
+    @testset "Losses" begin
+      include("losses.jl")
+      include("ctc.jl")
+    end
 
     @testset "Layers" begin
       include("layers/attention.jl")

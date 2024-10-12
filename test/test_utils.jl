@@ -19,12 +19,9 @@ function finitediff_withgradient(f, x...)
 end
 
 
-function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4, check_eltype=true)
+function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b) do kp, x, y
         if x isa AbstractArray
-            if check_eltype
-                @test eltype(x) == eltype(y)
-            end
             @test x ≈ y rtol=rtol atol=atol
         elseif x isa Number
             @test x ≈ y rtol=rtol atol=atol
@@ -43,7 +40,10 @@ function test_gradients(
             )
 
     # Use finite differences gradient as a reference.
-    y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f(xs...)), xs...)
+    # Cast to Float64 to avoid precision issues.
+    f64 = f |> f64
+    xs64 = xs .|> f64
+    y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64(xs...)), xs64...)
 
     # Zygote gradient with respect to input.
     y, g = Zygote.withgradient((xs...) -> loss(f(xs...)), xs...)
@@ -66,8 +66,8 @@ function test_gradients(
     if test_grad_f
         # Use finite differences gradient as a reference.
         # y_fd, g_fd = finitediff_withgradient(f -> loss(f(x)), f)
-        ps, re = Flux.destructure(f)
-        y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps)(xs...)), ps)
+        ps, re = Flux.destructure(f64)
+        y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps)(xs64...)), ps)
         g_fd = (re(g_fd[1]),)
 
         # Zygote gradient with respect to f.
