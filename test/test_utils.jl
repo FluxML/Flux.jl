@@ -42,8 +42,8 @@ function test_gradients(
 
     # Use finite differences gradient as a reference.
     # Cast to Float64 to avoid precision issues.
-    f64 = f |> f64
-    xs64 = xs .|> f64
+    f64 = f |> Flux.f64
+    xs64 = xs .|> Flux.f64
     y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64(xs...)), xs64...)
 
     # Zygote gradient with respect to input.
@@ -83,20 +83,5 @@ function test_gradients(
             @test y_gpu |> cpu_dev ≈ y rtol=rtol atol=atol
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
         end
-    end
-end
-
-# check_grad_type checks that the gradient type matches the primal type.
-
-check_grad_type(g::Nothing, x) = nothing
-
-function check_grad_type(g::AbstractArray{T1}, x::AbstractArray{T2}) where {T1, T2}
-    @test T1 == T2
-    @test size(g) == size(x)
-end
-
-function check_grad_type(g::NamedTuple, x::T) where T
-    for f in fieldnames(T)
-        check_grad_type(g[f], getfield(x, f))
     end
 end
