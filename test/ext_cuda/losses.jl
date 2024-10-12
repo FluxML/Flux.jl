@@ -27,8 +27,9 @@ y = [1  0  0  0  1
 @test focal_loss(x, y) ≈ focal_loss(gpu(x), gpu(y))
 
 @testset "GPU: $loss" for loss in ALL_LOSSES
-  x = rand(Float32, 3,4)
-  y = rand(Float32, 3,4)
+  # let's stay far from the boundaries to avoid problems with finite differences gradients
+  x = 0.1f0 + 0.8f0 .* rand(Float32, 3, 4)
+  y = 0.1f0 + 0.8f0 .* rand(Float32, 3, 4)
   @test loss(x, y) ≈ loss(gpu(x), gpu(y))
 
   test_gradients(loss, x, y, test_gpu=true, test_grad_f = false)

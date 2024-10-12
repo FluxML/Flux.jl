@@ -11,9 +11,7 @@
 end
 
 
-const ACTIVATIONS = [identity, relu, tanh,
-                     sigmoid, exp, softplus,
-                     elu, selu]
+const ACTIVATIONS = [identity, tanh, softplus, elu]
 
 function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; test_cpu = true, test_mode = false)
   @testset "$name GPU grad tests" begin

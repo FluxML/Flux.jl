@@ -14,7 +14,8 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
 
 function finitediff_withgradient(f, x...)
     y = f(x...)
-    fdm = FiniteDifferences.central_fdm(5, 1)
+    # We set a range to avoid domain errors
+    fdm = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)
     return y, FiniteDifferences.grad(fdm, f, x...)
 end
 
