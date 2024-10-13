@@ -10,7 +10,6 @@ CUDA.allowscalar(false)
 @testset "get_devices" begin
   include("get_devices.jl")
 end
-
 @testset "cuda" begin
   include("cuda.jl")
 end

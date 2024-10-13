@@ -26,7 +26,7 @@ end
 
 @testset "Convolution" begin
     for conv_type in (Conv, ConvTranspose), nd in 1:3
-        m = conv_type(tuple(fill(2, nd)...), 3 => 4) |> f32
+        m = conv_type(tuple(fill(2, nd)...), 3 => 4)
         x = rand(Float32, fill(10, nd)..., 3, 5)
 
         md, xd = Flux.gpu.((m, x))
@@ -53,10 +53,10 @@ end
         x = rand(Float32, fill(10, nd)..., 3, 5) |> gpu
 
         pad = ntuple(i -> i, nd)
-        m = conv_type(kernel, 3 => 4, pad=pad) |> f32 |> gpu
+        m = conv_type(kernel, 3 => 4, pad=pad) |> gpu
 
         expanded_pad = ntuple(i -> pad[(i - 1) ÷ 2 + 1], 2 * nd)
-        m_expanded = conv_type(kernel, 3 => 4, pad=expanded_pad) |> f32 |> gpu
+        m_expanded = conv_type(kernel, 3 => 4, pad=expanded_pad) |> gpu
 
         @test size(m(x)) == size(m_expanded(x))
     end
@@ -92,7 +92,7 @@ end
 end
 
 @testset "Cross-correlation" begin
-    m = CrossCor((2, 2), 3 => 4) |> f32
+    m = CrossCor((2, 2), 3 => 4)
     x = rand(Float32, 5, 5, 3, 2)
     test_gradients(m, x, test_gpu=true)
 end
