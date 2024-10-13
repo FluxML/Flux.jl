@@ -8,9 +8,6 @@ dense_model = Dense(2 => 3)                 # initially lives on CPU
 weight = copy(dense_model.weight)           # store the weight
 bias = copy(dense_model.bias)               # store the bias
 
-cuda_device = Flux.get_device()
-
-@test typeof(cuda_device) <: Flux.CUDADevice
 
 # correctness of data transfer
 x = randn(5, 5)
@@ -30,6 +27,12 @@ for id in 0:(length(CUDA.devices()) - 1)
   @test isequal(Flux.cpu(dense_model.weight), weight)
   @test isequal(Flux.cpu(dense_model.bias), bias)
 end
+
+# gpu_device remembers the last device selected
+# Therefore, we need to reset it to the current cuda device
+@test gpu_device().device.handle == length(CUDA.devices()) - 1
+gpu_device(CUDA.device().handle + 1)
+
 # finally move to CPU, and see if things work
 cdev = cpu_device()
 dense_model = cdev(dense_model)

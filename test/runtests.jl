@@ -6,17 +6,19 @@ using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
 using Zygote
 using Pkg
+using FiniteDifferences: FiniteDifferences
+using Functors: fmapstructure_with_path
 
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
-# ENV["FLUX_TEST_CUDA"] = "true"
+ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
-# ENV["FLUX_TEST_CPU"] = "false"
+ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 ENV["FLUX_TEST_ENZYME"] = "false" # We temporarily disable Enzyme tests since they are failing
 
-include("test_utils.jl")
+include("test_utils.jl") # for test_gradients
 
 Random.seed!(0)
 
