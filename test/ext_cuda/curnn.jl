@@ -1,20 +1,8 @@
-using Flux, CUDA, Test
-
-@testset for R in [RNN, GRU, LSTM, GRUv3]
-  m = R(10, 5) |> gpu
-  x = gpu(rand(10))
-  (m̄,) = gradient(m -> sum(m(x)), m)
-  Flux.reset!(m)
-  θ = gradient(() -> sum(m(x)), params(m))
-  @test x isa CuArray
-  @test θ[m.cell.Wi] isa CuArray
-  @test collect(m̄.cell.Wi) == collect(θ[m.cell.Wi])
-end
 
 @testset "RNN" begin
   @testset for R in [RNN, GRU, LSTM, GRUv3], batch_size in (1, 5)
     rnn = R(10, 5)
-    curnn = fmap(gpu, rnn)
+    curnn = rnn |> gpu
 
     Flux.reset!(rnn)
     Flux.reset!(curnn)

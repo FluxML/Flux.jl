@@ -1,6 +1,5 @@
 using Flux
 using Flux: OneHotArray, OneHotMatrix, OneHotVector
-using Flux: params
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
@@ -11,9 +10,9 @@ using Functors: fmapstructure_with_path
 
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
-ENV["FLUX_TEST_CUDA"] = "true"
+# ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
-ENV["FLUX_TEST_CPU"] = "false"
+# ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 ENV["FLUX_TEST_ENZYME"] = "false" # We temporarily disable Enzyme tests since they are failing

@@ -82,7 +82,8 @@ using Random
     X = zeros(2, 10)
     loss(x) = sum((x .- θ).^2)
     d  = DataLoader(X)
-    Flux.train!(loss, Params([θ]), ncycle(d, 10), Descent(0.1))
+    opt_state = Flux.setup(Descent(0.1), θ)
+    Flux.train!(loss, θ, ncycle(d, 10), opt_state)
     @test norm(θ) < 1e-4
 
     # test interaction with `train!`
@@ -91,7 +92,8 @@ using Random
     Y = fill(2, 10)
     loss(x, y) = sum((y - x'*θ).^2)
     d  = DataLoader((X, Y))
-    Flux.train!(loss, Params([θ]), ncycle(d, 10), Descent(0.1))
+    opt_state = Flux.setup(Descent(0.1), θ)
+    Flux.train!(loss, θ, ncycle(d, 10), opt_state)
     @test norm(θ .- 1) < 1e-10
 
     # specify the rng

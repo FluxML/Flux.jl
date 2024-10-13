@@ -2,7 +2,7 @@ using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
              kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
              sparse_init, identity_init, unstack, batch, unbatch,
-             unsqueeze, params, loadmodel!
+             unsqueeze, loadmodel!
 using MLUtils
 using Statistics, LinearAlgebra
 using Random
@@ -334,28 +334,12 @@ end
     o = ones(s)
     z = zeros(s)
 
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
-      g = gfun(o, z)
-      @test gfun(o, false) == (g[1], nothing)
+    gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
+    g = gfun(o, z)
+    @test gfun(o, false) == (g[1], nothing)
 
-      g = gfun(z, o)
-      @test gfun(false, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
-      g = gfun(o, z)
-
-      gres = gfun(o, false)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-
-      g = gfun(z, o)
-      gres = gfun(false, o)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-    end
+    g = gfun(z, o)
+    @test gfun(false, o) == (nothing, g[2])
   end
 end
 
