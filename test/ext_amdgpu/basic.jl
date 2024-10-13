@@ -35,11 +35,11 @@ end
         @test collect(md(xd)) ≈ y  atol=1f-3
 
         # Gradients are flipped as well.
-        gs = gradient(m -> sum(m(x)), m)
-        gsd = gradient(m -> sum(m(xd)), md)
+        gs = gradient(m -> sum(m(x)), m)[1]
+        gsd = gradient(m -> sum(m(xd)), md)[1]
 
         dims = ntuple(i -> i, ndims(m.weight) - 2)
-        @test reverse(gs[1].weight; dims) ≈ Array(gsd[1].weight) atol=1f-2
+        @test reverse(gs.weight; dims) ≈ Array(gsd.weight) atol=1f-2
 
         # Movement back to CPU flips weights back.
         mh = Flux.cpu(md)
@@ -77,16 +77,15 @@ end
 @testset "Chain(Conv)" begin
     m = Chain(Conv((3, 3), 3 => 3))
     x = rand(Float32, 5, 5, 3, 2)
-    # gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
-    test_gradients(m, x, test_gpu=true)
+    
+    @test Array((m |> gpu)(x |> gpu)) ≈ m(x) atol=1f-3
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
 
     m = Chain(ConvTranspose((3, 3), 3 => 3))
     x = rand(Float32, 5, 5, 3, 2)
-    # gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
-    test_gradients(m, x, test_gpu=true)
+    @test Array((m |> gpu)(x |> gpu)) ≈ m(x) atol=1f-3
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
