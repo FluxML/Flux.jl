@@ -77,15 +77,14 @@ end
 @testset "Chain(Conv)" begin
     m = Chain(Conv((3, 3), 3 => 3))
     x = rand(Float32, 5, 5, 3, 2)
-    
-    @test Array((m |> gpu)(x |> gpu)) ≈ m(x) atol=1f-3
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false, test_grad_f=false)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
 
     m = Chain(ConvTranspose((3, 3), 3 => 3))
     x = rand(Float32, 5, 5, 3, 2)
-    @test Array((m |> gpu)(x |> gpu)) ≈ m(x) atol=1f-3
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false, test_grad_f=false)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3

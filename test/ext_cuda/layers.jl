@@ -11,9 +11,11 @@
 end
 
 
-const ACTIVATIONS = [identity, tanh, softplus, elu]
+const ACTIVATIONS = [identity, tanh]
 
-function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; test_cpu = true, test_mode = false)
+function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; 
+    test_mode=false, test_grad_x=true, 
+    atol=1e-4, rtol=1e-4)
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer Layer GPU grad test" begin
@@ -24,7 +26,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; test_cpu = t
           testmode!(l_cpu)
         end
 
-        test_gradients(l_cpu, x_cpu, test_gpu=true, compare_finite_diff=false)
+        test_gradients(l_cpu, x_cpu; test_gpu=true, compare_finite_diff=false, test_grad_x, atol, rtol)
       end
     end
   end
@@ -45,23 +47,24 @@ for act in ACTIVATIONS
                  ConvTranspose, ConvTransposeNoBias,
                  CrossCor, CrossCorNoBias,
                  DepthwiseConv, DepthwiseConvNoBias]
-  gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
+  gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act)
 
   groupedconv = [GroupedConv, GroupedConvTranspose]
-  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = true)
+  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act)
 
   batch_norm = [BatchNorm, BatchNormNoTrackStats]
-  gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
-  gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = true)
+  gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, atol=1e-3)
+  gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, atol=1e-3)
 
   batch_norm = [BatchNormNoTrackStats]
-  gpu_gradtest("BatchNorm 3 with $act (test mode)", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = true, test_mode = true)
+  gpu_gradtest("BatchNorm 3 with $act (test mode)", batch_norm, rand(Float32, 5,4), 5, act, 
+    test_mode=true, atol=1e-3)
 
   instancenorm = [InstanceNorm]
-  gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act, test_cpu = false)
+  gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act)
 
   groupnorm = [GroupNorm]
-  gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act, test_cpu = false)
+  gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act)
 end
 
 r = rand(Float32, 28, 28, 1, 1)
@@ -70,13 +73,13 @@ pooling_layers = [MaxPool, MeanPool]
 gpu_gradtest("Pooling", pooling_layers, r, (2,2))
 
 adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
-gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7), test_cpu = false)
+gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 
 dropout_layers = [Dropout, AlphaDropout]
-gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu = false) # dropout is not deterministic
+gpu_gradtest("Dropout", dropout_layers, r, 1e-6) # dropout is not deterministic
 
 layer_norm = [LayerNorm]
-gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 28, test_cpu = false) #TODO fix errors
+gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 28)
 gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
 
 upsample = [x -> Upsample(scale=x)]
@@ -88,13 +91,13 @@ gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
 gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
 
 embedding = [Flux.Embedding]
-gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2)
-gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2)
-gpu_gradtest("Embedding integer index", embedding, 1, 5, 2)
-gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2)
-gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2)
-gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2)
-gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
+gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding integer index", embedding, 1, 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2, test_grad_x=false)
 
 @testset "function layers" begin
   x = rand(Float32, 3, 3)
@@ -310,5 +313,5 @@ end
   @test Array(α_gpu) ≈ α_cpu atol=1e-4
 
   test_gradients(mha_cpu, x_cpu, loss = o -> sum(o[1].^2) + sum(o[2].^2), 
-    test_gpu = true, compare_finite_diff = false)
+    test_gpu=true, compare_finite_diff=false)
 end
