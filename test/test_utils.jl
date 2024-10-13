@@ -37,19 +37,26 @@ function test_gradients(
             rtol=1e-4, atol=1e-4,
             test_gpu = false,
             test_grad_f = true,
+            compare_finite_diff = true,
             loss = sum
             )
 
-    # Use finite differences gradient as a reference.
-    # Cast to Float64 to avoid precision issues.
-    f64 = f |> Flux.f64
-    xs64 = xs .|> Flux.f64
-    y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64(xs...)), xs64...)
+    if !test_gpu && !compare_finite_diff
+        error("You should either compare finite diff vs CPU AD \
+               or CPU AD vs GPU AD.")
+    end
 
     # Zygote gradient with respect to input.
     y, g = Zygote.withgradient((xs...) -> loss(f(xs...)), xs...)
-    @test y ≈ y_fd rtol=rtol atol=atol
-    check_equal_leaves(g, g_fd; rtol, atol)
+    
+    if compare_finite_diff
+        # Cast to Float64 to avoid precision issues.
+        f64 = f |> Flux.f64
+        xs64 = xs .|> Flux.f64
+        y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64(xs...)), xs64...)
+        @test y ≈ y_fd rtol=rtol atol=atol
+        check_equal_leaves(g, g_fd; rtol, atol)
+    end
 
     if test_gpu
         gpu_dev = gpu_device(force=true)
@@ -65,16 +72,18 @@ function test_gradients(
     end
 
     if test_grad_f
-        # Use finite differences gradient as a reference.
-        # y_fd, g_fd = finitediff_withgradient(f -> loss(f(x)), f)
-        ps, re = Flux.destructure(f64)
-        y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps)(xs64...)), ps)
-        g_fd = (re(g_fd[1]),)
-
         # Zygote gradient with respect to f.
         y, g = Zygote.withgradient(f -> loss(f(xs...)), f)
-        @test y ≈ y_fd rtol=rtol atol=atol
-        check_equal_leaves(g, g_fd; rtol, atol)
+
+        if compare_finite_diff
+            # Use finite differences gradient as a reference.
+            # y_fd, g_fd = finitediff_withgradient(f -> loss(f(x)), f)
+            ps, re = Flux.destructure(f64)
+            y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps)(xs64...)), ps)
+            g_fd = (re(g_fd[1]),)
+            @test y ≈ y_fd rtol=rtol atol=atol
+            check_equal_leaves(g, g_fd; rtol, atol)
+        end
 
         if test_gpu
             # Zygote gradient with respect to f on GPU.

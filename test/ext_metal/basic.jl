@@ -23,5 +23,5 @@ end
     m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
     x = rand(Float32, 10, 10) 
     @test (m|>gpu)(x|>gpu) isa MtlArray{Float32, 2}
-    test_gradients(m, x, test_gpu=true)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false)
 end

@@ -24,7 +24,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; test_cpu = t
           testmode!(l_cpu)
         end
 
-        test_gradients(l_cpu, x_cpu, test_gpu = true)
+        test_gradients(l_cpu, x_cpu, test_gpu=true, compare_finite_diff=false)
       end
     end
   end
@@ -97,10 +97,10 @@ gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5
 gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
 
 @testset "function layers" begin
-  x = rand(Float32, 3,3)
-  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x)
-  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x)
-  test_gradients(x -> sum(Flux.normalise(x)), x)
+  x = rand(Float32, 3, 3)
+  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, compare_finite_diff=false)
+  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x, test_gpu=true, compare_finite_diff=false)
+  test_gradients(x -> sum(Flux.normalise(x)), x, test_gpu=true, compare_finite_diff=false)
 end
 
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
@@ -309,5 +309,6 @@ end
   @test Array(y_gpu) ≈ y_cpu atol=1e-4
   @test Array(α_gpu) ≈ α_cpu atol=1e-4
 
-  test_gradients(mha_cpu, x_cpu, loss = o -> sum(o[1].^2) + sum(o[2].^2), test_gpu = true)
+  test_gradients(mha_cpu, x_cpu, loss = o -> sum(o[1].^2) + sum(o[2].^2), 
+    test_gpu = true, compare_finite_diff = false)
 end

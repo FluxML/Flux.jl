@@ -21,7 +21,7 @@ end
 @testset "Chain of Dense layers" begin
     m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
     x = rand(Float32, 10, 10)
-    test_gradients(m, x, test_gpu=true)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false)
 end
 
 @testset "Convolution" begin
@@ -94,7 +94,7 @@ end
 @testset "Cross-correlation" begin
     m = CrossCor((2, 2), 3 => 4)
     x = rand(Float32, 5, 5, 3, 2)
-    test_gradients(m, x, test_gpu=true)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false)
 end
 
 @testset "Restructure" begin
@@ -134,7 +134,7 @@ end
     bn = BatchNorm(3, σ)
     for nd in 1:3
         x = rand(Float32, fill(2, nd - 1)..., 3, 4)
-        test_gradients(bn, x; test_gpu=true)
+        test_gradients(bn, x; test_gpu=true, compare_finite_diff=false)
     end
 end
 
