@@ -17,9 +17,9 @@ x = randn(Float32, 5, 5)
 cx = x |> amdgpu_device
 @test cx isa AMDGPU.ROCArray
 
-# moving models to specific NVIDIA devices
+# moving models to specific AMDGPU devices
 for id in 0:(length(AMDGPU.devices()) - 1)
-  current_amdgpu_device = Flux.get_device("AMDGPU", id)
+  current_amdgpu_device = gpu_device(id+1)
 
   global dense_model = dense_model |> current_amdgpu_device
   @test dense_model.weight isa AMDGPU.ROCArray

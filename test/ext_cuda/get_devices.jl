@@ -8,9 +8,6 @@ dense_model = Dense(2 => 3)                 # initially lives on CPU
 weight = copy(dense_model.weight)           # store the weight
 bias = copy(dense_model.bias)               # store the bias
 
-cuda_device = Flux.get_device()
-
-@test typeof(cuda_device) <: Flux.CUDADevice
 
 # correctness of data transfer
 x = randn(5, 5)

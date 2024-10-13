@@ -28,8 +28,8 @@ y = [1  0  0  0  1
 
 @testset "GPU: $loss" for loss in ALL_LOSSES
   # let's stay far from the boundaries to avoid problems with finite differences gradients
-  x = 0.1f0 + 0.8f0 .* rand(Float32, 3, 4)
-  y = 0.1f0 + 0.8f0 .* rand(Float32, 3, 4)
+  x = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+  y = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
   @test loss(x, y) ≈ loss(gpu(x), gpu(y))
 
   test_gradients(loss, x, y, test_gpu=true, test_grad_f = false)
