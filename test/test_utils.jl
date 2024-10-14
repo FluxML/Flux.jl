@@ -39,7 +39,7 @@ function test_gradients(
             test_grad_f = true,
             test_grad_x = true,
             compare_finite_diff = true,
-            loss = mean,
+            loss = (f, xs...) -> mean(f(xs...)),
             )
 
     if !test_gpu && !compare_finite_diff
@@ -49,13 +49,13 @@ function test_gradients(
 
     if test_grad_x
         # Zygote gradient with respect to input.
-        y, g = Zygote.withgradient((xs...) -> loss(f(xs...)), xs...)
+        y, g = Zygote.withgradient((xs...) -> loss(f, xs...), xs...)
         
         if compare_finite_diff
             # Cast to Float64 to avoid precision issues.
             f64 = f |> Flux.f64
             xs64 = xs .|> Flux.f64
-            y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64(xs...)), xs64...)
+            y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64, xs...), xs64...)
             @test y ≈ y_fd rtol=rtol atol=atol
             check_equal_leaves(g, g_fd; rtol, atol)
         end
@@ -67,7 +67,7 @@ function test_gradients(
             f_gpu = f |> gpu_dev
 
             # Zygote gradient with respect to input on GPU.
-            y_gpu, g_gpu = Zygote.withgradient((xs...) -> loss(f_gpu(xs...)), xs_gpu...)
+            y_gpu, g_gpu = Zygote.withgradient((xs...) -> loss(f_gpu, xs...), xs_gpu...)
             @test get_device(g_gpu) == get_device(xs_gpu)
             @test y_gpu ≈ y rtol=rtol atol=atol
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
@@ -76,15 +76,13 @@ function test_gradients(
 
     if test_grad_f
         # Zygote gradient with respect to f.
-        y, g = Zygote.withgradient(f -> loss(f(xs...)), f)
+        y, g = Zygote.withgradient(f -> loss(f, xs...), f)
 
         if compare_finite_diff
-            # Use finite differences gradient as a reference.
-            # y_fd, g_fd = finitediff_withgradient(f -> loss(f(x)), f)
             # Cast to Float64 to avoid precision issues.
             f64 = f |> Flux.f64
             ps, re = Flux.destructure(f64)
-            y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps)(xs...)), ps)
+            y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps), xs...), ps)
             g_fd = (re(g_fd[1]),)
             @test y ≈ y_fd rtol=rtol atol=atol
             check_equal_leaves(g, g_fd; rtol, atol)
@@ -97,10 +95,11 @@ function test_gradients(
             f_gpu = f |> gpu_dev
 
             # Zygote gradient with respect to f on GPU.
-            y_gpu, g_gpu = Zygote.withgradient(f -> loss(f(xs_gpu...)), f_gpu)
+            y_gpu, g_gpu = Zygote.withgradient(f -> loss(f, xs_gpu...), f_gpu)
             # @test get_device(g_gpu) == get_device(xs_gpu)
             @test y_gpu ≈ y rtol=rtol atol=atol
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
         end
     end
+    return true
 end
