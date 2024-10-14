@@ -61,18 +61,20 @@ for T in [:Descent, :Adam, :Momentum, :Nesterov,
    	      # :InvDecay, :ExpDecay, 
           :SignDecay,
           ]
-  @eval function _old_to_new(rule::$T)
+  @eval function _old_to_new(rule::Optimise.$T)
     args = map(f -> getfield(rule, f), fieldnames(Optimisers.$T))
     Optimisers.$T(args...)
   end
 end
-_old_to_new(rule::Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
-const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
-_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called lambda now
-_old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
-_old_to_new(rule::ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
-const ClipGrad = Optimise.ClipValue
-_old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
+_old_to_new(rule::Optimise.Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
+# const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
+const Optimiser = Optimisers.OptimiserChain
+_old_to_new(rule::Optimise.WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called lambda now
+_old_to_new(rule::Optimise.ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
+_old_to_new(rule::Optimise.ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
+# const ClipGrad = Optimise.ClipValue
+const ClipValue = Optimisers.ClipGrad
+_old_to_new(rule::Optimise.RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
 
 _old_to_new(rule) = error("Flux.setup does not know how to translate this old-style implicit rule to a new-style Optimisers.jl explicit rule")
 
@@ -90,8 +92,15 @@ function update!(opt::Optimise.AbstractOptimiser, model, grad)
   # to accept only arrays. Remove if this causes problems!
   # update!(opt::Flux.Optimise.AbstractOptimiser, x::AbstractArray, x̄)
   error("""Invalid input to `update!`.
-    * For the implicit style, this needs `update(::AbstractOptimiser, ::Params, ::Grads)`
-    * For the explicit style, `update(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    * For the implicit style, this needs `update!(::AbstractOptimiser, ::Params, ::Grads)`
+    * For the explicit style, `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    """)
+end
+
+# TODO this friendly error should go in Optimisers.jl.
+function update!(opt::Optimisers.AbstractRule, model, grad)
+  error("""Invalid input to `update!`.
+     `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
     """)
 end
 

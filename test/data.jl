@@ -80,7 +80,7 @@ using Random
     # test interaction with `train!`
     θ = ones(2)
     X = zeros(2, 10)
-    loss(x) = sum((x .- θ).^2)
+    loss(θ, x) = sum((x .- θ).^2)
     d  = DataLoader(X)
     opt_state = Flux.setup(Descent(0.1), θ)
     Flux.train!(loss, θ, ncycle(d, 10), opt_state)
@@ -90,7 +90,7 @@ using Random
     θ = zeros(2)
     X = ones(2, 10)
     Y = fill(2, 10)
-    loss(x, y) = sum((y - x'*θ).^2)
+    loss(θ, x, y) = sum((y - x'*θ).^2)
     d  = DataLoader((X, Y))
     opt_state = Flux.setup(Descent(0.1), θ)
     Flux.train!(loss, θ, ncycle(d, 10), opt_state)

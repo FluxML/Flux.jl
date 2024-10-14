@@ -436,7 +436,7 @@ end
 @testset "gradients of Chain{Vector}" begin
   m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
   m1v = Chain([m1[1], m1[2]])
-  @test sum(length, trainables(m1)) == sum(length, trainables(m1v))
+  @test sum(length, Flux.trainables(m1)) == sum(length, Flux.trainables(m1v))
 
   x1 = randn(Float32,3,5)
   @test m1(x1) ≈ m1v(x1)
