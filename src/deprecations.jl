@@ -98,6 +98,7 @@ function update!(opt::Optimise.AbstractOptimiser, model, grad)
 end
 
 # TODO this friendly error should go in Optimisers.jl.
+# remove after https://github.com/FluxML/Optimisers.jl/pull/181
 function update!(opt::Optimisers.AbstractRule, model, grad)
   error("""Invalid input to `update!`.
      `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
