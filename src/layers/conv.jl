@@ -145,7 +145,7 @@ Conv((3,), 4 => 5, σ)  # 65 parameters
 julia> layer(randn(100, 4, 64)) |> size
 (98, 5, 64)
 
-julia> Flux.params(layer) |> length
+julia> Flux.trainables(layer) |> length
 2
 ```
 """
@@ -294,7 +294,7 @@ ConvTranspose((3,), 5 => 4, σ)  # 64 parameters
 julia> layer(randn(100, 5, 64)) |> size  # transposed convolution will increase the dimension size (upsampling)
 (102, 4, 64)
 
-julia> Flux.params(layer) |> length
+julia> Flux.trainables(layer) |> length
 2
 ```
 """

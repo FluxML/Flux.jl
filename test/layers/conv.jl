@@ -43,28 +43,30 @@ end
   @test sum(op) == prod(size(op))
 
   @testset "No bias mapped through $lmap" for lmap in (identity, cpu, f32)
-    bias = Conv((2,2), 1=>3, bias = false) |> lmap
-    op = bias(ip)
+    model = Conv((2,2), 1=>3, bias = false) |> lmap
+    op = model(ip)
     @test sum(op) ≈ 0.f0
-    gs = gradient(() -> sum(bias(ip)), Flux.params(bias))
-    @test bias.bias ∉ gs.params
+    g = gradient(m -> sum(m(ip)), model)[1]
+    @test g.bias isa Nothing
   end
 
-  # Train w/o bias and make sure no convergence happens
-  # when only bias can be converged
-  bias = Conv((2, 2), 1=>3, bias = false);
-  ip = zeros(Float32, 28,28,1,1)
-  op = zeros(Float32, 27,27,3,1) .+ 2.f0
-  opt = Descent()
+  @testset "no bias train" begin
+    # Train w/o bias and make sure no convergence happens
+    # when only bias can be converged
+    model = Conv((2, 2), 1=>3, bias = false);
+    ip = zeros(Float32, 28,28,1,1)
+    op = zeros(Float32, 27,27,3,1) .+ 2.f0
+    opt_state = Flux.setup(Descent(), model)
 
-  for _ = 1:10^3
-    gs = gradient(Flux.params(bias)) do
-      Flux.Losses.mse(bias(ip), op)
+    for _ = 1:10^3
+      g = gradient(model) do m
+        Flux.mse(m(ip), op)
+      end[1]
+      Flux.update!(opt_state, model, g)
     end
-    Flux.Optimise.update!(opt, params(bias), gs)
-  end
 
-  @test Flux.Losses.mse(bias(ip), op) ≈ 4.f0
+    @test Flux.Losses.mse(model(ip), op) ≈ 4.f0
+  end
 
   @testset "Grouped Conv" begin
     ip = rand(Float32, 28, 100, 2)
@@ -164,11 +166,11 @@ end
 
   m = ConvTranspose((3,3), 1=>1)
   # Test that the gradient call does not throw: #900
-  @test gradient(()->sum(m(x)), Flux.params(m)) isa Flux.Zygote.Grads
+  g = gradient(m -> sum(m(x)), m)[1]
 
   x = zeros(Float32, 5, 5, 2, 4)
   m = ConvTranspose((3,3), 2=>3)
-  @test gradient(()->sum(m(x)), params(m)) isa Flux.Zygote.Grads
+  g = gradient(m -> sum(m(x)), m)[1]
 
   # test ConvTranspose supports groups argument
   x = randn(Float32, 10, 10, 2, 3)
@@ -178,7 +180,7 @@ end
   m2 = ConvTranspose((3,3), 2=>4, groups=2, pad=SamePad())
   @test size(m2.weight) == (3,3,2,2)
   @test size(m1(x)) == size(m2(x))
-  @test gradient(()->sum(m2(x)), params(m2)) isa Flux.Zygote.Grads
+  g = gradient(m -> sum(m(x)), m2)[1]
 
   x = randn(Float32, 10, 2,1)
   m = ConvTranspose((3,), 2=>4, pad=SamePad(), groups=2)
