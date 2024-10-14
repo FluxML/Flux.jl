@@ -103,6 +103,11 @@ function update!(opt::Optimisers.AbstractRule, model, grad)
      `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
     """)
 end
+function update!(opt::Optimisers.AbstractRule, model::Chain, grad::Tuple)
+  error("""Invalid input to `update!`.
+     `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    """)
+end
 
 # An easy error to make is to pass result of explicit gradient(...), not gradient(...)[1]
 # Can't catch every case, but can catch many simple Flux models:

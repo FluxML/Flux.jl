@@ -57,10 +57,8 @@ export Chain, Dense, Embedding, EmbeddingBag,
 ))
 
 include("optimise/Optimise.jl")
-using .Optimise: Optimise, update!
-export Optimise, ClipValue, Optimiser
-
-export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
+using .Optimise: Optimise
+export ClipValue # this is const defined in deprecations, for ClipGrad
 
 include("train.jl")
 using .Train

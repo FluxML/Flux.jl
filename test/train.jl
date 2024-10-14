@@ -90,7 +90,7 @@ end
 
 @testset "Explicit Flux.update! features" begin
   m = Chain(Dense(2=>3, tanh), Dense(3=>1), only)
-  x = rand(2)
+  x = rand(Float32, 2)
   y1 = m(x)  # before
 
   # Explicit gradient
