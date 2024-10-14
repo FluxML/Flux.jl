@@ -44,7 +44,6 @@ function ∇eachlastdim(dys_raw, x::AbstractArray{T, N}) where {T, N}
   return ProjectTo(x)(dx)
 end
 
-# TODO piracy, move to ChainRules.jl
 function ChainRulesCore.rrule(::typeof(eachlastdim), x::AbstractArray{T,N}) where {T,N}
   lastdims(dy) = (NoTangent(), ∇eachlastdim(unthunk(dy), x))
   collect(eachlastdim(x)), lastdims
@@ -60,13 +59,13 @@ end
 The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
 
-In the forwar pass, implements the function
-
+In the forward pass, implements the function
 ```math
 h^\prime = \sigma(W_i x + W_h h + b)
 ```
+and returns `h'`.
 
-and returns the new hidden state `h'`.
+See also [`RNN`](@ref).
 
 # Arguments
 
@@ -139,77 +138,95 @@ function Base.show(io::IO, l::RNNCell)
   print(io, ")")
 end
 
-"""
-    RNN(in => out, σ = tanh)
+@doc raw"""
+    RNN(in => out, σ = tanh; bias = true, init = glorot_uniform)
 
-The most basic recurrent layer; essentially acts as a `Dense` layer, but with the
-output fed back into the input each time step.
+The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
+output fed back into the input each time step.  
 
-The arguments `in` and `out` describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length `in` or a batch of vectors represented as a `in x B` matrix and outputs a vector of length `out` or a batch of vectors of size `out x B`.
+In the forward pass computes
 
-This constructor is syntactic sugar for `Recur(RNNCell(a...))`, and so RNNs are stateful. Note that the state shape can change depending on the inputs, and so it is good to `reset!` the model between inference calls if the batch size changes. See the examples below.
+```math
+h_t = \sigma(W_i x_t + W_h h_{t-1} + b)
+```
+for all `len` steps `t` in the in input sequence. 
+Returns all hidden states `h_t` in a tensor of size `(out, len, batch_size)`.
+
+See also [`RNNCell`](@ref).
+
+# Arguments
+
+- `in => out`: The input and output dimensions of the layer.
+- `σ`: The non-linearity to apply to the output. Default is `tanh`.
+- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `bias`: Whether to include a bias term initialized to zero. Default is `true`.
+
+# Forward
+
+    rnn(x, h)
+
+The arguments of the forward pass are:
+
+- `x`: The input to the RNN. It should be a matrix size `in x len` or a tensor of size `in x len x batch_size`.
+- `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
 
 # Examples
+
 ```jldoctest
-julia> r = RNN(3 => 5)
-Recur(
-  RNNCell(3 => 5, tanh),                # 50 parameters
-)         # Total: 4 trainable arrays, 50 parameters,
-          # plus 1 non-trainable, 5 parameters, summarysize 424 bytes.
+julia> d_in, d_out, len, batch_size = 4, 6, 3, 5;
 
-julia> r(rand(Float32, 3)) |> size
-(5,)
+julia> x = rand(Float32, (d_in, len, batch_size));
 
-julia> Flux.reset!(r);
+julia> h = zeros(Float32, (d_out, batch_size));
 
-julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
-(5, 10)
+julia> rnn = RNN(d_in => d_out)
+RNN(
+  RNNCell(4 => 6, tanh),                # 66 parameters
+)                   # Total: 3 arrays, 66 parameters, 424 bytes.
+
+julia> y = rnn(x, h);   # [y] = [d_out, len, batch_size]
 ```
 
-!!! warning "Batch size changes"
-  
-    Failing to call `reset!` when the input batch size changes can lead to unexpected behavior. See the following example:
+Sometimes, the initial hidden state is a learnable parameter. 
+In this case, the `RNN` should be wrapped in a custom struct.
 
-    ```julia
-    julia> r = RNN(3 => 5)
-    Recur(
-      RNNCell(3 => 5, tanh),                # 50 parameters
-    )         # Total: 4 trainable arrays, 50 parameters,
-              # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
+```jldoctest
+struct Model
+  rnn::RNN
+  h0::AbstractVector
+end
 
-    julia> r.state |> size
-    (5, 1)
+Flux.@layer :expand Model
 
-    julia> r(rand(Float32, 3)) |> size
-    (5,)
+(m::Model)(x) = m.rnn(x, m.h0)
 
-    julia> r.state |> size
-    (5, 1)
-
-    julia> r(rand(Float32, 3, 10)) |> size # batch size of 10
-    (5, 10)
-
-    julia> r.state |> size # state shape has changed
-    (5, 10)
-
-    julia> r(rand(Float32, 3)) |> size # erroneously outputs a length 5*10 = 50 vector.
-    (50,)
-    ```
-
-# Note:
-`RNNCell`s can be constructed directly by specifying the non-linear function, the `Wi` and `Wh` internal matrices, a bias vector `b`, and a learnable initial state `state0`. The  `Wi` and `Wh` matrices do not need to be the same type, but if `Wh` is `dxd`, then `Wi` should be of shape `dxN`.
-
-```julia
-julia> using LinearAlgebra
-
-julia> r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
-
-julia> r(rand(4, 10)) |> size # batch size of 10
-(5, 10)
+model = Model(RNN(32 => 64), zeros(Float32, 64))
 ```
 """
-RNN(a...; ka...) = Recur(RNNCell(a...; ka...))
-Recur(m::RNNCell) = Recur(m, m.state0)
+struct RNN{M}
+  cell::M
+end
+
+@layer :expand RNN
+
+function RNN((in, out)::Pair, σ = tanh; bias = true, init = glorot_uniform)
+  cell = RNNCell(in => out, σ; bias, init)
+  return RNN(cell)
+end
+
+function (m::RNN)(x, h) 
+  @assert ndims(x) == 2 || ndims(x) == 3
+  # [x] = [in, L] or [in, L, B]
+  # [h] = [out] or [out, B]
+  y = []
+  for x_t in eachslice(x, dims=2)
+    h = m.cell(x_t, h)
+    # y = [y..., h]
+    y = vcat(y, [h])
+  end
+  return stack(y, dims=2)
+end
+
 
 # LSTM
 
