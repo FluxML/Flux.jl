@@ -18,38 +18,6 @@ function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
   return multigate(x, h, c), multigate_pullback
 end
 
-# Type stable and AD-friendly helper for iterating over the last dimension of an array
-function eachlastdim(A::AbstractArray{T,N}) where {T,N}
-  inds_before = ntuple(_ -> :, N-1)
-  return (view(A, inds_before..., i) for i in axes(A, N))
-end
-
-# adapted from https://github.com/JuliaDiff/ChainRules.jl/blob/f13e0a45d10bb13f48d6208e9c9d5b4a52b96732/src/rulesets/Base/indexing.jl#L77
-function ∇eachlastdim(dys_raw, x::AbstractArray{T, N}) where {T, N}
-  dys = unthunk(dys_raw)
-  i1 = findfirst(dy -> dy isa AbstractArray, dys)
-  if isnothing(i1)  # all slices are Zero!
-      return fill!(similar(x, T, axes(x)), zero(T))
-  end
-  # The whole point of this gradient is that we can allocate one `dx` array:
-  dx = similar(x, T, axes(x))::AbstractArray
-  for i in axes(x, N)
-      slice = selectdim(dx, N, i)
-      if dys[i] isa AbstractZero
-          fill!(slice, zero(eltype(slice)))
-      else
-          copyto!(slice, dys[i])
-      end
-  end
-  return ProjectTo(x)(dx)
-end
-
-function ChainRulesCore.rrule(::typeof(eachlastdim), x::AbstractArray{T,N}) where {T,N}
-  lastdims(dy) = (NoTangent(), ∇eachlastdim(unthunk(dy), x))
-  collect(eachlastdim(x)), lastdims
-end
-
-
 
 # Vanilla RNN
 
@@ -76,12 +44,13 @@ See also [`RNN`](@ref).
 
 # Forward
 
-    rnncell(x, h)
+    rnncell(x, [h])
 
 The arguments of the forward pass are:
 
 - `x`: The input to the RNN. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 - `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
+       If not provided, it is assumed to be a vector of zeros.
 
 # Examples
 
@@ -124,6 +93,8 @@ function RNNCell((in, out)::Pair, σ=tanh; init = glorot_uniform, bias = true)
   b = create_bias(Wi, bias, size(Wi, 1))
   return RNNCell(σ, Wi, Wh, b)
 end
+
+(m::RNNCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 1)))
 
 function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi,2))
@@ -230,31 +201,31 @@ end
 
 # LSTM
 
-struct LSTMCell{I,H,V,S}
+struct LSTMCell{I,H,V}
   Wi::I
   Wh::H
-  b::V
-  state0::S
+  bias::V
 end
 
 function LSTMCell((in, out)::Pair;
                   init = glorot_uniform,
-                  initb = zeros32,
-                  init_state = zeros32)
-  cell = LSTMCell(init(out * 4, in), init(out * 4, out), initb(out * 4), (init_state(out,1), init_state(out,1)))
-  cell.b[gate(out, 2)] .= 1
+                  bias = true)
+  Wi = init(out * 4, in)
+  Wh = init(out * 4, out)
+  b = create_bias(Wi, bias, size(Wi, 1))
+  cell = LSTMCell(Wi, Wh, b)
+  cell.bias[gate(out, 2)] .= 1
   return cell
 end
 
-function (m::LSTMCell{I,H,V,<:NTuple{2,AbstractMatrix{T}}})((h, c), x::AbstractVecOrMat) where {I,H,V,T}
-  _size_check(m, x, 1 => size(m.Wi,2))
-  b, o = m.b, size(h, 1)
-  xT = _match_eltype(m, T, x)
-  g = muladd(m.Wi, xT, muladd(m.Wh, h, b))
+function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
+  _size_check(m, x, 1 => size(m.Wi, 2))
+  b, o = m.bias, size(h, 1)
+  g = m.Wi * x .+ m.Wh*h .+ b
   input, forget, cell, output = multigate(g, o, Val(4))
   c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
   h′ = @. sigmoid_fast(output) * tanh_fast(c′)
-  return (h′, c′), reshape_cell_output(h′, x)
+  return h′, c′
 end
 
 @layer LSTMCell
