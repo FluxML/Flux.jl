@@ -32,6 +32,7 @@
     end
 
     r = RNNCell(3 => 5)
+    @test length(Flux.trainables(r)) == 3
     # An input sequence of length 6 and batch size 4.
     x = [rand(Float32, 3, 4) for _ in 1:6]
 
@@ -49,6 +50,11 @@
     # The input sequence has no batch dimension.
     x = [rand(Float32, 3) for _ in 1:6]
     h = randn(Float32, 5)
+    test_gradients(r, x, h, loss=loss4)
+
+    # No Bias 
+    r = RNNCell(3 => 5, bias=false)
+    @test length(Flux.trainables(r)) == 2
     test_gradients(r, x, h, loss=loss4)
 end
 
