@@ -44,175 +44,98 @@ function ∇eachlastdim(dys_raw, x::AbstractArray{T, N}) where {T, N}
   return ProjectTo(x)(dx)
 end
 
+# TODO piracy, move to ChainRules.jl
 function ChainRulesCore.rrule(::typeof(eachlastdim), x::AbstractArray{T,N}) where {T,N}
   lastdims(dy) = (NoTangent(), ∇eachlastdim(unthunk(dy), x))
   collect(eachlastdim(x)), lastdims
 end
 
-reshape_cell_output(h, x) = reshape(h, :, size(x)[2:end]...)
 
-# Stateful recurrence
-
-"""
-    Recur(cell)
-
-`Recur` takes a recurrent cell and makes it stateful, managing the hidden state
-in the background. `cell` should be a model of the form:
-
-    h, y = cell(h, x...)
-
-For example, here's a recurrent network that keeps a running total of its inputs:
-
-# Examples
-```jldoctest
-julia> accum(h, x) = (h + x, x)
-accum (generic function with 1 method)
-
-julia> rnn = Flux.Recur(accum, 0)
-Recur(accum)
-
-julia> rnn(2) 
-2
-
-julia> rnn(3)
-3
-
-julia> rnn.state
-5
-```
-
-Folding over a 3d Array of dimensions `(features, batch, time)` is also supported:
-
-```jldoctest
-julia> accum(h, x) = (h .+ x, x)
-accum (generic function with 1 method)
-
-julia> rnn = Flux.Recur(accum, zeros(Int, 1, 1))
-Recur(accum)
-
-julia> rnn([2])
-1-element Vector{Int64}:
- 2
-
-julia> rnn([3])
-1-element Vector{Int64}:
- 3
-
-julia> rnn.state
-1×1 Matrix{Int64}:
- 5
-
-julia> out = rnn(reshape(1:10, 1, 1, :));  # apply to a sequence of (features, batch, time)
-
-julia> out |> size
-(1, 1, 10)
-
-julia> vec(out)
-10-element Vector{Int64}:
-  1
-  2
-  3
-  4
-  5
-  6
-  7
-  8
-  9
- 10
-
-julia> rnn.state
-1×1 Matrix{Int64}:
- 60
-```
-"""
-mutable struct Recur{T,S}
-  cell::T
-  state::S
-end
-
-function (m::Recur)(x)
-  m.state, y = m.cell(m.state, x)
-  return y
-end
-
-@layer :expand Recur trainable=(cell,)
-
-Base.show(io::IO, m::Recur) = print(io, "Recur(", m.cell, ")")
-
-"""
-    reset!(rnn)
-
-Reset the hidden state of a recurrent layer back to its original value.
-
-Assuming you have a `Recur` layer `rnn`, this is roughly equivalent to:
-
-    rnn.state = hidden(rnn.cell)
-
-# Examples
-```jldoctest
-julia> r = Flux.RNNCell(relu, ones(1,1), zeros(1,1), ones(1,1), zeros(1,1));  # users should use the RNN wrapper struct instead
-
-julia> y = Flux.Recur(r, ones(1,1));
-
-julia> y.state
-1×1 Matrix{Float64}:
- 1.0
-
-julia> y(ones(1,1))  # relu(1*1 + 1)
-1×1 Matrix{Float64}:
- 2.0
-
-julia> y.state
-1×1 Matrix{Float64}:
- 2.0
-
-julia> Flux.reset!(y)
-1×1 Matrix{Float64}:
- 0.0
-
-julia> y.state
-1×1 Matrix{Float64}:
- 0.0
-```
-"""
-reset!(m::Recur) = (m.state = m.cell.state0)
-reset!(m) = foreach(reset!, functor(m)[1])
-
-flip(f, xs) = reverse([f(x) for x in reverse(xs)])
-
-function (m::Recur)(x::AbstractArray{T, 3}) where T
-  h = [m(x_t) for x_t in eachlastdim(x)]
-  sze = size(h[1])
-  reshape(reduce(hcat, h), sze[1], sze[2], length(h))
-end
 
 # Vanilla RNN
 
-struct RNNCell{F,I,H,V,S}
+@doc raw"""
+    RNNCell(in => out, σ = tanh; init = glorot_uniform, bias = true)
+
+The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
+output fed back into the input each time step.
+
+In the forwar pass, implements the function
+
+```math
+h^\prime = \sigma(W_i x + W_h h + b)
+```
+
+and returns the new hidden state `h'`.
+
+# Arguments
+
+- `in => out`: The input and output dimensions of the layer.
+- `σ`: The non-linearity to apply to the output. Default is `tanh`.
+- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `bias`: Whether to include a bias term initialized to zero. Default is `true`.
+
+# Forward
+
+    rnncell(x, h)
+
+The arguments of the forward pass are:
+
+- `x`: The input to the RNN. It should be a vector of size `in` or a matrix of size `in x batch_size`.
+- `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
+
+# Examples
+
+```jldoctest
+r = RNNCell(3 => 5)
+
+# A sequence of length 10 and batch size 4
+x = [rand(Float32, 3, 4) for _ in 1:10]
+
+# Initialize the hidden state
+h = zeros(Float32, 5)
+
+# We collect the hidden states in an array `history`
+# in case the loss depends on the entire sequence.
+ŷ = []
+
+for x_t in x
+  h = r(x_t, h)
+  ŷ = [ŷ..., h] # Cannot use `push!(ŷ, h)` here since mutation 
+                # is not automatic differentiation friendly yet.
+                # Can use `y = vcat(y, [h])` as an alternative.
+end
+
+h   # The final hidden state
+ŷ   # The hidden states at each time step
+```
+"""
+struct RNNCell{F,I,H,V}
   σ::F
   Wi::I
   Wh::H
-  b::V
-  state0::S
+  bias::V
 end
 
-RNNCell((in, out)::Pair, σ=tanh; init=Flux.glorot_uniform, initb=zeros32, init_state=zeros32) =
-  RNNCell(σ, init(out, in), init(out, out), initb(out), init_state(out,1))
+@layer RNNCell 
 
-function (m::RNNCell{F,I,H,V,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where {F,I,H,V,T}
-  Wi, Wh, b = m.Wi, m.Wh, m.b
-  _size_check(m, x, 1 => size(Wi,2))
+function RNNCell((in, out)::Pair, σ=tanh; init = glorot_uniform, bias = true)
+  Wi = init(out, in)
+  Wh = init(out, out)
+  b = create_bias(Wi, bias, size(Wi, 1))
+  return RNNCell(σ, Wi, Wh, b)
+end
+
+function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
+  _size_check(m, x, 1 => size(m.Wi,2))
   σ = NNlib.fast_act(m.σ, x)
-  xT = _match_eltype(m, T, x)
-  h = σ.(Wi*xT .+ Wh*h .+ b)
-  return h, reshape_cell_output(h, x)
+  h = σ.(m.Wi*x .+ m.Wh*h .+ m.bias)
+  return h
 end
-
-@layer RNNCell  # state0 is trainable, see issue 807 about this.
 
 function Base.show(io::IO, l::RNNCell)
   print(io, "RNNCell(", size(l.Wi, 2), " => ", size(l.Wi, 1))
-  l.σ == identity || print(io, ", ", l.σ)
+  print(io, ", ", l.σ)
   print(io, ")")
 end
 
