@@ -1,24 +1,4 @@
 
-gate(h, n) = (1:h) .+ h*(n-1)
-gate(x::AbstractVector, h, n) = @view x[gate(h,n)]
-gate(x::AbstractMatrix, h, n) = view(x, gate(h,n), :)
-
-# AD-friendly helper for dividing monolithic RNN params into equally sized gates
-multigate(x::AbstractArray, h, ::Val{N}) where N = ntuple(n -> gate(x,h,n), N)
-
-function ChainRulesCore.rrule(::typeof(multigate), x::AbstractArray, h, c)
-  function multigate_pullback(dy)
-    dx = map!(zero, similar(x, float(eltype(x)), axes(x)), x)
-    foreach(multigate(dx, h, c), unthunk(dy)) do dxᵢ, dyᵢ
-      dyᵢ isa AbstractZero && return
-      @. dxᵢ += dyᵢ
-    end
-    return (NoTangent(), dx, NoTangent(), NoTangent())
-  end
-  return multigate(x, h, c), multigate_pullback
-end
-
-
 # Vanilla RNN
 
 @doc raw"""
@@ -137,10 +117,10 @@ See [`RNNCell`](@ref) for a layer that processes a single time step.
 
 The arguments of the forward pass are:
 
-- `x`: The input to the RNN. It should be a matrix size `in x len` or a tensor of size `in x len x batch_size`.
+- `x`: The input to the RNN. It should be a matrix size `in x len` or an array of size `in x len x batch_size`.
 - `h`: The initial hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
 
-Returns all new hidden states `h_t` in a tensor of size `(out, len, batch_size)`.
+Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
 
 # Examples
 
@@ -186,6 +166,8 @@ function RNN((in, out)::Pair, σ = tanh; bias = true, init = glorot_uniform)
   return RNN(cell)
 end
 
+(m::RNN)(x) = m(x, zeros_like(x, size(m.cell.Wh, 1)))
+
 function (m::RNN)(x, h) 
   @assert ndims(x) == 2 || ndims(x) == 3
   # [x] = [in, L] or [in, L, B]
@@ -228,10 +210,11 @@ See also [`LSTM`](@ref) for a layer that processes entire sequences.
 
 # Forward
 
-    lstmcell(x, (h, c)) or lstmcell(x)
+    lstmcell(x, (h, c))
+    lstmcell(x)
 
 The arguments of the forward pass are:
-- `x`: The input to the LSTM. It should be a matrix of size `in` or a tensor of size `in x batch_size`.
+- `x`: The input to the LSTM. It should be a matrix of size `in` or an array of size `in x batch_size`.
 - `(h, c)`: A tuple containing the hidden and cell states of the LSTM. 
   They should be vectors of size `out` or matrices of size `out x batch_size`.
   If not provided, they are assumed to be vectors of zeros.
@@ -266,18 +249,22 @@ end
 function LSTMCell((in, out)::Pair; init = glorot_uniform, bias = true)
   Wi = init(out * 4, in)
   Wh = init(out * 4, out)
-  b = create_bias(Wi, bias, size(Wi, 1))
+  b = create_bias(Wi, bias, out * 4)
   cell = LSTMCell(Wi, Wh, b)
-  cell.bias[gate(out, 2)] .= 1
   return cell
 end
 
+function (m::LSTMCell)(x::AbstractVecOrMat)
+  h = zeros_like(x, size(m.Wh, 2))
+  c = zeros_like(h)
+  return m(x, (h, c))
+end
 
 function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   _size_check(m, x, 1 => size(m.Wi, 2))
   b, o = m.bias, size(h, 1)
   g = m.Wi * x .+ m.Wh * h .+ b
-  input, forget, cell, output = multigate(g, o, Val(4))
+  input, forget, cell, output = chunk(g, 4; dims=1)
   c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
   h′ = @. sigmoid_fast(output) * tanh_fast(c′)
   return h′, c′
@@ -305,8 +292,8 @@ c_t = f_t \odot c_{t-1} + i_t \odot \tanh(W_{xc} x_t + W_{hc} h_{t-1} + b_c)
 o_t = \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o)
 h_t = o_t \odot \tanh(c_t)
 ```
-
-See also [`LSTMCell`](@ref).
+for all `len` steps `t` in the input sequence.
+See [`LSTMCell`](@ref) for a layer that processes a single time step.
 
 # Arguments
 
@@ -317,10 +304,13 @@ See also [`LSTMCell`](@ref).
 # Forward
 
     lstm(x, (h, c))
+    lstm(x)
 
 The arguments of the forward pass are:
-- `x`: The input to the LSTM. It should be a matrix of size `in x len` or a tensor of size `in x len x batch_size`.
-- `(h, c)`: A tuple containing the hidden and cell states of the LSTM. They should be vectors of size `out` or matrices of size `out x batch_size`.
+- `x`: The input to the LSTM. It should be a matrix of size `in x len` or an array of size `in x len x batch_size`.
+- `(h, c)`: A tuple containing the hidden and cell states of the LSTM. 
+    They should be vectors of size `out` or matrices of size `out x batch_size`.
+    If not provided, they are assumed to be vectors of zeros.
 
 Returns a tuple `(h′, c′)` containing all new hidden states `h_t` and cell states `c_t` 
 in tensors of size `out x len` or `out x len x batch_size`.
@@ -328,19 +318,21 @@ in tensors of size `out x len` or `out x len x batch_size`.
 # Examples
 
 ```jldoctest
-julia> l = LSTM(3 => 5)
-Recur(
-  LSTMCell(3 => 5),                     # 190 parameters
-)         # Total: 5 trainable arrays, 190 parameters,
-          # plus 2 non-trainable, 10 parameters, summarysize 1.023 KiB.
+struct Model
+  lstm::LSTM
+  h0::AbstractVector
+  c0::AbstractVector
+end
 
-julia> l(rand(Float32, 3)) |> size
-(5,)
+Flux.@layer :expand Model
 
-julia> Flux.reset!(l);
+(m::Model)(x) = m.lstm(x, (m.h0, m.c0))
 
-julia> l(rand(Float32, 3, 10)) |> size # batch size of 10
-(5, 10)
+d_in, d_out, len, batch_size = 2, 3, 4, 5
+x = rand(Float32, (d_in, len, batch_size))
+model = Model(LSTM(d_in => d_out), zeros(Float32, d_out), zeros(Float32, d_out))
+h, c = model(x)
+size(h)  # out x len x batch_size
 ```
 """
 struct LSTM{M}
@@ -352,6 +344,12 @@ end
 function LSTM((in, out)::Pair; init = glorot_uniform, bias = true)
   cell = LSTMCell(in => out; init, bias)
   return LSTM(cell)
+end
+
+function (m::LSTM)(x)
+  h = zeros_like(x, size(m.cell.Wh, 1))
+  c = zeros_like(h)
+  return m(x, (h, c))
 end
 
 function (m::LSTM)(x, (h, c))
@@ -368,39 +366,89 @@ end
 
 # GRU
 
-function _gru_output(gxs, ghs, bs)
-  r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
-  z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
-  return r, z
-end
+@doc raw"""
+    GRUCell(in => out; init = glorot_uniform, bias = true)
 
+[Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. 
+Behaves like an RNN but generally exhibits a longer memory span over sequences. 
+This implements the variant proposed in v1 of the referenced paper.
+
+In the forward pass, computes
+
+```math
+r = \sigma(W_{xi} x + W_{hi} h + b_i)
+z = \sigma(W_{xz} x + W_{hz} h + b_z)
+h̃ = \tanh(W_{xh} x + r \odot W_{hh} h + b_h)
+h' = (1 - z) \odot h̃ + z \odot h
+```
+
+See also [`GRU`](@ref) for a layer that processes entire sequences.
+
+# Arguments
+
+- `in => out`: The input and output dimensions of the layer.
+- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `bias`: Whether to include a bias term initialized to zero. Default is `true`.
+
+# Forward
+
+    grucell(x, h)
+    grucell(x)
+
+The arguments of the forward pass are:
+- `x`: The input to the GRU. It should be a vector of size `in` or a matrix of size `in x batch_size`.
+- `h`: The hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
+  If not provided, it is assumed to be a vector of zeros.
+
+Returns the new hidden state `h'` as an array of size `out` or `out x batch_size`.
+
+# Examples
+
+TODO add loop
+```jldoctest
+julia> g = GRUCell(3 => 5)
+GRUCell(3 => 5)    # 140 parameters
+
+julia> h = zeros(Float32, 5); # hidden state
+
+julia> x = rand(Float32, 3, 4);  # in x batch_size
+
+julia> h′ = g(x, h);
+```
+"""
 struct GRUCell{I,H,V}
   Wi::I
   Wh::H
   b::V
 end
 
-GRUCell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
-  GRUCell(init(out * 3, in), init(out * 3, out), initb(out * 3), init_state(out,1))
+@layer GRUCell
 
-function (m::GRUCell{I,H,V})(h, x::AbstractVecOrMat) where {I,H,V}
-  _size_check(m, x, 1 => size(m.Wi,2))
-  Wi, Wh, b, o = m.Wi, m.Wh, m.b, size(h, 1)
-  xT = _match_eltype(m, T, x)
-  gxs, ghs, bs = multigate(Wi*xT, o, Val(3)), multigate(Wh*h, o, Val(3)), multigate(b, o, Val(3))
-  r, z = _gru_output(gxs, ghs, bs)
-  h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
-  h′ = @. (1 - z) * h̃ + z * h
-  return h′, reshape_cell_output(h′, x)
+function GRUCell((in, out)::Pair; init = glorot_uniform, bias = true)
+  Wi = init(out * 3, in)
+  Wh = init(out * 3, out)
+  b = create_bias(Wi, bias, size(Wi, 1))
+  return GRUCell(Wi, Wh, b)
 end
 
-@layer GRUCell
+function (m::GRUCell)(x::AbstractVecOrMat, h)
+  _size_check(m, x, 1 => size(m.Wi,2))
+  Wi, Wh, b = m.Wi, m.Wh, m.b
+  gxs = chunk(Wi * x, 3, dims=1)
+  ghs = chunk(Wh * h, 3, dims=1)
+  bs = chunk(b, 3, dims=1)
+  r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
+  z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
+  h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
+  h′ = @. (1 - z) * h̃ + z * h
+  return h′
+end
 
 Base.show(io::IO, l::GRUCell) =
   print(io, "GRUCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
 
 """
-    GRU(in => out)
+    GRU(in => out, 
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
@@ -441,23 +489,24 @@ Recur(m::GRUCell) = Recur(m, m.state0)
 
 # GRU v3
 
-struct GRUv3Cell{I,H,V,HH,S}
+struct GRUv3Cell{I,H,V,HH}
   Wi::I
   Wh::H
   b::V
   Wh_h̃::HH
-  state0::S
 end
 
 GRUv3Cell((in, out)::Pair; init = glorot_uniform, initb = zeros32, init_state = zeros32) =
   GRUv3Cell(init(out * 3, in), init(out * 2, out), initb(out * 3),
             init(out, out), init_state(out,1))
 
-function (m::GRUv3Cell{I,H,V,HH,<:AbstractMatrix{T}})(h, x::AbstractVecOrMat) where {I,H,V,HH,T}
+function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi,2))
   Wi, Wh, b, Wh_h̃, o = m.Wi, m.Wh, m.b, m.Wh_h̃, size(h, 1)
   xT = _match_eltype(m, T, x)
-  gxs, ghs, bs = multigate(Wi*xT, o, Val(3)), multigate(Wh*h, o, Val(2)), multigate(b, o, Val(3))
+  gxs = chunk(Wi * xT, 3, dims=1)
+  ghs = chunk(Wh * h, 2, dims=1)
+  bs = chunk(b, 3, dims=1)
   r, z = _gru_output(gxs, ghs, bs)
   h̃ = tanh_fast.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
   h′ = @. (1 - z) * h̃ + z * h
