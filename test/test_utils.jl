@@ -47,6 +47,9 @@ function test_gradients(
                or CPU AD vs GPU AD.")
     end
 
+    ## Let's make sure first that the forward pass works.
+    @test loss(f, xs...) isa Number
+
     if test_grad_x
         # Zygote gradient with respect to input.
         y, g = Zygote.withgradient((xs...) -> loss(f, xs...), xs...)

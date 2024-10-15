@@ -22,8 +22,8 @@ end
 @testset "cudnn" begin
   include("cudnn.jl")
 end
-@testset "curnn" begin
-  include("curnn.jl")
+@testset "recurrent" begin
+  include("recurrent.jl")
 end
 @testset "ctc" begin
   include("ctc.jl")
