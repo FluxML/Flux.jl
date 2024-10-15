@@ -43,6 +43,9 @@
     test_gradients(r, x, h, loss=loss3) # splat
     test_gradients(r, x, h, loss=loss4) # vcat and stack
 
+    # no initial state same as zero initial state
+    @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
+
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
     test_gradients(r, x, h, loss=loss4)
@@ -52,6 +55,7 @@
     h = randn(Float32, 5)
     test_gradients(r, x, h, loss=loss4)
 
+    
     # No Bias 
     r = RNNCell(3 => 5, bias=false)
     @test length(Flux.trainables(r)) == 2
@@ -75,6 +79,10 @@ end
     @test y isa Array{Float32, 3}
     @test size(y) == (4, 3, 1)
     test_gradients(model, x)
+
+    # no initial state same as zero initial state
+    rnn = model.rnn 
+    @test rnn(x) ≈ rnn(x, zeros(Float32, 4))
 
     x = rand(Float32, 2, 3)
     y = model(x)
@@ -112,6 +120,13 @@ end
     test_gradients(cell, x[1], (h, c), loss = (m, x, hc) -> mean(m(x, hc)[1]))
     test_gradients(cell, x, (h, c), loss = loss)
 
+    # no initial state same as zero initial state
+    hnew1, cnew1 = cell(x[1])
+    hnew2, cnew2 = cell(x[1], (zeros(Float32, 5), zeros(Float32, 5)))
+    @test hnew1 ≈ hnew2
+    @test cnew1 ≈ cnew2
+
+    # no bias
     cell = LSTMCell(3 => 5, bias=false)
     @test length(Flux.trainables(cell)) == 2
 end
