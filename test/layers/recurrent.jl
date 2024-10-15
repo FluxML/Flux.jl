@@ -82,3 +82,66 @@ end
     @test size(y) == (4, 3)
     test_gradients(model, x)
 end
+
+@testset "LSTMCell" begin
+
+    function loss(r, x, hc)
+        h, c = hc
+        h′ = []
+        c′ = []
+        for x_t in x
+            h, c = r(x_t, (h, c))
+            h′ = vcat(h′, [h])
+            c′ = [c′..., c]
+        end
+        hnew = stack(h′, dims=2)
+        cnew = stack(c′, dims=2)
+        return mean(hnew.^2) + mean(cnew.^2)
+    end
+
+    cell = LSTMCell(3 => 5)
+    @test length(Flux.trainables(cell)) == 3
+    x = [rand(Float32, 3, 4) for _ in 1:6]
+    h = zeros(Float32, 5, 4)
+    c = zeros(Float32, 5, 4)
+    hnew, cnew = cell(x[1], (h, c))
+    @test hnew isa Matrix{Float32}
+    @test cnew isa Matrix{Float32}
+    @test size(hnew) == (5, 4)
+    @test size(cnew) == (5, 4)
+    test_gradients(cell, x[1], (h, c), loss = (m, x, hc) -> mean(m(x, hc)[1]))
+    test_gradients(cell, x, (h, c), loss = loss)
+
+    cell = LSTMCell(3 => 5, bias=false)
+    @test length(Flux.trainables(cell)) == 2
+end
+
+@testset "LSTM" begin
+    struct ModelLSTM
+        lstm::LSTM
+        h0::AbstractVector
+        c0::AbstractVector
+    end
+
+    Flux.@layer :expand ModelLSTM
+
+    (m::ModelLSTM)(x) = m.lstm(x, (m.h0, m.c0))
+
+    model = ModelLSTM(LSTM(2 => 4), zeros(Float32, 4), zeros(Float32, 4))
+    
+    x = rand(Float32, 2, 3, 1)
+    h, c = model(x)
+    @test h isa Array{Float32, 3}
+    @test size(h) == (4, 3, 1)
+    @test c isa Array{Float32, 3}
+    @test size(c) == (4, 3, 1)
+    test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
+
+    x = rand(Float32, 2, 3)
+    h, c = model(x)
+    @test h isa Array{Float32, 2}
+    @test size(h) == (4, 3)
+    @test c isa Array{Float32, 2}
+    @test size(c) == (4, 3)
+    test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
+end
