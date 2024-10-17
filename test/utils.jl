@@ -469,10 +469,10 @@ end
   @test modules[5] === m2
   @test modules[6] === m3
 
-  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2,2,abs), Dense(2,2,abs2)))
+  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2=>2,abs), Dense(2=>2,abs2)))
   @test length(mod_par) == 5
 
-  mod_rnn = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  mod_rnn = Flux.modules(Chain(Dense(2=>3), BatchNorm(3), LSTM(3=>4)))
   @test length(mod_rnn) == 6
   @test mod_rnn[end] isa Flux.LSTMCell
 
