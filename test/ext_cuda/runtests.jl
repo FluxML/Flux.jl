@@ -22,8 +22,9 @@ end
 @testset "cudnn" begin
   include("cudnn.jl")
 end
-@testset "recurrent" begin
-  include("recurrent.jl")
+@testset "Recurrent" begin
+    BROKEN_TESTS = []
+    include("../ext_common/recurrent_gpu_ad.jl")
 end
 @testset "ctc" begin
   include("ctc.jl")

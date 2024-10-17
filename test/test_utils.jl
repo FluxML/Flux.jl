@@ -48,7 +48,16 @@ function test_gradients(
     end
 
     ## Let's make sure first that the forward pass works.
-    @test loss(f, xs...) isa Number
+    l = loss(f, xs...)
+    @test l isa Number
+    if test_gpu
+        gpu_dev = gpu_device(force=true)
+        cpu_dev = cpu_device()
+        xs_gpu = xs |> gpu_dev
+        f_gpu = f |> gpu_dev
+        l_gpu = loss(f_gpu, xs_gpu...)
+        @test l_gpu isa Number
+    end
 
     if test_grad_x
         # Zygote gradient with respect to input.
@@ -64,11 +73,6 @@ function test_gradients(
         end
 
         if test_gpu
-            gpu_dev = gpu_device(force=true)
-            cpu_dev = cpu_device()
-            xs_gpu = xs |> gpu_dev
-            f_gpu = f |> gpu_dev
-
             # Zygote gradient with respect to input on GPU.
             y_gpu, g_gpu = Zygote.withgradient((xs...) -> loss(f_gpu, xs...), xs_gpu...)
             @test get_device(g_gpu) == get_device(xs_gpu)
@@ -92,11 +96,6 @@ function test_gradients(
         end
 
         if test_gpu
-            gpu_dev = gpu_device(force=true)
-            cpu_dev = cpu_device()
-            xs_gpu = xs |> gpu_dev
-            f_gpu = f |> gpu_dev
-
             # Zygote gradient with respect to f on GPU.
             y_gpu, g_gpu = Zygote.withgradient(f -> loss(f, xs_gpu...), f_gpu)
             # @test get_device(g_gpu) == get_device(xs_gpu)
