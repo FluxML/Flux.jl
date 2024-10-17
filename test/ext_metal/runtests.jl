@@ -33,7 +33,7 @@ end
 end
 
 @testset "Recurrent" begin
-    BROKEN_TESTS = [:lstm, :gru, :gruv3]
+    global BROKEN_TESTS = [:lstm, :gru, :gruv3]
     include("../ext_common/recurrent_gpu_ad.jl")
 end
 

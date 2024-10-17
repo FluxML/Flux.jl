@@ -23,7 +23,7 @@ end
   include("cudnn.jl")
 end
 @testset "Recurrent" begin
-    BROKEN_TESTS = []
+    global BROKEN_TESTS = []
     include("../ext_common/recurrent_gpu_ad.jl")
 end
 @testset "ctc" begin
