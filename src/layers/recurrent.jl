@@ -83,9 +83,9 @@ function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
   return h
 end
 
-function Base.show(io::IO, l::RNNCell)
-  print(io, "RNNCell(", size(l.Wi, 2), " => ", size(l.Wi, 1))
-  print(io, ", ", l.σ)
+function Base.show(io::IO, m::RNNCell)
+  print(io, "RNNCell(", size(m.Wi, 2), " => ", size(m.Wi, 1))
+  print(io, ", ", m.σ)
   print(io, ")")
 end
 
@@ -262,7 +262,7 @@ end
 
 function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   _size_check(m, x, 1 => size(m.Wi, 2))
-  b, o = m.bias, size(h, 1)
+  b = m.bias
   g = m.Wi * x .+ m.Wh * h .+ b
   input, forget, cell, output = chunk(g, 4; dims=1)
   c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
@@ -270,8 +270,8 @@ function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   return h′, c′
 end
 
-Base.show(io::IO, l::LSTMCell) =
-  print(io, "LSTMCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷4, ")")
+Base.show(io::IO, m::LSTMCell) =
+  print(io, "LSTMCell(", size(m.Wi, 2), " => ", size(m.Wi, 1)÷4, ")")
 
 
 @doc raw""""
@@ -431,12 +431,17 @@ function GRUCell((in, out)::Pair; init = glorot_uniform, bias = true)
   return GRUCell(Wi, Wh, b)
 end
 
+(m::GRUCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
+
 function (m::GRUCell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi,2))
-  Wi, Wh, b = m.Wi, m.Wh, m.b
-  gxs = chunk(Wi * x, 3, dims=1)
-  ghs = chunk(Wh * h, 3, dims=1)
-  bs = chunk(b, 3, dims=1)
+  gxs = chunk(m.Wi * x, 3, dims=1)
+  ghs = chunk(m.Wh * h, 3, dims=1)
+  if m.b isa AbstractArray
+    bs = chunk(m.b, 3, dims=1)
+  else # b == false
+    bs = [false, false, false]
+  end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
   h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
@@ -444,8 +449,8 @@ function (m::GRUCell)(x::AbstractVecOrMat, h)
   return h′
 end
 
-Base.show(io::IO, l::GRUCell) =
-  print(io, "GRUCell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
+Base.show(io::IO, m::GRUCell) =
+  print(io, "GRUCell(", size(m.Wi, 2), " => ", size(m.Wi, 1)÷3, ")")
 
 @doc raw"""
     GRU(in => out; init = glorot_uniform, bias = true)
@@ -507,6 +512,7 @@ end
 function (m::GRU)(x, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
+  # [x] = [in, L] or [in, L, B]
   for x_t in eachslice(x, dims=2)
     h = m.cell(x_t, h)
     h′ = vcat(h′, [h])
@@ -573,19 +579,22 @@ end
 
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi,2))
-  Wi, Wh, b, Wh_h̃ = m.Wi, m.Wh, m.b, m.Wh_h̃
-  gxs = chunk(Wi * x, 3, dims=1)
-  ghs = chunk(Wh * h, 2, dims=1)
-  bs = chunk(b, 3, dims=1)
+  gxs = chunk(m.Wi * x, 3, dims=1)
+  ghs = chunk(m.Wh * h, 3, dims=1)
+  if m.b isa AbstractArray
+    bs = chunk(m.b, 3, dims=1)
+  else # m.b == false
+    bs = [false, false, false]
+  end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
-  h̃ = tanh_fast.(gxs[3] .+ (Wh_h̃ * (r .* h)) .+ bs[3])
+  h̃ = tanh_fast.(gxs[3] .+ (m.Wh_h̃ * (r .* h)) .+ bs[3])
   h′ = @. (1 - z) * h̃ + z * h
   return h′
 end
 
-Base.show(io::IO, l::GRUv3Cell) =
-  print(io, "GRUv3Cell(", size(l.Wi, 2), " => ", size(l.Wi, 1)÷3, ")")
+Base.show(io::IO, m::GRUv3Cell) =
+  print(io, "GRUv3Cell(", size(m.Wi, 2), " => ", size(m.Wi, 1)÷3, ")")
 
 
 @doc raw"""
