@@ -7,12 +7,10 @@ Flux.@functor RNNWrapper
 
 # Need to specialize for RNNWrapper.
 fw(r::RNNWrapper, X::Vector{<:AbstractArray}) = begin
-  Flux.reset!(r.rnn)
   [r.rnn(x) for x in X]
 end
 
 fw(r::RNNWrapper, X) = begin
-  Flux.reset!(r.rnn)
   r.rnn(X)
 end
 
