@@ -63,13 +63,6 @@ There are two ways you can specify it:
 gpu_backend = "AMDGPU"
 ```
 
-Current GPU backend can be fetched from `Flux.GPU_BACKEND` variable:
-
-```julia
-julia> Flux.GPU_BACKEND
-"CUDA"
-```
-
 The current backend will affect the behaviour of methods like the method `gpu` described below.
 
 ## Basic GPU Usage
@@ -358,7 +351,9 @@ MLDataDevices.get_device
 MLDataDevices.gpu_device
 MLDataDevices.gpu_backend!
 MLDataDevices.get_device_type
+MLDataDevices.loaded
 MLDataDevices.reset_gpu_device!
+MLDataDevices.set_device!
 MLDataDevices.supported_gpu_backends
 MLDataDevices.DeviceIterator
 ```

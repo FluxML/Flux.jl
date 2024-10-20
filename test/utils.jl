@@ -278,7 +278,6 @@ end
   @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
   @test gnew.y ≈ [1.0]
 
-
   # Implicit
   gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
   @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
