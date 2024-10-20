@@ -140,8 +140,8 @@ Note, all the `flux_*` variables in this tutorial would be general, that is, the
 julia> flux_model = Chain(Dense(4 => 3), softmax)
 Chain(
   Dense(4 => 3),                        # 15 parameters
-  NNlib.softmax,
-)
+  softmax,
+) 
 ```
 
 A [`Dense(4 => 3)`](@ref Dense) layer denotes a layer with four inputs (four features in every data point) and three outputs (three classes or labels). This layer is the same as the mathematical model defined by us above. Under the hood, Flux too calculates the output using the same expression, but we don't have to initialize the parameters ourselves this time, instead Flux does it for us.

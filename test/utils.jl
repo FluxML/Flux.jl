@@ -273,13 +273,11 @@ end
 @testset "params gradient" begin
   m = (x=[1,2.0], y=[3.0]);
 
-  @test begin
-    # Explicit -- was broken by #2054 / then fixed / now broken again on julia v1.11
-    gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
-    @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
-    @test gnew.y ≈ [1.0]
-    true
-  end broken = VERSION >= v"1.11"
+  # Explicit -- was broken by #2054 / then fixed / now broken again on julia v1.11
+  gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
+  @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
+  @test gnew.y ≈ [1.0]
+
 
   # Implicit
   gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
