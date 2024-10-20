@@ -278,7 +278,6 @@ end
   @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
   @test gnew.y ≈ [1.0]
 
-
   # Implicit
   gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
   @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
@@ -568,30 +567,6 @@ end
   @test length(Flux.params(oneadj)) == 1  # needs Functors@0.3
   
   @test Flux.destructure(simple)[1] == Flux.destructure(oneadj)[1] == [1, 3, 2, 4]
-
-  @testset "issue 2432" begin
-    x = rand(1)
-    m = (; a = x, b = x')
-    count = Ref(0)
-    mcopy = fmap(m; exclude = Flux._isleaf) do x
-      count[] += 1
-      return copy(x)
-    end
-    @test count[] == 1
-    @test mcopy.a === mcopy.b'
-
-    struct BitsType
-      x::Int32
-      y::Float64
-    end
-
-    for x in [1.0, 'a', BitsType(1, 2.0)]
-      @test Flux._isleaf([x])
-      @test !Flux._isleaf([x]')
-      @test !Flux._isleaf(transpose([x]))
-      @test !Flux._isleaf(PermutedDimsArray([x;;], (1, 2)))
-    end
-  end
 end
 
 @testset "Various destructure bugs" begin

@@ -1,5 +1,5 @@
 x = rand(Float32, 10, 10)
-if !(Flux.CUDA_LOADED[] || Flux.AMDGPU_LOADED[] || Flux.METAL_LOADED[])
+if gpu_device() isa CPUDevice
     @test x === gpu(x)
 end
 

@@ -1,5 +1,3 @@
-@test Flux.METAL_LOADED[]
-
 @testset "Basic GPU movement" begin
     @test Flux.gpu(rand(Float64, 16)) isa MtlArray{Float32, 1}
     @test Flux.gpu(rand(Float64, 16, 16)) isa MtlArray{Float32, 2}

@@ -134,21 +134,6 @@ end
 # From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
 Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
-struct FluxCPUAdaptor end
-
-# define rules for handling structured arrays
-adapt_storage(to::FluxCPUAdaptor, x::AbstractArray) = adapt(Array, x)
-adapt_storage(to::FluxCPUAdaptor, x::AbstractRange) = x
-adapt_storage(to::FluxCPUAdaptor, x::Zygote.FillArrays.AbstractFill) = x
-adapt_storage(to::FluxCPUAdaptor, x::Zygote.OneElement) = x
-adapt_storage(to::FluxCPUAdaptor, x::AbstractSparseArray) = x
-adapt_storage(to::FluxCPUAdaptor, x::AbstractRNG) = x
-
-
-# The following rrules for adapt are here to avoid double wrapping issues
-# as seen in https://github.com/FluxML/Flux.jl/pull/2117#discussion_r1027321801
-ChainRulesCore.rrule(::typeof(adapt), a::FluxCPUAdaptor, x::AbstractArray) =
-  adapt(a, x), Δ -> (NoTangent(), NoTangent(), Δ)
 
 
 
@@ -179,15 +164,7 @@ julia> m.bias
  0.0
 ```
 """
-cpu(x) = fmap(x -> adapt(FluxCPUAdaptor(), x), x, exclude = _isleaf)
-
-_isleaf(x) = Functors.isleaf(x)
-
-_isleaf(::AbstractArray{<:Number}) = true
-_isleaf(::AbstractArray{T}) where T = isbitstype(T)
-_isleaf(::Union{Transpose, Adjoint, PermutedDimsArray}) = false
-
-_isleaf(::AbstractRNG) = true
+cpu(x) = cpu_device()(x)
 
 # Remove when 
 # https://github.com/JuliaPackaging/Preferences.jl/issues/39
@@ -196,12 +173,6 @@ function gpu_backend!(backend::String)
     @set_preferences!("gpu_backend" => backend)
     MLDataDevices.gpu_backend!(backend)
 end
-
-# the order below is important
-const GPU_BACKENDS = ("CUDA", "AMDGPU", "Metal", "CPU")
-# const GPU_BACKEND = load_preference(MLDataDevices, "gpu_backend", "CUDA")
-# https://github.com/JuliaPackaging/Preferences.jl/issues/39
-const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 """
     gpu(m)
@@ -234,25 +205,7 @@ julia> typeof(m_gpu.weight)
 CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
-function gpu(x)
-    @static if GPU_BACKEND == "CUDA"
-        gpu(FluxCUDAAdaptor(), x)
-    elseif GPU_BACKEND == "AMD"
-        @warn "\"AMD\" backend is deprecated. Please use \"AMDGPU\" instead." maxlog=1
-        gpu(FluxAMDGPUAdaptor(), x)
-    elseif GPU_BACKEND == "AMDGPU"
-        gpu(FluxAMDGPUAdaptor(), x)
-    elseif GPU_BACKEND == "Metal"
-        gpu(FluxMetalAdaptor(), x)
-    elseif GPU_BACKEND == "CPU"
-        cpu(x)
-    else
-        error("""
-        Unsupported GPU backend: $GPU_BACKEND.
-        Supported backends are: $GPU_BACKENDS.
-        """)
-    end
-end
+gpu(x) = gpu_device()(x)
 
 # Precision
 
@@ -323,73 +276,6 @@ f16(m) = _paramtype(Float16, m)
 @functor Cholesky
 trainable(c::Cholesky) = ()
 
-# CUDA extension. ########
-
-Base.@kwdef struct FluxCUDAAdaptor
-    id::Union{Nothing, Int} = nothing
-end
-
-const CUDA_LOADED = Ref{Bool}(false)
-
-function gpu(to::FluxCUDAAdaptor, x)
-    if CUDA_LOADED[]
-        return _cuda(to.id, x)
-    else
-        @info """
-        The CUDA functionality is being called but
-        `CUDA.jl` must be loaded to access it.
-        Add `using CUDA` or `import CUDA` to your code.  Alternatively, configure a different GPU backend by calling `Flux.gpu_backend!`.
-        """ maxlog=1
-        return x
-    end
-end
-
-function _cuda end
-
-# AMDGPU extension. ########
-
-Base.@kwdef struct FluxAMDGPUAdaptor
-    id::Union{Nothing, Int} = nothing
-end
-
-const AMDGPU_LOADED = Ref{Bool}(false)
-
-function gpu(to::FluxAMDGPUAdaptor, x)
-    if AMDGPU_LOADED[]
-        return _amd(to.id, x)
-    else
-        @info """
-        The AMDGPU functionality is being called but
-        `AMDGPU.jl` must be loaded to access it.
-        Add `using AMDGPU` or `import AMDGPU` to your code.
-        """ maxlog=1
-        return x
-    end
-end
-
-function _amd end
-
-# Metal extension. ######
-
-struct FluxMetalAdaptor end
-
-const METAL_LOADED = Ref{Bool}(false)
-
-function gpu(::FluxMetalAdaptor, x)
-    if METAL_LOADED[]
-        return _metal(x)
-    else
-        @info """
-        The Metal functionality is being called but
-        `Metal.jl` must be loaded to access it.
-        """ maxlog=1
-        return x
-    end
-end
-
-function _metal end
-
-################################
 
 """
     gpu(data::DataLoader)
