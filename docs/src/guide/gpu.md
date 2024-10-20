@@ -16,61 +16,13 @@ in your code. Notice that for CUDA, explicitly loading also `cuDNN` is not requi
 !!! compat "Flux ≤ 0.13"
     Old versions of Flux automatically installed CUDA.jl to provide GPU support. Starting from Flux v0.14, CUDA.jl is not a dependency anymore and has to be installed manually.
 
-## Checking GPU Availability
-
-By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
-
-```julia
-julia> using CUDA
-
-julia> CUDA.functional()
-true
-```
-
-For AMD GPU:
-
-```julia
-julia> using AMDGPU
-
-julia> AMDGPU.functional()
-true
-
-julia> AMDGPU.functional(:MIOpen)
-true
-```
-
-For Metal GPU:
-
-```julia
-julia> using Metal
-
-julia> Metal.functional()
-true
-```
-
-## Selecting GPU backend
-
-Available GPU backends are: `CUDA`, `AMDGPU` and `Metal`.
-
-Flux relies on [Preferences.jl](https://github.com/JuliaPackaging/Preferences.jl) for selecting default GPU backend to use.
-
-There are two ways you can specify it:
-
-- From the REPL/code in your project, call `Flux.gpu_backend!("AMDGPU")` and restart (if needed) Julia session for the changes to take effect.
-- In `LocalPreferences.toml` file in you project directory specify:
-```toml
-[Flux]
-gpu_backend = "AMDGPU"
-```
-
-The current backend will affect the behaviour of methods like the method `gpu` described below.
 
 ## Basic GPU Usage
 
 Support for array operations on other hardware backends, like GPUs, is provided by external packages like [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl), [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl), and [Metal.jl](https://github.com/JuliaGPU/Metal.jl).
 Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.
 
-For example, we can use `CUDA.CuArray` (with the `cu` converter) to run our [basic example](@ref man-basics) on an NVIDIA GPU.
+For example, we can use `CUDA.CuArray` (with the `CUDA.cu` converter) to run our [basic example](@ref man-basics) on an NVIDIA GPU.
 
 (Note that you need to have CUDA available to use CUDA.CuArray – please see the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) instructions for more details.)
 
@@ -138,6 +90,50 @@ julia> x |> cpu
  ⋮
  0.7766742
 ```
+
+## Using device objects
+
+In Flux, you can create `device` objects which can be used to easily transfer models and data to GPUs (and defaulting to using the CPU if no GPU backend is available). 
+These features are provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl) package, that Flux uses internally and re-exports.
+
+Device objects can be automatically created using the [`cpu_device`](@ref MLDataDevices.cpu_device) and [`gpu_device`](@ref MLDataDevices.gpu_device) functions. For instance, the `gpu` and `cpu` functions are just convenience functions defined as 
+
+```julia
+cpu(x) = cpu_device()(x)
+gpu(x) = gpu_device()(x)
+```
+
+`gpu_device` performs automatic GPU device selection and returns a device object:
+- If no GPU is available, it returns a `CPUDevice` object.
+-  If a LocalPreferences file is present, then the backend specified in the file is used. To set a backend, use `Flux.gpu_backend!(<backend_name>)`. If the trigger package corresponding to the device is not loaded (e.g. with `using CUDA`), then a warning is displayed. 
+- If no LocalPreferences option is present, then the first working GPU with loaded trigger package is used.
+
+Consider the following example, where we load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) package to use an NVIDIA GPU (`"CUDA"` is the default preference):
+
+```julia-repl
+julia> using Flux, CUDA;
+
+julia> device = gpu_device()   # returns handle to an NVIDIA GPU if available
+(::CUDADevice{Nothing}) (generic function with 4 methods)
+
+julia> model = Dense(2 => 3);
+
+julia> model.weight     # the model initially lives in CPU memory
+3×2 Matrix{Float32}:
+ -0.984794  -0.904345
+  0.720379  -0.486398
+  0.851011  -0.586942
+
+julia> model = model |> device      # transfer model to the GPU
+Dense(2 => 3)       # 9 parameters
+
+julia> model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ -0.984794  -0.904345
+  0.720379  -0.486398
+  0.851011  -0.586942
+```
+
 
 ## Transferring Training Data
 
@@ -220,65 +216,8 @@ To select specific devices by device id:
 $ export CUDA_VISIBLE_DEVICES='0,1'
 ```
 
-
 More information for conditional use of GPUs in CUDA.jl can be found in its [documentation](https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use), and information about the specific use of the variable is described in the [Nvidia CUDA blog post](https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/).
 
-## Using device objects
-
-As a more convenient syntax, Flux allows the usage of GPU `device` objects which can be used to easily transfer models to GPUs (and defaulting to using the CPU if no GPU backend is available). This syntax has a few advantages including automatic selection of the GPU backend and type stability of data movement. 
-These features are provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl) package, that Flux's uses internally and re-exports.
-
-A `device` object can be created using the [`gpu_device`](@ref MLDataDevices.gpu_device) function. 
-`gpu_device` first checks for a GPU preference, and if possible returns a device for the preference backend. For instance, consider the following example, where we load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) package to use an NVIDIA GPU (`"CUDA"` is the default preference):
-
-```julia-repl
-julia> using Flux, CUDA;
-
-julia> device = gpu_device()   # returns handle to an NVIDIA GPU if available
-(::CUDADevice{Nothing}) (generic function with 4 methods)
-
-julia> model = Dense(2 => 3);
-
-julia> model.weight     # the model initially lives in CPU memory
-3×2 Matrix{Float32}:
- -0.984794  -0.904345
-  0.720379  -0.486398
-  0.851011  -0.586942
-
-julia> model = model |> device      # transfer model to the GPU
-Dense(2 => 3)       # 9 parameters
-
-julia> model.weight
-3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
- -0.984794  -0.904345
-  0.720379  -0.486398
-  0.851011  -0.586942
-```
-
-The device preference can also be set via the [`gpu_backend!`](@ref MLDataDevices.gpu_backend!) function. For instance, below we first set our device preference to `"AMDGPU"`:
-
-```julia-repl
-julia> gpu_backend!("AMDGPU")
-[ Info: GPU backend has been set to AMDGPU. Restart Julia to use the new backend.
-```
-If no functional GPU backend is available, the device will default to a CPU device. 
-You can also explictly request a CPU device by calling the [`cpu_device`](@ref MLDataDevices.cpu_device) function.
-
-```julia-repl
-julia> using Flux, MLDataDevices
-
-julia> cdev = cpu_device()
-(::CPUDevice{Nothing}) (generic function with 4 methods)
-
-julia> gdev = gpu_device(force=true)   # force GPU device, error if no GPU is available
-(::CUDADevice{Nothing}) (generic function with 4 methods)
-
-julia> model = Dense(2 => 3);     # model in CPU memory
-
-julia> gmodel = model |> gdev;    # transfer model to GPU
-
-julia> cmodel = gmodel |> cdev;   # transfer model back to CPU
-```
 
 ## Data movement across GPU devices
 
@@ -337,26 +276,6 @@ CuDevice(1): NVIDIA TITAN RTX
 
 Due to a limitation in `Metal.jl`, currently this kind of data movement across devices is only supported for `CUDA` and `AMDGPU` backends.
 
-!!! warning "Printing models after moving to a different device"
-    
-    Due to a limitation in how GPU packages currently work, printing
-    models on the REPL after moving them to a GPU device which is different
-    from the current device will lead to an error.
-
-
-```@docs
-MLDataDevices.cpu_device
-MLDataDevices.default_device_rng
-MLDataDevices.get_device
-MLDataDevices.gpu_device
-MLDataDevices.gpu_backend!
-MLDataDevices.get_device_type
-MLDataDevices.loaded
-MLDataDevices.reset_gpu_device!
-MLDataDevices.set_device!
-MLDataDevices.supported_gpu_backends
-MLDataDevices.DeviceIterator
-```
 
 ## Distributed data parallel training
 
@@ -474,3 +393,35 @@ julia> set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
     
     We don't run CUDA-aware tests so you're running it at own risk.
 
+
+## Checking GPU Availability
+
+By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
+
+```julia
+julia> using CUDA
+
+julia> CUDA.functional()
+true
+```
+
+For AMD GPU:
+
+```julia
+julia> using AMDGPU
+
+julia> AMDGPU.functional()
+true
+
+julia> AMDGPU.functional(:MIOpen)
+true
+```
+
+For Metal GPU:
+
+```julia
+julia> using Metal
+
+julia> Metal.functional()
+true
+```

@@ -36,6 +36,7 @@ makedocs(
             "Flat vs. Nested" => "reference/destructure.md",
             "Callback Helpers" => "reference/training/callbacks.md",
             "Gradients -- Zygote.jl" => "reference/training/zygote.md",
+            "Transfer Data to GPU -- MLDataDevices.jl" => "reference/data/mldatadevices.md",
             "Batching Data -- MLUtils.jl" => "reference/data/mlutils.md",
             "OneHotArrays.jl" => "reference/data/onehot.md",
             "Low-level Operations -- NNlib.jl" => "reference/models/nnlib.md",
