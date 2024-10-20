@@ -4,7 +4,7 @@ import Flux
 import Flux: adapt_storage, fmap
 import Flux: DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
 import NNlib
-using MLDataDevices: MLDataDevices
+using MLDataDevices
 using AMDGPU
 using Adapt
 using Random
