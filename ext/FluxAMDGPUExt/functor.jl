@@ -13,6 +13,7 @@ _conv_basetype(::Conv) = Conv
 _conv_basetype(::ConvTranspose) = ConvTranspose
 
 MLDataDevices.isleaf(::AMDGPU_CONV) = true
+MLDataDevices.isleaf(::CPU_CONV) = true
 
 _other_args(m::Conv) = (m.stride, m.pad, m.dilation, m.groups)
 _other_args(m::ConvTranspose) = (m.stride, m.pad, m.outpad, m.dilation, m.groups)
