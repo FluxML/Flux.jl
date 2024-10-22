@@ -169,14 +169,13 @@ X = [seq_1, seq_2]
 Y = [y1, y2]
 data = zip(X,Y)
 
-Flux.reset!(m)
 [m(x) for x in seq_init]
 
 opt = Flux.setup(Adam(1e-3), m)
 Flux.train!(loss, m, data, opt)
 ```
 
-In this previous example, model's state is first reset with `Flux.reset!`. Then, there's a warmup that is performed over a sequence of length 1 by feeding it with `seq_init`, resulting in a warmup state. The model can then be trained for 1 epoch, where 2 batches are provided (`seq_1` and `seq_2`) and all the timesteps outputs are considered for the loss.
+Then, there's a warmup that is performed over a sequence of length 1 by feeding it with `seq_init`, resulting in a warmup state. The model can then be trained for 1 epoch, where 2 batches are provided (`seq_1` and `seq_2`) and all the timesteps outputs are considered for the loss.
 
 In this scenario, it is important to note that a single continuous sequence is considered. Since the model state is not reset between the 2 batches, the state of the model flows through the batches, which only makes sense in the context where `seq_1` is the continuation of `seq_init` and so on.
 
@@ -187,7 +186,7 @@ x = [rand(Float32, 2, 4) for i = 1:3]
 y = [rand(Float32, 1, 4) for i = 1:3]
 ```
 
-That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix). We do not need to use `Flux.reset!(m)` here; each sentence in the batch will output in its own "column", and the outputs of the different sentences won't mix. 
+That would mean that we have 4 sentences (or samples), each with 2 features (let's say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing `m(batch[1])`, would still represent `x1 -> y1` in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix). Each sentence in the batch will output in its own "column", and the outputs of the different sentences won't mix. 
 
 To illustrate, we go through an example of batching with our implementation of `rnn_cell`. The implementation doesn't need to change; the batching comes for "free" from the way Julia does broadcasting and the rules of matrix multiplication.
 
@@ -223,7 +222,6 @@ In many situations, such as when dealing with a language model, the sentences in
 
 ```julia
 function loss(x, y)
-  Flux.reset!(m)
   sum(mse(m(xi), yi) for (xi, yi) in zip(x, y))
 end
 ```
