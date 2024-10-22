@@ -115,7 +115,6 @@ end
 # v0.14 deprecations
 @deprecate default_rng_value() Random.default_rng()
 
-Base.@deprecate_binding FluxAMDAdaptor FluxAMDGPUAdaptor
 
 # Issue 2476, after ConvTranspose got a new field in 2462. Minimal fix to allow loading?
 function loadmodel!(dst::ConvTranspose, src::NamedTuple{(:σ, :weight, :bias, :stride, :pad, :dilation, :groups)}; kw...)
@@ -135,22 +134,14 @@ function get_device(backend::String, idx::Int = 0)
       backend = "AMDGPU"
   end
   if backend == "CPU"
-      return MLDataDevices.CPUDevice()
+      return cpu_device()
   else
-      return _get_device(Val(Symbol(backend)), idx)
-  end
-end
-
-function _get_device(::Val{D}, idx) where D 
-  if D ∈ (:CUDA, :AMDGPU, :Metal)
-      error(string("Unavailable backend: ", D,". Try importing the corresponding package with `using ", D, "`."))
-  else
-      error(string("Unsupported backend: ", D, ". Supported backends are ", (:CUDA, :AMDGPU, :Metal), "."))
+      return gpu_device(idx+1, force=true)
   end
 end
 
 function supported_devices()
-  Base.depwarn("supported_devices() is deprecated. Use `supported_gpu_backends()` instead.", :supported_devices)
+  Base.depwarn("`supported_devices()` is deprecated. Use `supported_gpu_backends()` instead.", :supported_devices)
   return MLDataDevices.supported_gpu_backends()
 end
 

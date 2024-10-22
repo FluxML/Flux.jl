@@ -243,10 +243,10 @@ end
 @testset "Dropout RNGs" begin
   @test_throws ArgumentError Flux.dropout(MersenneTwister(), CUDA.rand(Float32, 2, 3), 0.1)
   @testset for layer in (Dropout, AlphaDropout)
-    m = layer(0.1; rng = MersenneTwister(123))
-    @test_throws ErrorException gpu(m)
-    m = layer(0.1; rng = CUDA.default_rng())
+    m = layer(0.1)
+    @test m.rng === Random.default_rng()
     @test gpu(m).rng isa CUDA.RNG
+    @test cpu(gpu(m)).rng === Random.default_rng()
   end
 end
 

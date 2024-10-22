@@ -29,7 +29,6 @@ AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
-Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
 NCCL = "3fe64909-d7a1-4096-9b7d-7a0f12cf0f6b"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
@@ -40,7 +39,6 @@ FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
 FluxEnzymeExt = "Enzyme"
 FluxMPIExt = "MPI"
 FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
-FluxMetalExt = "Metal"
 
 [compat]
 AMDGPU = "1"
@@ -50,11 +48,10 @@ ChainRulesCore = "1.12"
 Compat = "4.10.0"
 Enzyme = "0.12, 0.13"
 Functors = "0.4"
-MLDataDevices = "1.2.0"
+MLDataDevices = "1.4.0"
 MLUtils = "0.4"
 MPI = "0.20.19"
 MacroTools = "0.5"
-Metal = "0.5, 1"
 NCCL = "0.1.1"
 NNlib = "0.9.22"
 OneHotArrays = "0.2.4"

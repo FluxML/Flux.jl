@@ -1,5 +1,3 @@
-@test Flux.AMDGPU_LOADED[]
-
 @testset "Basic GPU movement" begin
     @test Flux.gpu(rand(Float64, 16)) isa ROCArray{Float32, 1}
     @test Flux.gpu(rand(Float64, 16, 16)) isa ROCArray{Float32, 2}
