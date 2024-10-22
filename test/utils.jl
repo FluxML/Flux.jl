@@ -251,19 +251,19 @@ end
 end
 
 @testset "Params" begin
-  m = Dense(10, 5)
+  m = Dense(10 => 5)
   @test size.(params(m)) == [(5, 10), (5,)]
-  m = RNN(10, 5)
-  @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  m = RNN(10 => 5)
+  @test size.(params(m)) == [(5, 10), (5, 5), (5,)]
 
   # Layer duplicated in same chain, params just once pls.
   c = Chain(m, m)
-  @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(params(c)) == [(5, 10), (5, 5), (5,)]
 
   # Self-referential array. Just want params, no stack overflow pls.
   r = Any[nothing,m]
   r[1] = r
-  @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(params(r)) == [(5, 10), (5, 5), (5,)]
 
   # Ensure functor explores inside Transpose but not SubArray
   m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
@@ -273,7 +273,7 @@ end
 @testset "params gradient" begin
   m = (x=[1,2.0], y=[3.0]);
 
-  # Explicit -- was broken by #2054 / then fixed / now broken again on julia v1.11
+  # Explicit -- was broken by #2054
   gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
   @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
   @test gnew.y ≈ [1.0]
@@ -285,7 +285,7 @@ end
 end
 
 @testset "Precision" begin
-  m = Chain(Dense(10, 5, relu; bias=false), Dense(5, 2))
+  m = Chain(Dense(10 => 5, relu; bias=false), Dense(5 => 2))
   x64 = rand(Float64, 10)
   x32 = rand(Float32, 10)
   i64 = rand(Int64, 10)
@@ -466,10 +466,10 @@ end
   @test modules[5] === m2
   @test modules[6] === m3
 
-  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2,2,abs), Dense(2,2,abs2)))
+  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2=>2,abs), Dense(2=>2,abs2)))
   @test length(mod_par) == 5
 
-  mod_rnn = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  mod_rnn = Flux.modules(Chain(Dense(2=>3), BatchNorm(3), LSTM(3=>4)))
   @test length(mod_rnn) == 6
   @test mod_rnn[end] isa Flux.LSTMCell
 
