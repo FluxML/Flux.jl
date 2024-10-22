@@ -34,7 +34,7 @@ The arguments of the forward pass are:
 
 # Examples
 
-```jldoctest
+```julia
 r = RNNCell(3 => 5)
 
 # A sequence of length 10 and batch size 4
@@ -142,7 +142,7 @@ julia> y = rnn(x, h);   # [y] = [d_out, len, batch_size]
 Sometimes, the initial hidden state is a learnable parameter. 
 In this case, the `RNN` should be wrapped in a custom struct.
 
-```jldoctest
+```julia
 struct Model
   rnn::RNN
   h0::AbstractVector
@@ -317,7 +317,7 @@ in tensors of size `out x len` or `out x len x batch_size`.
 
 # Examples
 
-```jldoctest
+```julia
 struct Model
   lstm::LSTM
   h0::AbstractVector
@@ -404,10 +404,9 @@ Returns the new hidden state `h'` as an array of size `out` or `out x batch_size
 
 # Examples
 
-TODO add loop
 ```jldoctest
 julia> g = GRUCell(3 => 5)
-GRUCell(3 => 5)    # 140 parameters
+GRUCell(3 => 5)     # 135 parameters
 
 julia> h = zeros(Float32, 5); # hidden state
 
@@ -485,7 +484,7 @@ Returns all new hidden states `h_t` as an array of size `out x len x batch_size`
 
 # Examples
 
-```jldoctest
+```julia
 d_in, d_out, len, batch_size = 2, 3, 4, 5
 gru = GRU(d_in => d_out)
 x = rand(Float32, (d_in, len, batch_size))
@@ -615,9 +614,6 @@ h_t = (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
 for all `len` steps `t` in the input sequence. 
 See [`GRUv3Cell`](@ref) for a layer that processes a single time step.
 See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
-
-# Examples
-TODO
 """
 struct GRUv3{M}
   cell::M
