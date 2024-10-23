@@ -64,6 +64,7 @@ function _applychain(layers::AbstractVector, x)  # type-unstable path, helps com
   end
   x
 end
+_show_pre_post(::Chain{<:AbstractVector}) = "Chain([", "])"  # internal method for show
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
