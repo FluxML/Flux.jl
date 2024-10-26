@@ -71,7 +71,13 @@ end
   # Functors@0.3 marks transposed matrices non-leaf, shouldn't affect printing:
   adjoint_chain = repr("text/plain", Chain([Dense([1 2; 3 4]')]))
   @test occursin("Dense(2 => 2)", adjoint_chain)
-  @test occursin("Chain([", adjoint_chain)
+  @test occursin("Chain(", adjoint_chain)
+  @test occursin("[", adjoint_chain)
+
+  # New printing of arrays, and Fix1
+  fix_chain = repr("text/plain", Chain(Base.Fix1(*, rand32(22,33)), softmax))
+  @test occursin("Fix1(", fix_chain)
+  @test occursin("22×33 Matrix{Float32}", fix_chain)
 end
 
 # Bug when no children, https://github.com/FluxML/Flux.jl/issues/2208
