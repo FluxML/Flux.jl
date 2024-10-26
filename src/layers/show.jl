@@ -53,7 +53,6 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
 end
 
 _show_pre_post(obj) = string(nameof(typeof(obj)), "("), ")"
-# _show_pre_post(::Chain{<:AbstractVector}) = "Chain([", "])"  # has to be done elsewhere
 _show_pre_post(::AbstractVector) = "[", "]"
 _show_pre_post(::NamedTuple) = "(;", ")"
 
