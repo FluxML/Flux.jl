@@ -35,6 +35,7 @@ Flux.glorot_normal
 Flux.kaiming_uniform
 Flux.kaiming_normal
 Flux.truncated_normal
+Flux.lecun_normal
 Flux.orthogonal
 Flux.sparse_init
 Flux.identity_init
