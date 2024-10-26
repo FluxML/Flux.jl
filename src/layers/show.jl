@@ -29,7 +29,7 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   else
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", pre)
     if obj isa Chain{<:NamedTuple} || obj isa NamedTuple
-      # then we insert names -- can this be done more generically? 
+      # then we insert names -- can this be done more generically?
       for k in Base.keys(obj)
         _big_show(io, obj[k], indent+2, k)
       end
@@ -49,6 +49,16 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
     else
       println(io, " "^indent, post, ",")
     end
+  end
+end
+
+for Fix in (:Fix1, :Fix2)
+  pre = string(Fix, "(")
+  @eval function _big_show(io::IO, obj::Base.$Fix, indent::Int=0, name=nothing)
+    println(io, " "^indent, isnothing(name) ? "" : "$name = ", $pre)
+    _big_show(io, obj.f, indent+2)
+    _big_show(io, obj.x, indent+2)
+    println(io, " "^indent, ")", ",")
   end
 end
 
