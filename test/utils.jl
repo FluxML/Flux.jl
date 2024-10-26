@@ -193,7 +193,8 @@ end
   end
 
   @testset "lecun_normal" begin
-    m = lecun_normal(100, 100)
+    @test std(Flux.lecun_normal(10, 1000)) ≈ 0.032f0 rtol=0.01
+    @test std(Flux.lecun_normal(1000, 10)) ≈ 0.317f0 rtol=0.01
   end
 
   @testset "Partial application" begin
