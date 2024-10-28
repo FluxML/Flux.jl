@@ -5,6 +5,9 @@ also known as reverse-mode automatic differentiation.
 Given a model, some data, and a loss function, this answers the question
 "what direction, in the space of the model's parameters, reduces the loss fastest?"
 
+This page is a brief overview of ways to perform automatic differentiation in Julia,
+and how they relate to Flux.
+
 ### `gradient(f, x)` interface
 
 Julia's ecosystem has many versions of `gradient(f, x)`, which evaluates `y = f(x)` then retuns `∂y_∂x`. The details of how they do this vary, but the interfece is similar. An incomplete list is (alphabetically):
@@ -21,11 +24,11 @@ julia> ForwardDiff.gradient(x -> sum(sqrt, x), [1 4 16.])
 1×3 Matrix{Float64}:
  0.5  0.25  0.125
 
-julia> ReverseDiff.gradient(x -> sum(sqrt, x), [1 4 16.])
+julia> DifferentiationInterface.gradient(x -> sum(sqrt, x), AutoMooncake(; config=nothing), [1 4 16.])
 1×3 Matrix{Float64}:
  0.5  0.25  0.125
 
-julia> DifferentiationInterface.gradient(x -> sum(sqrt, x), AutoTapir(), [1 4 16.])
+julia> ReverseDiff.gradient(x -> sum(sqrt, x), [1 4 16.])
 1×3 Matrix{Float64}:
  0.5  0.25  0.125
 
@@ -64,7 +67,7 @@ julia> model = Chain(Embedding(reshape(1:6, 2,3) .+ 0.0), softmax)
 Chain(
   Embedding(3 => 2),                    # 6 parameters
   NNlib.softmax,
-) 
+)
 
 julia> model.layers[1].weight  # this is the wrapped parameter array
 2×3 Matrix{Float64}:
@@ -90,11 +93,11 @@ julia> _, grads_t = Tracker.withgradient(loss, model)
 julia> grads_d = Diffractor.gradient(loss, model)
 (Tangent{Chain{Tuple{Embedding{Matrix{Float64}}, typeof(softmax)}}}(layers = (Tangent{Embedding{Matrix{Float64}}}(weight = [-0.18171549534589682 0.0 0.0; 0.18171549534589682 0.0 0.0],), ChainRulesCore.NoTangent()),),)
 
-julia> grad_e = Enzyme.gradient(Reverse, loss, model)
-Chain(
-  Embedding(3 => 2),                    # 6 parameters
-  NNlib.softmax,
-) 
+julia> grads_e = Enzyme.gradient(Reverse, loss, model)
+(Chain(Embedding(3 => 2), softmax),)
+
+julia> grad_m = DifferentiationInterface.gradient(loss, AutoMooncake(; config=nothing), model)
+Mooncake.Tangent{@NamedTuple{layers::Tuple{Mooncake.Tangent{@NamedTuple{weight::Matrix{Float64}}}, Mooncake.NoTangent}}}((layers = (Mooncake.Tangent{@NamedTuple{weight::Matrix{Float64}}}((weight = [-0.18171549534589682 0.0 0.0; 0.18171549534589682 0.0 0.0],)), Mooncake.NoTangent()),))
 ```
 
 While the type returned for `∂loss_∂model` varies, they all have the same nested structure, matching that of the model. This is all that Flux needs.
@@ -105,10 +108,12 @@ julia> grads_z[1].layers[1].weight  # Zygote's gradient for model.layers[1].weig
  -0.181715  0.0  0.0
   0.181715  0.0  0.0
 
-julia> grad_e.layers[1].weight  # Enzyme's gradient for the same weight matrix
+julia> grads_e[1].layers[1].weight  # Enzyme's gradient for the same weight matrix
 2×3 Matrix{Float64}:
  -0.181715  0.0  0.0
   0.181715  0.0  0.0
+
+julia> ans ≈ grad_m.fields.layers[1].fields.weight  # Mooncake seems to differ?
 ```
 
 Here's Flux updating the model using each gradient:
@@ -128,7 +133,9 @@ julia> model_z.layers[1].weight  # updated weight matrix
 
 julia> model_e = deepcopy(model);
 
-julia> Flux.update!(opt_state, model_e, grad_e)[2][1].weight  # same update
+julia> Flux.update!(opt_state, model_e, grads_e[1]);
+
+julia> model_e.layers[1].weight  # same update
 2×3 Matrix{Float64}:
  1.06057  3.0  5.0
  1.93943  4.0  6.0
@@ -142,11 +149,11 @@ In this case they are all identical, but there are some caveats, explored below.
 
 Both Zygote and Tracker were written for Flux, and at present, Flux loads Zygote and exports `Zygote.gradient`, and calls this within `Flux.train!`. But apart from that, there is very little coupling between Flux and the automatic differentiation package.
 
-This page has very brief notes on how all these packages compare, as a guide for anyone wanting to experiment with them. We stress "experiment" since Zygote is (at present) by far the best-tested. All notes are from February 2024, 
+This page has very brief notes on how all these packages compare, as a guide for anyone wanting to experiment with them. We stress "experiment" since Zygote is (at present) by far the best-tested. All notes are from February 2024,
 
 ### [Zygote.jl](https://github.com/FluxML/Zygote.jl/issues)
 
-Reverse-mode source-to-source automatic differentiation, written by hooking into Julis's compiler.
+Reverse-mode source-to-source automatic differentiation, written by hooking into Julia's compiler.
 
 * By far the best-tested option for Flux models.
 
@@ -154,10 +161,28 @@ Reverse-mode source-to-source automatic differentiation, written by hooking into
 
 * Allows mutation of structs, but not of arrays. This leads to the most common error... sometimes this happens because you mutate an array, often because you call some function which, internally, creates the array it wants to return & then fills it in.
 
-* Custom rules via `ZygoteRules.@adjpoint` or better, `ChainRulesCore.rrule`.
+```julia
+function mysum2(x::AbstractMatrix)  # implements y = vec(sum(x; dims=2))
+  y = similar(x, size(x,1))
+  for col in eachcol(x)
+    y .+= col  # mutates y, Zygote will not allow this
+  end
+  return y
+end
 
-* Returns nested NamedTuples and Tuples, and uses `nothing` to mean zero. Does not track shared arrays, hence may return different contributions 
+Zygote.jacobian(x -> sum(x; dims=2).^2, Float32[1 2 3; 4 5 6])[1]  # returns a 2×6 Matrix
+Zygote.jacobian(x -> mysum2(x).^2, Float32[1 2 3; 4 5 6])[1]  # ERROR: Mutating arrays is not supported
+```
 
+* Custom rules via `ZygoteRules.@adjpoint` or (equivalently) `ChainRulesCore.rrule`.
+
+* Returns nested NamedTuples and Tuples, and uses `nothing` to mean zero.
+
+* Does not track shared arrays, hence may return different contributions.
+
+```julia
+
+```
 
 !!! compat "Deprecated: Zygote's implicit mode"
     Flux's default used to be work like this, instead of using deeply nested trees for gradients as above:
@@ -194,7 +219,7 @@ julia> model_tracked = Flux.fmap(x -> x isa Array ? Tracker.param(x) : x, model)
 Chain(
   Embedding(3 => 2),                    # 6 parameters
   NNlib.softmax,
-) 
+)
 
 julia> val_tracked = loss(model_tracked)
 0.6067761f0 (tracked)
@@ -230,7 +255,23 @@ New package which works on the LLVM code which Julia compiles down to.
 
 * Returns another struct of the same type as the model, such as `Chain` above. Non-differentiable objects are left alone, not replaced by a zero.
 
-### [Tapir.jl](https://github.com/withbayes/Tapir.jl)
+Enzyme likes to work in-place, with objects and their gradients stored togeter in a `Duplicated(x, dx)`.
+Flux has an interface which uses this:
+```julia
+julia> Flux.train!((m,x) -> sum(abs2, m(1)), model, 1:1, opt_state)  # train! with Zygote
+
+julia> Flux.train!((m,x) -> sum(abs2, m(1)), Duplicated(model), 1:1, opt_state)  # train! with Enzyme
+```
+and
+```julia
+julia> grads_e2 = Flux.gradient(loss, Duplicated(model))
+((layers = ((weight = [-0.18171549534589682 0.0 0.0; 0.18171549534589682 0.0 0.0],), nothing),),)
+
+julia> Flux.withgradient(loss, Duplicated(model))
+(val = 0.5665111155481435, grad = ((layers = ((weight = [-0.15810298866515066 0.0 0.0; 0.1581029886651505 0.0 0.0],), nothing),),))
+```
+
+### [Mooncake.jl](https://github.com/compintell/Mooncake.jl)
 
 Another new AD to watch. Many similariries in its approach to Enzyme.jl, but operates all in Julia.
 
@@ -262,11 +303,11 @@ Another Julia source-to-source reverse-mode AD.
 
 ### [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
 
-Forward mode is a different algorithm... 
+Forward mode is a different algorithm...
 
-* Needs a flat vector
+* Needs a simple array of parameters, i.e. supports only `gradient(f, x::AbstractArray{<:Real})`.
 
-* Forward mode is generally not what you want!
+* Forward mode is generally not what you want for nerual networks! It's ideal for ``ℝ → ℝᴺ`` functions, but the wrong algorithm for ``ℝᴺ → ℝ``.
 
 * `gradient(f, x)` will call `f(x)` multiple times. Layers like `BatchNorm` with state may get confused.
 
@@ -316,7 +357,4 @@ This year's new attempt to build a simpler one?
 
 Really `rrule_via_ad` is another mechanism, but only for 3 systems.
 
-Sold as an attempt at unification, but its design of extensible `rrule`s turned out to be too closely tied to Zygote/Diffractor style AD, and not a good fit for Enzyme/Tapir which therefore use their own rule systems. Also not a natural fit for Tracker/ReverseDiff/ForwardDiff style of operator overloading AD.
-
-
-
+Sold as an attempt at unification, but its design of extensible `rrule`s turned out to be too closely tied to Zygote/Diffractor style AD, and not a good fit for Enzyme/Mooncake which therefore use their own rule systems. Also not a natural fit for Tracker/ReverseDiff/ForwardDiff style of operator overloading AD.
