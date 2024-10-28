@@ -119,6 +119,7 @@ export MPIBackend, NCCLBackend, DistributedUtils
   kaiming_uniform,
   kaiming_normal,
   truncated_normal,
+  lecun_normal,
   orthogonal,
   sparse_init,
   identity_init,

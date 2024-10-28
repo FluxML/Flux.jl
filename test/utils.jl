@@ -1,6 +1,6 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
-             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
+             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal, lecun_normal,
              sparse_init, identity_init, unstack, batch, unbatch,
              unsqueeze, params, loadmodel!
 using MLUtils
