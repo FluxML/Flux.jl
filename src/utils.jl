@@ -264,7 +264,7 @@ julia> round(std(Flux.lecun_normal(10, 1000)), digits=3)
 0.032f0
 
 julia> round(std(Flux.lecun_normal(1000, 10)), digits=3)
-0.317f0
+0.32f0
 
 julia> round(std(Flux.lecun_normal(1000, 1000)), digits=3)
 0.032f0
@@ -272,8 +272,8 @@ julia> round(std(Flux.lecun_normal(1000, 1000)), digits=3)
 julia> Dense(10 => 1000, selu; init = Flux.lecun_normal())
 Dense(10 => 1000, selu)  # 11_000 parameters
 
-julia> round(std(ans.weight), sigdigits=3)
-0.319f0
+julia> round(std(ans.weight), digits=3)
+0.313f0
 ```
 
 # References
