@@ -1,6 +1,6 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
-             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
+             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal, lecun_normal,
              sparse_init, identity_init, unstack, batch, unbatch,
              unsqueeze, params, loadmodel!
 using MLUtils
@@ -75,7 +75,7 @@ end
       kaiming_uniform, kaiming_normal, 
       orthogonal, 
       sparse_init,
-      truncated_normal,
+      truncated_normal, lecun_normal,
       identity_init,
       Flux.rand32,
       Flux.randn32,
@@ -190,6 +190,11 @@ end
       @test isapprox(mean(v), μ; atol = 1f-1)
       @test isapprox(std(v), σ; atol = 1f-1)
     end
+  end
+
+  @testset "lecun_normal" begin
+    @test std(Flux.lecun_normal(10, 1000)) ≈ 0.032f0 rtol=0.1
+    @test std(Flux.lecun_normal(1000, 10)) ≈ 0.317f0 rtol=0.1
   end
 
   @testset "Partial application" begin
