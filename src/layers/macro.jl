@@ -46,6 +46,11 @@ Trio(
 )                   # Total: 3 arrays, 4 parameters, 240 bytes.
 ```
 
+The macro also adds methods to make using Flux with Enzyme easier.
+* `Duplicated(m::Layer)` allocates a copy for the gradient (initially zero).
+* This is made callable, `(m::Duplicated{<:Layer})(x...) = m.val(x...)`
+* Pretty printing for `show(io, mime, ::Duplicated{<:Layer})`
+
 """
 macro layer(exs...)
   out = quote end
