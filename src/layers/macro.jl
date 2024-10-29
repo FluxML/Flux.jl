@@ -53,7 +53,7 @@ macro layer(exs...)
 
   # These functions are defined in show.jl, and each return an expression overloading Base.show
   type, rest... = if exs[1] == QuoteNode(:expand)
-    push!(out.args, _macro_big_show(esc(exs[2])))  
+    push!(out.args, _macro_big_show(esc(exs[2])))
     exs[2:end]
   elseif exs[1] == QuoteNode(:ignore)
     exs[2:end]
@@ -67,10 +67,9 @@ macro layer(exs...)
   # This function exists only for depwarns when you use @functor directly
   push!(out.args, :(Flux._check_new_macro(::$(esc(type))) = nothing))
 
-  # TODO this should probably make it zero first?
-  push!(out.args, :($EnzymeCore.Duplicated(m::$(esc(type))) = $EnzymeCore.Duplicated(m, $deepcopy(m))))
-  
   push!(out.args, _macro_functor(esc(type)))
+
+  push!(out.args, _macro_enzyme(esc(type)))
 
   for j in 1:length(rest)
     ex = rest[j]
@@ -135,7 +134,7 @@ function _default_functor(::Type{T}, x) where {T}
     namedtuple(x), spl(Base.typename(T).wrapper)
   end
 end
- 
+
 function namedtuple(x::T) where T
   F = fieldnames(T)
   NamedTuple{F}(map(sy -> getfield(x, sy), F))
@@ -158,3 +157,29 @@ _macro_trainable(type, fun, field::Union{Symbol,QuoteNode}) = _macro_trainable(t
 _noquotenode(s::Symbol) = s
 _noquotenode(q::QuoteNode) = q.value  # lets you write trainable=(:x,:y) instead of (x,y)
 _noquotenode(ex) = error("expected a symbol here, as a field name, but got ", ex)
+
+_make_zero_internal!(x::AbstractArray) = fill!(x, 0)
+_make_zero_internal!(x) = x
+_make_zero!(model) = fmap(_make_zero_internal!, model)
+
+function _macro_enzyme(type)
+    out = quote
+        # One-arg method Duplicated(m::Layer) which allocates & zeros the gradient:
+        $EnzymeCore.Duplicated(m::$type) = $EnzymeCore.Duplicated(m, $_make_zero!($deepcopy(m)))
+
+        # Not sure we want this, but make Duplicated{<:Layer} callable?
+        (m::$EnzymeCore.Duplicated{<:$type})(xs...) = m.val(xs...)
+
+        # Not sure but this does prevent printing of 2nd copy:
+        $Optimisers.trainable(m::$EnzymeCore.Duplicated{<:$type}) = (; val = m.val)
+    end
+    # Add a show method for Duplicated{<:Layer}
+    push!(out.args, _macro_big_show(:($EnzymeCore.Duplicated{<:$type})))
+    out
+end
+
+function _show_pre_post(obj::EnzymeCore.Duplicated)
+    nrm = norm(destructure(obj.dval)[1])
+    str = repr(round(nrm; sigdigits=3))
+    "Duplicated(", "  # norm(∇) ≈ $str\n) "
+end

@@ -12,6 +12,8 @@ By default, `Flux.gradient` calls Zygote. If you load Enzyme, then other methods
 
 See also [`withgradient`](@ref) to keep the value `f(args...)`.
 
+# Examples
+
 ```jldoctest; setup=:(using Zygote)
 julia> gradient(*, 2.0, 3.0, 5.0)
 (15.0, 10.0, 6.0)
@@ -36,6 +38,8 @@ gradient(f, args...) = Zygote.gradient(f, args...)
 Returns both the value of the function and the [`gradient`](@ref), as a named tuple.
 
 By default, `Flux.withgradient` calls Zygote. If you load Enzyme, then other methods become available.
+
+# Example
 
 ```jldoctest; setup=:(using Zygote)
 julia> y, ∇ = withgradient(/, 1, 2)
