@@ -28,8 +28,77 @@ julia> gradient([7, 11], 0, 1) do x, y, d
 ([14.0, 22.0], 2.0, nothing)
 ```
 """
-gradient(f, args...) = Zygote.gradient(f, args...)
+function gradient(f, args...; zero::Bool=true)
+    for a in args
+        a isa EnzymeCore.Duplicated && return _enzyme_gradient(f, map(_ensure_enzyme, args)...; zero)
+    end
+    Zygote.gradient(f, args...)
+end
 
+_ensure_enzyme(x::EnzymeCore.Duplicated) = x
+_ensure_enzyme(x::EnzymeCore.Const) = x
+_ensure_enzyme(x) = EnzymeCore.Const(x)
+
+"""
+    gradient(f, args::Union{Const,Duplicated}...)
+
+This should return the same answer as `gradient(f, args...)`,
+but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
+
+Only available when Enzyme is loaded!
+
+This method is used when at least one argument is of type `Duplicated`,
+and all unspecified aguments are wrapped in `Const`.
+
+Besides returning the gradient, this is also stored within the `Duplicated` object.
+Calling `Enzyme.Duplicated(model)` allocates space for the gradient,
+which is zero'd befor use when calling `gradient`.
+With the keyword `zero=false`, the new gradient will instead be added to what is already stored.
+
+!!! warning "Experimental"
+    Enzyme support like this is new and somewhat experimental.
+
+# Example
+```
+julia> using Flux
+
+julia> model = Chain(Dense([3.0;;]));
+
+julia> Flux.gradient(model, [1]) do m, x  # computed using Zygote
+         sum(abs2, m(x))
+       end
+((layers = ((weight = [6.0;;], bias = [6.0], σ = nothing),),), [18.0])
+
+julia> using Enzyme
+
+julia> dup_model = Duplicated(model);  # allocates space for gradient
+
+julia> Flux.gradient(dup_model, Const([1])) do m, x  # Enzyme, returns the same
+         sum(abs2, m(x))
+       end
+((layers = ((weight = [6.0;;], bias = [6.0], σ = nothing),),), nothing)
+
+julia> dup_model  # same gradient is also stored within Duplicated
+Duplicated(
+  Chain(
+    Dense(1 => 1),                      # 2 parameters
+  ),
+  # norm(∇) ≈ 8.49
+)
+
+julia> Flux.destructure((weight = [6.0;;], bias = [6.0]))[1] |> norm
+8.48528137423857
+
+julia> Flux.gradient(dup_model, [1]; zero=false) do m, x  # implict Const([1]), and grad accumulation
+         sum(abs2, m(x))
+       end
+((layers = ((weight = [12.0;;], bias = [12.0], σ = nothing),),), nothing)
+```
+"""
+gradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_gradient(f, args...; zero)
+
+# FluxEnzymeExt defines more specific _enzyme_gradient(f, args::Union{Const, Duplicated}...; zero)
+_enzyme_gradient(f, args...; zero) = error("methods like `gradient(f, x::Duplicated)` are only available when Enzyme is loaded.")
 
 
 """
@@ -67,4 +136,41 @@ julia> withgradient(3.0, 4.0) do x, y
 (val = (div = 0.75, mul = 12.0), grad = (0.25, -0.1875))
 ```
 """
-withgradient(f, args...) = Zygote.withgradient(f, args...)
+function withgradient(f, args...; zero::Bool=true)
+    for a in args
+        a isa EnzymeCore.Duplicated && return _enzyme_withgradient(f, map(_ensure_enzyme, args)...; zero)
+    end
+    Zygote.withgradient(f, args...)
+end
+
+"""
+    withgradient(f, args::Union{Const,Duplicated}...)
+
+This should return the same answer as `withgradient(f, model, args...)`,
+but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
+
+Only available when Enzyme is loaded!
+
+Does not at present allow `f` to return a tuple of `(loss, aux)` the way `Zygote.withgradient` does.
+
+# Example
+
+```
+julia> using Flux, Enzyme
+
+julia> model = Chain(Embedding([1.1 2.2 3.3]), Dense([4.4;;]), only);
+
+julia> model(3)
+14.52
+
+julia> Flux.withgradient(m -> m(3), model)  # this uses Zygote
+(val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+
+julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
+(val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+```
+"""
+withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_withgradient(f, args...; zero)
+
+# FluxEnzymeExt defines more specific _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero)
+_enzyme_withgradient(f, args...; zero) = error("methods like `withgradient(f, x::Duplicated)` are only available when Enzyme is loaded.")

@@ -10,6 +10,10 @@ using Zygote: Zygote
 
 export setup, train!
 
+using ProgressLogging: @progress, @withprogress, @logprogress
+using Zygote: Zygote, Params
+using EnzymeCore: Duplicated
+
 """
     opt_state = setup(rule, model)
 
@@ -55,7 +59,7 @@ end
     train!(loss, model, data, opt_state)
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
-according to a particular optimisation rule encoded in `opt_state`. 
+according to a particular optimisation rule encoded in `opt_state`.
 Iterates through `data` once, evaluating for each `d in data` either
 `loss(model, d...)` if `d isa Tuple`, or else `loss(model, d)` for other `d`.
 
@@ -131,6 +135,33 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
     leaf
   end
   state
+end
+
+"""
+    train!(loss, Duplicated(model), data, opt_state)
+
+This method uses Enzyme.jl instead of Zygote.jl to compute the gradients,
+but is otherwise the same as `train!(loss, model, data, opt_state)`.
+
+Only available when Enzyme is loaded.
+
+!!! compat "New"
+    This method was added in Flux 0.13.9.
+
+"""
+train!(loss, model::Duplicated, data, opt; cb = nothing) = _enzyme_train!(loss, model, data, opt; cb = nothing)
+
+# FluxEnzymeExt defines more specific _enzyme_train!(loss, model::Duplicated, data, opt; cb)
+_enzyme_train!(loss, model, data, opt; cb = nothing) = error("The method `train!(loss, Duplicated(model), data, opt_state)` is only available when Enzyme.jl is loaded")
+
+# Following src/deprecations.jl
+function train!(loss, model::Duplicated, data, opt::Optimise.AbstractOptimiser; cb=nothing)
+  train!(loss, model, data, _old_to_new(opt); cb)
+end
+
+# This method let you use Optimisers.Descent() without setup, when there is no state
+function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing)
+  train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
 end # module Train

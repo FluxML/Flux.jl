@@ -1,4 +1,3 @@
-import EnzymeCore
 
 """
     @layer Dense
