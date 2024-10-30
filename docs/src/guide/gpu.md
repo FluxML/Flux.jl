@@ -34,7 +34,7 @@ using Pkg; Pkg.add(["CUDA", "cuDNN"])  # do this once
 using Flux, CUDA
 CUDA.allowscalar(false)  # recommended
 
-model = Dense(W, true, tanh)  # wrap the same matrix W
+model = Dense(W, true, tanh)  # wrap the same matrix W in a Flux layer
 model(x) ≈ y                  # same result, still on CPU
 
 c_model = cu(model)  # move all the arrays within model to the GPU
@@ -43,13 +43,13 @@ c_model(cx)          # computation on the GPU
 
 Notice that you need `using CUDA` (every time) but also `] add cuDNN` (once, when installing packages).
 This is a quirk of how these packages are set up.
+(The [`cuDNN.jl`](https://github.com/JuliaGPU/CUDA.jl/tree/master/lib/cudnn) sub-package handles operations such as convolutions, called by Flux via [NNlib.jl](https://github.com/FluxML/NNlib.jl).)
 
 Flux's `gradient`, and training functions like `setup`, `update!`, and `train!`, are all equally happy to accept GPU arrays and GPU models, and then perform all computations on the GPU.
 It is recommended that you move the model to the GPU before calling `setup`.
 
 ```julia
-Flux.gradient((f,x) -> sum(abs2, f(x)), model, x)
-
+grads = Flux.gradient((f,x) -> sum(abs2, f(x)), model, x)  # on CPU
 c_grads = Flux.gradient((f,x) -> sum(abs2, f(x)), c_model, cx)  # same result, all on GPU
 
 c_opt = Flux.setup(Adam(), c_model)  # setup optimiser after moving model to GPU
@@ -86,7 +86,7 @@ r_model(roc(x))
 Flux.gradient((f,x) -> sum(abs2, f(x)), r_model, roc(x))
 ```
 
-Experimental support for apple devices with M-series chips is provided by  [Metal.jl](https://github.com/JuliaGPU/Metal.jl). This has a function [`mtl`](https://metal.juliagpu.org/stable/api/array/#Metal.mtl) which works like `cu`, converting `Array` to `MtlArray`:
+Experimental support for Apple devices with M-series chips is provided by  [Metal.jl](https://github.com/JuliaGPU/Metal.jl). This has a function [`mtl`](https://metal.juliagpu.org/stable/api/array/#Metal.mtl) which works like `cu`, converting `Array` to `MtlArray`:
 
 ```julia
 using Flux, Metal
@@ -98,7 +98,7 @@ m_y = m_model(mtl(x))
 Flux.gradient((f,x) -> sum(abs2, f(x)), m_model, mtl(x))
 ```
 
-!!! warn "Experimental"
+!!! danger "Experimental"
     Metal support in Flux is experimental and many features are not yet available.
     AMD support is improving, but likely to have more rough edges than CUDA.
 
@@ -142,7 +142,7 @@ cpu(x) = cpu_device()(x)
 
 ## Manually selecting devices
 
-??
+I thought there was a whole `Flux.gpu_backend!` and Preferences.jl story we had to tell??
 
 
 ## Transferring Training Data
