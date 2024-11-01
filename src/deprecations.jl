@@ -145,6 +145,12 @@ function supported_devices()
   return MLDataDevices.supported_gpu_backends()
 end
 
+# This was previosly documented. 
+# As of v0.14.23 we silently deprecate it. 
+# Later we will deprecate it loudly and then remove it.
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA") 
+
+
 # v0.15 deprecations
 
 # Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
