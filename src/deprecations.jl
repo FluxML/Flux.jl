@@ -151,6 +151,12 @@ end
 const GPU_BACKEND = @load_preference("gpu_backend", "CUDA") 
 
 
+# help out with https://github.com/chengchingwen/Transformers.jl/issues/201
+const FluxCPUAdaptor = CPUDevice
+const FluxCUDAAdaptor = CUDADevice
+const FluxAMDGPUAdaptor = AMDGPUDevice
+const FluxMetalAdaptor = MetalDevice
+
 # v0.15 deprecations
 
 # Enable these when 0.15 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
