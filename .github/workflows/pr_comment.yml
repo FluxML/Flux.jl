@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: Create PR comment
         if: github.event_name == 'pull_request' && github.repository == github.event.pull_request.head.repo.full_name && github.event.label.name == 'documentation' # if this is a pull request build AND the pull request is NOT made from a fork
-        uses: thollander/actions-comment-pull-request@fabd468d3a1a0b97feee5f6b9e499eab0dd903f6
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b
         with:
           message: 'Once the build has completed, you can preview any updated documentation at this URL: https://fluxml.ai/Flux.jl/previews/PR${{ github.event.number }}/ in ~20 minutes'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
