@@ -259,16 +259,16 @@ end
   m = Dense(10 => 5)
   @test size.(Flux.trainables(m)) == [(5, 10), (5,)]
   m = RNN(10 => 5)
-  @test size.(Flux.trainables(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(Flux.trainables(m)) == [(5, 10), (5, 5), (5,)]
 
   # Layer duplicated in same chain, params just once pls.
   c = Chain(m, m)
-  @test size.(Flux.trainables(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(Flux.trainables(c)) == [(5, 10), (5, 5), (5,)]
 
   # Self-referential array. Just want params, no stack overflow pls.
   r = Any[nothing,m]
   r[1] = r
-  @test_broken size.(Flux.trainables(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(Flux.trainables(r)) == [(5, 10), (5, 5), (5,)]
 
   # Ensure functor explores inside Transpose but not SubArray
   m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
