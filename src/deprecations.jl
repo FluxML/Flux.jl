@@ -170,3 +170,8 @@ const FluxMetalAdaptor = MetalDevice
 #   where `loss_mxy` accepts the model as its first argument.
 #   """
 # ))
+
+function reset!(x)
+  Base.depwarn("reset!(m) is deprecated. You can remove this call as it is no more needed.", :reset!)
+  return x
+end

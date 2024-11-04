@@ -312,6 +312,10 @@ end
   @test Array(y_gpu) ≈ y_cpu atol=1e-4
   @test Array(α_gpu) ≈ α_cpu atol=1e-4
 
-  test_gradients(mha_cpu, x_cpu, loss = o -> sum(o[1].^2) + sum(o[2].^2), 
+  function loss(m, x)
+    y, α = m(x)
+    return sum(y.^2) + sum(α.^2)
+  end
+  test_gradients(mha_cpu, x_cpu; loss, 
     test_gpu=true, compare_finite_diff=false)
 end

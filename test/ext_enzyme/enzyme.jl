@@ -93,7 +93,6 @@ end
 
 @testset "Models" begin
     function loss(model, x)
-        Flux.reset!(model)
         sum(model(x))
     end
 
@@ -126,7 +125,6 @@ end
 
 @testset "Recurrence Tests" begin
     function loss(model, x)
-        Flux.reset!(model)
         for i in 1:3
             x = model(x)
         end

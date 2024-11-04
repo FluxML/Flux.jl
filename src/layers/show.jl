@@ -14,7 +14,7 @@ function _macro_big_show(ex)
       end
     end
 
-    # Don't show Chain(Tuple(...)), always splat that. And ignore Recur's non-trainable state:
+    # Don't show Chain(Tuple(...)), always splat that. And ignore non-trainable buffers:
     Flux._show_children(x::$ex) = _flat_children(trainable(x))
   end
 end

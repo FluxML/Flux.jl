@@ -54,7 +54,11 @@
   end
 
   @testset "gradient" begin
-    test_gradients(mha, q, loss = o -> sum(o[1].^2) + sum(o[2].^2))
+    function loss(m, q)
+      y, α = m(q)
+      return sum(y.^2) + sum(α.^2)
+    end
+    test_gradients(mha, q; loss)
   end
 end
 

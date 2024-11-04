@@ -112,8 +112,6 @@ RNN
 LSTM
 GRU
 GRUv3
-Flux.Recur
-Flux.reset!
 ```
 
 ## Normalisation & Regularisation
