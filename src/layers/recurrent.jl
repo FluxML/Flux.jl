@@ -237,6 +237,7 @@ julia> h′, c′ = l(x, (h, c));
 
 julia> size(h′)  # out x batch_size
 (5, 4)
+```
 """
 struct LSTMCell{I,H,V}
   Wi::I
