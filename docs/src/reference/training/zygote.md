@@ -4,8 +4,10 @@ CollapsedDocStrings = true
 
 # [Automatic Differentiation using Zygote.jl](@id autodiff-zygote)
 
-Flux re-exports the `gradient` from [Zygote](https://github.com/FluxML/Zygote.jl), and uses this function within [`train!`](@ref Flux.train!) to differentiate the model. Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
+Flux's `gradient` function uses [Zygote](https://github.com/FluxML/Zygote.jl) by default, and also uses this function within [`train!`](@ref Flux.train!) to differentiate the model.
+Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
 
+Flux also has support for Enzyme.jl, documented [on its own page](@ref autodiff-enzyme).
 
 ## Explicit style
 
