@@ -2,7 +2,7 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
-## v0.15.0 
+## v0.15.0
 * Recurrent layers have undergone a complete redesign in [PR 2500](https://github.com/FluxML/Flux.jl/pull/2500).
   * `RNNCell`, `LSTMCell`, and `GRUCell` are now exported and provide functionality for single time-step processing: `rnncell(x_t, h_t) -> h_{t+1}`.
   * `RNN`, `LSTM`, and `GRU` no longer store the hidden state internally, it has to be explicitely passed to the layer. Moreover, they now process entire sequences at once, rather than one element at a time: `rnn(x, h) -> h′`.
@@ -12,6 +12,8 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
   Now Flux re-exports the optimisers from Optimisers.jl. Most users will be uneffected by this change.
   The module is still available for now, but will be removed in a future release.
 * Most Flux layers will [re-use memory via `NNlib.bias_act!`](https://github.com/FluxML/Flux.jl/pull/2327), when possible.
+* Further support for Enzyme.jl, via methods of `Flux.gradient`.
+  This still defaults to Zygote, but is no longer `=== Zygote.gradient`.
 
 ## v0.14.22
 * Data movement between devices is now provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl).
@@ -37,7 +39,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 * After a deprecations cycle, the macro `@epochs` and the functions `Flux.stop`, `Flux.skip`, `Flux.zeros`, `Flux.ones` have been removed.
 
 ## v0.13.17
-* Apple's Metal GPU acceleration preliminary support via the extension mechanism. 
+* Apple's Metal GPU acceleration preliminary support via the extension mechanism.
 
 ## v0.13.16
 * Most greek-letter keyword arguments are deprecated in favour of ascii.

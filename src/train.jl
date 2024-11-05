@@ -55,6 +55,11 @@ function setup(rule::Optimisers.AbstractRule, model)
     return state
 end
 
+"""
+    opt_state = setup(rule, model::Duplicated) = setup(rule, model.val)
+
+Special method for use with Enzyme.jl, ignores the stored gradient.
+"""
 setup(rule::Optimisers.AbstractRule, model::Duplicated) = setup(rule, model.val)
 
 """
