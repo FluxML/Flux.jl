@@ -35,6 +35,8 @@ using Flux: activations
     c = Chain(Dense(10, 5, σ), Dense(5, 2), Dense(2, 1, relu))
     @test c[1] == c[begin]
     @test c[3] == c[end]
+
+    @test Chain(identity)(1,2,3) == (1,2,3)  # multiple args become a tuple
   end
 
   @testset "Activations" begin
@@ -228,17 +230,20 @@ using Flux: activations
     end
 
     @testset "concat size" begin
-      input = randn(10, 2)
+      input = randn32(10, 2)
       @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
       @test size(Parallel(hcat, one = Dense(10, 10), two = identity)(input)) == (10, 4)
     end
 
     @testset "vararg input" begin
-      inputs = randn(10), randn(5), randn(4)
+      inputs = randn32(10), randn32(5), randn32(4)
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
       @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
       @test_throws ArgumentError Parallel(+, sin, cos)(1,2,3)  # wrong number of inputs
-      @test Parallel(+, sin, cos)(pi/2) ≈ 1
+      @test Parallel(+, sin, cos)(pi/2) ≈ 1  # one input, several layers
+      @test Parallel(/, abs)(3, -4) ≈ 3/4    # one layer, several inputs
+      @test Parallel(/, abs)((3, -4)) ≈ 3/4
+      @test Parallel(/; f=abs)(3, -4) ≈ 3/4
     end
 
     @testset "named access" begin
@@ -256,9 +261,13 @@ using Flux: activations
     end
 
     @testset "trivial cases" begin
-      @test Parallel(hcat) isa Parallel{typeof(hcat), Tuple{}}  # not a NamedTuple
-      @test Parallel(hcat)(1) == hcat()
-      @test Parallel(hcat, inv)(2) == hcat(1/2)  # still calls connection once.
+      # zero inputs, always an error
+      @test_throws ArgumentError Parallel(hcat)()
+      @test_throws ArgumentError Parallel(hcat, inv)()
+      @test_throws ArgumentError Parallel(hcat, inv, sqrt)()
+
+      # zero layers -- not useful... now made an error
+      @test_throws ArgumentError Parallel(hcat)
     end
 
     @testset "connection is called once" begin
@@ -270,6 +279,8 @@ using Flux: activations
       @test CNT[] == 2
       Parallel(f_cnt, sin)(1)
       @test CNT[] == 3
+      Parallel(f_cnt, sin)(1,2,3)
+      @test CNT[] == 4
     end
 
     # Ref https://github.com/FluxML/Flux.jl/issues/1673
