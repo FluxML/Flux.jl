@@ -184,7 +184,7 @@ end
   @test size(b(x, y)) == (3,9)
   @test sum(abs2, b(x, y)) ≈ 0f0
   test_gradients(b |> cpu, x |> cpu, y |> cpu, 
-    test_gpu=true, compare_finite_diff=false, loss=o -> mean(abs2, o))
+    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
 end
 
 @testset "Two-streams Bilinear" begin
@@ -194,7 +194,7 @@ end
   @test size(b(x, y)) == (3,9)
   @test sum(abs2, b(x, y)) ≈ 0f0
   test_gradients(b |> cpu, x |> cpu, y |> cpu, 
-    test_gpu=true, compare_finite_diff=false, loss=o -> mean(abs2, o))
+    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
 end
 
 @testset "Parallel" begin
@@ -214,7 +214,7 @@ end
   @testset "gradient" begin
     layer_cpu = Parallel(+, x -> zero(x), identity)
     test_gradients(layer_cpu, randn(5, 5, 5, 5), 
-      test_gpu=true, compare_finite_diff=false, loss=o -> mean(abs2, o))
+      test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
   end
 end
 
