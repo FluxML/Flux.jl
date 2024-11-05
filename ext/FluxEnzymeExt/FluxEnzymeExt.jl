@@ -1,8 +1,10 @@
 module FluxEnzymeExt
 
 using Flux
-using Flux: _make_zero!
-import Flux.Train: train!, _rule_to_state
+# using Flux: _make_zero!
+# import Flux.Train: train!, _rule_to_state
+import Flux.Train: _make_zero!, _enzyme_train!, _rule_to_state
+# import Flux.Optimise
 import Optimisers
 import Enzyme
 using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal

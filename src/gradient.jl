@@ -32,6 +32,11 @@ function gradient(f, args...; zero::Bool=true)
     for a in args
         a isa EnzymeCore.Duplicated && return _enzyme_gradient(f, map(_ensure_enzyme, args)...; zero)
     end
+    for a in args
+        a isa EnzymeCore.Const && throw(ArgumentError(
+            "The method `gradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
+        ))
+    end
     Zygote.gradient(f, args...)
 end
 
@@ -97,8 +102,14 @@ julia> Flux.gradient(dup_model, [1]; zero=false) do m, x  # implict Const([1]), 
 """
 gradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_gradient(f, args...; zero)
 
+gradient(f, args::EnzymeCore.Const...; zero::Bool=true) = throw(ArgumentError(
+    "The method `gradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
+))
+
 # FluxEnzymeExt defines more specific _enzyme_gradient(f, args::Union{Const, Duplicated}...; zero)
-_enzyme_gradient(f, args...; zero) = error("methods like `gradient(f, x::Duplicated)` are only available when Enzyme is loaded.")
+_enzyme_gradient(f, args...; zero) = throw(ArgumentError(
+    "Methods like `gradient(f, x::Duplicated)` are only available when Enzyme is loaded."
+))
 
 
 """
@@ -140,6 +151,11 @@ function withgradient(f, args...; zero::Bool=true)
     for a in args
         a isa EnzymeCore.Duplicated && return _enzyme_withgradient(f, map(_ensure_enzyme, args)...; zero)
     end
+    for a in args
+        a isa EnzymeCore.Const && throw(ArgumentError(
+            "The method `withgradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
+        ))
+    end
     Zygote.withgradient(f, args...)
 end
 
@@ -172,5 +188,11 @@ julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
 """
 withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_withgradient(f, args...; zero)
 
+withgradient(f, args::EnzymeCore.Const...; zero::Bool=true) = throw(ArgumentError(
+    "The method `withgradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
+))
+
 # FluxEnzymeExt defines more specific _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero)
-_enzyme_withgradient(f, args...; zero) = error("methods like `withgradient(f, x::Duplicated)` are only available when Enzyme is loaded.")
+_enzyme_withgradient(f, args...; zero) = throw(ArgumentError(
+    "Methods like `withgradient(f, x::Duplicated)` are only available when Enzyme is loaded."
+))

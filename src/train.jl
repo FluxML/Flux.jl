@@ -55,6 +55,8 @@ function setup(rule::Optimisers.AbstractRule, model)
     return state
 end
 
+setup(rule, model::Duplicated) = setup(rule, model.val)
+
 """
     train!(loss, model, data, opt_state)
 
@@ -152,7 +154,7 @@ Only available when Enzyme is loaded.
 train!(loss, model::Duplicated, data, opt; cb = nothing) = _enzyme_train!(loss, model, data, opt; cb = nothing)
 
 # FluxEnzymeExt defines more specific _enzyme_train!(loss, model::Duplicated, data, opt; cb)
-_enzyme_train!(loss, model, data, opt; cb = nothing) = error("The method `train!(loss, Duplicated(model), data, opt_state)` is only available when Enzyme.jl is loaded")
+_enzyme_train!(loss, model, data, opt; cb = nothing) = throw(ArgumentError("The method `train!(loss, Duplicated(model), data, opt_state)` is only available when Enzyme.jl is loaded"))
 
 # Following src/deprecations.jl
 function train!(loss, model::Duplicated, data, opt::Optimise.AbstractOptimiser; cb=nothing)

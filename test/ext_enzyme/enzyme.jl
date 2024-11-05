@@ -152,3 +152,28 @@ end
         end
     end
 end
+
+@testset "gradient, withgradient, Duplicated" begin
+    # Tests above are about how Enzyme digests Flux layers.
+    # Tests here are just the interface Flux.gradient(f, Duplicated(model)) etc.
+    m1 = Duplicated(Dense(3=>2))
+    @test m1 isa Duplicated
+    g1 = Flux.gradient(m -> sum(m.bias), m1) |> only
+    @test iszero(g1.weight)
+    @test g1.bias == [1, 1]
+    @test m1.dval.bias == [1, 1]
+
+    g2 = Flux.withgradient((m,x) -> sum(m(x)), m1, [1,2,3f0])
+    @test g2.val ≈ sum(m1([1,2,3f0]))
+    @test g2.grad[1].weight ≈ [1 2 3; 1 2 3]
+    @test g2.grad[2] === nothing  # implicitly Const
+
+    # setup understands Duplicated:
+    @test Flux.setup(Adam(), m1) == Flux.setup(Adam(), m1.val)
+
+    # At least one Duplicated is required:
+    @test_throws ArgumentError Flux.gradient(m -> sum(m.bias), Const(m1))
+    @test_throws ArgumentError Flux.gradient((m,x) -> sum(m(x)), Const(m1), [1,2,3f0])
+    @test_throws ArgumentError Flux.withgradient(m -> sum(m.bias), Const(m1))
+    @test_throws ArgumentError Flux.withgradient((m,x) -> sum(m(x)), Const(m1), [1,2,3f0])
+end
