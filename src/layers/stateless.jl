@@ -17,11 +17,11 @@ julia> mean(x), std(x; corrected=false)
 
 julia> y = Flux.normalise(x)
 5-element Vector{Float64}:
- -0.49999975000012503
+ -0.4999999999999375
   0.0
-  0.49999975000012503
-  1.499999250000375
- -1.499999250000375
+  0.4999999999999375
+  1.4999999999998124
+ -1.4999999999998124
 
 julia> isapprox(std(y; corrected=false), 1, atol=1e-5)
 true
