@@ -213,8 +213,8 @@ end
 
   @testset "gradient" begin
     layer_cpu = Parallel(+, x -> zero(x), identity)
-    test_gradients(layer_cpu, randn(5, 5, 5, 5), 
-      test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
+    test_gradients(layer_cpu, randn(2, 2, 2, 2), 
+      test_gpu=true, compare_finite_diff=false, loss=(m, x) -> mean(abs2, m(x)))
   end
 end
 
