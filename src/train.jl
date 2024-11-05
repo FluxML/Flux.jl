@@ -55,7 +55,7 @@ function setup(rule::Optimisers.AbstractRule, model)
     return state
 end
 
-setup(rule, model::Duplicated) = setup(rule, model.val)
+setup(rule::Optimisers.AbstractRule, model::Duplicated) = setup(rule, model.val)
 
 """
     train!(loss, model, data, opt_state)
