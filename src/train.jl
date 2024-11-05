@@ -21,16 +21,12 @@ It differs from `Optimisers.setup` in that it:
 * has methods which accept Flux's old optimisers, and convert them.
   (The old `Flux.Optimise.Adam` and new `Optimisers.Adam` are distinct types.)
 
-!!! compat "New"
-    This function was added in Flux 0.13.9. It was not used by the old "implicit"
-    interface, using `Flux.Optimise` module and [`Flux.params`](@ref).
-
 # Example
 ```jldoctest
-julia> model = Dense(2=>1, leakyrelu; init=ones);
+julia> model = Dense(2 => 1, leakyrelu; init=ones);
 
 julia> opt_state = Flux.setup(Momentum(0.1), model)  # this encodes the optimiser and its state
-(weight = Leaf(Momentum{Float64}(0.1, 0.9), [0.0 0.0]), bias = Leaf(Momentum{Float64}(0.1, 0.9), [0.0]), σ = ())
+(weight = Leaf(Momentum(0.1, 0.9), [0.0 0.0]), bias = Leaf(Momentum(0.1, 0.9), [0.0]), σ = ())
 
 julia> x1, y1 = [0.2, -0.3], [0.4];  # use the same data for two steps:
 
@@ -43,7 +39,7 @@ julia> model.bias  # was zero, mutated by Flux.train!
  10.19
 
 julia> opt_state  # mutated by Flux.train!
-(weight = Leaf(Momentum{Float64}(0.1, 0.9), [-2.018 3.027]), bias = Leaf(Momentum{Float64}(0.1, 0.9), [-10.09]), σ = ())
+(weight = Leaf(Momentum(0.1, 0.9), [-2.018 3.027]), bias = Leaf(Momentum(0.1, 0.9), [-10.09]), σ = ())
 ```
 """
 function setup(rule::Optimisers.AbstractRule, model)
@@ -63,6 +59,9 @@ Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule encoded in `opt_state`. 
 Iterates through `data` once, evaluating for each `d in data` either
 `loss(model, d...)` if `d isa Tuple`, or else `loss(model, d)` for other `d`.
+
+If `model` is an Enzyme.Duplicated and `Enzyme.jl` is loaded, gradients will be computed with Enzyme,
+otherwise they will be computed with Zygote.
 
 For example, with these definitions...
 ```
@@ -90,7 +89,7 @@ It adds only a few features to the loop above:
 !!! compat "New"
     This method was added in Flux 0.13.9.
     It has significant changes from the one used by Flux ≤ 0.13:
-    * It now takes the `model` itself, not the result of [`Flux.params`](@ref).
+    * It now takes the `model` itself, not the result of `Flux.params`.
       (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
     * Instead of `loss` being a function which accepts only the data,
       now it must also accept the `model` itself, as the first argument.
@@ -104,14 +103,19 @@ function train!(loss, model, data, opt; cb = nothing)
                             For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
+
     l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
+
     if !isfinite(l)
       throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
+
     opt, model = Optimisers.update!(opt, model, gs[1])
+
     @logprogress Base.haslength(data) ? i/length(data) : nothing
   end
 end
+
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)

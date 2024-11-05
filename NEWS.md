@@ -2,6 +2,26 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
+## v0.15.0 
+* Recurrent layers have undergone a complete redesign in [PR 2500](https://github.com/FluxML/Flux.jl/pull/2500).
+  * `RNNCell`, `LSTMCell`, and `GRUCell` are now exported and provide functionality for single time-step processing: `rnncell(x_t, h_t) -> h_{t+1}`.
+  * `RNN`, `LSTM`, and `GRU` no longer store the hidden state internally, it has to be explicitely passed to the layer. Moreover, they now process entire sequences at once, rather than one element at a time: `rnn(x, h) -> h′`.
+  * The `Recur` wrapper has been deprecated and removed.
+  * The `reset!` function has also been removed; state management is now entirely up to the user.
+* The `Flux.Optimise` module has been deprecated in favor of the Optimisers.jl package.
+  Now Flux re-exports the optimisers from Optimisers.jl. Most users will be uneffected by this change.
+  The module is still available for now, but will be removed in a future release.
+
+## v0.14.22
+* Data movement between devices is now provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl).
+
+## v0.14.18
+* Add [support for distributed data parallel training](https://github.com/FluxML/Flux.jl/pull/2446).
+* MPI and NCCL backend available with `FluxMPIExt` and `FluxMPINCCLExt` extensions respectively.
+
+## v0.14.17
+* Add [support for Enzyme](https://github.com/FluxML/Flux.jl/pull/2446) with `Flux.train!`.
+
 ## v0.14.13
 * New macro `Flux.@layer` which should be used in place of `@functor`.
   This also adds `show` methods for pretty printing.

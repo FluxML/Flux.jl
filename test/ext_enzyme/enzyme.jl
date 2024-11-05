@@ -1,19 +1,11 @@
 using Test
 using Flux
 
-using Enzyme
+using Enzyme: Enzyme, make_zero, Active, Duplicated, ReverseWithPrimal
+
 using Functors
 using FiniteDifferences
-using CUDA
 
-Enzyme.API.typeWarning!(false) # suppresses a warning with Bilinear https://github.com/EnzymeAD/Enzyme.jl/issues/1341
-Enzyme.API.runtimeActivity!(true) # for Enzyme debugging 
-# Enzyme.Compiler.bitcode_replacement!(false)
-
-_make_zero(x::Union{Number,AbstractArray}) = zero(x)
-_make_zero(x) = x
-make_zero(model) = fmap(_make_zero, model)
-## make_differential(model) = fmapstructure(make_zero, model) # NOT SUPPORTED, See https://github.com/EnzymeAD/Enzyme.jl/issues/1329
 
 function gradient_fd(f, x...)
     x = [cpu(x) for x in x]
@@ -101,7 +93,6 @@ end
 
 @testset "Models" begin
     function loss(model, x)
-        Flux.reset!(model)
         sum(model(x))
     end
 
@@ -120,6 +111,8 @@ end
         (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
         (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),        
+        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+        (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
     ]
     
     for (model, x, name) in models_xs
@@ -132,7 +125,6 @@ end
 
 @testset "Recurrence Tests" begin
     function loss(model, x)
-        Flux.reset!(model)
         for i in 1:3
             x = model(x)
         end
@@ -154,32 +146,3 @@ end
         end
     end
 end
-
-@testset "Broken Models" begin
-    function loss(model, x)
-        Flux.reset!(model)
-        sum(model(x))
-    end
-
-    device = Flux.get_device()
-
-    models_xs = [
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
-        (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
-        ]
-
-    for (model, x, name) in models_xs
-        @testset "check grad $name" begin
-            println("testing $name")
-            broken = false
-            try
-                test_enzyme_grad(loss, model, x)
-            catch e
-                println(e)
-                broken = true
-            end
-            @test broken
-        end
-    end
-end
-

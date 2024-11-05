@@ -11,17 +11,33 @@ using MacroTools: @forward
 using MLUtils
 const stack = MLUtils.stack  # now exported by Base
 import Optimisers: Optimisers, trainable, destructure  # before v0.13, Flux owned these functions
-using Optimisers: freeze!, thaw!, adjust!
+using Optimisers: freeze!, thaw!, adjust!, trainables
+@reexport using Optimisers
+
 using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: Params, @adjoint, gradient, pullback
 using Zygote.ForwardDiff: value
 export gradient
 
+@reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
+                    default_device_rng,
+                    gpu_device, cpu_device, xla_device,
+                    CPUDevice,
+                    CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
+                    XLADevice,
+                    # get_device, # we define get_device here for retrocompatibility
+                    # gpu_backend!, # have to define here due to https://github.com/JuliaPackaging/Preferences.jl/issues/39
+                    get_device_type,
+                    DeviceIterator
+
+
 # Pirate error to catch a common mistake. (Internal function `base` because overloading `update!` is more likely to give ambiguities.)
 Optimisers.base(dx::Zygote.Grads) = error("Optimisers.jl cannot be used with Zygote.jl's implicit gradients, `Params` & `Grads`")
 
-export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion,
+export Chain, Dense, Embedding, EmbeddingBag,
+       Maxout, SkipConnection, Parallel, PairwiseFusion,
+       RNNCell, LSTMCell, GRUCell, GRUv3Cell,
        RNN, LSTM, GRU, GRUv3,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
@@ -36,19 +52,14 @@ export Chain, Dense, Embedding, Maxout, SkipConnection, Parallel, PairwiseFusion
   # modules
   Losses, Train,
   # layers
-  Bilinear, Scale, dropout,
+  Bilinear, Scale,
   # utils
   outputsize, state, create_bias, @layer,
 ))
 
 include("optimise/Optimise.jl")
-using .Optimise
-export Descent, Adam, Momentum, Nesterov, RMSProp,
-  AdaGrad, AdaMax, AdaDelta, AMSGrad, NAdam, OAdam,
-  AdamW, RAdam, AdaBelief, InvDecay, ExpDecay,
-  WeightDecay, SignDecay, ClipValue, ClipNorm
-
-export ClipGrad, OptimiserChain  # these are const defined in deprecations, for ClipValue, Optimiser
+using .Optimise: Optimise
+export ClipValue # this is const defined in deprecations, for ClipGrad
 
 include("train.jl")
 using .Train
@@ -62,9 +73,9 @@ include("functor.jl")
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,  
   # from Functors.jl
-  functor, @functor,
+  functor, @functor, KeyPath, haskeypath, getkeypath,
   # from Optimise/Train/Optimisers.jl
-  setup, update!, destructure, freeze!, adjust!, params, trainable
+  setup, update!, destructure, freeze!, adjust!, params, trainable, trainables
 ))
 
 # Pirate error to catch a common mistake.
@@ -91,6 +102,14 @@ include("deprecations.jl")
 include("losses/Losses.jl")
 using .Losses
 
+include("devices.jl")
+export get_device, gpu_backend!
+
+# Distributed Training
+include("distributed/backend.jl")
+include("distributed/public_api.jl")
+export MPIBackend, NCCLBackend, DistributedUtils
+
 @compat(public, (
   # init
   glorot_uniform,
@@ -98,6 +117,7 @@ using .Losses
   kaiming_uniform,
   kaiming_normal,
   truncated_normal,
+  lecun_normal,
   orthogonal,
   sparse_init,
   identity_init,

@@ -35,16 +35,18 @@ using Flux: activations
     c = Chain(Dense(10, 5, σ), Dense(5, 2), Dense(2, 1, relu))
     @test c[1] == c[begin]
     @test c[3] == c[end]
+
+    @test Chain(identity)(1,2,3) == (1,2,3)  # multiple args become a tuple
   end
 
   @testset "Activations" begin
     c = Chain(Dense(3,5,relu), Dense(5,1,relu))
     X = Float32.([1.0; 1.0; 1.0])
-    @test_nowarn gradient(()->Flux.activations(c, X)[2][1], Flux.params(c))
+    @test_nowarn gradient(c -> Flux.activations(c, X)[2][1], c)
 
     c2 = Chain(enc = c[1], dec = c[2])
     @test Flux.activations(c, X) == Flux.activations(c2, X)
-    @test_nowarn gradient(()->Flux.activations(c2, X)[2][1], Flux.params(c2))
+    @test_nowarn gradient(c -> Flux.activations(c, X)[2][1], c2)
   end
 
   @testset "Dense" begin
@@ -156,9 +158,9 @@ using Flux: activations
       @test mo(input) == target
     end
 
-    @testset "params" begin
+    @testset "trainables" begin
       mo = Maxout(()->Dense(32, 64), 4)
-      ps = Flux.params(mo)
+      ps = Flux.trainables(mo)
       @test length(ps) == 8  #4 alts, each with weight and bias
     end
   end
@@ -196,7 +198,7 @@ using Flux: activations
       x = randn(Float32,11,7)
       b = Flux.Bilinear(11, 11, 3)
       @test size(b(x)) == (3,7)
-      @test_nowarn gs = gradient(() -> sum(abs2.(b(x))), params(b))
+      test_gradients(b, x)
     end
 
     @testset "constructors" begin
@@ -228,17 +230,20 @@ using Flux: activations
     end
 
     @testset "concat size" begin
-      input = randn(10, 2)
+      input = randn32(10, 2)
       @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
       @test size(Parallel(hcat, one = Dense(10, 10), two = identity)(input)) == (10, 4)
     end
 
     @testset "vararg input" begin
-      inputs = randn(10), randn(5), randn(4)
+      inputs = randn32(10), randn32(5), randn32(4)
       @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
       @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
       @test_throws ArgumentError Parallel(+, sin, cos)(1,2,3)  # wrong number of inputs
-      @test Parallel(+, sin, cos)(pi/2) ≈ 1
+      @test Parallel(+, sin, cos)(pi/2) ≈ 1  # one input, several layers
+      @test Parallel(/, abs)(3, -4) ≈ 3/4    # one layer, several inputs
+      @test Parallel(/, abs)((3, -4)) ≈ 3/4
+      @test Parallel(/; f=abs)(3, -4) ≈ 3/4
     end
 
     @testset "named access" begin
@@ -256,9 +261,13 @@ using Flux: activations
     end
 
     @testset "trivial cases" begin
-      @test Parallel(hcat) isa Parallel{typeof(hcat), Tuple{}}  # not a NamedTuple
-      @test Parallel(hcat)(1) == hcat()
-      @test Parallel(hcat, inv)(2) == hcat(1/2)  # still calls connection once.
+      # zero inputs, always an error
+      @test_throws ArgumentError Parallel(hcat)()
+      @test_throws ArgumentError Parallel(hcat, inv)()
+      @test_throws ArgumentError Parallel(hcat, inv, sqrt)()
+
+      # zero layers -- not useful... now made an error
+      @test_throws ArgumentError Parallel(hcat)
     end
 
     @testset "connection is called once" begin
@@ -270,6 +279,8 @@ using Flux: activations
       @test CNT[] == 2
       Parallel(f_cnt, sin)(1)
       @test CNT[] == 3
+      Parallel(f_cnt, sin)(1,2,3)
+      @test CNT[] == 4
     end
 
     # Ref https://github.com/FluxML/Flux.jl/issues/1673
@@ -436,16 +447,15 @@ end
 @testset "gradients of Chain{Vector}" begin
   m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
   m1v = Chain([m1[1], m1[2]])
-  @test sum(length, params(m1)) == sum(length, params(m1v))
+  @test sum(length, Flux.trainables(m1)) == sum(length, Flux.trainables(m1v))
 
   x1 = randn(Float32,3,5)
   @test m1(x1) ≈ m1v(x1)
 
   y1 = rand(Bool,2,5)
-  g1 = gradient(() -> Flux.Losses.logitcrossentropy(m1(x1), y1), params(m1))
-  g1v = gradient(() -> Flux.Losses.logitcrossentropy(m1v(x1), y1), params(m1v))
-  @test g1[m1[1].weight] ≈ g1v[m1v[1].weight]
-  @test g1[m1[2].bias] ≈ g1v[m1v[2].bias]
+  g1 = gradient(m1 -> Flux.logitcrossentropy(m1(x1), y1), m1)[1]
+  g1v = gradient(m1v -> Flux.logitcrossentropy(m1v(x1), y1), m1v)[1]
+  check_equal_leaves(g1, g1v)
 
   @test Flux.destructure(m1)[1] ≈ Flux.destructure(m1v)[1]
   z1 = rand(22);

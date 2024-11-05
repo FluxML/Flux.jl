@@ -1,250 +1,272 @@
-using LinearAlgebra
 
-@testset "RNN gradients-implicit" begin
-    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
-    layer.cell.Wi .= 5.0
-    layer.cell.Wh .= 4.0
-    layer.cell.b .= 0.0f0
-    layer.cell.state0 .= 7.0
-    x = [[2.0f0], [3.0f0]]
-
-    # theoretical primal gradients
-    primal =
-        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
-        x[2] .* layer.cell.Wi
-    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
-    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
-    ∇b = layer.cell.Wh .+ 1
-    ∇state0 = layer.cell.Wh .^ 2
-
-    Flux.reset!(layer)
-    ps = Flux.params(layer)
-    e, g = Flux.withgradient(ps) do
-        out = [layer(xi) for xi in x]
-        sum(out[2])
+@testset "RNNCell" begin
+    function loss1(r, x, h)
+        for x_t in x
+            h = r(x_t, h)
+        end
+        return mean(h.^2)
     end
 
-    @test primal[1] ≈ e
-    @test ∇Wi ≈ g[ps[1]]
-    @test ∇Wh ≈ g[ps[2]]
-    @test ∇b ≈ g[ps[3]]
-    @test ∇state0 ≈ g[ps[4]]
-
-end
-
-@testset "RNN gradients-explicit" begin
-    layer = Flux.Recur(Flux.RNNCell(1, 1, identity))
-    layer.cell.Wi .= 5.0f0
-    layer.cell.Wh .= 4.0f0
-    layer.cell.b .= 0.0f0
-    layer.cell.state0 .= 7.0f0
-    x = [[2.0f0], [3.0f0]]
-
-    # theoretical primal gradients
-    primal =
-        layer.cell.Wh .* (layer.cell.Wh * layer.cell.state0 .+ x[1] .* layer.cell.Wi) .+
-        x[2] .* layer.cell.Wi
-    ∇Wi = x[1] .* layer.cell.Wh .+ x[2]
-    ∇Wh = 2 .* layer.cell.Wh .* layer.cell.state0 .+ x[1] .* layer.cell.Wi
-    ∇b = layer.cell.Wh .+ 1
-    ∇state0 = layer.cell.Wh .^ 2
-
-    Flux.reset!(layer)
-    e, g = Flux.withgradient(layer) do m
-        out = [m(xi) for xi in x]
-        sum(out[2])
+    function loss2(r, x, h)
+        y = [r(x_t, h) for x_t in x]
+        return sum(mean, y)
     end
-    grads = g[1][:cell]
 
-    @test primal[1] ≈ e
-
-    @test_broken ∇Wi ≈ grads[:Wi]
-    @test_broken ∇Wh ≈ grads[:Wh]
-    @test_broken ∇b ≈ grads[:b]
-    @test_broken ∇state0 ≈ grads[:state0]
-end
-
-# Ref FluxML/Flux.jl#1209 1D input
-@testset "BPTT-1D" begin
-  seq = [rand(Float32, 2) for i = 1:3]
-  for r ∈ [RNN,]
-    rnn = r(2 => 3)
-    Flux.reset!(rnn)
-    grads_seq = gradient(Flux.params(rnn)) do
-        sum([rnn(s) for s in seq][3])
+    function loss3(r, x, h)
+        y = []
+        for x_t in x
+            h = r(x_t, h)
+            y = [y..., h]
+        end
+        return sum(mean, y)
     end
-    Flux.reset!(rnn);
-    bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
-                                  tanh.(rnn.cell.Wi * seq[2] + Wh *
-                                        tanh.(rnn.cell.Wi * seq[1] +
-                                            Wh * rnn.cell.state0
-                                        + rnn.cell.b)
-                                  + rnn.cell.b)
-                            + rnn.cell.b)),
-                    rnn.cell.Wh)
-    @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
-  end
-end
 
-# Ref FluxML/Flux.jl#1209 2D input
-@testset "BPTT-2D" begin
-  seq = [rand(Float32, (2, 1)) for i = 1:3]
-  for r ∈ [RNN,]
-    rnn = r(2 => 3)
-    Flux.reset!(rnn)
-    grads_seq = gradient(Flux.params(rnn)) do
-        sum([rnn(s) for s in seq][3])
+    function loss4(r, x, h)
+        y = []
+        for x_t in x
+            h = r(x_t, h)
+            y = vcat(y, [h])
+        end
+        y = stack(y, dims=2) # [D, L] or [D, L, B]
+        return mean(y.^2)
     end
-    Flux.reset!(rnn);
-    bptt = gradient(Wh -> sum(tanh.(rnn.cell.Wi * seq[3] + Wh *
-                                  tanh.(rnn.cell.Wi * seq[2] + Wh *
-                                        tanh.(rnn.cell.Wi * seq[1] +
-                                            Wh * rnn.cell.state0
-                                        + rnn.cell.b)
-                                  + rnn.cell.b)
-                            + rnn.cell.b)),
-                    rnn.cell.Wh)
-    @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
-  end
+
+    r = RNNCell(3 => 5)
+    @test length(Flux.trainables(r)) == 3
+    # An input sequence of length 6 and batch size 4.
+    x = [rand(Float32, 3, 4) for _ in 1:6]
+
+    # Initial State is a single vector
+    h = randn(Float32, 5)
+    test_gradients(r, x, h, loss=loss1) # for loop
+    test_gradients(r, x, h, loss=loss2) # comprehension
+    test_gradients(r, x, h, loss=loss3) # splat
+    test_gradients(r, x, h, loss=loss4) # vcat and stack
+
+    # no initial state same as zero initial state
+    @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
+
+    # Now initial state has a batch dimension.
+    h = randn(Float32, 5, 4)
+    test_gradients(r, x, h, loss=loss4)
+
+    # The input sequence has no batch dimension.
+    x = [rand(Float32, 3) for _ in 1:6]
+    h = randn(Float32, 5)
+    test_gradients(r, x, h, loss=loss4)
+
+    
+    # No Bias 
+    r = RNNCell(3 => 5, bias=false)
+    @test length(Flux.trainables(r)) == 2
+    test_gradients(r, x, h, loss=loss4)
 end
 
-@testset "BPTT-3D" begin
-  seq = rand(Float32, (2, 1, 3))
-  rnn = RNN(2 => 3)
-  Flux.reset!(rnn)
-  grads_seq = gradient(Flux.params(rnn)) do
-    sum(rnn(seq)[:, :, 3])
-  end
-  Flux.reset!(rnn);
-  bptt = gradient(rnn.cell.Wh) do Wh
-    # calculate state 1
-    s1 = tanh.(rnn.cell.Wi * seq[:, :, 1] +
-               Wh * rnn.cell.state0 +
-               rnn.cell.b)
-    #calculate state 2
-    s2 = tanh.(rnn.cell.Wi * seq[:, :, 2] +
-               Wh * s1 +
-               rnn.cell.b)
-    #calculate state 3
-    s3 = tanh.(rnn.cell.Wi * seq[:, :, 3] +
-               Wh * s2 +
-               rnn.cell.b)
-    sum(s3) # loss is sum of state 3
-  end
-  @test grads_seq[rnn.cell.Wh] ≈ bptt[1]
+@testset "RNN" begin
+    struct ModelRNN
+        rnn::RNN
+        h0::AbstractVector
+    end
+
+    Flux.@layer :expand ModelRNN
+
+    (m::ModelRNN)(x) = m.rnn(x, m.h0)
+
+    model = ModelRNN(RNN(2 => 4), zeros(Float32, 4))
+    
+    x = rand(Float32, 2, 3, 1)
+    y = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+    test_gradients(model, x)
+
+    # no initial state same as zero initial state
+    rnn = model.rnn 
+    @test rnn(x) ≈ rnn(x, zeros(Float32, 4))
+
+    x = rand(Float32, 2, 3)
+    y = model(x)
+    @test y isa Array{Float32, 2}
+    @test size(y) == (4, 3)
+    test_gradients(model, x)
 end
 
-@testset "RNN-shapes" begin
-  @testset for R in [RNN, GRU, LSTM, GRUv3]
-    m1 = R(3 => 5)
-    m2 = R(3 => 5)
-    m3 = R(3, 5)  # leave one to test the silently deprecated "," not "=>" notation
-    x1 = rand(Float32, 3)
-    x2 = rand(Float32, 3, 1)
-    x3 = rand(Float32, 3, 1, 2)
-    Flux.reset!(m1)
-    Flux.reset!(m2)
-    Flux.reset!(m3)
-    @test size(m1(x1)) == (5,)
-    @test size(m1(x1)) == (5,) # repeat in case of effect from change in state shape
-    @test size(m2(x2)) == (5, 1)
-    @test size(m2(x2)) == (5, 1)
-    @test size(m3(x3)) == (5, 1, 2)
-    @test size(m3(x3)) == (5, 1, 2)
-  end
+@testset "LSTMCell" begin
+
+    function loss(r, x, hc)
+        h, c = hc
+        h′ = []
+        c′ = []
+        for x_t in x
+            h, c = r(x_t, (h, c))
+            h′ = vcat(h′, [h])
+            c′ = [c′..., c]
+        end
+        hnew = stack(h′, dims=2)
+        cnew = stack(c′, dims=2)
+        return mean(hnew.^2) + mean(cnew.^2)
+    end
+
+    cell = LSTMCell(3 => 5)
+    @test length(Flux.trainables(cell)) == 3
+    x = [rand(Float32, 3, 4) for _ in 1:6]
+    h = zeros(Float32, 5, 4)
+    c = zeros(Float32, 5, 4)
+    hnew, cnew = cell(x[1], (h, c))
+    @test hnew isa Matrix{Float32}
+    @test cnew isa Matrix{Float32}
+    @test size(hnew) == (5, 4)
+    @test size(cnew) == (5, 4)
+    test_gradients(cell, x[1], (h, c), loss = (m, x, hc) -> mean(m(x, hc)[1]))
+    test_gradients(cell, x, (h, c), loss = loss)
+
+    # no initial state same as zero initial state
+    hnew1, cnew1 = cell(x[1])
+    hnew2, cnew2 = cell(x[1], (zeros(Float32, 5), zeros(Float32, 5)))
+    @test hnew1 ≈ hnew2
+    @test cnew1 ≈ cnew2
+
+    # no bias
+    cell = LSTMCell(3 => 5, bias=false)
+    @test length(Flux.trainables(cell)) == 2
 end
 
-@testset "multigate" begin
-  x = rand(6, 5)
-  res, (dx,) = Flux.withgradient(x) do x
-    x1, _, x3 = Flux.multigate(x, 2, Val(3))
-    sum(x1) + sum(x3 .* 2)
-  end
-  @test res == sum(x[1:2, :]) + 2sum(x[5:6, :])
-  @test dx == [ones(2, 5); zeros(2, 5); fill(2, 2, 5)]
+@testset "LSTM" begin
+    struct ModelLSTM
+        lstm::LSTM
+        h0::AbstractVector
+        c0::AbstractVector
+    end
+
+    Flux.@layer :expand ModelLSTM
+
+    (m::ModelLSTM)(x) = m.lstm(x, (m.h0, m.c0))
+
+    model = ModelLSTM(LSTM(2 => 4), zeros(Float32, 4), zeros(Float32, 4))
+    
+    x = rand(Float32, 2, 3, 1)
+    h, c = model(x)
+    @test h isa Array{Float32, 3}
+    @test size(h) == (4, 3, 1)
+    @test c isa Array{Float32, 3}
+    @test size(c) == (4, 3, 1)
+    test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
+
+    x = rand(Float32, 2, 3)
+    h, c = model(x)
+    @test h isa Array{Float32, 2}
+    @test size(h) == (4, 3)
+    @test c isa Array{Float32, 2}
+    @test size(c) == (4, 3)
+    test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
 end
 
-@testset "eachlastdim" begin
-  x = rand(3, 3, 1, 2, 4)
-  @test length(Flux.eachlastdim(x)) == size(x, ndims(x))
-  @test collect(@inferred(Flux.eachlastdim(x))) == collect(eachslice(x; dims=ndims(x)))
-  slicedim = (size(x)[1:end-1]..., 1)
-  res, (dx,) = Flux.withgradient(x) do x
-    x1, _, x3, _ = Flux.eachlastdim(x)
-    sum(x1) + sum(x3 .* 3)
-  end
-  @test res ≈ sum(selectdim(x, ndims(x), 1)) + 3sum(selectdim(x, ndims(x), 3))
-  @test dx ≈ cat(fill(1, slicedim), fill(0, slicedim),
-              fill(3, slicedim), fill(0, slicedim); dims=ndims(x))
+@testset "GRUCell" begin
+    function loss(r, x, h)
+        y = []
+        for x_t in x
+            h = r(x_t, h)
+            y = vcat(y, [h])
+        end
+        y = stack(y, dims=2) # [D, L] or [D, L, B]
+        return mean(y.^2)
+    end
+
+    r = GRUCell(3 => 5)
+    @test length(Flux.trainables(r)) == 3
+    # An input sequence of length 6 and batch size 4.
+    x = [rand(Float32, 3, 4) for _ in 1:6]
+
+    # Initial State is a single vector
+    h = randn(Float32, 5)
+    test_gradients(r, x, h; loss)
+
+    # no initial state same as zero initial state
+    @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
+
+    # Now initial state has a batch dimension.
+    h = randn(Float32, 5, 4)
+    test_gradients(r, x, h; loss)
+
+    # The input sequence has no batch dimension.
+    x = [rand(Float32, 3) for _ in 1:6]
+    h = randn(Float32, 5)
+    test_gradients(r, x, h; loss)
+
+    # No Bias 
+    r = GRUCell(3 => 5, bias=false)
+    @test length(Flux.trainables(r)) == 2
 end
 
-@testset "∇eachlastdim" begin
-    x = rand(3, 3, 1, 2, 4)
-    x_size = size(x)
-    y = collect(eachslice(x; dims=ndims(x)))
-    @test @inferred(Flux.∇eachlastdim(y, x)) == x
-    ZeroTangent = Flux.Zygote.ZeroTangent
-    NoTangent = Flux.Zygote.NoTangent
-    abstract_zeros_vector = [ZeroTangent(), ZeroTangent(), NoTangent(), NoTangent()]
-    @test @inferred(Flux.∇eachlastdim(abstract_zeros_vector, x)) == zeros(size(x))
-    x2 = rand(Float64, x_size[1:end-1])
-    x3 = rand(Float64, x_size[1:end-1])
-    mixed_vector = [ZeroTangent(), x2, x3, ZeroTangent()]
-    @test @inferred(Flux.∇eachlastdim(mixed_vector, x)) ≈ cat(zeros(x_size[1:end-1]), 
-                                                         x2, 
-                                                         x3, 
-                                                         zeros(x_size[1:end-1]); dims=ndims(x))
+@testset "GRU" begin
+    struct ModelGRU
+        gru::GRU
+        h0::AbstractVector
+    end
+
+    Flux.@layer :expand ModelGRU
+
+    (m::ModelGRU)(x) = m.gru(x, m.h0)
+
+    model = ModelGRU(GRU(2 => 4), zeros(Float32, 4))
+
+    x = rand(Float32, 2, 3, 1)
+    y = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+    test_gradients(model, x)
+
+    # no initial state same as zero initial state
+    gru = model.gru
+    @test gru(x) ≈ gru(x, zeros(Float32, 4))
+    
+    # No Bias
+    gru = GRU(2 => 4, bias=false)
+    @test length(Flux.trainables(gru)) == 2
+    test_gradients(gru, x)
 end
 
-@testset "Different Internal Matrix Types" begin
-  R = Flux.Recur(Flux.RNNCell(tanh, rand(5, 3), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))
-  # don't want to pull in SparseArrays just for this test, but there aren't any
-  # non-square structured matrix types in LinearAlgebra. so we will use a different
-  # eltype matrix, which would fail before when `W_i` and `W_h` were required to be the
-  # same type.
-  L = Flux.Recur(Flux.LSTMCell(rand(5*4, 3), rand(1:20, 5*4, 5), rand(5*4), (rand(5, 1), rand(5, 1))))
-  G = Flux.Recur(Flux.GRUCell(rand(5*3, 3), rand(1:20, 5*3, 5), rand(5*3), rand(5, 1)))
-  G3 = Flux.Recur(Flux.GRUv3Cell(rand(5*3, 3), rand(1:20, 5*2, 5), rand(5*3), Tridiagonal(rand(5, 5)), rand(5, 1)))
+@testset "GRUv3Cell" begin 
+    r = GRUv3Cell(3 => 5)
+    @test length(Flux.trainables(r)) == 4
+    x = rand(Float32, 3)
 
-  for m in [R, L, G, G3]
+    # Initial State is a single vector
+    h = randn(Float32, 5)
+    test_gradients(r, x, h)
 
-    x1 = rand(3)
-    x2 = rand(3, 1)
-    x3 = rand(3, 1, 2)
-    Flux.reset!(m)
-    @test size(m(x1)) == (5,)
-    Flux.reset!(m)
-    @test size(m(x1)) == (5,) # repeat in case of effect from change in state shape
-    @test size(m(x2)) == (5, 1)
-    Flux.reset!(m)
-    @test size(m(x2)) == (5, 1)
-    Flux.reset!(m)
-    @test size(m(x3)) == (5, 1, 2)
-    Flux.reset!(m)
-    @test size(m(x3)) == (5, 1, 2)
-  end
+    # no initial state same as zero initial state
+    @test r(x) ≈ r(x, zeros(Float32, 5))
+
+    # Now initial state has a batch dimension.
+    h = randn(Float32, 5, 4)
+    test_gradients(r, x, h)
+
+    # The input sequence has no batch dimension.
+    x = rand(Float32, 3)
+    h = randn(Float32, 5)
+    test_gradients(r, x, h)
 end
 
-@testset "type matching" begin
-  x = rand(Float64, 2, 4)
-  m1 = RNN(2=>3)
-  @test m1(x) isa Matrix{Float32}  # uses _match_eltype, may print a warning
-  @test m1.state isa Matrix{Float32}
-  @test (@inferred m1(x); true)
-  @test Flux.outputsize(m1, size(x)) == size(m1(x))
+@testset "GRUv3" begin
+    struct ModelGRUv3
+        gru::GRUv3
+        h0::AbstractVector
+    end
 
-  m2 = LSTM(2=>3)
-  @test m2(x) isa Matrix{Float32}
-  @test (@inferred m2(x); true)
-  @test Flux.outputsize(m2, size(x)) == size(m2(x))
+    Flux.@layer :expand ModelGRUv3
 
-  m3 = GRU(2=>3)
-  @test m3(x) isa Matrix{Float32}
-  @test (@inferred m3(x); true)
-  @test Flux.outputsize(m3, size(x)) == size(m3(x))
+    (m::ModelGRUv3)(x) = m.gru(x, m.h0)
 
-  m4 = GRUv3(2=>3)
-  @test m4(x) isa Matrix{Float32}
-  @test (@inferred m4(x); true)
-  @test Flux.outputsize(m4, size(x)) == size(m4(x))
+    model = ModelGRUv3(GRUv3(2 => 4), zeros(Float32, 4))
+
+    x = rand(Float32, 2, 3, 1)
+    y = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+    test_gradients(model, x)
+
+    # no initial state same as zero initial state
+    gru = model.gru
+    @test gru(x) ≈ gru(x, zeros(Float32, 4))
 end

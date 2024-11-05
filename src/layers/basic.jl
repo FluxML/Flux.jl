@@ -28,6 +28,20 @@ julia> m2(x) == (m2[:dec] ∘ m2[:enc])(x)
 true
 ```
 
+A chain may be called with multiple arguments, which is equivalent to calling it
+with one tuple of these arguments. Such a tuple is understood by [`Parallel`](@ref)
+to mean the same as several arguments:
+
+```jldoctest
+julia> Chain(println, println)(1, 2, 3)  # three arguments become a tuple
+(1, 2, 3)
+nothing
+
+julia> Chain(x->@show(x), Parallel(+, inv, abs2))(4, 5)  # returns 1/4 + 5^2
+x = (4, 5)
+25.25
+```
+
 For large models, there is a special type-unstable path which can reduce compilation
 times. This can be used by supplying a vector of layers `Chain([layer1, layer2, ...])`.
 This feature is somewhat experimental, beware!
@@ -46,9 +60,10 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
-@layer :expand Chain  # the + opts-in to container-style pretty-printing
+@layer :expand Chain  # the option :expand opts-in to container-style pretty-printing
 
 (c::Chain)(x) = _applychain(c.layers, x)
+(c::Chain)(x, ys...) = _applychain(c.layers, (x, ys...))
 
 @generated function _applychain(layers::Tuple{Vararg{Any,N}}, x) where {N}
   symbols = vcat(:x, [gensym() for _ in 1:N])
@@ -68,6 +83,7 @@ end
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])
 Base.getindex(c::Chain{<:NamedTuple}, i::AbstractArray) =
   Chain(NamedTuple{keys(c)[i]}(Tuple(c.layers)[i]))
+
 function Base.show(io::IO, c::Chain)
   print(io, "Chain(")
   _show_layers(io, c.layers)
@@ -129,25 +145,26 @@ The weight matrix and/or the bias vector (of length `out`) may also be provided 
 
 # Examples
 ```jldoctest
-julia> d = Dense(5 => 2)
+julia> model = Dense(5 => 2)
 Dense(5 => 2)       # 12 parameters
 
-julia> d(rand32(5, 64)) |> size
+julia> model(rand32(5, 64)) |> size
 (2, 64)
 
-julia> d(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
+julia> model(rand32(5, 6, 4, 64)) |> size  # treated as three batch dimensions
 (2, 6, 4, 64)
 
-julia> d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
+julia> model2 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
 Dense(5 => 2, tanh; bias=false)  # 10 parameters
 
-julia> d1(ones(5))
+julia> model2(ones(5))
 2-element Vector{Float64}:
  0.9999092042625951
  0.9999092042625951
 
-julia> Flux.params(d1)  # no trainable bias
-Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])
+julia> Flux.trainables(model2)  # no trainable bias
+1-element Vector{AbstractArray}:
+ [1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]
 ```
 """
 struct Dense{F, M<:AbstractMatrix, B}
@@ -190,8 +207,8 @@ Dense(W::LinearAlgebra.Diagonal, bias = true, σ = identity) =
   Scale(W.diag, bias, σ)
 
 function _size_check(layer, x::AbstractArray, (d, n)::Pair)
-  d > 0 || throw(DimensionMismatch(string("layer ", layer,
-    " expects ndims(input) > ", ndims(x)-d, ", but got ", summary(x))))
+  0 < d <= ndims(x) || throw(DimensionMismatch(string("layer ", layer,
+    " expects ndims(input) >= ", d, ", but got ", summary(x))))
   size(x, d) == n || throw(DimensionMismatch(string("layer ", layer,
     lazy" expects size(input, $d) == $n, but got ", summary(x))))
 end
@@ -218,24 +235,27 @@ Used by [`LayerNorm`](@ref) with `affine=true`.
 julia> a = Flux.Scale(2)
 Scale(2)            # 4 parameters
 
-julia> Flux.params(a)
-Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
+julia> Flux.trainables(a)
+2-element Vector{AbstractArray}:
+ Float32[1.0, 1.0]
+ Float32[0.0, 0.0]
 
 julia> a([1 2 3])
 2×3 Matrix{Float32}:
  1.0  2.0  3.0
  1.0  2.0  3.0
 
-julia> b = Flux.Scale([1 2 3 4], false, abs2)
+julia> b = Flux.Scale(Float32[1 2 3 4], false, abs2)
 Scale(1, 4, abs2; bias=false)  # 4 parameters
 
 julia> b([1, 10])
-2×4 Matrix{Int64}:
-   1    4    9    16
- 100  400  900  1600
+2×4 Matrix{Float32}:
+   1.0    4.0    9.0    16.0
+ 100.0  400.0  900.0  1600.0
 
-julia> Flux.params(b)
-Params([[1 2 3 4]])
+julia> Flux.trainables(b)
+1-element Vector{AbstractArray}:
+ Float32[1.0 2.0 3.0 4.0]
 ```
 """
 struct Scale{F, A<:AbstractArray, B}
@@ -294,7 +314,7 @@ Maxout(
   Dense(5 => 7, tanh),                  # 42 parameters
   Dense(5 => 7, tanh),                  # 42 parameters
   Dense(5 => 7, tanh),                  # 42 parameters
-)                   # Total: 6 arrays, 126 parameters, 888 bytes.
+)                   # Total: 6 arrays, 126 parameters, 816 bytes.
 
 julia> Flux.outputsize(m3, (5, 11))
 (7, 11)
@@ -471,8 +491,11 @@ end
 Create a layer which passes an input array to each path in
 `layers`, before reducing the output with `connection`.
 
-Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
-If called with multiple inputs, one is passed to each layer, thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
+Obeys the similar rules to broadcasting:
+* Called with one input `x`, this is equivalent to `connection([l(x) for l in layers]...)`.
+* With multiple `inputs` and just one layer, it is instead `connection([layer(x) for x in inputs]...)`.
+* With multiple inputs and multiple layers, one input is passed to each layer,
+  thus `Parallel(+, f, g)(x, y) = f(x) + g(y)`.
 
 Like [`Chain`](@ref), its sub-layers may be given names using the keyword constructor.
 These can be accessed by indexing: `m[1] == m[:name]` is the first layer.
@@ -483,6 +506,25 @@ and [`Maxout`](@ref) which reduces by broadcasting `max`.
 # Examples
 
 ```jldoctest
+julia> p = Parallel(+, abs2, sqrt);
+
+julia> p(3, 4)  # == 3^2 + √4, two functions two inputs
+11.0
+
+julia> p((3, 4))  # tuple is always splatted
+11.0
+
+julia> p(4)  # == 4^2 + √4, one input used twice
+18.0
+
+julia> Parallel(hcat, inv)(1, 2, 4)  # one function three inputs
+1×3 Matrix{Float64}:
+ 1.0  0.5  0.25
+```
+
+With Flux layers:
+
+```jldoctest
 julia> model = Chain(Dense(3 => 5),
                      Parallel(vcat, Dense(5 => 4), Chain(Dense(5 => 7), Dense(7 => 4))),
                      Dense(8 => 17));
@@ -490,12 +532,12 @@ julia> model = Chain(Dense(3 => 5),
 julia> model(rand32(3)) |> size
 (17,)
 
-julia> model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
+julia> model2 = Parallel(+; α = Dense(10 => 2, tanh), β = Dense(5 => 2))
 Parallel(
   +,
   α = Dense(10 => 2, tanh),             # 22 parameters
   β = Dense(5 => 2),                    # 12 parameters
-)                   # Total: 4 arrays, 34 parameters, 392 bytes.
+)                   # Total: 4 arrays, 34 parameters, 344 bytes.
 
 julia> model2(rand32(10), rand32(5)) |> size
 (2,)
@@ -512,34 +554,46 @@ struct Parallel{F, T<:Union{Tuple, NamedTuple}}
   layers::T
 end
 
+_ParallelONE{T} = Parallel{T, <:Union{Tuple{Any}, NamedTuple{<:Any, <:Tuple{Any}}}}
+
 Parallel(connection, layers...) = Parallel(connection, layers)
 function Parallel(connection; kw...)
   layers = NamedTuple(kw)
   if :layers in keys(layers) || :connection in keys(layers)
     throw(ArgumentError("a Parallel layer cannot have a named sub-layer called `connection` or `layers`"))
   end
-  isempty(layers) && return Parallel(connection, ())
   Parallel(connection, layers)
 end
+Parallel(connection, layers::Union{Tuple{}, @NamedTuple{}}) =
+    throw(ArgumentError("cannot construct a Parallel layer with no sub-layers"))
 
 @layer :expand Parallel
 
-(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)
-(m::Parallel)(xs::Tuple) = m(xs...)
+(m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)  # one argument
 
 function _parallel_check(layers, xs)
   nl = length(layers)
-  nx = length(xs) 
+  @assert nl > 1  # dispatch handles nl==1 cases
+  nx = length(xs)
   if (nl != nx)
-    throw(ArgumentError(lazy"Parallel with $nl sub-layers can take one input or $nl inputs, but got $nx inputs"))
+    throw(ArgumentError(lazy"Parallel with $nl > 1 sub-layers can take one input or $nl inputs, but got $nx inputs"))
   end
 end
 ChainRulesCore.@non_differentiable _parallel_check(nl, nx)
 
-function (m::Parallel)(xs...)
+function (m::Parallel)(x, ys...)
+  xs = (x, ys...)
   _parallel_check(m.layers, xs)
-  m.connection(map(|>, xs, Tuple(m.layers))...)
+  m.connection(map(|>, xs, Tuple(m.layers))...)  # multiple arguments & multiple layers
 end
+
+(m::_ParallelONE)(x, ys...) =
+  m.connection(map(z -> only(m.layers)(z), (x, ys...))...)  # multiple arguments, one layer
+
+(m::Parallel)(xs::Tuple) = m(xs...)  # tuple is always splatted
+(m::_ParallelONE)(xs::Tuple) = m(xs...)  # solves an ambiguity
+
+(m::Parallel)() = throw(ArgumentError("Parallel layer cannot take 0 inputs"))
 
 Base.getindex(m::Parallel, i) = m.layers[i]
 Base.getindex(m::Parallel, i::AbstractVector) = Parallel(m.connection, m.layers[i])
@@ -770,7 +824,7 @@ The "bag" may equivalently be represented as a `OneHotMatrix`. A collection of t
 or one higher-rank `OneHotArray`, again produce a stack of embeddings. See details below.
 
 # Examples
-```jldoctest
+```jldoctest ebag
 julia> vocab_size = 26;  # embed into 3 dimensions, with non-random vectors:
 
 julia> eb = EmbeddingBag(vocab_size => 3, init=Flux.identity_init(gain=100))
@@ -809,11 +863,11 @@ and a vector `at` stating where to split that up into "bags".
 The first bag starts with `data[at[1]]`, the second at `data[at[2]]`, and so on, 
 with no overlaps and nothing left out (thus it requires `at[1]==1`).
 
-```jldoctest
+```jldoctest ebag
 julia> data = [11, 1, 12, 2, 13, 3, 14];
 
-julia> Flux._splitat(data, [1, 4]) |> println  # internal function, makes data[1:3], data[4:end]
-[[11, 1, 12], [2, 13, 3, 14]]
+julia> data[1:3], data[4:end]
+([11, 1, 12], [2, 13, 3, 14])
 
 julia> eb(data, [1, 4])  # two bags, of 3 and 4 items
 3×2 Matrix{Float32}:
@@ -824,7 +878,7 @@ julia> eb(data, [1, 4])  # two bags, of 3 and 4 items
 
 Finally, each bag may also be also be represented as a [`OneHotMatrix`](@ref OneHotArrays.onehotbatch).
 
-```jldoctest
+```jldoctest ebag
 julia> eb(Flux.onehotbatch("bba", 'a':'z'))  # same as [2,2,1], one bag of 3 items
 3-element Vector{Float32}:
  33.333332
@@ -843,7 +897,7 @@ struct EmbeddingBag{F, W<:AbstractMatrix}
   reduction::F
 end
 
-@functor EmbeddingBag
+@layer EmbeddingBag
 
 EmbeddingBag((in, out)::Pair{<:Integer, <:Integer}, reduction::Function = mean; init = randn32) = EmbeddingBag(init(out, in), reduction)
 EmbeddingBag(weight::AbstractMatrix) = EmbeddingBag(weight, mean)

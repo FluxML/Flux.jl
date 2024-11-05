@@ -54,12 +54,11 @@
   end
 
   @testset "gradient" begin
-    gm, gq = gradient(mha, q) do mha, q
-      y, α = mha(q)
+    function loss(m, q)
+      y, α = m(q)
       return sum(y.^2) + sum(α.^2)
     end
-    check_grad_type(gm, mha)
-    check_grad_type(gq, q)
+    test_gradients(mha, q; loss)
   end
 end
 

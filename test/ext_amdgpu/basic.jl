@@ -1,5 +1,3 @@
-@test Flux.AMDGPU_LOADED[]
-
 @testset "Basic GPU movement" begin
     @test Flux.gpu(rand(Float64, 16)) isa ROCArray{Float32, 1}
     @test Flux.gpu(rand(Float64, 16, 16)) isa ROCArray{Float32, 2}
@@ -19,26 +17,27 @@ end
 end
 
 @testset "Chain of Dense layers" begin
-    m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax) |> f32
+    m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
     x = rand(Float32, 10, 10)
-    gpu_autodiff_test(m, x)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false)
 end
 
 @testset "Convolution" begin
     for conv_type in (Conv, ConvTranspose), nd in 1:3
-        m = conv_type(tuple(fill(2, nd)...), 3 => 4) |> f32
+        m = conv_type(tuple(fill(2, nd)...), 3 => 4)
         x = rand(Float32, fill(10, nd)..., 3, 5)
 
+        md, xd = Flux.gpu.((m, x))
+        y = m(x)
         # Ensure outputs are the same.
-        gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+        @test collect(md(xd)) ≈ y  atol=1f-3
 
         # Gradients are flipped as well.
-        md, xd = Flux.gpu.((m, x))
-        gs = gradient(m -> sum(m(x)), m)
-        gsd = gradient(m -> sum(m(xd)), md)
+        gs = gradient(m -> sum(m(x)), m)[1]
+        gsd = gradient(m -> sum(m(xd)), md)[1]
 
         dims = ntuple(i -> i, ndims(m.weight) - 2)
-        @test reverse(gs[1].weight; dims) ≈ Array(gsd[1].weight) atol=1f-2
+        @test reverse(gs.weight; dims) ≈ Array(gsd.weight) atol=1f-2
 
         # Movement back to CPU flips weights back.
         mh = Flux.cpu(md)
@@ -46,26 +45,53 @@ end
     end
 end
 
+@testset "Convolution with symmetric non-constant padding" begin
+    for conv_type in (Conv, ConvTranspose), nd in 1:3
+        kernel = tuple(fill(2, nd)...)
+        x = rand(Float32, fill(10, nd)..., 3, 5) |> gpu
+
+        pad = ntuple(i -> i, nd)
+        m = conv_type(kernel, 3 => 4, pad=pad) |> gpu
+
+        expanded_pad = ntuple(i -> pad[(i - 1) ÷ 2 + 1], 2 * nd)
+        m_expanded = conv_type(kernel, 3 => 4, pad=expanded_pad) |> gpu
+
+        @test size(m(x)) == size(m_expanded(x))
+    end
+end
+
+@testset "ConvTranspose output padding" begin
+    x = randn(Float32, 10, 11, 3, 2)
+    m = ConvTranspose((3, 5), 3=>6, stride=3, outpad=(1, 0))
+    md, xd = Flux.gpu.((m, x))
+    @test size(m(x)) == size(md(xd))
+
+    x = randn(Float32, 10, 11, 12, 3, 2)
+    m = ConvTranspose((3, 5, 3), 3=>6, stride=3, outpad=(1, 0, 1))
+    md, xd = Flux.gpu.((m, x))
+    @test size(m(x)) == size(md(xd))
+end
+
 @testset "Chain(Conv)" begin
-    m = Chain(Conv((3, 3), 3 => 3)) |> f32
-    x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+    m = Chain(Conv((3, 3), 3 => 3))
+    x = rand(Float32, 5, 5, 3, 2)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false, test_grad_f=false)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
 
-    m = Chain(ConvTranspose((3, 3), 3 => 3)) |> f32
-    x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x; atol=1f-3, checkgrad=false)
+    m = Chain(ConvTranspose((3, 3), 3 => 3))
+    x = rand(Float32, 5, 5, 3, 2)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false, test_grad_f=false)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
 end
 
 @testset "Cross-correlation" begin
-    m = CrossCor((2, 2), 3 => 4) |> f32
-    x = rand(Float32, 10, 10, 3, 2)
-    gpu_autodiff_test(m, x; atol=1f-3)
+    m = CrossCor((2, 2), 3 => 4)
+    x = rand(Float32, 5, 5, 3, 2)
+    test_gradients(m, x, test_gpu=true, compare_finite_diff=false)
 end
 
 @testset "Restructure" begin
@@ -105,7 +131,7 @@ end
     bn = BatchNorm(3, σ)
     for nd in 1:3
         x = rand(Float32, fill(2, nd - 1)..., 3, 4)
-        gpu_autodiff_test(bn, x; atol=1f-3, allow_nothing=true)
+        test_gradients(bn, x; test_gpu=true, compare_finite_diff=false)
     end
 end
 

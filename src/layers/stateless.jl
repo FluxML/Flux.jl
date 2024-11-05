@@ -1,6 +1,6 @@
 
 """
-    normalise(x; dims=ndims(x), eps=1e-5)
+    normalise(x; dims=ndims(x), eps=1f-5)
 
 Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
 Per default, `dims` is the last dimension. 
@@ -34,10 +34,10 @@ julia> isapprox(std(y; dims=1, corrected=false), ones(1, 10), atol=1e-5)
 true
 ```
 """
-@inline function normalise(x::AbstractArray; dims=ndims(x), eps=ofeltype(x, 1e-5), ϵ=nothing)
-  ε = _greek_ascii_depwarn(ϵ => eps, :InstanceNorm, "ϵ" => "eps")
+@inline function normalise(x::AbstractArray; dims=ndims(x), eps=1f-5)
   μ = mean(x, dims=dims)
   σ² = var(x, dims=dims, mean=μ, corrected=false)
+  ε = ofeltype(x, eps)
   return @. (x - μ) / sqrt(σ² + ε^2)
 end
 

@@ -56,7 +56,7 @@ For each `d in data`, first the gradient of the `loss` is computed like this:
     gradient(() -> loss(d...), pars)  # if d isa Tuple
     gradient(() -> loss(d), pars)     # otherwise
 ```
-Here `pars` is produced by calling [`Flux.params`](@ref) on your model.
+Here `pars` is produced by calling `Flux.params` on your model.
 (Or just on the layers you want to train, like `train!(loss, params(model[1:end-2]), data, opt)`.)
 This is the "implicit" style of parameter handling.
 

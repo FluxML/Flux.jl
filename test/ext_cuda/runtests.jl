@@ -7,13 +7,9 @@ using Random, LinearAlgebra, Statistics
 @assert CUDA.functional()
 CUDA.allowscalar(false)
 
-# include("../test_utils.jl")
-include("test_utils.jl")
-
 @testset "get_devices" begin
   include("get_devices.jl")
 end
-
 @testset "cuda" begin
   include("cuda.jl")
 end
@@ -26,8 +22,9 @@ end
 @testset "cudnn" begin
   include("cudnn.jl")
 end
-@testset "curnn" begin
-  include("curnn.jl")
+@testset "Recurrent" begin
+  global BROKEN_TESTS = []
+  include("../ext_common/recurrent_gpu_ad.jl")
 end
 @testset "ctc" begin
   include("ctc.jl")

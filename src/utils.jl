@@ -37,14 +37,10 @@ epseltype(x) = eps(float(eltype(x)))
     rng_from_array(x)
 
 Create an instance of the RNG most appropriate for `x`.
-The current defaults are:
-- `x isa CuArray`: `CUDA.default_rng()`
-- `x isa AbstractArray`: `Random.default_rng()
+As an example, if `x` is a`CuArray`, it will return a `CUDA.default_rng()`.
+If `x` is an `Array` instead, it will return a `Random.default_rng()`.
 """
-rng_from_array(::AbstractArray) = Random.default_rng()
-
-@non_differentiable rng_from_array(::Any)
-
+rng_from_array(x) = MLDataDevices.default_device_rng(MLDataDevices.get_device(x))
 
 """
     glorot_uniform([rng], size...; gain = 1) -> Array
@@ -61,10 +57,10 @@ julia> Flux.glorot_uniform(3, 4) |> summary
 "3×4 Matrix{Float32}"
 
 julia> round.(extrema(Flux.glorot_uniform(10, 100)), digits=3)
-(-0.232f0, 0.234f0)
+(-0.233f0, 0.233f0)
 
 julia> round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
-(-0.233f0, 0.233f0)
+(-0.234f0, 0.233f0)
 
 julia> round.(extrema(Flux.glorot_uniform(100, 100)), digits=3)
 (-0.173f0, 0.173f0)
@@ -109,7 +105,7 @@ julia> round(std(Flux.glorot_normal(10, 1000)), digits=3)
 0.044f0
 
 julia> round(std(Flux.glorot_normal(1000, 10)), digits=3)
-0.044f0
+0.045f0
 
 julia> round(std(Flux.glorot_normal(1000, 1000)), digits=3)
 0.032f0
@@ -146,10 +142,10 @@ This method is described in [1] and also known as He initialization.
 # Examples
 ```jldoctest; setup = :(using Random; Random.seed!(0))
 julia> round.(extrema(Flux.kaiming_uniform(100, 10)), digits=3)
-(-0.774f0, 0.774f0)
+(-0.774f0, 0.773f0)
 
 julia> round.(extrema(Flux.kaiming_uniform(10, 100)), digits=3)
-(-0.245f0, 0.244f0)
+(-0.243f0, 0.245f0)
 
 julia> round.(extrema(Flux.kaiming_uniform(100, 100)), digits=3)
 (-0.245f0, 0.245f0)
@@ -183,10 +179,10 @@ This method is described in [1] and also known as He initialization.
 julia> using Statistics
 
 julia> round(std(Flux.kaiming_normal(10, 1000)), digits=3)
-0.045f0
+0.044f0
 
 julia> round(std(Flux.kaiming_normal(1000, 10)), digits=3)
-0.447f0
+0.45f0
 
 julia> round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
 0.045f0
@@ -251,6 +247,48 @@ truncated_normal(dims::Integer...; kwargs...) = truncated_normal(default_rng(), 
 truncated_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> truncated_normal(rng, dims...; init_kwargs..., kwargs...)
 
 ChainRulesCore.@non_differentiable truncated_normal(::Any...)
+
+"""
+    lecun_normal([rng], size...) -> Array
+    lecun_normal([rng]; kw...) -> Function
+
+Return an `Array{Float32}` of the given `size` containing random numbers drawn from a truncated normal
+distribution centered on 0 with stddev `sqrt(1 / fan_in)`, where `fan_in` is the number of input units 
+in the weight tensor.
+
+# Examples
+```jldoctest; setup = :(using Random; Random.seed!(0))
+julia> using Statistics
+
+julia> round(std(Flux.lecun_normal(10, 1000)), digits=3)
+0.032f0
+
+julia> round(std(Flux.lecun_normal(1000, 10)), digits=3)
+0.32f0
+
+julia> round(std(Flux.lecun_normal(1000, 1000)), digits=3)
+0.032f0
+
+julia> Dense(10 => 1000, selu; init = Flux.lecun_normal())
+Dense(10 => 1000, selu)  # 11_000 parameters
+
+julia> round(std(ans.weight), digits=3)
+0.313f0
+```
+
+# References
+
+[1] Lecun, Yann, et al. "Efficient backprop." Neural networks: Tricks of the trade. Springer, Berlin, Heidelberg, 2012. 9-48.
+"""
+function lecun_normal(rng::AbstractRNG, dims::Integer...; gain::Real=1)
+  std = Float32(gain)*sqrt(1.0f0 / first(nfan(dims...))) # calculates the standard deviation based on the `fan_in` value
+  return truncated_normal(rng, dims...; mean=0, std=std)
+end
+
+lecun_normal(dims::Integer...; kwargs...) = lecun_normal(default_rng(), dims...; kwargs...)
+lecun_normal(rng::AbstractRNG=default_rng(); init_kwargs...) = (dims...; kwargs...) -> lecun_normal(rng, dims...; init_kwargs..., kwargs...)
+
+ChainRulesCore.@non_differentiable lecun_normal(::Any...)
 
 """
     orthogonal([rng], size...; gain = 1) -> Array
@@ -590,7 +628,7 @@ Chain(
   ),
   Dense(64 => 10),                      # 650 parameters
 )         # Total: 6 trainable arrays, 51_018 parameters,
-          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB.
+          # plus 2 non-trainable, 128 parameters, summarysize 200.211 KiB.
 
 julia> Flux.modules(m2)
 7-element Vector{Any}:

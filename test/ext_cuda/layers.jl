@@ -10,74 +10,30 @@
   @test gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
 end
 
-# TODO: These layers get into scalar indexing issues.
-const BROKEN_LAYERS = Union{}
 
-const ACTIVATIONS = [identity, relu, tanh,
-                     sigmoid, exp, softplus,
-                     elu, selu]
+const ACTIVATIONS = [identity, tanh]
 
-function gpu_gradtest(name::String, layers::Vector, x_cpu = nothing, args...; test_cpu = true)
-  isnothing(x_cpu) && error("Missing input to test the layers against.")
+function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; 
+    test_mode=false, test_grad_x=true, 
+    atol=1e-4, rtol=1e-4)
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer Layer GPU grad test" begin
 
         # compute output and grad of parameters
         l_cpu = layer(args...)
-        ps_cpu = Flux.params(l_cpu)
-        y_cpu, back_cpu = pullback(() -> sum(l_cpu(x_cpu)), ps_cpu)
-        gs_cpu = back_cpu(1f0)
-
-        x_gpu = gpu(x_cpu)
-        l_gpu = l_cpu |> gpu
-        ps_gpu = Flux.params(l_gpu)
-
-        if typeof(l_gpu) <: BROKEN_LAYERS
-          @test_broken gradient(() -> sum(l_gpu(x_gpu)), ps_gpu) isa Flux.Zygote.Grads
-        else
-          y_gpu, back_gpu = pullback(() -> sum(l_gpu(x_gpu)), ps_gpu)
-          gs_gpu = back_gpu(1f0) # TODO many layers error out when backprop int 1, should fix
-
-          # compute grad of input
-          xg_cpu = gradient(x -> sum(l_cpu(x)), x_cpu)[1]
-          xg_gpu = gradient(x -> sum(l_gpu(x)), x_gpu)[1]
-
-          # test
-          if test_cpu
-            if layer === GroupedConvTranspose
-              @test y_gpu ≈ y_cpu rtol=1f-2 atol=1f-3
-            else
-              @test y_gpu ≈ y_cpu rtol=1f-3 atol=1f-3
-            end
-            if isnothing(xg_cpu)
-              @test isnothing(xg_gpu)
-            else
-              if layer === GroupedConvTranspose
-                @test Array(xg_gpu) ≈ xg_cpu rtol = 2f-2 atol = 1f-3
-              else
-                @test Array(xg_gpu) ≈ xg_cpu rtol = 1f-3 atol = 1f-3
-              end
-            end
-          end
-          @test gs_gpu isa Flux.Zygote.Grads
-          for (p_cpu, p_gpu) in zip(ps_cpu, ps_gpu)
-            if isnothing(gs_cpu[p_cpu])
-              @test isnothing(gs_gpu[p_gpu])
-            else
-              @test gs_gpu[p_gpu] isa CuArray
-              if test_cpu
-                @test Array(gs_gpu[p_gpu]) ≈ gs_cpu[p_cpu] rtol=1f-3 atol=1f-3
-              end
-            end
-          end
+        if test_mode
+          testmode!(l_cpu)
         end
+
+        test_gradients(l_cpu, x_cpu; test_gpu=true, compare_finite_diff=false, test_grad_x, atol, rtol)
       end
     end
   end
 end
 
 # Just to give testset in gpu_gradtest meaningful labels
+BatchNormNoTrackStats(args...) = BatchNorm(args...; track_stats = false)
 ConvNoBias(args...) = Conv(args...; bias = false)
 ConvTransposeNoBias(args...) = ConvTranspose(args...; bias = false)
 CrossCorNoBias(args...) = CrossCor(args...; bias = false)
@@ -91,20 +47,24 @@ for act in ACTIVATIONS
                  ConvTranspose, ConvTransposeNoBias,
                  CrossCor, CrossCorNoBias,
                  DepthwiseConv, DepthwiseConvNoBias]
-  gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act, test_cpu = false)
+  gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act)
 
   groupedconv = [GroupedConv, GroupedConvTranspose]
-  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act, test_cpu = true)
+  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act)
 
-  batch_norm = [BatchNorm]
-  gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, test_cpu = false) #TODO fix errors
-  gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, test_cpu = false)
+  batch_norm = [BatchNorm, BatchNormNoTrackStats]
+  gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, atol=1e-3)
+  gpu_gradtest("BatchNorm 2 with $act", batch_norm, rand(Float32, 5,4), 5, act, atol=1e-3)
+
+  batch_norm = [BatchNormNoTrackStats]
+  gpu_gradtest("BatchNorm 3 with $act (test mode)", batch_norm, rand(Float32, 5,4), 5, act, 
+    test_mode=true, atol=1e-3)
 
   instancenorm = [InstanceNorm]
-  gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act, test_cpu = false)
+  gpu_gradtest("InstanceNorm with $act", instancenorm, r, 1, act)
 
   groupnorm = [GroupNorm]
-  gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act, test_cpu = false)
+  gpu_gradtest("GroupNorm with $act", groupnorm, rand(Float32, 28,28,3,1), 3, 1, act)
 end
 
 r = rand(Float32, 28, 28, 1, 1)
@@ -113,13 +73,13 @@ pooling_layers = [MaxPool, MeanPool]
 gpu_gradtest("Pooling", pooling_layers, r, (2,2))
 
 adaptive_pooling_layers = [AdaptiveMaxPool, AdaptiveMeanPool]
-gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7), test_cpu = false)
+gpu_gradtest("AdaptivePooling", adaptive_pooling_layers, r, (7,7))
 
 dropout_layers = [Dropout, AlphaDropout]
-gpu_gradtest("Dropout", dropout_layers, r, 0.5f0; test_cpu = false) # dropout is not deterministic
+gpu_gradtest("Dropout", dropout_layers, r, 1e-6) # dropout is not deterministic
 
 layer_norm = [LayerNorm]
-gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 28, test_cpu = false) #TODO fix errors
+gpu_gradtest("LayerNorm 1", layer_norm, rand(Float32, 28,28,3,4), 28)
 gpu_gradtest("LayerNorm 2", layer_norm, rand(Float32, 5,4), 5)
 
 upsample = [x -> Upsample(scale=x)]
@@ -131,32 +91,27 @@ gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
 gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
 
 embedding = [Flux.Embedding]
-gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2)
-gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2)
-gpu_gradtest("Embedding integer index", embedding, 1, 5, 2)
-gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2)
-gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2)
-gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2)
-gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
+gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding integer index", embedding, 1, 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2, test_grad_x=false)
 
 @testset "function layers" begin
-  x = rand(Float32, 3,3)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=1)), x)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x; dims=2)), x)
-  gpu_autodiff_test(x -> sum(Flux.normalise(x)), x)
+  x = rand(Float32, 3, 3)
+  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, compare_finite_diff=false)
+  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x, test_gpu=true, compare_finite_diff=false)
+  test_gradients(x -> sum(Flux.normalise(x)), x, test_gpu=true, compare_finite_diff=false)
 end
 
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
   l = cl((2,2), 1=>3, bias = false) |> gpu
   ip = zeros(Float32, 28,28,1,1) |> gpu
-  if typeof(l) <: BROKEN_LAYERS
-    @test_broken sum(l(ip)) ≈ 0.f0
-    @test_broken gradient(() -> sum(l(ip)), Flux.params(l)) isa Flux.Zygote.Grads
-  else
-    @test sum(l(ip)) ≈ 0.f0
-    gs = gradient(() -> sum(l(ip)), Flux.params(l))
-    @test l.bias ∉ gs.params
-  end
+  @test sum(l(ip)) ≈ 0.f0
+  gs = gradient(l -> sum(l(ip)), l)[1]
+  @test gs.bias === nothing
 end
 
 @testset "Dense without bias" begin
@@ -164,8 +119,8 @@ end
   ip = zeros(Float32, 3, 7) |> gpu
 
   @test sum(l(ip)) ≈ 0.f0
-  gs = gradient(() -> sum(l(ip)), Flux.params(l))
-  @test l.bias ∉ gs.params
+  gs = gradient(l -> sum(l(ip)), l)[1]
+  @test gs.bias === nothing
 end
 
 @testset "Extended BatchNorm" begin
@@ -178,13 +133,13 @@ end
   μ_cpu = copy(m_cpu.μ)
   m_cpu(x_cpu)
   @test m_cpu.μ ≈ μ_cpu
-  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  gradient(m_cpu -> sum(m_cpu(x_cpu)), m_cpu)
   @test !(m_cpu.μ ≈ μ_cpu)
 
   μ_gpu = copy(m_gpu.μ)
   m_gpu(x_gpu)
   @test m_gpu.μ ≈ μ_gpu
-  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
 
   @test Array(m_gpu.μ) ≈ m_cpu.μ
@@ -194,14 +149,14 @@ end
   μ_cpu = copy(m_cpu.μ)
   m_cpu(x_cpu)
   @test m_cpu.μ ≈ μ_cpu
-  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  gradient(m_cpu -> sum(m_cpu(x_cpu)), m_cpu)
   @test m_cpu.μ ≈ μ_cpu
 
   testmode!(m_gpu)
   μ_gpu = copy(m_gpu.μ)
   m_gpu(x_gpu)
   @test m_gpu.μ ≈ μ_gpu
-  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test m_gpu.μ ≈ μ_gpu
 
   ## In trainmode, always track statistics
@@ -210,7 +165,7 @@ end
   m_cpu(x_cpu)
   @test !(m_cpu.μ ≈ μ_cpu)
   μ_cpu = copy(m_cpu.μ)
-  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  gradient(m_cpu -> sum(m_cpu(x_cpu)), m_cpu)
   @test !(m_cpu.μ ≈ μ_cpu)
 
   trainmode!(m_gpu)
@@ -218,44 +173,28 @@ end
   m_gpu(x_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
   μ_gpu = copy(m_gpu.μ)
-  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
-
-  ## No errors if input type mistmatch
-  # x_cpu = rand(Float64, 3, 2, 2)
-  # x_gpu = x_cpu |> gpu
-  # m_cpu(x_cpu)
-  # gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
-  # m_gpu(x_gpu)
-  # gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
 end
 
 @testset "Two-streams Bilinear" begin
   x = zeros(Float32,10,9) |> gpu
   y = zeros(Float32,2,9) |> gpu
   b = Flux.Bilinear(10, 2, 3) |> gpu
-  @test size(b(x,y)) == (3,9)
-  @test sum(abs2, b(x,y)) ≈ 0f0
-  gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
-  b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
-  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
-  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
-    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
-  end
+  @test size(b(x, y)) == (3,9)
+  @test sum(abs2, b(x, y)) ≈ 0f0
+  test_gradients(b |> cpu, x |> cpu, y |> cpu, 
+    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
 end
 
 @testset "Two-streams Bilinear" begin
   x = zeros(Float32,10,9) |> gpu
   y = zeros(Float32,2,9) |> gpu
   b = Flux.Bilinear(10, 2, 3) |> gpu
-  @test size(b(x,y)) == (3,9)
-  @test sum(abs2, b(x,y)) ≈ 0f0
-  gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
-  b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
-  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
-  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
-    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
-  end
+  @test size(b(x, y)) == (3,9)
+  @test sum(abs2, b(x, y)) ≈ 0f0
+  test_gradients(b |> cpu, x |> cpu, y |> cpu, 
+    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
 end
 
 @testset "Parallel" begin
@@ -273,25 +212,19 @@ end
   end
 
   @testset "gradient" begin
-    input_cpu = randn(10, 10, 10, 10)
-    input_gpu = input_cpu |> gpu
     layer_cpu = Parallel(+, x -> zero(x), identity)
-    layer_gpu = layer_cpu |> gpu
-    gs_cpu = gradient(() -> sum(abs2.(layer_cpu(input_cpu))), params(layer_cpu))
-    gs_gpu = gradient(() -> sum(abs2.(layer_gpu(input_gpu))), params(layer_gpu))
-    for (pgpu, pcpu) in zip(params(layer_cpu), params(layer_gpu))
-      @test gs_cpu[pcpu] ≈ gs_gpu[pgpu]
-    end
+    test_gradients(layer_cpu, randn(2, 2, 2, 2), 
+      test_gpu=true, compare_finite_diff=false, loss=(m, x) -> mean(abs2, m(x)))
   end
 end
 
 @testset "Dropout RNGs" begin
   @test_throws ArgumentError Flux.dropout(MersenneTwister(), CUDA.rand(Float32, 2, 3), 0.1)
   @testset for layer in (Dropout, AlphaDropout)
-    m = layer(0.1; rng = MersenneTwister(123))
-    @test_throws ErrorException gpu(m)
-    m = layer(0.1; rng = CUDA.default_rng())
+    m = layer(0.1)
+    @test m.rng === Random.default_rng()
     @test gpu(m).rng isa CUDA.RNG
+    @test cpu(gpu(m)).rng === Random.default_rng()
   end
 end
 
@@ -357,14 +290,10 @@ end
   @test Array(y_gpu) ≈ y_cpu atol=1e-4
   @test Array(α_gpu) ≈ α_cpu atol=1e-4
 
-  gm_cpu, gx_cpu = gradient(mha_cpu, x_cpu) do mha, x
-    y, α = mha(x)
+  function loss(m, x)
+    y, α = m(x)
     return sum(y.^2) + sum(α.^2)
   end
-  gm_gpu, gx_gpu = gradient(mha_gpu, x_gpu) do mha, x
-    y, α = mha(x)
-    return sum(y.^2) + sum(α.^2)
-  end
-  check_grad(gm_gpu, gm_cpu)
-  check_grad(gx_gpu, gx_cpu)
+  test_gradients(mha_cpu, x_cpu; loss, 
+    test_gpu=true, compare_finite_diff=false)
 end

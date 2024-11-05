@@ -43,7 +43,7 @@ Trio(
   Dense(2 => 1, tanh),                  # 3 parameters
   Dense(1 => 1; bias=false),            # 1 parameters
   Dropout(0.4),
-)                   # Total: 3 arrays, 4 parameters, 224 bytes.
+)                   # Total: 3 arrays, 4 parameters, 240 bytes.
 ```
 
 """
