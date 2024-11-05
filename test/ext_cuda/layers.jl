@@ -110,8 +110,8 @@ end
   l = cl((2,2), 1=>3, bias = false) |> gpu
   ip = zeros(Float32, 28,28,1,1) |> gpu
   @test sum(l(ip)) ≈ 0.f0
-  gs = gradient(() -> sum(l(ip)), Flux.params(l))
-  @test l.bias ∉ gs.params
+  gs = gradient(l -> sum(l(ip)), l)[1]
+  @test gs.bias === nothing
 end
 
 @testset "Dense without bias" begin
@@ -119,8 +119,8 @@ end
   ip = zeros(Float32, 3, 7) |> gpu
 
   @test sum(l(ip)) ≈ 0.f0
-  gs = gradient(() -> sum(l(ip)), Flux.params(l))
-  @test l.bias ∉ gs.params
+  gs = gradient(l -> sum(l(ip)), l)[1]
+  @test gs.bias === nothing
 end
 
 @testset "Extended BatchNorm" begin
@@ -133,13 +133,13 @@ end
   μ_cpu = copy(m_cpu.μ)
   m_cpu(x_cpu)
   @test m_cpu.μ ≈ μ_cpu
-  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  gradient(m_cpu -> sum(m_cpu(x_cpu)), m_cpu)
   @test !(m_cpu.μ ≈ μ_cpu)
 
   μ_gpu = copy(m_gpu.μ)
   m_gpu(x_gpu)
   @test m_gpu.μ ≈ μ_gpu
-  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
 
   @test Array(m_gpu.μ) ≈ m_cpu.μ
@@ -149,14 +149,14 @@ end
   μ_cpu = copy(m_cpu.μ)
   m_cpu(x_cpu)
   @test m_cpu.μ ≈ μ_cpu
-  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  gradient(m_cpu -> sum(m_cpu(x_cpu)), m_cpu)
   @test m_cpu.μ ≈ μ_cpu
 
   testmode!(m_gpu)
   μ_gpu = copy(m_gpu.μ)
   m_gpu(x_gpu)
   @test m_gpu.μ ≈ μ_gpu
-  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test m_gpu.μ ≈ μ_gpu
 
   ## In trainmode, always track statistics
@@ -165,7 +165,7 @@ end
   m_cpu(x_cpu)
   @test !(m_cpu.μ ≈ μ_cpu)
   μ_cpu = copy(m_cpu.μ)
-  gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
+  gradient(m_cpu -> sum(m_cpu(x_cpu)), m_cpu)
   @test !(m_cpu.μ ≈ μ_cpu)
 
   trainmode!(m_gpu)
@@ -173,44 +173,28 @@ end
   m_gpu(x_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
   μ_gpu = copy(m_gpu.μ)
-  gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
-
-  ## No errors if input type mistmatch
-  # x_cpu = rand(Float64, 3, 2, 2)
-  # x_gpu = x_cpu |> gpu
-  # m_cpu(x_cpu)
-  # gradient(() -> sum(m_cpu(x_cpu)), Flux.params(m_cpu))
-  # m_gpu(x_gpu)
-  # gradient(() -> sum(m_gpu(x_gpu)), Flux.params(m_gpu))
 end
 
 @testset "Two-streams Bilinear" begin
   x = zeros(Float32,10,9) |> gpu
   y = zeros(Float32,2,9) |> gpu
   b = Flux.Bilinear(10, 2, 3) |> gpu
-  @test size(b(x,y)) == (3,9)
-  @test sum(abs2, b(x,y)) ≈ 0f0
-  gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
-  b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
-  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
-  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
-    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
-  end
+  @test size(b(x, y)) == (3,9)
+  @test sum(abs2, b(x, y)) ≈ 0f0
+  test_gradients(b |> cpu, x |> cpu, y |> cpu, 
+    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
 end
 
 @testset "Two-streams Bilinear" begin
   x = zeros(Float32,10,9) |> gpu
   y = zeros(Float32,2,9) |> gpu
   b = Flux.Bilinear(10, 2, 3) |> gpu
-  @test size(b(x,y)) == (3,9)
-  @test sum(abs2, b(x,y)) ≈ 0f0
-  gs_gpu = gradient(() -> sum(abs2.(b(x, y))), params(b))
-  b_cpu, x_cpu, y_cpu = b |> cpu, x |> cpu, y |> cpu
-  gs_cpu = gradient(() -> sum(abs2.(b_cpu(x_cpu, y_cpu))), params(b_cpu))
-  for (pgpu, pcpu) in zip(params(b), params(b_cpu))
-    @test gs_cpu[pcpu] ≈ Array(gs_gpu[pgpu])
-  end
+  @test size(b(x, y)) == (3,9)
+  @test sum(abs2, b(x, y)) ≈ 0f0
+  test_gradients(b |> cpu, x |> cpu, y |> cpu, 
+    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
 end
 
 @testset "Parallel" begin
@@ -228,15 +212,9 @@ end
   end
 
   @testset "gradient" begin
-    input_cpu = randn(10, 10, 10, 10)
-    input_gpu = input_cpu |> gpu
     layer_cpu = Parallel(+, x -> zero(x), identity)
-    layer_gpu = layer_cpu |> gpu
-    gs_cpu = gradient(() -> sum(abs2.(layer_cpu(input_cpu))), params(layer_cpu))
-    gs_gpu = gradient(() -> sum(abs2.(layer_gpu(input_gpu))), params(layer_gpu))
-    for (pgpu, pcpu) in zip(params(layer_cpu), params(layer_gpu))
-      @test gs_cpu[pcpu] ≈ gs_gpu[pgpu]
-    end
+    test_gradients(layer_cpu, randn(2, 2, 2, 2), 
+      test_gpu=true, compare_finite_diff=false, loss=(m, x) -> mean(abs2, m(x)))
   end
 end
 

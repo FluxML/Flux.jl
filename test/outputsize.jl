@@ -248,7 +248,7 @@ end
   @test string(ld) == "LazyLayer(Dense(2 => 3, relu))"
   @test Flux.striplazy(ld) isa Dense
 
-  @test_throws Exception Flux.params(lm)
+  @test_throws Exception Flux.trainables(lm)
   @test_throws Exception gradient(x -> sum(abs2, lm(x)), [1,2])
   @test_throws Exception gradient(m -> sum(abs2, Flux.striplazy(m)([1,2])), ld)
   

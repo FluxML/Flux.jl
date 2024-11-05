@@ -41,31 +41,40 @@ train!(loss, ps::Params, data, opt::Optimisers.AbstractRule; cb=nothing) = error
   """)
 
 train!(loss, model, data, opt::Optimise.AbstractOptimiser; cb=nothing) =
-  train!(loss, model, data, _old_to_new(opt); cb)
+  train!(loss, model, data, __old_to_new(opt); cb)
 
 # Next, to use the new `setup` with the still-exported old-style `Adam` etc:
 import .Train: setup
-setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
+setup(rule::Optimise.AbstractOptimiser, model) = setup(__old_to_new(rule), model)
 # ... and allow accidental use of `Optimisers.setup` to do the same:
-Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = setup(_old_to_new(rule), model)
+Optimisers.setup(rule::Optimise.AbstractOptimiser, model) = setup(__old_to_new(rule), model)
+
+
+function __old_to_new(rule)
+  Base.depwarn("""Optimisers from  Flux.Optimise module are deprecated. 
+                   Use optimisers from Optimisers.jl instead.""", :__old_to_new)
+  return _old_to_new(rule)
+end
 
 for T in [:Descent, :Adam, :Momentum, :Nesterov,
    	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief,
    	      # :InvDecay, :ExpDecay, 
           :SignDecay,
           ]
-  @eval function _old_to_new(rule::$T)
+  @eval function _old_to_new(rule::Optimise.$T)
     args = map(f -> getfield(rule, f), fieldnames(Optimisers.$T))
     Optimisers.$T(args...)
   end
 end
-_old_to_new(rule::Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
-const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
-_old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called lambda now
-_old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
-_old_to_new(rule::ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
-const ClipGrad = Optimise.ClipValue
-_old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
+_old_to_new(rule::Optimise.Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
+# const OptimiserChain = Optimise.Optimiser  # lets you use new name with implicit params too.
+const Optimiser = Optimisers.OptimiserChain
+_old_to_new(rule::Optimise.WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called lambda now
+_old_to_new(rule::Optimise.ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
+_old_to_new(rule::Optimise.ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
+# const ClipGrad = Optimise.ClipValue
+const ClipValue = Optimisers.ClipGrad
+_old_to_new(rule::Optimise.RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred
 
 _old_to_new(rule) = error("Flux.setup does not know how to translate this old-style implicit rule to a new-style Optimisers.jl explicit rule")
 
@@ -83,8 +92,21 @@ function update!(opt::Optimise.AbstractOptimiser, model, grad)
   # to accept only arrays. Remove if this causes problems!
   # update!(opt::Flux.Optimise.AbstractOptimiser, x::AbstractArray, x̄)
   error("""Invalid input to `update!`.
-    * For the implicit style, this needs `update(::AbstractOptimiser, ::Params, ::Grads)`
-    * For the explicit style, `update(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    * For the implicit style, this needs `update!(::AbstractOptimiser, ::Params, ::Grads)`
+    * For the explicit style, `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    """)
+end
+
+# TODO this friendly error should go in Optimisers.jl.
+# remove after https://github.com/FluxML/Optimisers.jl/pull/181
+function update!(opt::Optimisers.AbstractRule, model, grad)
+  error("""Invalid input to `update!`.
+     `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
+    """)
+end
+function update!(opt::Optimisers.AbstractRule, model::Chain, grad::Tuple)
+  error("""Invalid input to `update!`.
+     `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
     """)
 end
 
