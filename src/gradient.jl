@@ -14,14 +14,14 @@ See also [`withgradient`](@ref) to keep the value `f(args...)`.
 
 # Examples
 
-```jldoctest; setup=:(using Zygote)
-julia> gradient(*, 2.0, 3.0, 5.0)
+```
+julia> Flux.gradient(*, 2.0, 3.0, 5.0)
 (15.0, 10.0, 6.0)
 
-julia> gradient(x -> sum(abs2,x), [7.0, 11.0, 13.0])
+julia> Flux.gradient(x -> sum(abs2,x), [7.0, 11.0, 13.0])
 ([14.0, 22.0, 26.0],)
 
-julia> gradient([7, 11], 0, 1) do x, y, d
+julia> Flux.gradient([7, 11], 0, 1) do x, y, d
          p = size(x, d)
          sum(x.^p .+ y)
        end
@@ -110,7 +110,7 @@ By default, `Flux.withgradient` calls Zygote. If you load Enzyme, then other met
 
 # Example
 
-```jldoctest; setup=:(using Zygote)
+```
 julia> y, ∇ = withgradient(/, 1, 2)
 (val = 0.5, grad = (0.5, -0.25))
 

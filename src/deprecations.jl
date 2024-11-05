@@ -187,13 +187,13 @@ const FluxMetalAdaptor = MetalDevice
 function gradient(f, p::Zygote.Params)
   Base.depwarn("""Implicit gradients such as `gradient(f, ::Params)` are deprecated!
     Please see the docs for new explicit form.""", :gradient)
-  Zygote.gradient(f, args...)
+  Zygote.gradient(f, p)
 end
 
 function withgradient(f, p::Zygote.Params)
   Base.depwarn("""Implicit gradients such as `withgradient(f, ::Params)` are deprecated!
     Please see the docs for new explicit form.""", :withgradient)
-  Zygote.withgradient(f, args...)
+  Zygote.withgradient(f, p)
 end
 
 # v0.15 deprecations
