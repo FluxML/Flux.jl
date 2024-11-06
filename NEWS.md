@@ -11,6 +11,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 * The `Flux.Optimise` module has been deprecated in favor of the Optimisers.jl package.
   Now Flux re-exports the optimisers from Optimisers.jl. Most users will be uneffected by this change.
   The module is still available for now, but will be removed in a future release.
+* Most Flux layers will [re-use memory via `NNlib.bias_act!`](https://github.com/FluxML/Flux.jl/pull/2327), when possible.
 
 ## v0.14.22
 * Data movement between devices is now provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl).
