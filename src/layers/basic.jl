@@ -187,7 +187,7 @@ end
 function (a::Dense)(x::AbstractVecOrMat)
   _size_check(a, x, 1 => size(a.weight, 2))
   xT = _match_eltype(a, x)  # fixes Float64 input, etc.
-  NNlib.bias_act!(a.σ, a.weight * xT, a.bias)  # does σ.(W*x .+ b), with fast paths
+  return NNlib.bias_act!(a.σ, a.weight * xT, a.bias)  # does σ.(W*x .+ b), with fast paths
 end
 
 function (a::Dense)(x::AbstractArray)
