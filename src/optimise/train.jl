@@ -1,3 +1,27 @@
+<<<<<<< HEAD
+=======
+using ProgressLogging: @progress, @withprogress, @logprogress
+import Zygote: Params, gradient, withgradient
+
+# Flux 0.13 and 0.14 used Optimisers.jl's function, but Flux 0.15 owns it:
+# import Optimisers.update!
+function update! end
+
+"""
+    update!(opt, p, g)
+    update!(opt, ps::Params, gs)
+
+Perform an update step of the parameters `ps` (or the single parameter `p`)
+according to optimiser `opt::AbstractOptimiser`  and the gradients `gs` (the gradient `g`).
+
+As a result, the parameters are mutated and the optimiser's internal state may change.
+The gradient could be mutated as well.
+
+!!! compat "Deprecated"
+    This method for implicit `Params` (and `AbstractOptimiser`) will be removed from Flux 0.15.
+    The explicit method `update!(opt, model, grad)` from Optimisers.jl will remain.
+"""
+>>>>>>> 1466ba36 (let Flux own the function update! to avoid piracy)
 function update!(opt::AbstractOptimiser, x::AbstractArray, x̄)
   x̄r = copyto!(similar(x̄), x̄)  # Flux.Optimise assumes it can mutate the gradient. This is not
                                # safe due to aliasing, nor guaranteed to be possible, e.g. Fill.

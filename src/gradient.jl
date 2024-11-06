@@ -62,6 +62,7 @@ With the keyword `zero=false`, the new gradient will instead be added to what is
 
 !!! warning "Experimental"
     Enzyme support like this is new and somewhat experimental.
+    This method was added in Flux 0.15.
 
 # Example
 ```
@@ -168,6 +169,10 @@ but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
 Only available when Enzyme is loaded!
 
 Does not at present allow `f` to return a tuple of `(loss, aux)` the way `Zygote.withgradient` does.
+
+!!! warning "Experimental"
+    Enzyme support like this is new and somewhat experimental.
+    This method was added in Flux 0.15.
 
 # Example
 

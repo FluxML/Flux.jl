@@ -7,12 +7,15 @@ using ..Flux: Flux
 
 using ProgressLogging: @progress, @withprogress, @logprogress
 using Zygote: Zygote
+import ..Flux.Optimise: train!, update!, Optimise  # during 0.13, we add methods to the old functions
 
-export setup, train!
+using ..Flux: Flux # used only in docstring
+
+export setup, train!, update!
 
 using ProgressLogging: @progress, @withprogress, @logprogress
 using Zygote: Zygote, Params
-using EnzymeCore: Duplicated
+using EnzymeCore: EnzymeCore, Duplicated, Const
 
 """
     opt_state = setup(rule, model)
@@ -170,5 +173,101 @@ end
 function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing)
   train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
+
+""""
+    update!(opt_state, model, grad)
+
+Uses the optimiser and the gradient to change the trainable parameters in the model.
+The optimisers state comes from `setup(rule, model)`, and the gradient from `grad = gradient(loss, model, args...)[1]`.
+
+This is a version of `Optimisers.update!`, which differs in that it returns `nothing`.
+It also differs in having a method which accepts a model and gradient packaged together as `Duplicated(model, grad)`,
+which is convenient for use with Enzyme.
+
+# Example
+
+```jldoctest
+julia> model = Chain(Embedding([1;;2;;3.0;;]), Dense([4;-5.0;;], true, relu))
+Chain(
+  Embedding(3 => 1),                    # 3 parameters
+  Dense(1 => 2, relu),                  # 4 parameters
+)                   # Total: 3 arrays, 7 parameters, 216 bytes.
+
+julia> opt_state = Flux.setup(Momentum(1/9), model)
+(layers = ((weight = Leaf(Momentum(0.111111, 0.9), [0.0 0.0 0.0]),), (weight = Leaf(Momentum(0.111111, 0.9), [0.0; 0.0;;]), bias = Leaf(Momentum(0.111111, 0.9), [0.0, 0.0]), σ = ())),)
+
+julia> val, grads = Flux.withgradient(m -> first(m(2)), model)
+(val = 8.0, grad = ((layers = ((weight = [0.0 4.0 0.0],), (weight = [2.0; 0.0;;], bias = [1.0, 0.0], σ = nothing)),),))
+
+julia> Flux.update!(opt_state, model, grads[1]);
+
+julia> round.(model(2); digits=3)  # has changed! Compare val = 8.0
+2-element Vector{Float64}:
+ 5.765
+ 0.0
+
+julia> opt_state  # has also changed
+(layers = ((weight = Leaf(Momentum(0.111111, 0.9), [0.0 0.444444 0.0]),), (weight = Leaf(Momentum(0.111111, 0.9), [0.222222; 0.0;;]), bias = Leaf(Momentum(0.111111, 0.9), [0.111111, 0.0]), σ = ())),)
+```
+
+"""
+update!(opt_state, model, grad) = Optimisers.update!(opt_state, model, grad)
+
+"""
+    update!(opt_state, model::Duplicated)
+
+Method of `update!` for use with Enzyme, and in particular with `gradient(loss, Duplicated(model))`.
+Since `Duplicated(model)` stores the gradient, `update!` can read it & update the model itself.
+Approximately equivalent to calling `Flux.update!(opt_state, model.val, model.dval)`,
+but more careful about shared parameters.
+
+!!! warning "Experimental"
+    Enzyme support like this is new and somewhat experimental.
+    This method was added in Flux 0.15.
+
+# Example
+
+```julia
+julia> using Flux, Enzyme
+
+julia> dup_model = Chain(Embedding([1;;2;;3.0;;]), Dense([4;-5.0;;], true, relu)) |> Duplicated
+Duplicated(
+  Chain(
+    Embedding(3 => 1),                  # 3 parameters
+    Dense(1 => 2, relu),                # 4 parameters
+  ),
+  # norm(∇) ≈ 0.0
+)                   # Total: 3 arrays, 7 parameters, 216 bytes.
+
+julia> dup_model(2)
+2-element Vector{Float64}:
+ 8.0
+ 0.0
+
+julia> opt_state = Flux.setup(Momentum(1/9), dup_model)
+(layers = ((weight = Leaf(Momentum(0.111111, 0.9), [0.0 0.0 0.0]),), (weight = Leaf(Momentum(0.111111, 0.9), [0.0; 0.0;;]), bias = Leaf(Momentum(0.111111, 0.9), [0.0, 0.0]), σ = ())),)
+
+julia> Flux.gradient(m -> first(m(2)), dup_model);  # updates gradient within Duplicated
+
+julia> Flux.update!(opt_state, dup_model);
+
+julia> round.(dup_model(2); digits=3)  # has changed! Compare val = 8.0
+2-element Vector{Float64}:
+ 5.765
+ 0.0
+
+julia> opt_state  # has also changed
+(layers = ((weight = Leaf(Momentum(0.111111, 0.9), [0.0 0.444444 0.0]),), (weight = Leaf(Momentum(0.111111, 0.9), [0.222222; 0.0;;]), bias = Leaf(Momentum(0.111111, 0.9), [0.111111, 0.0]), σ = ())),)
+```
+"""
+function update!(opt_state, model::Duplicated)
+  update!(opt_state, model.val, _grad_or_nothing(model))
+  model
+end
+
+# This function strips the returned gradient to be Zygote-like:
+_grad_or_nothing(dup::Duplicated) = Flux.fmapstructure(_grad_or_nothing, dup.dval; prune=nothing)
+_grad_or_nothing(::Const) = nothing
+_grad_or_nothing(x) = Optimisers.isnumeric(x) ? x : nothing
 
 end # module Train
