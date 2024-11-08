@@ -3,9 +3,9 @@
 using ProgressLogging: @progress, @withprogress, @logprogress
 import Zygote: Params, gradient, withgradient
 
-# Flux 0.13 and 0.14 used Optimisers.jl's function, but Flux 0.15 owns it:
-# import Optimisers.update!
-function update! end
+# Add methods to Optimisers.jl's function, so that there is just one Flux.update!
+# for both explicit and implicit parameters.
+import Optimisers.update!
 
 """
     update!(opt, p, g)
