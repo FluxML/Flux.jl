@@ -185,14 +185,14 @@ const FluxMetalAdaptor = MetalDevice
 
 # Enable these when 0.16 is released, and delete const ClipGrad = Optimise.ClipValue etc:
 function gradient(f, p::Zygote.Params)
-  Base.depwarn("""Implicit gradients such as `gradient(f, ::Params)` are deprecated!
-    Please see the docs for new explicit form.""", :gradient)
+  Base.depwarn("""Implicit gradients such as `gradient(f, ::Params)` are deprecated in Flux!
+    Please see the docs for new explicit form.""", :gradient; force=true)
   Zygote.gradient(f, p)
 end
 
 function withgradient(f, p::Zygote.Params)
-  Base.depwarn("""Implicit gradients such as `withgradient(f, ::Params)` are deprecated!
-    Please see the docs for new explicit form.""", :withgradient)
+  Base.depwarn("""Implicit gradients such as `withgradient(f, ::Params)` are deprecated in Flux!
+    Please see the docs for new explicit form.""", :withgradient; force=true)
   Zygote.withgradient(f, p)
 end
 
