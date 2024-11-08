@@ -61,24 +61,4 @@ function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
   end
 end
 
-
-### Optimisers.update!, piracy, for now!
-
-"""
-    Flux.update!(opt_state, model::Duplicated)
-
-Method of `update!` for use with Enzyme, and in particular with `gradient(loss, Duplicated(model))`.
-Since `Duplicated(model)` stores the gradient, `update!` can read it & update the model itself,
-by calling `Flux.update!(opt_state, model.val, model.dval)`.
-
-!!! warning "Experimental"
-    Enzyme support like this is new and somewhat experimental.
-    This method is piracy, and must either move to Optimisers.jl
-    or else Flux should own this function, and fall back to Optimisers.
-"""
-function Flux.update!(opt_state, model::Duplicated)
-  Flux.update!(opt_state, model.val, _grad_or_nothing(model))
-  model
-end
-
 end # FluxEnzymeExt
