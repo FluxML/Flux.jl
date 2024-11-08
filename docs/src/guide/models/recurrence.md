@@ -19,7 +19,7 @@ Wxh = randn(Float32, output_size, input_size)
 Whh = randn(Float32, output_size, output_size)
 b = zeros(Float32, output_size)
 
-function rnn_cell(x, h)
+function rnn_cell(h, x)
     h = tanh.(Wxh * x .+ Whh * h .+ b)
     return h
 end

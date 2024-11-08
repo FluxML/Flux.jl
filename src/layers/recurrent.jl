@@ -24,13 +24,13 @@ See [`RNN`](@ref) for a layer that processes entire sequences.
 
 # Forward
 
-    rnncell(x, [h])
+    rnncell([h,] x)
 
 The arguments of the forward pass are:
 
-- `x`: The input to the RNN. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 - `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
        If not provided, it is assumed to be a vector of zeros.
+- `x`: The input to the RNN. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 
 # Examples
 
@@ -48,7 +48,7 @@ h = zeros(Float32, 5)
 ŷ = []
 
 for x_t in x
-  h = r(x_t, h)
+  h = r(h, x_t)
   ŷ = [ŷ..., h] # Cannot use `push!(ŷ, h)` here since mutation 
                 # is not automatic differentiation friendly yet.
                 # Can use `y = vcat(y, [h])` as an alternative.
@@ -76,7 +76,7 @@ end
 
 (m::RNNCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 1)))
 
-function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
+function (m::RNNCell)(h::AbstractVecOrMat, x::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi,2))
   σ = NNlib.fast_act(m.σ, x)
   h = σ.(m.Wi*x .+ m.Wh*h .+ m.bias)
@@ -113,7 +113,7 @@ See [`RNNCell`](@ref) for a layer that processes a single time step.
 
 # Forward
 
-    rnn(x, h)
+    rnn(h, x)
 
 The arguments of the forward pass are:
 
@@ -136,7 +136,7 @@ RNN(
   RNNCell(4 => 6, tanh),                # 66 parameters
 )                   # Total: 3 arrays, 66 parameters, 424 bytes.
 
-julia> y = rnn(x, h);   # [y] = [d_out, len, batch_size]
+julia> y = rnn(h, x);   # [y] = [d_out, len, batch_size]
 ```
 
 Sometimes, the initial hidden state is a learnable parameter. 
@@ -150,7 +150,7 @@ end
 
 Flux.@layer :expand Model
 
-(m::Model)(x) = m.rnn(x, m.h0)
+(m::Model)(x) = m.rnn(m.h0, x)
 
 model = Model(RNN(32 => 64), zeros(Float32, 64))
 ```
@@ -166,15 +166,15 @@ function RNN((in, out)::Pair, σ = tanh; bias = true, init = glorot_uniform)
   return RNN(cell)
 end
 
-(m::RNN)(x) = m(x, zeros_like(x, size(m.cell.Wh, 1)))
+(m::RNN)(x) = m(zeros_like(x, size(m.cell.Wh, 1)), x)
 
-function (m::RNN)(x, h) 
+function (m::RNN)(h, x) 
   @assert ndims(x) == 2 || ndims(x) == 3
   # [x] = [in, L] or [in, L, B]
   # [h] = [out] or [out, B]
   y = []
   for x_t in eachslice(x, dims=2)
-    h = m.cell(x_t, h)
+    h = m.cell(h, x_t)
     # y = [y..., h]
     y = vcat(y, [h])
   end
@@ -210,7 +210,7 @@ See also [`LSTM`](@ref) for a layer that processes entire sequences.
 
 # Forward
 
-    lstmcell(x, (h, c))
+    lstmcell((h, c), x)
     lstmcell(x)
 
 The arguments of the forward pass are:
@@ -233,7 +233,7 @@ julia> c = zeros(Float32, 5); # cell state
 
 julia> x = rand(Float32, 3, 4);  # in x batch_size
 
-julia> h′, c′ = l(x, (h, c));
+julia> h′, c′ = l((h, c), x);
 
 julia> size(h′)  # out x batch_size
 (5, 4)
@@ -258,10 +258,10 @@ end
 function (m::LSTMCell)(x::AbstractVecOrMat)
   h = zeros_like(x, size(m.Wh, 2))
   c = zeros_like(h)
-  return m(x, (h, c))
+  return m((h, c), x)
 end
 
-function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
+function (m::LSTMCell)((h, c), x::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi, 2))
   b = m.bias
   g = m.Wi * x .+ m.Wh * h .+ b
@@ -304,7 +304,7 @@ See [`LSTMCell`](@ref) for a layer that processes a single time step.
 
 # Forward
 
-    lstm(x, (h, c))
+    lstm((h, c), x)
     lstm(x)
 
 The arguments of the forward pass are:
@@ -327,7 +327,7 @@ end
 
 Flux.@layer :expand Model
 
-(m::Model)(x) = m.lstm(x, (m.h0, m.c0))
+(m::Model)(x) = m.lstm((m.h0, m.c0), x)
 
 d_in, d_out, len, batch_size = 2, 3, 4, 5
 x = rand(Float32, (d_in, len, batch_size))
@@ -350,15 +350,15 @@ end
 function (m::LSTM)(x)
   h = zeros_like(x, size(m.cell.Wh, 1))
   c = zeros_like(h)
-  return m(x, (h, c))
+  return m((h, c), x)
 end
 
-function (m::LSTM)(x, (h, c))
+function (m::LSTM)((h, c), x)
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
   c′ = []
   for x_t in eachslice(x, dims=2)
-    h, c = m.cell(x_t, (h, c))
+    h, c = m.cell((h, c), x_t)
     h′ = vcat(h′, [h])
     c′ = vcat(c′, [c])
   end
@@ -393,7 +393,7 @@ See also [`GRU`](@ref) for a layer that processes entire sequences.
 
 # Forward
 
-    grucell(x, h)
+    grucell(h, x)
     grucell(x)
 
 The arguments of the forward pass are:
@@ -413,7 +413,7 @@ julia> h = zeros(Float32, 5); # hidden state
 
 julia> x = rand(Float32, 3, 4);  # in x batch_size
 
-julia> h′ = g(x, h);
+julia> h′ = g(h, x);
 ```
 """
 struct GRUCell{I,H,V}
@@ -431,9 +431,9 @@ function GRUCell((in, out)::Pair; init = glorot_uniform, bias = true)
   return GRUCell(Wi, Wh, b)
 end
 
-(m::GRUCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
+(m::GRUCell)(x::AbstractVecOrMat) = m(zeros_like(x, size(m.Wh, 2)), x)
 
-function (m::GRUCell)(x::AbstractVecOrMat, h)
+function (m::GRUCell)(h, x::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi,2))
   gxs = chunk(m.Wi * x, 3, dims=1)
   ghs = chunk(m.Wh * h, 3, dims=1)
@@ -472,7 +472,7 @@ See [`GRUCell`](@ref) for a layer that processes a single time step.
 
 # Forward
 
-    gru(x, h)
+    gru(h, x)
     gru(x)
 
 The arguments of the forward pass are:
@@ -506,15 +506,15 @@ end
 
 function (m::GRU)(x)
   h = zeros_like(x, size(m.cell.Wh, 2))
-  return m(x, h)
+  return m(h, x)
 end
 
-function (m::GRU)(x, h)
+function (m::GRU)(h, x)
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
   # [x] = [in, L] or [in, L, B]
   for x_t in eachslice(x, dims=2)
-    h = m.cell(x_t, h)
+    h = m.cell(h, x_t)
     h′ = vcat(h′, [h])
   end
   return stack(h′, dims=2)
@@ -548,7 +548,7 @@ See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
 
 # Forward
 
-    gruv3cell(x, h)
+    gruv3cell(h, x)
     gruv3cell(x)
 
 The arguments of the forward pass are:
@@ -575,9 +575,9 @@ function GRUv3Cell((in, out)::Pair; init = glorot_uniform, bias = true)
   return GRUv3Cell(Wi, Wh, b, Wh_h̃)
 end
 
-(m::GRUv3Cell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
+(m::GRUv3Cell)(x::AbstractVecOrMat) = m(zeros_like(x, size(m.Wh, 2)), x)
 
-function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
+function (m::GRUv3Cell)(h, x::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi,2))
   gxs = chunk(m.Wi * x, 3, dims=1)
   ghs = chunk(m.Wh * h, 3, dims=1)
@@ -629,14 +629,14 @@ end
 
 function (m::GRUv3)(x)
   h = zeros_like(x, size(m.cell.Wh, 2))
-  return m(x, h)
+  return m(h, x)
 end
 
-function (m::GRUv3)(x, h)
+function (m::GRUv3)(h, x)
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
   for x_t in eachslice(x, dims=2)
-    h = m.cell(x_t, h)
+    h = m.cell(h, x_t)
     h′ = vcat(h′, [h])
   end
   return stack(h′, dims=2)

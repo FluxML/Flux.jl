@@ -1,9 +1,9 @@
 
 @testset "RNNCell GPU AD" begin
-    function loss(r, x, h)
+    function loss(r, h, x)
         y = []
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
             y = vcat(y, [h])
         end
         # return mean(h)
@@ -18,7 +18,7 @@
     # Single Step
     @test test_gradients(r, x[1], h; test_gpu=true, compare_finite_diff=false) broken = :rnncell_single ∈ BROKEN_TESTS
     # Multiple Steps
-    @test test_gradients(r, x, h; test_gpu=true, compare_finite_diff=false, loss)  broken = :rnncell_multiple ∈ BROKEN_TESTS
+    @test test_gradients(r, h, x; test_gpu=true, compare_finite_diff=false, loss)  broken = :rnncell_multiple ∈ BROKEN_TESTS
 end
 
 @testset "RNN GPU AD" begin
@@ -29,7 +29,7 @@ end
 
     Flux.@layer :expand ModelRNN
 
-    (m::ModelRNN)(x) = m.rnn(x, m.h0)
+    (m::ModelRNN)(x) = m.rnn(m.h0, x)
 
     d_in, d_out, len, batch_size = 2, 3, 4, 5
     model = ModelRNN(RNN(d_in => d_out), zeros(Float32, d_out))
@@ -41,12 +41,12 @@ end
 
 @testset "LSTMCell" begin
 
-    function loss(r, x, hc)
+    function loss(r, hc, x)
         h, c = hc
         h′ = []
         c′ = []
         for x_t in x
-            h, c = r(x_t, (h, c))
+            h, c = r((h, c), x_t)
             h′ = vcat(h′, [h])
             c′ = [c′..., c]
         end
@@ -62,9 +62,9 @@ end
     c = zeros(Float32, d_out)
     # Single Step
     @test test_gradients(cell, x[1], (h, c); test_gpu=true, compare_finite_diff=false,
-        loss = (m, x, (h, c)) -> mean(m(x, (h, c))[1]))  broken = :lstmcell_single ∈ BROKEN_TESTS
+        loss = (m, (h, c), x) -> mean(m((h, c), x)[1]))  broken = :lstmcell_single ∈ BROKEN_TESTS
     # Multiple Steps
-    @test test_gradients(cell, x, (h, c); test_gpu=true, compare_finite_diff=false, loss)  broken = :lstmcell_multiple ∈ BROKEN_TESTS
+    @test test_gradients(cell, (h, c), x; test_gpu=true, compare_finite_diff=false, loss)  broken = :lstmcell_multiple ∈ BROKEN_TESTS
 end
 
 @testset "LSTM" begin
@@ -89,10 +89,10 @@ end
 end
 
 @testset "GRUCell" begin
-    function loss(r, x, h)
+    function loss(r, h, x)
         y = []
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
             y = vcat(y, [h])
         end
         y = stack(y, dims=2) # [D, L] or [D, L, B]
@@ -104,7 +104,7 @@ end
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
     @test test_gradients(r, x[1], h; test_gpu=true, compare_finite_diff=false) broken = :grucell_single ∈ BROKEN_TESTS
-    @test test_gradients(r, x, h; test_gpu=true, compare_finite_diff=false, loss) broken = :grucell_multiple ∈ BROKEN_TESTS
+    @test test_gradients(r, h, x; test_gpu=true, compare_finite_diff=false, loss) broken = :grucell_multiple ∈ BROKEN_TESTS
 end
 
 @testset "GRU GPU AD" begin
@@ -115,7 +115,7 @@ end
 
     Flux.@layer :expand ModelGRU
 
-    (m::ModelGRU)(x) = m.gru(x, m.h0)
+    (m::ModelGRU)(x) = m.gru(m.h0, x)
 
     d_in, d_out, len, batch_size = 2, 3, 4, 5
     model = ModelGRU(GRU(d_in => d_out), zeros(Float32, d_out))
@@ -126,10 +126,10 @@ end
 end
 
 @testset "GRUv3Cell GPU AD" begin
-    function loss(r, x, h)
+    function loss(r, h, x)
         y = []
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
             y = vcat(y, [h])
         end
         y = stack(y, dims=2) # [D, L] or [D, L, B]
@@ -141,7 +141,7 @@ end
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
     @test test_gradients(r, x[1], h; test_gpu=true, compare_finite_diff=false) broken = :gruv3cell_single ∈ BROKEN_TESTS
-    @test test_gradients(r, x, h; test_gpu=true, compare_finite_diff=false, loss) broken = :gruv3cell_multiple ∈ BROKEN_TESTS
+    @test test_gradients(r, h, x; test_gpu=true, compare_finite_diff=false, loss) broken = :gruv3cell_multiple ∈ BROKEN_TESTS
 end
 
 @testset "GRUv3 GPU AD" begin
@@ -152,7 +152,7 @@ end
 
     Flux.@layer :expand ModelGRUv3
 
-    (m::ModelGRUv3)(x) = m.gru(x, m.h0)
+    (m::ModelGRUv3)(x) = m.gru(m.h0, x)
     
     d_in, d_out, len, batch_size = 2, 3, 4, 5
     model = ModelGRUv3(GRUv3(d_in => d_out), zeros(Float32, d_out))

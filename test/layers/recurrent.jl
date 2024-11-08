@@ -1,30 +1,30 @@
 
 @testset "RNNCell" begin
-    function loss1(r, x, h)
+    function loss1(r, h, x)
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
         end
         return mean(h.^2)
     end
 
-    function loss2(r, x, h)
-        y = [r(x_t, h) for x_t in x]
+    function loss2(r, h, x)
+        y = [r(h, x_t) for x_t in x]
         return sum(mean, y)
     end
 
-    function loss3(r, x, h)
+    function loss3(r, h, x)
         y = []
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
             y = [y..., h]
         end
         return sum(mean, y)
     end
 
-    function loss4(r, x, h)
+    function loss4(r, h, x)
         y = []
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
             y = vcat(y, [h])
         end
         y = stack(y, dims=2) # [D, L] or [D, L, B]
@@ -38,28 +38,28 @@
 
     # Initial State is a single vector
     h = randn(Float32, 5)
-    test_gradients(r, x, h, loss=loss1) # for loop
-    test_gradients(r, x, h, loss=loss2) # comprehension
-    test_gradients(r, x, h, loss=loss3) # splat
-    test_gradients(r, x, h, loss=loss4) # vcat and stack
+    test_gradients(r, h, x, loss=loss1) # for loop
+    test_gradients(r, h, x, loss=loss2) # comprehension
+    test_gradients(r, h, x, loss=loss3) # splat
+    test_gradients(r, h, x, loss=loss4) # vcat and stack
 
     # no initial state same as zero initial state
     @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
-    test_gradients(r, x, h, loss=loss4)
+    test_gradients(r, h, x, loss=loss4)
 
     # The input sequence has no batch dimension.
     x = [rand(Float32, 3) for _ in 1:6]
     h = randn(Float32, 5)
-    test_gradients(r, x, h, loss=loss4)
+    test_gradients(r, h, x, loss=loss4)
 
     
     # No Bias 
     r = RNNCell(3 => 5, bias=false)
     @test length(Flux.trainables(r)) == 2
-    test_gradients(r, x, h, loss=loss4)
+    test_gradients(r, h, x, loss=loss4)
 end
 
 @testset "RNN" begin
@@ -70,7 +70,7 @@ end
 
     Flux.@layer :expand ModelRNN
 
-    (m::ModelRNN)(x) = m.rnn(x, m.h0)
+    (m::ModelRNN)(x) = m.rnn(m.h0, x)
 
     model = ModelRNN(RNN(2 => 4), zeros(Float32, 4))
     
@@ -93,12 +93,12 @@ end
 
 @testset "LSTMCell" begin
 
-    function loss(r, x, hc)
+    function loss(r, hc, x)
         h, c = hc
         h′ = []
         c′ = []
         for x_t in x
-            h, c = r(x_t, (h, c))
+            h, c = r((h, c), x_t)
             h′ = vcat(h′, [h])
             c′ = [c′..., c]
         end
@@ -117,8 +117,8 @@ end
     @test cnew isa Matrix{Float32}
     @test size(hnew) == (5, 4)
     @test size(cnew) == (5, 4)
-    test_gradients(cell, x[1], (h, c), loss = (m, x, hc) -> mean(m(x, hc)[1]))
-    test_gradients(cell, x, (h, c), loss = loss)
+    test_gradients(cell, x[1], (h, c), loss = (m, hc, x) -> mean(m(hc, x)[1]))
+    test_gradients(cell, (h, c), x, loss = loss)
 
     # no initial state same as zero initial state
     hnew1, cnew1 = cell(x[1])
@@ -162,10 +162,10 @@ end
 end
 
 @testset "GRUCell" begin
-    function loss(r, x, h)
+    function loss(r, h, x)
         y = []
         for x_t in x
-            h = r(x_t, h)
+            h = r(h, x_t)
             y = vcat(y, [h])
         end
         y = stack(y, dims=2) # [D, L] or [D, L, B]
@@ -179,19 +179,19 @@ end
 
     # Initial State is a single vector
     h = randn(Float32, 5)
-    test_gradients(r, x, h; loss)
+    test_gradients(r, h, x; loss)
 
     # no initial state same as zero initial state
     @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
-    test_gradients(r, x, h; loss)
+    test_gradients(r, h, x; loss)
 
     # The input sequence has no batch dimension.
     x = [rand(Float32, 3) for _ in 1:6]
     h = randn(Float32, 5)
-    test_gradients(r, x, h; loss)
+    test_gradients(r, h, x; loss)
 
     # No Bias 
     r = GRUCell(3 => 5, bias=false)
@@ -206,7 +206,7 @@ end
 
     Flux.@layer :expand ModelGRU
 
-    (m::ModelGRU)(x) = m.gru(x, m.h0)
+    (m::ModelGRU)(x) = m.gru(m.h0, x)
 
     model = ModelGRU(GRU(2 => 4), zeros(Float32, 4))
 
@@ -233,19 +233,19 @@ end
 
     # Initial State is a single vector
     h = randn(Float32, 5)
-    test_gradients(r, x, h)
+    test_gradients(r, h, x)
 
     # no initial state same as zero initial state
     @test r(x) ≈ r(x, zeros(Float32, 5))
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
-    test_gradients(r, x, h)
+    test_gradients(r, h, x)
 
     # The input sequence has no batch dimension.
     x = rand(Float32, 3)
     h = randn(Float32, 5)
-    test_gradients(r, x, h)
+    test_gradients(r, h, x)
 end
 
 @testset "GRUv3" begin
@@ -256,7 +256,7 @@ end
 
     Flux.@layer :expand ModelGRUv3
 
-    (m::ModelGRUv3)(x) = m.gru(x, m.h0)
+    (m::ModelGRUv3)(x) = m.gru(m.h0, x)
 
     model = ModelGRUv3(GRUv3(2 => 4), zeros(Float32, 4))
 
