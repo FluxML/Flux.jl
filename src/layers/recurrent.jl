@@ -74,7 +74,7 @@ function RNNCell((in, out)::Pair, σ=tanh; init = glorot_uniform, bias = true)
   return RNNCell(σ, Wi, Wh, b)
 end
 
-(m::RNNCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 1)))
+(m::RNNCell)(x::AbstractVecOrMat) = m(zeros_like(x, size(m.Wh, 1)), x)
 
 function (m::RNNCell)(h::AbstractVecOrMat, x::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi,2))
