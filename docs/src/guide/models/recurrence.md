@@ -151,7 +151,7 @@ function RecurrentModel(input_size::Int, hidden_size::Int)
 end
 
 function (m::RecurrentModel)(x)
-    z = m.rnn(x, m.h0)  # [hidden_size, seq_len, batch_size] or [hidden_size, seq_len]
+    z = m.rnn(m.h0, x)  # [hidden_size, seq_len, batch_size] or [hidden_size, seq_len]
     ŷ = m.dense(z)      # [1, seq_len, batch_size] or [1, seq_len]
     return ŷ
 end
