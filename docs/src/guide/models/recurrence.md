@@ -33,12 +33,12 @@ h0 = zeros(Float32, output_size)
 y = []
 ht = h0
 for xt in x
-    ht = rnn_cell(xt, ht)
+    ht = rnn_cell(ht, xt)
     y = [y; [ht]]  # concatenate in non-mutating (AD friendly) way
 end
 ```
 
-Notice how the above is essentially a `Dense` layer that acts on two inputs, `xt` and `ht`.
+Notice how the above is essentially a `Dense` layer that acts on two inputs, `ht` and `xt`.
 
 The output at each time step, called the hidden state, is used as the input to the next time step and is also the output of the model. 
 
@@ -58,7 +58,7 @@ rnn_cell = Flux.RNNCell(input_size => output_size)
 y = []
 ht = h0
 for xt in x
-    ht = rnn_cell(xt, ht)
+    ht = rnn_cell(ht, xt)
     y = [y; [ht]]
 end
 ```
@@ -78,7 +78,7 @@ struct RecurrentCellModel{H,C,D}
 end
 
 # we choose to not train the initial hidden state
-Flux.@layer RecurrentCellModel trainable=(cell,dense) 
+Flux.@layer RecurrentCellModel trainable = (cell, dense) 
 
 function RecurrentCellModel(input_size::Int, hidden_size::Int)
     return RecurrentCellModel(
@@ -91,7 +91,7 @@ function (m::RecurrentCellModel)(x)
     z = []
     ht = m.h0
     for xt in x
-        ht = m.cell(xt, ht)
+        ht = m.cell(ht, xt)
         z = [z; [ht]]
     end
     z = stack(z, dims=2) # [hidden_size, seq_len, batch_size] or [hidden_size, seq_len]
