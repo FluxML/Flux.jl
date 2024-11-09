@@ -171,11 +171,10 @@ Only available when Enzyme is loaded!
 !!! warning "Experimental"
     Enzyme support like this is new and somewhat experimental.
     This method was added in Flux 0.15.
-    It does not at present allow `f` to return a tuple of `(loss, aux)` the way `Zygote.withgradient` does.
 
 # Example
 
-```
+```julia
 julia> using Flux, Enzyme
 
 julia> model = Chain(Embedding([1.1 2.2 3.3]), Dense([4.4;;]), only);
@@ -188,6 +187,18 @@ julia> Flux.withgradient(m -> m(3), model)  # this uses Zygote
 
 julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
 (val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+```
+
+The function `f` may return Tuple or NamedTuple, with the loss as the first element.
+The gradient is then `grad = gradient(first∘f, args...)`
+but the returned value is `val = f(args...)`:
+
+```julia
+julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
+(val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+
+julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
+(val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
 ```
 """
 withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_withgradient(f, args...; zero)

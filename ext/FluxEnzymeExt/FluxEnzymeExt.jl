@@ -9,6 +9,7 @@ import Flux.Train: _enzyme_train!, _rule_to_state, _grad_or_nothing
 import Optimisers
 import Enzyme
 using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal
+using Enzyme: autodiff_thunk, ReverseSplitWithPrimal
 using ProgressLogging: @withprogress, @logprogress
 
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
@@ -32,10 +33,21 @@ function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::B
   for x in args
     zero && x isa Duplicated && _make_zero!(x.dval)
   end
-  # TODO allow for f to return a tuple here, like in Zygote
-  _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
-  (; val, grad = map(_grad_or_nothing, args))
+
+  # _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
+
+  forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
+  tape, result, shadow_result  = forward(Const(f), args...)
+  reverse(Const(f), args..., _sensitivity(result), tape)
+
+  (; val = result, grad = map(_grad_or_nothing, args))
 end
+
+_sensitivity(y::Real) = one(y)
+_sensitivity(ys::Tuple{Real,Vararg}) = (one(ys[1]), Enzyme.make_zero(Base.tail(ys))...)
+_sensitivity(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = NamedTuple{S}(_sensitivity(Tuple(ys)))
+_sensitivity(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
+    or else a Tuple or NamedTuple whose first element is a real number.""")
 
 ### Flux.Train, for train!
 

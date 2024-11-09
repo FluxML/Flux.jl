@@ -168,6 +168,21 @@ end
     @test g2.grad[1].weight ≈ [1 2 3; 1 2 3]
     @test g2.grad[2] === nothing  # implicitly Const
 
+    g3 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
+              z = 1 ./ x
+              sum(z), z  # here z is an auxillary output
+           end
+    @test g3.grad[1] ≈ [-1.0, -0.25, -0.0625]
+    @test g3.val[1] ≈ 1.75
+    @test g3.val[2] ≈ [1.0, 0.5, 0.25]
+    g4 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
+              z = 1 ./ x
+              (loss=sum(z), aux=string(z))
+           end
+    @test g4.grad[1] ≈ [-1.0, -0.25, -0.0625]
+    @test g4.val.loss ≈ 1.75
+    @test g4.val.aux == "[1.0, 0.5, 0.25]"
+
     # setup understands Duplicated:
     @test Flux.setup(Adam(), m1) == Flux.setup(Adam(), m1.val)
 
