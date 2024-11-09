@@ -2,7 +2,8 @@
 # Vanilla RNN
 
 @doc raw"""
-    RNNCell(in => out, σ = tanh; init = glorot_uniform, bias = true)
+    RNNCell(in => out, σ = tanh; kernel_init = glorot_uniform, 
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.
@@ -19,7 +20,8 @@ See [`RNN`](@ref) for a layer that processes entire sequences.
 
 - `in => out`: The input and output dimensions of the layer.
 - `σ`: The non-linearity to apply to the output. Default is `tanh`.
-- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -58,39 +60,46 @@ h   # The final hidden state
 ŷ   # The hidden states at each time step
 ```
 """
-struct RNNCell{F,I,H,V}
-  σ::F
-  Wi::I
-  Wh::H
-  bias::V
+struct RNNCell{F, I, H, V}
+    σ::F
+    Wi::I
+    Wh::H
+    bias::V
 end
 
-@layer RNNCell 
+@layer RNNCell
 
-function RNNCell((in, out)::Pair, σ=tanh; init = glorot_uniform, bias = true)
-  Wi = init(out, in)
-  Wh = init(out, out)
-  b = create_bias(Wi, bias, size(Wi, 1))
-  return RNNCell(σ, Wi, Wh, b)
+function RNNCell(
+    (in, out)::Pair,
+    σ = tanh;
+    kernel_init = glorot_uniform,
+    recurrent_kernel_init = glorot_uniform,
+    bias = true,
+)
+    Wi = kernel_init(out, in)
+    Wh = recurrent_kernel_init(out, out)
+    b = create_bias(Wi, bias, size(Wi, 1))
+    return RNNCell(σ, Wi, Wh, b)
 end
 
 (m::RNNCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 1)))
 
 function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
-  _size_check(m, x, 1 => size(m.Wi,2))
-  σ = NNlib.fast_act(m.σ, x)
-  h = σ.(m.Wi*x .+ m.Wh*h .+ m.bias)
-  return h
+    _size_check(m, x, 1 => size(m.Wi, 2))
+    σ = NNlib.fast_act(m.σ, x)
+    h = σ.(m.Wi * x .+ m.Wh * h .+ m.bias)
+    return h
 end
 
 function Base.show(io::IO, m::RNNCell)
-  print(io, "RNNCell(", size(m.Wi, 2), " => ", size(m.Wi, 1))
-  print(io, ", ", m.σ)
-  print(io, ")")
+    print(io, "RNNCell(", size(m.Wi, 2), " => ", size(m.Wi, 1))
+    print(io, ", ", m.σ)
+    print(io, ")")
 end
 
 @doc raw"""
-    RNN(in => out, σ = tanh; bias = true, init = glorot_uniform)
+    RNN(in => out, σ = tanh; kernel_init = glorot_uniform, 
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.  
@@ -108,7 +117,8 @@ See [`RNNCell`](@ref) for a layer that processes a single time step.
 
 - `in => out`: The input and output dimensions of the layer.
 - `σ`: The non-linearity to apply to the output. Default is `tanh`.
-- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -156,35 +166,36 @@ model = Model(RNN(32 => 64), zeros(Float32, 64))
 ```
 """
 struct RNN{M}
-  cell::M
+    cell::M
 end
 
 @layer :expand RNN
 
-function RNN((in, out)::Pair, σ = tanh; bias = true, init = glorot_uniform)
-  cell = RNNCell(in => out, σ; bias, init)
-  return RNN(cell)
+function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
+    cell = RNNCell(in => out, σ; cell_kwargs...)
+    return RNN(cell)
 end
 
 (m::RNN)(x) = m(x, zeros_like(x, size(m.cell.Wh, 1)))
 
-function (m::RNN)(x, h) 
-  @assert ndims(x) == 2 || ndims(x) == 3
-  # [x] = [in, L] or [in, L, B]
-  # [h] = [out] or [out, B]
-  y = []
-  for x_t in eachslice(x, dims=2)
-    h = m.cell(x_t, h)
-    # y = [y..., h]
-    y = vcat(y, [h])
-  end
-  return stack(y, dims=2)
+function (m::RNN)(x, h)
+    @assert ndims(x) == 2 || ndims(x) == 3
+    # [x] = [in, L] or [in, L, B]
+    # [h] = [out] or [out, B]
+    y = []
+    for x_t in eachslice(x, dims = 2)
+        h = m.cell(x_t, h)
+        # y = [y..., h]
+        y = vcat(y, [h])
+    end
+    return stack(y, dims = 2)
 end
 
 
 # LSTM
 @doc raw"""
-    LSTMCell(in => out; init = glorot_uniform, bias = true)
+    LSTMCell(in => out; kernel_init = glorot_uniform,
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 The [Long Short Term Memory](https://www.researchgate.net/publication/13853244_Long_Short-term_Memory) cell.
 Behaves like an RNN but generally exhibits a longer memory span over sequences.
@@ -205,7 +216,8 @@ See also [`LSTM`](@ref) for a layer that processes entire sequences.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
-- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -239,44 +251,50 @@ julia> size(h′)  # out x batch_size
 (5, 4)
 ```
 """
-struct LSTMCell{I,H,V}
-  Wi::I
-  Wh::H
-  bias::V
+struct LSTMCell{I, H, V}
+    Wi::I
+    Wh::H
+    bias::V
 end
 
 @layer LSTMCell
 
-function LSTMCell((in, out)::Pair; init = glorot_uniform, bias = true)
-  Wi = init(out * 4, in)
-  Wh = init(out * 4, out)
-  b = create_bias(Wi, bias, out * 4)
-  cell = LSTMCell(Wi, Wh, b)
-  return cell
+function LSTMCell(
+    (in, out)::Pair;
+    kernel_init = glorot_uniform,
+    recurrent_kernel_init = glorot_uniform,
+    bias = true,
+)
+    Wi = kernel_init(out * 4, in)
+    Wh = recurrent_kernel_init(out * 4, out)
+    b = create_bias(Wi, bias, out * 4)
+    cell = LSTMCell(Wi, Wh, b)
+    return cell
 end
 
 function (m::LSTMCell)(x::AbstractVecOrMat)
-  h = zeros_like(x, size(m.Wh, 2))
-  c = zeros_like(h)
-  return m(x, (h, c))
+    h = zeros_like(x, size(m.Wh, 2))
+    c = zeros_like(h)
+    return m(x, (h, c))
 end
 
 function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
-  _size_check(m, x, 1 => size(m.Wi, 2))
-  b = m.bias
-  g = m.Wi * x .+ m.Wh * h .+ b
-  input, forget, cell, output = chunk(g, 4; dims=1)
-  c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
-  h′ = @. sigmoid_fast(output) * tanh_fast(c′)
-  return h′, c′
+    _size_check(m, x, 1 => size(m.Wi, 2))
+    b = m.bias
+    g = m.Wi * x .+ m.Wh * h .+ b
+    input, forget, cell, output = chunk(g, 4; dims = 1)
+    c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
+    h′ = @. sigmoid_fast(output) * tanh_fast(c′)
+    return h′, c′
 end
 
 Base.show(io::IO, m::LSTMCell) =
-  print(io, "LSTMCell(", size(m.Wi, 2), " => ", size(m.Wi, 1)÷4, ")")
+    print(io, "LSTMCell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 4, ")")
 
 
 @doc raw""""
-    LSTM(in => out; init = glorot_uniform, bias = true)
+    LSTM(in => out; kernel_init = glorot_uniform,
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 [Long Short Term Memory](https://www.researchgate.net/publication/13853244_Long_Short-term_Memory)
 recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.
@@ -299,7 +317,8 @@ See [`LSTMCell`](@ref) for a layer that processes a single time step.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
-- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -337,38 +356,39 @@ size(h)  # out x len x batch_size
 ```
 """
 struct LSTM{M}
-  cell::M
+    cell::M
 end
 
 @layer :expand LSTM
 
-function LSTM((in, out)::Pair; init = glorot_uniform, bias = true)
-  cell = LSTMCell(in => out; init, bias)
-  return LSTM(cell)
+function LSTM((in, out)::Pair; cell_kwargs...)
+    cell = LSTMCell(in => out; cell_kwargs...)
+    return LSTM(cell)
 end
 
 function (m::LSTM)(x)
-  h = zeros_like(x, size(m.cell.Wh, 1))
-  c = zeros_like(h)
-  return m(x, (h, c))
+    h = zeros_like(x, size(m.cell.Wh, 1))
+    c = zeros_like(h)
+    return m(x, (h, c))
 end
 
 function (m::LSTM)(x, (h, c))
-  @assert ndims(x) == 2 || ndims(x) == 3
-  h′ = []
-  c′ = []
-  for x_t in eachslice(x, dims=2)
-    h, c = m.cell(x_t, (h, c))
-    h′ = vcat(h′, [h])
-    c′ = vcat(c′, [c])
-  end
-  return stack(h′, dims=2), stack(c′, dims=2)
+    @assert ndims(x) == 2 || ndims(x) == 3
+    h′ = []
+    c′ = []
+    for x_t in eachslice(x, dims = 2)
+        h, c = m.cell(x_t, (h, c))
+        h′ = vcat(h′, [h])
+        c′ = vcat(c′, [c])
+    end
+    return stack(h′, dims = 2), stack(c′, dims = 2)
 end
 
 # GRU
 
 @doc raw"""
-    GRUCell(in => out; init = glorot_uniform, bias = true)
+    GRUCell(in => out; kernel_init = glorot_uniform,
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. 
 Behaves like an RNN but generally exhibits a longer memory span over sequences. 
@@ -388,7 +408,8 @@ See also [`GRU`](@ref) for a layer that processes entire sequences.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
-- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -416,44 +437,50 @@ julia> x = rand(Float32, 3, 4);  # in x batch_size
 julia> h′ = g(x, h);
 ```
 """
-struct GRUCell{I,H,V}
-  Wi::I
-  Wh::H
-  b::V
+struct GRUCell{I, H, V}
+    Wi::I
+    Wh::H
+    b::V
 end
 
 @layer GRUCell
 
-function GRUCell((in, out)::Pair; init = glorot_uniform, bias = true)
-  Wi = init(out * 3, in)
-  Wh = init(out * 3, out)
-  b = create_bias(Wi, bias, size(Wi, 1))
-  return GRUCell(Wi, Wh, b)
+function GRUCell(
+    (in, out)::Pair;
+    kernel_init = glorot_uniform,
+    recurrent_kernel_init = glorot_uniform,
+    bias = true,
+)
+    Wi = kernel_init(out * 3, in)
+    Wh = recurrent_kernel_init(out * 3, out)
+    b = create_bias(Wi, bias, size(Wi, 1))
+    return GRUCell(Wi, Wh, b)
 end
 
 (m::GRUCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
 
 function (m::GRUCell)(x::AbstractVecOrMat, h)
-  _size_check(m, x, 1 => size(m.Wi,2))
-  gxs = chunk(m.Wi * x, 3, dims=1)
-  ghs = chunk(m.Wh * h, 3, dims=1)
-  if m.b isa AbstractArray
-    bs = chunk(m.b, 3, dims=1)
-  else # b == false
-    bs = [false, false, false]
-  end
-  r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
-  z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
-  h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
-  h′ = @. (1 - z) * h̃ + z * h
-  return h′
+    _size_check(m, x, 1 => size(m.Wi, 2))
+    gxs = chunk(m.Wi * x, 3, dims = 1)
+    ghs = chunk(m.Wh * h, 3, dims = 1)
+    if m.b isa AbstractArray
+        bs = chunk(m.b, 3, dims = 1)
+    else # b == false
+        bs = [false, false, false]
+    end
+    r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
+    z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
+    h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
+    h′ = @. (1 - z) * h̃ + z * h
+    return h′
 end
 
 Base.show(io::IO, m::GRUCell) =
-  print(io, "GRUCell(", size(m.Wi, 2), " => ", size(m.Wi, 1)÷3, ")")
+    print(io, "GRUCell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 3, ")")
 
 @doc raw"""
-    GRU(in => out; init = glorot_uniform, bias = true)
+    GRU(in => out; kernel_init = glorot_uniform,
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
@@ -469,6 +496,13 @@ h_t = (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
 ```
 for all `len` steps `t` in the input sequence.
 See [`GRUCell`](@ref) for a layer that processes a single time step.
+
+# Arguments
+
+- `in => out`: The input and output dimensions of the layer.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
+- `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
 
@@ -494,35 +528,36 @@ h = gru(x, h0)  # out x len x batch_size
 ```
 """
 struct GRU{M}
-  cell::M
+    cell::M
 end
 
 @layer :expand GRU
 
-function GRU((in, out)::Pair; init = glorot_uniform, bias = true)
-  cell = GRUCell(in => out; init, bias)
-  return GRU(cell)
+function GRU((in, out)::Pair; cell_kwargs...)
+    cell = GRUCell(in => out; cell_kwargs...)
+    return GRU(cell)
 end
 
 function (m::GRU)(x)
-  h = zeros_like(x, size(m.cell.Wh, 2))
-  return m(x, h)
+    h = zeros_like(x, size(m.cell.Wh, 2))
+    return m(x, h)
 end
 
 function (m::GRU)(x, h)
-  @assert ndims(x) == 2 || ndims(x) == 3
-  h′ = []
-  # [x] = [in, L] or [in, L, B]
-  for x_t in eachslice(x, dims=2)
-    h = m.cell(x_t, h)
-    h′ = vcat(h′, [h])
-  end
-  return stack(h′, dims=2)
+    @assert ndims(x) == 2 || ndims(x) == 3
+    h′ = []
+    # [x] = [in, L] or [in, L, B]
+    for x_t in eachslice(x, dims = 2)
+        h = m.cell(x_t, h)
+        h′ = vcat(h′, [h])
+    end
+    return stack(h′, dims = 2)
 end
 
 # GRU v3
 @doc raw"""
-    GRUv3Cell(in => out, init = glorot_uniform, bias = true)
+    GRUv3Cell(in => out; kernel_init = glorot_uniform,
+      recurrent_kernel_init = glorot_uniform, bias = true)
     
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v3) layer. 
 Behaves like an RNN but generally exhibits a longer memory span over sequences. 
@@ -543,7 +578,8 @@ See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
-- `init`: The initialization function to use for the weights. Default is `glorot_uniform`.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -558,47 +594,53 @@ The arguments of the forward pass are:
 
 Returns the new hidden state `h'` as an array of size `out` or `out x batch_size`.
 """
-struct GRUv3Cell{I,H,V,HH}
-  Wi::I
-  Wh::H
-  b::V
-  Wh_h̃::HH
+struct GRUv3Cell{I, H, V, HH}
+    Wi::I
+    Wh::H
+    b::V
+    Wh_h̃::HH
 end
 
 @layer GRUv3Cell
 
-function GRUv3Cell((in, out)::Pair; init = glorot_uniform, bias = true)
-  Wi = init(out * 3, in)
-  Wh = init(out * 3, out)
-  Wh_h̃ = init(out, out)
-  b = create_bias(Wi, bias, out * 3)
-  return GRUv3Cell(Wi, Wh, b, Wh_h̃)
+function GRUv3Cell(
+    (in, out)::Pair;
+    kernel_init = glorot_uniform,
+    recurrent_kernel_init = glorot_uniform,
+    bias = true,
+)
+    Wi = kernel_init(out * 3, in)
+    Wh = recurrent_kernel_init(out * 3, out)
+    Wh_h̃ = recurrent_kernel_init(out, out)
+    b = create_bias(Wi, bias, out * 3)
+    return GRUv3Cell(Wi, Wh, b, Wh_h̃)
 end
 
 (m::GRUv3Cell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
 
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
-  _size_check(m, x, 1 => size(m.Wi,2))
-  gxs = chunk(m.Wi * x, 3, dims=1)
-  ghs = chunk(m.Wh * h, 3, dims=1)
-  if m.b isa AbstractArray
-    bs = chunk(m.b, 3, dims=1)
-  else # m.b == false
-    bs = [false, false, false]
-  end
-  r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
-  z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
-  h̃ = tanh_fast.(gxs[3] .+ (m.Wh_h̃ * (r .* h)) .+ bs[3])
-  h′ = @. (1 - z) * h̃ + z * h
-  return h′
+    _size_check(m, x, 1 => size(m.Wi, 2))
+    gxs = chunk(m.Wi * x, 3, dims = 1)
+    ghs = chunk(m.Wh * h, 3, dims = 1)
+    if m.b isa AbstractArray
+        bs = chunk(m.b, 3, dims = 1)
+    else # m.b == false
+        bs = [false, false, false]
+    end
+    r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
+    z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
+    h̃ = tanh_fast.(gxs[3] .+ (m.Wh_h̃ * (r .* h)) .+ bs[3])
+    h′ = @. (1 - z) * h̃ + z * h
+    return h′
 end
 
 Base.show(io::IO, m::GRUv3Cell) =
-  print(io, "GRUv3Cell(", size(m.Wi, 2), " => ", size(m.Wi, 1)÷3, ")")
+    print(io, "GRUv3Cell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 3, ")")
 
 
 @doc raw"""
-    GRUv3(in => out)
+    GRUv3(in => out; kernel_init = glorot_uniform,
+      recurrent_kernel_init = glorot_uniform, bias = true)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v3) layer. Behaves like an
 RNN but generally exhibits a longer memory span over sequences. This implements
@@ -615,30 +657,36 @@ h_t = (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
 for all `len` steps `t` in the input sequence. 
 See [`GRUv3Cell`](@ref) for a layer that processes a single time step.
 See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
+
+# Arguments
+
+- `in => out`: The input and output dimensions of the layer.
+- `kernel_init`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
+- `recurrent_kernel_init`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
+- `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 """
 struct GRUv3{M}
-  cell::M
+    cell::M
 end
 
 @layer :expand GRUv3
 
-function GRUv3((in, out)::Pair; init = glorot_uniform, bias = true)
-  cell = GRUv3Cell(in => out; init, bias)
-  return GRUv3(cell)
+function GRUv3((in, out)::Pair; cell_kwargs...)
+    cell = GRUv3Cell(in => out; cell_kwargs...)
+    return GRUv3(cell)
 end
 
 function (m::GRUv3)(x)
-  h = zeros_like(x, size(m.cell.Wh, 2))
-  return m(x, h)
+    h = zeros_like(x, size(m.cell.Wh, 2))
+    return m(x, h)
 end
 
 function (m::GRUv3)(x, h)
-  @assert ndims(x) == 2 || ndims(x) == 3
-  h′ = []
-  for x_t in eachslice(x, dims=2)
-    h = m.cell(x_t, h)
-    h′ = vcat(h′, [h])
-  end
-  return stack(h′, dims=2)
+    @assert ndims(x) == 2 || ndims(x) == 3
+    h′ = []
+    for x_t in eachslice(x, dims = 2)
+        h = m.cell(x_t, h)
+        h′ = vcat(h′, [h])
+    end
+    return stack(h′, dims = 2)
 end
-
