@@ -44,7 +44,7 @@
     test_gradients(r, h, x, loss=loss4) # vcat and stack
 
     # no initial state same as zero initial state
-    @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
+    @test r(x[1]) ≈ r(zeros(Float32, 5), x[1])
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
@@ -82,7 +82,7 @@ end
 
     # no initial state same as zero initial state
     rnn = model.rnn 
-    @test rnn(x) ≈ rnn(x, zeros(Float32, 4))
+    @test rnn(x) ≈ rnn(zeros(Float32, 4), x)
 
     x = rand(Float32, 2, 3)
     y = model(x)
@@ -112,17 +112,17 @@ end
     x = [rand(Float32, 3, 4) for _ in 1:6]
     h = zeros(Float32, 5, 4)
     c = zeros(Float32, 5, 4)
-    hnew, cnew = cell(x[1], (h, c))
+    hnew, cnew = cell((h, c), x[1])
     @test hnew isa Matrix{Float32}
     @test cnew isa Matrix{Float32}
     @test size(hnew) == (5, 4)
     @test size(cnew) == (5, 4)
-    test_gradients(cell, x[1], (h, c), loss = (m, hc, x) -> mean(m(hc, x)[1]))
+    test_gradients(cell, (h, c), x[1], loss = (m, hc, x) -> mean(m(hc, x)[1]))
     test_gradients(cell, (h, c), x, loss = loss)
 
     # no initial state same as zero initial state
     hnew1, cnew1 = cell(x[1])
-    hnew2, cnew2 = cell(x[1], (zeros(Float32, 5), zeros(Float32, 5)))
+    hnew2, cnew2 = cell((zeros(Float32, 5), zeros(Float32, 5)), x[1])
     @test hnew1 ≈ hnew2
     @test cnew1 ≈ cnew2
 
@@ -140,7 +140,7 @@ end
 
     Flux.@layer :expand ModelLSTM
 
-    (m::ModelLSTM)(x) = m.lstm(x, (m.h0, m.c0))
+    (m::ModelLSTM)(x) = m.lstm((m.h0, m.c0), x)
 
     model = ModelLSTM(LSTM(2 => 4), zeros(Float32, 4), zeros(Float32, 4))
     
@@ -182,7 +182,7 @@ end
     test_gradients(r, h, x; loss)
 
     # no initial state same as zero initial state
-    @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
+    @test r(x[1]) ≈ r(zeros(Float32, 5), x[1])
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
@@ -218,7 +218,7 @@ end
 
     # no initial state same as zero initial state
     gru = model.gru
-    @test gru(x) ≈ gru(x, zeros(Float32, 4))
+    @test gru(x) ≈ gru(zeros(Float32, 4), x)
     
     # No Bias
     gru = GRU(2 => 4, bias=false)
@@ -236,7 +236,7 @@ end
     test_gradients(r, h, x)
 
     # no initial state same as zero initial state
-    @test r(x) ≈ r(x, zeros(Float32, 5))
+    @test r(x) ≈ r(zeros(Float32, 5), x)
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
@@ -268,5 +268,5 @@ end
 
     # no initial state same as zero initial state
     gru = model.gru
-    @test gru(x) ≈ gru(x, zeros(Float32, 4))
+    @test gru(x) ≈ gru(zeros(Float32, 4), x)
 end
