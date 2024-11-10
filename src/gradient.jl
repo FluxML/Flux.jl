@@ -33,16 +33,27 @@ function gradient(f, args...; zero::Bool=true)
         a isa EnzymeCore.Duplicated && return _enzyme_gradient(f, map(_ensure_enzyme, args)...; zero)
     end
     for a in args
-        a isa EnzymeCore.Const && throw(ArgumentError(
-            "The method `gradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
-        ))
+        _ensure_noenzyme(a)
     end
     Zygote.gradient(f, args...)
 end
 
+# Given one Duplicated, we wrap everything else in Const before calling Enzyme
 _ensure_enzyme(x::EnzymeCore.Duplicated) = x
 _ensure_enzyme(x::EnzymeCore.Const) = x
 _ensure_enzyme(x) = EnzymeCore.Const(x)
+_ensure_enzyme(x::EnzymeCore.Active) = throw(ArgumentError(
+    "The method `gradient(f, xs...)` using Enzyme.jl does not support `Active`, only `Duplicated` and ``Const`."
+))
+
+# Without any Duplicated, check for no stray Enzyme types before calling Zygote
+_ensure_noenzyme(::EnzymeCore.Const) = throw(ArgumentError(
+    "The method `gradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
+))
+_ensure_noenzyme(::EnzymeCore.Active) = throw(ArgumentError(
+    "The method `gradient(f, xs...)` using Enzyme.jl does not support `Active`, only `Duplicated` and ``Const`"
+))
+_ensure_noenzyme(_) = nothing
 
 """
     gradient(f, args::Union{Const,Duplicated}...)
@@ -54,6 +65,7 @@ Only available when Enzyme is loaded!
 
 This method is used when at least one argument is of type `Duplicated`,
 and all unspecified aguments are wrapped in `Const`.
+Note that Enzyme's `Active` is not supported.
 
 Besides returning the gradient, this is also stored within the `Duplicated` object.
 Calling `Enzyme.Duplicated(model)` allocates space for the gradient,
@@ -153,9 +165,7 @@ function withgradient(f, args...; zero::Bool=true)
         a isa EnzymeCore.Duplicated && return _enzyme_withgradient(f, map(_ensure_enzyme, args)...; zero)
     end
     for a in args
-        a isa EnzymeCore.Const && throw(ArgumentError(
-            "The method `withgradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
-        ))
+        _ensure_noenzyme(a)
     end
     Zygote.withgradient(f, args...)
 end

@@ -187,8 +187,12 @@ end
     @test Flux.setup(Adam(), m1) == Flux.setup(Adam(), m1.val)
 
     # At least one Duplicated is required:
-    @test_throws ArgumentError Flux.gradient(m -> sum(m.bias), Const(m1))
-    @test_throws ArgumentError Flux.gradient((m,x) -> sum(m(x)), Const(m1), [1,2,3f0])
-    @test_throws ArgumentError Flux.withgradient(m -> sum(m.bias), Const(m1))
-    @test_throws ArgumentError Flux.withgradient((m,x) -> sum(m(x)), Const(m1), [1,2,3f0])
+    @test_throws ArgumentError Flux.gradient(m -> sum(m.bias), Const(m1.val))
+    @test_throws ArgumentError Flux.gradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])
+    @test_throws ArgumentError Flux.withgradient(m -> sum(m.bias), Const(m1.val))
+    @test_throws ArgumentError Flux.withgradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])
+    # Active is disallowed:
+    @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, m1, Active(3f0))
+    @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, m1.val, Active(3f0))
+    @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, Const(m1.val), Active(3f0))
 end
