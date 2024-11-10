@@ -7,6 +7,7 @@ import Flux.Train: _enzyme_train!, _rule_to_state, _grad_or_nothing
 # import Flux.Optimise
 
 import Optimisers
+import Functors
 import Enzyme
 using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal
 using Enzyme: autodiff_thunk, ReverseSplitWithPrimal
@@ -19,10 +20,16 @@ EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
     zero && x isa Duplicated && _make_zero!(x.dval)
+    _check_mutable(x)
   end
   Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
   map(_grad_or_nothing, args)
 end
+
+_check_mutable(x::Const) = nothing
+_check_mutable(x::Duplicated) = Functors.anymutable(x) || error(
+    """`Flux.gradient(f, Duplicatged(x), ...)` expects `x` to contain mutable parameter arrays."""
+)
 
 # This function strips the returned gradient to be Zygote-like:
 _grad_or_nothing(dup::Duplicated) = Flux.fmapstructure(_grad_or_nothing, dup.dval; prune=nothing)
@@ -32,6 +39,7 @@ _grad_or_nothing(x) = Optimisers.isnumeric(x) ? x : nothing
 function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
     zero && x isa Duplicated && _make_zero!(x.dval)
+    _check_mutable(x)
   end
 
   # _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
