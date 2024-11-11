@@ -22,7 +22,7 @@ function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=
     zero && x isa Duplicated && _make_zero!(x.dval)
     _check_mutable(x)
   end
-  Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
+  Enzyme.autodiff(Reverse, f, Active, args...)
   map(_grad_or_nothing, args)
 end
 
