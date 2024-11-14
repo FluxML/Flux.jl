@@ -205,7 +205,7 @@ ChainRulesCore.@non_differentiable kaiming_normal(::Any...)
 """
     truncated_normal([rng], size...; mean = 0, std = 1, lo = -2, hi = 2) -> Array
     truncated_normal([rng]; kw...) -> Function
-  
+
 Return an `Array{Float32}` of the given `size` where each element is drawn from a truncated normal distribution.
 The numbers are distributed like `filter(x -> lo<=x<=hi, mean .+ std .* randn(100))`.
 
@@ -253,7 +253,7 @@ ChainRulesCore.@non_differentiable truncated_normal(::Any...)
     lecun_normal([rng]; kw...) -> Function
 
 Return an `Array{Float32}` of the given `size` containing random numbers drawn from a truncated normal
-distribution centered on 0 with stddev `sqrt(1 / fan_in)`, where `fan_in` is the number of input units 
+distribution centered on 0 with stddev `sqrt(1 / fan_in)`, where `fan_in` is the number of input units
 in the weight tensor.
 
 # Examples
@@ -414,7 +414,7 @@ Has the following behaviour
 *  2D: An identity matrix (useful for an identity matrix multiplication)
 *  More than 2D: A dense block array of center tap spatial filters (useful for an identity convolution)
 
-Some caveats: 
+Some caveats:
 * Not all layers will be identity mapping when used with this init. Exceptions
   include recurrent layers and normalization layers.
 

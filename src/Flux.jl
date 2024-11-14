@@ -71,7 +71,7 @@ include("functor.jl")
 
 @compat(public, (
   # from OneHotArrays.jl
-  onehot, onehotbatch, onecold,  
+  onehot, onehotbatch, onecold,
   # from Functors.jl
   functor, @functor, KeyPath, haskeypath, getkeypath,
   # from Optimise/Train/Optimisers.jl
@@ -90,6 +90,7 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
+include("layers/rotary.jl")
 include("layers/attention.jl")
 
 include("loading.jl")

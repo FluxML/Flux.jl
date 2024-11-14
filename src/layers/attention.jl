@@ -14,7 +14,7 @@ Returns the transformed input sequence and the attention scores.
 # Arguments
 
 - `dims`: The embedding dimensions of inputs, intermediate tensors and outputs.
-          In the most general case, it is given as 
+          In the most general case, it is given as
           a) `(q_in_dim, k_in_dim, v_in_dim) => (qk_dim, v_dim) => out_dim`.
           Can take also simpler forms as
           b) `dims::Int`;
@@ -26,22 +26,24 @@ Returns the transformed input sequence and the attention scores.
 - `dropout_prob`: dropout probability for the attention scores. Default `0.0`.
 
 # Forward
-    
-    (mha::MultiHeadAttention)(q_in, k_in, v_in, [bias]; [mask])
+
+    (mha::MultiHeadAttention)(q_in, k_in, v_in, [bias]; [mask], [rope])
 
 The arguments of the forward pass are:
 
 - `q_in`: Input query array of size `(q_in_dim, q_len, batch_size)`.
 - `k_in`: Input key array of size `(k_in_dim, kv_len, batch_size)`.
 - `v_in`: Input value array of size `(v_in_dim, kv_len, batch_size)`.
-- `bias`: Bias array broadcastable to size `(kv_len, q_len, nheads, batch_size)`. 
+- `bias`: Bias array broadcastable to size `(kv_len, q_len, nheads, batch_size)`.
           It will be added to the attention scores before the softmax.
           Default `nothing`.
-- `mask`: Input array broadcastable to size 
-          `(kv_len, q_len, nheads, batch_size)`. 
-          The mask is applied to the attention scores just before the softmax. 
-          See [`NNlib.make_causal_mask`](@ref) for creating causal masks. 
+- `mask`: Input array broadcastable to size
+          `(kv_len, q_len, nheads, batch_size)`.
+          The mask is applied to the attention scores just before the softmax.
+          See [`NNlib.make_causal_mask`](@ref) for creating causal masks.
           Default `nothing`.
+- `rope`: Whether to apply rotary position embeddings to the input tensors.
+          Default `false`.
 
 Alternative calling signatures are `mha(q_in)`, equivalent to `mha(q_in, q_in, q_in)` (self-attention),
 and `mha(q_in, k_in)`, equivalent to `mha(q_in, k_in, k_in)` (key and value are the same).
@@ -55,7 +57,7 @@ mha = MultiHeadAttention(64, nheads = 8)
 q = rand(Float32, (64, 10, 32))
 k = rand(Float32, (64, 20, 32))
 v = rand(Float32, (64, 20, 32))
-y, α = mha(q, k, v) 
+y, α = mha(q, k, v)
 # [y] = [64, 10, 32]
 # [α] = [20, 10, 8, 32]
 
@@ -76,10 +78,10 @@ end
 
 @layer MultiHeadAttention
 
-function MultiHeadAttention(dims; 
+function MultiHeadAttention(dims;
                      nheads::Int = 8,
                      bias::Bool = false,
-                     init = glorot_uniform,                    
+                     init = glorot_uniform,
                      dropout_prob = 0.0)
 
   dims = normalize_mha_dims(dims)
@@ -94,7 +96,7 @@ function MultiHeadAttention(dims;
 end
 
 # turns the dims argument into a named tuple
-normalize_mha_dims(dims::Int) = 
+normalize_mha_dims(dims::Int) =
   (; q_in=dims, k_in=dims, v_in=dims, qk=dims, v=dims, out=dims)
 
 function normalize_mha_dims((in, (qkv, out))::Pair{<:IntOrDims{3}, <:Pair{<:IntOrDims{2}, Int}})
@@ -117,14 +119,18 @@ end
 # key and value are the same
 (mha::MultiHeadAttention)(q, kv; kws...) = mha(q, kv, kv; kws...)
 
-function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3, 
-                                  bias=nothing; mask=nothing)
+function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3,
+                                  bias=nothing; mask=nothing, rope=false)
   ## [q_in] = [q_in_dim, q_len, batch_size]
-  ## [k_in] = [k_in_dim, kv_len, batch_size] 
+  ## [k_in] = [k_in_dim, kv_len, batch_size]
   ## [v_in] = [v_in_dim, kv_len, batch_size]
   q = mha.q_proj(q_in)  # [q] = [qk_dim, q_len, batch_size]
-  k = mha.k_proj(k_in)  # [k] = [qk_dim, kv_len, batch_size] 
+  k = mha.k_proj(k_in)  # [k] = [qk_dim, kv_len, batch_size]
   v = mha.v_proj(v_in)  # [v] = [v_dim, kv_len, batch_size]
+  if rope
+    q = with_rotary_position_embedding(q)
+    k = with_rotary_position_embedding(k)
+  end
   x, α = NNlib.dot_product_attention(q, k, v, bias; mha.nheads, mask, fdrop=mha.attn_drop)
   x = mha.out_proj(x)
   # [x] = [out_dim, q_len, batch_size]
@@ -157,7 +163,6 @@ function Base.show(io::IO, mha::MultiHeadAttention)
   end
   print(io, ")")
 end
-
 
 #=
 
