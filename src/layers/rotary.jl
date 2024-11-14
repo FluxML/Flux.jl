@@ -1,39 +1,39 @@
+"""
+Calculate position-dependent frequency.
+"""
+function _default_freq_decay(i, hidden_size)
+    j = 8 * (1 - i)
+    return Float32(10^(j / hidden_size))
+end
 
 """
-    sincos_position_embed(pos, idx, hidden_size)
-
-Calculate sinusoidal position embedding for a single position and feature index.
-Uses alternating sine and cosine based on feature index parity.
+Calculate sinusoidal position embedding.
 """
 function sincos_position_embed(pos, idx, hidden_size)
-    i = (idx + 1) ÷ 2  # which frequency we're calculating
-    pos_idx = pos - 1
+    feature = Int32(idx)
+    i = (feature + 1) >> 1  # integer divide by 2
+    pos_idx = Int32(pos - 1)
 
-    # freq = 1/10000^(2i/d) following original transformer paper
-    freq = 10.0f0^(-(8i/hidden_size))
+    freq = _default_freq_decay(i, hidden_size)
     angle = pos_idx * freq
 
-    # Alternate between sin and cos based on feature index
-    return iseven(idx) ? cos(angle) : sin(angle)
+    return iseven(feature) ? cos(angle) : sin(angle)
 end
 
 ChainRulesCore.@non_differentiable sincos_position_embed(pos, idx, hidden_size)
 
 """
-    _rotary_transform(x1, x2, cos_θ, sin_θ)
-
-Helper function to perform rotary transformation of a feature pair.
+Apply rotation to a pair of values.
 """
-function _rotary_transform(x1, x2, cos_θ, sin_θ)
-    y1 = x1 * cos_θ - x2 * sin_θ
-    y2 = x2 * cos_θ + x1 * sin_θ
-    return y1, y2
+function _rotary((x1, x2), (sin_θ, cos_θ))
+    return (
+        x1 * cos_θ - x2 * sin_θ,
+        x2 * cos_θ + x1 * sin_θ
+    )
 end
 
 """
-    _apply_rotary(x, seq_len)
-
-Apply rotary transformation to input tensor.
+Apply rotary embeddings to the full tensor.
 """
 function _apply_rotary(x, seq_len)
     hidden_size = size(x, 1)
@@ -44,36 +44,28 @@ function _apply_rotary(x, seq_len)
         pos_enc[i,j] = sincos_position_embed(j, i, hidden_size)
     end
 
-    y = similar(x)
-    half_size = hidden_size ÷ 2
+    # Reshape to handle pairs properly
+    x_reshaped = reshape(x, 2, :)
+    pos_reshaped = reshape(pos_enc, 2, :)
+
+    # Now reinterpret as pairs
+    x_pairs = reinterpret(reshape, NTuple{2,eltype(x)}, x_reshaped)
+    pos_pairs = reinterpret(reshape, NTuple{2,eltype(pos_enc)}, pos_reshaped)
 
     # Apply rotary transformation
-    for j in 1:seq_len
-        for i in 1:half_size
-            idx = 2i - 1
-            x1, x2 = x[idx,j], x[idx+1,j]
-            cos_θ, sin_θ = pos_enc[idx,j], pos_enc[idx+1,j]
+    y_reshaped = similar(x_reshaped)
+    y_pairs = reinterpret(reshape, NTuple{2,eltype(y_reshaped)}, y_reshaped)
 
-            y[idx,j], y[idx+1,j] = _rotary_transform(x1, x2, cos_θ, sin_θ)
-        end
+    for i in axes(x_pairs, 1)
+        y_pairs[i] = _rotary(x_pairs[i], pos_pairs[i])
     end
 
-    return y
+    # Reshape back to original dimensions
+    return reshape(y_reshaped, size(x))
 end
 
 """
-    with_rotary_position_embedding(x)
-
 Apply rotary position embeddings to input tensor x.
-
-Input tensor should be of shape (features, sequence_length, ...).
-Features dimension must be even.
-
-# Arguments
-- `x`: Input tensor of shape (features, sequence_length, ...)
-
-# Returns
-- Tensor of same shape as input with rotary position embeddings applied
 """
 function with_rotary_position_embedding(x::AbstractArray)
     hidden_size = size(x, 1)
@@ -82,20 +74,21 @@ function with_rotary_position_embedding(x::AbstractArray)
 end
 
 # Gradient rules
-function ChainRulesCore.rrule(::typeof(_rotary_transform), x1, x2, cos_θ, sin_θ)
-    y1, y2 = _rotary_transform(x1, x2, cos_θ, sin_θ)
+function ChainRulesCore.rrule(::typeof(_rotary), x_pair, pos_pair)
+    x1, x2 = x_pair
+    sin_θ, cos_θ = pos_pair
+    y1, y2 = _rotary(x_pair, pos_pair)
 
-    function rotary_transform_pullback(Ȳ)
+    function rotary_pullback(Ȳ)
         ∂y1, ∂y2 = Ȳ
 
-        # Inverse rotation matrix for gradients
         ∂x1 = ∂y1 * cos_θ + ∂y2 * sin_θ
         ∂x2 = -∂y1 * sin_θ + ∂y2 * cos_θ
 
-        return (NoTangent(), ∂x1, ∂x2, NoTangent(), NoTangent())
+        return (NoTangent(), (∂x1, ∂x2), NoTangent())
     end
 
-    return (y1, y2), rotary_transform_pullback
+    return (y1, y2), rotary_pullback
 end
 
 function ChainRulesCore.rrule(::typeof(_apply_rotary), x, seq_len)
@@ -103,26 +96,31 @@ function ChainRulesCore.rrule(::typeof(_apply_rotary), x, seq_len)
 
     function apply_rotary_pullback(Ȳ)
         hidden_size = size(x, 1)
+
+        # Recalculate position encodings for gradient
         pos_enc = similar(x, hidden_size, seq_len)
         for i in 1:hidden_size, j in 1:seq_len
             pos_enc[i,j] = sincos_position_embed(j, i, hidden_size)
         end
 
-        ∂x = similar(Ȳ)
-        half_size = hidden_size ÷ 2
+        # Reshape for gradient computation
+        x_reshaped = reshape(x, 2, :)
+        pos_reshaped = reshape(pos_enc, 2, :)
+        Ȳ_reshaped = reshape(Ȳ, 2, :)
 
-        for j in 1:seq_len
-            for i in 1:half_size
-                idx = 2i - 1
-                cos_θ, sin_θ = pos_enc[idx,j], pos_enc[idx+1,j]
-                ∂y1, ∂y2 = Ȳ[idx,j], Ȳ[idx+1,j]
+        x_pairs = reinterpret(reshape, NTuple{2,eltype(x)}, x_reshaped)
+        pos_pairs = reinterpret(reshape, NTuple{2,eltype(pos_enc)}, pos_reshaped)
+        Ȳ_pairs = reinterpret(reshape, NTuple{2,eltype(Ȳ)}, Ȳ_reshaped)
 
-                ∂x[idx,j] = ∂y1 * cos_θ + ∂y2 * sin_θ
-                ∂x[idx+1,j] = -∂y1 * sin_θ + ∂y2 * cos_θ
-            end
+        ∂x_reshaped = similar(x_reshaped)
+        ∂x_pairs = reinterpret(reshape, NTuple{2,eltype(∂x_reshaped)}, ∂x_reshaped)
+
+        for i in axes(x_pairs, 1)
+            _, pb = rrule(_rotary, x_pairs[i], pos_pairs[i])
+            ∂x_pairs[i] = pb(Ȳ_pairs[i])[2]
         end
 
-        return (NoTangent(), ∂x, NoTangent())
+        return (NoTangent(), reshape(∂x_reshaped, size(x)), NoTangent())
     end
 
     return y, apply_rotary_pullback
@@ -130,9 +128,11 @@ end
 
 function ChainRulesCore.rrule(::typeof(with_rotary_position_embedding), x::AbstractArray)
     y = with_rotary_position_embedding(x)
+
     function rotary_pullback(Ȳ)
         _, ∂x, _ = rrule(_apply_rotary, x, size(x,2))[2](Ȳ)
         return (NoTangent(), ∂x)
     end
+
     return y, rotary_pullback
 end
