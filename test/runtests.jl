@@ -55,6 +55,7 @@ Random.seed!(0)
       include("layers/upsample.jl")
       include("layers/show.jl")
       include("layers/macro.jl")
+      include("layers/rotary.jl")
     end
 
     @testset "outputsize" begin

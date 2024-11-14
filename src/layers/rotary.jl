@@ -1,19 +1,19 @@
 """
     Rotary Position Embeddings (RoPE)
 
-This is a port of the RoPE implementation from NeuralAttentionlib.jl, which is an implementation of
+This is a port and simplified code of the RoPE implementation from NeuralAttentionlib.jl, which is an implementation of
 the Rotary Position Embeddings (RoPE) described in the RoFormer paper.
 
 Original sources:
 - Paper: "RoFormer: Enhanced Transformer with Rotary Position Embedding"
   Authors: Jianlin Su, Yu Lu, Shengfeng Pan, Ahmed Murtadha, Bo Wen
   URL: https://arxiv.org/abs/2104.09864
-  
+
 - Code: NeuralAttentionlib.jl
   Author: chengchingwen
   Repository: https://github.com/chengchingwen/NeuralAttentionlib.jl
 
-RoPE encodes absolute positional information with a rotation matrix that naturally 
+RoPE encodes absolute positional information with a rotation matrix that naturally
 incorporates explicit relative position dependency in self-attention formulation.
 """
 
