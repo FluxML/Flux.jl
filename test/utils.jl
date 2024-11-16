@@ -225,7 +225,7 @@ end
         @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
     @testset "Dense ID mapping" begin
-        l = Dense(3,3, init = identity_init)
+        l = Dense(3 => 3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
@@ -449,7 +449,7 @@ end
   @test modules[5] === m2
   @test modules[6] === m3
 
-  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2=>2,abs), Dense(2=>2,abs2)))
+  mod_par = Flux.modules(Parallel(Flux.Bilinear((2,2) => 2,cbrt), Dense(2=>2,abs), Dense(2=>2,abs2)))
   @test length(mod_par) == 5
 
   mod_rnn = Flux.modules(Chain(Dense(2=>3), BatchNorm(3), LSTM(3=>4)))
@@ -559,15 +559,15 @@ end
         dense::Dense
         dense2::Dense
     end
-    Flux.@functor TwoDenses
+    Flux.@layer TwoDenses
 
     function (m::TwoDenses)(x)
         out = m.dense(x)
     end
 
     model = TwoDenses(
-        Dense(3,1),
-        Dense(3,2)
+        Dense(3 => 1),
+        Dense(3 => 2)
     )
     p, re = Flux.destructure(model)
 
@@ -602,7 +602,7 @@ end
     Flux.@layer Model
     (m::Model)(x) = m.a(x) .+ m.b(x)
 
-    d = Dense(1, 1)
+    d = Dense(1 => 1)
     x = rand(Float32, 1, 1)
 
     # Sharing the parameters
@@ -631,8 +631,8 @@ end
 
     data = rand(Float32, n_input, n_batch)
     model = Chain(
-        Dense(n_input, n_shared),
-        Split(Dense(n_shared, n_outputs[1]), Dense(n_shared, n_outputs[2]))
+        Dense(n_input => n_shared),
+        Split(Dense(n_shared => n_outputs[1]), Dense(n_shared => n_outputs[2]))
     )
 
     pvec, re = Flux.destructure(model)
