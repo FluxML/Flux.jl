@@ -133,8 +133,8 @@ end
 
   # Scalar indexing of an array, needs OneElement to transfer to GPU
   # https://github.com/FluxML/Zygote.jl/issues/1005
-  @test_broken gradient(x -> cpu(2 .* gpu(x))[1], Float32[1,2,3]) == ([2,0,0],)
-  @test_broken gradient(x -> cpu(gpu(x) * gpu(x))[1,2], Float32[1 2 3; 4 5 6; 7 8 9]) == ([2 6 8; 0 2 0; 0 3 0],)
+  @test gradient(x -> cpu(2 .* gpu(x))[1], Float32[1,2,3]) == ([2,0,0],)
+  @test gradient(x -> cpu(gpu(x) * gpu(x))[1,2], Float32[1 2 3; 4 5 6; 7 8 9]) == ([2 6 8; 0 2 0; 0 3 0],)
 end
 
 @testset "gpu(x) and cpu(x) on structured arrays" begin
