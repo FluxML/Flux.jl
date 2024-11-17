@@ -15,7 +15,7 @@ using Functors: fmapstructure_with_path
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
-ENV["FLUX_TEST_ENZYME"] = "true"
+# ENV["FLUX_TEST_ENZYME"] = "false"
 
 include("test_utils.jl") # for test_gradients
 

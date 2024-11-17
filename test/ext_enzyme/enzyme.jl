@@ -96,22 +96,32 @@ end
         sum(model(x))
     end
 
+    struct LSTMChain
+        rnn1
+        rnn2
+    end
+    function (m::LSTMChain)(x)
+        st = m.rnn1(x)
+        st = m.rnn2(st[1])
+        return st[1]
+    end
+
     models_xs = [
-        (Dense(2, 4), randn(Float32, 2), "Dense"),
-        (Chain(Dense(2, 4, relu), Dense(4, 3)), randn(Float32, 2), "Chain(Dense, Dense)"),
-        (f64(Chain(Dense(2, 4), Dense(4, 2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
+        (Dense(2=>4), randn(Float32, 2), "Dense"),
+        (Chain(Dense(2=>4, relu), Dense(4=>3)), randn(Float32, 2), "Chain(Dense, Dense)"),
+        (f64(Chain(Dense(2=>4), Dense(4=>2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
         (Flux.Scale([1.0f0 2.0f0 3.0f0 4.0f0], true, abs2), randn(Float32, 2), "Flux.Scale"),
         (Conv((3, 3), 2 => 3), randn(Float32, 3, 3, 2, 1), "Conv"),
         (Chain(Conv((3, 3), 2 => 3, relu), Conv((3, 3), 3 => 1, relu)), rand(Float32, 5, 5, 2, 1), "Chain(Conv, Conv)"),
         (Chain(Conv((4, 4), 2 => 2, pad=SamePad()), MeanPool((5, 5), pad=SamePad())), rand(Float32, 5, 5, 2, 2), "Chain(Conv, MeanPool)"),
         (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
         (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
-        (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
         (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
-        (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
+        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+        (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
+        (LSTMChain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
         (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),        
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
         (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
     ]
     

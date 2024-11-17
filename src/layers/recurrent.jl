@@ -176,9 +176,9 @@ function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
   return RNN(cell)
 end
 
-(m::RNN)(x) = m(x, zeros_like(x, size(m.cell.Wh, 1)))
+(m::RNN)(x::AbstractArray) = m(x, zeros_like(x, size(m.cell.Wh, 1)))
 
-function (m::RNN)(x, h)
+function (m::RNN)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   # [x] = [in, L] or [in, L, B]
   # [h] = [out] or [out, B]
@@ -366,13 +366,13 @@ function LSTM((in, out)::Pair; cell_kwargs...)
   return LSTM(cell)
 end
 
-function (m::LSTM)(x)
-  h = zeros_like(x, size(m.cell.Wh, 1))
+function (m::LSTM)(x::AbstractArray)
+  h = zeros_like(x, size(m.cell.Wh, 2))
   c = zeros_like(h)
   return m(x, (h, c))
 end
 
-function (m::LSTM)(x, (h, c))
+function (m::LSTM)(x::AbstractArray, (h, c))
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
   c′ = []
@@ -538,12 +538,12 @@ function GRU((in, out)::Pair; cell_kwargs...)
   return GRU(cell)
 end
 
-function (m::GRU)(x)
+function (m::GRU)(x::AbstractArray)
   h = zeros_like(x, size(m.cell.Wh, 2))
   return m(x, h)
 end
 
-function (m::GRU)(x, h)
+function (m::GRU)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
   # [x] = [in, L] or [in, L, B]
@@ -676,12 +676,12 @@ function GRUv3((in, out)::Pair; cell_kwargs...)
   return GRUv3(cell)
 end
 
-function (m::GRUv3)(x)
+function (m::GRUv3)(x::AbstractArray)
   h = zeros_like(x, size(m.cell.Wh, 2))
   return m(x, h)
 end
 
-function (m::GRUv3)(x, h)
+function (m::GRUv3)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   h′ = []
   for x_t in eachslice(x, dims = 2)
