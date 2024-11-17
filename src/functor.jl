@@ -108,6 +108,10 @@ julia> m.bias
 """
 cpu(x) = cpu_device()(x)
 
+# TODO remove after https://github.com/LuxDL/Lux.jl/pull/1089
+ChainRulesCore.@non_differentiable cpu_device()
+
+
 # Remove when 
 # https://github.com/JuliaPackaging/Preferences.jl/issues/39
 # is resolved
@@ -148,6 +152,10 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 gpu(x) = gpu_device()(x)
+
+# TODO remove after https://github.com/LuxDL/Lux.jl/pull/1089
+ChainRulesCore.@non_differentiable gpu_device()
+ChainRulesCore.@non_differentiable gpu_device(::Any)
 
 # Precision
 

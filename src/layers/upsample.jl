@@ -35,6 +35,9 @@ struct Upsample{mode, S, T}
   size::T
 end
 
+Functors.@leaf Upsample # mark leaf since the constructor is not compatible with Functors
+                        # by default but we don't need to recurse into it   
+
 function Upsample(mode::Symbol = :nearest; scale = nothing, size = nothing)
   mode in [:nearest, :bilinear, :trilinear] || 
     throw(ArgumentError("mode=:$mode is not supported."))
