@@ -77,7 +77,16 @@ function _applychain(layers::AbstractVector, x)  # type-unstable path, helps com
   for f in layers
     x = f(x)
   end
-  x
+  return x
+end
+
+# An easy error to make is to pass result of explicit gradient(...), not gradient(...)[1]
+# Can't catch every case, but can catch many simple Flux models:
+function Optimisers.update!(opt, model::Chain, grads::Tuple)
+  # Zygote will make a NamedTuple{(:layers,)} for the gradient of Chain, Diffractor a Tangent
+  @warn """explicit `update!(opt, model, grad)` wants the gradient for the model alone,
+    not the whole tuple from `gradient(m -> loss(m, x, y), model)`. You probably want `grads[1]`."""
+  return Optimisers.update!(opt, model, grads[1])
 end
 
 Base.getindex(c::Chain, i::AbstractArray) = Chain(c.layers[i])

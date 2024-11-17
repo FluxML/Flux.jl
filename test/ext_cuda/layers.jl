@@ -6,10 +6,9 @@
 
 # generic movement tests
 @testset "Basic GPU Movement" begin
-  @test gradient(x -> sum(gpu(x)), rand(3,3)) isa Tuple
-  @test gradient(x -> sum(cpu(x)), gpu(rand(3,3))) isa Tuple
+  @test gradient(x -> sum(gpu(x)), rand(Float32, 3, 3))[1] isa Matrix{Float32}
+  @test gradient(x -> sum(cpu(x)), gpu(rand(Float32, 3, 3)))[1] isa CuMatrix{Float32}
 end
-
 
 const ACTIVATIONS = [identity, tanh]
 

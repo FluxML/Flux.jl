@@ -32,7 +32,7 @@ evalwgrad(f, x...) = pullback(f, x...)[1]
     @test count(iszero, y2) == 0
 
     x = rand(Float32, 100)
-    m = Chain(Dense(100,100),
+    m = Chain(Dense(100 => 100),
               Dropout(0.9; rng_kwargs...))
     y = evalwgrad(m, x)
     @test count(a->a == 0, y) > 50

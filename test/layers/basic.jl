@@ -16,23 +16,23 @@ using Flux: activations
   end
 
   @testset "Chain" begin
-    @test_nowarn Chain(Dense(10, 5, σ), Dense(5, 2))(randn32(10))
-    @test_throws DimensionMismatch Chain(Dense(10, 5, σ),Dense(2, 1))(randn32(10))
+    @test_nowarn Chain(Dense(10 => 5, σ), Dense(5 => 2))(randn32(10))
+    @test_throws DimensionMismatch Chain(Dense(10 => 5, σ),Dense(2 => 1))(randn32(10))
     # numeric test should be put into testset of corresponding layer
 
-    @test_nowarn Chain(first = Dense(10, 5, σ), second = Dense(5, 2))(randn32(10))
-    m = Chain(first = Dense(10, 5, σ), second = Dense(5, 2))
+    @test_nowarn Chain(first = Dense(10 => 5, σ), second = Dense(5 => 2))(randn32(10))
+    m = Chain(first = Dense(10 => 5, σ), second = Dense(5 => 2))
     @test m[:first] == m[1]
     @test m[1:2] == m
 
     @test m == m
     @test m == fmap(identity, m)  # does not forget names
 
-    @test_throws ArgumentError Chain(layers = Dense(10, 10), two = identity) # reserved name
+    @test_throws ArgumentError Chain(layers = Dense(10 => 10), two = identity) # reserved name
 
-    @test_nowarn Chain([Dense(10, 5, σ), Dense(5, 2)])(randn(Float32, 10))  # vector of layers
+    @test_nowarn Chain([Dense(10 => 5, σ), Dense(5 => 2)])(randn(Float32, 10))  # vector of layers
     
-    c = Chain(Dense(10, 5, σ), Dense(5, 2), Dense(2, 1, relu))
+    c = Chain(Dense(10 => 5, σ), Dense(5 => 2), Dense(2 => 1, relu))
     @test c[1] == c[begin]
     @test c[3] == c[end]
 
@@ -40,7 +40,7 @@ using Flux: activations
   end
 
   @testset "Activations" begin
-    c = Chain(Dense(3,5,relu), Dense(5,1,relu))
+    c = Chain(Dense(3 => 5, relu), Dense(5 => 1, relu))
     X = Float32.([1.0; 1.0; 1.0])
     @test_nowarn gradient(c -> Flux.activations(c, X)[2][1], c)
 
@@ -51,8 +51,8 @@ using Flux: activations
 
   @testset "Dense" begin
     @testset "constructors" begin
-      @test size(Dense(10, 100).weight) == (100, 10)
-      @test size(Dense(10, 100).bias) == (100,)
+      @test size(Dense(10 => 100).weight) == (100, 10)
+      @test size(Dense(10 => 100).bias) == (100,)
       @test Dense(rand(100,10), rand(100)).σ == identity
       @test Dense(rand(100,10)).σ == identity
 
@@ -62,12 +62,12 @@ using Flux: activations
       @test Dense(rand(Float16, 100,10), true).bias isa Vector{Float16}  # creates matching type
       @test Dense(rand(Float16, 100,10), rand(100)).bias isa Vector{Float16}  # converts to match
 
-      @test Dense(3,4; init=Base.randn, bias=true).bias isa Vector{Float64}
-      @test Dense(3,4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
+      @test Dense(3 => 4; init=Base.randn, bias=true).bias isa Vector{Float64}
+      @test Dense(3 => 4; init=Base.randn, bias=[1,2,3,4]).bias isa Vector{Float64}
 
-      @test_throws MethodError Dense(10, 10.5)
-      @test_throws MethodError Dense(10, 10.5, tanh)
-      @test_throws DimensionMismatch Dense(3,4; bias=rand(5))
+      @test_throws MethodError Dense(10 => 10.5)
+      @test_throws MethodError Dense(10 => 10.5, tanh)
+      @test_throws DimensionMismatch Dense(3 => 4; bias=rand(5))
       @test_throws DimensionMismatch Dense(rand(4,3), rand(5))
       @test_throws MethodError Dense(rand(5))
       @test_throws MethodError Dense(rand(5), rand(5))
@@ -78,18 +78,18 @@ using Flux: activations
       @test_throws DimensionMismatch Dense(10 => 5)(randn32(1))
       @test_throws MethodError Dense(10 => 5)(1) # avoid broadcasting
       @test_throws MethodError Dense(10 => 5).(randn32(10)) # avoid broadcasting
-      @test size(Dense(10, 5)(randn(10))) == (5,)
-      @test size(Dense(10, 5)(randn(10,2))) == (5,2)
-      @test size(Dense(10, 5)(randn(10,2,3))) == (5,2,3)
-      @test size(Dense(10, 5)(randn(10,2,3,4))) == (5,2,3,4)
-      @test_throws DimensionMismatch Dense(10, 5)(randn(11,2,3))
+      @test size(Dense(10 => 5)(randn(10))) == (5,)
+      @test size(Dense(10 => 5)(randn(10,2))) == (5,2)
+      @test size(Dense(10 => 5)(randn(10,2,3))) == (5,2,3)
+      @test size(Dense(10 => 5)(randn(10,2,3,4))) == (5,2,3,4)
+      @test_throws DimensionMismatch Dense(10 => 5)(randn(11,2,3))
     end
     @testset "zeros" begin
-      @test Dense(10, 1, identity, init = ones)(ones(10,1)) == 10*ones(1, 1)
-      @test Dense(10, 1, identity, init = ones)(ones(10,2)) == 10*ones(1, 2)
-      @test Dense(10, 2, identity, init = ones)(ones(10,1)) == 10*ones(2, 1)
-      @test Dense(10, 2, identity, init = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
-      @test Dense(10, 2, identity, init = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10 => 1, identity, init = ones)(ones(10,1)) == 10*ones(1, 1)
+      @test Dense(10 => 1, identity, init = ones)(ones(10,2)) == 10*ones(1, 2)
+      @test Dense(10 => 2, identity, init = ones)(ones(10,1)) == 10*ones(2, 1)
+      @test Dense(10 => 2, identity, init = ones)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
+      @test Dense(10 => 2, identity, init = ones, bias = false)([ones(10,1) 2*ones(10,1)]) == [10 20; 10 20]
     end
     @testset "type matching" begin
        d1 = Dense(2 => 3)
@@ -159,7 +159,7 @@ using Flux: activations
     end
 
     @testset "trainables" begin
-      mo = Maxout(()->Dense(32, 64), 4)
+      mo = Maxout(()->Dense(32 => 64), 4)
       ps = Flux.trainables(mo)
       @test length(ps) == 8  #4 alts, each with weight and bias
     end
@@ -173,13 +173,13 @@ using Flux: activations
 
     @testset "concat size" begin
       input = randn(10, 2)
-      @test size(SkipConnection(Dense(10,10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
+      @test size(SkipConnection(Dense(10 => 10), (a,b) -> cat(a, b, dims = 2))(input)) == (10,4)
     end
   end
 
   @testset "Bilinear" begin
     @testset "SkipConnection recombinator" begin
-      d = Dense(10, 10)
+      d = Dense(10 => 10)
       b = Flux.Bilinear(10, 10, 5)
       x = randn(Float32,10,9)
       sc = SkipConnection(d, b)
@@ -231,14 +231,14 @@ using Flux: activations
 
     @testset "concat size" begin
       input = randn32(10, 2)
-      @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10, 10), identity)(input)) == (10, 4)
-      @test size(Parallel(hcat, one = Dense(10, 10), two = identity)(input)) == (10, 4)
+      @test size(Parallel((a, b) -> cat(a, b; dims=2), Dense(10 => 10), identity)(input)) == (10, 4)
+      @test size(Parallel(hcat, one = Dense(10 => 10), two = identity)(input)) == (10, 4)
     end
 
     @testset "vararg input" begin
       inputs = randn32(10), randn32(5), randn32(4)
-      @test size(Parallel(+, Dense(10, 2), Dense(5, 2), Dense(4, 2))(inputs)) == (2,)
-      @test size(Parallel(+; a = Dense(10, 2), b = Dense(5, 2), c = Dense(4, 2))(inputs)) == (2,)
+      @test size(Parallel(+, Dense(10 => 2), Dense(5 => 2), Dense(4 => 2))(inputs)) == (2,)
+      @test size(Parallel(+; a = Dense(10 => 2), b = Dense(5 => 2), c = Dense(4 => 2))(inputs)) == (2,)
       @test_throws ArgumentError Parallel(+, sin, cos)(1,2,3)  # wrong number of inputs
       @test Parallel(+, sin, cos)(pi/2) ≈ 1  # one input, several layers
       @test Parallel(/, abs)(3, -4) ≈ 3/4    # one layer, several inputs
@@ -247,12 +247,12 @@ using Flux: activations
     end
 
     @testset "named access" begin
-      m = Parallel(hcat, one = Dense(10, 10), two = identity)
+      m = Parallel(hcat, one = Dense(10 => 10), two = identity)
       @test m[1] == m[:one]
       @test m[1:2] == m
 
-      @test_throws ArgumentError Parallel(hcat, layers = Dense(10, 10), two = identity) # reserved names
-      @test_throws ArgumentError Parallel(hcat, connection = Dense(10, 10), two = identity)
+      @test_throws ArgumentError Parallel(hcat, layers = Dense(10 => 10), two = identity) # reserved names
+      @test_throws ArgumentError Parallel(hcat, connection = Dense(10 => 10), two = identity)
 
       @test m == fmap(identity, m)  # does not forget names
 
@@ -427,7 +427,7 @@ using Flux: activations
 end
 
 @testset "second derivatives" begin
-  m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
+  m1 = Chain(Dense(3 => 4,tanh; bias=false), Dense(4 => 2))
   @test Zygote.hessian_dual(sum∘m1, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1, [1,2,3])
 
   m1v = Chain([m1[1], m1[2]])  # vector of layers
@@ -435,17 +435,17 @@ end
   @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1v, [1,2,3])
 
   # NNlib's softmax gradient writes in-place
-  m2 = Chain(Dense(3,4,tanh), Dense(4,2), softmax)
+  m2 = Chain(Dense(3 => 4, tanh), Dense(4 => 2), softmax)
   @test_broken Zygote.hessian_dual(sum∘m2, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m2, [1,2,3])
 
   # https://github.com/FluxML/NNlib.jl/issues/362
-  m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2,2))
+  m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2 => 2))
   x3 = cat(Float32[1 2; 3 4; 5 6; 7 8]; dims=3)
   @test Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
 end
 
 @testset "gradients of Chain{Vector}" begin
-  m1 = Chain(Dense(3,4,tanh; bias=false), Dense(4,2))
+  m1 = Chain(Dense(3 => 4, tanh; bias=false), Dense(4 => 2))
   m1v = Chain([m1[1], m1[2]])
   @test sum(length, Flux.trainables(m1)) == sum(length, Flux.trainables(m1v))
 
@@ -465,14 +465,14 @@ end
 
 @testset "PairwiseFusion" begin
   x = (rand(1, 10), rand(30, 10))
-  layer = PairwiseFusion(+,  Dense(1, 30),  Dense(30, 10))
+  layer = PairwiseFusion(+,  Dense(1 => 30),  Dense(30 => 10))
   y = layer(x)
   @test length(y) == 2
   @test size(y[1]) == (30, 10)
   @test size(y[2]) == (10, 10)
 
   x = rand(1, 10)
-  layer = PairwiseFusion(.+,  Dense(1, 10),  Dense(10, 1))
+  layer = PairwiseFusion(.+,  Dense(1 => 10),  Dense(10 => 1))
   y = layer(x)
   @test length(y) == 2
   @test size(y[1]) == (10, 10)

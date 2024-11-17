@@ -159,6 +159,17 @@ end
     @test c isa Array{Float32, 2}
     @test size(c) == (4, 3)
     test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
+
+    lstm = model.lstm
+    h, c = lstm(x)
+    @test h isa Array{Float32, 2}
+    @test size(h) == (4, 3)
+    @test c isa Array{Float32, 2}
+    @test size(c) == (4, 3)
+    # no initial state same as zero initial state
+    h1, c1 = lstm(x, (zeros(Float32, 4), zeros(Float32, 4)))
+    @test h ≈ h1
+    @test c ≈ c1
 end
 
 @testset "GRUCell" begin

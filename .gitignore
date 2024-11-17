@@ -11,3 +11,4 @@ LocalPreferences.toml
 .DS_Store
 docs/mymodel.bson
 prova.jl
+benchmarks/

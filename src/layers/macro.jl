@@ -117,19 +117,19 @@ end
 _macro_functor(type, field::Union{Symbol,QuoteNode}) = _macro_functor(type, :(($field,)))  # lets you forget a comma
 
 function _default_functor(::Type{T}, x) where {T}
-   if @generated
-     F = fieldnames(T)
-     args = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
-     C = Base.typename(T).wrapper  # constructor
-     # recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
-     recon = :(Base.splat($C))
-     :((NamedTuple{$F}(($(args...),)), $recon))
-   else
-     # Getting this parameterless type takes about 2μs, every time:
-     # spl = VERSION > v"1.9-" ? Splat : Base.splat
-     spl = Base.splat
-     namedtuple(x), spl(Base.typename(T).wrapper)
-   end
+  if @generated
+    F = fieldnames(T)
+    args = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
+    C = Base.typename(T).wrapper  # constructor
+    # recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
+    recon = :(Base.splat($C))
+    :((NamedTuple{$F}(($(args...),)), $recon))
+  else
+    # Getting this parameterless type takes about 2μs, every time:
+    # spl = VERSION > v"1.9-" ? Splat : Base.splat
+    spl = Base.splat
+    namedtuple(x), spl(Base.typename(T).wrapper)
+  end
 end
  
 function namedtuple(x::T) where T

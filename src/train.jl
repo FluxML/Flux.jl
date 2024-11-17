@@ -3,13 +3,12 @@ module Train
 using LinearAlgebra
 using Optimisers: Optimisers
 using Functors: fmap, fmapstructure
-using ..Flux: Flux # used only in docstring 
-import ..Flux.Optimise: train!, update!  # during 0.13, we add methods to the old functions
-
-export setup, train!
+using ..Flux: Flux
 
 using ProgressLogging: @progress, @withprogress, @logprogress
-using Zygote: Zygote, Params
+using Zygote: Zygote
+
+export setup, train!
 
 """
     opt_state = setup(rule, model)
@@ -49,7 +48,7 @@ function setup(rule::Optimisers.AbstractRule, model)
       Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
                                          If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
     end
-    state
+    return state
 end
 
 """

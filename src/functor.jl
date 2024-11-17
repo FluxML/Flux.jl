@@ -75,64 +75,6 @@ function testmode!(m, mode)
   m
 end
 
-function params!(p::Params, x, seen = IdSet())
-  if x isa AbstractArray{<:Number} && Functors.isleaf(x)
-    return push!(p, x)
-  elseif x in seen
-    nothing
-  else
-    _check_new_macro(x)  # complains if you used @functor not @layer
-    push!(seen, x)
-    for child in trainable(x)
-      params!(p, child, seen)
-    end
-  end
-end
-
-"""
-    params(model)
-    params(layers...)
-
-Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
-
-This can be used with the `gradient` function, see the [training section of the manual](@ref man-training), or as input to the [`Flux.train!`](@ref Flux.train!) function.
-
-The behaviour of `params` on custom types can be customized using [`Functors.@functor`](@ref) or [`Flux.trainable`](@ref).
-
-# Examples
-```jldoctest
-julia> using Flux: params
-
-julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
-Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
-
-julia> bn = BatchNorm(2, relu)
-BatchNorm(2, relu)  # 4 parameters, plus 4 non-trainable
-
-julia> params(bn)  # only the trainable parameters
-Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
-
-julia> params([1, 2, 3], [4])  # one or more arrays of numbers
-Params([[1, 2, 3], [4]])
-
-julia> params([[1, 2, 3], [4]])  # unpacks array of arrays
-Params([[1, 2, 3], [4]])
-
-julia> params(1, [2 2], (alpha=[3,3,3], beta=Ref(4), gamma=sin))  # ignores scalars, unpacks NamedTuples
-Params([[2 2], [3, 3, 3]])
-```
-"""
-function params(m...)
-  ps = Params()
-  params!(ps, m)
-  return ps
-end
-
-# Allows caching of the parameters when params is called within gradient() to fix #2040.
-# @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
-# That speeds up implicit use, and silently breaks explicit use. 
-# From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
-Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
 
 
@@ -165,6 +107,10 @@ julia> m.bias
 ```
 """
 cpu(x) = cpu_device()(x)
+
+# TODO remove after https://github.com/LuxDL/Lux.jl/pull/1089
+ChainRulesCore.@non_differentiable cpu_device()
+
 
 # Remove when 
 # https://github.com/JuliaPackaging/Preferences.jl/issues/39
@@ -206,6 +152,10 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 gpu(x) = gpu_device()(x)
+
+# TODO remove after https://github.com/LuxDL/Lux.jl/pull/1089
+ChainRulesCore.@non_differentiable gpu_device()
+ChainRulesCore.@non_differentiable gpu_device(::Any)
 
 # Precision
 

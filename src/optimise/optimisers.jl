@@ -1,11 +1,6 @@
-using Flux
-using MacroTools: @forward
-
 abstract type AbstractOptimiser end
 
 const EPS = 1e-8
-
-# TODO: should use weak refs
 
 """
     Descent(η = 0.1)

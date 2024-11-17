@@ -2,7 +2,6 @@ module FluxEnzymeExt
 
 using Flux
 import Flux.Train: train!, _rule_to_state
-import Flux.Optimise
 import Optimisers
 import Enzyme
 using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal

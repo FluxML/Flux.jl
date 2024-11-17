@@ -2,15 +2,15 @@
   m = Chain(Conv((3, 3), 3 => 16), Conv((3, 3), 16 => 32))
   @test outputsize(m, (10, 10, 3, 1)) == (6, 6, 32, 1)
 
-  m = Dense(10, 5)
+  m = Dense(10 => 5)
   @test_throws DimensionMismatch outputsize(m, (5, 2)) == (5, 1)
   @test outputsize(m, (10,); padbatch=true) == (5, 1)
 
-  m = Chain(Dense(10, 8, σ), Dense(8, 5), Dense(5, 2))
+  m = Chain(Dense(10 => 8, σ), Dense(8 => 5), Dense(5 => 2))
   @test outputsize(m, (10,); padbatch=true) == (2, 1)
   @test outputsize(m, (10, 30)) == (2, 30)
 
-  m = Chain(Dense(10, 8, σ), Dense(8, 4), Dense(5, 2))
+  m = Chain(Dense(10 => 8, σ), Dense(8 => 4), Dense(5 => 2))
   @test_throws DimensionMismatch outputsize(m, (10,))
 
   m = Flux.Scale(10)
@@ -25,7 +25,7 @@
   m = Flux.unsqueeze(dims=3)
   @test outputsize(m, (5, 7, 13)) == (5, 7, 1, 13)
 
-  m = Flux.Bilinear(10, 10, 7)
+  m = Flux.Bilinear((10, 10) => 7)
   @test outputsize(m, (10,)) == (7,)
   @test outputsize(m, (10, 32)) == (7, 32)
 
@@ -41,13 +41,13 @@
 end
 
 @testset "multiple inputs" begin
-  m = Parallel(vcat, Dense(2, 4, relu), Dense(3, 6, relu))
+  m = Parallel(vcat, Dense(2 => 4, relu), Dense(3 => 6, relu))
   @test outputsize(m, (2,), (3,)) == (10,)
   @test outputsize(m, ((2,), (3,))) == (10,)
   @test outputsize(m, (2,), (3,); padbatch=true) == (10, 1)
   @test outputsize(m, (2,7), (3,7)) == (10, 7)
 
-  m = Chain(m, Dense(10, 13, tanh), softmax)
+  m = Chain(m, Dense(10 => 13, tanh), softmax)
   @test outputsize(m, (2,), (3,)) == (13,)
   @test outputsize(m, ((2,), (3,))) == (13,)
   @test outputsize(m, (2,), (3,); padbatch=true) == (13, 1)
@@ -59,7 +59,7 @@ end
                      leakyrelu, lisht, logcosh, logσ, mish,
                      relu, relu6, rrelu, selu, σ, softplus,
                      softshrink, softsign, swish, tanhshrink, trelu]
-    @test outputsize(Dense(10, 5, f), (10, 1)) == (5, 1)
+    @test outputsize(Dense(10 => 5, f), (10, 1)) == (5, 1)
   end
 end
 
