@@ -14,6 +14,7 @@ steps:
     env:
       FLUX_TEST_CUDA: "true"
       FLUX_TEST_CPU: "false"
+      FLUX_TEST_ENZYME: "false"
     timeout_in_minutes: 60
 
   # - label: "GPU nightly"
@@ -53,6 +54,7 @@ steps:
     env:
       FLUX_TEST_METAL: "true"
       FLUX_TEST_CPU: "false"
+      FLUX_TEST_ENZYME: "false"
     matrix:
       setup:
         julia:
@@ -82,6 +84,7 @@ steps:
       JULIA_AMDGPU_DISABLE_ARTIFACTS: "1"
       FLUX_TEST_AMDGPU: "true"
       FLUX_TEST_CPU: "false"
+      FLUX_TEST_ENZYME: "false"
       JULIA_NUM_THREADS: 4
 env:
   SECRET_CODECOV_TOKEN: "fAV/xwuaV0l5oaIYSAXRQIor8h7yHdlrpLUZFwNVnchn7rDk9UZoz0oORG9vlKLc1GK2HhaPRAy+fTkJ3GM/8Y0phHh3ANK8f5UsGm2DUTNsnf6u9izgnwnoRTcsWu+vSO0fyYrxBvBCoJwljL+yZbDFz3oE16DP7HPIzxfQagm+o/kMEszVuoUXhuLXXH0LxT6pXl214qjqs04HfMRmKIIiup48NB6fBLdhGlQz64MdMNHBfgDa/fafB7eNvn0X6pEOxysoy6bDQLUhKelOXgcDx1UsTo34Yiqr+QeJPAeKcO//PWurwQhPoUoHfLad2da9DN4uQk4YQLqAlcIuAA==;U2FsdGVkX1+mRXF2c9soCXT7DYymY3msM+vrpaifiTp8xA+gMpbQ0G63WY3tJ+6V/fJcVnxYoKZVXbjcg8fl4Q=="
