@@ -162,14 +162,10 @@ _noquotenode(s::Symbol) = s
 _noquotenode(q::QuoteNode) = q.value  # lets you write trainable=(:x,:y) instead of (x,y)
 _noquotenode(ex) = error("expected a symbol here, as a field name, but got ", ex)
 
-_make_zero_internal!(x::AbstractArray) = fill!(x, 0)
-_make_zero_internal!(x) = x
-_make_zero!(model) = fmap(_make_zero_internal!, model)
-
 function _macro_enzyme(type)
     out = quote
         # One-arg method Duplicated(m::Layer) which allocates & zeros the gradient:
-        $EnzymeCore.Duplicated(m::$type) = $EnzymeCore.Duplicated(m, $_make_zero!($deepcopy(m)))
+        $EnzymeCore.Duplicated(m::$type) = $EnzymeCore.Duplicated(m, $EnzymeCore.make_zero(m))
 
         # Not sure we want this, but make Duplicated{<:Layer} callable?
         (m::$EnzymeCore.Duplicated{<:$type})(xs...) = m.val(xs...)

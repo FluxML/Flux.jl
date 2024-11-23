@@ -1,13 +1,12 @@
 module FluxEnzymeExt
 
 using Flux
-using Flux: _make_zero!
 import Flux.Train: _enzyme_train!
 
 import Optimisers
 import Functors
 import Enzyme
-using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal
+using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, DuplicatedNoNeed, make_zero!
 using Enzyme: autodiff_thunk, Reverse, ReverseSplitWithPrimal
 using ProgressLogging: @withprogress, @logprogress
 
@@ -17,7 +16,7 @@ EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
 function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
-    zero && x isa Duplicated && _make_zero!(x.dval)
+    zero && x isa Duplicated && make_zero!(x.dval)
     _check_mutable(x)
   end
   Enzyme.autodiff(Reverse, f, Active, args...)
@@ -36,7 +35,7 @@ _grad_or_nothing(x) = Optimisers.isnumeric(x) ? x : nothing
 
 function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
-    zero && x isa Duplicated && _make_zero!(x.dval)
+    zero && x isa Duplicated && make_zero!(x.dval)
     _check_mutable(x)
   end
 
@@ -85,7 +84,7 @@ function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
 
-    _make_zero!(model.dval)
+    make_zero!(model.dval)
     _, l = Enzyme.autodiff(ReverseWithPrimal, _applyloss,
                            Active, Const(loss), model, map(Const, d_splat)...)
 
