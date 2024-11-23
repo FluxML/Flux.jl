@@ -609,7 +609,7 @@ end
 
 Return an iterator over non-leaf objects
 that can be reached by recursing `m` over
-the children given by [`functor`](@ref).
+the children given by [`Functors.functor`](@ref).
 
 Useful for applying a function (e.g. a regularizer)
 over specific modules or subsets of the parameters

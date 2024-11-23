@@ -92,7 +92,9 @@ include("train.jl")
 using .Train
 using .Train: setup
 
-using Adapt, Functors, OneHotArrays
+using Adapt, OneHotArrays
+using Functors: Functors, fmap, fmapstructure
+
 include("utils.jl")
 include("functor.jl")
 
