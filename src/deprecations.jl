@@ -116,19 +116,6 @@ function Optimisers.update!(opt::Optimisers.AbstractRule, model::Chain, grad::Tu
 end
 
 
-macro functor(ex)
-  Base.depwarn("""The macro `Flux.@functor` is deprecated.
-      Most likely, you should write `Flux.@layer MyLayer` which will add 
-      various convenience methods for your type, such as pretty-printing, and use with Adapt.jl.
-      However, this is not strictly required: Flux.jl v0.15 uses Functors.jl v0.5, 
-      which makes exploration of most nested `struct`s opt-out instead of opt-in... 
-      so Flux will automatically see inside any custom struct definitions to take care of things
-      like moving data to the GPU.
-      """, Symbol("@functor"))
-
-  return :(Functors.functor($(esc(expr))))
-end
-
 ### v0.16 deprecations ####################
 
 

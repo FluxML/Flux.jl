@@ -79,7 +79,7 @@ end
     cpu(m)
 
 Copies `m` onto the CPU, the opposite of [`gpu`](@ref).
-Recurses into structs marked [`@functor`](@ref).
+Recurses into structs (thanks to Functors.jl).
 
 # Example
 ```julia-repl
@@ -119,16 +119,14 @@ end
 
 Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
-
-On arrays, this calls CUDA's `cu`, which also changes arrays
-with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
-To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
+It recurses into structs according to Functors.jl.
 
 Use [`cpu`](@ref) to copy back to ordinary `Array`s.
 See also [`f32`](@ref) and [`f16`](@ref) to change element type only.
 
-See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
-to help identify the current device.
+This function is just defined for convenience around [`gpu_device`](@ref), 
+and is equivalent to `gpu_device()(m)`.
+You may consider defining `device = gpu_device()` once and then using `device(m)` to move data.
 
 # Example
 ```julia-repl
@@ -146,10 +144,6 @@ CUDA.CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}
 ```
 """
 gpu(x) = gpu_device()(x)
-
-# TODO remove after https://github.com/LuxDL/Lux.jl/pull/1089
-ChainRulesCore.@non_differentiable gpu_device()
-ChainRulesCore.@non_differentiable gpu_device(::Any)
 
 # Precision
 
