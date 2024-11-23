@@ -18,7 +18,7 @@ import Optimisers: trainable
 using Random: default_rng
 
 using Zygote, ChainRulesCore
-using Zygote: Params, @adjoint, pullback
+using Zygote: @adjoint, pullback
 using Zygote.ForwardDiff: value
 using EnzymeCore: EnzymeCore
 
@@ -59,10 +59,6 @@ export Chain, Dense, Embedding, EmbeddingBag,
   setup, train!,
   # from Optimsers.jl
   destructure, freeze!, thaw!, adjust!, trainables, update!, trainable,
-  # from Functors.jl
-  functor, @functor, KeyPath, haskeypath, getkeypath,
-  # from Train/Optimisers.jl
-  setup, update!, destructure, freeze!, adjust!, params, trainable, trainables,
   withgradient,
   # init
   glorot_uniform,

@@ -8,8 +8,6 @@ using ..Flux: Flux
 using ProgressLogging: @progress, @withprogress, @logprogress
 using Zygote: Zygote
 
-# import ..Flux.Optimise: train!, update!, Optimise  # during 0.13, we add methods to the old functions
-
 export setup, train!
 
 using ProgressLogging: @progress, @withprogress, @logprogress
@@ -162,11 +160,6 @@ train!(loss, model::Duplicated, data, opt; cb = nothing) = _enzyme_train!(loss, 
 
 # FluxEnzymeExt defines more specific _enzyme_train!(loss, model::Duplicated, data, opt; cb)
 _enzyme_train!(loss, model, data, opt; cb = nothing) = throw(ArgumentError("The method `train!(loss, Duplicated(model), data, opt_state)` is only available when Enzyme.jl is loaded"))
-
-# # Following src/deprecations.jl
-# function train!(loss, model::Duplicated, data, opt::Optimise.AbstractOptimiser; cb=nothing)
-#   train!(loss, model, data, _old_to_new(opt); cb)
-# end
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing)
