@@ -656,7 +656,7 @@ end
 
 isleaflike(x) = Functors.isleaf(x)
 
-# these are, essentially, Tuple{Vararg{<:T}} using the special property
+# these are, essentially, Tuple{Vararg{T}} using the special property
 # of tuples that they are type covariant.  Using <: here causes warning or error
 isleaflike(::Tuple{Vararg{Number}}) = true
 isleaflike(::Tuple{Vararg{AbstractArray{<:Number}}}) = true
