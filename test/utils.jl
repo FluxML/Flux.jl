@@ -623,7 +623,6 @@ end
         paths::T
     end
     Split(paths...) = Split(paths)
-    Flux.@functor Split
     (m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
 
     n_input, n_batch, n_shared = 5, 13, 11

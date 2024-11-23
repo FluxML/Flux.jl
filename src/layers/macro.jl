@@ -4,12 +4,8 @@
     @layer :expand Chain
     @layer BatchNorm trainable=(β,γ)
 
-This macro replaces most uses of `@functor`. Its basic purpose is the same:
-When you define a new layer, this tells Flux to explore inside it
-to see the parameters it trains, and also to move them to the GPU, change precision, etc.
-
-Like `@functor`, this assumes your struct has the default constructor, to enable re-building.
-If you define an inner constructor (i.e. a function within the `struct` block) things may break.
+This macro adds convenience functionality to a custom type to serve 
+as a neural network layer, module, or entire model.
 
 The keyword `trainable` allows you to limit this exploration, instead of visiting all `fieldnames(T)`.
 Note that it is never necessary to tell Flux to ignore non-array objects such as functions or sizes.
@@ -30,15 +26,9 @@ julia> struct Trio; a; b; c end
 julia> tri = Trio(Dense([1.1 2.2], [0.0], tanh), Dense(hcat(3.3), false), Dropout(0.4))
 Trio(Dense(2 => 1, tanh), Dense(1 => 1; bias=false), Dropout(0.4))
 
-julia> Flux.destructure(tri)  # parameters are not yet visible to Flux
-(Bool[], Restructure(Trio, ..., 0))
-
 julia> Flux.@layer :expand Trio
 
-julia> Flux.destructure(tri)  # now gpu, params, train!, etc will see inside too
-([1.1, 2.2, 0.0, 3.3], Restructure(Trio, ..., 4))
-
-julia> tri  # and layer is printed like Chain
+julia> tri  # now the layer is printed like Chain
 Trio(
   Dense(2 => 1, tanh),                  # 3 parameters
   Dense(1 => 1; bias=false),            # 1 parameters
@@ -67,7 +57,7 @@ function _layer_macro(exs...)
     exs
   end
   
-  push!(out.args, _macro_functor(esc(type)))
+  push!(out.args, _macro_adapt(esc(type)))
 
   for j in 1:length(rest)
     ex = rest[j]
@@ -86,28 +76,13 @@ function _layer_macro(exs...)
   return out
 end
 
-
-# @layer's code for Functors & Adapt
-# Unlike @functor, _default_functor doesn't need to eval anything
-
-function _macro_functor(type)
+# @layer's code for Adapt
+function _macro_adapt(type)
   quote
-    Functors.functor(::Type{T}, x) where {T<:$type} = $_default_functor(T, x)
     Adapt.adapt_structure(to, layer::$type) = $fmap($adapt(to), layer)
   end
 end
 
-function _macro_functor(type, fields)
-  Meta.isexpr(fields, :tuple) || error("expected a tuple of field names")
-  symbols = Tuple(map(_noquotenode, fields.args))
-  quote
-    Functors.functor(::Type{T}, x) where {T<:$type} = $_custom_functor(T, x, Val($symbols))
-    Adapt.adapt_structure(to, layer::$type) = $fmap($adapt(to), layer)
-  end
-end
-_macro_functor(type, field::Union{Symbol,QuoteNode}) = _macro_functor(type, :(($field,)))  # lets you forget a comma
-
- 
 # @layer's code for Optimisers.trainable, and perhaps anything else,
 # with the pattern that keywords mean function names & what fields they pick.
 

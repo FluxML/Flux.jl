@@ -20,13 +20,13 @@ function _macro_big_show(ex)
 end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
-  pre, post = _show_pre_post(obj)
   children = _show_children(obj)
   if all(_show_leaflike, children)
     # This check may not be useful anymore: it tries to infer when to stop the recursion by looking for grandkids,
     # but once all layers use @layer, they stop the recursion by defining a method for _big_show.
     _layer_show(io, obj, indent, name)
   else
+    pre, post = _show_pre_post(obj)
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", pre)
     if obj isa Chain{<:NamedTuple} || obj isa NamedTuple
       # then we insert names -- can this be done more generically?
@@ -66,7 +66,7 @@ _show_pre_post(obj) = string(nameof(typeof(obj)), "("), ")"
 _show_pre_post(::AbstractVector) = "[", "]"
 _show_pre_post(::NamedTuple) = "(;", ")"
 
-_show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
+_show_leaflike(x) = Functors.isleaf(x)  # mostly follow Functors, except for:
 
 # note the covariance of tuple, using <:T causes warning or error
 _show_leaflike(::Tuple{Vararg{Number}}) = true         # e.g. stride of Conv
@@ -146,7 +146,7 @@ function _big_finale(io::IO, m)
 end
 
 _childarray_sum(f, x::AbstractArray{<:Number}) = f(x)
-_childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x), 
+_childarray_sum(f, x) = Functors.isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x), 
 init=0)
 
 # utility functions

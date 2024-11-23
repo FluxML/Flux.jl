@@ -116,25 +116,17 @@ function Optimisers.update!(opt::Optimisers.AbstractRule, model::Chain, grad::Tu
 end
 
 
-"""
-    @functor MyLayer
-  
-Flux used to require the use of `Functors.@functor` to mark any new layer-like struct.
-This allowed it to explore inside the struct, and update any trainable parameters within.
-Flux@0.15 removes this requirement. This is because Functors@0.5 changed its behaviour
-to be opt-out instead of opt-in. Arbitrary structs will now be explored without special marking.
-Hence calling `@functor` is no longer required.
-Calling `Flux.@layer MyLayer` is, however, still recommended. This adds various convenience methods
-for your layer type, such as pretty printing.
-"""
 macro functor(ex)
-  Base.depwarn("""The macro `@functor` is deprecated.
-      Most likely, you should write `Flux.@layer MyLayer` which will add various convenience methods for your type,
-      such as pretty-printing, and use with Adapt.jl.
-      However, this is not required. Flux.jl v0.15 uses Functors.jl v0.5, which makes exploration of most nested `struct`s
-      opt-out instead of opt-in... so Flux will automatically see inside any custom struct definitions.
-      """, Symbol("@functor")
-  _layer_macro(ex)
+  Base.depwarn("""The macro `Flux.@functor` is deprecated.
+      Most likely, you should write `Flux.@layer MyLayer` which will add 
+      various convenience methods for your type, such as pretty-printing, and use with Adapt.jl.
+      However, this is not strictly required: Flux.jl v0.15 uses Functors.jl v0.5, 
+      which makes exploration of most nested `struct`s opt-out instead of opt-in... 
+      so Flux will automatically see inside any custom struct definitions to take care of things
+      like moving data to the GPU.
+      """, Symbol("@functor"))
+
+  return :(Functors.functor($(esc(expr))))
 end
 
 ### v0.16 deprecations ####################

@@ -1,9 +1,3 @@
-import Adapt: adapt, adapt_storage
-using  LinearAlgebra: Cholesky
-using Zygote: IdSet
-import Functors: Functors, @functor, functor, fmap, isleaf
-using SparseArrays: AbstractSparseArray
-
 """
     testmode!(model, [mode]) -> model
 
@@ -221,10 +215,6 @@ Chain(
 ```
 """
 f16(m) = _paramtype(Float16, m)
-
-# Functors for certain Julia data structures -- PIRACY, should move to Functors.jl
-@functor Cholesky
-trainable(c::Cholesky) = ()
 
 
 """
