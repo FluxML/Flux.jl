@@ -79,22 +79,17 @@ julia> opt_state = Flux.setup(Adam(0), model);
 julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_state)
 ```
 
+## Second-order AD
+
+If you calculate a gradient within the loss function, then training will involve 2nd derivatives.
+While this is in principle supported by Zygote.jl, there are many bugs, and Enzyme.jl is probably a better choice.
 
 ## Listing
-
-Flux functions:
 
 ```@docs
 Flux.gradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
 Flux.withgradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
 Flux.train!(loss, model::Flux.EnzymeCore.Duplicated, data, opt)
-```
-
-EnzymeCore types:
-
-```@docs
-Flux.EnzymeCore.Duplicated
-Flux.EnzymeCore.Const
 ```
 
 Enzyme.jl has [its own extensive documentation](https://enzymead.github.io/Enzyme.jl/stable/).
