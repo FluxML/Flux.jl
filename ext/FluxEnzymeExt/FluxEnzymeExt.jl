@@ -2,9 +2,7 @@ module FluxEnzymeExt
 
 using Flux
 using Flux: _make_zero!
-
-import Flux.Train: _enzyme_train!, _rule_to_state, _grad_or_nothing
-# import Flux.Optimise
+import Flux.Train: _enzyme_train!
 
 import Optimisers
 import Functors

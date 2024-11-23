@@ -1,7 +1,7 @@
 using Test
 using Flux
 
-using Enzyme: Enzyme, make_zero, Active, Duplicated, ReverseWithPrimal
+using Enzyme: Enzyme, make_zero, Active, Duplicated, Const, ReverseWithPrimal
 
 using Functors
 using FiniteDifferences
@@ -112,8 +112,8 @@ end
     ]
     
     for (model, x, name) in models_xs
-        @testset "check grad $name" begin
-            println("testing $name")
+        @testset "Enzyme grad check $name" begin
+            println("testing $name with Enzyme")
             test_enzyme_grad(loss, model, x)
         end
     end

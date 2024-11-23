@@ -35,7 +35,8 @@ julia> grads_f = Flux.gradient((m,x,y) -> sum(abs2, m(x) .- y), dup_model, Const
     -0.0014538406], σ = nothing), nothing),), nothing, nothing)
 ```
 
-The gradient returned here is also stored within `dup_model`, it shares the same arrays.
+The gradient returned here is also stored within `dup_model`.
+Both share the same arrays -- what is returned is not a copy, just a view of the same memory (wrapped in `NamedTuple`s instead of `struct`s).
 They will all be set to zero when you call `gradient` again, then replaced with the new values.
 Alternatively, `gradient(f, args...; zero=false)` will add the new gradient to what's already stored.
 
@@ -81,8 +82,19 @@ julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_s
 
 ## Listing
 
+Flux functions:
+
 ```@docs
 Flux.gradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
 Flux.withgradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
 Flux.train!(loss, model::Flux.EnzymeCore.Duplicated, data, opt)
 ```
+
+EnzymeCore types:
+
+```@docs
+Flux.EnzymeCore.Duplicated
+Flux.EnzymeCore.Const
+```
+
+Enzyme.jl has [its own extensive documentation](https://enzymead.github.io/Enzyme.jl/stable/).

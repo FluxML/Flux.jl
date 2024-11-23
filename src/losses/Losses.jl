@@ -4,7 +4,9 @@ using Statistics
 using Zygote
 using Zygote: @adjoint
 using ChainRulesCore
-using ..Flux: ofeltype, epseltype
+# using ..Flux: ofeltype, epseltype
+ofeltype(x, y) = convert(float(eltype(x)), y)
+epseltype(x) = eps(float(eltype(x)))
 using NNlib: logsoftmax, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
 import Base.Broadcast: broadcasted
 

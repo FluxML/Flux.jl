@@ -9,6 +9,7 @@ using MacroTools: @forward
 
 @reexport using NNlib
 using MLUtils
+using Adapt, Functors, OneHotArrays
 
 using Optimisers: Optimisers, destructure, freeze!, thaw!, adjust!, trainables, update!
 import Optimisers: trainable
@@ -60,43 +61,9 @@ export Chain, Dense, Embedding, EmbeddingBag,
   destructure, freeze!, thaw!, adjust!, trainables, update!, trainable,
   # from Functors.jl
   functor, @functor, KeyPath, haskeypath, getkeypath,
-  # from Optimise/Train/Optimisers.jl
-  setup, update!, destructure, freeze!, adjust!, params, trainable, trainables
-))
-
-# Pirate error to catch a common mistake.
-Functors.functor(::Type{<:MLUtils.DataLoader}, x) = error("`DataLoader` does not support Functors.jl, thus functions like `Flux.gpu` will not act on its contents.")
-
-include("layers/show.jl")
-include("layers/macro.jl")
-
-include("layers/stateless.jl")
-include("layers/basic.jl")
-include("layers/conv.jl")
-include("layers/recurrent.jl")
-include("layers/normalise.jl")
-include("layers/upsample.jl")
-include("layers/attention.jl")
-
-include("loading.jl")
-
-include("outputsize.jl")
-export @autosize
-
-include("deprecations.jl")
-
-include("losses/Losses.jl")
-using .Losses
-
-include("devices.jl")
-export get_device, gpu_backend!
-
-# Distributed Training
-include("distributed/backend.jl")
-include("distributed/public_api.jl")
-export MPIBackend, NCCLBackend, DistributedUtils
-
-@compat(public, (
+  # from Train/Optimisers.jl
+  setup, update!, destructure, freeze!, adjust!, params, trainable, trainables,
+  withgradient,
   # init
   glorot_uniform,
   glorot_normal,
@@ -128,15 +95,13 @@ export MPIBackend, NCCLBackend, DistributedUtils
   tversky_loss,
 ))
 
+include("gradient.jl")
+export gradient
+
 include("train.jl")
 using .Train
 using .Train: setup
 
-include("gradient.jl")
-export gradient
-@compat(public, (withgradient,))
-
-using Adapt, Functors, OneHotArrays
 include("utils.jl")
 include("functor.jl")
 
