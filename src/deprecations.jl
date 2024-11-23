@@ -64,17 +64,6 @@ const FluxMetalAdaptor = MetalDevice
 
 ######## v0.15 deprecations #########################
 
-# Enable these when 0.16 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
-# Base.@deprecate_binding Optimiser OptimiserChain
-# Base.@deprecate_binding ClipValue ClipGrad
-
-# train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
-#   """On Flux 0.16, `train!` no longer accepts implicit `Zygote.Params`.
-#   Instead of `train!(loss_xy, Flux.params(model), data, Adam())`
-#   it now needs `opt = Flux.setup(Adam(), model); train!(loss_mxy, model, data, opt)`
-#   where `loss_mxy` accepts the model as its first argument.
-#   """
-# ))
 
 function reset!(x)
   Base.depwarn("reset!(m) is deprecated. You can remove this call as it is no more needed.", :reset!)
@@ -87,7 +76,6 @@ function params!(p::Zygote.Params, x, seen = IdSet())
   elseif x in seen
     nothing
   else
-    _check_new_macro(x)  # complains if you used @functor not @layer
     push!(seen, x)
     for child in trainable(x)
       params!(p, child, seen)
@@ -126,3 +114,40 @@ function Optimisers.update!(opt::Optimisers.AbstractRule, model::Chain, grad::Tu
      `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
     """)
 end
+
+
+"""
+    @functor MyLayer
+  
+Flux used to require the use of `Functors.@functor` to mark any new layer-like struct.
+This allowed it to explore inside the struct, and update any trainable parameters within.
+Flux@0.15 removes this requirement. This is because Functors@0.5 changed its behaviour
+to be opt-out instead of opt-in. Arbitrary structs will now be explored without special marking.
+Hence calling `@functor` is no longer required.
+Calling `Flux.@layer MyLayer` is, however, still recommended. This adds various convenience methods
+for your layer type, such as pretty printing.
+"""
+macro functor(ex)
+  Base.depwarn("""The macro `@functor` is deprecated.
+      Most likely, you should write `Flux.@layer MyLayer` which will add various convenience methods for your type,
+      such as pretty-printing, and use with Adapt.jl.
+      However, this is not required. Flux.jl v0.15 uses Functors.jl v0.5, which makes exploration of most nested `struct`s
+      opt-out instead of opt-in... so Flux will automatically see inside any custom struct definitions.
+      """, Symbol("@functor")
+  _layer_macro(ex)
+end
+
+### v0.16 deprecations ####################
+
+
+# Enable these when 0.16 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
+# Base.@deprecate_binding Optimiser OptimiserChain
+# Base.@deprecate_binding ClipValue ClipGrad
+
+# train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
+#   """On Flux 0.16, `train!` no longer accepts implicit `Zygote.Params`.
+#   Instead of `train!(loss_xy, Flux.params(model), data, Adam())`
+#   it now needs `opt = Flux.setup(Adam(), model); train!(loss_mxy, model, data, opt)`
+#   where `loss_mxy` accepts the model as its first argument.
+#   """
+# ))

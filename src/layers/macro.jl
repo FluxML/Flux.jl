@@ -48,6 +48,10 @@ Trio(
 
 """
 macro layer(exs...)
+  _layer_macro(exs...)
+end
+
+function _layer_macro(exs...)
   out = quote end
 
   # These functions are defined in show.jl, and each return an expression overloading Base.show
@@ -62,9 +66,6 @@ macro layer(exs...)
     push!(out.args, _macro_layer_show(esc(exs[1])))
     exs
   end
-
-  # This function exists only for depwarns when you use @functor directly
-  push!(out.args, :(Flux._check_new_macro(::$(esc(type))) = nothing))
   
   push!(out.args, _macro_functor(esc(type)))
 
@@ -82,19 +83,9 @@ macro layer(exs...)
     push!(out.args, _macro_trainable(esc(type), name, ex.args[2]))
   end
 
-  out
+  return out
 end
 
-# Temporary depwarn function, called within `params`, is also called by `show`.
-
-function _check_new_macro(x::T) where T
-  Functors.isleaf(x) && return
-  Base.depwarn(LazyString("This type should probably now use `Flux.@layer` instead of `@functor`: ", T), Symbol("@functor"))
-end
-_check_new_macro(::Tuple) = nothing  # defined by Functors.jl, not by users
-_check_new_macro(::NamedTuple) = nothing
-_check_new_macro(::AbstractArray) = nothing
-_check_new_macro(::Ref) = nothing
 
 # @layer's code for Functors & Adapt
 # Unlike @functor, _default_functor doesn't need to eval anything
@@ -116,27 +107,7 @@ function _macro_functor(type, fields)
 end
 _macro_functor(type, field::Union{Symbol,QuoteNode}) = _macro_functor(type, :(($field,)))  # lets you forget a comma
 
-function _default_functor(::Type{T}, x) where {T}
-  if @generated
-    F = fieldnames(T)
-    args = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
-    C = Base.typename(T).wrapper  # constructor
-    # recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
-    recon = :(Base.splat($C))
-    :((NamedTuple{$F}(($(args...),)), $recon))
-  else
-    # Getting this parameterless type takes about 2μs, every time:
-    # spl = VERSION > v"1.9-" ? Splat : Base.splat
-    spl = Base.splat
-    namedtuple(x), spl(Base.typename(T).wrapper)
-  end
-end
  
-function namedtuple(x::T) where T
-  F = fieldnames(T)
-  NamedTuple{F}(map(sy -> getfield(x, sy), F))
-end
-
 # @layer's code for Optimisers.trainable, and perhaps anything else,
 # with the pattern that keywords mean function names & what fields they pick.
 
