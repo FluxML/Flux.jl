@@ -35,6 +35,12 @@ function gradient(f, args...; zero::Bool=true)
     for a in args
         _ensure_noenzyme(a)
     end
+    if Zygote.isderiving()
+        error("""`Flux.gradient` does not support use within a Zygote gradient.
+            If what you are doing worked on Flux < 0.14, then calling `Zygote.gradiet` directly should still work.
+            If you are writing new code, then Zygote over Zygote is heavily discouraged.
+            """)
+    end
     Zygote.gradient(f, args...)
 end
 
@@ -166,6 +172,12 @@ function withgradient(f, args...; zero::Bool=true)
     end
     for a in args
         _ensure_noenzyme(a)
+    end
+    if Zygote.isderiving()
+        error("""`Flux.withgradient` does not support use within a Zygote gradient.
+            If what you are doing worked on Flux < 0.14, then calling `Zygote.gradiet` directly should still work.
+            If you are writing new code, then Zygote over Zygote is heavily discouraged.
+            """)
     end
     Zygote.withgradient(f, args...)
 end
