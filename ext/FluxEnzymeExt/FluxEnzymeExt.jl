@@ -10,7 +10,7 @@ import Optimisers
 import Functors
 import Enzyme
 using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal
-using Enzyme: autodiff_thunk, ReverseSplitWithPrimal
+using Enzyme: autodiff_thunk, Reverse, ReverseSplitWithPrimal
 using ProgressLogging: @withprogress, @logprogress
 
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
@@ -42,11 +42,15 @@ function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::B
     _check_mutable(x)
   end
 
+  # Take I, doesn't allow for aux at all.
   # _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
 
+  # Take II, using split mode.
   forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
   tape, result, shadow_result  = forward(Const(f), args...)
   reverse(Const(f), args..., _sensitivity(result), tape)
+
+  # Take III, it may be more efficient to have the function write the loss into Ref(0.0), seed Duplicated(that, Ref(1.0))?
 
   (; val = result, grad = map(_grad_or_nothing, args))
 end
