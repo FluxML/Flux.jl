@@ -12,8 +12,9 @@ Note that it is never necessary to tell Flux to ignore non-array objects such as
 This can be also done by defining [`trainable(::MyModel)`](@ref Optimisers.trainable) for your type.
 
 The macro also handles overloads of `show` for pretty printing. 
-It adds methods to 3-arg `Base.show` to treat your layer much like `Dense` or `Chain`.
-You probably still want to define 2-arg `show(io::IO, x::MyModel)`, the macro does not touch this.
+It adds methods to `show(::IO, ::MIME"text/plain", ::MyModel)` to treat your layer much like `Dense` or `Chain`.
+To opt out of this, use `@layer :ignore MyModel`.
+In case, you probably still want to define 2-arg `show(::IO, ::MyModel)`, the macro does not touch this.
 
 Note that re-running the macro with different options may not remove all methods, you will need to restart.
 
@@ -50,7 +51,7 @@ function _layer_macro(exs...)
   elseif exs[1] == QuoteNode(:ignore)
     exs[2:end]
   elseif exs[1] isa QuoteNode
-    error("`@layer` accepts only two options before the layer type, `:expand` and `:ignore` (to control `show`)")
+    error("`@layer` accepts only the option `:ignore` before the layer type (to control `show`).")
   else
     push!(out.args, _macro_big_show(esc(exs[1])))
     exs

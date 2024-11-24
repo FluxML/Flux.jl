@@ -113,7 +113,7 @@ end
         h0::AbstractVector
     end
 
-    Flux.@layer :expand ModelGRU
+    Flux.@layer ModelGRU
 
     (m::ModelGRU)(x) = m.gru(x, m.h0)
 
@@ -150,7 +150,7 @@ end
         h0::AbstractVector
     end
 
-    Flux.@layer :expand ModelGRUv3
+    Flux.@layer ModelGRUv3
 
     (m::ModelGRUv3)(x) = m.gru(x, m.h0)
     
