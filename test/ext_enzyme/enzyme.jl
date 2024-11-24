@@ -185,6 +185,15 @@ end
     # setup understands Duplicated:
     @test Flux.setup(Adam(), m1) == Flux.setup(Adam(), m1.val)
 
+    # state, loadmodel do too -- all ignore the dval branch, no outer (; val, dval) namedtuple
+    @test Flux.state(m1) == Flux.state(m1.val)
+    oldmodel = deepcopy(m1)
+    oldpar = deepcopy(Flux.state(m1))
+    m1.val.weight .= 0
+    @test Flux.loadmodel!(m1, oldmodel).val.weight ≈ oldpar.weight
+    m1.val.weight .= 0
+    @test Flux.loadmodel!(m1, oldpar).val.weight ≈ oldpar.weight
+
     # At least one Duplicated is required:
     @test_throws ArgumentError Flux.gradient(m -> sum(m.bias), Const(m1.val))
     @test_throws ArgumentError Flux.gradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])

@@ -176,3 +176,14 @@ const STATE_TYPES = Union{AbstractArray, Number, Nothing, AbstractString, Symbol
 
 _state(x::STATE_TYPES) = x
 _state(x) = ()
+
+#=
+Starting with `gradient(f, m) == gradient(f, Duplicated(m))`,
+we choose to regard `Duplicated` as some kind of label, not part of the model tree,
+and avoid outer NamedTuples like `(; val=..., dval=...)`.
+We certainly don't want to save model gradients alongside parameters/settings:
+=#
+state(x::EnzymeCore.Duplicated) = state(x.val)
+
+loadmodel!(dst::EnzymeCore.Duplicated, src::EnzymeCore.Duplicated; kw...) = @invoke loadmodel!(dst::Any, src::Any; kw...)
+loadmodel!(dst::EnzymeCore.Duplicated, src; kw...) = (loadmodel!(dst.val, src; kw...); dst)
