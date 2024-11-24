@@ -609,7 +609,7 @@ end
 
 Return an iterator over non-leaf objects
 that can be reached by recursing `m` over
-the children given by [`functor`](@ref).
+the children given by [`Functors.functor`](@ref).
 
 Useful for applying a function (e.g. a regularizer)
 over specific modules or subsets of the parameters
@@ -656,7 +656,7 @@ end
 
 isleaflike(x) = Functors.isleaf(x)
 
-# these are, essentially, Tuple{Vararg{<:T}} using the special property
+# these are, essentially, Tuple{Vararg{T}} using the special property
 # of tuples that they are type covariant.  Using <: here causes warning or error
 isleaflike(::Tuple{Vararg{Number}}) = true
 isleaflike(::Tuple{Vararg{AbstractArray{<:Number}}}) = true

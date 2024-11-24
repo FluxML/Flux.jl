@@ -3,7 +3,6 @@
 struct RNNWrapper{T}
   rnn::T
 end
-Flux.@functor RNNWrapper
 
 # Need to specialize for RNNWrapper.
 fw(r::RNNWrapper, X::Vector{<:AbstractArray}) = begin

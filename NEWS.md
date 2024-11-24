@@ -14,6 +14,9 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 * Most Flux layers will [re-use memory via `NNlib.bias_act!`](https://github.com/FluxML/Flux.jl/pull/2327), when possible.
 * Further support for Enzyme.jl, via methods of `Flux.gradient`.
   This still defaults to Zygote, but is no longer `=== Zygote.gradient`.
+* `Flux.params` has been deprecated. Use Zygote's explicit differentiation instead, 
+`gradient(m -> loss(m, x, y), model)`, or use `Flux.trainables(model)` to get the trainable parameters.
+* Flux now requires Functors.jl v0.5. This new release of Functors assumes all types to be functors by default. Therefore, applying `@layer` or `@functor` to a type is no longer strictly necessary for Flux's models. However, it is still recommended to use `@layer Model` for additional functionality like pretty printing.
 
 ## v0.14.22
 * Data movement between devices is now provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl).

@@ -9,7 +9,8 @@ using MacroTools: @forward
 
 @reexport using NNlib
 using MLUtils
-using Adapt, Functors, OneHotArrays
+using Adapt, OneHotArrays
+using Functors: Functors, fmap, fmapstructure
 
 using Optimisers: Optimisers, destructure, freeze!, thaw!, adjust!, trainables, update!
 import Optimisers: trainable

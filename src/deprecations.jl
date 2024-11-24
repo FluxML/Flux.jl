@@ -62,20 +62,6 @@ const FluxCUDAAdaptor = CUDADevice
 const FluxAMDGPUAdaptor = AMDGPUDevice
 const FluxMetalAdaptor = MetalDevice
 
-######## v0.15 deprecations #########################
-
-# Enable these when 0.16 is released, and delete const ClipGrad = Optimise.ClipValue etc:
-# Base.@deprecate_binding Optimiser OptimiserChain
-# Base.@deprecate_binding ClipValue ClipGrad
-
-# train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
-#   """On Flux 0.16, `train!` no longer accepts implicit `Zygote.Params`.
-#   Instead of `train!(loss_xy, Flux.params(model), data, Adam())`
-#   it now needs `opt = Flux.setup(Adam(), model); train!(loss_mxy, model, data, opt)`
-#   where `loss_mxy` accepts the model as its first argument.
-#   """
-# ))
-
 function reset!(x)
   Base.depwarn("reset!(m) is deprecated. You can remove this call as it is no more needed.", :reset!)
   return x
@@ -87,7 +73,6 @@ function params!(p::Zygote.Params, x, seen = IdSet())
   elseif x in seen
     nothing
   else
-    _check_new_macro(x)  # complains if you used @functor not @layer
     push!(seen, x)
     for child in trainable(x)
       params!(p, child, seen)
@@ -140,3 +125,20 @@ function withgradient(f, p::Zygote.Params)
     Please see the docs for new explicit form.""", :withgradient; force=true)
   Zygote.withgradient(f, p)
 end
+
+          
+### v0.16 deprecations ####################
+
+
+# Enable these when 0.16 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
+# Base.@deprecate_binding Optimiser OptimiserChain
+# Base.@deprecate_binding ClipValue ClipGrad
+
+# train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
+#   """On Flux 0.16, `train!` no longer accepts implicit `Zygote.Params`.
+#   Instead of `train!(loss_xy, Flux.params(model), data, Adam())`
+#   it now needs `opt = Flux.setup(Adam(), model); train!(loss_mxy, model, data, opt)`
+#   where `loss_mxy` accepts the model as its first argument.
+#   """
+# ))
+
