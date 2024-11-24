@@ -11,7 +11,7 @@ using Zygote: Zygote
 export setup, train!
 
 using ProgressLogging: @progress, @withprogress, @logprogress
-using Zygote: Zygote, Params
+using Zygote: Zygote
 using EnzymeCore: Duplicated
 
 """
