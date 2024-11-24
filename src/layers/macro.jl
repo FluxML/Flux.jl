@@ -1,21 +1,19 @@
 
 """
-    @layer Dense
-    @layer :expand Chain
-    @layer BatchNorm trainable=(β,γ)
+    @layer MyModel
+    @layer MyModel trainable=(β,γ)
 
 This macro adds convenience functionality to a custom type to serve 
-as a neural network layer, module, or entire model.
+as a neural network layer, as a module, or as an entire model.
 
-The keyword `trainable` allows you to limit this exploration, instead of visiting all `fieldnames(T)`.
+The keyword `trainable` allows you to specify which fiels of you model can be trained, 
+instead of assuming all `fieldnames(MyModel)` to trainable. 
 Note that it is never necessary to tell Flux to ignore non-array objects such as functions or sizes.
+This can be also done by defining [`trainable(::MyModel)`](@ref Optimisers.trainable) for your type.
 
-The macro also handles overloads of `show` for pretty printing.
-* By default, it adds methods to 3-arg `Base.show` to treat your layer much like `Dense` or `Conv`.
-* If your layer is a container, more like `Chain` or `Parallel`, then `:expand` makes `show` unfold its contents.
-* To disable all `show` overloads, there is an `:ignore` option too.
-
-(You probably still want to define 2-arg `show(io::IO, x::Layer)`, the macro does not touch this.)
+The macro also handles overloads of `show` for pretty printing. 
+It adds methods to 3-arg `Base.show` to treat your layer much like `Dense` or `Chain`.
+You probably still want to define 2-arg `show(io::IO, x::MyModel)`, the macro does not touch this.
 
 Note that re-running the macro with different options may not remove all methods, you will need to restart.
 
@@ -26,7 +24,7 @@ julia> struct Trio; a; b; c end
 julia> tri = Trio(Dense([1.1 2.2], [0.0], tanh), Dense(hcat(3.3), false), Dropout(0.4))
 Trio(Dense(2 => 1, tanh), Dense(1 => 1; bias=false), Dropout(0.4))
 
-julia> Flux.@layer :expand Trio
+julia> Flux.@layer Trio
 
 julia> tri  # now the layer is printed like Chain
 Trio(
@@ -46,14 +44,15 @@ function _layer_macro(exs...)
 
   # These functions are defined in show.jl, and each return an expression overloading Base.show
   type, rest... = if exs[1] == QuoteNode(:expand)
-    push!(out.args, _macro_big_show(esc(exs[2])))  
+    @warn "The `:expand` option is deprecated, and will be removed in a future release. Use `@layer` without options instead." maxlog=1
+    push!(out.args, _macro_big_show(esc(exs[1])))
     exs[2:end]
   elseif exs[1] == QuoteNode(:ignore)
     exs[2:end]
   elseif exs[1] isa QuoteNode
     error("`@layer` accepts only two options before the layer type, `:expand` and `:ignore` (to control `show`)")
   else
-    push!(out.args, _macro_layer_show(esc(exs[1])))
+    push!(out.args, _macro_big_show(esc(exs[1])))
     exs
   end
   

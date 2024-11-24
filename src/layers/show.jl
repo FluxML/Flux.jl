@@ -1,6 +1,6 @@
 @nospecialize  # just for this file, for startup time
 
-# This is called by @layer :expand, on layers which should be treated like Chain, and returns an expression:
+# This is called by @layer and returns an expression:
 function _macro_big_show(ex)
   quote
     # Entry point:
@@ -83,23 +83,6 @@ function _flat_children(x)
     gamma = ((beta...)...,)
 end
 
-# This is called by @layer, on layers which should be treated like Dense, and returns an expression:
-function _macro_layer_show(ex)
-  quote
-    # Entry point:
-    function Base.show(io::IO, m::MIME"text/plain", x::$ex)
-      if !get(io, :compact, false)
-        _layer_show(io, x)
-      else
-        show(io, x)
-      end
-    end
-
-    # Exit from _big_show recursion:
-    Flux._big_show(io::IO, obj::$ex, indent::Int=0, name=nothing) = _layer_show(io, obj, indent, name)
-  end
-end
-
 function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   _str = isnothing(name) ? "" : "$name = "
   str = _str * _layer_string(io, layer)
@@ -176,40 +159,53 @@ _all(f, xs) = !_any(!f, xs)
 
 #=
 
-julia> struct Tmp2; x; y; end; Flux.@functor Tmp2
+julia> struct Tmp2; x; y; end;
 
-# Before, notice Array(), NamedTuple(), and values
+julia> t = Tmp2([Dense(2,3), randn(3,4)'], (x=1:4, y=Dense(3,4), z=rand(3)))
+Tmp2(Any[Dense(2 => 3), [-0.559390071462934 -0.6357914190386781 -0.8516823037180543; -2.187495592853204 -0.6807254521505784 -1.2334639710489697; -0.12790952072543338 -1.4672700459421741 1.3687526519721238; 0.5232171922680576 -1.012045481192333 1.4953790632112915]], (x = 1:4, y = Dense(3 => 4), z = [0.29222096031585143, 0.6562195256556428, 0.9741896713499167]))
 
-julia> Chain(Tmp2([Dense(2,3), randn(3,4)'], (x=1:3, y=Dense(3,4), z=rand(3))))
-Chain(
-  Tmp2(
-    Array(
-      Dense(2 => 3),                    # 9 parameters
-      [0.351978391016603 0.6408681372462821 -1.326533184688648; 0.09481930831795712 1.430103476272605 0.7250467613675332; 2.03372151428719 -0.015879812799495713 1.9499692162118236; -1.6346846180722918 -0.8364610153059454 -1.2907265737483433],  # 12 parameters
-    ),
-    NamedTuple(
-      1:3,                              # 3 parameters
-      Dense(3 => 4),                    # 16 parameters
-      [0.9666158193429335, 0.01613900990539574, 0.0205920186127464],  # 3 parameters
-    ),
-  ),
-)                   # Total: 7 arrays, 43 parameters, 644 bytes.
-
-# After, (; x=, y=, z=) and "3-element Array"
-
-julia> Chain(Tmp2([Dense(2,3), randn(3,4)'], (x=1:3, y=Dense(3,4), z=rand(3))))
+julia> Chain(t)
 Chain(
   Tmp2(
     [
       Dense(2 => 3),                    # 9 parameters
-      4×3 Adjoint,                      # 12 parameters
+      4×3 Adjoint{Float64,...},         # 12 parameters
     ],
     (;
-      x = 3-element UnitRange,          # 3 parameters
+      x = 4-element UnitRange{Int64},
       y = Dense(3 => 4),                # 16 parameters
-      z = 3-element Array,              # 3 parameters
+      z = 3-element Vector{Float64},    # 3 parameters
     ),
   ),
-)                   # Total: 7 arrays, 43 parameters, 644 bytes.
+)         # Total: 6 trainable arrays, 40 parameters,
+          # plus 1 non-trainable, 4 parameters, summarysize 620 bytes.
 
+
+julia> Flux.@layer Tmp2
+
+julia> t
+Tmp2(
+  [
+    Dense(2 => 3),                      # 9 parameters
+    4×3 Adjoint{Float64,...},           # 12 parameters
+  ],
+  4-element UnitRange{Int64},
+  Dense(3 => 4),                        # 16 parameters
+  3-element Vector{Float64},            # 3 parameters
+)         # Total: 6 trainable arrays, 40 parameters,
+          # plus 1 non-trainable, 4 parameters, summarysize 620 bytes.
+
+julia> Chain(t)
+Chain(
+  Tmp2(
+    [
+      Dense(2 => 3),                    # 9 parameters
+      4×3 Adjoint{Float64,...},         # 12 parameters
+    ],
+    4-element UnitRange{Int64},
+    Dense(3 => 4),                      # 16 parameters
+    3-element Vector{Float64},          # 3 parameters
+  ),
+)         # Total: 6 trainable arrays, 40 parameters,
+          # plus 1 non-trainable, 4 parameters, summarysize 620 bytes.
 =#
