@@ -113,8 +113,13 @@ function _macro_enzyme(type)
     # One-arg method Duplicated(m::Layer) which allocates & zeros the gradient:
     $EnzymeCore.Duplicated(m::$type) = $EnzymeCore.Duplicated(m, $EnzymeCore.make_zero(m))
 
-    # Not sure we want this, but make Duplicated{<:Layer} callable?
-    (m::$EnzymeCore.Duplicated{<:$type})(xs...) = m.val(xs...)
+    # Make Duplicated{<:Layer} callable:
+    function (m::$EnzymeCore.Duplicated{<:$type})(xs...)
+        Zygote.isderiving() && error("""`Duplicated(flux_model)` is only for use with Enzyme.jl.
+            `Flux.gradient` should detect this, but calling `Zygote.gradient` directly on
+            such a wrapped model is not supported.""")
+        m.val(xs...)
+    end
 
     # Not sure but this does prevent printing of 2nd copy:
     $Optimisers.trainable(m::$EnzymeCore.Duplicated{<:$type}) = (; val = m.val)
