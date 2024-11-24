@@ -37,7 +37,13 @@ end
 
   m23re = Functors.functor(m23)[2]((a = [10 20], b = [3 4], c = [50 60]))
   @test m23re isa MacroTest.TwoThirds
-  @test Flux.namedtuple(m23re) == (a = [10 20], b = [3 4], c = [50 60])
+
+  function namedtuple(x::T) where T
+    F = fieldnames(T)
+    NamedTuple{F}(map(sy -> getfield(x, sy), F))
+  end
+
+  @test namedtuple(m23re) == (a = [10 20], b = [3 4], c = [50 60])
 
   @test Optimisers.trainable(m23) == (a = [1 2],)
 

@@ -284,7 +284,7 @@ function (l::LazyLayer)(x::AbstractArray, ys::AbstractArray...)
 end
 
 function striplazy(m)
-  fs, re = functor(m)
+  fs, re = Functors.functor(m)
   re(map(striplazy, fs))
 end
 function striplazy(l::LazyLayer)

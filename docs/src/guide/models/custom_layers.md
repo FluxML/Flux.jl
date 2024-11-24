@@ -18,7 +18,7 @@ function (m::CustomModel)(x)
   return m.chain(x) + x
 end
 
-# Call @layer to allow for training. Described below in more detail.
+# This is optional but recommended for pretty printing and other niceties
 Flux.@layer CustomModel
 ```
 Notice that we parameterized the type of the `chain` field. This is necessary for fast Julia code, so that that struct field can be given a concrete type. `Chain`s have a type parameter fully specifying the types of the layers they contain. By using a type parameter, we are freeing Julia to determine the correct concrete type, so that we do not need to specify the full, possibly quite long, type ourselves.
@@ -78,7 +78,7 @@ The exact same method of `trainable` can also be defined using the macro, for co
 Flux.@layer Affine trainable=(W,)
 ```
 
-There is a second, more severe, kind of restriction possible. This is not recommended, but is included here for completeness. Calling `Functors.@functor Affine (W,)` means that all no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
+There is a second, more severe, kind of restriction possible. This is not recommended, but is included here for completeness. Calling `Functors.@functor Affine (W,)` means that no exploration of the model will ever visit the other fields: They will not be moved to the GPU by [`gpu`](@ref), and their precision will not be changed by `f32`. This requires the `struct` to have a corresponding constructor that accepts only `W` as an argument.
 
 ## Custom multiple input or output layer
 
@@ -87,7 +87,7 @@ Sometimes a model needs to receive several separate inputs at once or produce se
 We could have a struct that stores the weights of along each path and implement the joining/splitting in the forward pass function. That would mean a new struct for each different block,
 e.g. one would have a `TransformerBlock` struct for a transformer block, and a `ResNetBlock` struct for a ResNet block, each block being composed by smaller sub-blocks. This is often the simplest and cleanest way to implement complex models.
 
-This guide instead will show you how to construct a high-level layer (like [`Chain`](@ref)) that is made of multiple sub-layers for each path.
+This guide instead will show you how to construct a high-level layer (like [`Chain`](@ref)) that is made of multiple sub-layers for each path. It may be the case that using the layers described as follows makes the definition of your model harder to read and to change. In that case, consider using the simpler approach of defining a custom structure described above.
 
 ### Multiple inputs: a custom `Join` layer
 

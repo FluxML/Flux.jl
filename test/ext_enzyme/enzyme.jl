@@ -76,7 +76,6 @@ end
         end
         SimpleDense(in::Integer, out::Integer; σ=identity) = SimpleDense(randn(Float32, out, in), zeros(Float32, out), σ)
         (m::SimpleDense)(x) = m.σ.(m.weight * x .+ m.bias)
-        @functor SimpleDense
 
         model = SimpleDense(2, 4)
         x = randn(Float32, 2)

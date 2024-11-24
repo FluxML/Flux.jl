@@ -293,7 +293,6 @@ using Flux: activations
         x
       end
       (l::L1)(x) = l.x * x
-      Flux.@functor L1
       Base.:*(a::AbstractArray, b::Input) = a * b.x
 
       par = Parallel(+, L1(rand(Float32, 3,3)), L1(rand(Float32, 3,3)))
