@@ -133,8 +133,14 @@ Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ 
 
 include("optimise/Optimise.jl") ## deprecated Module
 
-Base.@deprecate_binding Optimiser OptimiserChain
-Base.@deprecate_binding ClipValue ClipGrad
+function Optimiser(rules...)
+  @warn "`Flux.Optimiser(...)` has been removed, please call `OptimiserChain(...)`, exported by Flux from Optimisers.jl" maxlog=1
+  OptimiserChain(rules...)
+end
+function ClipValue(val)
+  @warn "`Flux.ClipValue(...)` has been removed, please call `ClipGrad(...)`, exported by Flux from Optimisers.jl" maxlog=1
+  ClipGrad(val)
+end
 
 # TODO this friendly error should go in Optimisers.jl.
 # remove after https://github.com/FluxML/Optimisers.jl/pull/181
