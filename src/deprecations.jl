@@ -93,6 +93,29 @@ function params(m...)
   return ps
 end
 
+
+"""
+    @functor MyLayer
+
+Flux used to require the use of `Functors.@functor` to mark any new layer-like struct.
+This allowed it to explore inside the struct, and update any trainable parameters within.
+Flux@0.15 removes this requirement. This is because Functors@0.5 changed ist behaviour
+to be opt-out instead of opt-in. Arbitrary structs will now be explored without special marking.
+Hence calling `@functor` is no longer required.
+
+Calling `Flux.@layer MyLayer` is, however, still recommended. This adds various convenience methods
+for your layer type, such as pretty printing, and use with Adapt.jl.
+"""
+macro functor(ex)
+  @warn """The use of `Flux.@functor` is deprecated.
+      Most likely, you should write `Flux.@layer MyLayer` which will add various convenience methods for your type,
+      such as pretty-printing, and use with Adapt.jl.
+      However, this is not required. Flux.jl v0.15 uses Functors.jl v0.5, which makes exploration of most nested `struct`s
+      opt-out instead of opt-in... so Flux will automatically see inside any custom struct definitions.
+      """ maxlog=1
+  _layer_macro(ex)
+end
+
 # Allows caching of the parameters when params is called within gradient() to fix #2040.
 # @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
 # That speeds up implicit use, and silently breaks explicit use. 
