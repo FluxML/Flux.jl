@@ -133,6 +133,8 @@ Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ 
 
 include("optimise/Optimise.jl") ## deprecated Module
 
+Base.@deprecate_binding Optimiser OptimiserChain
+Base.@deprecate_binding ClipValue ClipGrad
 
 # TODO this friendly error should go in Optimisers.jl.
 # remove after https://github.com/FluxML/Optimisers.jl/pull/181
@@ -151,9 +153,6 @@ end
 ### v0.16 deprecations ####################
 
 
-# Enable these when 0.16 is released, and delete const ClipGrad = Optimise.ClipValue etc: 
-# Base.@deprecate_binding Optimiser OptimiserChain
-# Base.@deprecate_binding ClipValue ClipGrad
 
 # train!(loss::Function, ps::Zygote.Params, data, opt) = throw(ArgumentError(
 #   """On Flux 0.16, `train!` no longer accepts implicit `Zygote.Params`.
