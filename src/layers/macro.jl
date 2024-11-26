@@ -38,13 +38,13 @@ Trio(
   Dropout(0.4),
 )                   # Total: 3 arrays, 4 parameters, 240 bytes.
 
-# Freeze `c`, equivalent to `Optimisers.trainable(tri::Trio) = (; tri.a, tri.b)`
-julia> Flux.@layer Trio trainable=(a,b) 
+julia> Flux.@layer :noexpand Trio trainable=(a,b)
 
-# Now the optimizer's state won't contain `c`
-julia> opt_state = Flux.setup(Adam(), tri);
+julia> tri  # now the layer is printed compactly
+Trio(Dense(2 => 1, tanh), Dense(1 => 1; bias=false), Dropout(0.4))  # 4 parameters
+
+julia> opt_state = Flux.setup(Adam(), tri); # `c` is not in the optimizer state
 ```
-
 """
 macro layer(exs...)
   _layer_macro(exs...)
