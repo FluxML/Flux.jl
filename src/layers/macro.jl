@@ -1,20 +1,24 @@
 
 """
-    @layer MyModel
-    @layer MyModel trainable=(β,γ)
-
+    @layer [showtype] MyModel [trainable=(field1,...)]
+ 
 This macro adds convenience functionality to a custom type to serve 
 as a neural network layer, as a module, or as an entire model.
 
-The keyword `trainable` allows you to specify which fiels of you model can be trained, 
+The optional keyword `trainable` allows you to specify which fields of your model can be trained, 
 instead of assuming all `fieldnames(MyModel)` to trainable. 
 Note that it is never necessary to tell Flux to ignore non-array objects such as functions or sizes.
-This can be also done by defining [`trainable(::MyModel)`](@ref Optimisers.trainable) for your type.
+This can be also be done by defining [`trainable(::MyModel)`](@ref Optimisers.trainable) for your type.
 
-The macro also handles overloads of `show` for pretty printing. 
-It adds methods to `show(::IO, ::MIME"text/plain", ::MyModel)` to treat your layer much like `Dense` or `Chain`.
-To opt out of this, use `@layer :ignore MyModel`.
-In case, you probably still want to define 2-arg `show(::IO, ::MyModel)`, the macro does not touch this.
+The macro also handles overloads of the 3-arg `show(::IO, ::MIME"text/plain", ::MyModel)` for pretty printing. 
+The optional argument `showtype` can take any of the following values:
+
+- `:expand` (default): This will expand the representation of container types like `Chain`, 
+   while maintaining a compat representation of types like `Dense` containing only arrays.
+- `:noexpand`: This is to be used in case your type contains other layers but you want to keep the representation simple.
+- `:ignore`: To opt out of the pretty printing.
+
+You probably still want to define 2-arg `show(::IO, ::MyModel)`, the macro does not touch this.
 
 Note that re-running the macro with different options may not remove all methods, you will need to restart.
 
@@ -33,6 +37,12 @@ Trio(
   Dense(1 => 1; bias=false),            # 1 parameters
   Dropout(0.4),
 )                   # Total: 3 arrays, 4 parameters, 240 bytes.
+
+# Freeze `c`, equivalent to `Optimisers.trainable(tri::Trio) = (; tri.a, tri.b)`
+julia> Flux.@layer Trio trainable=(a,b) 
+
+# Now the optimizer's state won't contain `c`
+julia> opt_state = Flux.setup(Adam(), tri);
 ```
 
 """
@@ -45,8 +55,10 @@ function _layer_macro(exs...)
 
   # These functions are defined in show.jl, and each return an expression overloading Base.show
   type, rest... = if exs[1] == QuoteNode(:expand)
-    @warn "The `:expand` option is deprecated, and will be removed in a future release. Use `@layer` without options instead." maxlog=1
-    push!(out.args, _macro_big_show(esc(exs[1])))
+    push!(out.args, _macro_big_show(esc(exs[2])))
+    exs[2:end]
+  elseif exs[1] == QuoteNode(:noexpand)
+    push!(out.args, _macro_layer_show(esc(exs[2])))
     exs[2:end]
   elseif exs[1] == QuoteNode(:ignore)
     exs[2:end]

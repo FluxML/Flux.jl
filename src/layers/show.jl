@@ -83,6 +83,23 @@ function _flat_children(x)
     gamma = ((beta...)...,)
 end
 
+# This is called by @layer :noexpand, on layers which should be treated like Dense, and returns an expression:
+function _macro_layer_show(ex)
+  quote
+    # Entry point:
+    function Base.show(io::IO, m::MIME"text/plain", x::$ex)
+      if !get(io, :compact, false)
+        _layer_show(io, x)
+      else
+        show(io, x)
+      end
+    end
+
+    # Exit from _big_show recursion:
+    Flux._big_show(io::IO, obj::$ex, indent::Int=0, name=nothing) = _layer_show(io, obj, indent, name)
+  end
+end
+
 function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   _str = isnothing(name) ? "" : "$name = "
   str = _str * _layer_string(io, layer)
