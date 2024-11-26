@@ -8,6 +8,7 @@ using MacroTools, Reexport, ProgressLogging, SpecialFunctions
 using MacroTools: @forward
 
 @reexport using NNlib
+using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 using MLUtils
 
 using Optimisers: Optimisers, destructure, freeze!, thaw!, adjust!, trainables, update!
