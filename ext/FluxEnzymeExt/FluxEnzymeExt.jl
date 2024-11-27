@@ -109,7 +109,7 @@ function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
 
-    make_zero!(model.dval)
+    _make_zero!(model.dval)
     _, l = Enzyme.autodiff(ReverseWithPrimal, _applyloss,
                            Active, Const(loss), model, map(Const, d_splat)...)
 
