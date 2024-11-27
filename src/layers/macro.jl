@@ -111,6 +111,7 @@ _noquotenode(ex) = error("expected a symbol here, as a field name, but got ", ex
 function _macro_enzyme(type)
   out = quote
     # One-arg method Duplicated(m::Layer) which allocates & zeros the gradient:
+    # Remove once https://github.com/EnzymeAD/Enzyme.jl/pull/2118 is merged
     $EnzymeCore.Duplicated(m::$type) = $EnzymeCore.Duplicated(m, $EnzymeCore.make_zero(m))
 
     # Make Duplicated{<:Layer} callable:

@@ -209,3 +209,13 @@ end
     # Using Duplicated within Zygote.gradient is not supported:
     @test_throws ErrorException Zygote.gradient((m,x) -> sum(m(x)), m1, [1,2,3f0])
 end
+
+@testset "bugs found" begin
+    z = Duplicated(zeros32(3), zeros32(3))
+    @test Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.gradient(|>, z, Duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
+
+    @test_broken Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
+    @test_broken Flux.withgradient(|>, z, Duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
+end

@@ -6,7 +6,7 @@ import Flux.Train: _enzyme_train!
 import Optimisers
 import Functors
 import Enzyme
-using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, DuplicatedNoNeed, make_zero!
+using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, DuplicatedNoNeed
 using Enzyme: autodiff_thunk, Reverse, ReverseSplitWithPrimal
 using ProgressLogging: @withprogress, @logprogress
 
@@ -14,12 +14,38 @@ EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
 ### gradient & withgradient
 
+# We can't use Enzyme.make_zero! to reset Duplicated, as it complains about e.g. LayerNorm having immutable differentiable fields
+_make_zero!(model) = Functors.fmapstructure(_make_zero_inner!, model)
+function _make_zero_inner!(x::AbstractArray{<:Number})
+  Optimisers.isnumeric(x) || return
+  Optimisers.maywrite(x) || error("can't handle this")
+  fill!(x, zero(eltype(x)))
+  nothing
+end
+_make_zero_inner!(x) = nothing  # any other Functors leaf type
+
+#=  # This _make_zero! matches what Flux allows elsewhere:
+julia> Flux.setup(Adam(), (1:3.)')
+ERROR: model must be fully mutable for `train!` to work, got `x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}`.
+If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}) = true`
+=#
+# Perhaps canonical way for Enzyme is more like this:
+# function _make_zero!(x::AbstractArray{<:Number})
+#     if Enzyme.guess_activity(typeof(x), Reverse) <: Duplicated
+#         fill!(x, zero(eltype(x)))
+#     elseif Enzyme.guess_activity(typeof(x), Reverse) <: Const
+#         # that's OK
+#     else
+#         error("not sure what it should do for Active?")
+#     end
+# end
+
 function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
-    zero && x isa Duplicated && make_zero!(x.dval)
+    zero && x isa Duplicated && _make_zero!(x.dval)
     _check_mutable(x)
   end
-  Enzyme.autodiff(Reverse, f, Active, args...)
+  Enzyme.autodiff(Reverse, Const(f), Active, args...)
   map(_grad_or_nothing, args)
 end
 
@@ -35,7 +61,7 @@ _grad_or_nothing(x) = Optimisers.isnumeric(x) ? x : nothing
 
 function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
-    zero && x isa Duplicated && make_zero!(x.dval)
+    zero && x isa Duplicated && _make_zero!(x.dval)
     _check_mutable(x)
   end
 
