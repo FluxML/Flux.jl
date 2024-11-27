@@ -216,6 +216,6 @@ end
     @test Flux.gradient(|>, z, Duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
 
-    @test_broken Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
-    @test_broken Flux.withgradient(|>, z, Duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
+    @test Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.withgradient(|>, z, Duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
 end
