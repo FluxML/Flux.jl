@@ -69,14 +69,14 @@ function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::B
   # _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
 
   # Take II, using split mode.
-  # forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
-  # tape, result, shadow_result  = forward(Const(f), args...)
-  # reverse(Const(f), args..., _sensitivity(result), tape)
+  forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
+  tape, result, shadow_result  = forward(Const(f), args...)
+  reverse(Const(f), args..., _sensitivity(result), tape)
 
   # Take III, it may be more efficient to have the function write the loss into Ref(0.0)?
-  dup_loss = DuplicatedNoNeed(Ref(0f0), Ref(1f0))
-  # result = autodiff(Reverse, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
-  _, result = autodiff(ReverseWithPrimal, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
+  # dup_loss = DuplicatedNoNeed(Ref(0f0), Ref(1f0))
+  # # result = autodiff(Reverse, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
+  # _, result = autodiff(ReverseWithPrimal, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
 
   (; val = result, grad = map(_grad_or_nothing, args))
 end

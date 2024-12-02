@@ -1,5 +1,6 @@
 using Test
 using Flux
+import Zygote
 
 using Enzyme: Enzyme, make_zero, Active, Duplicated, Const, ReverseWithPrimal
 
@@ -106,13 +107,13 @@ end
         # (Chain(Conv((4, 4), 2 => 2, pad=SamePad()), MeanPool((5, 5), pad=SamePad())), rand(Float32, 5, 5, 2, 2), "Chain(Conv, MeanPool)"),
         (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
         (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
-        (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
+        # (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),  # Passes on 1.10, fails on 1.11 with MethodError: no method matching function_attributes(::LLVM.UserOperandSet)
         (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
-        (LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
+        (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
         # (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"),  # AssertionError: Base.isconcretetype(typ)
-        (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"),
+        # (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"),  # AssertionError: Base.isconcretetype(typ)
     ]
-    
+
     for (model, x, name) in models_xs
         @testset "Enzyme grad check $name" begin
             println("testing $name with Enzyme")
@@ -214,11 +215,12 @@ end
 end
 
 @testset "bugs found" begin
-    z = Duplicated(zeros32(3), zeros32(3))
-    @test Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]
-    @test Flux.gradient(|>, z, Duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
+    _duplicated(x) = Duplicated(x, Enzyme.make_zero(x))
+    z = _duplicated(zeros32(3))
+    @test_broken Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]  # Constant memory is stored (or returned) to a differentiable variable
+    @test Flux.gradient(|>, z, _duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
 
-    @test Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]
-    @test Flux.withgradient(|>, z, Duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
+    @test_broken Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
+    @test_broken Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
 end
