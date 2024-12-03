@@ -330,8 +330,8 @@ We can now proceed to the training phase!
 The training procedure would make use of the same mathematics, but now we can pass in the model inside the `gradient` call and let `Flux` and `Zygote` handle the derivatives!
 
 ```jldoctest linear_regression_complex
-julia> function train_model!(f_loss, model, x_train_n, y_train)
-           dLdm, _, _ = gradient(f_loss, model, x_train_n, y_train)
+julia> function train_model!(f_loss, model, X, y)
+           dLdm, _, _ = gradient(f_loss, model, X, y)
            @. model.weight = model.weight - 0.000001 * dLdm.weight
            @. model.bias = model.bias - 0.000001 * dLdm.bias
        end;
