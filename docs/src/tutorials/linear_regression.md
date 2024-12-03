@@ -214,13 +214,13 @@ The loss went down! This means that we successfully trained our model for one ep
 Let's plug our super training logic inside a function and test it again -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function train_custom_model()
-           dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, y)
-           @. W = W - 0.1 * dLdW
-           @. b = b - 0.1 * dLdb
+julia> function train_custom_model!(f_loss, weights, biases, x_train, y_train)
+           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, x_train, y_train)
+           @. weights = weights - 0.1 * dLdW
+           @. biases = biases - 0.1 * dLdb
        end;
 
-julia> train_custom_model();
+julia> train_custom_model!(custom_loss, W, b, x, y);
 
 julia> W, b, custom_loss(W, b, x, y)
 (Float32[2.340657], Float32[0.7516814], 13.64972f0)
@@ -230,7 +230,7 @@ It works, and the loss went down again! This was the second epoch of our trainin
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for i = 1:40
-          train_custom_model()
+          train_custom_model!(custom_loss, W, b, x, y)
        end
 
 julia> W, b, custom_loss(W, b, x, y)
@@ -330,8 +330,8 @@ We can now proceed to the training phase!
 The training procedure would make use of the same mathematics, but now we can pass in the model inside the `gradient` call and let `Flux` and `Zygote` handle the derivatives!
 
 ```jldoctest linear_regression_complex
-julia> function train_model()
-           dLdm, _, _ = gradient(loss, model, x_train_n, y_train)
+julia> function train_model!(f_loss, model, x_train_n, y_train)
+           dLdm, _, _ = gradient(f_loss, model, x_train_n, y_train)
            @. model.weight = model.weight - 0.000001 * dLdm.weight
            @. model.bias = model.bias - 0.000001 * dLdm.bias
        end;
@@ -344,7 +344,7 @@ We can write such custom training loops effortlessly using `Flux` and plain `Jul
 julia> loss_init = Inf;
 
 julia> while true
-           train_model()
+           train_model!(loss, model, x_train_n, y_train)
            if loss_init == Inf
                loss_init = loss(model, x_train_n, y_train)
                continue
