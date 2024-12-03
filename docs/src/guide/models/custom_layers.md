@@ -109,7 +109,9 @@ Join(combine, paths...) = Join(combine, paths)
 ```
 Notice again that we parameterized the type of the `combine` and `paths` fields. In addition to the performance considerations of concrete types, this allows either field to be `Vector`s, `Tuple`s, or one of each - we don't need to pay attention to which.
 
-The next step is to use [`Flux.@layer`](@ref) to make our struct behave like a Flux layer. This is important so that calling `Flux.setup` on a `Join` maps over the underlying trainable arrays on each path.
+The next step is to use [`Flux.@layer`](@ref) to make our struct behave like a Flux layer. 
+In Flux < v0.15 this used to be important so that calling `Flux.setup` on a `Join` maps over the underlying trainable arrays on each path. Since Flux v0.15, this is no longer necessary, since now Functors.jl automatically traverses custom types. However, [`Flux.@layer`](@ref) is still recommended for pretty printing and other niceties.
+
 ```julia
 Flux.@layer Join
 ```

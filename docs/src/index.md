@@ -8,14 +8,14 @@ Flux is a library for machine learning. It comes "batteries-included" with many 
 
 ### Installation
 
-Download [Julia 1.9](https://julialang.org/downloads/) or later, preferably the current stable release. You can add Flux using Julia's package manager, by typing `] add Flux` in the Julia prompt. 
+Download [Julia 1.10](https://julialang.org/downloads/) or later, preferably the current stable release. You can add Flux using Julia's package manager, by typing `] add Flux` in the Julia prompt. 
 For Nvidia GPU support, you will also need to install the `CUDA` and the `cuDNN` packages. For AMD GPU support, install the `AMDGPU` package. For acceleration on Apple Silicon, install the `Metal` package.
 
 ### Learning Flux
 
 The **[quick start](@ref man-quickstart)** page trains a simple neural network.
 
-This rest of the **guide** provides a from-scratch introduction to Flux's take on models and how they work, starting with [fitting a line](@ref man-overview). Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
+The rest of the **guide** provides a from-scratch introduction to Flux's take on models and how they work, starting with [fitting a line](@ref man-overview). Once you understand these docs, congratulations, you also understand [Flux's source code](https://github.com/FluxML/Flux.jl), which is intended to be concise, legible and a good reference for more advanced concepts.
 
 There are some **tutorials** about building particular models. The **[model zoo](https://github.com/FluxML/model-zoo/)** has starting points for many other common ones. And finally, the **[ecosystem page](ecosystem.md)** lists packages which define Flux models.
 
