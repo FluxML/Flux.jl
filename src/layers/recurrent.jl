@@ -123,12 +123,14 @@ See [`RNNCell`](@ref) for a layer that processes a single time step.
 
 # Forward
 
-    rnn(x, h)
+    rnn(x, [h])
 
 The arguments of the forward pass are:
 
 - `x`: The input to the RNN. It should be a matrix size `in x len` or an array of size `in x len x batch_size`.
-- `h`: The initial hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
+- `h`: The initial hidden state of the RNN. 
+       If given, it is a vector of size `out` or a matrix of size `out x batch_size`.
+       If not provided, it is assumed to be a vector of zeros.
 
 Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
 
@@ -506,8 +508,7 @@ See [`GRUCell`](@ref) for a layer that processes a single time step.
 
 # Forward
 
-    gru(x, h)
-    gru(x)
+    gru(x, [h])
 
 The arguments of the forward pass are:
 
@@ -584,8 +585,7 @@ See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
 
 # Forward
 
-    gruv3cell(x, h)
-    gruv3cell(x)
+    gruv3cell(x, [h])
 
 The arguments of the forward pass are:
 - `x`: The input to the GRU. It should be a vector of size `in` or a matrix of size `in x batch_size`.
@@ -657,6 +657,9 @@ h_t = (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
 for all `len` steps `t` in the input sequence. 
 See [`GRUv3Cell`](@ref) for a layer that processes a single time step.
 See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
+
+Notice that `GRUv3` is not a more advanced version of [`GRU`](@ref)
+but only a less popular variant.
 
 # Arguments
 
