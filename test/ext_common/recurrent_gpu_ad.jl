@@ -27,7 +27,7 @@ end
         h0::AbstractVector
     end
 
-    Flux.@layer :expand ModelRNN
+    Flux.@layer ModelRNN
 
     (m::ModelRNN)(x) = m.rnn(x, m.h0)
 
@@ -74,7 +74,7 @@ end
         c0::AbstractVector
     end
 
-    Flux.@layer :expand ModelLSTM
+    Flux.@layer ModelLSTM
 
     (m::ModelLSTM)(x) = m.lstm(x, (m.h0, m.c0))
 
@@ -113,7 +113,7 @@ end
         h0::AbstractVector
     end
 
-    Flux.@layer :expand ModelGRU
+    Flux.@layer ModelGRU
 
     (m::ModelGRU)(x) = m.gru(x, m.h0)
 
@@ -150,7 +150,7 @@ end
         h0::AbstractVector
     end
 
-    Flux.@layer :expand ModelGRUv3
+    Flux.@layer ModelGRUv3
 
     (m::ModelGRUv3)(x) = m.gru(x, m.h0)
     

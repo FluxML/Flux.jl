@@ -60,7 +60,7 @@ end
 @forward Chain.layers Base.getindex, Base.length, Base.first, Base.last,
   Base.iterate, Base.lastindex, Base.keys, Base.firstindex
 
-@layer :expand Chain  # the option :expand opts-in to container-style pretty-printing
+@layer Chain
 
 (c::Chain)(x) = _applychain(c.layers, x)
 (c::Chain)(x, ys...) = _applychain(c.layers, (x, ys...))
@@ -334,7 +334,7 @@ end
 Maxout(layers...) = Maxout(layers)
 Maxout(f::Function, n_alts::Integer) = Maxout((f() for _ in 1:n_alts)...)
 
-@layer :expand Maxout
+@layer Maxout
 
 function (mo::Maxout)(input::AbstractArray)
   # Perhaps surprisingly, pairwise max broadcast is often faster,
@@ -381,7 +381,7 @@ struct SkipConnection{T,F}
   connection::F  #user can pass arbitrary connections here, such as (a,b) -> a + b
 end
 
-@layer :expand SkipConnection
+@layer SkipConnection
 
 function (skip::SkipConnection)(input)
   skip.connection(skip.layers(input), input)
@@ -575,7 +575,7 @@ end
 Parallel(connection, layers::Union{Tuple{}, @NamedTuple{}}) =
     throw(ArgumentError("cannot construct a Parallel layer with no sub-layers"))
 
-@layer :expand Parallel
+@layer Parallel
 
 (m::Parallel)(x) = m.connection(map(f -> f(x), Tuple(m.layers))...)  # one argument
 
@@ -705,7 +705,7 @@ end
 end
 applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tuple(layers), connection, x)
 
-@layer :expand PairwiseFusion
+@layer PairwiseFusion
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
 Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])

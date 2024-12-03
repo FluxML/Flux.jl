@@ -158,7 +158,7 @@ struct Model
   h0::AbstractVector
 end
 
-Flux.@layer :expand Model
+Flux.@layer Model
 
 (m::Model)(x) = m.rnn(x, m.h0)
 
@@ -169,7 +169,7 @@ struct RNN{M}
   cell::M
 end
 
-@layer :expand RNN
+@layer RNN
 
 function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
   cell = RNNCell(in => out, σ; cell_kwargs...)
@@ -344,7 +344,7 @@ struct Model
   c0::AbstractVector
 end
 
-Flux.@layer :expand Model
+Flux.@layer Model
 
 (m::Model)(x) = m.lstm(x, (m.h0, m.c0))
 
@@ -359,7 +359,7 @@ struct LSTM{M}
   cell::M
 end
 
-@layer :expand LSTM
+@layer LSTM
 
 function LSTM((in, out)::Pair; cell_kwargs...)
   cell = LSTMCell(in => out; cell_kwargs...)
@@ -531,7 +531,7 @@ struct GRU{M}
   cell::M
 end
 
-@layer :expand GRU
+@layer GRU
 
 function GRU((in, out)::Pair; cell_kwargs...)
   cell = GRUCell(in => out; cell_kwargs...)
@@ -669,7 +669,7 @@ struct GRUv3{M}
   cell::M
 end
 
-@layer :expand GRUv3
+@layer GRUv3
 
 function GRUv3((in, out)::Pair; cell_kwargs...)
   cell = GRUv3Cell(in => out; cell_kwargs...)

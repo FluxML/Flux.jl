@@ -198,7 +198,7 @@ end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
 
-@layer LayerNorm
+@layer :noexpand LayerNorm
 
 function (a::LayerNorm)(x::AbstractArray)
   ChainRulesCore.@ignore_derivatives if a.diag isa Scale
