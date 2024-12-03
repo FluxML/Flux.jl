@@ -45,6 +45,12 @@ Trio(Dense(2 => 1, tanh), Dense(1 => 1; bias=false), Dropout(0.4))  # 4 paramete
 
 julia> opt_state = Flux.setup(Adam(), tri); # `c` is not in the optimizer state
 ```
+
+The macro also adds methods to make using Flux with Enzyme easier.
+* `Duplicated(m::Layer)` allocates a copy for the gradient (initially zero).
+* This is made callable, `(m::Duplicated{<:Layer})(x...) = m.val(x...)`
+* Pretty printing for `show(io, mime, ::Duplicated{<:Layer})`
+
 """
 macro layer(exs...)
   _layer_macro(exs...)
@@ -70,6 +76,8 @@ function _layer_macro(exs...)
   end
   
   push!(out.args, _macro_adapt(esc(type)))
+
+  push!(out.args, _macro_enzyme(esc(type)))
 
   for j in 1:length(rest)
     ex = rest[j]
@@ -112,3 +120,31 @@ _macro_trainable(type, fun, field::Union{Symbol,QuoteNode}) = _macro_trainable(t
 _noquotenode(s::Symbol) = s
 _noquotenode(q::QuoteNode) = q.value  # lets you write trainable=(:x,:y) instead of (x,y)
 _noquotenode(ex) = error("expected a symbol here, as a field name, but got ", ex)
+
+function _macro_enzyme(type)
+  out = quote
+    # One-arg method Duplicated(m::Layer) which allocates & zeros the gradient:
+    # Remove once https://github.com/EnzymeAD/Enzyme.jl/pull/2118 is merged
+    $EnzymeCore.Duplicated(m::$type) = $EnzymeCore.Duplicated(m, $EnzymeCore.make_zero(m))
+
+    # Make Duplicated{<:Layer} callable:
+    function (m::$EnzymeCore.Duplicated{<:$type})(xs...)
+        Zygote.isderiving() && error("""`Duplicated(flux_model)` is only for use with Enzyme.jl.
+            `Flux.gradient` should detect this, but calling `Zygote.gradient` directly on
+            such a wrapped model is not supported.""")
+        m.val(xs...)
+    end
+
+    # Not sure but this does prevent printing of 2nd copy:
+    $Optimisers.trainable(m::$EnzymeCore.Duplicated{<:$type}) = (; val = m.val)
+  end
+  # Add a show method for Duplicated{<:Layer}
+  push!(out.args, _macro_big_show(:($EnzymeCore.Duplicated{<:$type})))
+  out
+end
+
+function _show_pre_post(obj::EnzymeCore.Duplicated)
+  nrm = norm(destructure(obj.dval)[1])
+  str = repr(round(nrm; sigdigits=3))
+  "Duplicated(", "  # norm(∇) ≈ $str\n) "
+end

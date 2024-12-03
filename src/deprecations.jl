@@ -50,10 +50,10 @@ function supported_devices()
   return MLDataDevices.supported_gpu_backends()
 end
 
-# This was previosly documented. 
-# As of v0.14.23 we silently deprecate it. 
+# This was previosly documented.
+# As of v0.14.23 we silently deprecate it.
 # Later we will deprecate it loudly and then remove it.
-const GPU_BACKEND = @load_preference("gpu_backend", "CUDA") 
+const GPU_BACKEND = @load_preference("gpu_backend", "CUDA")
 
 
 # help out with https://github.com/chengchingwen/Transformers.jl/issues/201
@@ -61,9 +61,6 @@ const FluxCPUAdaptor = CPUDevice
 const FluxCUDAAdaptor = CUDADevice
 const FluxAMDGPUAdaptor = AMDGPUDevice
 const FluxMetalAdaptor = MetalDevice
-
-######## v0.15 deprecations #########################
-
 
 function reset!(x)
   Base.depwarn("reset!(m) is deprecated. You can remove this call as it is no more needed.", :reset!)
@@ -127,7 +124,7 @@ end
 
 # Allows caching of the parameters when params is called within gradient() to fix #2040.
 # @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
-# That speeds up implicit use, and silently breaks explicit use. 
+# That speeds up implicit use, and silently breaks explicit use.
 # From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
 Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
@@ -149,13 +146,27 @@ function Optimisers.update!(opt::Optimisers.AbstractRule, model, grad)
      `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
     """)
 end
+
+# This exists to solve an ambiguity between the method above & one in layers/basic.jl
 function Optimisers.update!(opt::Optimisers.AbstractRule, model::Chain, grad::Tuple)
   error("""Invalid input to `update!`.
      `update!(state, model, grad)` needs `state = Flux.setup(opt, model)`.
     """)
 end
 
+# From 0.15, Flux.gradient is not Zygote.gradient, but we can add a deprecation path:
+function gradient(f, p::Zygote.Params)
+  Base.depwarn("""Implicit gradients such as `gradient(f, ::Params)` are deprecated in Flux!
+    Please see the docs for new explicit form.""", :gradient; force=true)
+  Zygote.gradient(f, p)
+end
+function withgradient(f, p::Zygote.Params)
+  Base.depwarn("""Implicit gradients such as `withgradient(f, ::Params)` are deprecated in Flux!
+    Please see the docs for new explicit form.""", :withgradient; force=true)
+  Zygote.withgradient(f, p)
+end
 
+          
 ### v0.16 deprecations ####################
 
 
@@ -167,3 +178,4 @@ end
 #   where `loss_mxy` accepts the model as its first argument.
 #   """
 # ))
+

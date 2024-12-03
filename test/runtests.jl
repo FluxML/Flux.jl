@@ -3,7 +3,11 @@ using Flux: OneHotArray, OneHotMatrix, OneHotVector
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
+
 using Zygote
+const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
+const withgradient = Flux.withgradient
+
 using Pkg
 using FiniteDifferences: FiniteDifferences
 using Functors: fmapstructure_with_path

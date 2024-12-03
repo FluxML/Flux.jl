@@ -10,16 +10,19 @@ using MacroTools: @forward
 @reexport using NNlib
 using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 using MLUtils
+using Adapt, OneHotArrays
+using Functors: Functors, fmap, fmapstructure
 
 using Optimisers: Optimisers, destructure, freeze!, thaw!, adjust!, trainables, update!
 import Optimisers: trainable
 @reexport using Optimisers
 
 using Random: default_rng
+
 using Zygote, ChainRulesCore
-using Zygote: @adjoint, gradient, pullback
+using Zygote: @adjoint, pullback
 using Zygote.ForwardDiff: value
-export gradient
+using EnzymeCore: EnzymeCore
 
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
@@ -53,11 +56,12 @@ export Chain, Dense, Embedding, EmbeddingBag,
   # utils
   outputsize, state, create_bias, @layer,
   # from OneHotArrays.jl
-  onehot, onehotbatch, onecold,  
+  onehot, onehotbatch, onecold,
   # from Train
   setup, train!,
   # from Optimsers.jl
   destructure, freeze!, thaw!, adjust!, trainables, update!, trainable,
+  withgradient,
   # init
   glorot_uniform,
   glorot_normal,
@@ -89,12 +93,12 @@ export Chain, Dense, Embedding, EmbeddingBag,
   tversky_loss,
 ))
 
+include("gradient.jl")
+export gradient
+
 include("train.jl")
 using .Train
 using .Train: setup
-
-using Adapt, OneHotArrays
-using Functors: Functors, fmap, fmapstructure
 
 include("utils.jl")
 include("functor.jl")
