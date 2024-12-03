@@ -3,6 +3,23 @@
 Most work on neural networks involves the use of GPUs, as they can typically perform the required computation much faster.
 This page describes how Flux co-operates with various other packages, which talk to GPU hardware.
 
+## TL;DR: use automatic GPU selection
+
+For most use cases, you can load a GPU package by calling `using CUDA`, `using AMDGPU`, or `using Metal`, depending on your hardware, and then organizing the training loop like this:
+
+```julia
+device = gpu_device()
+model = model |> device
+for epoch in 1:num_epochs
+    for (x, y) in dataloader
+        x, y = device((x, y))
+        ... compute gradients and update model ...
+    end
+end
+```
+
+What follows is a detailed explanation of how this works in terms of lower-level functions.
+
 ## Basic GPU use: from `Array` to `CuArray` with `cu`
 
 Julia's GPU packages work with special array types, in place of the built-in `Array`.
@@ -119,7 +136,7 @@ model = Chain(...) |> device
     The reason they work on Flux models is that `Flux.@layer Layer` defines methods of `Adapt.adapt_structure(to, lay::Layer)`.
 
 
-## Automatic GPU choice with `gpu`
+## Automatic GPU choice with `gpu` and `gpu_device`
 
 Flux also provides a more automatic way of choosing which GPU (or none) to use. This is the function `gpu`:
 * By default it does nothing.
@@ -131,13 +148,17 @@ Flux also provides a more automatic way of choosing which GPU (or none) to use. 
 For the most part, this means that a script which says `model |> gpu` and `data |> gpu` will just work.
 It should always run, and if a GPU package is loaded (and finds the correct hardware) then that will be used.
 
-The function `gpu` uses a lower-level function called `get_device()` from MLDataDevices.jl,
-which checks what to do & then returns some device object. In fact, the entire implementation is just this:
+The function `gpu` uses a lower-level function called [`gpu_device`](@ref) from MLDataDevices.jl,
+which checks what to do and then returns some device object. In fact, the entire implementation is just this:
 
 ```julia
 gpu(x) = gpu_device()(x)
 cpu(x) = cpu_device()(x)
 ```
+
+In case automatic backend selction through `gpu` has an impact in some hot loop of your 
+code (although this is rare in practice), it is recommended to first instantiate a device object with `device = gpu_device()`, and then use it to transfer data. 
+Finally, setting a backend prefence with [`gpu_backend!`](@ref) gives type stability to the whole pipeline.
 
 ## Transferring Training Data
 
