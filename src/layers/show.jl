@@ -1,6 +1,6 @@
 @nospecialize  # just for this file, for startup time
 
-# This is called by @layer :expand, on layers which should be treated like Chain, and returns an expression:
+# This is called by @layer and returns an expression:
 function _macro_big_show(ex)
   quote
     # Entry point:
@@ -14,19 +14,19 @@ function _macro_big_show(ex)
       end
     end
 
-    # Don't show Chain(Tuple(...)), always splat that. And ignore Recur's non-trainable state:
+    # Don't show Chain(Tuple(...)), always splat that. And ignore non-trainable buffers:
     Flux._show_children(x::$ex) = _flat_children(trainable(x))
   end
 end
 
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
-  pre, post = _show_pre_post(obj)
   children = _show_children(obj)
   if all(_show_leaflike, children)
     # This check may not be useful anymore: it tries to infer when to stop the recursion by looking for grandkids,
     # but once all layers use @layer, they stop the recursion by defining a method for _big_show.
     _layer_show(io, obj, indent, name)
   else
+    pre, post = _show_pre_post(obj)
     println(io, " "^indent, isnothing(name) ? "" : "$name = ", pre)
     if obj isa Chain{<:NamedTuple} || obj isa NamedTuple
       # then we insert names -- can this be done more generically?
@@ -66,7 +66,7 @@ _show_pre_post(obj) = string(nameof(typeof(obj)), "("), ")"
 _show_pre_post(::AbstractVector) = "[", "]"
 _show_pre_post(::NamedTuple) = "(;", ")"
 
-_show_leaflike(x) = isleaf(x)  # mostly follow Functors, except for:
+_show_leaflike(x) = Functors.isleaf(x)  # mostly follow Functors, except for:
 
 # note the covariance of tuple, using <:T causes warning or error
 _show_leaflike(::Tuple{Vararg{Number}}) = true         # e.g. stride of Conv
@@ -83,7 +83,7 @@ function _flat_children(x)
     gamma = ((beta...)...,)
 end
 
-# This is called by @layer, on layers which should be treated like Dense, and returns an expression:
+# This is called by @layer :noexpand, on layers which should be treated like Dense, and returns an expression:
 function _macro_layer_show(ex)
   quote
     # Entry point:
@@ -104,15 +104,15 @@ function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   _str = isnothing(name) ? "" : "$name = "
   str = _str * _layer_string(io, layer)
   print(io, " "^indent, str, indent==0 ? "" : ",")
-  if !isempty(params(layer))
+  if !isempty(trainables(layer))
     print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
-    printstyled(io, "# ", underscorise(sum(length, params(layer); init=0)), " parameters"; 
+    printstyled(io, "# ", underscorise(sum(length, trainables(layer); init=0)), " parameters"; 
 color=:light_black)
-    nonparam = _childarray_sum(length, layer) - sum(length, params(layer), init=0)
+    nonparam = _childarray_sum(length, layer) - sum(length, trainables(layer), init=0)
     if nonparam > 0
       printstyled(io, ", plus ", underscorise(nonparam), indent==0 ? " non-trainable" : ""; color=:light_black)
     end
-    _nan_show(io, params(layer))
+    _nan_show(io, trainables(layer))
   end
   indent==0 || println(io)
 end
@@ -127,7 +127,7 @@ function _layer_string(::IO, a::AbstractArray)
 end
 
 function _big_finale(io::IO, m)
-  ps = params(m)
+  ps = trainables(m)
   if length(ps) > 2
     pars = underscorise(sum(length, ps; init=0))
     bytes = Base.format_bytes(Base.summarysize(m))
@@ -146,7 +146,7 @@ function _big_finale(io::IO, m)
 end
 
 _childarray_sum(f, x::AbstractArray{<:Number}) = f(x)
-_childarray_sum(f, x) = isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x), 
+_childarray_sum(f, x) = Functors.isleaf(x) ? 0 : sum(y -> _childarray_sum(f, y), Functors.children(x), 
 init=0)
 
 # utility functions
@@ -176,40 +176,53 @@ _all(f, xs) = !_any(!f, xs)
 
 #=
 
-julia> struct Tmp2; x; y; end; Flux.@functor Tmp2
+julia> struct Tmp2; x; y; end;
 
-# Before, notice Array(), NamedTuple(), and values
+julia> t = Tmp2([Dense(2,3), randn(3,4)'], (x=1:4, y=Dense(3,4), z=rand(3)))
+Tmp2(Any[Dense(2 => 3), [-0.559390071462934 -0.6357914190386781 -0.8516823037180543; -2.187495592853204 -0.6807254521505784 -1.2334639710489697; -0.12790952072543338 -1.4672700459421741 1.3687526519721238; 0.5232171922680576 -1.012045481192333 1.4953790632112915]], (x = 1:4, y = Dense(3 => 4), z = [0.29222096031585143, 0.6562195256556428, 0.9741896713499167]))
 
-julia> Chain(Tmp2([Dense(2,3), randn(3,4)'], (x=1:3, y=Dense(3,4), z=rand(3))))
-Chain(
-  Tmp2(
-    Array(
-      Dense(2 => 3),                    # 9 parameters
-      [0.351978391016603 0.6408681372462821 -1.326533184688648; 0.09481930831795712 1.430103476272605 0.7250467613675332; 2.03372151428719 -0.015879812799495713 1.9499692162118236; -1.6346846180722918 -0.8364610153059454 -1.2907265737483433],  # 12 parameters
-    ),
-    NamedTuple(
-      1:3,                              # 3 parameters
-      Dense(3 => 4),                    # 16 parameters
-      [0.9666158193429335, 0.01613900990539574, 0.0205920186127464],  # 3 parameters
-    ),
-  ),
-)                   # Total: 7 arrays, 43 parameters, 644 bytes.
-
-# After, (; x=, y=, z=) and "3-element Array"
-
-julia> Chain(Tmp2([Dense(2,3), randn(3,4)'], (x=1:3, y=Dense(3,4), z=rand(3))))
+julia> Chain(t)
 Chain(
   Tmp2(
     [
       Dense(2 => 3),                    # 9 parameters
-      4×3 Adjoint,                      # 12 parameters
+      4×3 Adjoint{Float64,...},         # 12 parameters
     ],
     (;
-      x = 3-element UnitRange,          # 3 parameters
+      x = 4-element UnitRange{Int64},
       y = Dense(3 => 4),                # 16 parameters
-      z = 3-element Array,              # 3 parameters
+      z = 3-element Vector{Float64},    # 3 parameters
     ),
   ),
-)                   # Total: 7 arrays, 43 parameters, 644 bytes.
+)         # Total: 6 trainable arrays, 40 parameters,
+          # plus 1 non-trainable, 4 parameters, summarysize 620 bytes.
 
+
+julia> Flux.@layer Tmp2
+
+julia> t
+Tmp2(
+  [
+    Dense(2 => 3),                      # 9 parameters
+    4×3 Adjoint{Float64,...},           # 12 parameters
+  ],
+  4-element UnitRange{Int64},
+  Dense(3 => 4),                        # 16 parameters
+  3-element Vector{Float64},            # 3 parameters
+)         # Total: 6 trainable arrays, 40 parameters,
+          # plus 1 non-trainable, 4 parameters, summarysize 620 bytes.
+
+julia> Chain(t)
+Chain(
+  Tmp2(
+    [
+      Dense(2 => 3),                    # 9 parameters
+      4×3 Adjoint{Float64,...},         # 12 parameters
+    ],
+    4-element UnitRange{Int64},
+    Dense(3 => 4),                      # 16 parameters
+    3-element Vector{Float64},          # 3 parameters
+  ),
+)         # Total: 6 trainable arrays, 40 parameters,
+          # plus 1 non-trainable, 4 parameters, summarysize 620 bytes.
 =#

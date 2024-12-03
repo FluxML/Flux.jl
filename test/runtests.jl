@@ -1,6 +1,5 @@
 using Flux
 using Flux: OneHotArray, OneHotMatrix, OneHotVector
-using Flux: params
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
@@ -16,7 +15,7 @@ using Functors: fmapstructure_with_path
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
-ENV["FLUX_TEST_ENZYME"] = "false" # We temporarily disable Enzyme tests since they are failing
+# ENV["FLUX_TEST_ENZYME"] = "false"
 
 include("test_utils.jl") # for test_gradients
 
@@ -32,8 +31,7 @@ Random.seed!(0)
       include("loading.jl")
     end
 
-    @testset "Optimise / Train" begin
-      include("optimise.jl")
+    @testset "Train" begin
       include("train.jl")
       include("tracker.jl")
     end

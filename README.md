@@ -5,7 +5,9 @@
 
 <div align="center">
 
-[![](https://img.shields.io/badge/Documentation-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) [![DOI](https://joss.theoj.org/papers/10.21105/joss.00602/status.svg)](https://doi.org/10.21105/joss.00602) [![Flux Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FFlux&query=total_requests&suffix=%2Fmonth&label=Downloads)](http://juliapkgstats.com/pkg/Flux)
+[![](https://img.shields.io/badge/Documentation-stable-blue.svg)](https://fluxml.github.io/Flux.jl/stable/) 
+[![](https://img.shields.io/badge/Documentation-dev-blue.svg)](https://fluxml.github.io/Flux.jl/dev/)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.00602/status.svg)](https://doi.org/10.21105/joss.00602) [![Flux Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FFlux&query=total_requests&suffix=%2Fmonth&label=Downloads)](http://juliapkgstats.com/pkg/Flux)
 <br/>
 [![][action-img]][action-url] [![][codecov-img]][codecov-url] [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 
@@ -18,16 +20,16 @@
 
 Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, and provides lightweight abstractions on top of Julia's native GPU and AD support. Flux makes the easy things easy while remaining fully hackable.
 
-Works best with [Julia 1.9](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
+Works best with [Julia 1.10](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
 using Flux, Plots
 data = [([x], 2x-x^3) for x in -2:0.1f0:2]
 
 model = Chain(Dense(1 => 23, tanh), Dense(23 => 1, bias=false), only)
 
-optim = Flux.setup(Adam(), model)
+opt_state = Flux.setup(Adam(), model)
 for epoch in 1:1000
-  Flux.train!((m,x,y) -> (m(x) - y)^2, model, data, optim)
+  Flux.train!((m,x,y) -> (m(x) - y)^2, model, data, opt_state)
 end
 
 plot(x -> 2x-x^3, -2, 2, legend=false)

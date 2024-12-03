@@ -1,6 +1,6 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.14.24"
+version = "0.15.0-DEV"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -42,12 +42,12 @@ FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
 
 [compat]
 AMDGPU = "1"
-Adapt = "3, 4"
-CUDA = "4, 5"
+Adapt = "4"
+CUDA = "5"
 ChainRulesCore = "1.12"
 Compat = "4.10.0"
-Enzyme = "0.12, 0.13"
-Functors = "0.4"
+Enzyme = "0.13"
+Functors = "0.5"
 MLDataDevices = "1.4.2"
 MLUtils = "0.4"
 MPI = "0.20.19"
@@ -55,7 +55,7 @@ MacroTools = "0.5"
 NCCL = "0.1.1"
 NNlib = "0.9.22"
 OneHotArrays = "0.2.4"
-Optimisers = "0.3.3"
+Optimisers = "0.4"
 Preferences = "1"
 ProgressLogging = "0.1"
 Reexport = "1.0"

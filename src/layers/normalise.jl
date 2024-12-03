@@ -198,7 +198,7 @@ end
 LayerNorm(size::Integer...; kw...) = LayerNorm(Int.(size); kw...)
 LayerNorm(size_act...; kw...) = LayerNorm(Int.(size_act[1:end-1]), size_act[end]; kw...)
 
-@layer LayerNorm
+@layer :noexpand LayerNorm
 
 function (a::LayerNorm)(x::AbstractArray)
   ChainRulesCore.@ignore_derivatives if a.diag isa Scale
@@ -245,7 +245,7 @@ function _norm_layer_forward(
   β = reshape(l.β, affine_shape)
 
   scale = γ ./ sqrt.(σ² .+ eps)
-  bias = -scale .* μ .+ β
+  bias = .-scale .* μ .+ β
   l.λ.(scale .* x .+ bias)
 end
 

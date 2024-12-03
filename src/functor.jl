@@ -1,9 +1,3 @@
-import Adapt: adapt, adapt_storage
-using  LinearAlgebra: Cholesky
-using Zygote: IdSet
-import Functors: Functors, @functor, functor, fmap, isleaf
-using SparseArrays: AbstractSparseArray
-
 """
     testmode!(model, [mode]) -> model
 
@@ -75,64 +69,6 @@ function testmode!(m, mode)
   m
 end
 
-function params!(p::Params, x, seen = IdSet())
-  if x isa AbstractArray{<:Number} && Functors.isleaf(x)
-    return push!(p, x)
-  elseif x in seen
-    nothing
-  else
-    _check_new_macro(x)  # complains if you used @functor not @layer
-    push!(seen, x)
-    for child in trainable(x)
-      params!(p, child, seen)
-    end
-  end
-end
-
-"""
-    params(model)
-    params(layers...)
-
-Given a model or specific layers from a model, create a `Params` object pointing to its trainable parameters.
-
-This can be used with the `gradient` function, see the [training section of the manual](@ref man-training), or as input to the [`Flux.train!`](@ref Flux.train!) function.
-
-The behaviour of `params` on custom types can be customized using [`Functors.@functor`](@ref) or [`Flux.trainable`](@ref).
-
-# Examples
-```jldoctest
-julia> using Flux: params
-
-julia> params(Chain(Dense(ones(2,3)), softmax))  # unpacks Flux models
-Params([[1.0 1.0 1.0; 1.0 1.0 1.0], [0.0, 0.0]])
-
-julia> bn = BatchNorm(2, relu)
-BatchNorm(2, relu)  # 4 parameters, plus 4 non-trainable
-
-julia> params(bn)  # only the trainable parameters
-Params([Float32[0.0, 0.0], Float32[1.0, 1.0]])
-
-julia> params([1, 2, 3], [4])  # one or more arrays of numbers
-Params([[1, 2, 3], [4]])
-
-julia> params([[1, 2, 3], [4]])  # unpacks array of arrays
-Params([[1, 2, 3], [4]])
-
-julia> params(1, [2 2], (alpha=[3,3,3], beta=Ref(4), gamma=sin))  # ignores scalars, unpacks NamedTuples
-Params([[2 2], [3, 3, 3]])
-```
-"""
-function params(m...)
-  ps = Params()
-  params!(ps, m)
-  return ps
-end
-
-# Allows caching of the parameters when params is called within gradient() to fix #2040.
-# @non_differentiable params(m...)  # https://github.com/FluxML/Flux.jl/pull/2054
-# That speeds up implicit use, and silently breaks explicit use. 
-# From @macroexpand Zygote.@non_differentiable params(m...) and https://github.com/FluxML/Zygote.jl/pull/1248
-Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ -> nothing
 
 
 
@@ -143,7 +79,7 @@ Zygote._pullback(::Zygote.Context{true}, ::typeof(params), m...) = params(m), _ 
     cpu(m)
 
 Copies `m` onto the CPU, the opposite of [`gpu`](@ref).
-Recurses into structs marked [`@functor`](@ref).
+Recurses into structs (thanks to Functors.jl).
 
 # Example
 ```julia-repl
@@ -166,29 +102,19 @@ julia> m.bias
 """
 cpu(x) = cpu_device()(x)
 
-# Remove when 
-# https://github.com/JuliaPackaging/Preferences.jl/issues/39
-# is resolved
-function gpu_backend!(backend::String)
-    @set_preferences!("gpu_backend" => backend)
-    MLDataDevices.gpu_backend!(backend)
-end
-
 """
     gpu(m)
 
 Copies `m` to the current GPU device (using current GPU backend), if one is available.
 If no GPU is available, it does nothing (but prints a warning the first time).
-
-On arrays, this calls CUDA's `cu`, which also changes arrays
-with Float64 elements to Float32 while copying them to the device (same for AMDGPU).
-To act on arrays within a struct, the struct type must be marked with [`@functor`](@ref).
+It recurses into structs according to Functors.jl.
 
 Use [`cpu`](@ref) to copy back to ordinary `Array`s.
 See also [`f32`](@ref) and [`f16`](@ref) to change element type only.
 
-See the [CUDA.jl docs](https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/) 
-to help identify the current device.
+This function is just defined for convenience around [`gpu_device`](@ref), 
+and is equivalent to `gpu_device()(m)`.
+You may consider defining `device = gpu_device()` once and then using `device(m)` to move data.
 
 # Example
 ```julia-repl
@@ -271,10 +197,6 @@ Chain(
 ```
 """
 f16(m) = _paramtype(Float16, m)
-
-# Functors for certain Julia data structures -- PIRACY, should move to Functors.jl
-@functor Cholesky
-trainable(c::Cholesky) = ()
 
 
 """

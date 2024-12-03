@@ -1,8 +1,8 @@
 using Flux
 using Flux: throttle, nfan, glorot_uniform, glorot_normal,
-             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal,
+             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal, lecun_normal,
              sparse_init, identity_init, unstack, batch, unbatch,
-             unsqueeze, params, loadmodel!
+             unsqueeze, loadmodel!
 using MLUtils
 using Statistics, LinearAlgebra
 using Random
@@ -75,7 +75,7 @@ end
       kaiming_uniform, kaiming_normal, 
       orthogonal, 
       sparse_init,
-      truncated_normal,
+      truncated_normal, lecun_normal,
       identity_init,
       Flux.rand32,
       Flux.randn32,
@@ -192,6 +192,11 @@ end
     end
   end
 
+  @testset "lecun_normal" begin
+    @test std(Flux.lecun_normal(10, 1000)) ≈ 0.032f0 rtol=0.1
+    @test std(Flux.lecun_normal(1000, 10)) ≈ 0.317f0 rtol=0.1
+  end
+
   @testset "Partial application" begin
     partial_ku = kaiming_uniform(gain=1e9)
     @test maximum(partial_ku(8, 8)) > 1e9 / 2
@@ -220,7 +225,7 @@ end
         @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
     @testset "Dense ID mapping" begin
-        l = Dense(3,3, init = identity_init)
+        l = Dense(3 => 3, init = identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
@@ -250,42 +255,36 @@ end
   end
 end
 
-@testset "Params" begin
-  m = Dense(10, 5)
-  @test size.(params(m)) == [(5, 10), (5,)]
-  m = RNN(10, 5)
-  @test size.(params(m)) == [(5, 10), (5, 5), (5,), (5, 1)]
+@testset "Trainables" begin
+  m = Dense(10 => 5)
+  @test size.(Flux.trainables(m)) == [(5, 10), (5,)]
+  m = RNN(10 => 5)
+  @test size.(Flux.trainables(m)) == [(5, 10), (5, 5), (5,)]
 
   # Layer duplicated in same chain, params just once pls.
   c = Chain(m, m)
-  @test size.(params(c)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test size.(Flux.trainables(c)) == [(5, 10), (5, 5), (5,)]
 
   # Self-referential array. Just want params, no stack overflow pls.
   r = Any[nothing,m]
   r[1] = r
-  @test size.(params(r)) == [(5, 10), (5, 5), (5,), (5, 1)]
+  @test_broken size.(Flux.trainables(r)) == [(5, 10), (5, 5), (5,)]
 
   # Ensure functor explores inside Transpose but not SubArray
   m = (x = view([1,2,3]pi, 1:2), y = transpose([4 5]pi))
-  @test size.(Flux.params(m)) == [(2,), (1, 2)]
+  @test size.(Flux.trainables(m)) == [(2,), (1, 2)]
 end
 
-@testset "params gradient" begin
+@testset "trainables gradient" begin
   m = (x=[1,2.0], y=[3.0]);
 
-  # Explicit -- was broken by #2054 / then fixed / now broken again on julia v1.11
-  gnew = gradient(m -> (sum(norm, Flux.params(m))), m)[1]
+  gnew = gradient(m -> (sum(norm, Flux.trainables(m))), m)[1]
   @test gnew.x ≈ [0.4472135954999579, 0.8944271909999159]
   @test gnew.y ≈ [1.0]
-
-  # Implicit
-  gold = gradient(() -> (sum(norm, Flux.params(m))), Flux.params(m))
-  @test gold[m.x] ≈ [0.4472135954999579, 0.8944271909999159]
-  @test gold[m.y] ≈ [1.0]
 end
 
 @testset "Precision" begin
-  m = Chain(Dense(10, 5, relu; bias=false), Dense(5, 2))
+  m = Chain(Dense(10 => 5, relu; bias=false), Dense(5 => 2))
   x64 = rand(Float64, 10)
   x32 = rand(Float32, 10)
   i64 = rand(Int64, 10)
@@ -340,28 +339,12 @@ end
     o = ones(s)
     z = zeros(s)
 
-    @testset "Explicit" begin
-      gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
-      g = gfun(o, z)
-      @test gfun(o, false) == (g[1], nothing)
+    gfun(args...) = gradient((x, y) -> sum(op.(x,y)), args...)
+    g = gfun(o, z)
+    @test gfun(o, false) == (g[1], nothing)
 
-      g = gfun(z, o)
-      @test gfun(false, o) == (nothing, g[2])
-    end
-
-    @testset "Implicit" begin
-      gfun(args...) = gradient(() -> sum(op.(args...)), params(collect(args)))
-      g = gfun(o, z)
-
-      gres = gfun(o, false)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-
-      g = gfun(z, o)
-      gres = gfun(false, o)
-      @test gres[o] == g[o]
-      @test false ∉ gres.params
-    end
+    g = gfun(z, o)
+    @test gfun(false, o) == (nothing, g[2])
   end
 end
 
@@ -466,10 +449,10 @@ end
   @test modules[5] === m2
   @test modules[6] === m3
 
-  mod_par = Flux.modules(Parallel(Flux.Bilinear(2,2,2,cbrt), Dense(2,2,abs), Dense(2,2,abs2)))
+  mod_par = Flux.modules(Parallel(Flux.Bilinear((2,2) => 2,cbrt), Dense(2=>2,abs), Dense(2=>2,abs2)))
   @test length(mod_par) == 5
 
-  mod_rnn = Flux.modules(Chain(Dense(2,3), BatchNorm(3), LSTM(3,4)))
+  mod_rnn = Flux.modules(Chain(Dense(2=>3), BatchNorm(3), LSTM(3=>4)))
   @test length(mod_rnn) == 6
   @test mod_rnn[end] isa Flux.LSTMCell
 
@@ -561,10 +544,10 @@ end
 @testset "Shared parameters" begin
   mat = [1 2; 3 4.0]
   simple = ((nothing, mat, (3, mat, 4)))
-  @test length(Flux.params(simple)) == 1
+  @test length(Flux.trainables(simple)) == 1
   
   oneadj = (nt = (m = mat, a = mat'))
-  @test length(Flux.params(oneadj)) == 1  # needs Functors@0.3
+  @test length(Flux.trainables(oneadj)) == 1  # needs Functors@0.3
   
   @test Flux.destructure(simple)[1] == Flux.destructure(oneadj)[1] == [1, 3, 2, 4]
 end
@@ -576,15 +559,15 @@ end
         dense::Dense
         dense2::Dense
     end
-    Flux.@functor TwoDenses
+    Flux.@layer TwoDenses
 
     function (m::TwoDenses)(x)
         out = m.dense(x)
     end
 
     model = TwoDenses(
-        Dense(3,1),
-        Dense(3,2)
+        Dense(3 => 1),
+        Dense(3 => 2)
     )
     p, re = Flux.destructure(model)
 
@@ -619,20 +602,20 @@ end
     Flux.@layer Model
     (m::Model)(x) = m.a(x) .+ m.b(x)
 
-    d = Dense(1, 1)
+    d = Dense(1 => 1)
     x = rand(Float32, 1, 1)
 
     # Sharing the parameters
     model = Model(d, d)
 
     # Works
-    g1 = Flux.gradient(() -> sum(model(x)), Flux.params(model))
+    g1 = Flux.gradient(m -> sum(m(x)), model)[1]
 
     p, re = Flux.destructure(model)
     # Fails
-    g2 = Flux.gradient(p -> sum(re(p)(x)), p)
+    g2 = Flux.gradient(p -> sum(re(p)(x)), p)[1]
 
-    @test g2[1] ≈ vcat(g1[d.weight], g1[d.bias])
+    @test g2 ≈ vcat(g1.a.weight + g1.b.weight, g1.a.bias + g1.b.bias)
   end
 
   @testset "issue 1826" begin
@@ -640,7 +623,6 @@ end
         paths::T
     end
     Split(paths...) = Split(paths)
-    Flux.@functor Split
     (m::Split)(x::AbstractArray) = map(f -> f(x), m.paths)
 
     n_input, n_batch, n_shared = 5, 13, 11
@@ -648,8 +630,8 @@ end
 
     data = rand(Float32, n_input, n_batch)
     model = Chain(
-        Dense(n_input, n_shared),
-        Split(Dense(n_shared, n_outputs[1]), Dense(n_shared, n_outputs[2]))
+        Dense(n_input => n_shared),
+        Split(Dense(n_shared => n_outputs[1]), Dense(n_shared => n_outputs[2]))
     )
 
     pvec, re = Flux.destructure(model)

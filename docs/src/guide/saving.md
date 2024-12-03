@@ -21,7 +21,12 @@ julia> Flux.@layer MyModel
 julia> MyModel() = MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)));
 
 julia> model = MyModel()
-MyModel(Chain(Dense(10 => 5, relu), Dense(5 => 2)))  # 67 parameters
+MyModel(
+  Chain(
+    Dense(10 => 5, relu),               # 55 parameters
+    Dense(5 => 2),                      # 12 parameters
+  ),
+)                   # Total: 4 arrays, 67 parameters, 484 bytes.
 
 julia> model_state = Flux.state(model);
 

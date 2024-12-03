@@ -2,6 +2,20 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
+## v0.15.0 
+* Recurrent layers have undergone a complete redesign in [PR 2500](https://github.com/FluxML/Flux.jl/pull/2500).
+  * `RNNCell`, `LSTMCell`, and `GRUCell` are now exported and provide functionality for single time-step processing: `rnncell(x_t, h_t) -> h_{t+1}`.
+  * `RNN`, `LSTM`, and `GRU` no longer store the hidden state internally, it has to be explicitely passed to the layer. Moreover, they now process entire sequences at once, rather than one element at a time: `rnn(x, h) -> h′`.
+  * The `Recur` wrapper has been deprecated and removed.
+  * The `reset!` function has also been removed; state management is now entirely up to the user.
+* The `Flux.Optimise` module has been deprecated in favor of the Optimisers.jl package.
+  Now Flux re-exports the optimisers from Optimisers.jl. Most users will be uneffected by this change.
+  The module is still available for now, but will be removed in a future release.
+* Most Flux layers will [re-use memory via `NNlib.bias_act!`](https://github.com/FluxML/Flux.jl/pull/2327), when possible.
+* `Flux.params` has been deprecated. Use Zygote's explicit differentiation instead, 
+`gradient(m -> loss(m, x, y), model)`, or use `Flux.trainables(model)` to get the trainable parameters.
+* Flux now requires Functors.jl v0.5. This new release of Functors assumes all types to be functors by default. Therefore, applying `@layer` or `@functor` to a type is no longer strictly necessary for Flux's models. However, it is still recommended to use `@layer Model` for additional functionality like pretty printing.
+
 ## v0.14.22
 * Data movement between devices is now provided by [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl).
 

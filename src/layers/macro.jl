@@ -1,25 +1,24 @@
 
 """
-    @layer Dense
-    @layer :expand Chain
-    @layer BatchNorm trainable=(β,γ)
+    @layer [showtype] MyModel [trainable=(field1,...)]
+ 
+This macro adds convenience functionality to a custom type to serve 
+as a neural network layer, as a module, or as an entire model.
 
-This macro replaces most uses of `@functor`. Its basic purpose is the same:
-When you define a new layer, this tells Flux to explore inside it
-to see the parameters it trains, and also to move them to the GPU, change precision, etc.
-
-Like `@functor`, this assumes your struct has the default constructor, to enable re-building.
-If you define an inner constructor (i.e. a function within the `struct` block) things may break.
-
-The keyword `trainable` allows you to limit this exploration, instead of visiting all `fieldnames(T)`.
+The optional keyword `trainable` allows you to specify which fields of your model can be trained, 
+instead of assuming all `fieldnames(MyModel)` to trainable. 
 Note that it is never necessary to tell Flux to ignore non-array objects such as functions or sizes.
+This can be also be done by defining [`trainable(::MyModel)`](@ref Optimisers.trainable) for your type.
 
-The macro also handles overloads of `show` for pretty printing.
-* By default, it adds methods to 3-arg `Base.show` to treat your layer much like `Dense` or `Conv`.
-* If your layer is a container, more like `Chain` or `Parallel`, then `:expand` makes `show` unfold its contents.
-* To disable all `show` overloads, there is an `:ignore` option too.
+The macro also handles overloads of the 3-arg `show(::IO, ::MIME"text/plain", ::MyModel)` for pretty printing. 
+The optional argument `showtype` can take any of the following values:
 
-(You probably still want to define 2-arg `show(io::IO, x::Layer)`, the macro does not touch this.)
+- `:expand` (default): This will expand the representation of container types like `Chain`, 
+   while maintaining a compat representation of types like `Dense` containing only arrays.
+- `:noexpand`: This is to be used in case your type contains other layers but you want to keep the representation simple.
+- `:ignore`: To opt out of the pretty printing.
+
+You probably still want to define 2-arg `show(::IO, ::MyModel)`, the macro does not touch this.
 
 Note that re-running the macro with different options may not remove all methods, you will need to restart.
 
@@ -30,43 +29,47 @@ julia> struct Trio; a; b; c end
 julia> tri = Trio(Dense([1.1 2.2], [0.0], tanh), Dense(hcat(3.3), false), Dropout(0.4))
 Trio(Dense(2 => 1, tanh), Dense(1 => 1; bias=false), Dropout(0.4))
 
-julia> Flux.destructure(tri)  # parameters are not yet visible to Flux
-(Bool[], Restructure(Trio, ..., 0))
+julia> Flux.@layer Trio
 
-julia> Flux.@layer :expand Trio
-
-julia> Flux.destructure(tri)  # now gpu, params, train!, etc will see inside too
-([1.1, 2.2, 0.0, 3.3], Restructure(Trio, ..., 4))
-
-julia> tri  # and layer is printed like Chain
+julia> tri  # now the layer is printed like Chain
 Trio(
   Dense(2 => 1, tanh),                  # 3 parameters
   Dense(1 => 1; bias=false),            # 1 parameters
   Dropout(0.4),
 )                   # Total: 3 arrays, 4 parameters, 240 bytes.
-```
 
+julia> Flux.@layer :noexpand Trio trainable=(a,b)
+
+julia> tri  # now the layer is printed compactly
+Trio(Dense(2 => 1, tanh), Dense(1 => 1; bias=false), Dropout(0.4))  # 4 parameters
+
+julia> opt_state = Flux.setup(Adam(), tri); # `c` is not in the optimizer state
+```
 """
 macro layer(exs...)
+  _layer_macro(exs...)
+end
+
+function _layer_macro(exs...)
   out = quote end
 
   # These functions are defined in show.jl, and each return an expression overloading Base.show
   type, rest... = if exs[1] == QuoteNode(:expand)
-    push!(out.args, _macro_big_show(esc(exs[2])))  
+    push!(out.args, _macro_big_show(esc(exs[2])))
+    exs[2:end]
+  elseif exs[1] == QuoteNode(:noexpand)
+    push!(out.args, _macro_layer_show(esc(exs[2])))
     exs[2:end]
   elseif exs[1] == QuoteNode(:ignore)
     exs[2:end]
   elseif exs[1] isa QuoteNode
-    error("`@layer` accepts only two options before the layer type, `:expand` and `:ignore` (to control `show`)")
+    error("`@layer` accepts only the options `:ignore`, `:noexpand`, and `:expand` before the layer type (to control `show`).")
   else
-    push!(out.args, _macro_layer_show(esc(exs[1])))
+    push!(out.args, _macro_big_show(esc(exs[1])))
     exs
   end
-
-  # This function exists only for depwarns when you use @functor directly
-  push!(out.args, :(Flux._check_new_macro(::$(esc(type))) = nothing))
   
-  push!(out.args, _macro_functor(esc(type)))
+  push!(out.args, _macro_adapt(esc(type)))
 
   for j in 1:length(rest)
     ex = rest[j]
@@ -82,59 +85,14 @@ macro layer(exs...)
     push!(out.args, _macro_trainable(esc(type), name, ex.args[2]))
   end
 
-  out
+  return out
 end
 
-# Temporary depwarn function, called within `params`, is also called by `show`.
-
-function _check_new_macro(x::T) where T
-  Functors.isleaf(x) && return
-  Base.depwarn(LazyString("This type should probably now use `Flux.@layer` instead of `@functor`: ", T), Symbol("@functor"))
-end
-_check_new_macro(::Tuple) = nothing  # defined by Functors.jl, not by users
-_check_new_macro(::NamedTuple) = nothing
-_check_new_macro(::AbstractArray) = nothing
-_check_new_macro(::Ref) = nothing
-
-# @layer's code for Functors & Adapt
-# Unlike @functor, _default_functor doesn't need to eval anything
-
-function _macro_functor(type)
+# @layer's code for Adapt
+function _macro_adapt(type)
   quote
-    Functors.functor(::Type{T}, x) where {T<:$type} = $_default_functor(T, x)
     Adapt.adapt_structure(to, layer::$type) = $fmap($adapt(to), layer)
   end
-end
-
-function _macro_functor(type, fields)
-  Meta.isexpr(fields, :tuple) || error("expected a tuple of field names")
-  symbols = Tuple(map(_noquotenode, fields.args))
-  quote
-    Functors.functor(::Type{T}, x) where {T<:$type} = $_custom_functor(T, x, Val($symbols))
-    Adapt.adapt_structure(to, layer::$type) = $fmap($adapt(to), layer)
-  end
-end
-_macro_functor(type, field::Union{Symbol,QuoteNode}) = _macro_functor(type, :(($field,)))  # lets you forget a comma
-
-function _default_functor(::Type{T}, x) where {T}
-   if @generated
-     F = fieldnames(T)
-     args = map(sy -> :(getfield(x, $(QuoteNode(sy)))), F)
-     C = Base.typename(T).wrapper  # constructor
-     # recon = VERSION > v"1.9-" ? :(Splat($C)) : :(Base.splat($C))
-     recon = :(Base.splat($C))
-     :((NamedTuple{$F}(($(args...),)), $recon))
-   else
-     # Getting this parameterless type takes about 2μs, every time:
-     # spl = VERSION > v"1.9-" ? Splat : Base.splat
-     spl = Base.splat
-     namedtuple(x), spl(Base.typename(T).wrapper)
-   end
-end
- 
-function namedtuple(x::T) where T
-  F = fieldnames(T)
-  NamedTuple{F}(map(sy -> getfield(x, sy), F))
 end
 
 # @layer's code for Optimisers.trainable, and perhaps anything else,

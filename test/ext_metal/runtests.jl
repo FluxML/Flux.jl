@@ -32,6 +32,11 @@ end
     include("basic.jl")
 end
 
+@testset "Recurrent" begin
+    global BROKEN_TESTS = [:lstm, :gru, :gruv3]
+    include("../ext_common/recurrent_gpu_ad.jl")
+end
+
 @testset "Huber Loss test" begin
     X = Flux.gpu(Float32[0,1])
     Y = Flux.gpu(Float32[1,0])

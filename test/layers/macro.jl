@@ -4,7 +4,7 @@ module MacroTest
   using Flux: @layer
 
   struct Duo{T,S}; x::T; y::S; end
-  @layer :expand Duo
+  @layer Duo
 
   struct Trio; a; b; c end
   # @layer Trio trainable=(a,b) test=(c) # should be (c,) but it lets you forget
@@ -33,11 +33,17 @@ end
   
   m23 = MacroTest.TwoThirds([1 2], [3 4], [5 6])
   # Check that we can use the macro with a qualified type name, outside the defining module:
-  Flux.@layer :expand MacroTest.TwoThirds trainable=(:a)  # documented as (a,c) but allow quotes
+  Flux.@layer MacroTest.TwoThirds trainable=(:a)  # documented as (a,c) but allow quotes
 
   m23re = Functors.functor(m23)[2]((a = [10 20], b = [3 4], c = [50 60]))
   @test m23re isa MacroTest.TwoThirds
-  @test Flux.namedtuple(m23re) == (a = [10 20], b = [3 4], c = [50 60])
+
+  function namedtuple(x::T) where T
+    F = fieldnames(T)
+    NamedTuple{F}(map(sy -> getfield(x, sy), F))
+  end
+
+  @test namedtuple(m23re) == (a = [10 20], b = [3 4], c = [50 60])
 
   @test Optimisers.trainable(m23) == (a = [1 2],)
 

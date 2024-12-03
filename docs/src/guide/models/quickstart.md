@@ -5,48 +5,53 @@ If you have used neural networks before, then this simple example might be helpf
 If you haven't, then you might prefer the [Fitting a Straight Line](overview.md) page.
 
 ```julia
-# This will prompt if neccessary to install everything, including CUDA:
+# This will prompt if neccessary to install everything, including CUDA.
+# For CUDA acceleration, also cuDNN.jl has to be installed in your environment.
 using Flux, CUDA, Statistics, ProgressMeter
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
 truth = [xor(col[1]>0.5, col[2]>0.5) for col in eachcol(noisy)]   # 1000-element Vector{Bool}
 
+# Use this object to move data and model to the GPU, if available
+device = gpu_device()
+
 # Define our model, a multi-layer perceptron with one hidden layer of size 3:
 model = Chain(
-    Dense(2 => 3, tanh),   # activation function inside layer
+    Dense(2 => 3, tanh),      # activation function inside layer
     BatchNorm(3),
-    Dense(3 => 2)) |> gpu        # move model to GPU, if available
+    Dense(3 => 2)) |> device  # move model to GPU, if available
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
-out1 = model(noisy |> gpu) |> cpu                                 # 2×1000 Matrix{Float32}
-probs1 = softmax(out1)      # normalise to get probabilities
+out1 = model(noisy |> device) |> cpu     # 2×1000 Matrix{Float32}
+probs1 = softmax(out1)                   # normalise to get probabilities
 
 # To train the model, we use batches of 64 samples, and one-hot encoding:
 target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
-loader = Flux.DataLoader((noisy, target) |> gpu, batchsize=64, shuffle=true);
-# 16-element DataLoader with first element: (2×64 Matrix{Float32}, 2×64 OneHotMatrix)
+loader = Flux.DataLoader((noisy, target), batchsize=64, shuffle=true);
 
-optim = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum, etc.
+opt_state = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum, etc.
 
 # Training loop, using the whole data set 1000 times:
 losses = []
 @showprogress for epoch in 1:1_000
     for (x, y) in loader
+        x, y = device((x, y))
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             y_hat = m(x)
             Flux.logitcrossentropy(y_hat, y)
         end
-        Flux.update!(optim, model, grads[1])
+        Flux.update!(opt_state, model, grads[1])
         push!(losses, loss)  # logging, outside gradient context
     end
 end
 
-optim # parameters, momenta and output have all changed
-out2 = model(noisy |> gpu) |> cpu  # first row is prob. of true, second row p(false)
-probs2 = softmax(out2)      # normalise to get probabilities
-mean((probs2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
+opt_state # parameters, momenta and output have all changed
+
+out2 = model(noisy |> device)  |> cpu   # first row is prob. of true, second row p(false)
+probs2 = softmax(out2)                  # normalise to get probabilities
+mean((probs2[1,:] .> 0.5) .== truth)    # accuracy 94% so far!
 ```
 
 ![](../../assets/quickstart/oneminute.png)
@@ -95,9 +100,13 @@ Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.
 
 ```julia
 for epoch in 1:1_000
-    Flux.train!(model, loader, optim) do m, x, y
+    Flux.train!(model, loader, opt_state) do m, x, y
+        x, y = device((x, y))
         y_hat = m(x)
         Flux.logitcrossentropy(y_hat, y)
     end
 end
 ```
+
+* In our simple example, we conveniently created the model has a [`Chain`](@ref Flux.Chain) of layers. 
+For more complex models, you can define a custom struct `MyModel` containing layers and arrays and implement the call operator `(::MyModel)(x) = ...` to define the forward pass. This is all it is needed for Flux to work. Marking the struct with [`Flux.@layer`](@ref) will add some more functionality, like pretty printing and the ability to mark some internal fields as trainable or not (also see [`trainable`](@ref Optimisers.trainable)).

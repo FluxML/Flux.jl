@@ -16,12 +16,12 @@ end
   
 
 @testset "loadmodel!(dst, src)" begin
-  m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
-  m2 = Chain(Dense(10, 5), Dense(5, 2))
-  m3 = Chain(Conv((3, 3), 3 => 16), Dense(5, 2))
-  m4 = Chain(Dense(10, 6), Dense(6, 2))
-  m5 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5, 2)))
-  m6 = Chain(Dense(10, 5), Parallel(+, Dense(5, 2), Dense(5, 2)))
+  m1 = Chain(Dense(10 => 5), Dense(5 => 2, relu))
+  m2 = Chain(Dense(10 => 5), Dense(5 => 2))
+  m3 = Chain(Conv((3, 3), 3 => 16), Dense(5 => 2))
+  m4 = Chain(Dense(10 => 6), Dense(6 => 2))
+  m5 = Chain(Dense(10 => 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5 => 2)))
+  m6 = Chain(Dense(10 => 5), Parallel(+, Dense(5 => 2), Dense(5 => 2)))
 
   loadmodel!(m1, m2)
   # trainable parameters copy over
@@ -73,7 +73,7 @@ end
                   Dropout(0.2),
                   x -> reshape(x, :, size(x, 4)),
                   Dropout(0.2),
-                  Dense(90, 10),
+                  Dense(90 => 10),
                   softmax)
   chain2 = Chain([Dropout(0.1),
                   Conv((3, 3), 1 => 32, relu),
@@ -88,7 +88,7 @@ end
                   Dropout(0.1),
                   x -> reshape(x, :, size(x, 4)),
                   Dropout(0.1),
-                  Dense(90, 10),
+                  Dense(90 => 10),
                   softmax])
   chain2[3].μ .= 5f0
   chain2[3].σ² .= 2f0
@@ -143,9 +143,9 @@ end
   @test_throws ErrorException loadmodel!(m1, m2)
 
   @testset "loadmodel! & filter" begin
-    m1 = Chain(Dense(10, 5), Dense(5, 2, relu))
-    m2 = Chain(Dense(10, 5), Dropout(0.2), Dense(5, 2))
-    m3 = Chain(Dense(10, 5), Dense(5, 2, relu))
+    m1 = Chain(Dense(10 => 5), Dense(5 => 2, relu))
+    m2 = Chain(Dense(10 => 5), Dropout(0.2), Dense(5 => 2))
+    m3 = Chain(Dense(10 => 5), Dense(5 => 2, relu))
 
     # this will not error cause Dropout is skipped
     loadmodel!(m1, m2; filter = x -> !(x isa Dropout))
@@ -191,8 +191,8 @@ end
 end
 
 @testset "state" begin
-  m1 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5 => 2)))
-  m2 = Chain(Dense(10, 5), Parallel(+, Dense(Flux.zeros32(2, 5), Flux.ones32(2)), Dense(5 => 2)))
+  m1 = Chain(Dense(10 => 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5 => 2)))
+  m2 = Chain(Dense(10 => 5), Parallel(+, Dense(Flux.zeros32(2, 5), Flux.ones32(2)), Dense(5 => 2)))
   s = Flux.state(m1)
   @test s isa NamedTuple
   @test fieldnames(typeof(s)) == (:layers,)
@@ -217,7 +217,7 @@ end
   end
 
   @testset "track active state and batch norm params" begin
-    m3 = Chain(Dense(10, 5), Dropout(0.2), Dense(5, 2), BatchNorm(2))
+    m3 = Chain(Dense(10 => 5), Dropout(0.2), Dense(5 => 2), BatchNorm(2))
     trainmode!(m3)
     s = Flux.state(m3)
     @test s.layers[2].active == true

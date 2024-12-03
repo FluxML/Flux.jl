@@ -74,7 +74,7 @@ struct MultiHeadAttention{P1, D, P2}
   out_proj::P2
 end
 
-@layer MultiHeadAttention
+@layer :noexpand MultiHeadAttention
 
 function MultiHeadAttention(dims; 
                      nheads::Int = 8,
