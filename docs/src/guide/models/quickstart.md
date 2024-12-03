@@ -54,7 +54,7 @@ probs2 = softmax(out2)                  # normalise to get probabilities
 mean((probs2[1,:] .> 0.5) .== truth)    # accuracy 94% so far!
 ```
 
-![](../../assets/quickstart/oneminute.png)
+![](../../../assets/quickstart/oneminute.png)
 
 ```julia
 using Plots  # to draw the above figure
@@ -67,7 +67,7 @@ plot(p_true, p_raw, p_done, layout=(1,3), size=(1000,330))
 ```
 
 ```@raw html
-<img align="right" width="300px" src="../../assets/quickstart/loss.png">
+<img align="right" width="300px" src="../../../assets/quickstart/loss.png">
 ```
 
 Here's the loss during training:

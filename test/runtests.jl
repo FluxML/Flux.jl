@@ -69,6 +69,10 @@ Random.seed!(0)
     @testset "functors" begin
       include("functors.jl")
     end
+
+    @testset "deprecations" begin
+      include("deprecations.jl")
+    end
   else
       @info "Skipping CPU tests."
   end
