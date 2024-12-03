@@ -313,10 +313,10 @@ julia> custom_loss(W, b, x, custom_y_onehot)
 The loss went down! Let's plug our super training logic inside a function.
 
 ```jldoctest logistic_regression
-julia> function train_custom_model()
-           dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, custom_y_onehot)
-           W .= W .- 0.1 .* dLdW
-           b .= b .- 0.1 .* dLdb
+julia> function train_custom_model!(f_loss, weights, biases, x, y)
+           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, x, y)
+           weights .= weights .- 0.1 .* dLdW
+           biases .= biases .- 0.1 .* dLdb
        end;
 ```
 
@@ -324,7 +324,7 @@ We can plug the training function inside a loop and train the model for more epo
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for i = 1:500
-            train_custom_model();
+            train_custom_model!(custom_loss, W, b, x, custom_y_onehot);
             custom_accuracy(W, b, x, y) >= 0.98 && break
        end
     
@@ -347,14 +347,14 @@ We can write a similar-looking training loop for our `flux_model` and train it s
 julia> flux_loss(flux_model, x, flux_y_onehot)
 1.215731131385928
 
-julia> function train_flux_model()
-           dLdm, _, _ = gradient(flux_loss, flux_model, x, flux_y_onehot)
-           @. flux_model[1].weight = flux_model[1].weight - 0.1 * dLdm[:layers][1][:weight]
-           @. flux_model[1].bias = flux_model[1].bias - 0.1 * dLdm[:layers][1][:bias]
+julia> function train_flux_model!(f_loss, model, x, y)
+           dLdm, _, _ = gradient(f_loss, model, x, y)
+           @. model[1].weight = model[1].weight - 0.1 * dLdm[:layers][1][:weight]
+           @. model[1].bias = model[1].bias - 0.1 * dLdm[:layers][1][:bias]
        end;
 
 julia> for i = 1:500
-            train_flux_model();
+            train_flux_model!(flux_loss, flux_model, x, flux_y_onehot);
             flux_accuracy(x, y) >= 0.98 && break
        end
 ```
