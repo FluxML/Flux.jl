@@ -16,39 +16,51 @@ containing many parameters, and how to handle their gradients.
 Let's start with very simple functions. This is a polynomial in `x::Real`,
 returning another real number `y` which depends on some coefficients stored in a vector:
 
-```jldoctest poly
+```jldoctest poly; output = false
 θ = [10, 1, 0.1]
 
 poly1(x::Real) = θ[1] + θ[2]*x + θ[3]*x^2
 
 poly1(5) == 17.5  # true
+
+# output
+
+true
 ```
 
 Here the parameters are a global variable `θ`. They could be handled in other ways,
 for instance by explicitly passing them as an additional argument to the function:
 
-```jldoctest poly
+```jldoctest poly; output = false
 poly2(x::Real, θ2) = evalpoly(x, θ2)
 
 poly2(5, θ) == 17.5  # true
+
+# output
+
+true
 ```
 
 Flux chooses a third path, by *encapsulating* the parameters within the function.
 The simplest way to do this is a *closure*, an anonymous function which Julia knows
 to depend on some local variable `θ3`:
 
-```jldoctest poly
+```jldoctest poly; output = false
 poly3 = let θ3 = [10, 1, 0.1]
     x -> evalpoly(x, θ3)
 end
 
 poly3(5) == 17.5  # true
+
+# output
+
+true
 ```
 
 An equivalent, but tidier, way is to construct a `struct` in which to store the parameters.
 Any struct can be made callable, allowing its instances to act just like function:
 
-```jldoctest poly
+```jldoctest poly; output = false
 struct Poly3{T}  # container struct
     θ3::T
 end
@@ -57,12 +69,16 @@ end
 poly3s = Poly3([10, 1, 0.1])  # construct an instance
 
 poly3s(5) == 17.5  # true
+
+# output
+
+true
 ```
 
 Internally, there is little difference between a closure and a struct.
 They have the same fields, and equivalent methods:
 
-```jldoctest poly
+```julia
 poly3s.θ3 == poly3.θ3 == θ  # both have a field called :θ3
 dump(poly3)  # contains θ3: Array
 dump(poly3s)
@@ -76,13 +92,17 @@ and each will keep track of its own parameters.
 Juia writes function composition as `∘`, for instance `(inv ∘ sin)(pi/6) ≈ 2`,
 and we can use exactly this for our parameterised polynomials:
 
-```jldoctest poly
+```jldoctest poly; output = false
 poly4 = Poly3([1, 0.5, 0]) ∘ Poly3([10, 1, 0.1])
 
 poly4 isa ComposedFunction  # ∘ creates another struct...
 poly4.outer.θ3 == θ         # which has fields :inner & :outer
 
 poly4(5) == 9.75  # true
+
+# output
+
+true
 ```
 
 Flux models are precisely made by such function composition.
@@ -105,7 +125,7 @@ julia> (poly1(5 + 0.001) - poly1(5)) / 0.001  # answer is getting close to 2
 
 Flux's `gradient(f, x)` works this out for `f(x)`, and gives exactly `∂f/∂x = 2.0` here:
 
-```jldoctest poly
+```jldoctest poly; setup = :(using Flux: gradient)
 julia> gradient(poly1, 5)
 (2.0,)
 ```
@@ -156,7 +176,7 @@ For ordinary pure functions like `(x,y) -> (x*y)`, this `∂f(x,y)/∂f` would a
 !!! note "Implicit gradients"
     Earlier versions of Flux used a different way to relate parameters and gradients,
     which looks like this:
-    ```jldoctest poly
+    ```julia
     g1 = gradient(() -> poly1(5), Params([θ]))
     g1[θ] == [1.0, 5.0, 25.0]
     ```
