@@ -21,8 +21,8 @@ model = Chain(
     Dense(3 => 2)) |> device  # move model to GPU, if one is available
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
-out1 = model(noisy |> device) |> cpu     # 2×1000 Matrix{Float32}
-probs1 = softmax(out1)                   # normalise to get probabilities
+out1 = model(noisy |> device)    # 2×1000 Matrix{Float32}, or CuArray{Float32}
+probs1 = softmax(out1) |> cpu    # normalise to get probabilities (and move off GPU)
 
 # To train the model, we use batches of 64 samples, and one-hot encoding:
 target = Flux.onehotbatch(truth, [true, false])                   # 2×1000 OneHotMatrix
@@ -48,9 +48,9 @@ end
 
 opt_state # parameters, momenta and output have all changed
 
-out2 = model(noisy |> device)  |> cpu   # first row is prob. of true, second row p(false)
-probs2 = softmax(out2)                  # normalise to get probabilities
-mean((probs2[1,:] .> 0.5) .== truth)    # accuracy 94% so far!
+out2 = model(noisy |> device)         # first row is prob. of true, second row p(false)
+probs2 = softmax(out2) |> cpu         # normalise to get probabilities
+mean((probs2[1,:] .> 0.5) .== truth)  # accuracy 94% so far!
 ```
 
 ![](../../assets/quickstart/oneminute.png)
