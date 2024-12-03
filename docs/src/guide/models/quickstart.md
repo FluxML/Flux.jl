@@ -5,22 +5,20 @@ If you have used neural networks before, then this simple example might be helpf
 If you haven't, then you might prefer the [Fitting a Straight Line](overview.md) page.
 
 ```julia
-# This will prompt if neccessary to install everything, including CUDA.
-# For CUDA acceleration, also cuDNN.jl has to be installed in your environment.
+# Install everything, including CUDA, and load packages:
+using Pkg; Pkg.add(["Flux", "CUDA", "cuDNN", "ProgressMeter"])
 using Flux, CUDA, Statistics, ProgressMeter
+device = gpu_device()  # function to move data and model to the GPU
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
 noisy = rand(Float32, 2, 1000)                                    # 2×1000 Matrix{Float32}
 truth = [xor(col[1]>0.5, col[2]>0.5) for col in eachcol(noisy)]   # 1000-element Vector{Bool}
 
-# Use this object to move data and model to the GPU, if available
-device = gpu_device()
-
 # Define our model, a multi-layer perceptron with one hidden layer of size 3:
 model = Chain(
     Dense(2 => 3, tanh),      # activation function inside layer
     BatchNorm(3),
-    Dense(3 => 2)) |> device  # move model to GPU, if available
+    Dense(3 => 2)) |> device  # move model to GPU, if one is available
 
 # The model encapsulates parameters, randomly initialised. Its initial output is:
 out1 = model(noisy |> device) |> cpu     # 2×1000 Matrix{Float32}
@@ -35,8 +33,9 @@ opt_state = Flux.setup(Flux.Adam(0.01), model)  # will store optimiser momentum,
 # Training loop, using the whole data set 1000 times:
 losses = []
 @showprogress for epoch in 1:1_000
-    for (x, y) in loader
-        x, y = device((x, y))
+    for xy_cpu in loader
+        # Unpack batch of data, and move to GPU:
+        x, y = xy_cpu |> device
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             y_hat = m(x)
@@ -100,8 +99,7 @@ Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.
 
 ```julia
 for epoch in 1:1_000
-    Flux.train!(model, loader, opt_state) do m, x, y
-        x, y = device((x, y))
+    Flux.train!(model, loader |> device, opt_state) do m, x, y
         y_hat = m(x)
         Flux.logitcrossentropy(y_hat, y)
     end
