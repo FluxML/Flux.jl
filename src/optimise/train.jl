@@ -5,6 +5,10 @@ function update!(opt::AbstractOptimiser, x::AbstractArray, x̄)
 end
 
 function update!(opt::AbstractOptimiser, xs::Params, gs)
+  @warn """The method `Flux.update!(optimiser, ps::Params, grads)` is deprecated,
+      as part of Flux's move away from Zyote's implicit mode.
+      Please use explicit-style `update!(opt_state, model, grad)` instead,
+      where `grad = Flux.gradient(m -> loss(m,x,y), model)` and `opt_state = Flux.setup(rule, model)`.""" maxlog=1
   for x in xs
     isnothing(gs[x]) && continue
     update!(opt, x, gs[x])
@@ -21,6 +25,10 @@ batchmemaybe(x) = tuple(x)
 batchmemaybe(x::Tuple) = x
 
 function train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
+  @warn """The method `Flux.train!(loss2, ps::Params, data, optimiser)` is deprecated,
+    as part of Flux's move away from Zyote's implicit parameters.
+    Please use explicit-style `train!(loss, model, data, opt_state)` instead,
+    where `loss(m, xy...)` accepts the model, and `opt_state = Flux.setup(rule, model)`.""" maxlog=1
   cb = runall(cb)
   itrsz = Base.IteratorSize(typeof(data))
   n = (itrsz == Base.HasLength()) || (itrsz == Base.HasShape{1}()) ? length(data) : 0
