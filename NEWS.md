@@ -16,7 +16,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
   Flux now owns & exports `gradient`, but without `Duplicated` this still defaults to calling Zygote.jl.
 * `Flux.params` has been deprecated. Use Zygote's explicit differentiation instead, 
 `gradient(m -> loss(m, x, y), model)`, or use `Flux.trainables(model)` to get the trainable parameters.
-* Flux now requires Functors.jl v0.5. This new release of Functors assumes all types to be functors by default. Therefore, applying `@layer` or `@functor` to a type is no longer strictly necessary for Flux's models. However, it is still recommended to use `@layer Model` for additional functionality like pretty printing.
+* Flux now requires Functors.jl v0.5. This new release of Functors assumes all types to be functors by default. Therefore, applying `Flux.@layer` or `Functors.@functor` to a type is no longer strictly necessary for Flux's models. However, it is still recommended to use `@layer Model` for additional functionality like pretty printing.
 * `@layer Model`now behaves the same as `@layer :expand Model`, which means that the model is expanded into its sublayers (if there are any) when printed. To force compact printing, use `@layer :noexpand Model`.
 
 ## v0.14.22
