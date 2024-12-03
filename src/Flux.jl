@@ -8,6 +8,7 @@ using MacroTools, Reexport, ProgressLogging, SpecialFunctions
 using MacroTools: @forward
 
 @reexport using NNlib
+using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 using MLUtils
 using Adapt, OneHotArrays
 using Functors: Functors, fmap, fmapstructure
@@ -30,7 +31,7 @@ using EnzymeCore: EnzymeCore
                     CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
                     XLADevice,
                     # get_device, # we define get_device here for retrocompatibility
-                    # gpu_backend!, # have to define here due to https://github.com/JuliaPackaging/Preferences.jl/issues/39
+                    gpu_backend!,
                     get_device_type,
                     DeviceIterator
 
@@ -122,7 +123,7 @@ include("losses/Losses.jl")
 using .Losses
 
 include("devices.jl")
-export get_device, gpu_backend!
+export get_device
 
 # Distributed Training
 include("distributed/backend.jl")

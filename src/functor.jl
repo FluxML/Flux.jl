@@ -102,18 +102,6 @@ julia> m.bias
 """
 cpu(x) = cpu_device()(x)
 
-# TODO remove after https://github.com/LuxDL/Lux.jl/pull/1089
-ChainRulesCore.@non_differentiable cpu_device()
-
-
-# Remove when 
-# https://github.com/JuliaPackaging/Preferences.jl/issues/39
-# is resolved
-function gpu_backend!(backend::String)
-    @set_preferences!("gpu_backend" => backend)
-    MLDataDevices.gpu_backend!(backend)
-end
-
 """
     gpu(m)
 
