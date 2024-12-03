@@ -15,6 +15,7 @@ EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 ### gradient & withgradient
 
 # We can't use Enzyme.make_zero! to reset Duplicated, as it complains about e.g. LayerNorm having immutable differentiable fields
+# After https://github.com/EnzymeAD/Enzyme.jl/pull/1961 probably this can be `make_zero!(Ref(dup.dval))`
 _make_zero!(model) = Functors.fmapstructure(_make_zero_inner!, model)
 function _make_zero_inner!(x::AbstractArray{<:Number})
   Optimisers.isnumeric(x) || return
