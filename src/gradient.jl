@@ -196,7 +196,7 @@ Only available when Enzyme is loaded!
 
 # Example
 
-```julia
+```julia-repl
 julia> using Flux, Enzyme
 
 julia> model = Chain(Embedding([1.1 2.2 3.3]), Dense([4.4;;]), only);
@@ -215,7 +215,7 @@ The function `f` may return Tuple or NamedTuple, with the loss as the first elem
 The gradient is then `grad = gradient(first∘f, args...)`
 but the returned value is `val = f(args...)`:
 
-```julia
+```julia-repl
 julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
 (val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
 

@@ -41,7 +41,7 @@ Julia's `Base.Math` also provides `tanh`, which can be used as an activation fun
 
 Note that many Flux layers will automatically replace this with [`NNlib.tanh_fast`](@ref) when called, as Base's `tanh` is slow enough to sometimes be a bottleneck.
 
-```julia
+```julia-repl
 julia> using UnicodePlots
 
 julia> lineplot(tanh, -3, 3, height=7)

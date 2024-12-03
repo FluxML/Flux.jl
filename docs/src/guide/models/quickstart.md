@@ -54,7 +54,7 @@ probs2 = softmax(out2)                  # normalise to get probabilities
 mean((probs2[1,:] .> 0.5) .== truth)    # accuracy 94% so far!
 ```
 
-![](../../../assets/quickstart/oneminute.png)
+![](../../assets/quickstart/oneminute.png)
 
 ```julia
 using Plots  # to draw the above figure

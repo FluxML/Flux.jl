@@ -67,7 +67,7 @@ function reset!(x)
   return x
 end
 
-function params!(p::Zygote.Params, x, seen = IdSet())
+function params!(p::Zygote.Params, x, seen = Base.IdSet())
   if x isa AbstractArray{<:Number} && Functors.isleaf(x)
     return push!(p, x)
   elseif x in seen

@@ -29,7 +29,7 @@ Keyword `rng` lets you specify a custom random number generator.
 (Only supported on the CPU.)
 
 # Examples
-```julia
+```julia-repl
 julia> m = Chain(Dense(ones(3,2)), Dropout(0.4))
 Chain(
   Dense(2 => 3),                        # 9 parameters
@@ -297,7 +297,7 @@ that will be used to renormalize the input in test phase.
 Use [`testmode!`](@ref) during inference.
 
 # Examples
-```julia
+```julia-repl
 julia> using Statistics
 
 julia> xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels

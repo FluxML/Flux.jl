@@ -2,6 +2,8 @@ using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers,
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
       DataFrames, JLD2, MLDataDevices
 
+using Functors: @functor, @leaf
+
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(

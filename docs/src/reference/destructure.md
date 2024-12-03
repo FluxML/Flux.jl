@@ -1,9 +1,14 @@
+```@meta
+CurrentModule = Flux
+CollapsedDocStrings = true
+```
+
 # [Flat vs. Nested Structures](@id man-destructure)
 
 
 A Flux model is a nested structure, with parameters stored within many layers. Sometimes you may want a flat representation of them, to interact with functions expecting just one vector. This is provided by `destructure`:
 
-```julia
+```julia-repl
 julia> model = Chain(Dense(2=>1, tanh), Dense(1=>1))
 Chain(
   Dense(2 => 1, tanh),                  # 3 parameters
@@ -22,7 +27,7 @@ Chain(
 
 Both `destructure` and the `Restructure` function can be used within gradient computations. For instance, this computes the Hessian `∂²L/∂θᵢ∂θⱼ` of some loss function, with respect to all parameters of the Flux model. The resulting matrix has off-diagonal entries, which cannot really be expressed in a nested structure:
 
-```julia
+```julia-repl
 julia> x = rand(Float32, 2, 16);
 
 julia> grad = gradient(m -> sum(abs2, m(x)), model)  # nested gradient
@@ -51,7 +56,7 @@ julia> Flux.destructure(grad)  # acts on non-models, too
 
 In order to collect all parameters of a model into a list instead, you can use the `trainables` function:
 
-```julia
+```julia-repl
 julia> Flux.trainables(model)
 5-element Vector{AbstractArray}:
   [0.863101 1.2454957]
@@ -61,7 +66,7 @@ julia> Flux.trainables(model)
 ```
 Any mutation of the elements of the resulting list will affect the model's parameters.
 
-### All Parameters
+## All Parameters
 
 The functions `destructure` and `trainables` live in [`Optimisers.jl`](https://github.com/FluxML/Optimisers.jl).
 
@@ -73,7 +78,7 @@ Optimisers.trainables
 Optimisers.isnumeric
 ```
 
-### All Layers
+## All Layers
 
 Another kind of flat view of a nested model is provided by the `modules` command. This extracts a list of all layers:
 
@@ -81,14 +86,14 @@ Another kind of flat view of a nested model is provided by the `modules` command
 Flux.modules
 ```
 
-### Save and Load
+## Save and Load
 
 ```@docs
 Flux.state
 Flux.loadmodel!
 ```
 
-### KeyPath 
+## KeyPath 
 
 ```@docs
 Functors.KeyPath

@@ -3,7 +3,6 @@ using Metal
 using Flux
 using Random, Statistics
 using Zygote
-Flux.gpu_backend!("Metal") # needs a restart
 
 @testset "data movement" begin
     metal_device = Flux.gpu_device()

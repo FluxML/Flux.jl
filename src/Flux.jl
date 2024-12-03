@@ -48,7 +48,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
        fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
 
-@compat(public, ( # mark unexported symbols as API, on Julia 1.11
+@compat(public, ( # unexported symbols marked as API, on Julia 1.11
   # modules
   Losses, Train,
   # layers
@@ -61,6 +61,9 @@ export Chain, Dense, Embedding, EmbeddingBag,
   setup, train!,
   # from Optimsers.jl
   destructure, freeze!, thaw!, adjust!, trainables, update!, trainable,
+  # from Zygote.jl
+  hessian, diaghessian, jacobian, withjacobian, pullback,
+  # AD functions
   withgradient,
   # init
   glorot_uniform,

@@ -131,19 +131,13 @@ Flux also provides a more automatic way of choosing which GPU (or none) to use. 
 For the most part, this means that a script which says `model |> gpu` and `data |> gpu` will just work.
 It should always run, and if a GPU package is loaded (and finds the correct hardware) then that will be used.
 
-The function `gpu` uses a lower-level function called `get_device()` from [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl),
+The function `gpu` uses a lower-level function called `get_device()` from MLDataDevices.jl,
 which checks what to do & then returns some device object. In fact, the entire implementation is just this:
 
 ```julia
 gpu(x) = gpu_device()(x)
 cpu(x) = cpu_device()(x)
 ```
-
-
-## Manually selecting devices
-
-I thought there was a whole `Flux.gpu_backend!` and Preferences.jl story we had to tell??
-
 
 ## Transferring Training Data
 
@@ -408,7 +402,7 @@ julia> set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
 
-```julia
+```julia-repl
 julia> using CUDA
 
 julia> CUDA.functional()
@@ -417,7 +411,7 @@ true
 
 For AMD GPU:
 
-```julia
+```julia-repl
 julia> using AMDGPU
 
 julia> AMDGPU.functional()
@@ -429,7 +423,7 @@ true
 
 For Metal GPU:
 
-```julia
+```julia-repl
 julia> using Metal
 
 julia> Metal.functional()
