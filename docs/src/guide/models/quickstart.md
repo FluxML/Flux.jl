@@ -95,7 +95,7 @@ Some things to notice in this example are:
 
 * The `do` block creates an anonymous function, as the first argument of `gradient`. Anything executed within this is differentiated.
 
-Instead of calling [`gradient`](@ref Zygote.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!). If we didn't want anything extra (like logging the loss), we could replace the training loop with the following:
+Instead of calling [`gradient`](@ref Flux.gradient) and [`update!`](@ref Flux.update!) separately, there is a convenience function [`train!`](@ref Flux.train!). If we didn't want anything extra (like logging the loss), we could replace the training loop with the following:
 
 ```julia
 for epoch in 1:1_000
