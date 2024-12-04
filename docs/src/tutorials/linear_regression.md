@@ -106,7 +106,7 @@ It does! But the predictions are way off. We need to train the model to improve 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> function custom_loss(weights, biases, features, labels)
            ŷ = custom_model(weights, biases, features)
-           sum((labels .- ŷ).^2) / length(weights)
+           sum((labels .- ŷ).^2) / length(features)
        end;
 
 julia> custom_loss(W, b, x, y)
