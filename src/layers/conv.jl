@@ -100,7 +100,7 @@ See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 # Examples
 
 ```jldoctest
-julia> xs = rand32(100, 100, 3, 50); # a batch of 50 RGB images
+julia> xs = rand(Float32, 100, 100, 3, 50); # a batch of 50 RGB images
 
 julia> layer = Conv((5,5), 3 => 7, relu; bias = false)
 Conv((5, 5), 3 => 7, relu, bias=false)  # 525 parameters
@@ -124,12 +124,12 @@ julia> Conv((5,5), 3 => 7; stride = 2, dilation = 4)(xs) |> size
 ```jldoctest
 julia> weight = rand(Float32, 3, 4, 5);
 
-julia> bias = zeros(5);
+julia> bias = zeros(Float32, 5);
 
 julia> layer = Conv(weight, bias, sigmoid)  # expects 1 spatial dimension
 Conv((3,), 4 => 5, σ)  # 65 parameters
 
-julia> layer(randn(100, 4, 64)) |> size
+julia> layer(randn(Float32, 100, 4, 64)) |> size
 (98, 5, 64)
 
 julia> Flux.trainables(layer) |> length
@@ -243,7 +243,7 @@ See also [`Conv`](@ref) for more detailed description of keywords.
 
 # Examples
 ```jldoctest
-julia> xs = rand32(100, 100, 3, 50);  # a batch of 50 RGB images
+julia> xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
 
 julia> layer = ConvTranspose((5,5), 3 => 7, relu)
 ConvTranspose((5, 5), 3 => 7, relu)  # 532 parameters
@@ -262,14 +262,14 @@ julia> ConvTranspose((5,5), 3 => 7, stride=3, pad=SamePad())(xs) |> size
 ```
 
 ```jldoctest
-julia> weight = rand(3, 4, 5);
+julia> weight = rand(Float32, 3, 4, 5);
 
-julia> bias = zeros(4);
+julia> bias = zeros(Float32, 4);
 
 julia> layer = ConvTranspose(weight, bias, sigmoid)
 ConvTranspose((3,), 5 => 4, σ)  # 64 parameters
 
-julia> layer(randn(100, 5, 64)) |> size  # transposed convolution will increase the dimension size (upsampling)
+julia> layer(randn(Float32, 100, 5, 64)) |> size  # transposed convolution will increase the dimension size (upsampling)
 (102, 4, 64)
 
 julia> Flux.trainables(layer) |> length
@@ -427,9 +427,9 @@ julia> CrossCor((5,5), 3 => 7, stride=3, pad=(2,0))(xs) |> size
 ```
 
 ```jldoctest
-julia> weight = rand(3, 4, 5);
+julia> weight = rand(Float32, 3, 4, 5);
 
-julia> bias = zeros(5);
+julia> bias = zeros(Float32, 5);
 
 julia> layer = CrossCor(weight, bias, relu)
 CrossCor((3,), 4 => 5, relu)  # 65 parameters
