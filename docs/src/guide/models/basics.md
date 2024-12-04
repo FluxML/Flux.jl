@@ -219,7 +219,7 @@ Finally, the function [`withgradient`](@ref) works the same way, but also return
 
 ```jldoctest poly
 julia> Flux.withgradient((x,p) -> p(x), 5.0, poly3s)
-(val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],))
+(val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],)))
 ```
 
 ## Neural Networks
@@ -327,13 +327,21 @@ grad = Flux.gradient(|>, [1f0], model1)[2]
 This gradient is starting to be a complicated nested structure.
 But it works just like before: `grad.outer.inner.W` corresponds to `model1.outer.inner.W`.
 
-### <img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/> &nbsp;  [Flux's layers](@ref man-layers)
+### <img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/> &nbsp;  [Flux's layers](man-layers)
 
 Rather than define everything from scratch every time, Flux provides a library of
 commonly used layers. The same model could be defined:
 
 ```jldoctest poly; output = false
 model2 = Chain(Dense(1 => 20, σ), Dense(20 => 1), only)
+
+# output
+
+Chain(
+  Dense(1 => 20, σ),                    # 40 parameters
+  Dense(20 => 1),                       # 21 parameters
+  only,
+)                   # Total: 4 arrays, 61 parameters, 500 bytes.
 ```
 
 How does this `model2` differ from the `model1` we had before?
@@ -351,7 +359,7 @@ How does this `model2` differ from the `model1` we had before?
   Calling [`Flux.@layer Layer`](@ref Flux.@layer) will add this, and some other niceties.
 
 If what you need isn't covered by Flux's built-in layers, it's easy to write your own.
-There are more details [later](@ref man-advanced), but the steps are invariably those shown for `struct Layer` above:
+There are more details [later](man-advanced), but the steps are invariably those shown for `struct Layer` above:
 1. Define a `struct` which will hold the parameters.
 2. Make it callable, to define how it uses them to transform the input `x`
 3. Define a constructor which initialises the parameters (if the default constructor doesn't do what you want).
@@ -417,6 +425,6 @@ plot(x -> 2x-x^3, -2, 2, label="truth")
 scatter!(x -> model2([x]), -2:0.1f0:2, label="fitted")
 ```
 
-If this general idea is unfamiliar, you may want the [tutorial on linear regression](@ref man-linear-regression).
+If this general idea is unfamiliar, you may want the [tutorial on linear regression](man-linear-regression).
 
-More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about: [training](@ref man-training).
+More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about: [training](man-training).
