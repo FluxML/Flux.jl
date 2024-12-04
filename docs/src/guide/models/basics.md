@@ -413,7 +413,6 @@ end
 
 # output
 
-nothing
 ```
 
 The same code will also work with `model1` instead.

@@ -95,7 +95,7 @@ Under the hood, the Flux [`Flux.train!`](@ref) function uses *a loss function* a
 julia> using Flux: train!
 
 julia> opt = Descent()
-Descent(0.1f0)
+Descent(0.1)
 
 julia> data = [(x_train, y_train)]
 1-element Vector{Tuple{Matrix{Int64}, Matrix{Int64}}}:
