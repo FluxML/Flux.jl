@@ -32,7 +32,7 @@ Here the parameters are a global variable `θ`. They could be handled in other w
 for instance by explicitly passing them as an additional argument to the function:
 
 ```jldoctest poly; output = false
-poly2(x::Real, θ2) = evalpoly(x, θ2)
+poly2(x::Real, θ2) = evalpoly(x, θ2)  # built-in, from Base.Math
 
 poly2(5, θ) == 17.5  # true
 
@@ -125,7 +125,9 @@ julia> (poly1(5 + 0.001) - poly1(5)) / 0.001  # answer is getting close to 2
 
 Flux's `gradient(f, x)` works this out for `f(x)`, and gives exactly `∂f/∂x = 2.0` here:
 
-```jldoctest poly; setup = :(using Flux: gradient)
+```jldoctest poly
+julia> using Flux
+
 julia> gradient(poly1, 5)
 (2.0,)
 ```
@@ -200,10 +202,10 @@ In particular, a major limitation is that mutating an array is not allowed.
 
 Flux can also be used with other automatic differentiation (AD) packages.
 It was originally written using [Tracker](https://github.com/FluxML/Tracker.jl), a more traditional operator-overloading approach.
-The future might be [Enzyme](https://github.com/EnzymeAD/Enzyme.jl), and Flux now builds in an easy way to use this instead:
+The future might be [Enzyme](https://github.com/EnzymeAD/Enzyme.jl), and Flux now builds in an easy way to use this instead, turned on by wrapping the model in `Duplicated`. (For details, see the [Enzyme page](@ref autodiff-enzyme) in the manual.)
 
 ```julia
-julia> using Enzyme
+julia> using Enzyme: Const, Duplicated
 
 julia> grad3e = Flux.gradient((x,p) -> p(x), Const(5.0), Duplicated(poly3s))
 (nothing, (θ3 = [1.0, 5.0, 25.0],))
@@ -212,6 +214,13 @@ julia> grad3e = Flux.gradient((x,p) -> p(x), Const(5.0), Duplicated(poly3s))
 `Flux.gradient` follows Zygote's convention that arguments with no derivative are marked `nothing`.
 Here, this is because `Const(5.0)` is explicitly constant.
 Below, we will see an example where `nothing` shows up because the model struct has fields containing things other than parameters, such as an activation function.
+
+Finally, the function [`withgradient`](@ref) works the same way, but also returns the value of the function:
+
+```jldoctest poly
+julia> Flux.withgradient((x,p) -> p(x), 5.0, poly3s)
+(val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],))
+```
 
 ## Neural Networks
 
@@ -241,7 +250,7 @@ and a version which encapsulates them (like `poly3` above):
 layer2(x, W2, b2) = sigmoid.(W2*x .+ b2)  # explicit parameter arguments
 
 layer3 = let
-    W3 = randn(2,3)
+    W3 = randn(2, 3)
     b3 = zeros(2)
     x -> sigmoid.(W3*x .+ b3)  # closure over local variables
 end
@@ -265,8 +274,10 @@ Layer(in::Int, out::Int, act::Function=sigmoid) =
 layer3s = Layer(3, 2)  # instance with its own parameters
 ```
 
-The one new thing here is a friendly constructor `Layer(in, out, act)`. This is because we anticipate
-composing several instances of this thing, with different sizes and different random initial parameters.
+The one new thing here is a friendly constructor `Layer(in, out, act)`.
+This is because we anticipate composing several instances of this thing,
+with independent parameter arrays, of different sizes and different
+random initial parameters.
 
 ```julia
 x = Float32[0.1, 0.2, 0.3]  # input
@@ -296,7 +307,7 @@ grad = gradient(|>, [1f0], model1)[2]
 This gradient is starting to be a complicated nested structure.
 But it works just like before: `grad.inner.W` corresponds to `model1.inner.W`.
 
-### ⋆ [Flux's layers](@ref man-layers)
+### <img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/> &nbsp;  [Flux's layers](@ref man-layers)
 
 Rather than define everything from scratch every time, Flux provides a library of
 commonly used layers. The same model could be defined:
@@ -312,7 +323,7 @@ How does this `model2` differ from the `model1` we had before?
 * Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences, mainly that
   like `struct Poly3{T}` above, it has type parameters for its fields -- the compiler does not
   know exactly what type `layer3s.W` will be, which costs speed.
-  Its initialisation uses not `randn` but ??
+  Its initialisation uses not `randn` (normal distribution) but [`glorot_uniform`](@ref).
   It also produces more friendly errors on wrong-size input, and has some performance tricks.
 * The function [`σ`](@ref NNlib.sigmoid) is calculated in a slightly better way,
   and has a rule telling Zygote how to differentiate it efficiently.
@@ -334,11 +345,11 @@ called Functors. Its basic function is [`fmap`](@ref Functors.fmap),
 which generalises `map(f, x)` to work on almost anything.
 
 For example, this is how [gpu](@ref Flux.gpu) moves all arrays within a model to the GPU,
-reconstructing another `only ∘ Layer(...) ∘ Layer(...)` around the new `CuArray`s:
+reconstructing another `only ∘ Layer(...) ∘ Layer(...)` (or a `Chain` etc.) around the new `CuArray`s:
 
 ```julia
-using CUDA
-fmap(cu, model)
+using CUDA, Functors
+fmap(cu, model1)
 ```
 
 And this is a very simple gradient update of the parameters:
@@ -395,6 +406,6 @@ plot(x -> 2x-x^3, -2, 2, legend=false)
 scatter!(-2:0.1:2, [model([x]) for x in -2:0.1:2])
 ```
 
-If this general idea is unfamiliar, you may want the [tutorial on linear regression](#ref ???).
+If this general idea is unfamiliar, you may want the [tutorial on linear regression](#ref man-linear-regression).
 
 More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about.
