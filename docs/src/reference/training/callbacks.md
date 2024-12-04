@@ -1,3 +1,6 @@
+```@meta
+CollapsedDocStrings = true
+```
 # [Callback Helpers](@id man-callback-helpers)
 
 ```@docs

@@ -11,7 +11,7 @@ Calling `Duplicated` on any Flux model which was defined using `@layer` will all
 and passing that to `gradient` (or `withgradient`, or `train!`) will then use Enzyme instead of Zygote.
 The gradient functions still return the gradient as usual, which can then be passed to `update!`:
 
-```julia
+```julia-repl
 julia> using Flux, Enzyme
 
 julia> model = Chain(Dense(28^2 => 32, sigmoid), Dense(32 => 10), softmax);  # from model zoo
@@ -47,7 +47,7 @@ The gradient `grads_f[1]` can be passed to `update!` as usual.
 But for convenience, you may also use what is stored within `Duplicated`.
 These are equivalent ways to perform an update step:
 
-```julia
+```julia-repl
 julia> opt_state = Flux.setup(Adam(), model)
 
 julia> ans == Flux.setup(Adam(), dup_model)
@@ -60,7 +60,7 @@ julia> Flux.update!(opt_state, dup_model)  # equivlent new path, Enzyme only
 Instead of using these FLux functions, you can also use Enzyme's own functions directly.
 `Enzyme.gradient` works like this:
 
-```julia
+```julia-repl
 julia> grads_e = Enzyme.gradient(Reverse, (m,x,y) -> sum(abs2, m(x) .- y), model, Const(x1), Const(y1))
 (Chain(Dense(784 => 32, σ), Dense(32 => 10), softmax), nothing, nothing)
 
@@ -73,7 +73,7 @@ But its fields contain the same gradient.
 
 There is also a method of `train!` which similarly takes `Duplicated(model)`:
 
-```julia
+```julia-repl
 julia> opt_state = Flux.setup(Adam(0), model);
 
 julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_state)

@@ -1,6 +1,11 @@
+```@meta
+CurrentModule = MLDataDevices
+CollapsedDocStrings = true
+```
+
 # Transferring data across devices
 
-Flux relies on the [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl/blob/main/src/public.jl) package to manage devices and transfer data across them. You don't have to explicitly use the package, as Flux re-exports the necessary functions and types.
+Flux relies on the MLDataDevices.jl package to manage devices and transfer data across them. You don't have to explicitly use the package, as Flux re-exports the necessary functions and types.
 
 ```@docs
 MLDataDevices.cpu_device

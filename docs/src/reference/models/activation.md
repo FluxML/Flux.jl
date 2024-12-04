@@ -1,3 +1,8 @@
+```@meta
+CollapsedDocStrings = true
+```
+
+
 # [Activation Functions from NNlib.jl](@id man-activations)
 
 These non-linearities used between layers of your model are exported by the [NNlib](https://github.com/FluxML/NNlib.jl) package.
@@ -6,7 +11,7 @@ Note that, unless otherwise stated, activation functions operate on scalars. To 
 
 Functions like [`softmax`](@ref) are sometimes described as activation functions, but not by Flux. They must see all the outputs, and hence cannot be broadcasted. See the next page for details.
 
-### Alphabetical Listing
+## Alphabetical Listing
 
 ```@docs
 celu
@@ -35,13 +40,13 @@ tanh_fast
 trelu
 ```
 
-### One More
+## One More
 
 Julia's `Base.Math` also provides `tanh`, which can be used as an activation function.
 
 Note that many Flux layers will automatically replace this with [`NNlib.tanh_fast`](@ref) when called, as Base's `tanh` is slow enough to sometimes be a bottleneck.
 
-```julia
+```julia-repl
 julia> using UnicodePlots
 
 julia> lineplot(tanh, -3, 3, height=7)

@@ -159,7 +159,7 @@ first(data) isa Tuple{AbstractMatrix, AbstractVector}  # true
 Here each iteration will use one matrix `x` (an image, perhaps) and one vector `y`.
 It is very common to instead train on *batches* of such inputs (or *mini-batches*,
 the two words mean the same thing) both for efficiency and for better results.
-This can be easily done using the [`DataLoader`](@ref Flux.Data.DataLoader):
+This can be easily done using the [`DataLoader`](@ref Flux.DataLoader):
 
 ```julia
 data = Flux.DataLoader((X, Y), batchsize=32)

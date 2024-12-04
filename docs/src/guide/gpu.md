@@ -3,7 +3,9 @@
 Most work on neural networks involves the use of GPUs, as they can typically perform the required computation much faster.
 This page describes how Flux co-operates with various other packages, which talk to GPU hardware.
 
-## Basic GPU use: from `Array` to `CuArray` with `cu`
+For those in a hurry, see the [quickstart](@ref man-quickstart) page. Or do `using CUDA` and then call `gpu` on both the model and the data. 
+
+## Basic GPU use: from `Array` to `CuArray`
 
 Julia's GPU packages work with special array types, in place of the built-in `Array`.
 The most used is `CuArray` provided by [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl), for GPUs made by NVIDIA.
@@ -119,7 +121,7 @@ model = Chain(...) |> device
     The reason they work on Flux models is that `Flux.@layer Layer` defines methods of `Adapt.adapt_structure(to, lay::Layer)`.
 
 
-## Automatic GPU choice with `gpu`
+## Automatic GPU choice with `gpu` and `gpu_device`
 
 Flux also provides a more automatic way of choosing which GPU (or none) to use. This is the function `gpu`:
 * By default it does nothing.
@@ -131,19 +133,28 @@ Flux also provides a more automatic way of choosing which GPU (or none) to use. 
 For the most part, this means that a script which says `model |> gpu` and `data |> gpu` will just work.
 It should always run, and if a GPU package is loaded (and finds the correct hardware) then that will be used.
 
-The function `gpu` uses a lower-level function called `get_device()` from [MLDataDevices.jl](https://github.com/LuxDL/MLDataDevices.jl),
-which checks what to do & then returns some device object. In fact, the entire implementation is just this:
+The function `gpu` uses a lower-level function called [`gpu_device`](@ref) from MLDataDevices.jl,
+which checks what to do and then returns some device object. In fact, the entire implementation is just this:
 
 ```julia
 gpu(x) = gpu_device()(x)
 cpu(x) = cpu_device()(x)
 ```
 
+Automatic backend selection through `gpu` is not type-stable. That doesn't matter if you do it once, or once per large batch -- it costs a few microseconds. But it might matter if you do it within some loop.
 
-## Manually selecting devices
+To avoid this, you can first obtain a "device object" with `device = gpu_device()`, once, and then use this as the function to transfer data. Something like this:
+```julia
+to_device = gpu_device()
+gpu_model = model |> to_device
 
-I thought there was a whole `Flux.gpu_backend!` and Preferences.jl story we had to tell??
+for epoch in 1:num_epochs
+    for (x, y) in dataloader
+        x_gpu, y_gpu = (x, y) |> to_device
+        # training code...
+```
 
+Finally, setting a backend prefence with [`gpu_backend!`](@ref) gives type stability to the whole pipeline.
 
 ## Transferring Training Data
 
@@ -408,7 +419,7 @@ julia> set_preferences!("Flux", "FluxDistributedMPICUDAAware" => true)
 
 By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:
 
-```julia
+```julia-repl
 julia> using CUDA
 
 julia> CUDA.functional()
@@ -417,7 +428,7 @@ true
 
 For AMD GPU:
 
-```julia
+```julia-repl
 julia> using AMDGPU
 
 julia> AMDGPU.functional()
@@ -429,7 +440,7 @@ true
 
 For Metal GPU:
 
-```julia
+```julia-repl
 julia> using Metal
 
 julia> Metal.functional()

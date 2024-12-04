@@ -50,7 +50,7 @@ Zero bias vectors and `bias=false` are considered equivalent
 See also [`Flux.state`](@ref).
 
 # Examples
-```julia
+```julia-repl
 julia> dst = Chain(Dense(Flux.ones32(2, 5), Flux.ones32(2), tanh), Dense(2 => 1; bias = [1f0]))
 Chain(
   Dense(5 => 2, tanh),                  # 12 parameters

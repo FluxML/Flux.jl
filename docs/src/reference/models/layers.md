@@ -1,3 +1,8 @@
+```@meta
+CurrentModule = Flux
+CollapsedDocStrings = true
+```
+
 # Built-in Layer Types
 
 If you started at the beginning of the guide, then you have already met the
@@ -40,14 +45,10 @@ To understand how strides and padding work, the article by [Dumoulin & Visin](ht
 
 ```@docs
 Conv
-Conv(weight::AbstractArray)
 ConvTranspose
-ConvTranspose(weight::AbstractArray)
 CrossCor
-CrossCor(weight::AbstractArray)
 DepthwiseConv
 SamePad
-Flux.flatten
 ```
 
 ## MultiHeadAttention
@@ -108,9 +109,13 @@ PairwiseFusion
 Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).
 
 ```@docs
+RNNCell
 RNN
+LSTMCell
 LSTM
+GRUCell
 GRU
+GRUv3Cell
 GRUv3
 ```
 
@@ -140,7 +145,6 @@ Several normalisation layers behave differently under training and inference (te
 The functions `Flux.trainmode!` and `Flux.testmode!` let you manually specify which behaviour you want. When called on a model, they will place all layers within the model into the specified mode.
 
 ```@docs
-testmode!(::Any)
-testmode!(::Any, ::Any)
+testmode!
 trainmode!
 ```

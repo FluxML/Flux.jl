@@ -29,33 +29,7 @@ Dropout(0.3)
 """
 testmode!(m) = testmode!(m, true)
 
-"""
-    trainmode!(model) -> model
 
-Set a layer, or all layers in a model, to training mode.
-Opposite to [`testmode!`](@ref), see further details there.
-"""
-trainmode!(m) = testmode!(m, false)
-trainmode!(m, mode::Symbol) = testmode!(m, mode)
-trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
-
-"""
-    testmode!(model, inactive)
-
-This two-argument method is largely internal. It recurses into the `model`,
-and until a method like `testmode!(d::Dropout, inactive)` alters the activity of a layer.
-Custom layers can support manual `testmode!` / `trainmode!` switching
-by defining such a method.
-
-Possible values of  `inactive` are:
-- `true` for testing, i.e. `active=false`
-- `false` for training, same as [`trainmode!`](@ref)`(m)`
-- `:auto` or `nothing` for Flux to detect training automatically.
-
-!!! compat
-    This method may be removed in a future breaking change, to separate
-    the user-facing `testmode!` from the internal recursion.
-"""
 function testmode!(m, mode)
   inactive = if mode isa Symbol
     mode === :auto || throw(ArgumentError(lazy"testmode! accepts only the symbol :auto, got :$mode"))
@@ -69,7 +43,15 @@ function testmode!(m, mode)
   m
 end
 
+"""
+    trainmode!(model) -> model
 
+Set a layer, or all layers in a model, to training mode.
+Opposite to [`testmode!`](@ref), see further details there.
+"""
+trainmode!(m) = testmode!(m, false)
+trainmode!(m, mode::Symbol) = testmode!(m, mode)
+trainmode!(m, ::Nothing) = testmode!(m, nothing)  # why do we have so much API?
 
 
 

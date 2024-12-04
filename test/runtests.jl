@@ -69,6 +69,10 @@ Random.seed!(0)
     @testset "functors" begin
       include("functors.jl")
     end
+
+    @testset "deprecations" begin
+      include("deprecations.jl")
+    end
   else
       @info "Skipping CPU tests."
   end
@@ -76,7 +80,6 @@ Random.seed!(0)
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
     Pkg.add(["CUDA", "cuDNN"])
     using CUDA, cuDNN
-    Flux.gpu_backend!("CUDA")
 
     if CUDA.functional()
       @testset "CUDA" begin
@@ -92,7 +95,6 @@ Random.seed!(0)
   if get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
     Pkg.add("AMDGPU")
     using AMDGPU
-    Flux.gpu_backend!("AMDGPU")
 
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
@@ -108,7 +110,6 @@ Random.seed!(0)
   if get(ENV, "FLUX_TEST_METAL", "false") == "true"
     Pkg.add("Metal")
     using Metal
-    Flux.gpu_backend!("Metal")
 
     if Metal.functional()
       @testset "Metal" begin

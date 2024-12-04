@@ -1,3 +1,8 @@
+```@meta
+CurrentModule = Flux
+CollapsedDocStrings = true
+```
+
 # Working with Data, using MLUtils.jl
 
 Flux re-exports the `DataLoader` type and utility functions for working with
@@ -25,6 +30,7 @@ MLUtils.chunk
 MLUtils.eachobs
 MLUtils.fill_like
 MLUtils.filterobs
+Flux.flatten
 MLUtils.flatten
 MLUtils.getobs
 MLUtils.getobs!

@@ -52,18 +52,9 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
-      - name: "Run test without coverage report"
-        uses: julia-actions/julia-runtest@v1
-        if: matrix.version != '1' || matrix.os != 'ubuntu-latest'
-        with:
-          coverage: false
-      - name: "Run test with coverage report"
-        uses: julia-actions/julia-runtest@v1
-        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
+      - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
       - uses: codecov/codecov-action@v5
-        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
         with:
           files: lcov.info
 

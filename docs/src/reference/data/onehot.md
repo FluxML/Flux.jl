@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # One-Hot Encoding with OneHotArrays.jl
 
 It's common to encode categorical variables (like `true`, `false` or `cat`, `dog`) in "one-of-k" or ["one-hot"](https://en.wikipedia.org/wiki/One-hot) form. [OneHotArrays.jl](https://github.com/FluxML/OneHotArrays.jl) provides the `onehot` function to make this easy.
@@ -51,7 +55,7 @@ julia> onecold(ans, [:a, :b, :c])
 
 Note that these operations returned `OneHotVector` and `OneHotMatrix` rather than `Array`s. `OneHotVector`s behave like normal vectors but avoid any unnecessary cost compared to using an integer index directly. For example, multiplying a matrix with a one-hot vector simply slices out the relevant row of the matrix under the hood.
 
-### Function listing
+## Function listing
 
 ```@docs
 OneHotArrays.onehot

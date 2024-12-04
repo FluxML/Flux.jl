@@ -1,5 +1,5 @@
 steps:
-  - label: "CUDA GPU with julia v1"
+  - label: "CUDA - Julia 1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
@@ -17,17 +17,7 @@ steps:
       FLUX_TEST_ENZYME: "false"
     timeout_in_minutes: 60
 
-  # - label: "GPU nightly"
-  #   plugins:
-  #     - JuliaCI/julia#v1:
-  #         version: "nightly"
-  #     - JuliaCI/julia-test#v1: ~
-  #   agents:
-  #     queue: "juliagpu"
-  #     cuda: "*"
-  #   timeout_in_minutes: 60
-
-  - label: "Metal with julia v1"
+  - label: "Metal - Julia 1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
@@ -41,32 +31,18 @@ steps:
       queue: "juliaecosystem"
       os: "macos"
       arch: "aarch64"
-    commands: |
-      julia --project -e '
-          # make sure the 1.8-era Manifest works on this Julia version
-          using Pkg
-          Pkg.resolve()'
-    commands: |
-      printf "[Flux]\ngpu_backend = \"Metal\"\n" > LocalPreferences.toml
-
     if: build.message !~ /\[skip tests\]/
     timeout_in_minutes: 60
     env:
       FLUX_TEST_METAL: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
-    matrix:
-      setup:
-        julia:
-          # - "1.9"
-          - "1"
-          # - "nightly"
 
-  - label: "AMD GPU with Julia 1"
+  - label: "AMDGPU - Julia 1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
-      - JuliaCI/julia-test#v1:
+      - JuliaCI/julia-test#v1: ~
       - JuliaCI/julia-coverage#v1:
           dirs:
             - src
@@ -75,8 +51,6 @@ steps:
       queue: "juliagpu"
       rocm: "*"
       rocmgpu: "*"
-    commands: |
-      printf "[Flux]\ngpu_backend = \"AMDGPU\"\n" > LocalPreferences.toml
     timeout_in_minutes: 60
     env:
       JULIA_AMDGPU_CORE_MUST_LOAD: "1"
@@ -86,5 +60,6 @@ steps:
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
       JULIA_NUM_THREADS: 4
+
 env:
   SECRET_CODECOV_TOKEN: "fAV/xwuaV0l5oaIYSAXRQIor8h7yHdlrpLUZFwNVnchn7rDk9UZoz0oORG9vlKLc1GK2HhaPRAy+fTkJ3GM/8Y0phHh3ANK8f5UsGm2DUTNsnf6u9izgnwnoRTcsWu+vSO0fyYrxBvBCoJwljL+yZbDFz3oE16DP7HPIzxfQagm+o/kMEszVuoUXhuLXXH0LxT6pXl214qjqs04HfMRmKIIiup48NB6fBLdhGlQz64MdMNHBfgDa/fafB7eNvn0X6pEOxysoy6bDQLUhKelOXgcDx1UsTo34Yiqr+QeJPAeKcO//PWurwQhPoUoHfLad2da9DN4uQk4YQLqAlcIuAA==;U2FsdGVkX1+mRXF2c9soCXT7DYymY3msM+vrpaifiTp8xA+gMpbQ0G63WY3tJ+6V/fJcVnxYoKZVXbjcg8fl4Q=="

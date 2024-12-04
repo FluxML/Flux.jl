@@ -4,22 +4,6 @@ using Flux
 using CUDA, cuDNN
 using NNlib
 
-const USE_CUDNN = Ref{Union{Nothing, Bool}}(nothing)
-
-function check_use_cudnn()
-    if !isnothing(USE_CUDNN[])
-        return
-    end
-
-    USE_CUDNN[] = cuDNN.has_cudnn()
-    if !USE_CUDNN[]
-        @warn """
-        cuDNN.jl didn't found libcudnn, some Flux functionality will not be available.
-        """ maxlog=1
-    end
-    return
-end
-
 function (BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}},
                               cache=nothing) where T<:Union{Float32, Float64}
   

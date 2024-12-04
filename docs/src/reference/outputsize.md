@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # Shape Inference
 
 Flux has some tools to help generate models in an automated fashion, by inferring the size
