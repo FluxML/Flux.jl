@@ -1,3 +1,8 @@
+```@meta
+CurrentModule = Flux
+CollapsedDocStrings = true
+```
+
 # [Random Weight Initialisation](@id man-init-funcs)
 
 Flux initialises convolutional layers and recurrent cells with `glorot_uniform` by default.

@@ -12,7 +12,7 @@ makedocs(
     modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
     sitename = "Flux",
     doctest = false,   # done later
-    checkdocs = :none,
+    checkdocs = :none, # :all, :exports, :none
     # checkdocs_ignored_modules =  [NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
     warnonly = [:cross_references],
     format = Documenter.HTML(
@@ -75,7 +75,7 @@ makedocs(
     ]
 )
 
-# doctest(Flux) # only test Flux modules
+doctest(Flux) # only test Flux modules
 
 deploydocs(
     repo = "github.com/FluxML/Flux.jl.git",

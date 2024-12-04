@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # [Loss Functions](@id man-losses)
 
 Flux provides a large number of common loss functions used for training machine learning models.
@@ -21,7 +25,7 @@ loss(ŷ, y, agg=x->mean(w .* x))    # weighted mean
 loss(ŷ, y, agg=identity)           # no aggregation.
 ```
 
-### Function listing
+## Function listing
 
 ```@docs
 Flux.Losses.mae

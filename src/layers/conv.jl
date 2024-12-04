@@ -59,6 +59,7 @@ end
 """
     Conv(filter, in => out, σ = identity;
          stride = 1, pad = 0, dilation = 1, groups = 1, [bias, init])
+    Conv(weight, [bias, activation; stride, pad, dilation])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -91,9 +92,13 @@ Keywords to control initialization of the layer:
 * `bias` - The initial bias vector is all zero by default. Trainable bias can be disabled entirely
   by setting this to `false`, or another vector can be provided such as `bias = randn(Float32, out)`.
 
+The second form of the constructor allows you to pass in a pre-constructed weight matrix
+and bias vector. This is useful when you want to initialize the weights yourself.
+
 See also [`ConvTranspose`](@ref), [`DepthwiseConv`](@ref), [`CrossCor`](@ref).
 
 # Examples
+
 ```jldoctest
 julia> xs = rand32(100, 100, 3, 50); # a batch of 50 RGB images
 
@@ -115,26 +120,9 @@ julia> Conv((1,1), 3 => 7; pad = (20,10,0,0))(xs) |> size
 julia> Conv((5,5), 3 => 7; stride = 2, dilation = 4)(xs) |> size
 (42, 42, 7, 50)
 ```
-"""
-struct Conv{N,M,F,A,V}
-  σ::F
-  weight::A
-  bias::V
-  stride::NTuple{N,Int}
-  pad::NTuple{M,Int}
-  dilation::NTuple{N,Int}
-  groups::Int
-end
-
-"""
-    Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])
-
-Constructs a convolutional layer with the given weight and bias.
-Accepts the same keywords and has the same defaults as
-[`Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ; ...)`](@ref Conv).
 
 ```jldoctest
-julia> weight = rand(3, 4, 5);
+julia> weight = rand(Float32, 3, 4, 5);
 
 julia> bias = zeros(5);
 
@@ -148,6 +136,16 @@ julia> Flux.trainables(layer) |> length
 2
 ```
 """
+struct Conv{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  dilation::NTuple{N,Int}
+  groups::Int
+end
+
 function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
               stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
 
@@ -223,6 +221,7 @@ end
 
 """
     ConvTranspose(filter, in => out, σ=identity; stride=1, pad=0, outpad=0, dilation=1, [bias, init])
+    ConvTranspose(weight, [bias, activation; stride, pad, outpad, dilation])
 
 Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
@@ -236,6 +235,9 @@ of the output in the desired dimensions. Whereas `pad` is used to zero-pad the i
 
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
+
+The second form of the constructor allows you to pass in a pre-constructed weight matrix
+and bias vector. This is useful when you want to initialize the weights yourself.
 
 See also [`Conv`](@ref) for more detailed description of keywords.
 
@@ -258,29 +260,7 @@ julia> ConvTranspose((5,5), 3 => 7, stride=2, outpad=1)(xs) |> size
 julia> ConvTranspose((5,5), 3 => 7, stride=3, pad=SamePad())(xs) |> size
 (300, 300, 7, 50)
 ```
-"""
-struct ConvTranspose{N,M,F,A,V}
-  σ::F
-  weight::A
-  bias::V
-  stride::NTuple{N,Int}
-  pad::NTuple{M,Int}
-  outpad::NTuple{N,Int}
-  dilation::NTuple{N,Int}
-  groups::Int
-end
 
-_channels_in(l::ConvTranspose)  = size(l.weight)[end]
-_channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
-
-"""
-    ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, outpad, dilation, groups])
-
-Constructs a ConvTranspose layer with the given weight and bias.
-Accepts the same keywords and has the same defaults as
-[`ConvTranspose(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ; ...)`](@ref ConvTranspose).
-
-# Examples
 ```jldoctest
 julia> weight = rand(3, 4, 5);
 
@@ -296,6 +276,20 @@ julia> Flux.trainables(layer) |> length
 2
 ```
 """
+struct ConvTranspose{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  outpad::NTuple{N,Int}
+  dilation::NTuple{N,Int}
+  groups::Int
+end
+
+_channels_in(l::ConvTranspose)  = size(l.weight)[end]
+_channels_out(l::ConvTranspose) = size(l.weight)[end-1]*l.groups
+
 function ConvTranspose(w::AbstractArray{T,N}, bias = true, σ = identity;
                       stride = 1, pad = 0, outpad = 0, dilation = 1, groups = 1) where {T,N}
   stride = expand(Val(N-2), stride)
@@ -403,6 +397,7 @@ end
 
 """
     CrossCor(filter, in => out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
+    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
 
 Standard cross correlation layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -410,6 +405,9 @@ specifying the size of the convolutional kernel;
 
 Parameters are controlled by additional keywords, with defaults
 `init=glorot_uniform` and `bias=true`.
+
+The second form of the constructor allows you to pass in a pre-constructed weight matrix
+and bias vector. This is useful when you want to initialize the weights yourself
 
 See also [`Conv`](@ref) for more detailed description of keywords.
 
@@ -427,26 +425,7 @@ julia> layer(xs) |> size
 julia> CrossCor((5,5), 3 => 7, stride=3, pad=(2,0))(xs) |> size
 (34, 32, 7, 50)
 ```
-"""
-struct CrossCor{N,M,F,A,V}
-  σ::F
-  weight::A
-  bias::V
-  stride::NTuple{N,Int}
-  pad::NTuple{M,Int}
-  dilation::NTuple{N,Int}
-end
 
-_channels_in(l::CrossCor) = size(l.weight, ndims(l.weight)-1)
-
-"""
-    CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])
-
-Constructs a CrossCor layer with the given weight and bias.
-Accepts the same keywords and has the same defaults as
-[`CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ; ...)`](@ref CrossCor).
-
-# Examples
 ```jldoctest
 julia> weight = rand(3, 4, 5);
 
@@ -459,6 +438,17 @@ julia> layer(randn(100, 4, 64)) |> size
 (98, 5, 64)
 ```
 """
+struct CrossCor{N,M,F,A,V}
+  σ::F
+  weight::A
+  bias::V
+  stride::NTuple{N,Int}
+  pad::NTuple{M,Int}
+  dilation::NTuple{N,Int}
+end
+
+_channels_in(l::CrossCor) = size(l.weight, ndims(l.weight)-1)
+
 function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
                   stride = 1, pad = 0, dilation = 1) where {T,N}
   stride = expand(Val(N-2), stride)
