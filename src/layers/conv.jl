@@ -434,7 +434,7 @@ julia> bias = zeros(Float32, 5);
 julia> layer = CrossCor(weight, bias, relu)
 CrossCor((3,), 4 => 5, relu)  # 65 parameters
 
-julia> layer(randn(100, 4, 64)) |> size
+julia> layer(randn(Float32, 100, 4, 64)) |> size
 (98, 5, 64)
 ```
 """
