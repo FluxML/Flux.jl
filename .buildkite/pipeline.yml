@@ -1,5 +1,5 @@
 steps:
-  - label: "CUDA"
+  - label: "CUDA - Julia 1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
@@ -17,7 +17,7 @@ steps:
       FLUX_TEST_ENZYME: "false"
     timeout_in_minutes: 60
 
-  - label: "Metal"
+  - label: "Metal - Julia 1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"
@@ -38,7 +38,7 @@ steps:
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
 
-  - label: "AMDGPU"
+  - label: "AMDGPU - Julia 1"
     plugins:
       - JuliaCI/julia#v1:
           version: "1"

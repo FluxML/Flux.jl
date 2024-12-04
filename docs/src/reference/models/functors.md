@@ -19,6 +19,8 @@ Flux models are deeply nested structures, and [Functors.jl](https://github.com/F
 
 ```@docs
 Flux.@layer
+Functors.@leaf
+Functors.@functor
 Functors.fmap
 Functors.fmap_with_path
 Functors.isleaf

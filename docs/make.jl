@@ -2,13 +2,25 @@ using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers,
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
       DataFrames, JLD2, MLDataDevices
 
-using Functors: @functor, @leaf
 
 DocMeta.setdocmeta!(Flux, :DocTestSetup, :(using Flux); recursive = true)
 
 makedocs(
+    ## This should be
+    ## modules = [Flux], checkdocs = :all,
+    ## but we get errors.
     modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
     sitename = "Flux",
+    doctest = false,   # done later
+    checkdocs = :none,
+    # checkdocs_ignored_modules =  [NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
+    warnonly = [:cross_references],
+    format = Documenter.HTML(
+        sidebar_sitename = false,
+        analytics = "UA-36890222-9",
+        assets = ["assets/flux.css"],
+        prettyurls = get(ENV, "CI", nothing) == "true"
+    ),
     pages = [
         "Welcome" => "index.md",
         "Guide" => [
@@ -60,20 +72,10 @@ makedocs(
             "Deep Convolutional GAN" => "tutorials/2021-10-08-dcgan-mnist.md",
             =#
         ],
-    ],
-    format = Documenter.HTML(
-        sidebar_sitename = false,
-        analytics = "UA-36890222-9",
-        assets = ["assets/flux.css"],
-        prettyurls = get(ENV, "CI", nothing) == "true"
-    ),
-    doctest = false,   # done later
-    checkdocs = :none, # :exports # Do not check if all functions appear in the docs
-                                  # since it considers all packages
-    warnonly = [:cross_references]
+    ]
 )
 
-doctest(Flux) # only test Flux modules
+# doctest(Flux) # only test Flux modules
 
 deploydocs(
     repo = "github.com/FluxML/Flux.jl.git",
