@@ -3,22 +3,7 @@
 Most work on neural networks involves the use of GPUs, as they can typically perform the required computation much faster.
 This page describes how Flux co-operates with various other packages, which talk to GPU hardware.
 
-## TL;DR: use automatic GPU selection
-
-For most use cases, you can load a GPU package by calling `using CUDA`, `using AMDGPU`, or `using Metal`, depending on your hardware, and then organizing the training loop like this:
-
-```julia
-device = gpu_device()
-model = model |> device
-for epoch in 1:num_epochs
-    for (x, y) in dataloader
-        x, y = device((x, y))
-        ... compute gradients and update model ...
-    end
-end
-```
-
-What follows is a detailed explanation of how this works in terms of lower-level functions.
+For those in a hurry, see the [quickstart](@ref man-quickstart) page. Or do `using CUDA` and then call `gpu` on both the model and the data. 
 
 ## Basic GPU use: from `Array` to `CuArray` with `cu`
 
