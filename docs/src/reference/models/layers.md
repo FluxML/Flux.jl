@@ -45,14 +45,10 @@ To understand how strides and padding work, the article by [Dumoulin & Visin](ht
 
 ```@docs
 Conv
-Conv(weight::AbstractArray)
 ConvTranspose
-ConvTranspose(weight::AbstractArray)
 CrossCor
-CrossCor(weight::AbstractArray)
 DepthwiseConv
 SamePad
-Flux.flatten
 ```
 
 ## MultiHeadAttention

@@ -30,6 +30,7 @@ MLUtils.chunk
 MLUtils.eachobs
 MLUtils.fill_like
 MLUtils.filterobs
+Flux.flatten
 MLUtils.flatten
 MLUtils.getobs
 MLUtils.getobs!
