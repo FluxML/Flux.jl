@@ -229,24 +229,26 @@ Neural networks typically take a vector of numbers, mix them all up, and return 
 Here's a very simple one, which will take a vector like `x = [1.0, 2.0, 3.0]`
 and return another vector `y = layer1(x)` with `length(y) == 2`:
 
-```julia
+```jldoctest poly; output = false
 W = randn(2, 3)
 b = zeros(2)
+
+sigmoid(x::Real) = 1 / (1 + exp(-x))
 layer1(x) = sigmoid.(W*x .+ b)
+
+# output
+
+layer1 (generic function with 1 method)
 ```
 
 Here `sigmoid` is a nonlinear function, applied element-wise
 because it is called with `.()`, called broadcasting.
 
-```julia
-sigmoid(x::Real) = 1 / (1 + exp(-x))
-```
-
 Like `poly1` above, this `layer1` has as its parameters the global variables `W, b`.
 We can similarly define a version which takes these as arguments (like `poly2`),
 and a version which encapsulates them (like `poly3` above):
 
-```julia
+```jldoctest poly; output = false
 layer2(x, W2, b2) = sigmoid.(W2*x .+ b2)  # explicit parameter arguments
 
 layer3 = let
@@ -254,12 +256,18 @@ layer3 = let
     b3 = zeros(2)
     x -> sigmoid.(W3*x .+ b3)  # closure over local variables
 end
+
+layer3([1.0, 2.0, 3.0]) isa Vector  # check that it runs
+
+# output
+
+true
 ```
 
 This third way is precisely a Flux model. And we can again make a tidier version
 using a `struct` to hold the parameters:
 
-```julia
+```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 struct Layer  # container struct
     W::Matrix
     b::Vector
@@ -272,6 +280,10 @@ Layer(in::Int, out::Int, act::Function=sigmoid) =
   Layer(randn(Float32, out, in), zeros(Float32, out), act)
 
 layer3s = Layer(3, 2)  # instance with its own parameters
+
+# output
+
+Layer(Float32[0.6911411 0.47683495 -0.75600505; 0.5247729 1.2508286 0.27635413], Float32[0.0, 0.0], sigmoid)
 ```
 
 The one new thing here is a friendly constructor `Layer(in, out, act)`.
@@ -279,12 +291,16 @@ This is because we anticipate composing several instances of this thing,
 with independent parameter arrays, of different sizes and different
 random initial parameters.
 
-```julia
+```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 x = Float32[0.1, 0.2, 0.3]  # input
 
 layer3s(x)  # output, 2-element Vector{Float32}
 
-gradient((x,d) -> d(x)[1], x, layer3s)[2]  # NamedTuple{(:W, :b, :act)}
+Flux.gradient((x,d) -> d(x)[1], x, layer3s)[2]  # NamedTuple{(:W, :b, :act)}
+
+# output
+
+(W = Float32[0.024975738 0.049951475 0.07492722; 0.0 0.0 0.0], b = Float32[0.24975738, 0.0], act = nothing)
 ```
 
 This `∂f/∂layer3s` is a named tuple with the same fields as `Layer`.
@@ -296,23 +312,27 @@ We can compose these layers just as we did the polynomials above.
 Here's a composition of 3, in which the last step is the function `only`
 which takes a 2-element vector and gives us the number inside:
 
-```julia
+```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 model1 = only ∘ Layer(20, 1) ∘ Layer(1, 20)
 
-model1(Float32[0.1])  # output is a Float32 number
+y = model1(Float32[0.1])  # output is a Float32 number
 
-grad = gradient(|>, [1f0], model1)[2]
+grad = Flux.gradient(|>, [1f0], model1)[2]
+
+# output
+
+(outer = (outer = nothing, inner = (W = Float32[0.058179587 0.1276911 … 0.08071162 0.034993216], b = Float32[0.14223717], act = nothing)), inner = (W = Float32[-0.048111934; -0.0008379104; … ; 0.017658396; -0.015104223;;], b = Float32[-0.048111934, -0.0008379104, 0.017207285, 0.026828118, -0.024858447, -0.015956078, 0.0020494608, -0.012577536, -0.044770215, 0.01478136, 0.034534186, -0.004748393, 0.026848236, -0.016794706, -0.041044597, 0.016186379, -0.036814954, 0.034786277, 0.017658396, -0.015104223], act = nothing))
 ```
 
 This gradient is starting to be a complicated nested structure.
-But it works just like before: `grad.inner.W` corresponds to `model1.inner.W`.
+But it works just like before: `grad.outer.inner.W` corresponds to `model1.outer.inner.W`.
 
 ### <img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/> &nbsp;  [Flux's layers](@ref man-layers)
 
 Rather than define everything from scratch every time, Flux provides a library of
 commonly used layers. The same model could be defined:
 
-```julia
+```jldoctest poly; output = false
 model2 = Chain(Dense(1 => 20, σ), Dense(20 => 1), only)
 ```
 
@@ -328,12 +348,13 @@ How does this `model2` differ from the `model1` we had before?
 * The function [`σ`](@ref NNlib.sigmoid) is calculated in a slightly better way,
   and has a rule telling Zygote how to differentiate it efficiently.
 * Flux overloads `Base.show` so to give pretty printing at the REPL prompt.
+  Calling [`Flux.@layer Layer`](@ref Flux.@layer) will add this, and some other niceties.
 
 If what you need isn't covered by Flux's built-in layers, it's easy to write your own.
-There are more details later, but the steps are invariably those shown for `struct Layer` above:
+There are more details [later](@ref man-advanced), but the steps are invariably those shown for `struct Layer` above:
 1. Define a `struct` which will hold the parameters.
 2. Make it callable, to define how it uses them to transform the input `x`
-3. Define a constructor which initialises the parameters.
+3. Define a constructor which initialises the parameters (if the default constructor doesn't do what you want).
 4. Annotate with `@layer` to opt-in to pretty printing, and other enhacements.
 
 ```@raw html
@@ -352,7 +373,7 @@ using CUDA, Functors
 fmap(cu, model1)
 ```
 
-And this is a very simple gradient update of the parameters:
+And this is a very simple gradient update of the parameters, walking over `model` and `grad` simultaneously:
 
 ```julia
 fmap((x, dx) -> x isa Array ? (x - dx/100) : x, model, grad)
@@ -370,42 +391,32 @@ of the output -- it must be a number, not a vector. Adjusting the parameters
 to make this smaller won't lead us anywhere interesting. Instead, we should minimise
 some *loss function* which compares the actual output to our desired output.
 
-Perhaps the simplest example is curve fitting. Given a function like `f(x) = 2x - x^3`
-evaluated at some points `x in -2:0.1:2`, we can aim to adjust the parameters
-of the two-layer `model` from above so that its output is similar to the truth.
-Here's how this might look:
+Perhaps the simplest example is curve fitting. The [previous page](man-overview) fitted
+a linear function to data. With out two-layer `model2`, we can fit a nonlinear function.
+For example, let us use `f(x) = 2x - x^3` evaluated at some points `x in -2:0.1:2` as the data,
+and adjust the parameters of `model2` from above so that its output is similar.
 
-```julia
+```jldoctest poly; output = false
 data = [([x], 2x-x^3) for x in -2:0.1f0:2]  # training points (x, y)
 
 for _ in 1:1000  # adjust parameters to minimise the error:
-  Flux.train!((m,x,y) -> (m(x) - y)^2, model, data, Descent(0.01))
+  Flux.train!((m,x,y) -> (m(x) - y)^2, model2, data, Descent(0.01))
 end
+
+# output
+
+nothing
 ```
 
-Here, `Flux.train!` is a loop which iterates over data, like this:
-
-```julia
-for xy in data
-  grads = gradient(m -> m(xy...), model)  # gradient at this datapoint
-  fmap(model, grads[1]) do x, dx
-    if x isa Array
-      x .= x .- 0.01 * dx  # mutates the parameters
-    else
-      x
-    end
-  end
-end
-```
-
-And here's how to plot the desired and actual outputs:
+The same code will also work with `model1` instead.
+Here's how to plot the desired and actual outputs:
 
 ```julia
 using Plots
-plot(x -> 2x-x^3, -2, 2, legend=false)
-scatter!(-2:0.1:2, [model([x]) for x in -2:0.1:2])
+plot(x -> 2x-x^3, -2, 2, label="truth")
+scatter!(x -> model2([x]), -2:0.1f0:2, label="fitted")
 ```
 
-If this general idea is unfamiliar, you may want the [tutorial on linear regression](#ref man-linear-regression).
+If this general idea is unfamiliar, you may want the [tutorial on linear regression](@ref man-linear-regression).
 
-More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about.
+More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about: [training](@ref man-training).
