@@ -104,9 +104,9 @@ julia> custom_model(W, b, x)[1], y[1]
 It does! But the predictions are way off. We need to train the model to improve the predictions, but before training the model we need to define the loss function. The loss function would ideally output a quantity that we will try to minimize during the entire training process. Here we will use the mean sum squared error loss function.
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function custom_loss(W, b, x, y)
-           ŷ = custom_model(W, b, x)
-           sum((y .- ŷ).^2) / length(x)
+julia> function custom_loss(weights, biases, features, labels)
+           ŷ = custom_model(weights, biases, features)
+           sum((labels .- ŷ).^2) / length(weights)
        end;
 
 julia> custom_loss(W, b, x, y)
@@ -142,9 +142,9 @@ julia> flux_model(x)[1], y[1]
 It is! The next step would be defining the loss function using `Flux`'s functions -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function flux_loss(flux_model, x, y)
-           ŷ = flux_model(x)
-           Flux.mse(ŷ, y)
+julia> function flux_loss(flux_model, features, labels)
+           ŷ = flux_model(features)
+           Flux.mse(ŷ, labels)
        end;
 
 julia> flux_loss(flux_model, x, y)
@@ -214,8 +214,8 @@ The loss went down! This means that we successfully trained our model for one ep
 Let's plug our super training logic inside a function and test it again -
 
 ```jldoctest linear_regression_simple; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function train_custom_model!(f_loss, weights, biases, X, y)
-           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, X, y)
+julia> function train_custom_model!(f_loss, weights, biases, features, labels)
+           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, features, labels)
            @. weights = weights - 0.1 * dLdW
            @. biases = biases - 0.1 * dLdb
        end;
@@ -314,9 +314,9 @@ Dense(13 => 1)      # 14 parameters
 Same as before, our next step would be to define a loss function to quantify our accuracy somehow. The lower the loss, the better the model!
 
 ```jldoctest linear_regression_complex; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function loss(model, x, y)
-           ŷ = model(x)
-           Flux.mse(ŷ, y)
+julia> function loss(model, features, labels)
+           ŷ = model(features)
+           Flux.mse(ŷ, labels)
        end;
 
 julia> loss(model, x_train_n, y_train)
@@ -330,8 +330,8 @@ We can now proceed to the training phase!
 The training procedure would make use of the same mathematics, but now we can pass in the model inside the `gradient` call and let `Flux` and `Zygote` handle the derivatives!
 
 ```jldoctest linear_regression_complex
-julia> function train_model!(f_loss, model, X, y)
-           dLdm, _, _ = gradient(f_loss, model, X, y)
+julia> function train_model!(f_loss, model, features, labels)
+           dLdm, _, _ = gradient(f_loss, model, features, labels)
            @. model.weight = model.weight - 0.000001 * dLdm.weight
            @. model.bias = model.bias - 0.000001 * dLdm.bias
        end;
