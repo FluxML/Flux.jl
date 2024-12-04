@@ -1,6 +1,6 @@
 # Logistic Regression
 
-The following page contains a step-by-step walkthrough of the logistic regression algorithm in Julia using Flux. We will then create a simple logistic regression model without any usage of Flux and compare the different working parts with Flux's implementation. 
+The following page contains a step-by-step walkthrough of the logistic regression algorithm in Julia using Flux. We will then create a simple logistic regression model without any usage of Flux and compare the different working parts with Flux's implementation.
 
 Let's start by importing the required Julia packages.
 
@@ -141,7 +141,7 @@ julia> flux_model = Chain(Dense(4 => 3), softmax)
 Chain(
   Dense(4 => 3),                        # 15 parameters
   softmax,
-) 
+)
 ```
 
 A [`Dense(4 => 3)`](@ref Dense) layer denotes a layer with four inputs (four features in every data point) and three outputs (three classes or labels). This layer is the same as the mathematical model defined by us above. Under the hood, Flux too calculates the output using the same expression, but we don't have to initialize the parameters ourselves this time, instead Flux does it for us.
@@ -313,8 +313,8 @@ julia> custom_loss(W, b, x, custom_y_onehot)
 The loss went down! Let's plug our super training logic inside a function.
 
 ```jldoctest logistic_regression
-julia> function train_custom_model!(f_loss, weights, biases, x, y)
-           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, x, y)
+julia> function train_custom_model!(f_loss, weights, biases, X, y)
+           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, X, y)
            weights .= weights .- 0.1 .* dLdW
            biases .= biases .- 0.1 .* dLdb
        end;
@@ -327,7 +327,7 @@ julia> for i = 1:500
             train_custom_model!(custom_loss, W, b, x, custom_y_onehot);
             custom_accuracy(W, b, x, y) >= 0.98 && break
        end
-    
+
 julia> @show custom_accuracy(W, b, x, y);
 custom_accuracy(W, b, x, y) = 0.98
 ```
@@ -347,8 +347,8 @@ We can write a similar-looking training loop for our `flux_model` and train it s
 julia> flux_loss(flux_model, x, flux_y_onehot)
 1.215731131385928
 
-julia> function train_flux_model!(f_loss, model, x, y)
-           dLdm, _, _ = gradient(f_loss, model, x, y)
+julia> function train_flux_model!(f_loss, model, X, y)
+           dLdm, _, _ = gradient(f_loss, model, X, y)
            @. model[1].weight = model[1].weight - 0.1 * dLdm[:layers][1][:weight]
            @. model[1].bias = model[1].bias - 0.1 * dLdm[:layers][1][:bias]
        end;
