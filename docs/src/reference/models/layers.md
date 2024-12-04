@@ -1,4 +1,4 @@
-# [Built-in Layer Types]](@id man-layers)
+# [Built-in Layer Types](@id man-layers)
 
 If you started at the beginning of the guide, then you have already met the
 basic [`Dense`](@ref) layer, and seen [`Chain`](@ref) for combining layers.

@@ -188,7 +188,7 @@ For ordinary pure functions like `(x,y) -> (x*y)`, this `∂f(x,y)/∂f` would a
     depends on `θ`.
 
 ```@raw html
-<h3><img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/><a href="https://github.com/FluxML/Zygote.jl">Zygote.jl</a></h3>
+<h3><img src="../../../assets/zygote-crop.png" width="40px"/>&nbsp;<a href="https://github.com/FluxML/Zygote.jl">Zygote.jl</a></h3>
 ```
 
 Flux's [`gradient`](@ref) function by default calls a companion packages called [Zygote](https://github.com/FluxML/Zygote.jl).
@@ -327,7 +327,9 @@ grad = Flux.gradient(|>, [1f0], model1)[2]
 This gradient is starting to be a complicated nested structure.
 But it works just like before: `grad.outer.inner.W` corresponds to `model1.outer.inner.W`.
 
-### <img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/> &nbsp;  [Flux's layers](man-layers)
+```@raw html
+<h3><img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/>&nbsp;<a href="../../../reference/models/layers/">Flux's layers</a></h3>
+```
 
 Rather than define everything from scratch every time, Flux provides a library of
 commonly used layers. The same model could be defined:
@@ -359,14 +361,14 @@ How does this `model2` differ from the `model1` we had before?
   Calling [`Flux.@layer Layer`](@ref Flux.@layer) will add this, and some other niceties.
 
 If what you need isn't covered by Flux's built-in layers, it's easy to write your own.
-There are more details [later](man-advanced), but the steps are invariably those shown for `struct Layer` above:
+There are more details [later](@ref man-advanced), but the steps are invariably those shown for `struct Layer` above:
 1. Define a `struct` which will hold the parameters.
 2. Make it callable, to define how it uses them to transform the input `x`
 3. Define a constructor which initialises the parameters (if the default constructor doesn't do what you want).
 4. Annotate with `@layer` to opt-in to pretty printing, and other enhacements.
 
 ```@raw html
-<h3><img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/><a href="https://github.com/FluxML/Functors.jl">Functors.jl</a></h3>
+<h3><img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/>&nbsp;<a href="https://github.com/FluxML/Functors.jl">Functors.jl</a></h3>
 ```
 
 To deal with such nested structures, Flux relies heavily on an associated package
@@ -399,7 +401,7 @@ of the output -- it must be a number, not a vector. Adjusting the parameters
 to make this smaller won't lead us anywhere interesting. Instead, we should minimise
 some *loss function* which compares the actual output to our desired output.
 
-Perhaps the simplest example is curve fitting. The [previous page](man-overview) fitted
+Perhaps the simplest example is curve fitting. The [previous page](@ref man-overview) fitted
 a linear function to data. With out two-layer `model2`, we can fit a nonlinear function.
 For example, let us use `f(x) = 2x - x^3` evaluated at some points `x in -2:0.1:2` as the data,
 and adjust the parameters of `model2` from above so that its output is similar.
@@ -424,6 +426,6 @@ plot(x -> 2x-x^3, -2, 2, label="truth")
 scatter!(x -> model2([x]), -2:0.1f0:2, label="fitted")
 ```
 
-If this general idea is unfamiliar, you may want the [tutorial on linear regression](man-linear-regression).
+If this general idea is unfamiliar, you may want the [tutorial on linear regression](@ref man-linear-regression).
 
-More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about: [training](man-training).
+More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about: [training](@ref man-training).
