@@ -310,7 +310,7 @@ How does this `model2` differ from the `model1` we had before?
 * Flux's [`Chain`](@ref Flux.Chain) works left-to-right, the reverse of Base's `∘`.
   Its contents is stored in a tuple, thus `model2.layers[1].weight` is an array.
 * Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences, mainly that
-  like `struct Poly3{T}` above it has type parameters for its fields -- the compiler does not
+  like `struct Poly3{T}` above, it has type parameters for its fields -- the compiler does not
   know exactly what type `layer3s.W` will be, which costs speed.
   Its initialisation uses not `randn` but ??
   It also produces more friendly errors on wrong-size input, and has some performance tricks.
