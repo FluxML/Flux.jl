@@ -214,9 +214,9 @@ julia> max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
 Now we can write a function that calculates the indices of the maximum element in each column, and maps them to a class name.
 
 ```jldoctest logistic_regression
-julia> function custom_onecold(custom_y_onehot)
-           max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
-           vec(classes[max_idx])
+julia> function custom_onecold(y)
+           max_idx = [x[1] for x in argmax(y; dims=1)]
+           return vec(classes[max_idx])
        end;
 
 julia> custom_onecold(custom_y_onehot)
