@@ -76,6 +76,7 @@ Optimisers.destructure
 Optimisers.trainable
 Optimisers.trainables
 Optimisers.isnumeric
+Flux.params
 ```
 
 ## All Layers

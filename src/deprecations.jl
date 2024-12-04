@@ -80,6 +80,15 @@ function params!(p::Zygote.Params, x, seen = Base.IdSet())
   end
 end
 
+"""
+    params(model)
+
+Returns a `Zygote.Params` object containing all parameter arrays from the model.
+This is deprecated!
+This function was the cornerstone of how Flux used Zygote's implicit mode gradients,
+but since Flux 0.13 we use explicit mode `gradient(m -> loss(m, x, y), model)` instead.
+To collect all the parameter arrays for other purposes, use `Flux.trainables(model)`.
+"""
 function params(m...)
   @warn """`Flux.params(m...)` is deprecated. Use `Flux.trainable(model)` for parameter collection,
   and the explicit `gradient(m -> loss(m, x, y), model)` for gradient computation.""" maxlog=1
