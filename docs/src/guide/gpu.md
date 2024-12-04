@@ -5,7 +5,7 @@ This page describes how Flux co-operates with various other packages, which talk
 
 For those in a hurry, see the [quickstart](@ref man-quickstart) page. Or do `using CUDA` and then call `gpu` on both the model and the data. 
 
-## Basic GPU use: from `Array` to `CuArray` with `cu`
+## Basic GPU use: from `Array` to `CuArray`
 
 Julia's GPU packages work with special array types, in place of the built-in `Array`.
 The most used is `CuArray` provided by [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl), for GPUs made by NVIDIA.
