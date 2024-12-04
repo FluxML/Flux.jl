@@ -1,6 +1,6 @@
 # Logistic Regression
 
-The following page contains a step-by-step walkthrough of the logistic regression algorithm in Julia using Flux. We will then create a simple logistic regression model without any usage of Flux and compare the different working parts with Flux's implementation. 
+The following page contains a step-by-step walkthrough of the logistic regression algorithm in Julia using Flux. We will then create a simple logistic regression model without any usage of Flux and compare the different working parts with Flux's implementation.
 
 Let's start by importing the required Julia packages.
 
@@ -9,7 +9,7 @@ julia> using Flux, Statistics, MLDatasets, DataFrames, OneHotArrays
 ```
 
 ## Dataset
-Let's start by importing a dataset from MLDatasets.jl. We will use the `Iris` dataset that contains the data of three different `Iris` species. The data consists of 150 data points (`x`s), each having four features. Each of these `x` is mapped to `y`, the name of a particular `Iris` specie. The following code will download the `Iris` dataset when run for the first time.
+Let's start by importing a dataset from MLDatasets.jl. We will use the `Iris` dataset that contains the data of three different `Iris` species. The data consists of 150 data points (`x`s), each having four features. Each of these `x` is mapped to a label (or target) `y`, the name of a particular `Iris` species. The following code will download the `Iris` dataset when run for the first time.
 
 ```jldoctest logistic_regression
 julia> Iris()
@@ -141,7 +141,7 @@ julia> flux_model = Chain(Dense(4 => 3), softmax)
 Chain(
   Dense(4 => 3),                        # 15 parameters
   softmax,
-) 
+)
 ```
 
 A [`Dense(4 => 3)`](@ref Dense) layer denotes a layer with four inputs (four features in every data point) and three outputs (three classes or labels). This layer is the same as the mathematical model defined by us above. Under the hood, Flux too calculates the output using the same expression, but we don't have to initialize the parameters ourselves this time, instead Flux does it for us.
@@ -170,9 +170,9 @@ julia> custom_logitcrossentropy(ŷ, y) = mean(.-sum(y .* logsoftmax(ŷ; dims = 1
 Now we can wrap the `custom_logitcrossentropy` inside a function that takes in the model parameters, `x`s, and `y`s, and returns the loss value.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function custom_loss(W, b, x, y)
-           ŷ = custom_model(W, b, x)
-           custom_logitcrossentropy(ŷ, y)
+julia> function custom_loss(weights, biases, features, labels_onehot)
+           ŷ = custom_model(weights, biases, features)
+           custom_logitcrossentropy(ŷ, labels_onehot)
        end;
 
 julia> custom_loss(W, b, x, custom_y_onehot)
@@ -184,9 +184,9 @@ The loss function works!
 Flux provides us with many minimal yet elegant loss functions. In fact, the `custom_logitcrossentropy` defined above has been taken directly from Flux. The functions present in Flux includes sanity checks, ensures efficient performance, and behaves well with the overall FluxML ecosystem.
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-julia> function flux_loss(flux_model, x, y)
-           ŷ = flux_model(x)
-           Flux.logitcrossentropy(ŷ, y)
+julia> function flux_loss(flux_model, features, labels_onehot)
+           ŷ = flux_model(features)
+           Flux.logitcrossentropy(ŷ, labels_onehot)
        end;
 
 julia> flux_loss(flux_model, x, flux_y_onehot)
@@ -214,9 +214,9 @@ julia> max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
 Now we can write a function that calculates the indices of the maximum element in each column, and maps them to a class name.
 
 ```jldoctest logistic_regression
-julia> function custom_onecold(custom_y_onehot)
-           max_idx = [x[1] for x in argmax(custom_y_onehot; dims=1)]
-           vec(classes[max_idx])
+julia> function custom_onecold(labels_onehot)
+           max_idx = [x[1] for x in argmax(labels_onehot; dims=1)]
+           return vec(classes[max_idx])
        end;
 
 julia> custom_onecold(custom_y_onehot)
@@ -313,10 +313,10 @@ julia> custom_loss(W, b, x, custom_y_onehot)
 The loss went down! Let's plug our super training logic inside a function.
 
 ```jldoctest logistic_regression
-julia> function train_custom_model()
-           dLdW, dLdb, _, _ = gradient(custom_loss, W, b, x, custom_y_onehot)
-           W .= W .- 0.1 .* dLdW
-           b .= b .- 0.1 .* dLdb
+julia> function train_custom_model!(f_loss, weights, biases, features, labels_onehot)
+           dLdW, dLdb, _, _ = gradient(f_loss, weights, biases, features, labels_onehot)
+           weights .= weights .- 0.1 .* dLdW
+           biases .= biases .- 0.1 .* dLdb
        end;
 ```
 
@@ -324,10 +324,10 @@ We can plug the training function inside a loop and train the model for more epo
 
 ```jldoctest logistic_regression; filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 julia> for i = 1:500
-            train_custom_model();
+            train_custom_model!(custom_loss, W, b, x, custom_y_onehot);
             custom_accuracy(W, b, x, y) >= 0.98 && break
        end
-    
+
 julia> @show custom_accuracy(W, b, x, y);
 custom_accuracy(W, b, x, y) = 0.98
 ```
@@ -347,14 +347,14 @@ We can write a similar-looking training loop for our `flux_model` and train it s
 julia> flux_loss(flux_model, x, flux_y_onehot)
 1.215731131385928
 
-julia> function train_flux_model()
-           dLdm, _, _ = gradient(flux_loss, flux_model, x, flux_y_onehot)
-           @. flux_model[1].weight = flux_model[1].weight - 0.1 * dLdm[:layers][1][:weight]
-           @. flux_model[1].bias = flux_model[1].bias - 0.1 * dLdm[:layers][1][:bias]
+julia> function train_flux_model!(f_loss, model, features, labels_onehot)
+           dLdm, _, _ = gradient(f_loss, model, features, labels_onehot)
+           @. model[1].weight = model[1].weight - 0.1 * dLdm[:layers][1][:weight]
+           @. model[1].bias = model[1].bias - 0.1 * dLdm[:layers][1][:bias]
        end;
 
 julia> for i = 1:500
-            train_flux_model();
+            train_flux_model!(flux_loss, flux_model, x, flux_y_onehot);
             flux_accuracy(x, y) >= 0.98 && break
        end
 ```

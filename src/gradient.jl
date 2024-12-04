@@ -37,7 +37,7 @@ function gradient(f, args...; zero::Bool=true)
     end
     if Zygote.isderiving()
         error("""`Flux.gradient` does not support use within a Zygote gradient.
-            If what you are doing worked on Flux < 0.14, then calling `Zygote.gradiet` directly should still work.
+            If what you are doing worked on Flux < 0.14, then calling `Zygote.gradient` directly should still work.
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
@@ -175,7 +175,7 @@ function withgradient(f, args...; zero::Bool=true)
     end
     if Zygote.isderiving()
         error("""`Flux.withgradient` does not support use within a Zygote gradient.
-            If what you are doing worked on Flux < 0.14, then calling `Zygote.gradiet` directly should still work.
+            If what you are doing worked on Flux < 0.14, then calling `Zygote.withgradient` directly should still work.
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
