@@ -141,8 +141,19 @@ gpu(x) = gpu_device()(x)
 cpu(x) = cpu_device()(x)
 ```
 
-In case automatic backend selction through `gpu` has an impact in some hot loop of your 
-code (although this is rare in practice), it is recommended to first instantiate a device object with `device = gpu_device()`, and then use it to transfer data. 
+Automatic backend selection through `gpu` is not type-stable. That doesn't matter if you do it once, or once per large batch -- it costs a few microseconds. But it might matter if you do it within some loop.
+
+To avoid this, you can first obtain a "device object" with `device = gpu_device()`, once, and then use this as the function to transfer data. Something like this:
+```julia
+to_device = gpu_device()
+gpu_model = model |> to_device
+
+for epoch in 1:num_epochs
+    for (x, y) in dataloader
+        x_gpu, y_gpu = (x, y) |> to_device
+        # training code...
+```
+
 Finally, setting a backend prefence with [`gpu_backend!`](@ref) gives type stability to the whole pipeline.
 
 ## Transferring Training Data
