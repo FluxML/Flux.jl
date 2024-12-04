@@ -221,7 +221,7 @@ BSON.@save "./path/to/trained_model.bson" model = cpu(model)
 ```
 The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect `CuArray`s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.
 
-In controlled scenarios in which the data fed to the loaded models is garanteed to be in the GPU there's no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no garantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.
+In controlled scenarios in which the data fed to the loaded models is guaranteed to be in the GPU there's no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no guarantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.
 
 
 ## Disabling CUDA or choosing which GPUs are visible to Flux
