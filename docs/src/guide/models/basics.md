@@ -341,7 +341,7 @@ Chain(
   Dense(1 => 20, σ),                    # 40 parameters
   Dense(20 => 1),                       # 21 parameters
   only,
-)                   # Total: 4 arrays, 61 parameters, 500 bytes.
+)                   # Total: 4 arrays, 61 parameters, 452 bytes.
 ```
 
 How does this `model2` differ from the `model1` we had before?
