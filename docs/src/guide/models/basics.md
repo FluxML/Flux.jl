@@ -109,7 +109,7 @@ Flux models are precisely made by such function composition.
 In fact, `poly3`  and `poly4` are already valid Flux models.
 
 
-## [Taking Gradients](@id man-taking-gradients)
+## [Structural Gradients](@id man-taking-gradients)
 
 The derivative of a scalar function is its slope: how fast the output changes as the input is changed slightly.
 This may be found approximately by evaluating at two nearby points, and exactly by taking the limit in
@@ -143,9 +143,8 @@ julia> gradient((x,y,z) -> (x*y)+z, 30, 40, 50)
 
 For our parameterised polynomial, we have `∂f/∂x` but we are really more interested
 in `∂f/∂θ`, as this will tell us about how the parameters are affecting the answer.
-It is possible to track gradients with respect to global `θ` (see below),
-but clearer to track explicit arguments. Here's how this works for `poly2` (which takes `θ` as a 2nd argument)
-and `poly3` (which encapsulates `θ`):
+It is not impossible to track gradients with respect to global `θ`, but much clearer to track explicit arguments.
+Here's how this works for `poly2` (which takes `θ` as a 2nd argument) and `poly3` (which encapsulates `θ`):
 
 ```jldoctest poly
 julia> grad2 = gradient(poly2, 5, θ)
@@ -170,10 +169,6 @@ julia> grad4 = gradient(|>, 5, poly4)
 
 Here `grad4.inner.θ3` corresponds to `poly4.inner.θ3`.
 These matching nested structures are at the core of how Flux works.
-
-(Aside, why don't we just write `gradient(poly4, 5)`? It's just a convention that `gradient(f,x,y)`
-returns only `∂f(x,y)/∂x, ∂f(x,y)/∂y`, and not a derivative of the output with respect to the function itself.
-For ordinary pure functions like `(x,y) -> (x*y)`, this `∂f(x,y)/∂f` would always be zero.)
 
 !!! note "Implicit gradients"
     Earlier versions of Flux used a different way to relate parameters and gradients,
@@ -214,6 +209,7 @@ julia> grad3e = Flux.gradient((x,p) -> p(x), Const(5.0), Duplicated(poly3s))
 `Flux.gradient` follows Zygote's convention that arguments with no derivative are marked `nothing`.
 Here, this is because `Const(5.0)` is explicitly constant.
 Below, we will see an example where `nothing` shows up because the model struct has fields containing things other than parameters, such as an activation function.
+(It also adopts the convention that `gradient(f, x, y)` returns a tuple `(∂f/∂x, ∂f/∂y)`, without a "`∂f/∂f`" term for the function. This is why we had to write `gradient(|>, 5, poly4)` above, not just `gradient(poly4, 5)`.)
 
 Finally, the function [`withgradient`](@ref) works the same way, but also returns the value of the function:
 
@@ -222,7 +218,7 @@ julia> Flux.withgradient((x,p) -> p(x), 5.0, poly3s)
 (val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],)))
 ```
 
-## Neural Networks
+## Simple Neural Networks
 
 The polynomial functions above send a number `x` to another a number `y`.
 Neural networks typically take a vector of numbers, mix them all up, and return another vector.
@@ -327,6 +323,28 @@ grad = Flux.gradient(|>, [1f0], model1)[2]
 This gradient is starting to be a complicated nested structure.
 But it works just like before: `grad.outer.inner.W` corresponds to `model1.outer.inner.W`.
 
+We don't have to use `∘` (which makes a `ComposedFunction` struct) to combine layers.
+Instead, we could define our own container struct, or use a closure:
+
+```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
+model2 = let
+    lay1 = Layer(1, 20)  # local variables containing layers
+    lay2 = Layer(20, 1)
+    function fwd(x)  # equivalent to x -> only(lay2(lay1(x)))
+        mid = lay1(x)
+        lay2(mid) |> only
+    end
+end
+
+model2(Float32[0.1])
+
+Flux.gradient(|>, [1f0], model2)[2]
+
+# output
+
+(lay2 = (W = Float32[0.051824596 0.03971491 … 0.038365345 0.051143322], b = Float32[0.09477656], act = nothing), lay1 = (W = Float32[-0.00049770635; 0.002891017; … ; -0.0022540581; 0.0039325757;;], b = Float32[-0.00049770635, 0.002891017, -0.00865399, -0.015051818, -0.005504916, -0.004188145, -0.01533527, -0.0059600063, -0.003092169, -0.00697084, -0.012470333, -0.0048766206, -0.010671042, -0.006604657, -0.0086712, -0.0044975257, -0.0028462198, -0.009992857, -0.0022540581, 0.0039325757], act = nothing))
+```
+
 ```@raw html
 <h3><img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/>&nbsp;<a href="../../../reference/models/layers/">Flux's layers</a></h3>
 ```
@@ -335,7 +353,7 @@ Rather than define everything from scratch every time, Flux provides a library o
 commonly used layers. The same model could be defined:
 
 ```jldoctest poly; output = false
-model2 = Chain(Dense(1 => 20, σ), Dense(20 => 1), only)
+model3 = Chain(Dense(1 => 20, σ), Dense(20 => 1), only)
 
 # output
 
@@ -346,15 +364,15 @@ Chain(
 )                   # Total: 4 arrays, 61 parameters, 452 bytes.
 ```
 
-How does this `model2` differ from the `model1` we had before?
+How does this `model3` differ from the `model1` we had before?
 
 * Flux's [`Chain`](@ref Flux.Chain) works left-to-right, the reverse of Base's `∘`.
-  Its contents is stored in a tuple, thus `model2.layers[1].weight` is an array.
-* Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences, mainly that
-  like `struct Poly3{T}` above, it has type parameters for its fields -- the compiler does not
-  know exactly what type `layer3s.W` will be, which costs speed.
-  Its initialisation uses not `randn` (normal distribution) but [`glorot_uniform`](@ref).
-  It also produces more friendly errors on wrong-size input, and has some performance tricks.
+  Its contents is stored in a tuple, thus `model3.layers[1].weight` is an array.
+* Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences:
+  - Like `struct Poly3{T}` above, it has type parameters for its fields -- the compiler does not know exactly what type `layer3s.W` will be, which costs speed.
+  - Its initialisation uses not `randn` (normal distribution) but [`glorot_uniform`](@ref) by default.
+  - It reshapes some inputs (to allow several batch dimensions), and produces more friendly errors on wrong-size input.
+  - And it has some performance tricks: making sure element types match, and re-using some memory.
 * The function [`σ`](@ref NNlib.sigmoid) is calculated in a slightly better way,
   and has a rule telling Zygote how to differentiate it efficiently.
 * Flux overloads `Base.show` so to give pretty printing at the REPL prompt.
@@ -389,10 +407,11 @@ And this is a very simple gradient update of the parameters, walking over `model
 fmap((x, dx) -> x isa Array ? (x - dx/100) : x, model, grad)
 ```
 
-Before Flux v0.15 (and Functors v0.5), this exploration of structs was opt-in.
-After defining `struct Layer` it was necessary to call `@functor Layer` (or `@layer Layer`) before Flux would look inside.
-This has now changed to be opt-out: Functors (and hence Flux) will explore arbitrary structs, unless told not to (using `Functors.@leaf`).
-This is why even "anonymous structs" created by closures like `poly3` and `layer3` above are now valid Flux models, although the use of named structs is still recommended practice.
+!!! note
+    Before Flux v0.15 (and Functors v0.5), this exploration of structs was opt-in.
+    After defining `struct Layer` it was necessary to call `@functor Layer` (or `@layer Layer`) before Flux would look inside.
+    This has now changed to be opt-out: Functors (and hence Flux) will explore arbitrary structs, unless told not to (using `Functors.@leaf`).
+    This is why even "anonymous structs" created by closures like `poly3` and `layer3` above are now valid Flux models, although the use of named structs is still recommended practice.
 
 ## Curve Fitting
 
@@ -402,30 +421,28 @@ to make this smaller won't lead us anywhere interesting. Instead, we should mini
 some *loss function* which compares the actual output to our desired output.
 
 Perhaps the simplest example is curve fitting. The [previous page](@ref man-overview) fitted
-a linear function to data. With out two-layer `model2`, we can fit a nonlinear function.
+a linear model to data. With out two-layer model, we can fit a nonlinear function.
 For example, let us use `f(x) = 2x - x^3` evaluated at some points `x in -2:0.1:2` as the data,
-and adjust the parameters of `model2` from above so that its output is similar.
+and adjust the parameters of `model3` from above so that its output is similar.
 
 ```jldoctest poly; output = false
 data = [([x], 2x-x^3) for x in -2:0.1f0:2]  # training points (x, y)
 
 for _ in 1:1000  # adjust parameters to minimise the error:
-  Flux.train!((m,x,y) -> (m(x) - y)^2, model2, data, Descent(0.01))
+  Flux.train!((m,x,y) -> (m(x) - y)^2, model3, data, Descent(0.01))
 end
 
 # output
 
 ```
 
-The same code will also work with `model1` instead.
+The same code will also work with `model1` or `model2` instead.
 Here's how to plot the desired and actual outputs:
 
 ```julia
 using Plots
 plot(x -> 2x-x^3, -2, 2, label="truth")
-scatter!(x -> model2([x]), -2:0.1f0:2, label="fitted")
+scatter!(x -> model3([x]), -2:0.1f0:2, label="fitted")
 ```
-
-If this general idea is unfamiliar, you may want the [tutorial on linear regression](@ref man-linear-regression).
 
 More detail about what exactly the function `train!` is doing, and how to use rules other than simple [`Descent`](@ref Optimisers.Descent), is what the next page in this guide is about: [training](@ref man-training).
