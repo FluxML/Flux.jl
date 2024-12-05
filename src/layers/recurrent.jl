@@ -69,6 +69,8 @@ end
 
 @layer RNNCell
 
+initialstates(rnn::RNNCell) = zeros_like(rnn.Wh, size(rnn.Wh, 2))
+
 function RNNCell(
   (in, out)::Pair,
   σ = tanh;
@@ -82,7 +84,10 @@ function RNNCell(
   return RNNCell(σ, Wi, Wh, b)
 end
 
-(m::RNNCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 1)))
+function (rnn::RNNCell)(x::AbstractVecOrMat)
+  state = initialstates(rnn)
+  rnn(x, state)
+end
 
 function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi, 2))
@@ -261,6 +266,10 @@ end
 
 @layer LSTMCell
 
+function initialstates(lstm:: LSTMCell) 
+  return zeros_like(lstm.Wh, size(lstm.Wh, 2)), zeros_like(lstm.Wh, size(lstm.Wh, 2))
+end
+
 function LSTMCell(
   (in, out)::Pair;
   init_kernel = glorot_uniform,
@@ -274,10 +283,9 @@ function LSTMCell(
   return cell
 end
 
-function (m::LSTMCell)(x::AbstractVecOrMat)
-  h = zeros_like(x, size(m.Wh, 2))
-  c = zeros_like(h)
-  return m(x, (h, c))
+function (lstm::LSTMCell)(x::AbstractVecOrMat)
+  state, cstate = initialstates(lstm)
+  return lstm(x, (state, cstate))
 end
 
 function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
@@ -447,6 +455,8 @@ end
 
 @layer GRUCell
 
+initialstates(gru::GRUCell) = zeros_like(gru.Wh, size(gru.Wh, 2))
+
 function GRUCell(
   (in, out)::Pair;
   init_kernel = glorot_uniform,
@@ -459,7 +469,10 @@ function GRUCell(
   return GRUCell(Wi, Wh, b)
 end
 
-(m::GRUCell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
+function (gru::GRUCell)(x::AbstractVecOrMat)
+  state = initialstates(gru)
+  return gru(x, state)
+end
 
 function (m::GRUCell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
@@ -603,6 +616,8 @@ end
 
 @layer GRUv3Cell
 
+initialstates(gru::GRUv3Cell) = zeros_like(gru.Wh, size(gru.Wh, 2))
+
 function GRUv3Cell(
   (in, out)::Pair;
   init_kernel = glorot_uniform,
@@ -616,7 +631,10 @@ function GRUv3Cell(
   return GRUv3Cell(Wi, Wh, b, Wh_h̃)
 end
 
-(m::GRUv3Cell)(x::AbstractVecOrMat) = m(x, zeros_like(x, size(m.Wh, 2)))
+function (gru::GRUv3Cell)(x::AbstractVecOrMat)
+  state = initialstates(gru)
+  return gru(x, state)
+end
 
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
