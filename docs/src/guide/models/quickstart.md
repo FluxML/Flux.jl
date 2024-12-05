@@ -7,7 +7,8 @@ If you haven't, then you might prefer the [Fitting a Straight Line](overview.md)
 ```julia
 # Install everything, including CUDA, and load packages:
 using Pkg; Pkg.add(["Flux", "CUDA", "cuDNN", "ProgressMeter"])
-using Flux, CUDA, Statistics, ProgressMeter
+using Flux, Statistics, ProgressMeter
+using CUDA  # optional
 device = gpu_device()  # function to move data and model to the GPU
 
 # Generate some data for the XOR problem: vectors of length 2, as columns of a matrix:
