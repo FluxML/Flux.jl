@@ -69,6 +69,39 @@ end
 
 @layer RNNCell
 
+"""
+    initialstates(rnn) -> AbstractVector
+
+Return the initial hidden state for the given cell or recurrent layer.
+The returned vector is initialized to zeros and has the appropriate 
+dimension inferred from the cell's internal recurrent weight matrix.
+
+# Arguments
+- `rnn`: The recurrent neural network cell or recurrent layer for
+  which the initial state vector is requested. It can be any of 
+  `RNNCell`, `RNN`, `LSTMCell`, `LSTM`, `GRUCell`, `GRU`, 
+  `GRUv3Cell`, and `GRUv3`
+
+# Returns
+An `AbstractVector` of zeros representing the initial hidden state, whose length 
+matches the output dimension of the cell or recurrent layer.
+
+# Example
+```julia
+using Flux
+
+# Create an RNNCell from input dimension 10 to output dimension 20
+rnn = RNNCell(10 => 20)
+
+# Get the initial hidden state
+h0 = initialstates(rnn)
+
+# Get some input data
+x = rand(Float32, 10)
+
+# Run forward
+res = rnn(x, h0)
+"""
 initialstates(rnn::RNNCell) = zeros_like(rnn.Wh, size(rnn.Wh, 2))
 
 function RNNCell(
@@ -86,7 +119,7 @@ end
 
 function (rnn::RNNCell)(x::AbstractVecOrMat)
   state = initialstates(rnn)
-  rnn(x, state)
+  return rnn(x, state)
 end
 
 function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
@@ -178,12 +211,17 @@ end
 
 @layer RNN
 
+initialstates(rnn::RNN) = zeros_like(x, size(rnn.cell.Wh, 1))
+
 function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
   cell = RNNCell(in => out, σ; cell_kwargs...)
   return RNN(cell)
 end
 
-(m::RNN)(x::AbstractArray) = m(x, zeros_like(x, size(m.cell.Wh, 1)))
+function (m::RNN)(x::AbstractArray)
+  state = initialstates(rnn)
+  return rnn(x, state)
+end
 
 function (m::RNN)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
@@ -371,15 +409,20 @@ end
 
 @layer LSTM
 
+function initialstates(lstm::LSTM)
+  state = zeros_like(x, size(lstm.cell.Wh, 2))
+  cstate = zeros_like(state)
+  return state, cstate
+end
+
 function LSTM((in, out)::Pair; cell_kwargs...)
   cell = LSTMCell(in => out; cell_kwargs...)
   return LSTM(cell)
 end
 
-function (m::LSTM)(x::AbstractArray)
-  h = zeros_like(x, size(m.cell.Wh, 2))
-  c = zeros_like(h)
-  return m(x, (h, c))
+function (lstm::LSTM)(x::AbstractArray)
+  state, cstate = initialstates(lstm)
+  return lstm(x, (state, cstate))
 end
 
 function (m::LSTM)(x::AbstractArray, (h, c))
@@ -547,14 +590,16 @@ end
 
 @layer GRU
 
+initialstates(gru::GRU) = zeros_like(x, size(gru.cell.Wh, 2))
+
 function GRU((in, out)::Pair; cell_kwargs...)
   cell = GRUCell(in => out; cell_kwargs...)
   return GRU(cell)
 end
 
-function (m::GRU)(x::AbstractArray)
-  h = zeros_like(x, size(m.cell.Wh, 2))
-  return m(x, h)
+function (gru::GRU)(x::AbstractArray)
+  state = initialstates(gru)
+  return gru(x, state)
 end
 
 function (m::GRU)(x::AbstractArray, h)
@@ -692,14 +737,16 @@ end
 
 @layer GRUv3
 
+initialstates(gru::GRUv3) = zeros_like(x, size(gru.cell.Wh, 2))
+
 function GRUv3((in, out)::Pair; cell_kwargs...)
   cell = GRUv3Cell(in => out; cell_kwargs...)
   return GRUv3(cell)
 end
 
-function (m::GRUv3)(x::AbstractArray)
-  h = zeros_like(x, size(m.cell.Wh, 2))
-  return m(x, h)
+function (gru::GRUv3)(x::AbstractArray)
+  state = initialstates(gru)
+  return gru(x, state)
 end
 
 function (m::GRUv3)(x::AbstractArray, h)
