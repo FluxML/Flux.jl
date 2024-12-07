@@ -294,7 +294,7 @@ Base.show(io::IO, m::LSTMCell) =
   print(io, "LSTMCell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 4, ")")
 
 
-@doc raw""""
+@doc raw"""
     LSTM(in => out; init_kernel = glorot_uniform,
       init_recurrent_kernel = glorot_uniform, bias = true)
 
