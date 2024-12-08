@@ -157,7 +157,7 @@ The first entry is `∂f/∂x` as before, but the second entry is more interesti
 For `poly2`, we get `∂f/∂θ` as `grad2[2]` directly.
 It is a vector, because `θ` is a vector, and has elements `[∂f/∂θ[1], ∂f/∂θ[2], ∂f/∂θ[3]]`.
 
-For `poly3`, however, we get a `NamedTuple` whose fields correspond to those of the struct `Poly3`.
+For `poly3s`, however, we get a `NamedTuple` whose fields correspond to those of the struct `Poly3`.
 This is called a *structural gradient*. And the nice thing about them is that they work for
 arbitrarily complicated structures, for instance:
 
@@ -286,6 +286,8 @@ This is because we anticipate composing several instances of this thing,
 with independent parameter arrays, of different sizes and different
 random initial parameters.
 
+Let's try this out, and look at its gradient:
+
 ```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 x = Float32[0.1, 0.2, 0.3]  # input
 
@@ -303,8 +305,8 @@ Within it, the gradient with respect to `W` is a matrix of seemingly random numb
 Notice that there is also an entry for `act`, which is `nothing`,
 as this field of the struct is not a smoothly adjustible parameter.
 
-We can compose these layers just as we did the polynomials above.
-Here's a composition of 3, in which the last step is the function `only`
+We can compose these layers just as we did the polynomials above, in `poly4`.
+Here's a composition of 3 functions, in which the last step is the function `only`
 which takes a 1-element vector and gives us the number inside:
 
 ```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
@@ -323,7 +325,8 @@ This gradient is starting to be a complicated nested structure.
 But it works just like before: `grad.outer.inner.W` corresponds to `model1.outer.inner.W`.
 
 We don't have to use `∘` (which makes a `ComposedFunction` struct) to combine layers.
-Instead, we could define our own container struct, or use a closure:
+Instead, we could define our own container struct, or use a closure.
+This `model2` will work the same way (although its fields have different names):
 
 ```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 model2 = let
@@ -367,7 +370,7 @@ How does this `model3` differ from the `model1` we had before?
 
 * Flux's [`Chain`](@ref Flux.Chain) works left-to-right, the reverse of Base's `∘`.
   Its contents is stored in a tuple, thus `model3.layers[1].weight` is an array.
-* Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences:
+* Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences from our `struct Layer`:
   - Like `struct Poly3{T}` above, it has type parameters for its fields -- the compiler does not know exactly what type `layer3s.W` will be, which costs speed.
   - Its initialisation uses not `randn` (normal distribution) but [`glorot_uniform`](@ref) by default.
   - It reshapes some inputs (to allow several batch dimensions), and produces more friendly errors on wrong-size input.
@@ -376,7 +379,8 @@ How does this `model3` differ from the `model1` we had before?
   and has a rule telling Zygote how to differentiate it efficiently.
 * Flux overloads `Base.show` so to give pretty printing at the REPL prompt.
   Calling [`Flux.@layer Layer`](@ref Flux.@layer) will add this, and some other niceties.
-* All Flux layers accept a batch of samples: Instead of mapping one sample `x::Vector` to one output `y::Vector`, they map columns of a matrix `xs::Matrix` to columns of the output. This looks like `f(xs) ≈ stack(f(x) for x in eachcol(xs))` but is done more efficiently.
+
+All Flux layers accept a batch of samples: Instead of mapping one sample `x::Vector` to one output `y::Vector`, they map columns of a matrix `xs::Matrix` to columns of the output. This looks like `f(xs) ≈ stack(f(x) for x in eachcol(xs))` but is done more efficiently.
 
 If what you need isn't covered by Flux's built-in layers, it's easy to write your own.
 There are more details [later](@ref man-advanced), but the steps are invariably those shown for `struct Layer` above:
