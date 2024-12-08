@@ -30,7 +30,6 @@ makedocs(
             "Quick Start" => "guide/models/quickstart.md",
             "Fitting a Line" => "guide/models/overview.md",
             "Gradients and Layers" => "guide/models/basics.md",
-            "Custom Layers" => "guide/models/custom_layers.md",
             "Training" => "guide/training/training.md",
             "Recurrence" => "guide/models/recurrence.md",
             "GPU Support" => "guide/gpu.md",
@@ -63,6 +62,7 @@ makedocs(
         # Or perhaps those should just be trashed, model zoo versions are newer & more useful.
             "Linear Regression" => "tutorials/linear_regression.md",
             "Logistic Regression" => "tutorials/logistic_regression.md",
+            "Custom Layers" => "tutorials/custom_layers.md",
             "Model Zoo" => "tutorials/model_zoo.md",
             #=
             # "Multi-layer Perceptron" => "tutorials/mlp.md",

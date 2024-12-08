@@ -1,9 +1,4 @@
-```@meta
-CurrentModule = Flux
-CollapsedDocStrings = true
-```
-
-# Built-in Layer Types
+# [Built-in Layer Types](@id man-layers)
 
 If you started at the beginning of the guide, then you have already met the
 basic [`Dense`](@ref) layer, and seen [`Chain`](@ref) for combining layers.
@@ -58,7 +53,7 @@ documented in NNlib's [Attention](@ref) section.
 
 ```@docs
 MultiHeadAttention
-``` 
+```
 
 ### Pooling
 
@@ -75,7 +70,7 @@ GlobalMeanPool
 
 ## Upsampling
 
-The opposite of pooling, these layers increase the size of an array. They have no trainable parameters. 
+The opposite of pooling, these layers increase the size of an array. They have no trainable parameters.
 
 ```@docs
 Upsample
@@ -135,7 +130,7 @@ Flux.normalise
 
 ### Test vs. Train
 
-Several normalisation layers behave differently under training and inference (testing). By default, Flux will automatically determine when a layer evaluation is part of training or inference. 
+Several normalisation layers behave differently under training and inference (testing). By default, Flux will automatically determine when a layer evaluation is part of training or inference.
 
 !!! warning
     This automatic train/test detection works best with Zygote, the default

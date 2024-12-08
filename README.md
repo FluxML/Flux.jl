@@ -22,19 +22,25 @@ Flux is an elegant approach to machine learning. It's a 100% pure-Julia stack, a
 
 Works best with [Julia 1.10](https://julialang.org/downloads/) or later. Here's a very short example to try it out:
 ```julia
-using Flux, Plots
-data = [([x], 2x-x^3) for x in -2:0.1f0:2]
+using Flux
+data = [(x, 2x-x^3) for x in -2:0.1f0:2]
 
-model = Chain(Dense(1 => 23, tanh), Dense(23 => 1, bias=false), only)
+model = let
+  w, b, v = (randn(Float32, 23) for _ in 1:3)  # parameters
+  x -> sum(v .* tanh.(w*x .+ b))               # callable
+end
+# model = Chain(vcat, Dense(1 => 23, tanh), Dense(23 => 1, bias=false), only)
 
 opt_state = Flux.setup(Adam(), model)
-for epoch in 1:1000
+for epoch in 1:100
   Flux.train!((m,x,y) -> (m(x) - y)^2, model, data, opt_state)
 end
 
-plot(x -> 2x-x^3, -2, 2, legend=false)
-scatter!(x -> model([x]), -2:0.1f0:2)
+using Plots
+plot(x -> 2x-x^3, -2, 2, label="truth")
+scatter!(model, -2:0.1f0:2, label="learned")
 ```
+In Flux 0.15, almost any parameterised function in Julia is a valid Flux model -- such as this closure over `w, b, v`. The same function can also be implemented with built-in layers as shown.
 
 The [quickstart page](https://fluxml.ai/Flux.jl/stable/guide/models/quickstart/) has a longer example. See the [documentation](https://fluxml.github.io/Flux.jl/) for details, or the [model zoo](https://github.com/FluxML/model-zoo/) for examples. Ask questions on the [Julia discourse](https://discourse.julialang.org/) or [slack](https://discourse.julialang.org/t/announcing-a-julia-slack/4866).
 
