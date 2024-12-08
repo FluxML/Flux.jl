@@ -79,11 +79,10 @@ Internally, there is little difference between a closure and a struct.
 They have the same fields, and equivalent methods:
 
 ```julia
-poly3s.θ3 == poly3.θ3 == θ  # both have a field called :θ3
-dump(poly3)  # contains θ3: Array
-dump(poly3s)
+dump(poly3), dump(poly3s)  # both contain θ3: Array
+poly3s.θ3 == poly3.θ3 == θ  # field called :θ3 has same value
 methods(poly3)
-methods(poly3s)  # each has 1 method, taking x::Real
+methods(poly3s)  # each has 1 method, accepting x
 ```
 
 The virtue of encapsulation is that it makes composition very easy.
@@ -306,7 +305,7 @@ as this field of the struct is not a smoothly adjustible parameter.
 
 We can compose these layers just as we did the polynomials above.
 Here's a composition of 3, in which the last step is the function `only`
-which takes a 2-element vector and gives us the number inside:
+which takes a 1-element vector and gives us the number inside:
 
 ```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 model1 = only ∘ Layer(20, 1) ∘ Layer(1, 20)
@@ -377,6 +376,7 @@ How does this `model3` differ from the `model1` we had before?
   and has a rule telling Zygote how to differentiate it efficiently.
 * Flux overloads `Base.show` so to give pretty printing at the REPL prompt.
   Calling [`Flux.@layer Layer`](@ref Flux.@layer) will add this, and some other niceties.
+* All Flux layers accept a batch of samples: Instead of mapping one sample `x::Vector` to one output `y::Vector`, they map columns of a matrix `xs::Matrix` to columns of the output. This looks like `f(xs) ≈ stack(f(x) for x in eachcol(xs))` but is done more efficiently.
 
 If what you need isn't covered by Flux's built-in layers, it's easy to write your own.
 There are more details [later](@ref man-advanced), but the steps are invariably those shown for `struct Layer` above:
@@ -411,7 +411,7 @@ fmap((x, dx) -> x isa Array ? (x - dx/100) : x, model, grad)
     Before Flux v0.15 (and Functors v0.5), this exploration of structs was opt-in.
     After defining `struct Layer` it was necessary to call `@functor Layer` (or `@layer Layer`) before Flux would look inside.
     This has now changed to be opt-out: Functors (and hence Flux) will explore arbitrary structs, unless told not to (using `Functors.@leaf`).
-    This is why even "anonymous structs" created by closures like `poly3` and `layer3` above are now valid Flux models, although the use of named structs is still recommended practice.
+    This is why even "anonymous structs" created by closures, like `poly3` and `layer3` above, are now valid Flux models, although the use of named structs is still recommended practice.
 
 ## Curve Fitting
 
