@@ -11,13 +11,27 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.binary_focal_loss, Flux.Losses.focal_loss,
                     Flux.Losses.siamese_contrastive_loss]
 
-
+### Finite Differences ####
 function finitediff_withgradient(f, x...)
     y = f(x...)
     # We set a range to avoid domain errors
     fdm = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)
     return y, FiniteDifferences.grad(fdm, f, x...)
 end
+###########################
+
+### Enzyme #####
+duplicated(x) = Duplicated(x, make_zero(x))
+duplicated(x::Number) = Active(x)
+
+function ez_withgradient(f, xs...)
+    dups = [duplicated(x) for x in xs]
+    grads, y = Enzyme.autodiff(ReverseWithPrimal, Const(f), Active, dups...)
+    # numbers' gradient are returned in g, arrays' gradient are returned in dups
+    gs = [g isa Number ? g : d.dval for  (g, d) in  zip(grads, dups)]
+    return y, gs
+end
+################
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b) do kp, x, y
@@ -103,3 +117,5 @@ function test_gradients(
     end
     return true
 end
+
+
