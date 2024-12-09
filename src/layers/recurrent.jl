@@ -32,7 +32,7 @@ The arguments of the forward pass are:
 
 - `x`: The input to the RNN. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 - `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
-       If not provided, it is assumed to be a vector of zeros.
+       If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
 # Examples
 
@@ -72,19 +72,7 @@ end
 """
     initialstates(rnn) -> AbstractVector
 
-Return the initial hidden state for the given cell or recurrent layer.
-The returned vector is initialized to zeros and has the appropriate 
-dimension inferred from the cell's internal recurrent weight matrix.
-
-# Arguments
-- `rnn`: The recurrent neural network cell or recurrent layer for
-  which the initial state vector is requested. It can be any of 
-  `RNNCell`, `RNN`, `LSTMCell`, `LSTM`, `GRUCell`, `GRU`, 
-  `GRUv3Cell`, and `GRUv3`
-
-# Returns
-An `AbstractVector` of zeros representing the initial hidden state, whose length 
-matches the output dimension of the cell or recurrent layer.
+Return the initial hidden state for the given recurrent cell or recurrent layer.
 
 # Example
 ```julia
@@ -168,7 +156,7 @@ The arguments of the forward pass are:
 - `x`: The input to the RNN. It should be a matrix size `in x len` or an array of size `in x len x batch_size`.
 - `h`: The initial hidden state of the RNN. 
        If given, it is a vector of size `out` or a matrix of size `out x batch_size`.
-       If not provided, it is assumed to be a vector of zeros.
+       If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
 Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
 
@@ -211,7 +199,7 @@ end
 
 @layer RNN
 
-initialstates(rnn::RNN) = zeros_like(rnn.cell.Wh, size(rnn.cell.Wh, 1))
+initialstates(rnn::RNN) = initialstates(rnn.cell)
 
 function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
   cell = RNNCell(in => out, σ; cell_kwargs...)
@@ -274,7 +262,7 @@ The arguments of the forward pass are:
 - `x`: The input to the LSTM. It should be a matrix of size `in` or an array of size `in x batch_size`.
 - `(h, c)`: A tuple containing the hidden and cell states of the LSTM. 
   They should be vectors of size `out` or matrices of size `out x batch_size`.
-  If not provided, they are assumed to be vectors of zeros.
+  If not provided, they are assumed to be vectors of zeros, initialized by [`initialstates`](@ref).
 
 Returns a tuple `(h′, c′)` containing the new hidden state and cell state in tensors of size  `out` or `out x batch_size`. 
 
@@ -378,7 +366,7 @@ The arguments of the forward pass are:
 - `x`: The input to the LSTM. It should be a matrix of size `in x len` or an array of size `in x len x batch_size`.
 - `(h, c)`: A tuple containing the hidden and cell states of the LSTM. 
     They should be vectors of size `out` or matrices of size `out x batch_size`.
-    If not provided, they are assumed to be vectors of zeros.
+    If not provided, they are assumed to be vectors of zeros, initialized by [`initialstates`](@ref).
 
 Returns a tuple `(h′, c′)` containing all new hidden states `h_t` and cell states `c_t` 
 in tensors of size `out x len` or `out x len x batch_size`.
@@ -409,11 +397,7 @@ end
 
 @layer LSTM
 
-function initialstates(lstm::LSTM)
-  state = zeros_like(lstm.cell.Wh, size(lstm.cell.Wh, 2))
-  cstate = zeros_like(state)
-  return state, cstate
-end
+initialstates(lstm::LSTM) = initialstates(lstm.cell)
 
 function LSTM((in, out)::Pair; cell_kwargs...)
   cell = LSTMCell(in => out; cell_kwargs...)
@@ -473,7 +457,7 @@ See also [`GRU`](@ref) for a layer that processes entire sequences.
 The arguments of the forward pass are:
 - `x`: The input to the GRU. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 - `h`: The hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
-  If not provided, it is assumed to be a vector of zeros.
+  If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
 Returns the new hidden state `h'` as an array of size `out` or `out x batch_size`.
 
@@ -570,7 +554,7 @@ The arguments of the forward pass are:
 
 - `x`: The input to the GRU. It should be a matrix of size `in x len` or an array of size `in x len x batch_size`.
 - `h`: The initial hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
-       If not provided, it is assumed to be a vector of zeros. 
+       If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
 Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
 
@@ -590,7 +574,7 @@ end
 
 @layer GRU
 
-initialstates(gru::GRU) = zeros_like(gru.cell.Wh, size(gru.cell.Wh, 2))
+initialstates(gru::GRU) = initialstates(gru.cell)
 
 function GRU((in, out)::Pair; cell_kwargs...)
   cell = GRUCell(in => out; cell_kwargs...)
@@ -648,7 +632,7 @@ See [`GRU`](@ref) and [`GRUCell`](@ref) for variants of this layer.
 The arguments of the forward pass are:
 - `x`: The input to the GRU. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 - `h`: The hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
-  If not provided, it is assumed to be a vector of zeros.
+  If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
 Returns the new hidden state `h'` as an array of size `out` or `out x batch_size`.
 """
@@ -730,6 +714,28 @@ but only a less popular variant.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
 - `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
+
+# Forward
+
+    gruv3(x, [h])
+
+The arguments of the forward pass are:
+
+- `x`: The input to the GRU. It should be a matrix of size `in x len` or an array of size `in x len x batch_size`.
+- `h`: The initial hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
+       If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
+
+Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
+
+# Examples
+
+```julia
+d_in, d_out, len, batch_size = 2, 3, 4, 5
+gruv3 = GRUv3(d_in => d_out)
+x = rand(Float32, (d_in, len, batch_size))
+h0 = zeros(Float32, d_out)
+h = gruv3(x, h0)  # out x len x batch_size
+```
 """
 struct GRUv3{M}
   cell::M
@@ -737,7 +743,7 @@ end
 
 @layer GRUv3
 
-initialstates(gru::GRUv3) = zeros_like(gru.cell.Wh, size(gru.cell.Wh, 2))
+initialstates(gru::GRUv3) = initialstates(gru.cell)
 
 function GRUv3((in, out)::Pair; cell_kwargs...)
   cell = GRUv3Cell(in => out; cell_kwargs...)
