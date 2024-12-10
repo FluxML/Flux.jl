@@ -112,6 +112,7 @@ GRUCell
 GRU
 GRUv3Cell
 GRUv3
+Flux.initialstates
 ```
 
 ## Normalisation & Regularisation

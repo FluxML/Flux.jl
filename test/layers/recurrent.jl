@@ -43,6 +43,9 @@
     test_gradients(r, x, h, loss=loss3) # splat
     test_gradients(r, x, h, loss=loss4) # vcat and stack
 
+    # initial states are zero
+    @test Flux.initialstates(r) ≈ zeros(Float32, 5)
+
     # no initial state same as zero initial state
     @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
 
@@ -80,8 +83,11 @@ end
     @test size(y) == (4, 3, 1)
     test_gradients(model, x)
 
+    rnn = model.rnn
+    # initial states are zero
+    @test Flux.initialstates(rnn) ≈ zeros(Float32, 4)
+    
     # no initial state same as zero initial state
-    rnn = model.rnn 
     @test rnn(x) ≈ rnn(x, zeros(Float32, 4))
 
     x = rand(Float32, 2, 3)
@@ -119,6 +125,11 @@ end
     @test size(cnew) == (5, 4)
     test_gradients(cell, x[1], (h, c), loss = (m, x, hc) -> mean(m(x, hc)[1]))
     test_gradients(cell, x, (h, c), loss = loss)
+
+    # initial states are zero
+    h0, c0 = Flux.initialstates(cell)
+    @test h0 ≈ zeros(Float32, 5)
+    @test c0 ≈ zeros(Float32, 5)
 
     # no initial state same as zero initial state
     hnew1, cnew1 = cell(x[1])
@@ -166,6 +177,12 @@ end
     @test size(h) == (4, 3)
     @test c isa Array{Float32, 2}
     @test size(c) == (4, 3)
+
+    # initial states are zero
+    h0, c0 = Flux.initialstates(lstm)
+    @test h0 ≈ zeros(Float32, 4)
+    @test c0 ≈ zeros(Float32, 4)
+
     # no initial state same as zero initial state
     h1, c1 = lstm(x, (zeros(Float32, 4), zeros(Float32, 4)))
     @test h ≈ h1
@@ -191,6 +208,9 @@ end
     # Initial State is a single vector
     h = randn(Float32, 5)
     test_gradients(r, x, h; loss)
+
+    # initial states are zero
+    @test Flux.initialstates(r) ≈ zeros(Float32, 5)
 
     # no initial state same as zero initial state
     @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
@@ -227,8 +247,12 @@ end
     @test size(y) == (4, 3, 1)
     test_gradients(model, x)
 
-    # no initial state same as zero initial state
+    
     gru = model.gru
+    # initial states are zero
+    @test Flux.initialstates(gru) ≈ zeros(Float32, 4)
+
+    # no initial state same as zero initial state
     @test gru(x) ≈ gru(x, zeros(Float32, 4))
     
     # No Bias
@@ -245,6 +269,9 @@ end
     # Initial State is a single vector
     h = randn(Float32, 5)
     test_gradients(r, x, h)
+
+    # initial states are zero
+    @test Flux.initialstates(r) ≈ zeros(Float32, 5)
 
     # no initial state same as zero initial state
     @test r(x) ≈ r(x, zeros(Float32, 5))
@@ -277,7 +304,10 @@ end
     @test size(y) == (4, 3, 1)
     test_gradients(model, x)
 
-    # no initial state same as zero initial state
     gru = model.gru
+    # initial states are zero
+    @test Flux.initialstates(gru) ≈ zeros(Float32, 4)
+    
+    # no initial state same as zero initial state
     @test gru(x) ≈ gru(x, zeros(Float32, 4))
 end
