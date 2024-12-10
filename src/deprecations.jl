@@ -99,14 +99,16 @@ end
 
 macro functor(args...)
   @warn """The use of `Flux.@functor` is deprecated.
-      Most likely, you should write `Flux.@layer MyLayer` which will add various convenience methods for your type,
+      Most likely, you should write `Flux.@layer MyLayer`\
+      which will add various convenience methods for your type,\
       such as pretty-printing and use with Adapt.jl.
-      However, this is not required. Flux.jl v0.15 uses Functors.jl v0.5, which makes exploration of most nested `struct`s
-      opt-out instead of opt-in... so Flux will automatically see inside any custom struct definitions.
+      However, this is not required. Flux.jl v0.15 uses Functors.jl v0.5,\
+      which makes exploration of most nested `struct`s opt-out instead of opt-in...\
+      so Flux will automatically see inside any custom struct definitions.
       If you really want to apply the `@functor` macro to a custom struct, use `Functors.@functor` instead.
       """ maxlog=1
-
-  return Functors.functorm(args...)
+  # From https://discourse.julialang.org/t/calling-a-macro-from-within-a-macro-revisited/19680
+  return esc(:($Functors.@functor($(args...))))
 end
 
 # Allows caching of the parameters when params is called within gradient() to fix #2040.
