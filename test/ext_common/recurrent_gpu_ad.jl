@@ -1,6 +1,14 @@
-function recurrent_cell_loss(cell, x, state)
-    out = Flux.scan(cell, x, state)
-    return mean(out)
+out_from_state(state::Tuple) = state[1]
+out_from_state(state) = state
+
+function recurrent_cell_loss(cell, seq, state)
+    out = []
+    for xt in seq
+        state = Flux.scan(cell, x, state)
+        yt  = out_from_state(state)
+        out = vcat(out, [yt])
+    end
+    return mean(stack(y, dims = 2))
 end
 
 @testset "RNNCell GPU AD" begin
