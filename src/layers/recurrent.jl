@@ -1,6 +1,20 @@
+out_from_state(state) = state
+out_from_state(state::Tuple) = state[1]
+
+function scan(cell, x, state0)
+  state = state0
+  y = []
+  for x_t in eachslice(x, dims = 2)
+    state = cell(x_t, state)
+    out = out_from_state(state)
+    y = vcat(y, [out])
+  end
+  return stack(y, dims = 2)
+end
+
+
 
 # Vanilla RNN
-
 @doc raw"""
     RNNCell(in => out, σ = tanh; init_kernel = glorot_uniform, 
       init_recurrent_kernel = glorot_uniform, bias = true)
@@ -215,13 +229,7 @@ function (m::RNN)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   # [x] = [in, L] or [in, L, B]
   # [h] = [out] or [out, B]
-  y = []
-  for x_t in eachslice(x, dims = 2)
-    h = m.cell(x_t, h)
-    # y = [y..., h]
-    y = vcat(y, [h])
-  end
-  return stack(y, dims = 2)
+  return scan(m.cell, x, h)
 end
 
 
@@ -297,11 +305,12 @@ function initialstates(lstm:: LSTMCell)
 end
 
 function LSTMCell(
-  (in, out)::Pair;
-  init_kernel = glorot_uniform,
-  init_recurrent_kernel = glorot_uniform,
-  bias = true,
-)
+    (in, out)::Pair;
+    init_kernel = glorot_uniform,
+    init_recurrent_kernel = glorot_uniform,
+    bias = true,
+  )
+
   Wi = init_kernel(out * 4, in)
   Wh = init_recurrent_kernel(out * 4, out)
   b = create_bias(Wi, bias, out * 4)
@@ -309,10 +318,7 @@ function LSTMCell(
   return cell
 end
 
-function (lstm::LSTMCell)(x::AbstractVecOrMat)
-  state, cstate = initialstates(lstm)
-  return lstm(x, (state, cstate))
-end
+(lstm::LSTMCell)(x::AbstractVecOrMat) = lstm(x, initialstates(lstm))
 
 function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   _size_check(m, x, 1 => size(m.Wi, 2))
@@ -368,15 +374,14 @@ The arguments of the forward pass are:
     They should be vectors of size `out` or matrices of size `out x batch_size`.
     If not provided, they are assumed to be vectors of zeros, initialized by [`initialstates`](@ref).
 
-Returns a tuple `(h′, c′)` containing all new hidden states `h_t` and cell states `c_t` 
-in tensors of size `out x len` or `out x len x batch_size`.
+Returns all new hidden states `h_t` as an array of size `out x len` or `out x len x batch_size`.
 
 # Examples
 
 ```julia
 struct Model
   lstm::LSTM
-  h0::AbstractVector
+  h0::AbstractVector # trainable initial hidden state
   c0::AbstractVector
 end
 
@@ -387,7 +392,7 @@ Flux.@layer Model
 d_in, d_out, len, batch_size = 2, 3, 4, 5
 x = rand(Float32, (d_in, len, batch_size))
 model = Model(LSTM(d_in => d_out), zeros(Float32, d_out), zeros(Float32, d_out))
-h, c = model(x)
+h = model(x)
 size(h)  # out x len x batch_size
 ```
 """
@@ -404,21 +409,11 @@ function LSTM((in, out)::Pair; cell_kwargs...)
   return LSTM(cell)
 end
 
-function (lstm::LSTM)(x::AbstractArray)
-  state, cstate = initialstates(lstm)
-  return lstm(x, (state, cstate))
-end
+(lstm::LSTM)(x::AbstractArray) = lstm(x, initialstates(lstm))
 
-function (m::LSTM)(x::AbstractArray, (h, c))
+function (m::LSTM)(x::AbstractArray, state0)
   @assert ndims(x) == 2 || ndims(x) == 3
-  h′ = []
-  c′ = []
-  for x_t in eachslice(x, dims = 2)
-    h, c = m.cell(x_t, (h, c))
-    h′ = vcat(h′, [h])
-    c′ = vcat(c′, [c])
-  end
-  return stack(h′, dims = 2), stack(c′, dims = 2)
+  return scan(m.cell, x, state0)
 end
 
 # GRU
@@ -485,11 +480,12 @@ end
 initialstates(gru::GRUCell) = zeros_like(gru.Wh, size(gru.Wh, 2))
 
 function GRUCell(
-  (in, out)::Pair;
-  init_kernel = glorot_uniform,
-  init_recurrent_kernel = glorot_uniform,
-  bias = true,
-)
+    (in, out)::Pair;
+    init_kernel = glorot_uniform,
+    init_recurrent_kernel = glorot_uniform,
+    bias = true,
+  )
+  
   Wi = init_kernel(out * 3, in)
   Wh = init_recurrent_kernel(out * 3, out)
   b = create_bias(Wi, bias, size(Wi, 1))
@@ -581,20 +577,11 @@ function GRU((in, out)::Pair; cell_kwargs...)
   return GRU(cell)
 end
 
-function (gru::GRU)(x::AbstractArray)
-  state = initialstates(gru)
-  return gru(x, state)
-end
+(gru::GRU)(x::AbstractArray) = gru(x, initialstates(gru))
 
 function (m::GRU)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
-  h′ = []
-  # [x] = [in, L] or [in, L, B]
-  for x_t in eachslice(x, dims = 2)
-    h = m.cell(x_t, h)
-    h′ = vcat(h′, [h])
-  end
-  return stack(h′, dims = 2)
+  return scan(m.cell, x, h)
 end
 
 # GRU v3
@@ -750,17 +737,9 @@ function GRUv3((in, out)::Pair; cell_kwargs...)
   return GRUv3(cell)
 end
 
-function (gru::GRUv3)(x::AbstractArray)
-  state = initialstates(gru)
-  return gru(x, state)
-end
+(gru::GRUv3)(x::AbstractArray) = gru(x, initialstates(gru))
 
 function (m::GRUv3)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
-  h′ = []
-  for x_t in eachslice(x, dims = 2)
-    h = m.cell(x_t, h)
-    h′ = vcat(h′, [h])
-  end
-  return stack(h′, dims = 2)
+  return scan(m.cell, x, h)
 end

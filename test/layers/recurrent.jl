@@ -156,37 +156,31 @@ end
     model = ModelLSTM(LSTM(2 => 4), zeros(Float32, 4), zeros(Float32, 4))
     
     x = rand(Float32, 2, 3, 1)
-    h, c = model(x)
+    h = model(x)
     @test h isa Array{Float32, 3}
     @test size(h) == (4, 3, 1)
-    @test c isa Array{Float32, 3}
-    @test size(c) == (4, 3, 1)
-    test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
+    test_gradients(model, x)
 
     x = rand(Float32, 2, 3)
-    h, c = model(x)
+    h = model(x)
     @test h isa Array{Float32, 2}
     @test size(h) == (4, 3)
-    @test c isa Array{Float32, 2}
-    @test size(c) == (4, 3)
     test_gradients(model, x, loss = (m, x) -> mean(m(x)[1]))
 
+    # test default initial states
     lstm = model.lstm
-    h, c = lstm(x)
+    h = lstm(x)
     @test h isa Array{Float32, 2}
     @test size(h) == (4, 3)
-    @test c isa Array{Float32, 2}
-    @test size(c) == (4, 3)
-
+    
     # initial states are zero
     h0, c0 = Flux.initialstates(lstm)
     @test h0 ≈ zeros(Float32, 4)
     @test c0 ≈ zeros(Float32, 4)
 
     # no initial state same as zero initial state
-    h1, c1 = lstm(x, (zeros(Float32, 4), zeros(Float32, 4)))
+    h1 = lstm(x, (zeros(Float32, 4), zeros(Float32, 4)))
     @test h ≈ h1
-    @test c ≈ c1
 end
 
 @testset "GRUCell" begin
