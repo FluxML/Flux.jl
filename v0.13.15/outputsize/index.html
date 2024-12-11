@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Shape Inference · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img class="docs-light-only" src="../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../training/training/">Training</a></li><li><a class="tocitem" href="../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../gpu/">GPU Support</a></li><li><a class="tocitem" href="../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../training/reference/">Training API</a></li><li><a class="tocitem" href="../training/optimisers/">Optimisation Rules</a></li><li class="is-active"><a class="tocitem" href>Shape Inference</a></li><li><a class="tocitem" href="../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../training/zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../models/advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Reference</a></li><li class="is-active"><a href>Shape Inference</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Shape Inference</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/outputsize.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Shape-Inference"><a class="docs-heading-anchor" href="#Shape-Inference">Shape Inference</a><a id="Shape-Inference-1"></a><a class="docs-heading-anchor-permalink" href="#Shape-Inference" title="Permalink"></a></h1><p>Flux has some tools to help generate models in an automated fashion, by inferring the size of arrays that layers will recieve, without doing any computation.  This is especially useful for convolutional models, where the same <a href="../models/layers/#Flux.Conv"><code>Conv</code></a> layer accepts any size of image, but the next layer may not. </p><p>The higher-level tool is a macro <a href="#Flux.@autosize"><code>@autosize</code></a> which acts on the code defining the layers, and replaces each appearance of <code>_</code> with the relevant size. This simple example returns a model with <code>Dense(845 =&gt; 10)</code> as the last layer:</p><pre><code class="language-julia hljs">@autosize (28, 28, 1, 32) Chain(Conv((3, 3), _ =&gt; 5, relu, stride=2), Flux.flatten, Dense(_ =&gt; 10))</code></pre><p>The input size may be provided at runtime, like <code>@autosize (sz..., 1, 32) Chain(Conv(</code>..., but all the layer constructors containing <code>_</code> must be explicitly written out – the macro sees the code as written.</p><p>This macro relies on a lower-level function <a href="#Flux.outputsize"><code>outputsize</code></a>, which you can also use directly:</p><pre><code class="language-julia hljs">c = Conv((3, 3), 1 =&gt; 5, relu, stride=2)
+Flux.outputsize(c, (28, 28, 1, 32))  # returns (13, 13, 5, 32)</code></pre><p>The function <code>outputsize</code> works by passing a &quot;dummy&quot; array into the model, which propagates through very cheaply. It should work for all layers, including custom layers, out of the box.</p><p>An example of how to automate model building is this:</p><pre><code class="language-julia hljs">&quot;&quot;&quot;
+    make_model(width, height, [inchannels, nclasses; layer_config])
+
+Create a CNN for a given set of configuration parameters. Arguments:
+- `width`, `height`: the input image size in pixels
+- `inchannels`: the number of channels in the input image, default `1`
+- `nclasses`: the number of output classes, default `10`
+- Keyword `layer_config`: a vector of the number of channels per layer, default `[16, 16, 32, 64]`
+&quot;&quot;&quot;
+function make_model(width, height, inchannels = 1, nclasses = 10;
+                    layer_config = [16, 16, 32, 64])
+  # construct a vector of layers:
+  conv_layers = []
+  push!(conv_layers, Conv((5, 5), inchannels =&gt; layer_config[1], relu, pad=SamePad()))
+  for (inch, outch) in zip(layer_config, layer_config[2:end])
+    push!(conv_layers, Conv((3, 3), inch =&gt; outch, sigmoid, stride=2))
+  end
+
+  # compute the output dimensions after these conv layers:
+  conv_outsize = Flux.outputsize(conv_layers, (width, height, inchannels); padbatch=true)
+
+  # use this to define appropriate Dense layer:
+  last_layer = Dense(prod(conv_outsize) =&gt; nclasses)
+  return Chain(conv_layers..., Flux.flatten, last_layer)
+end
+
+m = make_model(28, 28, 3, layer_config = [9, 17, 33, 65])
+
+Flux.outputsize(m, (28, 28, 3, 42)) == (10, 42) == size(m(randn(Float32, 28, 28, 3, 42)))</code></pre><p>Alternatively, using the macro, the definition of <code>make_model</code> could end with:</p><pre><code class="nohighlight hljs">  # compute the output dimensions &amp; construct appropriate Dense layer:
+  return @autosize (width, height, inchannels, 1) Chain(conv_layers..., Flux.flatten, Dense(_ =&gt; nclasses))
+end</code></pre><h3 id="Listing"><a class="docs-heading-anchor" href="#Listing">Listing</a><a id="Listing-1"></a><a class="docs-heading-anchor-permalink" href="#Listing" title="Permalink"></a></h3><article class="docstring"><header><a class="docstring-binding" id="Flux.@autosize" href="#Flux.@autosize"><code>Flux.@autosize</code></a> — <span class="docstring-category">Macro</span></header><section><div><pre><code class="language-julia hljs">@autosize (size...,) Chain(Layer(_ =&gt; 2), Layer(_), ...)</code></pre><p>Returns the specified model, with each <code>_</code> replaced by an inferred number, for input of the given <code>size</code>.</p><p>The unknown sizes are usually the second-last dimension of that layer&#39;s input, which Flux regards as the channel dimension. (A few layers, <code>Dense</code> &amp; <a href="../models/layers/#Flux.LayerNorm"><code>LayerNorm</code></a>, instead always use the first dimension.) The underscore may appear as an argument of a layer, or inside a <code>=&gt;</code>. It may be used in further calculations, such as <code>Dense(_ =&gt; _÷4)</code>.</p><p><strong>Examples</strong></p><pre><code class="nohighlight hljs">julia&gt; @autosize (3, 1) Chain(Dense(_ =&gt; 2, sigmoid), BatchNorm(_, affine=false))
+Chain(
+  Dense(3 =&gt; 2, σ),                     # 8 parameters
+  BatchNorm(2, affine=false),
+) 
+
+julia&gt; img = [28, 28];
+
+julia&gt; @autosize (img..., 1, 32) Chain(              # size is only needed at runtime
+          Chain(c = Conv((3,3), _ =&gt; 5; stride=2, pad=SamePad()),
+                p = MeanPool((3,3)),
+                b = BatchNorm(_),
+                f = Flux.flatten),
+          Dense(_ =&gt; _÷4, relu, init=Flux.rand32),   # can calculate output size _÷4
+          SkipConnection(Dense(_ =&gt; _, relu), +),
+          Dense(_ =&gt; 10),
+       )
+Chain(
+  Chain(
+    c = Conv((3, 3), 1 =&gt; 5, pad=1, stride=2),  # 50 parameters
+    p = MeanPool((3, 3)),
+    b = BatchNorm(5),                   # 10 parameters, plus 10
+    f = Flux.flatten,
+  ),
+  Dense(80 =&gt; 20, relu),                # 1_620 parameters
+  SkipConnection(
+    Dense(20 =&gt; 20, relu),              # 420 parameters
+    +,
+  ),
+  Dense(20 =&gt; 10),                      # 210 parameters
+)         # Total: 10 trainable arrays, 2_310 parameters,
+          # plus 2 non-trainable, 10 parameters, summarysize 10.469 KiB.
+
+julia&gt; outputsize(ans, (28, 28, 1, 32))
+(10, 32)</code></pre><p>Limitations:</p><ul><li>While <code>@autosize (5, 32) Flux.Bilinear(_ =&gt; 7)</code> is OK, something like <code>Bilinear((_, _) =&gt; 7)</code> will fail.</li><li>While <code>Scale(_)</code> and <code>LayerNorm(_)</code> are fine (and use the first dimension), <code>Scale(_,_)</code> and <code>LayerNorm(_,_)</code> will fail if <code>size(x,1) != size(x,2)</code>.</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ccf87bb13f01ff0c0a1a08d900f0a9d8c9122da3/src/outputsize.jl#L171-L226">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.outputsize" href="#Flux.outputsize"><code>Flux.outputsize</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">outputsize(m, x_size, y_size, ...; padbatch=false)</code></pre><p>For model or layer <code>m</code> accepting multiple arrays as input, this returns <code>size(m((x, y, ...)))</code> given <code>size_x = size(x)</code>, etc.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x, y = rand(Float32, 5, 64), rand(Float32, 7, 64);
+
+julia&gt; par = Parallel(vcat, Dense(5 =&gt; 9), Dense(7 =&gt; 11));
+
+julia&gt; Flux.outputsize(par, (5, 64), (7, 64))
+(20, 64)
+
+julia&gt; m = Chain(par, Dense(20 =&gt; 13), softmax);
+
+julia&gt; Flux.outputsize(m, (5,), (7,); padbatch=true)
+(13, 1)
+
+julia&gt; par(x, y) == par((x, y)) == Chain(par, identity)((x, y))
+true</code></pre><p>Notice that <code>Chain</code> only accepts multiple arrays as a tuple, while <code>Parallel</code> also accepts them as multiple arguments; <code>outputsize</code> always supplies the tuple.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/ccf87bb13f01ff0c0a1a08d900f0a9d8c9122da3/src/outputsize.jl#L99-L125">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../training/optimisers/">« Optimisation Rules</a><a class="docs-footer-nextpage" href="../destructure/">Flat vs. Nested »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 18 April 2023 01:45">Tuesday 18 April 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
