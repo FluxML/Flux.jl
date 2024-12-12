@@ -665,10 +665,11 @@ Remove any [WeightNorm](@ref) parametrization in the model.
 ### Example
 
 ```jldoctest
+
 julia> model = Chain(
-    WeightNorm(Conv((3,), 1 => 2), :weight),
-    WeightNorm(Conv((3,), 2 => 2), :weight),
-)
+           WeightNorm(Conv((3,), 1 => 2), :weight),
+           WeightNorm(Conv((3,), 2 => 2), :weight),
+       )
 Chain(
   WeightNorm(
     Conv((3,), 1 => 2),                 # 8 parameters
