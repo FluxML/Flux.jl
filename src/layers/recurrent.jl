@@ -1,12 +1,8 @@
-out_from_state(state) = state
-out_from_state(state::Tuple) = state[1]
-
 function scan(cell, x, state)
   y = []
   for x_t in eachslice(x, dims = 2)
-    state = cell(x_t, state)
-    out = out_from_state(state)
-    y = vcat(y, [out])
+    yt, state = cell(x_t, state)
+    y = vcat(y, [yt])
   end
   return stack(y, dims = 2)
 end
@@ -85,7 +81,7 @@ In the forward pass, implements the function
 ```math
 h^\prime = \sigma(W_i x + W_h h + b)
 ```
-and returns `h'`.
+Returns a tuple `(out, state)`, where both element are given by `h'`.
 
 See [`RNN`](@ref) for a layer that processes entire sequences.
 
@@ -107,6 +103,8 @@ The arguments of the forward pass are:
 - `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
        If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
+Returns a tuple `(out, state)`, where both elements are given by the updated state `h'`.
+
 # Examples
 
 ```julia
@@ -123,10 +121,10 @@ h = zeros(Float32, 5)
 ŷ = []
 
 for x_t in x
-  h = r(x_t, h)
-  ŷ = [ŷ..., h] # Cannot use `push!(ŷ, h)` here since mutation 
-                # is not automatic differentiation friendly yet.
-                # Can use `y = vcat(y, [h])` as an alternative.
+  yt, h = r(x_t, h)
+  ŷ = [ŷ..., yt] # Cannot use `push!(ŷ, h)` here since mutation 
+                 # is not automatic differentiation friendly yet.
+                 # Can use `y = vcat(y, [h])` as an alternative.
 end
 
 h   # The final hidden state
@@ -167,28 +165,25 @@ res = rnn(x, h0)
 initialstates(rnn::RNNCell) = zeros_like(rnn.Wh, size(rnn.Wh, 2))
 
 function RNNCell(
-  (in, out)::Pair,
-  σ = tanh;
-  init_kernel = glorot_uniform,
-  init_recurrent_kernel = glorot_uniform,
-  bias = true,
-)
+    (in, out)::Pair,
+    σ = tanh;
+    init_kernel = glorot_uniform,
+    init_recurrent_kernel = glorot_uniform,
+    bias = true,
+  )
   Wi = init_kernel(out, in)
   Wh = init_recurrent_kernel(out, out)
   b = create_bias(Wi, bias, size(Wi, 1))
   return RNNCell(σ, Wi, Wh, b)
 end
 
-function (rnn::RNNCell)(x::AbstractVecOrMat)
-  state = initialstates(rnn)
-  return rnn(x, state)
-end
+(rnn::RNNCell)(x::AbstractVecOrMat) = rnn(x, initialstates(rnn))
 
 function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi, 2))
   σ = NNlib.fast_act(m.σ, x)
   h = σ.(m.Wi * x .+ m.Wh * h .+ m.bias)
-  return h
+  return h, h
 end
 
 function Base.show(io::IO, m::RNNCell)
@@ -278,10 +273,7 @@ function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
   return RNN(cell)
 end
 
-function (rnn::RNN)(x::AbstractArray)
-  state = initialstates(rnn)
-  return rnn(x, state)
-end
+(rnn::RNN)(x::AbstractArray) = rnn(x, initialstates(rnn))
 
 function (m::RNN)(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
@@ -389,9 +381,9 @@ function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   b = m.bias
   g = m.Wi * x .+ m.Wh * h .+ b
   input, forget, cell, output = chunk(g, 4; dims = 1)
-  c′ = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
-  h′ = @. sigmoid_fast(output) * tanh_fast(c′)
-  return h′, c′
+  c = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
+  h = @. sigmoid_fast(output) * tanh_fast(c)
+  return h, (h, c)
 end
 
 Base.show(io::IO, m::LSTMCell) =
@@ -577,8 +569,8 @@ function (m::GRUCell)(x::AbstractVecOrMat, h)
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
   h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
-  h′ = @. (1 - z) * h̃ + z * h
-  return h′
+  h = @. (1 - z) * h̃ + z * h
+  return h, h
 end
 
 Base.show(io::IO, m::GRUCell) =
@@ -736,8 +728,8 @@ function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
   h̃ = tanh_fast.(gxs[3] .+ (m.Wh_h̃ * (r .* h)) .+ bs[3])
-  h′ = @. (1 - z) * h̃ + z * h
-  return h′
+  h = @. (1 - z) * h̃ + z * h
+  return h, h
 end
 
 Base.show(io::IO, m::GRUv3Cell) =

@@ -1,36 +1,37 @@
+function cell_loss1(r, x, state)
+    for x_t in x
+        _, state = r(x_t, state)
+    end
+    return mean(state[1])
+end
+
+function cell_loss2(r, x, state)
+    y = [r(x_t, state)[1] for x_t in x]
+    return sum(mean, y)
+end
+
+function cell_loss3(r, x, state)
+    y = []
+    for x_t in x
+        y_t, state = r(x_t, state)
+        y = [y..., y_t]
+    end
+    return sum(mean, y)
+end
+
+function cell_loss4(r, x, sate)
+    y = []
+    for x_t in x
+        y_t, state = r(x_t, state)
+        y = vcat(y, [y_t])
+    end
+    y = stack(y, dims=2) # [D, L] or [D, L, B]
+    return mean(y.^2)
+end
+
 
 @testset "RNNCell" begin
-    function loss1(r, x, h)
-        for x_t in x
-            h = r(x_t, h)
-        end
-        return mean(h.^2)
-    end
-
-    function loss2(r, x, h)
-        y = [r(x_t, h) for x_t in x]
-        return sum(mean, y)
-    end
-
-    function loss3(r, x, h)
-        y = []
-        for x_t in x
-            h = r(x_t, h)
-            y = [y..., h]
-        end
-        return sum(mean, y)
-    end
-
-    function loss4(r, x, h)
-        y = []
-        for x_t in x
-            h = r(x_t, h)
-            y = vcat(y, [h])
-        end
-        y = stack(y, dims=2) # [D, L] or [D, L, B]
-        return mean(y.^2)
-    end
-
+    
     r = RNNCell(3 => 5)
     @test length(Flux.trainables(r)) == 3
     # An input sequence of length 6 and batch size 4.
@@ -38,31 +39,33 @@
 
     # Initial State is a single vector
     h = randn(Float32, 5)
-    test_gradients(r, x, h, loss=loss1) # for loop
-    test_gradients(r, x, h, loss=loss2) # comprehension
-    test_gradients(r, x, h, loss=loss3) # splat
-    test_gradients(r, x, h, loss=loss4) # vcat and stack
+    test_gradients(r, x, h, loss=cell_loss1) # for loop
+    test_gradients(r, x, h, loss=cell_loss2) # comprehension
+    test_gradients(r, x, h, loss=cell_loss3) # splat
+    test_gradients(r, x, h, loss=cell_loss4) # vcat and stack
 
     # initial states are zero
     @test Flux.initialstates(r) ≈ zeros(Float32, 5)
 
     # no initial state same as zero initial state
-    @test r(x[1]) ≈ r(x[1], zeros(Float32, 5))
+    out, state = r(x[1])
+    @test out === state
+    @test out ≈ r(x[1], zeros(Float32, 5))[1]
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
-    test_gradients(r, x, h, loss=loss4)
+    test_gradients(r, x, h, loss=cell_loss4)
 
     # The input sequence has no batch dimension.
     x = [rand(Float32, 3) for _ in 1:6]
     h = randn(Float32, 5)
-    test_gradients(r, x, h, loss=loss4)
+    test_gradients(r, x, h, loss=cell_loss4)
 
     
     # No Bias 
     r = RNNCell(3 => 5, bias=false)
     @test length(Flux.trainables(r)) == 2
-    test_gradients(r, x, h, loss=loss4)
+    test_gradients(r, x, h, loss=cell_loss4)
 end
 
 @testset "RNN" begin
@@ -99,32 +102,20 @@ end
 
 @testset "LSTMCell" begin
 
-    function loss(r, x, hc)
-        h, c = hc
-        h′ = []
-        c′ = []
-        for x_t in x
-            h, c = r(x_t, (h, c))
-            h′ = vcat(h′, [h])
-            c′ = [c′..., c]
-        end
-        hnew = stack(h′, dims=2)
-        cnew = stack(c′, dims=2)
-        return mean(hnew.^2) + mean(cnew.^2)
-    end
-
     cell = LSTMCell(3 => 5)
     @test length(Flux.trainables(cell)) == 3
     x = [rand(Float32, 3, 4) for _ in 1:6]
     h = zeros(Float32, 5, 4)
     c = zeros(Float32, 5, 4)
-    hnew, cnew = cell(x[1], (h, c))
+    out, state = cell(x[1], (h, c))
+    hnew, cnew = state
+    @test out === hnew
     @test hnew isa Matrix{Float32}
     @test cnew isa Matrix{Float32}
     @test size(hnew) == (5, 4)
     @test size(cnew) == (5, 4)
     test_gradients(cell, x[1], (h, c), loss = (m, x, hc) -> mean(m(x, hc)[1]))
-    test_gradients(cell, x, (h, c), loss = loss)
+    test_gradients(cell, x, (h, c), loss = cell_loss4)
 
     # initial states are zero
     h0, c0 = Flux.initialstates(cell)
@@ -132,8 +123,8 @@ end
     @test c0 ≈ zeros(Float32, 5)
 
     # no initial state same as zero initial state
-    hnew1, cnew1 = cell(x[1])
-    hnew2, cnew2 = cell(x[1], (zeros(Float32, 5), zeros(Float32, 5)))
+    _, (hnew1, cnew1) = cell(x[1])
+    _, (hnew2, cnew2) = cell(x[1], (zeros(Float32, 5), zeros(Float32, 5)))
     @test hnew1 ≈ hnew2
     @test cnew1 ≈ cnew2
 
@@ -184,16 +175,6 @@ end
 end
 
 @testset "GRUCell" begin
-    function loss(r, x, h)
-        y = []
-        for x_t in x
-            h = r(x_t, h)
-            y = vcat(y, [h])
-        end
-        y = stack(y, dims=2) # [D, L] or [D, L, B]
-        return mean(y.^2)
-    end
-
     r = GRUCell(3 => 5)
     @test length(Flux.trainables(r)) == 3
     # An input sequence of length 6 and batch size 4.
@@ -201,7 +182,9 @@ end
 
     # Initial State is a single vector
     h = randn(Float32, 5)
-    test_gradients(r, x, h; loss)
+    out, state = r(x[1], h)
+    @test out === state
+    test_gradients(r, x, h; loss = cell_loss4)
 
     # initial states are zero
     @test Flux.initialstates(r) ≈ zeros(Float32, 5)
@@ -211,12 +194,12 @@ end
 
     # Now initial state has a batch dimension.
     h = randn(Float32, 5, 4)
-    test_gradients(r, x, h; loss)
+    test_gradients(r, x, h; loss = cell_loss4)
 
     # The input sequence has no batch dimension.
     x = [rand(Float32, 3) for _ in 1:6]
     h = randn(Float32, 5)
-    test_gradients(r, x, h; loss)
+    test_gradients(r, x, h; loss = cell_loss4)
 
     # No Bias 
     r = GRUCell(3 => 5, bias=false)
@@ -262,6 +245,8 @@ end
 
     # Initial State is a single vector
     h = randn(Float32, 5)
+    out, state = r(x, h)
+    @test out === state
     test_gradients(r, x, h)
 
     # initial states are zero
