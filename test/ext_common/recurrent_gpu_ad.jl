@@ -117,7 +117,7 @@ end
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
     @test test_gradients(r, x[1], h; test_gpu=true, 
-        compare_finite_diff=false
+        compare_finite_diff=false,
         loss=cell_loss) broken = :gruv3cell_single ∈ BROKEN_TESTS
     @test test_gradients(r, x, h; test_gpu=true, 
         compare_finite_diff=false, 
