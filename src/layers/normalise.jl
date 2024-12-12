@@ -598,8 +598,9 @@ julia> wc = WeightNorm(c, :weight)
 WeightNorm(
   Conv((3,), 1 => 2),                   # 8 parameters
   3×1×1 Array{Float32,...},             # 3 parameters
-  3×1×2 Array{Float32,...},             # 6 parameters
-)                   # Total: 4 arrays, 17 parameters, 348 bytes.
+  :weight,
+  3,
+)                   # Total: 3 arrays, 11 parameters, 276 bytes.
 
 julia> x = ones(Float32, 12, 1, 1);
 
@@ -672,14 +673,16 @@ Chain(
   WeightNorm(
     Conv((3,), 1 => 2),                 # 8 parameters
     3×1×1 Array{Float32,...},           # 3 parameters
-    3×1×2 Array{Float32,...},           # 6 parameters
+    :weight,
+    3,
   ),
   WeightNorm(
     Conv((3,), 2 => 2),                 # 14 parameters
     3×2×1 Array{Float32,...},           # 6 parameters
-    3×2×2 Array{Float32,...},           # 12 parameters
+    :weight,
+    3,
   ),
-)                   # Total: 8 arrays, 49 parameters, 756 bytes.
+)                   # Total: 6 arrays, 31 parameters, 588 bytes.
 
 julia> Flux.remove_weight_norms(model)
 Chain(
