@@ -624,13 +624,17 @@ function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
     end
 
     g = sqrt.(sum(abs2, x; dims) .+ eps(eltype(x)))
-    x ./= g # Store `v` in the original weights.
     WeightNorm{which, dims, L, typeof(g)}(layer, g)
 end
 
-(w::WeightNorm)(x) = transform(w)(x)
+(w::WeightNorm)(x) = reparametrize(w)(x)
 
-function transform(wn::WeightNorm{which, dims}) where {which, dims}
+"""
+    reparametrize(wn::WeightNorm)
+
+Apply `WeightNorm` reparametrization and return underlying `layer`.
+"""
+function reparametrize(wn::WeightNorm{which, dims}) where {which, dims}
     ϵ = eps(eltype(wn.g))
     v = getfield(wn.layer, which)
     n2 = sum(abs2, v; dims)
@@ -681,4 +685,4 @@ Chain(
 )                   # Total: 4 arrays, 22 parameters, 392 bytes.
 ```
 """
-remove_weight_norms(x) = fmap(transform, x; exclude=l -> l isa WeightNorm)
+remove_weight_norms(x) = fmap(reparametrize, x; exclude=l -> l isa WeightNorm)

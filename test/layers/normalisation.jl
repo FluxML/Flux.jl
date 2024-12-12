@@ -469,9 +469,10 @@ end
     v = mn.layer.weight
     ϵ = eps(eltype(v))
     n2 = sum(abs2, v; dims=2)
+    v = v ./ sqrt.(n2 .+ ϵ)
 
-    @test (og.weight .* v ./ sqrt.(n2 .+ ϵ)) ≈ g.g
-    @test (og.weight .* mn.g ./ n2 .- mn.g .* g.g .* v ./ n2.^2) ≈ g.layer.weight atol=1f-6
+    @test (og.weight .* v) ≈ g.g
+    @test (og.weight .* mn.g .- mn.g .* g.g .* v) ≈ g.layer.weight atol=1f-6
 
     # Test WeightNorm removal.
 
@@ -484,14 +485,24 @@ end
 
     c = Chain(
         WeightNorm(Conv((3,), 1 => 2)),
-        WeightNorm(Conv((3,), 2 => 2)),
+        Conv((3,), 2 => 2),
+        WeightNorm(Conv((3,), 2 => 3)),
+        x -> reshape(x, 18, :),
+        WeightNorm(Dense(18, 4)),
+        Dense(4, 1),
     )
     @test c[1] isa WeightNorm
-    @test c[2] isa WeightNorm
+    @test c[2] isa Conv
+    @test c[3] isa WeightNorm
+    @test c[5] isa WeightNorm
+    @test c[6] isa Dense
 
     oc = Flux.remove_weight_norms(c)
     @test oc[1] isa Conv
     @test oc[2] isa Conv
+    @test oc[3] isa Conv
+    @test oc[5] isa Dense
+    @test oc[6] isa Dense
 
     x = rand(Float32, 12, 1, 1)
     @test c(x) ≈ oc(x)

@@ -94,6 +94,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   siamese_contrastive_loss,
   squared_hinge_loss,
   tversky_loss,
+  remove_weight_norms,
 ))
 
 include("gradient.jl")
