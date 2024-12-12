@@ -443,8 +443,8 @@ end
 
 @testset "WeightNorm" begin
     x = rand(Float32, 1, 3)
-    m = Dense(1 => 2)
-    mn = WeightNorm(m)
+    mn = WeightNorm(Dense(1 => 2))
+    m = Flux.remove_weight_norms(mn)
     @test m(x) ≈ mn(x)
 
     @test_throws ArgumentError WeightNorm(m, :weights)
@@ -460,17 +460,18 @@ end
         sum(mn(x))
     end)[1]
 
-    @test g.layer.weight ≡ nothing # Original weight does not participate.
+    @test g.layer.weight ≢ nothing # Original weight acts as a direction `v`.
     @test g.layer.bias ≢ nothing
     @test g.g ≢ nothing
-    @test g.v ≢ nothing
 
     # Compare gradients with original layer.
 
-    n2 = sum(abs2, mn.v; dims=2)
-    ϵ = eps(eltype(mn.v))
-    @test (og.weight .* mn.v ./ sqrt.(n2 .+ ϵ)) ≈ g.g
-    @test (og.weight .* mn.g ./ n2 .- mn.g .* g.g .* mn.v ./ n2.^2) ≈ g.v atol=1f-6
+    v = mn.layer.weight
+    ϵ = eps(eltype(v))
+    n2 = sum(abs2, v; dims=2)
+
+    @test (og.weight .* v ./ sqrt.(n2 .+ ϵ)) ≈ g.g
+    @test (og.weight .* mn.g ./ n2 .- mn.g .* g.g .* v ./ n2.^2) ≈ g.layer.weight atol=1f-6
 
     # Test WeightNorm removal.
 

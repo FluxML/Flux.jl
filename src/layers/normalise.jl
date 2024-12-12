@@ -569,10 +569,9 @@ See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`Laye
 """
 hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
 
-struct WeightNorm{which, dims, L, G, V}
+struct WeightNorm{which, dims, L, G}
     layer::L
     g::G
-    v::V
 end
 @layer WeightNorm
 
@@ -625,16 +624,17 @@ function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
     end
 
     g = sqrt.(sum(abs2, x; dims) .+ eps(eltype(x)))
-    v = x ./ g
-    WeightNorm{which, dims, L, typeof(g), typeof(v)}(layer, g, v)
+    x ./= g # Store `v` in the original weights.
+    WeightNorm{which, dims, L, typeof(g)}(layer, g)
 end
 
 (w::WeightNorm)(x) = transform(w)(x)
 
 function transform(wn::WeightNorm{which, dims}) where {which, dims}
-    ϵ = eps(eltype(wn.v))
-    n2 = sum(abs2, wn.v; dims)
-    w = @. wn.g * wn.v / sqrt(n2 + ϵ)
+    ϵ = eps(eltype(wn.g))
+    v = getfield(wn.layer, which)
+    n2 = sum(abs2, v; dims)
+    w = @. wn.g * v / sqrt(n2 + ϵ)
 
     fields, ctor = Functors.functor(wn.layer)
     return ctor(merge(
