@@ -19,7 +19,7 @@ function cell_loss3(r, x, state)
     return sum(mean, y)
 end
 
-function cell_loss4(r, x, sate)
+function cell_loss4(r, x, state)
     y = []
     for x_t in x
         y_t, state = r(x_t, state)
