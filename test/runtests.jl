@@ -25,8 +25,20 @@ include("test_utils.jl") # for test_gradients
 
 Random.seed!(0)
 
+include("testsuite/normalization.jl")
+
+function flux_testsuite(dev)
+    @testset "Flux Test Suite" begin
+        @testset "Normalization" begin
+            normalization_testsuite(dev)
+        end
+    end
+end
+
 @testset verbose=true "Flux.jl" begin
   if get(ENV, "FLUX_TEST_CPU", "true") == "true"
+    flux_testsuite(cpu)
+
     @testset "Utils" begin
       include("utils.jl")
     end
@@ -84,6 +96,8 @@ Random.seed!(0)
     if CUDA.functional()
       @testset "CUDA" begin
         include("ext_cuda/runtests.jl")
+
+        flux_testsuite(gpu)
       end
     else
       @warn "CUDA.jl package is not functional. Skipping CUDA tests."
@@ -99,6 +113,8 @@ Random.seed!(0)
     if AMDGPU.functional() && AMDGPU.functional(:MIOpen)
       @testset "AMDGPU" begin
         include("ext_amdgpu/runtests.jl")
+
+        flux_testsuite(gpu)
       end
     else
       @info "AMDGPU.jl package is not functional. Skipping AMDGPU tests."
@@ -114,6 +130,8 @@ Random.seed!(0)
     if Metal.functional()
       @testset "Metal" begin
         include("ext_metal/runtests.jl")
+
+        flux_testsuite(gpu)
       end
     else
       @info "Metal.jl package is not functional. Skipping Metal tests."
