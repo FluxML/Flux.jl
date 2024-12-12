@@ -21,7 +21,7 @@ b = zeros(Float32, output_size)
 
 function rnn_cell(x, h)
     h = tanh.(Wxh * x .+ Whh * h .+ b)
-    return h
+    return h, h
 end
 
 seq_len = 3
@@ -33,14 +33,14 @@ h0 = zeros(Float32, output_size)
 y = []
 ht = h0
 for xt in x
-    ht = rnn_cell(xt, ht)
-    y = [y; [ht]]  # concatenate in non-mutating (AD friendly) way
+    yt, ht = rnn_cell(xt, ht)
+    y = [y; [yt]]  # concatenate in non-mutating (AD friendly) way
 end
 ```
 
 Notice how the above is essentially a `Dense` layer that acts on two inputs, `xt` and `ht`.
-
-The output at each time step, called the hidden state, is used as the input to the next time step and is also the output of the model. 
+The result of the forward pass at each time step, is a tuple contening the output `yt` and the updated state `ht`. The updated state is used as an input in next iteration. In the simple case of a vanilla RNN, the 
+output and the state are the same. In more complex cells, such as `LSTMCell`, the state can contain multiple arrays.
 
 There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCell` and `GRUCell`, which are documented in the [layer reference](../../reference/models/layers.md). The hand-written example above can be replaced with:
 
@@ -58,8 +58,8 @@ rnn_cell = Flux.RNNCell(input_size => output_size)
 y = []
 ht = h0
 for xt in x
-    ht = rnn_cell(xt, ht)
-    y = [y; [ht]]
+    yt, ht = rnn_cell(xt, ht)
+    y = [y; [yt]]
 end
 ```
 The entire output `y` or just the last output `y[end]` can be used for further processing, such as classification or regression. 
@@ -78,7 +78,7 @@ struct RecurrentCellModel{H,C,D}
 end
 
 # we choose to not train the initial hidden state
-Flux.@layer RecurrentCellModel trainable=(cell,dense) 
+Flux.@layer RecurrentCellModel trainable=(cell, dense) 
 
 function RecurrentCellModel(input_size::Int, hidden_size::Int)
     return RecurrentCellModel(
@@ -91,8 +91,8 @@ function (m::RecurrentCellModel)(x)
     z = []
     ht = m.h0
     for xt in x
-        ht = m.cell(xt, ht)
-        z = [z; [ht]]
+        yt, ht = m.cell(xt, ht)
+        z = [z; [yt]]
     end
     z = stack(z, dims=2) # [hidden_size, seq_len, batch_size] or [hidden_size, seq_len]
     ŷ = m.dense(z)       # [1, seq_len, batch_size] or [1, seq_len]
@@ -109,7 +109,6 @@ using Optimisers: AdamW
 
 function loss(model, x, y)
     ŷ = model(x)
-    y = stack(y, dims=2)
     return Flux.mse(ŷ, y)
 end
 
@@ -123,7 +122,7 @@ model = RecurrentCellModel(input_size, 5)
 opt_state = Flux.setup(AdamW(1e-3), model)
 
 # compute the gradient and update the model
-g = gradient(m -> loss(m, x, y),model)[1]
+g = gradient(m -> loss(m, x, y), model)[1]
 Flux.update!(opt_state, model, g)
 ```
 
