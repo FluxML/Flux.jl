@@ -1,20 +1,33 @@
 using Flux
+using Zygote
 
 function main()
-    # x = rand(Float32, 20, 16)
-    # d = Dense(20 => 40)
-    x = rand(Float32, 128, 1, 16)
-    d = Conv((3,), 1 => 2)
+    x = rand(Float32, 20, 1)
+    c = Dense(20 => 20)
 
-    @show size(d.weight)
+    # x = rand(Float32, 12, 1, 1)
+    # c = Conv((3,), 1 => 2)
+    y1 = c(x)
+    wn = WeightNorm(c, :weight)
+    @show wn
+    y2 = wn(x)
 
-    wn = Flux.WeightNorm(d, :weight)
-    @show size(wn.g)
-    y1 = wn(x)
-
-    w = Flux.weightnorm(wn)
-    y2 = w(x)
     @assert y1 ≈ y2
+
+    g = Zygote.gradient(wn) do wn
+        sum(wn(x))
+    end
+    display(g); println()
+
+    model = Chain(
+        WeightNorm(Conv((3,), 1 => 2), :weight),
+        WeightNorm(Conv((3,), 2 => 2), :weight),
+    )
+    @show model
+    # y1 = model(x)
+
+    mm = Flux.remove_weight_norms(model)
+    @show mm
     return
 end
 main()
