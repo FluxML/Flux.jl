@@ -3,8 +3,7 @@ module FluxAMDGPUExt
 import ChainRulesCore
 import ChainRulesCore: NoTangent
 import Flux
-import Flux: adapt_storage, fmap
-import Flux: DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
+import Flux: fmap, DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
 import NNlib
 using MLDataDevices
 using AMDGPU

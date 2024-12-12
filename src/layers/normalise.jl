@@ -568,3 +568,44 @@ scale parameters, `false` otherwise.
 See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
 """
 hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
+
+struct WeightNorm{which, dims, L, S}
+    layer::L
+    g::S
+end
+@layer WeightNorm
+
+function WeightNorm(layer, which::Symbol; dims = -1)
+    v = getfield(layer, which)
+    iszero(v) && error(
+        "`$which` field for `$(typeof(layer))` is all zero, which will result in NaN.")
+
+    d = if dims isa Colon
+        1:ndims(v)
+    elseif dims == -1
+        dims = ndims(v)
+    else
+        dims
+    end
+    g = one.(sum(v; dims=d))
+    WeightNorm{which, dims, typeof(layer), typeof(g)}(layer, g)
+end
+
+(w::WeightNorm)(x) = weightnorm(w)(x)
+
+function weightnorm(wn::WeightNorm{which, dims}) where {which, dims}
+    # TODO support recursive WeightNorm
+    v = getfield(wn.layer, which)
+    w = weightnorm(v, wn.g; dims)
+
+    fields, ctor = Functors.functor(wn.layer)
+    return ctor(merge(
+        fields, NamedTuple{(which,)}((w,)),
+    ))
+end
+
+function weightnorm(v::AbstractArray, g::AbstractArray; dims)
+    n2 = sum(abs2, v; dims)
+    ϵ = eps(eltype(v))
+    return @. v * g / sqrt(n2 + ϵ)
+end
