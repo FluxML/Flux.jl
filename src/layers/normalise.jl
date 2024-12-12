@@ -607,7 +607,7 @@ true
 
 # Reference
 
-Salimans & Kingma, _Weight Normalization_ (2016) https://arxiv.org/abs/1602.07868
+Salimans & Kingma, _Weight Normalization_ (2016) <https://arxiv.org/abs/1602.07868>
 """
 function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
     hasfield(L, which) || throw(ArgumentError("`$L` does not have field `:$which`."))
