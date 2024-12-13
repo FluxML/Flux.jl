@@ -240,9 +240,7 @@ julia> x = rand(Float32, (d_in, len, batch_size));
 julia> h = zeros(Float32, (d_out, batch_size));
 
 julia> rnn = RNN(d_in => d_out)
-RNN(
-  RNNCell(4 => 6, tanh),                # 66 parameters
-)                   # Total: 3 arrays, 66 parameters, 424 bytes.
+RNN(4 => 6, tanh)   # 66 parameters
 
 julia> y = rnn(x, h);   # [y] = [d_out, len, batch_size]
 ```
