@@ -53,6 +53,9 @@ stack(out, dims = 2)
 
 ```jldoctest
 julia> rnn = Recurrence(RNNCell(2 => 3))
+Recurrence(
+  RNNCell(2 => 3, tanh),                # 18 parameters
+)                   # Total: 3 arrays, 18 parameters, 232 bytes.
 
 julia> x = rand(Float32, 2, 3, 4); # in x len x batch_size
 
