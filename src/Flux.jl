@@ -38,7 +38,7 @@ using EnzymeCore: EnzymeCore
 export Chain, Dense, Embedding, EmbeddingBag,
        Maxout, SkipConnection, Parallel, PairwiseFusion,
        RNNCell, LSTMCell, GRUCell, GRUv3Cell,
-       RNN, LSTM, GRU, GRUv3,
+       RNN, LSTM, GRU, GRUv3, Recurrence,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout,
