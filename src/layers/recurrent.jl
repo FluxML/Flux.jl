@@ -103,6 +103,7 @@ x = rand(Float32, 10)
 
 # Run forward
 res = rnn(x, h0)
+```
 """
 initialstates(rnn::RNNCell) = zeros_like(rnn.Wh, size(rnn.Wh, 2))
 

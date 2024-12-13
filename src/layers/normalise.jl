@@ -568,3 +568,127 @@ scale parameters, `false` otherwise.
 See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref).
 """
 hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
+
+struct WeightNorm{L, G, D}
+    layer::L
+    g::G
+
+    which::Symbol
+    dims::D
+end
+@layer WeightNorm
+
+"""
+    WeightNorm(layer::L, which::Symbol = :weight; dims = -1)
+
+Apply weight normalization to a parameter given by `which` in a `layer`.
+
+``w = g \\frac{\\mathbf{v}}{\\lVert \\mathbf{v} \\rVert}``
+
+Decouples the magnitude of a weight tensor from its direction.
+By default, normalization is applied along the output channel `dim=-1`
+(equivalent to `dims=ndims(w)`).
+
+### Example
+
+```jldoctest
+julia> c = Conv((3,), 1 => 2);
+
+julia> wc = WeightNorm(c, :weight)
+WeightNorm(
+  Conv((3,), 1 => 2),                   # 8 parameters
+  3×1×1 Array{Float32,...},             # 3 parameters
+  :weight,
+  3,
+)                   # Total: 3 arrays, 11 parameters, 276 bytes.
+
+julia> x = ones(Float32, 12, 1, 1);
+
+julia> c(x) ≈ wc(x) # forward pass is the same as with the original layer
+true
+```
+
+# Reference
+
+Salimans & Kingma, _Weight Normalization_ (2016) <https://arxiv.org/abs/1602.07868>
+"""
+function WeightNorm(layer::L, which::Symbol = :weight; dims = -1) where L
+    hasfield(L, which) || throw(ArgumentError("`$L` does not have field `:$which`."))
+
+    x = getfield(layer, which)
+    iszero(x) && throw(ArgumentError(
+        "`$which` field for `$(typeof(layer))` is all zero, which will result in NaN."))
+
+    d = if dims isa Colon
+        1:ndims(x)
+    elseif dims == -1
+        dims = ndims(x)
+    else
+        dims
+    end
+
+    g = sqrt.(sum(abs2, x; dims) .+ eps(eltype(x)))
+    WeightNorm(layer, g, which, dims)
+end
+
+(w::WeightNorm)(x) = reparametrize(w)(x)
+
+"""
+    reparametrize(wn::WeightNorm)
+
+Apply `WeightNorm` reparametrization and return underlying `layer`.
+"""
+function reparametrize(wn::WeightNorm)
+    ϵ = eps(eltype(wn.g))
+    v = getfield(wn.layer, wn.which)
+    n2 = sum(abs2, v; wn.dims)
+    w = @. wn.g * v / sqrt(n2 + ϵ)
+
+    fields, ctor = Functors.functor(wn.layer)
+    return ctor(merge(
+        fields, NamedTuple{(wn.which,)}((w,)),
+    ))
+end
+
+function Base.show(io::IO, w::WeightNorm)
+    print(io, "WeightNorm(")
+    Base.show(io, w.layer)
+    print(io, ", :", w.which, "; dims=", w.dims)
+    print(io, ")")
+end
+
+"""
+    remove_weight_norms(x)
+
+Remove any [WeightNorm](@ref) parametrization in the model.
+
+### Example
+
+```jldoctest
+julia> model = Chain(
+           WeightNorm(Conv((3,), 1 => 2), :weight),
+           WeightNorm(Conv((3,), 2 => 2), :weight),
+       )
+Chain(
+  WeightNorm(
+    Conv((3,), 1 => 2),                 # 8 parameters
+    3×1×1 Array{Float32,...},           # 3 parameters
+    :weight,
+    3,
+  ),
+  WeightNorm(
+    Conv((3,), 2 => 2),                 # 14 parameters
+    3×2×1 Array{Float32,...},           # 6 parameters
+    :weight,
+    3,
+  ),
+)                   # Total: 6 arrays, 31 parameters, 588 bytes.
+
+julia> Flux.remove_weight_norms(model)
+Chain(
+  Conv((3,), 1 => 2),                   # 8 parameters
+  Conv((3,), 2 => 2),                   # 14 parameters
+)                   # Total: 4 arrays, 22 parameters, 392 bytes.
+```
+"""
+remove_weight_norms(x) = fmap(reparametrize, x; exclude=l -> l isa WeightNorm)

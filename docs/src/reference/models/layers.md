@@ -126,6 +126,8 @@ AlphaDropout
 LayerNorm
 InstanceNorm
 GroupNorm
+WeightNorm
+Flux.remove_weight_norms
 Flux.normalise
 ```
 

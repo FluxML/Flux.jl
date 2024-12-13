@@ -2,6 +2,9 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
+## v0.15.3
+* Add `WeightNorm` normalization layer.
+
 ## v0.15.0  (December 2024)
 This release includes two **breaking changes**:
 - The recurrent layers have been thoroughly revised. See below and read the [documentation](https://fluxml.ai/Flux.jl/v0.15/guide/models/recurrence/) for details.

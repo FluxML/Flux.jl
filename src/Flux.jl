@@ -42,7 +42,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
        SamePad, Conv, CrossCor, ConvTranspose, DepthwiseConv,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout,
-       LayerNorm, BatchNorm, InstanceNorm, GroupNorm,
+       LayerNorm, BatchNorm, InstanceNorm, GroupNorm, WeightNorm,
        MultiHeadAttention,
        Upsample, PixelShuffle,
        fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
@@ -94,6 +94,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   siamese_contrastive_loss,
   squared_hinge_loss,
   tversky_loss,
+  remove_weight_norms,
 ))
 
 include("gradient.jl")
