@@ -185,7 +185,7 @@ These matching nested structures are at the core of how Flux works.
 <h3><img src="../../../assets/zygote-crop.png" width="40px"/>&nbsp;<a href="https://github.com/FluxML/Zygote.jl">Zygote.jl</a></h3>
 ```
 
-Flux's [`gradient`](@ref) function by default calls a companion packages called [Zygote](https://github.com/FluxML/Zygote.jl).
+Flux's [`gradient`](@ref Flux.gradient) function by default calls a companion packages called [Zygote](https://github.com/FluxML/Zygote.jl).
 Zygote performs source-to-source automatic differentiation, meaning that `gradient(f, x)`
 hooks into Julia's compiler to find out what operations `f` contains, and transforms this
 to produce code for computing `∂f/∂x`.
@@ -372,7 +372,7 @@ How does this `model3` differ from the `model1` we had before?
   Its contents is stored in a tuple, thus `model3.layers[1].weight` is an array.
 * Flux's layer [`Dense`](@ref Flux.Dense) has only minor differences from our `struct Layer`:
   - Like `struct Poly3{T}` above, it has type parameters for its fields -- the compiler does not know exactly what type `layer3s.W` will be, which costs speed.
-  - Its initialisation uses not `randn` (normal distribution) but [`glorot_uniform`](@ref) by default.
+  - Its initialisation uses not `randn` (normal distribution) but [`glorot_uniform`](@ref  Flux.glorot_uniform) by default.
   - It reshapes some inputs (to allow several batch dimensions), and produces more friendly errors on wrong-size input.
   - And it has some performance tricks: making sure element types match, and re-using some memory.
 * The function [`σ`](@ref NNlib.sigmoid) is calculated in a slightly better way,

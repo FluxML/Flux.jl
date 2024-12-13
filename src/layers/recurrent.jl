@@ -12,7 +12,7 @@ function scan(cell, x, state)
 end
 
 """
-    Recurrent(cell)
+    Recurrence(cell)
 
 Create a recurrent layer that processes entire sequences out
 of a recurrent `cell`, such as an [`RNNCell`](@ref), [`LSTMCell`](@ref), or [`GRUCell`](@ref),
@@ -52,7 +52,7 @@ stack(out, dims = 2)
 # Examples
 
 ```jldoctest
-julia> rnn = Recurrent(RNNCell(2 => 3))
+julia> rnn = Recurrence(RNNCell(2 => 3))
 
 julia> x = rand(Float32, 2, 3, 4); # in x len x batch_size
 
