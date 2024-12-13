@@ -166,3 +166,50 @@ opt_state = Flux.setup(AdamW(1e-3), model)
 g = gradient(m -> Flux.mse(m(x), y), model)[1]
 Flux.update!(opt_state, model, g)
 ```
+
+Finally, the [`Recurrence`](@ref) layer can be used wrap any recurrent cell to process the entire sequence at once. For instance, a type behaving the same as the `LSTM` layer can be defined as follows:
+
+```julia
+rnn = Recurrence(LSTMCell(2 => 3))   # similar to LSTM(2 => 3)
+x = rand(Float32, 2, 4, 3)
+y = rnn(x)
+```
+
+## Stacking recurrent layers
+
+Recurrent layers can be stacked to form a deeper model by simply chaining them together using the [`Chain`](@ref) layer. The output of a layer is fed as input to the next layer in the chain.
+For instance, a model with two LSTM layers can be defined as follows:
+
+```julia
+stacked_rnn = Chain(LSTM(3 => 5), Dropout(0.5), LSTM(5 => 5))
+x = rand(Float32, 3, 4)
+y = stacked_rnn(x)
+```
+
+If more fine grained control is needed, for instance to have a trainable initial hidden state, one can define a custom model as follows: 
+
+```julia
+struct StackedRNN{L,S}
+    layers::L
+    states0::S
+end
+
+Flux.@layer StackedRNN
+
+function StackedRNN(d::Int; num_layers::Int)
+    layers = [LSTM(d => d) for _ in 1:num_layers]
+    states0 = [Flux.initialstates(l) for l in layers]
+    return StackedRNN(layers, states0)
+end
+
+function (m::StackedRNN)(x)
+   for (layer, state0) in zip(rnn.layers, rnn.states0)
+       x = layer(x, state0) 
+   end
+   return x
+end
+
+rnn = StackedRNN(3; num_layers=2)
+x = rand(Float32, 3, 10)
+y = rnn(x)
+```
