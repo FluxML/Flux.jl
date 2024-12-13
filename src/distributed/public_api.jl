@@ -132,7 +132,7 @@ Backend Agnostic API to perform an allreduce operation on the given buffer `send
 workers.
 """
 function allreduce!(backend::AbstractFluxDistributedBackend, sendrecvbuf, op::F) where {F}
-    return __allreduce!(backend, sendrecvbuf, op, gpu_device())
+    return __allreduce!(backend, sendrecvbuf, op, get_device(sendrecvbuf))
 end
 
 function allreduce!(
