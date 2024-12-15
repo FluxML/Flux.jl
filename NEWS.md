@@ -2,10 +2,17 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
-## v0.15.3
-* Add `WeightNorm` normalization layer.
+## v0.16.0 (15 December 2025)
+This release has a single **breaking change**:
 
-## v0.15.0  (December 2024)
+- The recurrent cells `RNNCell`, `LSTMCell`, and `GRUCell` forward has been changed to 
+  $y_t, state_t = cell(x_t, state_{t-1})$. Previously, it was $state_t = cell(x_t, state_{t-1})$.
+
+Other highlights include:
+* Added `WeightNorm` normalization layer.
+* Added `Recurrence` layer, turning a recurrent layer into a layer processing the entire sequence at once.
+
+## v0.15.0  (5 December 2024)
 This release includes two **breaking changes**:
 - The recurrent layers have been thoroughly revised. See below and read the [documentation](https://fluxml.ai/Flux.jl/v0.15/guide/models/recurrence/) for details.
 - Flux now defines and exports its own gradient function. Consequently, using gradient in an unqualified manner (e.g., after `using Flux, Zygote`) could result in an ambiguity error.
