@@ -11,7 +11,7 @@ b = zeros(Float32, output_size)
 
 function rnn_cell(x, h)
     h = tanh.(Wxh * x .+ Whh * h .+ b)
-    return h
+    return h, h
 end
 
 seq_len = 3
@@ -23,9 +23,9 @@ h0 = zeros(Float32, output_size)
 y = []
 ht = h0
 for xt in x
-    ht = rnn_cell(xt, ht)
-    y = [y; [ht]]  # concatenate in non-mutating (AD friendly) way
-end</code></pre><p>Notice how the above is essentially a <code>Dense</code> layer that acts on two inputs, <code>xt</code> and <code>ht</code>.</p><p>The output at each time step, called the hidden state, is used as the input to the next time step and is also the output of the model. </p><p>There are various recurrent cells available in Flux, notably <code>RNNCell</code>, <code>LSTMCell</code> and <code>GRUCell</code>, which are documented in the <a href="../../../reference/models/layers/">layer reference</a>. The hand-written example above can be replaced with:</p><pre><code class="language-julia hljs">using Flux
+    yt, ht = rnn_cell(xt, ht)
+    y = [y; [yt]]  # concatenate in non-mutating (AD friendly) way
+end</code></pre><p>Notice how the above is essentially a <code>Dense</code> layer that acts on two inputs, <code>xt</code> and <code>ht</code>. The result of the forward pass at each time step, is a tuple contening the output <code>yt</code> and the updated state <code>ht</code>. The updated state is used as an input in next iteration. In the simple case of a vanilla RNN, the  output and the state are the same. In more complex cells, such as <code>LSTMCell</code>, the state can contain multiple arrays.</p><p>There are various recurrent cells available in Flux, notably <code>RNNCell</code>, <code>LSTMCell</code> and <code>GRUCell</code>, which are documented in the <a href="../../../reference/models/layers/">layer reference</a>. The hand-written example above can be replaced with:</p><pre><code class="language-julia hljs">using Flux
 
 output_size = 5
 input_size = 2
@@ -38,8 +38,8 @@ rnn_cell = Flux.RNNCell(input_size =&gt; output_size)
 y = []
 ht = h0
 for xt in x
-    ht = rnn_cell(xt, ht)
-    y = [y; [ht]]
+    yt, ht = rnn_cell(xt, ht)
+    y = [y; [yt]]
 end</code></pre><p>The entire output <code>y</code> or just the last output <code>y[end]</code> can be used for further processing, such as classification or regression. </p><h2 id="Using-a-cell-as-part-of-a-model"><a class="docs-heading-anchor" href="#Using-a-cell-as-part-of-a-model">Using a cell as part of a model</a><a id="Using-a-cell-as-part-of-a-model-1"></a><a class="docs-heading-anchor-permalink" href="#Using-a-cell-as-part-of-a-model" title="Permalink"></a></h2><p>Let&#39;s consider a simple model that is trained to predict a scalar quantity for each time step in a sequence. The model will have a single RNN cell, followed by a dense layer to produce the output. Since the <a href="../../../reference/models/layers/#Flux.RNNCell"><code>RNNCell</code></a> can deal with batches of data, we can define the model to accept an input where at each time step, the input is a matrix of size <code>(input_size, batch_size)</code>. </p><pre><code class="language-julia hljs">struct RecurrentCellModel{H,C,D}
     h0::H
     cell::C
@@ -47,7 +47,7 @@ end</code></pre><p>The entire output <code>y</code> or just the last output <cod
 end
 
 # we choose to not train the initial hidden state
-Flux.@layer RecurrentCellModel trainable=(cell,dense) 
+Flux.@layer RecurrentCellModel trainable=(cell, dense) 
 
 function RecurrentCellModel(input_size::Int, hidden_size::Int)
     return RecurrentCellModel(
@@ -60,8 +60,8 @@ function (m::RecurrentCellModel)(x)
     z = []
     ht = m.h0
     for xt in x
-        ht = m.cell(xt, ht)
-        z = [z; [ht]]
+        yt, ht = m.cell(xt, ht)
+        z = [z; [yt]]
     end
     z = stack(z, dims=2) # [hidden_size, seq_len, batch_size] or [hidden_size, seq_len]
     ŷ = m.dense(z)       # [1, seq_len, batch_size] or [1, seq_len]
@@ -70,7 +70,6 @@ end</code></pre><p>Notice that we stack the hidden states <code>z</code> to form
 
 function loss(model, x, y)
     ŷ = model(x)
-    y = stack(y, dims=2)
     return Flux.mse(ŷ, y)
 end
 
@@ -84,7 +83,7 @@ model = RecurrentCellModel(input_size, 5)
 opt_state = Flux.setup(AdamW(1e-3), model)
 
 # compute the gradient and update the model
-g = gradient(m -&gt; loss(m, x, y),model)[1]
+g = gradient(m -&gt; loss(m, x, y), model)[1]
 Flux.update!(opt_state, model, g)</code></pre><h2 id="Handling-the-whole-sequence-at-once"><a class="docs-heading-anchor" href="#Handling-the-whole-sequence-at-once">Handling the whole sequence at once</a><a id="Handling-the-whole-sequence-at-once-1"></a><a class="docs-heading-anchor-permalink" href="#Handling-the-whole-sequence-at-once" title="Permalink"></a></h2><p>In the above example, we processed the sequence one time step at a time using a recurrent cell. However, it is possible to process the entire sequence at once. This can be done by stacking the input data <code>x</code> to form a tensor of size <code>(input_size, seq_len)</code> or <code>(input_size, seq_len, batch_size)</code>.  One can then use the <a href="../../../reference/models/layers/#Flux.RNN"><code>RNN</code></a>, <a href="../../../reference/models/layers/#Flux.LSTM"><code>LSTM</code></a> or <a href="../../../reference/models/layers/#Flux.GRU"><code>GRU</code></a> layers to process the entire input tensor. </p><p>Let&#39;s consider the same example as above, but this time we use an <code>RNN</code> layer instead of an <code>RNNCell</code>:</p><pre><code class="language-julia hljs">struct RecurrentModel{H,C,D}
     h0::H
     rnn::C
@@ -140,4 +139,4 @@ end
 
 rnn = StackedRNN(3; num_layers=2)
 x = rand(Float32, 3, 10)
-y = rnn(x)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../training/training/">« Training</a><a class="docs-footer-nextpage" href="../../gpu/">GPU Support »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 13 December 2024 17:51">Friday 13 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+y = rnn(x)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../training/training/">« Training</a><a class="docs-footer-nextpage" href="../../gpu/">GPU Support »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Sunday 15 December 2024 14:07">Sunday 15 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
