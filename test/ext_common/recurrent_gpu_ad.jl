@@ -1,11 +1,9 @@
-out_from_state(state::Tuple) = state[1]
-out_from_state(state) = state
+cell_loss(cell, x, state) = mean(cell(x, state)[1])
 
 function recurrent_cell_loss(cell, seq, state)
     out = []
     for xt in seq
-        state = cell(xt, state)
-        yt  = out_from_state(state)
+        yt, state = cell(xt, state)
         out = vcat(out, [yt])
     end
     return mean(stack(out, dims = 2))
@@ -18,7 +16,8 @@ end
     h = zeros(Float32, d_out)
     # Single Step
     @test test_gradients(r, x[1], h; test_gpu=true, 
-            compare_finite_diff=false) broken = :rnncell_single ∈ BROKEN_TESTS
+            compare_finite_diff=false, 
+            loss=cell_loss) broken = :rnncell_single ∈ BROKEN_TESTS
     # Multiple Steps
     @test test_gradients(r, x, h; test_gpu=true, 
             compare_finite_diff=false, 
@@ -51,7 +50,7 @@ end
     c = zeros(Float32, d_out)
     # Single Step
     @test test_gradients(cell, x[1], (h, c); test_gpu=true, compare_finite_diff=false,
-        loss = (m, x, (h, c)) -> mean(m(x, (h, c))[1]))  broken = :lstmcell_single ∈ BROKEN_TESTS
+        loss = cell_loss)  broken = :lstmcell_single ∈ BROKEN_TESTS
     # Multiple Steps
     @test test_gradients(cell, x, (h, c); test_gpu=true, 
         compare_finite_diff = false, 
@@ -84,7 +83,9 @@ end
     r = GRUCell(d_in => d_out)
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
-    @test test_gradients(r, x[1], h; test_gpu=true, compare_finite_diff=false) broken = :grucell_single ∈ BROKEN_TESTS
+    @test test_gradients(r, x[1], h; test_gpu=true, 
+        compare_finite_diff=false, 
+        loss = cell_loss) broken = :grucell_single ∈ BROKEN_TESTS
     @test test_gradients(r, x, h; test_gpu=true, 
         compare_finite_diff = false, 
         loss = recurrent_cell_loss) broken = :grucell_multiple ∈ BROKEN_TESTS
@@ -116,7 +117,8 @@ end
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
     @test test_gradients(r, x[1], h; test_gpu=true, 
-        compare_finite_diff=false) broken = :gruv3cell_single ∈ BROKEN_TESTS
+        compare_finite_diff=false,
+        loss=cell_loss) broken = :gruv3cell_single ∈ BROKEN_TESTS
     @test test_gradients(r, x, h; test_gpu=true, 
         compare_finite_diff=false, 
         loss = recurrent_cell_loss) broken = :gruv3cell_multiple ∈ BROKEN_TESTS
