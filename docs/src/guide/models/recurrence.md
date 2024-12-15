@@ -109,6 +109,7 @@ using Optimisers: AdamW
 
 function loss(model, x, y)
     ŷ = model(x)
+    y = stack(y, dims=2)
     return Flux.mse(ŷ, y)
 end
 
