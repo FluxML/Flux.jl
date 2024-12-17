@@ -42,6 +42,9 @@ See also academic work [citing Flux](https://scholar.google.com/scholar?cites=97
 
 - [RobustNeuralNetworks.jl](https://github.com/acfr/RobustNeuralNetworks.jl) includes classes of neural networks that are constructed to naturally satisfy robustness constraints.
 
+### Recurrent neural networks
+
+- [RecurrentLayers.jl](https://github.com/MartinuzziFrancesco/RecurrentLayers.jl) offers a collection of novel recurrent neural networks.
 ---
 
 ## Tools closely associated with Flux
