@@ -202,7 +202,7 @@ function StackedRNN(d::Int; num_layers::Int)
     return StackedRNN(layers, states0)
 end
 
-function (m::StackedRNN)(x)
+function (rnn::StackedRNN)(x)
    for (layer, state0) in zip(rnn.layers, rnn.states0)
        x = layer(x, state0) 
    end
