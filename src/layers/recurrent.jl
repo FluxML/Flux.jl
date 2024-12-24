@@ -193,8 +193,8 @@ function Base.show(io::IO, m::RNNCell)
 end
 
 @doc raw"""
-    RNN(in => out, σ = tanh; init_kernel = glorot_uniform, 
-      init_recurrent_kernel = glorot_uniform, bias = true)
+    RNN(in => out, σ = tanh; return_state = false,
+      init_kernel = glorot_uniform, init_recurrent_kernel = glorot_uniform, bias = true)
 
 The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.  
@@ -212,6 +212,7 @@ See [`RNNCell`](@ref) for a layer that processes a single time step.
 
 - `in => out`: The input and output dimensions of the layer.
 - `σ`: The non-linearity to apply to the output. Default is `tanh`.
+- `return_state`: Option to return the last state together with the output. Default is `false`.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
 - `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
@@ -398,7 +399,7 @@ Base.show(io::IO, m::LSTMCell) =
 
 
 @doc raw"""
-    LSTM(in => out; init_kernel = glorot_uniform,
+    LSTM(in => out; return_state = false, init_kernel = glorot_uniform,
       init_recurrent_kernel = glorot_uniform, bias = true)
 
 [Long Short Term Memory](https://www.researchgate.net/publication/13853244_Long_Short-term_Memory)
@@ -422,6 +423,7 @@ See [`LSTMCell`](@ref) for a layer that processes a single time step.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
+- `return_state`: Option to return the last state together with the output. Default is `false`.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
 - `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
@@ -590,7 +592,7 @@ Base.show(io::IO, m::GRUCell) =
   print(io, "GRUCell(", size(m.Wi, 2), " => ", size(m.Wi, 1) ÷ 3, ")")
 
 @doc raw"""
-    GRU(in => out; init_kernel = glorot_uniform,
+    GRU(in => out; return_state = false, init_kernel = glorot_uniform,
       init_recurrent_kernel = glorot_uniform, bias = true)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v1) layer. Behaves like an
@@ -611,6 +613,7 @@ See [`GRUCell`](@ref) for a layer that processes a single time step.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
+- `return_state`: Option to return the last state together with the output. Default is `false`.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
 - `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
@@ -756,7 +759,7 @@ Base.show(io::IO, m::GRUv3Cell) =
 
 
 @doc raw"""
-    GRUv3(in => out; init_kernel = glorot_uniform,
+    GRUv3(in => out; return_state = false, init_kernel = glorot_uniform,
       init_recurrent_kernel = glorot_uniform, bias = true)
 
 [Gated Recurrent Unit](https://arxiv.org/abs/1406.1078v3) layer. Behaves like an
@@ -781,6 +784,7 @@ but only a less popular variant.
 # Arguments
 
 - `in => out`: The input and output dimensions of the layer.
+- `return_state`: Option to return the last state together with the output. Default is `false`.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
 - `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
