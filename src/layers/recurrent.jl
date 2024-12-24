@@ -4,7 +4,7 @@ function scan(cell, x, state)
     yt, state = cell(x_t, state)
     y = vcat(y, [yt])
   end
-  return stack(y, dims = 2)
+  return stack(y, dims = 2), state
 end
 
 """
@@ -260,7 +260,7 @@ Flux.@layer Model
 model = Model(RNN(32 => 64), zeros(Float32, 64))
 ```
 """
-struct RNN{M}
+struct RNN{S,M}
   cell::M
 end
 
@@ -268,18 +268,25 @@ end
 
 initialstates(rnn::RNN) = initialstates(rnn.cell)
 
-function RNN((in, out)::Pair, σ = tanh; cell_kwargs...)
+function RNN((in, out)::Pair, σ = tanh; return_state = false, cell_kwargs...)
   cell = RNNCell(in => out, σ; cell_kwargs...)
-  return RNN(cell)
+  return RNN{return_state, typeof(cell)}(cell)
 end
 
 (rnn::RNN)(x::AbstractArray) = rnn(x, initialstates(rnn))
 
-function (m::RNN)(x::AbstractArray, h)
+function (rnn::RNN{false})(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   # [x] = [in, L] or [in, L, B]
   # [h] = [out] or [out, B]
-  return scan(m.cell, x, h)
+  return first(scan(rnn.cell, x, h))
+end
+
+function (rnn::RNN{true})(x::AbstractArray, h)
+  @assert ndims(x) == 2 || ndims(x) == 3
+  # [x] = [in, L] or [in, L, B]
+  # [h] = [out] or [out, B]
+  return scan(rnn.cell, x, h)
 end
 
 function Base.show(io::IO, m::RNN)
@@ -452,7 +459,7 @@ h = model(x)
 size(h)  # out x len x batch_size
 ```
 """
-struct LSTM{M}
+struct LSTM{S,M}
   cell::M
 end
 
@@ -460,16 +467,21 @@ end
 
 initialstates(lstm::LSTM) = initialstates(lstm.cell)
 
-function LSTM((in, out)::Pair; cell_kwargs...)
+function LSTM((in, out)::Pair; return_state = false, cell_kwargs...)
   cell = LSTMCell(in => out; cell_kwargs...)
-  return LSTM(cell)
+  return LSTM{return_state, typeof(cell)}(cell)
 end
 
 (lstm::LSTM)(x::AbstractArray) = lstm(x, initialstates(lstm))
 
-function (m::LSTM)(x::AbstractArray, state0)
+function (lstm::LSTM{false})(x::AbstractArray, state0)
   @assert ndims(x) == 2 || ndims(x) == 3
-  return scan(m.cell, x, state0)
+  return first(scan(lstm.cell, x, state0))
+end
+
+function (lstm::LSTM{true})(x::AbstractArray, state0)
+  @assert ndims(x) == 2 || ndims(x) == 3
+  return scan(lstm.cell, x, state0)
 end
 
 function Base.show(io::IO, m::LSTM)
@@ -625,7 +637,7 @@ h0 = zeros(Float32, d_out)
 h = gru(x, h0)  # out x len x batch_size
 ```
 """
-struct GRU{M}
+struct GRU{S,M}
   cell::M
 end
 
@@ -633,16 +645,21 @@ end
 
 initialstates(gru::GRU) = initialstates(gru.cell)
 
-function GRU((in, out)::Pair; cell_kwargs...)
+function GRU((in, out)::Pair; return_state = false, cell_kwargs...)
   cell = GRUCell(in => out; cell_kwargs...)
-  return GRU(cell)
+  return GRU{return_state, typeof(cell)}(cell)
 end
 
 (gru::GRU)(x::AbstractArray) = gru(x, initialstates(gru))
 
-function (m::GRU)(x::AbstractArray, h)
+function (gru::GRU{false})(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
-  return scan(m.cell, x, h)
+  return first(scan(gru.cell, x, h))
+end
+
+function (gru::GRU{true})(x::AbstractArray, h)
+  @assert ndims(x) == 2 || ndims(x) == 3
+  return scan(gru.cell, x, h)
 end
 
 function Base.show(io::IO, m::GRU)
@@ -790,7 +807,7 @@ h0 = zeros(Float32, d_out)
 h = gruv3(x, h0)  # out x len x batch_size
 ```
 """
-struct GRUv3{M}
+struct GRUv3{S,M}
   cell::M
 end
 
@@ -798,16 +815,21 @@ end
 
 initialstates(gru::GRUv3) = initialstates(gru.cell)
 
-function GRUv3((in, out)::Pair; cell_kwargs...)
+function GRUv3((in, out)::Pair; return_state = false, cell_kwargs...)
   cell = GRUv3Cell(in => out; cell_kwargs...)
-  return GRUv3(cell)
+  return GRUv3{return_state, typeof(cell)}(cell)
 end
 
 (gru::GRUv3)(x::AbstractArray) = gru(x, initialstates(gru))
 
-function (m::GRUv3)(x::AbstractArray, h)
+function (gru::GRUv3{false})(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
-  return scan(m.cell, x, h)
+  return first(scan(gru.cell, x, h))
+end
+
+function (gru::GRUv3{true})(x::AbstractArray, h)
+  @assert ndims(x) == 2 || ndims(x) == 3
+  return scan(gru.cell, x, h)
 end
 
 function Base.show(io::IO, m::GRUv3)
