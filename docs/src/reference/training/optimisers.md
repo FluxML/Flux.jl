@@ -8,7 +8,7 @@ CollapsedDocStrings = true
 Any optimization rule from Optimisers.jl can be used with [`train!`](@ref Flux.Train.train!) and
 other training functions.
 
-For full details of how the new interface works, see the [Optimisers.jl documentation](https://fluxml.ai/Optimisers.jl/dev/).
+For full details of how the interface works, see the [Optimisers.jl documentation](https://fluxml.ai/Optimisers.jl/).
 
 
 ## Optimisers Reference
