@@ -58,7 +58,7 @@ julia> x = rand(Float32, 2, 3, 4); # in x len x batch_size
 julia> y = rnn(x); # out x len x batch_size
 ```
 """
-struct Recurrence{M}
+struct Recurrence{S,M}
   cell::M
 end
 
@@ -66,8 +66,19 @@ end
 
 initialstates(rnn::Recurrence) = initialstates(rnn.cell)
 
+function Recurrence(cell; return_state = false)
+  return Recurrence{return_state, typeof(cell)}(cell)
+end
+
 (rnn::Recurrence)(x::AbstractArray) = rnn(x, initialstates(rnn))
-(rnn::Recurrence)(x::AbstractArray, state) = scan(rnn.cell, x, state)
+
+function (rnn::Recurrence{false})(x::AbstractArray, state)
+  first(scan(rnn.cell, x, state))
+end
+
+function (rnn::Recurrence{true})(x::AbstractArray, state)
+  scan(rnn.cell, x, state)
+end
 
 # Vanilla RNN
 @doc raw"""

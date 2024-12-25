@@ -98,6 +98,16 @@ end
     @test y isa Array{Float32, 2}
     @test size(y) == (4, 3)
     test_gradients(model, x)
+
+    # testing return state
+    model = ModelRNN(RNN(2 => 4; return_state = true), zeros(Float32, 4))
+    x = rand(Float32, 2, 3, 1)
+    y, last_state = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+
+    @test last_state isa Matrix{Float32}
+    @test size(last_state) == (4, 1)
 end
 
 @testset "LSTMCell" begin
@@ -172,6 +182,18 @@ end
     # no initial state same as zero initial state
     h1 = lstm(x, (zeros(Float32, 4), zeros(Float32, 4)))
     @test h ≈ h1
+
+    # testing return state
+    model = ModelLSTM(LSTM(2 => 4; return_state = true), zeros(Float32, 4), zeros(Float32, 4))
+    x = rand(Float32, 2, 3, 1)
+    y, last_state = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+
+    @test last_state[1] isa Matrix{Float32}
+    @test last_state[2] isa Matrix{Float32}
+    @test size(last_state[1]) == (4, 1)
+    @test size(last_state[2]) == (4, 1)
 end
 
 @testset "GRUCell" begin
@@ -236,6 +258,16 @@ end
     gru = GRU(2 => 4, bias=false)
     @test length(Flux.trainables(gru)) == 2
     test_gradients(gru, x)
+
+    # testing return state
+    model = ModelGRU(GRU(2 => 4; return_state = true), zeros(Float32, 4))
+    x = rand(Float32, 2, 3, 1)
+    y, last_state = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+
+    @test last_state isa Matrix{Float32}
+    @test size(last_state) == (4, 1)
 end
 
 @testset "GRUv3Cell" begin 
@@ -289,13 +321,36 @@ end
     
     # no initial state same as zero initial state
     @test gru(x) ≈ gru(x, zeros(Float32, 4))
+
+    # testing return state
+    model = ModelGRUv3(GRUv3(2 => 4; return_state = true), zeros(Float32, 4))
+    x = rand(Float32, 2, 3, 1)
+    y, last_state = model(x)
+    @test y isa Array{Float32, 3}
+    @test size(y) == (4, 3, 1)
+
+    @test last_state isa Matrix{Float32}
+    @test size(last_state) == (4, 1)
 end
 
 @testset "Recurrence" begin
     x = rand(Float32, 2, 3, 4)
-    for rnn in [RNN(2 => 3), LSTM(2 => 3), GRU(2 => 3)]
+    for rnn in [RNN(2 => 3), LSTM(2 => 3), GRU(2 => 3), GRUv3(2 => 3)]
         cell = rnn.cell
         rec = Recurrence(cell)
         @test rec(x) ≈ rnn(x)
+    end
+
+    for rnn in [RNN(2 => 3; return_state = true), LSTM(2 => 3; return_state = true),
+            GRU(2 => 3; return_state = true), GRUv3(2 => 3; return_state = true)]
+        cell = rnn.cell
+        rec = Recurrence(cell; return_state = true)
+        @test rec(x)[1] ≈ rnn(x)[1]
+        if !(typeof(rnn) <: LSTM)
+            @test rec(x)[2] ≈ rnn(x)[2]
+        else
+            @test rec(x)[2][1] ≈ rnn(x)[2][1]
+            @test rec(x)[2][2] ≈ rnn(x)[2][2]
+        end
     end
 end
