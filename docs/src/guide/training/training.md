@@ -337,6 +337,39 @@ opt_state = Flux.setup(Adam(0.02), bimodel)
 Flux.adjust!(opt_state.layers.enc, 0.03)
 ```
 
+
+## Scheduling Optimisers
+
+In practice, it is fairly common to schedule the learning rate of an optimiser to obtain faster convergence. There are a variety of popular scheduling policies, and you can find implementations of them in [ParameterSchedulers.jl](http://fluxml.ai/ParameterSchedulers.jl/stable). The documentation for ParameterSchedulers.jl provides a more detailed overview of the different scheduling policies, and how to use them with Flux optimisers. Below, we provide a brief snippet illustrating a [cosine annealing](https://arxiv.org/pdf/1608.03983.pdf) schedule with a momentum optimiser.
+
+First, we import ParameterSchedulers.jl and initialize a cosine annealing schedule to vary the learning rate between `1e-4` and `1e-2` every 10 epochs. We also create a new [`Momentum`](@ref Optimisers.Momentum) optimiser.
+```julia
+using ParameterSchedulers
+
+opt_state = Flux.setup(Momentum(), model)
+schedule = Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10)
+for (eta, epoch) in zip(schedule, 1:100)
+  Flux.adjust!(opt_state, eta)
+  # your training code here
+end
+```
+`schedule` can also be indexed (e.g. `schedule(100)`) or iterated like any iterator in Julia.
+
+ParameterSchedulers.jl schedules are stateless (they don't store their iteration state). If you want a _stateful_ schedule, you can use `ParameterSchedulers.Stateful`:
+```julia
+using ParameterSchedulers: Stateful, next!
+
+schedule = Stateful(Cos(λ0 = 1e-4, λ1 = 1e-2, period = 10))
+for epoch in 1:100
+  Flux.adjust!(opt_state, next!(schedule))
+  # your training code here
+end
+```
+
+Finally, a scheduling function can be incorporated into the optimser's state, advanced at each gradient update step, and possibly passed to the `train!` function. See [this section](https://fluxml.ai/ParameterSchedulers.jl/stable/tutorials/optimizers/#Working-with-Flux-optimizers) of ParameterSchedulers.jl documentation for more details.
+
+ParameterSchedulers.jl allows for many more scheduling policies including arbitrary functions, looping any function with a given period, or sequences of many schedules. See the [ParameterSchedulers.jl documentation](https://fluxml.ai/ParameterSchedulers.jl/stable) for more info.
+
 ## Freezing layer parameters
 
 To completely disable training of some part of the model, use [`freeze!`](@ref Flux.freeze!).
