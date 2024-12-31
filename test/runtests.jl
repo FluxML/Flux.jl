@@ -158,6 +158,7 @@ end
   end
 
   if get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
+    Pkg.add("Enzyme")
     @testset "Enzyme" begin
       import Enzyme
       include("ext_enzyme/enzyme.jl")
