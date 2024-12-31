@@ -60,7 +60,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   # from Train
   setup, train!,
   # from Optimsers.jl
-  destructure, freeze!, thaw!, adjust!, trainables, update!, trainable,
+  freeze!, thaw!, adjust!, update!, trainable,
   # from Zygote.jl
   hessian, diaghessian, jacobian, withjacobian, pullback,
   # AD functions
