@@ -157,7 +157,7 @@ end
     @info "Skipping Distributed tests, set FLUX_TEST_DISTRIBUTED_MPI or FLUX_TEST_DISTRIBUTED_NCCL=true to run them."
   end
 
-  if get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
+  if get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
     @testset "Enzyme" begin
       import Enzyme
       include("ext_enzyme/enzyme.jl")
