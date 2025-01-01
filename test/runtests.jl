@@ -3,6 +3,7 @@ using Flux: OneHotArray, OneHotMatrix, OneHotVector
 using Test
 using Random, Statistics, LinearAlgebra
 using IterTools: ncycle
+import Optimisers
 
 using Zygote
 const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
@@ -21,6 +22,12 @@ using Functors: fmapstructure_with_path
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 # ENV["FLUX_TEST_ENZYME"] = "false"
 
+const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
+if FLUX_TEST_ENZYME
+  Pkg.add("Enzyme")
+  using Enzyme: Enzyme
+end
+
 include("test_utils.jl") # for test_gradients
 
 Random.seed!(0)
@@ -28,11 +35,11 @@ Random.seed!(0)
 include("testsuite/normalization.jl")
 
 function flux_testsuite(dev)
-    @testset "Flux Test Suite" begin
-        @testset "Normalization" begin
-            normalization_testsuite(dev)
-        end
+  @testset "Flux Test Suite" begin
+    @testset "Normalization" begin
+      normalization_testsuite(dev)
     end
+  end
 end
 
 @testset verbose=true "Flux.jl" begin
@@ -157,9 +164,8 @@ end
     @info "Skipping Distributed tests, set FLUX_TEST_DISTRIBUTED_MPI or FLUX_TEST_DISTRIBUTED_NCCL=true to run them."
   end
 
-  if get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
+  if FLUX_TEST_ENZYME
     @testset "Enzyme" begin
-      import Enzyme
       include("ext_enzyme/enzyme.jl")
     end
   else

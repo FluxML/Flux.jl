@@ -19,6 +19,22 @@ function finitediff_withgradient(f, x...)
     return y, FiniteDifferences.grad(fdm, f, x...)
 end
 
+function enzyme_withgradient(f, x...)
+    args = []
+    for x in x
+        if x isa Number
+            push!(args, Enzyme.Active(x))
+        else
+            push!(args, Enzyme.Duplicated(x, Enzyme.make_zero(x)))
+        end
+    end
+    ad = Enzyme.set_runtime_activity(Enzyme.ReverseWithPrimal)
+    ret = Enzyme.autodiff(ad, Enzyme.Const(f), Enzyme.Active, args...)
+    g = ntuple(i -> x[i] isa Number ? ret[1][i] : args[i].dval, length(x))
+    return ret[2], g
+end
+
+
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b) do kp, x, y
         if x isa AbstractArray
@@ -37,12 +53,12 @@ function test_gradients(
             test_grad_f = true,
             test_grad_x = true,
             compare_finite_diff = true,
+            compare_enzyme = false,
             loss = (f, xs...) -> mean(f(xs...)),
             )
 
-    if !test_gpu && !compare_finite_diff
-        error("You should either compare finite diff vs CPU AD \
-               or CPU AD vs GPU AD.")
+    if !test_gpu && !compare_finite_diff && !compare_enzyme
+        error("You should either compare numerical gradients methods or CPU vs GPU.")
     end
 
     ## Let's make sure first that the forward pass works.
@@ -70,6 +86,12 @@ function test_gradients(
             check_equal_leaves(g, g_fd; rtol, atol)
         end
 
+        if compare_enzyme
+            y_ez, g_ez = enzyme_withgradient((xs...) -> loss(f, xs...), xs...)
+            @test y ≈ y_ez rtol=rtol atol=atol
+            check_equal_leaves(g, g_ez; rtol, atol)
+        end
+
         if test_gpu
             # Zygote gradient with respect to input on GPU.
             y_gpu, g_gpu = Zygote.withgradient((xs...) -> loss(f_gpu, xs...), xs_gpu...)
@@ -91,6 +113,12 @@ function test_gradients(
             g_fd = (re(g_fd[1]),)
             @test y ≈ y_fd rtol=rtol atol=atol
             check_equal_leaves(g, g_fd; rtol, atol)
+        end
+
+        if compare_enzyme
+            y_ez, g_ez = enzyme_withgradient(f -> loss(f, xs...), f)
+            @test y ≈ y_ez rtol=rtol atol=atol
+            check_equal_leaves(g, g_ez; rtol, atol)
         end
 
         if test_gpu

@@ -1,10 +1,3 @@
-using Flux
-# using Flux.Train
-import Optimisers
-
-using Test
-using Random
-import Enzyme
 
 function train_enzyme!(fn, model, args...; kwargs...)
   Flux.train!(fn, Enzyme.Duplicated(model, Enzyme.make_zero(model)), args...; kwargs...)
@@ -12,7 +5,7 @@ end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 
-  if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
+  if name == "Enzyme" && FLUX_TEST_ENZYME
     continue
   end
 
@@ -50,7 +43,7 @@ end
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
   # TODO reinstate Enzyme
   name == "Enzyme" && continue  
-  # if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
+  # if name == "Enzyme" && FLUX_TEST_ENZYME
   #   continue
   # end
 
