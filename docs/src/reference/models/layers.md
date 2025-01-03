@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # [Built-in Layer Types](@id man-layers)
 
 If you started at the beginning of the guide, then you have already met the
