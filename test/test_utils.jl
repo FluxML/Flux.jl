@@ -50,6 +50,7 @@ function test_gradients(
             xs...;
             rtol=1e-4, atol=1e-4,
             test_gpu = false,
+            test_reactant = false,
             test_grad_f = true,
             test_grad_x = true,
             compare_finite_diff = true,
@@ -71,6 +72,15 @@ function test_gradients(
         f_gpu = f |> gpu_dev
         l_gpu = loss(f_gpu, xs_gpu...)
         @test l_gpu isa Number
+    end
+
+    if test_reactant
+        reactant_dev = MLDataDevices.reactant_device(force=true)
+        cpu_dev = cpu_device()
+        xs_re = xs |> reactant_dev
+        f_re = f |> reactant_dev
+        l_re = Reactant.@jit loss(f_re, xs_re...)
+        @test l_re isa Reactant.ConcreteRNumber
     end
 
     if test_grad_x
@@ -98,6 +108,13 @@ function test_gradients(
             @test get_device(g_gpu) == get_device(xs_gpu)
             @test y_gpu ≈ y rtol=rtol atol=atol
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
+        end
+
+        if test_reactant
+            # Enzyme gradient with respect to input on Reactant.
+            y_re, g_re = Reactant.@jit enzyme_withgradient((xs...) -> loss(f_re, xs...), xs_re...)
+            @test y ≈ y_re rtol=rtol atol=atol
+            check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
         end
     end
 
@@ -127,6 +144,13 @@ function test_gradients(
             # @test get_device(g_gpu) == get_device(xs_gpu)
             @test y_gpu ≈ y rtol=rtol atol=atol
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
+        end
+
+        if test_reactant
+            # Enzyme gradient with respect to input on Reactant.
+            y_re, g_re = Reactant.@jit enzyme_withgradient(f -> loss(f, xs_re...), f_re)
+            @test y ≈ y_re rtol=rtol atol=atol
+            check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
         end
     end
     return true

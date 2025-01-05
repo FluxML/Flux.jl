@@ -13,6 +13,8 @@ using Pkg
 using FiniteDifferences: FiniteDifferences
 using Functors: fmapstructure_with_path
 
+using Reactant
+
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
