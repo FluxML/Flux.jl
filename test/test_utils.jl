@@ -37,6 +37,7 @@ end
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b) do kp, x, y
+        # @show kp
         if x isa AbstractArray
             @test x ≈ y rtol=rtol atol=atol
         elseif x isa Number
@@ -45,22 +46,28 @@ function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     end
 end
 
+# By default, this computes the gradients on cpu using the default AD (Zygote) 
+# and compares them with finite differences.
+# Changing the arguments, you can assume the cpu Zygote gradients as the ground truth 
+# and test other scenarios.
 function test_gradients(
             f, 
             xs...;
             rtol=1e-4, atol=1e-4,
             test_gpu = false,
             test_reactant = false,
+            test_enzyme = false,
             test_grad_f = true,
             test_grad_x = true,
             compare_finite_diff = true,
-            compare_enzyme = false,
             loss = (f, xs...) -> mean(f(xs...)),
             )
 
-    if !test_gpu && !compare_finite_diff && !compare_enzyme && !test_reactant
+    if !test_gpu && !compare_finite_diff && !test_enzyme && !test_reactant
         error("You should either compare numerical gradients methods or CPU vs GPU.")
     end
+
+    Flux.trainmode!(f) # for layers like BatchNorm
 
     ## Let's make sure first that the forward pass works.
     l = loss(f, xs...)
@@ -79,8 +86,7 @@ function test_gradients(
         cpu_dev = cpu_device()
         xs_re = xs |> reactant_dev
         f_re = f |> reactant_dev
-        l_re = Reactant.@jit loss(f_re, xs_re...)
-        @test l_re isa Reactant.ConcreteRNumber
+        l_re = reactant_loss(loss, f_re, xs_re...)
         @test l ≈ l_re rtol=rtol atol=atol
     end
 
@@ -97,7 +103,7 @@ function test_gradients(
             check_equal_leaves(g, g_fd; rtol, atol)
         end
 
-        if compare_enzyme
+        if test_enzyme
             y_ez, g_ez = enzyme_withgradient((xs...) -> loss(f, xs...), xs...)
             @test y ≈ y_ez rtol=rtol atol=atol
             check_equal_leaves(g, g_ez; rtol, atol)
@@ -113,7 +119,7 @@ function test_gradients(
 
         if test_reactant
             # Enzyme gradient with respect to input on Reactant.
-            y_re, g_re = Reactant.@jit enzyme_withgradient((xs...) -> loss(f_re, xs...), xs_re...)
+            y_re, g_re = reactant_withgradient((xs...) -> loss(f_re, xs...), xs_re...)
             @test y ≈ y_re rtol=rtol atol=atol
             check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
         end
@@ -133,7 +139,7 @@ function test_gradients(
             check_equal_leaves(g, g_fd; rtol, atol)
         end
 
-        if compare_enzyme
+        if test_enzyme
             y_ez, g_ez = enzyme_withgradient(f -> loss(f, xs...), f)
             @test y ≈ y_ez rtol=rtol atol=atol
             check_equal_leaves(g, g_ez; rtol, atol)
@@ -149,7 +155,7 @@ function test_gradients(
 
         if test_reactant
             # Enzyme gradient with respect to input on Reactant.
-            y_re, g_re = Reactant.@jit enzyme_withgradient(f -> loss(f, xs_re...), f_re)
+            y_re, g_re = reactant_withgradient(f -> loss(f, xs_re...), f_re)
             @test y ≈ y_re rtol=rtol atol=atol
             check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
         end

@@ -13,8 +13,6 @@ using Pkg
 using FiniteDifferences: FiniteDifferences
 using Functors: fmapstructure_with_path
 
-using Reactant
-
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
@@ -23,18 +21,18 @@ using Reactant
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 # ENV["FLUX_TEST_ENZYME"] = "false"
+# ENV["FLUX_TEST_REACTANT"] = "false"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
-const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT", VERSION < v"1.12-" && !Sys.iswindows() ? "true" : "false") == "true"
+
+# Reactant will automatically select a GPU backend, if available, and TPU backend, if available. 
+# Otherwise it will fall back to CPU.
+const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT", 
+  VERSION < v"1.12-" && !Sys.iswindows() ? "true" : "false") == "true"
 
 if FLUX_TEST_ENZYME || FLUX_TEST_REACTANT
   Pkg.add("Enzyme")
   using Enzyme: Enzyme
-end
-
-if FLUX_TEST_REACTANT
-  Pkg.add("Reactant")
-  using Reactant: Reactant
 end
 
 include("test_utils.jl") # for test_gradients
@@ -182,7 +180,15 @@ end
   end
 
   if FLUX_TEST_REACTANT
+    ## This Pg.add has to be done after Pkg.add("CUDA") otherwise CUDA.jl
+    ## will not be functional and complain with: 
+    # ┌ Error: CUDA.jl could not find an appropriate CUDA runtime to use.
+    # │ 
+    # │ CUDA.jl's JLLs were precompiled without an NVIDIA driver present.
+    Pkg.add("Reactant")
+    using Reactant: Reactant
     @testset "Reactant" begin
+      include("ext_reactant/test_utils_reactant.jl")
       include("ext_reactant/reactant.jl")
     end
   else
