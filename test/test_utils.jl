@@ -37,6 +37,7 @@ end
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b) do kp, x, y
+        # @show kp
         if x isa AbstractArray
             @test x ≈ y rtol=rtol atol=atol
         elseif x isa Number
@@ -65,6 +66,8 @@ function test_gradients(
     if !test_gpu && !compare_finite_diff && !test_enzyme && !test_reactant
         error("You should either compare numerical gradients methods or CPU vs GPU.")
     end
+
+    Flux.trainmode!(f) # for layers like BatchNorm
 
     ## Let's make sure first that the forward pass works.
     l = loss(f, xs...)

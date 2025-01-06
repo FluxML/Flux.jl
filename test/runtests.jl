@@ -35,11 +35,6 @@ if FLUX_TEST_ENZYME || FLUX_TEST_REACTANT
   using Enzyme: Enzyme
 end
 
-if FLUX_TEST_REACTANT
-  Pkg.add("Reactant")
-  using Reactant: Reactant
-end
-
 include("test_utils.jl") # for test_gradients
 
 Random.seed!(0)
@@ -185,6 +180,13 @@ end
   end
 
   if FLUX_TEST_REACTANT
+    ## This Pg.add has to be done after Pkg.add("CUDA") otherwise CUDA.jl
+    ## will not be functional and complain with: 
+    # ┌ Error: CUDA.jl could not find an appropriate CUDA runtime to use.
+    # │ 
+    # │ CUDA.jl's JLLs were precompiled without an NVIDIA driver present.
+    Pkg.add("Reactant")
+    using Reactant: Reactant
     @testset "Reactant" begin
       include("ext_reactant/test_utils_reactant.jl")
       include("ext_reactant/reactant.jl")
