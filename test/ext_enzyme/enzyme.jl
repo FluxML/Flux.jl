@@ -25,7 +25,7 @@ using Enzyme: Enzyme, Duplicated, Const, Active
     for (model, x, name) in models_xs
         @testset "Enzyme grad check $name" begin
             println("testing $name with Enzyme")
-            test_gradients(model, x; loss, compare_finite_diff=false, compare_enzyme=true)
+            test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
         end
     end
 end
@@ -46,7 +46,7 @@ end
     for (model, x, name) in models_xs
         @testset "check grad $name" begin
             println("testing $name")
-            test_gradients(model, x; loss, compare_finite_diff=false, compare_enzyme=true)
+            test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
         end
     end
 end
