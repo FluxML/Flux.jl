@@ -21,7 +21,7 @@ using Functors: fmapstructure_with_path
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 # ENV["FLUX_TEST_ENZYME"] = "false"
-ENV["FLUX_TEST_REACTANT"] = "false"
+# ENV["FLUX_TEST_REACTANT"] = "false"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
 
