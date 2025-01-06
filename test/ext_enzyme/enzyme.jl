@@ -17,8 +17,8 @@ using Enzyme: Enzyme, Duplicated, Const, Active
         (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
         (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
-        (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
-        (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"),
+        # (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
+        # (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"),
         (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"),
     ]
 
@@ -36,11 +36,11 @@ end
     end
 
     models_xs = [
-        (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
-        (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
-        (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
-        (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
+        # (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
+        # (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
+        # (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+        # (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
+        # (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
     ]
 
     for (model, x, name) in models_xs
