@@ -114,7 +114,7 @@ function test_gradients(
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
         end
 
-        if compare_reactant
+        if test_reactant
             # Enzyme gradient with respect to input on Reactant.
             y_re, g_re = reactant_withgradient((xs...) -> loss(f_re, xs...), xs_re...)
             @test y ≈ y_re rtol=rtol atol=atol
@@ -150,7 +150,7 @@ function test_gradients(
             check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
         end
 
-        if compare_reactant
+        if test_reactant
             # Enzyme gradient with respect to input on Reactant.
             y_re, g_re = reactant_withgradient(f -> loss(f, xs_re...), f_re)
             @test y ≈ y_re rtol=rtol atol=atol
