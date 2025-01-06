@@ -15,6 +15,7 @@ steps:
       FLUX_TEST_CUDA: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
+      FLUX_TEST_REACTANT: "true"
     timeout_in_minutes: 60
 
   - label: "Metal - Julia 1"
@@ -37,6 +38,7 @@ steps:
       FLUX_TEST_METAL: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
+      FLUX_TEST_REACTANT: "true"
 
   - label: "AMDGPU - Julia 1"
     plugins:
@@ -59,6 +61,7 @@ steps:
       FLUX_TEST_AMDGPU: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
+      FLUX_TEST_REACTANT: "false"
       JULIA_NUM_THREADS: 4
 
 env:

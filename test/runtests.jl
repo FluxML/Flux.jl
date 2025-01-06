@@ -25,9 +25,16 @@ using Reactant
 # ENV["FLUX_TEST_ENZYME"] = "false"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
-if FLUX_TEST_ENZYME
+const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT", VERSION < v"1.12-" && !Sys.iswindows() ? "true" : "false") == "true"
+
+if FLUX_TEST_ENZYME || FLUX_TEST_REACTANT
   Pkg.add("Enzyme")
   using Enzyme: Enzyme
+end
+
+if FLUX_TEST_REACTANT
+  Pkg.add("Reactant")
+  using Reactant: Reactant
 end
 
 include("test_utils.jl") # for test_gradients
@@ -172,6 +179,14 @@ end
     end
   else
     @info "Skipping Enzyme tests, set FLUX_TEST_ENZYME=true to run them."
+  end
+
+  if FLUX_TEST_REACTANT
+    @testset "Reactant" begin
+      include("ext_reactant/reactant.jl")
+    end
+  else
+    @info "Skipping Reactant tests, set FLUX_TEST_REACTANT=true to run them."
   end
 
 end

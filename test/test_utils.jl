@@ -58,7 +58,7 @@ function test_gradients(
             loss = (f, xs...) -> mean(f(xs...)),
             )
 
-    if !test_gpu && !compare_finite_diff && !compare_enzyme
+    if !test_gpu && !compare_finite_diff && !compare_enzyme && !test_reactant
         error("You should either compare numerical gradients methods or CPU vs GPU.")
     end
 
@@ -81,6 +81,7 @@ function test_gradients(
         f_re = f |> reactant_dev
         l_re = Reactant.@jit loss(f_re, xs_re...)
         @test l_re isa Reactant.ConcreteRNumber
+        @test l ≈ l_re rtol=rtol atol=atol
     end
 
     if test_grad_x
