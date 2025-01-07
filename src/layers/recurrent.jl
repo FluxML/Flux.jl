@@ -239,7 +239,8 @@ The arguments of the forward pass are:
        If given, it is a vector of size `out` or a matrix of size `out x batch_size`.
        If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
-Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
+Returns all new hidden states `h_t` as an array of size `out x len x batch_size`. When `return_state = true` it returns
+a tuple of the hidden stats `h_t` and the last state of the iteration.
 
 # Examples
 
@@ -285,6 +286,10 @@ function RNN((in, out)::Pair, σ = tanh; return_state = false, cell_kwargs...)
   return RNN{return_state, typeof(cell)}(cell)
 end
 
+function RNN(cell::RNNCell; return_state::Bool=false)
+  RNN{return_state, typeof(cell)}(cell)
+end
+
 (rnn::RNN)(x::AbstractArray) = rnn(x, initialstates(rnn))
 
 function (rnn::RNN{false})(x::AbstractArray, h)
@@ -299,6 +304,12 @@ function (rnn::RNN{true})(x::AbstractArray, h)
   # [x] = [in, L] or [in, L, B]
   # [h] = [out] or [out, B]
   return scan(rnn.cell, x, h)
+end
+
+function Functors.functor(rnn::RNN{S}) where {S}
+  params = (cell = rnn.cell,)
+  reconstruct = p -> RNN{S, typeof(p.cell)}(p.cell)
+  return params, reconstruct
 end
 
 function Base.show(io::IO, m::RNN)
@@ -450,7 +461,8 @@ The arguments of the forward pass are:
     They should be vectors of size `out` or matrices of size `out x batch_size`.
     If not provided, they are assumed to be vectors of zeros, initialized by [`initialstates`](@ref).
 
-Returns all new hidden states `h_t` as an array of size `out x len` or `out x len x batch_size`.
+Returns all new hidden states `h_t` as an array of size `out x len` or `out x len x batch_size`. When `return_state = true` it returns
+a tuple of the hidden stats `h_t` and the last state of the iteration.
 
 # Examples
 
@@ -485,6 +497,10 @@ function LSTM((in, out)::Pair; return_state = false, cell_kwargs...)
   return LSTM{return_state, typeof(cell)}(cell)
 end
 
+function LSTM(cell::LSTMCell; return_state::Bool=false)
+  LSTM{return_state, typeof(cell)}(cell)
+end
+
 (lstm::LSTM)(x::AbstractArray) = lstm(x, initialstates(lstm))
 
 function (lstm::LSTM{false})(x::AbstractArray, state0)
@@ -495,6 +511,12 @@ end
 function (lstm::LSTM{true})(x::AbstractArray, state0)
   @assert ndims(x) == 2 || ndims(x) == 3
   return scan(lstm.cell, x, state0)
+end
+
+function Functors.functor(lstm::LSTM{S}) where {S}
+  params = (cell = lstm.cell,)
+  reconstruct = p -> LSTM{S, typeof(p.cell)}(p.cell)
+  return params, reconstruct
 end
 
 function Base.show(io::IO, m::LSTM)
@@ -639,7 +661,8 @@ The arguments of the forward pass are:
 - `h`: The initial hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
        If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
-Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
+Returns all new hidden states `h_t` as an array of size `out x len x batch_size`. When `return_state = true` it returns
+a tuple of the hidden stats `h_t` and the last state of the iteration.
 
 # Examples
 
@@ -664,6 +687,10 @@ function GRU((in, out)::Pair; return_state = false, cell_kwargs...)
   return GRU{return_state, typeof(cell)}(cell)
 end
 
+function GRU(cell::GRUCell; return_state::Bool=false)
+  GRU{return_state, typeof(cell)}(cell)
+end
+
 (gru::GRU)(x::AbstractArray) = gru(x, initialstates(gru))
 
 function (gru::GRU{false})(x::AbstractArray, h)
@@ -674,6 +701,12 @@ end
 function (gru::GRU{true})(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   return scan(gru.cell, x, h)
+end
+
+function Functors.functor(gru::GRU{S}) where {S}
+  params = (cell = gru.cell,)
+  reconstruct = p -> GRU{S, typeof(p.cell)}(p.cell)
+  return params, reconstruct
 end
 
 function Base.show(io::IO, m::GRU)
@@ -810,7 +843,8 @@ The arguments of the forward pass are:
 - `h`: The initial hidden state of the GRU. It should be a vector of size `out` or a matrix of size `out x batch_size`.
        If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
-Returns all new hidden states `h_t` as an array of size `out x len x batch_size`.
+Returns all new hidden states `h_t` as an array of size `out x len x batch_size`. When `return_state = true` it returns
+a tuple of the hidden stats `h_t` and the last state of the iteration.
 
 # Examples
 
@@ -835,6 +869,10 @@ function GRUv3((in, out)::Pair; return_state = false, cell_kwargs...)
   return GRUv3{return_state, typeof(cell)}(cell)
 end
 
+function GRUv3(cell::GRUv3Cell; return_state::Bool=false)
+  GRUv3{return_state, typeof(cell)}(cell)
+end
+
 (gru::GRUv3)(x::AbstractArray) = gru(x, initialstates(gru))
 
 function (gru::GRUv3{false})(x::AbstractArray, h)
@@ -845,6 +883,12 @@ end
 function (gru::GRUv3{true})(x::AbstractArray, h)
   @assert ndims(x) == 2 || ndims(x) == 3
   return scan(gru.cell, x, h)
+end
+
+function Functors.functor(gru::GRUv3{S}) where {S}
+  params = (cell = gru.cell,)
+  reconstruct = p -> GRUv3{S, typeof(p.cell)}(p.cell)
+  return params, reconstruct
 end
 
 function Base.show(io::IO, m::GRUv3)
