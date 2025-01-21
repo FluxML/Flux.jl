@@ -106,7 +106,7 @@ end
   # Trivial functions
   @test gradient(x -> sum(abs, gpu(x)), a)[1] isa Matrix
   @test gradient(x -> sum(gpu(x)), a)[1] isa Matrix
-  @test_broken gradient(x -> sum(gpu(x)), a')[1] isa Matrix  # sum(::Adjoint{T,CuArray}) makes a Fill
+  @test gradient(x -> sum(gpu(x)), a')[1] isa Matrix  # sum(::Adjoint{T,CuArray}) makes a Fill
   @test gradient(x -> sum(abs, cpu(x)), ca)[1] isa CuArray
   # This test should really not go through indirections and pull out Fills for efficiency
   # but we forcefully materialise. TODO: remove materialising CuArray here

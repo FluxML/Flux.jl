@@ -17,7 +17,7 @@ function ChainRulesCore.rrule(
 )
     y, μ_saved, ν_saved = _amdgpu_batchnorm(x, γ, β; μ, σ², ϵ, within_grad)
     function _batchnorm_pullback(Δ)
-        dx, dγ, dβ = AMDGPU.MIOpen.∇batchnorm(Δ, x, γ, β, μ_saved, ν_saved)
+        dx, dγ, dβ = AMDGPU.MIOpen.∇batchnorm(unthunk(Δ), x, γ, β, μ_saved, ν_saved)
         (NoTangent(), dx, dγ, dβ)
     end
     y, _batchnorm_pullback
