@@ -226,7 +226,7 @@ julia> Flux.DataLoader((x = ones(2,10), y=2:11) |> gpu, batchsize=3)
     it will not work on (say) a tuple of `DataLoader`s.
 """
 function gpu(d::MLUtils.DataLoader)
-  MLUtils.DataLoader(MLUtils.mapobs(gpu, d.data),
+  MLUtils.DataLoader(MLUtils.mapobs(gpu, d.data);
     d.batchsize,
     d.buffer,
     d.partial,
@@ -238,7 +238,7 @@ function gpu(d::MLUtils.DataLoader)
 end
 
 function cpu(d::MLUtils.DataLoader)
-  MLUtils.DataLoader(MLUtils.mapobs(cpu, d.data),
+  MLUtils.DataLoader(MLUtils.mapobs(cpu, d.data);
     d.batchsize,
     d.buffer,
     d.partial,
