@@ -162,10 +162,6 @@ function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity
             bias = true) where N
     
   weight = convfilter(k, ch; init, groups)
-  shape = (k..., ch.first÷groups, ch.second)
-  if size(weight) != shape
-    error("Weight shape mismatch: expected $(shape), got $(size(weight))")
-  end
   Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
 
@@ -180,12 +176,21 @@ distribution.
 
 This is internally used by the [`Conv`](@ref) layer.
 """
+function _sizecheck(f, sz::Integer...)
+    W = f(sz...)
+    err = DimensionMismatch("Weight shape mismatch: expected $(sz), got $(size(W))")
+    size(W) == sz || throw(err)
+    W
+end
+
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
   cin, cout = ch
   @assert cin % groups == 0 "Input channel dimension must be divisible by groups."
   @assert cout % groups == 0 "Output channel dimension must be divisible by groups."
-  init(filter..., cin÷groups, cout)
+  shape = (filter..., cin ÷ groups, cout)
+  weight = _sizecheck(init, shape...)
+  weight
 end
 
 @layer Conv
