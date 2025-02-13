@@ -24,7 +24,7 @@ function DistributedUtils.__initialize(
         error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
     end
 
-    if amdgpu_devices !== missing && AMDGPU.functional()
+    if amdgpu_devices !== missing && functional(AMDGPUDevice)
         if amdgpu_devices === nothing
             set_device!(AMDGPUDevice, nothing, local_rank + 1)
         else
