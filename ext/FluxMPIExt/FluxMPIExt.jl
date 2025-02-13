@@ -3,7 +3,7 @@ module FluxMPIExt
 using Flux: MPIBackend, NCCLBackend, DistributedUtils,
             MPI_CUDA_AWARE, MPI_ROCM_AWARE
 using MPI: MPI
-using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_device!
+using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_device!, cpu_device
 
 
 function DistributedUtils.__initialize(
