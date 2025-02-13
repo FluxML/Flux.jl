@@ -162,6 +162,10 @@ function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity
             bias = true) where N
     
   weight = convfilter(k, ch; init, groups)
+  shape = (k..., ch.first÷groups, ch.second)
+  if size(weight) != shape
+    error("Weight shape mismatch: expected $(shape), got $(size(weight))")
+  end
   Conv(weight, bias, σ; stride, pad, dilation, groups)
 end
 
