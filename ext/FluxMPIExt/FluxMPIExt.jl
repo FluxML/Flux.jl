@@ -3,7 +3,7 @@ module FluxMPIExt
 using Flux: MPIBackend, NCCLBackend, DistributedUtils,
             MPI_CUDA_AWARE, MPI_ROCM_AWARE
 using MPI: MPI
-using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_device!
+using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_device!, cpu_device
 
 
 function DistributedUtils.__initialize(
@@ -24,7 +24,7 @@ function DistributedUtils.__initialize(
         error(lazy"CUDA devices are not functional and `force_cuda` is set to `true`. This is caused by backend: $(caller).")
     end
 
-    if amdgpu_devices !== missing && AMDGPU.functional()
+    if amdgpu_devices !== missing && functional(AMDGPUDevice)
         if amdgpu_devices === nothing
             set_device!(AMDGPUDevice, nothing, local_rank + 1)
         else
