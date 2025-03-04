@@ -87,6 +87,14 @@ end
     # Test that we cannot ask for non-integer multiplication factors
     @test_throws AssertionError Conv((2, 2), 3=>10, groups=2)
     @test_throws AssertionError Conv((2, 2), 2=>9, groups=2)
+
+    # Test that Conv throws a DimensionMismatch error when the initializer 
+    # produces a tensor with an incorrect shape.
+    @test_throws DimensionMismatch Conv(
+      (3, 3),
+      1 => 1;
+      init = (_...) -> rand(3, 3, 1),
+    )
   end
 end
 
