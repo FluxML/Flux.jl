@@ -176,12 +176,15 @@ distribution.
 
 This is internally used by the [`Conv`](@ref) layer.
 """
+
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
   cin, cout = ch
   @assert cin % groups == 0 "Input channel dimension must be divisible by groups."
   @assert cout % groups == 0 "Output channel dimension must be divisible by groups."
-  init(filter..., cin÷groups, cout)
+  shape = (filter..., cin ÷ groups, cout)
+  weight = _sizecheck(init, shape...)
+  weight
 end
 
 @layer Conv
@@ -501,6 +504,25 @@ function _conv_size_check(layer, x::AbstractArray)
     lazy" expects size(input, $d) == $n, but got ", summary(x))))
 end
 ChainRulesCore.@non_differentiable _conv_size_check(::Any, ::Any)
+
+"""
+    _sizecheck(f, sz::Integer...)
+
+Ensures that the output of `f(sz...)` has the expected shape `sz`.
+
+Constructs a tensor using the function `f` with the given size `sz` and verifies that its shape matches `sz`.  
+If the shape does not match, a `DimensionMismatch` error is thrown.
+
+This is internally used to validate weight initialization functions.
+"""
+function _sizecheck(f, sz::Integer...)
+  W = f(sz...)
+  size(W) == sz || throw(DimensionMismatch(
+      "Weight shape mismatch: expected $(sz), got $(size(W))",
+  ))
+  W
+end
+
 """
     AdaptiveMaxPool(out::NTuple)
 
