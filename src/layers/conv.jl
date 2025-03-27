@@ -515,7 +515,6 @@ If the shape does not match, a `DimensionMismatch` error is thrown.
 
 This is internally used to validate weight initialization functions.
 """
-
 function _sizecheck(f, sz::Integer...)
   W = f(sz...)
   size(W) == sz || throw(DimensionMismatch(
