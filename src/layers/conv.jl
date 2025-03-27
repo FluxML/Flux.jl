@@ -518,10 +518,9 @@ This is internally used to validate weight initialization functions.
 
 function _sizecheck(f, sz::Integer...)
   W = f(sz...)
-  err = DimensionMismatch(
+  size(W) == sz || throw(DimensionMismatch(
       "Weight shape mismatch: expected $(sz), got $(size(W))",
-  )
-  size(W) == sz || throw(err)
+  ))
   W
 end
 
