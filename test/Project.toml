@@ -22,6 +22,4 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 FiniteDifferences = "0.12"
-GPUArraysCore = "0.1"
-GPUCompiler = "0.27"
 Tracker = "0.2.33"
