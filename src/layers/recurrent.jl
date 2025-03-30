@@ -26,7 +26,7 @@ the initial hidden state. The output of the `cell` is considered to be:
 
 The input `x` should be an array of size `in x len` or `in x len x batch_size`, 
 where `in` is the input dimension of the cell, `len` is the sequence length, and `batch_size` is the batch size.
-The `state` should be a valid state for the recurrent cell. If not provided, it obtained by calling
+The `state` should be a valid state for the recurrent cell. If not provided, it is obtained by calling
 `Flux.initialstates(cell)`.
 
 The output is an array of size `out x len x batch_size`, where `out` is the output dimension of the cell.
@@ -107,7 +107,7 @@ See [`RNN`](@ref) for a layer that processes entire sequences.
 
     rnncell(x, [h])
 
-The arguments of the forward pass are:
+The arguments for the forward pass are:
 
 - `x`: The input to the RNN. It should be a vector of size `in` or a matrix of size `in x batch_size`.
 - `h`: The hidden state of the RNN. It should be a vector of size `out` or a matrix of size `out x batch_size`.
@@ -210,12 +210,12 @@ end
 The most basic recurrent layer. Essentially acts as a `Dense` layer, but with the
 output fed back into the input each time step.  
 
-In the forward pass computes
+The forward pass computes
 
 ```math
 h_t = \sigma(W_i x_t + W_h h_{t-1} + b)
 ```
-for all `len` steps `t` in the in input sequence. 
+for all `len` steps `t` in the input sequence. 
 
 See [`RNNCell`](@ref) for a layer that processes a single time step.
 
@@ -225,7 +225,7 @@ See [`RNNCell`](@ref) for a layer that processes a single time step.
 - `σ`: The non-linearity to apply to the output. Default is `tanh`.
 - `return_state`: Option to return the last state together with the output. Default is `false`.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
-- `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
+- `init_recurrent_kernel`: The initialization function to use for the hidden-to-hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -239,7 +239,7 @@ The arguments of the forward pass are:
        If given, it is a vector of size `out` or a matrix of size `out x batch_size`.
        If not provided, it is assumed to be a vector of zeros, initialized by [`initialstates`](@ref).
 
-Returns all new hidden states `h_t` as an array of size `out x len x batch_size`. When `return_state = true` it returns
+Returns all the new hidden states `h_t` as an array of size `out x len x batch_size`. When `return_state = true` it returns
 a tuple of the hidden stats `h_t` and the last state of the iteration.
 
 # Examples
@@ -330,11 +330,13 @@ Behaves like an RNN but generally exhibits a longer memory span over sequences.
 In the forward pass, computes
 
 ```math
-i_t = \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)
-f_t = \sigma(W_{xf} x_t + W_{hf} h_{t-1} + b_f)
-c_t = f_t \odot c_{t-1} + i_t \odot \tanh(W_{xc} x_t + W_{hc} h_{t-1} + b_c)
-o_t = \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o)
-h_t = o_t \odot \tanh(c_t)
+\begin{aligned}
+i_t &= \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)\\
+f_t &= \sigma(W_{xf} x_t + W_{hf} h_{t-1} + b_f)\\
+c_t &= f_t \odot c_{t-1} + i_t \odot \tanh(W_{xc} x_t + W_{hc} h_{t-1} + b_c)\\
+o_t &= \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o)\\
+h_t &= o_t \odot \tanh(c_t)
+\end{aligned}
 ```
 
 See also [`LSTM`](@ref) for a layer that processes entire sequences.
@@ -430,14 +432,16 @@ recurrent layer. Behaves like an RNN but generally exhibits a longer memory span
 See [this article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 for a good overview of the internals.
 
-In the forward pass, computes
+In the forward pass, it computes
 
 ```math
-i_t = \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)
-f_t = \sigma(W_{xf} x_t + W_{hf} h_{t-1} + b_f)
-c_t = f_t \odot c_{t-1} + i_t \odot \tanh(W_{xc} x_t + W_{hc} h_{t-1} + b_c)
-o_t = \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o)
-h_t = o_t \odot \tanh(c_t)
+\begin{aligned}
+i_t &= \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)\\
+f_t &= \sigma(W_{xf} x_t + W_{hf} h_{t-1} + b_f)\\
+c_t &= f_t \odot c_{t-1} + i_t \odot \tanh(W_{xc} x_t + W_{hc} h_{t-1} + b_c)\\
+o_t &= \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o)\\
+h_t &= o_t \odot \tanh(c_t)
+\end{aligned}
 ```
 for all `len` steps `t` in the input sequence.
 See [`LSTMCell`](@ref) for a layer that processes a single time step.
@@ -447,7 +451,7 @@ See [`LSTMCell`](@ref) for a layer that processes a single time step.
 - `in => out`: The input and output dimensions of the layer.
 - `return_state`: Option to return the last state together with the output. Default is `false`.
 - `init_kernel`: The initialization function to use for the input to hidden connection weights. Default is `glorot_uniform`.
-- `init_recurrent_kernel`: The initialization function to use for the hidden to hidden connection weights. Default is `glorot_uniform`.
+- `init_recurrent_kernel`: The initialization function to use for the hidden-to-hidden connection weights. Default is `glorot_uniform`.
 - `bias`: Whether to include a bias term initialized to zero. Default is `true`.
 
 # Forward
@@ -536,10 +540,12 @@ This implements the variant proposed in v1 of the referenced paper.
 In the forward pass, computes
 
 ```math
-r = \sigma(W_{xi} x + W_{hi} h + b_i)
-z = \sigma(W_{xz} x + W_{hz} h + b_z)
-h̃ = \tanh(W_{xh} x + r \odot W_{hh} h + b_h)
-h' = (1 - z) \odot h̃ + z \odot h
+\begin{aligned}
+r &= \sigma(W_{xi} x + W_{hi} h + b_i)\\
+z &= \sigma(W_{xz} x + W_{hz} h + b_z)\\
+h̃ &= \tanh(W_{xh} x + r \odot W_{hh} h + b_h)\\
+h' &= (1 - z) \odot h̃ + z \odot h
+\end{aligned}
 ```
 
 See also [`GRU`](@ref) for a layer that processes entire sequences.
@@ -635,10 +641,12 @@ the variant proposed in v1 of the referenced paper.
 The forward pass computes
 
 ```math
-r_t = \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)
-z_t = \sigma(W_{xz} x_t + W_{hz} h_{t-1} + b_z)
-h̃_t = \tanh(W_{xh} x_t + r_t \odot W_{hh} h_{t-1} + b_h)
-h_t = (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
+\begin{aligned}
+r_t &= \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)\\
+z_t &= \sigma(W_{xz} x_t + W_{hz} h_{t-1} + b_z)\\
+h̃_t &= \tanh(W_{xh} x_t + r_t \odot W_{hh} h_{t-1} + b_h)\\
+h_t &= (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
+\end{aligned}
 ```
 for all `len` steps `t` in the input sequence.
 See [`GRUCell`](@ref) for a layer that processes a single time step.
@@ -724,10 +732,12 @@ This implements the variant proposed in v3 of the referenced paper.
 
 The forward pass computes
 ```math
-r = \sigma(W_{xi} x + W_{hi} h + b_i)
-z = \sigma(W_{xz} x + W_{hz} h + b_z)
-h̃ = \tanh(W_{xh} x + W_{hh̃} (r \odot W_{hh} h) + b_h)
-h' = (1 - z) \odot h̃ + z \odot h
+\begin{aligned}
+r &= \sigma(W_{xi} x + W_{hi} h + b_i)\\
+z &= \sigma(W_{xz} x + W_{hz} h + b_z)\\
+h̃ &= \tanh(W_{xh} x + W_{hh̃} (r \odot W_{hh} h) + b_h)\\
+h' &= (1 - z) \odot h̃ + z \odot h
+\end{aligned}
 ```
 and returns `h'`. This is a single time step of the GRU.
 
@@ -813,10 +823,12 @@ the variant proposed in v3 of the referenced paper.
 The forward pass computes
 
 ```math
-r_t = \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)
-z_t = \sigma(W_{xz} x_t + W_{hz} h_{t-1} + b_z)
-h̃_t = \tanh(W_{xh} x_t + W_{hh̃} (r_t \odot  W_{hh} h_{t-1}) + b_h)
-h_t = (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
+\begin{aligned}
+r_t &= \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)\\
+z_t &= \sigma(W_{xz} x_t + W_{hz} h_{t-1} + b_z)\\
+h̃_t &= \tanh(W_{xh} x_t + W_{hh̃} (r_t \odot  W_{hh} h_{t-1}) + b_h)\\
+h_t &= (1 - z_t) \odot h̃_t + z_t \odot h_{t-1}
+\end{aligned}
 ```
 for all `len` steps `t` in the input sequence. 
 See [`GRUv3Cell`](@ref) for a layer that processes a single time step.
