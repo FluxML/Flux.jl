@@ -109,8 +109,6 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
   return dst
 end
 
-loadmodel!(dst::MaxPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
-
 """
     state(x)
 
