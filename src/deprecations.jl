@@ -168,3 +168,10 @@ end
 #   """
 # ))
 
+# In Flux <= v0.14, pooling layers contained no state.
+# These workarounds allow such pooling layers to be loaded in Flux >= v0.16. 
+# (https://github.com/FluxML/Flux.jl/pull/2598)
+loadmodel!(dst::MaxPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
+loadmodel!(dst::MeanPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
+loadmodel!(dst::AdaptiveMaxPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
+loadmodel!(dst::AdaptiveMeanPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
