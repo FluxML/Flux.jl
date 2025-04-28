@@ -33,7 +33,7 @@ end
         
         (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
 
-        
+        #
         # (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
