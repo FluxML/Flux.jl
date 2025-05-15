@@ -70,7 +70,7 @@ model2(x)
 ```
 
 !!! compat "Flux ≤ 0.13"
-    Old versions of Flux automatically loaded CUDA.jl to provide GPU support. Starting from Flux v0.14, it has to be  loaded separately. Julia's [package extensions](https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)) allow Flux to automatically load some GPU-specific code when needed.
+    Old versions of Flux automatically loaded CUDA.jl to provide GPU support. Starting from Flux v0.14, it has to be loaded separately. Julia's [package extensions](https://pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)) allow Flux to automatically load some GPU-specific code when needed.
 
 ## Other GPU packages for AMD & Apple
 
@@ -128,7 +128,7 @@ Flux also provides a more automatic way of choosing which GPU (or none) to use. 
 * If the package CUDA is loaded, and `CUDA.functional() === true`, then it behaves like `cu`.
 * If the package AMDGPU is loaded,  and `AMDGPU.functional() === true`, then it behaves like `roc`.
 * If the package Metal is loaded, and `Metal.functional() === true`, then it behaves like `mtl`.
-* If two differnet GPU packages are loaded, the first one takes priority.
+* If two different GPU packages are loaded, the first one takes priority.
 
 For the most part, this means that a script which says `model |> gpu` and `data |> gpu` will just work.
 It should always run, and if a GPU package is loaded (and finds the correct hardware) then that will be used.
@@ -353,7 +353,7 @@ julia> data = DistributedUtils.DistributedDataContainer(backend, x)
 Flux.DistributedUtils.DistributedDataContainer(Float32[0.23932439 0.33102947 … 0.66191036 0.75822026], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
 ```
 
-You have to wrap your model in `DistributedUtils.FluxDistributedModel` and synchronize it (broadcast accross all processes):
+You have to wrap your model in `DistributedUtils.FluxDistributedModel` and synchronize it (broadcast across all processes):
 ```julia-repl
 julia> model = DistributedUtils.synchronize!!(backend, DistributedUtils.FluxDistributedModel(model); root=0)
 Chain(

@@ -39,7 +39,7 @@ end
 ```
 
 Notice how the above is essentially a `Dense` layer that acts on two inputs, `xt` and `ht`.
-The result of the forward pass at each time step, is a tuple contening the output `yt` and the updated state `ht`. The updated state is used as an input in next iteration. In the simple case of a vanilla RNN, the 
+The result of the forward pass at each time step, is a tuple containing the output `yt` and the updated state `ht`. The updated state is used as an input in next iteration. In the simple case of a vanilla RNN, the 
 output and the state are the same. In more complex cells, such as `LSTMCell`, the state can contain multiple arrays.
 
 There are various recurrent cells available in Flux, notably `RNNCell`, `LSTMCell` and `GRUCell`, which are documented in the [layer reference](../../reference/models/layers.md). The hand-written example above can be replaced with:
@@ -100,7 +100,7 @@ function (m::RecurrentCellModel)(x)
 end
 ```
 
-Notice that we stack the hidden states `z` to form a tensor of size `(hidden_size, seq_len, batch_size)`. This can speedup the final classification, since we then process all the outputs at once with a single forward pass of the dense layer. 
+Notice that we stack the hidden states `z` to form a tensor of size `(hidden_size, seq_len, batch_size)`. This can speed up the final classification, since we then process all the outputs at once with a single forward pass of the dense layer. 
 
 Let's now define the training loop for this model:
 
