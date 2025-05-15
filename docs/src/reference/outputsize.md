@@ -5,7 +5,7 @@ CollapsedDocStrings = true
 # Shape Inference
 
 Flux has some tools to help generate models in an automated fashion, by inferring the size
-of arrays that layers will recieve, without doing any computation. 
+of arrays that layers will receive, without doing any computation. 
 This is especially useful for convolutional models, where the same [`Conv`](@ref) layer
 accepts any size of image, but the next layer may not. 
 

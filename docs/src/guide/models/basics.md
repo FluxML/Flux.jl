@@ -387,7 +387,7 @@ There are more details [later](@ref man-advanced), but the steps are invariably 
 1. Define a `struct` which will hold the parameters.
 2. Make it callable, to define how it uses them to transform the input `x`
 3. Define a constructor which initialises the parameters (if the default constructor doesn't do what you want).
-4. Annotate with `@layer` to opt-in to pretty printing, and other enhacements.
+4. Annotate with `@layer` to opt-in to pretty printing, and other enhancements.
 
 ```@raw html
 <h3><img src="https://github.com/FluxML/Optimisers.jl/blob/master/docs/src/assets/logo.png?raw=true" width="40px"/>&nbsp;<a href="https://github.com/FluxML/Functors.jl">Functors.jl</a></h3>
@@ -425,7 +425,7 @@ to make this smaller won't lead us anywhere interesting. Instead, we should mini
 some *loss function* which compares the actual output to our desired output.
 
 Perhaps the simplest example is curve fitting. The [previous page](@ref man-overview) fitted
-a linear model to data. With out two-layer model, we can fit a nonlinear function.
+a linear model to data. With our two-layer model, we can fit a nonlinear function.
 For example, let us use `f(x) = 2x - x^3` evaluated at some points `x in -2:0.1:2` as the data,
 and adjust the parameters of `model3` from above so that its output is similar.
 
