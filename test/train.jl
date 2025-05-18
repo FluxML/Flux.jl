@@ -136,6 +136,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       l2 = sum(pen2, Flux.trainables(m))
       err + 0.33 * l2
     end
+    
 
     diff2 = model.weight .- init_weight
     @test diff1 ≈ diff2
