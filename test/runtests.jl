@@ -1,16 +1,18 @@
 using BSON: BSON
+using FiniteDifferences: FiniteDifferences
 using Flux
 using Flux: OneHotArray, OneHotMatrix, OneHotVector, 
             onehotbatch, withgradient, pullback
 using Flux.Losses: xlogx, xlogy
 using Flux.Losses
 using ForwardDiff: ForwardDiff
-using Functors: Functors
+using Functors: Functors, fmapstructure_with_path
 using IterTools: ncycle
 using LinearAlgebra
 using MLUtils: MLUtils, batch, unstack, unsqueeze, 
               unbatch, getobs, numobs, flatten, DataLoader
 using Optimisers: Optimisers
+using Pkg
 using Random
 using SparseArrays
 using Statistics
@@ -19,10 +21,6 @@ using Zygote: Zygote
 # const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
 # const withgradient = Flux.withgradient
 
-using Pkg
-using FiniteDifferences: FiniteDifferences
-using Functors: fmapstructure_with_path
-
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
@@ -30,7 +28,7 @@ using Functors: fmapstructure_with_path
 # ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
-ENV["FLUX_TEST_ENZYME"] = "false"
+# ENV["FLUX_TEST_ENZYME"] = "false"
 ENV["FLUX_TEST_REACTANT"] = "false"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"

@@ -55,11 +55,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
         (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
       end
       @test CNT[] == 51  # stopped early
-      if name != "Enzyme"
-        @test m1.weight[1] ≈ -5  # did not corrupt weights
-      else
-        @test m1.weight[1] ≈ 0.0  # did not corrupt weights
-      end
+      @test m1.weight[1] ≈ -5  # did not corrupt weights
     end
 
     @testset "non-tuple data" begin
