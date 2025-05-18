@@ -1,10 +1,3 @@
-using Flux, Test, Zygote
-using Flux: cpu, gpu
-using Statistics: mean
-using LinearAlgebra: I, cholesky, Cholesky, Adjoint
-using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray
-using CUDA
-CUDA.allowscalar(false)
 
 @testset "CUDA" begin
   x = randn(5, 5)

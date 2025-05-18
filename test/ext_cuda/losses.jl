@@ -1,5 +1,3 @@
-using Flux.Losses: crossentropy, binarycrossentropy, logitbinarycrossentropy, binary_focal_loss, focal_loss
-
 
 @testset "Losses" begin
 

@@ -1,5 +1,3 @@
-using Enzyme: Enzyme, Duplicated, Const, Active
-
 @testset "Models" begin
     function loss(model, x)
         mean(model(x))

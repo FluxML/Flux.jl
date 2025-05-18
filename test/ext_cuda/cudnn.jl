@@ -1,5 +1,3 @@
-using Flux, CUDA, Test
-using Flux: pullback
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input, $T" for (T,f) in [(Float32, identity), (Float16, f16)]
@@ -19,10 +17,10 @@ using Flux: pullback
         dm, dx = back(Δ)
         gdm, gdx = gback(f(gpu(Δ)))
 
-        @test dm[].γ ≈ cpu(gdm[].γ)
-        @test dm[].β ≈ cpu(gdm[].β)
+        @test dm.γ ≈ cpu(gdm.γ)
+        @test dm.β ≈ cpu(gdm.β)
         @test dx ≈ cpu(gdx)
-        @test eltype(gdm[].γ) == T
+        @test eltype(gdm.γ) == T
         @test eltype(gdx) == T
     end
 
@@ -41,8 +39,8 @@ using Flux: pullback
         dm, dx = back(Δ)
         gdm, gdx = gback(gpu(Δ))
 
-        @test dm[].γ ≈ cpu(gdm[].γ)
-        @test dm[].β ≈ cpu(gdm[].β)
+        @test dm.γ ≈ cpu(gdm.γ)
+        @test dm.β ≈ cpu(gdm.β)
         @test dx ≈ cpu(gdx)
     end
 end

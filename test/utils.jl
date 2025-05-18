@@ -1,18 +1,7 @@
-using Flux
-using Flux: throttle, nfan, glorot_uniform, glorot_normal,
-             kaiming_normal, kaiming_uniform, orthogonal, truncated_normal, lecun_normal,
-             sparse_init, identity_init, unstack, batch, unbatch,
-             unsqueeze, loadmodel!
-using MLUtils
-using Statistics, LinearAlgebra
-using Random
-using Test
-using BSON
-
 @testset "Throttle" begin
   @testset "default behaviour" begin
     a = []
-    f = throttle(()->push!(a, time()), 1, leading=true, trailing=false)
+    f = Flux.throttle(()->push!(a, time()), 1, leading=true, trailing=false)
     f()
     f()
     f()
@@ -22,7 +11,7 @@ using BSON
 
   @testset "leading behaviour" begin
     a = []
-    f = throttle(()->push!(a, time()), 1, leading=true, trailing=false)
+    f = Flux.throttle(()->push!(a, time()), 1, leading=true, trailing=false)
     f()
     @test length(a) == 1
     f()
@@ -34,7 +23,7 @@ using BSON
 
   @testset "trailing behaviour" begin
     a = []
-    f = throttle(()->push!(a, time()), 1, leading=false, trailing=true)
+    f = Flux.throttle(()->push!(a, time()), 1, leading=false, trailing=true)
     f()
     @test length(a) == 0
     f()
@@ -45,7 +34,7 @@ using BSON
 
   @testset "arguments" begin
     a = []
-    f = throttle((x)->push!(a, x), 1, leading=true, trailing=true)
+    f = Flux.throttle((x)->push!(a, x), 1, leading=true, trailing=true)
     f(1)
     @test a == [1]
     f(2)
@@ -62,26 +51,26 @@ end
   Random.seed!(0)
 
   @testset "Fan in/out" begin
-    @test nfan() == (1, 1) #For a constant
-    @test nfan(100) == (1, 100) #For vector
-    @test nfan(100, 200) == (200, 100) == nfan((100, 200)) #For Dense layer
-    @test nfan(2, 30, 40) == (2 * 30, 2 * 40) #For 1D Conv layer
-    @test nfan(2, 3, 40, 50) == (2 * 3 * 40, 2 * 3 * 50) #For 2D Conv layer
-    @test nfan(2, 3, 4, 50, 60) == (2 * 3 * 4 * 50, 2 * 3 * 4 * 60) #For 3D Conv layer
+    @test Flux.nfan() == (1, 1) #For a constant
+    @test Flux.nfan(100) == (1, 100) #For vector
+    @test Flux.nfan(100, 200) == (200, 100) == Flux.nfan((100, 200)) #For Dense layer
+    @test Flux.nfan(2, 30, 40) == (2 * 30, 2 * 40) #For 1D Conv layer
+    @test Flux.nfan(2, 3, 40, 50) == (2 * 3 * 40, 2 * 3 * 50) #For 2D Conv layer
+    @test Flux.nfan(2, 3, 4, 50, 60) == (2 * 3 * 4 * 50, 2 * 3 * 4 * 60) #For 3D Conv layer
   end
 
   @testset "Basics: $init" for init in [
-      glorot_uniform, glorot_normal, 
-      kaiming_uniform, kaiming_normal, 
-      orthogonal, 
-      sparse_init,
-      truncated_normal, lecun_normal,
-      identity_init,
+      Flux.glorot_uniform, Flux.glorot_normal, 
+      Flux.kaiming_uniform,Flux.kaiming_normal, 
+      Flux.orthogonal, 
+      Flux.sparse_init,
+      Flux.truncated_normal, Flux.lecun_normal,
+      Flux.identity_init,
       Flux.rand32,
       Flux.randn32,
     ]
-    if init == sparse_init
-      init = (args...) -> sparse_init(args...; sparsity=0.5)
+    if init == Flux.sparse_init
+      init = (args...) -> Flux.sparse_init(args...; sparsity=0.5)
     else
       # sparse_init is the only one which accepts only matrices:
       @test size(init(3)) == (3,)
@@ -103,12 +92,12 @@ end
     @test gradient(x -> sum(x .* init(3, 4)), 5.0)[1] isa Number
   end
 
-  @testset "glorot: $init" for init ∈ [glorot_uniform, glorot_normal]
+  @testset "glorot: $init" for init ∈ [Flux.glorot_uniform, Flux.glorot_normal]
     # glorot_uniform and glorot_normal should both yield a kernel with
     # variance ≈ 2/(fan_in + fan_out)
     for dims ∈ [(1000,), (100, 100), (100, 400), (2, 3, 32, 64), (2, 3, 4, 32, 64)]
         v = init(dims...)
-        fan_in, fan_out = nfan(dims...)
+        fan_in, fan_out = Flux.nfan(dims...)
         σ2 = 2 / (fan_in + fan_out)
         @test 0.9σ2 < var(v) < 1.1σ2
     end
@@ -119,33 +108,33 @@ end
     # kaiming_uniform should yield a kernel in range [-sqrt(6/n_out), sqrt(6/n_out)]
     # and kaiming_normal should yield a kernel with stddev ~= sqrt(2/n_out)
     for (n_in, n_out) in [(100, 100), (100, 400)]
-      v = kaiming_uniform(n_in, n_out)
+      v = Flux.kaiming_uniform(n_in, n_out)
       σ2 = sqrt(6/n_out)
       @test -1σ2  < minimum(v) < -0.9σ2
       @test 0.9σ2  < maximum(v) < 1σ2
 
-      v = kaiming_normal(n_in, n_out)
+      v = Flux.kaiming_normal(n_in, n_out)
       σ2 = sqrt(2/n_out)
       @test 0.9σ2 < std(v) < 1.1σ2
     end
-    @test eltype(kaiming_uniform(3, 4; gain=1.5)) == Float32
-    @test eltype(kaiming_normal(3, 4; gain=1.5)) == Float32
+    @test eltype(Flux.kaiming_uniform(3, 4; gain=1.5)) == Float32
+    @test eltype(Flux.kaiming_normal(3, 4; gain=1.5)) == Float32
   end
 
   @testset "orthogonal" begin
     # A matrix of dim = (m,n) with m > n should produce a QR decomposition. In the other case, the transpose should be taken to compute the QR decomposition.
     for (rows,cols) in [(5,3),(3,5)]
-      v = orthogonal(rows, cols)
+      v = Flux.orthogonal(rows, cols)
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
     for mat in [(3,4,5),(2,2,5)]
-      v = orthogonal(mat...)
+      v = Flux.orthogonal(mat...)
       cols = mat[end]
       rows = div(prod(mat),cols)
       v = reshape(v, (rows,cols))
       rows < cols ? (@test v * v' ≈ I(rows)) : (@test v' * v ≈ I(cols))
     end
-    @test eltype(orthogonal(3, 4; gain=1.5)) == Float32
+    @test eltype(Flux.orthogonal(3, 4; gain=1.5)) == Float32
   end
 
   @testset "sparse_init" begin
@@ -155,38 +144,38 @@ end
     # sparse_init should yield exactly ceil(n_in * sparsity) elements in each column for other sparsity values
     # sparse_init should yield a kernel in its non-zero elements consistent with the std parameter
 
-    @test_throws ArgumentError sparse_init(100, 100, 100, sparsity=0.1)
-    v = sparse_init(100, 100, sparsity=-0.1)
+    @test_throws ArgumentError Flux.sparse_init(100, 100, 100, sparsity=0.1)
+    v = Flux.sparse_init(100, 100, sparsity=-0.1)
     @test sum(v .== 0) == 0
-    v = sparse_init(100, 100, sparsity=1.1)
+    v = Flux.sparse_init(100, 100, sparsity=1.1)
     @test sum(v .== 0) == length(v)
 
     for (n_in, n_out, sparsity, σ) in [(100, 100, 0.25, 0.1), (100, 400, 0.75, 0.01)]
       expected_zeros = ceil(Integer, n_in * sparsity)
-      v = sparse_init(n_in, n_out, sparsity=sparsity, std=σ)
+      v = Flux.sparse_init(n_in, n_out, sparsity=sparsity, std=σ)
       @test all([sum(v[:,col] .== 0) == expected_zeros for col in 1:n_out])
       @test 0.9 * σ < std(v[v .!= 0]) < 1.1 * σ
     end
 
-    @test eltype(sparse_init(3, 4; std=1.5, sparsity=0.5)) == Float32
+    @test eltype(Flux.sparse_init(3, 4; std=1.5, sparsity=0.5)) == Float32
   end
 
   @testset "truncated_normal" begin
-    m = truncated_normal(100, 100)
+    m = Flux.truncated_normal(100, 100)
     @test minimum(m) ≈ -2 atol = 0.05  # default arguments
     @test maximum(m) ≈ 2 atol = 0.05
     @test mean(m) ≈ 0 atol = 0.1
 
     size100 = (100, 100, 100)
     for (μ, σ, lo, hi) in [(0.0, 1, -2, 3), (1, 2, -4.0, 5.0)]
-      v = truncated_normal(size100...; mean = μ, std = σ, lo, hi)
+      v = Flux.truncated_normal(size100...; mean = μ, std = σ, lo, hi)
       @test isapprox(mean(v), μ; atol = 1f-1)
       @test isapprox(minimum(v), lo; atol = 1f-2)
       @test isapprox(maximum(v), hi; atol = 1f-2)
       @test eltype(v) == Float32  # despite some Float64 arguments
     end
     for (μ, σ, lo, hi) in [(6, 2, -100.0, 100), (-7.0, 10, -100, 100)]
-      v = truncated_normal(size100...; mean = μ, std = σ, lo, hi)
+      v = Flux.truncated_normal(size100...; mean = μ, std = σ, lo, hi)
       @test isapprox(mean(v), μ; atol = 1f-1)
       @test isapprox(std(v), σ; atol = 1f-1)
     end
@@ -198,34 +187,34 @@ end
   end
 
   @testset "Partial application" begin
-    partial_ku = kaiming_uniform(gain=1e9)
+    partial_ku = Flux.kaiming_uniform(gain=1e9)
     @test maximum(partial_ku(8, 8)) > 1e9 / 2
     @test maximum(partial_ku(8, 8, gain=1)) < 1e9 / 2
 
-    partial_kn = kaiming_normal(gain=1e9)
+    partial_kn = Flux.kaiming_normal(gain=1e9)
     @test maximum(partial_kn(8, 8)) > 1e9 / 2
     @test maximum(partial_kn(8, 8, gain=1)) < 1e9 / 2
 
-    partial_si = sparse_init(sparsity=1)
+    partial_si = Flux.sparse_init(sparsity=1)
     @test maximum(partial_si(8, 8)) == 0
     @test maximum(partial_si(8, 8, sparsity=0)) > 0
   end
 
   @testset "identity_init" begin
     @testset "Basic" begin
-      partial = identity_init(gain=3)
-      @test partial(3, 3) == identity_init(3, 3; gain=3) == [3 0 0; 0 3 0; 0 0 3]
-      @test eltype(identity_init(3, 4; gain=1.5)) == Float32  # despite Float64 keyword
+      partial = Flux.identity_init(gain=3)
+      @test partial(3, 3) == Flux.identity_init(3, 3; gain=3) == [3 0 0; 0 3 0; 0 0 3]
+      @test eltype(Flux.identity_init(3, 4; gain=1.5)) == Float32  # despite Float64 keyword
     end
     @testset "Non-identity sizes" begin
-        @test identity_init(2, 3)[:, end] == zeros(Float32, 2)
-        @test identity_init(3, 2; shift=1)[1, :] == zeros(Float32, 2)
-        @test identity_init(1, 1, 3, 4)[:, :, :, end] == zeros(Float32, 1, 1, 3)
-        @test identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
-        @test identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
+        @test Flux.identity_init(2, 3)[:, end] == zeros(Float32, 2)
+        @test Flux.identity_init(3, 2; shift=1)[1, :] == zeros(Float32, 2)
+        @test Flux.identity_init(1, 1, 3, 4)[:, :, :, end] == zeros(Float32, 1, 1, 3)
+        @test Flux.identity_init(2, 1, 3, 3)[end, :, :, :] == zeros(Float32, 1, 3, 3)
+        @test Flux.identity_init(1, 2, 3, 3)[:, end, :, :] == zeros(Float32, 1, 3, 3)
     end
     @testset "Dense ID mapping" begin
-        l = Dense(3 => 3, init = identity_init)
+        l = Dense(3 => 3, init = Flux.identity_init)
 
         indata = reshape(collect(Float32, 1:9), 3, 3)
         @test l(indata) == indata
@@ -237,16 +226,16 @@ end
         (3, 5),
         (3, 5, 7))
         nch = 3
-        l = layer(kernelsize, nch=>nch, init=identity_init, pad=SamePad())
+        l = layer(kernelsize, nch=>nch, init=Flux.identity_init, pad=SamePad())
 
         indata = randn(Float32, kernelsize..., nch, nch)
         @test l(indata) == indata
     end
     @testset "Inception identity" begin
       insize = 7
-      path1 = Conv((1, 3), insize=>2; init=identity_init, pad=SamePad())
-      path2 = Conv((3, 5), insize=>3; init=identity_init(shift=(0, 0, 2, 0)), pad=SamePad())
-      path3 = Conv((5, 7), insize=>2; init=identity_init(shift=(0, 0, 5, 0)), pad=SamePad())
+      path1 = Conv((1, 3), insize=>2; init=Flux.identity_init, pad=SamePad())
+      path2 = Conv((3, 5), insize=>3; init=Flux.identity_init(shift=(0, 0, 2, 0)), pad=SamePad())
+      path3 = Conv((5, 7), insize=>2; init=Flux.identity_init(shift=(0, 0, 5, 0)), pad=SamePad())
       block = Parallel((xs...) -> cat(xs...;dims=3), path1, path2, path3)
 
       indata = randn(Float32, 9, 9, 7, 2)
@@ -403,10 +392,9 @@ end
   end
 
   @testset "destructure" begin
-    import Flux: destructure
     @testset "Bias type $bt" for bt in (zeros, nobias)
       m = dm(bt)
-      p, re = destructure(m)
+      p, re = Flux.destructure(m)
       testdense(re(p), bt)
     end
 
@@ -414,9 +402,9 @@ end
       x = rand(Float32, 3, 1)
       m = dm(zeros)
       ∇m = gradient(m -> sum(m(x)), m)[1]
-      p, re = destructure(m)
+      p, re = Flux.destructure(m)
       ∇p = gradient(θ -> sum(re(θ)(x)), p)[1]
-      @test ∇p ≈ destructure(∇m)[1]
+      @test ∇p ≈ Flux.destructure(∇m)[1]
     end
   end
 end
@@ -637,8 +625,8 @@ end
     pvec, re = Flux.destructure(model)
     loss(x, idx, pv) = sum(abs2, re(pv)(x)[idx])  # loss wrt `idx`th output term
 
-    g = Flux.Zygote.ForwardDiff.gradient(pv -> loss(data, 1, pv), pvec)
-    @test g ≈ Flux.Zygote.gradient(pv -> loss(data, 1, pv), pvec)[1]
+    g = ForwardDiff.gradient(pv -> loss(data, 1, pv), pvec)
+    @test g ≈ gradient(pv -> loss(data, 1, pv), pvec)[1]
   end
 end
 

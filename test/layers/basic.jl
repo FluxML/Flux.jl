@@ -1,17 +1,14 @@
-using Test, Random
-using Flux: activations
-
 @testset "basic" begin
   @testset "helpers" begin
     @testset "activations" begin
       dummy_model = Chain(x->x.^2, x->x .- 3, x -> tan.(x))
       x = randn(10)
-      @test activations(dummy_model, x)[1] == x.^2
-      @test activations(dummy_model, x)[2] == (x.^2 .- 3)
-      @test activations(dummy_model, x)[3] == tan.(x.^2 .- 3)
+      @test Flux.activations(dummy_model, x)[1] == x.^2
+      @test Flux.activations(dummy_model, x)[2] == (x.^2 .- 3)
+      @test Flux.activations(dummy_model, x)[3] == tan.(x.^2 .- 3)
 
-      @test activations(Chain(), x) == ()
-      @test activations(Chain(identity, x->:foo), x)[2] == :foo # results include `Any` type
+      @test Flux.activations(Chain(), x) == ()
+      @test Flux.activations(Chain(identity, x->:foo), x)[2] == :foo # results include `Any` type
     end
   end
 

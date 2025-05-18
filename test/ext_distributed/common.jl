@@ -1,5 +1,3 @@
-using Flux, MPI, NCCL, Test, CUDA
-
 const input_args = length(ARGS) == 2 ? ARGS : ("CPU", "mpi")
 const backend_type = input_args[2] == "nccl" ? NCCLBackend : MPIBackend
 const dev = input_args[1] == "CPU" ? Flux.cpu : Flux.gpu

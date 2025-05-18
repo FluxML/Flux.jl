@@ -1,6 +1,3 @@
-using Flux
-using Test
-
 backend_string = ARGS[1]
 
 if backend_string == "mpi"

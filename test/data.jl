@@ -1,5 +1,3 @@
-using Flux: DataLoader
-using Random
 
 @testset "DataLoader" begin
     X = reshape([1:10;], (2, 5))
