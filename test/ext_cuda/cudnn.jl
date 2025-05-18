@@ -17,10 +17,10 @@
         dm, dx = back(Δ)
         gdm, gdx = gback(f(gpu(Δ)))
 
-        @test dm[].γ ≈ cpu(gdm[].γ)
-        @test dm[].β ≈ cpu(gdm[].β)
+        @test dm.γ ≈ cpu(gdm.γ)
+        @test dm.β ≈ cpu(gdm.β)
         @test dx ≈ cpu(gdx)
-        @test eltype(gdm[].γ) == T
+        @test eltype(gdm.γ) == T
         @test eltype(gdx) == T
     end
 
@@ -39,8 +39,8 @@
         dm, dx = back(Δ)
         gdm, gdx = gback(gpu(Δ))
 
-        @test dm[].γ ≈ cpu(gdm[].γ)
-        @test dm[].β ≈ cpu(gdm[].β)
+        @test dm.γ ≈ cpu(gdm.γ)
+        @test dm.β ≈ cpu(gdm.β)
         @test dx ≈ cpu(gdx)
     end
 end
