@@ -5,7 +5,7 @@ end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 
-  if name == "Enzyme" && FLUX_TEST_ENZYME
+  if name == "Enzyme" && !FLUX_TEST_ENZYME
     continue
   end
 
@@ -41,11 +41,9 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
-  # TODO reinstate Enzyme
-  name == "Enzyme" && continue  
-  # if name == "Enzyme" && FLUX_TEST_ENZYME
-  #   continue
-  # end
+  if name == "Enzyme" && !FLUX_TEST_ENZYME
+    continue
+  end
 
   @testset "Flux.train! features with $name" begin
     @testset "Stop on NaN" begin
@@ -110,11 +108,9 @@ end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 
-  # TODO reinstate Enzyme
-  name == "Enzyme" && continue
-  # if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
-  #   continue
-  # end
+  if name == "Enzyme" && !FLUX_TEST_ENZYME
+    continue
+  end
   
   @testset "L2 regularisation with $name" begin
     # New docs claim an exact equivalent. It's a bit long to put the example in there,

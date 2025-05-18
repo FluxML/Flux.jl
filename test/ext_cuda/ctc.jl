@@ -1,9 +1,3 @@
-using Test
-using Flux
-using Flux.Losses: ctc_loss
-using Zygote: gradient
-using LinearAlgebra
-using CUDA
 
 # Custom function to check numerical gradient of ctc loss,
 # based on `ngradient` in `Tracker.jl`

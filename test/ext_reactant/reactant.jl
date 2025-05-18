@@ -1,6 +1,3 @@
-using Enzyme: Enzyme, Duplicated, Const, Active
-using Reactant
-
 function scalarfirst(x)
     Reactant.@allowscalar first(x)
 end

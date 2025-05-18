@@ -1,7 +1,3 @@
-using Flux, Test
-using Flux: maxpool, meanpool
-using Flux: gradient
-
 @testset "Pooling" begin
   x = randn(Float32, 10, 10, 3, 2)
   y = randn(Float32, 20, 20, 3, 2)

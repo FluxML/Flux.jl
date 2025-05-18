@@ -1,9 +1,3 @@
-# Distributed Tests
-using MPI, Pkg, Test
-if get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "true"
-    import CUDA
-end
-
 nprocs_str = get(ENV, "JULIA_MPI_TEST_NPROCS", "")
 nprocs = nprocs_str == "" ? clamp(Sys.CPU_THREADS, 2, 4) : parse(Int, nprocs_str)
 testdir = @__DIR__

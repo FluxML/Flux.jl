@@ -1,8 +1,3 @@
-using CUDA
-using Flux, Test
-using Zygote
-using Zygote: pullback
-using Random, LinearAlgebra, Statistics
 
 @assert CUDA.functional()
 CUDA.allowscalar(false)

@@ -1,5 +1,3 @@
-using Flux, CUDA, Test
-using Flux: pullback
 
 @testset "CUDNN BatchNorm" begin
     @testset "4D Input, $T" for (T,f) in [(Float32, identity), (Float16, f16)]
