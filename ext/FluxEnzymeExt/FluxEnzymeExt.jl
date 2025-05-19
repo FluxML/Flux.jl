@@ -46,7 +46,8 @@ function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=
     zero && x isa Duplicated && _make_zero!(x.dval)
     _check_mutable(x)
   end
-  Enzyme.autodiff(Reverse, Const(f), Active, args...)
+  ad = Enzyme.set_runtime_activity(Reverse)
+  Enzyme.autodiff(ad, Const(f), Active, args...)
   map(_grad_or_nothing, args)
 end
 
@@ -111,7 +112,8 @@ function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
     d_splat = d isa Tuple ? d : (d,)
 
     _make_zero!(model.dval)
-    _, l = Enzyme.autodiff(ReverseWithPrimal, _applyloss,
+    ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
+    _, l = Enzyme.autodiff(ad, _applyloss,
                            Active, Const(loss), model, map(Const, d_splat)...)
 
     if !isfinite(l)
