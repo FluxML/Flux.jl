@@ -32,8 +32,8 @@ MLUtils.fill_like
 MLUtils.filterobs
 Flux.flatten
 MLUtils.flatten
-MLUtils.getobs
-MLUtils.getobs!
+MLCore.getobs
+MLCore.getobs!
 MLUtils.joinobs
 MLUtils.group_counts
 MLUtils.group_indices
@@ -41,7 +41,7 @@ MLUtils.groupobs
 MLUtils.kfolds
 MLUtils.leavepout
 MLUtils.mapobs
-MLUtils.numobs
+MLCore.numobs
 MLUtils.normalise
 MLUtils.obsview
 MLUtils.ObsView

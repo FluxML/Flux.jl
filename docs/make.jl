@@ -1,6 +1,7 @@
 using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
-      DataFrames, JLD2, MLDataDevices
+      DataFrames, JLD2, MLDataDevices, MLCore
+using MLCore: numobs, getobs, getobs!
 
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
@@ -10,7 +11,7 @@ makedocs(
     ## This should be
     ## modules = [Flux], checkdocs = :all,
     ## but we get errors.
-    modules = [Flux, NNlib, Functors, MLUtils, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
+    modules = [Flux, NNlib, Functors, MLUtils, MLCore, Zygote, OneHotArrays, Optimisers, ChainRulesCore, MLDataDevices],
     sitename = "Flux",
     doctest = false,   # done later
     checkdocs = :none, # :all, :exports, :none

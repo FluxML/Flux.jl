@@ -29,7 +29,7 @@ It differs from `Optimisers.setup` in that it:
 julia> model = Dense(2 => 1, leakyrelu; init=ones);
 
 julia> opt_state = Flux.setup(Momentum(0.1), model)  # this encodes the optimiser and its state
-(weight = Leaf(Momentum(0.1, 0.9), [0.0 0.0]), bias = Leaf(Momentum(0.1, 0.9), [0.0]), σ = ())
+(weight = Leaf(Momentum(eta=0.1, rho=0.9), [0.0 0.0]), bias = Leaf(Momentum(eta=0.1, rho=0.9), [0.0]), σ = ())
 
 julia> x1, y1 = [0.2, -0.3], [0.4];  # use the same data for two steps:
 
@@ -42,7 +42,7 @@ julia> model.bias  # was zero, mutated by Flux.train!
  10.19
 
 julia> opt_state  # mutated by Flux.train!
-(weight = Leaf(Momentum(0.1, 0.9), [-2.018 3.027]), bias = Leaf(Momentum(0.1, 0.9), [-10.09]), σ = ())
+(weight = Leaf(Momentum(eta=0.1, rho=0.9), [-2.018 3.027]), bias = Leaf(Momentum(eta=0.1, rho=0.9), [-10.09]), σ = ())
 ```
 """
 function setup(rule::Optimisers.AbstractRule, model)
