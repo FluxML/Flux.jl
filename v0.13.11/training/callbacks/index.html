@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Callback Helpers · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../../models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../training/">Training</a></li><li><a class="tocitem" href="../../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../reference/">Training API</a></li><li><a class="tocitem" href="../optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li class="is-active"><a class="tocitem" href>Callback Helpers</a><ul class="internal"><li><a class="tocitem" href="#Patience-Helpers"><span>Patience Helpers</span></a></li></ul></li><li><a class="tocitem" href="../zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../../models/advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Reference</a></li><li class="is-active"><a href>Callback Helpers</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Callback Helpers</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/training/callbacks.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="man-callback-helpers"><a class="docs-heading-anchor" href="#man-callback-helpers">Callback Helpers</a><a id="man-callback-helpers-1"></a><a class="docs-heading-anchor-permalink" href="#man-callback-helpers" title="Permalink"></a></h1><article class="docstring"><header><a class="docstring-binding" id="Flux.throttle" href="#Flux.throttle"><code>Flux.throttle</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">throttle(f, timeout; leading=true, trailing=false)</code></pre><p>Return a function that when invoked, will only be triggered at most once during <code>timeout</code> seconds.</p><p>Normally, the throttled function will run as much as it can, without ever going more than once per <code>wait</code> duration; but if you&#39;d like to disable the execution on the leading edge, pass <code>leading=false</code>. To enable execution on the trailing edge, pass <code>trailing=true</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; a = Flux.throttle(() -&gt; println(&quot;Flux&quot;), 2);
+
+julia&gt; for i = 1:4  # a called in alternate iterations
+           a()
+           sleep(1)
+       end
+Flux
+Flux</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/7ae67a3d41d0cacbe616410087af3a60e50d95ec/src/utils.jl#L530-L552">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Optimise.stop" href="#Flux.Optimise.stop"><code>Flux.Optimise.stop</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">stop()</code></pre><p>Call <code>Flux.stop()</code> in a callback to indicate when a callback condition is met. This will trigger the train loop to stop and exit.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p><code>Flux.stop()</code> will be removed from Flux 0.14. It should be replaced with <code>break</code> in an ordinary <code>for</code> loop.</p></div></div><p><strong>Examples</strong></p><pre><code class="language-julia hljs">cb = function ()
+  accuracy() &gt; 0.9 &amp;&amp; Flux.stop()
+end</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/7ae67a3d41d0cacbe616410087af3a60e50d95ec/src/optimise/train.jl#L67-L82">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Optimise.skip" href="#Flux.Optimise.skip"><code>Flux.Optimise.skip</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">skip()</code></pre><p>Call <code>Flux.skip()</code> in a callback to indicate when a callback condition is met. This will trigger the train loop to skip the current data point and not update with the calculated gradient.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p><code>Flux.skip()</code> will be removed from Flux 0.14</p></div></div><p><strong>Examples</strong></p><pre><code class="language-julia hljs">cb = function ()
+  loss() &gt; 1e7 &amp;&amp; Flux.skip()
+end</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/7ae67a3d41d0cacbe616410087af3a60e50d95ec/src/optimise/train.jl#L42-L57">source</a></section></article><h2 id="Patience-Helpers"><a class="docs-heading-anchor" href="#Patience-Helpers">Patience Helpers</a><a id="Patience-Helpers-1"></a><a class="docs-heading-anchor-permalink" href="#Patience-Helpers" title="Permalink"></a></h2><p>Flux provides utilities for controlling your training procedure according to some monitored condition and a maximum <code>patience</code>. For example, you can use <code>early_stopping</code> to stop training when the model is converging or deteriorating, or you can use <code>plateau</code> to check if the model is stagnating.</p><p>For example, below we create a pseudo-loss function that decreases, bottoms out, and then increases. The early stopping trigger will break the loop before the loss increases too much.</p><pre><code class="language-julia hljs"># create a pseudo-loss that decreases for 4 calls, then starts increasing
+# we call this like loss()
+loss = let t = 0
+  () -&gt; begin
+    t += 1
+    (t - 4) ^ 2
+  end
+end
+
+# create an early stopping trigger
+# returns true when the loss increases for two consecutive steps
+es = early_stopping(loss, 2; init_score = 9)
+
+# this will stop at the 6th (4 decreasing + 2 increasing calls) epoch
+@epochs 10 begin
+  es() &amp;&amp; break
+end</code></pre><p>The keyword argument <code>distance</code> of <code>early_stopping</code> is a function of the form <code>distance(best_score, score)</code>. By default <code>distance</code> is <code>-</code>, which implies that the monitored metric <code>f</code> is expected to be decreasing and minimized. If you use some increasing metric (e.g. accuracy), you can customize the <code>distance</code> function: <code>(best_score, score) -&gt; score - best_score</code>.</p><pre><code class="language-julia hljs"># create a pseudo-accuracy that increases by 0.01 each time from 0 to 1
+# we call this like acc()
+acc = let v = 0
+  () -&gt; v = max(1, v + 0.01)
+end
+
+# create an early stopping trigger for accuracy
+es = early_stopping(acc, 3; delta = (best_score, score) -&gt; score - best_score)
+
+# this will iterate until the 10th epoch
+@epochs 10 begin
+  es() &amp;&amp; break
+end</code></pre><p><code>early_stopping</code> and <code>plateau</code> are both built on top of <code>patience</code>. You can use <code>patience</code> to build your own triggers that use a patient counter. For example, if you want to trigger when the loss is below a threshold for several consecutive iterations:</p><pre><code class="language-julia hljs">threshold(f, thresh, delay) = patience(delay) do
+  f() &lt; thresh
+end</code></pre><p>Both <code>predicate</code> in <code>patience</code> and <code>f</code> in <code>early_stopping</code> / <code>plateau</code> can accept extra arguments. You can pass such extra arguments to <code>predicate</code> or <code>f</code> through the returned function:</p><pre><code class="language-julia hljs">trigger = patience((a; b) -&gt; a &gt; b, 3)
+
+# this will iterate until the 10th epoch
+@epochs 10 begin
+  trigger(1; b = 2) &amp;&amp; break
+end
+
+# this will stop at the 3rd epoch
+@epochs 10 begin
+  trigger(3; b = 2) &amp;&amp; break
+end</code></pre><article class="docstring"><header><a class="docstring-binding" id="Flux.patience" href="#Flux.patience"><code>Flux.patience</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">patience(predicate, wait)</code></pre><p>Return a function that internally counts by one when <code>predicate(...) == true</code>, otherwise the count is reset to zero. If the count is greater than or equal to <code>wait</code>, the function returns <code>true</code>, otherwise it returns <code>false</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; loss() = rand();
+
+julia&gt; trigger = Flux.patience(() -&gt; loss() &lt; 1, 3);
+
+
+julia&gt; for i in 1:10
+         @info &quot;Epoch $i&quot;
+         trigger() &amp;&amp; break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/7ae67a3d41d0cacbe616410087af3a60e50d95ec/src/utils.jl#L640-L663">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.early_stopping" href="#Flux.early_stopping"><code>Flux.early_stopping</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)</code></pre><p>Return a function that internally counts by one when <code>distance(best_score, f(...)) &lt;= min_dist</code>, where <code>best_score</code> is the last seen best value of <code>f(...)</code>. If the count is greater than or equal to <code>delay</code>, the function returns <code>true</code>, otherwise it returns <code>false</code>. The count is reset when <code>distance(best_score, f(...)) &gt; min_dist</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; loss = let l = 0
+         () -&gt; l += 1
+       end; # pseudo loss function that returns increasing values
+
+julia&gt; es = Flux.early_stopping(loss, 3);
+
+
+julia&gt; for i in 1:10
+         @info &quot;Epoch $i&quot;
+         es() &amp;&amp; break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/7ae67a3d41d0cacbe616410087af3a60e50d95ec/src/utils.jl#L674-L701">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.plateau" href="#Flux.plateau"><code>Flux.plateau</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)</code></pre><p>Return a function that internally counts by one when <code>abs(distance(last_score, f(...))) &lt;= min_dist</code>, where <code>last_score</code> holds the last value of <code>f(...)</code>. If the count is greater than or equal to <code>width</code>, the function returns <code>true</code>, otherwise it returns <code>false</code>. The count is reset when <code>abs(distance(last_score, f(...))) &gt; min_dist</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; f = let v = 10
+         () -&gt; v = v / abs(v) - v
+       end; # -9, 8, -7, 6, ...
+
+julia&gt; trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
+
+
+julia&gt; for i in 1:10
+         @info &quot;Epoch $i&quot;
+         trigger() &amp;&amp; break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+[ Info: Epoch 4</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/7ae67a3d41d0cacbe616410087af3a60e50d95ec/src/utils.jl#L716-L744">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../destructure/">« Flat vs. Nested</a><a class="docs-footer-nextpage" href="../zygote/">Gradients – Zygote.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 4 January 2023 23:03">Wednesday 4 January 2023</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
