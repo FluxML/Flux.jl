@@ -1,7 +1,7 @@
 function maybeAddWarning() {
   // DOCUMENTER_NEWEST is defined in versions.js, DOCUMENTER_CURRENT_VERSION and DOCUMENTER_STABLE
-  // in siteinfo.js.
-  // If either of these are undefined something went horribly wrong, so we abort.
+  // in siteinfo.js. DOCUMENTER_IS_DEV_VERSION is optional and defined in siteinfo.js.
+  // If the required variables are undefined something went horribly wrong, so we abort.
   if (
     window.DOCUMENTER_NEWEST === undefined ||
     window.DOCUMENTER_CURRENT_VERSION === undefined ||
@@ -30,17 +30,33 @@ function maybeAddWarning() {
   }
 
   const div = document.createElement("div");
-  div.classList.add("outdated-warning-overlay");
+  // Base class is added by default
+  div.classList.add("warning-overlay-base");
   const closer = document.createElement("button");
   closer.classList.add("outdated-warning-closer", "delete");
   closer.addEventListener("click", function () {
     document.body.removeChild(div);
   });
   const href = window.documenterBaseURL + "/../" + window.DOCUMENTER_STABLE;
-  div.innerHTML =
-    'This documentation is not for the latest stable release, but for either the development version or an older release.<br><a href="' +
+
+  // Determine if this is a development version or an older release
+  let warningMessage = "";
+  if (window.DOCUMENTER_IS_DEV_VERSION === true) {
+    div.classList.add("dev-warning-overlay");
+    warningMessage =
+      "This documentation is for the <strong>development version</strong> and may contain unstable or unreleased features.<br>";
+  } else {
+    div.classList.add("outdated-warning-overlay");
+    warningMessage =
+      "This documentation is for an <strong>older version</strong> that may be missing recent changes.<br>";
+  }
+
+  warningMessage +=
+    '<a href="' +
     href +
     '">Click here to go to the documentation for the latest stable release.</a>';
+
+  div.innerHTML = warningMessage;
   div.appendChild(closer);
   document.body.appendChild(div);
 }

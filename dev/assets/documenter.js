@@ -239,6 +239,20 @@ $(document).ready(function () {
       type: "click",
       noToggleAnimation: true,
     });
+
+    setTimeout(function () {
+      if (window.location.hash) {
+        const targetId = window.location.hash.substring(1);
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }
+    }, 100);
   }
 });
 
@@ -647,6 +661,42 @@ function runSearchMainCode() {
   // Which filter is currently selected
   var selected_filter = "";
 
+  document.addEventListener("reset-filter", function () {
+    selected_filter = "";
+    update_search();
+  });
+
+  //update the url with search query
+  function updateSearchURL(query) {
+    const url = new URL(window.location);
+
+    if (query && query.trim() !== "") {
+      url.searchParams.set("q", query);
+    } else {
+      // remove the 'q' param if it exists
+      if (url.searchParams.has("q")) {
+        url.searchParams.delete("q");
+      }
+    }
+
+    // Add or remove the filter parameter based on selected_filter
+    if (selected_filter && selected_filter.trim() !== "") {
+      url.searchParams.set("filter", selected_filter);
+    } else {
+      // remove the 'filter' param if it exists
+      if (url.searchParams.has("filter")) {
+        url.searchParams.delete("filter");
+      }
+    }
+
+    // Only update history if there are parameters, otherwise use the base URL
+    if (url.search) {
+      window.history.replaceState({}, "", url);
+    } else {
+      window.history.replaceState({}, "", url.pathname + url.hash);
+    }
+  }
+
   $(document).on("input", ".documenter-search-input", function (event) {
     if (!worker_is_running) {
       launch_search();
@@ -656,6 +706,7 @@ function runSearchMainCode() {
   function launch_search() {
     worker_is_running = true;
     last_search_text = $(".documenter-search-input").val();
+    updateSearchURL(last_search_text);
     worker.postMessage(last_search_text);
   }
 
@@ -671,6 +722,9 @@ function runSearchMainCode() {
   };
 
   $(document).on("click", ".search-filter", function () {
+    let search_input = $(".documenter-search-input");
+    let cursor_position = search_input[0].selectionStart;
+
     if ($(this).hasClass("search-filter-selected")) {
       selected_filter = "";
     } else {
@@ -679,6 +733,9 @@ function runSearchMainCode() {
 
     // This updates search results and toggles classes for UI:
     update_search();
+
+    search_input.focus();
+    search_input.setSelectionRange(cursor_position, cursor_position);
   });
 
   /**
@@ -686,6 +743,7 @@ function runSearchMainCode() {
    */
   function update_search() {
     let querystring = $(".documenter-search-input").val();
+    updateSearchURL(querystring);
 
     if (querystring.trim()) {
       if (selected_filter == "") {
@@ -760,6 +818,24 @@ function runSearchMainCode() {
     }
   }
 
+  //url param checking
+  function checkURLForSearch() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get("q");
+    const filterParam = urlParams.get("filter");
+
+    // Set the selected filter if present in URL
+    if (filterParam) {
+      selected_filter = filterParam.toLowerCase();
+    }
+
+    // Trigger input event if there's a search query to perform the search
+    if (searchQuery) {
+      $(".documenter-search-input").val(searchQuery).trigger("input");
+    }
+  }
+  setTimeout(checkURLForSearch, 100);
+
   /**
    * Make the modal filter html
    *
@@ -830,8 +906,9 @@ $(document).ready(function () {
       <div class="field mb-0 w-100">
         <p class="control has-icons-right">
           <input class="input documenter-search-input" type="text" placeholder="Search" />
-          <span class="icon is-small is-right has-text-primary-dark">
-            <i class="fas fa-magnifying-glass"></i>
+          <span class="icon is-small is-right has-text-primary-dark gap-2">
+            <i class="fas fa-link link-icon is-clickable"></i>
+            <i class="fas fa-magnifying-glass mr-4"></i>
           </span>
         </p>
       </div>
@@ -870,6 +947,19 @@ $(document).ready(function () {
     `
   );
 
+  function checkURLForSearch() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get("q");
+
+    if (searchQuery) {
+      //only if there is a search query, open the modal
+      openModal();
+    }
+  }
+
+  //this function will be called whenever the page will load
+  checkURLForSearch();
+
   document.querySelector(".docs-search-query").addEventListener("click", () => {
     openModal();
   });
@@ -894,6 +984,25 @@ $(document).ready(function () {
     return false;
   });
 
+  //event listener for the link icon to copy the URL
+  $(document).on("click", ".link-icon", function () {
+    const currentUrl = window.location.href;
+
+    navigator.clipboard
+      .writeText(currentUrl)
+      .then(() => {
+        const $linkIcon = $(this);
+        $linkIcon.removeClass("fa-link").addClass("fa-check");
+
+        setTimeout(() => {
+          $linkIcon.removeClass("fa-check").addClass("fa-link");
+        }, 1000);
+      })
+      .catch((err) => {
+        console.error("Failed to copy URL: ", err);
+      });
+  });
+
   // Functions to open and close a modal
   function openModal() {
     let searchModal = document.querySelector("#search-modal");
@@ -908,15 +1017,17 @@ $(document).ready(function () {
       <div class="has-text-centered my-5 py-5">Type something to get started!</div>
     `;
 
+    $(".documenter-search-input").val("");
+    $(".search-modal-card-body").html(initial_search_body);
+
+    document.dispatchEvent(new CustomEvent("reset-filter"));
+
     searchModal.classList.remove("is-active");
     document.querySelector(".documenter-search-input").blur();
 
     if (!$(".search-modal-card-body").hasClass("is-justify-content-center")) {
       $(".search-modal-card-body").addClass("is-justify-content-center");
     }
-
-    $(".documenter-search-input").val("");
-    $(".search-modal-card-body").html(initial_search_body);
   }
 
   document
