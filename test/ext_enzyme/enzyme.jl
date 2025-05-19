@@ -118,7 +118,7 @@ end
 @testset "bugs found" begin
     _duplicated(x) = Duplicated(x, Enzyme.make_zero(x))
     z = _duplicated(zeros32(3))
-    @test_broken Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]  # Constant memory is stored (or returned) to a differentiable variable
+    @test Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, _duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
 
