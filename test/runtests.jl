@@ -40,7 +40,7 @@ const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT",
 
 if FLUX_TEST_ENZYME || FLUX_TEST_REACTANT
   Pkg.add("Enzyme")
-  using Enzyme: Enzyme
+  using Enzyme: Enzyme, Const, Active, Duplicated
 end
 
 include("test_utils.jl") # for test_gradients

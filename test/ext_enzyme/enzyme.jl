@@ -53,7 +53,7 @@ end
     # Tests above are about how Enzyme digests Flux layers.
     # Tests here are just the interface Flux.gradient(f, Duplicated(model)) etc.
     m1 = Duplicated(Dense(3=>2))
-    @test m1 isa Duplicated
+    @test m1 isa Enzyme.Duplicated
     g1 = Flux.gradient(m -> sum(m.bias), m1) |> only
     @test iszero(g1.weight)
     @test g1.bias == [1, 1]
