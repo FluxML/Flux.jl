@@ -32,6 +32,7 @@ using Zygote: Zygote
 ENV["FLUX_TEST_REACTANT"] = "false"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
+const FLUX_TEST_CPU = get(ENV, "FLUX_TEST_CPU", "true") == "true"
 
 # Reactant will automatically select a GPU backend, if available, and TPU backend, if available. 
 # Otherwise it will fall back to CPU.
@@ -58,7 +59,7 @@ function flux_testsuite(dev)
 end
 
 @testset verbose=true "Flux.jl" begin
-  if get(ENV, "FLUX_TEST_CPU", "true") == "true"
+  if FLUX_TEST_CPU
     flux_testsuite(cpu)
 
     @testset "Utils" begin
@@ -183,7 +184,9 @@ end
   if FLUX_TEST_ENZYME
     ## Pkg.add("Enzyme") is already done above
     @testset "Enzyme" begin
-      include("ext_enzyme/enzyme.jl")
+      if FLUX_TEST_CPU
+        include("ext_enzyme/enzyme.jl")
+      end
     end
   else
     @info "Skipping Enzyme tests, set FLUX_TEST_ENZYME=true to run them."
