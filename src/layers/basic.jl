@@ -617,7 +617,7 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-   PairwiseFusion(connection, layers...)
+    PairwiseFusion(connection, layers...)
 
 ## Arguments
 
