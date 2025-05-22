@@ -617,7 +617,7 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-    PairwiseFusion(connection, layers...)
+PairwiseFusion(connection, layers...)
 
 ## Arguments
 
@@ -646,7 +646,7 @@ y3 = layer3(connection(y2, x3))
 ```
 
 2. With just one input, each layer receives the same `x` combined with the previous output.
-   Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
+  Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
 
 ```julia
 y[1] == layers[1](x)
@@ -709,9 +709,7 @@ applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tup
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
 Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
-Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) =
-  PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
-
+Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) = PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
 Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
 
 function Base.show(io::IO, m::PairwiseFusion)
