@@ -617,7 +617,7 @@ function Base.show(io::IO, m::Parallel)
 end
 
 """
-PairwiseFusion(connection, layers...)
+   PairwiseFusion(connection, layers...)
 
 ## Arguments
 
@@ -628,7 +628,8 @@ PairwiseFusion(connection, layers...)
 
 This layer behaves differently based on input type:
 
-1. If input `x` is a tuple of length N (or the input is `xs` with N `x`'s), matching the number of `layers`, 
+1. **Tuple input:**
+  If input `x` is a tuple of length N (or the input is `xs` with N `x`'s), matching the number of `layers`, 
   then each layer receives a new input `x[i]` combined with the previous output `y[i-1]` using `connection`.
   Thus `(y1, y2, y3) = PairwiseFusion(connection, layer1, layer2, layer3)((x1, x2, x3))`
   may be drawn as:
@@ -645,7 +646,8 @@ y2 = layer2(connection(y1, x2))
 y3 = layer3(connection(y2, x3))
 ```
 
-2. With just one input, each layer receives the same `x` combined with the previous output.
+2. **Single input:**
+  With a single input, each layer receives the same `x` combined with the previous output.
   Thus `y = PairwiseFusion(connection, layers...)(x)` obeys:
 
 ```julia
@@ -708,7 +710,9 @@ applypairwisefusion(layers::NamedTuple, connection, x) = applypairwisefusion(Tup
 @layer PairwiseFusion
 
 Base.getindex(m::PairwiseFusion, i) = m.layers[i]
-Base.getindex(m::PairwiseFusion, i::AbstractVector) = PairwiseFusion(m.connection, m.layers[i])
+Base.getindex(m::PairwiseFusion, i::AbstractVector) = 
+  PairwiseFusion(m.connection, m.layers[i])
+  
 Base.getindex(m::PairwiseFusion{<:Any, <:NamedTuple}, i::AbstractVector) = PairwiseFusion(m.connection, NamedTuple{keys(m)[i]}(Tuple(m.layers)[i]))
 Base.keys(m::PairwiseFusion) = keys(getfield(m, :layers))
 
