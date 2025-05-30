@@ -201,6 +201,7 @@ end
     # │ CUDA.jl's JLLs were precompiled without an NVIDIA driver present.
     Pkg.add("Reactant")
     using Reactant: Reactant
+    Reactant.set_default_backend("cpu")
     @testset "Reactant" begin
       include("ext_reactant/test_utils_reactant.jl")
       include("ext_reactant/reactant.jl")

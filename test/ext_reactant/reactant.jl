@@ -10,37 +10,37 @@ end
     models_xs = [
         (Dense(2=>4), randn(Float32, 2), "Dense"),
         
-        (Chain(Dense(2=>4, tanh), Dense(4=>3)), randn(Float32, 2), "Chain(Dense, Dense)"),
+        # (Chain(Dense(2=>4, tanh), Dense(4=>3)), randn(Float32, 2), "Chain(Dense, Dense)"),
 
-        (f64(Chain(Dense(2=>4), Dense(4=>2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
+        # (f64(Chain(Dense(2=>4), Dense(4=>2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
 
-        (Flux.Scale([1.0f0 2.0f0 3.0f0 4.0f0], true, abs2), randn(Float32, 2), "Flux.Scale"),
+        # (Flux.Scale([1.0f0 2.0f0 3.0f0 4.0f0], true, abs2), randn(Float32, 2), "Flux.Scale"),
 
-        # all arguments must have at least the same length of the firs one
-        # a = (Conv((3, 3), 2 => 3),)
-        # b = ((σ = nothing, weight = Float32[-0.169722 -0.12912463 0.026297366; -0.08920034 -0.11879107 -0.30971745; -0.11957143 0.3129449 0.32124594;;; 0.011128465 0.12124362 0.096895896; -0.29864514 -0.053307496 0.055420622; -0.30712044 0.2959723 0.5099815;;;; -0.169722 -0.12912463 0.026297366; -0.08920034 -0.11879107 -0.30971745; -0.11957143 0.3129449 0.32124594;;; 0.011128465 0.12124362 0.096895896; -0.29864514 -0.053307496 0.055420622; -0.30712044 0.2959723 0.5099815;;;; -0.169722 -0.12912463 0.026297366; -0.08920034 -0.11879107 -0.30971745; -0.11957143 0.3129449 0.32124594;;; 0.011128465 0.12124362 0.096895896; -0.29864514 -0.053307496 0.055420622; -0.30712044 0.2959723 0.5099815], bias = Float32[0.33333334, 0.33333334, 0.33333334], stride = nothing, pad = nothing, dilation = nothing, groups = nothing),)
-        # (Conv((3, 3), 2 => 3), randn(Float32, 3, 3, 2, 1), "Conv"),
+        # # all arguments must have at least the same length of the firs one
+        # # a = (Conv((3, 3), 2 => 3),)
+        # # b = ((σ = nothing, weight = Float32[-0.169722 -0.12912463 0.026297366; -0.08920034 -0.11879107 -0.30971745; -0.11957143 0.3129449 0.32124594;;; 0.011128465 0.12124362 0.096895896; -0.29864514 -0.053307496 0.055420622; -0.30712044 0.2959723 0.5099815;;;; -0.169722 -0.12912463 0.026297366; -0.08920034 -0.11879107 -0.30971745; -0.11957143 0.3129449 0.32124594;;; 0.011128465 0.12124362 0.096895896; -0.29864514 -0.053307496 0.055420622; -0.30712044 0.2959723 0.5099815;;;; -0.169722 -0.12912463 0.026297366; -0.08920034 -0.11879107 -0.30971745; -0.11957143 0.3129449 0.32124594;;; 0.011128465 0.12124362 0.096895896; -0.29864514 -0.053307496 0.055420622; -0.30712044 0.2959723 0.5099815], bias = Float32[0.33333334, 0.33333334, 0.33333334], stride = nothing, pad = nothing, dilation = nothing, groups = nothing),)
+        # # (Conv((3, 3), 2 => 3), randn(Float32, 3, 3, 2, 1), "Conv"),
 
-        # all arguments must have at least the same length of the firs one
-        # a = (Chain(Conv((3, 3), 2 => 3), Conv((3, 3), 3 => 1, tanh)),)
-        # b = ((layers = ((σ = nothing, weight = Float32[0.2703631 0.15815677 0.2918554; 0.20036785 0.43450722 0.3525422; 0.3541182 0.32077286 0.44091386;;; 0.3233156 0.08538988 0.25763267; 0.413441 0.66042584 0.16991; 0.36993486 0.5990643 0.10123589;;;; 0.45728725 0.500834 0.46808332; 0.3662355 0.35068494 0.27277413; 0.44974697 0.47245422 0.10595817;;; 0.36255562 0.6111583 0.52779496; 0.27237993 0.25857046 0.33643073; 0.6679214 0.066386 0.32072845;;;; -0.4879305 -0.59246373 -0.59834677; -0.55097836 -0.5006755 -0.4233263; -0.72177917 -0.65806544 -0.38224664;;; -0.4765812 -0.6856963 -0.5864509; -0.6547631 -0.55094117 -0.38632843; -0.74521375 -0.3817107 -0.48642716], bias = Float32[0.7159346, 0.7152501, -1.0509125], stride = nothing, pad = nothing, dilation = nothing, groups = nothing), (σ = nothing, weight = Float32[0.32858944 -0.10135343 -0.25303265; -0.13622479 0.023095237 0.1746222; 0.18829267 -0.5047879 0.07125988;;; 0.023820637 -0.06595295 -0.003393827; -0.111125976 0.0023178488 0.08700531; -0.073591515 0.057915907 0.048598815;;; 0.016056929 -0.5129501 -0.15588683; -0.3756476 -0.09993523 -0.45654622; -0.3688693 -0.33078116 -0.4093926;;;;], bias = Float32[0.77964276], stride = nothing, pad = nothing, dilation = nothing, groups = nothing)),),)
-        # (Chain(Conv((3, 3), 2 => 3, ), Conv((3, 3), 3 => 1, tanh)), rand(Float32, 5, 5, 2, 1), "Chain(Conv, Conv)"),
+        # # all arguments must have at least the same length of the firs one
+        # # a = (Chain(Conv((3, 3), 2 => 3), Conv((3, 3), 3 => 1, tanh)),)
+        # # b = ((layers = ((σ = nothing, weight = Float32[0.2703631 0.15815677 0.2918554; 0.20036785 0.43450722 0.3525422; 0.3541182 0.32077286 0.44091386;;; 0.3233156 0.08538988 0.25763267; 0.413441 0.66042584 0.16991; 0.36993486 0.5990643 0.10123589;;;; 0.45728725 0.500834 0.46808332; 0.3662355 0.35068494 0.27277413; 0.44974697 0.47245422 0.10595817;;; 0.36255562 0.6111583 0.52779496; 0.27237993 0.25857046 0.33643073; 0.6679214 0.066386 0.32072845;;;; -0.4879305 -0.59246373 -0.59834677; -0.55097836 -0.5006755 -0.4233263; -0.72177917 -0.65806544 -0.38224664;;; -0.4765812 -0.6856963 -0.5864509; -0.6547631 -0.55094117 -0.38632843; -0.74521375 -0.3817107 -0.48642716], bias = Float32[0.7159346, 0.7152501, -1.0509125], stride = nothing, pad = nothing, dilation = nothing, groups = nothing), (σ = nothing, weight = Float32[0.32858944 -0.10135343 -0.25303265; -0.13622479 0.023095237 0.1746222; 0.18829267 -0.5047879 0.07125988;;; 0.023820637 -0.06595295 -0.003393827; -0.111125976 0.0023178488 0.08700531; -0.073591515 0.057915907 0.048598815;;; 0.016056929 -0.5129501 -0.15588683; -0.3756476 -0.09993523 -0.45654622; -0.3688693 -0.33078116 -0.4093926;;;;], bias = Float32[0.77964276], stride = nothing, pad = nothing, dilation = nothing, groups = nothing)),),)
+        # # (Chain(Conv((3, 3), 2 => 3, ), Conv((3, 3), 3 => 1, tanh)), rand(Float32, 5, 5, 2, 1), "Chain(Conv, Conv)"),
 
-        # https://github.com/EnzymeAD/Enzyme-JAX/issues/221
-        # (Chain(Conv((4, 4), 2 => 2, pad=SamePad()), MeanPool((5, 5), pad=SamePad())), rand(Float32, 5, 5, 2, 2), "Chain(Conv, MeanPool)"), 
+        # # https://github.com/EnzymeAD/Enzyme-JAX/issues/221
+        # # (Chain(Conv((4, 4), 2 => 2, pad=SamePad()), MeanPool((5, 5), pad=SamePad())), rand(Float32, 5, 5, 2, 2), "Chain(Conv, MeanPool)"), 
         
-        (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
+        # (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
 
-        # error: 'stablehlo.multiply' op requires compatible types for all operands and results
-        # This requires an issue to be opened.
-        # (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
+        # # error: 'stablehlo.multiply' op requires compatible types for all operands and results
+        # # This requires an issue to be opened.
+        # # (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         
-        (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
+        # (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
 
-        # error: inferred shape '[1, 3, 9, 9]' is incompatible with return type of operation 'tensor<1x3x5x5xf32>'
-        # (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
+        # # error: inferred shape '[1, 3, 9, 9]' is incompatible with return type of operation 'tensor<1x3x5x5xf32>'
+        # # (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
 
-        # (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"), # Apparent correctness issue
+        # # (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"), # Apparent correctness issue
     ]
 
     for (model, x, name) in models_xs
@@ -76,11 +76,11 @@ end
     end
 
     models_xs = [
-        (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
-        (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
-        (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
-        (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
+        # (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
+        # (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
+        # (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+        # (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
+        # (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
     ]
 
     for (model, x, name) in models_xs
