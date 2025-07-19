@@ -43,7 +43,7 @@ FluxMPIExt = "MPI"
 FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
 
 [compat]
-AMDGPU = "1"
+AMDGPU = "1, 2"
 Adapt = "4"
 CUDA = "5"
 ChainRulesCore = "1.12"
