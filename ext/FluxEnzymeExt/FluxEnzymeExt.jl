@@ -14,16 +14,14 @@ EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
 ### gradient & withgradient
 
-# We can't use Enzyme.make_zero! to reset Duplicated, as it complains about e.g. LayerNorm having immutable differentiable fields
-# After https://github.com/EnzymeAD/Enzyme.jl/pull/1961 probably this can be `make_zero!(Ref(dup.dval))`
-_make_zero!(model) = Functors.fmapstructure(_make_zero_inner!, model)
-function _make_zero_inner!(x::AbstractArray{<:Number})
-  Optimisers.isnumeric(x) || return
-  Optimisers.maywrite(x) || error("can't handle this")
-  fill!(x, zero(eltype(x)))
-  nothing
-end
-_make_zero_inner!(x) = nothing  # any other Functors leaf type
+# After https://github.com/EnzymeAD/Enzyme.jl/pull/1961 Enzyme.make_zero! can be used,
+# but we have to use Ref as it complains about e.g. LayerNorm having immutable differentiable fields
+_make_zero!(model) = Enzyme.make_zero!(Ref(model))
+
+## OLD CODE
+# _make_zero!(model) = Functors.fmapstructure(_make_zero_inner!, model)
+# _make_zero_inner!(x::AbstractArray{<:Number}) = Enzyme.make_zero!(x)
+# _make_zero_inner!(x) = nothing  # any other Functors leaf type
 
 #=  # This _make_zero! matches what Flux allows elsewhere:
 julia> Flux.setup(Adam(), (1:3.)')
