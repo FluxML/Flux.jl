@@ -166,7 +166,7 @@ julia> grad4 = gradient(|>, 5, poly4)
 (1.0, (outer = (θ3 = [1.0, 17.5, 306.25],), inner = (θ3 = [0.5, 2.5, 12.5],)))
 ```
 
-Here `grad4.inner.θ3` corresponds to `poly4.inner.θ3`.
+Here `grad4[2].inner.θ3` corresponds to `poly4.inner.θ3`.
 These matching nested structures are at the core of how Flux works.
 
 !!! note "Implicit gradients"
