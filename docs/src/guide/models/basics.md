@@ -310,7 +310,7 @@ Here's a composition of 3 functions, in which the last step is the function `onl
 which takes a 1-element vector and gives us the number inside:
 
 ```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
-model1 = only ∘ Layer(20, 1) ∘ Layer(1, 20)
+model1 = only ∘ Layer(20, 1, identity) ∘ Layer(1, 20)
 
 y = model1(Float32[0.1])  # output is a Float32 number
 
@@ -331,7 +331,7 @@ This `model2` will work the same way (although its fields have different names):
 ```jldoctest poly; output = false, filter = r"[+-]?([0-9]*[.])?[0-9]+(f[+-]*[0-9])?"
 model2 = let
     lay1 = Layer(1, 20)  # local variables containing layers
-    lay2 = Layer(20, 1)
+    lay2 = Layer(20, 1, identity)
     function fwd(x)  # equivalent to x -> only(lay2(lay1(x)))
         mid = lay1(x)
         lay2(mid) |> only
