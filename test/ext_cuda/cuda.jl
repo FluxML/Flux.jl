@@ -88,7 +88,8 @@ end
 
     @test gpu((;a=ones(1))).a isa CuVector{Float32}
     @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
-    @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
+    ## issue https://github.com/LuxDL/Lux.jl/issues/1586
+    @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits} broken=true
   end
 end
 
