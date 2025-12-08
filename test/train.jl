@@ -27,15 +27,12 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
     end
 
     # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
-    # Enzyme doesn't work with un-initialized atm, presumably due to trainmode?
-    if name != "Enzyme"
     @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
       loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
       model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
       @test loss(model, rand(10, 10)) > 1
       trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
       @test loss(model, rand(10, 10)) < 0.01
-    end
     end
   end
 end
@@ -52,7 +49,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       CNT = Ref(0)
       @test_throws DomainError trainfn!(m1, tuple.(1:100), Descent(0.1)) do m, i
         CNT[] += 1
-        (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
+        (i == 51 ? NaN32 : 1f0) * sum(m([1f0]))
       end
       @test CNT[] == 51  # stopped early
       @test m1.weight[1] ≈ -5  # did not corrupt weights
