@@ -25,13 +25,7 @@
     for (model, x, name) in models_xs
         @testset "Enzyme grad check $name" begin
             println("testing $name with Enzyme")
-            if name ∈ ["Bilinear", "MultiHeadAttention"]
-                # these are failing with error:
-                # Error handling recursive stores for Symbol which has a fieldcount of 0
-                @test_broken test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
-            else
-                test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
-            end
+            @test test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
         end
     end
 end
