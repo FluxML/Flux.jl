@@ -1,0 +1,76 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Training · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+</script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>Flux</h1><select id="version-selector" onchange="window.location.href=this.value" style="visibility: hidden"></select><form action="../search.html" class="search" id="search-form"><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">Home</a></li><li><span class="toctext">Building Models</span><ul><li><a class="toctext" href="../models/basics.html">Basics</a></li><li><a class="toctext" href="../models/recurrence.html">Recurrence</a></li><li><a class="toctext" href="../models/regularisation.html">Regularisation</a></li><li><a class="toctext" href="../models/layers.html">Model Reference</a></li></ul></li><li><span class="toctext">Training Models</span><ul><li><a class="toctext" href="optimisers.html">Optimisers</a></li><li class="current"><a class="toctext" href="training.html">Training</a><ul class="internal"><li><a class="toctext" href="#Loss-Functions-1">Loss Functions</a></li><li><a class="toctext" href="#Datasets-1">Datasets</a></li><li><a class="toctext" href="#Callbacks-1">Callbacks</a></li></ul></li></ul></li><li><a class="toctext" href="../data/onehot.html">One-Hot Encoding</a></li><li><a class="toctext" href="../gpu.html">GPU Support</a></li><li><a class="toctext" href="../saving.html">Saving &amp; Loading</a></li><li><a class="toctext" href="../community.html">Community</a></li></ul></nav><article id="docs"><header><nav><ul><li>Training Models</li><li><a href="training.html">Training</a></li></ul><a class="edit-page" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/training/training.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Training</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" href="#Training-1" id="Training-1">Training</a></h1><p>To actually train a model we need three things:</p><ul><li><p>A <em>objective function</em>, that evaluates how well a model is doing given some input data.</p></li><li><p>A collection of data points that will be provided to the objective function.</p></li><li><p>An <a href="optimisers.html">optimiser</a> that will update the model parameters appropriately.</p></li></ul><p>With these we can call <code>Flux.train!</code>:</p><pre><code class="language-julia">Flux.train!(objective, data, opt)</code></pre><p>There are plenty of examples in the <a href="https://github.com/FluxML/model-zoo">model zoo</a>.</p><h2><a class="nav-anchor" href="#Loss-Functions-1" id="Loss-Functions-1">Loss Functions</a></h2><p>The objective function must return a number representing how far the model is from its target – the <em>loss</em> of the model. The <code>loss</code> function that we defined in <a href="../models/basics.html">basics</a> will work as an objective. We can also define an objective in terms of some model:</p><pre><code class="language-julia">m = Chain(
+  Dense(784, 32, σ),
+  Dense(32, 10), softmax)
+
+loss(x, y) = Flux.mse(m(x), y)
+
+# later
+Flux.train!(loss, data, opt)</code></pre><p>The objective will almost always be defined in terms of some <em>cost function</em> that measures the distance of the prediction <code>m(x)</code> from the target <code>y</code>. Flux has several of these built in, like <code>mse</code> for mean squared error or <code>crossentropy</code> for cross entropy loss, but you can calculate it however you want.</p><h2><a class="nav-anchor" href="#Datasets-1" id="Datasets-1">Datasets</a></h2><p>The <code>data</code> argument provides a collection of data to train with (usually a set of inputs <code>x</code> and target outputs <code>y</code>). For example, here's a dummy data set with only one data point:</p><pre><code class="language-julia">x = rand(784)
+y = rand(10)
+data = [(x, y)]</code></pre><p><code>Flux.train!</code> will call <code>loss(x, y)</code>, calculate gradients, update the weights and then move on to the next data point if there is one. We can train the model on the same data three times:</p><pre><code class="language-julia">data = [(x, y), (x, y), (x, y)]
+# Or equivalently
+data = Iterators.repeated((x, y), 3)</code></pre><p>It's common to load the <code>x</code>s and <code>y</code>s separately. In this case you can use <code>zip</code>:</p><pre><code class="language-julia">xs = [rand(784), rand(784), rand(784)]
+ys = [rand( 10), rand( 10), rand( 10)]
+data = zip(xs, ys)</code></pre><p>Note that, by default, <code>train!</code> only loops over the data once (a single "epoch"). A convenient way to run multiple epochs from the REPL is provided by <code>@epochs</code>.</p><pre><code class="language-julia">julia&gt; using Flux: @epochs
+
+julia&gt; @epochs 2 println("hello")
+INFO: Epoch 1
+hello
+INFO: Epoch 2
+hello
+
+julia&gt; @epochs 2 Flux.train!(...)
+# Train for two epochs</code></pre><h2><a class="nav-anchor" href="#Callbacks-1" id="Callbacks-1">Callbacks</a></h2><p><code>train!</code> takes an additional argument, <code>cb</code>, that's used for callbacks so that you can observe the training process. For example:</p><pre><code class="language-julia">train!(objective, data, opt, cb = () -&gt; println("training"))</code></pre><p>Callbacks are called for every batch of training data. You can slow this down using <code>Flux.throttle(f, timeout)</code> which prevents <code>f</code> from being called more than once every <code>timeout</code> seconds.</p><p>A more typical callback might look like this:</p><pre><code class="language-julia">test_x, test_y = # ... create single batch of test data ...
+evalcb() = @show(loss(test_x, test_y))
+
+Flux.train!(objective, data, opt,
+            cb = throttle(evalcb, 5))</code></pre><footer><hr/><a class="previous" href="optimisers.html"><span class="direction">Previous</span><span class="title">Optimisers</span></a><a class="next" href="../data/onehot.html"><span class="direction">Next</span><span class="title">One-Hot Encoding</span></a></footer></article></body></HTML>
