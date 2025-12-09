@@ -114,7 +114,8 @@ end
 
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
     Pkg.add(["CUDA", "cuDNN"])
-    using CUDA, cuDNN
+    # using CUDA, cuDNN
+    using CUDA # cuDNN is loaded by FluxCUDAExt
 
     if CUDA.functional()
       @testset "CUDA" begin
