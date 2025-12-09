@@ -3,15 +3,8 @@ module FluxCUDAcuDNNExt
 using Flux
 using NNlib
 using CUDA
+using cuDNN
 
-try
-    using cuDNN
-catch
-    @warn """Package cuDNN not found in current path.
-    - Run `import Pkg; Pkg.add(\"cuDNN\")` to install the cuDNN package, then restart julia.
-    - If cuDNN is not installed, some Flux functionalities will not be available when running on the GPU.
-    """
-end
 
 function (BN::Flux.BatchNorm)(x::Union{CuArray{T,2},CuArray{T,4},CuArray{T,5}},
                               cache=nothing) where T<:Union{Float32, Float64}
