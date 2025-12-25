@@ -33,8 +33,7 @@ requirejs.config({
       "highlight"
     ]
   }
-}
-});
+}});
 ////////////////////////////////////////////////////////////////////////////////
 require(['jquery', 'katex', 'katex-auto-render'], function($, katex, renderMathInElement) {
 $(document).ready(function() {
@@ -59,7 +58,6 @@ $(document).ready(function() {
     }
   ]
 }
-
   );
 })
 
@@ -74,81 +72,64 @@ $(document).ready(function() {
 ////////////////////////////////////////////////////////////////////////////////
 require(['jquery'], function($) {
 
-let timer = 0;
-var isExpanded = true;
+///////////////////////////////////
 
-$(document).on(
-  "click",
-  ".docstring .docstring-article-toggle-button",
-  function () {
-    let articleToggleTitle = "Expand docstring";
-    const parent = $(this).parent();
-
-    debounce(() => {
-      if (parent.siblings("section").is(":visible")) {
-        parent
-          .find("a.docstring-article-toggle-button")
-          .removeClass("fa-chevron-down")
-          .addClass("fa-chevron-right");
-      } else {
-        parent
-          .find("a.docstring-article-toggle-button")
-          .removeClass("fa-chevron-right")
-          .addClass("fa-chevron-down");
-
-        articleToggleTitle = "Collapse docstring";
-      }
-
-      parent
-        .children(".docstring-article-toggle-button")
-        .prop("title", articleToggleTitle);
-      parent.siblings("section").slideToggle();
-    });
-  }
-);
-
-$(document).on("click", ".docs-article-toggle-button", function (event) {
-  let articleToggleTitle = "Expand docstring";
-  let navArticleToggleTitle = "Expand all docstrings";
-  let animationSpeed = event.noToggleAnimation ? 0 : 400;
-
-  debounce(() => {
-    if (isExpanded) {
-      $(this).removeClass("fa-chevron-up").addClass("fa-chevron-down");
-      $("a.docstring-article-toggle-button")
-        .removeClass("fa-chevron-down")
-        .addClass("fa-chevron-right");
-
-      isExpanded = false;
-
-      $(".docstring section").slideUp(animationSpeed);
-    } else {
-      $(this).removeClass("fa-chevron-down").addClass("fa-chevron-up");
-      $("a.docstring-article-toggle-button")
-        .removeClass("fa-chevron-right")
-        .addClass("fa-chevron-down");
-
-      isExpanded = true;
-      articleToggleTitle = "Collapse docstring";
-      navArticleToggleTitle = "Collapse all docstrings";
-
-      $(".docstring section").slideDown(animationSpeed);
+// to open and scroll to
+function openTarget() {
+  const hash = decodeURIComponent(location.hash.substring(1));
+  if (hash) {
+    const target = document.getElementById(hash);
+    if (target) {
+      const details = target.closest("details");
+      if (details) details.open = true;
     }
-
-    $(this).prop("title", navArticleToggleTitle);
-    $(".docstring-article-toggle-button").prop("title", articleToggleTitle);
-  });
-});
-
-function debounce(callback, timeout = 300) {
-  if (Date.now() - timer > timeout) {
-    callback();
   }
-
-  clearTimeout(timer);
-
-  timer = Date.now();
 }
+openTarget(); // onload
+window.addEventListener("hashchange", openTarget);
+window.addEventListener("load", openTarget);
+
+//////////////////////////////////////
+// for the global expand/collapse butter
+
+function accordion() {
+  document.body
+    .querySelectorAll("details.docstring")
+    .forEach((e) => e.setAttribute("open", "true"));
+}
+
+function noccordion() {
+  document.body
+    .querySelectorAll("details.docstring")
+    .forEach((e) => e.removeAttribute("open"));
+}
+
+function expandAll() {
+  let me = document.getElementById("documenter-article-toggle-button");
+  me.setAttribute("open", "true");
+  $(me).removeClass("fa-chevron-down").addClass("fa-chevron-up");
+  $(me).prop("title", "Collapse all docstrings");
+  accordion();
+}
+
+function collapseAll() {
+  let me = document.getElementById("documenter-article-toggle-button");
+  me.removeAttribute("open");
+  $(me).removeClass("fa-chevron-up").addClass("fa-chevron-down");
+  $(me).prop("title", "Expand all docstrings");
+  noccordion();
+}
+
+$(document).on("click", ".docs-article-toggle-button", function () {
+  var isExpanded = this.hasAttribute("open");
+  if (isExpanded) {
+    collapseAll();
+    isExpanded = false;
+  } else {
+    expandAll();
+    isExpanded = true;
+  }
+});
 
 })
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,6 +197,57 @@ if (document.readyState === "loading") {
 
 })
 ////////////////////////////////////////////////////////////////////////////////
+require(['jquery'], function($) {
+$(document).ready(function () {
+  $(".footnote-ref").hover(
+    function () {
+      var id = $(this).attr("href");
+      var footnoteContent = $(id).clone().find("a").remove().end().html();
+
+      var $preview = $(this).next(".footnote-preview");
+
+      $preview.html(footnoteContent).css({
+        display: "block",
+        left: "50%",
+        transform: "translateX(-50%)",
+      });
+
+      repositionPreview($preview, $(this));
+    },
+    function () {
+      var $preview = $(this).next(".footnote-preview");
+      $preview.css({
+        display: "none",
+        left: "",
+        transform: "",
+        "--arrow-left": "",
+      });
+    },
+  );
+
+  function repositionPreview($preview, $ref) {
+    var previewRect = $preview[0].getBoundingClientRect();
+    var refRect = $ref[0].getBoundingClientRect();
+    var viewportWidth = $(window).width();
+
+    if (previewRect.right > viewportWidth) {
+      var excessRight = previewRect.right - viewportWidth;
+      $preview.css("left", `calc(50% - ${excessRight + 10}px)`);
+    } else if (previewRect.left < 0) {
+      var excessLeft = 0 - previewRect.left;
+      $preview.css("left", `calc(50% + ${excessLeft + 10}px)`);
+    }
+
+    var newPreviewRect = $preview[0].getBoundingClientRect();
+
+    var arrowLeft = refRect.left + refRect.width / 2 - newPreviewRect.left;
+
+    $preview.css("--arrow-left", arrowLeft + "px");
+  }
+});
+
+})
+////////////////////////////////////////////////////////////////////////////////
 require(['jquery', 'headroom', 'headroom-jquery'], function($, Headroom) {
 
 // Manages the top navigation bar (hides it when the user starts scrolling down on the
@@ -233,26 +265,10 @@ require(['jquery'], function($) {
 
 $(document).ready(function () {
   let meta = $("div[data-docstringscollapsed]").data();
-
-  if (meta?.docstringscollapsed) {
+  if (!meta?.docstringscollapsed) {
     $("#documenter-article-toggle-button").trigger({
       type: "click",
-      noToggleAnimation: true,
     });
-
-    setTimeout(function () {
-      if (window.location.hash) {
-        const targetId = window.location.hash.substring(1);
-        const targetElement = document.getElementById(targetId);
-
-        if (targetElement) {
-          targetElement.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }
-      }
-    }, 100);
   }
 });
 
@@ -326,7 +342,7 @@ update_search
 
 function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
   importScripts(
-    "https://cdn.jsdelivr.net/npm/minisearch@6.1.0/dist/umd/index.min.js"
+    "https://cdn.jsdelivr.net/npm/minisearch@6.1.0/dist/umd/index.min.js",
   );
 
   let data = documenterSearchIndex.map((x, key) => {
@@ -451,10 +467,10 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
     processTerm: (term) => {
       let word = stopWords.has(term) ? null : term;
       if (word) {
-        // custom trimmer that doesn't strip @ and !, which are used in julia macro and function names
+        // custom trimmer that doesn't strip special characters `@!+-*/^&|%<>=:.` which are used in julia macro and function names.
         word = word
-          .replace(/^[^a-zA-Z0-9@!]+/, "")
-          .replace(/[^a-zA-Z0-9@!]+$/, "");
+          .replace(/^[^a-zA-Z0-9@!+\-/*^&%|<>._=:]+/, "")
+          .replace(/[^a-zA-Z0-9@!+\-/*^&%|<>._=:]+$/, "");
 
         word = word.toLowerCase();
       }
@@ -463,7 +479,52 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
     },
     // add . as a separator, because otherwise "title": "Documenter.Anchors.add!", would not
     // find anything if searching for "add!", only for the entire qualification
-    tokenize: (string) => string.split(/[\s\-\.]+/),
+    tokenize: (string) => {
+      const tokens = [];
+      let remaining = string;
+
+      // julia specific patterns
+      const patterns = [
+        // Module qualified names (e.g., Base.sort, Module.Submodule. function)
+        /\b[A-Za-z0-9_1*(?:\.[A-Z][A-Za-z0-9_1*)*\.[a-z_][A-Za-z0-9_!]*\b/g,
+        // Macro calls (e.g., @time, @async)
+        /@[A-Za-z0-9_]*/g,
+        // Type parameters (e.g., Array{T,N}, Vector{Int})
+        /\b[A-Za-z0-9_]*\{[^}]+\}/g,
+        // Function names with module qualification (e.g., Base.+, Base.:^)
+        /\b[A-Za-z0-9_]*\.:[A-Za-z0-9_!+\-*/^&|%<>=.]+/g,
+        // Operators as complete tokens (e.g., !=, aã, ||, ^, .=, →)
+        /[!<>=+\-*/^&|%:.]+/g,
+        // Function signatures with type annotations (e.g., f(x::Int))
+        /\b[A-Za-z0-9_!]*\([^)]*::[^)]*\)/g,
+        // Numbers (integers, floats, scientific notation)
+        /\b\d+(?:\.\d+)? (?:[eE][+-]?\d+)?\b/g,
+      ];
+
+      // apply patterns in order of specificity
+      for (const pattern of patterns) {
+        pattern.lastIndex = 0; //reset regex state
+        let match;
+        while ((match = pattern.exec(remaining)) != null) {
+          const token = match[0].trim();
+          if (token && !tokens.includes(token)) {
+            tokens.push(token);
+          }
+        }
+      }
+
+      // splitting the content if something remains
+      const basicTokens = remaining
+        .split(/[\s\-,;()[\]{}]+/)
+        .filter((t) => t.trim());
+      for (const token of basicTokens) {
+        if (token && !tokens.includes(token)) {
+          tokens.push(token);
+        }
+      }
+
+      return tokens.filter((token) => token.length > 0);
+    },
     // options which will be applied during the search
     searchOptions: {
       prefix: true,
@@ -537,8 +598,8 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
             Math.max(textindex.index - 100, 0),
             Math.min(
               textindex.index + querystring.length + 100,
-              result.text.length
-            )
+              result.text.length,
+            ),
           )
         : ""; // cut-off text before and after from the match
 
@@ -548,7 +609,7 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
       ? "..." +
         text.replace(
           new RegExp(`${escape(searchstring)}`, "i"), // For first occurrence
-          '<span class="search-result-highlight py-1">$&</span>'
+          '<span class="search-result-highlight py-1">$&</span>',
         ) +
         "..."
       : ""; // highlights the match
@@ -561,7 +622,7 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
     // We encode the full url to escape some special characters which can lead to broken links
     let result_div = `
         <a href="${encodeURI(
-          documenterBaseURL + "/" + result.location
+          documenterBaseURL + "/" + result.location,
         )}" class="search-result-link w-100 is-flex is-flex-direction-column gap-2 px-4 py-2">
           <div class="w-100 is-flex is-flex-wrap-wrap is-justify-content-space-between is-align-items-flex-start">
             <div class="search-result-title has-text-weight-bold ${
@@ -586,6 +647,35 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
     return result_div;
   }
 
+  function calculateCustomScore(result, query) {
+    const titleLower = result.title.toLowerCase();
+    const queryLower = query.toLowerCase();
+
+    // Tier 1 : Exact title match
+    if (titleLower == queryLower) {
+      return 10000 + result.score;
+    }
+
+    // Tier 2 : Title contains exact query
+    if (titleLower.includes(queryLower)) {
+      const position = titleLower.indexOf(queryLower);
+      // prefer matches at the beginning
+      return 5000 + result.score - position * 10;
+    }
+
+    // Tier 3 : All query words in title
+    const queryWords = queryLower.trim().split(/\s+/);
+    const titleWords = titleLower.trim().split(/\s+/);
+    const allWordsInTitle = queryWords.every((qw) =>
+      titleWords.some((tw) => tw.includes(qw)),
+    );
+    if (allWordsInTitle) {
+      return 2000 + result.score;
+    }
+
+    return result.score;
+  }
+
   self.onmessage = function (e) {
     let query = e.data;
     let results = index.search(query, {
@@ -595,6 +685,15 @@ function worker_function(documenterSearchIndex, documenterBaseURL, filters) {
       },
       combineWith: "AND",
     });
+
+    // calculate custom scores for all results
+    results = results.map((result) => ({
+      ...result,
+      customScore: calculateCustomScore(result, query),
+    }));
+
+    // sort by custom score in descending order
+    results.sort((a, b) => b.customScore - a.customScore);
 
     // Pre-filter to deduplicate and limit to 200 per category to the extent
     // possible without knowing what the filters are.
@@ -865,11 +964,14 @@ function waitUntilSearchIndexAvailable() {
   // has finished loading and documenterSearchIndex gets defined.
   // So we need to wait until the search index actually loads before setting
   // up all the search-related stuff.
-  if (typeof documenterSearchIndex !== "undefined") {
+  if (
+    typeof documenterSearchIndex !== "undefined" &&
+    typeof $ !== "undefined"
+  ) {
     runSearchMainCode();
   } else {
-    console.warn("Search Index not available, waiting");
-    setTimeout(waitUntilSearchIndexAvailable, 1000);
+    console.warn("Search Index or jQuery not available, waiting");
+    setTimeout(waitUntilSearchIndexAvailable, 100);
   }
 }
 
@@ -923,12 +1025,21 @@ $(document).ready(function () {
   `;
 
   let search_modal_footer = `
-    <footer class="modal-card-foot">
-      <span>
-        <kbd class="search-modal-key-hints">Ctrl</kbd> +
-        <kbd class="search-modal-key-hints">/</kbd> to search
-      </span>
-      <span class="ml-3"> <kbd class="search-modal-key-hints">esc</kbd> to close </span>
+    <footer class="modal-card-foot is-flex is-justify-content-space-between is-align-items-center">
+      <div class="is-flex gap-3 is-flex-wrap-wrap">
+        <span>
+          <kbd class="search-modal-key-hints">Ctrl</kbd> +
+          <kbd class="search-modal-key-hints">/</kbd> to search
+        </span>
+        <span> <kbd class="search-modal-key-hints">esc</kbd> to close </span>
+      </div>
+      <div class="is-flex gap-3 is-flex-wrap-wrap">
+        <span>
+          <kbd class="search-modal-key-hints">↑</kbd>
+          <kbd class="search-modal-key-hints">↓</kbd> to navigate
+        </span>
+        <span> <kbd class="search-modal-key-hints">Enter</kbd> to select </span>
+      </div>
     </footer>
   `;
 
@@ -944,7 +1055,7 @@ $(document).ready(function () {
           ${search_modal_footer}
         </div>
       </div>
-    `
+    `,
   );
 
   function checkURLForSearch() {
@@ -979,9 +1090,33 @@ $(document).ready(function () {
       openModal();
     } else if (event.key === "Escape") {
       closeModal();
-    }
+    } else if (
+      document.querySelector("#search-modal")?.classList.contains("is-active")
+    ) {
+      const searchResults = document.querySelectorAll(".search-result-link");
 
-    return false;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        if (searchResults.length > 0) {
+          const currentFocused = document.activeElement;
+          const currentIndex =
+            Array.from(searchResults).indexOf(currentFocused);
+          const nextIndex =
+            currentIndex < searchResults.length - 1 ? currentIndex + 1 : 0;
+          searchResults[nextIndex].focus();
+        }
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        if (searchResults.length > 0) {
+          const currentFocused = document.activeElement;
+          const currentIndex =
+            Array.from(searchResults).indexOf(currentFocused);
+          const prevIndex =
+            currentIndex > 0 ? currentIndex - 1 : searchResults.length - 1;
+          searchResults[prevIndex].focus();
+        }
+      }
+    }
   });
 
   //event listener for the link icon to copy the URL
@@ -1145,7 +1280,55 @@ $(document).ready(function () {
     target_href = version_selector_select
       .children("option:selected")
       .get(0).value;
-    window.location.href = target_href;
+
+    // if the target is just "#", don't navigate (it's the current version)
+    if (target_href === "#") {
+      return;
+    }
+
+    // try to stay on the same page when switching versions
+    // get the current page path relative to the version root
+    var current_page = window.location.pathname;
+
+    // resolve the documenterBaseURL to an absolute path
+    // documenterBaseURL is a relative path (usually "."), so we need to resolve it
+    var base_url_absolute = new URL(documenterBaseURL, window.location.href)
+      .pathname;
+    if (!base_url_absolute.endsWith("/")) {
+      base_url_absolute = base_url_absolute + "/";
+    }
+
+    // extract the page path after the version directory
+    // e.g., if we're on /stable/man/guide.html, we want "man/guide.html"
+    var page_path = "";
+    if (current_page.startsWith(base_url_absolute)) {
+      page_path = current_page.substring(base_url_absolute.length);
+    }
+
+    // construct the target URL with the same page path
+    var target_url = target_href;
+    if (page_path && page_path !== "" && page_path !== "index.html") {
+      // remove trailing slash from target_href if present
+      if (target_url.endsWith("/")) {
+        target_url = target_url.slice(0, -1);
+      }
+      target_url = target_url + "/" + page_path;
+    }
+
+    // check if the target page exists, fallback to homepage if it doesn't
+    fetch(target_url, { method: "HEAD" })
+      .then(function (response) {
+        if (response.ok) {
+          window.location.href = target_url;
+        } else {
+          // page doesn't exist in the target version, go to homepage
+          window.location.href = target_href;
+        }
+      })
+      .catch(function (error) {
+        // network error or other failure - use homepage
+        window.location.href = target_href;
+      });
   });
 
   // add the current version to the selector based on siteinfo.js, but only if the selector is empty
@@ -1156,7 +1339,7 @@ $(document).ready(function () {
     var option = $(
       "<option value='#' selected='selected'>" +
         DOCUMENTER_CURRENT_VERSION +
-        "</option>"
+        "</option>",
     );
     version_selector_select.append(option);
   }
@@ -1173,7 +1356,7 @@ $(document).ready(function () {
       // otherwise update the old option with the URL and enable it
       if (existing_id == -1) {
         var option = $(
-          "<option value='" + version_url + "'>" + each + "</option>"
+          "<option value='" + version_url + "'>" + each + "</option>",
         );
         version_selector_select.append(option);
       } else {
