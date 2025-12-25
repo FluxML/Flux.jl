@@ -715,12 +715,13 @@ julia> es = Flux.early_stopping(loss, 3);
 
 
 julia> for i in 1:10
-         @info "Epoch \$i"
+         @info "Epoch \$i" # first epoch improves; next ones don't
          es() && break
        end
 [ Info: Epoch 1
 [ Info: Epoch 2
 [ Info: Epoch 3
+[ Info: Epoch 4
 ```
 """
 function early_stopping(f, delay; distance = -, init_score = Inf, min_dist = 0)
