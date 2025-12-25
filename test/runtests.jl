@@ -25,11 +25,11 @@ using Zygote: Zygote
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"
 # ENV["FLUX_TEST_METAL"] = "true"
-# ENV["FLUX_TEST_CPU"] = "false"
+ENV["FLUX_TEST_CPU"] = "false"
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
-# ENV["FLUX_TEST_ENZYME"] = "false"
-ENV["FLUX_TEST_REACTANT"] = "false"
+ENV["FLUX_TEST_ENZYME"] = "false"
+ENV["FLUX_TEST_REACTANT"] = "true"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
 const FLUX_TEST_CPU = get(ENV, "FLUX_TEST_CPU", "true") == "true"
@@ -201,6 +201,7 @@ end
     # │ CUDA.jl's JLLs were precompiled without an NVIDIA driver present.
     Pkg.add("Reactant")
     using Reactant: Reactant
+    Reactant.set_default_backend("cpu")
     @testset "Reactant" begin
       include("ext_reactant/test_utils_reactant.jl")
       include("ext_reactant/reactant.jl")
