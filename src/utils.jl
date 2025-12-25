@@ -696,7 +696,7 @@ function patience(predicate, wait)
 end
 
 """
-    early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
+    early_stopping(f, delay; distance = -, init_score = Inf, min_dist = 0)
 
 Return a function that internally counts by one when
 `distance(best_score, f(...)) <= min_dist`, where
@@ -723,7 +723,7 @@ julia> for i in 1:10
 [ Info: Epoch 3
 ```
 """
-function early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
+function early_stopping(f, delay; distance = -, init_score = Inf, min_dist = 0)
   trigger = let best_score = init_score
     (args...; kwargs...) -> begin
       score = f(args...; kwargs...)
@@ -738,7 +738,7 @@ function early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
 end
 
 """
-    plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
+    plateau(f, width; distance = -, init_score = Inf, min_dist = 1f-6)
 
 Return a function that internally counts by one when
 `abs(distance(last_score, f(...))) <= min_dist`, where
@@ -766,7 +766,7 @@ julia> for i in 1:10
 [ Info: Epoch 4
 ```
 """
-function plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)
+function plateau(f, width; distance = -, init_score = Inf, min_dist = 1f-6)
   is_plateau = let last_score = init_score
     (args...; kwargs...) -> begin
       score = f(args...; kwargs...)

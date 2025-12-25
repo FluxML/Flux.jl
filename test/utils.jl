@@ -475,8 +475,32 @@ end
   end
 
   @testset "early stopping" begin
+    @testset "decreasing score" begin
+      es = Flux.early_stopping(identity, 10)
+
+      n_iter = 0
+      while n_iter < 99
+        es(-n_iter) && break
+        n_iter += 1
+      end
+
+      @test n_iter == 99  # every iter improves
+    end
+
+    @testset "increasing score" begin
+      es = Flux.early_stopping(identity, 10; distance=(best_score, score) -> score - best_score, init_score=-Inf)
+
+      n_iter = 0
+      while n_iter < 99
+        es(n_iter) && break
+        n_iter += 1
+      end
+
+      @test n_iter == 99  # every iter improves
+    end
+
     @testset "args & kwargs" begin
-      es = Flux.early_stopping((x; y = 1) -> x + y, 10; min_dist=3)
+      es = Flux.early_stopping((x; y) -> x + y, 10)
 
       n_iter = 0
       while n_iter < 99
@@ -484,31 +508,27 @@ end
         n_iter += 1
       end
 
-      @test n_iter == 9
+      @test n_iter == 99  # every iter improves
     end
 
-    @testset "distance" begin
-      es = Flux.early_stopping(identity, 10; distance=(best_score, score) -> score - best_score)
+    @testset "minimum distance" begin
+      es = Flux.early_stopping(identity, 10; min_dist = 3)
 
       n_iter = 0
       while n_iter < 99
-        es(n_iter) && break
-        n_iter += 1
+        es(-n_iter) && break
+        n_iter += 3
       end
 
-      @test n_iter == 99
-    end
-
-    @testset "init_score" begin
-      es = Flux.early_stopping(identity, 10; init_score=10)
+      @test n_iter == 99  # every iter improves by at least 3
 
       n_iter = 0
       while n_iter < 99
-        es(n_iter) && break
+        es(-n_iter) && break
         n_iter += 1
       end
-
-      @test n_iter == 10
+      
+      @test n_iter == 9  # first iteration improves by at least 3; next ones don't
     end
   end
 

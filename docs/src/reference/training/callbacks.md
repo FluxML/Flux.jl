@@ -32,7 +32,7 @@ for epoch in 1:10
 end
 ```
 
-The keyword argument `distance` of `early_stopping` is a function of the form `distance(best_score, score)`. By default `distance` is `-`, which implies that the monitored metric `f` is expected to be decreasing and minimized. If you use some increasing metric (e.g. accuracy), you can customize the `distance` function: `(best_score, score) -> score - best_score`.
+The keyword argument `distance` of `early_stopping` is a function of the form `distance(best_score, score)`. By default `distance` is `-` and `init_score` is `Inf`, meaning that the monitored metric `f` is expected to be decreasing and minimized. If you use a metric such that improvement is shown by increasing values (e.g. accuracy), you can customize the `distance` function and the `init_score` value to, for example, `(best_score, score) -> score - best_score` and `-Inf`, respectively.
 ```julia
 # create a pseudo-accuracy that increases by 0.01 each time from 0 to 1
 # we call this like acc()
@@ -41,7 +41,7 @@ acc = let v = 0
 end
 
 # create an early stopping trigger for accuracy
-es = early_stopping(acc, 3; delta = (best_score, score) -> score - best_score)
+es = early_stopping(acc, 3; delta = (best_score, score) -> score - best_score, init_score = -Inf)
 
 # this will iterate until the 10th epoch
 for epoch in 1:10
