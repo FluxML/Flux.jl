@@ -1,6 +1,6 @@
 using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
-      DataFrames, JLD2, MLDataDevices, MLCore
+      DataFrames, JLD2, MLDataDevices, MLCore, Mooncake
 using MLCore: numobs, getobs, getobs!
 
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
@@ -50,8 +50,7 @@ makedocs(
             "Shape Inference" => "reference/outputsize.md",
             "Flat vs. Nested" => "reference/destructure.md",
             "Callback Helpers" => "reference/training/callbacks.md",
-            "Gradients -- Zygote.jl" => "reference/training/zygote.md",
-            "Gradients -- Enzyme.jl" => "reference/training/enzyme.md",
+            "Gradients" => "reference/training/gradients.md",
             "Transfer Data to GPU -- MLDataDevices.jl" => "reference/data/mldatadevices.md",
             "Batching Data -- MLUtils.jl" => "reference/data/mlutils.md",
             "OneHotArrays.jl" => "reference/data/onehot.md",

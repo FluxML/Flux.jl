@@ -13,19 +13,14 @@ end
 const ACTIVATIONS = [identity, tanh]
 
 function gpu_gradtest(name::String, layers::Vector, x_cpu, args...; 
-    test_mode=false, test_grad_x=true, 
+    test_mode=false, 
     atol=1e-4, rtol=1e-4)
   @testset "$name GPU grad tests" begin
     for layer in layers
       @testset "$layer Layer GPU grad test" begin
-
-        # compute output and grad of parameters
         l_cpu = layer(args...)
-        if test_mode
-          testmode!(l_cpu)
-        end
-
-        test_gradients(l_cpu, x_cpu; test_gpu=true, compare_finite_diff=false, test_grad_x, atol, rtol)
+        test_gradients(l_cpu, x_cpu; test_gpu=true, reference=AutoZygote(), compare=nothing, 
+                atol, rtol, test_mode)
       end
     end
   end
@@ -90,19 +85,22 @@ gpu_gradtest("PixelShuffle 2d", pixelshuffle, rand(Float32, 3, 4, 18, 3), 3)
 gpu_gradtest("PixelShuffle 1d", pixelshuffle, rand(Float32, 3, 18, 3), 3)
 
 embedding = [Flux.Embedding]
-gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2, test_grad_x=false)
-gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2, test_grad_x=false)
-gpu_gradtest("Embedding integer index", embedding, 1, 5, 2, test_grad_x=false)
-gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2, test_grad_x=false)
-gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2, test_grad_x=false)
-gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2, test_grad_x=false)
-gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2, test_grad_x=false)
+gpu_gradtest("Embedding", embedding, [1,3,5], 5, 2)
+gpu_gradtest("Embedding repeated indices", embedding, [1,3,5,3], 5, 2)
+gpu_gradtest("Embedding integer index", embedding, 1, 5, 2)
+gpu_gradtest("Embedding 2d index", embedding, [1 2; 3 4], 5, 2)
+gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2)
+gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2)
+gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
 
 @testset "function layers" begin
   x = rand(Float32, 3, 3)
-  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, compare_finite_diff=false)
-  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x, test_gpu=true, compare_finite_diff=false)
-  test_gradients(x -> sum(Flux.normalise(x)), x, test_gpu=true, compare_finite_diff=false)
+  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, 
+    reference=AutoZygote(), compare=nothing)
+  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x, test_gpu=true, 
+    reference=AutoZygote(), compare=nothing)
+  test_gradients(x -> sum(Flux.normalise(x)), x, test_gpu=true, 
+    reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Zeros mapped for $cl" for cl in (Conv, ConvTranspose, CrossCor, DepthwiseConv)
@@ -183,7 +181,7 @@ end
   @test size(b(x, y)) == (3,9)
   @test sum(abs2, b(x, y)) ≈ 0f0
   test_gradients(b |> cpu, x |> cpu, y |> cpu, 
-    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
+    test_gpu=true, reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Two-streams Bilinear" begin
@@ -193,7 +191,7 @@ end
   @test size(b(x, y)) == (3,9)
   @test sum(abs2, b(x, y)) ≈ 0f0
   test_gradients(b |> cpu, x |> cpu, y |> cpu, 
-    test_gpu=true, compare_finite_diff=false, loss=(m, x, y) -> mean(abs2, m(x, y)))
+    test_gpu=true, reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Parallel" begin
@@ -213,7 +211,7 @@ end
   @testset "gradient" begin
     layer_cpu = Parallel(+, x -> zero(x), identity)
     test_gradients(layer_cpu, randn(2, 2, 2, 2), 
-      test_gpu=true, compare_finite_diff=false, loss=(m, x) -> mean(abs2, m(x)))
+      test_gpu=true, reference=AutoZygote(), compare=nothing)
   end
 end
 
@@ -294,5 +292,5 @@ end
     return sum(y.^2) + sum(α.^2)
   end
   test_gradients(mha_cpu, x_cpu; loss, 
-    test_gpu=true, compare_finite_diff=false)
+    test_gpu=true, reference=AutoZygote(), compare=nothing)
 end

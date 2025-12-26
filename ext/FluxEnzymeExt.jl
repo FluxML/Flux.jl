@@ -6,7 +6,7 @@ import Flux.Train: _enzyme_train!
 import Optimisers
 import Functors
 import Enzyme
-using Enzyme: EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, DuplicatedNoNeed
+using Enzyme: EnzymeCore, EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, DuplicatedNoNeed
 using Enzyme: autodiff_thunk, Reverse, ReverseSplitWithPrimal
 using ProgressLogging: @withprogress, @logprogress
 
@@ -14,46 +14,19 @@ EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
 ### gradient & withgradient
 
-# We can't use Enzyme.make_zero! to reset Duplicated, as it complains about e.g. LayerNorm having immutable differentiable fields
-# After https://github.com/EnzymeAD/Enzyme.jl/pull/1961 probably this can be `make_zero!(Ref(dup.dval))`
-_make_zero!(model) = Functors.fmapstructure(_make_zero_inner!, model)
-function _make_zero_inner!(x::AbstractArray{<:Number})
-  Optimisers.isnumeric(x) || return
-  Optimisers.maywrite(x) || error("can't handle this")
-  fill!(x, zero(eltype(x)))
-  nothing
-end
-_make_zero_inner!(x) = nothing  # any other Functors leaf type
-
-#=  # This _make_zero! matches what Flux allows elsewhere:
-julia> Flux.setup(Adam(), (1:3.)')
-ERROR: model must be fully mutable for `train!` to work, got `x::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}`.
-If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}) = true`
-=#
-# Perhaps canonical way for Enzyme is more like this:
-# function _make_zero!(x::AbstractArray{<:Number})
-#     if Enzyme.guess_activity(typeof(x), Reverse) <: Duplicated
-#         fill!(x, zero(eltype(x)))
-#     elseif Enzyme.guess_activity(typeof(x), Reverse) <: Const
-#         # that's OK
-#     else
-#         error("not sure what it should do for Active?")
-#     end
-# end
-
 function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
-    zero && x isa Duplicated && _make_zero!(x.dval)
+    zero && x isa Duplicated && EnzymeCore.remake_zero!(x.dval)
     _check_mutable(x)
   end
   ad = Enzyme.set_runtime_activity(Reverse)
   Enzyme.autodiff(ad, Const(f), Active, args...)
-  map(_grad_or_nothing, args)
+  return map(_grad_or_nothing, args)
 end
 
 _check_mutable(x::Const) = nothing
 _check_mutable(x::Duplicated) = Functors.anymutable(x) || error(
-    """`Flux.gradient(f, Duplicatged(x), ...)` expects `x` to contain mutable parameter arrays."""
+    """`Flux.gradient(f, Duplicated(x), ...)` expects `x` to contain mutable parameter arrays."""
 )
 
 # This function strips the returned gradient to be Zygote-like:
@@ -63,9 +36,11 @@ _grad_or_nothing(x) = Optimisers.isnumeric(x) ? x : nothing
 
 function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
-    zero && x isa Duplicated && _make_zero!(x.dval)
+    zero && x isa Duplicated && EnzymeCore.remake_zero!(x.dval)
     _check_mutable(x)
   end
+
+  # In order to support auxillary outputs, we try different ways.
 
   # Take I, doesn't allow for aux at all.
   # _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
@@ -80,7 +55,7 @@ function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::B
   # # result = autodiff(Reverse, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
   # _, result = autodiff(ReverseWithPrimal, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
 
-  (; val = result, grad = map(_grad_or_nothing, args))
+  return (; val = result, grad = map(_grad_or_nothing, args))
 end
 
 @inline _sensitivity(y::Real) = one(y)
@@ -89,17 +64,17 @@ end
 _sensitivity(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
     or else a Tuple or NamedTuple whose first element is a real number.""")
 
-function _ref_loss!(out::Ref, f, args...)  # for Take III above
-  val = f(args...)
-  out[] = _get_loss(val)  # saves loss by mutation
-  val  # returns the whole thing
-end
+# function _ref_loss!(out::Ref, f, args...)  # for Take III above
+#   val = f(args...)
+#   out[] = _get_loss(val)  # saves loss by mutation
+#   val  # returns the whole thing
+# end
 
-@inline _get_loss(y::Real) = y
-@inline _get_loss(ys::Tuple{Real,Vararg}) = ys[1]
-@inline _get_loss(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = ys[1]
-_get_loss(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
-    or else a Tuple or NamedTuple whose first element is a real number.""")
+# @inline _get_loss(y::Real) = y
+# @inline _get_loss(ys::Tuple{Real,Vararg}) = ys[1]
+# @inline _get_loss(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = ys[1]
+# _get_loss(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
+#     or else a Tuple or NamedTuple whose first element is a real number.""")
 
 ### Flux.Train, for train!
 
@@ -111,7 +86,7 @@ function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
 
-    _make_zero!(model.dval)
+    EnzymeCore.remake_zero!(model.dval)
     ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
     _, l = Enzyme.autodiff(ad, _applyloss,
                            Active, Const(loss), model, map(Const, d_splat)...)

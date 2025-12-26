@@ -36,7 +36,7 @@ end
     for (model, x, name) in models_xs
         @testset "Enzyme grad check $name" begin
             println("testing $name with Reactant")
-            test_gradients(model, x; loss, compare_finite_diff=false, test_reactant=true)
+            test_gradients(model, x; loss, reference=AutoZygote(), compare=AutoReactant())
         end
     end
 
@@ -50,7 +50,7 @@ end
     for (model, x, name) in models_xs
         @testset "Enzyme grad check $name" begin
             println("testing $name with Reactant")
-            test_gradients(model, x; loss, compare_finite_diff=false, test_reactant=true)
+            test_gradients(model, x; loss, reference=AutoZygote(), compare=AutoReactant())
         end
     end
     Reactant.allowscalar(false)
@@ -72,7 +72,7 @@ end
     for (model, x, name) in models_xs
         @testset "check grad $name" begin
             println("testing $name with Reactant")
-            test_gradients(model, x; loss, compare_finite_diff=false, test_reactant=true)
+            test_gradients(model, x; loss, reference=AutoZygote(), compare=AutoReactant())
         end
     end
 end

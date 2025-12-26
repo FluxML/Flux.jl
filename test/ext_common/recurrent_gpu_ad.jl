@@ -16,11 +16,11 @@ end
     h = zeros(Float32, d_out)
     # Single Step
     @test test_gradients(r, x[1], h; test_gpu=true, 
-            compare_finite_diff=false, 
+            reference=AutoZygote(), compare=nothing, 
             loss=cell_loss) broken = :rnncell_single ∈ BROKEN_TESTS
     # Multiple Steps
     @test test_gradients(r, x, h; test_gpu=true, 
-            compare_finite_diff=false, 
+            reference=AutoZygote(), compare=nothing, 
             loss=recurrent_cell_loss)  broken = :rnncell_multiple ∈ BROKEN_TESTS
 end
 
@@ -37,9 +37,11 @@ end
     d_in, d_out, len, batch_size = 2, 3, 4, 5
     model = ModelRNN(RNN(d_in => d_out), zeros(Float32, d_out))
     x_nobatch = randn(Float32, d_in, len)
-    @test test_gradients(model, x_nobatch; test_gpu=true, compare_finite_diff=false)  broken = :rnn_nobatch ∈ BROKEN_TESTS
+    @test test_gradients(model, x_nobatch; test_gpu=true,
+        reference=AutoZygote(), compare=nothing)  broken = :rnn_nobatch ∈ BROKEN_TESTS
     x = randn(Float32, d_in, batch_size)
-    @test test_gradients(model, x, test_gpu=true, compare_finite_diff=false)  broken = :rnn ∈ BROKEN_TESTS
+    @test test_gradients(model, x, test_gpu=true, 
+        reference=AutoZygote(), compare=nothing)  broken = :rnn ∈ BROKEN_TESTS
 end
 
 @testset "LSTMCell" begin
@@ -49,11 +51,12 @@ end
     h = zeros(Float32, d_out)
     c = zeros(Float32, d_out)
     # Single Step
-    @test test_gradients(cell, x[1], (h, c); test_gpu=true, compare_finite_diff=false,
+    @test test_gradients(cell, x[1], (h, c); test_gpu=true, 
+    reference=AutoZygote(), compare=nothing,
         loss = cell_loss)  broken = :lstmcell_single ∈ BROKEN_TESTS
     # Multiple Steps
     @test test_gradients(cell, x, (h, c); test_gpu=true, 
-        compare_finite_diff = false, 
+        reference=AutoZygote(), compare=nothing,
         loss = recurrent_cell_loss)  broken = :lstmcell_multiple ∈ BROKEN_TESTS
 end
 
@@ -72,10 +75,10 @@ end
     model = ModelLSTM(LSTM(d_in => d_out), zeros(Float32, d_out), zeros(Float32, d_out))
     x_nobatch = randn(Float32, d_in, len)
     @test test_gradients(model, x_nobatch; test_gpu=true, 
-        compare_finite_diff=false) broken = :lstm_nobatch ∈ BROKEN_TESTS
+        reference=AutoZygote(), compare=nothing) broken = :lstm_nobatch ∈ BROKEN_TESTS
     x = randn(Float32, d_in, len, batch_size)
     @test test_gradients(model, x; test_gpu=true, 
-        compare_finite_diff=false) broken = :lstm ∈ BROKEN_TESTS
+        reference=AutoZygote(), compare=nothing) broken = :lstm ∈ BROKEN_TESTS
 end
 
 @testset "GRUCell" begin
@@ -84,10 +87,10 @@ end
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
     @test test_gradients(r, x[1], h; test_gpu=true, 
-        compare_finite_diff=false, 
+        reference=AutoZygote(), compare=nothing, 
         loss = cell_loss) broken = :grucell_single ∈ BROKEN_TESTS
     @test test_gradients(r, x, h; test_gpu=true, 
-        compare_finite_diff = false, 
+        reference=AutoZygote(), compare=nothing, 
         loss = recurrent_cell_loss) broken = :grucell_multiple ∈ BROKEN_TESTS
 end
 
@@ -105,10 +108,10 @@ end
     model = ModelGRU(GRU(d_in => d_out), zeros(Float32, d_out))
     x_nobatch = randn(Float32, d_in, len)
     @test test_gradients(model, x_nobatch; test_gpu=true, 
-        compare_finite_diff=false) broken = :gru_nobatch ∈ BROKEN_TESTS
+        reference=AutoZygote(), compare=nothing) broken = :gru_nobatch ∈ BROKEN_TESTS
     x = randn(Float32, d_in, len, batch_size)
     @test test_gradients(model, x; test_gpu=true, 
-        compare_finite_diff=false) broken = :gru ∈ BROKEN_TESTS
+        reference=AutoZygote(), compare=nothing) broken = :gru ∈ BROKEN_TESTS
 end
 
 @testset "GRUv3Cell GPU AD" begin
@@ -117,10 +120,10 @@ end
     x = [randn(Float32, d_in, batch_size) for _ in 1:len]
     h = zeros(Float32, d_out)
     @test test_gradients(r, x[1], h; test_gpu=true, 
-        compare_finite_diff=false,
+        reference=AutoZygote(), compare=nothing,
         loss=cell_loss) broken = :gruv3cell_single ∈ BROKEN_TESTS
     @test test_gradients(r, x, h; test_gpu=true, 
-        compare_finite_diff=false, 
+        reference=AutoZygote(), compare=nothing, 
         loss = recurrent_cell_loss) broken = :gruv3cell_multiple ∈ BROKEN_TESTS
 end
 
@@ -138,8 +141,8 @@ end
     model = ModelGRUv3(GRUv3(d_in => d_out), zeros(Float32, d_out))
     x_nobatch = randn(Float32, d_in, len)
     @test test_gradients(model, x_nobatch; test_gpu=true, 
-        compare_finite_diff=false) broken = :gruv3_nobatch ∈ BROKEN_TESTS
+        reference=AutoZygote(), compare=nothing) broken = :gruv3_nobatch ∈ BROKEN_TESTS
     x = randn(Float32, d_in, len, batch_size)
     @test test_gradients(model, x; test_gpu=true, 
-        compare_finite_diff=false) broken = :gruv3 ∈ BROKEN_TESTS
+        reference=AutoZygote(), compare=nothing) broken = :gruv3 ∈ BROKEN_TESTS
 end

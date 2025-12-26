@@ -1,5 +1,64 @@
+```@meta
+CollapsedDocStrings = true
+```
 
-# [Automatic Differentiation using Enzyme.jl](@id autodiff-enzyme)
+# Automatic Differentiation in Flux
+
+Flux's `gradient` function uses [Zygote](https://github.com/FluxML/Zygote.jl) by default, and also uses this function within [`train!`](@ref Flux.train!) to differentiate the model.
+Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
+
+Flux also has support for Enzyme.jl, documented [below](@ref autodiff-enzyme) and for other AD backends such as Mooncake.jl and FiniteDifferences.jl.
+
+
+```@docs
+Flux.gradient(f, args::Any...)
+Flux.withgradient(f, args::Any...)
+```
+
+## [Automatic Differentiation using Zygote.jl](@id autodiff-zygote)
+
+The preferred way of using Zygote, and the only way of using most other AD packages,
+is to explicitly provide a function and its arguments.
+
+```@docs
+Zygote.gradient(f, args...)
+Zygote.withgradient(f, args...)
+Zygote.jacobian(f, args...)
+Zygote.withjacobian(f, args...)
+Zygote.hessian
+Zygote.hessian_reverse
+Zygote.diaghessian
+Zygote.pullback
+```
+
+## ChainRules for Zygote
+
+Zygote uses [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl) to define how to differentiate functions.
+
+Sometimes it is necessary to exclude some code, or a whole function, from automatic differentiation. 
+This can be done using the following methods:
+
+```@docs
+ChainRulesCore.ignore_derivatives
+ChainRulesCore.@non_differentiable
+```
+
+To manually supply the gradient for one function, you should define a method of `rrule`. ChainRules has [detailed documentation](https://juliadiff.org/ChainRulesCore.jl/stable/) on how this works.
+
+```@docs
+ChainRulesCore.rrule
+ChainRulesCore.frule
+ChainRulesCore.@scalar_rule
+ChainRulesCore.NoTangent
+ChainRulesCore.ZeroTangent
+ChainRulesCore.RuleConfig
+ChainRulesCore.Tangent
+ChainRulesCore.canonicalize
+```
+
+Gradient customization for other AD packages such as Enzyme and Mooncake has to be done according to their own documentation.
+
+## [Automatic Differentiation using Enzyme.jl](@id autodiff-enzyme)
 
 [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) is a new package for automatic differentiation.
 Like Zygote.jl, calling `gradient(f, x)` causes it to hooks into the compiler and transform code that is executed while calculating `f(x)`, in order to produce code for `∂f/∂x`.
@@ -71,25 +130,16 @@ true
 Note that what `Enzyme.gradient` returns is an object like `deepcopy(model)` of the same type, `grads_e[1] isa Chain`.
 But its fields contain the same gradient.
 
-There is also a method of `train!` which similarly takes `Duplicated(model)`:
 
-```julia-repl
-julia> opt_state = Flux.setup(Adam(0), model);
-
-julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_state)
+```@docs
+Flux.gradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
+Flux.withgradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
 ```
+
+Enzyme.jl has [its own extensive documentation](https://enzymead.github.io/Enzyme.jl/stable/).
+
 
 ## Second-order AD
 
 If you calculate a gradient within the loss function, then training will involve 2nd derivatives.
 While this is in principle supported by Zygote.jl, there are many bugs, and Enzyme.jl is probably a better choice.
-
-## Listing
-
-```@docs
-Flux.gradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
-Flux.withgradient(f, args::Union{Flux.EnzymeCore.Const, Flux.EnzymeCore.Duplicated}...)
-Flux.train!(loss, model::Flux.EnzymeCore.Duplicated, data, opt)
-```
-
-Enzyme.jl has [its own extensive documentation](https://enzymead.github.io/Enzyme.jl/stable/).
