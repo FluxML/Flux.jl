@@ -19,3 +19,6 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 Documenter = "1.3"
+
+[sources]
+Flux = {path = ".."}

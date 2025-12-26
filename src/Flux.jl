@@ -25,6 +25,9 @@ using Zygote: @adjoint, pullback
 using Zygote.ForwardDiff: value
 using EnzymeCore: EnzymeCore
 
+import DifferentiationInterface as DI
+@reexport using ADTypes # AutoZygote, AutoMooncake, etc...
+
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
                     gpu_device, cpu_device, xla_device,

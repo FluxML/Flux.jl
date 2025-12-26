@@ -1,4 +1,3 @@
-
 """
     gradient(f, args...)
 
@@ -233,3 +232,54 @@ withgradient(f, args::EnzymeCore.Const...; zero::Bool=true) = throw(ArgumentErro
 _enzyme_withgradient(f, args...; zero) = throw(ArgumentError(
     "Methods like `withgradient(f, x::Duplicated)` are only available when Enzyme is loaded."
 ))
+
+
+"""
+    gradient(f, adtype::AbstractADType, args...)
+
+A version of `gradient` that allows specifying the automatic differentiation backend via `adtype`. 
+Any backend compatible with `DifferentiationInterface.jl` can be used.
+
+The package corresponding to the chosen backend must be loaded in advance.
+
+See also [`withgradient`](@ref) to keep the value `f(args...)`.
+
+# Examples
+
+```julia-repl
+julia> using AutoMooncake
+
+julia> f(x) = sum(2 .* x)
+f (generic function with 1 method)
+
+julia> Flux.gradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
+([2.0, 2.0, 2.0],)
+```
+"""
+function gradient(f, adtype::ADTypes.AbstractADType, x)
+    g = DI.gradient(f, adtype, x)
+    return (g,)
+end
+
+function gradient(f, adtype::ADTypes.AbstractADType, x...)
+    return DI.gradient(x -> f(x...), adtype, x)
+end
+
+"""
+    withgradient(f, adtype::AbstractADType, args...)
+
+A version of `withgradient` that allows specifying the automatic differentiation backend via `adtype`. 
+Any backend compatible with `DifferentiationInterface.jl` can be used. 
+The package corresponding to the chosen backend must be loaded in advance.
+
+See also [`gradient`](@ref) to get only the gradients.
+"""
+function withgradient(f, adtype::ADTypes.AbstractADType, x)
+    val, grad = DI.withgradient(f, adtype, x)
+    return (val=val, grad=(grad,))
+end
+
+function withgradient(f, adtype::ADTypes.AbstractADType, x...)
+    val, grad = DI.withgradient(x -> f(x...), adtype, x)
+    return (val=val, grad=grad)
+end

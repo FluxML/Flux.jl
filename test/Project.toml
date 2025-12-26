@@ -12,6 +12,7 @@ GPUCompiler = "61eb1bfa-7361-4325-ad38-22787b887f55"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -21,9 +22,9 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
+[sources]
+Flux = {path = ".."}
+
 [compat]
 FiniteDifferences = "0.12"
 Tracker = "0.2.33"
-
-[sources.Flux]
-path = ".."
