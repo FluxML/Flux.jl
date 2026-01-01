@@ -1,4 +1,5 @@
 using Enzyme: Enzyme, Duplicated, Const, Active
+Enzyme.Compiler.VERBOSE_ERRORS[] = true
 using Reactant
 
 function scalarfirst(x)
@@ -33,7 +34,7 @@ end
         
         (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
 
-        # (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
+        (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
         
         (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
 
@@ -50,7 +51,7 @@ end
     end
 
     models_xs = [
-        # (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"), # Zygote comparison test fails on the GPUArraysCore.@allowscalar in scalarfirst, so we globally allow scalar
+        (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"), # Zygote comparison test fails on the GPUArraysCore.@allowscalar in scalarfirst, so we globally allow scalar
 
         # Structural mismatch?
         # a = (first ∘ MultiHeadAttention(16; nheads=8),)

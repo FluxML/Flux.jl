@@ -1,4 +1,5 @@
 using Enzyme: Enzyme, Duplicated, Const, Active
+Enzyme.Compiler.VERBOSE_ERRORS[] = true
 
 @testset "Models" begin
     function loss(model, x)

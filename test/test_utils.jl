@@ -34,9 +34,19 @@ function enzyme_withgradient(f, x...)
     return ret[2], g
 end
 
+function _contains_no_numerical(kp, x)
+    count = 0
+    fmap(x) do y
+        if y isa AbstractArray{<:AbstractFloat}
+            count += 1
+        end
+        return y
+    end
+    return count == 0
+end
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
-    fmapstructure_with_path(a, b) do kp, x, y
+    fmapstructure_with_path(a, b, exclude=_contains_no_numerical) do kp, x, y
         # @show kp
         if x isa AbstractArray
             @test x ≈ y rtol=rtol atol=atol
@@ -119,7 +129,7 @@ function test_gradients(
 
         if test_reactant
             # Enzyme gradient with respect to input on Reactant.
-            y_re, g_re = reactant_withgradient((xs...) -> loss(f_re, xs...), xs_re...)
+            y_re, g_re = reactant_withgradient(Base.Fix1(loss, f_re), xs_re...)
             @test y ≈ y_re rtol=rtol atol=atol
             check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
         end
@@ -155,7 +165,7 @@ function test_gradients(
 
         if test_reactant
             # Enzyme gradient with respect to input on Reactant.
-            y_re, g_re = reactant_withgradient(f -> loss(f, xs_re...), f_re)
+            y_re, g_re = reactant_withgradient(Base.Fix2(loss, xs_re[1]), f_re)
             @test y ≈ y_re rtol=rtol atol=atol
             check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
         end

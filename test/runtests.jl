@@ -21,14 +21,13 @@ using Functors: fmapstructure_with_path
 # ENV["FLUX_TEST_DISTRIBUTED_MPI"] = "true"
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 # ENV["FLUX_TEST_ENZYME"] = "false"
-# ENV["FLUX_TEST_REACTANT"] = "false"
+ENV["FLUX_TEST_REACTANT"] = "true"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
 
 # Reactant will automatically select a GPU backend, if available, and TPU backend, if available. 
 # Otherwise it will fall back to CPU.
-const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT", 
-  VERSION < v"1.12-" && !Sys.iswindows() ? "true" : "false") == "true"
+const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT", "true") == "true"
 
 if FLUX_TEST_ENZYME || FLUX_TEST_REACTANT
   Pkg.add("Enzyme")
