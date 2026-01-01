@@ -1,5 +1,3 @@
-using Flux, Functors, Optimisers
-
 module MacroTest
   using Flux: @layer
 

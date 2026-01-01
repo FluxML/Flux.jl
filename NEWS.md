@@ -2,6 +2,10 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
+## v0.16.1 (25 December 2025)
+
+The default `init_score` value for `early_stopping` has been set to `Inf` (instead of `0`) in order to prevent unexpected behavior if the defaults were not modified. Documentation has been updated to explain that, if the user needs to track a metric where improvement is shown by increasing values, then the `init_score` needs to be adjusted, for example, to `-Inf`). Tests corresponding to `early_stopping` have been reorganized and extended to be more detailed and illustrative of `early_stopping`'s behavior.
+
 ## v0.16.0 (15 December 2025)
 This release has a single **breaking change**:
 

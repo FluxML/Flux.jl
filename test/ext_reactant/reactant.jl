@@ -1,7 +1,3 @@
-using Enzyme: Enzyme, Duplicated, Const, Active
-Enzyme.Compiler.VERBOSE_ERRORS[] = true
-using Reactant
-
 function scalarfirst(x)
     Reactant.@allowscalar first(x)
 end

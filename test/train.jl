@@ -5,7 +5,7 @@ end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 
-  if name == "Enzyme" && FLUX_TEST_ENZYME
+  if name == "Enzyme" && !FLUX_TEST_ENZYME
     continue
   end
 
@@ -27,8 +27,6 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
     end
 
     # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
-    # Enzyme doesn't work with un-initialized atm, presumably due to trainmode?
-    if name != "Enzyme"
     @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
       loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
       model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
@@ -36,16 +34,13 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
       @test loss(model, rand(10, 10)) < 0.01
     end
-    end
   end
 end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
-  # TODO reinstate Enzyme
-  name == "Enzyme" && continue  
-  # if name == "Enzyme" && FLUX_TEST_ENZYME
-  #   continue
-  # end
+  if name == "Enzyme" && !FLUX_TEST_ENZYME
+    continue
+  end
 
   @testset "Flux.train! features with $name" begin
     @testset "Stop on NaN" begin
@@ -54,14 +49,10 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       CNT = Ref(0)
       @test_throws DomainError trainfn!(m1, tuple.(1:100), Descent(0.1)) do m, i
         CNT[] += 1
-        (i == 51 ? NaN32 : 1f0) * sum(m([1.0]))
+        (i == 51 ? NaN32 : 1f0) * sum(m([1f0]))
       end
       @test CNT[] == 51  # stopped early
-      if name != "Enzyme"
-        @test m1.weight[1] ≈ -5  # did not corrupt weights
-      else
-        @test m1.weight[1] ≈ 0.0  # did not corrupt weights
-      end
+      @test m1.weight[1] ≈ -5  # did not corrupt weights
     end
 
     @testset "non-tuple data" begin
@@ -110,11 +101,9 @@ end
 
 for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
 
-  # TODO reinstate Enzyme
-  name == "Enzyme" && continue
-  # if (name == "Enzyme" && get(ENV, "FLUX_TEST_ENZYME", "true") == "false")
-  #   continue
-  # end
+  if name == "Enzyme" && !FLUX_TEST_ENZYME
+    continue
+  end
   
   @testset "L2 regularisation with $name" begin
     # New docs claim an exact equivalent. It's a bit long to put the example in there,
@@ -144,6 +133,7 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       l2 = sum(pen2, Flux.trainables(m))
       err + 0.33 * l2
     end
+    
 
     diff2 = model.weight .- init_weight
     @test diff1 ≈ diff2

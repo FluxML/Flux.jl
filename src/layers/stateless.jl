@@ -99,7 +99,7 @@ end
   flatten(x)
 
 Same as [`MLUtils.flatten`](@ref), which 
-should be prefered to this method existing 
+should be preferred to this method existing 
 only for backward compatibility.
 """
 flatten(x) = MLUtils.flatten(x)

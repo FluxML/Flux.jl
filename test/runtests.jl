@@ -1,17 +1,25 @@
-using Flux
-using Flux: OneHotArray, OneHotMatrix, OneHotVector
-using Test
-using Random, Statistics, LinearAlgebra
-using IterTools: ncycle
-import Optimisers
-
-using Zygote
-const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
-const withgradient = Flux.withgradient
-
-using Pkg
+using BSON: BSON
 using FiniteDifferences: FiniteDifferences
-using Functors: fmapstructure_with_path
+using Flux
+using Flux: OneHotArray, OneHotMatrix, OneHotVector, 
+            onehotbatch, withgradient, pullback
+using Flux.Losses: xlogx, xlogy
+using Flux.Losses
+using ForwardDiff: ForwardDiff
+using Functors: Functors, fmapstructure_with_path
+using IterTools: ncycle
+using LinearAlgebra
+using MLUtils: MLUtils, batch, unstack, unsqueeze, 
+              unbatch, getobs, numobs, flatten, DataLoader
+using Optimisers: Optimisers
+using Pkg
+using Random
+using SparseArrays
+using Statistics
+using Test
+using Zygote: Zygote
+# const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
+# const withgradient = Flux.withgradient
 
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
@@ -24,6 +32,7 @@ using Functors: fmapstructure_with_path
 ENV["FLUX_TEST_REACTANT"] = "true"
 
 const FLUX_TEST_ENZYME = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
+const FLUX_TEST_CPU = get(ENV, "FLUX_TEST_CPU", "true") == "true"
 
 # Reactant will automatically select a GPU backend, if available, and TPU backend, if available. 
 # Otherwise it will fall back to CPU.
@@ -31,7 +40,7 @@ const FLUX_TEST_REACTANT = get(ENV, "FLUX_TEST_REACTANT", "true") == "true"
 
 if FLUX_TEST_ENZYME || FLUX_TEST_REACTANT
   Pkg.add("Enzyme")
-  using Enzyme: Enzyme
+  using Enzyme: Enzyme, Const, Active, Duplicated
 end
 
 include("test_utils.jl") # for test_gradients
@@ -49,7 +58,7 @@ function flux_testsuite(dev)
 end
 
 @testset verbose=true "Flux.jl" begin
-  if get(ENV, "FLUX_TEST_CPU", "true") == "true"
+  if FLUX_TEST_CPU
     flux_testsuite(cpu)
 
     @testset "Utils" begin
@@ -104,7 +113,8 @@ end
 
   if get(ENV, "FLUX_TEST_CUDA", "false") == "true"
     Pkg.add(["CUDA", "cuDNN"])
-    using CUDA, cuDNN
+    # using CUDA, cuDNN
+    using CUDA # cuDNN is loaded by FluxCUDAExt
 
     if CUDA.functional()
       @testset "CUDA" begin
@@ -160,6 +170,7 @@ end
     if get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "true"
       Pkg.add(["NCCL"])
       using NCCL
+      import CUDA
     end
 
     @testset "Distributed" begin
@@ -171,8 +182,11 @@ end
   end
 
   if FLUX_TEST_ENZYME
+    ## Pkg.add("Enzyme") is already done above
     @testset "Enzyme" begin
-      include("ext_enzyme/enzyme.jl")
+      if FLUX_TEST_CPU
+        include("ext_enzyme/enzyme.jl")
+      end
     end
   else
     @info "Skipping Enzyme tests, set FLUX_TEST_ENZYME=true to run them."

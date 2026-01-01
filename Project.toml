@@ -1,6 +1,9 @@
 name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.16.3"
+version = "0.16.7"
+
+[workspace]
+projects = ["test", "docs"]
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -9,6 +12,7 @@ Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MLCore = "c2834f40-e789-41da-a90e-33b280584a8c"
 MLDataDevices = "7e8f7934-dd98-4c1a-8fe8-92b47a384d40"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
@@ -42,7 +46,7 @@ FluxMPIExt = "MPI"
 FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
 
 [compat]
-AMDGPU = "1"
+AMDGPU = "1, 2"
 Adapt = "4"
 CUDA = "5"
 ChainRulesCore = "1.12"
@@ -50,6 +54,7 @@ Compat = "4.10.0"
 Enzyme = "0.13"
 EnzymeCore = "0.7.7, 0.8.4"
 Functors = "0.5"
+MLCore = "1.0.0"
 MLDataDevices = "1.4.2"
 MLUtils = "0.4"
 MPI = "0.20.19"

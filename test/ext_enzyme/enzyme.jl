@@ -1,5 +1,4 @@
-using Enzyme: Enzyme, Duplicated, Const, Active
-Enzyme.Compiler.VERBOSE_ERRORS[] = true
+# ENZYME CPU TESTS
 
 @testset "Models" begin
     function loss(model, x)
@@ -26,7 +25,7 @@ Enzyme.Compiler.VERBOSE_ERRORS[] = true
     for (model, x, name) in models_xs
         @testset "Enzyme grad check $name" begin
             println("testing $name with Enzyme")
-            test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
+            @test test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
         end
     end
 end
@@ -56,7 +55,7 @@ end
     # Tests above are about how Enzyme digests Flux layers.
     # Tests here are just the interface Flux.gradient(f, Duplicated(model)) etc.
     m1 = Duplicated(Dense(3=>2))
-    @test m1 isa Duplicated
+    @test m1 isa Enzyme.Duplicated
     g1 = Flux.gradient(m -> sum(m.bias), m1) |> only
     @test iszero(g1.weight)
     @test g1.bias == [1, 1]
@@ -113,9 +112,9 @@ end
 @testset "bugs found" begin
     _duplicated(x) = Duplicated(x, Enzyme.make_zero(x))
     z = _duplicated(zeros32(3))
-    @test_broken Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]  # Constant memory is stored (or returned) to a differentiable variable
+    @test Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, _duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
-    @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing broken=VERSION >= v"1.11"
+    @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
 
     @test_broken Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
     @test_broken Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]

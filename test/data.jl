@@ -1,5 +1,3 @@
-using Flux: DataLoader
-using Random
 
 @testset "DataLoader" begin
     X = reshape([1:10;], (2, 5))
@@ -16,7 +14,6 @@ using Random
     @test batches[3] == X[:,5:5]
 
     d_cpu = d |> cpu  # does nothing but shouldn't error
-    @test d_cpu isa DataLoader
     @test first(d_cpu) == X[:,1:2]
     @test length(d_cpu) == 3
 

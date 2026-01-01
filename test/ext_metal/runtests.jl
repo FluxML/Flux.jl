@@ -1,9 +1,3 @@
-using Test
-using Metal
-using Flux
-using Random, Statistics
-using Zygote
-
 @testset "data movement" begin
     metal_device = Flux.gpu_device()
     cdev = cpu_device()

@@ -1,10 +1,3 @@
-using Flux, Test, Zygote
-using Flux: cpu, gpu
-using Statistics: mean
-using LinearAlgebra: I, cholesky, Cholesky, Adjoint
-using SparseArrays: sparse, SparseMatrixCSC, AbstractSparseArray
-using CUDA
-CUDA.allowscalar(false)
 
 @testset "CUDA" begin
   x = randn(5, 5)
@@ -95,6 +88,7 @@ end
 
     @test gpu((;a=ones(1))).a isa CuVector{Float32}
     @test gpu((;a=['a', 'b', 'c'])).a isa CuVector{Char}
+    ## issue https://github.com/LuxDL/Lux.jl/issues/1586
     @test gpu((;a=[SimpleBits(1)])).a isa CuVector{SimpleBits}
   end
 end

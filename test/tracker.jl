@@ -1,7 +1,3 @@
-using Tracker: withgradient
-using Zygote: gradient
-using Functors: fmapstructure
-using Flux
 
 @testset "Tracker.jl" begin
   @testset "some simple models" begin

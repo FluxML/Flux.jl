@@ -10,6 +10,7 @@ using MacroTools: @forward
 @reexport using NNlib
 using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 using MLUtils
+using MLCore: MLCore # this is only needed for the documentation
 using Adapt, OneHotArrays
 using Functors: Functors, fmap, fmapstructure
 

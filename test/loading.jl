@@ -23,14 +23,14 @@ end
   m5 = Chain(Dense(10 => 5), Parallel(+, Dense(Flux.ones32(2, 5), false), Dense(5 => 2)))
   m6 = Chain(Dense(10 => 5), Parallel(+, Dense(5 => 2), Dense(5 => 2)))
 
-  loadmodel!(m1, m2)
+  Flux.loadmodel!(m1, m2)
   # trainable parameters copy over
   @test m1[1].weight == m2[1].weight
   @test m1[1].bias == m2[1].bias
   # non-array leaves are untouched
   @test m1[2].σ == relu
 
-  loadmodel!(m5, m6)
+  Flux.loadmodel!(m5, m6)
   # more complex nested structures also work
   @test m5[1].weight == m6[1].weight
   @test m5[2][1].weight == m6[2][1].weight
@@ -38,16 +38,16 @@ end
   @test m5[2][1].bias == false
 
   # mismatched nodes throw an error
-  @test_throws ArgumentError loadmodel!(m1, m3)
-  @test_throws ArgumentError loadmodel!(m1, m5)
+  @test_throws ArgumentError Flux.loadmodel!(m1, m3)
+  @test_throws ArgumentError Flux.loadmodel!(m1, m5)
   # size mismatches throw an error
-  @test_throws DimensionMismatch loadmodel!(m1, m4)
+  @test_throws DimensionMismatch Flux.loadmodel!(m1, m4)
 
   # tests for BatchNorm and Dropout
   m1 = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), Flux.flatten, Dropout(0.2))
   m2 = Chain(Conv((3, 3), 3 => 16), BatchNorm(16), x -> reshape(x, :, size(x)[end]), Dropout(0.1))
   m2[2].μ .= rand(Float32, size(m2[2].μ)...)
-  loadmodel!(m1, m2)
+  Flux.loadmodel!(m1, m2)
   # non-trainable parameters are copied as well
   @test m1[2].μ == m2[2].μ
   # functions are not copied
@@ -93,7 +93,7 @@ end
   chain2[3].μ .= 5f0
   chain2[3].σ² .= 2f0
   testmode!(chain2)
-  loadmodel!(chain1, chain2)
+  Flux.loadmodel!(chain1, chain2)
   for (dst, src) in zip(chain1, chain2)
     if dst isa Dropout
       @test dst.p == 0.2
@@ -113,8 +113,8 @@ end
   chain1[end - 1].weight .= 1f0
   chain1[3].μ .= 3f0
   chain1[2].bias .= 5f0
-  loadmodel!(chain2[end - 1], chain1[end - 1])
-  loadmodel!(chain2[3], chain1[3])
+  Flux.loadmodel!(chain2[end - 1], chain1[end - 1])
+  Flux.loadmodel!(chain2[3], chain1[3])
   @test chain2[end - 1].weight == chain1[end - 1].weight
   @test chain2[3].μ == chain1[3].μ
   @test chain2[2].bias != chain1[2].bias
@@ -125,22 +125,22 @@ end
   # matched weights are okay
   m1 = Chain(shared_dst, Dense(shared_dst.weight))
   m2 = Chain(shared_src, Dense(shared_src.weight))
-  loadmodel!(m1, m2)
+  Flux.loadmodel!(m1, m2)
   @test m1[1].weight === m1[2].weight
   @test m1[1].weight == m2[2].weight
   # mismatched weights are an error
   m2 = Chain(Dense(10 => 10), Dense(10 => 10))
-  @test_throws ErrorException loadmodel!(m1, m2)
+  @test_throws ErrorException Flux.loadmodel!(m1, m2)
   # loading into tied weights with absent parameter is okay when the dst == zero
   b = Flux.zeros32(5)
   m1 = Chain(Dense(10 => 5; bias = b), Dense(5 => 5; bias = b))
   m2 = Chain(Dense(10 => 5; bias = Flux.zeros32(5)), Dense(5 => 5; bias = false))
-  loadmodel!(m1, m2)
+  Flux.loadmodel!(m1, m2)
   @test m1[1].bias === m1[2].bias
   @test iszero(m1[1].bias)
   # loading into tied weights with absent parameter is bad when the dst != zero
   m2[1].bias .= 1
-  @test_throws ErrorException loadmodel!(m1, m2)
+  @test_throws ErrorException Flux.loadmodel!(m1, m2)
 
   @testset "loadmodel! & filter" begin
     m1 = Chain(Dense(10 => 5), Dense(5 => 2, relu))
@@ -148,12 +148,12 @@ end
     m3 = Chain(Dense(10 => 5), Dense(5 => 2, relu))
 
     # this will not error cause Dropout is skipped
-    loadmodel!(m1, m2; filter = x -> !(x isa Dropout))
+    Flux.loadmodel!(m1, m2; filter = x -> !(x isa Dropout))
     @test m1[1].weight == m2[1].weight
     @test m1[2].weight == m2[3].weight
 
     # this will not error cause Dropout is skipped
-    loadmodel!(m2, m3; filter = x -> !(x isa Dropout))
+    Flux.loadmodel!(m2, m3; filter = x -> !(x isa Dropout))
     @test m3[1].weight == m2[1].weight
     @test m3[2].weight == m2[3].weight
   end

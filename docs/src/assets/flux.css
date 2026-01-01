@@ -65,10 +65,10 @@ nav.toc ul.internal li.toplevel {
 
 /* Content */
 
-article { max-width: none; }
+article { max-width: 45em; }
 
 article > p, article > ul {
-  max-width: 45em;
+  max-width: none;
 }
 
 /* Links */
