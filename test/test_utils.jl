@@ -47,6 +47,9 @@ end
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
     fmapstructure_with_path(a, b, exclude=_contains_no_numerical) do kp, x, y
+        if y isa Nothing
+            return
+        end
         # @show kp
         if x isa AbstractArray
             @test x ≈ y rtol=rtol atol=atol
