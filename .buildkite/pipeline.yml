@@ -61,7 +61,7 @@ steps:
       FLUX_TEST_AMDGPU: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
-      FLUX_TEST_REACTANT: "false"
+      FLUX_TEST_REACTANT: "true"
       JULIA_NUM_THREADS: 4
 
 env:
