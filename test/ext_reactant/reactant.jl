@@ -41,7 +41,7 @@ end
     end
 
     models_xs = [
-        (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"), # Zygote comparison test fails on the GPUArraysCore.@allowscalar in scalarfirst, so we globally allow scalar
+        (LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"), # Zygote comparison test fails on the GPUArraysCore.@allowscalar in scalarfirst, so we globally allow scalar
 
         (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"), # Zygote comparison test fails on the GPUArraysCore.@allowscalar in scalarfirst, so we globally allow scalar
     ]
