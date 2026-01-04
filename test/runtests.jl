@@ -6,9 +6,10 @@ using Flux: OneHotArray, OneHotMatrix, OneHotVector,
 using Flux.Losses: xlogx, xlogy
 using Flux.Losses
 using ForwardDiff: ForwardDiff
-using Functors: Functors, fmapstructure_with_path
+using Functors: Functors, fmapstructure_with_path, fmap
 using IterTools: ncycle
 using LinearAlgebra
+using Mooncake: Mooncake
 using MLUtils: MLUtils, batch, unstack, unsqueeze, 
               unbatch, getobs, numobs, flatten, DataLoader
 using Optimisers: Optimisers
@@ -18,8 +19,6 @@ using SparseArrays
 using Statistics
 using Test
 using Zygote: Zygote
-# const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
-# const withgradient = Flux.withgradient
 
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
@@ -102,6 +101,10 @@ end
 
     @testset "functors" begin
       include("functors.jl")
+    end
+
+    @testset "mooncake" begin
+      include("ext_mooncake.jl")
     end
 
     @testset "deprecations" begin

@@ -28,6 +28,19 @@ Optimisers.setup
 To see one in a terminal, you will need to install [TerminalLoggers.jl](https://github.com/JuliaLogging/TerminalLoggers.jl)
 and follow its setup instructions.
 
+
+There is also a method of `train!` which similarly takes `Duplicated(model)` and uses Enzyme.jl for differentiation (see (@ref autodiff-enzyme)):
+```julia-repl
+julia> opt_state = Flux.setup(Adam(0), model);
+
+julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_state)
+```
+
+```@docs
+Flux.train!(loss, model::Flux.EnzymeCore.Duplicated, data, opt)
+```
+
+
 ## Optimisation Modifiers
 
 The state returned by `setup` can be modified to temporarily prevent training of

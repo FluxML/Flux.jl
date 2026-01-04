@@ -12,27 +12,27 @@ const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.siamese_contrastive_loss]
 
 
-function finitediff_withgradient(f, x...)
-    y = f(x...)
-    # We set a range to avoid domain errors
-    fdm = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)
-    return y, FiniteDifferences.grad(fdm, f, x...)
-end
-
-function enzyme_withgradient(f, x...)
-    args = []
-    for x in x
-        if x isa Number
-            push!(args, Enzyme.Active(x))
-        else
-            push!(args, Enzyme.Duplicated(x, Enzyme.make_zero(x)))
-        end
-    end
-    ad = Enzyme.set_runtime_activity(Enzyme.ReverseWithPrimal)
-    ret = Enzyme.autodiff(ad, Enzyme.Const(f), Enzyme.Active, args...)
-    g = ntuple(i -> x[i] isa Number ? ret[1][i] : args[i].dval, length(x))
-    return ret[2], g
-end
+const TEST_MODELS = [
+    (Dense(2=>4), randn(Float32, 2), "Dense"),
+    (Chain(Dense(2=>4, tanh), Dense(4=>3)), randn(Float32, 2), "Chain(Dense, Dense)"),
+    (f64(Chain(Dense(2=>4), Dense(4=>2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
+    (Flux.Scale([1.0f0 2.0f0 3.0f0 4.0f0], true, abs2), randn(Float32, 2), "Flux.Scale"),
+    (Conv((3, 3), 2 => 3), randn(Float32, 3, 3, 2, 1), "Conv"),
+    (Chain(Conv((3, 3), 2 => 3, ), Conv((3, 3), 3 => 1, tanh)), rand(Float32, 5, 5, 2, 1), "Chain(Conv, Conv)"),
+    (Chain(Conv((4, 4), 2 => 2, pad=SamePad()), MeanPool((5, 5), pad=SamePad())), rand(Float32, 5, 5, 2, 2), "Chain(Conv, MeanPool)"),
+    (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
+    (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
+    (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
+    (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
+    (LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
+    (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"),
+    (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"),
+    (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
+    (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
+    (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
+    (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
+    (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
+]
 
 function _contains_no_numerical(kp, x)
     count = 0
@@ -46,132 +46,108 @@ function _contains_no_numerical(kp, x)
 end
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
+    # Since Zygote could use nothing for an entire subtree, we prune the
+    # the tree using _contains_no_numerical
     fmapstructure_with_path(a, b, exclude=_contains_no_numerical) do kp, x, y
-        if y isa Nothing
-            return
-        end
         # @show kp
-        if x isa AbstractArray
-            @test x ≈ y rtol=rtol atol=atol
-        elseif x isa Number
+        if x isa AbstractArray{<:AbstractFloat}
             @test x ≈ y rtol=rtol atol=atol
         end
     end
+    return true
 end
 
-# By default, this computes the gradients on cpu using the default AD (Zygote) 
-# and compares them with finite differences.
-# Changing the arguments, you can assume the cpu Zygote gradients as the ground truth 
-# and test other scenarios.
+function _contains_no_numerical(kp, x)
+    count = 0
+    fmap(x) do y
+        if y isa AbstractArray{<:AbstractFloat}
+            count += 1
+        end
+        return y
+    end
+    return count == 0
+end
+
+_default_fdm() = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)
+
+"""
+Compare the `reference` and `compare` AD backends on the gradients of `f` at `xs...`.
+The loss function can be customized (default is mean over outputs).
+
+- If `test_gpu` is true, the `compare` backend is tested on GPU.
+- If `test_cpu` is true, the `compare` backend is tested on CPU.
+- If `test_reactant` is true, the Enzyme backend is tested with Reactant.
+  Depending on the platform, this may run on CPU or GPU.
+"""
 function test_gradients(
             f, 
             xs...;
             rtol=1e-4, atol=1e-4,
             test_gpu = false,
+            test_cpu = true,
             test_reactant = false,
-            test_enzyme = false,
-            test_grad_f = true,
-            test_grad_x = true,
-            compare_finite_diff = true,
+            reference = AutoFiniteDifferences(; fdm = _default_fdm()),
+            compare = AutoZygote(),
             loss = (f, xs...) -> mean(f(xs...)),
+            test_mode = false,
             )
 
-    if !test_gpu && !compare_finite_diff && !test_enzyme && !test_reactant
-        error("You should either compare numerical gradients methods or CPU vs GPU.")
+    @assert reference !== nothing "reference AD backend must be provided"
+    @assert compare !== nothing || test_gpu "compare AD backend must be provided if test_gpu=false"
+    compare = compare === nothing ? reference : compare
+
+    if test_mode
+        Flux.testmode!(f)
+    else
+        Flux.trainmode!(f)
     end
 
-    Flux.trainmode!(f) # for layers like BatchNorm
-
-    ## Let's make sure first that the forward pass works.
-    l = loss(f, xs...)
-    @test l isa Number
+    cpu_dev = cpu_device()
+    
     if test_gpu
         gpu_dev = gpu_device(force=true)
         cpu_dev = cpu_device()
         xs_gpu = xs |> gpu_dev
         f_gpu = f |> gpu_dev
+    end
+    
+    if test_reactant
+        reactant_dev = MLDataDevices.reactant_device(force=true)
+        xs_re = xs |> reactant_dev
+        f_re = f |> reactant_dev
+    end
+
+    ## Let's make sure first that the forward pass works.
+    l = loss(f, xs...)
+    @test l isa Number
+
+    # Compute reference gradients in f64 precision
+    y, gs = Flux.withgradient(loss, reference, Flux.f64(f), Flux.f64(xs)...)
+    @test l ≈ y rtol=rtol atol=atol
+
+    if test_cpu
+        y2, gs2 = Flux.withgradient(loss, compare, f, xs...)
+        @test l ≈ y2 rtol=rtol atol=atol
+        check_equal_leaves(gs, gs2; rtol, atol)
+    end
+
+    if test_gpu
         l_gpu = loss(f_gpu, xs_gpu...)
         @test l_gpu isa Number
+
+        y_gpu, gs_gpu = Flux.withgradient(loss, compare, f_gpu, xs_gpu...)
+        @test l_gpu ≈ y_gpu rtol=rtol atol=atol
+        check_equal_leaves(gs, gs_gpu |> cpu_dev; rtol, atol)  
     end
 
     if test_reactant
-        reactant_dev = MLDataDevices.reactant_device(force=true)
-        cpu_dev = cpu_device()
-        xs_re = xs |> reactant_dev
-        f_re = f |> reactant_dev
         l_re = reactant_loss(loss, f_re, xs_re...)
         @test l ≈ l_re rtol=rtol atol=atol
+
+        y_re, g_re = reactant_withgradient(loss, f_re, xs_re...)
+        @test y ≈ y_re rtol=rtol atol=atol
+        check_equal_leaves(gs, g_re |> cpu_dev; rtol, atol)
     end
 
-    if test_grad_x
-        # Zygote gradient with respect to input.
-        y, g = Zygote.withgradient((xs...) -> loss(f, xs...), xs...)
-        
-        if compare_finite_diff
-            # Cast to Float64 to avoid precision issues.
-            f64 = f |> Flux.f64
-            xs64 = xs .|> Flux.f64
-            y_fd, g_fd = finitediff_withgradient((xs...) -> loss(f64, xs...), xs64...)
-            @test y ≈ y_fd rtol=rtol atol=atol
-            check_equal_leaves(g, g_fd; rtol, atol)
-        end
-
-        if test_enzyme
-            y_ez, g_ez = enzyme_withgradient((xs...) -> loss(f, xs...), xs...)
-            @test y ≈ y_ez rtol=rtol atol=atol
-            check_equal_leaves(g, g_ez; rtol, atol)
-        end
-
-        if test_gpu
-            # Zygote gradient with respect to input on GPU.
-            y_gpu, g_gpu = Zygote.withgradient((xs...) -> loss(f_gpu, xs...), xs_gpu...)
-            @test get_device(g_gpu) == get_device(xs_gpu)
-            @test y_gpu ≈ y rtol=rtol atol=atol
-            check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
-        end
-
-        if test_reactant
-            # Enzyme gradient with respect to input on Reactant.
-            y_re, g_re = reactant_withgradient(Base.Fix1(loss, f_re), xs_re...)
-            @test y ≈ y_re rtol=rtol atol=atol
-            check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
-        end
-    end
-
-    if test_grad_f
-        # Zygote gradient with respect to f.
-        y, g = Zygote.withgradient(f -> loss(f, xs...), f)
-
-        if compare_finite_diff
-            # Cast to Float64 to avoid precision issues.
-            f64 = f |> Flux.f64
-            ps, re = Flux.destructure(f64)
-            y_fd, g_fd = finitediff_withgradient(ps -> loss(re(ps), xs...), ps)
-            g_fd = (re(g_fd[1]),)
-            @test y ≈ y_fd rtol=rtol atol=atol
-            check_equal_leaves(g, g_fd; rtol, atol)
-        end
-
-        if test_enzyme
-            y_ez, g_ez = enzyme_withgradient(f -> loss(f, xs...), f)
-            @test y ≈ y_ez rtol=rtol atol=atol
-            check_equal_leaves(g, g_ez; rtol, atol)
-        end
-
-        if test_gpu
-            # Zygote gradient with respect to f on GPU.
-            y_gpu, g_gpu = Zygote.withgradient(f -> loss(f, xs_gpu...), f_gpu)
-            # @test get_device(g_gpu) == get_device(xs_gpu)
-            @test y_gpu ≈ y rtol=rtol atol=atol
-            check_equal_leaves(g_gpu |> cpu_dev, g; rtol, atol)
-        end
-
-        if test_reactant
-            # Enzyme gradient with respect to input on Reactant.
-            y_re, g_re = reactant_withgradient(Base.Fix2(loss, xs_re[1]), f_re)
-            @test y ≈ y_re rtol=rtol atol=atol
-            check_equal_leaves(g_re |> cpu_dev, g; rtol, atol)
-        end
-    end
     return true
 end

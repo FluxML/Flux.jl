@@ -2,11 +2,71 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
-## v0.16.1 (25 December 2025)
+## v0.16.8 (January 2025)
 
-The default `init_score` value for `early_stopping` has been set to `Inf` (instead of `0`) in order to prevent unexpected behavior if the defaults were not modified. Documentation has been updated to explain that, if the user needs to track a metric where improvement is shown by increasing values, then the `init_score` needs to be adjusted, for example, to `-Inf`). Tests corresponding to `early_stopping` have been reorganized and extended to be more detailed and illustrative of `early_stopping`'s behavior.
+This release includes the following changes:
+- Added support in `Flux.gradient` and `Flux.withgradient` to alternative AD backends such as `AutoEnzyme()` and `AutoMooncake()`.
+- The default `init_score` value for `early_stopping` has been set to `Inf` (instead of `0`) in order to prevent unexpected behavior if the defaults were not modified. 
 
-## v0.16.0 (15 December 2025)
+## v0.16.7 (10 December 2025)
+
+This patch release includes:
+
+* Minor documentation fixes and housekeeping commits.
+* Compatibility updates for downstream packages.
+
+
+## v0.16.6 (8 December 2025)
+
+This patch release includes:
+
+* Minor dependency bumps and CI updates.
+* Preparatory changes ahead of v0.16.7.
+
+## v0.16.5 (23 July 2025)
+
+This release includes:
+
+* Fix typos in legacy tutorials documentation.([GitHub][2])
+* Bump compatibility for `AMDGPU` in weak dependencies.([GitHub][2])
+* **Fix** for `unsafe_free!` failure with certain `CuArray` configurations.([GitHub][2])
+
+## v0.16.4 (2 June 2025)
+
+This release includes:
+
+* Fix missing imports in `FluxMPIExt`.([GitHub][1])
+* Add shape validation for convolution weight tensors.([GitHub][1])
+* Disable and fix intermittent Reactant tests.([GitHub][1])
+* Fix recurrent docstrings and pooling layer loading.([GitHub][1])
+* Small test updates and miscellaneous doc fixes.([GitHub][1])
+
+## v0.16.3 (6 February 2025)
+
+This release includes:
+
+* **Fix** for `cpu(dataloader)` behavior.([GitHub][1])
+* Addressed data loading and preprocessing pipeline issues.([GitHub][1])
+* Resolved “Infinite time of gradient” edge case.([GitHub][1])
+
+## v0.16.2 (21 January 2025)
+
+This release includes:
+
+* Updated dependencies and bumped to v0.16.1 as a base.([GitHub][1])
+* **Fixes** around new gradients, precompilation on Julia 1.12, and export issues.([GitHub][1])
+
+## v0.16.1 (13 January 2025)
+
+This release includes:
+
+* Added references to recurrent layers in `ecosystem.md`.([GitHub][1])
+* Fixed typo in recurrence documentation.([GitHub][1])
+* Added “return state” option to recurrent layers.([GitHub][1])
+* Updated schedulers docs, collapsed docstrings in layers docs.([GitHub][1])
+* Test fixes for Enzyme and Reactant forward/reverse passes.([GitHub][1])
+
+## v0.16.0 (15 December 2024)
 This release has a single **breaking change**:
 
 - The recurrent cells `RNNCell`, `LSTMCell`, and `GRUCell` forward has been changed to 
