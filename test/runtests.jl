@@ -20,9 +20,6 @@ using Statistics
 using Test
 using Zygote: Zygote
 
-# const gradient = Flux.gradient  # both Flux & Zygote export this on 0.15
-# const withgradient = Flux.withgradient
-
 ## Uncomment below to change the default test settings
 # ENV["FLUX_TEST_AMDGPU"] = "true"
 # ENV["FLUX_TEST_CUDA"] = "true"

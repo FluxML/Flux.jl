@@ -19,7 +19,7 @@ function gpu_gradtest(name::String, layers::Vector, x_cpu, args...;
     for layer in layers
       @testset "$layer Layer GPU grad test" begin
         l_cpu = layer(args...)
-        test_gradients(l_cpu, x_cpu; test_gpu=true, reference=AutoZygote(), compare=nothing, 
+        test_gradients(l_cpu, x_cpu; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing, 
                 atol, rtol, test_mode)
       end
     end
@@ -95,11 +95,11 @@ gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix(
 
 @testset "function layers" begin
   x = rand(Float32, 3, 3)
-  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, 
+  test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, test_cpu=false, 
     reference=AutoZygote(), compare=nothing)
-  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x, test_gpu=true, 
+  test_gradients(x -> sum(Flux.normalise(x; dims=2)), x, test_gpu=true, test_cpu=false, 
     reference=AutoZygote(), compare=nothing)
-  test_gradients(x -> sum(Flux.normalise(x)), x, test_gpu=true, 
+  test_gradients(x -> sum(Flux.normalise(x)), x, test_gpu=true, test_cpu=false, 
     reference=AutoZygote(), compare=nothing)
 end
 
@@ -181,7 +181,7 @@ end
   @test size(b(x, y)) == (3,9)
   @test sum(abs2, b(x, y)) ≈ 0f0
   test_gradients(b |> cpu, x |> cpu, y |> cpu, 
-    test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Two-streams Bilinear" begin
@@ -191,7 +191,7 @@ end
   @test size(b(x, y)) == (3,9)
   @test sum(abs2, b(x, y)) ≈ 0f0
   test_gradients(b |> cpu, x |> cpu, y |> cpu, 
-    test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Parallel" begin
@@ -211,7 +211,7 @@ end
   @testset "gradient" begin
     layer_cpu = Parallel(+, x -> zero(x), identity)
     test_gradients(layer_cpu, randn(2, 2, 2, 2), 
-      test_gpu=true, reference=AutoZygote(), compare=nothing)
+      test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
   end
 end
 
@@ -292,5 +292,5 @@ end
     return sum(y.^2) + sum(α.^2)
   end
   test_gradients(mha_cpu, x_cpu; loss, 
-    test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 end

@@ -19,7 +19,7 @@ end
 @testset "Chain of Dense layers" begin
     m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
     x = rand(Float32, 10, 10)
-    test_gradients(m, x, test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Convolution" begin
@@ -75,14 +75,14 @@ end
 @testset "Chain(Conv)" begin
     m = Chain(Conv((3, 3), 3 => 3))
     x = rand(Float32, 5, 5, 3, 2)
-    test_gradients(m, x, test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
 
     m = Chain(ConvTranspose((3, 3), 3 => 3))
     x = rand(Float32, 5, 5, 3, 2)
-    test_gradients(m, x, test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 
     md = m |> gpu |> cpu
     @test md[1].weight ≈ m[1].weight atol=1f-3
@@ -91,7 +91,7 @@ end
 @testset "Cross-correlation" begin
     m = CrossCor((2, 2), 3 => 4)
     x = rand(Float32, 5, 5, 3, 2)
-    test_gradients(m, x, test_gpu=true, reference=AutoZygote(), compare=nothing)
+    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 end
 
 @testset "Restructure" begin
@@ -131,7 +131,7 @@ end
     bn = BatchNorm(3, σ)
     for nd in 1:3
         x = rand(Float32, fill(2, nd - 1)..., 3, 4)
-        test_gradients(bn, x; test_gpu=true, reference=AutoZygote(), compare=nothing)
+        test_gradients(bn, x; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
     end
 end
 

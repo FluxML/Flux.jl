@@ -73,10 +73,11 @@ function gradient(f::F, adtype::ADTypes.AbstractADType, x::Vararg{Any,N}) where 
     return _grad_unwrap(adtype, gs)
 end
 
-# use our Enzyme infrastructure instead of DI
-function gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}) where {F,N}
-    return _enzyme_gradient(f, map(_make_duplicated, x)...; zero=true)
-end
+## Use our Enzyme infrastructure instead of DI
+## THIS IS ERRORS ATM, SEE https://github.com/FluxML/Flux.jl/pull/2645#issuecomment-3705225743
+# function gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}) where {F,N}
+#     return _enzyme_gradient(f, map(_make_duplicated, x)...; zero=true)
+# end
 
 
 _make_duplicated(x::EnzymeCore.Duplicated) = throw(ArgumentError(
@@ -241,12 +242,13 @@ end
 ## Use our Enzyme infrastructure instead of DI
 ## so that we can support aux output until https://github.com/JuliaDiff/DifferentiationInterface.jl/issues/720 
 ## is resolved.
-function withgradient(f::F, adtype::AutoEnzyme, x) where {F}
-    return _enzyme_withgradient(f, _make_duplicated(x); zero=true)
-end
-function withgradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}) where {F,N}
-    return _enzyme_withgradient(f, map(_make_duplicated, x)...; zero=true)
-end
+## THIS IS ERRORS ATM, SEE https://github.com/FluxML/Flux.jl/pull/2645#issuecomment-3705225743
+# function withgradient(f::F, adtype::AutoEnzyme, x) where {F}
+#     return _enzyme_withgradient(f, _make_duplicated(x); zero=true)
+# end
+# function withgradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}) where {F,N}
+#     return _enzyme_withgradient(f, map(_make_duplicated, x)...; zero=true)
+# end
 
 ## Zygote version, supporting aux output too.
 function withgradient(f::F, adtype::AutoZygote, x) where {F}
