@@ -13,19 +13,18 @@ using ProgressLogging: @withprogress, @logprogress
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
 ### gradient & withgradient
-function gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
-    return _enzyme_gradient(f, map(_make_duplicated, x)...; zero)
+function Flux.gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
+    return _enzyme_gradient(f, map(_trymake_duplicated, x)...; zero)
 end
 
 function Flux.withgradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
-    return _enzyme_withgradient(f, map(_make_duplicated, x)...; zero)
+    return _enzyme_withgradient(f, map(_trymake_duplicated, x)...; zero)
 end
 
-_make_duplicated(x::EnzymeCore.Duplicated) = throw(ArgumentError(
-    "`Flux.withgradient(f, AutoEnzyme(), x)` expects `x` to be a regular object, not already `Duplicated`."
-))
-_make_duplicated(x::EnzymeCore.Const) = x
-_make_duplicated(x) = EnzymeCore.Duplicated(x, EnzymeCore.make_zero(x))
+_trymake_duplicated(x::EnzymeCore.Duplicated) = x
+_trymake_duplicated(x::EnzymeCore.Const) = x
+_trymake_duplicated(x::EnzymeCore.Active) = throw(ArgumentError("Enzyme's `Active` type not supported in `Flux.gradient` or `Flux.withgradient`."))
+_trymake_duplicated(x) = EnzymeCore.Duplicated(x, EnzymeCore.make_zero(x))
 
 
 function _enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
@@ -58,7 +57,7 @@ function _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=t
 
   ## Take I, doesn't allow for aux at all.
   ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
-  _, result = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
+  _, result = Enzyme.autodiff(ReverseWithPrimal, Const(f), Active, args...)
 
   ## Take II, using split mode.
   ## This fails with RNNs https://github.com/EnzymeAD/Enzyme.jl/issues/2897
@@ -67,6 +66,7 @@ function _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=t
   # reverse(Const(f), args..., _sensitivity(result), tape)
 
   ## Take III, it may be more efficient to have the function write the loss into Ref(0.0)?
+  ## This doesn't work with Reactant
   # dup_loss = DuplicatedNoNeed(Ref(0f0), Ref(1f0))
   # ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
   # _, result = autodiff(ad, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
@@ -96,19 +96,12 @@ end
 
 ### Flux.Train, for train!
 
-_applyloss(loss, model, d...) = loss(model, d...)
-
 function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
   isnothing(cb) || error("""train! does not support callback functions.
                             For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
-
-    EnzymeCore.remake_zero!(model.dval)
-    ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
-    _, l = Enzyme.autodiff(ad, _applyloss,
-                           Active, Const(loss), model, map(Const, d_splat)...)
-
+    Flux.gradient(loss, AutoEnzyme(), model, map(Const, d_splat)...)
     if !isfinite(l)
       throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end

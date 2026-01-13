@@ -58,7 +58,7 @@ end
 # Default gradient using Zygote
 function gradient(f, args...; zero::Bool=true)
     for a in args
-        a isa EnzymeCore.Duplicated && return gradient(f, AutoEnzyme(), args...; zero)
+        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return gradient(f, AutoEnzyme(), args...; zero)
     end
     for a in args
         _ensure_noenzyme(a)
@@ -202,7 +202,7 @@ end
 # Default withgradient using Zygote
 function withgradient(f, args...; zero::Bool=true)
     for a in args
-        a isa EnzymeCore.Duplicated && return withgradient(f, AutoEnzyme(), args...; zero)
+        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return withgradient(f, AutoEnzyme(), args...; zero)
     end
     for a in args
         _ensure_noenzyme(a)
@@ -230,7 +230,8 @@ but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
 Only available when Enzyme is loaded!
 
 This method is used when at least one argument is of type `Duplicated`,
-All non-duplicated arguments are treated as `Const`.
+All non-duplicated arguments will be differentiated as well.
+Mark them as `Const` to avoid this.
 Note that Enzyme's `Active` is not supported.
 
 # Examples
@@ -249,17 +250,18 @@ julia> Flux.withgradient(m -> m(3), model)  # this uses Zygote
 julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
 (val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
 ```
-
-The function `f` may return Tuple or NamedTuple, with the loss as the first element.
-The gradient is then `grad = gradient(first∘f, args...)`
-but the returned value is `val = f(args...)`:
-
-```julia-repl
-julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
-(val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
-
-julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
-(val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
-```
 """
 withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = withgradient(f, AutoEnzyme(), args...; zero)
+
+## ADD BACK TO withgradient docstring above when AUX is SUPPORTED
+# The function `f` may return Tuple or NamedTuple, with the loss as the first element.
+# The gradient is then `grad = gradient(first∘f, args...)`
+# but the returned value is `val = f(args...)`:
+
+# ```julia-repl
+# julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
+# (val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+
+# julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
+# (val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+# ```

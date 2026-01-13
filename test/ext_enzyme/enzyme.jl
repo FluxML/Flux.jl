@@ -18,25 +18,26 @@ end
     @test g1.bias == [1, 1]
     @test m1.dval.bias == [1, 1]
 
-    g2 = Flux.withgradient((m,x) -> sum(m(x)), m1, [1,2,3f0])
+    g2 = Flux.withgradient((m,x) -> sum(m(x)), m1, Const([1,2,3f0]))
     @test g2.val ≈ sum(m1([1,2,3f0]))
     @test g2.grad[1].weight ≈ [1 2 3; 1 2 3]
-    @test g2.grad[2] === nothing  # implicitly Const
+    @test g2.grad[2] === nothing
 
-    g3 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
-              z = 1 ./ x
-              sum(z), z  # here z is an auxillary output
-           end
-    @test g3.grad[1] ≈ [-1.0, -0.25, -0.0625]
-    @test g3.val[1] ≈ 1.75
-    @test g3.val[2] ≈ [1.0, 0.5, 0.25]
-    g4 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
-              z = 1 ./ x
-              (loss=sum(z), aux=string(z))
-           end
-    @test g4.grad[1] ≈ [-1.0, -0.25, -0.0625]
-    @test g4.val.loss ≈ 1.75
-    @test g4.val.aux == "[1.0, 0.5, 0.25]"
+    ## Auxillary outputs not supported at the moment
+    # g3 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
+    #           z = 1 ./ x
+    #           sum(z), z  # here z is an auxillary output
+    #        end
+    # @test g3.grad[1] ≈ [-1.0, -0.25, -0.0625]
+    # @test g3.val[1] ≈ 1.75
+    # @test g3.val[2] ≈ [1.0, 0.5, 0.25]
+    # g4 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
+    #           z = 1 ./ x
+    #           (loss=sum(z), aux=string(z))
+    #        end
+    # @test g4.grad[1] ≈ [-1.0, -0.25, -0.0625]
+    # @test g4.val.loss ≈ 1.75
+    # @test g4.val.aux == "[1.0, 0.5, 0.25]"
 
     # setup understands Duplicated:
     @test Flux.setup(Adam(), m1) == Flux.setup(Adam(), m1.val)
@@ -50,11 +51,11 @@ end
     m1.val.weight .= 0
     @test Flux.loadmodel!(m1, oldpar).val.weight ≈ oldpar.weight
 
-    # At least one Duplicated is required:
-    @test_throws ArgumentError Flux.gradient(m -> sum(m.bias), Const(m1.val))
-    @test_throws ArgumentError Flux.gradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])
-    @test_throws ArgumentError Flux.withgradient(m -> sum(m.bias), Const(m1.val))
-    @test_throws ArgumentError Flux.withgradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])
+    # Only Const args are supported
+    @test Flux.gradient(m -> sum(m.bias), Const(m1.val))[1] === nothing
+    @test Flux.gradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0]) isa Tuple{Nothing,Vector{Float32}}
+    @test Flux.withgradient(m -> sum(m.bias), Const(m1.val)).grad[1] === nothing
+    @test Flux.withgradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0]).grad isa Tuple{Nothing,Vector{Float32}}
     # Active is disallowed:
     @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, m1, Active(3f0))
     @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, m1.val, Active(3f0))
@@ -72,7 +73,6 @@ end
     @test Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, _duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
-
-    @test_broken Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
-    @test_broken Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
 end
