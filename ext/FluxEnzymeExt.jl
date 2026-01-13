@@ -42,39 +42,43 @@ function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::B
 
   # In order to support auxillary outputs, we try different ways.
 
-  # Take I, doesn't allow for aux at all.
-  # _, val = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
+  ## Take I, doesn't allow for aux at all.
+  ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
+  _, result = Enzyme.autodiff(ReverseWithPrimal, f, Active, args...)
 
-  # Take II, using split mode.
-  forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
-  tape, result, shadow_result  = forward(Const(f), args...)
-  reverse(Const(f), args..., _sensitivity(result), tape)
+  ## Take II, using split mode.
+  ## This fails with RNNs https://github.com/EnzymeAD/Enzyme.jl/issues/2897
+  # forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
+  # tape, result, shadow_result  = forward(Const(f), args...)
+  # reverse(Const(f), args..., _sensitivity(result), tape)
 
-  # Take III, it may be more efficient to have the function write the loss into Ref(0.0)?
+  ## Take III, it may be more efficient to have the function write the loss into Ref(0.0)?
   # dup_loss = DuplicatedNoNeed(Ref(0f0), Ref(1f0))
-  # # result = autodiff(Reverse, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
-  # _, result = autodiff(ReverseWithPrimal, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
+  # ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
+  # _, result = autodiff(ad, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
 
   return (; val = result, grad = map(_grad_or_nothing, args))
 end
 
-@inline _sensitivity(y::Real) = one(y)
-@inline _sensitivity(ys::Tuple{Real,Vararg}) = (one(ys[1]), Enzyme.make_zero(Base.tail(ys))...)
-@inline _sensitivity(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = NamedTuple{S}(_sensitivity(Tuple(ys)))
-_sensitivity(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
-    or else a Tuple or NamedTuple whose first element is a real number.""")
+## for Take II above
+# @inline _sensitivity(y::Real) = one(y)
+# @inline _sensitivity(ys::Tuple{Real,Vararg}) = (one(ys[1]), Enzyme.make_zero(Base.tail(ys))...)
+# @inline _sensitivity(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = NamedTuple{S}(_sensitivity(Tuple(ys)))
+# _sensitivity(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
+#     or else a Tuple or NamedTuple whose first element is a real number.""")
 
-# function _ref_loss!(out::Ref, f, args...)  # for Take III above
+# for Take III above
+# function _ref_loss!(out::Ref, f, args...)  
 #   val = f(args...)
 #   out[] = _get_loss(val)  # saves loss by mutation
 #   val  # returns the whole thing
 # end
-
-# @inline _get_loss(y::Real) = y
-# @inline _get_loss(ys::Tuple{Real,Vararg}) = ys[1]
-# @inline _get_loss(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = ys[1]
+# @inline _get_loss(y::Number) = y
+# @inline _get_loss(ys::Tuple{Number,Vararg}) = ys[1]
+# @inline _get_loss(ys::NamedTuple{S, <:Tuple{Number,Vararg}}) where S = ys[1]
 # _get_loss(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
 #     or else a Tuple or NamedTuple whose first element is a real number.""")
+
 
 ### Flux.Train, for train!
 
