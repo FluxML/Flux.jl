@@ -215,8 +215,8 @@ julia> Flux.withgradient((x,p) -> p(x), 5.0, poly3s)
 (val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],)))
 ```
 
-One can also directly specify which AD backend to use, by passing an adtype among the ones
-supported by [DifferentiationInterface.jl](https://github.com/JuliaDiff/DifferentiationInterface.jl) as the second argument.
+One can also directly specify which AD backend to use, by passing an adtype among the supported ones
+(`AutoMooncake, AutoEnzyme, AutoZygote, AutoFiniteDifferences`) as the second argument.
 The corresponding AD package has to be loaded first.
 
 Here is an example using [Mooncake](https://github.com/chalk-lab/Mooncake.jl):

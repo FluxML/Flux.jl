@@ -13,8 +13,22 @@ using ProgressLogging: @withprogress, @logprogress
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
 ### gradient & withgradient
+function gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
+    return _enzyme_gradient(f, map(_make_duplicated, x)...; zero)
+end
 
-function Flux._enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
+function Flux.withgradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
+    return _enzyme_withgradient(f, map(_make_duplicated, x)...; zero)
+end
+
+_make_duplicated(x::EnzymeCore.Duplicated) = throw(ArgumentError(
+    "`Flux.withgradient(f, AutoEnzyme(), x)` expects `x` to be a regular object, not already `Duplicated`."
+))
+_make_duplicated(x::EnzymeCore.Const) = x
+_make_duplicated(x) = EnzymeCore.Duplicated(x, EnzymeCore.make_zero(x))
+
+
+function _enzyme_gradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
     zero && x isa Duplicated && EnzymeCore.remake_zero!(x.dval)
     _check_mutable(x)
@@ -34,7 +48,7 @@ _grad_or_nothing(dup::Duplicated) = Flux.fmapstructure(_grad_or_nothing, dup.dva
 _grad_or_nothing(::Const) = nothing
 _grad_or_nothing(x) = Optimisers.isnumeric(x) ? x : nothing
 
-function Flux._enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
+function _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=true)
   for x in args
     zero && x isa Duplicated && EnzymeCore.remake_zero!(x.dval)
     _check_mutable(x)

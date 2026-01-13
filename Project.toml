@@ -2,17 +2,13 @@ name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 version = "0.16.7"
 
-[workspace]
-projects = ["test", "docs"]
-
 [deps]
-Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLCore = "c2834f40-e789-41da-a90e-33b280584a8c"
 MLDataDevices = "7e8f7934-dd98-4c1a-8fe8-92b47a384d40"
@@ -36,8 +32,8 @@ AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
-Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
 NCCL = "3fe64909-d7a1-4096-9b7d-7a0f12cf0f6b"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
@@ -47,14 +43,14 @@ FluxCUDAExt = "CUDA"
 FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
 FluxEnzymeExt = "Enzyme"
 FluxFiniteDifferencesExt = "FiniteDifferences"
-FluxMooncakeExt = "Mooncake"
 FluxMPIExt = "MPI"
 FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
+FluxMooncakeExt = "Mooncake"
 
 [compat]
+ADTypes = "1"
 AMDGPU = "1, 2"
 Adapt = "4"
-ADTypes = "1"
 CUDA = "5"
 ChainRulesCore = "1.12"
 Compat = "4.10.0"
@@ -62,7 +58,6 @@ Enzyme = "0.13"
 EnzymeCore = "0.7.7, 0.8.4"
 FiniteDifferences = "0.12"
 Functors = "0.5"
-DifferentiationInterface = "0.7"
 MLCore = "1.0.0"
 MLDataDevices = "1.4.2"
 MLUtils = "0.4"
@@ -82,3 +77,6 @@ Statistics = "1"
 Zygote = "0.6.67, 0.7"
 cuDNN = "1"
 julia = "1.10"
+
+[workspace]
+projects = ["test", "docs"]
