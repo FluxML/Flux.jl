@@ -101,7 +101,7 @@ function _enzyme_train!(loss, model::Duplicated, data, opt; cb = nothing)
                             For more control use a loop with `gradient` and `update!`.""")
   @withprogress for (i,d) in enumerate(data)
     d_splat = d isa Tuple ? d : (d,)
-    Flux.gradient(loss, AutoEnzyme(), model, map(Const, d_splat)...)
+    l, gs = Flux.withgradient(loss, AutoEnzyme(), model, map(Const, d_splat)...)
     if !isfinite(l)
       throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
     end
