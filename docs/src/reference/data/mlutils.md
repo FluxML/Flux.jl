@@ -25,6 +25,7 @@ these functions help create inputs for your models or batch your dataset.
 MLUtils.batch
 MLUtils.batchsize
 MLUtils.batchseq
+MLUtils.batch_sequence
 MLUtils.BatchView
 MLUtils.chunk
 MLUtils.eachobs

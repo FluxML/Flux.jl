@@ -1,6 +1,7 @@
+const SUPPORTED_AD_BACKENDS = (:Zygote, :Enzyme, :Mooncake, :FiniteDifferences)
 
 """
-    gradient(f, args...)
+    gradient(f, [adtype,] args...)
 
 Returns a tuple containing `∂f/∂x` for each argument `x`,
 the derivative (for scalar `x`) or the gradient.
@@ -8,13 +9,21 @@ If no gradient is defined, `∂f/∂x` will be `nothing`.
 
 `f(args...)` must be a real number, see [`Zygote.jacobian`](@ref) for array output.
 
-By default, `Flux.gradient` calls Zygote. If you load Enzyme, then other methods become available.
+The optional argument `adtype` allows specifying the automatic differentiation backend. 
+
+We provide specific support and testing for the following backends: 
+`AutoZygote`, `AutoEnzyme`, `AutoMooncake`, and `AutoFiniteDifferences`.
+
+The package corresponding to any chosen backend (except Zygote) must be loaded in advance.
+
+If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument 
+is of type `Duplicated` from Enzyme.jl, in which case Enzyme.jl is used.
 
 See also [`withgradient`](@ref) to keep the value `f(args...)`.
 
 # Examples
 
-```
+```julia-repl
 julia> Flux.gradient(*, 2.0, 3.0, 5.0)
 (15.0, 10.0, 6.0)
 
@@ -27,10 +36,29 @@ julia> Flux.gradient([7, 11], 0, 1) do x, y, d
        end
 ([14.0, 22.0], 2.0, nothing)
 ```
+Specifying other AD backends:
+
+```julia-repl
+julia> using Mooncake
+
+julia> f(x) = sum(2 .* x)
+f (generic function with 1 method)
+
+julia> Flux.gradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
+([2.0, 2.0, 2.0],)
+```
 """
+function gradient(f, adtype::ADTypes.AbstractADType, args...)
+    error("AD backend has to be loaded to use `gradient(f, AutoXXX(), args...)`.
+        Make sure to `using` the corresponding package, e.g. `using Mooncake` for `AutoMooncake()`.
+        Supported backends are $SUPPORTED_AD_BACKENDS.")
+end
+
+
+# Default gradient using Zygote
 function gradient(f, args...; zero::Bool=true)
     for a in args
-        a isa EnzymeCore.Duplicated && return _enzyme_gradient(f, map(_ensure_enzyme, args)...; zero)
+        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return gradient(f, AutoEnzyme(), args...; zero)
     end
     for a in args
         _ensure_noenzyme(a)
@@ -41,16 +69,8 @@ function gradient(f, args...; zero::Bool=true)
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
-    Zygote.gradient(f, args...)
+    return Zygote.gradient(f, args...)
 end
-
-# Given one Duplicated, we wrap everything else in Const before calling Enzyme
-_ensure_enzyme(x::EnzymeCore.Duplicated) = x
-_ensure_enzyme(x::EnzymeCore.Const) = x
-_ensure_enzyme(x) = EnzymeCore.Const(x)
-_ensure_enzyme(x::EnzymeCore.Active) = throw(ArgumentError(
-    "The method `gradient(f, xs...)` using Enzyme.jl does not support `Active`, only `Duplicated` and ``Const`."
-))
 
 # Without any Duplicated, check for no stray Enzyme types before calling Zygote
 _ensure_noenzyme(::EnzymeCore.Const) = throw(ArgumentError(
@@ -62,7 +82,7 @@ _ensure_noenzyme(::EnzymeCore.Active) = throw(ArgumentError(
 _ensure_noenzyme(_) = nothing
 
 """
-    gradient(f, args::Union{Const,Duplicated}...)
+    gradient(f, args::Union{Any,EnzymeCore.Duplicated}...)
 
 This should return the same answer as `gradient(f, args...)`,
 but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
@@ -70,7 +90,7 @@ but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
 Only available when Enzyme is loaded!
 
 This method is used when at least one argument is of type `Duplicated`,
-and all unspecified aguments are wrapped in `Const`.
+All non-duplicated arguments are treated as `Const`.
 Note that Enzyme's `Active` is not supported.
 
 Besides returning the gradient, this is also stored within the `Duplicated` object.
@@ -78,12 +98,9 @@ Calling `Enzyme.Duplicated(model)` allocates space for the gradient,
 which is zero'd befor use when calling `gradient`.
 With the keyword `zero=false`, the new gradient will instead be added to what is already stored.
 
-!!! warning "Experimental"
-    Enzyme support like this is new and somewhat experimental.
-    This method was added in Flux 0.15.
+# Examples
 
-# Example
-```
+```julia-repl
 julia> using Flux
 
 julia> model = Chain(Dense([3.0;;]));
@@ -119,28 +136,26 @@ julia> Flux.gradient(dup_model, [1]; zero=false) do m, x  # implict Const([1]), 
 ((layers = ((weight = [12.0;;], bias = [12.0], σ = nothing),),), nothing)
 ```
 """
-gradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_gradient(f, args...; zero)
-
-gradient(f, args::EnzymeCore.Const...; zero::Bool=true) = throw(ArgumentError(
-    "The method `gradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
-))
-
-# FluxEnzymeExt defines more specific _enzyme_gradient(f, args::Union{Const, Duplicated}...; zero)
-_enzyme_gradient(f, args...; zero) = throw(ArgumentError(
-    "Methods like `gradient(f, x::Duplicated)` are only available when Enzyme is loaded."
-))
+gradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = gradient(f, AutoEnzyme(), args...; zero)
 
 
 """
-    withgradient(f, args...)
+    withgradient(f, [adtype,] args...)
 
 Returns both the value of the function and the [`gradient`](@ref), as a named tuple.
 
-By default, `Flux.withgradient` calls Zygote. If you load Enzyme, then other methods become available.
+The optional argument `adtype` allows specifying the automatic differentiation backend
+among the supported ones: `AutoZygote`, `AutoEnzyme`, `AutoMooncake`, and `AutoFiniteDifferences`.
+The package corresponding to the chosen backend must be loaded in advance.
 
-# Example
+If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument 
+is of type `Duplicated` from Enzyme.jl, in which case Enzyme.jl is used.
 
-```
+Se also [`gradient`](@ref) to get just the gradient.
+
+# Examples
+
+```jldoctest
 julia> y, ∇ = withgradient(/, 1, 2)
 (val = 0.5, grad = (0.5, -0.25))
 
@@ -148,12 +163,12 @@ julia> ∇ == gradient(/, 1, 2)
 true
 ```
 
-Allows you to capture auxillary outputs, in addition to the scalar
+`withgradient` allows you to capture auxillary outputs, in addition to the scalar
 used by `gradient`. To do this, `f` must return a Tuple or NamedTuple.
 Then it calculates `grad = gradient(first∘f, args...)
 but returns the whole `val = f(args...)`:
 
-```jldoctest; setup=:(using Zygote)
+```jldoctest
 julia> withgradient([1,2,4]) do x
           z = 1 ./ x
           sum(z), z  # here z is an auxillary output
@@ -165,10 +180,29 @@ julia> withgradient(3.0, 4.0) do x, y
        end
 (val = (div = 0.75, mul = 12.0), grad = (0.25, -0.1875))
 ```
+
+Different AD backends can be specified:
+```julia-repl
+julia> using Mooncake
+
+julia> f(x) = sum(2 .* x)
+f (generic function with 1 method)
+
+julia> Flux.withgradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
+(val = 12.0, grad = ([2.0, 2.0, 2.0],))
+```
 """
+function withgradient(f, adtype::ADTypes.AbstractADType, args...)
+    error("AD backend has to be loaded to use `withgradient(f, AutoXXX(), args...)`.
+        Make sure to `using` the corresponding package, e.g. `using Mooncake` for `AutoMooncake()`.
+        Supported backends are $SUPPORTED_AD_BACKENDS.")
+end
+
+
+# Default withgradient using Zygote
 function withgradient(f, args...; zero::Bool=true)
     for a in args
-        a isa EnzymeCore.Duplicated && return _enzyme_withgradient(f, map(_ensure_enzyme, args)...; zero)
+        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return withgradient(f, AutoEnzyme(), args...; zero)
     end
     for a in args
         _ensure_noenzyme(a)
@@ -179,22 +213,28 @@ function withgradient(f, args...; zero::Bool=true)
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
-    Zygote.withgradient(f, args...)
+    return Zygote.withgradient(f, args...)
+end
+
+## Zygote version, supporting aux output too.
+function withgradient(f::F, adtype::AutoZygote, x::Vararg{Any,N}) where {F,N}
+    return Zygote.withgradient(f, x...)
 end
 
 """
-    withgradient(f, args::Union{Const,Duplicated}...)
+    withgradient(f, args::Union{Any,EnzymeCore.Duplicated}...)
 
 This should return the same answer as `withgradient(f, model, args...)`,
 but it uses Enzyme.jl instead of Zygote.jl to compute the derivative.
 
 Only available when Enzyme is loaded!
 
-!!! warning "Experimental"
-    Enzyme support like this is new and somewhat experimental.
-    This method was added in Flux 0.15.
+This method is used when at least one argument is of type `Duplicated`,
+All non-duplicated arguments will be differentiated as well.
+Mark them as `Const` to avoid this.
+Note that Enzyme's `Active` is not supported.
 
-# Example
+# Examples
 
 ```julia-repl
 julia> using Flux, Enzyme
@@ -210,26 +250,18 @@ julia> Flux.withgradient(m -> m(3), model)  # this uses Zygote
 julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
 (val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
 ```
-
-The function `f` may return Tuple or NamedTuple, with the loss as the first element.
-The gradient is then `grad = gradient(first∘f, args...)`
-but the returned value is `val = f(args...)`:
-
-```julia-repl
-julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
-(val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
-
-julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
-(val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
-```
 """
-withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = _enzyme_withgradient(f, args...; zero)
+withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = withgradient(f, AutoEnzyme(), args...; zero)
 
-withgradient(f, args::EnzymeCore.Const...; zero::Bool=true) = throw(ArgumentError(
-    "The method `withgradient(f, xs...)` using Enzyme.jl requires at least one `Duplicated` argument, not just `Const`."
-))
+## ADD BACK TO withgradient docstring above when AUX is SUPPORTED
+# The function `f` may return Tuple or NamedTuple, with the loss as the first element.
+# The gradient is then `grad = gradient(first∘f, args...)`
+# but the returned value is `val = f(args...)`:
 
-# FluxEnzymeExt defines more specific _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero)
-_enzyme_withgradient(f, args...; zero) = throw(ArgumentError(
-    "Methods like `withgradient(f, x::Duplicated)` are only available when Enzyme is loaded."
-))
+# ```julia-repl
+# julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
+# (val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+
+# julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
+# (val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+# ```

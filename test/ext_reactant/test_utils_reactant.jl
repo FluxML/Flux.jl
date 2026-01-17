@@ -2,7 +2,7 @@
 # because Reactant is only optionally loaded and the macros fail when it is not loaded.
 
 function reactant_withgradient(f, x...)
-    y, g = Reactant.@jit enzyme_withgradient(f, x...)
+    y, g = Reactant.@jit Flux.withgradient(f, AutoEnzyme(), x...)
     return y, g
 end
 

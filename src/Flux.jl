@@ -25,6 +25,8 @@ using Zygote: @adjoint, pullback
 using Zygote.ForwardDiff: value
 using EnzymeCore: EnzymeCore
 
+@reexport using ADTypes # AutoZygote, AutoMooncake, etc...
+
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
                     gpu_device, cpu_device, xla_device,
@@ -64,8 +66,6 @@ export Chain, Dense, Embedding, EmbeddingBag,
   freeze!, thaw!, adjust!, update!, trainable,
   # from Zygote.jl
   hessian, diaghessian, jacobian, withjacobian, pullback,
-  # AD functions
-  withgradient,
   # init
   glorot_uniform,
   glorot_normal,
@@ -99,7 +99,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
 ))
 
 include("gradient.jl")
-export gradient
+export gradient, withgradient
 
 include("train.jl")
 using .Train

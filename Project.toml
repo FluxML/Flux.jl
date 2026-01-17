@@ -2,10 +2,8 @@ name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 version = "0.16.7"
 
-[workspace]
-projects = ["test", "docs"]
-
 [deps]
+ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
@@ -33,7 +31,9 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
 NCCL = "3fe64909-d7a1-4096-9b7d-7a0f12cf0f6b"
 cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
@@ -42,10 +42,13 @@ FluxAMDGPUExt = "AMDGPU"
 FluxCUDAExt = "CUDA"
 FluxCUDAcuDNNExt = ["CUDA", "cuDNN"]
 FluxEnzymeExt = "Enzyme"
+FluxFiniteDifferencesExt = "FiniteDifferences"
 FluxMPIExt = "MPI"
 FluxMPINCCLExt = ["CUDA", "MPI", "NCCL"]
+FluxMooncakeExt = "Mooncake"
 
 [compat]
+ADTypes = "1"
 AMDGPU = "1, 2"
 Adapt = "4"
 CUDA = "5"
@@ -53,12 +56,14 @@ ChainRulesCore = "1.12"
 Compat = "4.10.0"
 Enzyme = "0.13"
 EnzymeCore = "0.7.7, 0.8.4"
+FiniteDifferences = "0.12"
 Functors = "0.5"
 MLCore = "1.0.0"
 MLDataDevices = "1.4.2"
 MLUtils = "0.4"
 MPI = "0.20.19"
 MacroTools = "0.5"
+Mooncake = "0.4"
 NCCL = "0.1.1"
 NNlib = "0.9.22"
 OneHotArrays = "0.2.4"
@@ -72,3 +77,6 @@ Statistics = "1"
 Zygote = "0.6.67, 0.7"
 cuDNN = "1"
 julia = "1.10"
+
+[workspace]
+projects = ["test", "docs"]

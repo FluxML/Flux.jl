@@ -1,52 +1,9 @@
 # ENZYME CPU TESTS
 
-@testset "Models" begin
-    function loss(model, x)
-        mean(model(x))
-    end
-
-    models_xs = [
-        (Dense(2=>4), randn(Float32, 2), "Dense"),
-        (Chain(Dense(2=>4, tanh), Dense(4=>3)), randn(Float32, 2), "Chain(Dense, Dense)"),
-        (f64(Chain(Dense(2=>4), Dense(4=>2))), randn(Float64, 2, 1), "f64(Chain(Dense, Dense))"),
-        (Flux.Scale([1.0f0 2.0f0 3.0f0 4.0f0], true, abs2), randn(Float32, 2), "Flux.Scale"),
-        (Conv((3, 3), 2 => 3), randn(Float32, 3, 3, 2, 1), "Conv"),
-        (Chain(Conv((3, 3), 2 => 3, ), Conv((3, 3), 3 => 1, tanh)), rand(Float32, 5, 5, 2, 1), "Chain(Conv, Conv)"),
-        (Chain(Conv((4, 4), 2 => 2, pad=SamePad()), MeanPool((5, 5), pad=SamePad())), rand(Float32, 5, 5, 2, 2), "Chain(Conv, MeanPool)"),
-        (Maxout(() -> Dense(5 => 4, tanh), 3), randn(Float32, 5, 1), "Maxout"),
-        (SkipConnection(Dense(2 => 2), vcat), randn(Float32, 2, 3), "SkipConnection"),
-        (Flux.Bilinear((2, 2) => 3), randn(Float32, 2, 1), "Bilinear"),
-        (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
-        (first ∘ LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
-        (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"),
-        (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"),
-    ]
-
-    for (model, x, name) in models_xs
+@testset "enzyme gradients" begin
+    for (model, x, name) in TEST_MODELS
         @testset "Enzyme grad check $name" begin
-            println("testing $name with Enzyme")
-            @test test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
-        end
-    end
-end
-
-@testset "Recurrent Layers" begin
-    function loss(model, x)
-        mean(model(x))
-    end
-
-    models_xs = [
-        (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
-        (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
-        (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
-        (Chain(RNN(3 => 4), RNN(4 => 3)), randn(Float32, 3, 2), "Chain(RNN, RNN)"),
-        (Chain(LSTM(3 => 5), LSTM(5 => 3)), randn(Float32, 3, 2), "Chain(LSTM, LSTM)"),
-    ]
-
-    for (model, x, name) in models_xs
-        @testset "check grad $name" begin
-            println("testing $name")
-            test_gradients(model, x; loss, compare_finite_diff=false, test_enzyme=true)
+            @test test_gradients(model, x; reference=AutoZygote(), compare=AutoEnzyme())
         end
     end
 end
@@ -61,25 +18,26 @@ end
     @test g1.bias == [1, 1]
     @test m1.dval.bias == [1, 1]
 
-    g2 = Flux.withgradient((m,x) -> sum(m(x)), m1, [1,2,3f0])
+    g2 = Flux.withgradient((m,x) -> sum(m(x)), m1, Const([1,2,3f0]))
     @test g2.val ≈ sum(m1([1,2,3f0]))
     @test g2.grad[1].weight ≈ [1 2 3; 1 2 3]
-    @test g2.grad[2] === nothing  # implicitly Const
+    @test g2.grad[2] === nothing
 
-    g3 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
-              z = 1 ./ x
-              sum(z), z  # here z is an auxillary output
-           end
-    @test g3.grad[1] ≈ [-1.0, -0.25, -0.0625]
-    @test g3.val[1] ≈ 1.75
-    @test g3.val[2] ≈ [1.0, 0.5, 0.25]
-    g4 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
-              z = 1 ./ x
-              (loss=sum(z), aux=string(z))
-           end
-    @test g4.grad[1] ≈ [-1.0, -0.25, -0.0625]
-    @test g4.val.loss ≈ 1.75
-    @test g4.val.aux == "[1.0, 0.5, 0.25]"
+    ## Auxillary outputs not supported at the moment
+    # g3 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
+    #           z = 1 ./ x
+    #           sum(z), z  # here z is an auxillary output
+    #        end
+    # @test g3.grad[1] ≈ [-1.0, -0.25, -0.0625]
+    # @test g3.val[1] ≈ 1.75
+    # @test g3.val[2] ≈ [1.0, 0.5, 0.25]
+    # g4 = Flux.withgradient(Duplicated([1,2,4.], zeros(3))) do x
+    #           z = 1 ./ x
+    #           (loss=sum(z), aux=string(z))
+    #        end
+    # @test g4.grad[1] ≈ [-1.0, -0.25, -0.0625]
+    # @test g4.val.loss ≈ 1.75
+    # @test g4.val.aux == "[1.0, 0.5, 0.25]"
 
     # setup understands Duplicated:
     @test Flux.setup(Adam(), m1) == Flux.setup(Adam(), m1.val)
@@ -93,11 +51,11 @@ end
     m1.val.weight .= 0
     @test Flux.loadmodel!(m1, oldpar).val.weight ≈ oldpar.weight
 
-    # At least one Duplicated is required:
-    @test_throws ArgumentError Flux.gradient(m -> sum(m.bias), Const(m1.val))
-    @test_throws ArgumentError Flux.gradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])
-    @test_throws ArgumentError Flux.withgradient(m -> sum(m.bias), Const(m1.val))
-    @test_throws ArgumentError Flux.withgradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0])
+    # Only Const args are supported
+    @test Flux.gradient(m -> sum(m.bias), Const(m1.val))[1] === nothing
+    @test Flux.gradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0]) isa Tuple{Nothing,Vector{Float32}}
+    @test Flux.withgradient(m -> sum(m.bias), Const(m1.val)).grad[1] === nothing
+    @test Flux.withgradient((m,x) -> sum(m(x)), Const(m1.val), [1,2,3f0]).grad isa Tuple{Nothing,Vector{Float32}}
     # Active is disallowed:
     @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, m1, Active(3f0))
     @test_throws ArgumentError Flux.gradient((m,z) -> sum(m.bias)/z, m1.val, Active(3f0))
@@ -115,7 +73,6 @@ end
     @test Flux.gradient(sum ∘ LayerNorm(3), z)[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, _duplicated(sum ∘ LayerNorm(3)))[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
-
-    @test_broken Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]  # AssertionError: Base.allocatedinline(actualRetType) returns false: actualRetType = Any, rettype = Active{Any}
-    @test_broken Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]
+    @test Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
 end

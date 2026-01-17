@@ -181,9 +181,7 @@ These matching nested structures are at the core of how Flux works.
     This method of `gradient` takes a zero-argument function, which only *implicitly*
     depends on `θ`.
 
-```@raw html
-<h3><img src="../../../assets/zygote-crop.png" width="40px"/>&nbsp;<a href="https://github.com/FluxML/Zygote.jl">Zygote.jl</a></h3>
-```
+## Automatic Differentiation
 
 Flux's [`gradient`](@ref Flux.gradient) function by default calls a companion packages called [Zygote](https://github.com/FluxML/Zygote.jl).
 Zygote performs source-to-source automatic differentiation, meaning that `gradient(f, x)`
@@ -198,7 +196,7 @@ Flux can also be used with other automatic differentiation (AD) packages.
 It was originally written using [Tracker](https://github.com/FluxML/Tracker.jl), a more traditional operator-overloading approach.
 The future might be [Enzyme](https://github.com/EnzymeAD/Enzyme.jl), and Flux now builds in an easy way to use this instead, turned on by wrapping the model in `Duplicated`. (For details, see the [Enzyme page](@ref autodiff-enzyme) in the manual.)
 
-```julia
+```julia-repl
 julia> using Enzyme: Const, Duplicated
 
 julia> grad3e = Flux.gradient((x,p) -> p(x), Const(5.0), Duplicated(poly3s))
@@ -210,11 +208,31 @@ Here, this is because `Const(5.0)` is explicitly constant.
 Below, we will see an example where `nothing` shows up because the model struct has fields containing things other than parameters, such as an activation function.
 (It also adopts the convention that `gradient(f, x, y)` returns a tuple `(∂f/∂x, ∂f/∂y)`, without a "`∂f/∂f`" term for the function. This is why we had to write `gradient(|>, 5, poly4)` above, not just `gradient(poly4, 5)`.)
 
-Finally, the function [`withgradient`](@ref) works the same way, but also returns the value of the function:
+The function [`withgradient`](@ref) works the same way, but also returns the value of the function:
 
 ```jldoctest poly
 julia> Flux.withgradient((x,p) -> p(x), 5.0, poly3s)
 (val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],)))
+```
+
+One can also directly specify which AD backend to use, by passing an adtype among the supported ones
+(`AutoMooncake, AutoEnzyme, AutoZygote, AutoFiniteDifferences`) as the second argument.
+The corresponding AD package has to be loaded first.
+
+Here is an example using [Mooncake](https://github.com/chalk-lab/Mooncake.jl):
+```jldoctest poly
+julia> using Mooncake
+
+julia> Flux.withgradient((x,p) -> p(x), AutoMooncake(), 5.0, poly3s)
+(val = 17.5, grad = (2.0, Poly3{Vector{Float64}}([1.0, 5.0, 25.0])))
+```
+
+and here is the same example using Enzyme:
+```julia-repl
+julia> using Enzyme
+
+julia> Flux.withgradient((x,p) -> p(x), AutoEnzyme(), 5.0, poly3s)
+(val = 17.5, grad = (2.0, Poly3{Vector{Float64}}([1.0, 5.0, 25.0])))
 ```
 
 ## Simple Neural Networks
