@@ -168,7 +168,7 @@ used by `gradient`. To do this, `f` must return a Tuple or NamedTuple.
 Then it calculates `grad = gradient(first∘f, args...)
 but returns the whole `val = f(args...)`:
 
-```jldoctest; setup=:(using Zygote)
+```jldoctest
 julia> withgradient([1,2,4]) do x
           z = 1 ./ x
           sum(z), z  # here z is an auxillary output

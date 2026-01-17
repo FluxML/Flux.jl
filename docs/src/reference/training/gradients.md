@@ -10,6 +10,8 @@ Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particu
 Flux also has support for Enzyme.jl, documented [below](@ref autodiff-enzyme) and for Mooncake.jl.
 
 
+## Generic Gradient Interface
+
 ```@docs
 Flux.gradient(f, adtype::AbstractADType, args::Any...)
 Flux.withgradient(f, adtype::AbstractADType, args::Any...)
@@ -17,12 +19,10 @@ Flux.withgradient(f, adtype::AbstractADType, args::Any...)
 
 ## [Automatic Differentiation using Zygote.jl](@id autodiff-zygote)
 
-The preferred way of using Zygote, and the only way of using most other AD packages,
-is to explicitly provide a function and its arguments.
+The default AD backend in Flux is Zygote. Besides  gradient calculation, Zygote also supports
+higher-order derivatives, Jacobians, Hessians, and pullbacks.
 
 ```@docs
-Zygote.gradient(f, args...)
-Zygote.withgradient(f, args...)
 Zygote.jacobian(f, args...)
 Zygote.withjacobian(f, args...)
 Zygote.hessian
