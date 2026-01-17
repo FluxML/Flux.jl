@@ -125,6 +125,7 @@ function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing)
     end
 end
 
+train!(loss, model, data, opt; cb = nothing) = train!(loss, AutoZygote(), model, data, opt; cb)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
