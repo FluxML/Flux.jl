@@ -1,4 +1,5 @@
-using Documenter, Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
+using Documenter
+using Flux, NNlib, Functors, MLUtils, BSON, Optimisers, 
       OneHotArrays, Zygote, ChainRulesCore, Plots, MLDatasets, Statistics, 
       DataFrames, JLD2, MLDataDevices, MLCore, Mooncake
 using MLCore: numobs, getobs, getobs!
@@ -21,7 +22,8 @@ makedocs(
         sidebar_sitename = false,
         analytics = "UA-36890222-9",
         assets = ["assets/flux.css"],
-        prettyurls = get(ENV, "CI", nothing) == "true"
+        prettyurls = get(ENV, "CI", nothing) == "true",
+        size_threshold=1_000_000,
     ),
     pages = [
         "Welcome" => "index.md",

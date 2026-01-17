@@ -66,8 +66,6 @@ export Chain, Dense, Embedding, EmbeddingBag,
   freeze!, thaw!, adjust!, update!, trainable,
   # from Zygote.jl
   hessian, diaghessian, jacobian, withjacobian, pullback,
-  # AD functions
-  withgradient,
   # init
   glorot_uniform,
   glorot_normal,
@@ -101,7 +99,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
 ))
 
 include("gradient.jl")
-export gradient
+export gradient, withgradient
 
 include("train.jl")
 using .Train

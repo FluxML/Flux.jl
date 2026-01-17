@@ -224,7 +224,7 @@ Here is an example using [Mooncake](https://github.com/chalk-lab/Mooncake.jl):
 julia> using Mooncake
 
 julia> Flux.withgradient((x,p) -> p(x), AutoMooncake(), 5.0, poly3s)
-(val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],)))
+(val = 17.5, grad = (2.0, Poly3{Vector{Float64}}([1.0, 5.0, 25.0])))
 ```
 
 and here is the same example using Enzyme:

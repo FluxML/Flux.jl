@@ -7,12 +7,12 @@ CollapsedDocStrings = true
 Flux's `gradient` function uses [Zygote](https://github.com/FluxML/Zygote.jl) by default, and also uses this function within [`train!`](@ref Flux.train!) to differentiate the model.
 Zygote has its own [documentation](https://fluxml.ai/Zygote.jl/dev/), in particular listing some [important limitations](https://fluxml.ai/Zygote.jl/dev/limitations/).
 
-Flux also has support for Enzyme.jl, documented [below](@ref autodiff-enzyme) and for other AD backends such as Mooncake.jl and FiniteDifferences.jl.
+Flux also has support for Enzyme.jl, documented [below](@ref autodiff-enzyme) and for Mooncake.jl.
 
 
 ```@docs
-Flux.gradient(f, args::Any...)
-Flux.withgradient(f, args::Any...)
+Flux.gradient(f, adtype::AbstractADType, args::Any...)
+Flux.withgradient(f, adtype::AbstractADType, args::Any...)
 ```
 
 ## [Automatic Differentiation using Zygote.jl](@id autodiff-zygote)
