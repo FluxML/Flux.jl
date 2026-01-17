@@ -7,7 +7,7 @@ using ..Flux: Flux
 
 using ProgressLogging: @progress, @withprogress, @logprogress
 using EnzymeCore: Duplicated
-using ADTypes: AbstractADType
+using ADTypes: AbstractADType, AutoEnzyme, AutoZygote
 
 export setup, train!
 
