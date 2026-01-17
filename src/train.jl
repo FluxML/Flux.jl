@@ -6,13 +6,10 @@ using Functors: fmap, fmapstructure
 using ..Flux: Flux
 
 using ProgressLogging: @progress, @withprogress, @logprogress
-using Zygote: Zygote
+using EnzymeCore: Duplicated
+using ADTypes: AbstractADType
 
 export setup, train!
-
-using ProgressLogging: @progress, @withprogress, @logprogress
-using Zygote: Zygote
-using EnzymeCore: Duplicated
 
 """
     opt_state = setup(rule, model)
@@ -49,7 +46,7 @@ function setup(rule::Optimisers.AbstractRule, model)
     state = Optimisers.setup(rule, model)
     # This check only needs foreach; using fmap caused https://github.com/FluxML/Flux.jl/issues/2144
     fmapstructure(model, exclude = Optimisers.isnumeric) do x
-      Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
+        Optimisers.maywrite(x) || error("""model must be fully mutable for `train!` to work, got `x::$(typeof(x))`.
                                          If `x .+= dx` is in fact ok, define `Optimisers.maywrite(::$(typeof(x))) = true`""")
     end
     return state
@@ -63,15 +60,17 @@ Special method for use with Enzyme.jl, ignores the stored gradient.
 setup(rule::Optimisers.AbstractRule, model::Duplicated) = setup(rule, model.val)
 
 """
-    train!(loss, model, data, opt_state)
+    train!(loss, [adtype,] model, data, opt_state)
 
 Uses a `loss` function and training `data` to improve the `model`'s parameters
 according to a particular optimisation rule encoded in `opt_state`.
+
 Iterates through `data` once, evaluating for each `d in data` either
 `loss(model, d...)` if `d isa Tuple`, or else `loss(model, d)` for other `d`.
 
-If `model` is an Enzyme.Duplicated and `Enzyme.jl` is loaded, gradients will be computed with Enzyme,
-otherwise they will be computed with Zygote.
+The optional argument `adtype`, selects an automatic differentiation engine  among the ones supported by 
+[`gradient`](@ref). If no `adtype` is given, then Zygote is used by default, unless `model` is of type `Duplicated` from Enzyme.jl,
+in which case Enzyme is used.
 
 For example, with these definitions...
 ```
@@ -108,62 +107,47 @@ It adds only a few features to the loop above:
     * Callback functions are not supported.
       (But any code can be included in the above `for` loop.)
 """
-function train!(loss, model, data, opt; cb = nothing)
-  isnothing(cb) || error("""train! does not support callback functions.
-                            For more control use a loop with `gradient` and `update!`.""")
-  @withprogress for (i,d) in enumerate(data)
-    d_splat = d isa Tuple ? d : (d,)
+function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing)
+    isnothing(cb) || error("""train! does not support callback functions.
+                                For more control use a loop with `gradient` and `update!`.""")
+    @withprogress for (i,d) in enumerate(data)
+        d_splat = d isa Tuple ? d : (d,)
 
-    l, gs = Zygote.withgradient(m -> loss(m, d_splat...), model)
+        l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model)
 
-    if !isfinite(l)
-      throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+        if !isfinite(l)
+            throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+        end
+
+        opt, model = Optimisers.update!(opt, model, gs[1])
+
+        @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
-
-    opt, model = Optimisers.update!(opt, model, gs[1])
-
-    @logprogress Base.haslength(data) ? i/length(data) : nothing
-  end
 end
 
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
-  train!(loss, model, data, _rule_to_state(model, rule); cb)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
-  state = setup(rule, model)
-  @gensym warn_id
-  name = typeof(rule).name.name
-  fmap(state, exclude = x -> x isa Optimisers.Leaf) do leaf
-    leaf.state isa Nothing ||  @warn """Optimiser $name has state which will be discarded after `train!` finishes.
-                                        Please run `opt = Flux.setup($name(), model)` and pass this `opt` to `train!`.""" leaf maxlog=1 _id=warn_id
-    leaf
-  end
-  state
+    state = setup(rule, model)
+    @gensym warn_id
+    name = typeof(rule).name.name
+    fmap(state, exclude = x -> x isa Optimisers.Leaf) do leaf
+        leaf.state isa Nothing ||  @warn """Optimiser $name has state which will be discarded after `train!` finishes.
+                                            Please run `opt = Flux.setup($name(), model)` and pass this `opt` to `train!`.""" leaf maxlog=1 _id=warn_id
+        leaf
+    end
+    return state
 end
 
-"""
-    train!(loss, Duplicated(model), data, opt_state)
-
-This method uses Enzyme.jl instead of Zygote.jl to compute the gradients,
-but is otherwise the same as `train!(loss, model, data, opt_state)`.
-
-Only available when Enzyme is loaded.
-
-!!! compat "New"
-    This method was added in Flux 0.13.9.
-
-"""
-train!(loss, model::Duplicated, data, opt; cb = nothing) = _enzyme_train!(loss, model, data, opt; cb = nothing)
-
-# FluxEnzymeExt defines more specific _enzyme_train!(loss, model::Duplicated, data, opt; cb)
-_enzyme_train!(loss, model, data, opt; cb = nothing) = throw(ArgumentError("The method `train!(loss, Duplicated(model), data, opt_state)` is only available when Enzyme.jl is loaded"))
+train!(loss, model::Duplicated, data, opt; cb = nothing) = train!(loss, AutoEnzyme(), model, data, opt; cb)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing)
-  train!(loss, model, data, _rule_to_state(model, rule); cb)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb)
 end
 
 end # module Train

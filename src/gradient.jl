@@ -48,12 +48,11 @@ julia> Flux.gradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
 ([2.0, 2.0, 2.0],)
 ```
 """
-function gradient(f, adtype::ADTypes.AbstractADType, args...)
+function gradient(f, adtype::AbstractADType, args...)
     error("AD backend has to be loaded to use `gradient(f, AutoXXX(), args...)`.
         Make sure to `using` the corresponding package, e.g. `using Mooncake` for `AutoMooncake()`.
         Supported backends are $SUPPORTED_AD_BACKENDS.")
 end
-
 
 # Default gradient using Zygote
 function gradient(f, args...; zero::Bool=true)
