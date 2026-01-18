@@ -36,11 +36,6 @@ julia> opt_state = Flux.setup(Adam(0), model);
 julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_state)
 ```
 
-```@docs
-Flux.train!(loss, model::Flux.EnzymeCore.Duplicated, data, opt)
-```
-
-
 ## Optimisation Modifiers
 
 The state returned by `setup` can be modified to temporarily prevent training of
