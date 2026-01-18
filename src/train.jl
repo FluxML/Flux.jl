@@ -119,11 +119,19 @@ function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing)
             throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
         end
 
-        opt, model = Optimisers.update!(opt, model, gs[1])
+        opt, model = _update!(opt, model, gs[1])
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
 end
+
+_update!(opt_state, model, grads) = Optimisers.update!(opt_state, model, grads)
+
+function _update!(opt_state, model::Duplicated, grad)
+    opt_state, model2 = Optimisers.update!(opt_state, model.val, grad)
+    return opt_state, Duplicated(model2, model.dval)
+end
+
 
 train!(loss, model, data, opt; cb = nothing) = train!(loss, AutoZygote(), model, data, opt; cb)
 
