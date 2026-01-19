@@ -1,0 +1,194 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>MLUtils · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview', {'page': location.pathname + location.search + location.hash});
+</script><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script data-main="../../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" data-theme-name="documenter-dark" data-theme-primary-dark="" href="../../assets/themes/documenter-dark.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="documenter-light" data-theme-primary="" href="../../assets/themes/documenter-light.css" rel="stylesheet" type="text/css"/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img alt="Flux logo" src="../../assets/logo.png"/></a><div class="docs-package-name"><span class="docs-autofit">Flux</span></div><form action="../../search/" class="docs-search"><input class="docs-search-query" id="documenter-search-query" name="q" placeholder="Search docs" type="text"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li><a class="tocitem" href="../../models/overview/">Overview</a></li><li><a class="tocitem" href="../../models/basics/">Basics</a></li><li><a class="tocitem" href="../../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../models/layers/">Model Reference</a></li><li><a class="tocitem" href="../../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../../models/regularisation/">Regularisation</a></li><li><a class="tocitem" href="../../models/advanced/">Advanced Model Building</a></li><li><a class="tocitem" href="../../models/nnlib/">NNlib</a></li><li><a class="tocitem" href="../../models/functors/">Functors</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../onehot/">One-Hot Encoding</a></li><li class="is-active"><a class="tocitem" href="">MLUtils</a><ul class="internal"><li><a class="tocitem" href="#DataLoader"><span>DataLoader</span></a></li><li><a class="tocitem" href="#Utility-functions-for-working-with-data"><span>Utility functions for working with data</span></a></li></ul></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li></ul></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../ecosystem/">The Julia Ecosystem</a></li><li><a class="tocitem" href="../../utilities/">Utility Functions</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li><li><a class="tocitem" href="../../datasets/">Datasets</a></li><li><a class="tocitem" href="../../community/">Community</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Handling Data</a></li><li class="is-active"><a href="">MLUtils</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="">MLUtils</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/data/mlutils.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" href="#" id="documenter-settings-button" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" href="#" id="documenter-sidebar-button"></a></div></header><article class="content" id="documenter-page"><h1 id="MLUtils.jl"><a class="docs-heading-anchor" href="#MLUtils.jl">MLUtils.jl</a><a id="MLUtils.jl-1"></a><a class="docs-heading-anchor-permalink" href="#MLUtils.jl" title="Permalink"></a></h1><p>Flux re-exports the <code>DataLoader</code> type and utility functions for working with data from <a href="https://github.com/JuliaML/MLUtils.jl">MLUtils</a>.</p><h2 id="DataLoader"><a class="docs-heading-anchor" href="#DataLoader">DataLoader</a><a id="DataLoader-1"></a><a class="docs-heading-anchor-permalink" href="#DataLoader" title="Permalink"></a></h2><p><code>DataLoader</code> can be used to handle iteration over mini-batches of data.</p><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.DataLoader" id="MLUtils.DataLoader"><code>MLUtils.DataLoader</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">DataLoader(data; batchsize=1, shuffle=false, partial=true, rng=GLOBAL_RNG)</code></pre><p>An object that iterates over mini-batches of <code>data</code>,  each mini-batch containing <code>batchsize</code> observations (except possibly the last one).</p><p>Takes as input a single data tensor, or a tuple (or a named tuple) of tensors. The last dimension in each tensor is the observation dimension, i.e. the one divided into mini-batches.</p><p>If <code>shuffle=true</code>, it shuffles the observations each time iterations are re-started. If <code>partial=false</code> and the number of observations is not divisible by the batchsize,  then the last mini-batch is dropped.</p><p>The original data is preserved in the <code>data</code> field of the DataLoader.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Xtrain = rand(10, 100);
+
+julia&gt; array_loader = DataLoader(Xtrain, batchsize=2);
+
+julia&gt; for x in array_loader
+         @assert size(x) == (10, 2)
+         # do something with x, 50 times
+       end
+
+julia&gt; array_loader.data === Xtrain
+true
+
+julia&gt; tuple_loader = DataLoader((Xtrain,), batchsize=2);  # similar, but yielding 1-element tuples
+
+julia&gt; for x in tuple_loader
+         @assert x isa Tuple{Matrix}
+         @assert size(x[1]) == (10, 2)
+       end
+
+julia&gt; Ytrain = rand('a':'z', 100);  # now make a DataLoader yielding 2-element named tuples
+
+julia&gt; train_loader = DataLoader((data=Xtrain, label=Ytrain), batchsize=5, shuffle=true);
+
+julia&gt; for epoch in 1:100
+         for (x, y) in train_loader  # access via tuple destructuring
+           @assert size(x) == (10, 5)
+           @assert size(y) == (5,)
+           # loss += f(x, y) # etc, runs 100 * 20 times
+         end
+       end
+
+julia&gt; first(train_loader).label isa Vector{Char}  # access via property name
+true
+
+julia&gt; first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
+false
+
+julia&gt; foreach(println∘summary, DataLoader(rand(Int8, 10, 64), batchsize=30))  # partial=false would omit last
+10×30 Matrix{Int8}
+10×30 Matrix{Int8}
+10×4 Matrix{Int8}</code></pre></div></section></article><h2 id="Utility-functions-for-working-with-data"><a class="docs-heading-anchor" href="#Utility-functions-for-working-with-data">Utility functions for working with data</a><a id="Utility-functions-for-working-with-data-1"></a><a class="docs-heading-anchor-permalink" href="#Utility-functions-for-working-with-data" title="Permalink"></a></h2><p>The utility functions are meant to be used while working with data; these functions help create inputs for your models or batch your dataset.</p><p>Below is a non-exhaustive list of such utility functions.</p><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.unsqueeze" id="MLUtils.unsqueeze"><code>MLUtils.unsqueeze</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">unsqueeze(x; dims)</code></pre><p>Return <code>x</code> reshaped into an array one dimensionality higher than <code>x</code>, where <code>dims</code> indicates in which dimension <code>x</code> is extended.</p><p>See also <a href="data/@ref"><code>flatten</code></a>, <a href="#MLUtils.stack"><code>stack</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; unsqueeze([1 2; 3 4], dims=2)
+2×1×2 Array{Int64, 3}:
+[:, :, 1] =
+ 1
+ 3
+
+[:, :, 2] =
+ 2
+ 4
+
+
+julia&gt; xs = [[1, 2], [3, 4], [5, 6]]
+3-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+
+julia&gt; unsqueeze(xs, dims=1)
+1×3 Matrix{Vector{Int64}}:
+ [1, 2]  [3, 4]  [5, 6]</code></pre></div></section><section><div><pre><code class="language-none">unsqueeze(; dims)</code></pre><p>Returns a function which, acting on an array, inserts a dimension of size 1 at <code>dims</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; rand(21, 22, 23) |&gt; unsqueeze(dims=2) |&gt; size
+(21, 1, 22, 23)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.stack" id="MLUtils.stack"><code>MLUtils.stack</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">stack(xs; dims)</code></pre><p>Concatenate the given array of arrays <code>xs</code> into a single array along the given dimension <code>dims</code>.</p><p>See also <a href="#MLUtils.stack"><code>stack</code></a> and <a href="#MLUtils.batch"><code>batch</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; xs = [[1, 2], [3, 4], [5, 6]]
+3-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+
+julia&gt; stack(xs, dims=1)
+3×2 Matrix{Int64}:
+ 1  2
+ 3  4
+ 5  6
+
+julia&gt; stack(xs, dims=2)
+2×3 Matrix{Int64}:
+ 1  3  5
+ 2  4  6
+
+julia&gt; stack(xs, dims=3)
+2×1×3 Array{Int64, 3}:
+[:, :, 1] =
+ 1
+ 2
+
+[:, :, 2] =
+ 3
+ 4
+
+[:, :, 3] =
+ 5
+ 6</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.unstack" id="MLUtils.unstack"><code>MLUtils.unstack</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">unstack(xs; dims)</code></pre><p>Unroll the given <code>xs</code> into an array of arrays along the given dimension <code>dims</code>.</p><p>See also <a href="#MLUtils.stack"><code>stack</code></a> and <a href="#MLUtils.unbatch"><code>unbatch</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; unstack([1 3 5 7; 2 4 6 8], dims=2)
+4-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+ [7, 8]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.chunk" id="MLUtils.chunk"><code>MLUtils.chunk</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">chunk(x, n; [dims])</code></pre><p>Split <code>x</code> into <code>n</code> parts. The parts contain the same number of elements except possibly for the last one that can be smaller.</p><p>If <code>x</code> is an array, <code>dims</code> can be used to specify along which dimension to  split (defaults to the last dimension).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; chunk(1:10, 3)
+3-element Vector{UnitRange{Int64}}:
+ 1:4
+ 5:8
+ 9:10
+
+julia&gt; x = reshape(collect(1:20), (5, 4))
+5×4 Matrix{Int64}:
+ 1   6  11  16
+ 2   7  12  17
+ 3   8  13  18
+ 4   9  14  19
+ 5  10  15  20
+
+julia&gt; xs = chunk(x, 2, dims=1)
+2-element Vector{SubArray{Int64, 2, Matrix{Int64}, Tuple{UnitRange{Int64}, Base.Slice{Base.OneTo{Int64}}}, false}}:
+ [1 6 11 16; 2 7 12 17; 3 8 13 18]
+ [4 9 14 19; 5 10 15 20]
+
+julia&gt; xs[1]
+3×4 view(::Matrix{Int64}, 1:3, :) with eltype Int64:
+ 1  6  11  16
+ 2  7  12  17
+ 3  8  13  18</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.group_counts" id="MLUtils.group_counts"><code>MLUtils.group_counts</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">group_counts(x)</code></pre><p>Count the number of times that each element of <code>x</code> appears.</p><p>See also <a href="data/@ref"><code>group_indices</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; group_counts(['a', 'b', 'b'])
+Dict{Char, Int64} with 2 entries:
+  'a' =&gt; 1
+  'b' =&gt; 2</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.batch" id="MLUtils.batch"><code>MLUtils.batch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">batch(xs)</code></pre><p>Batch the arrays in <code>xs</code> into a single array with  an extra dimension.</p><p>If the elements of <code>xs</code> are tuples, named tuples, or dicts,  the output will be of the same type. </p><p>See also <a href="#MLUtils.unbatch"><code>unbatch</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; batch([[1,2,3], 
+              [4,5,6]])
+3×2 Matrix{Int64}:
+ 1  4
+ 2  5
+ 3  6
+
+julia&gt; batch([(a=[1,2], b=[3,4])
+               (a=[5,6], b=[7,8])]) 
+(a = [1 5; 2 6], b = [3 7; 4 8])</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.unbatch" id="MLUtils.unbatch"><code>MLUtils.unbatch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">unbatch(x)</code></pre><p>Reverse of the <a href="#MLUtils.batch"><code>batch</code></a> operation, unstacking the last dimension of the array <code>x</code>.</p><p>See also <a href="#MLUtils.unstack"><code>unstack</code></a>.</p><p><strong>Examples</strong></p><p>```jldoctest julia&gt; unbatch([1 3 5 7;                      2 4 6 8]) 4-element Vector{Vector{Int64}}:  [1, 2]  [3, 4]  [5, 6]  [7, 8]</p></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#MLUtils.batchseq" id="MLUtils.batchseq"><code>MLUtils.batchseq</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">batchseq(seqs, pad)</code></pre><p>Take a list of <code>N</code> sequences, and turn them into a single sequence where each item is a batch of <code>N</code>. Short sequences will be padded by <code>pad</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; batchseq([[1, 2, 3], [4, 5]], 0)
+3-element Vector{Vector{Int64}}:
+ [1, 4]
+ [2, 5]
+ [3, 0]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" href="#Base.rpad-Tuple{AbstractVector{T} where T, Integer, Any}" id="Base.rpad-Tuple{AbstractVector{T} where T, Integer, Any}"><code>Base.rpad</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia">rpad(v::AbstractVector, n::Integer, p)</code></pre><p>Return the given sequence padded with <code>p</code> up to a maximum length of <code>n</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; rpad([1, 2], 4, 0)
+4-element Vector{Int64}:
+ 1
+ 2
+ 0
+ 0
+
+julia&gt; rpad([1, 2, 3], 2, 0)
+3-element Vector{Int64}:
+ 1
+ 2
+ 3</code></pre></div></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../onehot/">« One-Hot Encoding</a><a class="docs-footer-nextpage" href="../../training/optimisers/">Optimisers »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label></p><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div><p></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 8 April 2022 06:56">Friday 8 April 2022</span>. Using Julia version 1.6.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></HTML>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Flat vs. Nested · Flux</title><meta name="title" content="Flat vs. Nested · Flux"/><meta property="og:title" content="Flat vs. Nested · Flux"/><meta property="twitter:title" content="Flat vs. Nested · Flux"/><meta name="description" content="Documentation for Flux."/><meta property="og:description" content="Documentation for Flux."/><meta property="twitter:description" content="Documentation for Flux."/><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../guide/models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../guide/models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../../guide/models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../../guide/training/training/">Training</a></li><li><a class="tocitem" href="../../guide/models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../guide/gpu/">GPU Support</a></li><li><a class="tocitem" href="../../guide/saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../guide/performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../training/reference/">Training API</a></li><li><a class="tocitem" href="../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../outputsize/">Shape Inference</a></li><li class="is-active"><a class="tocitem" href>Flat vs. Nested</a><ul class="internal"><li><a class="tocitem" href="#All-Parameters"><span>All Parameters</span></a></li><li><a class="tocitem" href="#All-Layers"><span>All Layers</span></a></li><li><a class="tocitem" href="#Save-and-Load"><span>Save and Load</span></a></li><li><a class="tocitem" href="#KeyPath"><span>KeyPath</span></a></li></ul></li><li><a class="tocitem" href="../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../training/gradients/">Gradients</a></li><li><a class="tocitem" href="../data/mldatadevices/">Transfer Data to GPU – MLDataDevices.jl</a></li><li><a class="tocitem" href="../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../../tutorials/custom_layers/">Custom Layers</a></li><li><a class="tocitem" href="../../tutorials/model_zoo/">Model Zoo</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Reference</a></li><li class="is-active"><a href>Flat vs. Nested</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Flat vs. Nested</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/FluxML/Flux.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/reference/destructure.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="man-destructure"><a class="docs-heading-anchor" href="#man-destructure">Flat vs. Nested Structures</a><a id="man-destructure-1"></a><a class="docs-heading-anchor-permalink" href="#man-destructure" title="Permalink"></a></h1><p>A Flux model is a nested structure, with parameters stored within many layers. Sometimes you may want a flat representation of them, to interact with functions expecting just one vector. This is provided by <code>destructure</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; model = Chain(Dense(2=&gt;1, tanh), Dense(1=&gt;1))
+Chain(
+  Dense(2 =&gt; 1, tanh),                  # 3 parameters
+  Dense(1 =&gt; 1),                        # 2 parameters
+)                   # Total: 4 arrays, 5 parameters, 276 bytes.
+
+julia&gt; flat, rebuild = Flux.destructure(model)
+(Float32[0.863101, 1.2454957, 0.0, -1.6345707, 0.0], Restructure(Chain, ..., 5))
+
+julia&gt; rebuild(zeros(5))  # same structure, new parameters
+Chain(
+  Dense(2 =&gt; 1, tanh),                  # 3 parameters  (all zero)
+  Dense(1 =&gt; 1),                        # 2 parameters  (all zero)
+)                   # Total: 4 arrays, 5 parameters, 276 bytes.</code></pre><p>Both <code>destructure</code> and the <code>Restructure</code> function can be used within gradient computations. For instance, this computes the Hessian <code>∂²L/∂θᵢ∂θⱼ</code> of some loss function, with respect to all parameters of the Flux model. The resulting matrix has off-diagonal entries, which cannot really be expressed in a nested structure:</p><pre><code class="language-julia-repl hljs">julia&gt; x = rand(Float32, 2, 16);
+
+julia&gt; grad = gradient(m -&gt; sum(abs2, m(x)), model)  # nested gradient
+((layers = ((weight = Float32[10.339018 11.379145], bias = Float32[22.845667], σ = nothing), (weight = Float32[-29.565302;;], bias = Float32[-37.644184], σ = nothing)),),)
+
+julia&gt; function loss(v::Vector)
+         m = rebuild(v)
+         y = m(x)
+         sum(abs2, y)
+       end;
+
+julia&gt; gradient(loss, flat)  # flat gradient, same numbers
+(Float32[10.339018, 11.379145, 22.845667, -29.565302, -37.644184],)
+
+julia&gt; Zygote.hessian(loss, flat)  # second derivative
+5×5 Matrix{Float32}:
+  -7.13131   -5.54714  -11.1393  -12.6504   -8.13492
+  -5.54714   -7.11092  -11.0208  -13.9231   -9.36316
+ -11.1393   -11.0208   -13.7126  -27.9531  -22.741
+ -12.6504   -13.9231   -27.9531   18.0875   23.03
+  -8.13492   -9.36316  -22.741    23.03     32.0
+
+julia&gt; Flux.destructure(grad)  # acts on non-models, too
+(Float32[10.339018, 11.379145, 22.845667, -29.565302, -37.644184], Restructure(Tuple, ..., 5))</code></pre><p>In order to collect all parameters of a model into a list instead, you can use the <code>trainables</code> function:</p><pre><code class="language-julia-repl hljs">julia&gt; Flux.trainables(model)
+5-element Vector{AbstractArray}:
+  [0.863101 1.2454957]
+  [0.0]
+  [1.290355429422727;;]
+  [0.0]</code></pre><p>Any mutation of the elements of the resulting list will affect the model&#39;s parameters.</p><h2 id="All-Parameters"><a class="docs-heading-anchor" href="#All-Parameters">All Parameters</a><a id="All-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#All-Parameters" title="Permalink"></a></h2><p>The functions <code>destructure</code> and <code>trainables</code> live in <a href="https://github.com/FluxML/Optimisers.jl"><code>Optimisers.jl</code></a>.</p><article><details class="docstring"><summary id="Optimisers.destructure"><a class="docstring-binding" href="#Optimisers.destructure"><code>Optimisers.destructure</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">destructure(model) -&gt; vector, reconstructor</code></pre><p>Copies all <a href="#Optimisers.trainable"><code>trainable</code></a>, <a href="#Optimisers.isnumeric"><code>isnumeric</code></a> parameters in the model to a vector, and returns also a function which reverses this transformation. Differentiable.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl hljs">julia&gt; v, re = destructure((x=[1.0, 2.0], y=(sin, [3.0 + 4.0im])))
+(ComplexF64[1.0 + 0.0im, 2.0 + 0.0im, 3.0 + 4.0im], Restructure(NamedTuple, ..., 3))
+
+julia&gt; re([3, 5, 7+11im])
+(x = [3.0, 5.0], y = (sin, ComplexF64[7.0 + 11.0im]))</code></pre><p>If <code>model</code> contains various number types, they are promoted to make <code>vector</code>, and are usually restored by <code>Restructure</code>. Such restoration follows the rules  of <code>ChainRulesCore.ProjectTo</code>, and thus will restore floating point precision, but will permit more exotic numbers like <code>ForwardDiff.Dual</code>.</p><p>If <code>model</code> contains only GPU arrays, then <code>vector</code> will also live on the GPU. At present, a mixture of GPU and ordinary CPU arrays is undefined behaviour.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Optimisers.jl/blob/v0.4.7/src/destructure.jl#L5-L28">source</a></section></details></article><article><details class="docstring"><summary id="Optimisers.trainable"><a class="docstring-binding" href="#Optimisers.trainable"><code>Optimisers.trainable</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">trainable(x::Layer) -&gt; NamedTuple</code></pre><p>This may be overloaded to make optimisers ignore some fields of every <code>Layer</code>, which would otherwise contain trainable parameters.</p><div class="admonition is-warning" id="Warning-70683325285d3df2"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-70683325285d3df2" title="Permalink"></a></header><div class="admonition-body"><p>This is very rarely required. Fields of <code>struct Layer</code> which contain functions, or integers like sizes, are always ignored anyway. Overloading <code>trainable</code> is only necessary when some arrays of numbers are to be optimised, and some arrays of numbers are not.</p></div></div><p>The default is <code>Functors.children(x)</code>, usually a NamedTuple of all fields, and <code>trainable(x)</code> must contain a subset of these.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Optimisers.jl/blob/v0.4.7/src/interface.jl#L161-L175">source</a></section></details></article><article><details class="docstring"><summary id="Optimisers.trainables"><a class="docstring-binding" href="#Optimisers.trainables"><code>Optimisers.trainables</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">trainables(x, path = false)</code></pre><p>Return an iterable over all the trainable parameters in <code>x</code>, that is all the numerical arrays (see <a href="#Optimisers.isnumeric"><code>isnumeric</code></a>) which are reachable through <a href="#Optimisers.trainable"><code>trainable</code></a>.</p><p>Parameters appearing multiple times in the model (tied weights) will be present only once in the output.</p><p>If <code>path = false</code>, the output is a list of numerical arrays.</p><p>If <code>path = true</code>, the output is a list of <code>(KeyPath, AbstractArray)</code> pairs, where <a href="#KeyPath"><code>KeyPath</code></a> is a type representing the path to the array in the original structure.</p><p>See also <a href="#Optimisers.destructure"><code>destructure</code></a> for a similar operation that returns a single flat vector instead.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; struct MyLayer
+         w
+         b
+       end
+
+julia&gt; Functors.@functor MyLayer
+
+julia&gt; Optimisers.trainable(x::MyLayer) = (; w = x.w,) # only w is trainable in this example
+
+julia&gt; x = MyLayer([1.0,2.0,3.0], [4.0,5.0,6.0]);
+
+julia&gt; trainables(x)
+1-element Vector{AbstractArray}:
+ [1.0, 2.0, 3.0]
+
+julia&gt; x = MyLayer((a=[1.0,2.0], b=[3.0]), [4.0,5.0,6.0]);
+
+julia&gt; trainables(x) # collects nested parameters
+2-element Vector{AbstractArray}:
+ [1.0, 2.0]
+ [3.0]</code></pre><pre><code class="language-julia-repl hljs">julia&gt; x = (a = [1.0,2.0], b = (Dict(&quot;c&quot; =&gt; [3.0, 4.0], &quot;d&quot; =&gt; 5.0), [6.0,7.0]));
+
+julia&gt; for (kp, y) in trainables(x, path = true)
+           println(kp, &quot; =&gt; &quot;, y)
+       end
+KeyPath(:a,) =&gt; [1.0, 2.0]
+KeyPath(:b, 1, &quot;c&quot;) =&gt; [3.0, 4.0]
+KeyPath(:b, 2) =&gt; [6.0, 7.0]
+
+julia&gt; getkeypath(x, KeyPath(:b, 1, &quot;c&quot;))
+2-element Vector{Float64}:
+ 3.0
+ 4.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Optimisers.jl/blob/v0.4.7/src/trainables.jl#L2-L58">source</a></section></details></article><article><details class="docstring"><summary id="Optimisers.isnumeric"><a class="docstring-binding" href="#Optimisers.isnumeric"><code>Optimisers.isnumeric</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">isnumeric(x) -&gt; Bool</code></pre><p>Returns <code>true</code> on any parameter to be adjusted by Optimisers.jl, namely arrays of non-integer numbers. Returns <code>false</code> on all other types.</p><p>Requires also that <code>Functors.isleaf(x) == true</code>, to focus on e.g. the parent of a transposed matrix, not the wrapper.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Optimisers.jl/blob/v0.4.7/src/interface.jl#L136-L144">source</a></section></details></article><article><details class="docstring"><summary id="Flux.params"><a class="docstring-binding" href="#Flux.params"><code>Flux.params</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">params(model)</code></pre><p>Returns a <code>Zygote.Params</code> object containing all parameter arrays from the model. This is deprecated! This function was the cornerstone of how Flux used Zygote&#39;s implicit mode gradients, but since Flux 0.13 we use explicit mode <code>gradient(m -&gt; loss(m, x, y), model)</code> instead. To collect all the parameter arrays for other purposes, use <code>Flux.trainables(model)</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/43b0a91c856099ca240f94ee1a676d7b4a57bacb/src/deprecations.jl#L83-L91">source</a></section></details></article><h2 id="All-Layers"><a class="docs-heading-anchor" href="#All-Layers">All Layers</a><a id="All-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#All-Layers" title="Permalink"></a></h2><p>Another kind of flat view of a nested model is provided by the <code>modules</code> command. This extracts a list of all layers:</p><article><details class="docstring"><summary id="Flux.modules"><a class="docstring-binding" href="#Flux.modules"><code>Flux.modules</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">modules(m)</code></pre><p>Return an iterator over non-leaf objects that can be reached by recursing <code>m</code> over the children given by <a href="../models/functors/#Functors.functor"><code>Functors.functor</code></a>.</p><p>Useful for applying a function (e.g. a regularizer) over specific modules or subsets of the parameters (e.g. the weights but not the biases).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu));
+
+julia&gt; m2 = Chain(m1, Dense(64, 10))
+Chain(
+  Chain(
+    Dense(784 =&gt; 64),                   # 50_240 parameters
+    BatchNorm(64, relu),                # 128 parameters, plus 128
+  ),
+  Dense(64 =&gt; 10),                      # 650 parameters
+)         # Total: 6 trainable arrays, 51_018 parameters,
+          # plus 2 non-trainable, 128 parameters, summarysize 200.211 KiB.
+
+julia&gt; Flux.modules(m2)
+7-element Vector{Any}:
+ Chain(Chain(Dense(784 =&gt; 64), BatchNorm(64, relu)), Dense(64 =&gt; 10))  # 51_018 parameters, plus 128 non-trainable
+ (Chain(Dense(784 =&gt; 64), BatchNorm(64, relu)), Dense(64 =&gt; 10))
+ Chain(Dense(784 =&gt; 64), BatchNorm(64, relu))  # 50_368 parameters, plus 128 non-trainable
+ (Dense(784 =&gt; 64), BatchNorm(64, relu))
+ Dense(784 =&gt; 64)    # 50_240 parameters
+ BatchNorm(64, relu)  # 128 parameters, plus 128 non-trainable
+ Dense(64 =&gt; 10)     # 650 parameters
+
+julia&gt; L2(m) = sum(sum(abs2, l.weight) for l in Flux.modules(m) if l isa Dense)
+L2 (generic function with 1 method)
+
+julia&gt; L2(m2) isa Float32
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/43b0a91c856099ca240f94ee1a676d7b4a57bacb/src/utils.jl#L607-L649">source</a></section></details></article><h2 id="Save-and-Load"><a class="docs-heading-anchor" href="#Save-and-Load">Save and Load</a><a id="Save-and-Load-1"></a><a class="docs-heading-anchor-permalink" href="#Save-and-Load" title="Permalink"></a></h2><article><details class="docstring"><summary id="Flux.state"><a class="docstring-binding" href="#Flux.state"><code>Flux.state</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">state(x)</code></pre><p>Return an object with the same nested structure as <code>x</code> according to <code>Functors.children</code>,  but made only of basic containers (e.g. named tuples, tuples, arrays, and dictionaries).</p><p>Besides trainable and non-trainable arrays, the state will contain leaf nodes that are not arrays, such as numbers, symbols, strings, and nothing values. The leaf types that end up in the state could increase in the future.</p><p>This method is particularly useful for saving and loading models,  since the state contain only simple data types that can be easily serialized.</p><p>The state can be passed to <a href="#Flux.loadmodel!"><code>loadmodel!</code></a> to restore the model.</p><p><strong>Examples</strong></p><p><strong>Copy the state into another model</strong></p><pre><code class="language-julia-repl hljs">julia&gt; m1 = Chain(Dense(1, 2, tanh; init=ones), Dense(2, 1; init=ones));
+
+julia&gt; s = Flux.state(m1)
+(layers = ((weight = [1.0; 1.0;;], bias = [0.0, 0.0], σ = ()), (weight = [1.0 1.0], bias = [0.0], σ = ())),)
+
+julia&gt; m2 = Chain(Dense(1, 2, tanh), Dense(2, 1; bias=false));  # weights are random numbers
+
+julia&gt; Flux.loadmodel!(m2, s);
+
+julia&gt; m2[1].weight   # now the weights of m2 are the same as m1
+2×1 Matrix{Float32}:
+ 1.0
+ 1.0
+
+julia&gt; Flux.state(trainmode!(Dropout(0.2)))  # contains p &amp; activity, but not RNG state
+(p = 0.2, dims = (), active = true, rng = ())
+
+julia&gt; Flux.state(BatchNorm(1))  # contains non-trainable arrays μ, σ²
+(λ = (), β = Float32[0.0], γ = Float32[1.0], μ = Float32[0.0], σ² = Float32[1.0], ϵ = 1.0f-5, momentum = 0.1f0, affine = true, track_stats = true, active = nothing, chs = 1)</code></pre><p><strong>Save and load with BSON</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using BSON
+
+julia&gt; BSON.@save &quot;checkpoint.bson&quot; model_state = s
+
+julia&gt; Flux.loadmodel!(m2, BSON.load(&quot;checkpoint.bson&quot;)[:model_state])</code></pre><p><strong>Save and load with JLD2</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using JLD2
+
+julia&gt; JLD2.jldsave(&quot;checkpoint.jld2&quot;, model_state = s)
+
+julia&gt; Flux.loadmodel!(m2, JLD2.load(&quot;checkpoint.jld2&quot;, &quot;model_state&quot;))</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/43b0a91c856099ca240f94ee1a676d7b4a57bacb/src/loading.jl#L112-L172">source</a></section></details></article><article><details class="docstring"><summary id="Flux.loadmodel!"><a class="docstring-binding" href="#Flux.loadmodel!"><code>Flux.loadmodel!</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">loadmodel!(dst, src)</code></pre><p>Copy all the parameters (trainable and non-trainable) from <code>src</code> into <code>dst</code>.</p><p>Recursively walks <code>dst</code> and <code>src</code> together using <a href="../models/functors/#Functors.children"><code>Functors.children</code></a>, and calling <code>copyto!</code> on parameter arrays or throwing an error when there is a mismatch. Non-array elements (such as activation functions) are not copied and need not match. Zero bias vectors and <code>bias=false</code> are considered equivalent (see extended help for more details).</p><p>See also <a href="#Flux.state"><code>Flux.state</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; dst = Chain(Dense(Flux.ones32(2, 5), Flux.ones32(2), tanh), Dense(2 =&gt; 1; bias = [1f0]))
+Chain(
+  Dense(5 =&gt; 2, tanh),                  # 12 parameters
+  Dense(2 =&gt; 1),                        # 3 parameters
+)                   # Total: 4 arrays, 15 parameters, 316 bytes.
+
+julia&gt; dst[1].weight ≈ ones(2, 5)  # by construction
+true
+
+julia&gt; src = Chain(Dense(5 =&gt; 2, relu), Dense(2 =&gt; 1, bias=false));
+
+julia&gt; Flux.loadmodel!(dst, src);
+
+julia&gt; dst[1].weight ≈ ones(2, 5)  # values changed
+false
+
+julia&gt; iszero(dst[2].bias)
+true</code></pre><p><strong>Extended help</strong></p><p>Throws an error when:</p><ul><li><code>dst</code> and <code>src</code> do not share the same fields (at any level)</li><li>the sizes of leaf nodes are mismatched between <code>dst</code> and <code>src</code></li><li>copying non-array values to/from an array parameter (except inactive parameters described below)</li><li><code>dst</code> is a &quot;tied&quot; parameter (i.e. refers to another parameter) and loaded into multiple times with mismatched source values</li></ul><p>Inactive parameters can be encoded by using the boolean value <code>false</code> instead of an array. If <code>dst == false</code> and <code>src</code> is an all-zero array, no error will be raised (and no values copied); however, attempting to copy a non-zero array to an inactive parameter will throw an error. Likewise, copying a <code>src</code> value of <code>false</code> to any <code>dst</code> array is valid, but copying a <code>src</code> value of <code>true</code> will error.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/43b0a91c856099ca240f94ee1a676d7b4a57bacb/src/loading.jl#L39-L89">source</a></section></details></article><h2 id="KeyPath"><a class="docs-heading-anchor" href="#KeyPath">KeyPath</a><a id="KeyPath-1"></a><a class="docs-heading-anchor-permalink" href="#KeyPath" title="Permalink"></a></h2><article><details class="docstring"><summary id="Functors.KeyPath"><a class="docstring-binding" href="#Functors.KeyPath"><code>Functors.KeyPath</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">KeyPath(keys...)</code></pre><p>A type for representing a path of keys to a value in a nested structure. Can be constructed with a sequence of keys, or by concatenating other <code>KeyPath</code>s. Keys can be of type <code>Symbol</code>, <code>String</code>, <code>Int</code>, or <code>CartesianIndex</code>.</p><p>For custom types, access through symbol keys is assumed to be done with <code>getproperty</code>. For consistency, the method <code>Base.propertynames</code> is used to get the viable property names.</p><p>For string, integer, and cartesian index keys, the access is done with <code>getindex</code> instead.</p><p>See also <a href="#Functors.getkeypath"><code>getkeypath</code></a>, <a href="#Functors.haskeypath"><code>haskeypath</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; kp = KeyPath(:b, 3)
+KeyPath(:b, 3)
+
+julia&gt; KeyPath(:a, kp, :c, 4) # construct mixing keys and keypaths
+KeyPath(:a, :b, 3, :c, 4)
+
+julia&gt; struct T
+           a
+           b
+       end
+
+julia&gt; function Base.getproperty(x::T, k::Symbol)
+            if k in fieldnames(T)
+                return getfield(x, k)
+            elseif k === :ab
+                return &quot;ab&quot;
+            else        
+                error()
+            end
+        end;
+
+julia&gt; Base.propertynames(::T) = (:a, :b, :ab);
+
+julia&gt; x = T(3, Dict(:c =&gt; 4, :d =&gt; 5));
+
+julia&gt; getkeypath(x, KeyPath(:ab)) # equivalent to x.ab
+&quot;ab&quot;
+
+julia&gt; getkeypath(x, KeyPath(:b, :c)) # equivalent to (x.b)[:c]
+4</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Functors.jl/blob/v0.5.2/src/keypath.jl#L5-L53">source</a></section></details></article><article><details class="docstring"><summary id="Functors.getkeypath"><a class="docstring-binding" href="#Functors.getkeypath"><code>Functors.getkeypath</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">getkeypath(x, kp::KeyPath)</code></pre><p>Return the value in <code>x</code> at the path <code>kp</code>.</p><p>See also <a href="#KeyPath"><code>KeyPath</code></a>, <a href="#Functors.haskeypath"><code>haskeypath</code></a>, and <a href="#Functors.setkeypath!"><code>setkeypath!</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = Dict(:a =&gt; 3, :b =&gt; Dict(:c =&gt; 4, &quot;d&quot; =&gt; [5, 6, 7]))
+Dict{Symbol, Any} with 2 entries:
+  :a =&gt; 3
+  :b =&gt; Dict{Any, Any}(:c=&gt;4, &quot;d&quot;=&gt;[5, 6, 7])
+
+julia&gt; getkeypath(x, KeyPath(:b, &quot;d&quot;, 2))
+6</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Functors.jl/blob/v0.5.2/src/keypath.jl#L108-L125">source</a></section></details></article><article><details class="docstring"><summary id="Functors.haskeypath"><a class="docstring-binding" href="#Functors.haskeypath"><code>Functors.haskeypath</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">haskeypath(x, kp::KeyPath)</code></pre><p>Return <code>true</code> if <code>x</code> has a value at the path <code>kp</code>.</p><p>See also <a href="#KeyPath"><code>KeyPath</code></a>, <a href="#Functors.getkeypath"><code>getkeypath</code></a>, and <a href="#Functors.setkeypath!"><code>setkeypath!</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = Dict(:a =&gt; 3, :b =&gt; Dict(:c =&gt; 4, &quot;d&quot; =&gt; [5, 6, 7]))
+Dict{Symbol, Any} with 2 entries:
+  :a =&gt; 3
+  :b =&gt; Dict{Any, Any}(:c=&gt;4, &quot;d&quot;=&gt;[5, 6, 7])
+
+julia&gt; haskeypath(x, KeyPath(:a))
+true
+
+julia&gt; haskeypath(x, KeyPath(:b, &quot;d&quot;, 1))
+true
+
+julia&gt; haskeypath(x, KeyPath(:b, &quot;d&quot;, 4))
+false</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Functors.jl/blob/v0.5.2/src/keypath.jl#L134-L157">source</a></section></details></article><article><details class="docstring"><summary id="Functors.setkeypath!"><a class="docstring-binding" href="#Functors.setkeypath!"><code>Functors.setkeypath!</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">setkeypath!(x, kp::KeyPath, v)</code></pre><p>Set the value in <code>x</code> at the path <code>kp</code> to <code>v</code>.</p><p>See also <a href="#KeyPath"><code>KeyPath</code></a>, <a href="#Functors.getkeypath"><code>getkeypath</code></a>, and <a href="#Functors.haskeypath"><code>haskeypath</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Functors.jl/blob/v0.5.2/src/keypath.jl#L167-L173">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../outputsize/">« Shape Inference</a><a class="docs-footer-nextpage" href="../training/callbacks/">Callback Helpers »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Saturday 17 January 2026 20:10">Saturday 17 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body><div data-docstringscollapsed="true"></div></html>

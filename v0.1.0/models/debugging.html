@@ -1,0 +1,178 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>
+Debugging · Flux
+    </title><script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+
+    </script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><script>
+documenterBaseURL=".."
+    </script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../versions.js"></script><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>
+Flux
+      </h1><form action="../search.html" class="search"><select id="version-selector" onchange="window.location.href=this.value"><option disabled="disabled" selected="selected" value="#">
+Version
+          </option></select><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">
+Home
+          </a></li><li><span class="toctext">
+Building Models
+          </span><ul><li><a class="toctext" href="basics.html">
+Model Building Basics
+              </a></li><li><a class="toctext" href="templates.html">
+Model Templates
+              </a></li><li><a class="toctext" href="recurrent.html">
+Recurrence
+              </a></li><li class="current"><a class="toctext" href="debugging.html">
+Debugging
+              </a><ul class="internal"></ul></li></ul></li><li><span class="toctext">
+Other APIs
+          </span><ul><li><a class="toctext" href="../apis/batching.html">
+Batching
+              </a></li><li><a class="toctext" href="../apis/backends.html">
+Backends
+              </a></li><li><a class="toctext" href="../apis/storage.html">
+Storing Models
+              </a></li></ul></li><li><span class="toctext">
+In Action
+          </span><ul><li><a class="toctext" href="../examples/logreg.html">
+Logistic Regression
+              </a></li><li><a class="toctext" href="../examples/char-rnn.html">
+Char RNN
+              </a></li></ul></li><li><a class="toctext" href="../contributing.html">
+Contributing &amp; Help
+          </a></li><li><a class="toctext" href="../internals.html">
+Internals
+          </a></li></ul></nav><article id="docs"><header><nav><ul><li>
+Building Models
+            </li><li><a href="debugging.html">
+Debugging
+              </a></li></ul><a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/1c317eeefec910170cc72a4fe09ac54e187b3624/docs/src/models/debugging.md"><span class="fa">
+
+            </span>
+ Edit on GitHub
+          </a></nav><hr/></header><h1><a class="nav-anchor" href="#Debugging-Models-1" id="Debugging-Models-1">
+Debugging Models
+        </a></h1><p>
+Let's take our two-layer perceptron as an example again, running on MXNet:
+      </p><pre><code class="language-julia">@net type TLP
+  first
+  second
+  function (x)
+    l1 = σ(first(x))
+    l2 = softmax(second(l1))
+  end
+end
+
+model = TLP(Affine(10, 20), Affine(21, 15))
+
+mxmodel = mxnet(model, (10, 1))</code></pre><p>
+Unfortunately, this model has a (fairly obvious) typo, which means that the code above won't run. Instead we get an error message:
+      </p><pre><code class="language-julia">InferShape Error in dot5: [20:37:39] src/operator/./matrix_op-inl.h:271:
+Check failed: (lshape[1]) == (rshape[0]) dot shape error: (15,21) X (20,1)
+ in Flux.Affine at affine.jl:8
+ in TLP at test.jl:6
+ in mxnet(::TLP, ::Tuple{Int64,Int64}) at model.jl:40
+ in mxnet(::TLP, ::Vararg{Any,N} where N) at backend.jl:20</code></pre><p>
+Most frameworks would only give the error message here – not so helpful if you have thousands of nodes in your computational graph. However, Flux is able to give good error reports 
+        <em>
+even when no Julia code has been run
+        </em>
+, e.g. when running on a backend like MXNet. This enables us to pinpoint the source of the error very quickly even in a large model.
+      </p><p>
+In this case, we can immediately see that the error occurred within an 
+<code>Affine</code>
+ layer. There are two such layers, but this one was called from the second line of 
+<code>TLP</code>
+, so it must be the second 
+<code>Affine</code>
+ layer we defined. The layer expected an input of length 21 but got 20 instead.
+      </p><p>
+Of course, often a stack trace isn't enough to figure out the source of an error. Another option is to simply step through the execution of the model using Gallium. While handy, however, stepping isn't always the best way to get a "bird's eye view" of the code. For that, Flux provides a macro called 
+<code>@shapes</code>
+:
+      </p><pre><code class="language-julia">julia&gt; @shapes model(rand(5,10))
+
+# /Users/mike/test.jl, line 18:
+gull = σ(Affine(10, 20)(Input()[1]::(5,10))::(5,20))::(5,20)
+# /Users/mike/.julia/v0.6/Flux/src/layers/affine.jl, line 8:
+lobster = gull * _::(21,15) + _::(1,15)
+# /Users/mike/test.jl, line 19:
+raven = softmax(lobster)</code></pre><p>
+This is a lot like Julia's own 
+<code>code_warntype</code>
+; but instead of annotating expressions with types, we display their shapes. As a lowered form it has some quirks; input arguments are represented by 
+<code>Input()[N]</code>
+ and parameters by an underscore.
+      </p><p>
+This makes the problem fairly obvious. We tried to multiply the output of the first layer 
+<code>(5, 20)</code>
+ by a parameter 
+<code>(21, 15)</code>
+; the inner dimensions should have been equal.
+      </p><p>
+Notice that while the first 
+<code>Affine</code>
+ layer is displayed as-is, the second was inlined and we see a reference to where the 
+<code>W * x + b</code>
+ line was defined in Flux's source code. In this way Flux makes it easy to drill down into problem areas, without showing you the full graph of thousands of nodes at once.
+      </p><p>
+With the typo fixed, the output of 
+<code>@shapes</code>
+ looks as follows:
+      </p><pre><code class="language-julia"># /Users/mike/test.jl, line 18:
+opossum = σ(Affine(10, 20)(Input()[1]::(5,10))::(5,20))::(5,20)
+# /Users/mike/test.jl, line 19:
+wren = softmax(Affine(20, 15)(opossum)::(5,15))::(5,15)</code></pre><footer><hr/><a class="previous" href="recurrent.html"><span class="direction">
+Previous
+          </span><span class="title">
+Recurrence
+          </span></a><a class="next" href="../apis/batching.html"><span class="direction">
+Next
+          </span><span class="title">
+Batching
+          </span></a></footer></article></body></HTML>

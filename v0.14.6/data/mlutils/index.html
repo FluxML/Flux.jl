@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Batching Data – MLUtils.jl · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../../models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li><li><a class="tocitem" href="../../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../../training/reference/">Training API</a></li><li><a class="tocitem" href="../../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../../training/zygote/">Gradients – Zygote.jl</a></li><li class="is-active"><a class="tocitem" href>Batching Data – MLUtils.jl</a><ul class="internal"><li><a class="tocitem" href="#DataLoader"><span><code>DataLoader</code></span></a></li><li><a class="tocitem" href="#Utility-Functions"><span>Utility Functions</span></a></li></ul></li><li><a class="tocitem" href="../onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../../models/advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Reference</a></li><li class="is-active"><a href>Batching Data – MLUtils.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Batching Data – MLUtils.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/data/mlutils.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Working-with-Data,-using-MLUtils.jl"><a class="docs-heading-anchor" href="#Working-with-Data,-using-MLUtils.jl">Working with Data, using MLUtils.jl</a><a id="Working-with-Data,-using-MLUtils.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-Data,-using-MLUtils.jl" title="Permalink"></a></h1><p>Flux re-exports the <code>DataLoader</code> type and utility functions for working with data from <a href="https://github.com/JuliaML/MLUtils.jl">MLUtils</a>.</p><h2 id="DataLoader"><a class="docs-heading-anchor" href="#DataLoader"><code>DataLoader</code></a><a id="DataLoader-1"></a><a class="docs-heading-anchor-permalink" href="#DataLoader" title="Permalink"></a></h2><p>The <code>DataLoader</code> can be used to create mini-batches of data, in the format <a href="../../training/reference/#Flux.Optimise.train!-NTuple{4, Any}"><code>train!</code></a> expects.</p><p><code>Flux</code>&#39;s website has a <a href="https://fluxml.ai/tutorials/2021/01/21/data-loader.html">dedicated tutorial</a> on <code>DataLoader</code> for more information. </p><article class="docstring"><header><a class="docstring-binding" id="MLUtils.DataLoader" href="#MLUtils.DataLoader"><code>MLUtils.DataLoader</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">DataLoader(data; [batchsize, buffer, collate, parallel, partial, rng, shuffle])</code></pre><p>An object that iterates over mini-batches of <code>data</code>, each mini-batch containing <code>batchsize</code> observations (except possibly the last one).</p><p>Takes as input a single data array, a tuple (or a named tuple) of arrays, or in general any <code>data</code> object that implements the <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a> methods.</p><p>The last dimension in each array is the observation dimension, i.e. the one divided into mini-batches.</p><p>The original data is preserved in the <code>data</code> field of the DataLoader.</p><p><strong>Arguments</strong></p><ul><li><code>data</code>: The data to be iterated over. The data type has to be supported by <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a>.</li><li><code>batchsize</code>: If less than 0, iterates over individual observations. Otherwise, each iteration (except possibly the last) yields a mini-batch containing <code>batchsize</code> observations. Default <code>1</code>.</li><li><code>buffer</code>: If <code>buffer=true</code> and supported by the type of <code>data</code>, a buffer will be allocated and reused for memory efficiency. You can also pass a preallocated object to <code>buffer</code>. Default <code>false</code>.</li><li><code>collate</code>: Batching behavior. If <code>nothing</code> (default), a batch is <code>getobs(data, indices)</code>. If <code>false</code>, each batch is  <code>[getobs(data, i) for i in indices]</code>. When <code>true</code>, applies <a href="#MLUtils.batch"><code>batch</code></a> to the vector of observations in a batch,   recursively collating arrays in the last dimensions. See <a href="#MLUtils.batch"><code>batch</code></a> for more information and examples.</li><li><code>parallel</code>: Whether to use load data in parallel using worker threads. Greatly   speeds up data loading by factor of available threads. Requires starting   Julia with multiple threads. Check <code>Threads.nthreads()</code> to see the number of   available threads. <strong>Passing <code>parallel = true</code> breaks ordering guarantees</strong>.   Default <code>false</code>.</li><li><code>partial</code>: This argument is used only when <code>batchsize &gt; 0</code>. If <code>partial=false</code> and the number of observations is not divisible by the batchsize, then the last mini-batch is dropped. Default <code>true</code>.</li><li><code>rng</code>: A random number generator. Default <code>Random.GLOBAL_RNG</code>.</li><li><code>shuffle</code>: Whether to shuffle the observations before iterating. Unlike   wrapping the data container with <code>shuffleobs(data)</code>, <code>shuffle=true</code> ensures   that the observations are shuffled anew every time you start iterating over   <code>eachobs</code>. Default <code>false</code>.</li></ul><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; Xtrain = rand(10, 100);
+
+julia&gt; array_loader = DataLoader(Xtrain, batchsize=2);
+
+julia&gt; for x in array_loader
+         @assert size(x) == (10, 2)
+         # do something with x, 50 times
+       end
+
+julia&gt; array_loader.data === Xtrain
+true
+
+julia&gt; tuple_loader = DataLoader((Xtrain,), batchsize=2);  # similar, but yielding 1-element tuples
+
+julia&gt; for x in tuple_loader
+         @assert x isa Tuple{Matrix}
+         @assert size(x[1]) == (10, 2)
+       end
+
+julia&gt; Ytrain = rand(&#39;a&#39;:&#39;z&#39;, 100);  # now make a DataLoader yielding 2-element named tuples
+
+julia&gt; train_loader = DataLoader((data=Xtrain, label=Ytrain), batchsize=5, shuffle=true);
+
+julia&gt; for epoch in 1:100
+         for (x, y) in train_loader  # access via tuple destructuring
+           @assert size(x) == (10, 5)
+           @assert size(y) == (5,)
+           # loss += f(x, y) # etc, runs 100 * 20 times
+         end
+       end
+
+julia&gt; first(train_loader).label isa Vector{Char}  # access via property name
+true
+
+julia&gt; first(train_loader).label == Ytrain[1:5]  # because of shuffle=true
+false
+
+julia&gt; foreach(println∘summary, DataLoader(rand(Int8, 10, 64), batchsize=30))  # partial=false would omit last
+10×30 Matrix{Int8}
+10×30 Matrix{Int8}
+10×4 Matrix{Int8}</code></pre></div></section></article><h2 id="Utility-Functions"><a class="docs-heading-anchor" href="#Utility-Functions">Utility Functions</a><a id="Utility-Functions-1"></a><a class="docs-heading-anchor-permalink" href="#Utility-Functions" title="Permalink"></a></h2><p>The utility functions are meant to be used while working with data; these functions help create inputs for your models or batch your dataset.</p><article class="docstring"><header><a class="docstring-binding" id="MLUtils.batch" href="#MLUtils.batch"><code>MLUtils.batch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batch(xs)</code></pre><p>Batch the arrays in <code>xs</code> into a single array with  an extra dimension.</p><p>If the elements of <code>xs</code> are tuples, named tuples, or dicts,  the output will be of the same type. </p><p>See also <a href="#MLUtils.unbatch"><code>unbatch</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; batch([[1,2,3], 
+              [4,5,6]])
+3×2 Matrix{Int64}:
+ 1  4
+ 2  5
+ 3  6
+
+julia&gt; batch([(a=[1,2], b=[3,4])
+               (a=[5,6], b=[7,8])]) 
+(a = [1 5; 2 6], b = [3 7; 4 8])</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.batchsize" href="#MLUtils.batchsize"><code>MLUtils.batchsize</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batchsize(data) -&gt; Int</code></pre><p>Return the fixed size of each batch in <code>data</code>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.batchseq" href="#MLUtils.batchseq"><code>MLUtils.batchseq</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batchseq(seqs, val = 0)</code></pre><p>Take a list of <code>N</code> sequences, and turn them into a single sequence where each item is a batch of <code>N</code>. Short sequences will be padded by <code>val</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; batchseq([[1, 2, 3], [4, 5]], 0)
+3-element Vector{Vector{Int64}}:
+ [1, 4]
+ [2, 5]
+ [3, 0]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.BatchView" href="#MLUtils.BatchView"><code>MLUtils.BatchView</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">BatchView(data, batchsize; partial=true, collate=nothing)
+BatchView(data; batchsize=1, partial=true, collate=nothing)</code></pre><p>Create a view of the given <code>data</code> that represents it as a vector of batches. Each batch will contain an equal amount of observations in them. The batch-size can be specified using the  parameter <code>batchsize</code>. In the case that the size of the dataset is not dividable by the specified <code>batchsize</code>, the remaining observations will be ignored if <code>partial=false</code>. If  <code>partial=true</code> instead the last batch-size can be slightly smaller.</p><p>Note that any data access is delayed until <code>getindex</code> is called.</p><p>If used as an iterator, the object will iterate over the dataset once, effectively denoting an epoch.</p><p>For <code>BatchView</code> to work on some data structure, the type of the given variable <code>data</code> must implement the data container interface. See <a href="#MLUtils.ObsView"><code>ObsView</code></a> for more info.</p><p><strong>Arguments</strong></p><ul><li><p><strong><code>data</code></strong> : The object describing the dataset. Can be of any   type as long as it implements <a href="#MLUtils.getobs"><code>getobs</code></a> and   <a href="#MLUtils.numobs"><code>numobs</code></a> (see Details for more information).</p></li><li><p><strong><code>batchsize</code></strong> : The batch-size of each batch.   It is the number of observations that each batch must contain   (except possibly for the last one).</p></li><li><p><strong><code>partial</code></strong> : If <code>partial=false</code> and the number of observations is   not divisible by the batch-size, then the last mini-batch is dropped.</p></li><li><p><strong><code>collate</code></strong>: Batching behavior. If <code>nothing</code> (default), a batch   is <code>getobs(data, indices)</code>. If <code>false</code>, each batch is   <code>[getobs(data, i) for i in indices]</code>. When <code>true</code>, applies <a href="#MLUtils.batch"><code>batch</code></a>   to the vector of observations in a batch, recursively collating   arrays in the last dimensions. See <a href="#MLUtils.batch"><code>batch</code></a> for more information   and examples.</p></li></ul><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using MLUtils
+X, Y = MLUtils.load_iris()
+
+A = BatchView(X, batchsize=30)
+@assert typeof(A) &lt;: BatchView &lt;: AbstractVector
+@assert eltype(A) &lt;: SubArray{Float64,2}
+@assert length(A) == 5 # Iris has 150 observations
+@assert size(A[1]) == (4,30) # Iris has 4 features
+
+# 5 batches of size 30 observations
+for x in BatchView(X, batchsize=30)
+    @assert typeof(x) &lt;: SubArray{Float64,2}
+    @assert numobs(x) === 30
+end
+
+# 7 batches of size 20 observations
+# Note that the iris dataset has 150 observations,
+# which means that with a batchsize of 20, the last
+# 10 observations will be ignored
+for (x, y) in BatchView((X, Y), batchsize=20, partial=false)
+    @assert typeof(x) &lt;: SubArray{Float64,2}
+    @assert typeof(y) &lt;: SubArray{String,1}
+    @assert numobs(x) == numobs(y) == 20
+end
+
+# collate tuple observations
+for (x, y) in BatchView((rand(10, 3), [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]), batchsize=2, collate=true, partial=false)
+    @assert size(x) == (10, 2)
+    @assert size(y) == (2,)
+end
+
+
+# randomly assign observations to one and only one batch.
+for (x, y) in BatchView(shuffleobs((X, Y)), batchsize=20)
+    @assert typeof(x) &lt;: SubArray{Float64,2}
+    @assert typeof(y) &lt;: SubArray{String,1}
+end</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.chunk" href="#MLUtils.chunk"><code>MLUtils.chunk</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">chunk(x, n; [dims])
+chunk(x; [size, dims])</code></pre><p>Split <code>x</code> into <code>n</code> parts or alternatively, if <code>size</code> is an integer, into equal chunks of size <code>size</code>.  The parts contain the same number of elements except possibly for the last one that can be smaller.</p><p>In case <code>size</code> is a collection of integers instead, the elements of <code>x</code> are split into chunks of the given sizes.</p><p>If <code>x</code> is an array, <code>dims</code> can be used to specify along which dimension to  split (defaults to the last dimension).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; chunk(1:10, 3)
+3-element Vector{UnitRange{Int64}}:
+ 1:4
+ 5:8
+ 9:10
+
+julia&gt; chunk(1:10; size = 2)
+5-element Vector{UnitRange{Int64}}:
+ 1:2
+ 3:4
+ 5:6
+ 7:8
+ 9:10
+
+julia&gt; x = reshape(collect(1:20), (5, 4))
+5×4 Matrix{Int64}:
+ 1   6  11  16
+ 2   7  12  17
+ 3   8  13  18
+ 4   9  14  19
+ 5  10  15  20
+
+julia&gt; xs = chunk(x, 2, dims=1)
+2-element Vector{SubArray{Int64, 2, Matrix{Int64}, Tuple{UnitRange{Int64}, Base.Slice{Base.OneTo{Int64}}}, false}}:
+ [1 6 11 16; 2 7 12 17; 3 8 13 18]
+ [4 9 14 19; 5 10 15 20]
+
+julia&gt; xs[1]
+3×4 view(::Matrix{Int64}, 1:3, :) with eltype Int64:
+ 1  6  11  16
+ 2  7  12  17
+ 3  8  13  18
+
+julia&gt; xes = chunk(x; size = 2, dims = 2)
+2-element Vector{SubArray{Int64, 2, Matrix{Int64}, Tuple{Base.Slice{Base.OneTo{Int64}}, UnitRange{Int64}}, true}}:
+ [1 6; 2 7; … ; 4 9; 5 10]
+ [11 16; 12 17; … ; 14 19; 15 20]
+
+julia&gt; xes[2]
+5×2 view(::Matrix{Int64}, :, 3:4) with eltype Int64:
+ 11  16
+ 12  17
+ 13  18
+ 14  19
+ 15  20
+
+julia&gt; chunk(1:6; size = [2, 4])
+2-element Vector{UnitRange{Int64}}:
+ 1:2
+ 3:6</code></pre></div></section><section><div><pre><code class="nohighlight hljs">chunk(x, partition_idxs; [npartitions, dims])</code></pre><p>Partition the array <code>x</code> along the dimension <code>dims</code> according to the indexes  in <code>partition_idxs</code>.</p><p><code>partition_idxs</code> must be sorted and contain only positive integers  between 1 and the number of partitions. </p><p>If the number of partition <code>npartitions</code> is not provided,  it is inferred from <code>partition_idxs</code>.</p><p>If <code>dims</code> is not provided, it defaults to the last dimension.</p><p>See also <a href="#MLUtils.unbatch"><code>unbatch</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = reshape([1:10;], 2, 5)
+2×5 Matrix{Int64}:
+ 1  3  5  7   9
+ 2  4  6  8  10
+
+julia&gt; chunk(x, [1, 2, 2, 3, 3])
+3-element Vector{SubArray{Int64, 2, Matrix{Int64}, Tuple{Base.Slice{Base.OneTo{Int64}}, UnitRange{Int64}}, true}}:
+ [1; 2;;]
+ [3 5; 4 6]
+ [7 9; 8 10]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.eachobs" href="#MLUtils.eachobs"><code>MLUtils.eachobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">eachobs(data; kws...)</code></pre><p>Return an iterator over <code>data</code>.</p><p>Supports the same arguments as <a href="#MLUtils.DataLoader"><code>DataLoader</code></a>. The <code>batchsize</code> default is <code>-1</code> here while it is <code>1</code> for <code>DataLoader</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">X = rand(4,100)
+
+for x in eachobs(X)
+    # loop entered 100 times
+    @assert typeof(x) &lt;: Vector{Float64}
+    @assert size(x) == (4,)
+end
+
+# mini-batch iterations
+for x in eachobs(X, batchsize=10)
+    # loop entered 10 times
+    @assert typeof(x) &lt;: Matrix{Float64}
+    @assert size(x) == (4,10)
+end
+
+# support for tuples, named tuples, dicts
+for (x, y) in eachobs((X, Y))
+    # ...
+end</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.fill_like" href="#MLUtils.fill_like"><code>MLUtils.fill_like</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">fill_like(x, val, [element_type=eltype(x)], [dims=size(x)]))</code></pre><p>Create an array with the given element type and size, based upon the given source array <code>x</code>. All element of the new array will be set to <code>val</code>.  The third and fourth arguments are both optional, defaulting to the given array&#39;s eltype and size. The dimensions may be specified as an integer or as a tuple argument.</p><p>See also <a href="#MLUtils.zeros_like"><code>zeros_like</code></a> and <a href="#MLUtils.ones_like"><code>ones_like</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = rand(Float32, 2)
+2-element Vector{Float32}:
+ 0.16087806
+ 0.89916044
+
+julia&gt; fill_like(x, 1.7, (3, 3))
+3×3 Matrix{Float32}:
+ 1.7  1.7  1.7
+ 1.7  1.7  1.7
+ 1.7  1.7  1.7
+
+julia&gt; using CUDA
+
+julia&gt; x = CUDA.rand(2, 2)
+2×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 0.803167  0.476101
+ 0.303041  0.317581
+
+julia&gt; fill_like(x, 1.7, Float64)
+2×2 CuArray{Float64, 2, CUDA.Mem.DeviceBuffer}:
+ 1.7  1.7
+ 1.7  1.7</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.filterobs" href="#MLUtils.filterobs"><code>MLUtils.filterobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">filterobs(f, data)</code></pre><p>Return a subset of data container <code>data</code> including all indices <code>i</code> for which <code>f(getobs(data, i)) === true</code>.</p><pre><code class="language-julia hljs">data = 1:10
+numobs(data) == 10
+fdata = filterobs(&gt;(5), data)
+numobs(fdata) == 5</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.flatten" href="#MLUtils.flatten"><code>MLUtils.flatten</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">flatten(x::AbstractArray)</code></pre><p>Reshape arbitrarly-shaped input into a matrix-shaped output, preserving the size of the last dimension.</p><p>See also <a href="#MLUtils.unsqueeze"><code>unsqueeze</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; rand(3,4,5) |&gt; flatten |&gt; size
+(12, 5)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.getobs" href="#MLUtils.getobs"><code>MLUtils.getobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">getobs(data, [idx])</code></pre><p>Return the observations corresponding to the observation index <code>idx</code>. Note that <code>idx</code> can be any type as long as <code>data</code> has defined <code>getobs</code> for that type. If <code>idx</code> is not provided, then materialize all observations in <code>data</code>.</p><p>If <code>data</code> does not have <code>getobs</code> defined, then in the case of <code>Tables.table(data) == true</code> returns the row(s) in position <code>idx</code>, otherwise returns <code>data[idx]</code>.</p><p>Authors of custom data containers should implement <code>Base.getindex</code> for their type instead of <code>getobs</code>. <code>getobs</code> should only be implemented for types where there is a difference between <code>getobs</code> and <code>Base.getindex</code> (such as multi-dimensional arrays).</p><p>The returned observation(s) should be in the form intended to be passed as-is to some learning algorithm. There is no strict interface requirement on how this &quot;actual data&quot; must look like. Every author behind some custom data container can make this decision themselves. The output should be consistent when <code>idx</code> is a scalar vs vector.</p><p><code>getobs</code> supports by default nested combinations of array, tuple, named tuples, and dictionaries. </p><p>See also <a href="#MLUtils.getobs!"><code>getobs!</code></a> and <a href="#MLUtils.numobs"><code>numobs</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs"># named tuples 
+x = (a = [1, 2, 3], b = rand(6, 3))
+
+getobs(x, 2) == (a = 2, b = x.b[:, 2])
+getobs(x, [1, 3]) == (a = [1, 3], b = x.b[:, [1, 3]])
+
+
+# dictionaries
+x = Dict(:a =&gt; [1, 2, 3], :b =&gt; rand(6, 3))
+
+getobs(x, 2) == Dict(:a =&gt; 2, :b =&gt; x[:b][:, 2])
+getobs(x, [1, 3]) == Dict(:a =&gt; [1, 3], :b =&gt; x[:b][:, [1, 3]])</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.getobs!" href="#MLUtils.getobs!"><code>MLUtils.getobs!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">getobs!(buffer, data, idx)</code></pre><p>Inplace version of <code>getobs(data, idx)</code>. If this method is defined for the type of <code>data</code>, then <code>buffer</code> should be used to store the result, instead of allocating a dedicated object.</p><p>Implementing this function is optional. In the case no such method is provided for the type of <code>data</code>, then <code>buffer</code> will be <em>ignored</em> and the result of <a href="#MLUtils.getobs"><code>getobs</code></a> returned. This could be because the type of <code>data</code> may not lend itself to the concept of <code>copy!</code>. Thus, supporting a custom <code>getobs!</code> is optional and not required.</p><p>See also <a href="#MLUtils.getobs"><code>getobs</code></a> and <a href="#MLUtils.numobs"><code>numobs</code></a>. </p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.joinobs" href="#MLUtils.joinobs"><code>MLUtils.joinobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">joinobs(datas...)</code></pre><p>Concatenate data containers <code>datas</code>.</p><pre><code class="language-julia hljs">data1, data2 = 1:10, 11:20
+jdata = joinumobs(data1, data2)
+getobs(jdata, 15) == 15</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.group_counts" href="#MLUtils.group_counts"><code>MLUtils.group_counts</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">group_counts(x)</code></pre><p>Count the number of times that each element of <code>x</code> appears.</p><p>See also <a href="#MLUtils.group_indices"><code>group_indices</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; group_counts([&#39;a&#39;, &#39;b&#39;, &#39;b&#39;])
+Dict{Char, Int64} with 2 entries:
+  &#39;a&#39; =&gt; 1
+  &#39;b&#39; =&gt; 2</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.group_indices" href="#MLUtils.group_indices"><code>MLUtils.group_indices</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">group_indices(x) -&gt; Dict</code></pre><p>Computes the indices of elements in the vector <code>x</code> for each distinct value contained.  This information is useful for resampling strategies, such as stratified sampling.</p><p>See also <a href="#MLUtils.group_counts"><code>group_counts</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = [:yes, :no, :maybe, :yes];
+
+julia&gt; group_indices(x)
+Dict{Symbol, Vector{Int64}} with 3 entries:
+  :yes   =&gt; [1, 4]
+  :maybe =&gt; [3]
+  :no    =&gt; [2]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.groupobs" href="#MLUtils.groupobs"><code>MLUtils.groupobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">groupobs(f, data)</code></pre><p>Split data container data <code>data</code> into different data containers, grouping observations by <code>f(obs)</code>.</p><pre><code class="language-julia hljs">data = -10:10
+datas = groupobs(&gt;(0), data)
+length(datas) == 2</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.kfolds" href="#MLUtils.kfolds"><code>MLUtils.kfolds</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">kfolds(n::Integer, k = 5) -&gt; Tuple</code></pre><p>Compute the train/validation assignments for <code>k</code> repartitions of <code>n</code> observations, and return them in the form of two vectors. The first vector contains the index-vectors for the training subsets, and the second vector the index-vectors for the validation subsets respectively. A general rule of thumb is to use either <code>k = 5</code> or <code>k = 10</code>. The following code snippet generates the indices assignments for <code>k = 5</code></p><pre><code class="language-julia hljs">julia&gt; train_idx, val_idx = kfolds(10, 5);</code></pre><p>Each observation is assigned to the validation subset once (and only once). Thus, a union over all validation index-vectors reproduces the full range <code>1:n</code>. Note that there is no random assignment of observations to subsets, which means that adjacent observations are likely to be part of the same validation subset.</p><pre><code class="language-julia hljs">julia&gt; train_idx
+5-element Array{Array{Int64,1},1}:
+ [3,4,5,6,7,8,9,10]
+ [1,2,5,6,7,8,9,10]
+ [1,2,3,4,7,8,9,10]
+ [1,2,3,4,5,6,9,10]
+ [1,2,3,4,5,6,7,8]
+
+julia&gt; val_idx
+5-element Array{UnitRange{Int64},1}:
+ 1:2
+ 3:4
+ 5:6
+ 7:8
+ 9:10</code></pre></div></section><section><div><pre><code class="nohighlight hljs">kfolds(data, [k = 5])</code></pre><p>Repartition a <code>data</code> container <code>k</code> times using a <code>k</code> folds strategy and return the sequence of folds as a lazy iterator.  Only data subsets are created, which means that no actual data is copied until <a href="#MLUtils.getobs"><code>getobs</code></a> is invoked.</p><p>Conceptually, a k-folds repartitioning strategy divides the given <code>data</code> into <code>k</code> roughly equal-sized parts. Each part will serve as validation set once, while the remaining parts are used for training. This results in <code>k</code> different partitions of <code>data</code>.</p><p>In the case that the size of the dataset is not dividable by the specified <code>k</code>, the remaining observations will be evenly distributed among the parts.</p><pre><code class="language-julia hljs">for (x_train, x_val) in kfolds(X, k=10)
+    # code called 10 times
+    # nobs(x_val) may differ up to ±1 over iterations
+end</code></pre><p>Multiple variables are supported (e.g. for labeled data)</p><pre><code class="language-julia hljs">for ((x_train, y_train), val) in kfolds((X, Y), k=10)
+    # ...
+end</code></pre><p>By default the folds are created using static splits. Use <a href="#MLUtils.shuffleobs"><code>shuffleobs</code></a> to randomly assign observations to the folds.</p><pre><code class="language-julia hljs">for (x_train, x_val) in kfolds(shuffleobs(X), k = 10)
+    # ...
+end</code></pre><p>See <a href="#MLUtils.leavepout"><code>leavepout</code></a> for a related function.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.leavepout" href="#MLUtils.leavepout"><code>MLUtils.leavepout</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">leavepout(n::Integer, [size = 1]) -&gt; Tuple</code></pre><p>Compute the train/validation assignments for <code>k ≈ n/size</code> repartitions of <code>n</code> observations, and return them in the form of two vectors. The first vector contains the index-vectors for the training subsets, and the second vector the index-vectors for the validation subsets respectively. Each validation subset will have either <code>size</code> or <code>size+1</code> observations assigned to it. The following code snippet generates the index-vectors for <code>size = 2</code>.</p><pre><code class="language-julia hljs">julia&gt; train_idx, val_idx = leavepout(10, 2);</code></pre><p>Each observation is assigned to the validation subset once (and only once). Thus, a union over all validation index-vectors reproduces the full range <code>1:n</code>. Note that there is no random assignment of observations to subsets, which means that adjacent observations are likely to be part of the same validation subset.</p><pre><code class="language-julia hljs">julia&gt; train_idx
+5-element Array{Array{Int64,1},1}:
+ [3,4,5,6,7,8,9,10]
+ [1,2,5,6,7,8,9,10]
+ [1,2,3,4,7,8,9,10]
+ [1,2,3,4,5,6,9,10]
+ [1,2,3,4,5,6,7,8]
+
+julia&gt; val_idx
+5-element Array{UnitRange{Int64},1}:
+ 1:2
+ 3:4
+ 5:6
+ 7:8
+ 9:10</code></pre></div></section><section><div><pre><code class="nohighlight hljs">leavepout(data, p = 1)</code></pre><p>Repartition a <code>data</code> container using a k-fold strategy, where <code>k</code> is chosen in such a way, that each validation subset of the resulting folds contains roughly <code>p</code> observations. Defaults to <code>p = 1</code>, which is also known as &quot;leave-one-out&quot; partitioning.</p><p>The resulting sequence of folds is returned as a lazy iterator. Only data subsets are created. That means no actual data is copied until <a href="#MLUtils.getobs"><code>getobs</code></a> is invoked.</p><pre><code class="language-julia hljs">for (train, val) in leavepout(X, p=2)
+    # if nobs(X) is dividable by 2,
+    # then numobs(val) will be 2 for each iteraton,
+    # otherwise it may be 3 for the first few iterations.
+end</code></pre><p>See<a href="#MLUtils.kfolds"><code>kfolds</code></a> for a related function.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.mapobs" href="#MLUtils.mapobs"><code>MLUtils.mapobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">mapobs(f, data; batched=:auto)</code></pre><p>Lazily map <code>f</code> over the observations in a data container <code>data</code>. Returns a new data container <code>mdata</code> that can be indexed and has a length. Indexing triggers the transformation <code>f</code>.</p><p>The batched keyword argument controls the behavior of <code>mdata[idx]</code> and <code>mdata[idxs]</code>  where <code>idx</code> is an integer and <code>idxs</code> is a vector of integers:</p><ul><li><code>batched=:auto</code> (default). Let <code>f</code> handle the two cases.   Calls <code>f(getobs(data, idx))</code> and <code>f(getobs(data, idxs))</code>.</li><li><code>batched=:never</code>. The function <code>f</code> is always called on a single observation.   Calls <code>f(getobs(data, idx))</code> and <code>[f(getobs(data, idx)) for idx in idxs]</code>.</li><li><code>batched=:always</code>. The function <code>f</code> is always called on a batch of observations.   Calls <code>getobs(f(getobs(data, [idx])), 1)</code> and <code>f(getobs(data, idxs))</code>.</li></ul><p><strong>Examples</strong></p><pre><code class="language-julia hljs">julia&gt; data = (a=[1,2,3], b=[1,2,3]);
+
+julia&gt; mdata = mapobs(data) do x
+         (c = x.a .+ x.b,  d = x.a .- x.b)
+       end
+mapobs(#25, (a = [1, 2, 3], b = [1, 2, 3]); batched=:auto))
+
+julia&gt; mdata[1]
+(c = 2, d = 0)
+
+julia&gt; mdata[1:2]
+(c = [2, 4], d = [0, 0])</code></pre></div></section><section><div><pre><code class="nohighlight hljs">mapobs(fs, data)</code></pre><p>Lazily map each function in tuple <code>fs</code> over the observations in data container <code>data</code>. Returns a tuple of transformed data containers.</p></div></section><section><div><pre><code class="nohighlight hljs">mapobs(namedfs::NamedTuple, data)</code></pre><p>Map a <code>NamedTuple</code> of functions over <code>data</code>, turning it into a data container of <code>NamedTuple</code>s. Field syntax can be used to select a column of the resulting data container.</p><pre><code class="language-julia hljs">data = 1:10
+nameddata = mapobs((x = sqrt, y = log), data)
+getobs(nameddata, 10) == (x = sqrt(10), y = log(10))
+getobs(nameddata.x, 10) == sqrt(10)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.numobs" href="#MLUtils.numobs"><code>MLUtils.numobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">numobs(data)</code></pre><p>Return the total number of observations contained in <code>data</code>.</p><p>If <code>data</code> does not have <code>numobs</code> defined,  then in the case of <code>Tables.table(data) == true</code> returns the number of rows, otherwise returns <code>length(data)</code>.</p><p>Authors of custom data containers should implement <code>Base.length</code> for their type instead of <code>numobs</code>. <code>numobs</code> should only be implemented for types where there is a difference between <code>numobs</code> and <code>Base.length</code> (such as multi-dimensional arrays).</p><p><code>getobs</code> supports by default nested combinations of array, tuple, named tuples, and dictionaries. </p><p>See also <a href="#MLUtils.getobs"><code>getobs</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">
+# named tuples 
+x = (a = [1, 2, 3], b = rand(6, 3))
+numobs(x) == 3
+
+# dictionaries
+x = Dict(:a =&gt; [1, 2, 3], :b =&gt; rand(6, 3))
+numobs(x) == 3</code></pre><p>All internal containers must have the same number of observations:</p><pre><code class="language-juliarepl hljs">julia&gt; x = (a = [1, 2, 3, 4], b = rand(6, 3));
+
+julia&gt; numobs(x)
+ERROR: DimensionMismatch: All data containers must have the same number of observations.
+Stacktrace:
+ [1] _check_numobs_error()
+   @ MLUtils ~/.julia/dev/MLUtils/src/observation.jl:163
+ [2] _check_numobs
+   @ ~/.julia/dev/MLUtils/src/observation.jl:130 [inlined]
+ [3] numobs(data::NamedTuple{(:a, :b), Tuple{Vector{Int64}, Matrix{Float64}}})
+   @ MLUtils ~/.julia/dev/MLUtils/src/observation.jl:177
+ [4] top-level scope
+   @ REPL[35]:1</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.normalise" href="#MLUtils.normalise"><code>MLUtils.normalise</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">normalise(x; dims=ndims(x), ϵ=1e-5)</code></pre><p>Normalise the array <code>x</code> to mean 0 and standard deviation 1 across the dimension(s) given by <code>dims</code>. Per default, <code>dims</code> is the last dimension. </p><p><code>ϵ</code> is a small additive factor added to the denominator for numerical stability.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.obsview" href="#MLUtils.obsview"><code>MLUtils.obsview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">obsview(data, [indices])</code></pre><p>Returns a lazy view of the observations in <code>data</code> that correspond to the given <code>indices</code>. No data will be copied except of the indices. It is similar to constructing an <a href="#MLUtils.ObsView"><code>ObsView</code></a>,  but returns a <code>SubArray</code> if the type of <code>data</code> is <code>Array</code> or <code>SubArray</code>. Furthermore, this function may be extended for custom types of <code>data</code> that also want to provide their own subset-type.</p><p>In case <code>data</code> is a tuple, the constructor will be mapped over its elements. That means that the constructor returns a tuple of <code>ObsView</code> instead of a <code>ObsView</code> of tuples.</p><p>If instead you want to get the subset of observations corresponding to the given <code>indices</code> in their native type, use <code>getobs</code>.</p><p>See <a href="#MLUtils.ObsView"><code>ObsView</code></a> for more information.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.ObsView" href="#MLUtils.ObsView"><code>MLUtils.ObsView</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">ObsView(data, [indices])</code></pre><p>Used to represent a subset of some <code>data</code> of arbitrary type by storing which observation-indices the subset spans. Furthermore, subsequent subsettings are accumulated without needing to access actual data.</p><p>The main purpose for the existence of <code>ObsView</code> is to delay data access and movement until an actual batch of data (or single observation) is needed for some computation. This is particularily useful when the data is not located in memory, but on the hard drive or some remote location. In such a scenario one wants to load the required data only when needed.</p><p>Any data access is delayed until <code>getindex</code> is called,  and even <code>getindex</code> returns the result of <a href="#MLUtils.obsview"><code>obsview</code></a> which in general avoids data movement until <a href="#MLUtils.getobs"><code>getobs</code></a> is called. If used as an iterator, the view will iterate over the dataset once, effectively denoting an epoch. Each iteration will return a lazy subset to the current observation.</p><p><strong>Arguments</strong></p><ul><li><p><strong><code>data</code></strong> : The object describing the dataset. Can be of any   type as long as it implements <a href="#MLUtils.getobs"><code>getobs</code></a> and   <a href="#MLUtils.numobs"><code>numobs</code></a> (see Details for more information).</p></li><li><p><strong><code>indices</code></strong> : Optional. The index or indices of the   observation(s) in <code>data</code> that the subset should represent.   Can be of type <code>Int</code> or some subtype of <code>AbstractVector</code>.</p></li></ul><p><strong>Methods</strong></p><ul><li><p><strong><code>getindex</code></strong> : Returns the observation(s) of the given   index/indices. No data is copied aside   from the required indices.</p></li><li><p><strong><code>numobs</code></strong> : Returns the total number observations in the subset.</p></li><li><p><strong><code>getobs</code></strong> : Returns the underlying data that the   <code>ObsView</code> represents at the given relative indices. Note   that these indices are in &quot;subset space&quot;, and in general will   not directly correspond to the same indices in the underlying   data set.</p></li></ul><p><strong>Details</strong></p><p>For <code>ObsView</code> to work on some data structure, the desired type <code>MyType</code> must implement the following interface:</p><ul><li><p><code>getobs(data::MyType, idx)</code> :   Should return the observation(s) indexed by <code>idx</code>.   In what form is up to the user.   Note that <code>idx</code> can be of type <code>Int</code> or <code>AbstractVector</code>.</p></li><li><p><code>numobs(data::MyType)</code> :   Should return the total number of observations in <code>data</code></p></li></ul><p>The following methods can also be provided and are optional:</p><ul><li><p><code>getobs(data::MyType)</code> :   By default this function is the identity function.   If that is not the behaviour that you want for your type,   you need to provide this method as well.</p></li><li><p><code>obsview(data::MyType, idx)</code> :   If your custom type has its own kind of subset type, you can   return it here. An example for such a case are <code>SubArray</code> for   representing a subset of some <code>AbstractArray</code>.</p></li><li><p><code>getobs!(buffer, data::MyType, [idx])</code> :   Inplace version of <code>getobs(data, idx)</code>. If this method   is provided for <code>MyType</code>, then <code>eachobs</code> can preallocate a buffer that is then reused   every iteration. Note: <code>buffer</code> should be equivalent to the   return value of <code>getobs(::MyType, ...)</code>, since this is how   <code>buffer</code> is preallocated by default.</p></li></ul><p><strong>Examples</strong></p><pre><code class="language-julia hljs">X, Y = MLUtils.load_iris()
+
+# The iris set has 150 observations and 4 features
+@assert size(X) == (4,150)
+
+# Represents the 80 observations as a ObsView
+v = ObsView(X, 21:100)
+@assert numobs(v) == 80
+@assert typeof(v) &lt;: ObsView
+# getobs indexes into v
+@assert getobs(v, 1:10) == X[:, 21:30]
+
+# Use `obsview` to avoid boxing into ObsView
+# for types that provide a custom &quot;subset&quot;, such as arrays.
+# Here it instead creates a native SubArray.
+v = obsview(X, 1:100)
+@assert numobs(v) == 100
+@assert typeof(v) &lt;: SubArray
+
+# Also works for tuples of arbitrary length
+subset = obsview((X, Y), 1:100)
+@assert numobs(subset) == 100
+@assert typeof(subset) &lt;: Tuple # tuple of SubArray
+
+# Use as iterator
+for x in ObsView(X)
+    @assert typeof(x) &lt;: SubArray{Float64,1}
+end
+
+# iterate over each individual labeled observation
+for (x, y) in ObsView((X, Y))
+    @assert typeof(x) &lt;: SubArray{Float64,1}
+    @assert typeof(y) &lt;: String
+end
+
+# same but in random order
+for (x, y) in ObsView(shuffleobs((X, Y)))
+    @assert typeof(x) &lt;: SubArray{Float64,1}
+    @assert typeof(y) &lt;: String
+end
+
+# Indexing: take first 10 observations
+x, y = ObsView((X, Y))[1:10]</code></pre><p><strong>See also</strong></p><p><a href="#MLUtils.obsview"><code>obsview</code></a>,  <a href="#MLUtils.getobs"><code>getobs</code></a>, <a href="#MLUtils.numobs"><code>numobs</code></a>, <a href="#MLUtils.splitobs"><code>splitobs</code></a>, <a href="#MLUtils.shuffleobs"><code>shuffleobs</code></a>, <a href="#MLUtils.kfolds"><code>kfolds</code></a>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.ones_like" href="#MLUtils.ones_like"><code>MLUtils.ones_like</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">ones_like(x, [element_type=eltype(x)], [dims=size(x)]))</code></pre><p>Create an array with the given element type and size, based upon the given source array <code>x</code>. All element of the new array will be set to 1.  The second and third arguments are both optional, defaulting to the given array&#39;s eltype and size. The dimensions may be specified as an integer or as a tuple argument.</p><p>See also <a href="#MLUtils.zeros_like"><code>zeros_like</code></a> and <a href="#MLUtils.fill_like"><code>fill_like</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = rand(Float32, 2)
+2-element Vector{Float32}:
+ 0.8621633
+ 0.5158395
+
+julia&gt; ones_like(x, (3, 3))
+3×3 Matrix{Float32}:
+ 1.0  1.0  1.0
+ 1.0  1.0  1.0
+ 1.0  1.0  1.0
+
+julia&gt; using CUDA
+
+julia&gt; x = CUDA.rand(2, 2)
+2×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 0.82297   0.656143
+ 0.701828  0.391335
+
+julia&gt; ones_like(x, Float64)
+2×2 CuArray{Float64, 2, CUDA.Mem.DeviceBuffer}:
+ 1.0  1.0
+ 1.0  1.0</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.oversample" href="#MLUtils.oversample"><code>MLUtils.oversample</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">oversample(data, classes; fraction=1, shuffle=true)
+oversample(data::Tuple; fraction=1, shuffle=true)</code></pre><p>Generate a re-balanced version of <code>data</code> by repeatedly sampling existing observations in such a way that every class will have at least <code>fraction</code> times the number observations of the largest class in <code>classes</code>. This way, all classes will have a minimum number of observations in the resulting data set relative to what largest class has in the given (original) <code>data</code>.</p><p>As an example, by default (i.e. with <code>fraction = 1</code>) the resulting dataset will be near perfectly balanced. On the other hand, with <code>fraction = 0.5</code> every class in the resulting data with have at least 50% as many observations as the largest class.</p><p>The <code>classes</code> input is an array with the same length as <code>numobs(data)</code>.  </p><p>The convenience parameter <code>shuffle</code> determines if the resulting data will be shuffled after its creation; if it is not shuffled then all the repeated samples will be together at the end, sorted by class. Defaults to <code>true</code>.</p><p>The output will contain both the resampled data and classes.</p><pre><code class="language-julia hljs"># 6 observations with 3 features each
+X = rand(3, 6)
+# 2 classes, severely imbalanced
+Y = [&quot;a&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, &quot;a&quot;]
+
+# oversample the class &quot;a&quot; to match &quot;b&quot;
+X_bal, Y_bal = oversample(X, Y)
+
+# this results in a bigger dataset with repeated data
+@assert size(X_bal) == (3,8)
+@assert length(Y_bal) == 8
+
+# now both &quot;a&quot;, and &quot;b&quot; have 4 observations each
+@assert sum(Y_bal .== &quot;a&quot;) == 4
+@assert sum(Y_bal .== &quot;b&quot;) == 4</code></pre><p>For this function to work, the type of <code>data</code> must implement <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a>. </p><p>Note that if <code>data</code> is a tuple and <code>classes</code> is not given,  then it will be assumed that the last element of the tuple contains the classes.</p><pre><code class="language-julia hljs">julia&gt; data = DataFrame(X1=rand(6), X2=rand(6), Y=[:a,:b,:b,:b,:b,:a])
+6×3 DataFrames.DataFrame
+│ Row │ X1        │ X2          │ Y │
+├─────┼───────────┼─────────────┼───┤
+│ 1   │ 0.226582  │ 0.0443222   │ a │
+│ 2   │ 0.504629  │ 0.722906    │ b │
+│ 3   │ 0.933372  │ 0.812814    │ b │
+│ 4   │ 0.522172  │ 0.245457    │ b │
+│ 5   │ 0.505208  │ 0.11202     │ b │
+│ 6   │ 0.0997825 │ 0.000341996 │ a │
+
+julia&gt; getobs(oversample(data, data.Y))
+8×3 DataFrame
+ Row │ X1        X2         Y      
+     │ Float64   Float64    Symbol 
+─────┼─────────────────────────────
+   1 │ 0.376304  0.100022   a
+   2 │ 0.467095  0.185437   b
+   3 │ 0.481957  0.319906   b
+   4 │ 0.336762  0.390811   b
+   5 │ 0.376304  0.100022   a
+   6 │ 0.427064  0.0648339  a
+   7 │ 0.427064  0.0648339  a
+   8 │ 0.457043  0.490688   b</code></pre><p>See <a href="#MLUtils.ObsView"><code>ObsView</code></a> for more information on data subsets. See also <a href="#MLUtils.undersample"><code>undersample</code></a>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.randobs" href="#MLUtils.randobs"><code>MLUtils.randobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">randobs(data, [n])</code></pre><p>Pick a random observation or a batch of <code>n</code> random observations from <code>data</code>. For this function to work, the type of <code>data</code> must implement <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.rand_like" href="#MLUtils.rand_like"><code>MLUtils.rand_like</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">rand_like([rng=default_rng()], x, [element_type=eltype(x)], [dims=size(x)])</code></pre><p>Create an array with the given element type and size, based upon the given source array <code>x</code>. All element of the new array will be set to a random value. The last two arguments are both optional, defaulting to the given array&#39;s eltype and size. The dimensions may be specified as an integer or as a tuple argument.</p><p>The default random number generator is used, unless a custom one is passed in explicitly as the first argument.</p><p>See also <code>Base.rand</code> and <a href="#MLUtils.randn_like"><code>randn_like</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = ones(Float32, 2)
+2-element Vector{Float32}:
+ 1.0
+ 1.0
+
+julia&gt; rand_like(x, (3, 3))
+3×3 Matrix{Float32}:
+ 0.780032  0.920552  0.53689
+ 0.121451  0.741334  0.5449
+ 0.55348   0.138136  0.556404
+
+julia&gt; using CUDA
+
+julia&gt; CUDA.ones(2, 2)
+2×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 1.0  1.0
+ 1.0  1.0
+
+julia&gt; rand_like(x, Float64)
+2×2 CuArray{Float64, 2, CUDA.Mem.DeviceBuffer}:
+ 0.429274  0.135379
+ 0.718895  0.0098756</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.randn_like" href="#MLUtils.randn_like"><code>MLUtils.randn_like</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">randn_like([rng=default_rng()], x, [element_type=eltype(x)], [dims=size(x)])</code></pre><p>Create an array with the given element type and size, based upon the given source array <code>x</code>. All element of the new array will be set to a random value drawn from a normal distribution. The last two arguments are both optional, defaulting to the given array&#39;s eltype and size. The dimensions may be specified as an integer or as a tuple argument.</p><p>The default random number generator is used, unless a custom one is passed in explicitly as the first argument.</p><p>See also <code>Base.randn</code> and <a href="#MLUtils.rand_like"><code>rand_like</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = ones(Float32, 2)
+2-element Vector{Float32}:
+ 1.0
+ 1.0
+
+julia&gt; randn_like(x, (3, 3))
+3×3 Matrix{Float32}:
+ -0.385331    0.956231   0.0745102
+  1.43756    -0.967328   2.06311
+  0.0482372   1.78728   -0.902547
+
+julia&gt; using CUDA
+
+julia&gt; CUDA.ones(2, 2)
+2×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 1.0  1.0
+ 1.0  1.0
+
+julia&gt; randn_like(x, Float64)
+2×2 CuArray{Float64, 2, CUDA.Mem.DeviceBuffer}:
+ -0.578527   0.823445
+ -1.01338   -0.612053</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.rpad_constant" href="#MLUtils.rpad_constant"><code>MLUtils.rpad_constant</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">rpad_constant(v::AbstractArray, n::Union{Integer, Tuple}, val = 0; dims=:)</code></pre><p>Return the given sequence padded with <code>val</code> along the dimensions <code>dims</code> up to a maximum length in each direction specified by <code>n</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; rpad_constant([1, 2], 4, -1) # passing with -1 up to size 4
+4-element Vector{Int64}:
+ 1
+ 2
+ -1
+ -1
+
+julia&gt; rpad_constant([1, 2, 3], 2) # no padding if length is already greater than n
+3-element Vector{Int64}:
+ 1
+ 2
+ 3
+
+julia&gt; rpad_constant([1 2; 3 4], 4; dims=1) # padding along the first dimension
+4×2 Matrix{Int64}:
+ 1  2
+ 3  4
+ 0  0
+ 0  0 
+
+julia&gt; rpad_constant([1 2; 3 4], 4) # padding along all dimensions by default
+4×2 Matrix{Int64}:
+ 1  2
+ 3  4
+ 0  0
+ 0  0 </code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.shuffleobs" href="#MLUtils.shuffleobs"><code>MLUtils.shuffleobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">shuffleobs([rng], data)</code></pre><p>Return a &quot;subset&quot; of <code>data</code> that spans all observations, but has the order of the observations shuffled.</p><p>The values of <code>data</code> itself are not copied. Instead only the indices are shuffled. This function calls <a href="#MLUtils.obsview"><code>obsview</code></a> to accomplish that, which means that the return value is likely of a different type than <code>data</code>.</p><pre><code class="language-julia hljs"># For Arrays the subset will be of type SubArray
+@assert typeof(shuffleobs(rand(4,10))) &lt;: SubArray
+
+# Iterate through all observations in random order
+for x in eachobs(shuffleobs(X))
+    ...
+end</code></pre><p>The optional parameter <code>rng</code> allows one to specify the random number generator used for shuffling. This is useful when reproducible results are desired. By default, uses the global RNG. See <code>Random</code> in Julia&#39;s standard library for more info.</p><p>For this function to work, the type of <code>data</code> must implement <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a>. See <a href="#MLUtils.ObsView"><code>ObsView</code></a> for more information.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.splitobs" href="#MLUtils.splitobs"><code>MLUtils.splitobs</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">splitobs(n::Int; at) -&gt; Tuple</code></pre><p>Compute the indices for two or more disjoint subsets of the range <code>1:n</code> with splits given by <code>at</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">julia&gt; splitobs(100, at=0.7)
+(1:70, 71:100)
+
+julia&gt; splitobs(100, at=(0.1, 0.4))
+(1:10, 11:50, 51:100)</code></pre></div></section><section><div><pre><code class="nohighlight hljs">splitobs(data; at, shuffle=false) -&gt; Tuple</code></pre><p>Split the <code>data</code> into multiple subsets proportional to the value(s) of <code>at</code>. </p><p>If <code>shuffle=true</code>, randomly permute the observations before splitting.</p><p>Supports any datatype implementing the <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a> interfaces.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs"># A 70%-30% split
+train, test = splitobs(X, at=0.7)
+
+# A 50%-30%-20% split
+train, val, test = splitobs(X, at=(0.5, 0.3))
+
+# A 70%-30% split with multiple arrays and shuffling
+train, test = splitobs((X, y), at=0.7, shuffle=true)
+Xtrain, Ytrain = train</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.unbatch" href="#MLUtils.unbatch"><code>MLUtils.unbatch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">unbatch(x)</code></pre><p>Reverse of the <a href="#MLUtils.batch"><code>batch</code></a> operation, unstacking the last dimension of the array <code>x</code>.</p><p>See also <a href="#MLUtils.unstack"><code>unstack</code></a> and <a href="#MLUtils.chunk"><code>chunk</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; unbatch([1 3 5 7;
+                2 4 6 8])
+4-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+ [7, 8]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.undersample" href="#MLUtils.undersample"><code>MLUtils.undersample</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">undersample(data, classes; shuffle=true)</code></pre><p>Generate a class-balanced version of <code>data</code> by subsampling its observations in such a way that the resulting number of observations will be the same number for every class. This way, all classes will have as many observations in the resulting data set as the smallest class has in the given (original) <code>data</code>.</p><p>The convenience parameter <code>shuffle</code> determines if the resulting data will be shuffled after its creation; if it is not shuffled then all the observations will be in their original order. Defaults to <code>false</code>.</p><p>The output will contain both the resampled data and classes.</p><pre><code class="language-julia hljs"># 6 observations with 3 features each
+X = rand(3, 6)
+# 2 classes, severely imbalanced
+Y = [&quot;a&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, &quot;b&quot;, &quot;a&quot;]
+
+# subsample the class &quot;b&quot; to match &quot;a&quot;
+X_bal, Y_bal = undersample(X, Y)
+
+# this results in a smaller dataset
+@assert size(X_bal) == (3,4)
+@assert length(Y_bal) == 4
+
+# now both &quot;a&quot;, and &quot;b&quot; have 2 observations each
+@assert sum(Y_bal .== &quot;a&quot;) == 2
+@assert sum(Y_bal .== &quot;b&quot;) == 2</code></pre><p>For this function to work, the type of <code>data</code> must implement <a href="#MLUtils.numobs"><code>numobs</code></a> and <a href="#MLUtils.getobs"><code>getobs</code></a>. </p><p>Note that if <code>data</code> is a tuple, then it will be assumed that the last element of the tuple contains the targets.</p><pre><code class="language-julia hljs">julia&gt; data = DataFrame(X1=rand(6), X2=rand(6), Y=[:a,:b,:b,:b,:b,:a])
+6×3 DataFrames.DataFrame
+│ Row │ X1        │ X2          │ Y │
+├─────┼───────────┼─────────────┼───┤
+│ 1   │ 0.226582  │ 0.0443222   │ a │
+│ 2   │ 0.504629  │ 0.722906    │ b │
+│ 3   │ 0.933372  │ 0.812814    │ b │
+│ 4   │ 0.522172  │ 0.245457    │ b │
+│ 5   │ 0.505208  │ 0.11202     │ b │
+│ 6   │ 0.0997825 │ 0.000341996 │ a │
+
+julia&gt; getobs(undersample(data, data.Y))
+4×3 DataFrame
+ Row │ X1        X2         Y      
+     │ Float64   Float64    Symbol 
+─────┼─────────────────────────────
+   1 │ 0.427064  0.0648339  a
+   2 │ 0.376304  0.100022   a
+   3 │ 0.467095  0.185437   b
+   4 │ 0.457043  0.490688   b</code></pre><p>See <a href="#MLUtils.ObsView"><code>ObsView</code></a> for more information on data subsets. See also <a href="#MLUtils.oversample"><code>oversample</code></a>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.unsqueeze" href="#MLUtils.unsqueeze"><code>MLUtils.unsqueeze</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">unsqueeze(x; dims)</code></pre><p>Return <code>x</code> reshaped into an array one dimensionality higher than <code>x</code>, where <code>dims</code> indicates in which dimension <code>x</code> is extended. <code>dims</code> can be an integer between 1 and <code>ndims(x)+1</code>.</p><p>See also <a href="#MLUtils.flatten"><code>flatten</code></a>, <a href="data/@ref"><code>stack</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; unsqueeze([1 2; 3 4], dims=2)
+2×1×2 Array{Int64, 3}:
+[:, :, 1] =
+ 1
+ 3
+
+[:, :, 2] =
+ 2
+ 4
+
+
+julia&gt; xs = [[1, 2], [3, 4], [5, 6]]
+3-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+
+julia&gt; unsqueeze(xs, dims=1)
+1×3 Matrix{Vector{Int64}}:
+ [1, 2]  [3, 4]  [5, 6]</code></pre></div></section><section><div><pre><code class="nohighlight hljs">unsqueeze(; dims)</code></pre><p>Returns a function which, acting on an array, inserts a dimension of size 1 at <code>dims</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; rand(21, 22, 23) |&gt; unsqueeze(dims=2) |&gt; size
+(21, 1, 22, 23)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.unstack" href="#MLUtils.unstack"><code>MLUtils.unstack</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">unstack(xs; dims)</code></pre><p>Unroll the given <code>xs</code> into an array of arrays along the given dimension <code>dims</code>.</p><p>See also <a href="data/@ref"><code>stack</code></a>, <a href="#MLUtils.unbatch"><code>unbatch</code></a>, and <a href="#MLUtils.chunk"><code>chunk</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; unstack([1 3 5 7; 2 4 6 8], dims=2)
+4-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+ [7, 8]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="MLUtils.zeros_like" href="#MLUtils.zeros_like"><code>MLUtils.zeros_like</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">zeros_like(x, [element_type=eltype(x)], [dims=size(x)]))</code></pre><p>Create an array with the given element type and size, based upon the given source array <code>x</code>. All element of the new array will be set to 0.  The second and third arguments are both optional, defaulting to the given array&#39;s eltype and size. The dimensions may be specified as an integer or as a tuple argument.</p><p>See also <a href="#MLUtils.ones_like"><code>ones_like</code></a> and <a href="#MLUtils.fill_like"><code>fill_like</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = rand(Float32, 2)
+2-element Vector{Float32}:
+ 0.4005432
+ 0.36934233
+
+julia&gt; zeros_like(x, (3, 3))
+3×3 Matrix{Float32}:
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+
+julia&gt; using CUDA
+
+julia&gt; x = CUDA.rand(2, 2)
+2×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ 0.0695155  0.667979
+ 0.558468   0.59903
+
+julia&gt; zeros_like(x, Float64)
+2×2 CuArray{Float64, 2, CUDA.Mem.DeviceBuffer}:
+ 0.0  0.0
+ 0.0  0.0</code></pre></div></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../training/zygote/">« Gradients – Zygote.jl</a><a class="docs-footer-nextpage" href="../onehot/">OneHotArrays.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Thursday 21 September 2023 07:47">Thursday 21 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
