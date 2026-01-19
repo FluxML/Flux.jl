@@ -18,7 +18,7 @@ The available optimization rules are listed the [optimisation rules](@ref man-op
 
 ```@docs
 Flux.Train.setup
-Flux.Train.train!(loss, model, data, state)
+Flux.Train.train!
 Optimisers.update
 Optimisers.update!
 Optimisers.setup
@@ -35,11 +35,6 @@ julia> opt_state = Flux.setup(Adam(0), model);
 
 julia> Flux.train!((m,x,y) -> sum(abs2, m(x) .- y), dup_model, [(x1, y1)], opt_state)
 ```
-
-```@docs
-Flux.train!(loss, model::Flux.EnzymeCore.Duplicated, data, opt)
-```
-
 
 ## Optimisation Modifiers
 

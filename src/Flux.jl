@@ -26,6 +26,7 @@ using Zygote.ForwardDiff: value
 using EnzymeCore: EnzymeCore
 
 @reexport using ADTypes # AutoZygote, AutoMooncake, etc...
+using ADTypes: AbstractADType
 
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
