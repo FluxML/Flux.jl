@@ -2,6 +2,9 @@ name = "Flux"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 version = "0.16.8"
 
+[workspace]
+projects = ["test", "docs"]
+
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -63,7 +66,7 @@ MLDataDevices = "1.4.2"
 MLUtils = "0.4"
 MPI = "0.20.19"
 MacroTools = "0.5"
-Mooncake = "0.4"
+Mooncake = "0.4, 0.5"
 NCCL = "0.1.1"
 NNlib = "0.9.22"
 OneHotArrays = "0.2.4"
@@ -77,6 +80,3 @@ Statistics = "1"
 Zygote = "0.6.67, 0.7"
 cuDNN = "1"
 julia = "1.10"
-
-[workspace]
-projects = ["test", "docs"]
