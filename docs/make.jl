@@ -58,6 +58,7 @@ makedocs(
             "OneHotArrays.jl" => "reference/data/onehot.md",
             "Low-level Operations -- NNlib.jl" => "reference/models/nnlib.md",
             "Nested Structures -- Functors.jl" => "reference/models/functors.md",
+            "Advanced" => "reference/misc-model-tweaking.md"
          ],
         "Tutorials" => [
         # These walk you through various tasks. It's fine if they overlap quite a lot.
