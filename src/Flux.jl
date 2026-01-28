@@ -32,7 +32,7 @@ using ADTypes: AbstractADType
                     default_device_rng,
                     gpu_device, cpu_device, xla_device,
                     CPUDevice,
-                    CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
+                    CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice, OpenCLDevice,
                     XLADevice,
                     # get_device, # we define get_device here for retrocompatibility
                     gpu_backend!,

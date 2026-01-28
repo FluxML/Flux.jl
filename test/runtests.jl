@@ -1,4 +1,11 @@
 using BSON: BSON
+using Pkg
+
+if get(ENV, "FLUX_TEST_OPENCL", "false") == "true"
+  Pkg.add(["OpenCL", "pocl_jll"])
+  using OpenCL, pocl_jll
+end # OpenCL, pocl_jll are required to load before Flux to successfully use the jll
+
 using FiniteDifferences: FiniteDifferences
 using Flux
 using Flux: OneHotArray, OneHotMatrix, OneHotVector, 
@@ -13,7 +20,6 @@ using Mooncake: Mooncake
 using MLUtils: MLUtils, batch, unstack, unsqueeze, 
               unbatch, getobs, numobs, flatten, DataLoader
 using Optimisers: Optimisers
-using Pkg
 using Random
 using SparseArrays
 using Statistics
@@ -164,6 +170,20 @@ end
     end
   else
     @info "Skipping Metal tests, set FLUX_TEST_METAL=true to run them."
+  end
+
+  if get(ENV, "FLUX_TEST_OPENCL", "false") == "true"
+    if !isempty(cl.platforms()) && !isempty(vcat(cl.devices.(cl.platforms())...))
+      @testset "OpenCL" begin
+        include("ext_opencl/runtests.jl")
+
+        flux_testsuite(gpu)
+      end
+    else
+      @info "OpenCL.jl package is not functional. Skipping OpenCL tests."
+    end
+  else
+    @info "Skipping OpenCL tests, set FLUX_TEST_OPENCL=true to run them."
   end
 
   if get(ENV, "FLUX_TEST_DISTRIBUTED_MPI", "false") == "true" || get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == true
