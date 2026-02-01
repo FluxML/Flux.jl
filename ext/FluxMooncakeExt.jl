@@ -9,7 +9,7 @@ function Flux.gradient(f::F, adtype::AutoMooncake, args::Vararg{Any,N}) where {F
 end
 
 function Flux.withgradient(f::F, adtype::AutoMooncake, args::Vararg{Any,N}) where {F,N}
-    cache = Mooncake.prepare_gradient_cache(f, args...; Mooncake.Config(friendly_tangents=true))
+    cache = Mooncake.prepare_gradient_cache(f, args...; config=Mooncake.Config(friendly_tangents=true))
     val, grads = Mooncake.value_and_gradient!!(cache, f, args...)
     return (val=val, grad=grads[2:end])
 end 
