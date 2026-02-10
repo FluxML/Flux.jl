@@ -1,3 +1,4 @@
+
 steps:
   - label: "CUDA - Julia 1"
     plugins:
@@ -61,7 +62,8 @@ steps:
       FLUX_TEST_AMDGPU: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
-      FLUX_TEST_REACTANT: "false"
+      FLUX_TEST_REACTANT: "true"
+      # TF_CPP_MAX_VLOG_LEVEL: 3
       JULIA_NUM_THREADS: 4
 
 env:
