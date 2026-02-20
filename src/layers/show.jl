@@ -100,6 +100,8 @@ function _macro_layer_show(ex)
   end
 end
 
+summarise_array(a) = ""
+
 function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
   _str = isnothing(name) ? "" : "$name = "
   str = _str * _layer_string(io, layer)
@@ -108,6 +110,7 @@ function _layer_show(io::IO, layer, indent::Int=0, name=nothing)
     print(io, " "^max(2, (indent==0 ? 20 : 39) - indent - length(str)))
     printstyled(io, "# ", underscorise(sum(length, trainables(layer); init=0)), " parameters"; 
 color=:light_black)
+    printstyled(io, join(summarise_array.(trainables(layer))); color=:light_black)
     nonparam = _childarray_sum(length, layer) - sum(length, trainables(layer), init=0)
     if nonparam > 0
       printstyled(io, ", plus ", underscorise(nonparam), indent==0 ? " non-trainable" : ""; color=:light_black)
