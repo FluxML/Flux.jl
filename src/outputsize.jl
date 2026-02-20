@@ -87,6 +87,12 @@ DimensionMismatch("layer Conv((3, 3), 3 => 16) expects size(input, 3) == 3, but 
 julia> outputsize([Dense(10 => 4), Dense(4 => 2)], (10, 1)) # Vector of layers becomes a Chain
 (2, 1)
 ```
+
+Limitations:
+* `Embedding` accepts either integers or one-hot arrays, and `ohx = onehotbatch(x, ...)`
+  has one more dimension than `x`. Here `outputsize` uses `size(x)`.
+* At present `outputsize` does not work with recurrent layers,
+  `outputsize(RNN(2 => 3), (2, 1))` gives an error. This is a bug.
 """
 function outputsize(m, inputsizes::Tuple...; padbatch=false)
   x = nil_input(padbatch, inputsizes...)
@@ -142,6 +148,9 @@ for layer in (:BatchNorm, :InstanceNorm, :GroupNorm)  # LayerNorm works fine
 end
 
 ## fixes for layers that don't work out of the box
+
+(m::Embedding)(x::Nil) = similar(m.weight, Nil, size(m.weight, 1))
+(m::Embedding)(x::AbstractArray{Nil}) = similar(m.weight, Nil, size(m.weight, 1), size(x)...)
 
 for (fn, Dims) in ((:conv, DenseConvDims),)
   @eval begin
@@ -263,8 +272,10 @@ is needed to make `@autosize (2,3,4) Dense(_ => 5)` return
 """
 autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
 autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
-autosizefor(::Type{<:Embedding}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
+
+autosizefor(::Type{<:Embedding}, x::AbstractArray) = error(
+  "@autosize Embeeding(_ => n) cannot work, as this _ is the size of the vocabulary, not an array size")
 
 _replaceunderscore(e, s) = e === :_ ? s : e
 _replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)
