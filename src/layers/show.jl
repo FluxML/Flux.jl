@@ -155,7 +155,10 @@ underscorise(n::Integer) =
   join(reverse(join.(reverse.(Iterators.partition(digits(n), 3)))), '_')
 
 function _nan_show(io::IO, x)
-  if !isempty(x) && _all(iszero, x)
+  if any(y -> y isa Zygote.AbstractGPUArray, x)
+    # These friendly warnings take 10-20 sec to compile the first time, for models on GPU. 
+    printstyled(io, " (on GPU)", color=:light_black)
+  elseif !isempty(x) && _all(iszero, x)
     printstyled(io, "  (all zero)", color=:cyan)
   elseif _any(isnan, x)
     printstyled(io, "  (some NaN)", color=:red)
