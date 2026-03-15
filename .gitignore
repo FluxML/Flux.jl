@@ -12,3 +12,4 @@ LocalPreferences.toml
 docs/mymodel.bson
 prova.jl
 benchmarks/
+CLAUDE.md
