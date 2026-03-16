@@ -1,3 +1,37 @@
+using BSON: BSON
+using FiniteDifferences: FiniteDifferences
+using Flux
+using Flux: OneHotArray, OneHotMatrix, OneHotVector, 
+            onehotbatch, withgradient, pullback
+using Flux.Losses: xlogx, xlogy
+using Flux.Losses
+using Flux: gradient, withgradient # explicit import to avoid ambiguity with Zygote and Enzyme
+using ForwardDiff: ForwardDiff
+using Functors: Functors, fmapstructure_with_path, fmap
+using IterTools: ncycle
+using LinearAlgebra
+using Mooncake: Mooncake
+using MLUtils: MLUtils, batch, unstack, unsqueeze, 
+              unbatch, getobs, numobs, flatten, DataLoader
+using Optimisers: Optimisers
+using Pkg
+using Random
+using SparseArrays
+using Statistics
+using Test
+using Zygote: Zygote
+
+
+for pkg in [:CUDA, :AMDGPU, :Metal, :Enzyme, :Reactant, :MPI, :NCCL]
+    if Base.find_package(string(pkg)) !== nothing
+        @eval using $pkg
+    end
+end
+
+if Base.find_package("Reactant") !== nothing
+    include("ext_reactant/test_utils_reactant.jl")
+end
+
 # group here all losses, used in tests
 const ALL_LOSSES = [Flux.Losses.mse, Flux.Losses.mae, Flux.Losses.msle,
                     Flux.Losses.crossentropy, Flux.Losses.logitcrossentropy,
@@ -55,17 +89,6 @@ function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
         end
     end
     return true
-end
-
-function _contains_no_numerical(kp, x)
-    count = 0
-    fmap(x) do y
-        if y isa AbstractArray{<:AbstractFloat}
-            count += 1
-        end
-        return y
-    end
-    return count == 0
 end
 
 _default_fdm() = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)

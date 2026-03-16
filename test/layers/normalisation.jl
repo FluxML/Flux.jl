@@ -471,3 +471,4 @@ end
   g2 = ForwardDiff.gradient(v -> sum(abs2, re2(v)(x5)), v2)
 end
 
+normalization_testsuite(cpu)
