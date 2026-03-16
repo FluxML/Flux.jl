@@ -19,13 +19,13 @@ const FLUX_TEST_CPU       = get(ENV, "FLUX_TEST_CPU",    "true")  == "true"
 const FLUX_TEST_CUDA      = get(ENV, "FLUX_TEST_CUDA",   "false") == "true"
 const FLUX_TEST_DIST_MPI  = get(ENV, "FLUX_TEST_DISTRIBUTED_MPI",  "false") == "true"
 const FLUX_TEST_DIST_NCCL = get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "true"
-const FLUX_TEST_ENZYME    = get(ENV, "FLUX_TEST_ENZYME", VERSION < v"1.12-" ? "true" : "false") == "true"
+const FLUX_TEST_ENZYME    = get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
 const FLUX_TEST_METAL     = get(ENV, "FLUX_TEST_METAL",  "false") == "true"
 const FLUX_TEST_REACTANT  = get(ENV, "FLUX_TEST_REACTANT", "true") == "true"
 
 # --- Optional package installation (main process, before workers start) ---
 FLUX_TEST_AMDGPU   && Pkg.add("AMDGPU")
-(FLUX_TEST_ENZYME || FLUX_TEST_REACTANT) && Pkg.add("Enzyme")
+# (FLUX_TEST_ENZYME || FLUX_TEST_REACTANT) && Pkg.add("Enzyme") # Already installed
 FLUX_TEST_CUDA     && Pkg.add(["CUDA", "cuDNN"])
 FLUX_TEST_METAL    && Pkg.add("Metal")
 (FLUX_TEST_DIST_MPI || FLUX_TEST_DIST_NCCL) && Pkg.add("MPI")
