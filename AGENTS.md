@@ -6,20 +6,26 @@ This file provides guidance to all AI code assistants when working with code in 
 
 **Run all CPU tests:**
 ```
-julia --project -e 'using Pkg; Pkg.test()'
+# List all available tests
+julia --project=test/ test/runtests.jl --list
+
+# Run with verbose output and 4 workers
+julia --project=test/ test/runtests.jl --verbose --jobs=4
+
+# Run with quick-fail enabled
+julia --project=test/ test/runtests.jl --quickfail
 ```
 
 **Run a single test file:**
 ```
-julia --project test/losses.jl
-julia --project test/layers/basic.jl
+julia --project=test/ test/runtests.jl layers/conv
 ```
 
 **Run tests with specific backends:**
 ```
-FLUX_TEST_CUDA=true julia --project -e 'using Pkg; Pkg.test()'
-FLUX_TEST_ENZYME=false julia --project -e 'using Pkg; Pkg.test()'
-FLUX_TEST_REACTANT=false julia --project -e 'using Pkg; Pkg.test()'
+FLUX_TEST_CUDA=true julia --project=test/ test/runtests.jl
+FLUX_TEST_ENZYME=false julia --project=test/ test/runtests.jl
+FLUX_TEST_REACTANT=false julia --project=test/ test/runtests.jl
 ```
 
 Test environment flags: `FLUX_TEST_CPU` (default true), `FLUX_TEST_CUDA`, `FLUX_TEST_AMDGPU`, `FLUX_TEST_METAL`, `FLUX_TEST_ENZYME` (default true on Julia < 1.12), `FLUX_TEST_REACTANT` (default true), `FLUX_TEST_DISTRIBUTED_MPI`, `FLUX_TEST_DISTRIBUTED_NCCL`.
@@ -99,6 +105,8 @@ Optional backends live in `ext/` as Julia package extensions (weak dependencies)
 ### Test Layout
 
 Tests mirror the source structure. [test/test_utils.jl](test/test_utils.jl) provides `test_gradients`, which checks a layer's gradient against multiple AD backends. [test/testsuite/normalization.jl](test/testsuite/normalization.jl) is a reusable test suite run for each device backend.
+
+`ParallelTestRunner` runs each test file in an isolated anonymous module. Test files have **no imports of their own** — all names come from `init_code` in `runtests.jl`, which includes [test/test_module.jl](test/test_module.jl). Symbols that are `public` but not `export`ed in Flux (e.g. `outputsize`) are **not** brought into scope by `using Flux` alone; add them to the explicit `using Flux: ...` line in `test_module.jl` if a test file needs them.
 
 ## GitHub Repository
 
