@@ -472,6 +472,6 @@ end
 end
 
 @testset "normalization testsuite" begin
-  include("test_common/normalization.jl")
+  include("../test_common/normalization.jl")
   normalization_testsuite(cpu)
 end
