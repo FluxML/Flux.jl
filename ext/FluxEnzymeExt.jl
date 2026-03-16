@@ -55,7 +55,7 @@ function _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=t
 
     ## Take I, doesn't allow for aux at all.
     ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
-    _, result = Enzyme.autodiff(ReverseWithPrimal, Const(f), Active, args...)
+    _, result = Enzyme.autodiff(ad, Const(f), Active, args...)
 
     ## Take II, using split mode.
     ## This fails with RNNs https://github.com/EnzymeAD/Enzyme.jl/issues/2897
