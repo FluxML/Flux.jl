@@ -471,4 +471,7 @@ end
   g2 = ForwardDiff.gradient(v -> sum(abs2, re2(v)(x5)), v2)
 end
 
-normalization_testsuite(cpu)
+@testset "normalization testsuite" begin
+  include("test_common/normalization.jl")
+  normalization_testsuite(cpu)
+end

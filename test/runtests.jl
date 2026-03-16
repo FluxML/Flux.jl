@@ -38,8 +38,8 @@ testsuite = find_tests(@__DIR__)
 # --- Remove non-test utility files picked up by discovery ---
 delete!(testsuite, "test_module")
 delete!(testsuite, "ext_reactant/test_utils_reactant")
-delete!(testsuite, "testsuite/normalization")
-delete!(testsuite, "ext_gpu_common/recurrent")
+delete!(testsuite, "test_common/normalization")
+delete!(testsuite, "test_common/gpu_recurrent")
 
 # --- Filter by env flags (remove disabled test groups) ---
 
@@ -63,7 +63,6 @@ init_code = quote
     using Random
     Random.seed!(0)
     include($(joinpath(@__DIR__, "test_module.jl")))
-    include($(joinpath(@__DIR__, "testsuite", "normalization.jl")))  # defines normalization_testsuite
 end
 
 runtests(Flux, ARGS; testsuite, init_code)

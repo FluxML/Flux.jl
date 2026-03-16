@@ -1,6 +1,6 @@
 
 @testset "Recurrent" begin
   global BROKEN_TESTS = []
-  include("../ext_common/recurrent_gpu_ad.jl")
+  include("../test_common/gpu_recurrent.jl")
 end
 

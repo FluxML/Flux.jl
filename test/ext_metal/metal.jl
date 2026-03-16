@@ -59,7 +59,12 @@ end
 
 @testset "Recurrent" begin
     global BROKEN_TESTS = [:lstm, :gru, :gruv3]
-    include("../ext_common/recurrent_gpu_ad.jl")
+    include("../test_common/gpu_recurrent.jl")
+end
+
+@testset "Normalization" begin
+    include("../test_common/normalization.jl")
+    normalization_testsuite(Flux.gpu_device(force=true))
 end
 
 @testset "Huber Loss test" begin
