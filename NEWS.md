@@ -2,6 +2,10 @@
 
 See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a complete list of PRs merged before each release.
 
+## Unreleased
+
+- Switch to `ParallelTestRunner.jl` for parallel test execution, replacing the previous test runner.
+
 ## v0.16.8 (January 2025)
 
 This release includes the following changes:

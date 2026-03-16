@@ -106,6 +106,8 @@ Optional backends live in `ext/` as Julia package extensions (weak dependencies)
 
 Tests mirror the source structure. [test/test_utils.jl](test/test_utils.jl) provides `test_gradients`, which checks a layer's gradient against multiple AD backends. [test/testsuite/normalization.jl](test/testsuite/normalization.jl) is a reusable test suite run for each device backend.
 
+`ParallelTestRunner` runs each test file in an isolated anonymous module. Test files have **no imports of their own** — all names come from `init_code` in `runtests.jl`, which includes [test/test_module.jl](test/test_module.jl). Symbols that are `public` but not `export`ed in Flux (e.g. `outputsize`) are **not** brought into scope by `using Flux` alone; add them to the explicit `using Flux: ...` line in `test_module.jl` if a test file needs them.
+
 ## GitHub Repository
 
 **Repo:** https://github.com/FluxML/Flux.jl (under the `FluxML` org)

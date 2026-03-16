@@ -1,8 +1,8 @@
 using BSON: BSON
 using FiniteDifferences: FiniteDifferences
 using Flux
-using Flux: OneHotArray, OneHotMatrix, OneHotVector, 
-            onehotbatch, withgradient, pullback
+using Flux: OneHotArray, OneHotMatrix, OneHotVector,
+            onehotbatch, withgradient, pullback, outputsize
 using Flux.Losses: xlogx, xlogy
 using Flux.Losses
 using Flux: gradient, withgradient # explicit import to avoid ambiguity with Zygote and Enzyme

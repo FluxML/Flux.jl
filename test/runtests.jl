@@ -39,6 +39,7 @@ testsuite = find_tests(@__DIR__)
 delete!(testsuite, "test_module")
 delete!(testsuite, "ext_reactant/test_utils_reactant")
 delete!(testsuite, "testsuite/normalization")
+delete!(testsuite, "ext_gpu_common/recurrent")
 
 # --- Filter by env flags (remove disabled test groups) ---
 
