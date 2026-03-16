@@ -2,7 +2,7 @@
 
 @testset "enzyme gradients" begin
     if VERSION >= v"1.12"
-        BROKEN_TESTS = ["Bilinear", "MultiheadAttention"]
+        BROKEN_TESTS = ["Bilinear", "MultiHeadAttention"]
     else 
         BROKEN_TESTS = []
     end
