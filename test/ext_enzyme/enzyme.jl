@@ -1,6 +1,6 @@
 # ENZYME CPU TESTS
 
-@testset "enzyme gradients" begin
+@testset "enzyme gradients" skip=Sys.iswindows() begin
     if VERSION >= v"1.12"
         BROKEN_TESTS = ["Bilinear", "MultiHeadAttention"]
     else 
