@@ -1,14 +1,16 @@
 # ENZYME CPU TESTS
 
-@testset "enzyme gradients" skip=Sys.iswindows() begin
-    if VERSION >= v"1.12"
-        BROKEN_TESTS = ["Bilinear", "MultiHeadAttention"]
-    else 
-        BROKEN_TESTS = []
-    end
-    for (model, x, name) in TEST_MODELS
-        @testset "Enzyme grad check $name" begin
-            @test test_gradients(model, x; reference=AutoZygote(), compare=AutoEnzyme()) broken=(name ∈ BROKEN_TESTS)
+if !Sys.iswindows()
+    @testset "enzyme gradients" begin
+        if VERSION >= v"1.12"
+            BROKEN_TESTS = ["Bilinear", "MultiHeadAttention"]
+        else 
+            BROKEN_TESTS = []
+        end
+        for (model, x, name) in TEST_MODELS
+            @testset "Enzyme grad check $name" begin
+                @test test_gradients(model, x; reference=AutoZygote(), compare=AutoEnzyme()) broken=(name ∈ BROKEN_TESTS)
+            end
         end
     end
 end
