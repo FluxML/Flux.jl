@@ -54,6 +54,8 @@ function gradient(f, adtype::AbstractADType, args...)
         Supported backends are $SUPPORTED_AD_BACKENDS.")
 end
 
+gradient(f, adtype::AutoZygote, args...) = Zygote.gradient(f, args...)
+
 # Default gradient using Zygote
 function gradient(f, args...; zero::Bool=true)
     for a in args
