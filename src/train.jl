@@ -4,6 +4,7 @@ using LinearAlgebra
 using Optimisers: Optimisers
 using Functors: fmap, fmapstructure
 using ..Flux: Flux
+using GPUArrays: GPUArrays
 
 using ProgressLogging: @progress, @withprogress, @logprogress
 using EnzymeCore: Duplicated
@@ -110,19 +111,23 @@ It adds only a few features to the loop above:
 function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing)
     isnothing(cb) || error("""train! does not support callback functions.
                                 For more control use a loop with `gradient` and `update!`.""")
+    cache = GPUArrays.AllocCache()
     @withprogress for (i,d) in enumerate(data)
         d_splat = d isa Tuple ? d : (d,)
 
-        l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model)
+        GPUArrays.@cached cache begin
+            l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model)
 
-        if !isfinite(l)
-            throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+            if !isfinite(l)
+                throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+            end
+
+            opt, model = _update!(opt, model, gs[1])
         end
-
-        opt, model = _update!(opt, model, gs[1])
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
+    GPUArrays.unsafe_free!(cache)
 end
 
 _update!(opt_state, model, grads) = Optimisers.update!(opt_state, model, grads)
