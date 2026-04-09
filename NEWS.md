@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- Fix stack overflow when applying f16/f32/f64 or cpu/gpu to empty structs declared with Flux.@layer.
 - Switch to `ParallelTestRunner.jl` for parallel test execution, replacing the previous test runner.
 
 ## v0.16.8 (January 2025)
