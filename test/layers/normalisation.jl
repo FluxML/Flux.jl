@@ -85,11 +85,18 @@ end
 
     x = randn(1000) # large enough to prevent flaky test
     m = AlphaDropout(0.5; rng_kwargs...)
+    q = 0.5
+    u = mean(x)
+    α′ = -1.7580993408473766
 
     y = evalwgrad(m, x)
     # Should preserve unit mean and variance
     @test mean(y) ≈ 0 atol=0.2
     @test var(y) ≈ 1 atol=0.2
+
+    # Should check that the mean and variance matches the formula
+    # E(xd + α′(1-d)) = qu + (1-q)α′
+    @test mean(y) ≈ (q*u) + ((1-q)*α′)
 
     testmode!(m, true) # should override istraining
     @test evalwgrad(m, x) == x
