@@ -98,6 +98,10 @@ Packages based on differentiable programming but not necessarily related to Mach
 - [Omega.jl](https://github.com/zenna/Omega.jl) is a research project aimed at causal, higher-order probabilistic programming.
 - [Stheno.jl](https://github.com/willtebbutt/Stheno.jl) provides flexible Gaussian processes.
 
+### Simulation-based inference
+
+- [NeuralEstimators.jl](https://github.com/msainsburydale/NeuralEstimators.jl) enables amortized simulation-based inference using neural networks built with Flux.
+
 ### Statistics
 
 - [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) provides single-pass algorithms for statistics.
