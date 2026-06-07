@@ -6,34 +6,47 @@ on:
   pull_request:
 
 jobs:
+  prepare:
+    # Emit the package matrix only when the PR carries the 'run downstream test'
+    # label. Otherwise the matrix is empty, so the `test` job instantiates zero
+    # jobs and no (skipped) downstream checks show up on the PR.
+    name: prepare downstream matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run downstream test') }}" == "true" ]]; then
+            echo 'matrix={"package":[
+              {"user":"r3tex","repo":"ObjectDetector.jl","group":"All"},
+              {"user":"FluxML","repo":"Metalhead.jl","group":"All"},
+              {"user":"CarloLucibello","repo":"Tsunami.jl","group":"All"},
+              {"user":"JuliaGraphs","repo":"GraphNeuralNetworks.jl","group":"All","subdir":"GraphNeuralNetworks"},
+              {"user":"SciML","repo":"DiffEqFlux.jl","group":"Layers"},
+              {"user":"SciML","repo":"NeuralPDE.jl","group":"NNPDE"},
+              {"user":"SciML","repo":"OperatorLearning.jl","group":"All"}
+            ]}' | tr -d '\n' >> "$GITHUB_OUTPUT"
+            echo >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix={"package":[]}' >> "$GITHUB_OUTPUT"
+          fi
+
   test:
+    needs: prepare
     name: ${{ matrix.package.repo }}/${{ matrix.package.group }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     env:
       GROUP: ${{ matrix.package.group }}
     strategy:
       fail-fast: false
-      matrix:
-        julia-version: [1]
-        os: [ubuntu-latest]
-        package:
-          - {user: r3tex, repo: ObjectDetector.jl, group: All}
-          - {user: chengchingwen, repo: Transformers.jl, group: All}
-          - {user: FluxML, repo: GeometricFlux.jl, group: All}
-          - {user: FluxML, repo: FastAI.jl, group: All}
-          - {user: FluxML, repo: Flux3D.jl, group: All}
-          - {user: FluxML, repo: Torch.jl, group: All}
-          - {user: FluxML, repo: Metalhead.jl, group: All}
-          - {user: Chemellia, repo: AtomicGraphNets.jl, group: All}
-          - {user: SciML, repo: DiffEqFlux.jl, group: Layers}
-          - {user: SciML, repo: NeuralPDE.jl, group: NNPDE}
-          - {user: SciML, repo: OperatorLearning.jl, group: All}
-    if: contains(github.event.pull_request.labels.*.name, 'run downstream test')
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v3
         with:
-          version: ${{ matrix.julia-version }}
+          version: '1'
           arch: x64
       - uses: julia-actions/julia-buildpkg@latest
       - name: Clone Downstream
@@ -42,9 +55,14 @@ jobs:
           repository: ${{ matrix.package.user }}/${{ matrix.package.repo }}
           path: downstream
       - name: Load this and run the downstream tests
-        shell: julia --color=yes --project=downstream {0}
+        shell: julia --color=yes {0}
+        env:
+          DOWNSTREAM_SUBDIR: ${{ matrix.package.subdir }}
         run: |
           using Pkg
+          # downstream is checked out at ./downstream; for monorepos the package
+          # lives in a subdirectory (matrix entry's `subdir`).
+          Pkg.activate(joinpath("downstream", get(ENV, "DOWNSTREAM_SUBDIR", "")))
           try
             # force it to use this PR's version of the package
             Pkg.develop(PackageSpec(path="."))  # resolver may fail with main deps
