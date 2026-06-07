@@ -93,14 +93,16 @@ src/
 
 Optional backends live in `ext/` as Julia package extensions (weak dependencies):
 
-| Extension | Trigger package | Purpose |
+| Extension | Trigger package(s) | Purpose |
 |---|---|---|
 | `FluxCUDAExt` | CUDA.jl | NVIDIA GPU support |
+| `FluxCUDAcuDNNExt` | CUDA.jl + cuDNN.jl | cuDNN-accelerated kernels |
 | `FluxAMDGPUExt` | AMDGPU.jl | AMD GPU support |
 | `FluxEnzymeExt` | Enzyme.jl | Enzyme AD backend |
 | `FluxMooncakeExt` | Mooncake.jl | Mooncake AD backend |
+| `FluxFiniteDifferencesExt` | FiniteDifferences.jl | FiniteDifferences AD backend |
 | `FluxMPIExt` | MPI.jl | Distributed training |
-| `FluxMPINCCLExt` | NCCL.jl | NCCL all-reduce |
+| `FluxMPINCCLExt` | CUDA.jl + MPI.jl + NCCL.jl | NCCL all-reduce |
 
 ### Test Layout
 
