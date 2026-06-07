@@ -192,6 +192,16 @@ f (generic function with 1 method)
 julia> Flux.withgradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
 (val = 12.0, grad = ([2.0, 2.0, 2.0],))
 ```
+
+Auxillary outputs are also supported with Mooncake, by returning a Tuple or NamedTuple
+whose first element is the scalar loss:
+```julia-repl
+julia> Flux.withgradient(AutoMooncake(), [1.0, 2.0, 4.0]) do x
+          z = 1 ./ x
+          sum(z), z  # here z is an auxillary output
+       end
+(val = (1.75, [1.0, 0.5, 0.25]), grad = ([-1.0, -0.25, -0.0625],))
+```
 """
 function withgradient(f, adtype::ADTypes.AbstractADType, args...)
     error("AD backend has to be loaded to use `withgradient(f, AutoXXX(), args...)`.
