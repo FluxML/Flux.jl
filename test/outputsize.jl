@@ -5,6 +5,8 @@
   m = Dense(10 => 5)
   @test_throws DimensionMismatch outputsize(m, (5, 2)) == (5, 1)
   @test outputsize(m, (10,); padbatch=true) == (5, 1)
+  @test outputsize(m, (10,)) == (5,)
+  @test outputsize(m, (10, 6, 7)) == (5, 6, 7)
 
   m = Chain(Dense(10 => 8, σ), Dense(8 => 5), Dense(5 => 2))
   @test outputsize(m, (10,); padbatch=true) == (2, 1)
@@ -38,6 +40,19 @@
 
   m = Parallel((mx, x) -> cat(mx, x; dims = 3), Conv((3, 3), 3 => 16; pad = 1), identity)
   @test outputsize(m, (10, 10, 3, 1)) == (10, 10, 19, 1)
+end
+
+@testset "embeddings" begin
+  # Here outputsize expects indices, not one-hot representation:
+  m = Embedding(3 => 4)
+  @test outputsize(m, (3, 7)) == (4, 3, 7) == size(m(rand(1:3, 3, 7)))
+  @test outputsize(m, (5, 6, 7)) == (4, 5, 6, 7) == size(m(rand(1:3, 5, 6, 7)))
+
+  m = Chain(x -> Flux.onehotbatch(x, 1:5), Embedding(5 => 7))
+  @test size(m([3,4])) == (7, 2)
+  @test outputsize(m, (2,)) == (7, 2)
+  # This works because Flux.onehotbatch([nil, nil], 1:5) makes a 5×2 OneHotMatrix
+  # But e.g. Flux.onehotbatch([nil, nil], 'a':'e') will not work.
 end
 
 @testset "multiple inputs" begin
@@ -173,11 +188,6 @@ end
   m = @autosize (2, 3, 4, 5) Dense(_ => 10)  # goes by first dim, not 2nd-last
   @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
 
-  @test_broken begin  # outputsize fails on Embedding
-    m = @autosize (2, 3, 4, 5) Embedding(_ => 10)  # goes by first dim, not 2nd-last
-    @test randn(2, 3, 4, 5) |> m |> size == (10, 3, 4, 5)
-  end
-
   m = @autosize (9,) Dense(_ => div(_,2))
   @test randn(9) |> m |> size == (4,)
 
@@ -232,6 +242,11 @@ end
   # https://github.com/FluxML/Flux.jl/issues/2086
   m = @autosize (3, 1) Chain(; c = Dense(_ => 2, sigmoid), b = BatchNorm(_, affine=false))
   @test randn(Float32, 3, 32) |> m |> size == (2, 32)
+
+  # Embedding takes a vocab size, not an array size
+  @test_throws ErrorException @autosize (2, 3) Embedding(_ => 10)
+  m = @autosize (3,) Chain(Embedding(26 => 10), Dense(_, 4))
+  @test rand(1:26, 3) |> m |> size == (4, 3)
 end
 
 @testset "LazyLayer" begin
