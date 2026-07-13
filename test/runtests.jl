@@ -19,7 +19,7 @@ const FLUX_TEST_CPU       = get(ENV, "FLUX_TEST_CPU",    "true")  == "true"
 const FLUX_TEST_CUDA      = get(ENV, "FLUX_TEST_CUDA",   "false") == "true"
 const FLUX_TEST_DIST_MPI  = get(ENV, "FLUX_TEST_DISTRIBUTED_MPI",  "false") == "true"
 const FLUX_TEST_DIST_NCCL = get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "true"
-const FLUX_TEST_ENZYME    = get(ENV, "FLUX_TEST_ENZYME", !Sys.iswindows()) == "true" #TODO fix enzyme on windows
+const FLUX_TEST_ENZYME    = get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
 const FLUX_TEST_METAL     = get(ENV, "FLUX_TEST_METAL",  "false") == "true"
 const FLUX_TEST_REACTANT  = get(ENV, "FLUX_TEST_REACTANT", "true") == "true"
 
