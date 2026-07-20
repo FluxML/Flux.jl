@@ -9,14 +9,14 @@ If no gradient is defined, `∂f/∂x` will be `nothing`.
 
 `f(args...)` must be a real number, see [`Zygote.jacobian`](@ref) for array output.
 
-The optional argument `adtype` allows specifying the automatic differentiation backend. 
+The optional argument `adtype` allows specifying the automatic differentiation backend.
 
-We provide specific support and testing for the following backends: 
+We provide specific support and testing for the following backends:
 `AutoZygote`, `AutoEnzyme`, `AutoMooncake`, and `AutoFiniteDifferences`.
 
 The package corresponding to any chosen backend (except Zygote) must be loaded in advance.
 
-If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument 
+If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument
 is of type `Duplicated` from Enzyme.jl, in which case Enzyme.jl is used.
 
 See also [`withgradient`](@ref) to keep the value `f(args...)`.
@@ -96,7 +96,7 @@ Note that Enzyme's `Active` is not supported.
 
 Besides returning the gradient, this is also stored within the `Duplicated` object.
 Calling `Enzyme.Duplicated(model)` allocates space for the gradient,
-which is zero'd befor use when calling `gradient`.
+which is zero'd before use when calling `gradient`.
 With the keyword `zero=false`, the new gradient will instead be added to what is already stored.
 
 # Examples
@@ -131,7 +131,7 @@ Duplicated(
 julia> Flux.destructure((weight = [6.0;;], bias = [6.0]))[1] |> norm
 8.48528137423857
 
-julia> Flux.gradient(dup_model, [1]; zero=false) do m, x  # implict Const([1]), and grad accumulation
+julia> Flux.gradient(dup_model, [1]; zero=false) do m, x  # implicit Const([1]), and grad accumulation
          sum(abs2, m(x))
        end
 ((layers = ((weight = [12.0;;], bias = [12.0], σ = nothing),),), nothing)
@@ -149,7 +149,7 @@ The optional argument `adtype` allows specifying the automatic differentiation b
 among the supported ones: `AutoZygote`, `AutoEnzyme`, `AutoMooncake`, and `AutoFiniteDifferences`.
 The package corresponding to the chosen backend must be loaded in advance.
 
-If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument 
+If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument
 is of type `Duplicated` from Enzyme.jl, in which case Enzyme.jl is used.
 
 Se also [`gradient`](@ref) to get just the gradient.
@@ -164,7 +164,7 @@ julia> ∇ == gradient(/, 1, 2)
 true
 ```
 
-`withgradient` allows you to capture auxillary outputs, in addition to the scalar
+`withgradient` allows you to capture auxiliary outputs, in addition to the scalar
 used by `gradient`. To do this, `f` must return a Tuple or NamedTuple.
 Then it calculates `grad = gradient(first∘f, args...)
 but returns the whole `val = f(args...)`:
@@ -172,7 +172,7 @@ but returns the whole `val = f(args...)`:
 ```jldoctest
 julia> withgradient([1,2,4]) do x
           z = 1 ./ x
-          sum(z), z  # here z is an auxillary output
+          sum(z), z  # here z is an auxiliary output
        end
 (val = (1.75, [1.0, 0.5, 0.25]), grad = ([-1.0, -0.25, -0.0625],))
 
@@ -193,12 +193,12 @@ julia> Flux.withgradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
 (val = 12.0, grad = ([2.0, 2.0, 2.0],))
 ```
 
-Auxillary outputs are also supported with Mooncake, by returning a Tuple or NamedTuple
+Auxiliary outputs are also supported with Mooncake, by returning a Tuple or NamedTuple
 whose first element is the scalar loss:
 ```julia-repl
 julia> Flux.withgradient(AutoMooncake(), [1.0, 2.0, 4.0]) do x
           z = 1 ./ x
-          sum(z), z  # here z is an auxillary output
+          sum(z), z  # here z is an auxiliary output
        end
 (val = (1.75, [1.0, 0.5, 0.25]), grad = ([-1.0, -0.25, -0.0625],))
 ```

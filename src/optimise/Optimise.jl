@@ -30,7 +30,7 @@ include("train.jl")
   # Valid method in Optimise, old implicit style, is:
   train!(loss, ps::Params, data, opt::AbstractOptimiser; cb = () -> ())
 
-  # Valid methods in Train, new explict style, are:
+  # Valid methods in Train, new explicit style, are:
   train!(loss, model, data, opt)  # preferred
   train!(loss, model, data, opt::Optimisers.AbstractRule)  # if you forget setup
 
@@ -38,13 +38,13 @@ include("train.jl")
 =#
 
 train!(loss, ps::Params, data, opt; cb=nothing) = error(
-  """can't mix implict Params with explict state!
+  """can't mix implicit Params with explicit state!
   To use `Flux.params(m)` in `train!`, the 4th argument must be from the old `Flux.Optimise` sub-module.
   But better to use the new explicit style, in which `m` itself is the 2nd argument.
   """)
 
 train!(loss, ps::Params, data, opt::Optimisers.AbstractRule; cb=nothing) = error(
-  """can't mix implict Params with explict rule from Optimisers.jl
+  """can't mix implicit Params with explicit rule from Optimisers.jl
   To use `Flux.params(m)` in `train!`, the 4th argument must be from the old `Flux.Optimise` sub-module.
   But better to use the new explicit style, in which `m` itself is the 2nd argument.
   """)
@@ -59,14 +59,14 @@ Optimisers.setup(rule::AbstractOptimiser, model) = setup(__old_to_new(rule), mod
 
 
 function __old_to_new(rule)
-  Base.depwarn("""Optimisers from  Flux.Optimise module are deprecated. 
+  Base.depwarn("""Optimisers from  Flux.Optimise module are deprecated.
                    Use optimisers from Optimisers.jl instead.""", :__old_to_new)
   return _old_to_new(rule)
 end
 
 for T in [:Descent, :Adam, :Momentum, :Nesterov,
    	      :AdaGrad, :AdaMax, :AdaDelta, :AMSGrad, :NAdam, :RAdam, :OAdam, :AdaBelief,
-   	      # :InvDecay, :ExpDecay, 
+   	      # :InvDecay, :ExpDecay,
           :SignDecay,
           ]
   @eval function _old_to_new(rule::$T)
@@ -77,7 +77,7 @@ end
 _old_to_new(rule::Optimiser) = Optimisers.OptimiserChain(map(_old_to_new, rule.os)...)
 const OptimiserChain = Optimiser  # lets you use new name with implicit params too.
 _old_to_new(rule::WeightDecay) = Optimisers.WeightDecay(rule.wd)  # called lambda now
-_old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields 
+_old_to_new(rule::ClipNorm) = Optimisers.ClipNorm(rule.thresh)  # called omega, and there are more fields
 _old_to_new(rule::ClipValue) = Optimisers.ClipGrad(rule.thresh)  # called delta now, and struct name differs
 const ClipGrad = ClipValue
 _old_to_new(rule::RMSProp) = Optimisers.RMSProp(rule.eta, rule.rho, rule.epsilon)  # RMSProp has no field centred

@@ -321,7 +321,7 @@ Flux.gradient((x,d) -> d(x)[1], x, layer3s)[2]  # NamedTuple{(:W, :b, :act)}
 This `∂f/∂layer3s` is a named tuple with the same fields as `Layer`.
 Within it, the gradient with respect to `W` is a matrix of seemingly random numbers.
 Notice that there is also an entry for `act`, which is `nothing`,
-as this field of the struct is not a smoothly adjustible parameter.
+as this field of the struct is not a smoothly adjustable parameter.
 
 We can compose these layers just as we did the polynomials above, in `poly4`.
 Here's a composition of 3 functions, in which the last step is the function `only`

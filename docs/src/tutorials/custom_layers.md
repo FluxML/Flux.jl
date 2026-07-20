@@ -63,7 +63,7 @@ julia> Flux.trainable(a)
 (W = Float32[1.0 2.0; 3.0 4.0; 5.0 6.0],)
 ```
 
-Only the fields returned by `trainable` will be seen by `Flux.setup` and `Flux.update!` for training. But all fields wil be seen by `gpu` and similar functions, for example:
+Only the fields returned by `trainable` will be seen by `Flux.setup` and `Flux.update!` for training. But all fields will be seen by `gpu` and similar functions, for example:
 
 ```julia-repl
 julia> a |> f16
@@ -109,7 +109,7 @@ Join(combine, paths...) = Join(combine, paths)
 ```
 Notice again that we parameterized the type of the `combine` and `paths` fields. In addition to the performance considerations of concrete types, this allows either field to be `Vector`s, `Tuple`s, or one of each - we don't need to pay attention to which.
 
-The next step is to use [`Flux.@layer`](@ref) to make our struct behave like a Flux layer. 
+The next step is to use [`Flux.@layer`](@ref) to make our struct behave like a Flux layer.
 In Flux < v0.15 this used to be important so that calling `Flux.setup` on a `Join` maps over the underlying trainable arrays on each path. Since Flux v0.15, this is no longer necessary, since now Functors.jl automatically traverses custom types. However, [`Flux.@layer`](@ref) is still recommended for pretty printing and other niceties.
 
 ```julia
@@ -214,4 +214,3 @@ end
 
 !!! note
     This `Split` layer is available from the [Fluxperimental.jl](https://github.com/FluxML/Fluxperimental.jl) package.
-
