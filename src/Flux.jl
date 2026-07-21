@@ -63,7 +63,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,
   # from Train
-  setup, train!,
+  setup, train!, train_step!, TrainState,
   # from Optimsers.jl
   freeze!, thaw!, adjust!, update!, trainable,
   # from Zygote.jl
