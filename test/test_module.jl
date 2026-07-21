@@ -80,11 +80,17 @@ function _contains_no_numerical(kp, x)
 end
 
 function check_equal_leaves(a, b; rtol=1e-4, atol=1e-4)
-    # Since Zygote could use nothing for an entire subtree, we prune the
-    # the tree using _contains_no_numerical
-    fmapstructure_with_path(a, b, exclude=_contains_no_numerical) do kp, x, y
+    # Recurse until we hit a genuine leaf (where we compare the arrays) or a
+    # subtree containing no numerical arrays. The latter is pruned because a
+    # backend can return `nothing` for an entire subtree, and we must not recurse
+    # into it.
+    exclude(kp, x) = Functors.isleaf(x) || _contains_no_numerical(kp, x)
+    fmapstructure_with_path(a, b; exclude) do kp, x, y
         # @show kp
-        if x isa AbstractArray{<:AbstractFloat}
+        # Compare only where both backends produced a numerical gradient. A `nothing`
+        # on either side marks a leaf that backend did not differentiate (e.g. the
+        # non-trainable running stats of a normalisation layer), which we skip.
+        if x isa AbstractArray{<:AbstractFloat} && y isa AbstractArray{<:AbstractFloat}
             @test x ≈ y rtol=rtol atol=atol
         end
     end
