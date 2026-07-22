@@ -100,6 +100,7 @@ end
 function _macro_adapt(type)
   quote
     Adapt.adapt_structure(to, layer::$type) = $fmap($adapt(to), layer)
+    $Functors.isleaf(::$type) = false
   end
 end
 
