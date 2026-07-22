@@ -4,6 +4,21 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+### Distributed training fixes
+
+- **PMI guardrails**: MPI backend initialization now detects PMIx/PMI2 mismatch
+  before `MPI.Init()`, preventing silent hard aborts. A `force` keyword argument
+  allows bypassing the check.
+- **Data padding**: `DistributedDataContainer` now pads input data to ensure
+  even distribution across workers, avoiding load imbalance.
+- **Unused parameter handling**: New `DistributedUtils.resolve_unused_parameters!!`
+  replaces `nothing` gradients with zero-filled arrays, preventing allreduce
+  deadlocks in models with conditional computation.
+- **Distributed test fixes**: Previously orphaned distributed test files
+  (`common.jl`, `optimizer.jl`, `synchronized.jl`) were renamed with the
+  `_distributedtest.jl` suffix so they are discovered by the test runner.
+  A new test suite for `resolve_unused_parameters!!` was added.
+
 - `@layer :named MyModel` is a new show option that displays fieldnames in the expanded pretty-print (e.g. `cell = RNNCell(...)` instead of just `RNNCell(...)`) ([#2543](https://github.com/FluxML/Flux.jl/issues/2543)).
 - `Dense` now handles inputs with a zero-sized batch dimension (e.g. `Dense(4 => 5)(randn(Float32, 4, 0, 6))`), returning a correctly-shaped empty array instead of an error or a wrong shape ([#2407](https://github.com/FluxML/Flux.jl/issues/2407)).
 - Fix stack overflow when applying f16/f32/f64 or cpu/gpu to empty structs declared with Flux.@layer.

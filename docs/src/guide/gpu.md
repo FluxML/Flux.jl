@@ -394,6 +394,24 @@ Epoch 3: Loss 0.012763695
 ...
 ```
 
+### Handling Conditional Computation (Unused Parameters)
+
+If your model contains conditional branches (e.g. `if/else` statements where different layers are used depending on the input), some parameters may not be involved in the forward pass on certain ranks. In Zygote, unused parameters receive a `nothing` gradient. However, distributed training requires all ranks to participate in the Allreduce collective with matching buffers. Mismatched buffers (where one rank has an array and another has `nothing`) will cause allreduce deadlocks during synchronization.
+
+To prevent this, use `DistributedUtils.resolve_unused_parameters!!` to replace `nothing` gradients with zero-filled arrays before updating the optimizer:
+
+```julia-repl
+julia> for epoch in 1:100
+           global model, st_opt
+           l, grad = Zygote.withgradient(loss, model)
+           
+           # Resolve nothing gradients to avoid deadlocks
+           grad_resolved = DistributedUtils.resolve_unused_parameters!!(backend, grad[1], model)
+           
+           st_opt, model = Optimisers.update(st_opt, model, grad_resolved)
+         end
+```
+
 Remember that in order to run it on multiple GPUs you have to run from CLI `mpiexecjl --project=. -n <np> julia <filename>.jl`,
 where  `<np>` is the number of processes that you want to use. The number of processes usually corresponds to the number of gpus.
 
