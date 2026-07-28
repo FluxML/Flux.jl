@@ -25,9 +25,6 @@ end
 if USE_CUDA
     DistributedUtils.initialize(DistributedUtils.NCCLBackend)
     backend = DistributedUtils.get_distributed_backend(DistributedUtils.NCCLBackend)
-    
-    # Assign one GPU per process
-    CUDA.device!(DistributedUtils.local_rank(backend) % length(CUDA.devices()))
 else
     DistributedUtils.initialize(DistributedUtils.MPIBackend)
     backend = DistributedUtils.get_distributed_backend(DistributedUtils.MPIBackend)
@@ -42,7 +39,16 @@ world = DistributedUtils.total_workers(backend)
 To ensure each process sees a different slice of the dataset, wrap your dataset in a `DistributedDataContainer`. When iterating, it will automatically yield a distinct subset of the data based on the process's `rank`.
 
 ```julia
-# Synthetic dataset
+using Random
+
+# Synthetic validation dataset (same for all ranks before sharding)
+Random.seed!(42)
+val_dataset = (rand(Float32, 10, 200), rand(Float32, 2, 200))
+ddp_val_data = DistributedUtils.DistributedDataContainer(backend, val_dataset)
+val_data_loader = DataLoader(ddp_val_data, batchsize=32, shuffle=false)
+
+# Synthetic training dataset
+Random.seed!(42) # Use a fixed global seed so all ranks generate the identical global dataset before sharding
 dataset = (rand(Float32, 10, 1000), rand(Float32, 2, 1000))
 
 # Shard the dataset across all processes
@@ -110,10 +116,35 @@ for epoch in 1:epochs
     global_loss = DistributedUtils.allreduce!(backend, [avg_loss], +)[1] / world
     
     if rank == 0
-        println("Epoch $epoch | Global Loss: $global_loss")
+        println("Epoch $epoch | Global Train Loss: $global_loss")
+    end
+
+    # Validation Loop
+    val_total_loss = 0.0f0
+    val_batches = 0
+    
+    for (x, y) in val_data_loader
+        if USE_CUDA
+            x, y = gpu(x), gpu(y)
+        end
+        
+        # Compute loss without tracking gradients
+        l = Flux.Losses.mse(model(x), y)
+        
+        val_total_loss += l
+        val_batches += 1
+    end
+    
+    avg_val_loss = val_total_loss / val_batches
+    global_val_loss = DistributedUtils.allreduce!(backend, [avg_val_loss], +)[1] / world
+    
+    if rank == 0
+        println("Epoch $epoch | Global Val Loss: $global_val_loss")
     end
 end
 ```
+
+During validation, `allreduce!` is necessary because each rank evaluates only a partition (shard) of the validation dataset. To compute the true global validation metric (such as average loss or accuracy), we must aggregate the locally computed metrics across all distributed partitions. By averaging the validation metrics via `allreduce!` before logging, we ensure that Rank 0 reports an accurate and comprehensive evaluation of the model's performance on the entire validation set. Always ensure validation metrics are only logged by Rank 0 to avoid cluttering standard output.
 
 ## Advanced: Conditional Graphs and Unused Parameters
 
@@ -134,4 +165,17 @@ To safely handle conditional graphs, use `resolve_unused_parameters!!` immediate
         gs = DistributedUtils.resolve_unused_parameters!!(backend, gs, model)
         
         opt_state, model = Optimisers.update(opt_state, model, gs)
+```
+
+## Saving and Checkpointing
+
+In a distributed setting, model saving *must* be restricted to a single worker (typically rank 0) to avoid I/O race conditions and prevent file corruption.
+
+```julia
+# Ensure JLD2 is imported (e.g., `using JLD2`) at the top of your file
+if rank == 0
+    println("Training complete. Saving model checkpoint...")
+    model_state = Flux.state(model)
+    jldsave("ddp_model_checkpoint.jld2"; model_state)
+end
 ```
