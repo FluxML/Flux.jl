@@ -69,7 +69,7 @@ according to a particular optimisation rule encoded in `opt_state`.
 Iterates through `data` once, evaluating for each `d in data` either
 `loss(model, d...)` if `d isa Tuple`, or else `loss(model, d)` for other `d`.
 
-The optional argument `adtype`, selects an automatic differentiation engine  among the ones supported by 
+The optional argument `adtype`, selects an automatic differentiation engine  among the ones supported by
 [`gradient`](@ref). If no `adtype` is given, then Zygote is used by default, unless `model` is of type `Duplicated` from Enzyme.jl,
 in which case Enzyme is used.
 
@@ -108,26 +108,38 @@ It adds only a few features to the loop above:
     * Callback functions are not supported.
       (But any code can be included in the above `for` loop.)
 """
-function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing)
+function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing, caching_allocator::Bool = true)
     isnothing(cb) || error("""train! does not support callback functions.
                                 For more control use a loop with `gradient` and `update!`.""")
-    cache = GPUArrays.AllocCache()
+    cache = caching_allocator ? GPUArrays.AllocCache() : nothing
     @withprogress for (i,d) in enumerate(data)
         d_splat = d isa Tuple ? d : (d,)
 
-        GPUArrays.@cached cache begin
-            l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model)
-
-            if !isfinite(l)
-                throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+        if cache === nothing
+            opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
+        else
+            # Reuse the memory allocated during the previous step, see issue #2523.
+            GPUArrays.@cached cache begin
+                opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
             end
-
-            opt, model = _update!(opt, model, gs[1])
         end
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
-    GPUArrays.unsafe_free!(cache)
+    isnothing(cache) || GPUArrays.unsafe_free!(cache)
+    return nothing
+end
+
+# A single training step, factored out so that `train!` can run it with or without the
+# caching allocator without duplicating the body.
+function _train_step!(loss, adtype, model, opt, d_splat, i)
+    l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model)
+
+    if !isfinite(l)
+        throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+    end
+
+    return _update!(opt, model, gs[1])
 end
 
 _update!(opt_state, model, grads) = Optimisers.update!(opt_state, model, grads)
@@ -138,11 +150,12 @@ function _update!(opt_state, model::Duplicated, grad)
 end
 
 
-train!(loss, model, data, opt; cb = nothing) = train!(loss, AutoZygote(), model, data, opt; cb)
+train!(loss, model, data, opt; cb = nothing, caching_allocator::Bool = true) =
+    train!(loss, AutoZygote(), model, data, opt; cb, caching_allocator)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb)
+function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = true)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator)
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
@@ -157,11 +170,12 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
     return state
 end
 
-train!(loss, model::Duplicated, data, opt; cb = nothing) = train!(loss, AutoEnzyme(), model, data, opt; cb)
+train!(loss, model::Duplicated, data, opt; cb = nothing, caching_allocator::Bool = true) =
+    train!(loss, AutoEnzyme(), model, data, opt; cb, caching_allocator)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb)
+function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = true)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator)
 end
 
 end # module Train
