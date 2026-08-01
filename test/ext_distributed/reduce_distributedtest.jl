@@ -1,3 +1,7 @@
+using Test
+using Flux
+using Flux: DistributedUtils, MPIBackend, NCCLBackend
+
 backend_string = ARGS[1]
 
 if backend_string == "mpi"

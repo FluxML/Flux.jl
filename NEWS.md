@@ -4,6 +4,21 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+### Distributed training fixes
+
+- **PMI guardrails**: MPI backend initialization now detects PMIx/PMI2 mismatch
+  before `MPI.Init()`, preventing silent hard aborts. A `force` keyword argument
+  allows bypassing the check.
+- **Data padding**: `DistributedDataContainer` now pads input data to ensure
+  even distribution across workers, avoiding load imbalance.
+- **Unused parameter handling**: New `DistributedUtils.resolve_unused_parameters!!`
+  replaces `nothing` gradients with zero-filled arrays, preventing allreduce
+  deadlocks in models with conditional computation.
+- **Distributed test fixes**: Previously orphaned distributed test files
+  (`common.jl`, `optimizer.jl`, `synchronized.jl`) were renamed with the
+  `_distributedtest.jl` suffix so they are discovered by the test runner.
+  A new test suite for `resolve_unused_parameters!!` was added.
+
 - Switch to `ParallelTestRunner.jl` for parallel test execution, replacing the previous test runner.
 
 ## v0.16.8 (January 2025)

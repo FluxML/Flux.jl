@@ -33,7 +33,8 @@ Initialize the given backend. Users can supply `cuda_devices` and `amdgpu_device
 initialize the backend with the given devices. These can be set to `missing` to prevent
 initialization of the given device type. If set to `nothing`, and the backend is functional
 we assign GPUs in a round-robin fashion. Finally, a list of integers can be supplied to
-initialize the backend with the given devices.
+initialize the backend with the given devices. For the MPI backend, you can pass
+`force=true` to bypass PMI environment guardrail checks if needed.
 
 Possible values for `backend` are:
 
@@ -265,7 +266,14 @@ function __construct_distributed_data_container(
     split_across = total_workers(backend)
     size_per_worker = Int(ceil(total_size / split_across))
 
-    partitions = collect(Iterators.partition(1:total_size, size_per_worker))
+    # Pad the dataset size so that it is evenly divisible by the number of workers
+    total_padded = size_per_worker * split_across
+    indices = collect(1:total_size)
+    if total_padded > total_size
+        append!(indices, 1:(total_padded - total_size))
+    end
+
+    partitions = collect(Iterators.partition(indices, size_per_worker))
     idxs = collect(partitions[local_rank(backend) + 1])
 
     return DistributedDataContainer(data, idxs)
@@ -303,6 +311,33 @@ function DistributedUtils.synchronize!!(
         backend::AbstractFluxDistributedBackend, ps::Leaf; root::Int=0)
     @set! ps.state = DistributedUtils.synchronize!!(backend, ps.state; root)
     return ps
+end
+
+"""
+    resolve_unused_parameters!!(backend::AbstractFluxDistributedBackend, gs, model)
+
+Replaces `nothing` gradients in `gs` with zero-filled arrays matching the corresponding 
+parameter in `model` and returns the newly allocated gradient structure. This prevents DDP 
+deadlocks when conditional branches cause some parameters to be unused on some ranks.
+
+Note: The `backend` parameter is currently unused but kept for API consistency with 
+other distributed utilities and for future compatibility with device-specific 
+allocations (like NCCL).
+"""
+function resolve_unused_parameters!!(backend::AbstractFluxDistributedBackend, gs, model)
+    _ = backend # Unused but kept for API coherence and future GPU context
+    function walk(g, p)
+        if p isa AbstractArray
+            return g === nothing ? fill!(similar(p), 0) : g
+        end
+        if g === nothing
+            return fmap(p; exclude=x -> x isa AbstractArray) do x
+                fill!(similar(x), 0)
+            end
+        end
+        return fmap(walk, g, p; exclude=x -> x isa AbstractArray || x === nothing)
+    end
+    return walk(gs, model)
 end
 
 end

@@ -1,8 +1,21 @@
-const input_args = length(ARGS) == 2 ? ARGS : ("CPU", "mpi")
-const backend_type = input_args[2] == "nccl" ? NCCLBackend : MPIBackend
-const dev = input_args[1] == "CPU" ? Flux.cpu : Flux.gpu
-const aType = input_args[1] == "CPU" ? Array :
-              (input_args[1] == "CUDA" ? CuArray : ROCArray)
+using Test
+using Flux
+using Flux: DistributedUtils, MPIBackend, NCCLBackend
+
+backend_string = ARGS[1]
+
+if backend_string == "mpi"
+    import MPI
+    const backend_type = MPIBackend
+elseif backend_string == "nccl"
+    import MPI, NCCL, CUDA
+    const backend_type = NCCLBackend
+else
+    error("unsupported backend: $backend_string")
+end
+
+const dev = Flux.cpu
+const aType = Array
 
 DistributedUtils.initialize(backend_type)
 backend = DistributedUtils.get_distributed_backend(backend_type)
