@@ -44,13 +44,17 @@ pretraining).
 
 ## Notes
 
-- **`caching_allocator=false`.** By default `train!` wraps each step in a cross-step allocation
-  cache (`GPUArrays.@cached`) that reuses buffers to cut GC churn. The catch: it keeps *every*
-  allocation of a step alive, so the step's peak memory becomes the **sum** of its allocations
-  (~2× the true working set here — measured: 16 GiB vs 9 GiB at batch 128). Worse, the **cold first
-  step** runs cuDNN's convolution-algorithm search, whose per-algorithm workspaces are retained too,
-  ballooning past a 32 GB GPU and OOMing (even at batch 64). Passing `caching_allocator=false`
-  restores in-step recycling and keeps the peak at the working set. This option is Flux
-  [#2695](https://github.com/FluxML/Flux.jl/pull/2695); until it's in a registered release, the
-  `Project.toml` points at this repo's Flux via `[sources]`.
-- **GPU memory.** Batch size 128 is comfortable on a 32 GB card. Lower `batchsize` if you have less.
+- **Memory: handled by the `train!` defaults.** `train!` defaults to `caching_allocator = false`
+  with `gc_interval = :auto` — no cross-step buffer cache, plus an adaptive paced GC — which is
+  exactly right for a deep conv net, so this example passes no memory keywords. The alternative
+  `caching_allocator = true` reuses buffers with a `GPUArrays.AllocCache` (issue
+  [#2523](https://github.com/FluxML/Flux.jl/issues/2523),
+  [#2695](https://github.com/FluxML/Flux.jl/pull/2695)) but *pins* every allocation of a step, so
+  its peak becomes the **sum** of a step's allocations rather than its working set. Measured on an
+  RTX 5090 at batch 128, the defaults hold peak at **~8 GiB live / ~9 GiB reserved vs ~23 GiB** with
+  the cache, at the **same** time/epoch (the step is compute-bound, so the adaptive GC collects
+  every step and is hidden). See [`perf/caching_allocator`](../../perf/caching_allocator) for the
+  full comparison. These defaults need this repo's Flux (unreleased), so `Project.toml` points at
+  it via `[sources]`.
+- **GPU memory.** Batch 128 needs ~9 GiB and is comfortable on a 32 GB card. Lower `batchsize` if
+  you have less.

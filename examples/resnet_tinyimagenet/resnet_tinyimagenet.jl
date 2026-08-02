@@ -178,13 +178,17 @@ function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
     r(x::Integer) = x
     for epoch in 0:epochs
         if epoch > 0
-            # `train!` puts the model in `trainmode!`. `caching_allocator=false` is needed here:
-            # by default `train!` wraps each step in a cross-step allocation cache that keeps every
-            # allocation of a step alive for reuse, so the step's peak becomes the *sum* of its
-            # allocations (~2x the true working set) — and the cold first step's retained cuDNN
-            # algorithm-search workspaces then balloon it past GPU memory and OOM. Disabling the
-            # cache restores in-step recycling and keeps peak at the true working set.
-            Flux.train!(model, train_loader, opt; caching_allocator=false) do m, x, y
+            # `train!` puts the model in `trainmode!`, and its defaults are tuned for exactly this
+            # kind of model, so no memory keywords are needed. The defaults are
+            # `caching_allocator=false` (no cross-step buffer cache) with `gc_interval=:auto` (an
+            # adaptive, backend-agnostic paced GC). The cache would *pin* every allocation of a step,
+            # making peak memory the *sum* of a step's allocations (~23 GiB reserved at batch 128);
+            # running without it and pacing a GC from step timing instead holds peak at the working
+            # set (~8 GiB live / ~9 GiB reserved) at the same time/epoch — this net is compute-bound,
+            # so `:auto` collects every step and the GC is hidden. (Pass `caching_allocator=true` to
+            # use the cache; it can be faster for small, cheap-step models but pins memory. See
+            # ../../perf/caching_allocator for the comparison.)
+            Flux.train!(model, train_loader, opt) do m, x, y
                 logitcrossentropy(m(x |> DEVICE), onehotbatch(y, 0:NCLASSES-1) |> DEVICE)
             end
         end
