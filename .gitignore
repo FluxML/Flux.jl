@@ -13,3 +13,7 @@ docs/mymodel.bson
 prova.jl
 benchmarks/
 CLAUDE.md
+.CondaPkg/
+uv.lock
+.venv/
+__pycache__/
