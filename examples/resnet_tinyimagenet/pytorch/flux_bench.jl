@@ -38,9 +38,9 @@ function bench(; epochs=3, batchsize=128, lr=1e-3, num_workers=4)
         trainmode!(model)
         nimg = Ref(0)
         t0 = time()
-        Flux.train!(model, train_loader, opt) do m, x, y
+        Flux.train!(model, DEVICE(train_loader), opt) do m, x, y   # device iterator: GPU batches
             nimg[] += length(y)
-            logitcrossentropy(m(x |> DEVICE), onehotbatch(y, 0:NCLASSES-1) |> DEVICE)
+            logitcrossentropy(m(x), onehotbatch(y, 0:NCLASSES-1))
         end
         CUDA.synchronize()
         dt = time() - t0
@@ -52,3 +52,8 @@ function bench(; epochs=3, batchsize=128, lr=1e-3, num_workers=4)
 end
 
 bench(; epochs=3)
+
+# The included example defines `function (@main)(ARGS)`, which Julia 1.12 auto-invokes after the
+# script body — that would launch a full default (30-epoch) training run at exit. Exit explicitly to
+# suppress it (this still runs atexit hooks, so Distributed reaps the DataLoader workers cleanly).
+exit()

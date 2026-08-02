@@ -39,16 +39,17 @@ per-epoch timing.
 | metric | Flux | PyTorch |
 | --- | --- | --- |
 | params | 11.27M | 11.27M |
-| **steady-state train** | **~33.0 s/epoch · ~3010 img/s** | **~30.3 s/epoch · ~3280 img/s** |
+| **steady-state train** | **~32.4 s/epoch · ~3090 img/s** | **~30.3 s/epoch · ~3280 img/s** |
 | first train epoch | 70.2 s (incl. compilation) | 30.5 s |
 | epoch-0 full eval (110k imgs) | 65 s cold → 10.4 s warm | ~few s |
 | GPU during train | 90–97 % · ~540 W | 100 % · ~545 W |
-| GPU memory | pool reserves ~32 GB¹ | ~3.8 GB |
+| GPU memory | pool reserves ~9 GB, flat¹ | ~3.8 GB |
 | process warmup before epoch 1 | package load + precompile (~min) | ~seconds |
 
 ¹ CUDA.jl's memory pool *reserves* (and retains) freed device memory rather than returning it to
-the driver; live working-set usage is a small fraction of that. PyTorch's caching allocator holds
-only what it needs here (~3.8 GB).
+the driver; live working-set usage is a small fraction of that. The example wraps its training
+loader in a device iterator (see below) so the reservation stays flat at ~9 GB instead of climbing
+toward the full card. PyTorch's caching allocator holds only what it needs here (~3.8 GB).
 
 **Takeaways**
 
@@ -62,6 +63,32 @@ only what it needs here (~3.8 GB).
   on epoch 1. For a 30-epoch run this amortizes to a few percent; for short runs it dominates.
 - **Accuracy trajectories are comparable** (run-to-run variance from init/augmentation RNG); both
   climb steadily toward the ~50 % top-1 the README quotes for a full 30-epoch run.
+
+### Why the training loop uses a device iterator
+
+The example (and `flux_bench.jl`) wrap the training loader in an
+[MLDataDevices](https://github.com/LuxDL/MLDataDevices.jl) device iterator — `DEVICE(train_loader)`.
+The naive alternative moves each batch inside the step (`m(x |> DEVICE)`) and one-hots labels on the
+fly, allocating fresh device arrays every step that immediately become garbage; CUDA.jl's pool
+*retains* those freed blocks, so the **reservation keeps creeping up** epoch over epoch (toward the
+full card). The device iterator instead yields GPU-resident batches and `unsafe_free!`s each previous
+one, so the pool stops growing. Measured back-to-back on the same process (3 epochs each):
+
+| path | steady train | peak pool reservation |
+| --- | --- | --- |
+| baseline (`x \|> DEVICE` in step) | ~32.6 s/epoch | 2.8 → 10.5 → 10.6 GB, **still climbing** |
+| `DEVICE(loader)` device iterator | ~32.4 s/epoch | **9.2 GB, flat every epoch** |
+
+So the device iterator **doesn't change throughput** (both are GPU-compute-bound — there's no host
+transfer to overlap away) but it **caps the memory reservation** at a flat working set instead of
+letting it grow — which is why the example adopts it. Note the batch (labels included) arrives on the
+GPU, so the one-hot runs there:
+
+```julia
+Flux.train!(model, DEVICE(train_loader), opt) do m, x, y   # x, y arrive on the GPU
+    logitcrossentropy(m(x), onehotbatch(y, 0:NCLASSES-1))   # onehotbatch works on GPU labels
+end
+```
 
 ## Notes on faithfulness
 
