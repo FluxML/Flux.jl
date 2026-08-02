@@ -171,19 +171,15 @@ function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
     r(x) = round(x, digits=4)
     r(x::Integer) = x
 
-    # `DEVICE(train_loader)` is a device iterator: it moves each batch to the GPU and frees the
-    # previous one, so the CUDA memory pool holds a flat working set instead of growing epoch over
-    # epoch (which per-step `x |> DEVICE` allocations would otherwise cause). Labels arrive on the
-    # GPU too, so `onehotbatch` runs there.
+    # `DEVICE(train_loader)` is a device iterator: 
+    # it moves each batch to the GPU and frees the previous one.
     for epoch in 0:epochs
-        # Per-epoch cosine annealing of the learning rate, from `lr` towards 0 over training
-        # (Lux's example schedules per iteration; per epoch keeps the single `Flux.train!` call).
         η = lr * (1 + cos(π * max(epoch - 1, 0) / epochs)) / 2
         t = 0.0
         if epoch > 0
             Flux.adjust!(opt, η)
             t = @elapsed Flux.train!(model, DEVICE(train_loader), opt) do m, x, y
-                logitcrossentropy(m(cast(x)), onehotbatch(y, 0:NCLASSES-1))
+                    logitcrossentropy(m(cast(x)), onehotbatch(y, 0:NCLASSES-1))
             end
         end
         train_loss, train_acc = loss_and_accuracy(train_loader, model, cast)
@@ -244,7 +240,5 @@ function (@main)(ARGS)
         clip_norm    = opts["clip-norm"],
         bfloat16     = opts["bfloat16"],
     )
-    # `main` returns the model; a script entry point must return `nothing` or an integer, else
-    # Julia's `Cint(ret)` at exit throws and the process exits non-zero.
     return nothing
 end
