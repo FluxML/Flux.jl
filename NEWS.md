@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `train!` now defaults to `caching_allocator = false, gc_interval = :auto`: it runs without the cross-step allocation cache and instead paces an incremental garbage collection adaptively, choosing the cadence from step timing. This keeps GPU memory at the working set for allocation-heavy models (the caching allocator pins a step's allocations, which inflates peak memory and could OOM conv nets) while still bounding the ever-growing reserved memory of [#2523](https://github.com/FluxML/Flux.jl/issues/2523).
 - Switch to `ParallelTestRunner.jl` for parallel test execution, replacing the previous test runner.
 
 ## v0.16.8 (January 2025)
