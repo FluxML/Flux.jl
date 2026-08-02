@@ -1,6 +1,5 @@
 using Random, Statistics
 using ArgParse
-using BFloat16s: BFloat16
 using Flux
 using Flux.Losses: logitcrossentropy
 using Flux: onehotbatch, onecold, trainmode!, testmode!
@@ -119,19 +118,12 @@ end
 # ------------------------------------------------------------------------------------------------
 # Training
 
-# Flux ships `f16`/`f32`/`f64` but no `bf16`; this mirrors them (same conversion machinery) so the
-# model can be moved to BFloat16 for lower-precision training.
-bf16(m) = Flux._paramtype(BFloat16, m)
-
-# Evaluate mean loss and top-1 accuracy over a data loader. `cast` converts a device batch to the
-# training precision (identity for Float32, `BFloat16.` for `--bfloat16`); metrics accumulate in
-# Float32 regardless of the model's precision.
-function loss_and_accuracy(loader, model, cast=identity)
+function loss_and_accuracy(loader, model)
     testmode!(model)
     correct, total = 0, 0
     lsum = 0f0
     for (x, y) in loader
-        ŷ = Float32.(model(cast(x |> DEVICE)) |> cpu)
+        ŷ = model(x |> DEVICE) |> cpu
         yoh = onehotbatch(y, 0:NCLASSES-1)
         lsum += logitcrossentropy(ŷ, yoh; agg=sum)
         correct += sum(onecold(ŷ, 0:NCLASSES-1) .== y)
@@ -141,11 +133,9 @@ function loss_and_accuracy(loader, model, cast=identity)
 end
 
 function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
-              num_workers=4, seed=0, clip_norm=false, bfloat16=false)
+              num_workers=4, seed=0, clip_norm=false)
     Random.seed!(seed)
-    # `cast` moves a device batch to the training precision (a no-op for Float32).
-    cast = bfloat16 ? (x -> BFloat16.(x)) : identity
-    @info "Setup" DEVICE epochs batchsize lr weight_decay num_workers seed clip_norm bfloat16
+    @info "Setup" DEVICE epochs batchsize lr weight_decay num_workers seed clip_norm
 
     train_ds = load_dataset("zh-plus/tiny-imagenet", split="train")
     val_ds   = load_dataset("zh-plus/tiny-imagenet", split="valid")
@@ -160,9 +150,7 @@ function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
     train_loader = Flux.DataLoader(train_data; batchsize, shuffle=true, num_workers)
     val_loader   = Flux.DataLoader(val_data; batchsize, num_workers)
 
-    model = resnet18()
-    bfloat16 && (model = bf16(model))
-    model = model |> DEVICE
+    model = resnet18() |> DEVICE
 
     rule = AdamW(; eta=lr, lambda=weight_decay)
     clip_norm && (rule = OptimiserChain(ClipNorm(), rule))   # clip gradient L2 norm, then AdamW step
@@ -179,11 +167,11 @@ function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
         if epoch > 0
             Flux.adjust!(opt, η)
             t = @elapsed Flux.train!(model, DEVICE(train_loader), opt) do m, x, y
-                    logitcrossentropy(m(cast(x)), onehotbatch(y, 0:NCLASSES-1))
+                    logitcrossentropy(m(x), onehotbatch(y, 0:NCLASSES-1))
             end
         end
-        train_loss, train_acc = loss_and_accuracy(train_loader, model, cast)
-        val_loss, val_acc = loss_and_accuracy(val_loader, model, cast)
+        train_loss, train_acc = loss_and_accuracy(train_loader, model)
+        val_loss, val_acc = loss_and_accuracy(val_loader, model)
         @info map(r, (; epoch, lr=η, train_loss, train_acc, val_loss, val_acc, time=t))
     end
 
@@ -221,9 +209,6 @@ function parse_cli(ARGS)
         "--clip-norm"
             help = "clip the gradient L2 norm to 10 (wraps AdamW in OptimiserChain(ClipNorm(), …))"
             action = :store_true
-        "--bfloat16"
-            help = "train in BFloat16 instead of Float32"
-            action = :store_true
     end
     return parse_args(ARGS, s)
 end
@@ -238,7 +223,6 @@ function (@main)(ARGS)
         num_workers  = opts["num-workers"],
         seed         = opts["seed"],
         clip_norm    = opts["clip-norm"],
-        bfloat16     = opts["bfloat16"],
     )
     return nothing
 end

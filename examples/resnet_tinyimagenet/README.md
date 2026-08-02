@@ -41,10 +41,10 @@ image decode across worker processes, past the GIL.
 
 Command-line options (parsed with [ArgParse.jl](https://github.com/carlobaldassi/ArgParse.jl) —
 run with `--help` for the full list): `--epochs`, `--batchsize`, `--lr`, `--weight-decay`,
-`--num-workers`, `--seed`, `--clip-norm`, and `--bfloat16`. The learning rate is cosine-annealed
+`--num-workers`, `--seed`, and `--clip-norm`. The learning rate is cosine-annealed
 from `--lr` towards 0 over training. The same knobs are the keywords of `main`, so it can also be
 driven from the REPL: `main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0, num_workers=4,
-seed=0, clip_norm=false, bfloat16=false)`. Each epoch logs the learning rate, train/validation loss
+seed=0, clip_norm=false)`. Each epoch logs the learning rate, train/validation loss
 and top-1 accuracy, and the epoch's training time. A small-image ResNet-18 trained this way
 typically reaches **~50% top-1 validation accuracy** in ~30 epochs (indicative — from-scratch, no
 pretraining).
