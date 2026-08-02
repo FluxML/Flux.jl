@@ -1,0 +1,19 @@
+[project]
+name = "resnet-tinyimagenet-pytorch"
+version = "0.1.0"
+description = "PyTorch port of the Flux ResNet-18 / Tiny-ImageNet example"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.7",
+    "datasets>=3.0",
+    "pillow",
+    "numpy",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

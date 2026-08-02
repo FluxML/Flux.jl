@@ -1,26 +1,13 @@
-# ResNet-18 (small-image variant) on Tiny-ImageNet-200, with Flux + HuggingFaceDatasets.jl.
-#
-# Tiny-ImageNet is a 200-class subset of ImageNet downsized to 64x64: 100k training and 10k
-# validation images. We pull it straight from the HuggingFace Hub through HuggingFaceDatasets.jl,
-# augment on the fly, and train a small residual network on the GPU with `Flux.train!`.
-#
-# Run it with the example's own project, e.g.
-#
-#     julia --project=. -t auto resnet_tinyimagenet.jl            # 30 epochs (the default)
-#     EPOCHS=5 julia --project=. -t auto resnet_tinyimagenet.jl   # override the epoch count
-#
-# See the README for the config knobs and expected accuracy.
-
 using Random, Statistics
+using ArgParse
 using Flux
 using Flux.Losses: logitcrossentropy
 using Flux: onehotbatch, onecold, trainmode!, testmode!
 using MLUtils: MLUtils, mapobs
 using HuggingFaceDatasets
-using CUDA, cuDNN
+using CUDA # replace with `Metal` or `AMDGPU` for other backends
 
-# Train on the GPU when one is available (this example is written for it), else fall back to CPU.
-const DEVICE = CUDA.functional() ? gpu : cpu
+const DEVICE = gpu_device() # will select the first available GPU device, or CPU if none are available
 const NCLASSES = 200
 
 # ------------------------------------------------------------------------------------------------
@@ -33,9 +20,7 @@ const STD  = reshape(Float32[0.229, 0.224, 0.225], 1, 1, 3, 1)
 
 # Decode a raw batch to normalized WHCN Float32. Under HuggingFaceDatasets' "julia" format an
 # image column is a stacked (C, W, H, N) UInt8 array — channel axis first, from the numpy->Julia
-# axis reversal — so permute to Flux's (W, H, C, N) and standardize per channel. Returns a plain
-# `(x, y)` tuple: `Flux.train!` splats tuples into the loss, and `for (x, y) in loader` destructures
-# them.
+# axis reversal — so permute to Flux's (W, H, C, N) and standardize per channel.
 function decode(batch)
     x = Float32.(batch["image"]) ./ 255f0     # (C, W, H, N)
     x = permutedims(x, (2, 3, 1, 4))          # (W, H, C, N) — Flux WHCN layout
@@ -44,8 +29,7 @@ function decode(batch)
 end
 
 # Standard small-image training augmentation, applied per batch: zero-pad by 4 and take a random
-# 64x64 crop, then flip horizontally with probability 1/2. Pure Julia (no Python), so it
-# parallelizes across worker processes (`num_workers`). Random per call, so it runs every epoch.
+# 64x64 crop, then flip horizontally with probability 1/2.
 function augment(xy)
     x, y = xy
     W, H, C, N = size(x)
@@ -134,8 +118,6 @@ end
 # ------------------------------------------------------------------------------------------------
 # Training
 
-# Cross-entropy loss and top-1 accuracy over a loader. Switches the model to `testmode!` so
-# BatchNorm uses its running statistics (not the per-batch statistics of training).
 function loss_and_accuracy(loader, model)
     testmode!(model)
     correct, total = 0, 0
@@ -150,9 +132,6 @@ function loss_and_accuracy(loader, model)
     return lsum / total, correct / total
 end
 
-# `num_workers = 0` loads on the main process; `num_workers > 0` spreads each batch's `getobs` (the
-# CPython image decode) over that many worker processes, sidestepping the GIL — the collated batch
-# returns through shared memory (MLUtils >= 0.4.12). Pair with `julia -t auto` for threaded collation.
 function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
     @info "Setup" DEVICE epochs batchsize lr num_workers
 
@@ -163,8 +142,6 @@ function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
     train_ds = train_ds.cast_column("image", datasets.Image(mode="RGB"))
     val_ds   = val_ds.cast_column("image", datasets.Image(mode="RGB"))
 
-    # Decode + augment on the fly every batch; the CPython decode runs under the GIL, so use
-    # `num_workers > 0` to parallelize it across processes.
     train_data = mapobs(train_transform, train_ds)
     val_data   = mapobs(decode, val_ds)
 
@@ -176,18 +153,9 @@ function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
 
     r(x) = round(x, digits=4)
     r(x::Integer) = x
+
     for epoch in 0:epochs
         if epoch > 0
-            # `train!` puts the model in `trainmode!`, and its defaults are tuned for exactly this
-            # kind of model, so no memory keywords are needed. The defaults are
-            # `caching_allocator=false` (no cross-step buffer cache) with `gc_interval=:auto` (an
-            # adaptive, backend-agnostic paced GC). The cache would *pin* every allocation of a step,
-            # making peak memory the *sum* of a step's allocations (~23 GiB reserved at batch 128);
-            # running without it and pacing a GC from step timing instead holds peak at the working
-            # set (~8 GiB live / ~9 GiB reserved) at the same time/epoch — this net is compute-bound,
-            # so `:auto` collects every step and the GC is hidden. (Pass `caching_allocator=true` to
-            # use the cache; it can be faster for small, cheap-step models but pins memory. See
-            # ../../perf/caching_allocator for the comparison.)
             Flux.train!(model, train_loader, opt) do m, x, y
                 logitcrossentropy(m(x |> DEVICE), onehotbatch(y, 0:NCLASSES-1) |> DEVICE)
             end
@@ -197,10 +165,39 @@ function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
         @info map(r, (; epoch, train_loss, train_acc, val_loss, val_acc))
     end
 
-    MLUtils.close_dataloader_pool()
     return model
 end
 
-function (@main)(args)
-    main(; epochs=parse(Int, get(ENV, "EPOCHS", "30")))
+# Command-line interface. The defaults mirror `main`'s keyword defaults and are surfaced in `--help`.
+function parse_cli(ARGS)
+    s = ArgParseSettings(description="Train a small-image ResNet-18 on Tiny-ImageNet-200.")
+    @add_arg_table! s begin
+        "--epochs"
+            help = "number of training epochs"
+            arg_type = Int
+            default = 30
+        "--batchsize"
+            help = "minibatch size"
+            arg_type = Int
+            default = 128
+        "--lr"
+            help = "AdamW learning rate"
+            arg_type = Float64
+            default = 1e-3
+        "--num-workers"
+            help = "data-loading worker processes (0 loads in the main process)"
+            arg_type = Int
+            default = 4
+    end
+    return parse_args(ARGS, s)
+end
+
+function (@main)(ARGS)
+    opts = parse_cli(ARGS)
+    main(;
+        epochs = opts["epochs"],
+        batchsize = opts["batchsize"],
+        lr = opts["lr"],
+        num_workers = opts["num-workers"],
+    )
 end

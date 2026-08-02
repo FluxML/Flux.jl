@@ -1,4 +1,6 @@
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+BFloat16s = "ab4f0b2a-ad5b-11e8-123f-65d77653426b"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
@@ -11,6 +13,8 @@ cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 Flux = {path = "../.."}
 
 [compat]
+ArgParse = "1"
+BFloat16s = "0.5, 0.6"
 CUDA = "5, 6"
 Flux = "0.16"
 HuggingFaceDatasets = "0.4"

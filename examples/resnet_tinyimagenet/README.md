@@ -9,6 +9,7 @@ the GPU with `Flux.train!`.
 | --- | --- |
 | [`resnet_tinyimagenet.jl`](resnet_tinyimagenet.jl) | the example (data pipeline, model, training loop) |
 | [`Project.toml`](Project.toml) | its self-contained environment |
+| [`pytorch/`](pytorch/) | a line-for-line PyTorch port + a Flux-vs-PyTorch performance comparison |
 
 ## What it does
 
@@ -28,33 +29,20 @@ the GPU with `Flux.train!`.
 ```console
 $ cd examples/resnet_tinyimagenet
 $ julia --project=. -e 'using Pkg; Pkg.instantiate()'
-$ julia --project=. -t auto resnet_tinyimagenet.jl            # 30 epochs (the default)
-$ EPOCHS=5 julia --project=. -t auto resnet_tinyimagenet.jl   # override the epoch count
+$ julia --project=. -t auto resnet_tinyimagenet.jl                # 30 epochs (the default)
+$ julia --project=. -t auto resnet_tinyimagenet.jl --epochs 5     # override the epoch count
+$ julia --project=. -t auto resnet_tinyimagenet.jl --help         # list all options
 ```
 
 On the **first run**, HuggingFaceDatasets.jl transparently builds a small Python environment
 (via CondaPkg: `datasets`, `pillow`, `numpy`) and downloads the dataset — a few minutes, once.
-`-t auto` enables threaded batch collation; `num_workers > 0` (default `4`) spreads the CPython
+`-t auto` enables threaded batch collation; `--num-workers > 0` (default `4`) spreads the CPython
 image decode across worker processes, past the GIL.
 
-Tunable from the `main` function: `main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)`.
-Each epoch logs train/validation loss and top-1 accuracy. A small-image ResNet-18 trained this way
-typically reaches **~50% top-1 validation accuracy** in ~30 epochs (indicative — from-scratch, no
-pretraining).
+Command-line options (parsed with [ArgParse.jl](https://github.com/carlobaldassi/ArgParse.jl) —
+run with `--help` for the full list): `--epochs`, `--batchsize`, `--lr`, `--num-workers`. The same
+knobs are the keywords of `main`, so it can also be driven from the REPL:
+`main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)`. Each epoch logs train/validation loss
+and top-1 accuracy. A small-image ResNet-18 trained this way typically reaches **~50% top-1
+validation accuracy** in ~30 epochs (indicative — from-scratch, no pretraining).
 
-## Notes
-
-- **Memory: handled by the `train!` defaults.** `train!` defaults to `caching_allocator = false`
-  with `gc_interval = :auto` — no cross-step buffer cache, plus an adaptive paced GC — which is
-  exactly right for a deep conv net, so this example passes no memory keywords. The alternative
-  `caching_allocator = true` reuses buffers with a `GPUArrays.AllocCache` (issue
-  [#2523](https://github.com/FluxML/Flux.jl/issues/2523),
-  [#2695](https://github.com/FluxML/Flux.jl/pull/2695)) but *pins* every allocation of a step, so
-  its peak becomes the **sum** of a step's allocations rather than its working set. Measured on an
-  RTX 5090 at batch 128, the defaults hold peak at **~8 GiB live / ~9 GiB reserved vs ~23 GiB** with
-  the cache, at the **same** time/epoch (the step is compute-bound, so the adaptive GC collects
-  every step and is hidden). See [`perf/caching_allocator`](../../perf/caching_allocator) for the
-  full comparison. These defaults need this repo's Flux (unreleased), so `Project.toml` points at
-  it via `[sources]`.
-- **GPU memory.** Batch 128 needs ~9 GiB and is comfortable on a 32 GB card. Lower `batchsize` if
-  you have less.
