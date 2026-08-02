@@ -1,5 +1,6 @@
 using Random, Statistics
 using ArgParse
+using BFloat16s: BFloat16
 using Flux
 using Flux.Losses: logitcrossentropy
 using Flux: onehotbatch, onecold, trainmode!, testmode!
@@ -118,12 +119,19 @@ end
 # ------------------------------------------------------------------------------------------------
 # Training
 
-function loss_and_accuracy(loader, model)
+# Flux ships `f16`/`f32`/`f64` but no `bf16`; this mirrors them (same conversion machinery) so the
+# model can be moved to BFloat16 for lower-precision training.
+bf16(m) = Flux._paramtype(BFloat16, m)
+
+# Evaluate mean loss and top-1 accuracy over a data loader. `cast` converts a device batch to the
+# training precision (identity for Float32, `BFloat16.` for `--bfloat16`); metrics accumulate in
+# Float32 regardless of the model's precision.
+function loss_and_accuracy(loader, model, cast=identity)
     testmode!(model)
     correct, total = 0, 0
     lsum = 0f0
     for (x, y) in loader
-        ŷ = model(x |> DEVICE) |> cpu
+        ŷ = Float32.(model(cast(x |> DEVICE)) |> cpu)
         yoh = onehotbatch(y, 0:NCLASSES-1)
         lsum += logitcrossentropy(ŷ, yoh; agg=sum)
         correct += sum(onecold(ŷ, 0:NCLASSES-1) .== y)
@@ -132,8 +140,12 @@ function loss_and_accuracy(loader, model)
     return lsum / total, correct / total
 end
 
-function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
-    @info "Setup" DEVICE epochs batchsize lr num_workers
+function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
+              num_workers=4, seed=0, clip_norm=false, bfloat16=false)
+    Random.seed!(seed)
+    # `cast` moves a device batch to the training precision (a no-op for Float32).
+    cast = bfloat16 ? (x -> BFloat16.(x)) : identity
+    @info "Setup" DEVICE epochs batchsize lr weight_decay num_workers seed clip_norm bfloat16
 
     train_ds = load_dataset("zh-plus/tiny-imagenet", split="train")
     val_ds   = load_dataset("zh-plus/tiny-imagenet", split="valid")
@@ -148,21 +160,35 @@ function main(; epochs=30, batchsize=128, lr=1e-3, num_workers=4)
     train_loader = Flux.DataLoader(train_data; batchsize, shuffle=true, num_workers)
     val_loader   = Flux.DataLoader(val_data; batchsize, num_workers)
 
-    model = resnet18() |> DEVICE
-    opt = Flux.setup(AdamW(lr), model)
+    model = resnet18()
+    bfloat16 && (model = bf16(model))
+    model = model |> DEVICE
+
+    rule = AdamW(; eta=lr, lambda=weight_decay)
+    clip_norm && (rule = OptimiserChain(ClipNorm(), rule))   # clip gradient L2 norm, then AdamW step
+    opt = Flux.setup(rule, model)
 
     r(x) = round(x, digits=4)
     r(x::Integer) = x
 
+    # `DEVICE(train_loader)` is a device iterator: it moves each batch to the GPU and frees the
+    # previous one, so the CUDA memory pool holds a flat working set instead of growing epoch over
+    # epoch (which per-step `x |> DEVICE` allocations would otherwise cause). Labels arrive on the
+    # GPU too, so `onehotbatch` runs there.
     for epoch in 0:epochs
+        # Per-epoch cosine annealing of the learning rate, from `lr` towards 0 over training
+        # (Lux's example schedules per iteration; per epoch keeps the single `Flux.train!` call).
+        η = lr * (1 + cos(π * max(epoch - 1, 0) / epochs)) / 2
+        t = 0.0
         if epoch > 0
-            Flux.train!(model, train_loader, opt) do m, x, y
-                logitcrossentropy(m(x |> DEVICE), onehotbatch(y, 0:NCLASSES-1) |> DEVICE)
+            Flux.adjust!(opt, η)
+            t = @elapsed Flux.train!(model, DEVICE(train_loader), opt) do m, x, y
+                logitcrossentropy(m(cast(x)), onehotbatch(y, 0:NCLASSES-1))
             end
         end
-        train_loss, train_acc = loss_and_accuracy(train_loader, model)
-        val_loss, val_acc = loss_and_accuracy(val_loader, model)
-        @info map(r, (; epoch, train_loss, train_acc, val_loss, val_acc))
+        train_loss, train_acc = loss_and_accuracy(train_loader, model, cast)
+        val_loss, val_acc = loss_and_accuracy(val_loader, model, cast)
+        @info map(r, (; epoch, lr=η, train_loss, train_acc, val_loss, val_acc, time=t))
     end
 
     return model
@@ -181,13 +207,27 @@ function parse_cli(ARGS)
             arg_type = Int
             default = 128
         "--lr"
-            help = "AdamW learning rate"
+            help = "peak AdamW learning rate (cosine-annealed towards 0 over training)"
             arg_type = Float64
             default = 1e-3
+        "--weight-decay"
+            help = "AdamW decoupled weight decay (0 = plain Adam)"
+            arg_type = Float64
+            default = 0.0
         "--num-workers"
             help = "data-loading worker processes (0 loads in the main process)"
             arg_type = Int
             default = 4
+        "--seed"
+            help = "random seed for reproducibility"
+            arg_type = Int
+            default = 0
+        "--clip-norm"
+            help = "clip the gradient L2 norm to 10 (wraps AdamW in OptimiserChain(ClipNorm(), …))"
+            action = :store_true
+        "--bfloat16"
+            help = "train in BFloat16 instead of Float32"
+            action = :store_true
     end
     return parse_args(ARGS, s)
 end
@@ -195,9 +235,16 @@ end
 function (@main)(ARGS)
     opts = parse_cli(ARGS)
     main(;
-        epochs = opts["epochs"],
-        batchsize = opts["batchsize"],
-        lr = opts["lr"],
-        num_workers = opts["num-workers"],
+        epochs       = opts["epochs"],
+        batchsize    = opts["batchsize"],
+        lr           = opts["lr"],
+        weight_decay = opts["weight-decay"],
+        num_workers  = opts["num-workers"],
+        seed         = opts["seed"],
+        clip_norm    = opts["clip-norm"],
+        bfloat16     = opts["bfloat16"],
     )
+    # `main` returns the model; a script entry point must return `nothing` or an integer, else
+    # Julia's `Cint(ret)` at exit throws and the process exits non-zero.
+    return nothing
 end
