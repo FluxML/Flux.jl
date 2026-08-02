@@ -12,6 +12,13 @@ using ADTypes: AbstractADType, AutoEnzyme, AutoZygote
 
 export setup, train!
 
+# Tuning for `train!(...; gc_interval = :auto)` (see the GC block in `train!`):
+# a step longer than `GC_HIDE_S` seconds is assumed compute-bound enough to hide an
+# incremental GC (so we collect every step); for cheaper steps we keep the amortized GC cost
+# near `GC_OVERHEAD` of training time.
+const GC_HIDE_S = 5e-3
+const GC_OVERHEAD = 0.02
+
 """
     opt_state = setup(rule, model)
 
@@ -96,32 +103,83 @@ It adds only a few features to the loop above:
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
-!!! compat "New"
-    This method was added in Flux 0.13.9.
-    It has significant changes from the one used by Flux ≤ 0.13:
-    * It now takes the `model` itself, not the result of `Flux.params`.
-      (This is to move away from Zygote's "implicit" parameter handling, with `Grads`.)
-    * Instead of `loss` being a function which accepts only the data,
-      now it must also accept the `model` itself, as the first argument.
-    * `opt_state` should be the result of [`Flux.setup`](@ref). Using an optimiser
-      such as `Adam()` without this step should give you a warning.
-    * Callback functions are not supported.
-      (But any code can be included in the above `for` loop.)
+* Manage memory. Runs an incremental garbage collection adaptively.
 """
-function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing, caching_allocator::Bool = true)
+function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing,
+                caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
     isnothing(cb) || error("""train! does not support callback functions.
                                 For more control use a loop with `gradient` and `update!`.""")
+    gc_interval isa Symbol && gc_interval !== :auto &&
+        throw(ArgumentError("`gc_interval` must be a non-negative integer or `:auto`, got `:$gc_interval`"))
+    Flux.trainmode!(model)
     cache = caching_allocator ? GPUArrays.AllocCache() : nothing
+
+    # Paced GC (fixed `gc_interval` or `:auto`) only helps when the cache is off — with the
+    # cache on, a step's buffers are pinned, so a mid-training GC reclaims nothing. State below
+    # is for `gc_interval = :auto`, a timing-based adaptive cadence (see the GC block).
+    auto = gc_interval === :auto && cache === nothing
+    t_step = 0.0    # EMA of step wall-time (seconds)
+    t_gc = 0.0      # EMA of one GC's wall-time (seconds)
+    interval = 1    # current number of steps between collections
+    since = 0       # steps since the last collection
+
     @withprogress for (i,d) in enumerate(data)
         d_splat = d isa Tuple ? d : (d,)
 
-        if cache === nothing
+        t0 = auto ? time_ns() : zero(UInt64)
+        # The first step is run without the cache on purpose. On a GPU it triggers cuDNN's
+        # convolution-algorithm search, whose one-off probe workspaces are transient but
+        # would be pinned by the cache — they are never reused and can be large enough to
+        # blow past GPU memory. From the second step on the algorithm is fixed, so the cache
+        # only ever sees the real, reusable training buffers.
+        if cache === nothing || i == 1
             opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
         else
             # Reuse the memory allocated during the previous step, see issue #2523.
             GPUArrays.@cached cache begin
                 opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
             end
+        end
+
+        # With the caching allocator off, dead GPU buffers are only reclaimed by the GC, which
+        # seldom fires on its own here (the `CuArray` wrappers are tiny on the CPU heap), so
+        # reserved GPU memory creeps up (issue #2523). A periodic incremental GC bounds that
+        # growth at a fraction of the cost of collecting every step.
+        #
+        # A fixed `gc_interval` collects every N steps. `gc_interval = :auto` instead picks the
+        # cadence from wall-clock timing only (no GPU/backend queries, so it works for every
+        # backend):
+        #   * A compute-bound step (longer than `GC_HIDE_S`) overlaps an incremental GC with its
+        #     own GPU work, so the GC is effectively free — collect every step and keep memory
+        #     minimal. (Timing a GC in isolation would *overestimate* its cost here, because the
+        #     async frees pipeline with the next step; so we deliberately don't use `t_gc`.)
+        #   * A cheap step puts the GC on the critical path (the GPU is idle during it, so timing
+        #     it in isolation is accurate). Collect only ~every `t_gc/(ε·t_step)` steps to hold
+        #     the amortized cost near ε ≈ 2%.
+        # An unusually slow step (typically the backend's own memory reclaim under pressure)
+        # halves the interval to preempt further such stalls.
+        if auto
+            dt = (time_ns() - t0) / 1e9
+            spike = t_step > 0.0 && dt > 3 * t_step
+            t_step = t_step == 0.0 ? dt : 0.9 * t_step + 0.1 * dt
+            base = if t_step >= GC_HIDE_S            # compute-bound: GC hides → every step
+                1
+            elseif t_gc == 0.0 || t_step == 0.0     # not measured yet
+                1
+            else                                    # cheap step: bound amortized GC cost to ε
+                clamp(round(Int, t_gc / (GC_OVERHEAD * t_step)), 1, 4096)
+            end
+            interval = spike ? max(1, interval ÷ 2) : clamp(interval + 1, 1, base)
+            since += 1
+            if since >= interval
+                g0 = time_ns()
+                GC.gc(false)
+                gdt = (time_ns() - g0) / 1e9
+                t_gc = t_gc == 0.0 ? gdt : 0.9 * t_gc + 0.1 * gdt
+                since = 0
+            end
+        elseif cache === nothing && gc_interval isa Integer && gc_interval > 0 && i % gc_interval == 0
+            GC.gc(false)
         end
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
@@ -150,12 +208,12 @@ function _update!(opt_state, model::Duplicated, grad)
 end
 
 
-train!(loss, model, data, opt; cb = nothing, caching_allocator::Bool = true) =
-    train!(loss, AutoZygote(), model, data, opt; cb, caching_allocator)
+train!(loss, model, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto) =
+    train!(loss, AutoZygote(), model, data, opt; cb, caching_allocator, gc_interval)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = true)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator)
+function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
@@ -170,12 +228,12 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
     return state
 end
 
-train!(loss, model::Duplicated, data, opt; cb = nothing, caching_allocator::Bool = true) =
-    train!(loss, AutoEnzyme(), model, data, opt; cb, caching_allocator)
+train!(loss, model::Duplicated, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto) =
+    train!(loss, AutoEnzyme(), model, data, opt; cb, caching_allocator, gc_interval)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = true)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator)
+function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
 end
 
 end # module Train
