@@ -23,7 +23,6 @@ using Random: default_rng
 
 using Zygote, ChainRulesCore
 using Zygote: @adjoint, pullback
-using Zygote.ForwardDiff: value
 using EnzymeCore: EnzymeCore
 
 @reexport using ADTypes # AutoZygote, AutoMooncake, etc...

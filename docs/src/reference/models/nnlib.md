@@ -68,6 +68,18 @@ NNlib.dropout
 NNlib.dropout!
 ```
 
+## Normalization
+
+`Flux`'s [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`LayerNorm`](@ref) layers wrap the functional normalization operators below as their backend.
+
+```@docs
+NNlib.normalise
+NNlib.batchnorm
+NNlib.instancenorm
+NNlib.groupnorm
+NNlib.layernorm
+```
+
 ## Upsampling
 
 `Flux`'s [`Upsample`](@ref) layer uses [`NNlib.upsample_nearest`](@ref), [`NNlib.upsample_bilinear`](@ref), and [`NNlib.upsample_trilinear`](@ref) as its backend. Additionally, `Flux`'s [`PixelShuffle`](@ref) layer uses [`NNlib.pixel_shuffle`](@ref) as its backend.

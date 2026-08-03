@@ -1,10 +1,7 @@
 module FluxAMDGPUExt
 
-import ChainRulesCore
-import ChainRulesCore: NoTangent, unthunk
 import Flux
 import Flux: fmap, DenseConvDims, Conv, ConvTranspose, conv, conv_reshape_bias
-import NNlib
 
 using MLDataDevices
 using AMDGPU
@@ -12,10 +9,11 @@ using Adapt
 using Random
 using Zygote
 
-const MIOPENFloat = AMDGPU.MIOpen.MIOPENFloat
+# The MIOpen `BatchNorm` fast path was removed: `BatchNorm` now wraps `NNlib.batchnorm`,
+# which handles `ROCArray`s via its generic path. Moving the MIOpen fast path into NNlib
+# (alongside the cuDNN one) is tracked in FluxML/NNlib.jl#752.
 
 include("functor.jl")
-include("batchnorm.jl")
 include("conv.jl")
 
 end

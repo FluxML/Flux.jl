@@ -88,7 +88,7 @@ testmode!(m::Dropout, mode=true) =
 function Base.show(io::IO, d::Dropout)
   print(io, "Dropout(", d.p)
   d.dims != (:) && print(io, ", dims=", d.dims)
-  d.active == nothing || print(io, ", active=", d.active)
+  d.active === nothing || print(io, ", active=", d.active)
   print(io, ")")
 end
 
@@ -167,7 +167,7 @@ The input is expected to have first dimensions' size equal to `size`.
 If `affine=true`, it also applies a learnable shift and rescaling
 using the [`Scale`](@ref) layer.
 
-See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`normalise`](@ref).
+See also [`BatchNorm`](@ref), [`InstanceNorm`](@ref), and [`GroupNorm`](@ref).
 
 # Examples
 ```jldoctest
@@ -206,8 +206,7 @@ function (a::LayerNorm)(x::AbstractArray)
       _size_check(a, x, d => size(a.diag.scale, d))
     end
   end
-  eps = convert(float(eltype(x)), a.ϵ)  # avoids promotion for Float16 data, but should ε chage too?
-  a.diag(normalise(x; dims=1:length(a.size), eps))
+  a.diag(NNlib.normalise(x; dims=1:length(a.size), eps=a.ϵ))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -216,59 +215,6 @@ function Base.show(io::IO, l::LayerNorm)
   hasaffine(l) || print(io, ", affine=false")
   print(io, ")")
 end
-
-# For InstanceNorm, GroupNorm, and BatchNorm.
-# Compute the statistics on the slices specified by reduce_dims.
-# reduce_dims=[1,...,N-2,N] for BatchNorm
-# reduce_dims=[1,...,N-2] for InstanceNorm and GroupNorm
-function _norm_layer_forward(
-  l, x::AbstractArray{T, N}; reduce_dims, affine_shape,
-) where {T, N}
-  if !_isactive(l, x) && l.track_stats # testmode with tracked stats
-    stats_shape = ChainRulesCore.ignore_derivatives() do
-      ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-    end
-    μ = reshape(l.μ, stats_shape)
-    σ² = reshape(l.σ², stats_shape)
-  else # trainmode or testmode without tracked stats
-    μ = mean(x; dims=reduce_dims)
-    σ² = var(x; mean=μ, dims=reduce_dims, corrected=false)
-    if l.track_stats
-      _track_stats!(l, x, μ, σ², reduce_dims) # update moving mean/std
-    end
-  end
-
-  eps = convert(float(T), l.ϵ)
-  hasaffine(l) || return l.λ.(_norm_layer_forward(x, μ, σ², eps))
-
-  γ = reshape(l.γ, affine_shape)
-  β = reshape(l.β, affine_shape)
-
-  scale = γ ./ sqrt.(σ² .+ eps)
-  bias = .-scale .* μ .+ β
-  l.λ.(scale .* x .+ bias)
-end
-
-@inline _norm_layer_forward(x, μ, σ², ϵ) = (x .- μ) ./ sqrt.(σ² .+ ϵ)
-
-function _track_stats!(
-  bn, x::AbstractArray{T, N}, μ, σ², reduce_dims,
-) where {T, N}
-  V = eltype(bn.σ²)
-  mtm = bn.momentum
-  res_mtm = one(V) - mtm
-  m = prod(size(x, i) for i in reduce_dims)
-
-  μnew = vec(N ∈ reduce_dims ? μ : mean(μ, dims=N))
-  σ²new = vec(N ∈ reduce_dims ? σ² : mean(σ², dims=N))
-
-  # ForwardDiff.value removes Dual, was an error, issue #2122
-  bn.μ .= value.(res_mtm .* bn.μ .+ mtm .* μnew)
-  bn.σ² .= value.(res_mtm .* bn.σ² .+ mtm .* (m / (m - one(V))) .* σ²new)
-  return nothing
-end
-
-ChainRulesCore.@non_differentiable _track_stats!(::Any...)
 
 """
     BatchNorm(channels::Integer, λ=identity;
@@ -345,11 +291,9 @@ end
 
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(BN, x, N-1 => BN.chs)
-  reduce_dims = [1:N-2; N]
-  affine_shape = ChainRulesCore.ignore_derivatives() do
-    ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  end
-  return _norm_layer_forward(BN, x; reduce_dims, affine_shape)
+  y = NNlib.batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum;
+                      eps=BN.ϵ, training=_isactive(BN, x), track_stats=BN.track_stats)
+  return BN.λ.(y)
 end
 
 testmode!(m::BatchNorm, mode=true) =
@@ -436,11 +380,9 @@ end
 
 function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(l, x, N-1 => l.chs)
-  reduce_dims = 1:N-2
-  affine_shape = ChainRulesCore.ignore_derivatives() do
-    ntuple(i -> i == N-1 ? size(x, N-1) : 1, N)
-  end
-  return _norm_layer_forward(l, x; reduce_dims, affine_shape)
+  y = NNlib.instancenorm(l.γ, l.β, x, l.μ, l.σ², l.momentum;
+                         eps=l.ϵ, training=_isactive(l, x), track_stats=l.track_stats)
+  return l.λ.(y)
 end
 
 testmode!(m::InstanceNorm, mode=true) =
@@ -450,7 +392,7 @@ function Base.show(io::IO, l::InstanceNorm)
   print(io, "InstanceNorm($(l.chs)")
   l.λ == identity || print(io, ", $(l.λ)")
   hasaffine(l) || print(io,  ", affine=false")
-  l.active == nothing || print(io, ", active=", l.active)
+  l.active === nothing || print(io, ", active=", l.active)
   print(io, ")")
 end
 
@@ -536,15 +478,7 @@ end
 
 function (gn::GroupNorm)(x::AbstractArray)
   _size_check(gn, x, ndims(x)-1 => gn.chs)
-  sz = size(x)
-  x2 = reshape(x, sz[1:end-2]..., sz[end-1]÷gn.G, gn.G, sz[end])
-  N = ndims(x2)  # == ndims(x)+1
-  reduce_dims = 1:N-2
-  affine_shape = ChainRulesCore.ignore_derivatives() do
-    ntuple(i -> i ∈ (N-1, N-2) ? size(x2, i) : 1, N)
-  end
-  x3 = _norm_layer_forward(gn, x2; reduce_dims, affine_shape)
-  return reshape(x3, sz)
+  return gn.λ.(NNlib.groupnorm(gn.γ, gn.β, x, gn.G; eps=gn.ϵ))
 end
 
 testmode!(m::GroupNorm, mode = true) =
@@ -555,7 +489,7 @@ function Base.show(io::IO, l::GroupNorm)
   print(io, "GroupNorm($(l.chs), $(l.G)")
   l.λ == identity || print(io, ", ", l.λ)
   hasaffine(l) || print(io,  ", affine=false")
-  l.active == nothing || print(io, ", active=", l.active)
+  l.active === nothing || print(io, ", active=", l.active)
   print(io, ")")
 end
 
