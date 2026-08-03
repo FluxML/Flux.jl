@@ -4,6 +4,9 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- The normalization layers `BatchNorm`, `InstanceNorm`, `GroupNorm` and `LayerNorm` now delegate their forward pass to the functional operators `NNlib.batchnorm`, `NNlib.instancenorm`, `NNlib.groupnorm` and `NNlib.normalise` (which requires NNlib v0.9.41): the normalization logic now lives in NNlib and is shared across the ecosystem. As a side effect, `LayerNorm` and `Flux.normalise` now add `eps` (rather than `eps^2`) to the variance for numerical stability, matching the other normalization layers ([#2701](https://github.com/FluxML/Flux.jl/pull/2701)).
+- `Flux.normalise` is now a thin wrapper around `NNlib.normalise`, which should be preferred ([#2701](https://github.com/FluxML/Flux.jl/pull/2701)).
+- Removed the `FluxCUDAcuDNNExt` extension and the `cuDNN` dependency: cuDNN-accelerated `BatchNorm` on the GPU is now provided by NNlib and selected automatically for `CuArray`s ([#2701](https://github.com/FluxML/Flux.jl/pull/2701)). On AMDGPU the MIOpen `BatchNorm` fast path was likewise removed; `BatchNorm` uses NNlib's generic path there until a MIOpen fast path lands in NNlib ([NNlib.jl#752](https://github.com/FluxML/NNlib.jl/issues/752)).
 - `train!` now defaults to `caching_allocator = false, gc_interval = :auto`: it runs without the cross-step allocation cache and instead paces an incremental garbage collection adaptively, choosing the cadence from step timing. This keeps GPU memory at the working set for allocation-heavy models (the caching allocator pins a step's allocations, which inflates peak memory and could OOM conv nets) while still bounding the ever-growing reserved memory of [#2523](https://github.com/FluxML/Flux.jl/issues/2523). See [#2695](https://github.com/FluxML/Flux.jl/pull/2695) and [#2697](https://github.com/FluxML/Flux.jl/pull/2697).
 
 ## v0.16.10 (17 April 2026)
