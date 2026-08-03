@@ -311,6 +311,31 @@ end
   @test bf16(Float32[1, 1.5, -2.25, 96]) == BFloat16[1, 1.5, -2.25, 96]  # exact round-to-nearest-even
   @test gradient(x -> sum(bf16(x)), x32)[1] isa Vector{Float32}
 
+  @testset "mixed-precision normalization ($cast)" for cast in (f16, bf16)
+    Thalf = cast === f16 ? Float16 : BFloat16
+    # BatchNorm/InstanceNorm/GroupNorm keep statistics and affine parameters in Float32
+    # under half precision; LayerNorm is converted fully.
+    for layer in (BatchNorm(3),
+                  InstanceNorm(3; affine=true, track_stats=true),
+                  GroupNorm(4, 2))
+      hl = cast(layer)
+      params = filter(x -> x isa AbstractArray, collect(Functors.fleaves(hl)))
+      @test !isempty(params)
+      @test all(p -> eltype(p) == Float32, params)
+    end
+    @test all(p -> eltype(p) == Thalf,
+              filter(x -> x isa AbstractArray, collect(Functors.fleaves(cast(LayerNorm(3))))))
+
+    # Forward is only exercised for Float16: the generic bf16 CPU normalization path can
+    # hang LLVM codegen (JuliaMath/BFloat16s.jl#107), so bf16 norms are tested on the GPU.
+    if cast === f16
+      xh = f16(randn(Float32, 4, 4, 3, 2))
+      @test eltype(f16(BatchNorm(3))(xh)) == Float16          # mixed: Float32 params, f16 data
+      @test eltype(f16(InstanceNorm(3; affine=true))(xh)) == Float16
+      @test eltype(f16(GroupNorm(4, 2))(f16(randn(Float32, 4, 4, 4, 2)))) == Float16
+    end
+  end
+
   @testset "complex numbers" begin
     c32 = rand(ComplexF32, 2,2)
     c64 = rand(ComplexF64, 2,2)
