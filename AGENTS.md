@@ -2,6 +2,15 @@
 
 This file provides guidance to all AI code assistants when working with code in this repository.
 
+## Changelog (NEWS.md)
+
+Every user-facing change must be recorded in [NEWS.md](NEWS.md), as part of the same PR that makes the change. Keep it current.
+
+- Add new entries under the `## Unreleased` heading at the top of the file. When a version is tagged, rename that heading to `## vX.Y.Z (D Month YYYY)` and open a fresh `## Unreleased` section above it.
+- Use one `-` bullet per change, written from the user's perspective (what changed and why it matters), with a link to the PR or issue, e.g. `([#2665](https://github.com/FluxML/Flux.jl/pull/2665))`.
+- Flag breaking changes explicitly with a bold **breaking change** note.
+- Record only notable, user-facing changes. Skip CI tweaks, dependency bumps, formatting, and internal refactors.
+
 ## Commands
 
 **Run all CPU tests:**
