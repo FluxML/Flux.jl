@@ -300,6 +300,17 @@ end
   @test f32(i64) === i64
   @test f32(i32) === i32
 
+  # BFloat16
+  @test eltype(bf16(m)[1].weight) == BFloat16
+  @test eltype(bf16(m)(x32)) == BFloat16  # _match_eltype converts the input
+  @test eltype(f32(bf16(m))[1].weight) == Float32
+  @test bf16(x64) isa Vector{BFloat16}
+  @test bf16(x32) isa Vector{BFloat16}
+  @test bf16(x64') isa Adjoint{BFloat16}  # adapt goes inside the Adjoint
+  @test bf16(i64) === i64  # integers are not converted
+  @test bf16(Float32[1, 1.5, -2.25, 96]) == BFloat16[1, 1.5, -2.25, 96]  # exact round-to-nearest-even
+  @test gradient(x -> sum(bf16(x)), x32)[1] isa Vector{Float32}
+
   @testset "complex numbers" begin
     c32 = rand(ComplexF32, 2,2)
     c64 = rand(ComplexF64, 2,2)

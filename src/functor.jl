@@ -127,10 +127,39 @@ Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Complex{<:Abstrac
 _paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
 
 # fastpath for arrays
-_paramtype(::Type{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} = 
+_paramtype(::Type{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} =
   convert(AbstractArray{T}, x)
-_paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
+_paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} =
   convert(AbstractArray{Complex{T}}, x)
+
+# BFloat16 needs a hand-rolled conversion. On x86-64 with LLVM 18 (Julia 1.12.x) the
+# native `Float32`->`BFloat16` round (`Base.fptrunc`) auto-vectorizes into an
+# `X86ISD::VFPROUND` that LLVM cannot select, so `convert(AbstractArray{BFloat16}, ::Array{Float32})`
+# crashes or deadlocks (JuliaMath/BFloat16s.jl#107). We round to nearest even in the
+# integer domain instead (bit-identical to the native result, never emits `fptrunc`).
+@inline function _to_bf16(x::Real)
+  f = Float32(x)
+  u = reinterpret(UInt32, f)
+  bits = ((u + 0x00007fff + ((u >> 16) & 0x00000001)) >> 16) % UInt16
+  return reinterpret(BFloat16, ifelse(isnan(f), 0x7fc0 % UInt16, bits))
+end
+_to_bf16(x::AbstractArray{<:Real}) = _to_bf16.(x)
+_to_bf16(x::Adjoint{<:Real}) = adjoint(_to_bf16(parent(x)))       # keep the wrapper, like `convert`
+_to_bf16(x::Transpose{<:Real}) = transpose(_to_bf16(parent(x)))
+_to_bf16(x::AbstractArray{<:Complex}) = complex.(_to_bf16(real(x)), _to_bf16(imag(x)))
+
+# `_to_bf16` rounds via non-differentiable integer ops; give it a straight-through
+# pullback so `bf16` stays differentiable (matching `f16`/`f32`/`f64`).
+function ChainRulesCore.rrule(::typeof(_to_bf16), x::AbstractArray)
+  proj = ChainRulesCore.ProjectTo(x)
+  _to_bf16_back(Δ) = (ChainRulesCore.NoTangent(), proj(Δ))
+  return _to_bf16(x), _to_bf16_back
+end
+
+Adapt.adapt_storage(::FluxEltypeAdaptor{BFloat16}, x::AbstractArray{<:AbstractFloat}) = _to_bf16(x)
+Adapt.adapt_storage(::FluxEltypeAdaptor{BFloat16}, x::AbstractArray{<:Complex{<:AbstractFloat}}) = _to_bf16(x)
+_paramtype(::Type{BFloat16}, x::AbstractArray{<:AbstractFloat}) = _to_bf16(x)
+_paramtype(::Type{BFloat16}, x::AbstractArray{<:Complex{<:AbstractFloat}}) = _to_bf16(x)
 
 """
     f32(m)
@@ -138,7 +167,7 @@ _paramtype(::Type{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:Ab
 Converts the `eltype` of model's *floating point* parameters to `Float32` (which is Flux's default).
 Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
-See also [`f64`](@ref) and [`f16`](@ref).
+See also [`f64`](@ref), [`f16`](@ref) and [`bf16`](@ref).
 """
 f32(m) = _paramtype(Float32, m)
 
@@ -148,7 +177,7 @@ f32(m) = _paramtype(Float32, m)
 Converts the `eltype` of model's *floating point* parameters to `Float64`.
 Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
-See also [`f32`](@ref) and [`f16`](@ref).
+See also [`f32`](@ref), [`f16`](@ref) and [`bf16`](@ref).
 """
 f64(m) = _paramtype(Float64, m)
 
@@ -161,7 +190,7 @@ Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
 
-See also [`f32`](@ref) and [`f64`](@ref).
+See also [`f32`](@ref), [`f64`](@ref) and [`bf16`](@ref).
 
 # Example
 ```jldoctest
@@ -179,3 +208,36 @@ Chain(
 ```
 """
 f16(m) = _paramtype(Float16, m)
+
+"""
+    bf16(m)
+
+Converts the `eltype` of model's *floating point* parameters to `BFloat16`
+(from [BFloat16s.jl](https://github.com/JuliaMath/BFloat16s.jl)).
+Recurses into structs marked with [`@layer`](@ref Flux.@layer).
+
+`BFloat16` has the same exponent range as `Float32` but a reduced mantissa, trading
+precision for range. It is often a better choice than [`f16`](@ref) for training, as it
+is less prone to overflow/underflow, and is well supported on modern GPUs.
+
+Support for `BFloat16` is limited on many CPUs, where Julia may convert to `Float32`
+for each operation.
+
+See also [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
+
+# Example
+```jldoctest
+julia> m = Chain(Dense(784, 2048, relu), Dense(2048, 10))  # all Float32
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 6.211 MiB.
+
+julia> m |> bf16  # takes half the memory
+Chain(
+  Dense(784 => 2048, relu),             # 1_607_680 parameters
+  Dense(2048 => 10),                    # 20_490 parameters
+)                   # Total: 4 arrays, 1_628_170 parameters, 3.106 MiB.
+```
+"""
+bf16(m) = _paramtype(BFloat16, m)
