@@ -6,16 +6,16 @@ Flux offers two complementary mechanisms, mirroring the two approaches available
 in PyTorch:
 
 1. **Autocast (recommended for training)**: the model's parameters stay in
-   `Float32`, and a scoped [`autocast`](@ref) context casts values at layer-call
-   time. This corresponds to PyTorch's `torch.autocast`.
+   `Float32`, and [`autocast`](@ref) wraps the model so that layers cast at
+   call time. This corresponds to PyTorch's `torch.autocast`.
 2. **Static casting (recommended for inference)**: [`f16`](@ref) and
    [`bf16`](@ref) convert the parameters themselves, like PyTorch's
    `model.half()` and `model.bfloat16()`.
 
 ## Autocast
 
-Wrap the forward pass — or simply pass the `autocast` keyword to
-[`Flux.gradient`](@ref), [`Flux.withgradient`](@ref) or [`Flux.train!`](@ref):
+Pass the `autocast` keyword to [`Flux.gradient`](@ref), [`Flux.withgradient`](@ref)
+or [`Flux.train!`](@ref):
 
 ```julia
 using Flux
@@ -36,20 +36,28 @@ Flux.train!((m, x, y) -> Flux.logitcrossentropy(m(x), y), model, dataloader,
             opt_state; autocast=BFloat16)
 ```
 
-Inside the scope:
+`autocast(model, T)` returns a *wrapped* model that shares `model`'s parameter
+arrays (used automatically by the keyword above; you can also build it yourself
+for inference: `autocast(model, BFloat16)(x)`). In the wrapped model:
 
 - Matmul- and convolution-heavy layers (`Dense`, `Conv`, `ConvTranspose`,
-  `CrossCor`, `Bilinear`, `Embedding` on onehot input, `MultiHeadAttention`, and
-  the recurrent cells) cast their parameters and inputs to the requested half
-  precision before computing, so the compute-intensive kernels run fast and the
-  large activations take half the memory.
+  `CrossCor`, `Bilinear`, `MultiHeadAttention`'s projections, and the recurrent
+  cells) cast their parameters and inputs to the requested half precision before
+  computing, so the compute-intensive kernels run fast and the large activations
+  take half the memory.
 - Numerically sensitive operations compute in `Float32`: the normalization
-  layers (`BatchNorm`, `LayerNorm`, `InstanceNorm`, `GroupNorm`) and the loss
-  functions in `Flux.Losses` cast their inputs *up*.
+  layers (`BatchNorm`, `LayerNorm`, `InstanceNorm`, `GroupNorm`) cast their input
+  *up*, and the loss functions in `Flux.Losses` always accumulate in `Float32`
+  when given half-precision inputs.
 - The parameters are never modified; they act as `Float32` "master weights".
-  The backward pass of each cast accumulates the gradient back in `Float32`, so
-  parameter gradients — and therefore the optimiser state and update — are
-  full-precision, with no change to the training loop.
+  The backward pass of each cast accumulates the gradient back in `Float32`, and
+  the gradient returned by `gradient`/`withgradient` is shaped like the *original*
+  (unwrapped) model — so the optimiser state and update need no change.
+
+Because the wrapping is an ordinary (differentiable) model transformation rather
+than a runtime scope, both plain and wrapped forward passes keep their **exact
+inferred element type** — there is no type-inference penalty for defining
+`autocast` and no cost for models that never use it.
 
 Things to keep in mind:
 
@@ -64,18 +72,15 @@ Things to keep in mind:
   reduction.
 - The softmax inside `MultiHeadAttention`'s `dot_product_attention` runs in the
   half precision (the projections produce half-precision `q`, `k`, `v`).
-- Custom layers are not cast automatically unless they are built out of Flux
-  layers. To opt in, consult [`Flux.autocast_eltype`](@ref) in your forward pass
-  (see its docstring).
-- Weights are re-cast on every forward pass (there is no cast cache). The cast
+- `Embedding` is left in full precision (casting the — often large — embedding
+  table on every forward would be expensive, and PyTorch keeps embeddings in
+  `Float32` under autocast); downstream wrapped layers cast the looked-up vectors.
+- Parameters are re-cast on every forward pass (there is no cast cache). The cast
   is cheap next to the matmul/convolution it enables, and compiled backends fuse
   it away.
-- Autocast is compiled out until its first use: models that never enter an
-  `autocast` scope pay zero overhead and keep their exact inferred return types.
-  The first `autocast` call in a session enables the machinery globally, which
-  triggers a one-time recompilation of affected layer code.
 - Autocast works with Zygote (the default), Mooncake, and — for `Float16` —
-  Enzyme. `BFloat16` autocast is currently not supported with Enzyme.
+  Enzyme. `BFloat16` autocast is currently not supported with Enzyme
+  ([EnzymeAD/Enzyme.jl#3430](https://github.com/EnzymeAD/Enzyme.jl/issues/3430)).
 
 ## Static casting: `f16`, `bf16` and `f16mix`, `bf16mix`
 
@@ -109,10 +114,10 @@ layers in half precision, including the numerically sensitive reductions.
 
 ## Custom layers under autocast
 
-Flux's built-in layers consult the ambient autocast scope in their forward pass.
-A custom layer written in terms of Flux layers (e.g. a struct holding a `Dense`)
-inherits this for free. A layer that multiplies its own weight arrays needs one
-extra line to participate:
+A custom layer built out of Flux layers (e.g. a struct holding a `Dense`) is
+handled automatically: `autocast` recurses into it and wraps the inner layers. A
+layer that multiplies its *own* weight arrays opts in with a one-line trait,
+[`Flux.autocast_mode`](@ref):
 
 ```julia
 struct Affine{W, B}
@@ -121,33 +126,14 @@ struct Affine{W, B}
 end
 Flux.@layer Affine
 
-function (a::Affine)(x)
-    Flux._autocast_barrier() do T   # T is Float16, BFloat16, or nothing
-        W = Flux._autocast_down(T, a.weight)
-        b = Flux._autocast_down(T, a.bias)
-        xT = Flux._autocast_down(T, x)
-        return W * xT .+ b
-    end
-end
+(a::Affine)(x) = a.weight * x .+ a.bias
+
+Flux.autocast_mode(::Affine) = :down   # cast this layer's params + inputs to half precision
 ```
 
-`Flux._autocast_down(T, x)` casts a floating-point array to `T` and is a no-op
-when `T === nothing` (no active scope), when the array already has eltype `T`,
-and for non-float arrays (integer or onehot inputs, a `false` bias, ...); its
-gradient casts back, so parameter gradients stay `Float32`. The
-`Flux._autocast_barrier` wrapper runs the closure with the current scope value
-and acts as a dispatch barrier, keeping the layer type-stable when autocast is
-not in use. For a numerically sensitive custom layer, use `Flux._autocast_up(x)`
-instead, which casts half-precision input *up* to `Float32` inside a scope.
-
-!!! warning
-    Inside the `_autocast_barrier` closure, only assign to *fresh* local names.
-    Assigning to a variable captured from the enclosing function (like `x` or a
-    destructured argument) boxes it, which silently breaks both type inference
-    and Zygote gradients.
-
-These helpers are currently internal (underscore-prefixed): the API may still
-evolve, but they are the supported way to make a custom layer autocast-aware.
-
-Note that when writing a custom layer as a plain Julia function of arrays, an
-alternative is to rely on [`Flux.autocast_eltype`](@ref) directly.
+`autocast` then wraps `Affine` like a built-in `Dense`: on each call its
+floating-point parameters and inputs are cast to the half-precision type (its
+gradients still come back in `Float32`), and the wrapped forward pass keeps its
+exact inferred element type. Return `:up` instead for a numerically sensitive
+layer that should compute in `Float32` (like the normalization layers), or the
+default `:none` to leave a layer untouched and let `autocast` recurse into it.

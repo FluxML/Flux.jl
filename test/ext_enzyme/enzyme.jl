@@ -78,6 +78,19 @@ end
     @test Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
 end
 
-# NOTE: autocast + AutoEnzyme is not tested yet: after the first `autocast` call the
-# layer IR contains BFloat16 values, and Enzyme's type analysis crashes on those until
-# EnzymeAD/Enzyme.jl#3430 is fixed upstream.
+@testset "autocast" begin
+    model = Chain(Dense(3 => 4, tanh), Dense(4 => 2))
+    x = randn(Float32, 3, 8)
+    loss(m) = Flux.mse(m(x), zeros(Float32, 2, 8))
+    g32 = Flux.gradient(loss, model)[1]
+
+    # Float16 autocast under Enzyme: casts are native fptrunc/fpext, differentiated natively.
+    g16 = Flux.gradient(loss, AutoEnzyme(), model; autocast=Float16)[1]
+    @test eltype(g16.layers[1].weight) == Float32
+    @test g16.layers[1].weight ≈ g32.layers[1].weight rtol=0.03 atol=0.05
+
+    # BFloat16 autocast is blocked upstream: Enzyme's type analysis crashes on `Core.BFloat16`
+    # values (missing typetree primitive, EnzymeAD/Enzyme.jl#3430).
+    @test_broken Flux.gradient(loss, AutoEnzyme(), model; autocast=BFloat16)[1].layers[1].weight ≈
+        g32.layers[1].weight rtol=0.15 atol=0.05
+end

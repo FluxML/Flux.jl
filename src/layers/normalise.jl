@@ -206,10 +206,7 @@ function (a::LayerNorm)(x::AbstractArray)
       _size_check(a, x, d => size(a.diag.scale, d))
     end
   end
-  # fresh name: `x` is captured by the `@ignore_derivatives` closure above, so
-  # assigning to it would box it, hurting inference and Zygote gradients
-  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
-  a.diag(NNlib.normalise(xF; dims=1:length(a.size), eps=a.ϵ))
+  a.diag(NNlib.normalise(x; dims=1:length(a.size), eps=a.ϵ))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -294,8 +291,7 @@ end
 
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(BN, x, N-1 => BN.chs)
-  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
-  y = NNlib.batchnorm(BN.γ, BN.β, xF, BN.μ, BN.σ², BN.momentum;
+  y = NNlib.batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum;
                       eps=BN.ϵ, training=_isactive(BN, x), track_stats=BN.track_stats)
   return BN.λ.(y)
 end
@@ -384,8 +380,7 @@ end
 
 function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(l, x, N-1 => l.chs)
-  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
-  y = NNlib.instancenorm(l.γ, l.β, xF, l.μ, l.σ², l.momentum;
+  y = NNlib.instancenorm(l.γ, l.β, x, l.μ, l.σ², l.momentum;
                          eps=l.ϵ, training=_isactive(l, x), track_stats=l.track_stats)
   return l.λ.(y)
 end
@@ -483,8 +478,7 @@ end
 
 function (gn::GroupNorm)(x::AbstractArray)
   _size_check(gn, x, ndims(x)-1 => gn.chs)
-  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
-  return gn.λ.(NNlib.groupnorm(gn.γ, gn.β, xF, gn.G; eps=gn.ϵ))
+  return gn.λ.(NNlib.groupnorm(gn.γ, gn.β, x, gn.G; eps=gn.ϵ))
 end
 
 testmode!(m::GroupNorm, mode = true) =

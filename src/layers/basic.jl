@@ -195,12 +195,8 @@ end
 
 function (a::Dense)(x::AbstractVecOrMat)
   _size_check(a, x, 1 => size(a.weight, 2))
-  _autocast_barrier() do T   # under `autocast`, cast W/b/x to half precision; else a no-op
-    W = _autocast_down(T, a.weight)
-    b = _autocast_down(T, a.bias)
-    xT = _autocast_down(T, _match_eltype(a, x))  # _match_eltype fixes Float64 input, etc.
-    return NNlib.bias_act!(a.σ, W * xT, b)  # does σ.(W*x .+ b), with fast paths
-  end
+  xT = _match_eltype(a, x)  # fixes Float64 input, etc.
+  return NNlib.bias_act!(a.σ, a.weight * xT, a.bias)  # does σ.(W*x .+ b), with fast paths
 end
 
 function (a::Dense)(x::AbstractArray)
@@ -464,25 +460,21 @@ end
 Bilinear((in12, out)::Pair{<:Integer, <:Integer}, σ = identity; kw...) = Bilinear((in12, in12) => out, σ; kw...)
 
 function (a::Bilinear)(x::AbstractMatrix, y::AbstractMatrix)
-  _autocast_barrier() do T
-  # only fresh local names in here: assigning to captured `x`/`y` would box them
-  W, b, σ = _autocast_down(T, a.weight), _autocast_down(T, a.bias), a.σ
-  xT, yT = _autocast_down(T, x), _autocast_down(T, y)
+  W, b, σ = a.weight, a.bias, a.σ
 
   d_z, d_x, d_y = size(W)
-  d_x == size(xT,1) && d_y == size(yT,1) || throw(DimensionMismatch("number of rows in data must match W"))
-  size(xT,2) == size(yT,2) || throw(DimensionMismatch("Data inputs must agree on number of columns, got $(size(xT,2)) and $(size(yT,2))"))
+  d_x == size(x,1) && d_y == size(y,1) || throw(DimensionMismatch("number of rows in data must match W"))
+  size(x,2) == size(y,2) || throw(DimensionMismatch("Data inputs must agree on number of columns, got $(size(x,2)) and $(size(y,2))"))
 
   # @einsum Wy[o,i,s] := W[o,i,j] * y[j,s]
-  Wy = reshape(reshape(W, (:, d_y)) * yT, (d_z, d_x, :))
+  Wy = reshape(reshape(W, (:, d_y)) * y, (d_z, d_x, :))
 
   # @einsum Z[o,s] := Wy[o,i,s] * x[i,s]
-  Wyx = batched_mul(Wy, reshape(xT, (d_x, 1, :)))
+  Wyx = batched_mul(Wy, reshape(x, (d_x, 1, :)))
   Z = reshape(Wyx, (d_z, :))
 
   # @einsum out[o,s] := σ(Z[o,i] + b[o])
   NNlib.bias_act!(σ, Z, b)  # σ.(Z .+ b)
-  end
 end
 
 (a::Bilinear)(x::AbstractVecOrMat) = a(x, x)
@@ -782,8 +774,8 @@ Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(ini
 (m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
-(m::Embedding)(x::AbstractVector{Bool}) = _autocast_down(autocast_eltype(), m.weight) * x  # usually OneHotVector
-(m::Embedding)(x::AbstractMatrix{Bool}) = _autocast_down(autocast_eltype(), m.weight) * x  # usually OneHotMatrix
+(m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
+(m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
 (m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
 function Base.show(io::IO, m::Embedding)

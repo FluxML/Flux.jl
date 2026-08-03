@@ -192,15 +192,9 @@ end
 
 function (m::RNNCell)(x::AbstractVecOrMat, h::AbstractVecOrMat)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  _autocast_barrier() do T
-    # NOTE: assigning to captured arguments (`x`, `h`) inside this closure would box them,
-    # breaking both Zygote gradients and inference — only fresh local names below.
-    Wi, Wh, b = _autocast_down(T, m.Wi), _autocast_down(T, m.Wh), _autocast_down(T, m.bias)
-    xT, hT = _autocast_down(T, x), _autocast_down(T, h)
-    σ = NNlib.fast_act(m.σ, xT)
-    hnew = σ.(Wi * xT .+ Wh * hT .+ b)
-    return hnew, hnew
-  end
+  σ = NNlib.fast_act(m.σ, x)
+  h = σ.(m.Wi * x .+ m.Wh * h .+ m.bias)
+  return h, h
 end
 
 function Base.show(io::IO, m::RNNCell)
@@ -416,16 +410,12 @@ end
 
 function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   _size_check(m, x, 1 => size(m.Wi, 2))
-  _autocast_barrier() do T
-    # only fresh local names in here: assigning to captured `x`/`h`/`c` would box them
-    Wi, Wh, b = _autocast_down(T, m.Wi), _autocast_down(T, m.Wh), _autocast_down(T, m.bias)
-    xT, hT, cT = _autocast_down(T, x), _autocast_down(T, h), _autocast_down(T, c)
-    g = Wi * xT .+ Wh * hT .+ b
-    input, forget, cell, output = chunk(g, 4; dims = 1)
-    cnew = @. sigmoid_fast(forget) * cT + sigmoid_fast(input) * tanh_fast(cell)
-    hnew = @. sigmoid_fast(output) * tanh_fast(cnew)
-    return hnew, (hnew, cnew)
-  end
+  b = m.bias
+  g = m.Wi * x .+ m.Wh * h .+ b
+  input, forget, cell, output = chunk(g, 4; dims = 1)
+  c = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
+  h = @. sigmoid_fast(output) * tanh_fast(c)
+  return h, (h, c)
 end
 
 Base.show(io::IO, m::LSTMCell) =
@@ -623,23 +613,18 @@ end
 
 function (m::GRUCell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  _autocast_barrier() do T
-  # only fresh local names in here: assigning to captured `x`/`h` would box them
-  Wi, Wh, b = _autocast_down(T, m.Wi), _autocast_down(T, m.Wh), _autocast_down(T, m.b)
-  xT, hT = _autocast_down(T, x), _autocast_down(T, h)
-  gxs = chunk(Wi * xT, 3, dims = 1)
-  ghs = chunk(Wh * hT, 3, dims = 1)
-  if b isa AbstractArray
-    bs = chunk(b, 3, dims = 1)
+  gxs = chunk(m.Wi * x, 3, dims = 1)
+  ghs = chunk(m.Wh * h, 3, dims = 1)
+  if m.b isa AbstractArray
+    bs = chunk(m.b, 3, dims = 1)
   else # b == false
     bs = [false, false, false]
   end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
   h̃ = @. tanh_fast(gxs[3] + r * ghs[3] + bs[3])
-  hnew = @. (1 - z) * h̃ + z * hT
-  return hnew, hnew
-  end
+  h = @. (1 - z) * h̃ + z * h
+  return h, h
 end
 
 Base.show(io::IO, m::GRUCell) =
@@ -809,24 +794,18 @@ end
 
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  _autocast_barrier() do T
-  # only fresh local names in here: assigning to captured `x`/`h` would box them
-  Wi, Wh, b = _autocast_down(T, m.Wi), _autocast_down(T, m.Wh), _autocast_down(T, m.b)
-  Wh_h̃ = _autocast_down(T, m.Wh_h̃)
-  xT, hT = _autocast_down(T, x), _autocast_down(T, h)
-  gxs = chunk(Wi * xT, 3, dims = 1)
-  ghs = chunk(Wh * hT, 3, dims = 1)
-  if b isa AbstractArray
-    bs = chunk(b, 3, dims = 1)
-  else # b == false
+  gxs = chunk(m.Wi * x, 3, dims = 1)
+  ghs = chunk(m.Wh * h, 3, dims = 1)
+  if m.b isa AbstractArray
+    bs = chunk(m.b, 3, dims = 1)
+  else # m.b == false
     bs = [false, false, false]
   end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
-  h̃ = tanh_fast.(gxs[3] .+ (Wh_h̃ * (r .* hT)) .+ bs[3])
-  hnew = @. (1 - z) * h̃ + z * hT
-  return hnew, hnew
-  end
+  h̃ = tanh_fast.(gxs[3] .+ (m.Wh_h̃ * (r .* h)) .+ bs[3])
+  h = @. (1 - z) * h̃ + z * h
+  return h, h
 end
 
 Base.show(io::IO, m::GRUv3Cell) =

@@ -1,145 +1,130 @@
-# This testset MUST run before any `autocast` call in this file: it checks that until
-# the first use flips `Flux.autocast_active()`, the machinery is compiled out entirely
-# and layers infer their exact concrete return types.
-@testset "autocast is compiled out before first use" begin
-    @test Flux.autocast_active() == false
+@testset "inference stays tight" begin
+    # Plain layers are unaffected — exact concrete return type.
     @test @inferred(Dense(3 => 4, relu)(randn(Float32, 3, 8))) isa Matrix{Float32}
     @test @inferred(Conv((3,), 2 => 4, relu)(randn(Float32, 10, 2, 5))) isa Array{Float32, 3}
     @test @inferred(Chain(Dense(3 => 4, relu), Dense(4 => 2))(randn(Float32, 3, 8))) isa Matrix{Float32}
+
+    # Wrapped layers also infer their exact half-precision return type (the whole point of
+    # the wrapper design over a runtime scope).
+    for T in (Float16, BFloat16)
+        @test @inferred(autocast(Dense(3 => 4, relu), T)(randn(Float32, 3, 8))) isa Matrix{T}
+        @test @inferred(autocast(Conv((3,), 2 => 4, relu), T)(randn(Float32, 10, 2, 5))) isa Array{T, 3}
+        # a wrapped norm layer computes in Float32
+        xh = T == Float16 ? f16(randn(Float32, 4, 8)) : bf16(randn(Float32, 4, 8))
+        @test @inferred(autocast(LayerNorm(4), T)(xh)) isa Matrix{Float32}
+    end
 end
 
-@testset "autocast eltype flow ($T)" for T in (Float16, BFloat16)
-    x2 = randn(Float32, 3, 8)                 # for Dense-like layers
-    x4 = randn(Float32, 8, 8, 2, 3)           # for conv layers
-    xseq = randn(Float32, 3, 7, 2)            # for recurrent layers
+@testset "eltype flow ($T)" for T in (Float16, BFloat16)
+    x2 = randn(Float32, 3, 8)
+    x4 = randn(Float32, 8, 8, 2, 3)
+    xseq = randn(Float32, 3, 7, 2)
 
-    @testset "cast-down layers" begin
-        for (l, x) in (
-            (Dense(3 => 4, relu), x2),
-            (Flux.Bilinear((3, 3) => 4), x2),
-            (Conv((3, 3), 2 => 4, relu), x4),
-            (ConvTranspose((3, 3), 2 => 4), x4),
-            (CrossCor((3, 3), 2 => 4), x4),
-            (RNN(3 => 5), xseq),
-            (LSTM(3 => 5), xseq),
-            (GRU(3 => 5), xseq),
-            (GRUv3(3 => 5), xseq),
-        )
-            y = autocast(() -> l(x), T)
-            @test eltype(y) == T
-            # parameters are untouched
-            @test all(p -> eltype(p) == Float32, Flux.trainables(l))
+    @testset "down-cast layers → $T" begin
+        for (l, x) in ((Dense(3 => 4, relu), x2),
+                       (Flux.Bilinear((3, 3) => 4), x2),
+                       (Conv((3, 3), 2 => 4, relu), x4),
+                       (ConvTranspose((3, 3), 2 => 4), x4),
+                       (CrossCor((3, 3), 2 => 4), x4),
+                       (RNN(3 => 5), xseq),
+                       (LSTM(3 => 5), xseq),
+                       (GRU(3 => 5), xseq),
+                       (GRUv3(3 => 5), xseq))
+            @test eltype(autocast(l, T)(x)) == T
+            @test all(p -> eltype(p) == Float32, Flux.trainables(l))  # params untouched
         end
-
+        # MultiHeadAttention: its projections are wrapped, so attention runs in T
         mha = MultiHeadAttention(16)
-        xmha = randn(Float32, 16, 5, 2)
-        y, α = autocast(() -> mha(xmha), T)
+        y, α = autocast(mha, T)(randn(Float32, 16, 5, 2))
         @test eltype(y) == T
+    end
 
+    @testset "norm layers → Float32" begin
+        for (l, x) in ((BatchNorm(3), x2),
+                       (LayerNorm(3), x2),
+                       (InstanceNorm(2; affine=true), x4),
+                       (GroupNorm(2, 2), x4))
+            @test eltype(autocast(l, T)(x)) == Float32
+        end
+    end
+
+    @testset "Embedding is not wrapped (kept full precision)" begin
         e = Embedding(5 => 4)
-        @test eltype(autocast(() -> e(Flux.onehotbatch([1, 3], 1:5)), T)) == T
-        @test eltype(autocast(() -> e([1, 3]), T)) == Float32  # gather path stays Float32
-    end
-
-    @testset "normalization computes in Float32" begin
-        for (l, x) in (
-            (BatchNorm(3), x2),
-            (LayerNorm(3), x2),
-            (InstanceNorm(2; affine=true), x4),
-            (GroupNorm(2, 2), x4),
-        )
-            y = autocast(() -> l(x), T)
-            @test eltype(y) == Float32
-        end
-        # half-precision input to a norm layer is upcast inside the scope
-        xh = T == Float16 ? f16(x2) : bf16(x2)
-        @test eltype(autocast(() -> LayerNorm(3)(xh), T)) == Float32
-    end
-
-    @testset "losses upcast to Float32" begin
-        half = T == Float16 ? f16 : bf16
-        ŷ, y = half(rand(Float32, 4, 8)), half(rand(Float32, 4, 8))
-        for loss in (Flux.mse, Flux.mae, Flux.crossentropy, Flux.logitcrossentropy,
-                     Flux.huber_loss)
-            @test autocast(() -> loss(ŷ, y), T) isa Float32
-            @test loss(ŷ, y) isa T  # unchanged outside the scope
-        end
-    end
-
-    @testset "gradients are Float32 and close to the fp32 reference" begin
-        model = Chain(Dense(3 => 4, relu), BatchNorm(4), Dense(4 => 2))
-        ytarget = randn(Float32, 2, 8)
-        loss(m) = Flux.mse(m(x2), ytarget)
-
-        val, grad = Flux.withgradient(loss, model; autocast=T)
-        @test val isa Float32
-        gflat = filter(g -> g isa AbstractArray, Functors.fleaves(grad[1]))
-        @test !isempty(gflat)
-        @test all(g -> eltype(g) == Float32, gflat)
-        @test all(g -> all(isfinite, g), gflat)
-
-        val32, grad32 = Flux.withgradient(loss, model)
-        rtol = T == Float16 ? 0.03 : 0.15
-        @test val ≈ val32 rtol=rtol
-        @test grad[1].layers[1].weight ≈ grad32[1].layers[1].weight rtol=rtol atol=0.05
-
-        # raw reductions (not Flux losses) stay in half precision, like PyTorch
-        vraw, _ = Flux.withgradient(m -> sum(abs2, m(x2)), model; autocast=T)
-        @test vraw isa T
-    end
-
-    @testset "do-block and keyword forms agree" begin
-        model = Chain(Dense(3 => 4, tanh), Dense(4 => 2))
-        loss(m) = Flux.mse(m(x2), zeros(Float32, 2, 8))
-        g1 = autocast(() -> Flux.gradient(loss, model), T)
-        g2 = Flux.gradient(loss, model; autocast=T)
-        @test g1[1].layers[1].weight == g2[1].layers[1].weight
-        wg = Flux.withgradient(loss, AutoZygote(), model; autocast=T)
-        @test wg.grad[1].layers[1].weight == g2[1].layers[1].weight
-    end
-
-    @testset "train! with autocast" begin
-        model = Chain(Dense(3 => 4, relu), Dense(4 => 2))
-        w0 = copy(model[1].weight)
-        opt = Flux.setup(Adam(1e-3), model)
-        data = [(randn(Float32, 3, 8), randn(Float32, 2, 8)) for _ in 1:3]
-        Flux.train!((m, x, y) -> Flux.mse(m(x), y), model, data, opt; autocast=T)
-        @test eltype(model[1].weight) == Float32
-        @test model[1].weight != w0
+        @test Flux.autocast_mode(e) == :none
+        me = autocast(e, T)
+        @test eltype(me(Flux.onehotbatch([1, 3], 1:5))) == Float32
+        @test eltype(me([1, 3])) == Float32
     end
 end
 
-@testset "autocast is a no-op outside the scope" begin
-    model = Chain(Dense(3 => 4, relu), BatchNorm(4), Dense(4 => 2))
+@testset "losses always accumulate in Float32" begin
+    for cast in (f16, bf16)
+        ŷ, y = cast(rand(Float32, 4, 8)), cast(rand(Float32, 4, 8))
+        for loss in (Flux.mse, Flux.mae, Flux.crossentropy, Flux.logitcrossentropy, Flux.huber_loss)
+            @test loss(ŷ, y) isa Float32
+        end
+    end
+    # Float32 inputs are unaffected
+    @test Flux.mse(rand(Float32, 4), rand(Float32, 4)) isa Float32
+end
+
+@testset "gradients via the autocast keyword ($T)" for T in (Float16, BFloat16)
     x = randn(Float32, 3, 8)
-    y0 = model(x)
-    autocast(() -> model(x), Float16)  # entering and leaving a scope changes nothing
-    @test model(x) == y0
-    @test Flux.mse(y0, zero(y0)) isa Float32
+    ytarget = randn(Float32, 2, 8)
+    model = Chain(Dense(3 => 4, relu), BatchNorm(4), Dense(4 => 2))
+    loss(m) = Flux.mse(m(x), ytarget)
+
+    val, grad = Flux.withgradient(loss, model; autocast=T)
+    @test val isa Float32
+    # grad tree matches the *unwrapped* model, so the usual opt_state works
+    g32 = Flux.gradient(loss, model)[1]
+    @test typeof(grad[1].layers[1]) == typeof(g32.layers[1])
+    gflat = filter(g -> g isa AbstractArray, Functors.fleaves(grad[1]))
+    @test !isempty(gflat)
+    @test all(g -> eltype(g) == Float32, gflat)
+    @test all(g -> all(isfinite, g), gflat)
+    rtol = T == Float16 ? 0.03 : 0.15
+    @test grad[1].layers[1].weight ≈ g32.layers[1].weight rtol=rtol atol=0.05
+
+    # keyword form ≡ explicitly wrapping the model. `Chain` itself is not wrapped (its
+    # layers are), so the grad of the wrapped model nests as layers → AutocastDown → layer.
+    g_explicit = Flux.gradient(m -> loss(m), autocast(model, T))[1]
+    @test g_explicit.layers[1].layer.weight ≈ grad[1].layers[1].weight rtol=1e-5
 end
 
-@testset "forward pass infers as a small union after first use" begin
-    # The earlier testsets flipped `autocast_active()`. From then on the inferred return
-    # is at worst the 3-type union over the Float32/Float16/BFloat16 paths (which the
-    # compiler union-splits) — not `Any` — and the union must not widen through a Chain.
-    @test Flux.autocast_active() == true
-    MatUnion3 = Union{Matrix{Float32}, Matrix{Float16}, Matrix{BFloat16}}
-    @test Base.promote_op(Dense(3 => 4, relu), Matrix{Float32}) <: MatUnion3
-    @test Base.promote_op(Conv((3,), 2 => 4, relu), Array{Float32, 3}) <:
-        Union{Array{Float32, 3}, Array{Float16, 3}, Array{BFloat16, 3}}
-    @test Base.promote_op(Chain(Dense(3 => 4, relu), Dense(4 => 2)), Matrix{Float32}) <: MatUnion3
+@testset "train! with autocast" begin
+    model = Chain(Dense(3 => 4, relu), BatchNorm(4), Dense(4 => 2))
+    w0 = copy(model[1].weight)
+    opt = Flux.setup(Adam(1e-3), model)
+    data = [(randn(Float32, 3, 8), randn(Float32, 2, 8)) for _ in 1:3]
+    Flux.train!((m, x, y) -> Flux.mse(m(x), y), model, data, opt; autocast=BFloat16)
+    @test eltype(model[1].weight) == Float32
+    @test model[1].weight != w0
 end
 
-@testset "autocast argument checking" begin
-    @test_throws ArgumentError autocast(() -> 1, Float32)
-    @test_throws ArgumentError autocast(() -> 1, Float64)
-    @test_throws ArgumentError autocast(() -> 1, Int)
+@testset "argument checking" begin
+    @test_throws ArgumentError autocast(Dense(2 => 2), Float32)
+    @test_throws ArgumentError autocast(Dense(2 => 2), Float64)
+    @test_throws ArgumentError autocast(Dense(2 => 2), Int)
 end
 
-@testset "outputsize under autocast" begin
-    model = Chain(Dense(3 => 4), Conv((3, 3), 1 => 2))
-    m2 = Chain(Dense(3 => 7), Dense(7 => 2))
-    @test autocast(() -> outputsize(m2, (3, 5)), Float16) == (2, 5)
+@testset "outputsize through a wrapped model" begin
+    m = autocast(Chain(Dense(3 => 7), Dense(7 => 2)), Float16)
+    @test outputsize(m, (3, 5)) == (2, 5)
+end
+
+@testset "custom layer opts in via autocast_mode" begin
+    struct MyLinear{W}; weight::W; end
+    Flux.@layer MyLinear
+    (l::MyLinear)(x) = l.weight * x
+    Flux.autocast_mode(::MyLinear) = :down
+
+    l = MyLinear(randn(Float32, 4, 3))
+    x = randn(Float32, 3, 8)
+    @test eltype(autocast(l, Float16)(x)) == Float16
+    @test eltype(l.weight) == Float32
+    g = Flux.gradient(m -> sum(abs2, m(x)), l; autocast=Float16)[1]
+    @test eltype(g.weight) == Float32
 end
 
 @testset "autocast with Mooncake" begin

@@ -7,7 +7,7 @@ using ChainRulesCore
 # using ..Flux: ofeltype, epseltype
 ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
-using ..Flux: _autocast_up
+using ..Flux: _upcast_half
 using NNlib: logsoftmax, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
 import Base.Broadcast: broadcasted
 

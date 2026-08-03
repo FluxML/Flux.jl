@@ -4,12 +4,11 @@
 
     @testset "eltype flow" begin
         model = Chain(Dense(3 => 4, relu), BatchNorm(4), Dense(4 => 2)) |> gpu
-        y = autocast(() -> model(x2), T)
+        y = autocast(model, T)(x2)
         @test y isa CuArray{T}
 
         c = Chain(Conv((3, 3), 2 => 4, relu), BatchNorm(4), MaxPool((2, 2))) |> gpu
-        yc = autocast(() -> c(x4), T)
-        @test eltype(yc) == T
+        @test eltype(autocast(c, T)(x4)) == T
     end
 
     @testset "training step" begin
@@ -23,13 +22,11 @@
         @test gW isa CuArray{Float32}
         @test all(isfinite, Array(gW))
 
-        # close to the full-precision gradient
         val32, grad32 = Flux.withgradient(loss, model)
         rtol = T == Float16 ? 0.03 : 0.15
         @test val ≈ val32 rtol=rtol
         @test Array(gW) ≈ Array(grad32[1].layers[1].weight) rtol=rtol atol=0.05
 
-        # parameters stay Float32 through a train! step
         opt = Flux.setup(Adam(1e-3), model)
         data = [(CUDA.randn(Float32, 3, 8), CUDA.randn(Float32, 2, 8)) for _ in 1:3]
         Flux.train!((m, x, y) -> Flux.mse(m(x), y), model, data, opt; autocast=T)

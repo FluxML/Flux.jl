@@ -1,86 +1,94 @@
 
-# The scope stores the concrete `Type{Float16}`/`Type{BFloat16}` (or `nothing`) so that a
-# read is a small concrete union: dispatching the per-layer barrier on it specializes each
-# branch on a single precision, keeping the forward pass out of `Any`-typed territory.
-const AUTOCAST_ELTYPE = ScopedValue{Union{Nothing, Type{Float16}, Type{BFloat16}}}(nothing)
+# Mixed precision via layer wrappers (PyTorch `torch.autocast` style, at layer granularity).
+#
+# `autocast(model, T)` walks the model and wraps each matmul/convolution-heavy layer in an
+# `AutocastDown{T}` (casts its parameters and inputs to the half-precision type `T` before
+# computing) and each normalization layer in an `AutocastUp` (casts its input up to `Float32`).
+# The wrapped layers run the *original* layer code, so the model's parameters are never
+# modified — they act as `Float32` master weights, and gradients come back in `Float32`.
+#
+# Because the wrapping is a plain (differentiable) functor transform, running it inside a
+# gradient closure routes gradients back to the original model's structure, and the wrapped
+# forward passes keep their exact inferred element type (no runtime scope, no type widening).
 
-# Autocast is compiled out entirely until its first use. `autocast_active()` is a
-# constant-`false` method that the compiler folds away, so the half-precision branches
-# below are dead-stripped from every layer's forward pass: outside of autocast, layers
-# infer their exact concrete return type, pay zero overhead, and contain no half-precision
-# types in their IR. The first `autocast` call in a session redefines the method to return
-# `true` — a one-time world-age flip that invalidates and recompiles the affected layer
-# code with the scope checks included (from then on forward passes infer as the small
-# union of the three precision paths).
-autocast_active() = false
+# --- per-layer-type policy ---------------------------------------------------------------
 
-const AUTOCAST_FLIP_LOCK = ReentrantLock()
+"""
+    Flux.autocast_mode(layer) -> Symbol
 
-function _ensure_autocast_active()
-    autocast_active() && return nothing
-    lock(AUTOCAST_FLIP_LOCK) do
-        # re-check under the lock in the latest world: another task may have flipped,
-        # and this specialization was compiled before the flip so it folds `false`
-        if !Base.invokelatest(autocast_active)
-            @eval autocast_active() = true
-        end
-    end
-    return nothing
+Trait controlling how [`autocast`](@ref) treats a layer. Returns `:down` for layers whose
+parameters and inputs should be cast to the half-precision type (matmul/convolution family),
+`:up` for layers that should compute in `Float32` (normalization), or `:none` (default) for
+layers that `autocast` recurses into rather than wrapping.
+
+Overload it to make a custom layer autocast-aware, e.g.
+`Flux.autocast_mode(::MyLinear) = :down`.
+"""
+autocast_mode(x) = :none
+
+# --- wrappers ----------------------------------------------------------------------------
+
+"""
+    AutocastDown{T}(layer)
+
+Wrapper produced by [`autocast`](@ref) around a compute-heavy layer: on each call it casts
+the layer's floating-point parameters and inputs to the half-precision type `T` before
+running `layer`. Not usually constructed directly.
+"""
+struct AutocastDown{T, L}
+    layer::L
+end
+AutocastDown{T}(layer::L) where {T, L} = AutocastDown{T, L}(layer)
+
+"""
+    AutocastUp(layer)
+
+Wrapper produced by [`autocast`](@ref) around a numerically sensitive layer (normalization):
+on each call it casts half-precision inputs up to `Float32` so the layer computes in full
+precision. Not usually constructed directly.
+"""
+struct AutocastUp{L}
+    layer::L
 end
 
-"""
-    autocast_eltype()
+@layer :expand AutocastDown
+@layer :expand AutocastUp
 
-Return the floating point type of the innermost enclosing [`autocast`](@ref) scope,
-or `nothing` when called outside any `autocast` scope.
+# Recurrent cells reach their initial state through `initialstates`; forward it so a wrapped
+# cell can still be dropped into `RNN`/`LSTM`/`GRU`/`Recurrence`.
+initialstates(w::AutocastDown) = initialstates(w.layer)
+initialstates(w::AutocastUp) = initialstates(w.layer)
 
-Custom layers can use this, together with the (internal) cast helpers used by the
-built-in layers, to opt into mixed precision:
-
-```julia
-function (m::MyLayer)(x)
-    T = Flux.autocast_eltype()
-    W = Flux._autocast_down(T, m.weight)
-    xT = Flux._autocast_down(T, x)
-    return W * xT
+function (w::AutocastDown{T})(xs...) where T
+    fields, re = Functors.functor(w.layer)
+    layer_T = re(map(f -> _autocast_down(T, f), fields))
+    return layer_T(map(x -> _autocast_down(T, x), xs)...)
 end
-```
-"""
-autocast_eltype() = AUTOCAST_ELTYPE[]
 
-ChainRulesCore.@non_differentiable autocast_eltype()
-EnzymeCore.EnzymeRules.inactive(::typeof(autocast_eltype), args...) = true
+(w::AutocastUp)(xs...) = w.layer(map(_autocast_up, xs)...)
+
+# --- the transform -----------------------------------------------------------------------
 
 """
-    autocast(f, T::Type)
+    autocast(model, T::Type)
 
-Run `f()` with mixed precision: while inside `f`, the forward pass of matmul- and
-convolution-heavy Flux layers (`Dense`, `Conv`, `ConvTranspose`, `CrossCor`, `Bilinear`,
-`Embedding` on onehot input, `MultiHeadAttention`, and the recurrent cells) casts
-parameters and inputs to the half-precision type `T` (`Float16` or `BFloat16`) before
-computing, while numerically sensitive operations (the normalization layers and the
-loss functions) compute in `Float32`.
+Wrap `model` for mixed-precision execution with the half-precision type `T` (`Float16` or
+`BFloat16`), returning a new model that shares `model`'s parameter arrays. In the wrapped
+model, matmul- and convolution-heavy layers (`Dense`, `Conv`, `ConvTranspose`, `CrossCor`,
+`Bilinear`, `Embedding`, `MultiHeadAttention`'s projections, and the recurrent cells) cast
+their parameters and inputs to `T` before computing, while the normalization layers compute
+in `Float32`.
 
-The model's parameters are not modified: they act as `Float32` "master weights",
-and the gradients returned by [`Flux.gradient`](@ref) and [`Flux.withgradient`](@ref)
-are accumulated back in `Float32`, so the usual optimiser setup works unchanged.
-This mirrors PyTorch's `torch.autocast` recipe for mixed-precision training,
-at layer rather than operator granularity.
+The parameters themselves stay `Float32` ("master weights"): the wrappers cast on the fly,
+so `model`'s arrays are untouched and gradients are accumulated back in `Float32`. This
+mirrors PyTorch's `torch.autocast`, at layer rather than operator granularity, and — unlike
+casting the parameters with [`f16`](@ref)/[`bf16`](@ref) — keeps forward passes type-stable.
 
-Usually used through the `autocast` keyword of [`Flux.gradient`](@ref),
-[`Flux.withgradient`](@ref) and [`Flux.train!`](@ref) rather than directly.
+Usually applied through the `autocast` keyword of [`Flux.gradient`](@ref),
+[`Flux.withgradient`](@ref) and [`Flux.train!`](@ref) rather than directly; use the
+two-argument form for a wrapped model to run at inference time.
 
-Note that with `T = Float16` gradients can underflow; robust `Float16` training
-typically also needs loss scaling, which Flux does not provide yet.
-`BFloat16` has the same exponent range as `Float32` and does not need it.
-
-Autocast is compiled out until its first use: code that never calls `autocast` pays no
-overhead, and layer forward passes keep their exact inferred return types. The first
-`autocast` call in a session enables the machinery globally, which triggers a one-time
-recompilation of the affected layer code (from then on, forward passes infer as the
-small union of the `Float32`/`Float16`/`BFloat16` paths).
-
-See also [`f16`](@ref) and [`bf16`](@ref) for statically converting a model instead.
+Custom layers can opt in via [`Flux.autocast_mode`](@ref).
 
 # Examples
 
@@ -89,11 +97,9 @@ julia> model = Chain(Dense(3 => 4, relu), BatchNorm(4), Dense(4 => 2));
 
 julia> x = randn(Float32, 3, 8);
 
-julia> y = autocast(BFloat16) do
-           model(x)
-       end;
+julia> mac = autocast(model, BFloat16);
 
-julia> eltype(y)  # the final Dense ran in BFloat16
+julia> eltype(mac(x))  # the final Dense ran in BFloat16
 BFloat16
 
 julia> eltype(model[1].weight)  # parameters are untouched
@@ -105,41 +111,44 @@ julia> eltype(grad.layers[1].weight)  # gradients are Float32, like the paramete
 Float32
 ```
 """
-function autocast(f, ::Type{T}) where {T<:Union{Float16, BFloat16}}
-    _ensure_autocast_active()
-    # `invokelatest`: this call may sit in a specialization compiled before the flip
-    return Base.invokelatest(with, f, AUTOCAST_ELTYPE => T)
-end
-
-autocast(f, ::Type{T}) where T =
-    throw(ArgumentError("autocast supports Float16 and BFloat16, got $T"))
-
-_with_autocast(g, ::Nothing) = g()
-_with_autocast(g, ::Type{T}) where T = autocast(g, T)
-
-# Run `f(autocast_eltype())` as a dispatch barrier: the scope value is a concrete type (or
-# `nothing`), so each branch of the small union specializes `f` on a single precision. This
-# collapses what would otherwise be `Union`-of-`Union` inference (e.g. `W * x` with both cast)
-# into a per-precision concrete computation. Until the first `autocast` call flips
-# `autocast_active()`, the whole scope consultation folds away to `f(nothing)`.
-@inline function _autocast_barrier(f::F) where {F}
-    if autocast_active()
-        return f(autocast_eltype())
-    else
-        return f(nothing)
+function autocast(model, ::Type{T}) where {T<:Union{Float16, BFloat16}}
+    return fmap(model; exclude = _autocast_isleaf) do x
+        mode = autocast_mode(x)
+        mode === :down ? AutocastDown{T}(x) :
+        mode === :up   ? AutocastUp(x)       : x
     end
 end
 
-# Cast to the autocast eltype, for matmul/conv-family layers. `nothing` (no active scope) and
-# non-float arrays (onehot/integer inputs, `false` bias, `Nil`, ...) pass through unchanged.
-# BFloat16 goes through `_to_bf16` rather than a native `convert`/broadcast, which can hang
-# LLVM codegen on some platforms (JuliaMath/BFloat16s.jl#107).
-_autocast_down(::Nothing, x) = x
+autocast(model, ::Type{T}) where T =
+    throw(ArgumentError("autocast supports Float16 and BFloat16, got $T"))
+
+_autocast_isleaf(x) = autocast_mode(x) !== :none || Functors.isleaf(x)
+
+# Thread `autocast=T` through `gradient`/`withgradient`/`train!`: return a closure that wraps
+# every argument (a no-op on data arrays and other non-layer args) and calls `f`. Applied
+# INSIDE the differentiated region, so the pullback of the wrapper construction maps gradients
+# back to the original model's structure. `nothing` returns `f` unchanged (zero overhead).
+_autocast_closure(f, ::Nothing) = f
+_autocast_closure(f::F, ::Type{T}) where {F, T} = (args...) -> f(_map_autocast(T, args)...)
+
+# Recursive tuple construction rather than `map`: Zygote differentiates this cleanly, whereas
+# its adjoint for `map` over a heterogeneous tuple mishandles the tangent.
+_map_autocast(::Type, ::Tuple{}) = ()
+_map_autocast(::Type{T}, args::Tuple) where T =
+    (autocast(first(args), T), _map_autocast(T, Base.tail(args))...)
+
+# --- cast helpers ------------------------------------------------------------------------
+
+# Down-cast for the wrapped compute layers. Non-float leaves (a `false` bias, integer/onehot
+# inputs, `Nil`, activation functions, ...) pass through; tuples (e.g. a recurrent `(h, c)`
+# state) are cast element-wise. BFloat16 goes through `_to_bf16` rather than a native
+# `convert`/broadcast, which can hang LLVM codegen on some platforms (JuliaMath/BFloat16s.jl#107).
 _autocast_down(::Type{Float16}, x::AbstractArray{Float16}) = x
 _autocast_down(::Type{Float16}, x::AbstractArray{<:AbstractFloat}) = Float16.(x)
 _autocast_down(::Type{BFloat16}, x::AbstractArray{BFloat16}) = x
 _autocast_down(::Type{BFloat16}, x::AbstractArray{<:AbstractFloat}) = _to_bf16(x)
-_autocast_down(::Type{<:Union{Float16, BFloat16}}, x) = x
+_autocast_down(::Type{T}, t::Tuple) where T = map(x -> _autocast_down(T, x), t)
+_autocast_down(::Type, x) = x
 
 _autocast_down_pullback(proj) = dx -> (NoTangent(), NoTangent(), proj(unthunk(dx)))
 function ChainRulesCore.rrule(::typeof(_autocast_down), ::Type{T},
@@ -147,28 +156,49 @@ function ChainRulesCore.rrule(::typeof(_autocast_down), ::Type{T},
     proj = ChainRulesCore.ProjectTo(x)  # widens the cotangent back to eltype(x)
     return _autocast_down(T, x), _autocast_down_pullback(proj)
 end
-function ChainRulesCore.rrule(::typeof(_autocast_down), ::Nothing, x)
-    return x, dx -> (NoTangent(), NoTangent(), dx)
-end
 
-# Cast half-precision arrays up to Float32 inside an autocast scope, for
-# numerically sensitive operations (normalization layers, losses). Outside any
-# scope this is a no-op, so statically converted `f16`/`bf16` models are unaffected.
-_autocast_up(x) = autocast_active() ? _autocast_up_scoped(x) : x
-_autocast_up_scoped(x) = autocast_eltype() === nothing ? x : _cast_f32(x)
+# Up-cast half-precision arrays to Float32 for the wrapped normalization layers (and, always,
+# for the loss functions — see `_upcast_half`). Widening, so CPU-safe for BFloat16.
+_autocast_up(x::AbstractArray{<:Union{Float16, BFloat16}}) = convert(AbstractArray{Float32}, x)
+_autocast_up(x) = x
 
-_cast_f32(x::AbstractArray{<:Union{Float16, BFloat16}}) = convert(AbstractArray{Float32}, x)
-_cast_f32(x) = x
-
-function ChainRulesCore.rrule(::typeof(_cast_f32), x::AbstractArray{Float16})
+function ChainRulesCore.rrule(::typeof(_autocast_up), x::AbstractArray{Float16})
     proj = ChainRulesCore.ProjectTo(x)
-    cast_f32_pullback(dx) = (NoTangent(), proj(unthunk(dx)))
-    return _cast_f32(x), cast_f32_pullback
+    return _autocast_up(x), dx -> (NoTangent(), proj(unthunk(dx)))
+end
+# For BFloat16 the cotangent must be truncated through `_to_bf16`, not `ProjectTo`, again
+# because of JuliaMath/BFloat16s.jl#107.
+function ChainRulesCore.rrule(::typeof(_autocast_up), x::AbstractArray{BFloat16})
+    return _autocast_up(x), dx -> (NoTangent(), _to_bf16(unthunk(dx)))
 end
 
-# For BFloat16 the cotangent must be truncated through `_to_bf16`, not ProjectTo,
-# again because of JuliaMath/BFloat16s.jl#107.
-function ChainRulesCore.rrule(::typeof(_cast_f32), x::AbstractArray{BFloat16})
-    cast_f32_bf16_pullback(dx) = (NoTangent(), _to_bf16(unthunk(dx)))
-    return _cast_f32(x), cast_f32_bf16_pullback
-end
+# Unconditional Float32 accumulation for loss functions given half-precision inputs. Unlike
+# the norm up-cast this is not gated on a wrapper: a loss is called by the user on the model
+# output, so there is no wrapper to carry the policy. Integer labels and onehot targets pass
+# through untouched.
+_upcast_half(x) = _autocast_up(x)
+
+# --- per-layer policy for the built-in layers --------------------------------------------
+
+# Matmul/convolution-heavy layers: cast parameters + inputs to the half-precision type.
+autocast_mode(::Dense) = :down
+autocast_mode(::Bilinear) = :down
+autocast_mode(::Conv) = :down
+autocast_mode(::ConvTranspose) = :down
+autocast_mode(::CrossCor) = :down
+autocast_mode(::RNNCell) = :down
+autocast_mode(::LSTMCell) = :down
+autocast_mode(::GRUCell) = :down
+autocast_mode(::GRUv3Cell) = :down
+
+# Normalization: compute in Float32.
+autocast_mode(::BatchNorm) = :up
+autocast_mode(::InstanceNorm) = :up
+autocast_mode(::GroupNorm) = :up
+autocast_mode(::LayerNorm) = :up
+
+# `MultiHeadAttention` is left to recurse: its `q_proj`/`k_proj`/`v_proj`/`out_proj` are
+# `Dense` layers that get wrapped individually, so the attention (and its softmax) runs in
+# the half-precision type. `Embedding` is deliberately NOT wrapped: casting the (often large)
+# embedding table on every forward would be expensive, and PyTorch keeps embeddings in full
+# precision under autocast — downstream wrapped layers cast the looked-up vectors instead.

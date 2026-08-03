@@ -32,7 +32,7 @@ See the [Mixed Precision](@ref) guide page.
 
 ```@docs
 Flux.autocast
-Flux.autocast_eltype
+Flux.autocast_mode
 ```
 
 `train!` uses [`@progress`](https://github.com/JuliaLogging/ProgressLogging.jl) which should show a progress bar in VSCode automatically.

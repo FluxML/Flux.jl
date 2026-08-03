@@ -24,7 +24,6 @@ using Random: default_rng
 using Zygote, ChainRulesCore
 using Zygote: @adjoint, pullback
 using EnzymeCore: EnzymeCore
-using ScopedValues: ScopedValue, with
 
 @reexport using ADTypes # AutoZygote, AutoMooncake, etc...
 using ADTypes: AbstractADType
@@ -60,7 +59,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   Bilinear, Scale,
   # utils
   outputsize, state, create_bias, @layer, initialstates, normalise, loadmodel!,
-  autocast_eltype,
+  autocast_mode,
   activations, modules, flatten, rng_from_array, nfan,
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,
@@ -102,9 +101,6 @@ export Chain, Dense, Embedding, EmbeddingBag,
   remove_weight_norms,
 ))
 
-include("autocast.jl")
-export autocast
-
 include("gradient.jl")
 export gradient, withgradient
 
@@ -125,6 +121,9 @@ include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
 include("layers/attention.jl")
+
+include("autocast.jl")
+export autocast
 
 include("loading.jl")
 

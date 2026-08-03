@@ -58,7 +58,7 @@ function gradient(f, adtype::AbstractADType, args...; kws...)
 end
 
 gradient(f, adtype::AutoZygote, args...; autocast::Union{Nothing,Type}=nothing) =
-    _with_autocast(() -> Zygote.gradient(f, args...), autocast)
+    Zygote.gradient(_autocast_closure(f, autocast), args...)
 
 # Default gradient using Zygote
 function gradient(f, args...; zero::Bool=true, autocast::Union{Nothing,Type}=nothing)
@@ -74,7 +74,7 @@ function gradient(f, args...; zero::Bool=true, autocast::Union{Nothing,Type}=not
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
-    return _with_autocast(() -> Zygote.gradient(f, args...), autocast)
+    return Zygote.gradient(_autocast_closure(f, autocast), args...)
 end
 
 # Without any Duplicated, check for no stray Enzyme types before calling Zygote
@@ -232,12 +232,12 @@ function withgradient(f, args...; zero::Bool=true, autocast::Union{Nothing,Type}
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
-    return _with_autocast(() -> Zygote.withgradient(f, args...), autocast)
+    return Zygote.withgradient(_autocast_closure(f, autocast), args...)
 end
 
 ## Zygote version, supporting aux output too.
 function withgradient(f::F, adtype::AutoZygote, x::Vararg{Any,N}; autocast::Union{Nothing,Type}=nothing) where {F,N}
-    return _with_autocast(() -> Zygote.withgradient(f, x...), autocast)
+    return Zygote.withgradient(_autocast_closure(f, autocast), x...)
 end
 
 """
