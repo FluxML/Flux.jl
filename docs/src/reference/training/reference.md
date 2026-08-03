@@ -24,6 +24,17 @@ Optimisers.update!
 Optimisers.setup
 ```
 
+## Mixed Precision
+
+`train!`, [`gradient`](@ref Flux.gradient) and [`withgradient`](@ref Flux.withgradient)
+accept an `autocast` keyword to compute gradients under mixed precision.
+See the [Mixed Precision](@ref) guide page.
+
+```@docs
+Flux.autocast
+Flux.autocast_eltype
+```
+
 `train!` uses [`@progress`](https://github.com/JuliaLogging/ProgressLogging.jl) which should show a progress bar in VSCode automatically.
 To see one in a terminal, you will need to install [TerminalLoggers.jl](https://github.com/JuliaLogging/TerminalLoggers.jl)
 and follow its setup instructions.

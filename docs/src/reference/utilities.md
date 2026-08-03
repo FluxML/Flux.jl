@@ -68,4 +68,6 @@ Flux.f64
 Flux.f32
 Flux.f16
 Flux.bf16
+Flux.f16mix
+Flux.bf16mix
 ```

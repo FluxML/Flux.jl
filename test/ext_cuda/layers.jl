@@ -305,14 +305,15 @@ end
   @test eltype(gm2(gx)) == BFloat16
   @test Float32.(gm2(gx)) ≈ f32(gm2)(f32(gx))  rtol=0.1
 
-  # BatchNorm, InstanceNorm and GroupNorm are converted in mixed precision: statistics
-  # and affine parameters stay Float32 while the data flows in bf16, so they dispatch to
-  # NNlib's (cuDNN) half-precision kernels.
+  # Under `bf16mix`, BatchNorm, InstanceNorm and GroupNorm are converted in mixed
+  # precision: statistics and affine parameters stay Float32 while the data flows in
+  # bf16, so they dispatch to NNlib's (cuDNN) half-precision kernels. (A plain `bf16`
+  # full cast of these layers is rejected by those kernels.)
   gx4 = gpu(bf16(randn(Float32, 4, 4, 3, 2)))
   @testset "$(nameof(typeof(l)))" for l in (BatchNorm(3),
                                             InstanceNorm(3; affine=true, track_stats=true),
                                             GroupNorm(3, 3))
-    gm = bf16(l) |> gpu
+    gm = bf16mix(l) |> gpu
     @test eltype(gm.γ) == eltype(gm.β) == Float32          # affine params kept in Float32
     y = gm(gx4)
     @test eltype(y) == BFloat16                             # data flow stays bf16

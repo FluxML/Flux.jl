@@ -104,9 +104,13 @@ It adds only a few features to the loop above:
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
 * Manage memory. Runs an incremental garbage collection adaptively.
+
+The keyword `autocast` accepts `Float16` or `BFloat16` to compute each gradient
+under mixed precision, see [`autocast`](@ref).
 """
 function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing,
-                caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
+                caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto,
+                autocast::Union{Nothing, Type} = nothing)
     isnothing(cb) || error("""train! does not support callback functions.
                                 For more control use a loop with `gradient` and `update!`.""")
     gc_interval isa Symbol && gc_interval !== :auto &&
@@ -133,11 +137,11 @@ function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing,
         # blow past GPU memory. From the second step on the algorithm is fixed, so the cache
         # only ever sees the real, reusable training buffers.
         if cache === nothing || i == 1
-            opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
+            opt, model = _train_step!(loss, adtype, model, opt, d_splat, i; autocast)
         else
             # Reuse the memory allocated during the previous step, see issue #2523.
             GPUArrays.@cached cache begin
-                opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
+                opt, model = _train_step!(loss, adtype, model, opt, d_splat, i; autocast)
             end
         end
 
@@ -190,8 +194,8 @@ end
 
 # A single training step, factored out so that `train!` can run it with or without the
 # caching allocator without duplicating the body.
-function _train_step!(loss, adtype, model, opt, d_splat, i)
-    l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model)
+function _train_step!(loss, adtype, model, opt, d_splat, i; autocast = nothing)
+    l, gs = Flux.withgradient(m -> loss(m, d_splat...), adtype, model; autocast)
 
     if !isfinite(l)
         throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
@@ -208,12 +212,14 @@ function _update!(opt_state, model::Duplicated, grad)
 end
 
 
-train!(loss, model, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto) =
-    train!(loss, AutoZygote(), model, data, opt; cb, caching_allocator, gc_interval)
+train!(loss, model, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto,
+        autocast::Union{Nothing, Type} = nothing) =
+    train!(loss, AutoZygote(), model, data, opt; cb, caching_allocator, gc_interval, autocast)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
+function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto,
+                autocast::Union{Nothing, Type} = nothing)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval, autocast)
 end
 
 function _rule_to_state(model, rule::Optimisers.AbstractRule)
@@ -228,12 +234,14 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
     return state
 end
 
-train!(loss, model::Duplicated, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto) =
-    train!(loss, AutoEnzyme(), model, data, opt; cb, caching_allocator, gc_interval)
+train!(loss, model::Duplicated, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto,
+        autocast::Union{Nothing, Type} = nothing) =
+    train!(loss, AutoEnzyme(), model, data, opt; cb, caching_allocator, gc_interval, autocast)
 
 # This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
+function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto,
+                autocast::Union{Nothing, Type} = nothing)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval, autocast)
 end
 
 end # module Train

@@ -77,3 +77,7 @@ end
     @test Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
 end
+
+# NOTE: autocast + AutoEnzyme is not tested yet: after the first `autocast` call the
+# layer IR contains BFloat16 values, and Enzyme's type analysis crashes on those until
+# EnzymeAD/Enzyme.jl#3430 is fixed upstream.
