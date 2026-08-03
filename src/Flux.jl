@@ -12,6 +12,7 @@ using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 using MLUtils
 using MLCore: MLCore # this is only needed for the documentation
 using Adapt, OneHotArrays
+using BFloat16s: BFloat16
 using Functors: Functors, fmap, fmapstructure
 
 using Optimisers: Optimisers, destructure, freeze!, thaw!, adjust!, trainables, update!
@@ -49,7 +50,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
        LayerNorm, BatchNorm, InstanceNorm, GroupNorm, WeightNorm,
        MultiHeadAttention,
        Upsample, PixelShuffle,
-       fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
+       fmap, cpu, gpu, f32, f64, f16, bf16, BFloat16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
 
 @compat(public, ( # unexported symbols marked as API, on Julia 1.11

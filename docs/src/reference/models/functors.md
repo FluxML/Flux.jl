@@ -37,7 +37,7 @@ Functors.CachedWalk
 
 ## Moving models, or data, to the GPU
 
-Flux provides some convenience functions based on `fmap`. Some ([`f16`](@ref Flux.f16), [`f32`](@ref Flux.f32), [`f64`](@ref Flux.f64)) change the precision of all arrays in a model. Others are used for moving a model to of from GPU memory:
+Flux provides some convenience functions based on `fmap`. Some ([`f16`](@ref Flux.f16), [`bf16`](@ref Flux.bf16), [`f32`](@ref Flux.f32), [`f64`](@ref Flux.f64)) change the precision of all arrays in a model. Others are used for moving a model to of from GPU memory:
 
 ```@docs
 cpu

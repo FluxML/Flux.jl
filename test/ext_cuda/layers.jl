@@ -273,6 +273,49 @@ end
   end
 end
 
+@testset "Misc. BFloat16" begin
+  # These tests are very far from exhaustive!
+  # Comparisons use a loose `rtol`: BFloat16 keeps only 8 mantissa bits, and GPU
+  # kernels often accumulate in Float32, so CPU (pure bf16) and GPU results differ.
+  #
+  # NOTE: Conv and pooling are intentionally not tested here. NNlib's cuDNN wrapper
+  # only accepts `CUDNNFloat = Union{Float16,Float32,Float64}`, so BFloat16 conv/pool
+  # bypass cuDNN and hit the generic (scalar-indexing) GPU path, which errors.
+
+  x = bf16(randn(Float32, 3, 4))
+  gx = gpu(x)
+
+  # Dense
+  m1 = bf16(Dense(3 => 4, tanh))
+  gm1 = gpu(m1)
+
+  y1, back1 = Zygote.pullback(|>, x, m1)
+  gy1, gback1 = Zygote.pullback(|>, gx, gm1)
+
+  @test y1 ≈ m1(x)
+  @test y1 ≈ cpu(gy1)  rtol=0.1
+  @test eltype(y1) == eltype(m1(x)) == eltype(gy1) == BFloat16
+
+  @test back1(one.(y1))[2].weight ≈ cpu(gback1(one.(gy1))[2].weight)  rtol=0.1
+  @test eltype(gback1(one.(gy1))[2].bias) == BFloat16
+
+  # Normalisation
+  m2 = Chain(LayerNorm(3), Dropout(0.1)) |> bf16
+  gm2 = m2 |> gpu
+  @test m2(x) ≈ cpu(gm2(gx))  rtol=0.1
+  @test eltype(m2(x)) == BFloat16
+  @test eltype(gm2(gx)) == BFloat16
+
+  m3 = BatchNorm(3) |> bf16
+  gm3 = m3 |> gpu
+  @test m3(x) ≈ cpu(gm3(gx))  rtol=0.1
+  @test eltype(gm3(gx)) == BFloat16
+  dw3 = gradient(m -> sum(abs2, m(x)), m3)[1].γ
+  gdw3 = gradient(m -> sum(abs2, m(gx)), gm3)[1].γ
+  @test dw3 ≈ cpu(gdw3)  rtol=0.1
+  @test eltype(gdw3) == BFloat16
+end
+
 @testset "MultiHeadAttention" begin
   dim = 4; nheads = 2; len = 3; batch_size = 5
   mha_cpu = MultiHeadAttention(dim; nheads)

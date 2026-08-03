@@ -77,6 +77,10 @@ function _match_eltype(layer, ::Type{T}, x::AbstractArray{<:Union{AbstractFloat,
   convert(AbstractArray{T}, x)
 end
 
+# BFloat16 target: route through Flux's integer-domain conversion (`_to_bf16`), since
+# the native `convert(_, BFloat16)` crashes on some LLVM versions (JuliaMath/BFloat16s.jl#107).
+_match_eltype(layer, ::Type{BFloat16}, x::AbstractArray{<:Union{AbstractFloat, Integer}}) = _to_bf16(x)
+
 # Weird types like Nil, Dual, etc, we allow through:
 _match_eltype(layer, ::Type, x::AbstractArray) = x
 
