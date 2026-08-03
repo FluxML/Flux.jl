@@ -136,14 +136,10 @@ end
   μ_gpu = copy(m_gpu.μ)
   m_gpu(x_gpu)
   @test m_gpu.μ ≈ μ_gpu
-  # TODO(NNlib#753): 3D BatchNorm gradient on the GPU hits a cuDNN dim bug
-  # (CUDNN_STATUS_BAD_PARAM), because NNlib's cuDNN backward is not restricted to
-  # 2D/4D/5D like its forward. Re-enable once fixed in NNlib.
-  # https://github.com/FluxML/NNlib.jl/issues/753
-  # gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
-  # @test !(m_gpu.μ ≈ μ_gpu)
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
+  @test !(m_gpu.μ ≈ μ_gpu)
 
-  # @test Array(m_gpu.μ) ≈ m_cpu.μ
+  @test Array(m_gpu.μ) ≈ m_cpu.μ
 
   ## In testmode, never track statistics
   testmode!(m_cpu)
@@ -157,8 +153,7 @@ end
   μ_gpu = copy(m_gpu.μ)
   m_gpu(x_gpu)
   @test m_gpu.μ ≈ μ_gpu
-  # TODO(NNlib#753): 3D BatchNorm GPU gradient (see above).
-  # gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
   @test m_gpu.μ ≈ μ_gpu
 
   ## In trainmode, always track statistics
@@ -175,9 +170,8 @@ end
   m_gpu(x_gpu)
   @test !(m_gpu.μ ≈ μ_gpu)
   μ_gpu = copy(m_gpu.μ)
-  # TODO(NNlib#753): 3D BatchNorm GPU gradient (see above).
-  # gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
-  # @test !(m_gpu.μ ≈ μ_gpu)
+  gradient(m_gpu -> sum(m_gpu(x_gpu)), m_gpu)
+  @test !(m_gpu.μ ≈ μ_gpu)
 end
 
 @testset "Two-streams Bilinear" begin
@@ -282,11 +276,11 @@ end
 @testset "Misc. BFloat16" begin
   # These tests are very far from exhaustive!
   # Comparisons use a loose `rtol`: BFloat16 keeps only 8 mantissa bits, and GPU
-  # kernels often accumulate in Float32, so CPU (pure bf16) and GPU results differ.
+  # kernels often accumulate in Float32, so a pure-bf16 and a Float32 result differ.
   #
-  # NOTE: Conv and pooling are intentionally not tested here. NNlib's cuDNN wrapper
-  # only accepts `CUDNNFloat = Union{Float16,Float32,Float64}`, so BFloat16 conv/pool
-  # bypass cuDNN and hit the generic (scalar-indexing) GPU path, which errors.
+  # Normalization layers are exercised on the GPU only, against a Float32 GPU
+  # reference: their generic CPU path rounds Float32->BFloat16, which can hang LLVM
+  # codegen (JuliaMath/BFloat16s.jl#107).
 
   x = bf16(randn(Float32, 3, 4))
   gx = gpu(x)
@@ -305,25 +299,39 @@ end
   @test back1(one.(y1))[2].weight ≈ cpu(gback1(one.(gy1))[2].weight)  rtol=0.1
   @test eltype(gback1(one.(gy1))[2].bias) == BFloat16
 
-  # Normalisation
-  m2 = Chain(LayerNorm(3), Dropout(0.1)) |> bf16
-  gm2 = m2 |> gpu
-  @test m2(x) ≈ cpu(gm2(gx))  rtol=0.1
-  @test eltype(m2(x)) == BFloat16
+  # LayerNorm converts fully to bf16 (it wraps NNlib.normalise, which has no scale/bias
+  # and so no Float32-parameter requirement).
+  gm2 = Chain(LayerNorm(3), Dropout(0.1)) |> bf16 |> gpu
   @test eltype(gm2(gx)) == BFloat16
+  @test Float32.(gm2(gx)) ≈ f32(gm2)(f32(gx))  rtol=0.1
 
-  # TODO(#2700): NNlib 0.9.41 requires Float32 scale/bias for BFloat16 input, so a
-  # BFloat16 `BatchNorm` errors until `f16`/`bf16` normalization params are reworked
-  # in Flux.jl#2700. Re-enable then. (LayerNorm above is fine: it wraps NNlib.normalise,
-  # which takes no scale/bias and so has no such requirement.)
-  # m3 = BatchNorm(3) |> bf16
-  # gm3 = m3 |> gpu
-  # @test m3(x) ≈ cpu(gm3(gx))  rtol=0.1
-  # @test eltype(gm3(gx)) == BFloat16
-  # dw3 = gradient(m -> sum(abs2, m(x)), m3)[1].γ
-  # gdw3 = gradient(m -> sum(abs2, m(gx)), gm3)[1].γ
-  # @test dw3 ≈ cpu(gdw3)  rtol=0.1
-  # @test eltype(gdw3) == BFloat16
+  # BatchNorm, InstanceNorm and GroupNorm are converted in mixed precision: statistics
+  # and affine parameters stay Float32 while the data flows in bf16, so they dispatch to
+  # NNlib's (cuDNN) half-precision kernels.
+  gx4 = gpu(bf16(randn(Float32, 4, 4, 3, 2)))
+  @testset "$(nameof(typeof(l)))" for l in (BatchNorm(3),
+                                            InstanceNorm(3; affine=true, track_stats=true),
+                                            GroupNorm(3, 3))
+    gm = bf16(l) |> gpu
+    @test eltype(gm.γ) == eltype(gm.β) == Float32          # affine params kept in Float32
+    y = gm(gx4)
+    @test eltype(y) == BFloat16                             # data flow stays bf16
+    @test Float32.(y) ≈ f32(gm)(f32(gx4))  rtol=0.1        # matches the Float32 reference
+    dγ = gradient(m -> sum(abs2, m(gx4)), gm)[1].γ
+    @test eltype(dγ) == Float32                             # parameter grads follow the params
+  end
+
+  # Conv and pooling (cuDNN with NNlib ≥ 0.9.40 adds BFloat16 to its `CUDNNFloat` wrapper)
+  m4 = Conv((3,), 2=>1, sigmoid, pad=1, stride=2) |> bf16
+  x4 = bf16(randn(Float32, 7, 2, 1))
+  @test m4(x4) ≈ cpu(gpu(m4)(gpu(x4)))  rtol=0.1
+  @test eltype(gpu(m4)(gpu(x4))) == BFloat16
+  dw4 = gradient((m,z) -> sum(abs2, m(z)), gpu(m4), gpu(x4))[1].weight
+  @test eltype(dw4) == BFloat16
+  xp = gpu(bf16(randn(Float32, 6, 4, 1)))
+  for pool in [MaxPool((2,)), MeanPool((2,))]
+    @test eltype(pool(xp)) == BFloat16
+  end
 end
 
 @testset "MultiHeadAttention" begin

@@ -124,7 +124,28 @@ Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:AbstractFloat}) w
 Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
   convert(AbstractArray{Complex{T}}, x)
 
-_paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
+# `Float16`/`BFloat16` are "half precision": under these casts, some layers keep part
+# of their parameters in `Float32` (mixed precision, see `_keep_f32_under_halfprec`).
+_ishalfprec(::Type) = false
+_ishalfprec(::Type{Float16}) = true
+_ishalfprec(::Type{BFloat16}) = true
+
+# Layers that override half-precision conversion to keep (some of) their arrays in
+# `Float32`. Extended for normalization layers in `layers/normalise.jl`.
+_keep_f32_under_halfprec(::Any) = false
+
+function _paramtype(::Type{T}, m) where T
+  if _ishalfprec(T)
+    # Stop the walk at layers that manage their own precision and hand them to `f32`
+    # (so their statistics/affine parameters stay in `Float32`); convert every other
+    # leaf array to `T`.
+    fmap(m; exclude = x -> _keep_f32_under_halfprec(x) || Functors.isleaf(x)) do x
+      _keep_f32_under_halfprec(x) ? f32(x) : adapt(FluxEltypeAdaptor{T}(), x)
+    end
+  else
+    fmap(adapt(FluxEltypeAdaptor{T}()), m)
+  end
+end
 
 # fastpath for arrays
 _paramtype(::Type{T}, x::AbstractArray{<:AbstractFloat}) where {T<:AbstractFloat} =
@@ -190,6 +211,11 @@ Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
 
+The normalization layers `BatchNorm`, `InstanceNorm` and `GroupNorm` are converted in
+*mixed precision*: their statistics and affine parameters are kept in `Float32` while
+the data flowing through stays in `Float16`. This matches the functional operators in
+NNlib (and cuDNN), which require `Float32` parameters for half-precision feature maps.
+
 See also [`f32`](@ref), [`f64`](@ref) and [`bf16`](@ref).
 
 # Example
@@ -222,6 +248,11 @@ is less prone to overflow/underflow, and is well supported on modern GPUs.
 
 Support for `BFloat16` is limited on many CPUs, where Julia may convert to `Float32`
 for each operation.
+
+The normalization layers `BatchNorm`, `InstanceNorm` and `GroupNorm` are converted in
+*mixed precision*: their statistics and affine parameters are kept in `Float32` while
+the data flowing through stays in `BFloat16`. This matches the functional operators in
+NNlib (and cuDNN), which require `Float32` parameters for half-precision feature maps.
 
 See also [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
 
