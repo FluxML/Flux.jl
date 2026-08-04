@@ -503,12 +503,12 @@ See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`Laye
 """
 hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
 
-# Under `f16`/`bf16`, keep the statistics and affine parameters of `BatchNorm`,
+# Under `f16mix`/`bf16mix`, keep the statistics and affine parameters of `BatchNorm`,
 # `InstanceNorm` and `GroupNorm` in `Float32` (mixed precision). `NNlib.batchnorm`,
 # `NNlib.instancenorm` and `NNlib.groupnorm` require `Float32` scale/bias/statistics
 # for half-precision feature maps (as does cuDNN), and half-precision running
 # statistics are numerically poor. `LayerNorm` is excluded: it wraps `NNlib.normalise`,
-# which takes no scale/bias, so it has no such requirement. See `_paramtype`.
+# which takes no scale/bias, so it has no such requirement. See `_paramtype_mixed`.
 _keep_f32_under_halfprec(::Union{BatchNorm, InstanceNorm, GroupNorm}) = true
 
 struct WeightNorm{L, G, D}

@@ -124,26 +124,18 @@ Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:AbstractFloat}) w
 Adapt.adapt_storage(::FluxEltypeAdaptor{T}, x::AbstractArray{<:Complex{<:AbstractFloat}}) where {T<:AbstractFloat} = 
   convert(AbstractArray{Complex{T}}, x)
 
-# `Float16`/`BFloat16` are "half precision": under these casts, some layers keep part
-# of their parameters in `Float32` (mixed precision, see `_keep_f32_under_halfprec`).
-_ishalfprec(::Type) = false
-_ishalfprec(::Type{Float16}) = true
-_ishalfprec(::Type{BFloat16}) = true
-
-# Layers that override half-precision conversion to keep (some of) their arrays in
-# `Float32`. Extended for normalization layers in `layers/normalise.jl`.
+# Layers that override the mixed-precision conversions `f16mix`/`bf16mix` to keep (some
+# of) their arrays in `Float32`. Extended for normalization layers in `layers/normalise.jl`.
 _keep_f32_under_halfprec(::Any) = false
 
-function _paramtype(::Type{T}, m) where T
-  if _ishalfprec(T)
-    # Stop the walk at layers that manage their own precision and hand them to `f32`
-    # (so their statistics/affine parameters stay in `Float32`); convert every other
-    # leaf array to `T`.
-    fmap(m; exclude = x -> _keep_f32_under_halfprec(x) || Functors.isleaf(x)) do x
-      _keep_f32_under_halfprec(x) ? f32(x) : adapt(FluxEltypeAdaptor{T}(), x)
-    end
-  else
-    fmap(adapt(FluxEltypeAdaptor{T}()), m)
+_paramtype(::Type{T}, m) where T = fmap(adapt(FluxEltypeAdaptor{T}()), m)
+
+# Mixed-precision conversion (`f16mix`/`bf16mix`): stop the walk at layers that manage
+# their own precision and hand them to `f32` (so their statistics/affine parameters stay
+# in `Float32`); convert every other leaf array to `T`.
+function _paramtype_mixed(::Type{T}, m) where T
+  fmap(m; exclude = x -> _keep_f32_under_halfprec(x) || Functors.isleaf(x)) do x
+    _keep_f32_under_halfprec(x) ? f32(x) : adapt(FluxEltypeAdaptor{T}(), x)
   end
 end
 
@@ -205,18 +197,20 @@ f64(m) = _paramtype(Float64, m)
 """
     f16(m)
 
-Converts the `eltype` of model's *floating point* parameters to `Float16`.
+Converts the `eltype` of model's *floating point* parameters to `Float16`,
+like PyTorch's `model.half()`. All parameters are converted, including the
+statistics and affine parameters of the normalization layers; note that the GPU
+normalization kernels (cuDNN) require `Float32` statistics/affine parameters for
+half-precision inputs, so use [`f16mix`](@ref) for models containing `BatchNorm`,
+`InstanceNorm` or `GroupNorm`.
 Recurses into structs marked with [`@layer`](@ref Flux.@layer).
 
 Support for `Float16` is limited on many CPUs. Julia may
 convert to `Float32` for each operation, which is slow.
 
-The normalization layers `BatchNorm`, `InstanceNorm` and `GroupNorm` are converted in
-*mixed precision*: their statistics and affine parameters are kept in `Float32` while
-the data flowing through stays in `Float16`. This matches the functional operators in
-NNlib (and cuDNN), which require `Float32` parameters for half-precision feature maps.
+For mixed-precision *training* with `Float32` master weights, see [`autocast`](@ref).
 
-See also [`f32`](@ref), [`f64`](@ref) and [`bf16`](@ref).
+See also [`f16mix`](@ref), [`f32`](@ref), [`f64`](@ref) and [`bf16`](@ref).
 
 # Example
 ```jldoctest
@@ -249,12 +243,14 @@ is less prone to overflow/underflow, and is well supported on modern GPUs.
 Support for `BFloat16` is limited on many CPUs, where Julia may convert to `Float32`
 for each operation.
 
-The normalization layers `BatchNorm`, `InstanceNorm` and `GroupNorm` are converted in
-*mixed precision*: their statistics and affine parameters are kept in `Float32` while
-the data flowing through stays in `BFloat16`. This matches the functional operators in
-NNlib (and cuDNN), which require `Float32` parameters for half-precision feature maps.
+All parameters are converted, including the statistics and affine parameters of the
+normalization layers; note that the GPU normalization kernels (cuDNN) require `Float32`
+statistics/affine parameters for half-precision inputs, so use [`bf16mix`](@ref) for
+models containing `BatchNorm`, `InstanceNorm` or `GroupNorm`.
 
-See also [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
+For mixed-precision *training* with `Float32` master weights, see [`autocast`](@ref).
+
+See also [`bf16mix`](@ref), [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
 
 # Example
 ```jldoctest
@@ -272,3 +268,41 @@ Chain(
 ```
 """
 bf16(m) = _paramtype(BFloat16, m)
+
+"""
+    f16mix(m)
+
+Converts the model to *mixed* `Float16` precision: like [`f16`](@ref), but the
+statistics and affine parameters of `BatchNorm`, `InstanceNorm` and `GroupNorm` are
+kept in `Float32` while the data flowing through them stays in `Float16`. This
+matches the functional normalization operators in NNlib (and cuDNN), which require
+`Float32` parameters for half-precision feature maps — so unlike a full `f16` cast,
+a mixed-precision model works on the GPU. `LayerNorm` contains no such parameters
+and is converted fully.
+
+For mixed-precision *training* with `Float32` master weights, see [`autocast`](@ref).
+To keep the optimiser state in `Float32` when training a converted model, see
+[`Optimisers.MixedPrecision`](https://fluxml.ai/Optimisers.jl/dev/api/#Optimisers.MixedPrecision).
+
+See also [`bf16mix`](@ref), [`f16`](@ref), [`f32`](@ref) and [`f64`](@ref).
+"""
+f16mix(m) = _paramtype_mixed(Float16, m)
+
+"""
+    bf16mix(m)
+
+Converts the model to *mixed* `BFloat16` precision: like [`bf16`](@ref), but the
+statistics and affine parameters of `BatchNorm`, `InstanceNorm` and `GroupNorm` are
+kept in `Float32` while the data flowing through them stays in `BFloat16`. This
+matches the functional normalization operators in NNlib (and cuDNN), which require
+`Float32` parameters for half-precision feature maps — so unlike a full `bf16` cast,
+a mixed-precision model works on the GPU. `LayerNorm` contains no such parameters
+and is converted fully.
+
+For mixed-precision *training* with `Float32` master weights, see [`autocast`](@ref).
+To keep the optimiser state in `Float32` when training a converted model, see
+[`Optimisers.MixedPrecision`](https://fluxml.ai/Optimisers.jl/dev/api/#Optimisers.MixedPrecision).
+
+See also [`f16mix`](@ref), [`bf16`](@ref), [`f32`](@ref) and [`f64`](@ref).
+"""
+bf16mix(m) = _paramtype_mixed(BFloat16, m)

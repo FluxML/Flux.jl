@@ -10,13 +10,18 @@ using Enzyme: autodiff_thunk, Reverse, ReverseSplitWithPrimal
 
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
+# NOTE: `autocast=BFloat16` under `AutoEnzyme` is blocked upstream: Enzyme's type analysis
+# crashes on `Core.BFloat16` values (missing `typetree_primitive` method, see
+# EnzymeAD/Enzyme.jl#3430). Plain Enzyme differentiation and `autocast=Float16` are
+# unaffected; only `autocast=BFloat16` + `AutoEnzyme` requires the upstream fix.
+
 ### gradient & withgradient
-function Flux.gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
-    return _enzyme_gradient(f, map(_trymake_duplicated, x)...; zero)
+function Flux.gradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true, autocast=nothing) where {F,N}
+    return _enzyme_gradient(Flux._autocast_closure(f, autocast), map(_trymake_duplicated, x)...; zero)
 end
 
-function Flux.withgradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true) where {F,N}
-    return _enzyme_withgradient(f, map(_trymake_duplicated, x)...; zero)
+function Flux.withgradient(f::F, adtype::AutoEnzyme, x::Vararg{Any,N}; zero::Bool=true, autocast=nothing) where {F,N}
+    return _enzyme_withgradient(Flux._autocast_closure(f, autocast), map(_trymake_duplicated, x)...; zero)
 end
 
 _trymake_duplicated(x::EnzymeCore.Duplicated) = x

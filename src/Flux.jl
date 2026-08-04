@@ -49,7 +49,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
        LayerNorm, BatchNorm, InstanceNorm, GroupNorm, WeightNorm,
        MultiHeadAttention,
        Upsample, PixelShuffle,
-       fmap, cpu, gpu, f32, f64, f16, bf16, BFloat16, rand32, randn32, zeros32, ones32,
+       fmap, cpu, gpu, f32, f64, f16, bf16, f16mix, bf16mix, BFloat16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
 
 @compat(public, ( # unexported symbols marked as API, on Julia 1.11
@@ -59,6 +59,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   Bilinear, Scale,
   # utils
   outputsize, state, create_bias, @layer, initialstates, normalise, loadmodel!,
+  autocast_mode,
   activations, modules, flatten, rng_from_array, nfan,
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,
@@ -120,6 +121,9 @@ include("layers/recurrent.jl")
 include("layers/normalise.jl")
 include("layers/upsample.jl")
 include("layers/attention.jl")
+
+include("autocast.jl")
+export autocast
 
 include("loading.jl")
 

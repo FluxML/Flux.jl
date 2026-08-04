@@ -20,6 +20,7 @@ julia> Flux.mae(y_model, 1:3)
 """
 function mae(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(abs.(ŷ .- y))
 end
 
@@ -44,6 +45,7 @@ julia> Flux.mse(y_model, y_true)
 """
 function mse(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(abs2.(ŷ .- y))
 end
 
@@ -68,6 +70,7 @@ julia> Flux.msle(Float32[0.9, 1.8, 2.7], 1:3)
 """
 function msle(ŷ, y; agg = mean, eps::Real = epseltype(ŷ))
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg((log.((ŷ .+ eps) ./ (y .+ eps))) .^2 )
 end
 
@@ -103,6 +106,7 @@ julia> Flux.huber_loss(ŷ, 1:3, delta=0.05)  # changes behaviour as |ŷ - y| >
 function huber_loss(ŷ, y; agg = mean, delta::Real = 1)
     δ = ofeltype(ŷ, delta)
     _check_sizes(ŷ, y)
+    ŷ, y = _upcast_half(ŷ), _upcast_half(y)
     abs_error = abs.(ŷ .- y)
 
     agg(_huber_metric.(abs_error, δ))
@@ -230,6 +234,7 @@ julia> Flux.crossentropy(y_model, y_smooth)
 """
 function crossentropy(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(.-sum(xlogy.(y, ŷ .+ eps); dims = dims))
 end
 
@@ -269,6 +274,7 @@ julia> Flux.crossentropy(softmax(y_model), y_label)
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end
 
@@ -318,6 +324,7 @@ julia> Flux.crossentropy(y_prob, y_hot)
 """
 function binarycrossentropy(ŷ, y; agg = mean, eps::Real = epseltype(ŷ))
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(@.(-xlogy(y, ŷ + eps) - xlogy(1 - y, 1 - ŷ + eps)))
 end
 
@@ -348,6 +355,7 @@ julia> Flux.binarycrossentropy(sigmoid.(y_model), y_bin)
 """
 function logitbinarycrossentropy(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(@.((1 - y) * ŷ - logσ(ŷ)))
 end
 
@@ -388,6 +396,7 @@ Inf
 """
 function kldivergence(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   entropy = agg(sum(xlogx.(y); dims = dims))
   cross_entropy = crossentropy(ŷ, y; dims, agg, eps)
   return entropy + cross_entropy
@@ -413,6 +422,7 @@ julia> Flux.poisson_loss(y_model, 1:3)
 """
 function poisson_loss(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(ŷ .- xlogy.(y, ŷ))
 end
 
@@ -448,6 +458,7 @@ true
 """
 function hinge_loss(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg(max.(0, 1 .- ŷ .* y))
 end
 
@@ -483,6 +494,7 @@ true
 """
 function squared_hinge_loss(ŷ, y; agg = mean)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   agg((max.(0, 1 .- ŷ .* y)) .^ 2)
 end
 
@@ -510,6 +522,7 @@ julia> 1 - Flux.dice_coeff_loss(y_pred, 1:3)  # ~ F1 score for image segmentatio
 function dice_coeff_loss(ŷ, y; smooth = 1)
   s = ofeltype(ŷ, smooth)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   # TODO add agg
   1 - (2 * sum(y .* ŷ) + s) / (sum(y .^ 2) + sum(ŷ .^ 2) + s)
 end
@@ -528,6 +541,7 @@ Calculated as:
 function tversky_loss(ŷ, y; beta::Real = 0.7, β = nothing)
   β = ofeltype(ŷ, beta)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   #TODO add agg
   num = sum(y .* ŷ) + 1
   den = sum(y .* ŷ + β * (1 .- y) .* ŷ + (1 - β) * y .* (1 .- ŷ)) + 1
@@ -565,6 +579,7 @@ true
 function binary_focal_loss(ŷ, y; agg=mean, gamma=2, eps::Real=epseltype(ŷ))
     γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
     _check_sizes(ŷ, y)
+    ŷ, y = _upcast_half(ŷ), _upcast_half(y)
     ŷϵ = ŷ .+ eps
     p_t = y .* ŷϵ  + (1 .- y) .* (1 .- ŷϵ)
     ce = .-log.(p_t)
@@ -610,6 +625,7 @@ See also: [`Losses.binary_focal_loss`](@ref) for binary (not one-hot) labels
 function focal_loss(ŷ, y; dims=1, agg=mean, gamma=2, eps::Real=epseltype(ŷ), ϵ=nothing, γ=nothing)
   γ = gamma isa Integer ? gamma : ofeltype(ŷ, gamma)
   _check_sizes(ŷ, y)
+  ŷ, y = _upcast_half(ŷ), _upcast_half(y)
   ŷϵ = ŷ .+ eps
   agg(sum(@. -y * (1 - ŷϵ)^γ * log(ŷϵ); dims))
 end
@@ -637,6 +653,7 @@ julia> Flux.siamese_contrastive_loss(ŷ, 1:3, margin = 2)
 """
 function siamese_contrastive_loss(ŷ, y; agg = mean, margin::Real = 1)
     _check_sizes(ŷ, y)
+    ŷ, y = _upcast_half(ŷ), _upcast_half(y)
     margin < 0 && throw(DomainError(margin, "Margin must be non-negative"))
     return agg(@. (1 - y) * ŷ^2 + y * max(0, margin - ŷ)^2)
 end

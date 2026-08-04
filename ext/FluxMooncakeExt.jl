@@ -4,21 +4,22 @@ using ADTypes: AutoMooncake
 using Mooncake: Mooncake
 import Flux
 
-function Flux.gradient(f::F, adtype::AutoMooncake, args::Vararg{Any,N}) where {F,N}
-    return Flux.withgradient(f, adtype, args...)[2]
+function Flux.gradient(f::F, adtype::AutoMooncake, args::Vararg{Any,N}; autocast=nothing) where {F,N}
+    return Flux.withgradient(f, adtype, args...; autocast)[2]
 end
 
-function Flux.withgradient(f::F, adtype::AutoMooncake, args::Vararg{Any,N}) where {F,N}
+function Flux.withgradient(f::F, adtype::AutoMooncake, args::Vararg{Any,N}; autocast=nothing) where {F,N}
+    g = Flux._autocast_closure(f, autocast)
     config = Mooncake.Config(friendly_tangents=true)
-    cache = Mooncake.prepare_pullback_cache(f, args...; config)
+    cache = Mooncake.prepare_pullback_cache(g, args...; config)
     # `prepare_pullback_cache` already runs the forward pass once to build the rule, and stores
-    # a primal-typed buffer of the output `y = f(args...)`. We reuse it to learn the structure
+    # a primal-typed buffer of the output `y = g(args...)`. We reuse it to learn the structure
     # of the output (without an extra forward pass) and to build the cotangent seed.
     yout = cache.y_cache
     seed = yout isa Union{Tuple, NamedTuple} ? _loss_seed(yout) : one(yout)
     # `value_and_pullback!!` does a single forward + reverse and returns the full output `y`,
     # so auxiliary outputs come for free in `val`.
-    val, grads = Mooncake.value_and_pullback!!(cache, seed, f, args...)
+    val, grads = Mooncake.value_and_pullback!!(cache, seed, g, args...)
     return (val=val, grad=grads[2:end])
 end
 
