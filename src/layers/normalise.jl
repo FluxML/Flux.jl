@@ -206,7 +206,10 @@ function (a::LayerNorm)(x::AbstractArray)
       _size_check(a, x, d => size(a.diag.scale, d))
     end
   end
-  a.diag(NNlib.normalise(x; dims=1:length(a.size), eps=a.ϵ))
+  # fresh name: `x` is captured by the `@ignore_derivatives` closure above, so
+  # assigning to it would box it, hurting inference and Zygote gradients
+  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
+  a.diag(NNlib.normalise(xF; dims=1:length(a.size), eps=a.ϵ))
 end
 
 function Base.show(io::IO, l::LayerNorm)
@@ -291,7 +294,8 @@ end
 
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(BN, x, N-1 => BN.chs)
-  y = NNlib.batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum;
+  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
+  y = NNlib.batchnorm(BN.γ, BN.β, xF, BN.μ, BN.σ², BN.momentum;
                       eps=BN.ϵ, training=_isactive(BN, x), track_stats=BN.track_stats)
   return BN.λ.(y)
 end
@@ -380,7 +384,8 @@ end
 
 function (l::InstanceNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(l, x, N-1 => l.chs)
-  y = NNlib.instancenorm(l.γ, l.β, x, l.μ, l.σ², l.momentum;
+  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
+  y = NNlib.instancenorm(l.γ, l.β, xF, l.μ, l.σ², l.momentum;
                          eps=l.ϵ, training=_isactive(l, x), track_stats=l.track_stats)
   return l.λ.(y)
 end
@@ -478,7 +483,8 @@ end
 
 function (gn::GroupNorm)(x::AbstractArray)
   _size_check(gn, x, ndims(x)-1 => gn.chs)
-  return gn.λ.(NNlib.groupnorm(gn.γ, gn.β, x, gn.G; eps=gn.ϵ))
+  xF = _autocast_up(x)  # normalization computes in Float32 under `autocast`
+  return gn.λ.(NNlib.groupnorm(gn.γ, gn.β, xF, gn.G; eps=gn.ϵ))
 end
 
 testmode!(m::GroupNorm, mode = true) =
@@ -503,12 +509,12 @@ See [`BatchNorm`](@ref), [`InstanceNorm`](@ref), [`GroupNorm`](@ref), and [`Laye
 """
 hasaffine(l::Union{BatchNorm, InstanceNorm, LayerNorm, GroupNorm}) = l.affine
 
-# Under `f16`/`bf16`, keep the statistics and affine parameters of `BatchNorm`,
+# Under `f16mix`/`bf16mix`, keep the statistics and affine parameters of `BatchNorm`,
 # `InstanceNorm` and `GroupNorm` in `Float32` (mixed precision). `NNlib.batchnorm`,
 # `NNlib.instancenorm` and `NNlib.groupnorm` require `Float32` scale/bias/statistics
 # for half-precision feature maps (as does cuDNN), and half-precision running
 # statistics are numerically poor. `LayerNorm` is excluded: it wraps `NNlib.normalise`,
-# which takes no scale/bias, so it has no such requirement. See `_paramtype`.
+# which takes no scale/bias, so it has no such requirement. See `_paramtype_mixed`.
 _keep_f32_under_halfprec(::Union{BatchNorm, InstanceNorm, GroupNorm}) = true
 
 struct WeightNorm{L, G, D}

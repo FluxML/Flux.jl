@@ -19,6 +19,9 @@ The package corresponding to any chosen backend (except Zygote) must be loaded i
 If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument
 is of type `Duplicated` from Enzyme.jl, in which case Enzyme.jl is used.
 
+The keyword `autocast` accepts `Float16` or `BFloat16` to compute the forward and backward
+pass under mixed precision, see [`autocast`](@ref).
+
 See also [`withgradient`](@ref) to keep the value `f(args...)`.
 
 # Examples
@@ -48,18 +51,19 @@ julia> Flux.gradient(f, AutoMooncake(), [1.0, 2.0, 3.0])
 ([2.0, 2.0, 2.0],)
 ```
 """
-function gradient(f, adtype::AbstractADType, args...)
+function gradient(f, adtype::AbstractADType, args...; kws...)
     error("AD backend has to be loaded to use `gradient(f, AutoXXX(), args...)`.
         Make sure to `using` the corresponding package, e.g. `using Mooncake` for `AutoMooncake()`.
         Supported backends are $SUPPORTED_AD_BACKENDS.")
 end
 
-gradient(f, adtype::AutoZygote, args...) = Zygote.gradient(f, args...)
+gradient(f, adtype::AutoZygote, args...; autocast::Union{Nothing,Type}=nothing) =
+    _with_autocast(() -> Zygote.gradient(f, args...), autocast)
 
 # Default gradient using Zygote
-function gradient(f, args...; zero::Bool=true)
+function gradient(f, args...; zero::Bool=true, autocast::Union{Nothing,Type}=nothing)
     for a in args
-        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return gradient(f, AutoEnzyme(), args...; zero)
+        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return gradient(f, AutoEnzyme(), args...; zero, autocast)
     end
     for a in args
         _ensure_noenzyme(a)
@@ -70,7 +74,7 @@ function gradient(f, args...; zero::Bool=true)
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
-    return Zygote.gradient(f, args...)
+    return _with_autocast(() -> Zygote.gradient(f, args...), autocast)
 end
 
 # Without any Duplicated, check for no stray Enzyme types before calling Zygote
@@ -137,7 +141,8 @@ julia> Flux.gradient(dup_model, [1]; zero=false) do m, x  # implicit Const([1]),
 ((layers = ((weight = [12.0;;], bias = [12.0], σ = nothing),),), nothing)
 ```
 """
-gradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = gradient(f, AutoEnzyme(), args...; zero)
+gradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true, autocast::Union{Nothing,Type}=nothing) =
+    gradient(f, AutoEnzyme(), args...; zero, autocast)
 
 
 """
@@ -151,6 +156,9 @@ The package corresponding to the chosen backend must be loaded in advance.
 
 If no `adtype` is given, then Zygote.jl is used by default, unless at least one argument
 is of type `Duplicated` from Enzyme.jl, in which case Enzyme.jl is used.
+
+The keyword `autocast` accepts `Float16` or `BFloat16` to compute the forward and backward
+pass under mixed precision, see [`autocast`](@ref).
 
 Se also [`gradient`](@ref) to get just the gradient.
 
@@ -203,7 +211,7 @@ julia> Flux.withgradient(AutoMooncake(), [1.0, 2.0, 4.0]) do x
 (val = (1.75, [1.0, 0.5, 0.25]), grad = ([-1.0, -0.25, -0.0625],))
 ```
 """
-function withgradient(f, adtype::ADTypes.AbstractADType, args...)
+function withgradient(f, adtype::ADTypes.AbstractADType, args...; kws...)
     error("AD backend has to be loaded to use `withgradient(f, AutoXXX(), args...)`.
         Make sure to `using` the corresponding package, e.g. `using Mooncake` for `AutoMooncake()`.
         Supported backends are $SUPPORTED_AD_BACKENDS.")
@@ -211,9 +219,9 @@ end
 
 
 # Default withgradient using Zygote
-function withgradient(f, args...; zero::Bool=true)
+function withgradient(f, args...; zero::Bool=true, autocast::Union{Nothing,Type}=nothing)
     for a in args
-        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return withgradient(f, AutoEnzyme(), args...; zero)
+        a isa Union{EnzymeCore.Duplicated, EnzymeCore.Const} && return withgradient(f, AutoEnzyme(), args...; zero, autocast)
     end
     for a in args
         _ensure_noenzyme(a)
@@ -224,12 +232,12 @@ function withgradient(f, args...; zero::Bool=true)
             If you are writing new code, then Zygote over Zygote is heavily discouraged.
             """)
     end
-    return Zygote.withgradient(f, args...)
+    return _with_autocast(() -> Zygote.withgradient(f, args...), autocast)
 end
 
 ## Zygote version, supporting aux output too.
-function withgradient(f::F, adtype::AutoZygote, x::Vararg{Any,N}) where {F,N}
-    return Zygote.withgradient(f, x...)
+function withgradient(f::F, adtype::AutoZygote, x::Vararg{Any,N}; autocast::Union{Nothing,Type}=nothing) where {F,N}
+    return _with_autocast(() -> Zygote.withgradient(f, x...), autocast)
 end
 
 """
@@ -262,7 +270,8 @@ julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
 (val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
 ```
 """
-withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = withgradient(f, AutoEnzyme(), args...; zero)
+withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true, autocast::Union{Nothing,Type}=nothing) =
+    withgradient(f, AutoEnzyme(), args...; zero, autocast)
 
 ## ADD BACK TO withgradient docstring above when AUX is SUPPORTED
 # The function `f` may return Tuple or NamedTuple, with the loss as the first element.

@@ -35,6 +35,7 @@ makedocs(
             "Fitting a Line" => "guide/models/overview.md",
             "Gradients and Layers" => "guide/models/basics.md",
             "Training" => "guide/training/training.md",
+            "Mixed Precision" => "guide/training/mixed_precision.md",
             "Recurrence" => "guide/models/recurrence.md",
             "GPU Support" => "guide/gpu.md",
             "Saving & Loading" => "guide/saving.md",
