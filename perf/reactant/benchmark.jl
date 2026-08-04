@@ -21,12 +21,17 @@
 #      `Momentum` — trace cleanly. We use `Momentum` for *both* backends so the comparison is
 #      apples-to-apples; the optimiser is a negligible fraction of a ResNet step regardless.
 #
-#   2. Memory measurement. Reactant allocates through XLA's own pool, which CUDA.jl's pool
-#      high-water marks do not see, so we sample *device-level* used memory (`CUDA.memory_info`,
-#      i.e. the driver's total−free) from a background task and keep the peak — a number that
-#      captures both allocators. For it to reflect Reactant's true working set rather than a
-#      fixed 75 %-of-card reservation, XLA preallocation must be OFF; the `ENV` below does that
-#      and MUST be set before Reactant/XLA initialise, so keep it at the very top of the file.
+#   2. Memory measurement is per-backend, because the two backends use different allocators and
+#      no single axis sees both. The eager backends (Zygote, `train!`) allocate through CUDA.jl's
+#      pool, which grows the driver reservation on demand, so *device-level* used memory
+#      (`CUDA.memory_info`, driver total−free), sampled from a background task, tracks their
+#      working set. Reactant allocates through XLA's BFC pool, which grabs a big slab up front and
+#      sub-allocates inside it — device-level memory stays pinned at the slab size and reports ~0
+#      change — so we read XLA's *own* allocator high-water mark (`Reactant.XLA.allocatorstats`,
+#      `peak_bytes_in_use`). Both are baselined to the increase over what was resident before the
+#      timed run. (Even with `XLA_PYTHON_CLIENT_PREALLOCATE=false`, XLA still reserves ~75 % of the
+#      card as its pool; the allocator-stats path measures the true working set regardless.) See
+#      the "GPU memory helpers" section.
 #
 # Run with:
 #
@@ -40,8 +45,9 @@
 # CPU too); only the timings are meaningful there, and the memory columns read "n/a".
 
 # --- XLA/Reactant memory knobs: must be set before Reactant initialises its client ---------
-# Turn off XLA's eager pre-grab of most of the card so device-level memory tracks the working
-# set. `MEM_FRACTION` caps how much XLA may grow into if it does allocate.
+# Keep XLA from eagerly pre-grabbing most of the card. `MEM_FRACTION` caps how much XLA may grow
+# into. (XLA still reserves a large pool; the per-backend memory measurement reads XLA's own
+# allocator counters rather than device-level memory, so this no longer affects the reported peak.)
 get!(ENV, "XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 get!(ENV, "XLA_PYTHON_CLIENT_MEM_FRACTION", "0.9")
 
@@ -60,9 +66,23 @@ const HAS_GPU = CUDA.functional()
 # GPU memory helpers
 # ---------------------------------------------------------------------------------------
 
-# Device-level used bytes from the driver (total − free). Unlike CUDA.jl's pool counters this
-# sees *every* context's allocations on the device, so it captures both the CUDA.jl pool (used
-# by Zygote) and XLA's pool (used by Reactant) — the only apples-to-apples memory axis here.
+# Peak-memory measurement is per-backend, because the two backends allocate through different
+# pools and no single axis sees both faithfully:
+#
+#   * Zygote / `train!` allocate through CUDA.jl's pool, which grows its driver reservation on
+#     demand — so device-level used memory (driver `total − free`) tracks their working set, and
+#     `with_peak_mem` samples it. (See `zygote_backend` / `train_zygote_backend`.)
+#   * Reactant allocates through XLA's BFC pool, which grabs a big slab from the driver *up front*
+#     and then sub-allocates inside it without further driver calls. Device-level used memory
+#     therefore stays pinned at the reserved-slab size and reports ~0 change no matter how much
+#     XLA actually uses — so we read XLA's own allocator high-water mark instead. (See
+#     `reactant_backend`.)
+#
+# Each backend exposes a `peakmem(f)` that runs `f()` and returns `(result, peak_bytes)`, where
+# the peak is baselined to the *increase* over what was already resident when `f` started (model
+# weights, optimiser state, compiled constants) — i.e. the timed run's transient working set.
+
+# Device-level used bytes from the driver (total − free), for the CUDA.jl-pool (eager) backends.
 device_used_bytes() = HAS_GPU ? (let (free, total) = CUDA.memory_info(); total - free end) : 0
 
 fmt_bytes(n) = HAS_GPU ? Base.format_bytes(n) : "n/a"
@@ -73,8 +93,8 @@ fmt_bytes(n) = HAS_GPU ? Base.format_bytes(n) : "n/a"
 Run `f()` while a background task polls device-level used memory, and return
 `(result, peak_used_bytes)` where the peak is the high-water mark reached during `f` (baselined
 so it measures the *increase* over what was already resident when `f` started). Sampling is the
-only allocator-agnostic option — a short-lived peak between samples can be missed, so treat the
-number as a tight lower bound on the true peak.
+only option for the CUDA.jl pool — a short-lived peak between samples can be missed, so treat the
+number as a tight lower bound on the true peak. Used by the eager (Zygote / `train!`) backends.
 """
 function with_peak_mem(f)
     HAS_GPU || return (f(), 0)
@@ -96,6 +116,26 @@ function with_peak_mem(f)
         stop[] = true
         wait(sampler)
     end
+end
+
+"""
+    reactant_peak_mem(f)
+
+Run `f()` and return `(result, peak_bytes)` using XLA's *own* BFC-allocator counters rather than
+device-level memory (which can't see inside XLA's pre-grabbed pool). `peak_bytes_in_use` is a
+lifetime high-water mark; we baseline it against `bytes_in_use` sampled just before `f` (the
+resident model / optimiser / constants after warm-up) so the result is the timed run's working-
+set increase — the same "transient over resident" quantity `with_peak_mem` reports for the eager
+backends. Because the mark is lifetime, an unusually large *compile-time* scratch peak (before
+`f`) could inflate it; for a ResNet the step's activation set dwarfs any such scratch, so this
+tracks the true per-step working set closely.
+"""
+function reactant_peak_mem(f)
+    HAS_GPU || return (f(), 0)
+    before = Reactant.XLA.allocatorstats().bytes_in_use
+    result = f()
+    peak = Reactant.XLA.allocatorstats().peak_bytes_in_use
+    return (result, max(0, peak - before))
 end
 
 # ---------------------------------------------------------------------------------------
@@ -170,9 +210,29 @@ function zygote_backend(model0, batch; lr)
         Optimisers.update!(opt, model, gs[1])
         return nothing
     end
+    run!(n) = (for _ in 1:n; step!(); end; nothing)
     sync() = HAS_GPU ? CUDA.synchronize() : nothing
     lossof() = loss(model, x, y)
-    return (; step!, sync, lossof, model)
+    return (; run!, sync, lossof, model, peakmem = with_peak_mem)
+end
+
+# Same eager Zygote gradient as `zygote_backend`, but driven through `Flux.train!` instead of a
+# bare loop. `train!`'s default `gc_interval = :auto` fires an incremental `GC.gc(false)`
+# adaptively — for compute-bound steps (longer than a few ms) that means *every* step — to
+# reclaim dead GPU buffers so reserved memory doesn't creep up under the eager allocator
+# (issue #2523). The manual loop above does no collection, so pairing the two isolates exactly
+# what that adaptive GC buys. The adaptive cadence is stateful across steps, so `run!(n)` must
+# hand `train!` the whole run of `n` steps in one call (not one step at a time).
+function train_zygote_backend(model0, batch; lr)
+    dev = HAS_GPU ? gpu_device() : cpu_device()
+    model = model0 |> dev
+    x, y = batch[1] |> dev, batch[2] |> dev
+    opt = Flux.setup(Descent(lr), model)
+    # `train!` splats each data item into `loss`, so yield the fixed batch as the tuple `(x, y)`.
+    run!(n) = Flux.train!(loss, model, Iterators.repeated((x, y), n), opt)
+    sync() = HAS_GPU ? CUDA.synchronize() : nothing
+    lossof() = loss(model, x, y)
+    return (; run!, sync, lossof, model, peakmem = with_peak_mem)
 end
 
 function reactant_backend(model0, batch; lr)
@@ -188,10 +248,11 @@ function reactant_backend(model0, batch; lr)
     end
     compiled = @compile raw_step!(opt, model, x, y)
     step!() = compiled(opt, model, x, y)
+    run!(n) = (for _ in 1:n; compiled(opt, model, x, y); end; nothing)
     # PJRT runs async; reading a device array back to the host blocks until the queue drains.
     sync() = (Array(first_weight(model)); nothing)
     lossof() = Reactant.to_number(Reactant.@jit loss(model, x, y))
-    return (; step!, sync, lossof, model)
+    return (; run!, sync, lossof, model, peakmem = reactant_peak_mem)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -208,17 +269,13 @@ loss before and after the timed steps, a sanity check that the model is actually
 """
 function time_backend(make_backend, model0, batch; steps::Int, warmup::Int)
     b = make_backend(model0, batch)
-    for _ in 1:warmup
-        b.step!()
-    end
+    b.run!(warmup)
     b.sync()
     loss0 = Float64(b.lossof())
 
-    (t, peak) = with_peak_mem() do
+    (t, peak) = b.peakmem() do
         dt = @elapsed begin
-            for _ in 1:steps
-                b.step!()
-            end
+            b.run!(steps)
             b.sync()
         end
         return dt
@@ -232,13 +289,14 @@ function compare(bs; steps::Int, warmup::Int, lr = 1.0f-2)
     println("\n", "─"^72)
     println("● ResNet-18, batch $bs   ($steps timed steps)")
     println("─"^72)
-    @printf("  %-10s %14s %16s %22s\n", "backend", "time/step", "peak GPU mem", "loss (start → end)")
+    @printf("  %-14s %14s %16s %22s\n", "backend", "time/step", "peak GPU mem", "loss (start → end)")
 
     model0 = resnet18()
     batch = make_batch(bs)
     backends = [
-        ("Zygote",   (m, b) -> zygote_backend(m, b; lr)),
-        ("Reactant", (m, b) -> reactant_backend(m, b; lr)),
+        ("Zygote",        (m, b) -> zygote_backend(m, b; lr)),
+        ("Zygote train!", (m, b) -> train_zygote_backend(m, b; lr)),
+        ("Reactant",      (m, b) -> reactant_backend(m, b; lr)),
     ]
     for (name, mk) in backends
         r = try
@@ -248,9 +306,9 @@ function compare(bs; steps::Int, warmup::Int, lr = 1.0f-2)
             nothing
         end
         if r === nothing
-            @printf("  %-10s %14s %16s %22s\n", name, "—", "OOM", "—")
+            @printf("  %-14s %14s %16s %22s\n", name, "—", "OOM", "—")
         else
-            @printf("  %-10s %14s %16s %22s\n", name,
+            @printf("  %-14s %14s %16s %22s\n", name,
                     @sprintf("%.2f ms", 1e3 * r.time_per_step),
                     fmt_bytes(r.peak_used),
                     @sprintf("%.3f → %.3f", r.loss0, r.loss1))
