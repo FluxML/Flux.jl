@@ -29,15 +29,10 @@ the GPU with `Flux.train!`.
 ```console
 $ cd examples/resnet_tinyimagenet
 $ julia --project=. -e 'using Pkg; Pkg.instantiate()'
-$ julia --project=. -t auto resnet_tinyimagenet.jl                # 30 epochs (the default)
-$ julia --project=. -t auto resnet_tinyimagenet.jl --epochs 5     # override the epoch count
-$ julia --project=. -t auto resnet_tinyimagenet.jl --help         # list all options
+$ julia --project=. resnet_tinyimagenet.jl                # 30 epochs (the default)
+$ julia --project=. resnet_tinyimagenet.jl --epochs 5     # override the epoch count
+$ julia --project=. resnet_tinyimagenet.jl --help         # list all options
 ```
-
-On the **first run**, HuggingFaceDatasets.jl transparently builds a small Python environment
-(via CondaPkg: `datasets`, `pillow`, `numpy`) and downloads the dataset — a few minutes, once.
-`-t auto` enables threaded batch collation; `--num-workers > 0` (default `4`) spreads the CPython
-image decode across worker processes, past the GIL.
 
 Command-line options (parsed with [ArgParse.jl](https://github.com/carlobaldassi/ArgParse.jl) —
 run with `--help` for the full list): `--epochs`, `--batchsize`, `--lr`, `--weight-decay`,
