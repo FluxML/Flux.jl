@@ -9,6 +9,12 @@
 
         c = Chain(Conv((3, 3), 2 => 4, relu), BatchNorm(4), MaxPool((2, 2))) |> gpu
         @test eltype(autocast(c, T)(x4)) == T
+
+        # BatchNorm keeps the activation in half precision on the GPU (its statistics are
+        # folded in Float32 inside the cuDNN kernel), so no full-precision round-trip.
+        bn = BatchNorm(4) |> gpu
+        @test eltype(autocast(bn, T)(CUDA.randn(Float32, 4, 8))) == T
+        @test all(p -> eltype(p) == Float32, Flux.trainables(bn))
     end
 
     @testset "training step" begin

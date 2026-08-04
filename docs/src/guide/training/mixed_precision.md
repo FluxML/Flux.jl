@@ -45,10 +45,14 @@ for inference: `autocast(model, BFloat16)(x)`). In the wrapped model:
   cells) cast their parameters and inputs to the requested half precision before
   computing, so the compute-intensive kernels run fast and the large activations
   take half the memory.
-- Numerically sensitive operations compute in `Float32`: the normalization
-  layers (`BatchNorm`, `LayerNorm`, `InstanceNorm`, `GroupNorm`) cast their input
-  *up*, and the loss functions in `Flux.Losses` always accumulate in `Float32`
-  when given half-precision inputs.
+- Numerically sensitive operations keep their statistics in `Float32`.
+  `BatchNorm` folds its statistics in `Float32` inside the kernel (natively on the
+  GPU, via cuDNN) while letting the half-precision activation pass straight
+  through, so it neither loses accuracy nor pays a full-precision round-trip; on
+  the CPU, where there is no such kernel (and half precision is not faster), it
+  casts up to `Float32` instead. `LayerNorm`, `InstanceNorm` and `GroupNorm`
+  always cast their input *up* to `Float32`. The loss functions in `Flux.Losses`
+  always accumulate in `Float32` when given half-precision inputs.
 - The parameters are never modified; they act as `Float32` "master weights".
   The backward pass of each cast accumulates the gradient back in `Float32`, and
   the gradient returned by `gradient`/`withgradient` is shaped like the *original*

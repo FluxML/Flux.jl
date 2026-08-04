@@ -39,7 +39,12 @@ end
         @test eltype(y) == T
     end
 
-    @testset "norm layers → Float32" begin
+    @testset "norm layers compute in Float32 (on CPU)" begin
+        # BatchNorm uses the `:keep` mode: on the GPU it keeps the activation in half
+        # precision (statistics folded in Float32 by cuDNN), but on the CPU — where half
+        # precision is not faster and BFloat16 is not reliably compiled — it casts up to
+        # Float32, like the other norm layers.
+        @test Flux.autocast_mode(BatchNorm(3)) == :keep
         for (l, x) in ((BatchNorm(3), x2),
                        (LayerNorm(3), x2),
                        (InstanceNorm(2; affine=true), x4),
