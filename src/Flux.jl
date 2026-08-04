@@ -33,7 +33,7 @@ using ADTypes: AbstractADType
                     gpu_device, cpu_device, xla_device,
                     CPUDevice,
                     CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
-                    XLADevice,
+                    ReactantDevice,
                     # get_device, # we define get_device here for retrocompatibility
                     gpu_backend!,
                     get_device_type,
