@@ -33,99 +33,44 @@ The project uses the in-repo Flux (`[sources] Flux = {path = "../.."}`), so it b
 working copy. With no functional CUDA GPU it still runs on CPU — Reactant compiles and trains
 there too — but only the timings are meaningful and the memory column reads `n/a`.
 
-## Two things this benchmark had to work around
-
-### 1. Adam does not compile under Reactant — we use `Momentum`
-
-Reactant traces the optimiser update along with everything else. Stock `Optimisers.Adam` keeps
-a `Tuple{Float32,Float32}` of β-powers in its per-leaf state and *decays and writes it back*
-every step (`βt .* β`). Under tracing that written-back value is a `TracedRNumber`, and storing
-it into the leaf's concrete `Tuple{Float32,Float32}` field hits `Float32(::TracedRNumber)`,
-which has no method — compilation fails. Optimisers whose state is arrays only (`Descent`,
-`Momentum`) trace cleanly, so this benchmark uses plain **`Descent` (SGD) for both backends** (an
-apples-to-apples comparison; the optimiser is a negligible slice of a ResNet step anyway).
-
-**This is a real gap in Flux's Reactant story, not just a benchmark quirk.** Neither Flux nor
-`OptimisersReactantExt` (which only patches `_assert_positive_eta` and `AccumGrad`) ships a
-Reactant-compatible `Adam`. **Lux** works around it in
-`Lux.ReactantCompatibleOptimisers.make_reactant_compatible`, which — *before* `Optimisers.setup`
-— swaps `Adam`/`AdamW`/`Momentum`/`Descent` for structurally identical `ReactantAdam` &c. whose
-hyperparameters *and* β-accumulator are **tracked Reactant numbers** (`to_rarray(…;
-track_numbers=true)`) rather than plain `Float32`. That makes the in-place state write type-
-compatible under tracing, and as a bonus lets you adjust the learning rate without recompiling.
-Upstreaming this into Optimisers is tracked in
-[FluxML/Optimisers.jl#205](https://github.com/FluxML/Optimisers.jl/issues/205); until then, Flux
-+ Reactant users are limited to array-state optimisers or must vendor Lux's rules.
-
-### 2. Memory is measured per-backend
-
-The two backends allocate through different pools, and no single axis sees both faithfully, so
-the peak-memory number is measured differently for each:
-
-- **Eager backends (Zygote, `train!`)** allocate through CUDA.jl's pool, which grows its driver
-  reservation on demand. So their peak is sampled from a background task reading **device-level**
-  used memory (`CUDA.memory_info()`, the driver's `total − free`).
-- **Reactant** allocates through XLA's BFC pool, which grabs a big slab from the driver *up front*
-  and then sub-allocates inside it without further driver calls. Device-level used memory stays
-  pinned at the slab size and reports ~0 change no matter how much XLA actually uses — so for
-  Reactant we read XLA's *own* allocator high-water mark instead
-  (`Reactant.XLA.allocatorstats().peak_bytes_in_use`).
-
-Both are baselined to the *increase* over what was already resident (model weights, optimiser
-state, compiled constants) when the timed run started, so they report the run's transient working
-set. Even with `XLA_PYTHON_CLIENT_PREALLOCATE=false` XLA still reserves ~75 % of the card as its
-pool; the allocator-stats path measures Reactant's true working set regardless.
-
-Two consequences baked into the script:
-
-- **The eager sampler needs a spare thread.** With `julia -t1` it shares the one thread with the
-  training loop and can under-sample the peak; run with `julia -t2` (the script warns if not).
-  Because it samples, treat the eager peak as a tight lower bound. (Reactant's number comes from a
-  counter, not sampling, so it is exact.)
-- **Under memory pressure the eager device-level number is unreliable.** When the working set
-  approaches the card and CUDA.jl thrashes (reclaiming and re-allocating mid-step — see batch 128
-  below), `total − free` is depressed and *understates* the true peak.
-
 ## Sample output
 
-On an **NVIDIA GeForce RTX 5090** (32 GiB), ResNet-18, 20 timed steps:
+On an **NVIDIA GeForce RTX 5090** (32 GiB), ResNet-18, 20 timed steps, `Adam(1f-3)`:
 
 ```
 ● ResNet-18, batch 64   (20 timed steps)
   backend             time/step     peak GPU mem     loss (start → end)
-  Zygote               18.78 ms       18.283 GiB          5.292 → 4.741
-  Zygote train!        18.57 ms        4.252 GiB          4.502 → 1.099
-  Reactant             16.80 ms        1.313 GiB          5.247 → 4.179
+  Zygote               19.25 ms       18.283 GiB          5.617 → 0.000
+  Zygote train!        19.05 ms        4.283 GiB          5.617 → 0.000
+  Reactant             19.55 ms        1.335 GiB          5.617 → 0.000
 
 ● ResNet-18, batch 128   (20 timed steps)
   backend             time/step     peak GPU mem     loss (start → end)
-  Zygote              316.40 ms        7.125 GiB          5.307 → 5.032
-  Zygote train!       316.61 ms        6.781 GiB          5.136 → 2.711
-  Reactant             33.16 ms        2.607 GiB          5.291 → 5.100
+  Zygote              216.71 ms        7.000 GiB          5.746 → 0.001
+  Zygote train!       213.07 ms        6.625 GiB          5.746 → 0.001
+  Reactant             38.32 ms        2.550 GiB          5.746 → 0.001
 ```
 
-The `loss (start → end)` column is a sanity check that each backend is actually training (all
-start near `log(200) ≈ 5.3` and decrease). Three things stand out:
+The `loss (start → end)` column is a sanity check that each backend is actually training: all
+start at the same `log(200) ≈ 5.6` (identical `deepcopy`'d init, probed with batch statistics) and
+`Adam` drives them to ~0 by memorising the single repeated batch. Crucially all three rows now
+*agree*: every backend is put in `Flux.trainmode!` so the probe reads BatchNorm's *batch*
+statistics. Without that, a bare `withgradient` loop (and the Reactant step) would probe in eval
+mode using *running* statistics — which lag badly on a single repeated batch — and report a much
+higher loss than `Flux.train!` (which forces `trainmode!` internally), making the same
+optimisation look wildly different for a measurement reason, not a training one. Three performance
+things stand out:
 
 - **Adaptive GC is a large memory win at no time cost (batch 64).** `Flux.train!` drops peak from
-  **18.3 → 4.25 GiB (4.3×)** versus the bare loop while the time is unchanged (18.57 vs 18.78 ms):
+  **18.3 → 4.28 GiB (4.3×)** versus the bare loop while the time is unchanged (19.05 vs 19.25 ms):
   the bare loop's 18.3 GiB is 20 steps of un-reclaimed dead buffers piling up, and `train!`'s
   per-step incremental GC reclaims them and hides fully behind the compute.
-- **But adaptive GC does *not* fix the batch-128 cliff** (316.6 vs 316.4 ms). That slowdown is not
+- **But adaptive GC does *not* fix the batch-128 cliff** (213.1 vs 216.7 ms). That slowdown is not
   dead-buffer accumulation but memory-pressure *thrashing at allocation time* (CUDA.jl doing
   synchronous, blocking reclaim when the pool is exhausted mid-step), which a between-steps
-  `GC.gc(false)` cannot prevent. The ~7 GiB device-level reading there is understated (see the
-  memory caveat above).
-- **Reactant wins, especially at scale.** At batch 128 it is **~9.5× faster** (33 vs 316 ms) and
-  uses **~2.6× less memory** (2.6 vs 6.8 GiB) than either eager path, because it plans the whole
+  `GC.gc(false)` cannot prevent. The ~7 GiB device-level reading there is understated: under
+  memory pressure CUDA.jl reclaims and re-allocates mid-step, so the sampled `total − free`
+  dips below the true peak.
+- **Reactant wins, especially at scale.** At batch 128 it is **~5.6× faster** (38 vs 213 ms) and
+  uses **~2.6× less memory** (2.6 vs 6.6 GiB) than either eager path, because it plans the whole
   step's memory ahead and never hits the allocator cliff.
-
-For reference, a CPU smoke test (no GPU — timings only, batch 8) also shows both paths compile and
-train and that the compiled step is already several times faster than eager op-by-op:
-
-```
-● ResNet-18, batch 8   (10 timed steps)
-  backend             time/step     peak GPU mem     loss (start → end)
-  Zygote             3374.53 ms              n/a          5.212 → 4.706
-  Reactant            486.90 ms              n/a          4.871 → 2.483
-```

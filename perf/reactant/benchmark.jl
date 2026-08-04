@@ -12,16 +12,27 @@
 # For each backend we report **time per step** (after warm-up / compilation) and **peak GPU
 # memory** during the timed steps, at a couple of batch sizes.
 #
-# Two caveats this script bakes in, both learned the hard way:
+# Three caveats this script bakes in, all learned the hard way:
 #
-#   1. Optimiser choice. Reactant traces the optimiser update too, and `Adam`'s state carries a
-#      `Tuple{Float32,Float32}` of β-powers that is *decayed and written back* every step; under
-#      tracing that write hits `Float32(::TracedRNumber)` and fails to compile (as of
-#      Reactant 0.2 / Optimisers 0.4). Optimisers whose state is arrays only — `Descent`,
-#      `Momentum` — trace cleanly. We use `Momentum` for *both* backends so the comparison is
-#      apples-to-apples; the optimiser is a negligible fraction of a ResNet step regardless.
+#   1. Optimiser choice. Reactant traces the optimiser update too. Historically `Adam`'s state —
+#      a `Tuple{Float32,Float32}` of β-powers *decayed and written back* every step (`βt .* β`) —
+#      failed to compile: under tracing the written-back value is a `TracedRNumber` and storing it
+#      into the concrete `Float32` tuple hit `Float32(::TracedRNumber)`, which has no method. As of
+#      Optimisers 0.4.8 the `OptimisersReactantExt` extension fixes this, so `Adam` now traces and
+#      compiles cleanly, and we use it for all three backends. (Optimisers ≥ 0.4.8 is required — see
+#      the `[compat]` in Project.toml.)
 #
-#   2. Memory measurement is per-backend, because the two backends use different allocators and
+#   2. Loss is probed in training mode for every backend. The loss column exists only to confirm
+#      each backend is training; because the model has BatchNorm layers, a plain forward pass reads
+#      *running* statistics in eval mode but *batch* statistics in train mode, and on a single
+#      repeated synthetic batch those diverge wildly (running stats lag, so eval-mode loss stays
+#      near 5 while batch-stat loss overfits toward ~1). `Flux.train!` forces `trainmode!`
+#      internally, so without matching that the three rows would report loss numbers that look
+#      "very different" for the same optimisation — a measurement artifact, not a real gap. We call
+#      `Flux.trainmode!(model)` in every backend so both the traced/eager training step *and* the
+#      loss probe use batch statistics consistently.
+#
+#   3. Memory measurement is per-backend, because the two backends use different allocators and
 #      no single axis sees both. The eager backends (Zygote, `train!`) allocate through CUDA.jl's
 #      pool, which grows the driver reservation on demand, so *device-level* used memory
 #      (`CUDA.memory_info`, driver total−free), sampled from a background task, tracks their
@@ -203,8 +214,9 @@ first_weight(m) = m.layers[1].weight
 function zygote_backend(model0, batch; lr)
     dev = HAS_GPU ? gpu_device() : cpu_device()
     model = model0 |> dev
+    Flux.trainmode!(model)  # batch-stat BatchNorm, so training and the loss probe are consistent
     x, y = batch[1] |> dev, batch[2] |> dev
-    opt = Flux.setup(Descent(lr), model)
+    opt = Flux.setup(Adam(lr), model)
     step!() = begin
         _, gs = Flux.withgradient(m -> loss(m, x, y), model)
         Optimisers.update!(opt, model, gs[1])
@@ -226,10 +238,54 @@ end
 function train_zygote_backend(model0, batch; lr)
     dev = HAS_GPU ? gpu_device() : cpu_device()
     model = model0 |> dev
+    Flux.trainmode!(model)  # `train!` also forces this; set it up front so the loss probe matches
     x, y = batch[1] |> dev, batch[2] |> dev
-    opt = Flux.setup(Descent(lr), model)
+    opt = Flux.setup(Adam(lr), model)
     # `train!` splats each data item into `loss`, so yield the fixed batch as the tuple `(x, y)`.
     run!(n) = Flux.train!(loss, model, Iterators.repeated((x, y), n), opt)
+    sync() = HAS_GPU ? CUDA.synchronize() : nothing
+    lossof() = loss(model, x, y)
+    return (; run!, sync, lossof, model, peakmem = with_peak_mem)
+end
+
+# Eager Enzyme, bare loop. Same eager CUDA.jl execution as `zygote_backend` (op-by-op, no XLA
+# compile), but the gradient comes from Enzyme instead of Zygote. Enzyme differentiates in reverse
+# through the live cuDNN/CUDA kernels; the gradient is accumulated into a `Duplicated`'s shadow.
+# `Duplicated(model)` (the one-arg method from `@layer`) allocates that shadow, zeroed. The first
+# `withgradient` triggers Enzyme's (slow) compilation of the whole reverse pass — untimed, as it
+# lands in warmup. This is the eager counterpart to the Reactant backend below: same AD engine,
+# but no tracing/fusion, so it isolates what XLA compilation buys over eager Enzyme.
+function enzyme_backend(model0, batch; lr)
+    dev = HAS_GPU ? gpu_device() : cpu_device()
+    model = model0 |> dev
+    Flux.trainmode!(model)  # batch-stat BatchNorm, so training and the loss probe are consistent
+    x, y = batch[1] |> dev, batch[2] |> dev
+    opt = Flux.setup(Adam(lr), model)
+    dup = Duplicated(model)  # allocates the (zeroed) gradient shadow Enzyme writes into
+    step!() = begin
+        _, gs = Flux.withgradient(m -> loss(m, x, y), dup)
+        Optimisers.update!(opt, model, gs[1])
+        return nothing
+    end
+    run!(n) = (for _ in 1:n; step!(); end; nothing)
+    sync() = HAS_GPU ? CUDA.synchronize() : nothing
+    lossof() = loss(model, x, y)
+    return (; run!, sync, lossof, model, peakmem = with_peak_mem)
+end
+
+# Same eager Enzyme gradient as `enzyme_backend`, but driven through `Flux.train!`. Passing a
+# `Duplicated` model makes `train!` select its `AutoEnzyme` path (see `train!` methods in
+# src/train.jl); everything else — adaptive `GC.gc(false)`, the fixed-batch iterator — matches
+# `train_zygote_backend`, so this row is to `enzyme_backend` what the Zygote `train!` row is to the
+# bare Zygote loop.
+function train_enzyme_backend(model0, batch; lr)
+    dev = HAS_GPU ? gpu_device() : cpu_device()
+    model = model0 |> dev
+    Flux.trainmode!(model)  # `train!` also forces this; set it up front so the loss probe matches
+    x, y = batch[1] |> dev, batch[2] |> dev
+    opt = Flux.setup(Adam(lr), model)
+    dup = Duplicated(model)
+    run!(n) = Flux.train!(loss, dup, Iterators.repeated((x, y), n), opt)
     sync() = HAS_GPU ? CUDA.synchronize() : nothing
     lossof() = loss(model, x, y)
     return (; run!, sync, lossof, model, peakmem = with_peak_mem)
@@ -238,8 +294,9 @@ end
 function reactant_backend(model0, batch; lr)
     dev = reactant_device(force = HAS_GPU)
     model = model0 |> dev
+    Flux.trainmode!(model)  # batch-stat BatchNorm in the traced step and the loss probe alike
     x, y = batch[1] |> dev, batch[2] |> dev
-    opt = Flux.setup(Descent(lr), model)
+    opt = Flux.setup(Adam(lr), model)
     # The full step — forward, Enzyme reverse pass, optimiser update — compiled to one executable.
     raw_step!(opt, model, x, y) = begin
         _, gs = Flux.withgradient(m -> loss(m, x, y), AutoEnzyme(), model)
@@ -264,14 +321,17 @@ end
 
 Build a backend, run `warmup` untimed steps (for Reactant the first call is the compile, which
 must not be timed), then time `steps` in-place training steps — synchronising once at the end
-so async device work is included — while tracking peak device memory. `loss0`/`loss1` are the
-loss before and after the timed steps, a sanity check that the model is actually training.
+so async device work is included — while tracking peak device memory. `loss0` is the loss at
+initialisation (before any step) and `loss1` the loss after warmup + timed steps: a sanity check
+that the model is training. `loss0` is read *before* warmup on purpose — `Adam` overfits this
+single repeated batch within a few steps, so a post-warmup reading would already sit near zero
+and hide the starting point (~`log(nclasses)`).
 """
 function time_backend(make_backend, model0, batch; steps::Int, warmup::Int)
     b = make_backend(model0, batch)
+    loss0 = Float64(b.lossof())
     b.run!(warmup)
     b.sync()
-    loss0 = Float64(b.lossof())
 
     (t, peak) = b.peakmem() do
         dt = @elapsed begin
@@ -285,7 +345,7 @@ function time_backend(make_backend, model0, batch; steps::Int, warmup::Int)
     return (; time_per_step = t / steps, peak_used = peak, loss0, loss1)
 end
 
-function compare(bs; steps::Int, warmup::Int, lr = 1.0f-2)
+function compare(bs; steps::Int, warmup::Int, lr = 1.0f-3)
     println("\n", "─"^72)
     println("● ResNet-18, batch $bs   ($steps timed steps)")
     println("─"^72)
@@ -296,17 +356,28 @@ function compare(bs; steps::Int, warmup::Int, lr = 1.0f-2)
     backends = [
         ("Zygote",        (m, b) -> zygote_backend(m, b; lr)),
         ("Zygote train!", (m, b) -> train_zygote_backend(m, b; lr)),
+        # Eager Enzyme is disabled for now: on this CUDA conv net its reverse pass is impractically
+        # slow to compile / does not lower cleanly (Enzyme + cuDNN is not a well-supported path
+        # eagerly — the Reactant backend below uses Enzyme through XLA instead, which does work).
+        # The `enzyme_backend` / `train_enzyme_backend` functions are kept above; re-enable these
+        # two rows once eager Enzyme-on-CUDA is viable.
+        # ("Enzyme",        (m, b) -> enzyme_backend(m, b; lr)),
+        # ("Enzyme train!", (m, b) -> train_enzyme_backend(m, b; lr)),
         ("Reactant",      (m, b) -> reactant_backend(m, b; lr)),
     ]
     for (name, mk) in backends
         r = try
             time_backend(mk, deepcopy(model0), batch; steps, warmup)
         catch e
-            (e isa OutOfGPUMemoryError) || rethrow()
-            nothing
+            # One backend failing (an OOM at a large batch, or eager Enzyme not supporting some
+            # op) shouldn't abort the whole comparison — report it on its row and keep going.
+            e isa OutOfGPUMemoryError || @warn "backend `$name` failed" exception = (e, catch_backtrace())
+            e isa OutOfGPUMemoryError ? :oom : :err
         end
-        if r === nothing
+        if r === :oom
             @printf("  %-14s %14s %16s %22s\n", name, "—", "OOM", "—")
+        elseif r === :err
+            @printf("  %-14s %14s %16s %22s\n", name, "—", "error", "—")
         else
             @printf("  %-14s %14s %16s %22s\n", name,
                     @sprintf("%.2f ms", 1e3 * r.time_per_step),
