@@ -312,6 +312,28 @@ function reactant_backend(model0, batch; lr)
     return (; run!, sync, lossof, model, peakmem = reactant_peak_mem)
 end
 
+# Same compiled step as `reactant_backend`, but driven through `Flux.train!` instead of a manual
+# `@compile` + call loop. On a Reactant model `train!` detects the XLA device and compiles the whole
+# forward + Enzyme reverse + optimiser-update step once, caches it, and reuses it across calls —
+# folding in the boilerplate `reactant_backend` writes by hand. Two differences this row isolates
+# from `reactant_backend`: `train!` reads the loss back to the host each step (for its `isfinite`
+# guard and progress bar), adding one device→host sync per step that the sync-free `reactant_backend`
+# loop avoids — so this is to `reactant_backend` what `train_zygote_backend` is to the bare Zygote
+# loop. Data is already device-resident and `Iterators.repeated` keeps the batch shape fixed, so the
+# executable compiles once during warmup and every timed step reuses it (Flux caches it across the
+# two `run!` calls).
+function train_reactant_backend(model0, batch; lr)
+    dev = reactant_device(force = HAS_GPU)
+    model = model0 |> dev
+    Flux.trainmode!(model)  # `train!` also forces this; set it up front so the loss probe matches
+    x, y = batch[1] |> dev, batch[2] |> dev
+    opt = Flux.setup(Adam(lr), model)
+    run!(n) = Flux.train!(loss, model, Iterators.repeated((x, y), n), opt)
+    sync() = (Array(first_weight(model)); nothing)
+    lossof() = Reactant.to_number(Reactant.@jit loss(model, x, y))
+    return (; run!, sync, lossof, model, peakmem = reactant_peak_mem)
+end
+
 # ---------------------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------------------
@@ -349,7 +371,7 @@ function compare(bs; steps::Int, warmup::Int, lr = 1.0f-3)
     println("\n", "─"^72)
     println("● ResNet-18, batch $bs   ($steps timed steps)")
     println("─"^72)
-    @printf("  %-14s %14s %16s %22s\n", "backend", "time/step", "peak GPU mem", "loss (start → end)")
+    @printf("  %-16s %14s %16s %22s\n", "backend", "time/step", "peak GPU mem", "loss (start → end)")
 
     model0 = resnet18()
     batch = make_batch(bs)
@@ -363,7 +385,8 @@ function compare(bs; steps::Int, warmup::Int, lr = 1.0f-3)
         # two rows once eager Enzyme-on-CUDA is viable.
         # ("Enzyme",        (m, b) -> enzyme_backend(m, b; lr)),
         # ("Enzyme train!", (m, b) -> train_enzyme_backend(m, b; lr)),
-        ("Reactant",      (m, b) -> reactant_backend(m, b; lr)),
+        ("Reactant",        (m, b) -> reactant_backend(m, b; lr)),
+        ("Reactant train!", (m, b) -> train_reactant_backend(m, b; lr)),
     ]
     for (name, mk) in backends
         r = try
@@ -375,11 +398,11 @@ function compare(bs; steps::Int, warmup::Int, lr = 1.0f-3)
             e isa OutOfGPUMemoryError ? :oom : :err
         end
         if r === :oom
-            @printf("  %-14s %14s %16s %22s\n", name, "—", "OOM", "—")
+            @printf("  %-16s %14s %16s %22s\n", name, "—", "OOM", "—")
         elseif r === :err
-            @printf("  %-14s %14s %16s %22s\n", name, "—", "error", "—")
+            @printf("  %-16s %14s %16s %22s\n", name, "—", "error", "—")
         else
-            @printf("  %-14s %14s %16s %22s\n", name,
+            @printf("  %-16s %14s %16s %22s\n", name,
                     @sprintf("%.2f ms", 1e3 * r.time_per_step),
                     fmt_bytes(r.peak_used),
                     @sprintf("%.3f → %.3f", r.loss0, r.loss1))

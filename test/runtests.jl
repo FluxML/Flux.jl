@@ -59,6 +59,13 @@ delete!(testsuite, "test_common/gpu_recurrent")
 # --- init_code: runs in every test subprocess before the test expression ---
 # Constants are interpolated from the main process so subprocesses see the same values.
 init_code = quote
+    # Reactant/XLA preallocates 75% of the GPU by default, which starves the CUDA.jl tests that
+    # share the card on CI (they OOM even loading a kernel — the tell is a ~100%-full GPU next to a
+    # near-empty CUDA.jl pool). Disable preallocation and cap XLA's fraction so it allocates lazily
+    # and both backends fit. These are Reactant's own knobs (the JAX-style XLA_PYTHON_CLIENT_* names
+    # are ignored by Reactant); must be set before `using Reactant`.
+    get!(ENV, "XLA_REACTANT_GPU_PREALLOCATE", "false")
+    get!(ENV, "XLA_REACTANT_GPU_MEM_FRACTION", "0.25")
     const FLUX_TEST_ENZYME = $FLUX_TEST_ENZYME
     using Random
     Random.seed!(0)

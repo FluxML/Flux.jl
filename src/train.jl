@@ -12,12 +12,99 @@ using ADTypes: AbstractADType, AutoEnzyme, AutoZygote
 
 export setup, train!
 
-# Tuning for `train!(...; gc_interval = :auto)` (see the GC block in `train!`):
-# a step longer than `GC_HIDE_S` seconds is assumed compute-bound enough to hide an
-# incremental GC (so we collect every step); for cheaper steps we keep the amortized GC cost
-# near `GC_OVERHEAD` of training time.
+# Implemented by FluxReactantExt when Reactant.jl is loaded. Only reached from the ReactantDevice
+# branch of `train!` below, which requires the model to hold Reactant arrays — i.e. Reactant
+# (and thus the extension) is already loaded. The bare declaration lets `train!` reference it;
+# a MethodError is the (essentially unreachable) safety net if the extension is missing.
+function _reactant_train! end
+
+# ---------------------------------------------------------------------------
+# Paced garbage collection for `train!`.
+#
+# With the caching allocator off, dead GPU buffers are only reclaimed by the GC, which seldom
+# fires on its own here (the `CuArray` wrappers are tiny on the CPU heap), so reserved GPU
+# memory creeps up (issue #2523). A periodic incremental GC bounds that growth at a fraction
+# of the cost of collecting every step. A `GCPacer` decides, once per training step, whether
+# to run `GC.gc(false)`. The `train!` loop brackets each step with `tic`/`maybe_gc!`, keeping
+# all the cadence bookkeeping out of the loop body.
+# ---------------------------------------------------------------------------
+abstract type GCPacer end
+
+# Timestamp the pacer needs at the start of a step; `0` when it doesn't time steps.
+tic(::GCPacer) = zero(UInt64)
+
+# No paced GC: with the caching allocator on a mid-step GC reclaims nothing (the step's
+# buffers are pinned), and `gc_interval = 0` disables pacing explicitly.
+struct NoGCPacer <: GCPacer end
+maybe_gc!(::NoGCPacer, i::Integer, t0::UInt64) = nothing
+
+# Fixed cadence: collect every `interval` steps.
+struct FixedGCPacer <: GCPacer
+    interval::Int
+end
+function maybe_gc!(p::FixedGCPacer, i::Integer, ::UInt64)
+    i % p.interval == 0 && GC.gc(false)
+    return nothing
+end
+
+# Tuning for the adaptive pacer: a step longer than `GC_HIDE_S` seconds is assumed
+# compute-bound enough to hide an incremental GC (so we collect every step); for cheaper steps
+# we keep the amortized GC cost near `GC_OVERHEAD` of training time.
 const GC_HIDE_S = 5e-3
 const GC_OVERHEAD = 0.02
+
+# Adaptive cadence driven by wall-clock timing only (no GPU/backend queries, so it works for
+# every backend):
+#   * A compute-bound step (longer than `GC_HIDE_S`) overlaps an incremental GC with its own
+#     GPU work, so the GC is effectively free — collect every step and keep memory minimal.
+#     (Timing a GC in isolation would *overestimate* its cost here, because the async frees
+#     pipeline with the next step; so we deliberately don't use `t_gc`.)
+#   * A cheap step puts the GC on the critical path (the GPU is idle during it, so timing it in
+#     isolation is accurate). Collect only ~every `t_gc/(ε·t_step)` steps to hold the amortized
+#     cost near ε ≈ 2%.
+# An unusually slow step (typically the backend's own memory reclaim under pressure) halves the
+# interval to preempt further such stalls.
+mutable struct AutoGCPacer <: GCPacer
+    t_step::Float64   # EMA of step wall-time (seconds)
+    t_gc::Float64     # EMA of one GC's wall-time (seconds)
+    interval::Int     # current number of steps between collections
+    since::Int        # steps since the last collection
+end
+AutoGCPacer() = AutoGCPacer(0.0, 0.0, 1, 0)
+
+tic(::AutoGCPacer) = time_ns()
+
+function maybe_gc!(p::AutoGCPacer, i::Integer, t0::UInt64)
+    dt = (time_ns() - t0) / 1e9
+    spike = p.t_step > 0.0 && dt > 3 * p.t_step
+    p.t_step = p.t_step == 0.0 ? dt : 0.9 * p.t_step + 0.1 * dt
+    base = if p.t_step >= GC_HIDE_S           # compute-bound: GC hides → every step
+        1
+    elseif p.t_gc == 0.0 || p.t_step == 0.0  # not measured yet
+        1
+    else                                     # cheap step: bound amortized GC cost to ε
+        clamp(round(Int, p.t_gc / (GC_OVERHEAD * p.t_step)), 1, 4096)
+    end
+    p.interval = spike ? max(1, p.interval ÷ 2) : clamp(p.interval + 1, 1, base)
+    p.since += 1
+    if p.since >= p.interval
+        g0 = time_ns()
+        GC.gc(false)
+        gdt = (time_ns() - g0) / 1e9
+        p.t_gc = p.t_gc == 0.0 ? gdt : 0.9 * p.t_gc + 0.1 * gdt
+        p.since = 0
+    end
+    return nothing
+end
+
+# Paced GC only helps with the caching allocator off (with it on, a step's buffers are pinned,
+# so a mid-training GC reclaims nothing).
+function _gc_pacer(gc_interval::Union{Integer, Symbol}, cache)
+    cache === nothing || return NoGCPacer()
+    gc_interval === :auto && return AutoGCPacer()
+    gc_interval isa Integer && gc_interval > 0 && return FixedGCPacer(gc_interval)
+    return NoGCPacer()   # gc_interval == 0: pacing disabled
+end
 
 """
     opt_state = setup(rule, model)
@@ -111,27 +198,31 @@ function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing,
                                 For more control use a loop with `gradient` and `update!`.""")
     gc_interval isa Symbol && gc_interval !== :auto &&
         throw(ArgumentError("`gc_interval` must be a non-negative integer or `:auto`, got `:$gc_interval`"))
+
+    # Reactant / XLA fast path: compile the whole training step (forward + Enzyme reverse pass +
+    # optimiser update) into one XLA executable, reused across batches of the same shape.
+    if Flux.get_device_type(model) <: Flux.ReactantDevice
+        model isa Duplicated && throw(ArgumentError(
+            "`Duplicated` models are not supported on Reactant devices; pass the plain model \
+             that already lives on the Reactant device."))
+        (adtype isa AutoEnzyme || adtype isa AutoZygote) || @warn(
+            "On a Reactant device `train!` always differentiates with Enzyme; ignoring \
+             adtype=$adtype.", maxlog=1)
+        return _reactant_train!(loss, model, data, opt)
+    end
+
     Flux.trainmode!(model)
     cache = caching_allocator ? GPUArrays.AllocCache() : nothing
-
-    # Paced GC (fixed `gc_interval` or `:auto`) only helps when the cache is off — with the
-    # cache on, a step's buffers are pinned, so a mid-training GC reclaims nothing. State below
-    # is for `gc_interval = :auto`, a timing-based adaptive cadence (see the GC block).
-    auto = gc_interval === :auto && cache === nothing
-    t_step = 0.0    # EMA of step wall-time (seconds)
-    t_gc = 0.0      # EMA of one GC's wall-time (seconds)
-    interval = 1    # current number of steps between collections
-    since = 0       # steps since the last collection
+    pacer = _gc_pacer(gc_interval, cache)   # decides when to run an incremental GC (see above)
 
     @withprogress for (i,d) in enumerate(data)
         d_splat = d isa Tuple ? d : (d,)
 
-        t0 = auto ? time_ns() : zero(UInt64)
+        t0 = tic(pacer)
         # The first step is run without the cache on purpose. On a GPU it triggers cuDNN's
         # convolution-algorithm search, whose one-off probe workspaces are transient but
         # would be pinned by the cache — they are never reused and can be large enough to
-        # blow past GPU memory. From the second step on the algorithm is fixed, so the cache
-        # only ever sees the real, reusable training buffers.
+        # blow past GPU memory.
         if cache === nothing || i == 1
             opt, model = _train_step!(loss, adtype, model, opt, d_splat, i)
         else
@@ -141,46 +232,7 @@ function train!(loss, adtype::AbstractADType, model, data, opt; cb = nothing,
             end
         end
 
-        # With the caching allocator off, dead GPU buffers are only reclaimed by the GC, which
-        # seldom fires on its own here (the `CuArray` wrappers are tiny on the CPU heap), so
-        # reserved GPU memory creeps up (issue #2523). A periodic incremental GC bounds that
-        # growth at a fraction of the cost of collecting every step.
-        #
-        # A fixed `gc_interval` collects every N steps. `gc_interval = :auto` instead picks the
-        # cadence from wall-clock timing only (no GPU/backend queries, so it works for every
-        # backend):
-        #   * A compute-bound step (longer than `GC_HIDE_S`) overlaps an incremental GC with its
-        #     own GPU work, so the GC is effectively free — collect every step and keep memory
-        #     minimal. (Timing a GC in isolation would *overestimate* its cost here, because the
-        #     async frees pipeline with the next step; so we deliberately don't use `t_gc`.)
-        #   * A cheap step puts the GC on the critical path (the GPU is idle during it, so timing
-        #     it in isolation is accurate). Collect only ~every `t_gc/(ε·t_step)` steps to hold
-        #     the amortized cost near ε ≈ 2%.
-        # An unusually slow step (typically the backend's own memory reclaim under pressure)
-        # halves the interval to preempt further such stalls.
-        if auto
-            dt = (time_ns() - t0) / 1e9
-            spike = t_step > 0.0 && dt > 3 * t_step
-            t_step = t_step == 0.0 ? dt : 0.9 * t_step + 0.1 * dt
-            base = if t_step >= GC_HIDE_S            # compute-bound: GC hides → every step
-                1
-            elseif t_gc == 0.0 || t_step == 0.0     # not measured yet
-                1
-            else                                    # cheap step: bound amortized GC cost to ε
-                clamp(round(Int, t_gc / (GC_OVERHEAD * t_step)), 1, 4096)
-            end
-            interval = spike ? max(1, interval ÷ 2) : clamp(interval + 1, 1, base)
-            since += 1
-            if since >= interval
-                g0 = time_ns()
-                GC.gc(false)
-                gdt = (time_ns() - g0) / 1e9
-                t_gc = t_gc == 0.0 ? gdt : 0.9 * t_gc + 0.1 * gdt
-                since = 0
-            end
-        elseif cache === nothing && gc_interval isa Integer && gc_interval > 0 && i % gc_interval == 0
-            GC.gc(false)
-        end
+        maybe_gc!(pacer, i, t0)
 
         @logprogress Base.haslength(data) ? i/length(data) : nothing
     end
