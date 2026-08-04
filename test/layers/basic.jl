@@ -344,6 +344,47 @@
     @test size(x3) == (vocab_size, 3, 4)
     y3 = m(x3)
     @test size(y3) == (embed_size, 3, 4)
+
+    @testset "padding_idx" begin
+      pad = 2
+      m = Embedding(vocab_size => embed_size, padding_idx=pad)
+      @test m.padding_idx == pad
+      @test all(m.weight[:, pad] .== 0)
+      @test occursin("padding_idx=$pad", repr(m))
+      @test_throws ArgumentError Embedding(vocab_size => embed_size, padding_idx=0)
+      @test_throws ArgumentError Embedding(vocab_size => embed_size, padding_idx=vocab_size+1)
+
+      # forward: the padding embedding is all zeros for every input form
+      @test all(m(pad) .== 0)
+      x = [1, pad, 3, pad, 4]
+      y = m(x)
+      @test all(y[:, [2, 4]] .== 0)
+      @test y ≈ m(Flux.onehotbatch(x, 1:vocab_size))
+      @test all(m(OneHotVector(pad, vocab_size)) .== 0)
+      xnd = [1 pad; 3 pad]
+      @test all(m(xnd)[:, 1, 2] .== 0) && all(m(xnd)[:, 2, 2] .== 0)
+
+      # gradient w.r.t. the padding column is masked to zero, others match an unpadded ref
+      m0 = Embedding(copy(m.weight))  # padding_idx = nothing
+      for input in (x, Flux.onehotbatch(x, 1:vocab_size))
+        g = gradient(m -> sum(m(input)), m)[1].weight
+        g0 = gradient(m -> sum(m(input)), m0)[1].weight
+        @test all(g[:, pad] .== 0)
+        @test any(g0[:, pad] .!= 0)  # unmasked reference has a nonzero padding gradient
+        @test g[:, setdiff(1:vocab_size, pad)] == g0[:, setdiff(1:vocab_size, pad)]
+      end
+      # scalar-index path masks too
+      @test all(gradient(m -> sum(m(pad)), m)[1].weight .== 0)
+
+      # AD backends (incl. finite-difference reference) agree on the masked gradient
+      test_gradients(m, x)
+      test_gradients(m, Flux.onehotbatch(x, 1:vocab_size))
+
+      # the padding row stays fixed at zero through training
+      opt_state = Flux.setup(Adam(0.1), m)
+      Flux.train!((m, x) -> sum(abs2, m(x) .- 1), m, [(x,) for _ in 1:5], opt_state)
+      @test all(m.weight[:, pad] .== 0)
+    end
   end
 
   @testset "EmbeddingBag" begin
