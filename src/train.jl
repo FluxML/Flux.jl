@@ -2,7 +2,7 @@ module Train
 
 using LinearAlgebra
 using Optimisers: Optimisers
-using Functors: fmap, fmapstructure
+using Functors: fmap, fmapstructure, children
 using ..Flux: Flux
 using GPUArrays: GPUArrays
 
@@ -205,7 +205,7 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
 
     # On a Reactant device the fused step is compiled by `train_step!`; the caching allocator and the
     # paced GC below are CUDA-oriented (they manage `CuArray` reserved memory) and don't apply.
-    on_reactant = Flux.get_device_type(model) <: Flux.ReactantDevice
+    on_reactant = _on_reactant(model)
     if on_reactant
         cache = nothing
         pacer = NoGCPacer()
@@ -330,12 +330,32 @@ function _eager_step!(loss, adtype, model, batch::Tuple, opt_state)
     return l, gs[1]
 end
 
+# First parameter array of a model — a cheap proxy for the model's device, since a model's parameters
+# share a device in practice. `Flux.get_device_type(model)` traverses *every* parameter (microseconds
+# for a large model, and it runs on every `train_step!`), whereas one leaf suffices. Returns `nothing`
+# for a model with no array parameters.
+_first_param(x::AbstractArray{<:Number}) = x
+_first_param(x::Duplicated) = _first_param(x.val)
+function _first_param(x)
+    for c in children(x)
+        p = _first_param(c)
+        p === nothing || return p
+    end
+    return nothing
+end
+
+# Cheap "does this model live on a Reactant device" check (see `_first_param`).
+function _on_reactant(model)
+    p = _first_param(model)
+    return p !== nothing && Flux.get_device_type(p) <: Flux.ReactantDevice
+end
+
 # On a Reactant device, validate the model/adtype and signal the caller to take the compiled path.
 # The model's device is the canonical signal for Reactant training (it's what `train!` keys on too);
 # the extension then checks the batch is device-resident, so keying on the model here keeps the
 # "host-resident data" error meaningful.
 function _reactant_model(model, adtype)
-    Flux.get_device_type(model) <: Flux.ReactantDevice || return false
+    _on_reactant(model) || return false
     model isa Duplicated && throw(ArgumentError(
         "`Duplicated` models are not supported on Reactant devices; pass the plain model \
          that already lives on the Reactant device."))
