@@ -39,17 +39,6 @@ FLUX_TEST_REACTANT=false julia --project=test/ test/runtests.jl
 
 Test environment flags: `FLUX_TEST_CPU` (default true), `FLUX_TEST_CUDA`, `FLUX_TEST_AMDGPU`, `FLUX_TEST_METAL`, `FLUX_TEST_ENZYME` (default true on Julia < 1.12), `FLUX_TEST_REACTANT` (default true), `FLUX_TEST_DISTRIBUTED_MPI`, `FLUX_TEST_DISTRIBUTED_NCCL`.
 
-**Format code:**
-```
-julia -e 'using JuliaFormatter; format("src")'
-```
-Config: indent=4, margin=80, `always_for_in=true` (see `.JuliaFormatter.toml`).
-
-There is a pre-commit hook in `.githooks/pre-commit` that auto-formats staged files. Activate it with:
-```
-git config core.hooksPath .githooks
-```
-
 ## Architecture
 
 Flux.jl is a pure-Julia ML framework. The main entry point is [src/Flux.jl](src/Flux.jl), which re-exports from several key dependencies.
