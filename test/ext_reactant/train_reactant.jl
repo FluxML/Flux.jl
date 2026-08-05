@@ -96,6 +96,40 @@ end
     @test Reactant.to_number(Reactant.@jit lossnt(model, nt)) < l0
 end
 
+@testset "auxiliary loss outputs on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+
+    model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    opt = Flux.setup(Adam(1f-2), model)
+
+    scalarloss(m, a, b) = Flux.mse(m(a), b)
+    # loss returns (scalar loss, NamedTuple of a device-computed statistic)
+    auxloss(m, a, b) = (Flux.mse(m(a), b), (; sumsq = sum(abs2, m(a))))
+
+    l0 = Reactant.to_number(Reactant.@jit scalarloss(model, x, y))
+
+    v = Flux.train_step!(auxloss, model, (x, y), opt)
+    @test v isa Tuple                                              # full value returned
+    @test v[1] isa Real && isfinite(v[1])                         # scalar loss read to host
+    @test v[1] ≈ l0                                               # measured before the update
+    @test Flux.get_device_type(v[2].sumsq) <: Flux.ReactantDevice # aux stays on the device
+
+    # with-gradient variant: same value shape, gradient stays on the device
+    v2, g = Flux.train_step_withgradient!(auxloss, model, (x, y), opt)
+    @test v2 isa Tuple && v2[1] isa Real && isfinite(v2[1])
+    @test Flux.get_device_type(g) <: Flux.ReactantDevice
+
+    # differentiating `first∘loss`, training with the aux loss still reduces the loss
+    for _ in 1:20
+        Flux.train_step!(auxloss, model, (x, y), opt)
+    end
+    @test Reactant.to_number(Reactant.@jit scalarloss(model, x, y)) < l0
+
+    # `train!` over an aux-returning loss runs (it guards on the scalar and discards the aux)
+    @test Flux.train!(auxloss, model, [(x, y) for _ in 1:5], opt) === nothing
+end
+
 @testset "Reactant compile-cache auto-eviction" begin
     dev = MLDataDevices.reactant_device(force=true)
     ext = Base.get_extension(Flux, :FluxReactantExt)

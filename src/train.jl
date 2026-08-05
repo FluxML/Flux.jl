@@ -233,8 +233,10 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
 
         # `train_step!` mutates `model`/`opt_state` in place and skips the update itself on a
         # non-finite loss, so the model is intact here when we stop. (On a Reactant device the update
-        # is fused into the executable and already applied; this only halts further steps.)
-        isfinite(l) || throw(DomainError(lazy"Loss is $l on data item $i, stopping training"))
+        # is fused into the executable and already applied; this only halts further steps.) `l` is the
+        # loss value, or `(loss, aux...)` when the loss returns auxiliary outputs — guard on the scalar.
+        ls = _loss_scalar(l)
+        isfinite(ls) || throw(DomainError(lazy"Loss is $ls on data item $i, stopping training"))
 
         maybe_gc!(pacer, i, t0)
 
@@ -259,15 +261,34 @@ from Enzyme.jl, in which case Enzyme is used.
 
 [`train!`](@ref Flux.train!) is a loop over the data built on top of `train_step!`.
 
-If the loss comes out non-finite the update is skipped, leaving `model` unchanged (`train!` turns this
-into a `DomainError`). On a Reactant device this guard does not apply, as the update is fused into the
-compiled step.
+## Auxiliary outputs
+
+Like [`withgradient`](@ref Flux.withgradient), the loss may return auxiliary data alongside the
+scalar loss: if it returns a `Tuple` or `NamedTuple` whose first element is the loss, the gradient
+is taken of the loss alone and the whole value is returned. This is handy for logging metrics
+computed during the forward pass (accuracy, a breakdown of loss terms, …):
+
+```julia
+function loss(m, x, y)
+    ŷ = m(x)
+    Flux.mse(ŷ, y), (; acc = mean(onecold(ŷ) .== onecold(y)))
+end
+l, stats = Flux.train_step!(loss, model, (x, y), opt_state)   # l == (loss, stats); stats.acc
+```
+
+## Non-finite loss
+
+If the (scalar) loss comes out non-finite the update is skipped, leaving `model` unchanged (`train!`
+turns this into a `DomainError`). On a Reactant device this guard does not apply, as the update is
+fused into the compiled step.
+
+## Reactant
 
 When the `model` lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, the whole step
 (forward pass, Enzyme reverse pass and optimiser update) is compiled into a single XLA executable,
 cached and reused across calls with the same model, optimiser, loss and batch shape (the cached entry
-is dropped once the model is garbage-collected). The batch must be device-resident too, and the
-returned `loss` is read back to the host as a scalar.
+is dropped once the model is garbage-collected). The batch must be device-resident too. The scalar
+`loss` is read back to the host; any auxiliary outputs stay on the device.
 
 # Example
 ```julia
@@ -302,10 +323,11 @@ end
 
 Like [`train_step!`](@ref Flux.train_step!), but also returns the `grad`ient of the loss with respect
 to the model. Everything else is identical: `model` and `opt_state` are updated in place and the
-primal `loss` is returned as the first value.
+first returned value is whatever the loss returned — the scalar loss, or `(loss, aux...)` when the
+loss returns auxiliary outputs (see [`train_step!`](@ref Flux.train_step!)).
 
-On a Reactant device the returned `grad` stays on the device (only the `loss` is read back to the
-host). Returning the gradient makes it an output of the compiled step, which raises peak memory
+On a Reactant device the returned `grad` stays on the device (only the scalar `loss` is read back to
+the host). Returning the gradient makes it an output of the compiled step, which raises peak memory
 relative to `train_step!`; prefer `train_step!` when the gradient is not needed.
 """
 train_step_withgradient!(loss, model, batch::Tuple, opt_state) =
@@ -321,14 +343,21 @@ function train_step_withgradient!(loss, adtype::AbstractADType, model, batch::Tu
     return _eager_step!(loss, adtype, model, batch, opt_state)
 end
 
-# Eager (Zygote/Enzyme) single step, shared by both entry points; returns `(loss, grad)`. The update
-# is skipped on a non-finite loss so the model is left uncorrupted, and the returned loss lets the
-# caller (e.g. `train!`) decide how to react.
+# Eager (Zygote/Enzyme) single step, shared by both entry points; returns `(val, grad)` where `val`
+# is whatever the loss returned (a scalar, or a Tuple/NamedTuple `(loss, aux...)` — see
+# `_loss_scalar`). The update is skipped on a non-finite loss so the model is left uncorrupted, and
+# the returned value lets the caller (e.g. `train!`) decide how to react.
 function _eager_step!(loss, adtype, model, batch::Tuple, opt_state)
-    l, gs = Flux.withgradient(m -> loss(m, batch...), adtype, model)
-    isfinite(l) && _update!(opt_state, model, gs[1])
-    return l, gs[1]
+    v, gs = Flux.withgradient(m -> loss(m, batch...), adtype, model)
+    isfinite(_loss_scalar(v)) && _update!(opt_state, model, gs[1])
+    return v, gs[1]
 end
+
+# The scalar loss out of a `train_step!`/`withgradient` value. When the loss returns auxiliary
+# outputs (a Tuple or NamedTuple whose first element is the loss) the whole thing is returned to the
+# user, but the finiteness guard and `train!` only look at the scalar.
+_loss_scalar(v::Union{Tuple, NamedTuple}) = first(v)
+_loss_scalar(v) = v
 
 # First parameter array of a model — a cheap proxy for the model's device, since a model's parameters
 # share a device in practice. `Flux.get_device_type(model)` traverses *every* parameter (microseconds
