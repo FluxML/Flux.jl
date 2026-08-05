@@ -84,7 +84,7 @@ for name in ("Zygote", "Enzyme")
   wrap = name == "Enzyme" ? (m -> Enzyme.Duplicated(m, Enzyme.make_zero(m))) : identity
 
   @testset "Flux.train_step! with $name" begin
-    @testset "returns (loss, grad) and updates in place" begin
+    @testset "train_step! returns the loss and updates in place" begin
       model = Dense(3 => 2, tanh)
       x, y = randn(Float32, 3, 5), randn(Float32, 2, 5)
       loss(m, x, y) = Flux.mse(m(x), y)
@@ -95,13 +95,30 @@ for name in ("Zygote", "Enzyme")
       w0 = copy(model.weight)
       vel0 = copy(opt.weight.state)   # Momentum velocity, initially zero
 
-      l, g = Flux.train_step!(loss, wm, (x, y), opt)
+      l = Flux.train_step!(loss, wm, (x, y), opt)
+
+      @test l isa Real && isfinite(l)
+      @test l ≈ l0                          # loss is measured *before* the update
+      @test !(model.weight ≈ w0)            # model mutated in place
+      @test !(opt.weight.state ≈ vel0)      # optimiser state mutated in place
+    end
+
+    @testset "train_step_withgradient! also returns the gradient" begin
+      model = Dense(3 => 2, tanh)
+      x, y = randn(Float32, 3, 5), randn(Float32, 2, 5)
+      loss(m, x, y) = Flux.mse(m(x), y)
+
+      wm = wrap(model)
+      opt = Flux.setup(Momentum(0.1), wm)
+      l0 = loss(model, x, y)
+      w0 = copy(model.weight)
+
+      l, g = Flux.train_step_withgradient!(loss, wm, (x, y), opt)
 
       @test l isa Real && isfinite(l)
       @test l ≈ l0                          # loss is measured *before* the update
       @test g.weight isa AbstractArray && size(g.weight) == size(model.weight)
-      @test !(model.weight ≈ w0)            # model mutated in place
-      @test !(opt.weight.state ≈ vel0)      # optimiser state mutated in place
+      @test !(model.weight ≈ w0)            # model still mutated in place
     end
 
     @testset "repeated steps converge" begin
@@ -126,7 +143,7 @@ for name in ("Zygote", "Enzyme")
       wm = wrap(model)
       opt = Flux.setup(Descent(0.1), wm)
 
-      l, g = Flux.train_step!((m, i) -> NaN32 * sum(m([1f0])), wm, (1,), opt)
+      l = Flux.train_step!((m, i) -> NaN32 * sum(m([1f0])), wm, (1,), opt)
       @test !isfinite(l)
       @test model.weight ≈ [0f0;;]   # update skipped, model left uncorrupted
       @test model.bias ≈ [0f0]

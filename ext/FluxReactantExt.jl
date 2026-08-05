@@ -6,21 +6,26 @@ using ADTypes: AutoEnzyme
 using Functors: fmapstructure
 import Reactant
 
-# Fixed-arity compiled step: the whole batch is passed as ONE tuple (splat inside), so the
-# thunk arity is always 4 and stable regardless of how many arrays a batch holds. Mirrors
-# Flux's own eager `train_step!` (src/train.jl), returning `(loss, grad)`: the primal loss as an
-# on-device scalar (free — `withgradient` already runs a reverse-with-primal pass) and the gradient
-# w.r.t. the model (already computed for the update). `_reactant_train_step!` reads the loss back to
-# the host for the `isfinite` guard and returns the gradient to the caller.
+# Fixed-arity compiled steps: the whole batch is passed as ONE tuple (splat inside), so the thunk
+# arity is always 4 and stable regardless of how many arrays a batch holds. They mirror Flux's own
+# eager step (src/train.jl); the loss is a free by-product (`withgradient` already runs a
+# reverse-with-primal pass) and both mutate `opt`/`model` in place inside the executable.
 #
-# Memory note: returning `grad` makes it an *output* of the executable, so XLA must keep the gradient
-# buffers live to the end of the step instead of freeing each one right after the update reads it.
-# That blocks buffer reuse and raises peak GPU memory (~+0.8 GiB / +30–60% for a ResNet-18 vs. a
-# loss-only step). This is a deliberate tradeoff so `train!` and the public `train_step!` share one
-# compiled step; if `train!`'s Reactant memory ever needs to drop back, give it a loss-only variant.
+# `train_step!` uses the loss-only variant; `train_step_withgradient!` uses the one that also returns
+# the gradient. They are kept separate on purpose: returning `grad` makes it an *output* of the
+# executable, so XLA must keep the gradient buffers live to the end of the step instead of freeing
+# each one right after the update reads it. That blocks buffer reuse and raises peak GPU memory
+# (~+0.8 GiB / +30–60% for a ResNet-18). Keeping a loss-only variant lets `train!` (and anyone who
+# doesn't need the gradient) avoid that cost.
 function _reactant_step!(loss, model, data::Tuple, opt)
     l, gs = Flux.withgradient(m -> loss(m, data...), AutoEnzyme(), model)
-    Optimisers.update!(opt, model, gs[1])   # folded into the executable; mutates in place
+    Optimisers.update!(opt, model, gs[1])
+    return l
+end
+
+function _reactant_step_withgradient!(loss, model, data::Tuple, opt)
+    l, gs = Flux.withgradient(m -> loss(m, data...), AutoEnzyme(), model)
+    Optimisers.update!(opt, model, gs[1])
     return l, gs[1]
 end
 
@@ -66,13 +71,17 @@ end
 _shape_signature(x::AbstractArray) = size(x)
 _shape_signature(x) = fmapstructure(a -> a isa AbstractArray ? size(a) : a, x)
 
-function _compiled_step(loss, model, dtuple, opt)
+# `withgradient` selects the loss-only executable or the one that also returns the gradient, and is
+# part of the key so the two variants for the same model are cached separately.
+function _compiled_step(loss, model, dtuple, opt, withgradient::Bool)
     _prune_compile_cache!()
-    key = (objectid(model), typeof(model), typeof(opt), objectid(loss),
+    key = (withgradient, objectid(model), typeof(model), typeof(opt), objectid(loss),
            map(typeof, dtuple), map(_shape_signature, dtuple))
     entry = get(COMPILE_CACHE, key, nothing)
     entry === nothing || return entry[2]
-    exe = Reactant.@compile _reactant_step!(loss, model, dtuple, opt)
+    exe = withgradient ?
+        Reactant.@compile(_reactant_step_withgradient!(loss, model, dtuple, opt)) :
+        Reactant.@compile(_reactant_step!(loss, model, dtuple, opt))
     handle = _evict_handle(model)
     # A param-less model has nothing to weak-reference; fall back to the executable itself (which the
     # entry keeps alive) so such an entry is simply never pruned.
@@ -80,18 +89,28 @@ function _compiled_step(loss, model, dtuple, opt)
     return exe
 end
 
-# Reactant/XLA implementation of a single `Flux.train_step!`, dispatched to from the ReactantDevice
-# branch of the eager `train_step!` (src/train.jl); `Flux.train!` loops over it. The model and
-# optimiser state already live on the Reactant device, and the batch is required to be device-resident
-# too. The fused step is compiled once per distinct (model, optimiser, loss, batch-shape) and reused,
-# mutating `opt_state`/`model` in place. Returns the host-scalar loss (read forces the async
-# device→host sync) and the on-device gradient.
-function Train._reactant_train_step!(loss, model, batch::Tuple, opt_state)
+_require_device_batch(batch) =
     Flux.get_device_type(batch) <: Flux.ReactantDevice || throw(ArgumentError(
         "`train_step!`/`train!` on a Reactant model requires device-resident data; move each batch to \
          the model's device first, e.g. `data = [(x, y) |> reactant_device() for (x, y) in data]`."))
-    step = _compiled_step(loss, model, batch, opt_state)
-    l, g = step(loss, model, batch, opt_state)   # opt_state/model updated in place inside the executable
+
+# Reactant/XLA implementations of a single step, dispatched to from the ReactantDevice branch of
+# `train_step!` / `train_step_withgradient!` (src/train.jl); `Flux.train!` loops over the loss-only
+# one. The model and optimiser state already live on the Reactant device, and the batch is required to
+# be device-resident too. The fused step is compiled once per distinct (model, optimiser, loss,
+# batch-shape) and reused, mutating `opt_state`/`model` in place. The host loss read forces the async
+# device→host sync; any returned gradient stays on the device.
+function Train._reactant_train_step!(loss, model, batch::Tuple, opt_state)
+    _require_device_batch(batch)
+    step = _compiled_step(loss, model, batch, opt_state, false)
+    l = step(loss, model, batch, opt_state)
+    return Reactant.to_number(l)
+end
+
+function Train._reactant_train_step_withgradient!(loss, model, batch::Tuple, opt_state)
+    _require_device_batch(batch)
+    step = _compiled_step(loss, model, batch, opt_state, true)
+    l, g = step(loss, model, batch, opt_state)
     return Reactant.to_number(l), g
 end
 

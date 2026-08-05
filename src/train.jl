@@ -10,13 +10,15 @@ using ProgressLogging: @progress, @withprogress, @logprogress
 using EnzymeCore: Duplicated
 using ADTypes: AbstractADType, AutoEnzyme, AutoZygote
 
-export setup, train!, train_step!
+export setup, train!, train_step!, train_step_withgradient!
 
 # Implemented by FluxReactantExt when Reactant.jl is loaded. Only reached from the ReactantDevice
-# branch of `train_step!` below, which requires the model/batch/opt_state to hold Reactant arrays —
-# i.e. Reactant (and thus the extension) is already loaded. The bare declaration lets `train_step!`
-# reference it; a MethodError is the (essentially unreachable) safety net if the extension is missing.
+# branch of `train_step!`/`train_step_withgradient!` below, which requires the model to hold Reactant
+# arrays — i.e. Reactant (and thus the extension) is already loaded. The bare declarations let those
+# functions reference them; a MethodError is the (essentially unreachable) safety net if the extension
+# is missing.
 function _reactant_train_step! end
+function _reactant_train_step_withgradient! end
 
 # ---------------------------------------------------------------------------
 # Paced garbage collection for `train!`.
@@ -221,11 +223,11 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
         # would be pinned by the cache — they are never reused and can be large enough to
         # blow past GPU memory.
         if cache === nothing || i == 1
-            l, _ = train_step!(loss, adtype, model, batch, opt_state)
+            l = train_step!(loss, adtype, model, batch, opt_state)
         else
             # Reuse the memory allocated during the previous step, see issue #2523.
             GPUArrays.@cached cache begin
-                l, _ = train_step!(loss, adtype, model, batch, opt_state)
+                l = train_step!(loss, adtype, model, batch, opt_state)
             end
         end
 
@@ -243,11 +245,12 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
 end
 
 """
-    train_step!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss, grad
+    train_step!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss
 
 Perform a single optimisation step: differentiate `loss(model, batch...)` with respect to `model`,
 update `model` and `opt_state` **in place** according to the rule encoded in `opt_state`, and return
-the primal `loss` value together with the `grad`ient with respect to the model.
+the primal `loss` value. Use [`train_step_withgradient!`](@ref Flux.train_step_withgradient!) instead
+if you also need the gradient.
 
 `batch` is a tuple whose elements are spliced into `loss` after the model, so the loss is evaluated
 as `loss(model, batch...)`. The optional `adtype` selects the automatic differentiation engine among
@@ -263,8 +266,8 @@ compiled step.
 When the `model` lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, the whole step
 (forward pass, Enzyme reverse pass and optimiser update) is compiled into a single XLA executable,
 cached and reused across calls with the same model, optimiser, loss and batch shape (the cached entry
-is dropped once the model is garbage-collected). The batch must be device-resident too. The returned
-`loss` is read back to the host as a scalar, while `grad` stays on the device.
+is dropped once the model is garbage-collected). The batch must be device-resident too, and the
+returned `loss` is read back to the host as a scalar.
 
 # Example
 ```julia
@@ -275,7 +278,7 @@ x, y = rand(Float32, 2, 8), rand(Float32, 1, 8)
 loss(m, x, y) = Flux.mse(m(x), y)
 trainmode!(model) # necessary for dropout/batchnorm layers
 for epoch in 1:100
-    l, g = Flux.train_step!(loss, model, (x, y), opt_state)
+    l = Flux.train_step!(loss, model, (x, y), opt_state)
     @info "epoch \$epoch" loss=l
 end
 ```
@@ -287,24 +290,59 @@ train_step!(loss, model::Duplicated, batch::Tuple, opt_state) =
     train_step!(loss, AutoEnzyme(), model, batch, opt_state)
 
 function train_step!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
-    # The model's device is the canonical signal for Reactant training (it's what `train!` keys on
-    # too); `_reactant_train_step!` then checks that the batch is device-resident. Keying on the model
-    # rather than the batch keeps the "host-resident data" error meaningful.
-    if Flux.get_device_type(model) <: Flux.ReactantDevice
-        model isa Duplicated && throw(ArgumentError(
-            "`Duplicated` models are not supported on Reactant devices; pass the plain model \
-             that already lives on the Reactant device."))
-        (adtype isa AutoEnzyme || adtype isa AutoZygote) || @warn(
-            "On a Reactant device `train_step!` always differentiates with Enzyme; ignoring \
-             adtype=$adtype.", maxlog=1)
+    if _reactant_model(model, adtype)
         return _reactant_train_step!(loss, model, batch, opt_state)
     end
+    l, _ = _eager_step!(loss, adtype, model, batch, opt_state)
+    return l
+end
 
+"""
+    train_step_withgradient!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss, grad
+
+Like [`train_step!`](@ref Flux.train_step!), but also returns the `grad`ient of the loss with respect
+to the model. Everything else is identical: `model` and `opt_state` are updated in place and the
+primal `loss` is returned as the first value.
+
+On a Reactant device the returned `grad` stays on the device (only the `loss` is read back to the
+host). Returning the gradient makes it an output of the compiled step, which raises peak memory
+relative to `train_step!`; prefer `train_step!` when the gradient is not needed.
+"""
+train_step_withgradient!(loss, model, batch::Tuple, opt_state) =
+    train_step_withgradient!(loss, AutoZygote(), model, batch, opt_state)
+
+train_step_withgradient!(loss, model::Duplicated, batch::Tuple, opt_state) =
+    train_step_withgradient!(loss, AutoEnzyme(), model, batch, opt_state)
+
+function train_step_withgradient!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
+    if _reactant_model(model, adtype)
+        return _reactant_train_step_withgradient!(loss, model, batch, opt_state)
+    end
+    return _eager_step!(loss, adtype, model, batch, opt_state)
+end
+
+# Eager (Zygote/Enzyme) single step, shared by both entry points; returns `(loss, grad)`. The update
+# is skipped on a non-finite loss so the model is left uncorrupted, and the returned loss lets the
+# caller (e.g. `train!`) decide how to react.
+function _eager_step!(loss, adtype, model, batch::Tuple, opt_state)
     l, gs = Flux.withgradient(m -> loss(m, batch...), adtype, model)
-    # Skip the update on a non-finite loss so the model is left uncorrupted; the returned value lets
-    # `train!` (or the caller) decide how to react.
     isfinite(l) && _update!(opt_state, model, gs[1])
     return l, gs[1]
+end
+
+# On a Reactant device, validate the model/adtype and signal the caller to take the compiled path.
+# The model's device is the canonical signal for Reactant training (it's what `train!` keys on too);
+# the extension then checks the batch is device-resident, so keying on the model here keeps the
+# "host-resident data" error meaningful.
+function _reactant_model(model, adtype)
+    Flux.get_device_type(model) <: Flux.ReactantDevice || return false
+    model isa Duplicated && throw(ArgumentError(
+        "`Duplicated` models are not supported on Reactant devices; pass the plain model \
+         that already lives on the Reactant device."))
+    (adtype isa AutoEnzyme || adtype isa AutoZygote) || @warn(
+        "On a Reactant device training always differentiates with Enzyme; ignoring \
+         adtype=$adtype.", maxlog=1)
+    return true
 end
 
 _update!(opt_state, model, grads) = Optimisers.update!(opt_state, model, grads)

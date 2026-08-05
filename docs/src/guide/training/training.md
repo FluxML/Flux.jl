@@ -194,19 +194,21 @@ Or explicitly writing the anonymous function which this `do` block creates,
 If you want to write the loop yourself but keep the convenience of a single gradient +
 update call, [`train_step!`](@ref Flux.Train.train_step!) is the per-step primitive that
 `train!` is built on. It differentiates the loss, updates `model` and `opt_state` in place,
-and returns `(loss, grad)`:
+and returns the loss:
 
 ```julia
 opt_state = Flux.setup(Adam(), model)
 
 for epoch in 1:100
   for (x, y) in train_set
-    l, _ = Flux.train_step!((m, x, y) -> loss(m(x), y), model, (x, y), opt_state)
+    l = Flux.train_step!((m, x, y) -> loss(m(x), y), model, (x, y), opt_state)
   end
 end
 ```
 
-On a Reactant device `train_step!` compiles and caches the whole step, just like `train!`.
+Use [`train_step_withgradient!`](@ref Flux.Train.train_step_withgradient!) if you also need the
+gradient (it returns `(loss, grad)`). On a Reactant device both compile and cache the whole step,
+just like `train!`.
 
 Real training loops often need more flexibility, and the best way to do this is just
 to write the loop. This is ordinary Julia code, without any need to work through some

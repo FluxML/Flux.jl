@@ -53,12 +53,16 @@ end
     l0 = Reactant.to_number(Reactant.@jit loss(model, x, y))
     w0 = model.layers[1].weight |> cpu
 
-    # A single compiled step: returns (loss, grad), mutating model/opt in place.
-    l, g = Flux.train_step!(loss, model, (x, y), opt)
-    @test l isa Real && isfinite(l)            # loss read back to the host as a scalar
+    # `train_step!` returns just the host-scalar loss, mutating model/opt in place.
+    l = Flux.train_step!(loss, model, (x, y), opt)
+    @test l isa Real && isfinite(l)
     @test l ≈ l0                               # measured before the update
-    @test Flux.get_device_type(g) <: Flux.ReactantDevice   # gradient stays on the device
     @test !(w0 ≈ model.layers[1].weight |> cpu)            # parameters updated in place
+
+    # `train_step_withgradient!` also returns the on-device gradient.
+    l2, g = Flux.train_step_withgradient!(loss, model, (x, y), opt)
+    @test l2 isa Real && isfinite(l2)
+    @test Flux.get_device_type(g) <: Flux.ReactantDevice   # gradient stays on the device
 
     # Looping train_step! keeps reducing the loss (reuses the cached executable).
     for _ in 1:30
@@ -66,8 +70,9 @@ end
     end
     @test Reactant.to_number(Reactant.@jit loss(model, x, y)) < l0
 
-    # Host-resident data must be rejected.
+    # Host-resident data must be rejected by both entry points.
     @test_throws ArgumentError Flux.train_step!(loss, model, (X, Y), opt)
+    @test_throws ArgumentError Flux.train_step_withgradient!(loss, model, (X, Y), opt)
 end
 
 @testset "Flux.train_step! with a structured (non-array) batch element" begin
@@ -81,7 +86,8 @@ end
     lossnt(m, b) = Flux.mse(m(b.x), b.y)
 
     l0 = Reactant.to_number(Reactant.@jit lossnt(model, nt))
-    l, g = Flux.train_step!(lossnt, model, (nt,), opt)
+    # Exercise both compiled variants (loss-only and with-gradient) with the structured batch.
+    l, g = Flux.train_step_withgradient!(lossnt, model, (nt,), opt)
     @test l isa Real && isfinite(l)
     @test Flux.get_device_type(g) <: Flux.ReactantDevice
     for _ in 1:20
