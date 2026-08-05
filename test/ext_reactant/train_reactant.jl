@@ -36,7 +36,7 @@
     @test_throws ArgumentError Flux.train!(loss, model, [(X, Y)], opt)
 end
 
-@testset "Flux.train_step! on Reactant device" begin
+@testset "Flux.trainstep! on Reactant device" begin
     dev = MLDataDevices.reactant_device(force=true)
     cpu = cpu_device()
 
@@ -53,29 +53,29 @@ end
     l0 = Reactant.to_number(Reactant.@jit loss(model, x, y))
     w0 = model.layers[1].weight |> cpu
 
-    # `train_step!` returns just the host-scalar loss, mutating model/opt in place.
-    l = Flux.train_step!(loss, model, (x, y), opt)
+    # `trainstep!` returns just the host-scalar loss, mutating model/opt in place.
+    l = Flux.trainstep!(loss, model, (x, y), opt)
     @test l isa Real && isfinite(l)
     @test l ≈ l0                               # measured before the update
     @test !(w0 ≈ model.layers[1].weight |> cpu)            # parameters updated in place
 
-    # `train_step_withgradient!` also returns the on-device gradient.
-    l2, g = Flux.train_step_withgradient!(loss, model, (x, y), opt)
+    # `trainstep_withgradient!` also returns the on-device gradient.
+    l2, g = Flux.trainstep_withgradient!(loss, model, (x, y), opt)
     @test l2 isa Real && isfinite(l2)
     @test Flux.get_device_type(g) <: Flux.ReactantDevice   # gradient stays on the device
 
-    # Looping train_step! keeps reducing the loss (reuses the cached executable).
+    # Looping trainstep! keeps reducing the loss (reuses the cached executable).
     for _ in 1:30
-        Flux.train_step!(loss, model, (x, y), opt)
+        Flux.trainstep!(loss, model, (x, y), opt)
     end
     @test Reactant.to_number(Reactant.@jit loss(model, x, y)) < l0
 
     # Host-resident data must be rejected by both entry points.
-    @test_throws ArgumentError Flux.train_step!(loss, model, (X, Y), opt)
-    @test_throws ArgumentError Flux.train_step_withgradient!(loss, model, (X, Y), opt)
+    @test_throws ArgumentError Flux.trainstep!(loss, model, (X, Y), opt)
+    @test_throws ArgumentError Flux.trainstep_withgradient!(loss, model, (X, Y), opt)
 end
 
-@testset "Flux.train_step! with a structured (non-array) batch element" begin
+@testset "Flux.trainstep! with a structured (non-array) batch element" begin
     dev = MLDataDevices.reactant_device(force=true)
 
     model = Dense(4 => 2) |> dev
@@ -87,11 +87,11 @@ end
 
     l0 = Reactant.to_number(Reactant.@jit lossnt(model, nt))
     # Exercise both compiled variants (loss-only and with-gradient) with the structured batch.
-    l, g = Flux.train_step_withgradient!(lossnt, model, (nt,), opt)
+    l, g = Flux.trainstep_withgradient!(lossnt, model, (nt,), opt)
     @test l isa Real && isfinite(l)
     @test Flux.get_device_type(g) <: Flux.ReactantDevice
     for _ in 1:20
-        Flux.train_step!(lossnt, model, (nt,), opt)
+        Flux.trainstep!(lossnt, model, (nt,), opt)
     end
     @test Reactant.to_number(Reactant.@jit lossnt(model, nt)) < l0
 end
@@ -109,20 +109,20 @@ end
 
     l0 = Reactant.to_number(Reactant.@jit scalarloss(model, x, y))
 
-    v = Flux.train_step!(auxloss, model, (x, y), opt)
+    v = Flux.trainstep!(auxloss, model, (x, y), opt)
     @test v isa Tuple                                              # full value returned
     @test v[1] isa Real && isfinite(v[1])                         # scalar loss read to host
     @test v[1] ≈ l0                                               # measured before the update
     @test Flux.get_device_type(v[2].sumsq) <: Flux.ReactantDevice # aux stays on the device
 
     # with-gradient variant: same value shape, gradient stays on the device
-    v2, g = Flux.train_step_withgradient!(auxloss, model, (x, y), opt)
+    v2, g = Flux.trainstep_withgradient!(auxloss, model, (x, y), opt)
     @test v2 isa Tuple && v2[1] isa Real && isfinite(v2[1])
     @test Flux.get_device_type(g) <: Flux.ReactantDevice
 
     # differentiating `first∘loss`, training with the aux loss still reduces the loss
     for _ in 1:20
-        Flux.train_step!(auxloss, model, (x, y), opt)
+        Flux.trainstep!(auxloss, model, (x, y), opt)
     end
     @test Reactant.to_number(Reactant.@jit scalarloss(model, x, y)) < l0
 
@@ -143,7 +143,7 @@ end
     compile_one() = let model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
         x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
         opt = Flux.setup(Adam(1f-2), model)
-        Flux.train_step!(loss, model, (x, y), opt)
+        Flux.trainstep!(loss, model, (x, y), opt)
         model
     end
 
@@ -165,7 +165,7 @@ end
     opt = Flux.setup(Adam(1f-2), model)
     l0 = Reactant.to_number(Reactant.@jit loss(model, x, y))
     for _ in 1:20
-        Flux.train_step!(loss, model, (x, y), opt)
+        Flux.trainstep!(loss, model, (x, y), opt)
     end
     l1 = Reactant.to_number(Reactant.@jit loss(model, x, y))
     GC.gc(true)

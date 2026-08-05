@@ -78,13 +78,13 @@ for name in ("Zygote", "Enzyme")
     continue
   end
 
-  # For Enzyme the model is passed to `train_step!` wrapped in a `Duplicated` (whose `.val` is the
+  # For Enzyme the model is passed to `trainstep!` wrapped in a `Duplicated` (whose `.val` is the
   # same object as `model`, so `model` is still what gets mutated in place); for Zygote it's passed
   # as-is.
   wrap = name == "Enzyme" ? (m -> Enzyme.Duplicated(m, Enzyme.make_zero(m))) : identity
 
-  @testset "Flux.train_step! with $name" begin
-    @testset "train_step! returns the loss and updates in place" begin
+  @testset "Flux.trainstep! with $name" begin
+    @testset "trainstep! returns the loss and updates in place" begin
       model = Dense(3 => 2, tanh)
       x, y = randn(Float32, 3, 5), randn(Float32, 2, 5)
       loss(m, x, y) = Flux.mse(m(x), y)
@@ -95,7 +95,7 @@ for name in ("Zygote", "Enzyme")
       w0 = copy(model.weight)
       vel0 = copy(opt.weight.state)   # Momentum velocity, initially zero
 
-      l = Flux.train_step!(loss, wm, (x, y), opt)
+      l = Flux.trainstep!(loss, wm, (x, y), opt)
 
       @test l isa Real && isfinite(l)
       @test l ≈ l0                          # loss is measured *before* the update
@@ -103,7 +103,7 @@ for name in ("Zygote", "Enzyme")
       @test !(opt.weight.state ≈ vel0)      # optimiser state mutated in place
     end
 
-    @testset "train_step_withgradient! also returns the gradient" begin
+    @testset "trainstep_withgradient! also returns the gradient" begin
       model = Dense(3 => 2, tanh)
       x, y = randn(Float32, 3, 5), randn(Float32, 2, 5)
       loss(m, x, y) = Flux.mse(m(x), y)
@@ -113,7 +113,7 @@ for name in ("Zygote", "Enzyme")
       l0 = loss(model, x, y)
       w0 = copy(model.weight)
 
-      l, g = Flux.train_step_withgradient!(loss, wm, (x, y), opt)
+      l, g = Flux.trainstep_withgradient!(loss, wm, (x, y), opt)
 
       @test l isa Real && isfinite(l)
       @test l ≈ l0                          # loss is measured *before* the update
@@ -131,7 +131,7 @@ for name in ("Zygote", "Enzyme")
       wm = wrap(model)
       opt = Flux.setup(Adam(0.05), wm)
       for _ in 1:2000
-        Flux.train_step!(loss, wm, (rand(10, 32),), opt)
+        Flux.trainstep!(loss, wm, (rand(10, 32),), opt)
       end
       @test loss(model, rand(10, 10)) < 0.01
     end
@@ -143,7 +143,7 @@ for name in ("Zygote", "Enzyme")
       wm = wrap(model)
       opt = Flux.setup(Descent(0.1), wm)
 
-      l = Flux.train_step!((m, i) -> NaN32 * sum(m([1f0])), wm, (1,), opt)
+      l = Flux.trainstep!((m, i) -> NaN32 * sum(m([1f0])), wm, (1,), opt)
       @test !isfinite(l)
       @test model.weight ≈ [0f0;;]   # update skipped, model left uncorrupted
       @test model.bias ≈ [0f0]
@@ -165,8 +165,8 @@ for name in ("Zygote", "Enzyme")
         opt  = Flux.setup(Momentum(0.1), wm)
         optr = Flux.setup(Momentum(0.1), wref)
 
-        v = Flux.train_step!(auxfn, wm, (x, y), opt)
-        Flux.train_step!(mse, wref, (x, y), optr)                # same step, scalar loss
+        v = Flux.trainstep!(auxfn, wm, (x, y), opt)
+        Flux.trainstep!(mse, wref, (x, y), optr)                # same step, scalar loss
 
         @test v isa Union{Tuple, NamedTuple}                    # full value returned
         @test first(v) ≈ l0                                     # scalar loss, measured pre-update
@@ -174,10 +174,10 @@ for name in ("Zygote", "Enzyme")
         @test model.weight ≈ ref.weight                        # identical update to the scalar run
       end
 
-      # train_step_withgradient! returns ((loss, aux...), grad)
+      # trainstep_withgradient! returns ((loss, aux...), grad)
       model = deepcopy(base); wm = wrap(model)
       opt = Flux.setup(Momentum(0.1), wm)
-      v, g = Flux.train_step_withgradient!(ntloss, wm, (x, y), opt)
+      v, g = Flux.trainstep_withgradient!(ntloss, wm, (x, y), opt)
       @test v.loss ≈ l0
       @test v.pred ≈ pred0
       @test g.weight isa AbstractArray && size(g.weight) == size(model.weight)
@@ -185,7 +185,7 @@ for name in ("Zygote", "Enzyme")
   end
 end
 
-@testset "Flux.train! is a loop over Flux.train_step!" begin
+@testset "Flux.train! is a loop over Flux.trainstep!" begin
   Random.seed!(123)
   data = [(randn(Float32, 3, 5), randn(Float32, 2, 5)) for _ in 1:20]
   loss(m, x, y) = Flux.mse(m(x), y)
@@ -197,7 +197,7 @@ end
 
   Flux.train!(loss, m1, data, o1)
   for (x, y) in data
-    Flux.train_step!(loss, m2, (x, y), o2)
+    Flux.trainstep!(loss, m2, (x, y), o2)
   end
 
   @test m1.weight ≈ m2.weight

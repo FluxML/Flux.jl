@@ -10,15 +10,15 @@ using ProgressLogging: @progress, @withprogress, @logprogress
 using EnzymeCore: Duplicated
 using ADTypes: AbstractADType, AutoEnzyme, AutoZygote
 
-export setup, train!, train_step!, train_step_withgradient!
+export setup, train!, trainstep!, trainstep_withgradient!
 
 # Implemented by FluxReactantExt when Reactant.jl is loaded. Only reached from the ReactantDevice
-# branch of `train_step!`/`train_step_withgradient!` below, which requires the model to hold Reactant
+# branch of `trainstep!`/`trainstep_withgradient!` below, which requires the model to hold Reactant
 # arrays — i.e. Reactant (and thus the extension) is already loaded. The bare declarations let those
 # functions reference them; a MethodError is the (essentially unreachable) safety net if the extension
 # is missing.
-function _reactant_train_step! end
-function _reactant_train_step_withgradient! end
+function _reactant_trainstep! end
+function _reactant_trainstep_withgradient! end
 
 # ---------------------------------------------------------------------------
 # Paced garbage collection for `train!`.
@@ -180,10 +180,10 @@ opt_state = Flux.setup(Adam(), model)   # explicit setup of optimiser momenta
 ...calling `Flux.train!(loss3, model, data, opt_state)` runs a loop much like this:
 ```
 for d in data
-    l, ∂L∂m = Flux.train_step!(loss3, model, d, opt_state)
+    l, ∂L∂m = Flux.trainstep!(loss3, model, d, opt_state)
 end
 ```
-where each iteration is a single call to [`train_step!`](@ref Flux.train_step!).
+where each iteration is a single call to [`trainstep!`](@ref Flux.trainstep!).
 You can also write this loop yourself, if you need more flexibility.
 For this reason `train!` is not highly extensible.
 It adds only a few features to the loop above:
@@ -203,7 +203,7 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
 
     Flux.trainmode!(model)
 
-    # On a Reactant device the fused step is compiled by `train_step!`; the caching allocator and the
+    # On a Reactant device the fused step is compiled by `trainstep!`; the caching allocator and the
     # paced GC below are CUDA-oriented (they manage `CuArray` reserved memory) and don't apply.
     on_reactant = _on_reactant(model)
     if on_reactant
@@ -223,15 +223,15 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
         # would be pinned by the cache — they are never reused and can be large enough to
         # blow past GPU memory.
         if cache === nothing || i == 1
-            l = train_step!(loss, adtype, model, batch, opt_state)
+            l = trainstep!(loss, adtype, model, batch, opt_state)
         else
             # Reuse the memory allocated during the previous step, see issue #2523.
             GPUArrays.@cached cache begin
-                l = train_step!(loss, adtype, model, batch, opt_state)
+                l = trainstep!(loss, adtype, model, batch, opt_state)
             end
         end
 
-        # `train_step!` mutates `model`/`opt_state` in place and skips the update itself on a
+        # `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a
         # non-finite loss, so the model is intact here when we stop. (On a Reactant device the update
         # is fused into the executable and already applied; this only halts further steps.) `l` is the
         # loss value, or `(loss, aux...)` when the loss returns auxiliary outputs — guard on the scalar.
@@ -247,11 +247,11 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
 end
 
 """
-    train_step!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss
+    trainstep!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss
 
 Perform a single optimisation step: differentiate `loss(model, batch...)` with respect to `model`,
 update `model` and `opt_state` **in place** according to the rule encoded in `opt_state`, and return
-the primal `loss` value. Use [`train_step_withgradient!`](@ref Flux.train_step_withgradient!) instead
+the primal `loss` value. Use [`trainstep_withgradient!`](@ref Flux.trainstep_withgradient!) instead
 if you also need the gradient.
 
 `batch` is a tuple whose elements are spliced into `loss` after the model, so the loss is evaluated
@@ -259,7 +259,7 @@ as `loss(model, batch...)`. The optional `adtype` selects the automatic differen
 the ones supported by [`gradient`](@ref); if omitted, Zygote is used, unless `model` is a `Duplicated`
 from Enzyme.jl, in which case Enzyme is used.
 
-[`train!`](@ref Flux.train!) is a loop over the data built on top of `train_step!`.
+[`train!`](@ref Flux.train!) is a loop over the data built on top of `trainstep!`.
 
 ## Auxiliary outputs
 
@@ -273,7 +273,7 @@ function loss(m, x, y)
     ŷ = m(x)
     Flux.mse(ŷ, y), (; acc = mean(onecold(ŷ) .== onecold(y)))
 end
-l, stats = Flux.train_step!(loss, model, (x, y), opt_state)   # l == (loss, stats); stats.acc
+l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l == (loss, stats); stats.acc
 ```
 
 ## Non-finite loss
@@ -299,46 +299,46 @@ x, y = rand(Float32, 2, 8), rand(Float32, 1, 8)
 loss(m, x, y) = Flux.mse(m(x), y)
 trainmode!(model) # necessary for dropout/batchnorm layers
 for epoch in 1:100
-    l = Flux.train_step!(loss, model, (x, y), opt_state)
+    l = Flux.trainstep!(loss, model, (x, y), opt_state)
     @info "epoch \$epoch" loss=l
 end
 ```
 """
-train_step!(loss, model, batch::Tuple, opt_state) =
-    train_step!(loss, AutoZygote(), model, batch, opt_state)
+trainstep!(loss, model, batch::Tuple, opt_state) =
+    trainstep!(loss, AutoZygote(), model, batch, opt_state)
 
-train_step!(loss, model::Duplicated, batch::Tuple, opt_state) =
-    train_step!(loss, AutoEnzyme(), model, batch, opt_state)
+trainstep!(loss, model::Duplicated, batch::Tuple, opt_state) =
+    trainstep!(loss, AutoEnzyme(), model, batch, opt_state)
 
-function train_step!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
+function trainstep!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
     if _reactant_model(model, adtype)
-        return _reactant_train_step!(loss, model, batch, opt_state)
+        return _reactant_trainstep!(loss, model, batch, opt_state)
     end
     l, _ = _eager_step!(loss, adtype, model, batch, opt_state)
     return l
 end
 
 """
-    train_step_withgradient!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss, grad
+    trainstep_withgradient!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss, grad
 
-Like [`train_step!`](@ref Flux.train_step!), but also returns the `grad`ient of the loss with respect
+Like [`trainstep!`](@ref Flux.trainstep!), but also returns the `grad`ient of the loss with respect
 to the model. Everything else is identical: `model` and `opt_state` are updated in place and the
 first returned value is whatever the loss returned — the scalar loss, or `(loss, aux...)` when the
-loss returns auxiliary outputs (see [`train_step!`](@ref Flux.train_step!)).
+loss returns auxiliary outputs (see [`trainstep!`](@ref Flux.trainstep!)).
 
 On a Reactant device the returned `grad` stays on the device (only the scalar `loss` is read back to
 the host). Returning the gradient makes it an output of the compiled step, which raises peak memory
-relative to `train_step!`; prefer `train_step!` when the gradient is not needed.
+relative to `trainstep!`; prefer `trainstep!` when the gradient is not needed.
 """
-train_step_withgradient!(loss, model, batch::Tuple, opt_state) =
-    train_step_withgradient!(loss, AutoZygote(), model, batch, opt_state)
+trainstep_withgradient!(loss, model, batch::Tuple, opt_state) =
+    trainstep_withgradient!(loss, AutoZygote(), model, batch, opt_state)
 
-train_step_withgradient!(loss, model::Duplicated, batch::Tuple, opt_state) =
-    train_step_withgradient!(loss, AutoEnzyme(), model, batch, opt_state)
+trainstep_withgradient!(loss, model::Duplicated, batch::Tuple, opt_state) =
+    trainstep_withgradient!(loss, AutoEnzyme(), model, batch, opt_state)
 
-function train_step_withgradient!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
+function trainstep_withgradient!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
     if _reactant_model(model, adtype)
-        return _reactant_train_step_withgradient!(loss, model, batch, opt_state)
+        return _reactant_trainstep_withgradient!(loss, model, batch, opt_state)
     end
     return _eager_step!(loss, adtype, model, batch, opt_state)
 end
@@ -353,7 +353,7 @@ function _eager_step!(loss, adtype, model, batch::Tuple, opt_state)
     return v, gs[1]
 end
 
-# The scalar loss out of a `train_step!`/`withgradient` value. When the loss returns auxiliary
+# The scalar loss out of a `trainstep!`/`withgradient` value. When the loss returns auxiliary
 # outputs (a Tuple or NamedTuple whose first element is the loss) the whole thing is returned to the
 # user, but the finiteness guard and `train!` only look at the scalar.
 _loss_scalar(v::Union{Tuple, NamedTuple}) = first(v)
@@ -361,7 +361,7 @@ _loss_scalar(v) = v
 
 # First parameter array of a model — a cheap proxy for the model's device, since a model's parameters
 # share a device in practice. `Flux.get_device_type(model)` traverses *every* parameter (microseconds
-# for a large model, and it runs on every `train_step!`), whereas one leaf suffices. Returns `nothing`
+# for a large model, and it runs on every `trainstep!`), whereas one leaf suffices. Returns `nothing`
 # for a model with no array parameters.
 _first_param(x::AbstractArray{<:Number}) = x
 _first_param(x::Duplicated) = _first_param(x.val)

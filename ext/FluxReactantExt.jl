@@ -11,7 +11,7 @@ import Reactant
 # eager step (src/train.jl); the loss is a free by-product (`withgradient` already runs a
 # reverse-with-primal pass) and both mutate `opt`/`model` in place inside the executable.
 #
-# `train_step!` uses the loss-only variant; `train_step_withgradient!` uses the one that also returns
+# `trainstep!` uses the loss-only variant; `trainstep_withgradient!` uses the one that also returns
 # the gradient. They are kept separate on purpose: returning `grad` makes it an *output* of the
 # executable, so XLA must keep the gradient buffers live to the end of the step instead of freeing
 # each one right after the update reads it. That blocks buffer reuse and raises peak GPU memory
@@ -109,23 +109,23 @@ end
 
 _require_device_batch(batch) =
     Flux.get_device_type(batch) <: Flux.ReactantDevice || throw(ArgumentError(
-        "`train_step!`/`train!` on a Reactant model requires device-resident data; move each batch to \
+        "`trainstep!`/`train!` on a Reactant model requires device-resident data; move each batch to \
          the model's device first, e.g. `data = [(x, y) |> reactant_device() for (x, y) in data]`."))
 
 # Reactant/XLA implementations of a single step, dispatched to from the ReactantDevice branch of
-# `train_step!` / `train_step_withgradient!` (src/train.jl); `Flux.train!` loops over the loss-only
+# `trainstep!` / `trainstep_withgradient!` (src/train.jl); `Flux.train!` loops over the loss-only
 # one. The model and optimiser state already live on the Reactant device, and the batch is required to
 # be device-resident too. The fused step is compiled once per distinct (model, optimiser, loss,
 # batch-shape) and reused, mutating `opt_state`/`model` in place. The host loss read forces the async
 # device→host sync; any returned gradient stays on the device.
-function Train._reactant_train_step!(loss, model, batch::Tuple, opt_state)
+function Train._reactant_trainstep!(loss, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, model, batch, opt_state, false)
     l = step(loss, model, batch, opt_state)
     return _host_loss(l)
 end
 
-function Train._reactant_train_step_withgradient!(loss, model, batch::Tuple, opt_state)
+function Train._reactant_trainstep_withgradient!(loss, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, model, batch, opt_state, true)
     l, g = step(loss, model, batch, opt_state)
@@ -133,7 +133,7 @@ function Train._reactant_train_step_withgradient!(loss, model, batch::Tuple, opt
 end
 
 # Read the compiled step's loss output back to the host. When the loss returns auxiliary outputs (a
-# Tuple/NamedTuple `(loss, aux...)`, as `withgradient`/`train_step!` support), only the scalar loss is
+# Tuple/NamedTuple `(loss, aux...)`, as `withgradient`/`trainstep!` support), only the scalar loss is
 # brought to the host — the aux stays device-resident, like the returned gradient does.
 _host_loss(l) = Reactant.to_number(l)
 _host_loss(l::Tuple) = (Reactant.to_number(first(l)), Base.tail(l)...)
