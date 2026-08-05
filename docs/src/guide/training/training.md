@@ -210,6 +210,18 @@ Use [`train_step_withgradient!`](@ref Flux.Train.train_step_withgradient!) if yo
 gradient (it returns `(loss, grad)`). On a Reactant device both compile and cache the whole step,
 just like `train!`.
 
+Like [`withgradient`](@ref Flux.withgradient), the loss passed to `train_step!` may return auxiliary
+data alongside the scalar loss — return a `Tuple` or `NamedTuple` whose first element is the loss,
+and the gradient is taken of the loss alone while the whole value is returned. This is convenient
+for logging a metric computed during the forward pass:
+
+```julia
+l, stats = Flux.train_step!(model, (x, y), opt_state) do m, x, y
+    ŷ = m(x)
+    loss(ŷ, y), (; acc = accuracy(ŷ, y))
+end
+```
+
 Real training loops often need more flexibility, and the best way to do this is just
 to write the loop. This is ordinary Julia code, without any need to work through some
 callback API. Here is an example, in which it may be helpful to note:

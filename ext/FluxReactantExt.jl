@@ -17,16 +17,34 @@ import Reactant
 # each one right after the update reads it. That blocks buffer reuse and raises peak GPU memory
 # (~+0.8 GiB / +30–60% for a ResNet-18). Keeping a loss-only variant lets `train!` (and anyone who
 # doesn't need the gradient) avoid that cost.
+# Compute the loss value and the gradient of the (scalar) loss w.r.t. the model. When the loss
+# returns auxiliary outputs (a Tuple/NamedTuple `(loss, aux...)`), we can't use the eager
+# `withgradient` aux path: it smuggles the aux out through a mutable wrapper as a side effect, which
+# does not survive Reactant's tracing (the aux would be silently dropped). Instead we evaluate the
+# loss directly to get the full value `v`, and differentiate only `first(loss(...))`. XLA fuses the
+# two forward passes (common-subexpression elimination), and in the scalar branch `v` is unused so
+# its forward is dead-code-eliminated — the loss-only path keeps its single forward pass.
+function _reactant_valgrad(loss, model, data::Tuple)
+    v = loss(model, data...)
+    if v isa Union{Tuple, NamedTuple}
+        _, gs = Flux.withgradient(m -> first(loss(m, data...)), AutoEnzyme(), model)
+        return v, gs[1]
+    else
+        l, gs = Flux.withgradient(m -> loss(m, data...), AutoEnzyme(), model)
+        return l, gs[1]
+    end
+end
+
 function _reactant_step!(loss, model, data::Tuple, opt)
-    l, gs = Flux.withgradient(m -> loss(m, data...), AutoEnzyme(), model)
-    Optimisers.update!(opt, model, gs[1])
-    return l
+    v, g = _reactant_valgrad(loss, model, data)
+    Optimisers.update!(opt, model, g)
+    return v
 end
 
 function _reactant_step_withgradient!(loss, model, data::Tuple, opt)
-    l, gs = Flux.withgradient(m -> loss(m, data...), AutoEnzyme(), model)
-    Optimisers.update!(opt, model, gs[1])
-    return l, gs[1]
+    v, g = _reactant_valgrad(loss, model, data)
+    Optimisers.update!(opt, model, g)
+    return v, g
 end
 
 # Cache compiled steps so repeated calls (epochs, warm-up + timed runs) reuse the executable instead
@@ -104,14 +122,22 @@ function Train._reactant_train_step!(loss, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, model, batch, opt_state, false)
     l = step(loss, model, batch, opt_state)
-    return Reactant.to_number(l)
+    return _host_loss(l)
 end
 
 function Train._reactant_train_step_withgradient!(loss, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, model, batch, opt_state, true)
     l, g = step(loss, model, batch, opt_state)
-    return Reactant.to_number(l), g
+    return _host_loss(l), g
 end
+
+# Read the compiled step's loss output back to the host. When the loss returns auxiliary outputs (a
+# Tuple/NamedTuple `(loss, aux...)`, as `withgradient`/`train_step!` support), only the scalar loss is
+# brought to the host — the aux stays device-resident, like the returned gradient does.
+_host_loss(l) = Reactant.to_number(l)
+_host_loss(l::Tuple) = (Reactant.to_number(first(l)), Base.tail(l)...)
+_host_loss(l::NamedTuple) =
+    merge(l, NamedTuple{(first(keys(l)),)}((Reactant.to_number(first(l)),)))
 
 end # module

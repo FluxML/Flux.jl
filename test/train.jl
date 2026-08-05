@@ -148,6 +148,40 @@ for name in ("Zygote", "Enzyme")
       @test model.weight ≈ [0f0;;]   # update skipped, model left uncorrupted
       @test model.bias ≈ [0f0]
     end
+
+    @testset "auxiliary loss outputs" begin
+      x, y = randn(Float32, 3, 5), randn(Float32, 2, 5)
+      mse(m, x, y) = Flux.mse(m(x), y)
+      tuploss(m, x, y) = (Flux.mse(m(x), y), m(x))               # aux: a Tuple with an array
+      ntloss(m, x, y)  = (loss=Flux.mse(m(x), y), pred=m(x))     # aux: a NamedTuple
+
+      # Aux is returned verbatim, and differentiating `first∘loss` leaves the update identical to the
+      # plain scalar-loss run (aux does not perturb the gradient).
+      base = Dense(3 => 2, tanh)
+      l0, pred0 = Flux.mse(base(x), y), base(x)                  # pre-update loss and prediction
+      for auxfn in (tuploss, ntloss)
+        model = deepcopy(base); ref = deepcopy(base)
+        wm, wref = wrap(model), wrap(ref)
+        opt  = Flux.setup(Momentum(0.1), wm)
+        optr = Flux.setup(Momentum(0.1), wref)
+
+        v = Flux.train_step!(auxfn, wm, (x, y), opt)
+        Flux.train_step!(mse, wref, (x, y), optr)                # same step, scalar loss
+
+        @test v isa Union{Tuple, NamedTuple}                    # full value returned
+        @test first(v) ≈ l0                                     # scalar loss, measured pre-update
+        @test v[2] ≈ pred0                                      # aux is the pre-update prediction
+        @test model.weight ≈ ref.weight                        # identical update to the scalar run
+      end
+
+      # train_step_withgradient! returns ((loss, aux...), grad)
+      model = deepcopy(base); wm = wrap(model)
+      opt = Flux.setup(Momentum(0.1), wm)
+      v, g = Flux.train_step_withgradient!(ntloss, wm, (x, y), opt)
+      @test v.loss ≈ l0
+      @test v.pred ≈ pred0
+      @test g.weight isa AbstractArray && size(g.weight) == size(model.weight)
+    end
   end
 end
 
