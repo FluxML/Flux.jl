@@ -5,8 +5,7 @@ using Flux
 import Optimisers
 import Functors
 import Enzyme
-using Enzyme: EnzymeCore, EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, DuplicatedNoNeed
-using Enzyme: autodiff_thunk, Reverse, ReverseSplitWithPrimal
+using Enzyme: EnzymeCore, EnzymeRules, Active, Const, Duplicated, autodiff, ReverseWithPrimal, Reverse
 
 EnzymeRules.inactive(::typeof(Flux.Losses._check_sizes), args...) = true
 
@@ -51,45 +50,54 @@ function _enzyme_withgradient(f, args::Union{Const, Duplicated}...; zero::Bool=t
         _check_mutable(x)
     end
 
-    # In order to support auxillary outputs, we try different ways.
-
-    ## Take I, doesn't allow for aux at all.
+    # Enzyme's reverse mode differentiates a single scalar (`Active`) output, so it can't natively
+    # return auxiliary outputs the way Zygote's `withgradient` does. We adopt the trick Lux uses in
+    # its training loop: wrap `f` so Enzyme only ever sees the scalar loss, and smuggle any auxiliary
+    # outputs out through the (non-differentiated) wrapper as a side effect, to be read back after
+    # `autodiff`. `_WithAux` also avoids reconstructing the auxiliary container *inside* the
+    # differentiated call, which trips Enzyme (see its definition).
+    wrapped = _WithAux(f)
     ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
-    _, result = Enzyme.autodiff(ad, Const(f), Active, args...)
+    _, loss = Enzyme.autodiff(ad, Const(wrapped), Active, args...)
 
-    ## Take II, using split mode.
-    ## This fails with RNNs https://github.com/EnzymeAD/Enzyme.jl/issues/2897
-    # forward, reverse = autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(f)}, Active, map(typeof, args)...)
-    # tape, result, shadow_result  = forward(Const(f), args...)
-    # reverse(Const(f), args..., _sensitivity(result), tape)
-
-    ## Take III, it may be more efficient to have the function write the loss into Ref(0.0)?
-    ## This doesn't work with Reactant
-    # dup_loss = DuplicatedNoNeed(Ref(0f0), Ref(1f0))
-    # ad = Enzyme.set_runtime_activity(ReverseWithPrimal)
-    # _, result = autodiff(ad, Const(_ref_loss!), Const, dup_loss, Const(f), args...)
-
-    return (; val = result, grad = map(_grad_or_nothing, args))
+    return (; val = _aux_val(wrapped, loss), grad = map(_grad_or_nothing, args))
 end
 
-## for Take II above
-# @inline _sensitivity(y::Real) = one(y)
-# @inline _sensitivity(ys::Tuple{Real,Vararg}) = (one(ys[1]), Enzyme.make_zero(Base.tail(ys))...)
-# @inline _sensitivity(ys::NamedTuple{S, <:Tuple{Real,Vararg}}) where S = NamedTuple{S}(_sensitivity(Tuple(ys)))
-# _sensitivity(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
-#     or else a Tuple or NamedTuple whose first element is a real number.""")
+# Wraps a loss `f` that may return a `Tuple`/`NamedTuple` whose first element is the scalar loss.
+# The wrapper returns only that scalar to Enzyme (so reverse mode is happy) and stashes the
+# auxiliary outputs in `aux` as a side effect. How the aux is stashed matters, because rebuilding it
+# inside the differentiated call misbehaves with Enzyme:
+#   * a `Tuple` return stashes `Base.tail` — storing the whole tuple instead makes Enzyme drop the
+#     gradient to zero when the aux holds numeric arrays;
+#   * a `NamedTuple` return stashes the whole value — rebuilding a `NamedTuple` tail inside `autodiff`
+#     fails to compile for non-trivial aux.
+mutable struct _WithAux{F}
+    f::F
+    kind::Symbol   # :scalar | :tuple | :named
+    aux::Any       # Base.tail(val) for :tuple, the whole val for :named, unused for :scalar
+end
+_WithAux(f) = _WithAux(f, :scalar, nothing)
 
-# for Take III above
-# function _ref_loss!(out::Ref, f, args...)  
-#   val = f(args...)
-#   out[] = _get_loss(val)  # saves loss by mutation
-#   val  # returns the whole thing
-# end
-# @inline _get_loss(y::Number) = y
-# @inline _get_loss(ys::Tuple{Number,Vararg}) = ys[1]
-# @inline _get_loss(ys::NamedTuple{S, <:Tuple{Number,Vararg}}) where S = ys[1]
-# _get_loss(y) = error("""`Flux.withgradient(f, xs...)` expects that `y = f(xs...)` is a real numnber,
-#     or else a Tuple or NamedTuple whose first element is a real number.""")
+function (w::_WithAux)(args...)
+    val = w.f(args...)
+    if val isa Tuple
+        w.kind = :tuple
+        w.aux = Base.tail(val)
+        return val[1]
+    elseif val isa NamedTuple
+        w.kind = :named
+        w.aux = val
+        return val[1]
+    else
+        return val
+    end
+end
+
+# Reassemble the full `val` from the primal `loss` returned by Enzyme and the stashed aux.
+_aux_val(w::_WithAux, loss) =
+    w.kind === :tuple ? (loss, w.aux...) :
+    w.kind === :named ? w.aux :
+    loss
 
 
 end # FluxEnzymeExt

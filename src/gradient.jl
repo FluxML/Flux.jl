@@ -261,18 +261,17 @@ julia> Flux.withgradient(m -> m(3), model)  # this uses Zygote
 julia> Flux.withgradient(m -> m(3), Duplicated(model))  # this uses Enzyme
 (val = 14.52, grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
 ```
+
+Auxiliary outputs are supported here too: `f` may return a Tuple or NamedTuple whose first
+element is the scalar loss. The gradient is taken of the loss alone, while the whole output is
+returned as `val`:
+
+```julia-repl
+julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
+(val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+
+julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
+(val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
+```
 """
 withgradient(f, args::Union{EnzymeCore.Const, EnzymeCore.Duplicated}...; zero::Bool=true) = withgradient(f, AutoEnzyme(), args...; zero)
-
-## ADD BACK TO withgradient docstring above when AUX is SUPPORTED
-# The function `f` may return Tuple or NamedTuple, with the loss as the first element.
-# The gradient is then `grad = gradient(first∘f, args...)`
-# but the returned value is `val = f(args...)`:
-
-# ```julia-repl
-# julia> Flux.withgradient(m -> (m(3), "aux"), Duplicated(model))
-# (val = (14.52, "aux"), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
-
-# julia> Flux.withgradient(m -> (loss=m(3), aux=round.(m.(1:3); digits=3)), Duplicated(model))
-# (val = (loss = 14.52, aux = [4.84, 9.68, 14.52]), grad = ((layers = ((weight = [0.0 0.0 4.4],), (weight = [3.3;;], bias = [1.0], σ = nothing), nothing),),))
-# ```
