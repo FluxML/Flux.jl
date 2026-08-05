@@ -93,6 +93,12 @@ gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2)
 gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2)
 gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
 
+# padding_idx=2: the input must contain the padding index to exercise the mask
+EmbeddingPad(in, out) = Flux.Embedding(in => out; padding_idx=2)
+embedding_pad = [EmbeddingPad]
+gpu_gradtest("Embedding padding_idx", embedding_pad, [1,2,5,2], 5, 2)
+gpu_gradtest("Embedding padding_idx OneHotMatrix", embedding_pad, OneHotMatrix([1,2,2,3], 5), 5, 2)
+
 @testset "function layers" begin
   x = rand(Float32, 3, 3)
   test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, test_cpu=false, 
