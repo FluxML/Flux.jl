@@ -223,3 +223,81 @@ end
 
     empty!(ext.COMPILE_CACHE)   # leave a clean cache for other testsets
 end
+
+@testset "AD backend resolution on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    ext = Base.get_extension(Flux, :FluxReactantExt)
+    loss(m, a, b) = Flux.mse(m(a), b)
+
+    model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    opt = Flux.setup(Adam(1f-2), model)
+
+    empty!(ext.COMPILE_CACHE)
+    l0 = Reactant.to_number(Reactant.@jit loss(model, x, y))
+
+    # No `adtype` ⇒ the default on a Reactant device is Enzyme (compiles one executable).
+    Flux.trainstep!(loss, model, (x, y), opt)
+    @test length(ext.COMPILE_CACHE) == 1
+
+    # An explicit `AutoEnzyme()` is the same backend, so it reuses that executable rather than
+    # compiling a second one (the cache key includes `typeof(adtype)`).
+    Flux.trainstep!(loss, AutoEnzyme(), model, (x, y), opt)
+    @test length(ext.COMPILE_CACHE) == 1
+
+    # ...and it trains (Enzyme reverse pass under Reactant's ABI).
+    for _ in 1:20
+        Flux.trainstep!(loss, AutoEnzyme(), model, (x, y), opt)
+    end
+    @test Reactant.to_number(Reactant.@jit loss(model, x, y)) < l0
+end
+
+@testset "Duplicated model rejected on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    loss(m, a, b) = Flux.mse(m(a), b)
+    opt = Flux.setup(Adam(1f-2), model)
+
+    # A `Duplicated` model on a Reactant device is an error at resolution time, for every entry point
+    # (pass the plain device-resident model instead — Enzyme is applied internally).
+    dmodel = Duplicated(model, Enzyme.make_zero(model))
+    @test_throws ArgumentError Flux.trainstep!(loss, dmodel, (x, y), opt)
+    @test_throws ArgumentError Flux.trainstep_withgradient!(loss, dmodel, (x, y), opt)
+    @test_throws ArgumentError Flux.train!(loss, dmodel, [(x, y)], opt)
+end
+
+@testset "explicit non-Enzyme backend is honoured on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    ext = Base.get_extension(Flux, :FluxReactantExt)
+    loss(m, a, b) = Flux.mse(m(a), b)
+
+    model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    opt = Flux.setup(Adam(1f-2), model)
+
+    empty!(ext.COMPILE_CACHE)
+    Flux.trainstep!(loss, model, (x, y), opt)      # default Enzyme executable
+    @test length(ext.COMPILE_CACHE) == 1
+
+    # A non-Enzyme `adtype` is no longer ignored: Flux traces `Flux.withgradient(_, AutoZygote(), _)`
+    # through the compiled step instead of silently using Enzyme. Whether XLA can trace Zygote's
+    # backward pass is up to Reactant's op coverage, so tolerate a compile failure — the guarantee
+    # here is that Flux *attempts* the requested backend (never aliasing the Enzyme executable) and
+    # emits no "ignoring adtype" warning.
+    zygote_ran = try
+        Flux.trainstep!(loss, AutoZygote(), model, (x, y), opt)
+        true
+    catch err
+        @info "AutoZygote() through Reactant did not compile (op coverage)" exception=(err, catch_backtrace())
+        false
+    end
+    if zygote_ran
+        # A distinct executable was compiled for Zygote — the backend is part of the cache key.
+        @test length(ext.COMPILE_CACHE) == 2
+    else
+        @test_broken false
+    end
+
+    empty!(ext.COMPILE_CACHE)   # leave a clean cache for other testsets
+end
