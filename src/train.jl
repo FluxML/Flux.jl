@@ -320,7 +320,6 @@ for epoch in 1:100
 end
 ```
 """
-# No `adtype`: the `nothing` sentinel makes `_resolve_backend` pick the device-aware default.
 trainstep!(loss, model, batch, opt_state) =
     trainstep!(loss, nothing, model, batch, opt_state)
 
