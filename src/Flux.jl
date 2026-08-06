@@ -30,7 +30,7 @@ using ADTypes: AbstractADType
 
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
-                    gpu_device, cpu_device, xla_device,
+                    gpu_device, cpu_device, reactant_device,
                     CPUDevice,
                     CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
                     ReactantDevice,

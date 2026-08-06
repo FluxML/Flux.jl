@@ -113,11 +113,12 @@ end
     @test v isa Tuple                                              # full value returned
     @test v[1] isa Real && isfinite(v[1])                         # scalar loss read to host
     @test v[1] ≈ l0                                               # measured before the update
-    @test Flux.get_device_type(v[2].sumsq) <: Flux.ReactantDevice # aux stays on the device
+    @test v[2].sumsq isa Real && isfinite(v[2].sumsq)             # aux read back to the host too
 
-    # with-gradient variant: same value shape, gradient stays on the device
+    # with-gradient variant: same value shape (also host-read), gradient stays on the device
     v2, g = Flux.trainstep_withgradient!(auxloss, model, (x, y), opt)
     @test v2 isa Tuple && v2[1] isa Real && isfinite(v2[1])
+    @test v2[2].sumsq isa Real
     @test Flux.get_device_type(g) <: Flux.ReactantDevice
 
     # differentiating `first∘loss`, training with the aux loss still reduces the loss
@@ -128,6 +129,29 @@ end
 
     # `train!` over an aux-returning loss runs (it guards on the scalar and discards the aux)
     @test Flux.train!(auxloss, model, [(x, y) for _ in 1:5], opt) === nothing
+end
+
+@testset "BatchNorm running stats update once per Reactant step" begin
+    dev = MLDataDevices.reactant_device(force=true)
+
+    # A bare BatchNorm's running-stat update depends only on the input batch, so a single forward
+    # performs exactly one momentum update. This guards against evaluating the loss twice per step
+    # (which would double the update) for stateful layers — see `_reactant_valgrad`.
+    mk() = (m = BatchNorm(4); trainmode!(m); m)
+    X = randn(Float32, 4, 16)
+
+    # Independent reference: one plain forward ⇒ one update (no AD, can't hit the same code path).
+    ref = mk(); ref(X)
+
+    # scalar loss, and a loss returning (loss, aux) — both must still update the stats exactly once.
+    for lossf in ((m, a) -> sum(abs2, m(a)),
+                  (m, a) -> (y = m(a); (sum(abs2, y), sum(y))))
+        m = mk() |> dev
+        opt = Flux.setup(Descent(0f0), m)   # zero LR isolates the stat update from parameter changes
+        Flux.trainstep!(lossf, m, (X |> dev,), opt)
+        @test Array(m.μ)  ≈ ref.μ           # one update, not two
+        @test Array(m.σ²) ≈ ref.σ²
+    end
 end
 
 @testset "Reactant compile-cache auto-eviction" begin
@@ -173,4 +197,29 @@ end
     handle = first(Flux.trainables(model))
     @test any(v -> v[1].value === handle, values(ext.COMPILE_CACHE))   # this model's entry survived
     @test l1 < l0
+end
+
+@testset "Reactant compile-cache growth warning" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    ext = Base.get_extension(Flux, :FluxReactantExt)
+    loss(m, a, b) = Flux.mse(m(a), b)
+
+    empty!(ext.COMPILE_CACHE)
+    # Fill the cache to the warning threshold with live dummy entries. `handles` keeps them reachable
+    # so the prune pass on the next lookup won't drop them, letting us hit the threshold with a single
+    # real compile instead of eleven.
+    handles = [Ref(0) for _ in 1:ext.COMPILE_CACHE_WARN]
+    for (i, h) in enumerate(handles)
+        ext.COMPILE_CACHE[(:dummy, i)] = (WeakRef(h), nothing)
+    end
+    @test length(ext.COMPILE_CACHE) == ext.COMPILE_CACHE_WARN
+
+    # Compiling one more distinct step pushes the cache past the threshold and must warn.
+    model = Dense(2 => 2) |> dev
+    x, y = randn(Float32, 2, 4) |> dev, randn(Float32, 2, 4) |> dev
+    opt = Flux.setup(Adam(1f-2), model)
+    @test_logs (:warn,) match_mode=:any Flux.trainstep!(loss, model, (x, y), opt)
+    @test length(ext.COMPILE_CACHE) == ext.COMPILE_CACHE_WARN + 1
+
+    empty!(ext.COMPILE_CACHE)   # leave a clean cache for other testsets
 end

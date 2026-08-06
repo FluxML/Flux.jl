@@ -1,49 +1,54 @@
 module FluxReactantExt
 
-using Flux: Flux, Train
+using Flux: Flux, Train, cpu
 using Optimisers: Optimisers
-using ADTypes: AutoEnzyme
 using Functors: fmapstructure
 import Reactant
+using Reactant: Enzyme
 
-# Fixed-arity compiled steps: the whole batch is passed as ONE tuple (splat inside), so the thunk
-# arity is always 4 and stable regardless of how many arrays a batch holds. They mirror Flux's own
-# eager step (src/train.jl); the loss is a free by-product (`withgradient` already runs a
-# reverse-with-primal pass) and both mutate `opt`/`model` in place inside the executable.
-#
-# `trainstep!` uses the loss-only variant; `trainstep_withgradient!` uses the one that also returns
-# the gradient. They are kept separate on purpose: returning `grad` makes it an *output* of the
-# executable, so XLA must keep the gradient buffers live to the end of the step instead of freeing
-# each one right after the update reads it. That blocks buffer reuse and raises peak GPU memory
-# (~+0.8 GiB / +30–60% for a ResNet-18). Keeping a loss-only variant lets `train!` (and anyone who
-# doesn't need the gradient) avoid that cost.
-# Compute the loss value and the gradient of the (scalar) loss w.r.t. the model. When the loss
-# returns auxiliary outputs (a Tuple/NamedTuple `(loss, aux...)`), we can't use the eager
-# `withgradient` aux path: it smuggles the aux out through a mutable wrapper as a side effect, which
-# does not survive Reactant's tracing (the aux would be silently dropped). Instead we evaluate the
-# loss directly to get the full value `v`, and differentiate only `first(loss(...))`. XLA fuses the
-# two forward passes (common-subexpression elimination), and in the scalar branch `v` is unused so
-# its forward is dead-code-eliminated — the loss-only path keeps its single forward pass.
-function _reactant_valgrad(loss, model, data::Tuple)
+# The scalar loss out of a loss value: the whole thing for a scalar loss, or `first` when the loss
+# returns auxiliary outputs (a Tuple/NamedTuple `(loss, aux...)`).
+_reactant_loss_scalar(v::Union{Tuple, NamedTuple}) = first(v)
+_reactant_loss_scalar(v) = v
+
+# Objective differentiated by `_reactant_valgrad`. The gradient is taken of the scalar loss only, so
+# any auxiliary outputs are wrapped in `Reactant.ignore_derivatives` and handed back as a second,
+# non-differentiated return value — a genuine primal output of the single `ReverseWithPrimal` pass.
+function _reactant_objective(loss, model, data)
     v = loss(model, data...)
-    if v isa Union{Tuple, NamedTuple}
-        _, gs = Flux.withgradient(m -> first(loss(m, data...)), AutoEnzyme(), model)
-        return v, gs[1]
-    else
-        l, gs = Flux.withgradient(m -> loss(m, data...), AutoEnzyme(), model)
-        return l, gs[1]
-    end
+    return _reactant_loss_scalar(v), Reactant.ignore_derivatives(v)
 end
 
-function _reactant_step!(loss, model, data::Tuple, opt)
+# Zygote-style stripping of an Enzyme shadow model to a gradient: numeric leaves as-is, everything
+# else (non-trainable state, activation functions, …) to `nothing`. Matches `Flux.withgradient`'s
+# Enzyme path so the returned gradient and `Optimisers.update!` behave identically.
+_reactant_grad(dmodel) =
+    fmapstructure(x -> Optimisers.isnumeric(x) ? x : nothing, dmodel; prune=nothing)
+
+# Compute the full loss value (loss + any aux) and the gradient of the scalar loss w.r.t. the model. 
+# Enzyme's reverse mode returns only the scalar primal, so Flux's eager
+# `withgradient` smuggles aux out through a mutable wrapper as a side effect — which does NOT survive
+# Reactant's tracing (the aux would be silently dropped). 
+# Instead we differentiate `_reactant_objective` under Enzyme's Reactant ABI,
+# which returns the aux as a real primal output of the one differentiated forward.
+function _reactant_valgrad(loss, model, data::Tuple)
+    dmodel = Enzyme.make_zero(model)
+    ad = Enzyme.set_abi(Enzyme.ReverseWithPrimal, Reactant.ReactantABI)
+    _, (_, v) = Enzyme.autodiff(ad, Enzyme.Const(_reactant_objective),
+                                Enzyme.Duplicated, Enzyme.Const(loss),
+                                Enzyme.Duplicated(model, dmodel), Enzyme.Const(data))
+    return v, _reactant_grad(dmodel)
+end
+
+function _reactant_step!(loss, model, data::Tuple, opt_state)
     v, g = _reactant_valgrad(loss, model, data)
-    Optimisers.update!(opt, model, g)
+    Optimisers.update!(opt_state, model, g)
     return v
 end
 
-function _reactant_step_withgradient!(loss, model, data::Tuple, opt)
+function _reactant_step_withgradient!(loss, model, data::Tuple, opt_state)
     v, g = _reactant_valgrad(loss, model, data)
-    Optimisers.update!(opt, model, g)
+    Optimisers.update!(opt_state, model, g)
     return v, g
 end
 
@@ -59,6 +64,11 @@ end
 # model — it hashes by parameter *contents*, which change every in-place update — nor weak-reference
 # the immutable model directly, hence the parameter array as the lifetime handle.
 const COMPILE_CACHE = Dict{Any, Tuple{WeakRef, Any}}()
+
+# Warn once the number of live cached executables passes this, on each further addition: a healthy
+# training loop reuses a handful of steps, so unbounded growth usually means a new model/optimiser
+# (or batch shape) is compiled every iteration by mistake.
+const COMPILE_CACHE_WARN = 10
 
 # One of the model's parameter arrays, used as the weak handle whose lifetime tracks the model's;
 # `nothing` for a model with no array parameters (then that entry simply never auto-evicts).
@@ -91,19 +101,24 @@ _shape_signature(x) = fmapstructure(a -> a isa AbstractArray ? size(a) : a, x)
 
 # `withgradient` selects the loss-only executable or the one that also returns the gradient, and is
 # part of the key so the two variants for the same model are cached separately.
-function _compiled_step(loss, model, dtuple, opt, withgradient::Bool)
+function _compiled_step(loss, model, dtuple, opt_state, withgradient::Bool)
     _prune_compile_cache!()
-    key = (withgradient, objectid(model), typeof(model), typeof(opt), objectid(loss),
+    key = (withgradient, objectid(model), typeof(model), typeof(opt_state), objectid(loss),
            map(typeof, dtuple), map(_shape_signature, dtuple))
     entry = get(COMPILE_CACHE, key, nothing)
     entry === nothing || return entry[2]
     exe = withgradient ?
-        Reactant.@compile(_reactant_step_withgradient!(loss, model, dtuple, opt)) :
-        Reactant.@compile(_reactant_step!(loss, model, dtuple, opt))
+        Reactant.@compile(_reactant_step_withgradient!(loss, model, dtuple, opt_state)) :
+        Reactant.@compile(_reactant_step!(loss, model, dtuple, opt_state))
     handle = _evict_handle(model)
     # A param-less model has nothing to weak-reference; fall back to the executable itself (which the
     # entry keeps alive) so such an entry is simply never pruned.
     COMPILE_CACHE[key] = (WeakRef(handle === nothing ? exe : handle), exe)
+    length(COMPILE_CACHE) > COMPILE_CACHE_WARN && @warn(
+        "Flux's Reactant training-step cache now holds $(length(COMPILE_CACHE)) compiled executables. \
+         Each distinct (model, optimiser, loss, batch-shape) combination compiles and caches its own \
+         step; steady growth usually means one of these changes every iteration (e.g. a freshly built \
+         model or optimiser). Entries are freed automatically once their model is garbage-collected.")
     return exe
 end
 
@@ -113,31 +128,19 @@ _require_device_batch(batch) =
          the model's device first, e.g. `data = [(x, y) |> reactant_device() for (x, y) in data]`."))
 
 # Reactant/XLA implementations of a single step, dispatched to from the ReactantDevice branch of
-# `trainstep!` / `trainstep_withgradient!` (src/train.jl); `Flux.train!` loops over the loss-only
-# one. The model and optimiser state already live on the Reactant device, and the batch is required to
-# be device-resident too. The fused step is compiled once per distinct (model, optimiser, loss,
-# batch-shape) and reused, mutating `opt_state`/`model` in place. The host loss read forces the async
-# device→host sync; any returned gradient stays on the device.
+# `trainstep!` / `trainstep_withgradient!` (src/train.jl);
 function Train._reactant_trainstep!(loss, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, model, batch, opt_state, false)
     l = step(loss, model, batch, opt_state)
-    return _host_loss(l)
+    return cpu(l)
 end
 
 function Train._reactant_trainstep_withgradient!(loss, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
     step = _compiled_step(loss, model, batch, opt_state, true)
     l, g = step(loss, model, batch, opt_state)
-    return _host_loss(l), g
+    return cpu(l), g
 end
-
-# Read the compiled step's loss output back to the host. When the loss returns auxiliary outputs (a
-# Tuple/NamedTuple `(loss, aux...)`, as `withgradient`/`trainstep!` support), only the scalar loss is
-# brought to the host — the aux stays device-resident, like the returned gradient does.
-_host_loss(l) = Reactant.to_number(l)
-_host_loss(l::Tuple) = (Reactant.to_number(first(l)), Base.tail(l)...)
-_host_loss(l::NamedTuple) =
-    merge(l, NamedTuple{(first(keys(l)),)}((Reactant.to_number(first(l)),)))
 
 end # module
