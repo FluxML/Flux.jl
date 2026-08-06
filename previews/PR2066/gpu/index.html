@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>GPU Support · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="Flux logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">Flux</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li><a class="tocitem" href="../models/overview/">Overview</a></li><li><a class="tocitem" href="../models/basics/">Basics</a></li><li><a class="tocitem" href="../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../models/layers/">Layer Reference</a></li><li><a class="tocitem" href="../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../models/regularisation/">Regularisation</a></li><li><a class="tocitem" href="../models/advanced/">Custom Layers</a></li><li><a class="tocitem" href="../models/nnlib/">NNlib.jl</a></li><li><a class="tocitem" href="../models/activation/">Activation Functions</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../data/mlutils/">MLUtils.jl</a></li><li><a class="tocitem" href="../data/onehot/">OneHotArrays.jl</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../training/training/">Training</a></li><li><a class="tocitem" href="../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../training/zygote/">Zygote.jl</a></li></ul></li><li class="is-active"><a class="tocitem" href>GPU Support</a><ul class="internal"><li><a class="tocitem" href="#Checking-GPU-Availability"><span>Checking GPU Availability</span></a></li><li><a class="tocitem" href="#GPU-Usage"><span>GPU Usage</span></a></li><li><a class="tocitem" href="#Common-GPU-Workflows"><span>Common GPU Workflows</span></a></li><li><a class="tocitem" href="#Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux"><span>Disabling CUDA or choosing which GPUs are visible to Flux</span></a></li></ul></li><li><span class="tocitem">Model Tools</span><ul><li><a class="tocitem" href="../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../models/functors/">Functors.jl</a></li></ul></li><li><a class="tocitem" href="../performance/">Performance Tips</a></li><li><a class="tocitem" href="../ecosystem/">Flux&#39;s Ecosystem</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>GPU Support</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>GPU Support</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/gpu.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="GPU-Support"><a class="docs-heading-anchor" href="#GPU-Support">GPU Support</a><a id="GPU-Support-1"></a><a class="docs-heading-anchor-permalink" href="#GPU-Support" title="Permalink"></a></h1><p>NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a> readme.</p><h2 id="Checking-GPU-Availability"><a class="docs-heading-anchor" href="#Checking-GPU-Availability">Checking GPU Availability</a><a id="Checking-GPU-Availability-1"></a><a class="docs-heading-anchor-permalink" href="#Checking-GPU-Availability" title="Permalink"></a></h2><p>By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:</p><pre><code class="language-julia hljs">julia&gt; using CUDA
+
+julia&gt; CUDA.functional()
+true</code></pre><h2 id="GPU-Usage"><a class="docs-heading-anchor" href="#GPU-Usage">GPU Usage</a><a id="GPU-Usage-1"></a><a class="docs-heading-anchor-permalink" href="#GPU-Usage" title="Permalink"></a></h2><p>Support for array operations on other hardware backends, like GPUs, is provided by external packages like <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA</a>. Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.</p><p>For example, we can use <code>CUDA.CuArray</code> (with the <code>cu</code> converter) to run our <a href="../models/basics/">basic example</a> on an NVIDIA GPU.</p><p>(Note that you need to have CUDA available to use CUDA.CuArray – please see the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a> instructions for more details.)</p><pre><code class="language-julia hljs">using CUDA
+
+W = cu(rand(2, 5)) # a 2×5 CuArray
+b = cu(rand(2))
+
+predict(x) = W*x .+ b
+loss(x, y) = sum((predict(x) .- y).^2)
+
+x, y = cu(rand(5)), cu(rand(2)) # Dummy data
+loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>fmap</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia hljs">d = Dense(10 =&gt; 5, σ)
+d = fmap(cu, d)
+d.weight # CuArray
+d(cu(rand(10))) # CuArray output
+
+m = Chain(Dense(10 =&gt; 5, σ), Dense(5 =&gt; 2), softmax)
+m = fmap(cu, m)
+d(cu(rand(10)))</code></pre><p>As a convenience, Flux provides the <code>gpu</code> function to convert models and data to the GPU if one is available. By default, it&#39;ll do nothing. So, you can safely call <code>gpu</code> on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If the GPU library (CUDA.jl) loads successfully, <code>gpu</code> will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a <code>CuArray</code>.</p><pre><code class="language-julia hljs">julia&gt; using Flux, CUDA
+
+julia&gt; m = Dense(10, 5) |&gt; gpu
+Dense(10 =&gt; 5)      # 55 parameters
+
+julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.066846445
+ ⋮
+ 0.76706964
+
+julia&gt; m(x)
+5-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ -0.99992573
+ ⋮
+ -0.547261</code></pre><p>The analogue <code>cpu</code> is also available for moving models and data back off of the GPU.</p><pre><code class="language-julia hljs">julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.8019236
+ ⋮
+ 0.7766742
+
+julia&gt; x |&gt; cpu
+10-element Vector{Float32}:
+ 0.8019236
+ ⋮
+ 0.7766742</code></pre><article class="docstring"><header><a class="docstring-binding" id="Flux.cpu" href="#Flux.cpu"><code>Flux.cpu</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">cpu(m)</code></pre><p>Moves <code>m</code> onto the CPU, the opposite of <a href="#Flux.gpu"><code>gpu</code></a>. Recurses into structs marked <a href="../models/functors/#Functors.@functor"><code>@functor</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; m = Dense(1,2)
+Dense(1, 2)
+
+julia&gt; m_gpu = gpu(m)
+Dense(1, 2)
+
+julia&gt; typeof(m_gpu.W)
+CuArray{Float32, 2}
+
+julia&gt; m_cpu = cpu(m_gpu)
+Dense(1, 2)
+
+julia&gt; typeof(m_cpu.W)
+Matrix{Float32}</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/3fd78305a6f97a1f36892e8e3d65673b740ccea2/src/functor.jl#L131-L153">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.gpu" href="#Flux.gpu"><code>Flux.gpu</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">gpu(x)</code></pre><p>Moves <code>m</code> to the current GPU device, if available. It is a no-op otherwise. See the <a href="https://juliagpu.github.io/CUDA.jl/stable/usage/multigpu/">CUDA.jl docs</a>  to help identify the current device.</p><p>This works for functions, and any struct marked with <a href="../models/functors/#Functors.@functor"><code>@functor</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; m = Dense(1,2)
+Dense(1, 2)
+
+julia&gt; typeof(m.W)
+Matrix{Float32}
+
+julia&gt; m_gpu = gpu(m)
+Dense(1, 2)
+
+julia&gt; typeof(m_gpu.W) # notice the type of the array changed to a CuArray
+CuArray{Float32, 2}</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/3fd78305a6f97a1f36892e8e3d65673b740ccea2/src/functor.jl#L163-L185">source</a></section></article><h2 id="Common-GPU-Workflows"><a class="docs-heading-anchor" href="#Common-GPU-Workflows">Common GPU Workflows</a><a id="Common-GPU-Workflows-1"></a><a class="docs-heading-anchor-permalink" href="#Common-GPU-Workflows" title="Permalink"></a></h2><p>Some of the common workflows involving the use of GPUs are presented below.</p><h3 id="Transferring-Training-Data"><a class="docs-heading-anchor" href="#Transferring-Training-Data">Transferring Training Data</a><a id="Transferring-Training-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Transferring-Training-Data" title="Permalink"></a></h3><p>In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. This process can be done with the <code>gpu</code> function in two different ways:</p><ol><li><p>Iterating over the batches in a <a href="../data/mlutils/#DataLoader">DataLoader</a> object transferring each one of the training batches at a time to the GPU. </p><pre><code class="language-julia hljs">train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
+# ... model, optimizer and loss definitions
+for epoch in 1:nepochs
+    for (xtrain_batch, ytrain_batch) in train_loader
+        x, y = gpu(xtrain_batch), gpu(ytrain_batch)
+        gradients = gradient(() -&gt; loss(x, y), parameters)
+        Flux.Optimise.update!(optimizer, parameters, gradients)
+    end
+end</code></pre></li><li><p>Transferring all training data to the GPU at once before creating the <a href="../data/mlutils/#DataLoader">DataLoader</a> object. This is usually performed for smaller datasets which are sure to fit in the available GPU memory. Some possibilities are:</p><pre><code class="language-julia hljs">gpu_train_loader = Flux.DataLoader((xtrain |&gt; gpu, ytrain |&gt; gpu), batchsize = 32)</code></pre><pre><code class="language-julia hljs">gpu_train_loader = Flux.DataLoader((xtrain, ytrain) |&gt; gpu, batchsize = 32)</code></pre><p>Note that both <code>gpu</code> and <code>cpu</code> are smart enough to recurse through tuples and namedtuples. Another possibility is to use <a href="https://juliaml.github.io/MLUtils.jl/dev/api/#MLUtils.mapobs"><code>MLUtils.mapsobs</code></a> to push the data movement invocation into the background thread:</p><pre><code class="language-julia hljs">using MLUtils: mapobs
+# ...
+gpu_train_loader = Flux.DataLoader(mapobs(gpu, (xtrain, ytrain)), batchsize = 16)</code></pre></li><li><p>Wrapping the <code>DataLoader</code> in <a href="https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator"><code>CUDA.CuIterator</code></a> to efficiently move data to GPU on demand:</p><pre><code class="language-julia hljs">using CUDA: CuIterator
+train_loader = Flux.DataLoader((xtrain, ytrain), batchsize = 64, shuffle = true)
+# ... model, optimizer and loss definitions
+for epoch in 1:nepochs
+    for (xtrain_batch, ytrain_batch) in CuIterator(train_loader)
+       # ...
+    end
+end</code></pre><p>Note that this works with a limited number of data types. If <code>iterate(train_loader)</code> returns anything other than arrays, approach 1 or 2 is preferred.</p></li></ol><h3 id="Saving-GPU-Trained-Models"><a class="docs-heading-anchor" href="#Saving-GPU-Trained-Models">Saving GPU-Trained Models</a><a id="Saving-GPU-Trained-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-GPU-Trained-Models" title="Permalink"></a></h3><p>After the training process is done, one must always transfer the trained model back to the <code>cpu</code> memory scope before serializing or saving to disk. This can be done, as described in the previous section, with:</p><pre><code class="language-julia hljs">model = cpu(model) # or model = model |&gt; cpu</code></pre><p>and then</p><pre><code class="language-julia hljs">using BSON
+# ...
+BSON.@save &quot;./path/to/trained_model.bson&quot; model
+
+# in this approach the cpu-transferred model (referenced by the variable `model`)
+# only exists inside the `let` statement
+let model = cpu(model)
+   # ...
+   BSON.@save &quot;./path/to/trained_model.bson&quot; model
+end
+
+# is equivalent to the above, but uses `key=value` storing directive from BSON.jl
+BSON.@save &quot;./path/to/trained_model.bson&quot; model = cpu(model)</code></pre><p>The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect <code>CuArray</code>s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.</p><p>In controlled scenarios in which the data fed to the loaded models is garanteed to be in the GPU there&#39;s no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no garantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.</p><h2 id="Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux"><a class="docs-heading-anchor" href="#Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux">Disabling CUDA or choosing which GPUs are visible to Flux</a><a id="Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux-1"></a><a class="docs-heading-anchor-permalink" href="#Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux" title="Permalink"></a></h2><p>Sometimes it is required to control which GPUs are visible to <code>julia</code> on a system with multiple GPUs or disable GPUs entirely. This can be achieved with an environment variable <code>CUDA_VISIBLE_DEVICES</code>.</p><p>To disable all devices:</p><pre><code class="nohighlight hljs">$ export CUDA_VISIBLE_DEVICES=&#39;-1&#39;</code></pre><p>To select specific devices by device id:</p><pre><code class="nohighlight hljs">$ export CUDA_VISIBLE_DEVICES=&#39;0,1&#39;</code></pre><p>More information for conditional use of GPUs in CUDA.jl can be found in its <a href="https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use">documentation</a>, and information about the specific use of the variable is described in the <a href="https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/">Nvidia CUDA blog post</a>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../training/zygote/">« Zygote.jl</a><a class="docs-footer-nextpage" href="../saving/">Saving &amp; Loading »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Monday 26 September 2022 17:50">Monday 26 September 2022</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

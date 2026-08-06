@@ -1,0 +1,76 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Regularisation · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+</script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script data-main="../../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link href="../../assets/documenter.css" rel="stylesheet" type="text/css"/><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>Flux</h1><select id="version-selector" onchange="window.location.href=this.value" style="visibility: hidden"></select><form action="../../search/" class="search" id="search-form"><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../../">Home</a></li><li><span class="toctext">Building Models</span><ul><li><a class="toctext" href="../basics/">Basics</a></li><li><a class="toctext" href="../recurrence/">Recurrence</a></li><li class="current"><a class="toctext" href="">Regularisation</a><ul class="internal"></ul></li><li><a class="toctext" href="../layers/">Model Reference</a></li></ul></li><li><span class="toctext">Training Models</span><ul><li><a class="toctext" href="../../training/optimisers/">Optimisers</a></li><li><a class="toctext" href="../../training/training/">Training</a></li></ul></li><li><a class="toctext" href="../../data/onehot/">One-Hot Encoding</a></li><li><a class="toctext" href="../../gpu/">GPU Support</a></li><li><a class="toctext" href="../../saving/">Saving &amp; Loading</a></li><li><a class="toctext" href="../../performance/">Performance Tips</a></li><li><span class="toctext">Internals</span><ul><li><a class="toctext" href="../../internals/tracker/">Backpropagation</a></li></ul></li><li><a class="toctext" href="../../community/">Community</a></li></ul></nav><article id="docs"><header><nav><ul><li>Building Models</li><li><a href="">Regularisation</a></li></ul><a class="edit-page" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/regularisation.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Regularisation</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" href="#Regularisation-1" id="Regularisation-1">Regularisation</a></h1><p>Applying regularisation to model parameters is straightforward. We just need to apply an appropriate regulariser, such as <code>norm</code>, to each model parameter and add the result to the overall loss.</p><p>For example, say we have a simple regression.</p><pre><code class="language-julia">using Flux: crossentropy
+m = Dense(10, 5)
+loss(x, y) = crossentropy(softmax(m(x)), y)</code></pre><p>We can regularise this by taking the (L2) norm of the parameters, <code>m.W</code> and <code>m.b</code>.</p><pre><code class="language-julia">penalty() = norm(m.W) + norm(m.b)
+loss(x, y) = crossentropy(softmax(m(x)), y) + penalty()</code></pre><p>When working with layers, Flux provides the <code>params</code> function to grab all parameters at once. We can easily penalise everything with <code>sum(norm, params)</code>.</p><pre><code class="language-julia">julia&gt; params(m)
+2-element Array{Any,1}:
+ param([0.355408 0.533092; … 0.430459 0.171498])
+ param([0.0, 0.0, 0.0, 0.0, 0.0])
+
+julia&gt; sum(norm, params(m))
+26.01749952921026 (tracked)</code></pre><p>Here's a larger example with a multi-layer perceptron.</p><pre><code class="language-julia">m = Chain(
+  Dense(28^2, 128, relu),
+  Dense(128, 32, relu),
+  Dense(32, 10), softmax)
+
+loss(x, y) = crossentropy(m(x), y) + sum(norm, params(m))
+
+loss(rand(28^2), rand(10))</code></pre><p>One can also easily add per-layer regularisation via the <code>activations</code> function:</p><pre><code class="language-julia">julia&gt; c = Chain(Dense(10,5,σ),Dense(5,2),softmax)
+Chain(Dense(10, 5, NNlib.σ), Dense(5, 2), NNlib.softmax)
+
+julia&gt; activations(c, rand(10))
+3-element Array{Any,1}:
+ param([0.71068, 0.831145, 0.751219, 0.227116, 0.553074])
+ param([0.0330606, -0.456104])
+ param([0.61991, 0.38009])
+
+julia&gt; sum(norm, ans)
+2.639678767773633 (tracked)</code></pre><footer><hr/><a class="previous" href="../recurrence/"><span class="direction">Previous</span><span class="title">Recurrence</span></a><a class="next" href="../layers/"><span class="direction">Next</span><span class="title">Model Reference</span></a></footer></article></body></HTML>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basics · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview', {'page': location.pathname + location.search + location.hash});
+</script><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Flux</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li class="is-active"><a class="tocitem" href>Basics</a><ul class="internal"><li><a class="tocitem" href="#Taking-Gradients"><span>Taking Gradients</span></a></li><li><a class="tocitem" href="#Simple-Models"><span>Simple Models</span></a></li><li><a class="tocitem" href="#Building-Layers"><span>Building Layers</span></a></li><li><a class="tocitem" href="#Stacking-It-Up"><span>Stacking It Up</span></a></li><li><a class="tocitem" href="#Layer-helpers"><span>Layer helpers</span></a></li></ul></li><li><a class="tocitem" href="../recurrence/">Recurrence</a></li><li><a class="tocitem" href="../layers/">Model Reference</a></li><li><a class="tocitem" href="../losses/">Loss Functions</a></li><li><a class="tocitem" href="../regularisation/">Regularisation</a></li><li><a class="tocitem" href="../advanced/">Advanced Model Building</a></li><li><a class="tocitem" href="../nnlib/">NNlib</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../../data/onehot/">One-Hot Encoding</a></li><li><a class="tocitem" href="../../data/dataloader/">DataLoader</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li></ul></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../ecosystem/">The Julia Ecosystem</a></li><li><a class="tocitem" href="../../utilities/">Utility Functions</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li><li><a class="tocitem" href="../../datasets/">Datasets</a></li><li><a class="tocitem" href="../../community/">Community</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Building Models</a></li><li class="is-active"><a href>Basics</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basics</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/basics.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Model-Building-Basics"><a class="docs-heading-anchor" href="#Model-Building-Basics">Model-Building Basics</a><a id="Model-Building-Basics-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Building-Basics" title="Permalink"></a></h1><h2 id="Taking-Gradients"><a class="docs-heading-anchor" href="#Taking-Gradients">Taking Gradients</a><a id="Taking-Gradients-1"></a><a class="docs-heading-anchor-permalink" href="#Taking-Gradients" title="Permalink"></a></h2><p>Flux&#39;s core feature is taking gradients of Julia code. The <code>gradient</code> function takes another Julia function <code>f</code> and a set of arguments, and returns the gradient with respect to each argument. (It&#39;s a good idea to try pasting these examples in the Julia terminal.)</p><pre><code class="language-julia-repl">julia&gt; using Flux
+
+julia&gt; f(x) = 3x^2 + 2x + 1;
+
+julia&gt; df(x) = gradient(f, x)[1]; # df/dx = 6x + 2
+
+julia&gt; df(2)
+14
+
+julia&gt; d2f(x) = gradient(df, x)[1]; # d²f/dx² = 6
+
+julia&gt; d2f(2)
+6</code></pre><p>When a function has many parameters, we can get gradients of each one at the same time:</p><pre><code class="language-julia-repl">julia&gt; f(x, y) = sum((x .- y).^2);
+
+julia&gt; gradient(f, [2, 1], [2, 0])
+([0, 2], [0, -2])</code></pre><p>But machine learning models can have <em>hundreds</em> of parameters! To handle this, Flux lets you work with collections of parameters, via <code>params</code>. You can get the gradient of all parameters used in a program without explicitly passing them in.</p><pre><code class="language-julia-repl">julia&gt; x = [2, 1];
+
+julia&gt; y = [2, 0];
+
+julia&gt; gs = gradient(params(x, y)) do
+         f(x, y)
+       end
+Grads(...)
+
+julia&gt; gs[x]
+2-element Array{Int64,1}:
+ 0
+ 2
+
+julia&gt; gs[y]
+2-element Array{Int64,1}:
+  0
+ -2</code></pre><p>Here, <code>gradient</code> takes a zero-argument function; no arguments are necessary because the <code>params</code> tell it what to differentiate.</p><p>This will come in really handy when dealing with big, complicated models. For now, though, let&#39;s start with something simple.</p><h2 id="Simple-Models"><a class="docs-heading-anchor" href="#Simple-Models">Simple Models</a><a id="Simple-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Simple-Models" title="Permalink"></a></h2><p>Consider a simple linear regression, which tries to predict an output array <code>y</code> from an input <code>x</code>.</p><pre><code class="language-julia">W = rand(2, 5)
+b = rand(2)
+
+predict(x) = W*x .+ b
+
+function loss(x, y)
+  ŷ = predict(x)
+  sum((y .- ŷ).^2)
+end
+
+x, y = rand(5), rand(2) # Dummy data
+loss(x, y) # ~ 3</code></pre><p>To improve the prediction we can take the gradients of the loss with respect to <code>W</code> and <code>b</code> and perform gradient descent.</p><pre><code class="language-julia">using Flux
+
+gs = gradient(() -&gt; loss(x, y), params(W, b))</code></pre><p>Now that we have gradients, we can pull them out and update <code>W</code> to train the model.</p><pre><code class="language-julia">W̄ = gs[W]
+
+W .-= 0.1 .* W̄
+
+loss(x, y) # ~ 2.5</code></pre><p>The loss has decreased a little, meaning that our prediction <code>x</code> is closer to the target <code>y</code>. If we have some data we can already try <a href="../../training/training/">training the model</a>.</p><p>All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can <em>look</em> very different – they might have millions of parameters or complex control flow. Let&#39;s see how Flux handles more complex models.</p><h2 id="Building-Layers"><a class="docs-heading-anchor" href="#Building-Layers">Building Layers</a><a id="Building-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Building-Layers" title="Permalink"></a></h2><p>It&#39;s common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid</a> (<code>σ</code>) in between them. In the above style we could write this as:</p><pre><code class="language-julia">using Flux
+
+W1 = rand(3, 5)
+b1 = rand(3)
+layer1(x) = W1 * x .+ b1
+
+W2 = rand(2, 3)
+b2 = rand(2)
+layer2(x) = W2 * x .+ b2
+
+model(x) = layer2(σ.(layer1(x)))
+
+model(rand(5)) # =&gt; 2-element vector</code></pre><p>This works but is fairly unwieldy, with a lot of repetition – especially as we add more layers. One way to factor this out is to create a function that returns linear layers.</p><pre><code class="language-julia">function linear(in, out)
+  W = randn(out, in)
+  b = randn(out)
+  x -&gt; W * x .+ b
+end
+
+linear1 = linear(5, 3) # we can access linear1.W etc
+linear2 = linear(3, 2)
+
+model(x) = linear2(σ.(linear1(x)))
+
+model(rand(5)) # =&gt; 2-element vector</code></pre><p>Another (equivalent) way is to create a struct that explicitly represents the affine layer.</p><pre><code class="language-julia">struct Affine
+  W
+  b
+end
+
+Affine(in::Integer, out::Integer) =
+  Affine(randn(out, in), randn(out))
+
+# Overload call, so the object can be used as a function
+(m::Affine)(x) = m.W * x .+ m.b
+
+a = Affine(10, 5)
+
+a(rand(10)) # =&gt; 5-element vector</code></pre><p>Congratulations! You just built the <code>Dense</code> layer that comes with Flux. Flux has many interesting layers available, but they&#39;re all things you could have built yourself very easily.</p><p>(There is one small difference with <code>Dense</code> – for convenience it also takes an activation function, like <code>Dense(10, 5, σ)</code>.)</p><h2 id="Stacking-It-Up"><a class="docs-heading-anchor" href="#Stacking-It-Up">Stacking It Up</a><a id="Stacking-It-Up-1"></a><a class="docs-heading-anchor-permalink" href="#Stacking-It-Up" title="Permalink"></a></h2><p>It&#39;s pretty common to write models that look something like:</p><pre><code class="language-julia">layer1 = Dense(10, 5, σ)
+# ...
+model(x) = layer3(layer2(layer1(x)))</code></pre><p>For long chains, it might be a bit more intuitive to have a list of layers, like this:</p><pre><code class="language-julia">using Flux
+
+layers = [Dense(10, 5, σ), Dense(5, 2), softmax]
+
+model(x) = foldl((x, m) -&gt; m(x), layers, init = x)
+
+model(rand(10)) # =&gt; 2-element vector</code></pre><p>Handily, this is also provided for in Flux:</p><pre><code class="language-julia">model2 = Chain(
+  Dense(10, 5, σ),
+  Dense(5, 2),
+  softmax)
+
+model2(rand(10)) # =&gt; 2-element vector</code></pre><p>This quickly starts to look like a high-level deep learning library; yet you can see how it falls out of simple abstractions, and we lose none of the power of Julia code.</p><p>A nice property of this approach is that because &quot;models&quot; are just functions (possibly with trainable parameters), you can also see this as simple function composition.</p><pre><code class="language-julia">m = Dense(5, 2) ∘ Dense(10, 5, σ)
+
+m(rand(10))</code></pre><p>Likewise, <code>Chain</code> will happily work with any Julia function.</p><pre><code class="language-julia">m = Chain(x -&gt; x^2, x -&gt; x+1)
+
+m(5) # =&gt; 26</code></pre><h2 id="Layer-helpers"><a class="docs-heading-anchor" href="#Layer-helpers">Layer helpers</a><a id="Layer-helpers-1"></a><a class="docs-heading-anchor-permalink" href="#Layer-helpers" title="Permalink"></a></h2><p>Flux provides a set of helpers for custom layers, which you can enable by calling</p><pre><code class="language-julia">Flux.@functor Affine</code></pre><p>This enables a useful extra set of functionality for our <code>Affine</code> layer, such as <a href="../../training/optimisers/">collecting its parameters</a> or <a href="../../gpu/">moving it to the GPU</a>.</p><p>For some more helpful tricks, including parameter freezing, please checkout the <a href="../advanced/">advanced usage guide</a>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../recurrence/">Recurrence »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 8 January 2021 07:42">Friday 8 January 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
