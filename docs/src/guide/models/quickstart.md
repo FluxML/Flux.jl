@@ -107,6 +107,24 @@ for epoch in 1:1_000
 end
 ```
 
+If you want to keep control of the loop — for logging, early stopping, or a custom schedule — but would rather not spell out `gradient` and `update!` yourself, [`trainstep!`](@ref Flux.Train.trainstep!) is the per-step primitive that `train!` is built on. It evaluates the loss, computes the gradient, and updates `model` and `opt_state` in place, returning the loss. The batch is passed as a tuple and spliced into the loss after the model (so it is called as `loss(m, x, y)`):
+
+```julia
+losses = []
+@showprogress for epoch in 1:1_000
+    for xy_cpu in loader
+        x, y = xy_cpu |> device
+        loss = Flux.trainstep!(model, (x, y), opt_state) do m, x, y
+            y_hat = m(x)
+            Flux.logitcrossentropy(y_hat, y)
+        end
+        push!(losses, loss)
+    end
+end
+```
+
+This is exactly the original training loop above, with the `withgradient`/`update!` pair collapsed into a single call. Use [`trainstep_withgradient!`](@ref Flux.Train.trainstep_withgradient!) if you also need the gradient. On a [Reactant](../reactant.md) device, `trainstep!` (and `train!`) additionally compile and cache the whole step into one executable.
+
 * Notice that the full dataset `noisy` lives on the CPU, and is moved to the GPU one batch at a time, by `xy_cpu |> device`. This is generally what you want for large datasets. Calling `loader |> device` similarly modifies the `DataLoader` to move one batch at a time.
 
 * In our simple example, we conveniently created the model has a [`Chain`](@ref Flux.Chain) of layers.
