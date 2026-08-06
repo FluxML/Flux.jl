@@ -91,9 +91,10 @@ using Flux, Reactant
 dev = reactant_device()
 model = model |> dev
 opt_state = Flux.setup(Adam(1f-3), model)   # set up the optimiser after moving to the device
-
+loader = DataLoader((X, Y); batchsize=32) |> dev  # move batches to the device during iteration
+loss(m, x, y) = Flux.logitcrossentropy(m(x), y)
 trainmode!(model)
-for (x, y) in loader                          # batches already on the device
+for (x, y) in loader
     Flux.trainstep!(loss, model, (x, y), opt_state)   # compiled on the first call, reused after
 end
 ```
