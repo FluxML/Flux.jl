@@ -214,9 +214,7 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
         pacer = _gc_pacer(gc_interval, cache)   # decides when to run an incremental GC (see above)
     end
 
-    @withprogress for (i,d) in enumerate(data)
-        batch = d isa Tuple ? d : (d,)
-
+    @withprogress for (i, batch) in enumerate(data)
         t0 = tic(pacer)
         # The first step is run without the cache on purpose. On a GPU it triggers cuDNN's
         # convolution-algorithm search, whose one-off probe workspaces are transient but
@@ -246,18 +244,28 @@ function train!(loss, adtype::AbstractADType, model, data, opt_state; cb = nothi
     return nothing
 end
 
+train!(loss, model, data, opt_state; kws...) =
+    train!(loss, AutoZygote(), model, data, opt_state; kws...)
+
+train!(loss, model::Duplicated, data, opt_state; kws...) =
+    train!(loss, AutoEnzyme(), model, data, opt_state; kws...)
+
 """
-    trainstep!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss
+    trainstep!(loss, [adtype,] model, batch, opt_state) -> loss
 
-Perform a single optimisation step: differentiate `loss(model, batch...)` with respect to `model`,
+Perform a single optimisation step: differentiate the loss with respect to `model`,
 update `model` and `opt_state` **in place** according to the rule encoded in `opt_state`, and return
-the primal `loss` value. Use [`trainstep_withgradient!`](@ref Flux.trainstep_withgradient!) instead
-if you also need the gradient.
+the `loss` value. 
 
-`batch` is a tuple whose elements are spliced into `loss` after the model, so the loss is evaluated
-as `loss(model, batch...)`. The optional `adtype` selects the automatic differentiation engine among
+If `batch` is a `Tuple`, its elements are spliced into `loss` after the model, so the loss is
+evaluated as `loss(model, batch...)`; any other `batch` is passed as-is, i.e. `loss(model, batch)`.
+
+The optional `adtype` selects the automatic differentiation engine among
 the ones supported by [`gradient`](@ref); if omitted, Zygote is used, unless `model` is a `Duplicated`
 from Enzyme.jl, in which case Enzyme is used.
+
+Use [`trainstep_withgradient!`](@ref Flux.trainstep_withgradient!) instead
+if you also need the gradient.
 
 [`train!`](@ref Flux.train!) is a loop over the data built on top of `trainstep!`.
 
@@ -286,9 +294,8 @@ fused into the compiled step.
 
 When the `model` lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, the whole step
 (forward pass, Enzyme reverse pass and optimiser update) is compiled into a single XLA executable,
-cached and reused across calls with the same model, optimiser, loss and batch shape (the cached entry
-is dropped once the model is garbage-collected). The batch must be device-resident too. The scalar
-`loss` is read back to the host; any auxiliary outputs stay on the device.
+cached and reused across calls with the same model, optimiser, loss and batch shape. The returned
+value — the loss, or `(loss, aux...)` — is read back to the host.
 
 # Example
 ```julia
@@ -304,14 +311,17 @@ for epoch in 1:100
 end
 ```
 """
-trainstep!(loss, model, batch::Tuple, opt_state) =
+trainstep!(loss, model, batch, opt_state) =
     trainstep!(loss, AutoZygote(), model, batch, opt_state)
 
-trainstep!(loss, model::Duplicated, batch::Tuple, opt_state) =
+trainstep!(loss, model::Duplicated, batch, opt_state) =
     trainstep!(loss, AutoEnzyme(), model, batch, opt_state)
 
+trainstep!(loss, adtype::AbstractADType, model, batch, opt_state) = 
+    trainstep!(loss, adtype, model, (batch,), opt_state)
+
 function trainstep!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
-    if _reactant_model(model, adtype)
+    if _is_reactant_model(model, adtype)
         return _reactant_trainstep!(loss, model, batch, opt_state)
     end
     l, _ = _eager_step!(loss, adtype, model, batch, opt_state)
@@ -319,25 +329,29 @@ function trainstep!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state
 end
 
 """
-    trainstep_withgradient!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss, grad
+    trainstep_withgradient!(loss, [adtype,] model, batch, opt_state) -> loss, grad
 
 Like [`trainstep!`](@ref Flux.trainstep!), but also returns the `grad`ient of the loss with respect
 to the model. Everything else is identical: `model` and `opt_state` are updated in place and the
 first returned value is whatever the loss returned — the scalar loss, or `(loss, aux...)` when the
 loss returns auxiliary outputs (see [`trainstep!`](@ref Flux.trainstep!)).
 
-On a Reactant device the returned `grad` stays on the device (only the scalar `loss` is read back to
-the host). Returning the gradient makes it an output of the compiled step, which raises peak memory
-relative to `trainstep!`; prefer `trainstep!` when the gradient is not needed.
+On a Reactant device the returned value (the loss, or `(loss, aux...)`) is read back to the host,
+while the returned `grad` stays on the device. Returning the gradient makes it an output of the
+compiled step, which raises peak memory relative to `trainstep!`; prefer `trainstep!` when the
+gradient is not needed.
 """
-trainstep_withgradient!(loss, model, batch::Tuple, opt_state) =
+trainstep_withgradient!(loss, model, batch, opt_state) =
     trainstep_withgradient!(loss, AutoZygote(), model, batch, opt_state)
 
-trainstep_withgradient!(loss, model::Duplicated, batch::Tuple, opt_state) =
+trainstep_withgradient!(loss, model::Duplicated, batch, opt_state) =
     trainstep_withgradient!(loss, AutoEnzyme(), model, batch, opt_state)
 
+trainstep_withgradient!(loss, adtype::AbstractADType, model, batch, opt_state) = 
+    trainstep_withgradient!(loss, adtype, model, (batch,), opt_state)
+
 function trainstep_withgradient!(loss, adtype::AbstractADType, model, batch::Tuple, opt_state)
-    if _reactant_model(model, adtype)
+    if _is_reactant_model(model, adtype)
         return _reactant_trainstep_withgradient!(loss, model, batch, opt_state)
     end
     return _eager_step!(loss, adtype, model, batch, opt_state)
@@ -383,7 +397,7 @@ end
 # The model's device is the canonical signal for Reactant training (it's what `train!` keys on too);
 # the extension then checks the batch is device-resident, so keying on the model here keeps the
 # "host-resident data" error meaningful.
-function _reactant_model(model, adtype)
+function _is_reactant_model(model, adtype)
     _on_reactant(model) || return false
     model isa Duplicated && throw(ArgumentError(
         "`Duplicated` models are not supported on Reactant devices; pass the plain model \
@@ -401,33 +415,5 @@ function _update!(opt_state, model::Duplicated, grad)
     return opt_state, Duplicated(model2, model.dval)
 end
 
-
-train!(loss, model, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto) =
-    train!(loss, AutoZygote(), model, data, opt; cb, caching_allocator, gc_interval)
-
-# This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
-end
-
-function _rule_to_state(model, rule::Optimisers.AbstractRule)
-    state = setup(rule, model)
-    @gensym warn_id
-    name = typeof(rule).name.name
-    fmap(state, exclude = x -> x isa Optimisers.Leaf) do leaf
-        leaf.state isa Nothing ||  @warn """Optimiser $name has state which will be discarded after `train!` finishes.
-                                            Please run `opt = Flux.setup($name(), model)` and pass this `opt` to `train!`.""" leaf maxlog=1 _id=warn_id
-        leaf
-    end
-    return state
-end
-
-train!(loss, model::Duplicated, data, opt; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto) =
-    train!(loss, AutoEnzyme(), model, data, opt; cb, caching_allocator, gc_interval)
-
-# This method let you use Optimisers.Descent() without setup, when there is no state
-function train!(loss, model::Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
-    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
-end
 
 end # module Train

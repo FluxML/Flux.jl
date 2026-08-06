@@ -25,15 +25,6 @@ for (trainfn!, name) in ((Flux.train!, "Zygote"), (train_enzyme!, "Enzyme"))
       trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
       @test loss(model, rand(10, 10)) < 0.01
     end
-
-    # Test direct use of Optimisers.jl rule, only really OK for `Descent`:
-    @testset "without setup, $opt" for opt in [Descent(0.1), Optimisers.Descent(0.1), Optimisers.Adam()]
-      loss(m, x) = Flux.Losses.mse(w*x, m.weight*x .+ m.bias)
-      model = (weight=copy(w2), bias=zeros(10), ignore=nothing)
-      @test loss(model, rand(10, 10)) > 1
-      trainfn!(loss, model, ((rand(10),) for _ in 1: 10^5), opt)
-      @test loss(model, rand(10, 10)) < 0.01
-    end
   end
 end
 
