@@ -223,3 +223,46 @@ end
 
     empty!(ext.COMPILE_CACHE)   # leave a clean cache for other testsets
 end
+
+@testset "AD backend resolution on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    ext = Base.get_extension(Flux, :FluxReactantExt)
+    loss(m, a, b) = Flux.mse(m(a), b)
+
+    model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    opt = Flux.setup(Adam(1f-2), model)
+
+    empty!(ext.COMPILE_CACHE)
+    l0 = Reactant.to_number(Reactant.@jit loss(model, x, y))
+
+    # No `adtype` ⇒ the default on a Reactant device is Enzyme (compiles one executable).
+    Flux.trainstep!(loss, model, (x, y), opt)
+    @test length(ext.COMPILE_CACHE) == 1
+
+    # An explicit `AutoEnzyme()` is the same backend, so it reuses that executable rather than
+    # compiling a second one (the cache key includes `typeof(adtype)`).
+    Flux.trainstep!(loss, AutoEnzyme(), model, (x, y), opt)
+    @test length(ext.COMPILE_CACHE) == 1
+
+    # ...and it trains (Enzyme reverse pass under Reactant's ABI).
+    for _ in 1:20
+        Flux.trainstep!(loss, AutoEnzyme(), model, (x, y), opt)
+    end
+    @test Reactant.to_number(Reactant.@jit loss(model, x, y)) < l0
+end
+
+@testset "Duplicated model rejected on Reactant" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    model = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    x, y = randn(Float32, 4, 16) |> dev, randn(Float32, 2, 16) |> dev
+    loss(m, a, b) = Flux.mse(m(a), b)
+    opt = Flux.setup(Adam(1f-2), model)
+
+    # A `Duplicated` model on a Reactant device is an error at resolution time, for every entry point
+    # (pass the plain device-resident model instead — Enzyme is applied internally).
+    dmodel = Duplicated(model, Enzyme.make_zero(model))
+    @test_throws ArgumentError Flux.trainstep!(loss, dmodel, (x, y), opt)
+    @test_throws ArgumentError Flux.trainstep_withgradient!(loss, dmodel, (x, y), opt)
+    @test_throws ArgumentError Flux.train!(loss, dmodel, [(x, y)], opt)
+end

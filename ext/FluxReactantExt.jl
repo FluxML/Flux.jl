@@ -3,6 +3,7 @@ module FluxReactantExt
 using Flux: Flux, Train, cpu
 using Optimisers: Optimisers
 using Functors: fmapstructure
+using ADTypes: AbstractADType, AutoEnzyme
 import Reactant
 using Reactant: Enzyme
 
@@ -25,13 +26,15 @@ end
 _reactant_grad(dmodel) =
     fmapstructure(x -> Optimisers.isnumeric(x) ? x : nothing, dmodel; prune=nothing)
 
-# Compute the full loss value (loss + any aux) and the gradient of the scalar loss w.r.t. the model. 
-# Enzyme's reverse mode returns only the scalar primal, so Flux's eager
+# Compute the full loss value (loss + any aux) and the gradient of the scalar loss w.r.t. the model.
+# The AD backend is selected by `adtype`.
+#
+# Default / `AutoEnzyme`: Enzyme's reverse mode returns only the scalar primal, so Flux's eager
 # `withgradient` smuggles aux out through a mutable wrapper as a side effect — which does NOT survive
-# Reactant's tracing (the aux would be silently dropped). 
-# Instead we differentiate `_reactant_objective` under Enzyme's Reactant ABI,
-# which returns the aux as a real primal output of the one differentiated forward.
-function _reactant_valgrad(loss, model, data::Tuple)
+# Reactant's tracing (the aux would be silently dropped). Instead we differentiate `_reactant_objective`
+# under Enzyme's Reactant ABI, which returns the aux as a real primal output of the one differentiated
+# forward.
+function _reactant_valgrad(loss, ::AutoEnzyme, model, data::Tuple)
     dmodel = Enzyme.make_zero(model)
     ad = Enzyme.set_abi(Enzyme.ReverseWithPrimal, Reactant.ReactantABI)
     _, (_, v) = Enzyme.autodiff(ad, Enzyme.Const(_reactant_objective),
@@ -40,14 +43,24 @@ function _reactant_valgrad(loss, model, data::Tuple)
     return v, _reactant_grad(dmodel)
 end
 
-function _reactant_step!(loss, model, data::Tuple, opt_state)
-    v, g = _reactant_valgrad(loss, model, data)
+# Any other backend (Zygote, Mooncake, …): trace `Flux.withgradient` through the compiled step. Unlike
+# Enzyme's low-level `autodiff` above, `withgradient` for these backends already returns the full loss
+# value (`res.val`, including any aux) as a genuine output, so it survives tracing without the
+# `_reactant_objective`/`ignore_derivatives` machinery. Whether XLA can actually trace the backend is
+# up to Reactant's op coverage — this makes the attempt reachable per the honour-explicit-adtype rule.
+function _reactant_valgrad(loss, adtype::AbstractADType, model, data::Tuple)
+    res = Flux.withgradient(m -> loss(m, data...), adtype, model)
+    return res.val, res.grad[1]
+end
+
+function _reactant_step!(loss, adtype, model, data::Tuple, opt_state)
+    v, g = _reactant_valgrad(loss, adtype, model, data)
     Optimisers.update!(opt_state, model, g)
     return v
 end
 
-function _reactant_step_withgradient!(loss, model, data::Tuple, opt_state)
-    v, g = _reactant_valgrad(loss, model, data)
+function _reactant_step_withgradient!(loss, adtype, model, data::Tuple, opt_state)
+    v, g = _reactant_valgrad(loss, adtype, model, data)
     Optimisers.update!(opt_state, model, g)
     return v, g
 end
@@ -100,16 +113,18 @@ _shape_signature(x::AbstractArray) = size(x)
 _shape_signature(x) = fmapstructure(a -> a isa AbstractArray ? size(a) : a, x)
 
 # `withgradient` selects the loss-only executable or the one that also returns the gradient, and is
-# part of the key so the two variants for the same model are cached separately.
-function _compiled_step(loss, model, dtuple, opt_state, withgradient::Bool)
+# part of the key so the two variants for the same model are cached separately. `typeof(adtype)` is
+# in the key too: the compiled HLO is specialised to the differentiation path (Enzyme+ReactantABI vs
+# a traced Zygote/Mooncake pass), so mixing backends on the same model/shapes must not alias.
+function _compiled_step(loss, adtype, model, dtuple, opt_state, withgradient::Bool)
     _prune_compile_cache!()
-    key = (withgradient, objectid(model), typeof(model), typeof(opt_state), objectid(loss),
-           map(typeof, dtuple), map(_shape_signature, dtuple))
+    key = (withgradient, typeof(adtype), objectid(model), typeof(model), typeof(opt_state),
+           objectid(loss), map(typeof, dtuple), map(_shape_signature, dtuple))
     entry = get(COMPILE_CACHE, key, nothing)
     entry === nothing || return entry[2]
     exe = withgradient ?
-        Reactant.@compile(_reactant_step_withgradient!(loss, model, dtuple, opt_state)) :
-        Reactant.@compile(_reactant_step!(loss, model, dtuple, opt_state))
+        Reactant.@compile(_reactant_step_withgradient!(loss, adtype, model, dtuple, opt_state)) :
+        Reactant.@compile(_reactant_step!(loss, adtype, model, dtuple, opt_state))
     handle = _evict_handle(model)
     # A param-less model has nothing to weak-reference; fall back to the executable itself (which the
     # entry keeps alive) so such an entry is simply never pruned.
@@ -129,17 +144,17 @@ _require_device_batch(batch) =
 
 # Reactant/XLA implementations of a single step, dispatched to from the ReactantDevice branch of
 # `trainstep!` / `trainstep_withgradient!` (src/train.jl);
-function Train._reactant_trainstep!(loss, model, batch::Tuple, opt_state)
+function Train._reactant_trainstep!(loss, adtype, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
-    step = _compiled_step(loss, model, batch, opt_state, false)
-    l = step(loss, model, batch, opt_state)
+    step = _compiled_step(loss, adtype, model, batch, opt_state, false)
+    l = step(loss, adtype, model, batch, opt_state)
     return cpu(l)
 end
 
-function Train._reactant_trainstep_withgradient!(loss, model, batch::Tuple, opt_state)
+function Train._reactant_trainstep_withgradient!(loss, adtype, model, batch::Tuple, opt_state)
     _require_device_batch(batch)
-    step = _compiled_step(loss, model, batch, opt_state, true)
-    l, g = step(loss, model, batch, opt_state)
+    step = _compiled_step(loss, adtype, model, batch, opt_state, true)
+    l, g = step(loss, adtype, model, batch, opt_state)
     return cpu(l), g
 end
 
