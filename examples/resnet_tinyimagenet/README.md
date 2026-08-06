@@ -3,7 +3,7 @@
 Trains a small-image **ResNet-18** on **Tiny-ImageNet-200** — a 200-class, 64×64 subset of
 ImageNet — pulled from the HuggingFace Hub with
 [HuggingFaceDatasets.jl](https://github.com/CarloLucibello/HuggingFaceDatasets.jl) and trained on
-the GPU with `Flux.train!`.
+the GPU with `Flux.trainstep!`.
 
 | file | what |
 | --- | --- |
@@ -21,8 +21,8 @@ the GPU with `Flux.train!`.
   max-pool) is replaced by a single 3×3 stride-1 conv so a 64×64 image isn't over-downsampled. The
   rest is stock ResNet-18 — four stages of two BasicBlocks (64→128→256→512), global average pool,
   linear head (~11.3M params).
-- **Training** — `AdamW`, cross-entropy, `Flux.train!`, on the GPU (falls back to CPU if CUDA is
-  unavailable).
+- **Training** — `AdamW`, cross-entropy, a hand-written epoch loop over `Flux.trainstep!`, on the
+  GPU (falls back to CPU if CUDA is unavailable).
 
 ## Running
 

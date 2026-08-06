@@ -1,11 +1,3 @@
-"""PyTorch port of the Flux ResNet-18 / Tiny-ImageNet-200 example.
-
-A faithful mirror of `../resnet_tinyimagenet.jl`: same small-image ResNet-18, same data
-(`zh-plus/tiny-imagenet` from the HuggingFace Hub), same augmentation, same AdamW /
-cross-entropy training loop. Kept close to the Julia version so the two can be compared
-line-for-line and, more importantly, benchmarked head to head on the same GPU.
-"""
-
 import argparse
 import time
 
@@ -123,16 +115,9 @@ def loss_and_accuracy(loader, model):
     return lsum / total, correct / total
 
 
-def collate_identity(samples):
-    # HF with torch format already returns column tensors when we index a batch; but DataLoader
-    # calls collate per-sample. We instead let DataLoader batch and stack the dict columns.
-    keys = samples[0].keys()
-    return {k: torch.utils.data.default_collate([s[k] for s in samples]) for k in keys}
-
-
-def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None):
+def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None, use_compile=False):
     print(f"[setup] device={DEVICE} epochs={epochs} batchsize={batchsize} lr={lr} "
-          f"num_workers={num_workers}")
+          f"num_workers={num_workers} compile={use_compile}")
     torch.backends.cudnn.benchmark = True
 
     train_ds = load_dataset("zh-plus/tiny-imagenet", split="train")
@@ -145,12 +130,12 @@ def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None
 
     train_loader = DataLoader(
         train_ds, batch_size=batchsize, shuffle=True, num_workers=num_workers,
-        collate_fn=collate_identity, pin_memory=True, drop_last=False,
+        pin_memory=True, drop_last=False,
         persistent_workers=num_workers > 0,
     )
     val_loader = DataLoader(
         val_ds, batch_size=batchsize, shuffle=False, num_workers=num_workers,
-        collate_fn=collate_identity, pin_memory=True,
+        pin_memory=True,
         persistent_workers=num_workers > 0,
     )
 
@@ -160,6 +145,12 @@ def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None
     model = resnet18().to(DEVICE)
     nparams = sum(p.numel() for p in model.parameters())
     print(f"[model] resnet18  params={nparams/1e6:.2f}M")
+    # torch.compile (TorchInductor) is PyTorch's analogue of Reactant's XLA compilation: it captures
+    # the forward — and, via AOTAutograd, the backward — into fused Triton/cuDNN kernels. The optimiser
+    # step and the CPU-side augmentation stay eager, so this compiles less of the loop than Reactant,
+    # which fuses forward + reverse + update into a single executable.
+    if use_compile:
+        model = torch.compile(model)
     # Match Flux's AdamW default (lambda=0 -> no weight decay); torch defaults to 0.01.
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
 
@@ -169,7 +160,12 @@ def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None
         print(f"[eval] epoch={epoch} train_loss={train_loss:.4f} train_acc={train_acc:.4f} "
               f"val_loss={val_loss:.4f} val_acc={val_acc:.4f}")
 
-    run_eval(0)
+    # In benchmark mode, time training only (no evaluation) so this run matches `flux_bench.jl`;
+    # a normal run still evaluates each epoch, mirroring `../resnet_tinyimagenet.jl`.
+    benchmarking = benchmark_epochs is not None
+
+    if not benchmarking:
+        run_eval(0)
     for epoch in range(1, epochs + 1):
         model.train()
         t0 = time.perf_counter()
@@ -183,11 +179,12 @@ def main(epochs=30, batchsize=128, lr=1e-3, num_workers=4, benchmark_epochs=None
             opt.step()
             nimg += y.numel()
         if DEVICE.type == "cuda":
-            torch.cuda.synchronize()
+            torch.cuda.synchronize()   # CUDA is async — wait for the queued work before timing
         dt = time.perf_counter() - t0
         print(f"[train] epoch={epoch} time={dt:.2f}s throughput={nimg/dt:.0f} img/s")
-        run_eval(epoch)
-        if benchmark_epochs is not None and epoch >= benchmark_epochs:
+        if not benchmarking:
+            run_eval(epoch)
+        if benchmarking and epoch >= benchmark_epochs:
             break
 
     return model
@@ -201,10 +198,13 @@ def parse_cli():
     p.add_argument("--num-workers", type=int, default=4, help="data-loading worker processes")
     p.add_argument("--benchmark-epochs", type=int, default=None,
                    help="stop after this many train epochs (for timing runs)")
+    p.add_argument("--compile", action="store_true",
+                   help="wrap the model in torch.compile (TorchInductor) — PyTorch's XLA analogue")
     return p.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_cli()
     main(epochs=args.epochs, batchsize=args.batchsize, lr=args.lr,
-         num_workers=args.num_workers, benchmark_epochs=args.benchmark_epochs)
+         num_workers=args.num_workers, benchmark_epochs=args.benchmark_epochs,
+         use_compile=args.compile)

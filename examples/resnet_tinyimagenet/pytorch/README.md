@@ -25,70 +25,69 @@ The `[project]` `torch` dependency is pinned to the CUDA 12.8 wheel index (`cu12
 recent NVIDIA GPUs (Blackwell / RTX 50-series included). Drop the `[tool.uv.sources]` /
 `[[tool.uv.index]]` blocks from `pyproject.toml` to fall back to the default CPU/CUDA wheels.
 
-Each epoch prints its pure training wall-time and throughput (`[train]`), followed by train/val
-loss and top-1 accuracy (`[eval]`).
+A normal run prints each epoch's training wall-time and throughput (`[train]`) followed by train/val
+loss and top-1 accuracy (`[eval]`); `--benchmark-epochs N` times training only — no evaluation — to
+line up with [`flux_bench.jl`](flux_bench.jl).
 
 ## Performance comparison
 
-Measured on this workstation — **RTX 5090 (32 GB)**, Julia 1.12.6 / Flux 0.16 / CUDA.jl vs
-PyTorch 2.11.0+cu128 — same model (11.27M params), batch size 128, 4 data-loading workers,
-`AdamW(1e-3)`. Throughput is the pure training loop (forward + backward + step) over the 100k-image
-train set; `flux_bench.jl` in this directory reproduces the Flux side with the same
-per-epoch timing.
+Measured on this workstation — **RTX 5090 (32 GB)**, Julia 1.12.6 / Flux 0.16.10 / **Reactant
+0.2.278** (XLA) vs PyTorch 2.11.0+cu128 — same model (11.27M params), batch size 128, 4
+data-loading workers, `AdamW(1e-3)`. Throughput is the pure training loop (forward + backward +
+step) over the 100k-image train set, **timing only, no evaluation**: [`flux_bench.jl`](flux_bench.jl)
+and `resnet_tinyimagenet.py --benchmark-epochs 3` are the matched drivers.
 
-| metric | Flux | PyTorch |
+| metric | Flux (Reactant) | PyTorch |
 | --- | --- | --- |
 | params | 11.27M | 11.27M |
-| **steady-state train** | **~32.4 s/epoch · ~3090 img/s** | **~30.3 s/epoch · ~3280 img/s** |
-| first train epoch | 70.2 s (incl. compilation) | 30.5 s |
-| epoch-0 full eval (110k imgs) | 65 s cold → 10.4 s warm | ~few s |
-| GPU during train | 90–97 % · ~540 W | 100 % · ~545 W |
-| GPU memory | pool reserves ~9 GB, flat¹ | ~3.8 GB |
-| process warmup before epoch 1 | package load + precompile (~min) | ~seconds |
+| **steady-state train** | **~32.5 s/epoch · ~3060 img/s** | **~30.1 s/epoch · ~3320 img/s** |
+| first train epoch | **235.6 s** (incl. XLA compilation) | 40.0 s (incl. cuDNN autotune) |
+| GPU utilization (steady) | ~96 % | ~100 % |
+| GPU memory | **~16.8 GB** working set · 23.5 GB reserved by default¹ | ~3.8 GB |
 
-¹ CUDA.jl's memory pool *reserves* (and retains) freed device memory rather than returning it to
-the driver; live working-set usage is a small fraction of that. The example wraps its training
-loader in a device iterator (see below) so the reservation stays flat at ~9 GB instead of climbing
-toward the full card. PyTorch's caching allocator holds only what it needs here (~3.8 GB).
+¹ By default Reactant/XLA's BFC allocator *preallocates* a fixed fraction of the card
+(`XLA_REACTANT_GPU_MEM_FRACTION`, default 0.75 → ~23.5 GB of the 32 GB here) on first use, regardless
+of the model's needs — the strategy JAX uses too. Setting `XLA_REACTANT_GPU_PREALLOCATE=false`
+allocates on demand and reveals the true footprint: **~16.8 GB, still ~4× PyTorch's ~3.8 GB**
+(throughput is unchanged). So the gap is real, not just a reservation policy: the fused whole-step
+executable appears to keep all forward activations live for the Enzyme reverse pass (plus gradient
+shadows and cuDNN conv workspaces), whereas PyTorch's eager autograd frees activations more
+incrementally. See Reactant's [GPU config](https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration).
 
 **Takeaways**
 
-- **Steady-state throughput is within ~8 %** — both frameworks are GPU-compute-bound (both pin the
-  card at ~540 W, i.e. tensor-core saturated), so this small ResNet-18 runs at essentially the same
-  speed once warm. PyTorch is marginally ahead (cuDNN autotuning via `benchmark=True`, plus its
-  vectorized-on-GPU augmentation vs. Flux's per-image CPU augmentation).
-- **The real difference is warmup, not steady speed.** Julia pays a one-time first-call
-  compilation cost: epoch 1 is ~2× the steady time and the first full-train eval is ~6× the warm
-  eval, on top of a minute-plus of package load/precompile at startup. PyTorch reaches steady speed
-  on epoch 1. For a 30-epoch run this amortizes to a few percent; for short runs it dominates.
+- **Steady-state throughput is within ~8 %** — both frameworks are GPU-compute-bound on this small
+  ResNet-18, so once warm they run at essentially the same speed. PyTorch is marginally ahead (cuDNN
+  autotuning via `benchmark=True`, plus its vectorized-on-GPU augmentation vs. Flux's per-image CPU
+  augmentation). Reactant's steady-state matches the eager CUDA.jl path it replaced (~32.4 s/epoch).
+- **The cost is warmup.** On the first `trainstep!`, Reactant compiles the whole training step
+  (forward + Enzyme reverse + optimiser update) into a single XLA executable, so **epoch 1 is ~7× the
+  steady time** (~236 s vs ~32 s) — on top of the minute-plus of package load/precompile at startup.
+  PyTorch reaches steady speed on epoch 1 (its ~40 s is just cuDNN autotuning). The executable is
+  cached and reused for every later step, so the compile is a one-time cost: a modest fraction of a
+  30-epoch run, but dominant for short ones.
 - **Accuracy trajectories are comparable** (run-to-run variance from init/augmentation RNG); both
-  climb steadily toward the ~50 % top-1 the README quotes for a full 30-epoch run.
+  climb steadily toward the ~50 % top-1 the parent README quotes for a full 30-epoch run.
 
-### Why the training loop uses a device iterator
+### Why the training loop moves batches to the device
 
-The example (and `flux_bench.jl`) wrap the training loader in an
-[MLDataDevices](https://github.com/LuxDL/MLDataDevices.jl) device iterator — `DEVICE(train_loader)`.
-The naive alternative moves each batch inside the step (`m(x |> DEVICE)`) and one-hots labels on the
-fly, allocating fresh device arrays every step that immediately become garbage; CUDA.jl's pool
-*retains* those freed blocks, so the **reservation keeps creeping up** epoch over epoch (toward the
-full card). The device iterator instead yields GPU-resident batches and `unsafe_free!`s each previous
-one, so the pool stops growing. Measured back-to-back on the same process (3 epochs each):
-
-| path | steady train | peak pool reservation |
-| --- | --- | --- |
-| baseline (`x \|> DEVICE` in step) | ~32.6 s/epoch | 2.8 → 10.5 → 10.6 GB, **still climbing** |
-| `DEVICE(loader)` device iterator | ~32.4 s/epoch | **9.2 GB, flat every epoch** |
-
-So the device iterator **doesn't change throughput** (both are GPU-compute-bound — there's no host
-transfer to overlap away) but it **caps the memory reservation** at a flat working set instead of
-letting it grow — which is why the example adopts it. Note the batch (labels included) arrives on the
-GPU, so the one-hot runs there:
+Both the example and `flux_bench.jl` wrap the training loader in an
+[MLDataDevices](https://github.com/LuxDL/MLDataDevices.jl) device iterator — `device(train_loader)` —
+so every batch arrives on the accelerator (and the previous one is freed). On Reactant this is
+**required**, not just an optimisation: `Flux.trainstep!` runs the compiled XLA step, which only
+accepts device-resident arrays — a host-resident batch raises an error. The loop is one fused,
+cached executable per step:
 
 ```julia
-Flux.train!(model, DEVICE(train_loader), opt) do m, x, y   # x, y arrive on the GPU
-    logitcrossentropy(m(x), onehotbatch(y, 0:NCLASSES-1))   # onehotbatch works on GPU labels
+for (x, y) in train_loader          # x, y already on the Reactant device
+    Flux.trainstep!(loss_fn, model, (x, y), opt_state)   # compiled once, reused every step/epoch
 end
 ```
+
+`trainstep!` differentiates `loss_fn` with Enzyme and folds the AdamW update into the compiled step,
+returning the loss (read back to the host). The full loop — with running-mean train metrics — lives
+in [`../resnet_tinyimagenet.jl`](../resnet_tinyimagenet.jl). Swap `using Reactant` for `using CUDA`
+there to run the eager CUDA.jl path instead (same steady-state speed, without the one-time compile).
 
 ## Notes on faithfulness
 

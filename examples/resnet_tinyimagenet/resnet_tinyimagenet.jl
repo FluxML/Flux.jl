@@ -5,16 +5,19 @@ using Flux.Losses: logitcrossentropy
 using Flux: onehotbatch, onecold, trainmode!, testmode!
 using MLUtils: MLUtils, mapobs
 using HuggingFaceDatasets
-using CUDA # replace with `Metal` or `AMDGPU` for other backends
-
-const DEVICE = gpu_device() # will select the first available GPU device, or CPU if none are available
-const NCLASSES = 200
+# using CUDA     # Replace with `Metal` or `AMDGPU` for other backends.
+               # Comment out if using Reactant.
+using Reactant # Automatically selects the available gpu or cpu backend.
+               # Comment out if don't want XLA compilation.
+               # See https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration
+               # for memory management.
 
 # ------------------------------------------------------------------------------------------------
 # Data
 #
 # ImageNet per-channel mean/std (Tiny-ImageNet is an ImageNet subset), shaped for (W, H, C, N)
 # broadcasting.
+const NCLASSES = 200
 const MEAN = reshape(Float32[0.485, 0.456, 0.406], 1, 1, 3, 1)
 const STD  = reshape(Float32[0.229, 0.224, 0.225], 1, 1, 3, 1)
 
@@ -118,24 +121,19 @@ end
 # ------------------------------------------------------------------------------------------------
 # Training
 
-function loss_and_accuracy(loader, model)
-    testmode!(model)
-    correct, total = 0, 0
-    lsum = 0f0
-    for (x, y) in loader
-        ŷ = model(x |> DEVICE) |> cpu
-        yoh = onehotbatch(y, 0:NCLASSES-1)
-        lsum += logitcrossentropy(ŷ, yoh; agg=sum)
-        correct += sum(onecold(ŷ, 0:NCLASSES-1) .== y)
-        total += length(y)
-    end
-    return lsum / total, correct / total
+function loss_fn(model, x, y)
+    ŷ = model(x)
+    loss = logitcrossentropy(ŷ, onehotbatch(y, 0:NCLASSES-1))
+    correct = sum(onecold(ŷ, 0:NCLASSES-1) .== y)
+    n = length(y)
+    return loss, (; correct, n)
 end
 
 function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
               num_workers=4, seed=0, clip_norm=false)
-    Random.seed!(seed)
-    @info "Setup" DEVICE epochs batchsize lr weight_decay num_workers seed clip_norm
+    seed > 0 && Random.seed!(seed)
+    device = isdefined(Main, :Reactant) ? reactant_device() : gpu_device()
+    @info "Setup" device epochs batchsize lr weight_decay num_workers seed clip_norm
 
     train_ds = load_dataset("zh-plus/tiny-imagenet", split="train")
     val_ds   = load_dataset("zh-plus/tiny-imagenet", split="valid")
@@ -147,30 +145,62 @@ function main(; epochs=30, batchsize=128, lr=1e-3, weight_decay=0.0,
     train_data = mapobs(train_transform, train_ds)
     val_data   = mapobs(decode, val_ds)
 
-    train_loader = Flux.DataLoader(train_data; batchsize, shuffle=true, num_workers)
+    train_loader = Flux.DataLoader(train_data; batchsize, shuffle=true, num_workers, )
     val_loader   = Flux.DataLoader(val_data; batchsize, num_workers)
+    train_loader = device(train_loader)  # in loops, move each batch to the GPU and free the previous one
+    val_loader   = device(val_loader)
 
-    model = resnet18() |> DEVICE
+    model = resnet18() |> device
 
     rule = AdamW(; eta=lr, lambda=weight_decay)
     clip_norm && (rule = OptimiserChain(ClipNorm(), rule))   # clip gradient L2 norm, then AdamW step
-    opt = Flux.setup(rule, model)
+    opt_state = Flux.setup(rule, model)
 
     r(x) = round(x, digits=4)
     r(x::Integer) = x
 
-    # `DEVICE(train_loader)` is a device iterator: 
-    # it moves each batch to the GPU and frees the previous one.
-    for epoch in 0:epochs
-        η = lr * (1 + cos(π * max(epoch - 1, 0) / epochs)) / 2
-        t = 0.0
-        if epoch > 0
-            Flux.adjust!(opt, η)
-            t = @elapsed Flux.train!(model, DEVICE(train_loader), opt) do m, x, y
-                    logitcrossentropy(m(x), onehotbatch(y, 0:NCLASSES-1))
+    @static if isdefined(Main, :Reactant)
+        # Since the last batch of an epoch may be smaller than the others, 
+        # we need to compile and cache a separate executable for each distinct batch shape.
+        compiled_cache = Dict{Any, Any}()
+        function eval_loss_fn(m, x, y)
+            compiled_fn = get!(compiled_cache, (size(x), size(y))) do
+                Reactant.@compile(loss_fn(m, x, y))
             end
+            return compiled_fn(m, x, y)
         end
-        train_loss, train_acc = loss_and_accuracy(train_loader, model)
+    else
+        eval_loss_fn = loss_fn
+    end
+
+    function loss_and_accuracy(loader, model)
+        testmode!(model)
+        correct, total = 0, 0
+        lsum = 0.0
+        for (x, y) in loader
+            loss, stats = eval_loss_fn(model, x, y) |> cpu
+            lsum    += loss * stats.n
+            correct += stats.correct
+            total   += stats.n
+        end
+        return lsum / total, correct / total
+    end
+
+    val_loss, val_acc = loss_and_accuracy(val_loader, model)
+    @info map(r, (; epoch=0, lr=NaN, train_loss=NaN, train_acc=NaN, val_loss, val_acc, time=NaN))
+    for epoch in 1:epochs
+        η = lr * (1 + cos(π * max(epoch - 1, 0) / epochs)) / 2
+        Flux.adjust!(opt_state, η)
+        trainmode!(model)
+        lsum, correct, total = 0.0, 0, 0
+        t = @elapsed for (x, y) in train_loader
+            l, stats = Flux.trainstep!(loss_fn, model, (x, y), opt_state)
+            # We use running sums to compute the epoch-average train loss and accuracy.
+            lsum += l * stats.n
+            correct += stats.correct
+            total += stats.n
+        end
+        train_loss, train_acc = lsum / total, correct / total
         val_loss, val_acc = loss_and_accuracy(val_loader, model)
         @info map(r, (; epoch, lr=η, train_loss, train_acc, val_loss, val_acc, time=t))
     end
