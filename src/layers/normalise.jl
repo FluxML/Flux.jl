@@ -291,8 +291,15 @@ end
 
 function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(BN, x, N-1 => BN.chs)
+  training = _isactive(BN, x)
+  if training === true
+    m = prod(size(x)) ÷ size(x, N-1)
+    m == 1 && throw(ArgumentError(
+      "BatchNorm expected more than 1 value per channel when training, got input of size $(size(x)). " *
+      "The batch variance of a single value is undefined; use a larger batch or call `testmode!` for inference."))
+  end
   y = NNlib.batchnorm(BN.γ, BN.β, x, BN.μ, BN.σ², BN.momentum;
-                      eps=BN.ϵ, training=_isactive(BN, x), track_stats=BN.track_stats)
+                      eps=BN.ϵ, training, track_stats=BN.track_stats)
   return BN.λ.(y)
 end
 
