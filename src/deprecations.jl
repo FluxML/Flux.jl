@@ -177,6 +177,21 @@ loadmodel!(dst::AdaptiveMaxPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
 loadmodel!(dst::AdaptiveMeanPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
 
 
+### Unreleased deprecations ####################
+
+"""
+    SamePad()
+
+Deprecated alias for `pad=:same`, kept for backwards compatibility.
+Prefer passing the symbol `:same` to the `pad` keyword of convolutional
+and pooling layers. See [`Conv`](@ref).
+"""
+struct SamePad end
+
+calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T} =
+  calc_padding(lt, Val(:same), k, dilation, stride)
+
+
 # This method let you use Optimisers.Descent() without setup, when there is no state
 function Train.train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
     return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
