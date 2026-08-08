@@ -78,3 +78,25 @@ This will avoid the splatting penalty, and will hit the optimised `reduce` metho
 ## Be aware of GPU memory inefficiencies
 
 Currently, GPU memory is not handled as well as system memory. If your training loop is allocating significantly on the GPU, you can quickly fill your GPU memory and the piecemeal reclamation and shuffling of data between GPU and system memory can become extremely slow. If profiling shows that a significant portion of time is spent in the `gpu` function and your data sizes are not large, this may be the cause. Running an incremental garbage collection manually (`GC.gc(false)`) at regular intervals can keep your GPU memory free and responsive. See other tips for CUDA memory management [here](https://cuda.juliagpu.org/stable/usage/memory/).
+
+## Compile your training with Reactant
+
+The tips above tune *eager* execution. For the largest speedups, compile your model with [Reactant.jl](https://github.com/EnzymeAD/Reactant.jl): it traces your code and lowers it — through MLIR and XLA — into a single fused, kernel-optimised executable that is cached and reused across calls. For training, the forward pass, the Enzyme reverse pass and the optimiser update are compiled *together*, which removes per-operation dispatch and kernel-launch overhead and lets the compiler fuse operations and plan buffers across the whole step.
+
+You do not have to invoke the compiler yourself: when the model lives on a Reactant device, [`trainstep!`](@ref Flux.Train.trainstep!) — and [`train!`](@ref Flux.train!), which is built on it — compile and cache the fused step automatically.
+
+```julia
+using Flux, Reactant
+
+dev = reactant_device()
+model = model |> dev
+opt_state = Flux.setup(Adam(1f-3), model)   # set up the optimiser after moving to the device
+loader = DataLoader((X, Y); batchsize=32) |> dev  # move batches to the device during iteration
+loss(m, x, y) = Flux.logitcrossentropy(m(x), y)
+trainmode!(model)
+for (x, y) in loader
+    Flux.trainstep!(loss, model, (x, y), opt_state)   # compiled on the first call, reused after
+end
+```
+
+The cached executable is keyed on the batch shape, so keeping batch sizes fixed avoids recompilation (a smaller final batch simply compiles one extra executable). The first call pays a one-time compilation cost that can be large, so this pays off over many steps rather than a handful. See [Compiling Flux with Reactant](reactant.md) for the full guide, including inference and manual `@compile`.

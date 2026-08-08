@@ -2,6 +2,15 @@
 
 This file provides guidance to all AI code assistants when working with code in this repository.
 
+## Changelog (NEWS.md)
+
+Every user-facing change must be recorded in [NEWS.md](NEWS.md), as part of the same PR that makes the change. Keep it current.
+
+- Add new entries under the `## Unreleased` heading at the top of the file. When a version is tagged, rename that heading to `## vX.Y.Z (D Month YYYY)` and open a fresh `## Unreleased` section above it.
+- Use one `-` bullet per change, written from the user's perspective (what changed and why it matters), with a link to the PR or issue, e.g. `([#2665](https://github.com/FluxML/Flux.jl/pull/2665))`.
+- Flag breaking changes explicitly with a bold **breaking change** note.
+- Record only notable, user-facing changes. Skip CI tweaks, dependency bumps, formatting, and internal refactors.
+
 ## Commands
 
 **Run all CPU tests:**
@@ -29,17 +38,6 @@ FLUX_TEST_REACTANT=false julia --project=test/ test/runtests.jl
 ```
 
 Test environment flags: `FLUX_TEST_CPU` (default true), `FLUX_TEST_CUDA`, `FLUX_TEST_AMDGPU`, `FLUX_TEST_METAL`, `FLUX_TEST_ENZYME` (default true on Julia < 1.12), `FLUX_TEST_REACTANT` (default true), `FLUX_TEST_DISTRIBUTED_MPI`, `FLUX_TEST_DISTRIBUTED_NCCL`.
-
-**Format code:**
-```
-julia -e 'using JuliaFormatter; format("src")'
-```
-Config: indent=4, margin=80, `always_for_in=true` (see `.JuliaFormatter.toml`).
-
-There is a pre-commit hook in `.githooks/pre-commit` that auto-formats staged files. Activate it with:
-```
-git config core.hooksPath .githooks
-```
 
 ## Architecture
 
@@ -93,14 +91,16 @@ src/
 
 Optional backends live in `ext/` as Julia package extensions (weak dependencies):
 
-| Extension | Trigger package | Purpose |
+| Extension | Trigger package(s) | Purpose |
 |---|---|---|
 | `FluxCUDAExt` | CUDA.jl | NVIDIA GPU support |
+| `FluxCUDAcuDNNExt` | CUDA.jl + cuDNN.jl | cuDNN-accelerated kernels |
 | `FluxAMDGPUExt` | AMDGPU.jl | AMD GPU support |
 | `FluxEnzymeExt` | Enzyme.jl | Enzyme AD backend |
 | `FluxMooncakeExt` | Mooncake.jl | Mooncake AD backend |
+| `FluxFiniteDifferencesExt` | FiniteDifferences.jl | FiniteDifferences AD backend |
 | `FluxMPIExt` | MPI.jl | Distributed training |
-| `FluxMPINCCLExt` | NCCL.jl | NCCL all-reduce |
+| `FluxMPINCCLExt` | CUDA.jl + MPI.jl + NCCL.jl | NCCL all-reduce |
 
 ### Test Layout
 

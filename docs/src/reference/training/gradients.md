@@ -35,7 +35,7 @@ Zygote.pullback
 
 Zygote uses [ChainRules.jl](https://github.com/JuliaDiff/ChainRules.jl) to define how to differentiate functions.
 
-Sometimes it is necessary to exclude some code, or a whole function, from automatic differentiation. 
+Sometimes it is necessary to exclude some code, or a whole function, from automatic differentiation.
 This can be done using the following methods:
 
 ```@docs
@@ -113,7 +113,7 @@ julia> ans == Flux.setup(Adam(), dup_model)
 
 julia> Flux.update!(opt_state, model, grads_f[1])  # exactly as for Zygote gradients
 
-julia> Flux.update!(opt_state, dup_model)  # equivlent new path, Enzyme only
+julia> Flux.update!(opt_state, dup_model)  # equivalent new path, Enzyme only
 ```
 
 Instead of using these FLux functions, you can also use Enzyme's own functions directly.

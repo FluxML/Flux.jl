@@ -1,47 +1,5 @@
 
 """
-    normalise(x; dims=ndims(x), eps=1f-5)
-
-Normalise `x` to mean 0 and standard deviation 1 across the dimension(s) given by `dims`.
-Per default, `dims` is the last dimension. 
-`eps` is a small term added to the variance for numerical stability.
-
-# Examples
-```jldoctest
-julia> using Statistics
-
-julia> x = [90, 100, 110, 130, 70];
-
-julia> mean(x), std(x; corrected=false)
-(100.0, 20.0)
-
-julia> y = Flux.normalise(x)
-5-element Vector{Float64}:
- -0.4999999999999375
-  0.0
-  0.4999999999999375
-  1.4999999999998124
- -1.4999999999998124
-
-julia> isapprox(std(y; corrected=false), 1, atol=1e-5)
-true
-
-julia> x = rand(10:100, 10, 10);
-
-julia> y = Flux.normalise(x, dims=1);
-
-julia> isapprox(std(y; dims=1, corrected=false), ones(1, 10), atol=1e-5)
-true
-```
-"""
-@inline function normalise(x::AbstractArray; dims=ndims(x), eps=1f-5)
-  μ = mean(x, dims=dims)
-  σ² = var(x, dims=dims, mean=μ, corrected=false)
-  ε = ofeltype(x, eps)
-  return @. (x - μ) / sqrt(σ² + ε^2)
-end
-
-"""
     _match_eltype(layer, ::Type{T}, x)
     _match_eltype(layer, x)
 
@@ -77,6 +35,10 @@ function _match_eltype(layer, ::Type{T}, x::AbstractArray{<:Union{AbstractFloat,
   convert(AbstractArray{T}, x)
 end
 
+# BFloat16 target: route through Flux's integer-domain conversion (`_to_bf16`), since
+# the native `convert(_, BFloat16)` crashes on some LLVM versions (JuliaMath/BFloat16s.jl#107).
+_match_eltype(layer, ::Type{BFloat16}, x::AbstractArray{<:Union{AbstractFloat, Integer}}) = _to_bf16(x)
+
 # Weird types like Nil, Dual, etc, we allow through:
 _match_eltype(layer, ::Type, x::AbstractArray) = x
 
@@ -103,3 +65,11 @@ should be preferred to this method existing
 only for backward compatibility.
 """
 flatten(x) = MLUtils.flatten(x)
+
+"""
+    normalise(x; dims=ndims(x), eps=1f-5)
+
+Same as [`NNlib.normalise`](@ref), to which this method forwards.
+Kept for backward compatibility; prefer `NNlib.normalise` in new code.
+"""
+normalise(x::AbstractArray; kw...) = NNlib.normalise(x; kw...)

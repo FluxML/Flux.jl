@@ -1,6 +1,8 @@
 
 @testset "CUDNN BatchNorm" begin
-    @testset "4D Input, $T" for (T,f) in [(Float32, identity), (Float16, f16)]
+    # TODO(#2700): NNlib 0.9.41 requires Float32 scale/bias for Float16 input; `f16`
+    # normalization params are being reworked in Flux.jl#2700. Re-enable (Float16, f16) then.
+    @testset "4D Input, $T" for (T,f) in [(Float32, identity)] # , (Float16, f16)
         x = randn(T, 2, 2, 3, 4)
         m = f(BatchNorm(3))
         gx = gpu(x)

@@ -67,4 +67,5 @@ The `eltype` of model `m` can be changed to `Float64` by `f64(m)`:
 Flux.f64
 Flux.f32
 Flux.f16
+Flux.bf16
 ```

@@ -12,6 +12,7 @@ using NNlib: conv, ∇conv_data, depthwiseconv, output_size
 using MLUtils
 using MLCore: MLCore # this is only needed for the documentation
 using Adapt, OneHotArrays
+using BFloat16s: BFloat16
 using Functors: Functors, fmap, fmapstructure
 
 using Optimisers: Optimisers, destructure, freeze!, thaw!, adjust!, trainables, update!
@@ -22,7 +23,6 @@ using Random: default_rng
 
 using Zygote, ChainRulesCore
 using Zygote: @adjoint, pullback
-using Zygote.ForwardDiff: value
 using EnzymeCore: EnzymeCore
 
 @reexport using ADTypes # AutoZygote, AutoMooncake, etc...
@@ -30,10 +30,10 @@ using ADTypes: AbstractADType
 
 @reexport using MLDataDevices: MLDataDevices, supported_gpu_backends, reset_gpu_device!,
                     default_device_rng,
-                    gpu_device, cpu_device, xla_device,
+                    gpu_device, cpu_device, reactant_device,
                     CPUDevice,
                     CUDADevice, AMDGPUDevice, MetalDevice, oneAPIDevice,
-                    XLADevice,
+                    ReactantDevice,
                     # get_device, # we define get_device here for retrocompatibility
                     gpu_backend!,
                     get_device_type,
@@ -49,7 +49,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
        LayerNorm, BatchNorm, InstanceNorm, GroupNorm, WeightNorm,
        MultiHeadAttention,
        Upsample, PixelShuffle,
-       fmap, cpu, gpu, f32, f64, f16, rand32, randn32, zeros32, ones32,
+       fmap, cpu, gpu, f32, f64, f16, bf16, BFloat16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
 
 @compat(public, ( # unexported symbols marked as API, on Julia 1.11
@@ -63,7 +63,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,
   # from Train
-  setup, train!,
+  setup, train!, trainstep!, trainstep_withgradient!,
   # from Optimsers.jl
   freeze!, thaw!, adjust!, update!, trainable,
   # from Zygote.jl

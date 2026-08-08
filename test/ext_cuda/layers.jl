@@ -93,6 +93,12 @@ gpu_gradtest("Embedding OneHotVec index", embedding, OneHotVector(1, 5), 5, 2)
 gpu_gradtest("Embedding OneHotMatrix index", embedding,  OneHotMatrix([1,2,3], 5), 5, 2)
 gpu_gradtest("Embedding OneHotMatrix repeated indices", embedding, OneHotMatrix([1,2,2], 5), 5, 2)
 
+# padding_idx=2: the input must contain the padding index to exercise the mask
+EmbeddingPad(in, out) = Flux.Embedding(in => out; padding_idx=2)
+embedding_pad = [EmbeddingPad]
+gpu_gradtest("Embedding padding_idx", embedding_pad, [1,2,5,2], 5, 2)
+gpu_gradtest("Embedding padding_idx OneHotMatrix", embedding_pad, OneHotMatrix([1,2,2,3], 5), 5, 2)
+
 @testset "function layers" begin
   x = rand(Float32, 3, 3)
   test_gradients(x -> sum(Flux.normalise(x; dims=1)), x, test_gpu=true, test_cpu=false, 
@@ -270,6 +276,67 @@ end
   for pool in [MaxPool((2,)), MeanPool((2,))]
     pool(reshape(x,3,4,1)) ≈ cpu(pool(reshape(gx,3,4,1)))
     @test eltype(pool(reshape(gx,3,4,1))) == Float16
+  end
+end
+
+@testset "Misc. BFloat16" begin
+  # These tests are very far from exhaustive!
+  # Comparisons use a loose `rtol`: BFloat16 keeps only 8 mantissa bits, and GPU
+  # kernels often accumulate in Float32, so a pure-bf16 and a Float32 result differ.
+  #
+  # Normalization layers are exercised on the GPU only, against a Float32 GPU
+  # reference: their generic CPU path rounds Float32->BFloat16, which can hang LLVM
+  # codegen (JuliaMath/BFloat16s.jl#107).
+
+  x = bf16(randn(Float32, 3, 4))
+  gx = gpu(x)
+
+  # Dense
+  m1 = bf16(Dense(3 => 4, tanh))
+  gm1 = gpu(m1)
+
+  y1, back1 = Zygote.pullback(|>, x, m1)
+  gy1, gback1 = Zygote.pullback(|>, gx, gm1)
+
+  @test y1 ≈ m1(x)
+  @test y1 ≈ cpu(gy1)  rtol=0.1
+  @test eltype(y1) == eltype(m1(x)) == eltype(gy1) == BFloat16
+
+  @test back1(one.(y1))[2].weight ≈ cpu(gback1(one.(gy1))[2].weight)  rtol=0.1
+  @test eltype(gback1(one.(gy1))[2].bias) == BFloat16
+
+  # LayerNorm converts fully to bf16 (it wraps NNlib.normalise, which has no scale/bias
+  # and so no Float32-parameter requirement).
+  gm2 = Chain(LayerNorm(3), Dropout(0.1)) |> bf16 |> gpu
+  @test eltype(gm2(gx)) == BFloat16
+  @test Float32.(gm2(gx)) ≈ f32(gm2)(f32(gx))  rtol=0.1
+
+  # BatchNorm, InstanceNorm and GroupNorm are converted in mixed precision: statistics
+  # and affine parameters stay Float32 while the data flows in bf16, so they dispatch to
+  # NNlib's (cuDNN) half-precision kernels.
+  gx4 = gpu(bf16(randn(Float32, 4, 4, 3, 2)))
+  @testset "$(nameof(typeof(l)))" for l in (BatchNorm(3),
+                                            InstanceNorm(3; affine=true, track_stats=true),
+                                            GroupNorm(3, 3))
+    gm = bf16(l) |> gpu
+    @test eltype(gm.γ) == eltype(gm.β) == Float32          # affine params kept in Float32
+    y = gm(gx4)
+    @test eltype(y) == BFloat16                             # data flow stays bf16
+    @test Float32.(y) ≈ f32(gm)(f32(gx4))  rtol=0.1        # matches the Float32 reference
+    dγ = gradient(m -> sum(abs2, m(gx4)), gm)[1].γ
+    @test eltype(dγ) == Float32                             # parameter grads follow the params
+  end
+
+  # Conv and pooling (cuDNN with NNlib ≥ 0.9.40 adds BFloat16 to its `CUDNNFloat` wrapper)
+  m4 = Conv((3,), 2=>1, sigmoid, pad=1, stride=2) |> bf16
+  x4 = bf16(randn(Float32, 7, 2, 1))
+  @test m4(x4) ≈ cpu(gpu(m4)(gpu(x4)))  rtol=0.1
+  @test eltype(gpu(m4)(gpu(x4))) == BFloat16
+  dw4 = gradient((m,z) -> sum(abs2, m(z)), gpu(m4), gpu(x4))[1].weight
+  @test eltype(dw4) == BFloat16
+  xp = gpu(bf16(randn(Float32, 6, 4, 1)))
+  for pool in [MaxPool((2,)), MeanPool((2,))]
+    @test eltype(pool(xp)) == BFloat16
   end
 end
 

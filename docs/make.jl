@@ -37,6 +37,7 @@ makedocs(
             "Training" => "guide/training/training.md",
             "Recurrence" => "guide/models/recurrence.md",
             "GPU Support" => "guide/gpu.md",
+            "Compiling with Reactant" => "guide/reactant.md",
             "Saving & Loading" => "guide/saving.md",
             "Performance Tips" => "guide/performance.md",
         ],

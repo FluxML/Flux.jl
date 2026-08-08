@@ -48,17 +48,15 @@ end
 end
 
 @testset "gradients" begin
-    broken_models = ["Conv", "Chain(Conv, Conv)", "Chain(Conv, MeanPool)", "ConvTranspose","Bilinear","MultiHeadAttention"]
-    # Bilinear and MultiHeadAttention will be fixed by https://github.com/FluxML/NNlib.jl/pull/614
     for (model, x, name) in TEST_MODELS
         @testset "Zygote grad check $name" begin
-            @test test_gradients(model, x; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing) broken=(name ∈ broken_models)
+            @test test_gradients(model, x; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
         end
     end
 end
 
 @testset "Recurrent" begin
-    global BROKEN_TESTS = [:lstm, :gru, :gruv3]
+    global BROKEN_TESTS = []
     include("../test_common/gpu_recurrent.jl")
 end
 

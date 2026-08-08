@@ -724,17 +724,21 @@ function Base.show(io::IO, m::PairwiseFusion)
 end
 
 """
-    Embedding(in => out; init=randn32)
+    Embedding(in => out; init=randn32, padding_idx=nothing)
 
-A lookup table that stores embeddings of dimension `out` 
+A lookup table that stores embeddings of dimension `out`
 for a vocabulary of size `in`, as a trainable matrix.
 
-This layer is often used to store word embeddings and retrieve them using indices. 
+This layer is often used to store word embeddings and retrieve them using indices.
 The input to the layer can be a vocabulary index in `1:in`, an array of indices,
 or the corresponding [`onehot encoding`](@ref OneHotArrays.onehotbatch).
 
 For indices `x`, the result is of size `(out, size(x)...)`, allowing several batch dimensions.
 For one-hot `ohx`, the result is of size `(out, size(ohx)[2:end]...)`.
+
+If `padding_idx` is set to an index in `1:in`, the corresponding embedding vector is
+initialized to all zeros and its gradient is masked to zero, so it stays fixed during
+training. This is useful to represent a padding token in variable-length sequences.
 
 # Examples
 ```jldoctest
@@ -760,26 +764,57 @@ true
 
 julia> emb(rand(1:26, (10, 1, 12))) |> size  # three batch dimensions
 (4, 10, 1, 12)
+
+julia> emb = Embedding(5 => 2, padding_idx=1);
+
+julia> emb(1)  # the padding embedding is all zeros
+2-element Vector{Float32}:
+ 0.0
+ 0.0
 ```
 """
-struct Embedding{W<:AbstractMatrix}
+struct Embedding{W<:AbstractMatrix, I<:Union{Nothing,Integer}}
   weight::W
+  padding_idx::I
 end
 
-@layer Embedding
+@layer Embedding trainable=(weight,)
 
-Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32) = Embedding(init(out, in))
+function Embedding((in, out)::Pair{<:Integer, <:Integer}; init = randn32, padding_idx = nothing)
+  weight = init(out, in)
+  if padding_idx !== nothing
+    (1 <= padding_idx <= in) || throw(ArgumentError("padding_idx=$padding_idx must be in 1:$in"))
+    weight[:, padding_idx] .= 0
+  end
+  return Embedding(weight, padding_idx)
+end
 
-(m::Embedding)(x::Integer) = m.weight[:, x]
-(m::Embedding)(x::AbstractVector) = NNlib.gather(m.weight, x)
+Embedding(weight::AbstractMatrix; padding_idx = nothing) = Embedding(weight, padding_idx)
+
+(m::Embedding)(x::Integer) = _mask_padding(m.weight[:, x], x, m.padding_idx)
+(m::Embedding)(x::AbstractVector) = _mask_padding(NNlib.gather(m.weight, x), x, m.padding_idx)
 (m::Embedding)(x::AbstractArray) = reshape(m(vec(x)), :, size(x)...)
 
-(m::Embedding)(x::AbstractVector{Bool}) = m.weight * x  # usually OneHotVector
-(m::Embedding)(x::AbstractMatrix{Bool}) = m.weight * x  # usually OneHotMatrix
+(m::Embedding)(x::AbstractVector{Bool}) = _mask_padding(m.weight * x, x, m.padding_idx)  # usually OneHotVector
+(m::Embedding)(x::AbstractMatrix{Bool}) = _mask_padding(m.weight * x, x, m.padding_idx)  # usually OneHotMatrix
 (m::Embedding)(x::AbstractArray{Bool}) = reshape(m(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
 
+# `padding_idx === nothing`: no masking. Otherwise the output entries corresponding to
+# the padding index are multiplied by zero, which also zeros their gradient w.r.t. `weight`
+# (`gather`/`weight * onehot` only route a column's gradient from positions selecting it).
+_mask_padding(y, x, ::Nothing) = y
+_mask_padding(y::AbstractVector, x::Integer, padding_idx::Integer) = y .* (x != padding_idx)
+_mask_padding(y::AbstractMatrix, x::AbstractVector, padding_idx::Integer) =
+  y .* reshape(x .!= padding_idx, 1, :)
+_mask_padding(y::AbstractVector, x::AbstractVector{Bool}, padding_idx::Integer) =
+  y .* !x[padding_idx]
+_mask_padding(y::AbstractMatrix, x::AbstractMatrix{Bool}, padding_idx::Integer) =
+  y .* reshape(.!(x[padding_idx, :]), 1, :)
+
 function Base.show(io::IO, m::Embedding)
-  print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1), ")")
+  print(io, "Embedding(", size(m.weight, 2), " => ", size(m.weight, 1))
+  m.padding_idx !== nothing && print(io, ", padding_idx=", m.padding_idx)
+  print(io, ")")
 end
 
 

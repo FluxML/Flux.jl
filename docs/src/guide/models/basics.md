@@ -224,7 +224,7 @@ Here is an example using [Mooncake](https://github.com/chalk-lab/Mooncake.jl):
 julia> using Mooncake
 
 julia> Flux.withgradient((x,p) -> p(x), AutoMooncake(), 5.0, poly3s)
-(val = 17.5, grad = (2.0, Poly3{Vector{Float64}}([1.0, 5.0, 25.0])))
+(val = 17.5, grad = (2.0, (θ3 = [1.0, 5.0, 25.0],)))
 ```
 
 and here is the same example using Enzyme:
@@ -321,7 +321,7 @@ Flux.gradient((x,d) -> d(x)[1], x, layer3s)[2]  # NamedTuple{(:W, :b, :act)}
 This `∂f/∂layer3s` is a named tuple with the same fields as `Layer`.
 Within it, the gradient with respect to `W` is a matrix of seemingly random numbers.
 Notice that there is also an entry for `act`, which is `nothing`,
-as this field of the struct is not a smoothly adjustible parameter.
+as this field of the struct is not a smoothly adjustable parameter.
 
 We can compose these layers just as we did the polynomials above, in `poly4`.
 Here's a composition of 3 functions, in which the last step is the function `only`

@@ -19,6 +19,8 @@ The available optimization rules are listed the [optimisation rules](@ref man-op
 ```@docs
 Flux.Train.setup
 Flux.Train.train!
+Flux.Train.trainstep!
+Flux.Train.trainstep_withgradient!
 Optimisers.update
 Optimisers.update!
 Optimisers.setup

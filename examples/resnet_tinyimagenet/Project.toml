@@ -1,0 +1,22 @@
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
+MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
+
+[sources]
+Flux = {path = "../.."}
+
+[compat]
+ArgParse = "1"
+CUDA = "5, 6"
+Flux = "0.16"
+HuggingFaceDatasets = "0.4"
+MLUtils = "0.4.11"
+cuDNN = "1, 6"
+julia = "1.12"

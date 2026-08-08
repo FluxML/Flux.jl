@@ -191,6 +191,37 @@ end
 Or explicitly writing the anonymous function which this `do` block creates,
 `train!((m,x,y) -> loss(m(x),y), model, train_set, opt_state)` is exactly equivalent.
 
+If you want to write the loop yourself but keep the convenience of a single gradient +
+update call, [`trainstep!`](@ref Flux.Train.trainstep!) is the per-step primitive that
+`train!` is built on. It differentiates the loss, updates `model` and `opt_state` in place,
+and returns the loss:
+
+```julia
+opt_state = Flux.setup(Adam(), model)
+
+for epoch in 1:100
+  for (x, y) in train_set
+    l = Flux.trainstep!((m, x, y) -> loss(m(x), y), model, (x, y), opt_state)
+  end
+end
+```
+
+Use [`trainstep_withgradient!`](@ref Flux.Train.trainstep_withgradient!) if you also need the
+gradient (it returns `(loss, grad)`). On a Reactant device both compile and cache the whole step,
+just like `train!`.
+
+Like [`withgradient`](@ref Flux.withgradient), the loss passed to `trainstep!` may return auxiliary
+data alongside the scalar loss — return a `Tuple` or `NamedTuple` whose first element is the loss,
+and the gradient is taken of the loss alone while the whole value is returned. This is convenient
+for logging a metric computed during the forward pass:
+
+```julia
+l, stats = Flux.trainstep!(model, (x, y), opt_state) do m, x, y
+    ŷ = m(x)
+    loss(ŷ, y), (; acc = accuracy(ŷ, y))
+end
+```
+
 Real training loops often need more flexibility, and the best way to do this is just
 to write the loop. This is ordinary Julia code, without any need to work through some
 callback API. Here is an example, in which it may be helpful to note:

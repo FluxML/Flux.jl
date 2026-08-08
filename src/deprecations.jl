@@ -175,3 +175,26 @@ loadmodel!(dst::MaxPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
 loadmodel!(dst::MeanPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
 loadmodel!(dst::AdaptiveMaxPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
 loadmodel!(dst::AdaptiveMeanPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
+
+
+# This method let you use Optimisers.Descent() without setup, when there is no state
+function Train.train!(loss, model, data, rule::Optimisers.AbstractRule; cb = nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
+end
+
+# This method let you use Optimisers.Descent() without setup, when there is no state
+function Train.train!(loss, model::EnzymeCore.Duplicated, data, rule::Optimisers.AbstractRule; cb=nothing, caching_allocator::Bool = false, gc_interval::Union{Integer, Symbol} = :auto)
+    return train!(loss, model, data, _rule_to_state(model, rule); cb, caching_allocator, gc_interval)
+end
+
+function _rule_to_state(model, rule::Optimisers.AbstractRule)
+    state = setup(rule, model)
+    @gensym warn_id
+    name = typeof(rule).name.name
+    fmap(state, exclude = x -> x isa Optimisers.Leaf) do leaf
+        leaf.state isa Nothing ||  @warn """Optimiser $name has state which will be discarded after `train!` finishes.
+                                            Please run `opt = Flux.setup($name(), model)` and pass this `opt` to `train!`.""" leaf maxlog=1 _id=warn_id
+        leaf
+    end
+    return state
+end
