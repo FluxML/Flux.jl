@@ -293,10 +293,6 @@ function (BN::BatchNorm)(x::AbstractArray{T,N}) where {T,N}
   _size_check(BN, x, N-1 => BN.chs)
   training = _isactive(BN, x)
   if training === true
-    # Values seen per channel = all dims except the channel dim (N-1). With a single
-    # value the batch variance is 0 and the (Bessel-corrected) running-variance update
-    # `m/(m-1)·σ²` is `0/0 = NaN`, so we reject it as PyTorch does (issue #1992). cuDNN
-    # would also silently emit NaN here.
     m = prod(size(x)) ÷ size(x, N-1)
     m == 1 && throw(ArgumentError(
       "BatchNorm expected more than 1 value per channel when training, got input of size $(size(x)). " *
