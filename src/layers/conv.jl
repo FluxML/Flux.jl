@@ -12,39 +12,52 @@ conv_reshape_bias(bias::AbstractVector, stride) = reshape(bias, map(_->1, stride
 """
     SamePad()
 
-Passed as an option to convolutional layers (and friends), this causes
-the padding to be chosen such that the input and output sizes agree
-(on the first `N` dimensions, the kernel or window) when `stride==1`.
-When `stride≠1`, the output size equals `ceil(input_size/stride)`.
-
-See also [`Conv`](@ref), [`MaxPool`](@ref).
-
-# Examples
-```jldoctest
-julia> xs = rand32(100, 100, 3, 50);  # a batch of images
-
-julia> layer = Conv((2,2), 3 => 7, pad=SamePad())
-Conv((2, 2), 3 => 7, pad=(1, 0, 1, 0))  # 91 parameters
-
-julia> layer(xs) |> size  # notice how the dimensions stay the same with this padding
-(100, 100, 7, 50)
-
-julia> layer2 = Conv((2,2), 3 => 7)
-Conv((2, 2), 3 => 7)  # 91 parameters
-
-julia> layer2(xs) |> size  # the output dimension changes as the padding was not "same"
-(99, 99, 7, 50)
-
-julia> layer3 = Conv((5, 5), 3 => 7, stride=2, pad=SamePad())
-Conv((5, 5), 3 => 7, pad=2, stride=2)  # 532 parameters
-
-julia> layer3(xs) |> size  # output size = `ceil(input_size/stride)` = 50
-(50, 50, 7, 50)
-```
+Deprecated alias for `pad=:same`, kept for backwards compatibility.
+Prefer passing the symbol `:same` to the `pad` keyword of convolutional
+layers and pooling layers. See [`Conv`](@ref).
 """
 struct SamePad end
 
+# Non-zero padding modes borrow the border-filling routines from NNlib.
+# `:zeros` is handled natively by the convolution kernels (no pre-padding).
+const _PAD_MODES = (:zeros, :circular, :reflect, :replicate, :symmetric)
+
+function _check_pad_mode(pad_mode)
+  pad_mode in _PAD_MODES || throw(ArgumentError(
+    "Unsupported pad_mode $(repr(pad_mode)). Supported modes are $(_PAD_MODES)."))
+  return pad_mode
+end
+
+# Pad the spatial dimensions of `x` according to `pad_mode` (identity for `:zeros`,
+# whose padding is applied by the convolution itself). `pad` is a `2N`-tuple
+# `(l1, r1, …, lN, rN)` covering the first `N = ndims(x)-2` dimensions.
+function apply_pad(pad_mode::Symbol, pad, x::AbstractArray)
+  pad_mode === :zeros && return x
+  # NNlib's `NTuple{2,Int}` pad methods (the single-spatial-dim case) take `dims::Int`,
+  # while the multi-dim methods take a tuple of dims.
+  N = ndims(x) - 2
+  dims = N == 1 ? 1 : ntuple(identity, N)
+  if pad_mode === :circular
+    return pad_circular(x, pad; dims)
+  elseif pad_mode === :reflect
+    return pad_reflect(x, pad; dims)
+  elseif pad_mode === :replicate
+    return pad_repeat(x, pad; dims)
+  else # :symmetric
+    return pad_symmetric(x, pad; dims)
+  end
+end
+
+# Padding handed to the convolution kernel: the stored amount for `:zeros`,
+# and none otherwise (the input has already been padded by `apply_pad`).
+_kernel_pad(pad_mode::Symbol, pad) = pad_mode === :zeros ? pad : map(_ -> 0, pad)
+
 calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
+function calc_padding(lt, pad::Symbol, k::NTuple{N,T}, dilation, stride) where {N,T}
+  pad === :same || throw(ArgumentError(
+    "Unsupported padding $(repr(pad)). The only symbolic padding is `:same`."))
+  return calc_padding(lt, SamePad(), k, dilation, stride)
+end
 function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
@@ -58,8 +71,8 @@ end
 
 """
     Conv(filter, in => out, σ = identity;
-         stride = 1, pad = 0, dilation = 1, groups = 1, [bias, init])
-    Conv(weight, [bias, activation; stride, pad, dilation])
+         stride = 1, pad = 0, pad_mode = :zeros, dilation = 1, groups = 1, [bias, init])
+    Conv(weight, [bias, activation; stride, pad, pad_mode, dilation])
 
 Standard convolutional layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel;
@@ -82,8 +95,11 @@ Then:
   - a single integer for equal padding all around,
   - a tuple of `N` integers, to apply the same padding at begin/end of each spatial dimension,
   - a tuple of `2*N` integers, for asymmetric padding, or
-  - the singleton `SamePad()`, to calculate padding such that
-    `size(output,d) == size(x,d) / stride` (possibly rounded) for each spatial dimension.
+  - the symbol `:same`, to calculate padding such that the output and input sizes agree
+    (`size(output,d) == ceil(size(x,d) / stride)` for each spatial dimension).
+* Keyword `pad_mode` controls how the border elements are filled. One of
+  `:zeros` (default), `:circular`, `:reflect`, `:replicate`, or `:symmetric`.
+  See [`NNlib.pad_circular`](@ref) and friends for the meaning of each mode.
 * Keyword `groups` is expected to be an `Int`. It specifies the number of groups
   to divide a convolution into.
 
@@ -111,7 +127,7 @@ julia> layer(xs) |> size
 julia> Conv((5,5), 3 => 7; stride = 2)(xs) |> size
 (48, 48, 7, 50)
 
-julia> Conv((5,5), 3 => 7; stride = 2, pad = SamePad())(xs) |> size
+julia> Conv((5,5), 3 => 7; stride = 2, pad = :same)(xs) |> size
 (50, 50, 7, 50)
 
 julia> Conv((1,1), 3 => 7; pad = (20,10,0,0))(xs) |> size
@@ -144,25 +160,26 @@ struct Conv{N,M,F,A,V}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
   groups::Int
+  pad_mode::Symbol
 end
 
 function Conv(w::AbstractArray{T,N}, b = true, σ = identity;
-              stride = 1, pad = 0, dilation = 1, groups = 1) where {T,N}
+              stride = 1, pad = 0, dilation = 1, groups = 1, pad_mode = :zeros) where {T,N}
 
   @assert size(w, N) % groups == 0 "Output channel dimension must be divisible by groups."
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(Conv, pad, size(w)[1:N-2], dilation, stride)
   bias = create_bias(w, b, size(w, N))
-  return Conv(σ, w, bias, stride, pad, dilation, groups)
+  return Conv(σ, w, bias, stride, pad, dilation, groups, _check_pad_mode(pad_mode))
 end
 
 function Conv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
             init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groups = 1,
-            bias = true) where N
-    
+            bias = true, pad_mode = :zeros) where N
+
   weight = convfilter(k, ch; init, groups)
-  Conv(weight, bias, σ; stride, pad, dilation, groups)
+  Conv(weight, bias, σ; stride, pad, dilation, groups, pad_mode)
 end
 
 """
@@ -190,15 +207,17 @@ end
 @layer Conv
 
 conv_dims(c::Conv, x::AbstractArray) =
-  DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation, groups = c.groups)
+  DenseConvDims(x, c.weight; stride = c.stride, padding = _kernel_pad(c.pad_mode, c.pad),
+                dilation = c.dilation, groups = c.groups)
 
 ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
 
 function (c::Conv)(x::AbstractArray)
   _conv_size_check(c, x)
-  cdims = conv_dims(c, x)
   xT = _match_eltype(c, x)
-  NNlib.bias_act!(c.σ, conv(xT, c.weight, cdims), conv_reshape_bias(c))
+  xp = apply_pad(c.pad_mode, c.pad, xT)
+  cdims = conv_dims(c, xp)
+  NNlib.bias_act!(c.σ, conv(xp, c.weight, cdims), conv_reshape_bias(c))
 end
 
 _channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
@@ -214,6 +233,9 @@ end
 function _print_conv_opt(io::IO, l)
   l.σ == identity || print(io, ", ", l.σ)
   all(==(0), l.pad) || print(io, ", pad=", _maybetuple_string(l.pad))
+  if hasproperty(l, :pad_mode)
+    (l.pad_mode === :zeros) || print(io, ", pad_mode=", repr(l.pad_mode))
+  end
   all(==(1), l.stride) || print(io, ", stride=", _maybetuple_string(l.stride))
   all(==(1), l.dilation) || print(io, ", dilation=", _maybetuple_string(l.dilation))
   if hasproperty(l, :groups)
@@ -230,7 +252,7 @@ Standard convolutional transpose layer. `filter` is a tuple of integers
 specifying the size of the convolutional kernel, while
 `in` and `out` specify the number of input and output channels.
 
-Note that `pad=SamePad()` here tries to ensure `size(output,d) == size(x,d) * stride`.
+Note that `pad=:same` here tries to ensure `size(output,d) == size(x,d) * stride`.
 
 To conserve [`Conv`](@ref) inversability when `stride > 1`, `outpad` can be used to increase the size
 of the output in the desired dimensions. Whereas `pad` is used to zero-pad the input,
@@ -260,7 +282,7 @@ julia> ConvTranspose((5,5), 3 => 7, stride=2)(xs) |> size
 julia> ConvTranspose((5,5), 3 => 7, stride=2, outpad=1)(xs) |> size
 (204, 204, 7, 50)
 
-julia> ConvTranspose((5,5), 3 => 7, stride=3, pad=SamePad())(xs) |> size
+julia> ConvTranspose((5,5), 3 => 7, stride=3, pad=:same)(xs) |> size
 (300, 300, 7, 50)
 ```
 
@@ -386,15 +408,15 @@ julia> DepthwiseConv((5, 5), 3 => 9, stride=2, pad=2)(xs) |> size
 (50, 50, 9, 50)
 ```
 """
-function DepthwiseConv(k::NTuple{<:Any,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity; 
-            stride = 1, pad = 0, dilation = 1, bias = true, init = glorot_uniform)
-  Conv(k, ch, σ; groups=ch.first, stride, pad, dilation, bias, init)
+function DepthwiseConv(k::NTuple{<:Any,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
+            stride = 1, pad = 0, dilation = 1, bias = true, init = glorot_uniform, pad_mode = :zeros)
+  Conv(k, ch, σ; groups=ch.first, stride, pad, dilation, bias, init, pad_mode)
 end
 
 function DepthwiseConv(w::AbstractArray{T,N}, bias = true, σ = identity;
-                  stride = 1, pad = 0, dilation = 1) where {T,N}
+                  stride = 1, pad = 0, dilation = 1, pad_mode = :zeros) where {T,N}
   w2 = reshape(w, size(w)[1:end-2]..., 1, :)
-  Conv(w2, bias, σ; groups = size(w)[end-1], stride, pad, dilation)
+  Conv(w2, bias, σ; groups = size(w)[end-1], stride, pad, dilation, pad_mode)
 end
 
 
@@ -448,25 +470,26 @@ struct CrossCor{N,M,F,A,V}
   stride::NTuple{N,Int}
   pad::NTuple{M,Int}
   dilation::NTuple{N,Int}
+  pad_mode::Symbol
 end
 
 _channels_in(l::CrossCor) = size(l.weight, ndims(l.weight)-1)
 
 function CrossCor(w::AbstractArray{T,N}, bias = true, σ = identity;
-                  stride = 1, pad = 0, dilation = 1) where {T,N}
+                  stride = 1, pad = 0, dilation = 1, pad_mode = :zeros) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
   pad = calc_padding(CrossCor, pad, size(w)[1:N-2], dilation, stride)
   b = create_bias(w, bias, size(w, N))
-  return CrossCor(σ, w, b, stride, pad, dilation)
+  return CrossCor(σ, w, b, stride, pad, dilation, _check_pad_mode(pad_mode))
 end
 
 function CrossCor(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
                   init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                  bias = true) where N
+                  bias = true, pad_mode = :zeros) where N
 
   weight = convfilter(k, ch, init = init)
-  return CrossCor(weight, bias, σ; stride, pad, dilation)
+  return CrossCor(weight, bias, σ; stride, pad, dilation, pad_mode)
 end
 
 @layer CrossCor
@@ -477,15 +500,17 @@ function crosscor(x, w, ddims::DenseConvDims)
 end
 
 crosscor_dims(c::CrossCor, x::AbstractArray) =
-  DenseConvDims(x, c.weight; stride = c.stride, padding = c.pad, dilation = c.dilation)
+  DenseConvDims(x, c.weight; stride = c.stride, padding = _kernel_pad(c.pad_mode, c.pad),
+                dilation = c.dilation)
 
 ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
 
 function (c::CrossCor)(x::AbstractArray)
   _conv_size_check(c, x)
-  cdims = crosscor_dims(c, x)
   xT = _match_eltype(c, x)
-  NNlib.bias_act!(c.σ, crosscor(xT, c.weight, cdims), conv_reshape_bias(c))
+  xp = apply_pad(c.pad_mode, c.pad, xT)
+  cdims = crosscor_dims(c, xp)
+  NNlib.bias_act!(c.σ, crosscor(xp, c.weight, cdims), conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::CrossCor)
@@ -691,7 +716,7 @@ batch dimensions, after the `N` feature dimensions, where `N = length(window)`.
 
 By default the window size is also the stride in each dimension.
 The keyword `pad` accepts the same options as for the `Conv` layer,
-including `SamePad()`.
+including `:same`.
 
 See also [`Conv`](@ref), [`MeanPool`](@ref), [`AdaptiveMaxPool`](@ref), [`GlobalMaxPool`](@ref).
 
@@ -700,7 +725,7 @@ See also [`Conv`](@ref), [`MeanPool`](@ref), [`AdaptiveMaxPool`](@ref), [`Global
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
 
-julia> m = Chain(Conv((5, 5), 3 => 7, pad=SamePad()), MaxPool((5, 5), pad=SamePad()))
+julia> m = Chain(Conv((5, 5), 3 => 7, pad=:same), MaxPool((5, 5), pad=:same))
 Chain(
   Conv((5, 5), 3 => 7, pad=2),          # 532 parameters
   MaxPool((5, 5), pad=2),
@@ -757,7 +782,7 @@ batch dimensions, after the `N` feature dimensions, where `N = length(window)`.
 
 By default the window size is also the stride in each dimension.
 The keyword `pad` accepts the same options as for the `Conv` layer,
-including `SamePad()`.
+including `:same`.
 
 See also [`Conv`](@ref), [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 
@@ -766,7 +791,7 @@ See also [`Conv`](@ref), [`MaxPool`](@ref), [`AdaptiveMeanPool`](@ref).
 ```jldoctest
 julia> xs = rand(Float32, 100, 100, 3, 50);
 
-julia> m = Chain(Conv((5,5), 3 => 7), MeanPool((5,5), pad=SamePad()))
+julia> m = Chain(Conv((5,5), 3 => 7), MeanPool((5,5), pad=:same))
 Chain(
   Conv((5, 5), 3 => 7),                 # 532 parameters
   MeanPool((5, 5), pad=2),
