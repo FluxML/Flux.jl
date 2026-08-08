@@ -45,7 +45,7 @@ function make_model(width, height, inchannels = 1, nclasses = 10;
                     layer_config = [16, 16, 32, 64])
   # construct a vector of layers:
   conv_layers = []
-  push!(conv_layers, Conv((5, 5), inchannels => layer_config[1], relu, pad=SamePad()))
+  push!(conv_layers, Conv((5, 5), inchannels => layer_config[1], relu, pad=:same))
   for (inch, outch) in zip(layer_config, layer_config[2:end])
     push!(conv_layers, Conv((3, 3), inch => outch, sigmoid, stride=2))
   end
