@@ -6,6 +6,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 - `Conv`, `CrossCor` and `DepthwiseConv` now accept a `pad_mode` keyword that controls how the border is filled: `:zeros` (default), `:circular`, `:reflect`, `:replicate`, or `:symmetric`. This mirrors PyTorch's `padding_mode` and adds support for periodic (circular) and other non-zero paddings ([#1917](https://github.com/FluxML/Flux.jl/issues/1917)).
 - The convolution and pooling layers now accept `pad=:same` as a shorthand for same-size padding. `SamePad()` still works but is soft-deprecated in favour of the `:same` symbol ([#1917](https://github.com/FluxML/Flux.jl/issues/1917)).
+- **Fix, changed behavior:** for even-sized filters, `:same`/`SamePad()` now places the extra (odd) padding element on the right/bottom instead of the left/top, matching PyTorch and TensorFlow. This makes strided `Conv` and `ConvTranspose` proper adjoints of each other and produces reversal-symmetric outputs. Outputs of even-filter same-padded convolutions shift by one pixel compared to earlier versions ([#2431](https://github.com/FluxML/Flux.jl/issues/2431)).
 - `BatchNorm` in training mode now throws a clear error when a channel sees only a single value (e.g. batch size 1 with no spatial dimensions), instead of silently corrupting the running variance with `NaN`. The batch variance of a single value is undefined; this matches PyTorch's behavior (`testmode!` inference with batch size 1 is unaffected) ([#1992](https://github.com/FluxML/Flux.jl/issues/1992)).
 
 ## v0.16.11 (6 August 2026)

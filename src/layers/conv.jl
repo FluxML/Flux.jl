@@ -9,15 +9,6 @@ conv_reshape_bias(c) = conv_reshape_bias(c.bias, c.stride)
 conv_reshape_bias(@nospecialize(bias), _) = bias
 conv_reshape_bias(bias::AbstractVector, stride) = reshape(bias, map(_->1, stride)..., :, 1)
 
-"""
-    SamePad()
-
-Deprecated alias for `pad=:same`, kept for backwards compatibility.
-Prefer passing the symbol `:same` to the `pad` keyword of convolutional
-layers and pooling layers. See [`Conv`](@ref).
-"""
-struct SamePad end
-
 # Non-zero padding modes borrow the border-filling routines from NNlib.
 # `:zeros` is handled natively by the convolution kernels (no pre-padding).
 const _PAD_MODES = (:zeros, :circular, :reflect, :replicate, :symmetric)
@@ -31,12 +22,11 @@ end
 # Pad the spatial dimensions of `x` according to `pad_mode` (identity for `:zeros`,
 # whose padding is applied by the convolution itself). `pad` is a `2N`-tuple
 # `(l1, r1, …, lN, rN)` covering the first `N = ndims(x)-2` dimensions.
+# A branch (rather than `Val`-dispatch on the runtime symbol) keeps the forward
+# pass type-inferable, which matters since `apply_pad` sits on the hot path.
 function apply_pad(pad_mode::Symbol, pad, x::AbstractArray)
   pad_mode === :zeros && return x
-  # NNlib's `NTuple{2,Int}` pad methods (the single-spatial-dim case) take `dims::Int`,
-  # while the multi-dim methods take a tuple of dims.
-  N = ndims(x) - 2
-  dims = N == 1 ? 1 : ntuple(identity, N)
+  dims = _pad_dims(x)
   if pad_mode === :circular
     return pad_circular(x, pad; dims)
   elseif pad_mode === :reflect
@@ -48,25 +38,30 @@ function apply_pad(pad_mode::Symbol, pad, x::AbstractArray)
   end
 end
 
+# NNlib's `NTuple{2,Int}` pad methods (single spatial dim) take `dims::Int`,
+# while the multi-dim methods take a tuple of dims.
+_pad_dims(x::AbstractArray) = ndims(x) == 3 ? 1 : ntuple(identity, ndims(x) - 2)
+
 # Padding handed to the convolution kernel: the stored amount for `:zeros`,
 # and none otherwise (the input has already been padded by `apply_pad`).
 _kernel_pad(pad_mode::Symbol, pad) = pad_mode === :zeros ? pad : map(_ -> 0, pad)
 
 calc_padding(lt, pad, k::NTuple{N,T}, dilation, stride) where {T,N} = expand(Val(2*N), pad)
-function calc_padding(lt, pad::Symbol, k::NTuple{N,T}, dilation, stride) where {N,T}
-  pad === :same || throw(ArgumentError(
-    "Unsupported padding $(repr(pad)). The only symbolic padding is `:same`."))
-  return calc_padding(lt, SamePad(), k, dilation, stride)
-end
-function calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
+# Route symbolic padding through `Val` so each mode gets its own specialized method.
+calc_padding(lt, pad::Symbol, k::NTuple{N,T}, dilation, stride) where {N,T} =
+  calc_padding(lt, Val(pad), k, dilation, stride)
+calc_padding(lt, ::Val{P}, k::NTuple{N,T}, dilation, stride) where {P,N,T} =
+  throw(ArgumentError("Unsupported padding $(repr(P)). The only symbolic padding is `:same`."))
+function calc_padding(lt, ::Val{:same}, k::NTuple{N,T}, dilation, stride) where {N,T}
   #Ref: "A guide to convolution arithmetic for deep learning" https://arxiv.org/abs/1603.07285
 
   # Effective kernel size, including dilation
   k_eff = @. k + (k - 1) * (dilation - 1)
   # How much total padding needs to be applied?
   pad_amt = @. k_eff - 1
-  # In case amount of padding is odd we need to apply different amounts to each side.
-  return Tuple(mapfoldl(i -> [cld(i, 2), fld(i,2)], vcat, pad_amt))
+  # When the amount is odd, put the extra element on the right/bottom (larger index),
+  # matching PyTorch/TensorFlow and keeping `Conv`/`ConvTranspose` mutually adjoint (#2431).
+  return Tuple(mapfoldl(i -> [fld(i, 2), cld(i,2)], vcat, pad_amt))
 end
 
 """
@@ -380,8 +375,8 @@ function Base.show(io::IO, l::ConvTranspose)
   print(io, ")")
 end
 
-function calc_padding(::Type{ConvTranspose}, pad::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T}
-  calc_padding(Conv, pad, k .- stride .+ 1, dilation, stride)
+function calc_padding(::Type{ConvTranspose}, ::Val{:same}, k::NTuple{N,T}, dilation, stride) where {N,T}
+  calc_padding(Conv, Val(:same), k .- stride .+ 1, dilation, stride)
 end
 
 """

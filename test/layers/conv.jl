@@ -174,6 +174,21 @@ end end
   @test_throws ArgumentError Conv((3,3), 1=>1; pad=:valid)
 end
 
+@testset ":same is adjoint-consistent for even filters (#2431)" begin
+  x = randn(Float32, 8, 8, 1, 1)
+  y = randn(Float32, 16, 16, 1, 1)
+  ww = Float32[0.25, 0.75, 0.75, 0.25] * Float32[0.25, 0.75, 0.75, 0.25]'
+  P = ConvTranspose((4,4), 1=>1; pad=:same, stride=2); P.weight[:,:,1,1] .= ww
+  R = Conv((4,4), 1=>1; pad=:same, stride=2);          R.weight[:,:,1,1] .= ww
+  # extra padding goes on the right/bottom, matching PyTorch/TF
+  @test R.pad == (1, 2, 1, 2)
+  # Conv and ConvTranspose are adjoint: <y, P x> == <x, Rᵀ y>
+  @test sum(y .* P(x)) ≈ sum(x .* R(y)) rtol=1e-4
+  # output is symmetric under reversal
+  Ry = R(ones(Float32, size(y)))
+  @test Ry ≈ reverse(Ry)
+end
+
 @testset "pad_mode validation & show" begin
   @test_throws ArgumentError Conv((3,3), 1=>1; pad_mode=:bogus)
   @test occursin("pad_mode=:circular", repr(Conv((3,3), 1=>1; pad=1, pad_mode=:circular)))
