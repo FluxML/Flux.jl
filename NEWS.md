@@ -4,6 +4,10 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `BatchNorm` in training mode now throws a clear error when a channel sees only a single value (e.g. batch size 1 with no spatial dimensions), instead of silently corrupting the running variance with `NaN`. The batch variance of a single value is undefined; this matches PyTorch's behavior (`testmode!` inference with batch size 1 is unaffected) ([#1992](https://github.com/FluxML/Flux.jl/issues/1992)).
+
+## v0.16.11 (6 Augus 2026)
+
 - `Embedding` now accepts a `padding_idx` keyword. The embedding vector at that index is initialized to zero and its gradient is masked, so it stays fixed during training — useful for a padding token in variable-length sequences ([#2684](https://github.com/FluxML/Flux.jl/issues/2684)).
 - `Flux.withgradient(f, model::Duplicated, ...)` (the Enzyme backend) now supports **auxiliary outputs**, matching the Zygote and Mooncake backends: if `f` returns a `Tuple` or `NamedTuple` whose first element is the scalar loss, the gradient is taken of the loss alone and the whole output is returned as `val` ([#2710](https://github.com/FluxML/Flux.jl/pull/2710)).
 - Added the public single-step training primitives `Flux.trainstep!(loss, [adtype,] model, batch::Tuple, opt_state) -> loss` and `Flux.trainstep_withgradient!(...) -> (loss, grad)`, which run one optimisation step (gradient + in-place optimiser update). `train!` is now a loop built on top of `trainstep!`, and is compiled and cached automatically on a Reactant device ([#2709](https://github.com/FluxML/Flux.jl/pull/2709)).

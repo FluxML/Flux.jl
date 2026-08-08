@@ -171,6 +171,19 @@ end
     # @test y16 ≈ y  atol=1e-3
   end
 
+  # A single value per channel has undefined batch variance: error while training
+  # (matching PyTorch) instead of silently producing NaN running stats (issue #1992).
+  let m = BatchNorm(1)
+    trainmode!(m)
+    @test_throws ArgumentError m(zeros(Float32, 1, 1))          # (C=1, N=1) => 1 value/channel
+    @test_throws ArgumentError gradient(m -> sum(m(zeros(Float32, 1, 1))), m)
+    @test m(reshape(Float32[0, 1, 2, 3], 4, 1, 1)) isa AbstractArray  # N=1 but 4 values/channel is fine
+  end
+  let m = BatchNorm(1)
+    testmode!(m)
+    @test m(zeros(Float32, 1, 1)) ≈ zeros(Float32, 1, 1)        # single-sample inference is fine
+  end
+
   # with activation function
   let m = BatchNorm(2, sigmoid), x = Float32[1.0 3.0 5.0;
                                              2.0 4.0 6.0]
