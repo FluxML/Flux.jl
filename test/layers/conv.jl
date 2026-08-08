@@ -146,6 +146,41 @@ end
   @test y_hat[end, end] ≈ 2.0
 end
 
+@testset "pad_mode $pad_mode" for pad_mode in (:circular, :reflect, :replicate, :symmetric) begin
+  padfun = Dict(:circular => pad_circular, :reflect => pad_reflect,
+                :replicate => pad_repeat, :symmetric => pad_symmetric)[pad_mode]
+
+  @testset "$ltype $(nd)D" for ltype in (Conv, CrossCor, DepthwiseConv), nd in (1, 2, 3)
+    kernel = ntuple(_ -> 3, nd)
+    x = randn(Float32, ntuple(_ -> 8, nd)..., 2, 3)
+    l = ltype(kernel, 2=>2; pad=1, pad_mode)
+    # a non-zero pad_mode == prepadding the input then convolving with pad=0
+    l0 = l isa CrossCor ?
+      CrossCor(l.weight, l.bias, l.σ; stride=l.stride, pad=0, dilation=l.dilation) :
+      Conv(l.weight, l.bias, l.σ; stride=l.stride, pad=0, dilation=l.dilation, groups=l.groups)
+    xp = padfun(x, ntuple(_ -> 1, 2nd); dims=(nd == 1 ? 1 : ntuple(identity, nd)))
+    @test l(x) ≈ l0(xp)
+    @test size(l(x))[1:nd] == size(x)[1:nd]  # pad=1 keeps spatial size for kernel 3
+    test_gradients(l, x)
+  end
+end end
+
+@testset ":same padding alias" begin
+  # `:same` computes the exact same padding amounts as `SamePad()`
+  for L in (Conv, ConvTranspose, CrossCor, MaxPool), k in ((3,3), (4,4)), s in (1, 2)
+    args = L in (MaxPool,) ? (k,) : (k, 1=>1)
+    @test L(args...; pad=:same, stride=s).pad == L(args...; pad=SamePad(), stride=s).pad
+  end
+  @test_throws ArgumentError Conv((3,3), 1=>1; pad=:valid)
+end
+
+@testset "pad_mode validation & show" begin
+  @test_throws ArgumentError Conv((3,3), 1=>1; pad_mode=:bogus)
+  @test occursin("pad_mode=:circular", repr(Conv((3,3), 1=>1; pad=1, pad_mode=:circular)))
+  @test !occursin("pad_mode", repr(Conv((3,3), 1=>1; pad=1)))  # default :zeros is hidden
+  @test Flux.f16(Conv((3,3), 1=>1; pad_mode=:reflect)).pad_mode === :reflect  # survives fmap
+end
+
 @testset "Depthwise Conv" begin
   r = zeros(Float32, 28, 28, 3, 5)
   m1 = DepthwiseConv((2, 2), 3=>15)
@@ -276,16 +311,16 @@ end
   @test size(l(data)) == size(l_expanded(data))
 end
 
-@testset "$ltype SamePad kernelsize $k" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8))
+@testset "$ltype SamePad kernelsize $k ($(repr(samepad)))" for ltype in (Conv, ConvTranspose, DepthwiseConv, CrossCor), k in ( (1,), (2,), (3,), (4,5), (6,7,8)), samepad in (SamePad(), :same)
   data = ones(Float32, (k .+ 3)..., 1,1)
-  l = ltype(k, 1=>1, pad=SamePad())
+  l = ltype(k, 1=>1, pad=samepad)
   @test size(l(data)) == size(data)
 
-  l = ltype(k, 1=>1, pad=SamePad(), dilation = k .÷ 2)
+  l = ltype(k, 1=>1, pad=samepad, dilation = k .÷ 2)
   @test size(l(data)) == size(data)
 
   stride = 3
-  l = ltype(k, 1=>1, pad=SamePad(), stride = stride)
+  l = ltype(k, 1=>1, pad=samepad, stride = stride)
   if ltype == ConvTranspose
     @test size(l(data))[1:end-2] == stride .* size(data)[1:end-2]
   else

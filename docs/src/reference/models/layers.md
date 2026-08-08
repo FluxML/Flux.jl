@@ -47,7 +47,6 @@ Conv
 ConvTranspose
 CrossCor
 DepthwiseConv
-SamePad
 ```
 
 ## MultiHeadAttention

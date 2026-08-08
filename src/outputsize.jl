@@ -182,7 +182,7 @@ Chain(
 julia> img = [28, 28];
 
 julia> @autosize (img..., 1, 32) Chain(              # size is only needed at runtime
-          Chain(c = Conv((3,3), _ => 5; stride=2, pad=SamePad()),
+          Chain(c = Conv((3,3), _ => 5; stride=2, pad=:same),
                 p = MeanPool((3,3)),
                 b = BatchNorm(_),
                 f = Flux.flatten),
