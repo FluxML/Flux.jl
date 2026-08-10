@@ -210,9 +210,16 @@ ChainRulesCore.@non_differentiable conv_dims(::Any, ::Any)
 function (c::Conv)(x::AbstractArray)
   _conv_size_check(c, x)
   xT = _match_eltype(c, x)
+  if c.pad_mode === :zeros
+    # Fast path: let the convolution kernel apply the (zero) padding. Kept free of
+    # `apply_pad` so the default layer differentiates exactly as before, including
+    # under nested AD (e.g. Zygote hessians).
+    cdims = conv_dims(c, xT)
+    return NNlib.bias_act!(c.σ, conv(xT, c.weight, cdims), conv_reshape_bias(c))
+  end
   xp = apply_pad(c.pad_mode, c.pad, xT)
   cdims = conv_dims(c, xp)
-  NNlib.bias_act!(c.σ, conv(xp, c.weight, cdims), conv_reshape_bias(c))
+  return NNlib.bias_act!(c.σ, conv(xp, c.weight, cdims), conv_reshape_bias(c))
 end
 
 _channels_in(l::Conv) = size(l.weight, ndims(l.weight)-1) * l.groups
@@ -503,9 +510,13 @@ ChainRulesCore.@non_differentiable crosscor_dims(::Any, ::Any)
 function (c::CrossCor)(x::AbstractArray)
   _conv_size_check(c, x)
   xT = _match_eltype(c, x)
+  if c.pad_mode === :zeros
+    cdims = crosscor_dims(c, xT)
+    return NNlib.bias_act!(c.σ, crosscor(xT, c.weight, cdims), conv_reshape_bias(c))
+  end
   xp = apply_pad(c.pad_mode, c.pad, xT)
   cdims = crosscor_dims(c, xp)
-  NNlib.bias_act!(c.σ, crosscor(xp, c.weight, cdims), conv_reshape_bias(c))
+  return NNlib.bias_act!(c.σ, crosscor(xp, c.weight, cdims), conv_reshape_bias(c))
 end
 
 function Base.show(io::IO, l::CrossCor)
