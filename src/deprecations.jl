@@ -27,6 +27,18 @@ function loadmodel!(dst::ConvTranspose, src::NamedTuple{(:σ, :weight, :bias, :s
   loadmodel!(dst, new_src; kw...)
 end
 
+# `Conv`/`CrossCor` gained a `pad_mode` field in #2717. Allow loading `Flux.state`
+# checkpoints written before that, which lack the trailing `pad_mode` entry.
+function loadmodel!(dst::Conv, src::NamedTuple{(:σ, :weight, :bias, :stride, :pad, :dilation, :groups)}; kw...)
+  new_src = (; src.σ, src.weight, src.bias, src.stride, src.pad, src.dilation, src.groups, dst.pad_mode)
+  loadmodel!(dst, new_src; kw...)
+end
+
+function loadmodel!(dst::CrossCor, src::NamedTuple{(:σ, :weight, :bias, :stride, :pad, :dilation)}; kw...)
+  new_src = (; src.σ, src.weight, src.bias, src.stride, src.pad, src.dilation, dst.pad_mode)
+  loadmodel!(dst, new_src; kw...)
+end
+
 function get_device(; verbose::Bool=false)
   Base.depwarn("get_device() is deprecated. Use `gpu_device()` instead.", :get_device)
   return MLDataDevices.gpu_device()
@@ -175,6 +187,21 @@ loadmodel!(dst::MaxPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
 loadmodel!(dst::MeanPool{N, M}, src::Tuple{}; kw...) where {N, M} = dst
 loadmodel!(dst::AdaptiveMaxPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
 loadmodel!(dst::AdaptiveMeanPool{S, O}, src::Tuple{}; kw...) where {S, O} = dst
+
+
+### Unreleased deprecations ####################
+
+"""
+    SamePad()
+
+Deprecated alias for `pad=:same`, kept for backwards compatibility.
+Prefer passing the symbol `:same` to the `pad` keyword of convolutional
+and pooling layers. See [`Conv`](@ref).
+"""
+struct SamePad end
+
+calc_padding(lt, ::SamePad, k::NTuple{N,T}, dilation, stride) where {N,T} =
+  calc_padding(lt, Val(:same), k, dilation, stride)
 
 
 # This method let you use Optimisers.Descent() without setup, when there is no state

@@ -47,5 +47,18 @@ end
 
   @test_throws LoadError @eval Flux.@layer :zzz MacroTest.TwoThirds
   @test_throws LoadError @eval Flux.@layer MacroTest.TwoThirds chidren=(a, b)
+
+  @testset "empty struct" begin
+    struct EmptyStruct end
+    Flux.@layer EmptyStruct
+    em = EmptyStruct()
+    # @layer overrides isleaf to false, so fmap decomposes instead of recursing
+    @test Functors.isleaf(em) == false
+    @test Flux.f16(em) === em
+    @test Flux.f32(em) === em
+    @test Flux.f64(em) === em
+    @test Flux.cpu(em) === em
+    @test Flux.gpu(em) === em
+  end
 end
 
