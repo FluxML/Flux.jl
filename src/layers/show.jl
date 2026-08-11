@@ -55,6 +55,10 @@ function _big_show(io::IO, obj, indent::Int=0, name=nothing)
       for k in Base.keys(obj)
         _big_show(io, obj[k], indent+2, k)
       end
+    elseif children isa NamedTuple
+      for k in Base.keys(children)
+        _big_show(io, children[k], indent+2, k)
+      end
     else
       for c in children
         _big_show(io, c, indent+2)
