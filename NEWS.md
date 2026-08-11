@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `Dense` now handles inputs with a zero-sized batch dimension (e.g. `Dense(4 => 5)(randn(Float32, 4, 0, 6))`), returning a correctly-shaped empty array instead of an error or a wrong shape ([#2407](https://github.com/FluxML/Flux.jl/issues/2407)).
 - Fix stack overflow when applying f16/f32/f64 or cpu/gpu to empty structs declared with Flux.@layer.
 - `BatchNorm` in training mode now throws a clear error when a channel sees only a single value (e.g. batch size 1 with no spatial dimensions), instead of silently corrupting the running variance with `NaN`. The batch variance of a single value is undefined; this matches PyTorch's behavior (`testmode!` inference with batch size 1 is unaffected) ([#1992](https://github.com/FluxML/Flux.jl/issues/1992)).
 
