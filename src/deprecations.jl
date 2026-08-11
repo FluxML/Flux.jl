@@ -27,6 +27,18 @@ function loadmodel!(dst::ConvTranspose, src::NamedTuple{(:σ, :weight, :bias, :s
   loadmodel!(dst, new_src; kw...)
 end
 
+# `Conv`/`CrossCor` gained a `pad_mode` field in #2717. Allow loading `Flux.state`
+# checkpoints written before that, which lack the trailing `pad_mode` entry.
+function loadmodel!(dst::Conv, src::NamedTuple{(:σ, :weight, :bias, :stride, :pad, :dilation, :groups)}; kw...)
+  new_src = (; src.σ, src.weight, src.bias, src.stride, src.pad, src.dilation, src.groups, dst.pad_mode)
+  loadmodel!(dst, new_src; kw...)
+end
+
+function loadmodel!(dst::CrossCor, src::NamedTuple{(:σ, :weight, :bias, :stride, :pad, :dilation)}; kw...)
+  new_src = (; src.σ, src.weight, src.bias, src.stride, src.pad, src.dilation, dst.pad_mode)
+  loadmodel!(dst, new_src; kw...)
+end
+
 function get_device(; verbose::Bool=false)
   Base.depwarn("get_device() is deprecated. Use `gpu_device()` instead.", :get_device)
   return MLDataDevices.gpu_device()

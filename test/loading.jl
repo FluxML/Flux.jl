@@ -229,11 +229,36 @@ end
   end
 
   @testset "preservation of saved types" begin
-    m = (num = 1, cnum = Complex(1.2, 2), str = "hello", arr = [1, 2, 3], 
-        bool = true, dict = Dict(:a => 1, :b => 2), tup = (1, 2, 3), 
+    m = (num = 1, cnum = Complex(1.2, 2), str = "hello", arr = [1, 2, 3],
+        bool = true, dict = Dict(:a => 1, :b => 2), tup = (1, 2, 3),
         sym = :a, nth = nothing)
 
     s = Flux.state(m)
     @test s == m
+  end
+
+  @testset "load pre-pad_mode Conv/CrossCor checkpoints (#2717)" begin
+    # `Flux.state` gained a trailing `pad_mode` entry; old checkpoints lack it.
+    c = Conv((3,3), 2=>4, relu)
+    old = (; σ=(), weight=copy(c.weight) .+ 1, bias=copy(c.bias) .+ 1,
+           stride=c.stride, pad=c.pad, dilation=c.dilation, groups=c.groups)
+    dst = Conv((3,3), 2=>4, relu)
+    Flux.loadmodel!(dst, old)
+    @test dst.weight == old.weight
+    @test dst.bias == old.bias
+    @test dst.pad_mode === :zeros
+
+    cc = CrossCor((3,3), 2=>4)
+    oldc = (; σ=(), weight=copy(cc.weight) .+ 1, bias=copy(cc.bias) .+ 1,
+            stride=cc.stride, pad=cc.pad, dilation=cc.dilation)
+    dstc = CrossCor((3,3), 2=>4)
+    Flux.loadmodel!(dstc, oldc)
+    @test dstc.weight == oldc.weight
+    @test dstc.pad_mode === :zeros
+
+    # nested in a Chain, and a current-format state still round-trips
+    old_chain = (; layers = (old, Flux.state(Dense(4=>2))))
+    @test Flux.loadmodel!(Chain(Conv((3,3),2=>4,relu), Dense(4=>2)), old_chain) isa Chain
+    @test Flux.loadmodel!(Conv((3,3),2=>4,relu), Flux.state(c)) isa Conv
   end
 end
