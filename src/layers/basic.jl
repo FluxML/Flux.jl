@@ -201,7 +201,8 @@ end
 
 function (a::Dense)(x::AbstractArray)
   _size_check(a, x, 1 => size(a.weight, 2))
-  reshape(a(reshape(x, size(x,1), :)), :, size(x)[2:end]...)
+  y = a(reshape(x, size(x,1), :))
+  reshape(y, size(y,1), size(x)[2:end]...)  # size(y,1) avoids a 0/0 when the batch dims contain a zero
 end
 
 function Base.show(io::IO, l::Dense)

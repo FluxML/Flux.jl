@@ -80,6 +80,10 @@
       @test size(Dense(10 => 5)(randn(10,2,3))) == (5,2,3)
       @test size(Dense(10 => 5)(randn(10,2,3,4))) == (5,2,3,4)
       @test_throws DimensionMismatch Dense(10 => 5)(randn(11,2,3))
+      # a zero-sized batch dimension should propagate, not error (#2407)
+      @test size(Dense(4 => 5)(randn32(4,0))) == (5,0)
+      @test size(Dense(4 => 5)(randn32(4,0,6))) == (5,0,6)
+      @test size(Dense(4 => 5)(randn32(4,3,0,6))) == (5,3,0,6)
     end
     @testset "zeros" begin
       @test Dense(10 => 1, identity, init = ones)(ones(10,1)) == 10*ones(1, 1)

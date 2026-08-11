@@ -549,7 +549,7 @@ WeightNorm(
   3×1×1 Array{Float32,...},             # 3 parameters
   :weight,
   3,
-)                   # Total: 3 arrays, 11 parameters, 276 bytes.
+)                   # Total: 3 arrays, 11 parameters, 284 bytes.
 
 julia> x = ones(Float32, 12, 1, 1);
 
@@ -631,13 +631,13 @@ Chain(
     :weight,
     3,
   ),
-)                   # Total: 6 arrays, 31 parameters, 588 bytes.
+)                   # Total: 6 arrays, 31 parameters, 604 bytes.
 
 julia> Flux.remove_weight_norms(model)
 Chain(
   Conv((3,), 1 => 2),                   # 8 parameters
   Conv((3,), 2 => 2),                   # 14 parameters
-)                   # Total: 4 arrays, 22 parameters, 392 bytes.
+)                   # Total: 4 arrays, 22 parameters, 408 bytes.
 ```
 """
 remove_weight_norms(x) = fmap(reparametrize, x; exclude=l -> l isa WeightNorm)
