@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `@layer :named MyModel` is a new show option that displays fieldnames in the expanded pretty-print (e.g. `cell = RNNCell(...)` instead of just `RNNCell(...)`) ([#2543](https://github.com/FluxML/Flux.jl/issues/2543)).
 - `BatchNorm` in training mode now throws a clear error when a channel sees only a single value (e.g. batch size 1 with no spatial dimensions), instead of silently corrupting the running variance with `NaN`. The batch variance of a single value is undefined; this matches PyTorch's behavior (`testmode!` inference with batch size 1 is unaffected) ([#1992](https://github.com/FluxML/Flux.jl/issues/1992)).
 
 ## v0.16.11 (6 August 2026)

@@ -19,6 +19,23 @@ function _macro_big_show(ex)
   end
 end
 
+# This is called by @layer :named and returns an expression:
+function _macro_named_show(ex)
+    quote
+        function Base.show(io::IO, m::MIME"text/plain", x::$ex)
+            if get(io, :typeinfo, nothing) === nothing  # e.g. top level in REPL
+                _big_show(io, x)
+            elseif !get(io, :compact, false)  # e.g. printed inside a Vector, but not a Matrix
+                _layer_show(io, x)
+            else
+                show(io, x)
+            end
+        end
+
+        Flux._show_children(x::$ex) = Functors.children(x)
+    end
+end
+
 function _big_show(io::IO, obj, indent::Int=0, name=nothing)
   children = _show_children(obj)
   if all(_show_leaflike, children)

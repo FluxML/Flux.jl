@@ -15,6 +15,8 @@ The optional argument `showtype` can take any of the following values:
 
 - `:expand` (default): This will expand the representation of container types like `Chain`, 
    while maintaining a compat representation of types like `Dense` containing only arrays.
+- `:named`: Like `:expand`, but displays fieldnames as `field = value` in the expanded representation.
+   This is useful for container types whose children have meaningful names (e.g. `cell`, `layer`).
 - `:noexpand`: This is to be used in case your type contains other layers but you want to keep the representation simple.
 - `:ignore`: To opt out of the pretty printing.
 
