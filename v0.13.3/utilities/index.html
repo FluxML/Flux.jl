@@ -1,0 +1,346 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Utility Functions · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview', {'page': location.pathname + location.search + location.hash});
+</script><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" data-theme-name="documenter-dark" data-theme-primary-dark="" href="../assets/themes/documenter-dark.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" data-theme-name="documenter-light" data-theme-primary="" href="../assets/themes/documenter-light.css" rel="stylesheet" type="text/css"/><script src="../assets/themeswap.js"></script><link href="../assets/flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img alt="Flux logo" src="../assets/logo.png"/></a><div class="docs-package-name"><span class="docs-autofit">Flux</span></div><form action="../search/" class="docs-search"><input class="docs-search-query" id="documenter-search-query" name="q" placeholder="Search docs" type="text"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li><a class="tocitem" href="../models/overview/">Overview</a></li><li><a class="tocitem" href="../models/basics/">Basics</a></li><li><a class="tocitem" href="../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../models/layers/">Model Reference</a></li><li><a class="tocitem" href="../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../models/regularisation/">Regularisation</a></li><li><a class="tocitem" href="../models/advanced/">Advanced Model Building</a></li><li><a class="tocitem" href="../models/nnlib/">NNlib</a></li><li><a class="tocitem" href="../models/functors/">Functors</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../data/onehot/">One-Hot Encoding</a></li><li><a class="tocitem" href="../data/mlutils/">MLUtils</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../training/training/">Training</a></li></ul></li><li><a class="tocitem" href="../gpu/">GPU Support</a></li><li><a class="tocitem" href="../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../ecosystem/">The Julia Ecosystem</a></li><li class="is-active"><a class="tocitem" href="">Utility Functions</a><ul class="internal"><li><a class="tocitem" href="#Layer-Initialisation"><span>Layer Initialisation</span></a></li><li><a class="tocitem" href="#Changing-the-type-of-model-parameters"><span>Changing the type of model parameters</span></a></li><li><a class="tocitem" href="#Model-Building"><span>Model Building</span></a></li><li><a class="tocitem" href="#Model-Abstraction"><span>Model Abstraction</span></a></li><li><a class="tocitem" href="#Callback-Helpers"><span>Callback Helpers</span></a></li><li><a class="tocitem" href="#Patience-Helpers"><span>Patience Helpers</span></a></li></ul></li><li><a class="tocitem" href="../performance/">Performance Tips</a></li><li><a class="tocitem" href="../datasets/">Datasets</a></li><li><a class="tocitem" href="../community/">Community</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href="">Utility Functions</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="">Utility Functions</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/utilities.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" href="#" id="documenter-settings-button" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" href="#" id="documenter-sidebar-button"></a></div></header><article class="content" id="documenter-page"><h1 id="Utility-Functions"><a class="docs-heading-anchor" href="#Utility-Functions">Utility Functions</a><a id="Utility-Functions-1"></a><a class="docs-heading-anchor-permalink" href="#Utility-Functions" title="Permalink"></a></h1><p>Flux provides utility functions which can be used to initialize your layers or to regularly execute callback functions.</p><h2 id="Layer-Initialisation"><a class="docs-heading-anchor" href="#Layer-Initialisation">Layer Initialisation</a><a id="Layer-Initialisation-1"></a><a class="docs-heading-anchor-permalink" href="#Layer-Initialisation" title="Permalink"></a></h2><p>Flux initialises convolutional layers and recurrent cells with <code>glorot_uniform</code> by default. Most layers accept a function as an <code>init</code> keyword, which replaces this default. For example:</p><pre><code class="language-julia-repl">julia&gt; conv = Conv((3, 3), 3 =&gt; 2, relu; init=Flux.glorot_normal)
+Conv((3, 3), 3 =&gt; 2, relu)  # 56 parameters
+
+julia&gt; conv.bias
+2-element Vector{Float32}:
+ 0.0
+ 0.0</code></pre><p>Note that <code>init</code> creates the weight array, but not the bias vector.</p><p>Many of the initialisation functions accept keywords such as <code>gain</code>,  and a random number generator. To make it easy to pass these to layers, there are methods which return a function:</p><pre><code class="language-julia-repl">julia&gt; Dense(4 =&gt; 5, tanh; init=Flux.glorot_uniform(gain=2))
+Dense(4 =&gt; 5, tanh)  # 25 parameters
+
+julia&gt; Dense(4 =&gt; 5, tanh; init=Flux.randn32(MersenneTwister(1)))
+Dense(4 =&gt; 5, tanh)  # 25 parameters</code></pre><article class="docstring"><header><a class="docstring-binding" href="#Flux.glorot_uniform" id="Flux.glorot_uniform"><code>Flux.glorot_uniform</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">glorot_uniform([rng=GLOBAL_RNG], size...; gain = 1) -&gt; Array
+glorot_uniform([rng]; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> containing random numbers drawn from a uniform distribution on the interval <span>$[-x, x]$</span>, where <code>x = gain * sqrt(6 / (fan_in + fan_out))</code>.</p><p>This method is described in [1] and also known as Xavier initialization.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.glorot_uniform(3, 4) |&gt; summary
+"3×4 Matrix{Float32}"
+
+julia&gt; round.(extrema(Flux.glorot_uniform(10, 100)), digits=3)
+(-0.232f0, 0.234f0)
+
+julia&gt; round.(extrema(Flux.glorot_uniform(100, 10)), digits=3)
+(-0.233f0, 0.233f0)
+
+julia&gt; round.(extrema(Flux.glorot_uniform(100, 100)), digits=3)
+(-0.173f0, 0.173f0)
+
+julia&gt; Dense(3 =&gt; 2, tanh; init = Flux.glorot_uniform(MersenneTwister(1)))
+Dense(3 =&gt; 2, tanh)  # 8 parameters
+
+julia&gt; ans.bias
+2-element Vector{Float32}:
+ 0.0
+ 0.0</code></pre><p><strong>References</strong></p><p>[1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." <em>Proceedings of the thirteenth international conference on artificial intelligence and statistics</em>. 2010.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L54-L89" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.glorot_normal" id="Flux.glorot_normal"><code>Flux.glorot_normal</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">glorot_normal([rng=GLOBAL_RNG], size...; gain = 1) -&gt; Array
+glorot_normal([rng]; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> containing random numbers drawn from a normal distribution with standard deviation <code>gain * sqrt(2 / (fan_in + fan_out))</code>, using <a href="#Flux.nfan"><code>nfan</code></a>.</p><p>This method is described in [1] and also known as Xavier initialization.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; using Statistics
+
+julia&gt; round(std(Flux.glorot_normal(10, 1000)), digits=3)
+0.044f0
+
+julia&gt; round(std(Flux.glorot_normal(1000, 10)), digits=3)
+0.044f0
+
+julia&gt; round(std(Flux.glorot_normal(1000, 1000)), digits=3)
+0.032f0
+
+julia&gt; Dense(10 =&gt; 1000, tanh; init = Flux.glorot_normal(gain=100))
+Dense(10 =&gt; 1000, tanh)  # 11_000 parameters
+
+julia&gt; round(std(ans.weight), sigdigits=3)
+4.45f0</code></pre><p><strong>References</strong></p><p>[1] Glorot, Xavier, and Yoshua Bengio. "Understanding the difficulty of training deep feedforward neural networks." <em>Proceedings of the thirteenth international conference on artificial intelligence and statistics</em>. 2010.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L99-L132" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.kaiming_uniform" id="Flux.kaiming_uniform"><code>Flux.kaiming_uniform</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">kaiming_uniform([rng=GLOBAL_RNG], size...; gain = √2) -&gt; Array
+kaiming_uniform([rng]; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> containing random numbers drawn from a uniform distribution on the interval <code>[-x, x]</code>, where <code>x = gain * sqrt(3/fan_in)</code> using <a href="#Flux.nfan"><code>nfan</code></a>.</p><p>This method is described in [1] and also known as He initialization.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; round.(extrema(Flux.kaiming_uniform(100, 10)), digits=3)
+(-0.774f0, 0.774f0)
+
+julia&gt; round.(extrema(Flux.kaiming_uniform(10, 100)), digits=3)
+(-0.245f0, 0.244f0)
+
+julia&gt; round.(extrema(Flux.kaiming_uniform(100, 100)), digits=3)
+(-0.245f0, 0.245f0)</code></pre><p><strong>References</strong></p><p>[1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." <em>Proceedings of the IEEE international conference on computer vision</em>. 2015.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L142-L166" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.kaiming_normal" id="Flux.kaiming_normal"><code>Flux.kaiming_normal</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">kaiming_normal([rng=GLOBAL_RNG], size...; gain = √2) -&gt; Array
+kaiming_normal([rng]; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> containing random numbers taken from a normal distribution standard deviation <code>gain / sqrt(fan_in)</code>, using <a href="#Flux.nfan"><code>nfan</code></a>.</p><p>This method is described in [1] and also known as He initialization.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; using Statistics
+
+julia&gt; round(std(Flux.kaiming_normal(10, 1000)), digits=3)
+0.045f0
+
+julia&gt; round(std(Flux.kaiming_normal(1000, 10)), digits=3)
+0.447f0
+
+julia&gt; round(std(Flux.kaiming_normal(1000, 1000)), digits=3)
+0.045f0</code></pre><p><strong>References</strong></p><p>[1] He, Kaiming, et al. "Delving deep into rectifiers: Surpassing human-level performance on imagenet classification." <em>Proceedings of the IEEE international conference on computer vision</em>. 2015.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L177-L203" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.truncated_normal" id="Flux.truncated_normal"><code>Flux.truncated_normal</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">truncated_normal([rng=GLOBAL_RNG], size...; mean = 0, std = 1, lo = -2, hi = 2) -&gt; Array
+truncated_normal([rng]; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> where each element is drawn from a truncated normal distribution. The numbers are distributed like <code>filter(x -&gt; lo&lt;=x&lt;=hi, mean .+ std .* randn(100))</code>.</p><p>The values are generated by sampling a Uniform(0, 1) (<code>rand()</code>) and then applying the inverse CDF of the truncated normal distribution. This method works best when <code>lo ≤ mean ≤ hi</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; using Statistics
+
+julia&gt; Flux.truncated_normal(3, 4) |&gt; summary
+"3×4 Matrix{Float32}"
+
+julia&gt; round.(extrema(Flux.truncated_normal(10^6)); digits=3)
+(-2.0f0, 2.0f0)
+
+julia&gt; round(std(Flux.truncated_normal(10^6; lo = -100, hi = 100)))
+1.0f0</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L214-L238" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.orthogonal" id="Flux.orthogonal"><code>Flux.orthogonal</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">orthogonal([rng=GLOBAL_RNG], size...; gain = 1) -&gt; Array
+orthogonal([rng]; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> which is a (semi) orthogonal matrix, as described in [1].</p><p>Cannot construct a vector, i.e. <code>length(size) == 1</code> is forbidden. For <code>length(size) &gt; 2</code>, a <code>prod(size[1:(end - 1)])</code> by <code>size[end]</code> orthogonal matrix is computed before reshaping it to the original dimensions.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; W = Flux.orthogonal(5, 7);
+
+julia&gt; summary(W)
+"5×7 Matrix{Float32}"
+
+julia&gt; W * W' ≈ I(5)
+true
+
+julia&gt; W2 = Flux.orthogonal(7, 5);
+
+julia&gt; W2 * W2' ≈ I(7)
+false
+
+julia&gt; W2' * W2 ≈ I(5)
+true
+
+julia&gt; W3 = Flux.orthogonal(3, 3, 2, 4);
+
+julia&gt; transpose(reshape(W3, :, 4)) * reshape(W3, :, 4) ≈ I(4)
+true</code></pre><p><strong>References</strong></p><p>[1] Saxe, McClelland, Ganguli. "Exact solutions to the nonlinear dynamics of learning in deep linear neural networks", ICLR 2014, https://arxiv.org/abs/1312.6120</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L260-L298" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.sparse_init" id="Flux.sparse_init"><code>Flux.sparse_init</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">sparse_init([rng=GLOBAL_RNG], rows, cols; sparsity, std = 0.01) -&gt; Array
+sparse_init([rng]; kw...) -&gt; Function</code></pre><p>Return a <code>Matrix{Float32}</code> of size <code>rows, cols</code> where each column contains a fixed fraction of zero elements given by <code>sparsity</code>. Non-zero elements are normally distributed with a mean of zero and standard deviation <code>std</code>.</p><p>This method is described in [1].</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; count(iszero, Flux.sparse_init(10, 10, sparsity=1/5))
+20
+
+julia&gt; sum(0 .== Flux.sparse_init(10, 11, sparsity=0.9), dims=1)
+1×11 Matrix{Int64}:
+ 9  9  9  9  9  9  9  9  9  9  9
+
+julia&gt; Dense(3 =&gt; 10, tanh; init=Flux.sparse_init(sparsity=0.5))
+Dense(3 =&gt; 10, tanh)  # 40 parameters
+
+julia&gt; count(iszero, ans.weight, dims=1)
+1×3 Matrix{Int64}:
+ 5  5  5</code></pre><p><strong>References</strong></p><p>[1] Martens, J, "Deep learning via Hessian-free optimization" <em>Proceedings of the 27th International Conference on International Conference on Machine Learning</em>. 2010.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L321-L351" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.identity_init" id="Flux.identity_init"><code>Flux.identity_init</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">identity_init(size...; gain=1, shift=0) -&gt; Array
+identity_init(; kw...) -&gt; Function</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code> which yields an identity mapping when used as parameters in most Flux layers. Use <code>gain</code> to scale the identity by a constant.</p><p>Often useful in the context of transfer learning, i.e when one wants to add more capacity to a model but start from the same mapping.</p><p>Has the following behaviour</p><ul><li>1D: A <code>Vector</code> of <code>zeros</code> (useful for an identity bias)</li><li>2D: An identity matrix (useful for an identity matrix multiplication)</li><li>More than 2D: A dense block array of center tap spatial filters (useful for an identity convolution)</li></ul><p>Some caveats: </p><ul><li><p>Not all layers will be identity mapping when used with this init. Exceptions include recurrent layers and normalization layers.</p></li><li><p>Layers must have <code>input_size == output_size</code> for identity mapping to be possible. When this is not the case, extra dimensions of the array are padded with zeros.</p></li><li><p>For convolutional layers, in addition to the above, the kernel sizes must also be odd and padding must be applied so that output feature maps have the same size as input feature maps, e.g by using <a href="../models/layers/#Flux.SamePad"><code>SamePad</code></a>.</p></li></ul><p>Use keyword <code>shift</code> (integer or tuple) to apply circular shift to the output, equivalent to <code>Base.circshift(identity_init(size...), shift)</code>.</p><p>For consistency with other initialisers, it accepts <code>rng::AbstractRNG</code> as an optional first argument. But this is ignored, since the result is not random.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.identity_init(3,5)
+3×5 Matrix{Float32}:
+ 1.0  0.0  0.0  0.0  0.0
+ 0.0  1.0  0.0  0.0  0.0
+ 0.0  0.0  1.0  0.0  0.0
+
+julia&gt; Dense(5 =&gt; 3, relu, init=Flux.identity_init)([1,-2,3,-4,5])
+3-element Vector{Float32}:
+ 1.0
+ 0.0
+ 3.0
+
+julia&gt; Flux.identity_init(3,3,2; gain=100)
+3×3×2 Array{Float32, 3}:
+[:, :, 1] =
+   0.0  0.0  0.0
+ 100.0  0.0  0.0
+   0.0  0.0  0.0
+
+[:, :, 2] =
+ 0.0    0.0  0.0
+ 0.0  100.0  0.0
+ 0.0    0.0  0.0
+
+julia&gt; x4 = cat([1 2 3; 4 5 6; 7 8 9]; dims=4);
+
+julia&gt; Conv((2,2), 1 =&gt; 1, init=Flux.identity_init(gain=10), pad=SamePad())(x4)
+3×3×1×1 Array{Float32, 4}:
+[:, :, 1, 1] =
+ 10.0  20.0  30.0
+ 40.0  50.0  60.0
+ 70.0  80.0  90.0</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L369-L436" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.ones32" id="Flux.ones32"><code>Flux.ones32</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">ones32(size...) = ones(Float32, size...)
+zeros32(size...) = zeros(Float32, size...)</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code>.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L462-L467" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.rand32" id="Flux.rand32"><code>Flux.rand32</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">rand32([rng], size...)
+randn32([rng], size...)</code></pre><p>Return an <code>Array{Float32}</code> of the given <code>size</code>, filled like <code>rand</code> or <code>randn</code>. When the size is not provided, <code>rand32(rng::AbstractRNG)</code> returns a function.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L473-L479" target="_blank">source</a></section></article><h2 id="Changing-the-type-of-model-parameters"><a class="docs-heading-anchor" href="#Changing-the-type-of-model-parameters">Changing the type of model parameters</a><a id="Changing-the-type-of-model-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Changing-the-type-of-model-parameters" title="Permalink"></a></h2><p>The default <code>eltype</code> for models is <code>Float32</code> since models are often trained/run on GPUs. The <code>eltype</code> of model <code>m</code> can be changed to <code>Float64</code> by <code>f64(m)</code>:</p><article class="docstring"><header><a class="docstring-binding" href="#Flux.f64" id="Flux.f64"><code>Flux.f64</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">f64(m)</code></pre><p>Converts the <code>eltype</code> of model's parameters to <code>Float64</code>. Recurses into structs marked with <a href="@ref"><code>@functor</code></a>.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/functor.jl#L213-L218" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.f32" id="Flux.f32"><code>Flux.f32</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">f32(m)</code></pre><p>Converts the <code>eltype</code> of model's parameters to <code>Float32</code> (which is Flux's default). Recurses into structs marked with <a href="@ref"><code>@functor</code></a>.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/functor.jl#L205-L210" target="_blank">source</a></section></article><h2 id="Model-Building"><a class="docs-heading-anchor" href="#Model-Building">Model Building</a><a id="Model-Building-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Building" title="Permalink"></a></h2><p>Flux provides some utility functions to help you generate models in an automated fashion.</p><p><a href="@ref"><code>outputsize</code></a> enables you to calculate the output sizes of layers like <a href="../models/layers/#Flux.Conv"><code>Conv</code></a> when applied to input samples of a given size. This is achieved by passing a "dummy" array into the model that preserves size information without running any computation. <code>outputsize(f, inputsize)</code> works for all layers (including custom layers) out of the box. By default, <code>inputsize</code> expects the batch dimension, but you can exclude the batch size with <code>outputsize(f, inputsize; padbatch=true)</code> (assuming it to be one).</p><p>Using this utility function lets you automate model building for various inputs like so:</p><pre><code class="language-julia">"""
+    make_model(width, height, inchannels, nclasses;
+               layer_config = [16, 16, 32, 32, 64, 64])
+
+Create a CNN for a given set of configuration parameters.
+
+# Arguments
+- `width`: the input image width
+- `height`: the input image height
+- `inchannels`: the number of channels in the input image
+- `nclasses`: the number of output classes
+- `layer_config`: a vector of the number of filters per each conv layer
+"""
+function make_model(width, height, inchannels, nclasses;
+                    layer_config = [16, 16, 32, 32, 64, 64])
+  # construct a vector of conv layers programmatically
+  conv_layers = [Conv((3, 3), inchannels =&gt; layer_config[1])]
+  for (infilters, outfilters) in zip(layer_config, layer_config[2:end])
+    push!(conv_layers, Conv((3, 3), infilters =&gt; outfilters))
+  end
+
+  # compute the output dimensions for the conv layers
+  # use padbatch=true to set the batch dimension to 1
+  conv_outsize = Flux.outputsize(conv_layers, (width, height, nchannels); padbatch=true)
+
+  # the input dimension to Dense is programatically calculated from
+  #  width, height, and nchannels
+  return Chain(conv_layers..., Dense(prod(conv_outsize) =&gt; nclasses))
+end</code></pre><article class="docstring"><header><a class="docstring-binding" href="#Flux.outputsize" id="Flux.outputsize"><code>Flux.outputsize</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">outputsize(m, x_size, y_size, ...; padbatch=false)</code></pre><p>For model or layer <code>m</code> accepting multiple arrays as input, this returns <code>size(m((x, y, ...)))</code> given <code>size_x = size(x)</code>, etc.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; x, y = rand(Float32, 5, 64), rand(Float32, 7, 64);
+
+julia&gt; par = Parallel(vcat, Dense(5, 9), Dense(7, 11));
+
+julia&gt; Flux.outputsize(par, (5, 64), (7, 64))
+(20, 64)
+
+julia&gt; m = Chain(par, Dense(20, 13), softmax);
+
+julia&gt; Flux.outputsize(m, (5,), (7,); padbatch=true)
+(13, 1)
+
+julia&gt; par(x, y) == par((x, y)) == Chain(par, identity)((x, y))
+true</code></pre><p>Notice that <code>Chain</code> only accepts multiple arrays as a tuple, while <code>Parallel</code> also accepts them as multiple arguments; <code>outputsize</code> always supplies the tuple.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/outputsize.jl#L114-L140" target="_blank">source</a></section></article><h2 id="Model-Abstraction"><a class="docs-heading-anchor" href="#Model-Abstraction">Model Abstraction</a><a id="Model-Abstraction-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Abstraction" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" href="#Flux.modules" id="Flux.modules"><code>Flux.modules</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">modules(m)</code></pre><p>Return an iterator over non-leaf objects that can be reached by recursing <code>m</code> over the children given by <a href="../models/functors/#Functors.functor"><code>functor</code></a>.</p><p>Useful for applying a function (e.g. a regularizer) over specific modules or subsets of the parameters (e.g. the weights but not the biases).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; m1 = Chain(Dense(28^2, 64), BatchNorm(64, relu));
+
+julia&gt; m2 = Chain(m1, Dense(64, 10))
+Chain(
+  Chain(
+    Dense(784 =&gt; 64),                   # 50_240 parameters
+    BatchNorm(64, relu),                # 128 parameters, plus 128
+  ),
+  Dense(64 =&gt; 10),                      # 650 parameters
+)         # Total: 6 trainable arrays, 51_018 parameters,
+          # plus 2 non-trainable, 128 parameters, summarysize 200.312 KiB.
+
+julia&gt; Flux.modules(m2)
+7-element Vector{Any}:
+ Chain(Chain(Dense(784 =&gt; 64), BatchNorm(64, relu)), Dense(64 =&gt; 10))  # 51_018 parameters, plus 128 non-trainable
+ (Chain(Dense(784 =&gt; 64), BatchNorm(64, relu)), Dense(64 =&gt; 10))
+ Chain(Dense(784 =&gt; 64), BatchNorm(64, relu))  # 50_368 parameters, plus 128 non-trainable
+ (Dense(784 =&gt; 64), BatchNorm(64, relu))
+ Dense(784 =&gt; 64)    # 50_240 parameters
+ BatchNorm(64, relu)  # 128 parameters, plus 128 non-trainable
+ Dense(64 =&gt; 10)     # 650 parameters
+
+julia&gt; L2(m) = sum(sum(abs2, l.weight) for l in Flux.modules(m) if l isa Dense)
+L2 (generic function with 1 method)
+
+julia&gt; L2(m2) isa Float32
+true</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L555-L597" target="_blank">source</a></section></article><div class="admonition is-warning"><header class="admonition-header">Missing docstring.</header><div class="admonition-body"><p>Missing docstring for <code>Flux.destructure</code>. Check Documenter's build log for details.</p></div></div><article class="docstring"><header><a class="docstring-binding" href="#Flux.nfan" id="Flux.nfan"><code>Flux.nfan</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">nfan(n_out, n_in=1) -&gt; Tuple
+nfan(dims...)
+nfan(dims::Tuple)</code></pre><p>For a layer characterized by dimensions <code>dims</code>, return a tuple <code>(fan_in, fan_out)</code>, where <code>fan_in</code> is the number of input neurons connected to an output one, and <code>fan_out</code> is the number of output neurons connected to an input one.</p><p>This function is mainly used by weight initializers, e.g., <a href="#Flux.kaiming_normal"><code>kaiming_normal</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; layer = Dense(10, 20);
+
+julia&gt; Flux.nfan(size(layer.weight))
+(10, 20)
+
+julia&gt; layer = Conv((3, 3), 2=&gt;10);
+
+julia&gt; Flux.nfan(size(layer.weight))
+(18, 90)</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L2-L26" target="_blank">source</a></section></article><h2 id="Callback-Helpers"><a class="docs-heading-anchor" href="#Callback-Helpers">Callback Helpers</a><a id="Callback-Helpers-1"></a><a class="docs-heading-anchor-permalink" href="#Callback-Helpers" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" href="#Flux.throttle" id="Flux.throttle"><code>Flux.throttle</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">throttle(f, timeout; leading=true, trailing=false)</code></pre><p>Return a function that when invoked, will only be triggered at most once during <code>timeout</code> seconds.</p><p>Normally, the throttled function will run as much as it can, without ever going more than once per <code>wait</code> duration; but if you'd like to disable the execution on the leading edge, pass <code>leading=false</code>. To enable execution on the trailing edge, pass <code>trailing=true</code>.</p></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L511-L521" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.Optimise.stop" id="Flux.Optimise.stop"><code>Flux.Optimise.stop</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">stop()</code></pre><p>Call <code>Flux.stop()</code> in a callback to indicate when a callback condition is met. This will trigger the train loop to stop and exit.</p><p><strong>Examples</strong></p><pre><code class="language-julia">cb = function ()
+  accuracy() &gt; 0.9 &amp;&amp; Flux.stop()
+end</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/optimise/train.jl#L55-L67" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.Optimise.skip" id="Flux.Optimise.skip"><code>Flux.Optimise.skip</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">skip()</code></pre><p>Call <code>Flux.skip()</code> in a callback to indicate when a callback condition is met. This will trigger the train loop to skip the current data point and not update with the calculated gradient.</p><p><strong>Examples</strong></p><pre><code class="language-julia">cb = function ()
+  loss() &gt; 1e7 &amp;&amp; Flux.skip()
+end</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/optimise/train.jl#L35-L47" target="_blank">source</a></section></article><h2 id="Patience-Helpers"><a class="docs-heading-anchor" href="#Patience-Helpers">Patience Helpers</a><a id="Patience-Helpers-1"></a><a class="docs-heading-anchor-permalink" href="#Patience-Helpers" title="Permalink"></a></h2><p>Flux provides utilities for controlling your training procedure according to some monitored condition and a maximum <code>patience</code>. For example, you can use <code>early_stopping</code> to stop training when the model is converging or deteriorating, or you can use <code>plateau</code> to check if the model is stagnating.</p><p>For example, below we create a pseudo-loss function that decreases, bottoms out, then increases. The early stopping trigger will break the loop before the loss increases too much.</p><pre><code class="language-julia"># create a pseudo-loss that decreases for 4 calls, then starts increasing
+# we call this like loss()
+loss = let t = 0
+  () -&gt; begin
+    t += 1
+    (t - 4) ^ 2
+  end
+end
+
+# create an early stopping trigger
+# returns true when the loss increases for two consecutive steps
+es = early_stopping(loss, 2; init_score = 9)
+
+# this will stop at the 6th (4 decreasing + 2 increasing calls) epoch
+@epochs 10 begin
+  es() &amp;&amp; break
+end</code></pre><p>The keyword argument <code>distance</code> of <code>early_stopping</code> is a function of the form <code>distance(best_score, score)</code>. By default <code>distance</code> is <code>-</code>, which implies that the monitored metric <code>f</code> is expected to be decreasing and mimimized. If you use some increasing metric (e.g. accuracy), you can customize the <code>distance</code> function: <code>(best_score, score) -&gt; score - best_score</code>.</p><pre><code class="language-julia"># create a pseudo-accuracy that increases by 0.01 each time from 0 to 1
+# we call this like acc()
+acc = let v = 0
+  () -&gt; v = max(1, v + 0.01)
+end
+
+# create an early stopping trigger for accuracy
+es = early_stopping(acc, 3; delta = (best_score, score) -&gt; score - best_score)
+
+# this will iterate until the 10th epoch
+@epochs 10 begin
+  es() &amp;&amp; break
+end</code></pre><p><code>early_stopping</code> and <code>plateau</code> are both built on top of <code>patience</code>. You can use <code>patience</code> to build your own triggers that use a patient counter. For example, if you want to trigger when the loss is below a threshold for several consecutive iterations:</p><pre><code class="language-julia">threshold(f, thresh, delay) = patience(delay) do
+  f() &lt; thresh
+end</code></pre><p>Both <code>predicate</code> in <code>patience</code> and <code>f</code> in <code>early_stopping</code> / <code>plateau</code> can accept extra arguments. You can pass such extra arguments to <code>predicate</code> or <code>f</code> through the returned function:</p><pre><code class="language-julia">trigger = patience((a; b) -&gt; a &gt; b, 3)
+
+# this will iterate until the 10th epoch
+@epochs 10 begin
+  trigger(1; b = 2) &amp;&amp; break
+end
+
+# this will stop at the 3rd epoch
+@epochs 10 begin
+  trigger(3; b = 2) &amp;&amp; break
+end</code></pre><article class="docstring"><header><a class="docstring-binding" href="#Flux.patience" id="Flux.patience"><code>Flux.patience</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">patience(predicate, wait)</code></pre><p>Return a function that internally counts by one when <code>predicate(...) == true</code>, otherwise the count is reset to zero. If the count is greater than or equal to <code>wait</code>, the function returns <code>true</code>, otherwise it returns <code>false</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; loss() = rand();
+
+julia&gt; trigger = Flux.patience(() -&gt; loss() &lt; 1, 3);
+
+
+julia&gt; Flux.@epochs 10 begin
+         trigger() &amp;&amp; break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L609-L631" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.early_stopping" id="Flux.early_stopping"><code>Flux.early_stopping</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)</code></pre><p>Return a function that internally counts by one when <code>distance(best_score, f(...)) &lt;= min_dist</code>, where <code>best_score</code> is the last seen best value of <code>f(...)</code>. If the count is greater than or equal to <code>delay</code>, the function returns <code>true</code>, otherwise it returns <code>false</code>. The count is reset when <code>distance(best_score, f(...)) &gt; min_dist</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; loss = let l = 0
+         () -&gt; l += 1
+       end; # pseudo loss function that returns increasing values
+
+julia&gt; es = Flux.early_stopping(loss, 3);
+
+
+julia&gt; Flux.@epochs 10 begin
+         es() &amp;&amp; break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L642-L668" target="_blank">source</a></section></article><article class="docstring"><header><a class="docstring-binding" href="#Flux.plateau" id="Flux.plateau"><code>Flux.plateau</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">plateau(f, width; distance = -, init_score = 0, min_dist = 1f-6)</code></pre><p>Return a function that internally counts by one when <code>abs(distance(last_score, f(...))) &lt;= min_dist</code>, where <code>last_score</code> holds the last value of <code>f(...)</code>. If the count is greater than or equal to <code>width</code>, the function returns <code>true</code>, otherwise it returns <code>false</code>. The count is reset when <code>abs(distance(last_score, f(...))) &gt; min_dist</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; f = let v = 10
+         () -&gt; v = v / abs(v) - v
+       end; # -9, 8, -7, 6, ...
+
+julia&gt; trigger = Flux.plateau(f, 3; init_score=10, min_dist=18);
+
+
+julia&gt; Flux.@epochs 10 begin
+         trigger() &amp;&amp; break
+       end
+[ Info: Epoch 1
+[ Info: Epoch 2
+[ Info: Epoch 3
+[ Info: Epoch 4</code></pre></div><a class="docs-sourcelink" href="https://github.com/FluxML/Flux.jl/blob/e4f8678f8a389179d173010f6aad75b80189b0eb/src/utils.jl#L683-L710" target="_blank">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../ecosystem/">« The Julia Ecosystem</a><a class="docs-footer-nextpage" href="../performance/">Performance Tips »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label></p><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div><p></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 27 May 2022 04:56">Friday 27 May 2022</span>. Using Julia version 1.6.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></HTML>

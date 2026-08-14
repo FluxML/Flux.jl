@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>GPU Support · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img class="docs-light-only" src="../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../training/training/">Training</a></li><li><a class="tocitem" href="../models/recurrence/">Recurrence</a></li><li class="is-active"><a class="tocitem" href>GPU Support</a><ul class="internal"><li><a class="tocitem" href="#Checking-GPU-Availability"><span>Checking GPU Availability</span></a></li><li><a class="tocitem" href="#Selecting-GPU-backend"><span>Selecting GPU backend</span></a></li><li><a class="tocitem" href="#Basic-GPU-Usage"><span>Basic GPU Usage</span></a></li><li><a class="tocitem" href="#Transferring-Training-Data"><span>Transferring Training Data</span></a></li><li><a class="tocitem" href="#Saving-GPU-Trained-Models"><span>Saving GPU-Trained Models</span></a></li><li><a class="tocitem" href="#Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux"><span>Disabling CUDA or choosing which GPUs are visible to Flux</span></a></li><li><a class="tocitem" href="#Using-device-objects"><span>Using device objects</span></a></li><li><a class="tocitem" href="#Data-movement-across-GPU-devices"><span>Data movement across GPU devices</span></a></li></ul></li><li><a class="tocitem" href="../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../training/reference/">Training API</a></li><li><a class="tocitem" href="../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../training/zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../models/advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>GPU Support</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>GPU Support</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/gpu.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="GPU-Support"><a class="docs-heading-anchor" href="#GPU-Support">GPU Support</a><a id="GPU-Support-1"></a><a class="docs-heading-anchor-permalink" href="#GPU-Support" title="Permalink"></a></h1><p>Starting with v0.14, Flux doesn&#39;t force a specific GPU backend and the corresponding package dependencies on the users.  Thanks to the <a href=" https:/pkgdocs.julialang.org/v1/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions)">package extension mechanism</a> introduced in julia v1.9, Flux conditionally loads GPU specific code once a GPU package is made available (e.g. through <code>using CUDA</code>).</p><p>NVIDIA GPU support requires the packages <code>CUDA.jl</code> and <code>cuDNN.jl</code> to be installed in the environment. In the julia REPL, type <code>] add CUDA, cuDNN</code> to install them. For more details see the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a> readme.</p><p>AMD GPU support is available since Julia 1.9 on systems with ROCm and MIOpen installed. For more details refer to the <a href="https://github.com/JuliaGPU/AMDGPU.jl">AMDGPU.jl</a> repository.</p><p>Metal GPU acceleration is available on Apple Silicon hardware. For more details refer to the <a href="https://github.com/JuliaGPU/Metal.jl">Metal.jl</a> repository. Metal support in Flux is experimental and many features are not yet available.</p><p>In order to trigger GPU support in Flux, you need to call <code>using CUDA</code>, <code>using AMDGPU</code> or <code>using Metal</code> in your code. Notice that for CUDA, explicitly loading also <code>cuDNN</code> is not required, but the package has to be installed in the environment. </p><div class="admonition is-compat"><header class="admonition-header">Flux ≤ 0.13</header><div class="admonition-body"><p>Old versions of Flux automatically installed CUDA.jl to provide GPU support. Starting from Flux v0.14, CUDA.jl is not a dependency anymore and has to be installed manually.</p></div></div><h2 id="Checking-GPU-Availability"><a class="docs-heading-anchor" href="#Checking-GPU-Availability">Checking GPU Availability</a><a id="Checking-GPU-Availability-1"></a><a class="docs-heading-anchor-permalink" href="#Checking-GPU-Availability" title="Permalink"></a></h2><p>By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:</p><pre><code class="language-julia hljs">julia&gt; using CUDA
+
+julia&gt; CUDA.functional()
+true</code></pre><p>For AMD GPU:</p><pre><code class="language-julia hljs">julia&gt; using AMDGPU
+
+julia&gt; AMDGPU.functional()
+true
+
+julia&gt; AMDGPU.functional(:MIOpen)
+true</code></pre><p>For Metal GPU:</p><pre><code class="language-julia hljs">julia&gt; using Metal
+
+julia&gt; Metal.functional()
+true</code></pre><h2 id="Selecting-GPU-backend"><a class="docs-heading-anchor" href="#Selecting-GPU-backend">Selecting GPU backend</a><a id="Selecting-GPU-backend-1"></a><a class="docs-heading-anchor-permalink" href="#Selecting-GPU-backend" title="Permalink"></a></h2><p>Available GPU backends are: <code>CUDA</code>, <code>AMD</code> and <code>Metal</code>.</p><p>Flux relies on <a href="https://github.com/JuliaPackaging/Preferences.jl">Preferences.jl</a> for selecting default GPU backend to use.</p><p>There are two ways you can specify it:</p><ul><li>From the REPL/code in your project, call <code>Flux.gpu_backend!(&quot;AMD&quot;)</code> and restart (if needed) Julia session for the changes to take effect.</li><li>In <code>LocalPreferences.toml</code> file in you project directory specify:</li></ul><pre><code class="language-toml hljs">[Flux]
+gpu_backend = &quot;AMD&quot;</code></pre><p>Current GPU backend can be fetched from <code>Flux.GPU_BACKEND</code> variable:</p><pre><code class="language-julia hljs">julia&gt; Flux.GPU_BACKEND
+&quot;CUDA&quot;</code></pre><p>The current backend will affect the behaviour of methods like the method <code>gpu</code> described below.</p><h2 id="Basic-GPU-Usage"><a class="docs-heading-anchor" href="#Basic-GPU-Usage">Basic GPU Usage</a><a id="Basic-GPU-Usage-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-GPU-Usage" title="Permalink"></a></h2><p>Support for array operations on other hardware backends, like GPUs, is provided by external packages like <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a>, <a href="https://github.com/JuliaGPU/AMDGPU.jl">AMDGPU.jl</a>, and <a href="https://github.com/JuliaGPU/Metal.jl">Metal.jl</a>. Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.</p><p>For example, we can use <code>CUDA.CuArray</code> (with the <code>cu</code> converter) to run our <a href="../models/basics/#man-basics">basic example</a> on an NVIDIA GPU.</p><p>(Note that you need to have CUDA available to use CUDA.CuArray – please see the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a> instructions for more details.)</p><pre><code class="language-julia hljs">using CUDA
+
+W = cu(rand(2, 5)) # a 2×5 CuArray
+b = cu(rand(2))
+
+predict(x) = W*x .+ b
+loss(x, y) = sum((predict(x) .- y).^2)
+
+x, y = cu(rand(5)), cu(rand(2)) # Dummy data
+loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>fmap</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia hljs">d = Dense(10 =&gt; 5, σ)
+d = fmap(cu, d)
+d.weight # CuArray
+d(cu(rand(10))) # CuArray output
+
+m = Chain(Dense(10 =&gt; 5, σ), Dense(5 =&gt; 2), softmax)
+m = fmap(cu, m)
+m(cu(rand(10)))</code></pre><p>As a convenience, Flux provides the <code>gpu</code> function to convert models and data to the GPU if one is available. By default, it&#39;ll do nothing. So, you can safely call <code>gpu</code> on some data or model (as shown below), and the code will not error, regardless of whether the GPU is available or not. If a GPU library (e.g. CUDA) loads successfully, <code>gpu</code> will move data from the CPU to the GPU. As is shown below, this will change the type of something like a regular array to a <code>CuArray</code>.</p><pre><code class="language-julia hljs">julia&gt; using Flux, CUDA
+
+julia&gt; m = Dense(10, 5) |&gt; gpu
+Dense(10 =&gt; 5)      # 55 parameters
+
+julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.066846445
+ ⋮
+ 0.76706964
+
+julia&gt; m(x)
+5-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ -0.99992573
+ ⋮
+ -0.547261</code></pre><p>The analogue <code>cpu</code> is also available for moving models and data back off of the GPU.</p><pre><code class="language-julia hljs">julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32, 1, CUDA.Mem.DeviceBuffer}:
+ 0.8019236
+ ⋮
+ 0.7766742
+
+julia&gt; x |&gt; cpu
+10-element Vector{Float32}:
+ 0.8019236
+ ⋮
+ 0.7766742</code></pre><h2 id="Transferring-Training-Data"><a class="docs-heading-anchor" href="#Transferring-Training-Data">Transferring Training Data</a><a id="Transferring-Training-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Transferring-Training-Data" title="Permalink"></a></h2><p>In order to train the model using the GPU both model and the training data have to be transferred to GPU memory. Moving the data can be done in two different ways:</p><ol><li><p>Iterating over the batches in a <a href="../data/mlutils/#MLUtils.DataLoader"><code>DataLoader</code></a> object transferring each one of the training batches at a time to the GPU. This is recommended for large datasets. Done by hand, it might look like this:</p><pre><code class="language-julia hljs">train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true)
+# ... model definition, optimiser setup
+for epoch in 1:epochs
+    for (x_cpu, y_cpu) in train_loader
+        x = gpu(x_cpu)
+        y = gpu(y_cpu)
+        grads = gradient(m -&gt; loss(m, x, y), model)
+        Flux.update!(opt_state, model, grads[1])
+    end
+end</code></pre><p>Rather than write this out every time, you can just call <code>gpu(::DataLoader)</code>:</p><pre><code class="language-julia hljs">gpu_train_loader = Flux.DataLoader((X, Y), batchsize=64, shuffle=true) |&gt; gpu
+# ... model definition, optimiser setup
+for epoch in 1:epochs
+    for (x, y) in gpu_train_loader
+        grads = gradient(m -&gt; loss(m, x, y), model)
+        Flux.update!(opt_state, model, grads[1])
+    end
+end</code></pre><p>This is equivalent to <code>DataLoader(MLUtils.mapobs(gpu, (X, Y)); keywords...)</code>. Something similar can also be done with <a href="https://cuda.juliagpu.org/stable/usage/memory/#Batching-iterator"><code>CUDA.CuIterator</code></a>, <code>gpu_train_loader = CUDA.CuIterator(train_loader)</code>. However, this only works with a limited number of data types: <code>first(train_loader)</code> should be a tuple (or <code>NamedTuple</code>) of arrays.</p></li><li><p>Transferring all training data to the GPU at once before creating the <code>DataLoader</code>. This is usually performed for smaller datasets which are sure to fit in the available GPU memory.</p><pre><code class="language-julia hljs">gpu_train_loader = Flux.DataLoader((X, Y) |&gt; gpu, batchsize = 32)
+# ...
+for epoch in 1:epochs
+    for (x, y) in gpu_train_loader
+        # ...</code></pre><p>Here <code>(X, Y) |&gt; gpu</code> applies <a href="../models/functors/#Flux.gpu-Tuple{Any}"><code>gpu</code></a> to both arrays, as it recurses into structures.</p></li></ol><h2 id="Saving-GPU-Trained-Models"><a class="docs-heading-anchor" href="#Saving-GPU-Trained-Models">Saving GPU-Trained Models</a><a id="Saving-GPU-Trained-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-GPU-Trained-Models" title="Permalink"></a></h2><p>After the training process is done, one must always transfer the trained model back to the <code>cpu</code> memory scope before serializing or saving to disk. This can be done, as described in the previous section, with:</p><pre><code class="language-julia hljs">model = cpu(model) # or model = model |&gt; cpu</code></pre><p>and then</p><pre><code class="language-julia hljs">using BSON
+# ...
+BSON.@save &quot;./path/to/trained_model.bson&quot; model
+
+# in this approach the cpu-transferred model (referenced by the variable `model`)
+# only exists inside the `let` statement
+let model = cpu(model)
+   # ...
+   BSON.@save &quot;./path/to/trained_model.bson&quot; model
+end
+
+# is equivalent to the above, but uses `key=value` storing directive from BSON.jl
+BSON.@save &quot;./path/to/trained_model.bson&quot; model = cpu(model)</code></pre><p>The reason behind this is that models trained in the GPU but not transferred to the CPU memory scope will expect <code>CuArray</code>s as input. In other words, Flux models expect input data coming from the same kind device in which they were trained on.</p><p>In controlled scenarios in which the data fed to the loaded models is garanteed to be in the GPU there&#39;s no need to transfer them back to CPU memory scope, however in production environments, where artifacts are shared among different processes, equipments or configurations, there is no garantee that the CUDA.jl package will be available for the process performing inference on the model loaded from the disk.</p><h2 id="Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux"><a class="docs-heading-anchor" href="#Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux">Disabling CUDA or choosing which GPUs are visible to Flux</a><a id="Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux-1"></a><a class="docs-heading-anchor-permalink" href="#Disabling-CUDA-or-choosing-which-GPUs-are-visible-to-Flux" title="Permalink"></a></h2><p>Sometimes it is required to control which GPUs are visible to <code>julia</code> on a system with multiple GPUs or disable GPUs entirely. This can be achieved with an environment variable <code>CUDA_VISIBLE_DEVICES</code>.</p><p>To disable all devices:</p><pre><code class="nohighlight hljs">$ export CUDA_VISIBLE_DEVICES=&#39;-1&#39;</code></pre><p>To select specific devices by device id:</p><pre><code class="nohighlight hljs">$ export CUDA_VISIBLE_DEVICES=&#39;0,1&#39;</code></pre><p>More information for conditional use of GPUs in CUDA.jl can be found in its <a href="https://cuda.juliagpu.org/stable/installation/conditional/#Conditional-use">documentation</a>, and information about the specific use of the variable is described in the <a href="https://developer.nvidia.com/blog/cuda-pro-tip-control-gpu-visibility-cuda_visible_devices/">Nvidia CUDA blog post</a>.</p><h2 id="Using-device-objects"><a class="docs-heading-anchor" href="#Using-device-objects">Using device objects</a><a id="Using-device-objects-1"></a><a class="docs-heading-anchor-permalink" href="#Using-device-objects" title="Permalink"></a></h2><p>As a more convenient syntax, Flux allows the usage of GPU <code>device</code> objects which can be used to easily transfer models to GPUs (and defaulting to using the CPU if no GPU backend is available). This syntax has a few advantages including automatic selection of the GPU backend and type stability of data movement. To do this, the <a href="#Flux.get_device"><code>Flux.get_device</code></a> function can be used.</p><p><code>Flux.get_device</code> first checks for a GPU preference, and if possible returns a device for the preference backend. For instance, consider the following example, where we load the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a> package to use an NVIDIA GPU (<code>&quot;CUDA&quot;</code> is the default preference):</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, CUDA;
+
+julia&gt; device = Flux.get_device(; verbose=true)   # returns handle to an NVIDIA GPU
+[ Info: Using backend set in preferences: CUDA.
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia&gt; device.deviceID      # check the id of the GPU
+CuDevice(0): NVIDIA GeForce GTX 1650
+
+julia&gt; model = Dense(2 =&gt; 3);
+
+julia&gt; model.weight     # the model initially lives in CPU memory
+3×2 Matrix{Float32}:
+ -0.984794  -0.904345
+  0.720379  -0.486398
+  0.851011  -0.586942
+
+julia&gt; model = model |&gt; device      # transfer model to the GPU
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+ -0.984794  -0.904345
+  0.720379  -0.486398
+  0.851011  -0.586942
+</code></pre><p>The device preference can also be set via the <a href="@ref"><code>Flux.gpu_backend!</code></a> function. For instance, below we first set our device preference to <code>&quot;CPU&quot;</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux; Flux.gpu_backend!(&quot;CPU&quot;)
+┌ Info: New GPU backend set: CPU.
+└ Restart your Julia session for this change to take effect!</code></pre><p>Then, after restarting the Julia session, <code>Flux.get_device</code> returns a handle to the <code>&quot;CPU&quot;</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, CUDA;    # even if CUDA is loaded, we&#39;ll still get a CPU device
+
+julia&gt; device = Flux.get_device(; verbose=true)   # get a CPU device
+[ Info: Using backend set in preferences: CPU.
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+
+julia&gt; model = Dense(2 =&gt; 3);
+
+julia&gt; model = model |&gt; device
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; model.weight     # no change; model still lives on CPU
+3×2 Matrix{Float32}:
+ -0.942968   0.856258
+  0.440009   0.714106
+ -0.419192  -0.471838</code></pre><p>Clearly, this means that the same code will work for any GPU backend and the CPU. </p><p>If the preference backend isn&#39;t available or isn&#39;t functional, then <a href="#Flux.get_device"><code>Flux.get_device</code></a> looks for a CUDA, AMD or Metal backend, and returns a corresponding device (if the backend is available and functional). Otherwise, a CPU device is returned. In the below example, the GPU preference is <code>&quot;CUDA&quot;</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux;      # preference is CUDA, but CUDA.jl not loaded
+
+julia&gt; device = Flux.get_device(; verbose=true)       # this will resort to automatic device selection
+[ Info: Using backend set in preferences: CUDA.
+┌ Warning: Trying to use backend: CUDA but it&#39;s trigger package is not loaded.
+│ Please load the package and call this function again to respect the preferences backend.
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
+[ Info: Using backend: CPU.
+(::Flux.FluxCPUDevice) (generic function with 1 method)</code></pre><p>For detailed information about how the backend is selected, check the documentation for <a href="#Flux.get_device"><code>Flux.get_device</code></a>.</p><h2 id="Data-movement-across-GPU-devices"><a class="docs-heading-anchor" href="#Data-movement-across-GPU-devices">Data movement across GPU devices</a><a id="Data-movement-across-GPU-devices-1"></a><a class="docs-heading-anchor-permalink" href="#Data-movement-across-GPU-devices" title="Permalink"></a></h2><p>Flux also supports getting handles to specific GPU devices, and transferring models from one GPU device to another GPU device from the same backend. Let&#39;s try it out for NVIDIA GPUs. First, we list all the available devices:</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, CUDA;
+
+julia&gt; CUDA.devices()
+CUDA.DeviceIterator() for 3 devices:
+0. GeForce RTX 2080 Ti
+1. GeForce RTX 2080 Ti
+2. TITAN X (Pascal)
+</code></pre><p>Then, let&#39;s select the device with id <code>0</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; device0 = Flux.get_device(&quot;CUDA&quot;, 0)        # the currently supported values for backend are &quot;CUDA&quot; and &quot;AMD&quot;
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+</code></pre><p>Then, let&#39;s move a simple dense layer to the GPU represented by <code>device0</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; dense_model = Dense(2 =&gt; 3)
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; dense_model = dense_model |&gt; device0;
+
+julia&gt; dense_model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+  0.695662   0.816299
+ -0.204763  -0.10232
+ -0.955829   0.538412
+
+julia&gt; CUDA.device(dense_model.weight)      # check the GPU to which dense_model is attached
+CuDevice(0): GeForce RTX 2080 Ti
+</code></pre><p>Next, we&#39;ll get a handle to the device with id <code>1</code>, and move <code>dense_model</code> to that device:</p><pre><code class="language-julia-repl hljs">julia&gt; device1 = Flux.get_device(&quot;CUDA&quot;, 1)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia&gt; dense_model = dense_model |&gt; device1;    # don&#39;t directly print the model; see warning below
+
+julia&gt; CUDA.device(dense_model.weight)
+CuDevice(1): GeForce RTX 2080 Ti
+</code></pre><p>Due to a limitation in <code>Metal.jl</code>, currently this kind of data movement across devices is only supported for <code>CUDA</code> and <code>AMD</code> backends.</p><div class="admonition is-warning"><header class="admonition-header">Printing models after moving to a different device</header><div class="admonition-body"><p>Due to a limitation in how GPU packages currently work, printing models on the REPL after moving them to a GPU device which is different from the current device will lead to an error.</p></div></div><article class="docstring"><header><a class="docstring-binding" id="Flux.AbstractDevice" href="#Flux.AbstractDevice"><code>Flux.AbstractDevice</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Flux.AbstractDevice &lt;: Function</code></pre><p>An abstract type representing <code>device</code> objects for different GPU backends. The currently supported backends are <code>&quot;CUDA&quot;</code>, <code>&quot;AMD&quot;</code>, <code>&quot;Metal&quot;</code> and <code>&quot;CPU&quot;</code>; the <code>&quot;CPU&quot;</code> backend is the fallback case when no GPU is available. GPU extensions of Flux define subtypes of this type.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L457-L462">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.FluxCPUDevice" href="#Flux.FluxCPUDevice"><code>Flux.FluxCPUDevice</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Flux.FluxCPUDevice &lt;: Flux.AbstractDevice</code></pre><p>A type representing <code>device</code> objects for the <code>&quot;CPU&quot;</code> backend for Flux. This is the fallback case when no GPU is available to Flux.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L486-L490">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.FluxCUDADevice" href="#Flux.FluxCUDADevice"><code>Flux.FluxCUDADevice</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">FluxCUDADevice &lt;: AbstractDevice</code></pre><p>A type representing <code>device</code> objects for the <code>&quot;CUDA&quot;</code> backend for Flux.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L498-L502">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.FluxAMDDevice" href="#Flux.FluxAMDDevice"><code>Flux.FluxAMDDevice</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">FluxAMDDevice &lt;: AbstractDevice</code></pre><p>A type representing <code>device</code> objects for the <code>&quot;AMD&quot;</code> backend for Flux.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L507-L511">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.FluxMetalDevice" href="#Flux.FluxMetalDevice"><code>Flux.FluxMetalDevice</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">FluxMetalDevice &lt;: AbstractDevice</code></pre><p>A type representing <code>device</code> objects for the <code>&quot;Metal&quot;</code> backend for Flux.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L516-L520">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.supported_devices" href="#Flux.supported_devices"><code>Flux.supported_devices</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">Flux.supported_devices()</code></pre><p>Get all supported backends for Flux, in order of preference.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Flux;
+
+julia&gt; Flux.supported_devices()
+(&quot;CUDA&quot;, &quot;AMD&quot;, &quot;Metal&quot;, &quot;CPU&quot;)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L531-L544">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.get_device" href="#Flux.get_device"><code>Flux.get_device</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">Flux.get_device(; verbose=false)::Flux.AbstractDevice</code></pre><p>Returns a <code>device</code> object for the most appropriate backend for the current Julia session. </p><p>First, the function checks whether a backend preference has been set via the <a href="@ref"><code>Flux.gpu_backend!</code></a> function. If so, an attempt is made to load this backend. If the corresponding trigger package has been loaded and the backend is functional, a <code>device</code> corresponding to the given backend is loaded. Otherwise, the backend is chosen automatically. To update the backend preference, use <a href="@ref"><code>Flux.gpu_backend!</code></a>.</p><p>If there is no preference, then for each of the <code>&quot;CUDA&quot;</code>, <code>&quot;AMD&quot;</code>, <code>&quot;Metal&quot;</code> and <code>&quot;CPU&quot;</code> backends in the given order, this function checks whether the given backend has been loaded via the corresponding trigger package, and whether the backend is functional. If so, the <code>device</code> corresponding to the backend is returned. If no GPU backend is available, a <code>Flux.FluxCPUDevice</code> is returned.</p><p>If <code>verbose</code> is set to <code>true</code>, then the function prints informative log messages.</p><p><strong>Examples</strong></p><p>For the example given below, the backend preference was set to <code>&quot;AMD&quot;</code> via the <a href="@ref"><code>gpu_backend!</code></a> function.</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux;
+
+julia&gt; model = Dense(2 =&gt; 3)
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; device = Flux.get_device(; verbose=true)       # this will just load the CPU device
+[ Info: Using backend set in preferences: AMD.
+┌ Warning: Trying to use backend: AMD but it&#39;s trigger package is not loaded.
+│ Please load the package and call this function again to respect the preferences backend.
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:638
+[ Info: Using backend: CPU.
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+
+julia&gt; model = model |&gt; device
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; model.weight
+3×2 Matrix{Float32}:
+ -0.304362  -0.700477
+ -0.861201   0.67825
+ -0.176017   0.234188</code></pre><p>Here is the same example, but using <code>&quot;CUDA&quot;</code>:</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, CUDA;
+
+julia&gt; model = Dense(2 =&gt; 3)
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; device = Flux.get_device(; verbose=true)
+[ Info: Using backend set in preferences: AMD.
+┌ Warning: Trying to use backend: AMD but it&#39;s trigger package is not loaded.
+│ Please load the package and call this function again to respect the preferences backend.
+└ @ Flux ~/fluxml/Flux.jl/src/functor.jl:637
+[ Info: Using backend: CUDA.
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia&gt; model = model |&gt; device
+Dense(2 =&gt; 3)       # 9 parameters
+
+julia&gt; model.weight
+3×2 CuArray{Float32, 2, CUDA.Mem.DeviceBuffer}:
+  0.820013   0.527131
+ -0.915589   0.549048
+  0.290744  -0.0592499</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L547-L610">source</a></section><section><div><pre><code class="nohighlight hljs">Flux.get_device(backend::String, idx::Int = 0)::Flux.AbstractDevice</code></pre><p>Get a device object for a backend specified by the string <code>backend</code> and <code>idx</code>. The currently supported values of <code>backend</code> are <code>&quot;CUDA&quot;</code>, <code>&quot;AMD&quot;</code> and <code>&quot;CPU&quot;</code>. <code>idx</code> must be an integer value between <code>0</code> and the number of available devices.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Flux, CUDA;
+
+julia&gt; CUDA.devices()
+CUDA.DeviceIterator() for 3 devices:
+0. GeForce RTX 2080 Ti
+1. GeForce RTX 2080 Ti
+2. TITAN X (Pascal)
+
+julia&gt; device0 = Flux.get_device(&quot;CUDA&quot;, 0)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia&gt; device0.deviceID
+CuDevice(0): GeForce RTX 2080 Ti
+
+julia&gt; device1 = Flux.get_device(&quot;CUDA&quot;, 1)
+(::Flux.FluxCUDADevice) (generic function with 1 method)
+
+julia&gt; device1.deviceID
+CuDevice(1): GeForce RTX 2080 Ti
+
+julia&gt; cpu_device = Flux.get_device(&quot;CPU&quot;)
+(::Flux.FluxCPUDevice) (generic function with 1 method)
+</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fdcf8d3c456dbe8e87c9f7c9d996f5f9563ee69e/src/functor.jl#L652-L685">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../models/recurrence/">« Recurrence</a><a class="docs-footer-nextpage" href="../saving/">Saving &amp; Loading »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 28 August 2023 10:06">Monday 28 August 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Built-in Layers 📚 · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../">Welcome</a></li><li><a class="tocitem" href="../quickstart/">Quick Start</a></li><li><a class="tocitem" href="../overview/">Fitting a Line</a></li><li><a class="tocitem" href="../basics/">Gradients and Layers</a></li></ul></li><li><span class="tocitem">Building Models</span><ul><li class="is-active"><a class="tocitem" href>Built-in Layers 📚</a><ul class="internal"><li><a class="tocitem" href="#Convolution-and-Pooling-Layers"><span>Convolution and Pooling Layers</span></a></li><li><a class="tocitem" href="#Upsampling-Layers"><span>Upsampling Layers</span></a></li><li><a class="tocitem" href="#Recurrent-Layers"><span>Recurrent Layers</span></a></li><li><a class="tocitem" href="#Other-General-Purpose-Layers"><span>Other General Purpose Layers</span></a></li><li><a class="tocitem" href="#Normalisation-and-Regularisation"><span>Normalisation &amp; Regularisation</span></a></li></ul></li><li><a class="tocitem" href="../recurrence/">Recurrence</a></li><li><a class="tocitem" href="../activation/">Activation Functions 📚</a></li><li><a class="tocitem" href="../nnlib/">NNlib.jl 📚 (<code>softmax</code>, <code>conv</code>, ...)</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../../data/mlutils/">MLUtils.jl 📚 (<code>DataLoader</code>, ...)</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl 📚 (<code>onehot</code>, ...)</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../../training/training/">Training</a></li><li><a class="tocitem" href="../regularisation/">Regularisation</a></li><li><a class="tocitem" href="../losses/">Loss Functions 📚</a></li><li><a class="tocitem" href="../../training/optimisers/">Optimisation Rules 📚</a></li><li><a class="tocitem" href="../../training/callbacks/">Callback Helpers 📚</a></li><li><a class="tocitem" href="../../training/zygote/">Zygote.jl 📚 (<code>gradient</code>, ...)</a></li></ul></li><li><span class="tocitem">Model Tools</span><ul><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference 📚</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation 📚</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested 📚</a></li><li><a class="tocitem" href="../functors/">Functors.jl 📚 (<code>fmap</code>, ...)</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../advanced/">Custom Layers</a></li></ul></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li><li><a class="tocitem" href="../../ecosystem/">Flux&#39;s Ecosystem</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Building Models</a></li><li class="is-active"><a href>Built-in Layers 📚</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Built-in Layers 📚</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/layers.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Basic-Layers"><a class="docs-heading-anchor" href="#Basic-Layers">Basic Layers</a><a id="Basic-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Layers" title="Permalink"></a></h1><p>These core layers form the foundation of almost all neural networks.</p><article class="docstring"><header><a class="docstring-binding" id="Flux.Chain" href="#Flux.Chain"><code>Flux.Chain</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Chain(layers...)
+Chain(name = layer, ...)</code></pre><p>Collects multiple layers / functions to be called in sequence on a given input. Supports indexing and slicing, <code>m[2]</code> or <code>m[1:end-1]</code>, and if names are given, <code>m[:name] == m[1]</code> etc.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; m = Chain(x -&gt; x^2, x -&gt; x+1);
+
+julia&gt; m(5) == 26
+true
+
+julia&gt; m = Chain(Dense(10 =&gt; 5, tanh), Dense(5 =&gt; 2));
+
+julia&gt; x = rand(10, 32);
+
+julia&gt; m(x) == m[2](m[1](x))
+true
+
+julia&gt; m2 = Chain(enc = Chain(Flux.flatten, Dense(10 =&gt; 5, tanh)), 
+                  dec = Dense(5 =&gt; 2));
+
+julia&gt; m2(x) == (m2[:dec] ∘ m2[:enc])(x)
+true</code></pre><p>For large models, there is a special type-unstable path which can reduce compilation times. This can be used by supplying a vector of layers <code>Chain([layer1, layer2, ...])</code>. This feature is somewhat experimental, beware!</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L1-L34">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Dense" href="#Flux.Dense"><code>Flux.Dense</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Dense(in =&gt; out, σ=identity; bias=true, init=glorot_uniform)
+Dense(W::AbstractMatrix, [bias, σ])</code></pre><p>Create a traditional fully connected layer, whose forward pass is given by:</p><pre><code class="nohighlight hljs">y = σ.(W * x .+ bias)</code></pre><p>The input <code>x</code> should be a vector of length <code>in</code>, or batch of vectors represented as an <code>in × N</code> matrix, or any array with <code>size(x,1) == in</code>. The out <code>y</code> will be a vector  of length <code>out</code>, or a batch with <code>size(y) == (out, size(x)[2:end]...)</code></p><p>Keyword <code>bias=false</code> will switch off trainable bias for the layer. The initialisation of the weight matrix is <code>W = init(out, in)</code>, calling the function given to keyword <code>init</code>, with default <a href="../../utilities/#Flux.glorot_uniform"><code>glorot_uniform</code></a>. The weight matrix and/or the bias vector (of length <code>out</code>) may also be provided explicitly.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; d = Dense(5 =&gt; 2)
+Dense(5 =&gt; 2)       # 12 parameters
+
+julia&gt; d(rand(Float32, 5, 64)) |&gt; size
+(2, 64)
+
+julia&gt; d(rand(Float32, 5, 1, 1, 64)) |&gt; size  # treated as three batch dimensions
+(2, 1, 1, 64)
+
+julia&gt; d1 = Dense(ones(2, 5), false, tanh)  # using provided weight matrix
+Dense(5 =&gt; 2, tanh; bias=false)  # 10 parameters
+
+julia&gt; d1(ones(5))
+2-element Vector{Float64}:
+ 0.9999092042625951
+ 0.9999092042625951
+
+julia&gt; Flux.params(d1)  # no trainable bias
+Params([[1.0 1.0 … 1.0 1.0; 1.0 1.0 … 1.0 1.0]])</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L112-L152">source</a></section></article><h2 id="Convolution-and-Pooling-Layers"><a class="docs-heading-anchor" href="#Convolution-and-Pooling-Layers">Convolution and Pooling Layers</a><a id="Convolution-and-Pooling-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Convolution-and-Pooling-Layers" title="Permalink"></a></h2><p>These layers are used to build convolutional neural networks (CNNs).</p><article class="docstring"><header><a class="docstring-binding" id="Flux.Conv" href="#Flux.Conv"><code>Flux.Conv</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Conv(filter, in =&gt; out, σ = identity;
+     stride = 1, pad = 0, dilation = 1, groups = 1, [bias, init])</code></pre><p>Standard convolutional layer. <code>filter</code> is a tuple of integers specifying the size of the convolutional kernel; <code>in</code> and <code>out</code> specify the number of input and output channels.</p><p>Image data should be stored in WHCN order (width, height, channels, batch). In other words, a 100×100 RGB image would be a <code>100×100×3×1</code> array, and a batch of 50 would be a <code>100×100×3×50</code> array. This has <code>N = 2</code> spatial dimensions, and needs a kernel size like <code>(5,5)</code>, a 2-tuple of integers.</p><p>To take convolutions along <code>N</code> feature dimensions, this layer expects as input an array with <code>ndims(x) == N+2</code>, where <code>size(x, N+1) == in</code> is the number of input channels, and <code>size(x, ndims(x))</code> is (as always) the number of observations in a batch. Then:</p><ul><li><code>filter</code> should be a tuple of <code>N</code> integers.</li><li>Keywords <code>stride</code> and <code>dilation</code> should each be either single integer, or a tuple with <code>N</code> integers.</li><li>Keyword <code>pad</code> specifies the number of elements added to the borders of the data array. It can be<ul><li>a single integer for equal padding all around,</li><li>a tuple of <code>N</code> integers, to apply the same padding at begin/end of each spatial dimension,</li><li>a tuple of <code>2*N</code> integers, for asymmetric padding, or</li><li>the singleton <code>SamePad()</code>, to calculate padding such that <code>size(output,d) == size(x,d) / stride</code> (possibly rounded) for each spatial dimension.</li></ul></li><li>Keyword <code>groups</code> is expected to be an <code>Int</code>. It specifies the number of groups to divide a convolution into.</li></ul><p>Keywords to control initialization of the layer:</p><ul><li><code>init</code> - Function used to generate initial weights. Defaults to <code>glorot_uniform</code>.</li><li><code>bias</code> - The initial bias vector is all zero by default. Trainable bias can be disabled entirely by setting this to <code>false</code>, or another vector can be provided such as <code>bias = randn(Float32, out)</code>.</li></ul><p>See also <a href="#Flux.ConvTranspose"><code>ConvTranspose</code></a>, <a href="#Flux.DepthwiseConv"><code>DepthwiseConv</code></a>, <a href="#Flux.CrossCor"><code>CrossCor</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50); # a batch of images
+
+julia&gt; layer = Conv((5,5), 3 =&gt; 7, relu; bias = false)
+Conv((5, 5), 3 =&gt; 7, relu, bias=false)  # 525 parameters
+
+julia&gt; layer(xs) |&gt; size
+(96, 96, 7, 50)
+
+julia&gt; Conv((5,5), 3 =&gt; 7; stride = 2)(xs) |&gt; size
+(48, 48, 7, 50)
+
+julia&gt; Conv((5,5), 3 =&gt; 7; stride = 2, pad = SamePad())(xs) |&gt; size
+(50, 50, 7, 50)
+
+julia&gt; Conv((1,1), 3 =&gt; 7; pad = (20,10,0,0))(xs) |&gt; size
+(130, 100, 7, 50)
+
+julia&gt; Conv((5,5), 3 =&gt; 7; stride = 2, dilation = 4)(xs) |&gt; size
+(42, 42, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L60-L119">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Conv-Tuple{AbstractArray}" href="#Flux.Conv-Tuple{AbstractArray}"><code>Flux.Conv</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia hljs">Conv(weight::AbstractArray, [bias, activation; stride, pad, dilation])</code></pre><p>Constructs a convolutional layer with the given weight and bias. Accepts the same keywords and has the same defaults as <a href="#Flux.Conv"><code>Conv(k::NTuple{N,Integer}, ch::Pair{&lt;:Integer,&lt;:Integer}, σ; ...)</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; weight = rand(3, 4, 5);
+
+julia&gt; bias = zeros(5);
+
+julia&gt; layer = Conv(weight, bias, sigmoid)  # expects 1 spatial dimension
+Conv((3,), 4 =&gt; 5, σ)  # 65 parameters
+
+julia&gt; layer(randn(100, 4, 64)) |&gt; size
+(98, 5, 64)
+
+julia&gt; Flux.params(layer) |&gt; length
+2</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L130-L151">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.AdaptiveMaxPool" href="#Flux.AdaptiveMaxPool"><code>Flux.AdaptiveMaxPool</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">AdaptiveMaxPool(out::NTuple)</code></pre><p>Adaptive max pooling layer. Calculates the necessary window size such that its output has <code>size(y)[1:N] == out</code>.</p><p>Expects as input an array with <code>ndims(x) == N+2</code>, i.e. channel and batch dimensions, after the <code>N</code> feature dimensions, where <code>N = length(out)</code>.</p><p>See also <a href="#Flux.MaxPool"><code>MaxPool</code></a>, <a href="#Flux.AdaptiveMeanPool"><code>AdaptiveMeanPool</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
+
+julia&gt; AdaptiveMaxPool((25, 25))(xs) |&gt; size
+(25, 25, 3, 50)
+
+julia&gt; MaxPool((4,4))(xs) ≈ AdaptiveMaxPool((25, 25))(xs)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L481-L502">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.MaxPool" href="#Flux.MaxPool"><code>Flux.MaxPool</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">MaxPool(window::NTuple; pad=0, stride=window)</code></pre><p>Max pooling layer, which replaces all pixels in a block of size <code>window</code> with one.</p><p>Expects as input an array with <code>ndims(x) == N+2</code>, i.e. channel and batch dimensions, after the <code>N</code> feature dimensions, where <code>N = length(window)</code>.</p><p>By default the window size is also the stride in each dimension. The keyword <code>pad</code> accepts the same options as for the <code>Conv</code> layer, including <code>SamePad()</code>.</p><p>See also <a href="#Flux.Conv"><code>Conv</code></a>, <a href="#Flux.MeanPool"><code>MeanPool</code></a>, <a href="#Flux.AdaptiveMaxPool"><code>AdaptiveMaxPool</code></a>, <a href="#Flux.GlobalMaxPool"><code>GlobalMaxPool</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
+
+julia&gt; m = Chain(Conv((5, 5), 3 =&gt; 7, pad=SamePad()), MaxPool((5, 5), pad=SamePad()))
+Chain(
+  Conv((5, 5), 3 =&gt; 7, pad=2),          # 532 parameters
+  MaxPool((5, 5), pad=2),
+)
+
+julia&gt; m[1](xs) |&gt; size
+(100, 100, 7, 50)
+
+julia&gt; m(xs) |&gt; size
+(20, 20, 7, 50)
+
+julia&gt; layer = MaxPool((5,), pad=2, stride=(3,))  # one-dimensional window
+MaxPool((5,), pad=2, stride=3)
+
+julia&gt; layer(rand(Float32, 100, 7, 50)) |&gt; size
+(34, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L636-L674">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.GlobalMaxPool" href="#Flux.GlobalMaxPool"><code>Flux.GlobalMaxPool</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GlobalMaxPool()</code></pre><p>Global max pooling layer.</p><p>Transforms (w,h,c,b)-shaped input into (1,1,c,b)-shaped output, by performing max pooling on the complete (w,h)-shaped feature maps.</p><p>See also <a href="#Flux.MaxPool"><code>MaxPool</code></a>, <a href="#Flux.GlobalMeanPool"><code>GlobalMeanPool</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);
+
+julia&gt; m = Chain(Conv((3,3), 3 =&gt; 7), GlobalMaxPool());
+
+julia&gt; m(xs) |&gt; size
+(1, 1, 7, 50)
+
+julia&gt; GlobalMaxPool()(rand(3,5,7)) |&gt; size  # preserves 2 dimensions
+(1, 5, 7)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L563-L584">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.AdaptiveMeanPool" href="#Flux.AdaptiveMeanPool"><code>Flux.AdaptiveMeanPool</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">AdaptiveMeanPool(out::NTuple)</code></pre><p>Adaptive mean pooling layer. Calculates the necessary window size such that its output has <code>size(y)[1:N] == out</code>.</p><p>Expects as input an array with <code>ndims(x) == N+2</code>, i.e. channel and batch dimensions, after the <code>N</code> feature dimensions, where <code>N = length(out)</code>.</p><p>See also <a href="#Flux.MaxPool"><code>MaxPool</code></a>, <a href="#Flux.AdaptiveMaxPool"><code>AdaptiveMaxPool</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # batch of 50 RGB images
+
+julia&gt; AdaptiveMeanPool((25, 25))(xs) |&gt; size
+(25, 25, 3, 50)
+
+julia&gt; MeanPool((4,4))(xs) ≈ AdaptiveMeanPool((25, 25))(xs)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L522-L543">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.MeanPool" href="#Flux.MeanPool"><code>Flux.MeanPool</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">MeanPool(window::NTuple; pad=0, stride=window)</code></pre><p>Mean pooling layer, averaging all pixels in a block of size <code>window</code>.</p><p>Expects as input an array with <code>ndims(x) == N+2</code>, i.e. channel and batch dimensions, after the <code>N</code> feature dimensions, where <code>N = length(window)</code>.</p><p>By default the window size is also the stride in each dimension. The keyword <code>pad</code> accepts the same options as for the <code>Conv</code> layer, including <code>SamePad()</code>.</p><p>See also <a href="#Flux.Conv"><code>Conv</code></a>, <a href="#Flux.MaxPool"><code>MaxPool</code></a>, <a href="#Flux.AdaptiveMeanPool"><code>AdaptiveMeanPool</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);
+
+julia&gt; m = Chain(Conv((5,5), 3 =&gt; 7), MeanPool((5,5), pad=SamePad()))
+Chain(
+  Conv((5, 5), 3 =&gt; 7),                 # 532 parameters
+  MeanPool((5, 5), pad=2),
+)
+
+julia&gt; m[1](xs) |&gt; size
+(96, 96, 7, 50)
+
+julia&gt; m(xs) |&gt; size
+(20, 20, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L702-L733">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.GlobalMeanPool" href="#Flux.GlobalMeanPool"><code>Flux.GlobalMeanPool</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GlobalMeanPool()</code></pre><p>Global mean pooling layer.</p><p>Transforms (w,h,c,b)-shaped input into (1,1,c,b)-shaped output, by performing mean pooling on the complete (w,h)-shaped feature maps.</p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);
+
+julia&gt; m = Chain(Conv((3,3), 3 =&gt; 7), GlobalMeanPool());
+
+julia&gt; m(xs) |&gt; size
+(1, 1, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L602-L618">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.DepthwiseConv" href="#Flux.DepthwiseConv"><code>Flux.DepthwiseConv</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">DepthwiseConv(filter, in =&gt; out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])
+DepthwiseConv(weight::AbstractArray, [bias, activation; stride, pad, dilation])</code></pre><p>Return a depthwise convolutional layer, that is a <a href="#Flux.Conv"><code>Conv</code></a> layer with number of groups equal to the number of input channels.</p><p>See <a href="#Flux.Conv"><code>Conv</code></a> for a description of the arguments.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
+
+julia&gt; layer = DepthwiseConv((5,5), 3 =&gt; 6, relu; bias=false)
+Conv((5, 5), 3 =&gt; 6, relu, groups=3, bias=false)  # 150 parameters 
+
+julia&gt; layer(xs) |&gt; size
+(96, 96, 6, 50)
+
+julia&gt; DepthwiseConv((5, 5), 3 =&gt; 9, stride=2, pad=2)(xs) |&gt; size
+(50, 50, 9, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L347-L370">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.ConvTranspose" href="#Flux.ConvTranspose"><code>Flux.ConvTranspose</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">ConvTranspose(filter, in =&gt; out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])</code></pre><p>Standard convolutional transpose layer. <code>filter</code> is a tuple of integers specifying the size of the convolutional kernel, while <code>in</code> and <code>out</code> specify the number of input and output channels.</p><p>Note that <code>pad=SamePad()</code> here tries to ensure <code>size(output,d) == size(x,d) * stride</code>.</p><p>Parameters are controlled by additional keywords, with defaults <code>init=glorot_uniform</code> and <code>bias=true</code>.</p><p>See also <a href="#Flux.Conv"><code>Conv</code></a> for more detailed description of keywords.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
+
+julia&gt; layer = ConvTranspose((5,5), 3 =&gt; 7, relu)
+ConvTranspose((5, 5), 3 =&gt; 7, relu)  # 532 parameters
+
+julia&gt; layer(xs) |&gt; size
+(104, 104, 7, 50)
+
+julia&gt; ConvTranspose((5,5), 3 =&gt; 7, stride=2)(xs) |&gt; size
+(203, 203, 7, 50)
+
+julia&gt; ConvTranspose((5,5), 3 =&gt; 7, stride=3, pad=SamePad())(xs) |&gt; size
+(300, 300, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L224-L254">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.ConvTranspose-Tuple{AbstractArray}" href="#Flux.ConvTranspose-Tuple{AbstractArray}"><code>Flux.ConvTranspose</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia hljs">ConvTranspose(weight::AbstractArray, [bias, activation; stride, pad, dilation, groups])</code></pre><p>Constructs a ConvTranspose layer with the given weight and bias. Accepts the same keywords and has the same defaults as <a href="#Flux.ConvTranspose"><code>ConvTranspose(k::NTuple{N,Integer}, ch::Pair{&lt;:Integer,&lt;:Integer}, σ; ...)</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; weight = rand(3, 4, 5);
+
+julia&gt; bias = zeros(4);
+
+julia&gt; layer = ConvTranspose(weight, bias, sigmoid)
+ConvTranspose((3,), 5 =&gt; 4, σ)  # 64 parameters
+
+julia&gt; layer(randn(100, 5, 64)) |&gt; size  # transposed convolution will increase the dimension size (upsampling)
+(102, 4, 64)
+
+julia&gt; Flux.params(layer) |&gt; length
+2</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L268-L290">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.CrossCor" href="#Flux.CrossCor"><code>Flux.CrossCor</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">CrossCor(filter, in =&gt; out, σ=identity; stride=1, pad=0, dilation=1, [bias, init])</code></pre><p>Standard cross correlation layer. <code>filter</code> is a tuple of integers specifying the size of the convolutional kernel; <code>in</code> and <code>out</code> specify the number of input and output channels.</p><p>Parameters are controlled by additional keywords, with defaults <code>init=glorot_uniform</code> and <code>bias=true</code>.</p><p>See also <a href="#Flux.Conv"><code>Conv</code></a> for more detailed description of keywords.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # a batch of 50 RGB images
+
+julia&gt; layer = CrossCor((5,5), 3 =&gt; 6, relu; bias=false)
+CrossCor((5, 5), 3 =&gt; 6, relu, bias=false)  # 450 parameters
+
+julia&gt; layer(xs) |&gt; size
+(96, 96, 6, 50)
+
+julia&gt; CrossCor((5,5), 3 =&gt; 7, stride=3, pad=(2,0))(xs) |&gt; size
+(34, 32, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L383-L409">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.CrossCor-Tuple{AbstractArray}" href="#Flux.CrossCor-Tuple{AbstractArray}"><code>Flux.CrossCor</code></a> — <span class="docstring-category">Method</span></header><section><div><pre><code class="language-julia hljs">CrossCor(weight::AbstractArray, [bias, activation; stride, pad, dilation])</code></pre><p>Constructs a CrossCor layer with the given weight and bias. Accepts the same keywords and has the same defaults as <a href="#Flux.CrossCor"><code>CrossCor(k::NTuple{N,Integer}, ch::Pair{&lt;:Integer,&lt;:Integer}, σ; ...)</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; weight = rand(3, 4, 5);
+
+julia&gt; bias = zeros(5);
+
+julia&gt; layer = CrossCor(weight, bias, relu)
+CrossCor((3,), 4 =&gt; 5, relu)  # 65 parameters
+
+julia&gt; layer(randn(100, 4, 64)) |&gt; size
+(98, 5, 64)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L419-L438">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.SamePad" href="#Flux.SamePad"><code>Flux.SamePad</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">SamePad()</code></pre><p>Passed as an option to convolutional layers (and friends), this causes the padding to be chosen such that the input and output sizes agree (on the first <code>N</code> dimensions, the kernel or window) when <code>stride==1</code>. When <code>stride≠1</code>, the output size equals <code>ceil(input_size/stride)</code>.</p><p>See also <a href="#Flux.Conv"><code>Conv</code></a>, <a href="#Flux.MaxPool"><code>MaxPool</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; xs = rand(Float32, 100, 100, 3, 50);  # a batch of images
+
+julia&gt; layer = Conv((2,2), 3 =&gt; 7, pad=SamePad())
+Conv((2, 2), 3 =&gt; 7, pad=(1, 0, 1, 0))  # 91 parameters
+
+julia&gt; layer(xs) |&gt; size  # notice how the dimensions stay the same with this padding
+(100, 100, 7, 50)
+
+julia&gt; layer2 = Conv((2,2), 3 =&gt; 7)
+Conv((2, 2), 3 =&gt; 7)  # 91 parameters
+
+julia&gt; layer2(xs) |&gt; size  # the output dimension changes as the padding was not &quot;same&quot;
+(99, 99, 7, 50)
+
+julia&gt; layer3 = Conv((5, 5), 3 =&gt; 7, stride=2, pad=SamePad())
+Conv((5, 5), 3 =&gt; 7, pad=2, stride=2)  # 532 parameters
+
+julia&gt; layer3(xs) |&gt; size  # output size = `ceil(input_size/stride)` = 50
+(50, 50, 7, 50)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/conv.jl#L13-L45">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.flatten" href="#Flux.flatten"><code>Flux.flatten</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">flatten(x::AbstractArray)</code></pre><p>Reshape arbitrarly-shaped input into a matrix-shaped output, preserving the size of the last dimension.</p><p>See also <a href="../../data/mlutils/#MLUtils.unsqueeze"><code>unsqueeze</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; rand(3,4,5) |&gt; Flux.flatten |&gt; size
+(12, 5)
+
+julia&gt; xs = rand(Float32, 10,10,3,7);
+
+julia&gt; m = Chain(Conv((3,3), 3 =&gt; 4, pad=1), Flux.flatten, Dense(400 =&gt; 33));
+
+julia&gt; xs |&gt; m[1] |&gt; size
+(10, 10, 4, 7)
+
+julia&gt; xs |&gt; m |&gt; size
+(33, 7)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/stateless.jl#L1-L24">source</a></section></article><h2 id="Upsampling-Layers"><a class="docs-heading-anchor" href="#Upsampling-Layers">Upsampling Layers</a><a id="Upsampling-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Upsampling-Layers" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Flux.Upsample" href="#Flux.Upsample"><code>Flux.Upsample</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Upsample(mode = :nearest; [scale, size]) 
+Upsample(scale, mode = :nearest)</code></pre><p>An upsampling layer. One of two keywords must be given:</p><p>If <code>scale</code> is a number, this applies to all but the last two dimensions (channel and batch) of the input.  It may also be a tuple, to control dimensions individually. Alternatively, keyword  <code>size</code> accepts a tuple, to directly specify the leading dimensions of the output.</p><p>Currently supported upsampling <code>mode</code>s  and corresponding NNlib&#39;s methods are:</p><ul><li><code>:nearest</code> -&gt; <a href="../nnlib/#NNlib.upsample_nearest"><code>NNlib.upsample_nearest</code></a> </li><li><code>:bilinear</code> -&gt; <a href="../nnlib/#NNlib.upsample_bilinear"><code>NNlib.upsample_bilinear</code></a></li><li><code>:trilinear</code> -&gt; <a href="../nnlib/#NNlib.upsample_trilinear"><code>NNlib.upsample_trilinear</code></a></li></ul><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; m = Upsample(scale = (2, 3))
+Upsample(:nearest, scale = (2, 3))
+
+julia&gt; m(ones(2, 2, 1, 1)) |&gt; size
+(4, 6, 1, 1)
+
+julia&gt; m = Upsample(:bilinear, size = (4, 5))
+Upsample(:bilinear, size = (4, 5))
+
+julia&gt; m(ones(2, 2, 1, 1)) |&gt; size
+(4, 5, 1, 1)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/upsample.jl#L1-L32">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.PixelShuffle" href="#Flux.PixelShuffle"><code>Flux.PixelShuffle</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">PixelShuffle(r::Int)</code></pre><p>Pixel shuffling layer with upscale factor <code>r</code>. Usually used for generating higher resolution images while upscaling them.</p><p>See <a href="../nnlib/#NNlib.pixel_shuffle"><code>NNlib.pixel_shuffle</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; p = PixelShuffle(2);
+
+julia&gt; xs = [2row + col + channel/10 for row in 1:2, col in 1:2, channel in 1:4, n in 1:1]
+2×2×4×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 3.1  4.1
+ 5.1  6.1
+
+[:, :, 2, 1] =
+ 3.2  4.2
+ 5.2  6.2
+
+[:, :, 3, 1] =
+ 3.3  4.3
+ 5.3  6.3
+
+[:, :, 4, 1] =
+ 3.4  4.4
+ 5.4  6.4
+
+julia&gt; p(xs)
+4×4×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 3.1  3.3  4.1  4.3
+ 3.2  3.4  4.2  4.4
+ 5.1  5.3  6.1  6.3
+ 5.2  5.4  6.2  6.4
+
+julia&gt; xs = [3row + col + channel/10 for row in 1:2, col in 1:3, channel in 1:4, n in 1:1]
+2×3×4×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 4.1  5.1  6.1
+ 7.1  8.1  9.1
+
+[:, :, 2, 1] =
+ 4.2  5.2  6.2
+ 7.2  8.2  9.2
+
+[:, :, 3, 1] =
+ 4.3  5.3  6.3
+ 7.3  8.3  9.3
+
+[:, :, 4, 1] =
+ 4.4  5.4  6.4
+ 7.4  8.4  9.4
+
+julia&gt; p(xs)
+4×6×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 4.1  4.3  5.1  5.3  6.1  6.3
+ 4.2  4.4  5.2  5.4  6.2  6.4
+ 7.1  7.3  8.1  8.3  9.1  9.3
+ 7.2  7.4  8.2  8.4  9.2  9.4</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/upsample.jl#L75-L139">source</a></section></article><h2 id="Recurrent-Layers"><a class="docs-heading-anchor" href="#Recurrent-Layers">Recurrent Layers</a><a id="Recurrent-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-Layers" title="Permalink"></a></h2><p>Much like the core layers above, but can be used to process sequence data (as well as other kinds of structured data).</p><article class="docstring"><header><a class="docstring-binding" id="Flux.RNN" href="#Flux.RNN"><code>Flux.RNN</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">RNN(in =&gt; out, σ = tanh)</code></pre><p>The most basic recurrent layer; essentially acts as a <code>Dense</code> layer, but with the output fed back into the input each time step.</p><p>The arguments <code>in</code> and <code>out</code> describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length <code>in</code> or a batch of vectors represented as a <code>in x B</code> matrix and outputs a vector of length <code>out</code> or a batch of vectors of size <code>out x B</code>.</p><p>This constructor is syntactic sugar for <code>Recur(RNNCell(a...))</code>, and so RNNs are stateful. Note that the state shape can change depending on the inputs, and so it is good to <code>reset!</code> the model between inference calls if the batch size changes. See the examples below.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; r = RNN(3 =&gt; 5)
+Recur(
+  RNNCell(3 =&gt; 5, tanh),                # 50 parameters
+)         # Total: 4 trainable arrays, 50 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
+
+julia&gt; r(rand(Float32, 3)) |&gt; size
+(5,)
+
+julia&gt; Flux.reset!(r);
+
+julia&gt; r(rand(Float32, 3, 10)) |&gt; size # batch size of 10
+(5, 10)</code></pre><div class="admonition is-warning"><header class="admonition-header">Batch size changes</header><div class="admonition-body"><p>Failing to call <code>reset!</code> when the input batch size changes can lead to unexpected behavior. See the following example:</p><pre><code class="language-julia hljs">julia&gt; r = RNN(3 =&gt; 5)
+Recur(
+  RNNCell(3 =&gt; 5, tanh),                # 50 parameters
+)         # Total: 4 trainable arrays, 50 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 432 bytes.
+
+julia&gt; r.state |&gt; size
+(5, 1)
+
+julia&gt; r(rand(Float32, 3)) |&gt; size
+(5,)
+
+julia&gt; r.state |&gt; size
+(5, 1)
+
+julia&gt; r(rand(Float32, 3, 10)) |&gt; size # batch size of 10
+(5, 10)
+
+julia&gt; r.state |&gt; size # state shape has changed
+(5, 10)
+
+julia&gt; r(rand(Float32, 3)) |&gt; size # erroneously outputs a length 5*10 = 50 vector.
+(50,)</code></pre></div></div><p><strong>Note:</strong></p><p><code>RNNCell</code>s can be constructed directly by specifying the non-linear function, the <code>Wi</code> and <code>Wh</code> internal matrices, a bias vector <code>b</code>, and a learnable initial state <code>state0</code>. The  <code>Wi</code> and <code>Wh</code> matrices do not need to be the same type, but if <code>Wh</code> is <code>dxd</code>, then <code>Wi</code> should be of shape <code>dxN</code>.</p><p>```julia   julia&gt; using LinearAlgebra</p><p>julia&gt; r = Flux.Recur(Flux.RNNCell(tanh, rand(5, 4), Tridiagonal(rand(5, 5)), rand(5), rand(5, 1)))</p><p>julia&gt; r(rand(4, 10)) |&gt; size # batch size of 10   (5, 10)   ```</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/recurrent.jl#L218-L286">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.LSTM" href="#Flux.LSTM"><code>Flux.LSTM</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">LSTM(in =&gt; out)</code></pre><p><a href="https://www.researchgate.net/publication/13853244_Long_Short-term_Memory">Long Short Term Memory</a> recurrent layer. Behaves like an RNN but generally exhibits a longer memory span over sequences.</p><p>The arguments <code>in</code> and <code>out</code> describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length <code>in</code> or a batch of vectors represented as a <code>in x B</code> matrix and outputs a vector of length <code>out</code> or a batch of vectors of size <code>out x B</code>.</p><p>This constructor is syntactic sugar for <code>Recur(LSTMCell(a...))</code>, and so LSTMs are stateful. Note that the state shape can change depending on the inputs, and so it is good to <code>reset!</code> the model between inference calls if the batch size changes. See the examples below.</p><p>See <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">this article</a> for a good overview of the internals.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; l = LSTM(3 =&gt; 5)
+Recur(
+  LSTMCell(3 =&gt; 5),                     # 190 parameters
+)         # Total: 5 trainable arrays, 190 parameters,
+          # plus 2 non-trainable, 10 parameters, summarysize 1.062 KiB.
+
+julia&gt; l(rand(Float32, 3)) |&gt; size
+(5,)
+
+julia&gt; Flux.reset!(l);
+
+julia&gt; l(rand(Float32, 3, 10)) |&gt; size # batch size of 10
+(5, 10)</code></pre><div class="admonition is-warning"><header class="admonition-header">Batch size changes</header><div class="admonition-body"><p>Failing to call <code>reset!</code> when the input batch size changes can lead to unexpected behavior. See the example in <a href="#Flux.RNN"><code>RNN</code></a>.</p></div></div><p><strong>Note:</strong></p><p><code>LSTMCell</code>s can be constructed directly by specifying the non-linear function, the <code>Wi</code> and <code>Wh</code> internal matrices, a bias vector <code>b</code>, and a learnable initial state <code>state0</code>. The  <code>Wi</code> and <code>Wh</code> matrices do not need to be the same type. See the example in <a href="#Flux.RNN"><code>RNN</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/recurrent.jl#L322-L357">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.GRU" href="#Flux.GRU"><code>Flux.GRU</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">GRU(in =&gt; out)</code></pre><p><a href="https://arxiv.org/abs/1406.1078v1">Gated Recurrent Unit</a> layer. Behaves like an RNN but generally exhibits a longer memory span over sequences. This implements the variant proposed in v1 of the referenced paper.</p><p>The integer arguments <code>in</code> and <code>out</code> describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length <code>in</code> or a batch of vectors represented as a <code>in x B</code> matrix and outputs a vector of length <code>out</code> or a batch of vectors of size <code>out x B</code>.</p><p>This constructor is syntactic sugar for <code>Recur(GRUCell(a...))</code>, and so GRUs are stateful. Note that the state shape can change depending on the inputs, and so it is good to <code>reset!</code> the model between inference calls if the batch size changes. See the examples below.</p><p>See <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">this article</a> for a good overview of the internals.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; g = GRU(3 =&gt; 5)
+Recur(
+  GRUCell(3 =&gt; 5),                      # 140 parameters
+)         # Total: 4 trainable arrays, 140 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 792 bytes.
+
+julia&gt; g(rand(Float32, 3)) |&gt; size
+(5,)
+
+julia&gt; Flux.reset!(g);
+
+julia&gt; g(rand(Float32, 3, 10)) |&gt; size # batch size of 10
+(5, 10)</code></pre><div class="admonition is-warning"><header class="admonition-header">Batch size changes</header><div class="admonition-body"><p>Failing to call <code>reset!</code> when the input batch size changes can lead to unexpected behavior. See the example in <a href="#Flux.RNN"><code>RNN</code></a>.</p></div></div><p><strong>Note:</strong></p><p><code>GRUCell</code>s can be constructed directly by specifying the non-linear function, the <code>Wi</code> and <code>Wh</code> internal matrices, a bias vector <code>b</code>, and a learnable initial state <code>state0</code>. The  <code>Wi</code> and <code>Wh</code> matrices do not need to be the same type. See the example in <a href="#Flux.RNN"><code>RNN</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/recurrent.jl#L393-L429">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.GRUv3" href="#Flux.GRUv3"><code>Flux.GRUv3</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">GRUv3(in =&gt; out)</code></pre><p><a href="https://arxiv.org/abs/1406.1078v3">Gated Recurrent Unit</a> layer. Behaves like an RNN but generally exhibits a longer memory span over sequences. This implements the variant proposed in v3 of the referenced paper.</p><p>The arguments <code>in</code> and <code>out</code> describe the size of the feature vectors passed as input and as output. That is, it accepts a vector of length <code>in</code> or a batch of vectors represented as a <code>in x B</code> matrix and outputs a vector of length <code>out</code> or a batch of vectors of size <code>out x B</code>.</p><p>This constructor is syntactic sugar for <code>Recur(GRUv3Cell(a...))</code>, and so GRUv3s are stateful. Note that the state shape can change depending on the inputs, and so it is good to <code>reset!</code> the model between inference calls if the batch size changes. See the examples below.</p><p>See <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">this article</a> for a good overview of the internals.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; g = GRUv3(3 =&gt; 5)
+Recur(
+  GRUv3Cell(3 =&gt; 5),                    # 140 parameters
+)         # Total: 5 trainable arrays, 140 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 848 bytes.
+
+julia&gt; g(rand(Float32, 3)) |&gt; size
+(5,)
+
+julia&gt; Flux.reset!(g);
+
+julia&gt; g(rand(Float32, 3, 10)) |&gt; size # batch size of 10
+(5, 10)</code></pre><div class="admonition is-warning"><header class="admonition-header">Batch size changes</header><div class="admonition-body"><p>Failing to call <code>reset!</code> when the input batch size changes can lead to unexpected behavior. See the example in <a href="#Flux.RNN"><code>RNN</code></a>.</p></div></div><p><strong>Note:</strong></p><p><code>GRUv3Cell</code>s can be constructed directly by specifying the non-linear function, the <code>Wi</code>, <code>Wh</code>, and <code>Wh_h</code> internal matrices, a bias vector <code>b</code>, and a learnable initial state <code>state0</code>. The  <code>Wi</code>, <code>Wh</code>, and <code>Wh_h</code> matrices do not need to be the same type. See the example in <a href="#Flux.RNN"><code>RNN</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/recurrent.jl#L461-L497">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Recur" href="#Flux.Recur"><code>Flux.Recur</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Recur(cell)</code></pre><p><code>Recur</code> takes a recurrent cell and makes it stateful, managing the hidden state in the background. <code>cell</code> should be a model of the form:</p><pre><code class="nohighlight hljs">h, y = cell(h, x...)</code></pre><p>For example, here&#39;s a recurrent network that keeps a running total of its inputs:</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; accum(h, x) = (h + x, x)
+accum (generic function with 1 method)
+
+julia&gt; rnn = Flux.Recur(accum, 0)
+Recur(accum)
+
+julia&gt; rnn(2) 
+2
+
+julia&gt; rnn(3)
+3
+
+julia&gt; rnn.state
+5</code></pre><p>Folding over a 3d Array of dimensions <code>(features, batch, time)</code> is also supported:</p><pre><code class="language-julia-repl hljs">julia&gt; accum(h, x) = (h .+ x, x)
+accum (generic function with 1 method)
+
+julia&gt; rnn = Flux.Recur(accum, zeros(Int, 1, 1))
+Recur(accum)
+
+julia&gt; rnn([2])
+1-element Vector{Int64}:
+ 2
+
+julia&gt; rnn([3])
+1-element Vector{Int64}:
+ 3
+
+julia&gt; rnn.state
+1×1 Matrix{Int64}:
+ 5
+
+julia&gt; out = rnn(reshape(1:10, 1, 1, :));  # apply to a sequence of (features, batch, time)
+
+julia&gt; out |&gt; size
+(1, 1, 10)
+
+julia&gt; vec(out)
+10-element Vector{Int64}:
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+
+julia&gt; rnn.state
+1×1 Matrix{Int64}:
+ 60</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/recurrent.jl#L56-L127">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.reset!" href="#Flux.reset!"><code>Flux.reset!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">reset!(rnn)</code></pre><p>Reset the hidden state of a recurrent layer back to its original value.</p><p>Assuming you have a <code>Recur</code> layer <code>rnn</code>, this is roughly equivalent to:</p><pre><code class="nohighlight hljs">rnn.state = hidden(rnn.cell)</code></pre><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; r = Flux.RNNCell(relu, ones(1,1), zeros(1,1), ones(1,1), zeros(1,1));  # users should use the RNN wrapper struct instead
+
+julia&gt; y = Flux.Recur(r, ones(1,1));
+
+julia&gt; y.state
+1×1 Matrix{Float64}:
+ 1.0
+
+julia&gt; y(ones(1,1))  # relu(1*1 + 1)
+1×1 Matrix{Float64}:
+ 2.0
+
+julia&gt; y.state
+1×1 Matrix{Float64}:
+ 2.0
+
+julia&gt; Flux.reset!(y)
+1×1 Matrix{Float64}:
+ 0.0
+
+julia&gt; y.state
+1×1 Matrix{Float64}:
+ 0.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/recurrent.jl#L143-L178">source</a></section></article><h2 id="Other-General-Purpose-Layers"><a class="docs-heading-anchor" href="#Other-General-Purpose-Layers">Other General Purpose Layers</a><a id="Other-General-Purpose-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Other-General-Purpose-Layers" title="Permalink"></a></h2><p>These are marginally more obscure than the Basic Layers. But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).</p><article class="docstring"><header><a class="docstring-binding" id="Flux.Maxout" href="#Flux.Maxout"><code>Flux.Maxout</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Maxout(layers...)
+Maxout(f, n_alts)</code></pre><p>This contains a number of internal layers, each of which receives the same input. Its output is the elementwise maximum of the the internal layers&#39; outputs.</p><p>Instead of defining layers individually, you can provide a zero-argument function which constructs them, and the number to construct.</p><p>Maxout over linear dense layers satisfies the univeral approximation theorem. See Goodfellow, Warde-Farley, Mirza, Courville &amp; Bengio &quot;Maxout Networks&quot;  <a href="https://arxiv.org/abs/1302.4389">https://arxiv.org/abs/1302.4389</a>.</p><p>See also <a href="#Flux.Parallel"><code>Parallel</code></a> to reduce with other operators.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; m = Maxout(x -&gt; abs2.(x), x -&gt; x .* 3);
+
+julia&gt; m([-2 -1 0 1 2])
+1×5 Matrix{Int64}:
+ 4  1  0  3  6
+
+julia&gt; m3 = Maxout(() -&gt; Dense(5 =&gt; 7, tanh), 3)
+Maxout(
+  Dense(5 =&gt; 7, tanh),                  # 42 parameters
+  Dense(5 =&gt; 7, tanh),                  # 42 parameters
+  Dense(5 =&gt; 7, tanh),                  # 42 parameters
+)                   # Total: 6 arrays, 126 parameters, 888 bytes.
+
+julia&gt; Flux.outputsize(m3, (5, 11))
+(7, 11)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L253-L287">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.SkipConnection" href="#Flux.SkipConnection"><code>Flux.SkipConnection</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">SkipConnection(layer, connection)</code></pre><p>Create a skip connection which consists of a layer or <code>Chain</code> of consecutive layers and a shortcut connection linking the block&#39;s input to the output through a user-supplied 2-argument callable. The first argument to the callable will be propagated through the given <code>layer</code> while the second is the unchanged, &quot;skipped&quot; input.</p><p>The simplest &quot;ResNet&quot;-type connection is just <code>SkipConnection(layer, +)</code>. Here is a more complicated example:</p><pre><code class="language-julia-repl hljs">julia&gt; m = Conv((3,3), 4 =&gt; 7, pad=(1,1));
+
+julia&gt; x = ones(Float32, 5, 5, 4, 10);
+
+julia&gt; size(m(x)) == (5, 5, 7, 10)
+true
+
+julia&gt; sm = SkipConnection(m, (mx, x) -&gt; cat(mx, x, dims=3));
+
+julia&gt; size(sm(x)) == (5, 5, 11, 10)
+true</code></pre><p>See also <a href="#Flux.Parallel"><code>Parallel</code></a>, <a href="#Flux.Maxout"><code>Maxout</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L309-L335">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Parallel" href="#Flux.Parallel"><code>Flux.Parallel</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Parallel(connection, layers...)
+Parallel(connection; name = layer, ...)</code></pre><p>Create a layer which passes an input array to each path in <code>layers</code>, before reducing the output with <code>connection</code>.</p><p>Called with one input <code>x</code>, this is equivalent to <code>connection([l(x) for l in layers]...)</code>. If called with multiple inputs, one is passed to each layer, thus <code>Parallel(+, f, g)(x, y) = f(x) + g(y)</code>.</p><p>Like <a href="#Flux.Chain"><code>Chain</code></a>, its sub-layers may be given names using the keyword constructor. These can be accessed by indexing: <code>m[1] == m[:name]</code> is the first layer.</p><p>See also <a href="#Flux.SkipConnection"><code>SkipConnection</code></a> which is <code>Parallel</code> with one <code>identity</code>, and <a href="#Flux.Maxout"><code>Maxout</code></a> which reduces by broadcasting <code>max</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; model = Chain(Dense(3 =&gt; 5),
+                     Parallel(vcat, Dense(5 =&gt; 4), Chain(Dense(5 =&gt; 7), Dense(7 =&gt; 4))),
+                     Dense(8 =&gt; 17));
+
+julia&gt; model(rand(3)) |&gt; size
+(17,)
+
+julia&gt; model2 = Parallel(+; α = Dense(10, 2, tanh), β = Dense(5, 2))
+Parallel(
+  +,
+  α = Dense(10 =&gt; 2, tanh),             # 22 parameters
+  β = Dense(5 =&gt; 2),                    # 12 parameters
+)                   # Total: 4 arrays, 34 parameters, 392 bytes.
+
+julia&gt; model2(rand(10), rand(5)) |&gt; size
+(2,)
+
+julia&gt; model2[:α](rand(10)) |&gt; size
+(2,)
+
+julia&gt; model2[:β] == model2[2]
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L452-L494">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Bilinear" href="#Flux.Bilinear"><code>Flux.Bilinear</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Bilinear((in1, in2) =&gt; out, σ=identity; bias=true, init=glorot_uniform)
+Bilinear(W::AbstractArray, [bias, σ])</code></pre><p>Creates a layer which is fully connected between two inputs and the output, and otherwise similar to <a href="#Flux.Dense"><code>Dense</code></a>. Its output, given vectors <code>x</code> &amp; <code>y</code>, is another vector <code>z</code> with, for all <code>i ∈ 1:out</code>:</p><pre><code class="nohighlight hljs">z[i] = σ(x&#39; * W[i,:,:] * y + bias[i])</code></pre><p>If <code>x</code> and <code>y</code> are matrices, then each column of the output <code>z = B(x, y)</code> is of this form, with <code>B</code> the Bilinear layer.</p><p>If the second input <code>y</code> is not given, it is taken to be equal to <code>x</code>, i.e. <code>B(x) == B(x, x)</code></p><p>The two inputs may also be provided as a tuple, <code>B((x, y)) == B(x, y)</code>, which is accepted as the input to a <code>Chain</code>.</p><p>If the two input sizes are the same, <code>in1 == in2</code>, then you may write <code>Bilinear(in =&gt; out, σ)</code>.</p><p>The initialisation works as for <a href="#Flux.Dense"><code>Dense</code></a> layer, with <code>W = init(out, in1, in2)</code>. By default the bias vector is <code>zeros(Float32, out)</code>, option <code>bias=false</code> will switch off trainable bias. Either of these may be provided explicitly.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x, y = randn(Float32, 5, 32), randn(Float32, 5, 32);
+
+julia&gt; B = Flux.Bilinear((5, 5) =&gt; 7)
+Bilinear(5 =&gt; 7)    # 182 parameters
+
+julia&gt; B(x) |&gt; size  # interactions based on one input
+(7, 32)
+
+julia&gt; B(x,y) == B((x,y))  # two inputs, may be given as a tuple
+true
+
+julia&gt; sc = SkipConnection(
+                Chain(Dense(5 =&gt; 20, tanh), Dense(20 =&gt; 9, tanh)),
+                Flux.Bilinear((9, 5) =&gt; 3, bias=false),
+            );  # used as the recombinator, with skip as the second input
+
+julia&gt; sc(x) |&gt; size
+(3, 32)
+
+julia&gt; Flux.Bilinear(rand(4,8,16), false, tanh)  # first dim of weight is the output
+Bilinear((8, 16) =&gt; 4, tanh; bias=false)  # 512 parameters</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L351-L399">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Scale" href="#Flux.Scale"><code>Flux.Scale</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Scale(size::Integer..., σ=identity; bias=true, init=ones32)
+Scale(scale::AbstractArray, [bias, σ])</code></pre><p>Create an element-wise layer, whose forward pass is given by:</p><pre><code class="nohighlight hljs">y = σ.(scale .* x .+ bias)</code></pre><p>This uses <code>.*</code> instead of matrix multiplication <code>*</code> of <a href="#Flux.Dense"><code>Dense</code></a>.</p><p>The learnable scale &amp; bias are initialised <code>init(size...)</code> and <code>zeros32(size...)</code>, with <code>init=ones32</code> by default. You may specify the function <code>init</code>,  turn off trainable bias with <code>bias=false</code>, or provide the array(s) explicitly.</p><p>Used by <a href="#Flux.LayerNorm"><code>LayerNorm</code></a> with <code>affine=true</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; a = Flux.Scale(2)
+Scale(2)            # 4 parameters
+
+julia&gt; Flux.params(a)
+Params([Float32[1.0, 1.0], Float32[0.0, 0.0]])
+
+julia&gt; a([1 2 3])
+2×3 Matrix{Float32}:
+ 1.0  2.0  3.0
+ 1.0  2.0  3.0
+
+julia&gt; b = Flux.Scale([1 2 3 4], false, abs2)
+Scale(1, 4, abs2; bias=false)  # 4 parameters
+
+julia&gt; b([1, 10])
+2×4 Matrix{Int64}:
+   1    4    9    16
+ 100  400  900  1600
+
+julia&gt; Flux.params(b)
+Params([[1 2 3 4]])</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L185-L225">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Embedding" href="#Flux.Embedding"><code>Flux.Embedding</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Embedding(in =&gt; out; init=randn32)</code></pre><p>A lookup table that stores embeddings of dimension <code>out</code>  for a vocabulary of size <code>in</code>, as a trainable matrix.</p><p>This layer is often used to store word embeddings and retrieve them using indices.  The input to the layer can be a vocabulary index in <code>1:in</code>, an array of indices, or the corresponding <a href="../../data/onehot/#OneHotArrays.onehotbatch"><code>onehot encoding</code></a>.</p><p>For indices <code>x</code>, the result is of size <code>(out, size(x)...)</code>, allowing several batch dimensions. For one-hot <code>ohx</code>, the result is of size <code>(out, size(ohx)[2:end]...)</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; emb = Embedding(26 =&gt; 4, init=Flux.identity_init(gain=22))
+Embedding(26 =&gt; 4)  # 104 parameters
+
+julia&gt; emb(2)  # one column of e.weight (here not random!)
+4-element Vector{Float32}:
+  0.0
+ 22.0
+  0.0
+  0.0
+
+julia&gt; emb([3, 1, 20, 14, 4, 15, 7])  # vocabulary indices, in 1:26
+4×7 Matrix{Float32}:
+  0.0  22.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0   0.0  0.0  0.0
+ 22.0   0.0  0.0  0.0   0.0  0.0  0.0
+  0.0   0.0  0.0  0.0  22.0  0.0  0.0
+
+julia&gt; ans == emb(Flux.onehotbatch(&quot;cat&amp;dog&quot;, &#39;a&#39;:&#39;z&#39;, &#39;n&#39;))
+true
+
+julia&gt; emb(rand(1:26, (10, 1, 12))) |&gt; size  # three batch dimensions
+(4, 10, 1, 12)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/basic.jl#L646-L684">source</a></section></article><h2 id="Normalisation-and-Regularisation"><a class="docs-heading-anchor" href="#Normalisation-and-Regularisation">Normalisation &amp; Regularisation</a><a id="Normalisation-and-Regularisation-1"></a><a class="docs-heading-anchor-permalink" href="#Normalisation-and-Regularisation" title="Permalink"></a></h2><p>These layers don&#39;t affect the structure of the network but may improve training times or reduce overfitting.</p><article class="docstring"><header><a class="docstring-binding" id="Flux.normalise" href="#Flux.normalise"><code>Flux.normalise</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">normalise(x; dims=ndims(x), ϵ=1e-5)</code></pre><p>Normalise <code>x</code> to mean 0 and standard deviation 1 across the dimension(s) given by <code>dims</code>. Per default, <code>dims</code> is the last dimension.  <code>ϵ</code> is a small additive factor added to the denominator for numerical stability.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Statistics
+
+julia&gt; x = [9, 10, 20, 60];
+
+julia&gt; y = Flux.normalise(x);
+
+julia&gt; isapprox(std(y), 1, atol=0.2) &amp;&amp; std(y) != std(x)
+true
+
+julia&gt; x = rand(1:100, 10, 2);
+
+julia&gt; y = Flux.normalise(x, dims=1);
+
+julia&gt; isapprox(std(y, dims=1), ones(1, 2), atol=0.2) &amp;&amp; std(y, dims=1) != std(x, dims=1)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/stateless.jl#L29-L54">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.BatchNorm" href="#Flux.BatchNorm"><code>Flux.BatchNorm</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">BatchNorm(channels::Integer, λ=identity;
+          initβ=zeros32, initγ=ones32,
+          affine = true, track_stats = true,
+          ϵ=1f-5, momentum= 0.1f0)</code></pre><p><a href="https://arxiv.org/abs/1502.03167">Batch Normalization</a> layer. <code>channels</code> should be the size of the channel dimension in your data (see below).</p><p>Given an array with <code>N</code> dimensions, call the <code>N-1</code>th the channel dimension. For a batch of feature vectors this is just the data dimension, for <code>WHCN</code> images it&#39;s the usual channel dimension.</p><p><code>BatchNorm</code> computes the mean and variance for each <code>D_1×...×D_{N-2}×1×D_N</code> input slice and normalises the input accordingly.</p><p>If <code>affine=true</code>, it also applies  a shift and a rescale to the input through to learnable per-channel bias β and scale γ parameters.</p><p>After normalisation, elementwise activation <code>λ</code> is applied.</p><p>If <code>track_stats=true</code>, accumulates mean and var statistics in training phase that will be used to renormalize the input in test phase.</p><p>Use <a href="#Flux.testmode!"><code>testmode!</code></a> during inference.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">julia&gt; using Statistics
+
+julia&gt; xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
+
+julia&gt; m = BatchNorm(3);
+
+julia&gt; Flux.trainmode!(m);
+
+julia&gt; isapprox(std(m(xs)), 1, atol=0.1) &amp;&amp; std(xs) != std(m(xs))
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L285-L324">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Dropout" href="#Flux.Dropout"><code>Flux.Dropout</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">Dropout(p; dims=:, rng = default_rng_value())</code></pre><p>Dropout layer.</p><p>While training, for each input, this layer either sets that input to <code>0</code> (with probability <code>p</code>) or scales it by <code>1 / (1 - p)</code>. To apply dropout along certain dimension(s), specify the  <code>dims</code> keyword. e.g. <code>Dropout(p; dims = 3)</code> will randomly zero out entire channels on WHCN input (also called 2D dropout). This is used as a regularisation, i.e. it reduces overfitting during  training.</p><p>In the forward pass, this layer applies the <a href="#Flux.dropout"><code>Flux.dropout</code></a> function. See that for more details.</p><p>Specify <code>rng</code> to use a custom RNG instead of the default. Custom RNGs are only supported on the CPU.</p><p>Does nothing to the input once <a href="#Flux.testmode!"><code>Flux.testmode!</code></a> is <code>true</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; m = Chain(Dense(1 =&gt; 1), Dropout(1));
+
+julia&gt; Flux.trainmode!(m);
+
+julia&gt; y = m([1]);
+
+julia&gt; y == [0]
+true
+
+julia&gt; m = Chain(Dense(1000 =&gt; 1000), Dropout(0.5));
+
+julia&gt; Flux.trainmode!(m);
+
+julia&gt; y = m(ones(1000));
+
+julia&gt; isapprox(count(==(0), y) / length(y), 0.5, atol=0.1)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L53-L92">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.dropout" href="#Flux.dropout"><code>Flux.dropout</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">dropout([rng = rng_from_array(x)], x, p; dims=:, active=true)</code></pre><p>The dropout function. If <code>active</code> is <code>true</code>, for each input, either sets that input to <code>0</code> (with probability <code>p</code>) or scales it by <code>1 / (1 - p)</code>. <code>dims</code> specifies the unbroadcasted dimensions, e.g. <code>dims=1</code> applies dropout along columns and <code>dims=2</code> along rows. If <code>active</code> is <code>false</code>, it just returns the input <code>x</code>.</p><p>Specify <code>rng</code> for custom RNGs instead of the default RNG. Note that custom RNGs are only supported on the CPU.</p><p>Warning: when using this function, you have to manually manage the activation state. Usually in fact, dropout is used while training but is deactivated in the inference phase. This can be automatically managed using the <a href="#Flux.Dropout"><code>Dropout</code></a> layer instead of the <code>dropout</code> function.</p><p>The <a href="#Flux.Dropout"><code>Dropout</code></a> layer is what you should use in most scenarios.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L12-L31">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.AlphaDropout" href="#Flux.AlphaDropout"><code>Flux.AlphaDropout</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">AlphaDropout(p; rng = default_rng_value())</code></pre><p>A dropout layer. Used in <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>. The AlphaDropout layer ensures that mean and variance of activations remain the same as before.</p><p>Does nothing to the input once <a href="#Flux.testmode!"><code>testmode!</code></a> is true.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Statistics
+
+julia&gt; x = randn(1000,1);
+
+julia&gt; m = Chain(Dense(1000 =&gt; 1000, selu), AlphaDropout(0.2));
+
+julia&gt; Flux.trainmode!(m);
+
+julia&gt; y = m(x);
+
+julia&gt; isapprox(std(x), std(y), atol=0.2)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L123-L148">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.LayerNorm" href="#Flux.LayerNorm"><code>Flux.LayerNorm</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">LayerNorm(size..., λ=identity; affine=true, ϵ=1fe-5)</code></pre><p>A <a href="https://arxiv.org/abs/1607.06450">normalisation layer</a> designed to be used with recurrent hidden states. The argument <code>size</code> should be an integer or a tuple of integers. In the forward pass, the layer normalises the mean and standard deviation of the input, then applies the elementwise activation <code>λ</code>. The input is normalised along the first <code>length(size)</code> dimensions for tuple <code>size</code>, and along the first dimension for integer <code>size</code>. The input is expected to have first dimensions&#39; size equal to <code>size</code>.</p><p>If <code>affine=true</code>, it also applies a learnable shift and rescaling using the <a href="#Flux.Scale"><code>Scale</code></a> layer.</p><p>See also <a href="#Flux.BatchNorm"><code>BatchNorm</code></a>, <a href="#Flux.InstanceNorm"><code>InstanceNorm</code></a>, <a href="#Flux.GroupNorm"><code>GroupNorm</code></a>, and <a href="#Flux.normalise"><code>normalise</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Statistics
+
+julia&gt; xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
+
+julia&gt; m = LayerNorm(3);
+
+julia&gt; y = m(xs);
+
+julia&gt; isapprox(std(y, dims=1:3), ones(1, 1, 1, 2), atol=0.1) &amp;&amp; std(y, dims=1:3) != std(xs, dims=1:3)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L181-L211">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.InstanceNorm" href="#Flux.InstanceNorm"><code>Flux.InstanceNorm</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">InstanceNorm(channels::Integer, λ=identity;
+             initβ=zeros32, initγ=ones32,
+             affine=false, track_stats=false,
+             ϵ=1f-5, momentum=0.1f0)</code></pre><p><a href="https://arxiv.org/abs/1607.08022">Instance Normalization</a> layer. <code>channels</code> should be the size of the channel dimension in your data (see below).</p><p>Given an array with <code>N &gt; 2</code> dimensions, call the <code>N-1</code>th the channel dimension. For <code>WHCN</code> images it&#39;s the usual channel dimension.</p><p><code>InstanceNorm</code> computes the mean and variance for each <code>D_1×...×D_{N-2}×1×1</code> input slice and normalises the input accordingly.</p><p>If <code>affine=true</code>, it also applies  a shift and a rescale to the input through to learnable per-channel bias <code>β</code> and scale <code>γ</code> parameters.</p><p>If <code>track_stats=true</code>, accumulates mean and var statistics in training phase that will be used to renormalize the input in test phase.</p><p><strong>Warning</strong>: the defaults for <code>affine</code> and <code>track_stats</code> used to be <code>true</code> in previous Flux versions (&lt; v0.12).</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Statistics
+
+julia&gt; xs = rand(3, 3, 3, 2);  # a batch of 2 images, each having 3 channels
+
+julia&gt; m = InstanceNorm(3);
+
+julia&gt; y = m(xs);
+
+julia&gt; isapprox(std(y, dims=1:2), ones(1, 1, 3, 2), atol=0.2) &amp;&amp; std(y, dims=1:2) != std(xs, dims=1:2)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L377-L414">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.GroupNorm" href="#Flux.GroupNorm"><code>Flux.GroupNorm</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GroupNorm(channels::Integer, G::Integer, λ=identity;
+          initβ=zeros32, initγ=ones32,
+          affine=true, track_stats=false,
+          ϵ=1f-5, momentum=0.1f0)</code></pre><p><a href="https://arxiv.org/abs/1803.08494">Group Normalization</a> layer.</p><p><code>chs</code> is the number of channels, the channel dimension of your input. For an array of N dimensions, the <code>N-1</code>th index is the channel dimension.</p><p><code>G</code> is the number of groups along which the statistics are computed. The number of channels must be an integer multiple of the number of groups.</p><p><code>channels</code> should be the size of the channel dimension in your data (see below).</p><p>Given an array with <code>N &gt; 2</code> dimensions, call the <code>N-1</code>th the channel dimension. For <code>WHCN</code> images it&#39;s the usual channel dimension.</p><p>If <code>affine=true</code>, it also applies  a shift and a rescale to the input through to learnable per-channel bias <code>β</code> and scale <code>γ</code> parameters.</p><p>If <code>track_stats=true</code>, accumulates mean and var statistics in training phase that will be used to renormalize the input in test phase.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using Statistics
+
+julia&gt; xs = rand(3, 3, 4, 2);  # a batch of 2 images, each having 4 channels
+
+julia&gt; m = GroupNorm(4, 2);
+
+julia&gt; y = m(xs);
+
+julia&gt; isapprox(std(y[:, :, 1:2, 1]), 1, atol=0.1) &amp;&amp; std(xs[:, :, 1:2, 1]) != std(y[:, :, 1:2, 1])
+true
+
+julia&gt; isapprox(std(y[:, :, 3:4, 2]), 1, atol=0.1) &amp;&amp; std(xs[:, :, 3:4, 2]) != std(y[:, :, 3:4, 2])
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/layers/normalise.jl#L471-L512">source</a></section></article><h3 id="Testmode"><a class="docs-heading-anchor" href="#Testmode">Testmode</a><a id="Testmode-1"></a><a class="docs-heading-anchor-permalink" href="#Testmode" title="Permalink"></a></h3><p>Many normalisation layers behave differently under training and inference (testing). By default, Flux will automatically determine when a layer evaluation is part of training or inference. Still, depending on your use case, it may be helpful to manually specify when these layers should be treated as being trained or not. For this, Flux provides <code>Flux.testmode!</code>. When called on a model (e.g. a layer or chain of layers), this function will place the model into the mode specified.</p><article class="docstring"><header><a class="docstring-binding" id="Flux.testmode!" href="#Flux.testmode!"><code>Flux.testmode!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">testmode!(m, mode = true)</code></pre><p>Set a layer or model&#39;s test mode (see below). Using <code>:auto</code> mode will treat any gradient computation as training.</p><p><em>Note</em>: if you manually set a model into test mode, you need to manually place it back into train mode during training phase.</p><p>Possible values include:</p><ul><li><code>false</code> for training</li><li><code>true</code> for testing</li><li><code>:auto</code> or <code>nothing</code> for Flux to detect the mode automatically</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/functor.jl#L7-L20">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.trainmode!" href="#Flux.trainmode!"><code>Flux.trainmode!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">trainmode!(m, mode = true)</code></pre><p>Set a layer of model&#39;s train mode (see below). Symmetric to <a href="#Flux.testmode!"><code>testmode!</code></a> (i.e. <code>trainmode!(m, mode) == testmode!(m, !mode)</code>).</p><p><em>Note</em>: if you manually set a model into train mode, you need to manually place it into test mode during testing phase.</p><p>Possible values include:</p><ul><li><code>true</code> for training</li><li><code>false</code> for testing</li><li><code>:auto</code> or <code>nothing</code> for Flux to detect the mode automatically</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/8b5db7b6f5eb3b0374d2a8d4b4e91cf38ceceb20/src/functor.jl#L23-L36">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basics/">« Gradients and Layers</a><a class="docs-footer-nextpage" href="../recurrence/">Recurrence »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 24 November 2022 15:02">Thursday 24 November 2022</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
