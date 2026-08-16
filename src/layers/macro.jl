@@ -15,6 +15,8 @@ The optional argument `showtype` can take any of the following values:
 
 - `:expand` (default): This will expand the representation of container types like `Chain`, 
    while maintaining a compat representation of types like `Dense` containing only arrays.
+- `:named`: Like `:expand`, but displays fieldnames as `field = value` in the expanded representation.
+   This is useful for container types whose children have meaningful names (e.g. `cell`, `layer`).
 - `:noexpand`: This is to be used in case your type contains other layers but you want to keep the representation simple.
 - `:ignore`: To opt out of the pretty printing.
 
@@ -66,10 +68,13 @@ function _layer_macro(exs...)
   elseif exs[1] == QuoteNode(:noexpand)
     push!(out.args, _macro_layer_show(esc(exs[2])))
     exs[2:end]
+  elseif exs[1] == QuoteNode(:named)
+    push!(out.args, _macro_named_show(esc(exs[2])))
+    exs[2:end]
   elseif exs[1] == QuoteNode(:ignore)
     exs[2:end]
   elseif exs[1] isa QuoteNode
-    error("`@layer` accepts only the options `:ignore`, `:noexpand`, and `:expand` before the layer type (to control `show`).")
+    error("`@layer` accepts only the options `:ignore`, `:noexpand`, `:named`, and `:expand` before the layer type (to control `show`).")
   else
     push!(out.args, _macro_big_show(esc(exs[1])))
     exs

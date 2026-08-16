@@ -4,6 +4,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+- `@layer :named MyModel` is a new show option that displays fieldnames in the expanded pretty-print (e.g. `cell = RNNCell(...)` instead of just `RNNCell(...)`) ([#2543](https://github.com/FluxML/Flux.jl/issues/2543)).
 - `Dense` now handles inputs with a zero-sized batch dimension (e.g. `Dense(4 => 5)(randn(Float32, 4, 0, 6))`), returning a correctly-shaped empty array instead of an error or a wrong shape ([#2407](https://github.com/FluxML/Flux.jl/issues/2407)).
 - Fix stack overflow when applying f16/f32/f64 or cpu/gpu to empty structs declared with Flux.@layer.
 - `Conv`, `CrossCor` and `DepthwiseConv` now accept a `pad_mode` keyword that controls how the border is filled: `:zeros` (default), `:circular`, `:reflect`, `:replicate`, or `:symmetric`. This mirrors PyTorch's `padding_mode` and adds support for periodic (circular) and other non-zero paddings ([#1917](https://github.com/FluxML/Flux.jl/issues/1917)).

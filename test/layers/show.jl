@@ -88,3 +88,17 @@ Flux.@layer NoFields
   str = repr("text/plain", Chain(Dense(1=>1), Dense(1=>1), NoFields()))
   @test occursin("4 arrays, 4 parameters", str)
 end
+
+# @layer :named shows fieldnames in expanded output
+struct NamedContainer; inner; extra; end
+Flux.@layer :named NamedContainer
+
+@testset "named layer printing" begin
+  # Custom type with :named
+  nc = NamedContainer(Dense(2, 3), Dense(3, 4))
+  str = repr("text/plain", nc)
+  @test occursin("inner = Dense(2 => 3)", str)
+  @test occursin("extra = Dense(3 => 4)", str)
+
+
+end
