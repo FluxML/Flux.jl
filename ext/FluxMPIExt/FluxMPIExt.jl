@@ -13,34 +13,40 @@ function DistributedUtils.__initialize(
         force_amdgpu::Bool=false, force::Bool=false)
 
     if !force && !MPI.Initialized()
-        if haskey(ENV, "PMIX_RANK")
-            error(
-                "MPI backend initialization failed: Found PMIX_RANK in " *
-                "environment, but Julia's default MPICH_jll uses PMI2. " *
-                "The runtime environment uses an unsupported PMI version " *
-                "(PMIx), which will cause a hard abort in MPI.Init(). " *
-                "Please launch your job with a PMI2-compatible launcher " *
-                "(e.g., `srun --mpi=pmi2 ...`) or rebuild MPI.jl with " *
-                "your system MPI. To bypass this check, pass `force=true` " *
-                "to `initialize(MPIBackend; force=true)`."
-            )
-        elseif haskey(ENV, "OMPI_COMM_WORLD_RANK")
-            error(
-                "MPI backend initialization failed: Found " *
-                "OMPI_COMM_WORLD_RANK in environment, but Julia's " *
-                "default MPICH_jll expects MPICH. You appear to have " *
-                "launched with OpenMPI's mpirun, but loaded MPICH_jll. " *
-                "Please launch with an MPICH-compatible launcher or " *
-                "rebuild MPI.jl with OpenMPI. To bypass this check, pass " *
-                "`force=true` to `initialize(MPIBackend; force=true)`."
-            )
-        elseif haskey(ENV, "SLURM_JOB_ID") &&
-               !any(startswith(k, "PMI2") for k in keys(ENV))
+        is_openmpi = MPI.MPI_LIBRARY == "OpenMPI"
+        if !is_openmpi
+            if haskey(ENV, "PMIX_RANK")
+                error(
+                    "MPI backend initialization failed: Found PMIX_RANK in " *
+                    "environment, but the loaded MPI library ($(MPI.MPI_LIBRARY)) " *
+                    "is not OpenMPI and expects PMI2. The runtime environment " *
+                    "uses an unsupported PMI version (PMIx), which will cause " *
+                    "a hard abort in MPI.Init(). Please launch your job with " *
+                    "a PMI2-compatible launcher (e.g., `srun --mpi=pmi2 ...`) " *
+                    "or rebuild MPI.jl with your system MPI. To bypass this " *
+                    "check, pass `force=true` to `initialize(MPIBackend; force=true)`."
+                )
+            elseif haskey(ENV, "OMPI_COMM_WORLD_RANK")
+                error(
+                    "MPI backend initialization failed: Found " *
+                    "OMPI_COMM_WORLD_RANK in environment, but the loaded " *
+                    "MPI library ($(MPI.MPI_LIBRARY)) is not OpenMPI. You " *
+                    "appear to have launched with OpenMPI's mpirun, which " *
+                    "mismatches the loaded MPI library. Please launch with " *
+                    "a compatible launcher or rebuild MPI.jl with OpenMPI. " *
+                    "To bypass this check, pass `force=true` to " *
+                    "`initialize(MPIBackend; force=true)`."
+                )
+            end
+        end
+        if haskey(ENV, "SLURM_JOB_ID") &&
+           !any(startswith(k, "PMI2") for k in keys(ENV)) &&
+           !is_openmpi
             @warn(
                 "No PMI2 environment variables found inside a Slurm " *
-                "allocation. Julia's default MPICH_jll uses PMI2. If " *
-                "`MPI.Init()` aborts or hangs, ensure you launched " *
-                "with `srun --mpi=pmi2`."
+                "allocation. The loaded MPI library ($(MPI.MPI_LIBRARY)) " *
+                "is not OpenMPI and expects PMI2. If `MPI.Init()` aborts " *
+                "or hangs, ensure you launched with `srun --mpi=pmi2`."
             )
         end
     end
