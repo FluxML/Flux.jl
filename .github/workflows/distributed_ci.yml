@@ -1,0 +1,79 @@
+name: Distributed Data Parallel (DDP) Tests
+
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+
+jobs:
+  mpi_fast:
+    name: MPI DDP Correctness (2 Ranks)
+    runs-on: ubuntu-latest
+    env:
+      FLUX_TEST_DISTRIBUTED_MPI: "true"
+      JULIA_MPI_TEST_NPROCS: "2"
+      FLUX_TEST_DISTRIBUTED_TIMEOUT: "1200"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Install MPI
+        run: sudo apt-get update && sudo apt-get install -y openmpi-bin libopenmpi-dev
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Install MPIPreferences and use system binary
+        run: |
+          julia --project=test -e '
+            using Pkg;
+            Pkg.add("MPIPreferences");
+            using MPIPreferences;
+            MPIPreferences.use_system_binary()
+          '
+      - name: Run Distributed Tests
+        run: |
+          julia --project=test -e 'using Pkg; Pkg.instantiate()'
+          julia --project=test -e 'using MPI; MPI.install_mpiexecjl()'
+          julia --project=test test/ext_distributed/runtests.jl mpi
+        timeout-minutes: 20
+
+  mpi_edge:
+    name: MPI DDP Sharding & Asymmetry (4 Ranks)
+    runs-on: ubuntu-latest
+    env:
+      FLUX_TEST_DISTRIBUTED_MPI: "true"
+      JULIA_MPI_TEST_NPROCS: "4"
+      FLUX_TEST_DISTRIBUTED_TIMEOUT: "1200"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Install MPI
+        run: sudo apt-get update && sudo apt-get install -y openmpi-bin libopenmpi-dev
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Install MPIPreferences and use system binary
+        run: |
+          julia --project=test -e '
+            using Pkg;
+            Pkg.add("MPIPreferences");
+            using MPIPreferences;
+            MPIPreferences.use_system_binary()
+          '
+      - name: Run Distributed Tests (Edge cases)
+        run: |
+          julia --project=test -e 'using Pkg; Pkg.instantiate()'
+          julia --project=test -e 'using MPI; MPI.install_mpiexecjl()'
+          julia --project=test test/ext_distributed/runtests.jl mpi
+        timeout-minutes: 20
+
+  # Hardware NCCL CI job would go here, currently disabled on standard github runners
+  # nccl_hardware:
+  #   name: NCCL Native Correctness (2 GPUs)
+  #   runs-on: some-gpu-runner
+  #   env:
+  #     FLUX_TEST_DISTRIBUTED_NCCL: "true"
+  #     JULIA_MPI_TEST_NPROCS: "2"
+  #   steps:
+  #     ...

@@ -17,7 +17,7 @@ using ParallelTestRunner
 const FLUX_TEST_AMDGPU    = get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
 const FLUX_TEST_CPU       = get(ENV, "FLUX_TEST_CPU",    "true")  == "true"
 const FLUX_TEST_CUDA      = get(ENV, "FLUX_TEST_CUDA",   "false") == "true"
-const FLUX_TEST_DIST_MPI  = get(ENV, "FLUX_TEST_DISTRIBUTED_MPI",  Sys.islinux() ? "true" : "false") == "true"
+const FLUX_TEST_DIST_MPI  = get(ENV, "FLUX_TEST_DISTRIBUTED_MPI",  "false") == "true"
 const FLUX_TEST_DIST_NCCL = get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "true"
 const FLUX_TEST_ENZYME    = get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
 const FLUX_TEST_METAL     = get(ENV, "FLUX_TEST_METAL",  "false") == "true"
