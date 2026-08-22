@@ -21,6 +21,7 @@ jobs:
         with:
           version: '1'
       - name: Install MPI
+        timeout-minutes: 5
         run: sudo apt-get update && sudo apt-get install -y openmpi-bin libopenmpi-dev
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install MPIPreferences and use system binary
@@ -51,6 +52,7 @@ jobs:
         with:
           version: '1'
       - name: Install MPI
+        timeout-minutes: 5
         run: sudo apt-get update && sudo apt-get install -y openmpi-bin libopenmpi-dev
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install MPIPreferences and use system binary
