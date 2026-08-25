@@ -9,6 +9,17 @@
     end
 end
 
+@testset "loss gradients" begin
+    @testset "Enzyme grad check $loss" for loss in ALL_LOSSES
+        ŷ = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+        y = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+
+        gz = only(Flux.gradient(ŷ -> loss(ŷ, y), AutoZygote(), ŷ))
+        ge = first(Flux.gradient(loss, AutoEnzyme(), ŷ, Const(y)))
+        @test ge ≈ gz rtol=1e-4 atol=1e-4
+    end
+end
+
 @testset "gradient, withgradient, Duplicated" begin
     # Tests above are about how Enzyme digests Flux layers.
     # Tests here are just the interface Flux.gradient(f, Duplicated(model)) etc.
