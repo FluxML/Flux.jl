@@ -1,28 +1,10 @@
 using Test
 using Random
 using MLUtils
-using Flux
-using Flux: DistributedUtils, MPIBackend, NCCLBackend
 
-backend_string = ARGS[1]
-
-if backend_string == "mpi"
-    import MPI
-    backend_type = MPIBackend
-elseif backend_string == "nccl"
-    import MPI, NCCL, CUDA
-    backend_type = NCCLBackend
-else
-    error("unsupported backend: $backend_string")
-end
+include(joinpath(@__DIR__, "distributed_setup.jl"))
 
 rng = Xoshiro(1234)
-
-DistributedUtils.initialize(backend_type)
-backend = DistributedUtils.get_distributed_backend(backend_type)
-
-rank = DistributedUtils.local_rank(backend)
-tworkers = DistributedUtils.total_workers(backend)
 
 # Test 1: Evenly divisible dataset (no padding needed)
 data_even = randn(rng, Float32, 4 * tworkers)

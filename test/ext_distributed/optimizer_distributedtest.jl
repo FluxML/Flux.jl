@@ -1,25 +1,10 @@
 using Test
 using Flux
-using Flux: DistributedUtils, MPIBackend, NCCLBackend
 using Optimisers
 
-
-backend_string = ARGS[1]
-
-if backend_string == "mpi"
-    import MPI
-    const backend_type = MPIBackend
-elseif backend_string == "nccl"
-    import MPI, NCCL, CUDA
-    const backend_type = NCCLBackend
-else
-    error("unsupported backend: $backend_string")
-end
+include(joinpath(@__DIR__, "distributed_setup.jl"))
 
 const dev = Flux.cpu
-
-DistributedUtils.initialize(backend_type)
-backend = DistributedUtils.get_distributed_backend(backend_type)
 
 opt = Optimisers.Adam(0.001f0)
 ps = (a=zeros(4), b=zeros(4)) |> dev

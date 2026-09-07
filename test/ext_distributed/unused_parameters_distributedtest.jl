@@ -1,21 +1,6 @@
 using Test
-using Flux
-using Flux: DistributedUtils, MPIBackend, NCCLBackend
 
-backend_string = ARGS[1]
-
-if backend_string == "mpi"
-    import MPI
-elseif backend_string == "nccl"
-    import MPI, NCCL, CUDA
-else
-    error("unsupported backend: $backend_string")
-end
-
-const btype = backend_string == "nccl" ? NCCLBackend : MPIBackend
-
-DistributedUtils.initialize(btype)
-backend = DistributedUtils.get_distributed_backend(btype)
+include(joinpath(@__DIR__, "distributed_setup.jl"))
 
 @testset "resolve_unused_parameters!!" begin
     # Test 1: Replaces nothing gradients with zero-filled arrays

@@ -28,12 +28,17 @@ timeout_seconds = parse(Float64, get(ENV, "FLUX_TEST_DISTRIBUTED_TIMEOUT", "120.
         np = backend_type == "nccl" ? min(nprocs, length(CUDA.devices())) : nprocs
         @testset "Backend: $(backend_type)" begin
             @testset "$(basename(file))" for file in distributedtestfiles
-                @info "Running $file with $backend_type backend"
+                @info "Running $file with $backend_type backend " *
+                      "(env FLUX_TEST_DISTRIBUTED_BACKEND=$backend_type)"
                 
-                cmd = `$(MPI.mpiexec()) -n $(np) $(Base.julia_cmd()) --color=yes --project=$(cur_proj) --startup-file=no $(file) $(backend_type)`
+                cmd = `$(MPI.mpiexec()) -n $(np) $(Base.julia_cmd()) --color=yes --project=$(cur_proj) --startup-file=no $(file)`
+                # Backend per child via env var FLUX_TEST_DISTRIBUTED_BACKEND
+                # (not a positional arg): one parent runs both backend passes.
+                cmd = addenv(cmd, "FLUX_TEST_DISTRIBUTED_BACKEND" => backend_type)
                 
-                # Start process
-                proc = run(cmd, wait=false)
+                # Inherit streams: child errors must show in CI. A bare
+                # run(cmd, wait=false) would hide them (devnull).
+                proc = run(pipeline(cmd, stdout=stdout, stderr=stderr), wait=false)
                 
                 # Watchdog loop
                 start_time = time()

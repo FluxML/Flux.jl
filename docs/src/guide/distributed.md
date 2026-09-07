@@ -146,27 +146,6 @@ end
 
 During validation, `allreduce!` is necessary because each rank evaluates only a partition (shard) of the validation dataset. To compute the true global validation metric (such as average loss or accuracy), we must aggregate the locally computed metrics across all distributed partitions. By averaging the validation metrics via `allreduce!` before logging, we ensure that Rank 0 reports an accurate and comprehensive evaluation of the model's performance on the entire validation set. Always ensure validation metrics are only logged by Rank 0 to avoid cluttering standard output.
 
-## Advanced: Conditional Graphs and Unused Parameters
-
-If your model has branches and a particular parameter is completely unused during the forward/backward pass (for instance, a multi-task network where only certain heads are active for a specific batch), `Zygote` will return `nothing` for that parameter's gradient. 
-
-During the DDP `allreduce` step, these `nothing` values will cause a type mismatch or crash if other processes computed a gradient for that parameter. 
-
-To safely handle conditional graphs, use `resolve_unused_parameters!!` immediately after `withgradient`. This replaces any `nothing` gradients with zero-filled arrays of the correct shape and type:
-
-```julia
-        l, gs = Zygote.withgradient(model) do m
-            y_hat = m(x, rank == 0) # Only rank 0 uses the first branch
-            Flux.Losses.mse(y_hat, y)
-        end
-        gs = gs[1]
-        
-        # Replace `nothing` with zeros to prevent DDP deadlocks
-        gs = DistributedUtils.resolve_unused_parameters!!(backend, gs, model)
-        
-        opt_state, model = Optimisers.update(opt_state, model, gs)
-```
-
 ## Saving and Checkpointing
 
 In a distributed setting, model saving *must* be restricted to a single worker (typically rank 0) to avoid I/O race conditions and prevent file corruption.
