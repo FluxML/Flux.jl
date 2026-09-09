@@ -281,6 +281,18 @@ end
 with `MLUtils` interface and is used to partition the dataset across the available
 processes.
 
+The container does not modify the underlying dataset. It only pads its internal index
+sequence so that every process receives a shard of the same length. When the number of
+observations `N = numobs(data)` is not divisible by the number of processes, the padding
+is drawn by repeating indices cyclically from the start of the dataset (`mod1`-style),
+keeping every index in `1:N`. Each shard therefore has length `cld(N, workers)`.
+
+Because the padding duplicates observations, metrics computed over the sharded or padded
+data (for example epoch counts, losses, or sums) count the duplicated observations. Any
+metric meant to describe the original dataset must exclude or otherwise account for them.
+
+An empty dataset (`numobs(data) == 0`) is rejected with an `ArgumentError`.
+
 !!! danger
 
     `MLUtils.jl` must be installed and loaded before using this.
@@ -306,14 +318,18 @@ function __construct_distributed_data_container(
         backend::AbstractFluxDistributedBackend, data)
     total_size = numobs(data)
     split_across = total_workers(backend)
-    size_per_worker = Int(ceil(total_size / split_across))
 
-    # Pad the dataset size so that it is evenly divisible by the number of workers
+    total_size == 0 &&
+        throw(ArgumentError("cannot build a DistributedDataContainer for an empty " *
+                            "dataset (numobs(data) == 0)"))
+    size_per_worker = cld(total_size, split_across)
+
+    # Pad the index list so that it is evenly divisible by the number of workers.
+    # Repeats are drawn cyclically from the start of the dataset, keeping every
+    # index in `1:total_size` and the original indices `1:total_size` before any
+    # repeats.
     total_padded = size_per_worker * split_across
-    indices = collect(1:total_size)
-    if total_padded > total_size
-        append!(indices, 1:(total_padded - total_size))
-    end
+    indices = [mod1(i, total_size) for i in 1:total_padded]
 
     partitions = collect(Iterators.partition(indices, size_per_worker))
     idxs = collect(partitions[local_rank(backend) + 1])
