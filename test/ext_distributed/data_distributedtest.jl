@@ -6,39 +6,57 @@ include(joinpath(@__DIR__, "distributed_setup.jl"))
 
 rng = Xoshiro(1234)
 
-# Test 1: Evenly divisible dataset (no padding needed)
-data_even = randn(rng, Float32, 4 * tworkers)
-dc_even = DistributedUtils.DistributedDataContainer(backend, data_even)
+# Expected cyclic-padding spec for N observations across W workers:
+#   per   = cld(N, W)          (every rank receives `per` observations)
+#   total = per * W            (padded length of the global index list)
+#   full  = [mod1(i, N) for i in 1:total]
+# Rank `r` (0-based) receives full[(r*per + 1):((r+1)*per)].
+function _cyclic_spec(N::Int, W::Int)
+    per = cld(N, W)
+    total = per * W
+    full = [mod1(i, N) for i in 1:total]
+    return per, total, full
+end
 
-@test length(dc_even) == div(length(data_even), tworkers)
+@testset "DistributedDataContainer cyclic padding" begin
+    for N in (1, 2, 7, 10)
+        @testset "N = $N" begin
+            per, total, full = _cyclic_spec(N, tworkers)
+            @test total == per * tworkers
+            @test length(full) == total
+            @test all(i -> 1 <= i <= N, full)
+            @test full[1:N] == collect(1:N)
+            @test full[(N + 1):end] == [mod1(j, N) for j in 1:(total - N)]
 
-dsum = sum(Base.Fix1(MLUtils.getobs, dc_even), 1:MLUtils.numobs(dc_even))
-@test DistributedUtils.allreduce!(backend, [dsum], +)[1] ≈ sum(data_even)
+            chunk = full[(rank * per + 1):((rank + 1) * per)]
+            @test length(chunk) == per
+            @test all(i -> 1 <= i <= N, chunk)
 
-# Test 2: Non-divisible dataset — padding ensures equal partition sizes
-data_odd = randn(rng, Float32, 7)
-dc_odd = DistributedUtils.DistributedDataContainer(backend, data_odd)
+            @testset "identity index container" begin
+                data_id = Float32.(1:N)
+                dc_id = DistributedUtils.DistributedDataContainer(backend, data_id)
+                @test length(dc_id) == cld(N, tworkers)
+                @test [MLUtils.getobs(dc_id, k) for k in 1:length(dc_id)] == chunk
+                @test all(v -> 1 <= v <= N,
+                    [MLUtils.getobs(dc_id, k) for k in 1:length(dc_id)])
+            end
 
-expected_len = Int(ceil(length(data_odd) / tworkers))
-@test length(dc_odd) == expected_len
+            @testset "duplicate aggregate via allreduce" begin
+                data_rand = randn(rng, Float32, N)
+                dc_r = DistributedUtils.DistributedDataContainer(backend, data_rand)
+                local_sum = try
+                    sum(MLUtils.getobs(dc_r, k) for k in 1:length(dc_r))
+                catch e
+                    e isa BoundsError ? NaN32 : rethrow()
+                end
+                global_sum = DistributedUtils.allreduce!(backend, [local_sum], +)[1]
+                @test global_sum ≈ sum(data_rand[full])
+            end
+        end
+    end
 
-# All original elements must appear across the partitions.
-# Padding duplicates elements from the beginning, so the global sum includes those.
-pad_count = expected_len * tworkers - length(data_odd)
-expected_sum = sum(data_odd) + (pad_count > 0 ? sum(data_odd[1:pad_count]) : 0.0f0)
-
-dsum_odd = sum(Base.Fix1(MLUtils.getobs, dc_odd), 1:MLUtils.numobs(dc_odd))
-@test DistributedUtils.allreduce!(backend, [dsum_odd], +)[1] ≈ expected_sum
-
-# Test 3: Original dataset — preserve the original 10-element test case
-data = randn(Xoshiro(1234), Float32, 10)
-dcontainer = DistributedUtils.DistributedDataContainer(backend, data)
-
-expected_len_10 = Int(ceil(length(data) / tworkers))
-@test length(dcontainer) == expected_len_10
-
-pad_count_10 = expected_len_10 * tworkers - length(data)
-expected_sum_10 = sum(data) + (pad_count_10 > 0 ? sum(data[1:pad_count_10]) : 0.0f0)
-
-dsum_10 = sum(Base.Fix1(MLUtils.getobs, dcontainer), 1:MLUtils.numobs(dcontainer))
-@test DistributedUtils.allreduce!(backend, [dsum_10], +)[1] ≈ expected_sum_10
+    @testset "N = 0 empty dataset rejected" begin
+        @test_throws ArgumentError DistributedUtils.DistributedDataContainer(
+            backend, Float32[])
+    end
+end
