@@ -90,13 +90,3 @@ jobs:
           julia --project=test -e 'using MPI; MPI.install_mpiexecjl()'
           julia --project=test test/ext_distributed/runtests.jl
         timeout-minutes: 20
-
-  # Hardware NCCL CI job would go here, currently disabled on standard github runners
-  # nccl_hardware:
-  #   name: NCCL Native Correctness (2 GPUs)
-  #   runs-on: some-gpu-runner
-  #   env:
-  #     FLUX_TEST_DISTRIBUTED_NCCL: "true"
-  #     JULIA_MPI_TEST_NPROCS: "2"
-  #   steps:
-  #     ...

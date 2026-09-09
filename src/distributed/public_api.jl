@@ -313,31 +313,4 @@ function DistributedUtils.synchronize!!(
     return ps
 end
 
-"""
-    resolve_unused_parameters!!(backend::AbstractFluxDistributedBackend, gs, model)
-
-Replaces `nothing` gradients in `gs` with zero-filled arrays matching the corresponding 
-parameter in `model` and returns the newly allocated gradient structure. This prevents DDP 
-deadlocks when conditional branches cause some parameters to be unused on some ranks.
-
-Note: The `backend` parameter is currently unused but kept for API consistency with 
-other distributed utilities and for future compatibility with device-specific 
-allocations (like NCCL).
-"""
-function resolve_unused_parameters!!(backend::AbstractFluxDistributedBackend, gs, model)
-    _ = backend # Unused but kept for API coherence and future GPU context
-    function walk(g, p)
-        if p isa AbstractArray
-            return g === nothing ? fill!(similar(p), 0) : g
-        end
-        if g === nothing
-            return fmap(p; exclude=x -> x isa AbstractArray) do x
-                fill!(similar(x), 0)
-            end
-        end
-        return fmap(walk, g, p; exclude=x -> x isa AbstractArray || x === nothing)
-    end
-    return walk(gs, model)
-end
-
 end

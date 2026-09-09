@@ -35,7 +35,6 @@ makedocs(
             "Fitting a Line" => "guide/models/overview.md",
             "Gradients and Layers" => "guide/models/basics.md",
             "Training" => "guide/training/training.md",
-            "Distributed Training" => "guide/distributed.md",
             "Recurrence" => "guide/models/recurrence.md",
             "GPU Support" => "guide/gpu.md",
             "Compiling with Reactant" => "guide/reactant.md",
