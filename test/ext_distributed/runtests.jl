@@ -36,8 +36,8 @@ timeout_seconds = parse(Float64, get(ENV, "FLUX_TEST_DISTRIBUTED_TIMEOUT", "120.
                 # (not a positional arg): one parent runs both backend passes.
                 cmd = addenv(cmd, "FLUX_TEST_DISTRIBUTED_BACKEND" => backend_type)
                 
-                # Inherit streams: child errors must show in CI. A bare
-                # run(cmd, wait=false) would hide them (devnull).
+                # Explicitly inherit the child streams so the child's output
+                # and errors are visible in the CI logs.
                 proc = run(pipeline(cmd, stdout=stdout, stderr=stderr), wait=false)
                 
                 # Watchdog loop

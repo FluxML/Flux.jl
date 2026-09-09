@@ -12,7 +12,6 @@ jobs:
     name: MPI DDP Correctness (2 Ranks)
     runs-on: ubuntu-latest
     env:
-      FLUX_TEST_DISTRIBUTED_MPI: "true"
       JULIA_MPI_TEST_NPROCS: "2"
       FLUX_TEST_DISTRIBUTED_TIMEOUT: "1200"
     steps:
@@ -40,10 +39,9 @@ jobs:
         timeout-minutes: 20
 
   mpi_edge:
-    name: MPI DDP Sharding & Asymmetry (4 Ranks)
+    name: MPI DDP Correctness (4 Ranks)
     runs-on: ubuntu-latest
     env:
-      FLUX_TEST_DISTRIBUTED_MPI: "true"
       JULIA_MPI_TEST_NPROCS: "4"
       FLUX_TEST_DISTRIBUTED_TIMEOUT: "1200"
     # GitHub-hosted ubuntu-latest exposes 4 vCPU over 2 physical cores, and
@@ -84,7 +82,7 @@ jobs:
           echo "== slots probe (JULIA_MPI_TEST_NPROCS=${JULIA_MPI_TEST_NPROCS}) =="
           mpiexec --use-hwthread-cpus -n "$JULIA_MPI_TEST_NPROCS" true
           echo "4-rank launch OK"
-      - name: Run Distributed Tests (Edge cases)
+      - name: Run Distributed Tests
         run: |
           julia --project=test -e 'using Pkg; Pkg.instantiate()'
           julia --project=test -e 'using MPI; MPI.install_mpiexecjl()'
