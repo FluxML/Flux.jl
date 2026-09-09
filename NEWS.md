@@ -6,9 +6,12 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ### Distributed training fixes
 
-- **PMI guardrails**: MPI backend initialization now detects PMIx/PMI2 mismatch
-  before `MPI.Init()`, preventing silent hard aborts. A `force` keyword argument
-  allows bypassing the check.
+- **PMI guardrail**: MPI backend initialization now checks the launch environment
+  before `MPI.Init()` and errors when the job was started by a PMIx/OpenMPI
+  launcher (i.e. `PMIX_RANK` or `OMPI_COMM_WORLD_RANK` is set) while MPICH is the
+  loaded MPI library — a known unsafe combination that previously caused a native
+  hard abort. System OpenMPI launched with PMIx passes the check. Pass
+  `force=true` to `initialize(MPIBackend)` to bypass the check (expert use only).
 - **Data padding**: `DistributedDataContainer` now pads input data to ensure
   even distribution across workers, avoiding load imbalance.
 - **Distributed test fixes**: Previously orphaned distributed test files

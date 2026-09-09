@@ -33,8 +33,12 @@ Initialize the given backend. Users can supply `cuda_devices` and `amdgpu_device
 initialize the backend with the given devices. These can be set to `missing` to prevent
 initialization of the given device type. If set to `nothing`, and the backend is functional
 we assign GPUs in a round-robin fashion. Finally, a list of integers can be supplied to
-initialize the backend with the given devices. For the MPI backend, you can pass
-`force=true` to bypass PMI environment guardrail checks if needed.
+initialize the backend with the given devices. For the MPI backend, a guardrail runs
+before `MPI.Init()`: it errors when the job was started by a PMIx/OpenMPI launcher
+(i.e. `PMIX_RANK` or `OMPI_COMM_WORLD_RANK` is set in the environment) while MPICH is
+the loaded MPI library, a known unsafe combination that aborts `MPI.Init()` at the
+native level. System OpenMPI launched with PMIx passes the check. Pass `force=true` to
+bypass the guardrail entirely (expert use only).
 
 Possible values for `backend` are:
 
@@ -50,6 +54,44 @@ function initialize(backend::Type{<:AbstractFluxDistributedBackend}; kwargs...)
 end
 
 function __initialize end
+
+"""
+    check_launcher_compat(env; library, force=false, mpi_initialized=false)
+
+Pure, MPI-free compatibility check between the environment a process was launched
+in and the name of the loaded MPI library (as reported by `MPI.MPI_LIBRARY`, e.g.
+`"MPICH"`, `"OpenMPI"`, `"MPItrampoline"`). Used by the MPI backend guardrail,
+which runs only before `MPI.Init()`.
+
+Returns `nothing` when the launch environment is compatible with the loaded
+library, or a non-empty `String` error message when a known unsafe mismatch is
+detected. The only combination judged unsafe is MPICH loaded while a PMIx/OpenMPI
+launcher started the job (`PMIX_RANK` and/or `OMPI_COMM_WORLD_RANK` set). System
+OpenMPI with PMIx passes, non-MPICH non-OpenMPI libraries are never judged, and
+PMI2/SLURM/PMI1-era variables alone never trigger an error.
+
+Passing `force=true` (expert bypass) or `mpi_initialized=true` (the guard only
+runs before `MPI.Init()`) always returns `nothing`.
+"""
+function check_launcher_compat(env::AbstractDict;
+        library::AbstractString, force::Bool=false, mpi_initialized::Bool=false)
+    (force || mpi_initialized) && return nothing
+    library == "MPICH" || return nothing
+    trigger = [v for v in ("PMIX_RANK", "OMPI_COMM_WORLD_RANK") if haskey(env, v)]
+    isempty(trigger) && return nothing
+
+    vars = join(trigger, " and ")
+    return string(
+        "MPI backend initialization failed: found ", vars, " in the environment, ",
+        "but the loaded MPI library is ", library, ". PMIx/OpenMPI launchers set ",
+        "these variables, and the loaded ", library,
+        " build was not started by such a launcher, so `MPI.Init()` will likely ",
+        "abort or hang at the native level. Relaunch with a launcher matching the ",
+        "loaded MPI library (e.g. `mpiexecjl` for MPI.jl's default MPICH_jll, or ",
+        "`srun --mpi=pmi2` on SLURM), configure MPI.jl to use your system MPI via ",
+        "`MPIPreferences.use_system_binary()`, or bypass this check by passing ",
+        "`force=true` to `initialize(MPIBackend)`.")
+end
 
 """
     get_distributed_backend(backend::Type{<:AbstractFluxDistributedBackend})
