@@ -339,7 +339,7 @@ end
 
 # Distributed Optimizer
 """
-    DistributedOptimizer(backend::AbstractFluxDistributedBacked, optimizer)
+    DistributedOptimizer(backend::AbstractFluxDistributedBackend, optimizer)
 
 Wrap the `optimizer` in a `DistributedOptimizer`. Before updating the parameters, this
 averages the gradients across the processes using Allreduce.

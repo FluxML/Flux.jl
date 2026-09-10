@@ -11,12 +11,16 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
   launcher (i.e. `PMIX_RANK` or `OMPI_COMM_WORLD_RANK` is set) while MPICH is the
   loaded MPI library — a known unsafe combination that previously caused a native
   hard abort. System OpenMPI launched with PMIx passes the check. Pass
-  `force=true` to `initialize(MPIBackend)` to bypass the check (expert use only).
-- **Data padding**: `DistributedDataContainer` now pads input data to ensure
-  even distribution across workers, avoiding load imbalance.
-- **Distributed test fixes**: Previously orphaned distributed test files
-  (`common.jl`, `optimizer.jl`, `synchronized.jl`) were renamed with the
-  `_distributedtest.jl` suffix so they are discovered by the test runner.
+  `force=true` to `initialize(MPIBackend)` to bypass the check (expert use only)
+  ([#2694](https://github.com/FluxML/Flux.jl/pull/2694)).
+- **Data sharding**: `DistributedDataContainer` now gives every worker an
+  equal-length shard. When the number of observations `N` is not divisible by the
+  number of workers, it pads its index sequence by repeating observations
+  cyclically, so each worker receives `cld(N, workers)` observations while every
+  index stays in `1:N`. The underlying dataset is not modified; the duplicated
+  observations affect epoch accounting and metrics computed over the sharded data.
+  An empty dataset (`numobs(data) == 0`) is rejected with an `ArgumentError`
+  ([#2694](https://github.com/FluxML/Flux.jl/pull/2694)).
 
 - `@layer :named MyModel` is a new show option that displays fieldnames in the expanded pretty-print (e.g. `cell = RNNCell(...)` instead of just `RNNCell(...)`) ([#2543](https://github.com/FluxML/Flux.jl/issues/2543)).
 - `Dense` now handles inputs with a zero-sized batch dimension (e.g. `Dense(4 => 5)(randn(Float32, 4, 0, 6))`), returning a correctly-shaped empty array instead of an error or a wrong shape ([#2407](https://github.com/FluxML/Flux.jl/issues/2407)).

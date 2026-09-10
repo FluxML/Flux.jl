@@ -30,16 +30,16 @@ timeout_seconds = parse(Float64, get(ENV, "FLUX_TEST_DISTRIBUTED_TIMEOUT", "120.
             @testset "$(basename(file))" for file in distributedtestfiles
                 @info "Running $file with $backend_type backend " *
                       "(env FLUX_TEST_DISTRIBUTED_BACKEND=$backend_type)"
-                
+
                 cmd = `$(MPI.mpiexec()) -n $(np) $(Base.julia_cmd()) --color=yes --project=$(cur_proj) --startup-file=no $(file)`
                 # Backend per child via env var FLUX_TEST_DISTRIBUTED_BACKEND
                 # (not a positional arg): one parent runs both backend passes.
                 cmd = addenv(cmd, "FLUX_TEST_DISTRIBUTED_BACKEND" => backend_type)
-                
+
                 # Explicitly inherit the child streams so the child's output
                 # and errors are visible in the CI logs.
                 proc = run(pipeline(cmd, stdout=stdout, stderr=stderr), wait=false)
-                
+
                 # Watchdog loop
                 start_time = time()
                 is_timeout = false
@@ -55,12 +55,12 @@ timeout_seconds = parse(Float64, get(ENV, "FLUX_TEST_DISTRIBUTED_TIMEOUT", "120.
                     end
                     sleep(0.5)
                 end
-                
+
                 if is_timeout
                     @test false # Fail the test due to timeout
                 else
                     wait(proc)
-                    # If the child process exit code is non-zero, fail the test. 
+                    # If the child process exit code is non-zero, fail the test.
                     # Note: child processes MUST call exit(1) on failure.
                     @test proc.exitcode == 0
                 end

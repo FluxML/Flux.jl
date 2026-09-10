@@ -314,7 +314,7 @@ julia> using MPI
 julia> MPI.install_mpiexecjl()
 ```
 
-Now you can run your code with `mpiexecjl --project=. -n <np> julia <filename>.jl` from CLI.
+Now you can run your code with `mpiexecjl -n <np> julia --project=. <filename>.jl` from CLI.
 
 You can use either the `MPIBackend` or `NCCLBackend`, the latter only if also `NCCL.jl` is loaded. First, initialize a backend with `DistributedUtils.initialize`, e.g.
 
@@ -346,7 +346,7 @@ julia> y = x .^ 3
  0.0137076  0.0362744  0.791443  0.171815  0.620854  0.668804  0.53197  0.819654  0.108651  0.179971  0.312918  0.388508  0.907292  0.00155418  0.29  0.435899
 ```
 
-In this case, we are training on a total of `16 * number of processes` samples. You can also use `DistributedUtils.DistributedDataContainer` to split the data uniformly across processes (or do it manually).
+In this case, we are training on a total of `16 * number of processes` samples. You can also use `DistributedUtils.DistributedDataContainer` to give every process an equal-length shard of the data (or split it manually). When the number of observations `N` is not divisible by the number of processes, the container pads its index sequence by repeating observations cyclically, so every process receives `cld(N, workers)` observations while every index stays in `1:N`. The underlying dataset is not modified. Because the padding duplicates observations, epoch accounting and any metric computed over the sharded data are affected; exclude or otherwise account for the duplicates when reporting metrics over the original dataset. An empty dataset (`numobs(data) == 0`) is rejected.
 
 ```julia-repl
 julia> data = DistributedUtils.DistributedDataContainer(backend, x)
@@ -394,7 +394,7 @@ Epoch 3: Loss 0.012763695
 ...
 ```
 
-Remember that in order to run it on multiple GPUs you have to run from CLI `mpiexecjl --project=. -n <np> julia <filename>.jl`,
+Remember that in order to run it on multiple GPUs you have to run from CLI `mpiexecjl -n <np> julia --project=. <filename>.jl`,
 where  `<np>` is the number of processes that you want to use. The number of processes usually corresponds to the number of gpus.
 
 By default `MPI.jl` MPI installation is CUDA-unaware so if you want to run it in CUDA-aware mode, read more [here](https://juliaparallel.org/MPI.jl/stable/usage/#CUDA-aware-MPI-support) on custom installation and rebuilding `MPI.jl`.
