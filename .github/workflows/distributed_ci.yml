@@ -13,7 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JULIA_MPI_TEST_NPROCS: "2"
-      FLUX_TEST_DISTRIBUTED_TIMEOUT: "1200"
+      # Child watchdog fires at 15 min, before the 20-minute step timeout,
+      # so it can emit diagnostics before GitHub terminates the step.
+      FLUX_TEST_DISTRIBUTED_TIMEOUT: "900"
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
@@ -43,7 +45,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JULIA_MPI_TEST_NPROCS: "4"
-      FLUX_TEST_DISTRIBUTED_TIMEOUT: "1200"
+      # Child watchdog fires at 15 min, before the 20-minute step timeout,
+      # so it can emit diagnostics before GitHub terminates the step.
+      FLUX_TEST_DISTRIBUTED_TIMEOUT: "900"
     # GitHub-hosted ubuntu-latest exposes 4 vCPU over 2 physical cores, and
     # OpenMPI defaults its slot count to physical cores, so a plain
     # `mpiexec -n 4` aborts with "not enough slots". Only this 4-rank job

@@ -44,19 +44,32 @@ end
             @testset "duplicate aggregate via allreduce" begin
                 data_rand = randn(rng, Float32, N)
                 dc_r = DistributedUtils.DistributedDataContainer(backend, data_rand)
-                local_sum = try
-                    sum(MLUtils.getobs(dc_r, k) for k in 1:length(dc_r))
+                local_sum = 0.0f0
+                local_ok = true
+                try
+                    local_sum = sum(MLUtils.getobs(dc_r, k) for k in 1:length(dc_r))
                 catch e
-                    e isa BoundsError ? NaN32 : rethrow()
+                    local_ok = false
+                    @error "unexpected error while aggregating the local shard" exception = (e, catch_backtrace())
                 end
+                # Every rank must reach the collective even if a rank failed
+                # locally, so that a single bad rank cannot deadlock the others.
                 global_sum = DistributedUtils.allreduce!(backend, [local_sum], +)[1]
+                @test local_ok
                 @test global_sum ≈ sum(data_rand[full])
             end
         end
     end
 
     @testset "N = 0 empty dataset rejected" begin
-        @test_throws ArgumentError DistributedUtils.DistributedDataContainer(
-            backend, Float32[])
+        err = try
+            DistributedUtils.DistributedDataContainer(backend, Float32[])
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test err !== nothing && occursin("empty", sprint(showerror, err))
+        @test err !== nothing && occursin("numobs(data) == 0", sprint(showerror, err))
     end
 end

@@ -61,7 +61,6 @@ timeout_seconds = parse(Float64, get(ENV, "FLUX_TEST_DISTRIBUTED_TIMEOUT", "120.
                 else
                     wait(proc)
                     # If the child process exit code is non-zero, fail the test.
-                    # Note: child processes MUST call exit(1) on failure.
                     @test proc.exitcode == 0
                 end
             end

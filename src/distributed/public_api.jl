@@ -33,12 +33,14 @@ Initialize the given backend. Users can supply `cuda_devices` and `amdgpu_device
 initialize the backend with the given devices. These can be set to `missing` to prevent
 initialization of the given device type. If set to `nothing`, and the backend is functional
 we assign GPUs in a round-robin fashion. Finally, a list of integers can be supplied to
-initialize the backend with the given devices. For the MPI backend, a guardrail runs
-before `MPI.Init()`: it errors when the job was started by a PMIx/OpenMPI launcher
-(i.e. `PMIX_RANK` or `OMPI_COMM_WORLD_RANK` is set in the environment) while MPICH is
-the loaded MPI library, a known unsafe combination that aborts `MPI.Init()` at the
-native level. System OpenMPI launched with PMIx passes the check. Pass `force=true` to
-bypass the guardrail entirely (expert use only).
+initialize the backend with the given devices. A guardrail runs before `MPI.Init()` —
+including the `MPI.Init()` performed while bootstrapping `NCCLBackend`: it errors when
+the job was started by a PMIx/OpenMPI launcher (i.e. `PMIX_RANK` or
+`OMPI_COMM_WORLD_RANK` is set in the environment) while MPICH is the loaded MPI
+library, a known unsafe combination that aborts `MPI.Init()` at the native level.
+System OpenMPI launched with PMIx passes the check. Pass `force=true` to the same
+`initialize(...)` call (for either `MPIBackend` or `NCCLBackend`) to bypass the
+guardrail entirely (expert use only).
 
 Possible values for `backend` are:
 
@@ -56,11 +58,13 @@ end
 function __initialize end
 
 """
-    check_launcher_compat(env; library, force=false, mpi_initialized=false)
+    __check_launcher_compat(env; library, force=false, mpi_initialized=false)
+
+Internal helper. Users should call `initialize` instead.
 
 Pure, MPI-free compatibility check between the environment a process was launched
 in and the name of the loaded MPI library (as reported by `MPI.MPI_LIBRARY`, e.g.
-`"MPICH"`, `"OpenMPI"`, `"MPItrampoline"`). Used by the MPI backend guardrail,
+`"MPICH"`, `"OpenMPI"`, `"MPIwrapper"`). Used by the MPI backend guardrail,
 which runs only before `MPI.Init()`.
 
 Returns `nothing` when the launch environment is compatible with the loaded
@@ -73,7 +77,7 @@ PMI2/SLURM/PMI1-era variables alone never trigger an error.
 Passing `force=true` (expert bypass) or `mpi_initialized=true` (the guard only
 runs before `MPI.Init()`) always returns `nothing`.
 """
-function check_launcher_compat(env::AbstractDict;
+function __check_launcher_compat(env::AbstractDict;
         library::AbstractString, force::Bool=false, mpi_initialized::Bool=false)
     (force || mpi_initialized) && return nothing
     library == "MPICH" || return nothing
@@ -82,7 +86,7 @@ function check_launcher_compat(env::AbstractDict;
 
     vars = join(trigger, " and ")
     return string(
-        "MPI backend initialization failed: found ", vars, " in the environment, ",
+        "Distributed initialization failed: found ", vars, " in the environment, ",
         "but the loaded MPI library is ", library, ". PMIx/OpenMPI launchers set ",
         "these variables, and the loaded ", library,
         " build was not started by such a launcher, so `MPI.Init()` will likely ",
@@ -90,7 +94,7 @@ function check_launcher_compat(env::AbstractDict;
         "loaded MPI library (e.g. `mpiexecjl` for MPI.jl's default MPICH_jll, or ",
         "`srun --mpi=pmi2` on SLURM), configure MPI.jl to use your system MPI via ",
         "`MPIPreferences.use_system_binary()`, or bypass this check by passing ",
-        "`force=true` to `initialize(MPIBackend)`.")
+        "`force=true` to the same `initialize` call.")
 end
 
 """
@@ -231,7 +235,7 @@ CRC.@non_differentiable reduce!(::Any...)
 
 ## As Flux model is an arbitrary type it's not possible to dispatch `synchronize!!`
 ## end user needs to wrap Flux model into `FluxDistributedModel`
-## e.g. model = DistributedUtils.synchronize!!(backend, FluxDistributedModel(model); root=0) 
+## e.g. model = DistributedUtils.synchronize!!(backend, FluxDistributedModel(model); root=0)
 struct FluxDistributedModel{M}
     model::M
 end
@@ -270,7 +274,7 @@ end
 # if no method for a given type, just return the value
 function synchronize!!(backend::AbstractFluxDistributedBackend, ps::T; root::Int=0) where {T}
     isbitstype(T) && return bcast!(backend, [ps]; root)[]
-    return ps 
+    return ps
 end
 
 # data container
@@ -287,9 +291,12 @@ observations `N = numobs(data)` is not divisible by the number of processes, the
 is drawn by repeating indices cyclically from the start of the dataset (`mod1`-style),
 keeping every index in `1:N`. Each shard therefore has length `cld(N, workers)`.
 
-Because the padding duplicates observations, metrics computed over the sharded or padded
-data (for example epoch counts, losses, or sums) count the duplicated observations. Any
-metric meant to describe the original dataset must exclude or otherwise account for them.
+Because the padding duplicates observations, those duplicated observations are included
+in training batches and therefore receive extra weight in the averaged gradients, which
+changes the effective training objective. They also affect epoch accounting and any
+metric computed over the sharded or padded data (for example epoch counts, losses, or
+sums). Metrics meant to describe the original dataset must exclude or otherwise account
+for the duplicates.
 
 An empty dataset (`numobs(data) == 0`) is rejected with an `ArgumentError`.
 
