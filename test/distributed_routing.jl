@@ -1,11 +1,8 @@
 using Test
 
-# RED-phase regression test for blocker 2 of the PR #2694 salvage code review.
-#
-# Contract under test. The helpers live in `test/test_utils_distributed.jl`,
-# which does not exist yet, so this file is expected to fail at include time.
-# That include failure is the intended RED state; do not implement the helpers
-# or modify `test/runtests.jl` in this task.
+# These regression tests pin distributed test routing through the helpers in
+# `test/test_utils_distributed.jl`. Ordinary discovery excludes all
+# `ext_distributed` entries, and opt-in routing adds only the dedicated runner.
 #
 #   strip_distributed_tests!(testsuite) -> testsuite
 #       Remove every key that starts with "ext_distributed" from the
