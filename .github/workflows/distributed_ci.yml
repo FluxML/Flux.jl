@@ -1,0 +1,94 @@
+name: Distributed Data Parallel (DDP) Tests
+
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+
+jobs:
+  mpi_fast:
+    name: MPI DDP Correctness (2 Ranks)
+    runs-on: ubuntu-latest
+    env:
+      JULIA_MPI_TEST_NPROCS: "2"
+      # Child watchdog fires at 15 min, before the 20-minute step timeout,
+      # so it can emit diagnostics before GitHub terminates the step.
+      FLUX_TEST_DISTRIBUTED_TIMEOUT: "900"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Install MPI
+        timeout-minutes: 5
+        run: sudo apt-get update && sudo apt-get install -y openmpi-bin libopenmpi-dev
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Install MPIPreferences and use system binary
+        run: |
+          julia --project=test -e '
+            using Pkg;
+            Pkg.add("MPIPreferences");
+            using MPIPreferences;
+            MPIPreferences.use_system_binary()
+          '
+      - name: Run Distributed Tests
+        run: |
+          julia --project=test -e 'using Pkg; Pkg.instantiate()'
+          julia --project=test -e 'using MPI; MPI.install_mpiexecjl()'
+          julia --project=test test/ext_distributed/runtests.jl
+        timeout-minutes: 20
+
+  mpi_edge:
+    name: MPI DDP Correctness (4 Ranks)
+    runs-on: ubuntu-latest
+    env:
+      JULIA_MPI_TEST_NPROCS: "4"
+      # Child watchdog fires at 15 min, before the 20-minute step timeout,
+      # so it can emit diagnostics before GitHub terminates the step.
+      FLUX_TEST_DISTRIBUTED_TIMEOUT: "900"
+    # GitHub-hosted ubuntu-latest exposes 4 vCPU over 2 physical cores, and
+    # OpenMPI defaults its slot count to physical cores, so a plain
+    # `mpiexec -n 4` aborts with "not enough slots". Only this 4-rank job
+    # therefore configures the MPI.jl launcher with `--use-hwthread-cpus`
+    # (count hardware threads as slots) via the Cmd-based MPIPreferences
+    # preference below. The 2-rank job and user/local configurations keep the
+    # plain system launcher: production users choose their own process
+    # placement, and the test harness stays MPI-flavor-agnostic.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Install MPI
+        timeout-minutes: 5
+        run: sudo apt-get update && sudo apt-get install -y openmpi-bin libopenmpi-dev
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Install MPIPreferences and configure mpiexec for hardware threads
+        run: |
+          julia --project=test -e '
+            using Pkg;
+            Pkg.add("MPIPreferences");
+            using MPIPreferences;
+            MPIPreferences.use_system_binary(mpiexec=`mpiexec --use-hwthread-cpus`)
+          '
+      - name: Probe MPI environment and slots
+        timeout-minutes: 5
+        run: |
+          echo "== mpiexec version =="
+          mpiexec --version
+          echo "== topology =="
+          nproc
+          lscpu | grep -E "^(CPU\(s\)|Core\(s\) per socket|Thread\(s\) per core|Socket\(s\))"
+          echo "== MPI.jl effective launcher =="
+          julia --project=test -e 'using MPI; println("MPI.mpiexec() => ", MPI.mpiexec()); println("MPI_LIBRARY => ", MPI.MPI_LIBRARY)'
+          echo "== slots probe (JULIA_MPI_TEST_NPROCS=${JULIA_MPI_TEST_NPROCS}) =="
+          mpiexec --use-hwthread-cpus -n "$JULIA_MPI_TEST_NPROCS" true
+          echo "4-rank launch OK"
+      - name: Run Distributed Tests
+        run: |
+          julia --project=test -e 'using Pkg; Pkg.instantiate()'
+          julia --project=test -e 'using MPI; MPI.install_mpiexecjl()'
+          julia --project=test test/ext_distributed/runtests.jl
+        timeout-minutes: 20

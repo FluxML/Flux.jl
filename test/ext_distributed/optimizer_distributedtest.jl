@@ -1,9 +1,10 @@
-const input_args = length(ARGS) == 2 ? ARGS : ("CPU", "mpi")
-const backend_type = input_args[2] == "nccl" ? NCCLBackend : MPIBackend
-const dev = input_args[1] == "CPU" ? Flux.cpu : Flux.gpu
+using Test
+using Flux
+using Optimisers
 
-DistributedUtils.initialize(backend_type)
-backend = DistributedUtils.get_distributed_backend(backend_type)
+include(joinpath(@__DIR__, "distributed_setup.jl"))
+
+const dev = Flux.cpu
 
 opt = Optimisers.Adam(0.001f0)
 ps = (a=zeros(4), b=zeros(4)) |> dev

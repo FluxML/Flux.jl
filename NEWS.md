@@ -4,6 +4,28 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 
 ## Unreleased
 
+### Distributed training fixes
+
+- **PMI guardrail**: Initializing a distributed backend now checks the launch
+  environment before `MPI.Init()` (including the `MPI.Init()` performed while
+  bootstrapping `NCCLBackend`) and errors when the job was started by a
+  PMIx/OpenMPI launcher (i.e. `PMIX_RANK` or `OMPI_COMM_WORLD_RANK` is set)
+  while MPICH is the loaded MPI library — a known unsafe combination that
+  previously caused a native hard abort. System OpenMPI launched with PMIx
+  passes the check. Pass `force=true` to the same `initialize(...)` call (for
+  either `MPIBackend` or `NCCLBackend`) to bypass the check (expert use only)
+  ([#2694](https://github.com/FluxML/Flux.jl/pull/2694)).
+- **Data sharding**: `DistributedDataContainer` now gives every worker an
+  equal-length shard. When the number of observations `N` is not divisible by the
+  number of workers, it pads its index sequence by repeating observations
+  cyclically, so each worker receives `cld(N, workers)` observations while every
+  index stays in `1:N`. The underlying dataset is not modified. Duplicated
+  observations are included in training batches, so they receive extra weight in
+  the averaged gradients and change the effective training objective. They also
+  affect epoch accounting and metrics computed over the sharded data. An empty
+  dataset (`numobs(data) == 0`) is rejected with an `ArgumentError`
+  ([#2694](https://github.com/FluxML/Flux.jl/pull/2694)).
+
 - `@layer :named MyModel` is a new show option that displays fieldnames in the expanded pretty-print (e.g. `cell = RNNCell(...)` instead of just `RNNCell(...)`) ([#2543](https://github.com/FluxML/Flux.jl/issues/2543)).
 - `Dense` now handles inputs with a zero-sized batch dimension (e.g. `Dense(4 => 5)(randn(Float32, 4, 0, 6))`), returning a correctly-shaped empty array instead of an error or a wrong shape ([#2407](https://github.com/FluxML/Flux.jl/issues/2407)).
 - Fix stack overflow when applying f16/f32/f64 or cpu/gpu to empty structs declared with Flux.@layer.

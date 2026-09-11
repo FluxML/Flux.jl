@@ -1,6 +1,10 @@
-const input_args = length(ARGS) == 2 ? ARGS : ("CPU", "mpi")
-const backend_type = input_args[2] == "nccl" ? NCCLBackend : MPIBackend
-const dev = input_args[1] == "CPU" ? Flux.cpu : Flux.gpu
+using Test
+using Flux
+using Optimisers
+
+include(joinpath(@__DIR__, "distributed_setup.jl"))
+
+const dev = Flux.cpu
 
 function __get_array_based_on_rank(backend, dims; root)
     DistributedUtils.local_rank(backend) == root && return ones(dims...)
@@ -8,9 +12,6 @@ function __get_array_based_on_rank(backend, dims; root)
 end
 
 root = 0
-
-DistributedUtils.initialize(backend_type)
-backend = DistributedUtils.get_distributed_backend(backend_type)
 
 # Named Tuple
 gs = (

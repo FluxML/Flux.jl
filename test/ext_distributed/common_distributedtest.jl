@@ -1,18 +1,15 @@
-const input_args = length(ARGS) == 2 ? ARGS : ("CPU", "mpi")
-const backend_type = input_args[2] == "nccl" ? NCCLBackend : MPIBackend
-const dev = input_args[1] == "CPU" ? Flux.cpu : Flux.gpu
-const aType = input_args[1] == "CPU" ? Array :
-              (input_args[1] == "CUDA" ? CuArray : ROCArray)
+using Test
+using Flux
 
-DistributedUtils.initialize(backend_type)
-backend = DistributedUtils.get_distributed_backend(backend_type)
+include(joinpath(@__DIR__, "distributed_setup.jl"))
+
+const dev = Flux.cpu
+const aType = Array
 
 @test DistributedUtils.initialized(backend_type)
 
 # Should always hold true
-rank = DistributedUtils.local_rank(backend)
-nworkers = DistributedUtils.total_workers(backend)
-@test rank < nworkers
+@test rank < tworkers
 
 # Test the communication primitives
 ## broacast!
@@ -37,25 +34,25 @@ for arrType in (Array, aType)
 
     DistributedUtils.reduce!(backend, sendbuf, recvbuf, +; root=0)
 
-    rank == 0 && @test all(recvbuf .≈ sum(1:nworkers))
+    rank == 0 && @test all(recvbuf .≈ sum(1:tworkers))
 
     sendbuf .= rank + 1
 
     DistributedUtils.reduce!(backend, sendbuf, recvbuf, DistributedUtils.avg; root=0)
 
-    rank == 0 && @test all(recvbuf .≈ sum(1:nworkers) / nworkers)
+    rank == 0 && @test all(recvbuf .≈ sum(1:tworkers) / tworkers)
 
     sendrecvbuf = arrType(fill(Float64(rank + 1), 512))
 
     DistributedUtils.reduce!(backend, sendrecvbuf, +; root=0)
 
-    rank == 0 && @test all(sendrecvbuf .≈ sum(1:nworkers))
+    rank == 0 && @test all(sendrecvbuf .≈ sum(1:tworkers))
 
     sendrecvbuf .= rank + 1
 
     DistributedUtils.reduce!(backend, sendrecvbuf, DistributedUtils.avg; root=0)
 
-    rank == 0 && @test all(sendrecvbuf .≈ sum(1:nworkers) / nworkers)
+    rank == 0 && @test all(sendrecvbuf .≈ sum(1:tworkers) / tworkers)
 end
 
 ## allreduce!
@@ -65,23 +62,23 @@ for arrType in (Array, aType)
 
     DistributedUtils.allreduce!(backend, sendbuf, recvbuf, +)
 
-    @test all(recvbuf .≈ sum(1:nworkers))
+    @test all(recvbuf .≈ sum(1:tworkers))
 
     sendbuf .= rank + 1
 
     DistributedUtils.allreduce!(backend, sendbuf, recvbuf, DistributedUtils.avg)
 
-    @test all(recvbuf .≈ sum(1:nworkers) / nworkers)
+    @test all(recvbuf .≈ sum(1:tworkers) / tworkers)
 
     sendrecvbuf = arrType(fill(Float64(rank + 1), 512))
 
     DistributedUtils.allreduce!(backend, sendrecvbuf, +)
 
-    @test all(sendrecvbuf .≈ sum(1:nworkers))
+    @test all(sendrecvbuf .≈ sum(1:tworkers))
 
     sendrecvbuf .= rank + 1
 
     DistributedUtils.allreduce!(backend, sendrecvbuf, DistributedUtils.avg)
 
-    @test all(sendrecvbuf .≈ sum(1:nworkers) / nworkers)
+    @test all(sendrecvbuf .≈ sum(1:tworkers) / tworkers)
 end
