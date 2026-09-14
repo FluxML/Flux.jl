@@ -116,7 +116,7 @@ for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevi
                 sendrecvbuf_ = sendrecvbuf |> cdev
                 DistributedUtils.__allreduce!(backend, sendrecvbuf_, op, cdev)
                 copyto!(sendrecvbuf, sendrecvbuf_)
-                return
+                return sendrecvbuf
             end
 
             function DistributedUtils.__allreduce!(
@@ -126,7 +126,7 @@ for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevi
                 recvbuf_ = recvbuf |> cdev
                 DistributedUtils.__allreduce!(backend, sendbuf_, recvbuf_, op, cdev)
                 copyto!(recvbuf, recvbuf_)
-                return
+                return recvbuf
             end
         end
     end
@@ -162,7 +162,7 @@ for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevi
                 sendrecvbuf_ = sendrecvbuf |> cdev
                 DistributedUtils.__reduce!(backend, sendrecvbuf_, op, cdev; root)
                 copyto!(sendrecvbuf, sendrecvbuf_)
-                return
+                return sendrecvbuf
             end
 
             function DistributedUtils.__reduce!(backend::MPIBackend, sendbuf, recvbuf,
@@ -172,7 +172,7 @@ for (aware, dType) in ((MPI_CUDA_AWARE, CUDADevice), (MPI_ROCM_AWARE, AMDGPUDevi
                 recvbuf_ = recvbuf |> cdev
                 DistributedUtils.__reduce!(backend, sendbuf_, recvbuf_, op, cdev; root)
                 copyto!(recvbuf, recvbuf_)
-                return
+                return recvbuf
             end
         end
     end
