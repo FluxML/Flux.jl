@@ -33,7 +33,14 @@ Initialize the given backend. Users can supply `cuda_devices` and `amdgpu_device
 initialize the backend with the given devices. These can be set to `missing` to prevent
 initialization of the given device type. If set to `nothing`, and the backend is functional
 we assign GPUs in a round-robin fashion. Finally, a list of integers can be supplied to
-initialize the backend with the given devices.
+initialize the backend with the given devices. A guardrail runs before `MPI.Init()` —
+including the `MPI.Init()` performed while bootstrapping `NCCLBackend`: it errors when
+the job was started by a PMIx/OpenMPI launcher (i.e. `PMIX_RANK` or
+`OMPI_COMM_WORLD_RANK` is set in the environment) while MPICH is the loaded MPI
+library, a known unsafe combination that aborts `MPI.Init()` at the native level.
+System OpenMPI launched with PMIx passes the check. Pass `force=true` to the same
+`initialize(...)` call (for either `MPIBackend` or `NCCLBackend`) to bypass the
+guardrail entirely (expert use only).
 
 Possible values for `backend` are:
 
@@ -49,6 +56,46 @@ function initialize(backend::Type{<:AbstractFluxDistributedBackend}; kwargs...)
 end
 
 function __initialize end
+
+"""
+    __check_launcher_compat(env; library, force=false, mpi_initialized=false)
+
+Internal helper. Users should call `initialize` instead.
+
+Pure, MPI-free compatibility check between the environment a process was launched
+in and the name of the loaded MPI library (as reported by `MPI.MPI_LIBRARY`, e.g.
+`"MPICH"`, `"OpenMPI"`, `"MPIwrapper"`). Used by the MPI backend guardrail,
+which runs only before `MPI.Init()`.
+
+Returns `nothing` when the launch environment is compatible with the loaded
+library, or a non-empty `String` error message when a known unsafe mismatch is
+detected. The only combination judged unsafe is MPICH loaded while a PMIx/OpenMPI
+launcher started the job (`PMIX_RANK` and/or `OMPI_COMM_WORLD_RANK` set). System
+OpenMPI with PMIx passes, non-MPICH non-OpenMPI libraries are never judged, and
+PMI2/SLURM/PMI1-era variables alone never trigger an error.
+
+Passing `force=true` (expert bypass) or `mpi_initialized=true` (the guard only
+runs before `MPI.Init()`) always returns `nothing`.
+"""
+function __check_launcher_compat(env::AbstractDict;
+        library::AbstractString, force::Bool=false, mpi_initialized::Bool=false)
+    (force || mpi_initialized) && return nothing
+    library == "MPICH" || return nothing
+    trigger = [v for v in ("PMIX_RANK", "OMPI_COMM_WORLD_RANK") if haskey(env, v)]
+    isempty(trigger) && return nothing
+
+    vars = join(trigger, " and ")
+    return string(
+        "Distributed initialization failed: found ", vars, " in the environment, ",
+        "but the loaded MPI library is ", library, ". PMIx/OpenMPI launchers set ",
+        "these variables, and the loaded ", library,
+        " build was not started by such a launcher, so `MPI.Init()` will likely ",
+        "abort or hang at the native level. Relaunch with a launcher matching the ",
+        "loaded MPI library (e.g. `mpiexecjl` for MPI.jl's default MPICH_jll, or ",
+        "`srun --mpi=pmi2` on SLURM), configure MPI.jl to use your system MPI via ",
+        "`MPIPreferences.use_system_binary()`, or bypass this check by passing ",
+        "`force=true` to the same `initialize` call.")
+end
 
 """
     get_distributed_backend(backend::Type{<:AbstractFluxDistributedBackend})
@@ -188,7 +235,7 @@ CRC.@non_differentiable reduce!(::Any...)
 
 ## As Flux model is an arbitrary type it's not possible to dispatch `synchronize!!`
 ## end user needs to wrap Flux model into `FluxDistributedModel`
-## e.g. model = DistributedUtils.synchronize!!(backend, FluxDistributedModel(model); root=0) 
+## e.g. model = DistributedUtils.synchronize!!(backend, FluxDistributedModel(model); root=0)
 struct FluxDistributedModel{M}
     model::M
 end
@@ -227,7 +274,7 @@ end
 # if no method for a given type, just return the value
 function synchronize!!(backend::AbstractFluxDistributedBackend, ps::T; root::Int=0) where {T}
     isbitstype(T) && return bcast!(backend, [ps]; root)[]
-    return ps 
+    return ps
 end
 
 # data container
@@ -237,6 +284,21 @@ end
 `data` must be compatible with `MLUtils` interface. The returned container is compatible
 with `MLUtils` interface and is used to partition the dataset across the available
 processes.
+
+The container does not modify the underlying dataset. It only pads its internal index
+sequence so that every process receives a shard of the same length. When the number of
+observations `N = numobs(data)` is not divisible by the number of processes, the padding
+is drawn by repeating indices cyclically from the start of the dataset (`mod1`-style),
+keeping every index in `1:N`. Each shard therefore has length `cld(N, workers)`.
+
+Because the padding duplicates observations, those duplicated observations are included
+in training batches and therefore receive extra weight in the averaged gradients, which
+changes the effective training objective. They also affect epoch accounting and any
+metric computed over the sharded or padded data (for example epoch counts, losses, or
+sums). Metrics meant to describe the original dataset must exclude or otherwise account
+for the duplicates.
+
+An empty dataset (`numobs(data) == 0`) is rejected with an `ArgumentError`.
 
 !!! danger
 
@@ -263,9 +325,20 @@ function __construct_distributed_data_container(
         backend::AbstractFluxDistributedBackend, data)
     total_size = numobs(data)
     split_across = total_workers(backend)
-    size_per_worker = Int(ceil(total_size / split_across))
 
-    partitions = collect(Iterators.partition(1:total_size, size_per_worker))
+    total_size == 0 &&
+        throw(ArgumentError("cannot build a DistributedDataContainer for an empty " *
+                            "dataset (numobs(data) == 0)"))
+    size_per_worker = cld(total_size, split_across)
+
+    # Pad the index list so that it is evenly divisible by the number of workers.
+    # Repeats are drawn cyclically from the start of the dataset, keeping every
+    # index in `1:total_size` and the original indices `1:total_size` before any
+    # repeats.
+    total_padded = size_per_worker * split_across
+    indices = [mod1(i, total_size) for i in 1:total_padded]
+
+    partitions = collect(Iterators.partition(indices, size_per_worker))
     idxs = collect(partitions[local_rank(backend) + 1])
 
     return DistributedDataContainer(data, idxs)
@@ -273,7 +346,7 @@ end
 
 # Distributed Optimizer
 """
-    DistributedOptimizer(backend::AbstractFluxDistributedBacked, optimizer)
+    DistributedOptimizer(backend::AbstractFluxDistributedBackend, optimizer)
 
 Wrap the `optimizer` in a `DistributedOptimizer`. Before updating the parameters, this
 averages the gradients across the processes using Allreduce.

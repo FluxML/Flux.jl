@@ -8,8 +8,18 @@ using MLDataDevices: AbstractDevice, CUDADevice, AMDGPUDevice, functional, set_d
 
 function DistributedUtils.__initialize(
         ::Type{MPIBackend}; cuda_devices=nothing, amdgpu_devices=nothing,
-        force_cuda::Bool=false, caller::String="", force_amdgpu::Bool=false) # Undocumented internal kwarg 
-    !MPI.Initialized() && MPI.Init()
+        force_cuda::Bool=false, caller::String="", force::Bool=false,
+        # Undocumented internal kwargs
+        force_amdgpu::Bool=false)
+
+    mpi_initialized = MPI.Initialized()
+    if !force && !mpi_initialized
+        msg = DistributedUtils.__check_launcher_compat(
+            ENV; library=MPI.MPI_LIBRARY, force=force, mpi_initialized=mpi_initialized)
+        msg === nothing || error(msg)
+    end
+
+    !mpi_initialized && MPI.Init()
     DistributedUtils.MPI_Initialized[] = true
 
     local_rank = MPI.Comm_rank(MPI.COMM_WORLD)
