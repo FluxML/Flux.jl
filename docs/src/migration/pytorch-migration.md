@@ -110,21 +110,19 @@ wherever you would use that parameter.
 
 ## Training Loop
 
-A single step in Flux is simple `gradient` followed by `update!`.
+A single step in Flux is simple `gradient` followed by `update!`. Both steps can be combined with the `train!` function, and can
+also be used to iterate over a set of paired training inputs and outputs.
 
 In PyTorch there are more steps: the optimizer's gradients must be zeroed with `.zero_grad()`, then the loss is calculated,
 then the tensor returned from the loss function is backward-propagated with `.backward()` to compute the gradients, and finally
 the optimizer is stepped forward and the model parameters are updated with `.step()`.
-
-In Flux, both steps can be combined with the `train!` function, and can also be used to iterate over a set of paired training inputs
-and outputs.
 
 In Flux, an optimizer state object is first obtained by `setup`, and this state is passed to the training loop. In PyTorch, the
 optimizer object itself is manipulated in the training loop.
 
 ## Miscellaneous
 
-`torch.where` => `ifelse.()`
+`torch.where` => `Base.ifelse.()`
 
 `torch.squeeze` => `Base.dropdims`
 
