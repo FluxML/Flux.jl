@@ -81,7 +81,7 @@ end
 ## Gradient Modification
 
 `torch.nn.utils.clip_grad_norm_` norms the gradients across the whole network and clips them. It does not currently have a direct
-equivalent in Flux. `ClipNorm` only operates within a single array. It  You can accomplish it with something like:
+equivalent in Flux. `ClipNorm` only operates within a single array. You can accomplish this with something like:
 ```
 function global_grad_norm(grads)
     acc = 0.0
