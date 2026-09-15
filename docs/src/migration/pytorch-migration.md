@@ -64,7 +64,7 @@ argument of a layer.
 ## Forward Pass
 
 In PyTorch, the forward pass is defined in a `forward` method of a `nn.Module` subclass. In Flux, the forward pass is defined by
-creating a defining a function on the layer object itself:
+creating a function on the layer object itself:
 
 ```python
 class MyLayer(nn.Module):
