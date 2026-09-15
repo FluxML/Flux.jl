@@ -55,7 +55,7 @@ To replicate the PyTorch default, you can use `init = Flux.kaiming_uniform(gain 
 ## Bias Initialization
 
 PyTorch initializes bias parameters with uniformly random values between `± 1 / √(fan_in)`, where `fan_in` in Flux is
-`first(nfan(filter..., cin÷groups, cout))` for `Conv`/`CrossCorr` layers. For `Dense` layers, last(nfan(out, in)) instead.
+`first(nfan(filter..., cin÷groups, cout))` for `Conv`/`CrossCorr` layers. For `Dense` layers, `last(nfan(out, in))` instead.
 Flux initializes them all to zero.
 
 To replicate the PyTorch default, you'll need to manually initialize a vector as described and pass it to the `bias` keyword
