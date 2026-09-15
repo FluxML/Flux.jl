@@ -126,9 +126,9 @@ optimizer object itself is manipulated in the training loop.
 
 `torch.where` => `ifelse.()`
 
-`torch.unsqueeze` => `Base.dropdims`
+`torch.squeeze` => `Base.dropdims`
 
-Many PyTorch utility methods have equivalents in `MLUtils.jl`.
+Many PyTorch utility methods (e.g. `unsqueeze`) have equivalents in `MLUtils.jl`.
 
 PyTorch has adopted the convention of using a trailing underscore to indicate a function that mutates its arguments.
 
