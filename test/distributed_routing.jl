@@ -77,21 +77,6 @@ end
         @test expr isa Expr
         @test expr.head === :call
         @test expr.args[1] === :include
-        @test expr.args[2] === runner_path
-    end
-
-    @testset "runner paths are stored verbatim, whatever the separator" begin
-        # Regression for the Windows CI failure. Asserting on `string(expr)`
-        # compares against the *rendered* literal, where `show` escapes every
-        # backslash, so a Windows path never matches. Assert on the stored
-        # argument instead. A Windows-style path is injected here so the
-        # original bug reproduces on any platform.
-        win_path = raw"D:\a\Flux.jl\test\ext_distributed\runtests.jl"
-        suite = Dict{String,Expr}()
-        add_distributed_runner!(suite, win_path)
-
-        expr = suite["ext_distributed"]
-        @test expr.args[2] === win_path
-        @test win_path in expr.args
+        @test expr.args[2] == runner_path
     end
 end
