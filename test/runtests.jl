@@ -2,6 +2,8 @@ using Pkg
 using Flux
 using ParallelTestRunner
 
+include(joinpath(@__DIR__, "test_utils_distributed.jl"))
+
 # --- Env flags ---
 
 ## Uncomment below to change the default test settings
@@ -35,8 +37,13 @@ FLUX_TEST_REACTANT  && Pkg.add("Reactant")  # must come after CUDA
 # --- Auto-discover all .jl files (except runtests.jl) ---
 testsuite = find_tests(@__DIR__)
 
+# The distributed child files are run only through the dedicated runner
+# `ext_distributed/runtests.jl`; never discover them as individual tests.
+strip_distributed_tests!(testsuite)
+
 # --- Remove non-test utility files picked up by discovery ---
 delete!(testsuite, "test_module")
+delete!(testsuite, "test_utils_distributed")
 delete!(testsuite, "ext_reactant/test_utils_reactant")
 delete!(testsuite, "test_common/normalization")
 delete!(testsuite, "test_common/gpu_recurrent")
@@ -50,10 +57,14 @@ delete!(testsuite, "test_common/gpu_recurrent")
 !FLUX_TEST_CUDA     && filter!(((k, _),) -> !startswith(k, "ext_cuda"),        testsuite)
 !FLUX_TEST_AMDGPU   && filter!(((k, _),) -> !startswith(k, "ext_amdgpu"),      testsuite)
 !FLUX_TEST_METAL    && filter!(((k, _),) -> !startswith(k, "ext_metal"),        testsuite)
-!(FLUX_TEST_DIST_MPI || FLUX_TEST_DIST_NCCL) &&
-    filter!(((k, _),) -> !startswith(k, "ext_distributed"), testsuite)
 !FLUX_TEST_ENZYME   && filter!(((k, _),) -> !startswith(k, "ext_enzyme"),       testsuite)
 !FLUX_TEST_REACTANT && filter!(((k, _),) -> !startswith(k, "ext_reactant"),     testsuite)
+
+# Enable the dedicated distributed runner (its child files are never run
+# individually) only when distributed tests are opted in.
+if FLUX_TEST_DIST_MPI || FLUX_TEST_DIST_NCCL
+    add_distributed_runner!(testsuite, joinpath(@__DIR__, "ext_distributed", "runtests.jl"))
+end
 
 
 # --- init_code: runs in every test subprocess before the test expression ---
