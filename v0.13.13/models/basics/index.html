@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Gradients and Layers · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../quickstart/">Quick Start</a></li><li><a class="tocitem" href="../overview/">Fitting a Line</a></li><li class="is-active"><a class="tocitem" href>Gradients and Layers</a><ul class="internal"><li><a class="tocitem" href="#man-taking-gradients"><span>Taking Gradients</span></a></li><li><a class="tocitem" href="#Building-Simple-Models"><span>Building Simple Models</span></a></li><li><a class="tocitem" href="#Building-Layers"><span>Building Layers</span></a></li><li><a class="tocitem" href="#Stacking-It-Up"><span>Stacking It Up</span></a></li><li><a class="tocitem" href="#Layer-Helpers"><span>Layer Helpers</span></a></li></ul></li><li><a class="tocitem" href="../../training/training/">Training</a></li><li><a class="tocitem" href="../recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../layers/">Built-in Layers</a></li><li><a class="tocitem" href="../activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../losses/">Loss Functions</a></li><li><a class="tocitem" href="../../training/reference/">Training API</a></li><li><a class="tocitem" href="../../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../../training/zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>Gradients and Layers</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Gradients and Layers</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/basics.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="man-basics"><a class="docs-heading-anchor" href="#man-basics">How Flux Works: Gradients and Layers</a><a id="man-basics-1"></a><a class="docs-heading-anchor-permalink" href="#man-basics" title="Permalink"></a></h1><h2 id="man-taking-gradients"><a class="docs-heading-anchor" href="#man-taking-gradients">Taking Gradients</a><a id="man-taking-gradients-1"></a><a class="docs-heading-anchor-permalink" href="#man-taking-gradients" title="Permalink"></a></h2><p>Flux&#39;s core feature is taking gradients of Julia code. The <code>gradient</code> function takes another Julia function <code>f</code> and a set of arguments, and returns the gradient with respect to each argument. (It&#39;s a good idea to try pasting these examples in the Julia terminal.)</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux
+
+julia&gt; f(x) = 3x^2 + 2x + 1;
+
+julia&gt; df(x) = gradient(f, x)[1]; # df/dx = 6x + 2
+
+julia&gt; df(2)
+14.0
+
+julia&gt; d2f(x) = gradient(df, x)[1]; # d²f/dx² = 6
+
+julia&gt; d2f(2)
+6.0</code></pre><p>When a function has many parameters, we can get gradients of each one at the same time:</p><pre><code class="language-julia-repl hljs">julia&gt; f(x, y) = sum((x .- y).^2);
+
+julia&gt; gradient(f, [2, 1], [2, 0])
+([0.0, 2.0], [-0.0, -2.0])</code></pre><p>These gradients are based on <code>x</code> and <code>y</code>. Flux works by instead taking gradients based on the weights and biases that make up the parameters of a model.</p><p>Machine learning often can have <em>hundreds</em> of parameter arrays. Instead of passing them to <code>gradient</code> individually, we can store them together in a structure. The simplest example is a named tuple, created by the following syntax:</p><pre><code class="language-julia-repl hljs">julia&gt; nt = (a = [2, 1], b = [2, 0], c = tanh);
+
+julia&gt; g(x::NamedTuple) = sum(abs2, x.a .- x.b);
+
+julia&gt; g(nt)
+1
+
+julia&gt; dg_nt = gradient(g, nt)[1]
+(a = [0.0, 2.0], b = [-0.0, -2.0], c = nothing)</code></pre><p>Notice that <code>gradient</code> has returned a matching structure. The field <code>dg_nt.a</code> is the gradient for <code>nt.a</code>, and so on. Some fields have no gradient, indicated by <code>nothing</code>. </p><p>Rather than define a function like <code>g</code> every time (and think up a name for it), it is often useful to use anonymous functions: this one is <code>x -&gt; sum(abs2, x.a .- x.b)</code>. Anonymous functions can be defined either with <code>-&gt;</code> or with <code>do</code>, and such <code>do</code> blocks are often useful if you have a few steps to perform:</p><pre><code class="language-julia-repl hljs">julia&gt; gradient((x, y) -&gt; sum(abs2, x.a ./ y .- x.b), nt, [1, 2])
+((a = [0.0, 0.5], b = [-0.0, -1.0], c = nothing), [-0.0, -0.25])
+
+julia&gt; gradient(nt, [1, 2]) do x, y
+         z = x.a ./ y
+         sum(abs2, z .- x.b)
+       end
+((a = [0.0, 0.5], b = [-0.0, -1.0], c = nothing), [-0.0, -0.25])</code></pre><p>Sometimes you may want to know the value of the function, as well as its gradient. Rather than calling the function a second time, you can call <a href="../../training/zygote/#Zygote.withgradient"><code>withgradient</code></a> instead:</p><pre><code class="nohighlight hljs">julia&gt; Flux.withgradient(g, nt)
+(val = 1, grad = ((a = [0.0, 2.0], b = [-0.0, -2.0], c = nothing),))</code></pre><div class="admonition is-info"><header class="admonition-header">Implicit gradients</header><div class="admonition-body"><p>Flux used to handle many parameters in a different way, using the <a href="../../training/reference/#Flux.params"><code>params</code></a> function. This uses a method of <code>gradient</code> which takes a zero-argument function, and returns a dictionary through which the resulting gradients can be looked up:</p><pre><code class="language-julia-repl hljs">julia&gt; x = [2, 1];
+
+julia&gt; y = [2, 0];
+
+julia&gt; gs = gradient(Flux.params(x, y)) do
+         f(x, y)
+       end
+Grads(...)
+
+julia&gt; gs[x]
+2-element Vector{Float64}:
+ 0.0
+ 2.0
+
+julia&gt; gs[y]
+2-element Vector{Float64}:
+ -0.0
+ -2.0</code></pre></div></div><h2 id="Building-Simple-Models"><a class="docs-heading-anchor" href="#Building-Simple-Models">Building Simple Models</a><a id="Building-Simple-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Building-Simple-Models" title="Permalink"></a></h2><p>Consider a simple linear regression, which tries to predict an output array <code>y</code> from an input <code>x</code>.</p><pre><code class="language-julia hljs">W = rand(2, 5)
+b = rand(2)
+
+predict(x) = W*x .+ b
+
+function loss(x, y)
+  ŷ = predict(x)
+  sum((y .- ŷ).^2)
+end
+
+x, y = rand(5), rand(2) # Dummy data
+loss(x, y) # ~ 3</code></pre><p>To improve the prediction we can take the gradients of the loss with respect to <code>W</code> and <code>b</code> and perform gradient descent.</p><pre><code class="language-julia hljs">using Flux
+
+gs = gradient(() -&gt; loss(x, y), Flux.params(W, b))</code></pre><p>Now that we have gradients, we can pull them out and update <code>W</code> to train the model.</p><pre><code class="language-julia hljs">W̄ = gs[W]
+
+W .-= 0.1 .* W̄
+
+loss(x, y) # ~ 2.5</code></pre><p>The loss has decreased a little, meaning that our prediction <code>x</code> is closer to the target <code>y</code>. If we have some data we can already try <a href="../../training/training/">training the model</a>.</p><p>All deep learning in Flux, however complex, is a simple generalisation of this example. Of course, models can <em>look</em> very different – they might have millions of parameters or complex control flow. Let&#39;s see how Flux handles more complex models.</p><h2 id="Building-Layers"><a class="docs-heading-anchor" href="#Building-Layers">Building Layers</a><a id="Building-Layers-1"></a><a class="docs-heading-anchor-permalink" href="#Building-Layers" title="Permalink"></a></h2><p>It&#39;s common to create more complex models than the linear regression above. For example, we might want to have two linear layers with a nonlinearity like <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid</a> (<code>σ</code>) in between them. In the above style we could write this as:</p><pre><code class="language-julia hljs">using Flux
+
+W1 = rand(3, 5)
+b1 = rand(3)
+layer1(x) = W1 * x .+ b1
+
+W2 = rand(2, 3)
+b2 = rand(2)
+layer2(x) = W2 * x .+ b2
+
+model(x) = layer2(σ.(layer1(x)))
+
+model(rand(5)) # =&gt; 2-element vector</code></pre><p>This works but is fairly unwieldy, with a lot of repetition – especially as we add more layers. One way to factor this out is to create a function that returns linear layers.</p><pre><code class="language-julia hljs">function linear(in, out)
+  W = randn(out, in)
+  b = randn(out)
+  x -&gt; W * x .+ b
+end
+
+linear1 = linear(5, 3) # we can access linear1.W etc
+linear2 = linear(3, 2)
+
+model(x) = linear2(σ.(linear1(x)))
+
+model(rand(5)) # =&gt; 2-element vector</code></pre><p>Another (equivalent) way is to create a struct that explicitly represents the affine layer.</p><pre><code class="language-julia hljs">struct Affine
+  W
+  b
+end
+
+Affine(in::Integer, out::Integer) =
+  Affine(randn(out, in), randn(out))
+
+# Overload call, so the object can be used as a function
+(m::Affine)(x) = m.W * x .+ m.b
+
+a = Affine(10, 5)
+
+a(rand(10)) # =&gt; 5-element vector</code></pre><p>Congratulations! You just built the <code>Dense</code> layer that comes with Flux. Flux has many interesting layers available, but they&#39;re all things you could have built yourself very easily.</p><p>(There is one small difference with <code>Dense</code> – for convenience it also takes an activation function, like <code>Dense(10 =&gt; 5, σ)</code>.)</p><h2 id="Stacking-It-Up"><a class="docs-heading-anchor" href="#Stacking-It-Up">Stacking It Up</a><a id="Stacking-It-Up-1"></a><a class="docs-heading-anchor-permalink" href="#Stacking-It-Up" title="Permalink"></a></h2><p>It&#39;s pretty common to write models that look something like:</p><pre><code class="language-julia hljs">layer1 = Dense(10 =&gt; 5, σ)
+# ...
+model(x) = layer3(layer2(layer1(x)))</code></pre><p>For long chains, it might be a bit more intuitive to have a list of layers, like this:</p><pre><code class="language-julia hljs">using Flux
+
+layers = [Dense(10 =&gt; 5, σ), Dense(5 =&gt; 2), softmax]
+
+model(x) = foldl((x, m) -&gt; m(x), layers, init = x)
+
+model(rand(10)) # =&gt; 2-element vector</code></pre><p>Handily, this is also provided for in Flux:</p><pre><code class="language-julia hljs">model2 = Chain(
+  Dense(10 =&gt; 5, σ),
+  Dense(5 =&gt; 2),
+  softmax)
+
+model2(rand(10)) # =&gt; 2-element vector</code></pre><p>This quickly starts to look like a high-level deep learning library; yet you can see how it falls out of simple abstractions, and we lose none of the power of Julia code.</p><p>A nice property of this approach is that because &quot;models&quot; are just functions (possibly with trainable parameters), you can also see this as simple function composition.</p><pre><code class="language-julia hljs">m = Dense(5 =&gt; 2) ∘ Dense(10 =&gt; 5, σ)
+
+m(rand(10))</code></pre><p>Likewise, <code>Chain</code> will happily work with any Julia function.</p><pre><code class="language-julia hljs">m = Chain(x -&gt; x^2, x -&gt; x+1)
+
+m(5) # =&gt; 26</code></pre><h2 id="Layer-Helpers"><a class="docs-heading-anchor" href="#Layer-Helpers">Layer Helpers</a><a id="Layer-Helpers-1"></a><a class="docs-heading-anchor-permalink" href="#Layer-Helpers" title="Permalink"></a></h2><p>There is still one problem with this <code>Affine</code> layer, that Flux does not know to look inside it. This means that <a href="../../training/reference/#Flux.Optimise.train!-NTuple{4, Any}"><code>Flux.train!</code></a> won&#39;t see its parameters, nor will <a href="../../gpu/#Flux.gpu"><code>gpu</code></a> be able to move them to your GPU. These features are enabled by the <a href="../functors/#Functors.@functor"><code>@functor</code></a> macro:</p><pre><code class="nohighlight hljs">Flux.@functor Affine</code></pre><p>Finally, most Flux layers make bias optional, and allow you to supply the function used for generating random weights. We can easily add these refinements to the <code>Affine</code> layer as follows, using the helper function <a href="../../utilities/#Flux.create_bias"><code>create_bias</code></a>:</p><pre><code class="nohighlight hljs">function Affine((in, out)::Pair; bias=true, init=Flux.randn32)
+  W = init(out, in)
+  b = Flux.create_bias(W, bias, out)
+  Affine(W, b)
+end
+
+Affine(3 =&gt; 1, bias=false, init=ones) |&gt; gpu</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Fitting a Line</a><a class="docs-footer-nextpage" href="../../training/training/">Training »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 18 February 2023 05:37">Saturday 18 February 2023</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
