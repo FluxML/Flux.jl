@@ -17,7 +17,7 @@ jobs:
       # so it can emit diagnostics before GitHub terminates the step.
       FLUX_TEST_DISTRIBUTED_TIMEOUT: "900"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
@@ -57,7 +57,7 @@ jobs:
     # plain system launcher: production users choose their own process
     # placement, and the test harness stays MPI-flavor-agnostic.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
