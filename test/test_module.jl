@@ -99,15 +99,16 @@ end
 
 _default_fdm() = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)
 
-# Enzyme is compared by default only when the Enzyme tests are enabled.
-_default_compare() = FLUX_TEST_ENZYME ? [AutoZygote(), AutoEnzyme()] : [AutoZygote()]
+# Enzyme is compared by default only when the Enzyme tests are enabled, and only on CPU:
+# on GPU it is slow to compile and fails for many layers, see ext_cuda/enzyme.jl.
+_default_compare(test_gpu) = FLUX_TEST_ENZYME && !test_gpu ? [AutoZygote(), AutoEnzyme()] : [AutoZygote()]
 
 """
 Compare the `reference` AD backend with the `compare` AD backends on the gradients of `f` at `xs...`.
 The loss function can be customized (default is mean over outputs).
 
-`compare` can be a single AD backend or a list of them. It defaults to Zygote and,
-unless `FLUX_TEST_ENZYME` is false, Enzyme. With `compare=nothing` the `reference` backend is used.
+`compare` can be a single AD backend or a list of them. It defaults to Zygote, plus Enzyme
+for CPU-only calls unless `FLUX_TEST_ENZYME` is false.
 
 - If `test_gpu` is true, the `compare` backends are tested on GPU.
 - If `test_cpu` is true, the `compare` backends are tested on CPU.
@@ -122,14 +123,12 @@ function test_gradients(
             test_cpu = true,
             test_reactant = false,
             reference = AutoFiniteDifferences(; fdm = _default_fdm()),
-            compare = _default_compare(),
+            compare = _default_compare(test_gpu),
             loss = (f, xs...) -> mean(f(xs...)),
             test_mode = false,
             )
 
     @assert reference !== nothing "reference AD backend must be provided"
-    @assert compare !== nothing || test_gpu "compare AD backend must be provided if test_gpu=false"
-    compare = compare === nothing ? reference : compare
     backends = compare isa Union{Tuple, AbstractVector} ? compare : (compare,)
 
     if test_mode

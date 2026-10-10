@@ -44,13 +44,13 @@ end
     m = Chain(Dense(10, 5, tanh), Dense(5, 2), softmax)
     x = rand(Float32, 10, 10) 
     @test (m|>gpu)(x|>gpu) isa MtlArray{Float32, 2}
-    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote())
 end
 
 @testset "gradients" begin
     for (model, x, name) in TEST_MODELS
         @testset "Zygote grad check $name" begin
-            @test test_gradients(model, x; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+            @test test_gradients(model, x; test_gpu=true, test_cpu=false, reference=AutoZygote())
         end
     end
 end

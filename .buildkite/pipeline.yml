@@ -13,7 +13,7 @@ steps:
     env:
       FLUX_TEST_CUDA: "true"
       FLUX_TEST_CPU: "false"
-      FLUX_TEST_ENZYME: "false"
+      FLUX_TEST_ENZYME: "true"
       FLUX_TEST_REACTANT: "true"
     timeout_in_minutes: 60
 
