@@ -1,0 +1,131 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>
+Storing Models · Flux
+    </title><script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+
+    </script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><script>
+documenterBaseURL=".."
+    </script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../versions.js"></script><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>
+Flux
+      </h1><form action="../search.html" class="search"><select id="version-selector" onchange="window.location.href=this.value"><option disabled="disabled" selected="selected" value="#">
+Version
+          </option></select><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">
+Home
+          </a></li><li><span class="toctext">
+Building Models
+          </span><ul><li><a class="toctext" href="../models/basics.html">
+Model Building Basics
+              </a></li><li><a class="toctext" href="../models/templates.html">
+Model Templates
+              </a></li><li><a class="toctext" href="../models/recurrent.html">
+Recurrence
+              </a></li><li><a class="toctext" href="../models/debugging.html">
+Debugging
+              </a></li></ul></li><li><span class="toctext">
+Other APIs
+          </span><ul><li><a class="toctext" href="batching.html">
+Batching
+              </a></li><li><a class="toctext" href="backends.html">
+Backends
+              </a></li><li class="current"><a class="toctext" href="storage.html">
+Storing Models
+              </a><ul class="internal"></ul></li></ul></li><li><span class="toctext">
+In Action
+          </span><ul><li><a class="toctext" href="../examples/logreg.html">
+Simple MNIST
+              </a></li><li><a class="toctext" href="../examples/char-rnn.html">
+Char RNN
+              </a></li></ul></li><li><a class="toctext" href="../contributing.html">
+Contributing &amp; Help
+          </a></li><li><a class="toctext" href="../internals.html">
+Internals
+          </a></li></ul></nav><article id="docs"><header><nav><ul><li>
+Other APIs
+            </li><li><a href="storage.html">
+Storing Models
+              </a></li></ul><a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/efcb9650da31c183b94b839f66aa3467d007c33f/docs/src/apis/storage.md"><span class="fa">
+
+            </span>
+ Edit on GitHub
+          </a></nav><hr/></header><h1><a class="nav-anchor" href="#Loading-and-Saving-Models-1" id="Loading-and-Saving-Models-1">
+Loading and Saving Models
+        </a></h1><pre><code class="language-julia">model = Chain(Affine(10, 20), σ, Affine(20, 15), softmax)</code></pre><p>
+Since models are just simple Julia data structures, it's very easy to save and load them using any of Julia's existing serialisation formats. For example, using Julia's built-in 
+<code>serialize</code>
+:
+      </p><pre><code class="language-julia">open(io -&gt; serialize(io, model), "model.jls", "w")
+open(io -&gt; deserialize(io), "model.jls")</code></pre><p>
+One issue with 
+<code>serialize</code>
+ is that it doesn't promise compatibility between major Julia versions. For longer-term storage it's good to use a package like 
+        <a href="https://github.com/JuliaIO/JLD.jl">
+JLD
+        </a>
+.
+      </p><pre><code class="language-julia">using JLD
+@save "model.jld" model
+@load "model.jld"</code></pre><p>
+However, JLD will break for some models as functions are not supported on 0.5+. You can resolve that by checking out 
+        <a href="https://github.com/JuliaIO/JLD.jl/pull/137">
+this branch
+        </a>
+.
+      </p><p>
+Right now this is the only storage format Flux supports. In future Flux will support loading and saving other model formats (on an as-needed basis).
+      </p><footer><hr/><a class="previous" href="backends.html"><span class="direction">
+Previous
+          </span><span class="title">
+Backends
+          </span></a><a class="next" href="../examples/logreg.html"><span class="direction">
+Next
+          </span><span class="title">
+Simple MNIST
+          </span></a></footer></article></body></HTML>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Utility Functions · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview', {'page': location.pathname + location.search + location.hash});
+</script><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/flux.css" rel="stylesheet" type="text/css"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Flux</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li><a class="tocitem" href="../models/basics/">Basics</a></li><li><a class="tocitem" href="../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../models/regularisation/">Regularisation</a></li><li><a class="tocitem" href="../models/layers/">Model Reference</a></li><li><a class="tocitem" href="../models/advanced/">Advanced Model Building</a></li><li><a class="tocitem" href="../models/nnlib/">NNlib</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../data/onehot/">One-Hot Encoding</a></li><li><a class="tocitem" href="../data/dataloader/">DataLoader</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../training/training/">Training</a></li></ul></li><li><a class="tocitem" href="../gpu/">GPU Support</a></li><li><a class="tocitem" href="../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../ecosystem/">The Julia Ecosystem</a></li><li class="is-active"><a class="tocitem" href>Utility Functions</a><ul class="internal"><li><a class="tocitem" href="#Working-with-Data-1"><span>Working with Data</span></a></li><li><a class="tocitem" href="#Layer-Initialization-1"><span>Layer Initialization</span></a></li><li><a class="tocitem" href="#Model-Abstraction-1"><span>Model Abstraction</span></a></li><li><a class="tocitem" href="#Callback-Helpers-1"><span>Callback Helpers</span></a></li></ul></li><li><a class="tocitem" href="../performance/">Performance Tips</a></li><li><a class="tocitem" href="../datasets/">Datasets</a></li><li><a class="tocitem" href="../community/">Community</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Utility Functions</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Utility Functions</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/utilities.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Utility-Functions-1"><a class="docs-heading-anchor" href="#Utility-Functions-1">Utility Functions</a><a class="docs-heading-anchor-permalink" href="#Utility-Functions-1" title="Permalink"></a></h1><p>Flux contains some utility functions for working with data; these functions help create inputs for your models or batch your dataset. Other functions can be used to initialize your layers or to regularly execute callback functions.</p><h2 id="Working-with-Data-1"><a class="docs-heading-anchor" href="#Working-with-Data-1">Working with Data</a><a class="docs-heading-anchor-permalink" href="#Working-with-Data-1" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Flux.unsqueeze" href="#Flux.unsqueeze"><code>Flux.unsqueeze</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">unsqueeze(xs, dim)</code></pre><p>Return <code>xs</code> reshaped into an <code>Array</code> one dimensionality higher than <code>xs</code>, where <code>dim</code> indicates in which dimension <code>xs</code> is extended.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; xs = [[1, 2], [3, 4], [5, 6]]
+3-element Array{Array{Int64,1},1}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+
+julia&gt; Flux.unsqueeze(xs, 1)
+1×3 Array{Array{Int64,1},2}:
+ [1, 2]  [3, 4]  [5, 6]
+
+julia&gt; Flux.unsqueeze([1 2; 3 4], 2)
+2×1×2 Array{Int64,3}:
+[:, :, 1] =
+ 1
+ 3
+
+[:, :, 2] =
+ 2
+ 4</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L46-L74">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.stack" href="#Flux.stack"><code>Flux.stack</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">stack(xs, dim)</code></pre><p>Concatenate the given <code>Array</code> of <code>Array</code>s <code>xs</code> into a single <code>Array</code> along the given dimension <code>dim</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; xs = [[1, 2], [3, 4], [5, 6]]
+3-element Array{Array{Int64,1},1}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+
+julia&gt; Flux.stack(xs, 1)
+3×2 Array{Int64,2}:
+ 1  2
+ 3  4
+ 5  6
+
+julia&gt; cat(xs, dims=1)
+3-element Array{Array{Int64,1},1}:
+ [1, 2]
+ [3, 4]
+ [5, 6]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L77-L103">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.unstack" href="#Flux.unstack"><code>Flux.unstack</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">unstack(xs, dim)</code></pre><p>Unroll the given <code>xs</code> into an <code>Array</code> of <code>Array</code>s along the given dimension <code>dim</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.unstack([1 3 5 7; 2 4 6 8], 2)
+4-element Array{Array{Int64,1},1}:
+ [1, 2]
+ [3, 4]
+ [5, 6]
+ [7, 8]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L106-L120">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.chunk" href="#Flux.chunk"><code>Flux.chunk</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">chunk(xs, n)</code></pre><p>Split <code>xs</code> into <code>n</code> parts.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.chunk(1:10, 3)
+3-element Array{UnitRange{Int64},1}:
+ 1:4
+ 5:8
+ 9:10
+
+julia&gt; Flux.chunk(collect(1:10), 3)
+3-element Array{SubArray{Int64,1,Array{Int64,1},Tuple{UnitRange{Int64}},true},1}:
+ [1, 2, 3, 4]
+ [5, 6, 7, 8]
+ [9, 10]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L123-L142">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.frequencies" href="#Flux.frequencies"><code>Flux.frequencies</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">frequencies(xs)</code></pre><p>Count the number of times that each element of <code>xs</code> appears.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.frequencies([&#39;a&#39;,&#39;b&#39;,&#39;b&#39;])
+Dict{Char,Int64} with 2 entries:
+  &#39;a&#39; =&gt; 1
+  &#39;b&#39; =&gt; 2</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L147-L159">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.batch" href="#Flux.batch"><code>Flux.batch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">batch(xs)</code></pre><p>Batch the arrays in <code>xs</code> into a single array.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.batch([[1,2,3],[4,5,6]])
+3×2 Array{Int64,2}:
+ 1  4
+ 2  5
+ 3  6</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L172-L185">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.batchseq" href="#Flux.batchseq"><code>Flux.batchseq</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">batchseq(seqs, pad)</code></pre><p>Take a list of <code>N</code> sequences, and turn them into a single sequence where each item is a batch of <code>N</code>. Short sequences will be padded by <code>pad</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.batchseq([[1, 2, 3], [4, 5]], 0)
+3-element Array{Array{Int64,1},1}:
+ [1, 4]
+ [2, 5]
+ [3, 0]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L217-L231">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Base.rpad-Tuple{AbstractArray{T,1} where T,Integer,Any}" href="#Base.rpad-Tuple{AbstractArray{T,1} where T,Integer,Any}"><code>Base.rpad</code></a> — <span class="docstring-category">Method</span></header><section><div><p>Return the given sequence padded with <code>p</code> up to a maximum length of <code>n</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; rpad([1, 2], 4, 0)
+4-element Array{Int64,1}:
+ 1
+ 2
+ 0
+ 0
+
+julia&gt; rpad([1, 2, 3], 2, 0)
+3-element Array{Int64,1}:
+ 1
+ 2
+ 3</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L196-L214">source</a></section></article><h2 id="Layer-Initialization-1"><a class="docs-heading-anchor" href="#Layer-Initialization-1">Layer Initialization</a><a class="docs-heading-anchor-permalink" href="#Layer-Initialization-1" title="Permalink"></a></h2><p>These are primarily useful if you are planning to write your own layers. Flux initializes convolutional layers and recurrent cells with <code>glorot_uniform</code> by default. To change the default on an applicable layer, pass the desired function with the <code>init</code> keyword. For example:</p><pre><code class="language-julia-repl">julia&gt; conv = Conv((3, 3), 1 =&gt; 8, relu; init=Flux.glorot_normal)
+Conv((3, 3), 1=&gt;8, relu)</code></pre><article class="docstring"><header><a class="docstring-binding" id="Flux.glorot_uniform" href="#Flux.glorot_uniform"><code>Flux.glorot_uniform</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">glorot_uniform(dims...)</code></pre><p>Return an <code>Array</code> of size <code>dims</code> containing random variables taken from a uniform distribution in the interval <span>$[-x, x]$</span>, where <code>x = sqrt(24 / sum(dims)) / 2</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.glorot_uniform(2, 3)
+2×3 Array{Float32,2}:
+ 0.601094  -0.57414   -0.814925
+ 0.900868   0.805994   0.057514</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L7-L20">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.glorot_normal" href="#Flux.glorot_normal"><code>Flux.glorot_normal</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">glorot_normal(dims...)</code></pre><p>Return an <code>Array</code> of size <code>dims</code> containing random variables taken from a normal distribution with mean 0 and standard deviation <code>sqrt(2 / sum(dims))</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl">julia&gt; Flux.glorot_normal(3, 2)
+3×2 Array{Float32,2}:
+  0.429505  -0.0852891
+  0.523935   0.371009
+ -0.223261   0.188052</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L23-L37">source</a></section></article><h2 id="Model-Abstraction-1"><a class="docs-heading-anchor" href="#Model-Abstraction-1">Model Abstraction</a><a class="docs-heading-anchor-permalink" href="#Model-Abstraction-1" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Flux.destructure" href="#Flux.destructure"><code>Flux.destructure</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">destructure(m)</code></pre><p>Flatten a model&#39;s parameters into a single weight vector.</p><pre><code class="language-none">julia&gt; m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+
+julia&gt; θ, re = destructure(m);
+
+julia&gt; θ
+67-element Array{Float32,1}:
+-0.1407104
+...</code></pre><p>The second return value <code>re</code> allows you to reconstruct the original network after making modifications to the weight vector (for example, with a hypernetwork).</p><pre><code class="language-none">julia&gt; re(θ .* 2)
+Chain(Dense(10, 5, σ), Dense(5, 2), softmax)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L253-L273">source</a></section></article><h2 id="Callback-Helpers-1"><a class="docs-heading-anchor" href="#Callback-Helpers-1">Callback Helpers</a><a class="docs-heading-anchor-permalink" href="#Callback-Helpers-1" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="Flux.throttle" href="#Flux.throttle"><code>Flux.throttle</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">throttle(f, timeout; leading=true, trailing=false)</code></pre><p>Return a function that when invoked, will only be triggered at most once during <code>timeout</code> seconds.</p><p>Normally, the throttled function will run as much as it can, without ever going more than once per <code>wait</code> duration; but if you&#39;d like to disable the execution on the leading edge, pass <code>leading=false</code>. To enable execution on the trailing edge, pass <code>trailing=true</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/utils.jl#L285-L295">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="Flux.Optimise.stop" href="#Flux.Optimise.stop"><code>Flux.Optimise.stop</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia">stop()</code></pre><p>Call <code>Flux.stop()</code> in a callback to indicate when a callback condition is met. This will trigger the train loop to stop and exit.</p><p><strong>Examples</strong></p><pre><code class="language-julia">cb = function ()
+  accuracy() &gt; 0.9 &amp;&amp; Flux.stop()
+end</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/FluxML/Flux.jl/blob/fd4fbac353790f24367014b17bcfd8da7f3d465b/src/optimise/train.jl#L42-L54">source</a></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../ecosystem/">« The Julia Ecosystem</a><a class="docs-footer-nextpage" href="../performance/">Performance Tips »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 11 June 2020 00:31">Thursday 11 June 2020</span>. Using Julia version 1.3.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

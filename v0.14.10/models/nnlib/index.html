@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Low-level Operations – NNlib.jl · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../quickstart/">Quick Start</a></li><li><a class="tocitem" href="../overview/">Fitting a Line</a></li><li><a class="tocitem" href="../basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li><li><a class="tocitem" href="../recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../layers/">Built-in Layers</a></li><li><a class="tocitem" href="../activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../losses/">Loss Functions</a></li><li><a class="tocitem" href="../../training/reference/">Training API</a></li><li><a class="tocitem" href="../../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../../training/zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl</a></li><li class="is-active"><a class="tocitem" href>Low-level Operations – NNlib.jl</a><ul class="internal"><li><a class="tocitem" href="#Attention"><span>Attention</span></a></li><li><a class="tocitem" href="#Softmax"><span>Softmax</span></a></li><li><a class="tocitem" href="#Pooling"><span>Pooling</span></a></li><li><a class="tocitem" href="#Padding"><span>Padding</span></a></li><li><a class="tocitem" href="#Convolution"><span>Convolution</span></a></li><li><a class="tocitem" href="#Dropout"><span>Dropout</span></a></li><li><a class="tocitem" href="#Upsampling"><span>Upsampling</span></a></li><li><a class="tocitem" href="#Batched-Operations"><span>Batched Operations</span></a></li><li><a class="tocitem" href="#Gather-and-Scatter"><span>Gather and Scatter</span></a></li><li><a class="tocitem" href="#Sampling"><span>Sampling</span></a></li><li><a class="tocitem" href="#Losses"><span>Losses</span></a></li><li><a class="tocitem" href="#Miscellaneous"><span>Miscellaneous</span></a></li></ul></li><li><a class="tocitem" href="../functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Reference</a></li><li class="is-active"><a href>Low-level Operations – NNlib.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Low-level Operations – NNlib.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/nnlib.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Neural-Network-primitives-from-NNlib.jl"><a class="docs-heading-anchor" href="#Neural-Network-primitives-from-NNlib.jl">Neural Network primitives from NNlib.jl</a><a id="Neural-Network-primitives-from-NNlib.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Neural-Network-primitives-from-NNlib.jl" title="Permalink"></a></h1><p>Flux re-exports all of the functions exported by the <a href="https://github.com/FluxML/NNlib.jl">NNlib</a> package. This includes activation functions, described on <a href="../activation/#man-activations">their own page</a>. Many of the functions on this page exist primarily as the internal implementation of Flux layer, but can also be used independently.</p><h2 id="Attention"><a class="docs-heading-anchor" href="#Attention">Attention</a><a id="Attention-1"></a><a class="docs-heading-anchor-permalink" href="#Attention" title="Permalink"></a></h2><p>Primitives for the <a href="models/ref"><code>MultiHeadAttention</code></a> layer.</p><article class="docstring"><header><a class="docstring-binding" id="NNlib.dot_product_attention" href="#NNlib.dot_product_attention"><code>NNlib.dot_product_attention</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">dot_product_attention(query, key, value, [bias]; [fdrop, mask, nheads])</code></pre><p>Multihead dot product attention used in transformer architectures.</p><p>The input arrays must have the first two dimensions given by the number of features and the sequence length, then an arbitrary number of batch dimensions or none.</p><p>Returns the attention output array of size <code>(v_dim, q_len, batch_size...)</code> and the attention scores of size <code>(kv_len, q_len, nheads, batch_size...)</code>.</p><p>See also <a href="#NNlib.dot_product_attention_scores"><code>dot_product_attention_scores</code></a> if you only need the attention scores.</p><p><strong>Arguments</strong></p><ul><li><code>query</code>: Query array of size <code>(qk_dim, q_len, batch_size...)</code>.</li><li><code>key</code>: Key array of size <code>(qk_dim, kv_len, batch_size...)</code>.</li><li><code>value</code>: Value array of size <code>(v_dim, kv_len, batch_size...)</code>.</li><li><code>bias</code>: Either <code>nothing</code> or an array broadcastable to size <code>(kv_len, q_len, nheads, batch_size)</code>.         It will be added to the attention scores before applying the softmax. Default <code>nothing</code>.</li><li><code>fdrop</code>: A dropout function or layer to be applied on the attention scores right after the softmax.          Default <code>identity</code> (no dropout).</li><li><code>mask</code>: Either <code>nothing</code> or a boolean array broadcastable to size <code>(kv_len, q_len, nheads, batch_size)</code>.         The mask is applied to the attention scores just before the softmax.         See <a href="#NNlib.make_causal_mask"><code>make_causal_mask</code></a> fore creating causal masks. Default <code>nothing</code>.</li><li><code>nheads</code>: Number of heads to split the input arrays into. Default <code>1</code>.</li></ul><p><strong>Examples</strong></p><pre><code class="language-julia hljs">q, k, v = rand(10, 20, 2), rand(10, 30, 2), rand(20, 30, 2)
+y, α = dot_product_attention(q, k, v)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.dot_product_attention_scores" href="#NNlib.dot_product_attention_scores"><code>NNlib.dot_product_attention_scores</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">dot_product_attention_scores(query, key, [bias]; [fdrop, mask])</code></pre><p>Return the attention scores for the <a href="#NNlib.dot_product_attention"><code>dot_product_attention</code></a>. Input arrays must have dimensions <code>(num_features ÷ nheads, nheads, sequence_length, batch_size)</code>.</p><p>See <a href="#NNlib.dot_product_attention"><code>dot_product_attention</code></a> for more details.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.make_causal_mask" href="#NNlib.make_causal_mask"><code>NNlib.make_causal_mask</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">make_causal_mask(x, dims=2)</code></pre><p>Return a boolean square matrix <code>m</code> of the same type as <code>x</code> and of side <code>size(x, dims)</code>. Its elements are set such that <code>m[i, j] == i ≤ j</code>.</p><p>Can be used to mask the attention scores in <a href="#NNlib.dot_product_attention"><code>dot_product_attention</code></a>.</p></div></section></article><h2 id="Softmax"><a class="docs-heading-anchor" href="#Softmax">Softmax</a><a id="Softmax-1"></a><a class="docs-heading-anchor-permalink" href="#Softmax" title="Permalink"></a></h2><p><code>Flux</code>&#39;s <a href="../losses/#Flux.Losses.logitcrossentropy"><code>Flux.logitcrossentropy</code></a> uses <a href="#NNlib.logsoftmax"><code>NNlib.logsoftmax</code></a> internally.</p><article class="docstring"><header><a class="docstring-binding" id="NNlib.softmax" href="#NNlib.softmax"><code>NNlib.softmax</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">softmax(x; dims = 1)</code></pre><p><a href="https://en.wikipedia.org/wiki/Softmax_function">Softmax</a> turns input array <code>x</code> into probability distributions that sum to 1 along the dimensions specified by <code>dims</code>. It is semantically equivalent to the following:</p><pre><code class="nohighlight hljs">softmax(x; dims = 1) = exp.(x) ./ sum(exp.(x), dims = dims)</code></pre><p>with additional manipulations enhancing numerical stability.</p><p>For a matrix input <code>x</code> it will by default (<code>dims = 1</code>) treat it as a batch of vectors, with each column independent. Keyword <code>dims = 2</code> will instead treat rows independently, and so on.</p><p>See also <a href="#NNlib.logsoftmax"><code>logsoftmax</code></a>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; softmax([1, 2, 3])
+3-element Vector{Float64}:
+ 0.09003057317038046
+ 0.24472847105479764
+ 0.6652409557748218
+
+julia&gt; softmax([1 2 3; 2 2 2])  # dims=1
+2×3 Matrix{Float64}:
+ 0.268941  0.5  0.731059
+ 0.731059  0.5  0.268941
+
+julia&gt; softmax([1 2 3; 2 2 2]; dims=2)
+2×3 Matrix{Float64}:
+ 0.0900306  0.244728  0.665241
+ 0.333333   0.333333  0.333333</code></pre><p>Note that, when used with Flux.jl, <code>softmax</code> must not be passed to layers like <code>Dense</code> which accept an activation function. The activation is broadcasted over the result, thus applies to individual numbers. But <code>softmax</code> always needs to see the whole column.</p><pre><code class="language-julia hljs">julia&gt; using Flux
+
+julia&gt; x = randn(Float32, 4, 4, 3, 13);
+
+julia&gt; model = Chain(Conv((4, 4), 3 =&gt; 8, tanh), Flux.flatten, Dense(8 =&gt; 7), softmax);
+
+julia&gt; model(x) |&gt; size
+(7, 13)
+
+julia&gt; Dense(4 =&gt; 7, softmax)(x)
+ERROR: `softmax(x)` called with a number, but it expects an array. </code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.logsoftmax" href="#NNlib.logsoftmax"><code>NNlib.logsoftmax</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">logsoftmax(x; dims = 1)</code></pre><p>Computes the log of softmax in a more numerically stable way than directly taking <code>log.(softmax(xs))</code>. Commonly used in computing cross entropy loss.</p><p>It is semantically equivalent to the following:</p><pre><code class="nohighlight hljs">logsoftmax(x; dims = 1) = x .- log.(sum(exp.(x), dims = dims))</code></pre><p>See also <a href="#NNlib.softmax"><code>softmax</code></a>.</p></div></section></article><h2 id="Pooling"><a class="docs-heading-anchor" href="#Pooling">Pooling</a><a id="Pooling-1"></a><a class="docs-heading-anchor-permalink" href="#Pooling" title="Permalink"></a></h2><p><code>Flux</code>&#39;s <a href="../layers/#Flux.AdaptiveMaxPool"><code>AdaptiveMaxPool</code></a>, <a href="../layers/#Flux.AdaptiveMeanPool"><code>AdaptiveMeanPool</code></a>, <a href="../layers/#Flux.GlobalMaxPool"><code>GlobalMaxPool</code></a>, <a href="../layers/#Flux.GlobalMeanPool"><code>GlobalMeanPool</code></a>,  <a href="../layers/#Flux.MaxPool"><code>MaxPool</code></a>, and <a href="../layers/#Flux.MeanPool"><code>MeanPool</code></a> use <a href="#NNlib.PoolDims"><code>NNlib.PoolDims</code></a>, <a href="#NNlib.maxpool"><code>NNlib.maxpool</code></a>, and <a href="#NNlib.meanpool"><code>NNlib.meanpool</code></a> as their backend.</p><article class="docstring"><header><a class="docstring-binding" id="NNlib.PoolDims" href="#NNlib.PoolDims"><code>NNlib.PoolDims</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">PoolDims(x_size::NTuple{M}, k::Union{NTuple{L, Int}, Int};
+        stride=k, padding=0, dilation=1)  where {M, L}</code></pre><p>Dimensions for a &quot;pooling&quot; operation that can have an arbitrary input size, kernel size, stride, dilation, and channel count.  Used to dispatch onto efficient implementations at compile-time.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.lpnormpool" href="#NNlib.lpnormpool"><code>NNlib.lpnormpool</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">lpnormpool(x, p::Real, k::NTuple{N, Integer}; pad=0, stride=k)</code></pre><p>Perform Lp pool operation with value of the Lp norm <code>p</code> and window size <code>k</code> on input tensor <code>x</code>, also known as LPPool in pytorch. This pooling operator from <a href="https://arxiv.org/abs/1311.1780">Learned-Norm Pooling for Deep Feedforward and Recurrent Neural Networks</a>.</p><p>Arguments:</p><ul><li><code>x</code> and <code>k</code>: Expects <code>ndim(x) ∈ 3:5</code><code>, and always</code>length(k) == ndim(x) - 2`</li><li><code>p</code> is restricted to <code>0 &lt; p &lt; Inf</code>.</li><li><code>pad</code>: See <a href="#NNlib.pad_zeros"><code>pad_zeros</code></a> for details.</li><li><code>stride</code>: Either a tuple with the same length as <code>k</code>, or one integer for all directions. Default is <code>k</code>.</li></ul><p>For all elements <code>x</code> in a size <code>k</code> window, lpnormpool computes <code>(∑ᵢ xᵢ^p)^(1 / p)</code> as an element of the output.</p><p>Thus <code>lpnormpool(x, 1, k) ./ prod(k) ≈ meanpool(x, k)</code> and <code>lpnormpool(x, 2, k).^2 ./ prod(k) ≈ meanpool(x.^2, k)</code>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.maxpool" href="#NNlib.maxpool"><code>NNlib.maxpool</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">maxpool(x, k::NTuple{N, Integer}; pad=0, stride=k)</code></pre><p>Perform max pool operation with window size <code>k</code> on input tensor <code>x</code>.</p><p>Arguments:</p><ul><li><code>x</code> and <code>k</code>: Expects <code>ndim(x) ∈ 3:5</code>, and always <code>length(k) == ndim(x) - 2</code></li><li><code>pad</code>: See <a href="#NNlib.pad_zeros"><code>pad_zeros</code></a> for details.</li><li><code>stride</code>: Either a tuple with the same length as <code>k</code>, or one integer for all directions. Default is <code>k</code>.</li></ul></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.meanpool" href="#NNlib.meanpool"><code>NNlib.meanpool</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">meanpool(x, k::NTuple{N, Integer}; pad=0, stride=k)</code></pre><p>Perform mean pool operation with window size <code>k</code> on input tensor <code>x</code>.</p><p>Arguments:</p><ul><li><code>x</code> and <code>k</code>: Expects <code>ndim(x) ∈ 3:5</code><code>, and always</code>length(k) == ndim(x) - 2`</li><li><code>pad</code>: See <a href="#NNlib.pad_zeros"><code>pad_zeros</code></a> for details.</li><li><code>stride</code>: Either a tuple with the same length as <code>k</code>, or one integer for all directions. Default is <code>k</code>.</li></ul></div></section></article><h2 id="Padding"><a class="docs-heading-anchor" href="#Padding">Padding</a><a id="Padding-1"></a><a class="docs-heading-anchor-permalink" href="#Padding" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="NNlib.pad_circular" href="#NNlib.pad_circular"><code>NNlib.pad_circular</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pad_circular(x, pad::Tuple; [dims])
+pad_circular(x, pad::Int; [dims])</code></pre><p>Pad the array <code>x</code> &quot;circularly&quot; across the border by wrapping around values from the opposite side of <code>x</code>. </p><p><code>pad</code> can a tuple of integers <code>(l1, r1, ..., ln, rn)</code> of some length <code>2n</code> that specifies the left and right padding size for each of the dimensions in <code>dims</code>. If <code>dims</code> is not given,  it defaults to the first <code>n</code> dimensions.</p><p>If <code>pad</code> is an integer, it is applied on both sides on every dimension in <code>dims</code>. In this case, <code>dims</code>  defaults to the first <code>ndims(x)-2</code> dimensions  (i.e. excludes the channel and batch dimension). </p><p>The pad length on either side in any dimension must not exceed the size of <code>x</code> in that dimension, i.e. <code>pad_circular</code> is not able to create abitrary sized tilings of <code>x</code>.</p><p>See also <a href="#NNlib.pad_repeat"><code>pad_repeat</code></a>, <a href="#NNlib.pad_reflect"><code>pad_reflect</code></a>, <a href="#NNlib.pad_symmetric"><code>pad_symmetric</code></a>, and <a href="#NNlib.pad_constant"><code>pad_constant</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; r = reshape(1:9, 3, 3)
+3×3 reshape(::UnitRange{Int64}, 3, 3) with eltype Int64:
+ 1  4  7
+ 2  5  8
+ 3  6  9
+
+julia&gt; pad_circular(r, (1,2,1,2))
+6×6 Matrix{Int64}:
+ 9  3  6  9  3  6
+ 7  1  4  7  1  4
+ 8  2  5  8  2  5
+ 9  3  6  9  3  6
+ 7  1  4  7  1  4
+ 8  2  5  8  2  5</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.pad_constant" href="#NNlib.pad_constant"><code>NNlib.pad_constant</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pad_constant(x, pad::Tuple, val = 0; [dims = :])
+pad_constant(x, pad::Int, val = 0; [dims = :])</code></pre><p>Pad the array <code>x</code> with the constant value <code>val</code>.</p><p><code>pad</code> can be a tuple of integers. If it is of some length <code>2 * length(dims)</code> that specifies the left and right padding size for each of the dimensions in <code>dims</code> as <code>(l1, r1, ..., ln, rn)</code>.  If supplied with a tuple of length <code>length(dims)</code> instead, it applies symmetric padding. If <code>dims</code> is not given, it defaults to all dimensions.</p><p>For integer <code>pad</code> input, it is applied on both sides on every dimension in <code>dims</code>.</p><p>See also <a href="#NNlib.pad_zeros"><code>pad_zeros</code></a>, <a href="#NNlib.pad_repeat"><code>pad_repeat</code></a>, <a href="#NNlib.pad_reflect"><code>pad_reflect</code></a>, <a href="#NNlib.pad_symmetric"><code>pad_symmetric</code></a>, and <a href="#NNlib.pad_circular"><code>pad_circular</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; r = reshape(1:4, 2, 2)
+2×2 reshape(::UnitRange{Int64}, 2, 2) with eltype Int64:
+ 1  3
+ 2  4
+
+julia&gt; pad_constant(r, (1, 2, 3, 4), 8)
+5×9 Matrix{Int64}:
+ 8  8  8  8  8  8  8  8  8
+ 8  8  8  1  3  8  8  8  8
+ 8  8  8  2  4  8  8  8  8
+ 8  8  8  8  8  8  8  8  8
+ 8  8  8  8  8  8  8  8  8
+
+julia&gt; pad_constant(r, 1, 8)
+4×4 Matrix{Int64}:
+ 8  8  8  8
+ 8  1  3  8
+ 8  2  4  8
+ 8  8  8  8
+
+julia&gt; r = reshape(1:27, 3, 3, 3)
+3×3×3 reshape(::UnitRange{Int64}, 3, 3, 3) with eltype Int64:
+[:, :, 1] =
+ 1  4  7
+ 2  5  8
+ 3  6  9
+
+[:, :, 2] =
+ 10  13  16
+ 11  14  17
+ 12  15  18
+
+[:, :, 3] =
+ 19  22  25
+ 20  23  26
+ 21  24  27
+
+julia&gt; pad_constant(r, (2,1), dims = 1) # assymetric padding
+6×3×3 Array{Int64, 3}:
+[:, :, 1] =
+ 0  0  0
+ 0  0  0
+ 1  4  7
+ 2  5  8
+ 3  6  9
+ 0  0  0
+
+[:, :, 2] =
+  0   0   0
+  0   0   0
+ 10  13  16
+ 11  14  17
+ 12  15  18
+  0   0   0
+
+[:, :, 3] =
+  0   0   0
+  0   0   0
+ 19  22  25
+ 20  23  26
+ 21  24  27
+  0   0   0
+
+julia&gt; pad_constant(r, (2,1, 3), dims = (1,2)) # padding must always be either the same length as dims, or double it
+ERROR: ArgumentError: Could not parse padding (2, 1, 3) and dims (1, 2)
+Stacktrace:
+[...]</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.pad_reflect" href="#NNlib.pad_reflect"><code>NNlib.pad_reflect</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pad_reflect(x, pad::Tuple; [dims])
+pad_reflect(x, pad::Int; [dims])</code></pre><p>Pad the array <code>x</code> reflecting its values across the border.</p><p><code>pad</code> can a tuple of integers <code>(l1, r1, ..., ln, rn)</code> of some length <code>2n</code> that specifies the left and right padding size for each of the dimensions in <code>dims</code>. If <code>dims</code> is not given,  it defaults to the first <code>n</code> dimensions.</p><p>If <code>pad</code> is an integer, it is applied on both sides on every dimension in <code>dims</code>. In this case, <code>dims</code>  defaults to the first <code>ndims(x)-2</code> dimensions  (i.e. excludes the channel and batch dimension). </p><p>See also <a href="#NNlib.pad_repeat"><code>pad_repeat</code></a>, <a href="#NNlib.pad_symmetric"><code>pad_symmetric</code></a>, <a href="#NNlib.pad_circular"><code>pad_circular</code></a>, and <a href="#NNlib.pad_constant"><code>pad_constant</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; r = reshape(1:9, 3, 3)
+3×3 reshape(::UnitRange{Int64}, 3, 3) with eltype Int64:
+ 1  4  7
+ 2  5  8
+ 3  6  9
+
+julia&gt; pad_reflect(r, (1,2,1,2))
+6×6 Matrix{Int64}:
+ 5  2  5  8  5  2
+ 4  1  4  7  4  1
+ 5  2  5  8  5  2
+ 6  3  6  9  6  3
+ 5  2  5  8  5  2
+ 4  1  4  7  4  1</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.pad_repeat" href="#NNlib.pad_repeat"><code>NNlib.pad_repeat</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pad_repeat(x, pad::Tuple; [dims])
+pad_repeat(x, pad::Int; [dims])</code></pre><p>Pad the array <code>x</code> repeating the values on the border.</p><p><code>pad</code> can a tuple of integers <code>(l1, r1, ..., ln, rn)</code> of some length <code>2n</code> that specifies the left and right padding size for each of the dimensions in <code>dims</code>. If <code>dims</code> is not given,  it defaults to the first <code>n</code> dimensions.</p><p>If <code>pad</code> is an integer, it is applied on both sides on every dimension in <code>dims</code>. In this case, <code>dims</code>  defaults to the first <code>ndims(x)-2</code> dimensions  (i.e. excludes the channel and batch dimension). </p><p>See also <a href="#NNlib.pad_reflect"><code>pad_reflect</code></a>, <a href="#NNlib.pad_symmetric"><code>pad_symmetric</code></a>, <a href="#NNlib.pad_circular"><code>pad_circular</code></a>, and <a href="#NNlib.pad_constant"><code>pad_constant</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; r = reshape(1:9, 3, 3)
+3×3 reshape(::UnitRange{Int64}, 3, 3) with eltype Int64:
+ 1  4  7
+ 2  5  8
+ 3  6  9
+
+julia&gt; pad_repeat(r, (1,2,3,4))
+6×10 Matrix{Int64}:
+ 1  1  1  1  4  7  7  7  7  7
+ 1  1  1  1  4  7  7  7  7  7
+ 2  2  2  2  5  8  8  8  8  8
+ 3  3  3  3  6  9  9  9  9  9
+ 3  3  3  3  6  9  9  9  9  9
+ 3  3  3  3  6  9  9  9  9  9</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.pad_symmetric" href="#NNlib.pad_symmetric"><code>NNlib.pad_symmetric</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pad_symmetric(x, pad::Tuple; [dims])
+pad_symmetric(x, pad::Int; [dims])</code></pre><p>Pad the array <code>x</code> reflecting its values symmetrically across the border, i.e. the border values of <code>x</code> are present in the padding values, in contrast to <a href="#NNlib.pad_reflect"><code>pad_reflect</code></a>.</p><p><code>pad</code> can a tuple of integers <code>(l1, r1, ..., ln, rn)</code> of some length <code>2n</code> that specifies the left and right padding size for each of the dimensions in <code>dims</code>. If <code>dims</code> is not given,  it defaults to the first <code>n</code> dimensions.</p><p>If <code>pad</code> is an integer, it is applied on both sides on every dimension in <code>dims</code>. In this case, <code>dims</code>  defaults to the first <code>ndims(x)-2</code> dimensions  (i.e. excludes the channel and batch dimension). </p><p>See also <a href="#NNlib.pad_repeat"><code>pad_repeat</code></a>, <a href="#NNlib.pad_reflect"><code>pad_reflect</code></a>, <a href="#NNlib.pad_circular"><code>pad_circular</code></a>, and <a href="#NNlib.pad_constant"><code>pad_constant</code></a>.</p><pre><code class="language-julia-repl hljs">julia&gt; r = reshape(1:9, 3, 3)
+3×3 reshape(::UnitRange{Int64}, 3, 3) with eltype Int64:
+ 1  4  7
+ 2  5  8
+ 3  6  9
+
+julia&gt; pad_symmetric(r, (1,2,1,2))
+6×6 Matrix{Int64}:
+ 1  1  4  7  7  4
+ 1  1  4  7  7  4
+ 2  2  5  8  8  5
+ 3  3  6  9  9  6
+ 3  3  6  9  9  6
+ 2  2  5  8  8  5</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.pad_zeros" href="#NNlib.pad_zeros"><code>NNlib.pad_zeros</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pad_zeros(x, pad::Tuple; [dims])
+pad_zeros(x, pad::Int; [dims])</code></pre><p>Pad the array <code>x</code> with zeros. Equivalent to <a href="#NNlib.pad_constant"><code>pad_constant</code></a> with the constant equal to 0. </p></div></section></article><h2 id="Convolution"><a class="docs-heading-anchor" href="#Convolution">Convolution</a><a id="Convolution-1"></a><a class="docs-heading-anchor-permalink" href="#Convolution" title="Permalink"></a></h2><p><code>Flux</code>&#39;s <a href="../layers/#Flux.Conv"><code>Conv</code></a> and <a href="../layers/#Flux.CrossCor"><code>CrossCor</code></a> layers use <a href="#NNlib.DenseConvDims"><code>NNlib.DenseConvDims</code></a> and <a href="#NNlib.conv"><code>NNlib.conv</code></a> internally. </p><article class="docstring"><header><a class="docstring-binding" id="NNlib.conv" href="#NNlib.conv"><code>NNlib.conv</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">conv(x, w; stride = 1, pad = 0, dilation = 1, flipped = false, groups = 1)</code></pre><p>Apply convolution filter <code>w</code> to input <code>x</code>. <code>x</code> and <code>w</code> are 3d/4d/5d tensors in 1d/2d/3d convolutions respectively. <code>x</code> and <code>w</code> may have real or complex element types.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.ConvDims" href="#NNlib.ConvDims"><code>NNlib.ConvDims</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">ConvDims</code></pre><p>Type system-level information about convolution dimensions. Critical for things like <code>im2col!()</code> to generate efficient code, and helpful to reduce the number of kwargs getting passed around.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.depthwiseconv" href="#NNlib.depthwiseconv"><code>NNlib.depthwiseconv</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">depthwiseconv(x, w; stride=1, pad=0, dilation=1, flipped=false)</code></pre><p>Depthwise convolution operation with filter <code>w</code> on input <code>x</code>. <code>x</code> and <code>w</code> are 3d/4d/5d tensors in 1d/2d/3d convolutions respectively.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.DepthwiseConvDims" href="#NNlib.DepthwiseConvDims"><code>NNlib.DepthwiseConvDims</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">DepthwiseConvDims</code></pre><p>Concrete subclass of <code>ConvDims</code> for a depthwise convolution.  Differs primarily due to characterization by C<em>in, C</em>mult, rather than C<em>in, C</em>out.  Useful to be separate from DenseConvDims primarily for channel calculation differences.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.DenseConvDims" href="#NNlib.DenseConvDims"><code>NNlib.DenseConvDims</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">DenseConvDims</code></pre><p>Concrete subclass of <code>ConvDims</code> for a normal, dense, conv2d/conv3d.</p></div></section></article><h2 id="Dropout"><a class="docs-heading-anchor" href="#Dropout">Dropout</a><a id="Dropout-1"></a><a class="docs-heading-anchor-permalink" href="#Dropout" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="NNlib.dropout" href="#NNlib.dropout"><code>NNlib.dropout</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">dropout([rng], A, p; [dims])</code></pre><p>Returns an array in which each element of <code>A</code> is either replaced with zero, with probability <code>p</code>, or else multiplied by <code>1/(1-p)</code>.</p><p>By default every element is treated independently. With keyword <code>dims=1</code>, a choice is made for every value of the 1st index i.e. each row of a matrix is either zero or not.</p><p>Optional first argument is the random number generator used.</p><p><strong>Examples</strong></p><pre><code class="nohighlight hljs">julia&gt; dropout(ones(2, 10), 0.2)
+2×10 Matrix{Float64}:
+ 1.25  1.25  0.0   1.25  1.25  1.25  1.25  1.25  1.25  1.25
+ 1.25  1.25  1.25  0.0   1.25  1.25  0.0   1.25  1.25  1.25
+
+julia&gt; mean(dropout(ones(10^4, 5), 0.2), dims=1)
+1×5 Matrix{Float64}:
+ 0.998  1.00075  0.99125  0.99575  1.00075
+
+julia&gt; dropout(ones(5, 5), 0.7, dims=1)  # whole row the same
+5×5 Matrix{Float64}:
+ 3.33333  3.33333  3.33333  3.33333  3.33333
+ 0.0      0.0      0.0      0.0      0.0
+ 0.0      0.0      0.0      0.0      0.0
+ 3.33333  3.33333  3.33333  3.33333  3.33333
+ 0.0      0.0      0.0      0.0      0.0
+
+julia&gt; mean(dropout(ones(10^4, 5), 0.3, dims=1), dims=1)
+1×5 Matrix{Float64}:
+ 1.00571  1.00571  1.00571  1.00571  1.00571</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.dropout!" href="#NNlib.dropout!"><code>NNlib.dropout!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">dropout!(B, A, p; [dims])</code></pre><p>This does exactly <code>B .= dropout(A, p; dims)</code>, or rather, it&#39;s the implementation of out-of-place <a href="#NNlib.dropout"><code>dropout</code></a>.</p></div></section></article><h2 id="Upsampling"><a class="docs-heading-anchor" href="#Upsampling">Upsampling</a><a id="Upsampling-1"></a><a class="docs-heading-anchor-permalink" href="#Upsampling" title="Permalink"></a></h2><p><code>Flux</code>&#39;s <a href="../layers/#Flux.Upsample"><code>Upsample</code></a> layer uses <a href="#NNlib.upsample_nearest"><code>NNlib.upsample_nearest</code></a>, <a href="#NNlib.upsample_bilinear"><code>NNlib.upsample_bilinear</code></a>, and <a href="#NNlib.upsample_trilinear"><code>NNlib.upsample_trilinear</code></a> as its backend. Additionally, <code>Flux</code>&#39;s <a href="../layers/#Flux.PixelShuffle"><code>PixelShuffle</code></a> layer uses <a href="#NNlib.pixel_shuffle"><code>NNlib.pixel_shuffle</code></a> as its backend.</p><article class="docstring"><header><a class="docstring-binding" id="NNlib.upsample_nearest" href="#NNlib.upsample_nearest"><code>NNlib.upsample_nearest</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">upsample_nearest(x, scale::NTuple{S,Int})
+upsample_nearest(x; size::NTuple{S,Int})</code></pre><p>Upsamples the array <code>x</code> by integer multiples along the first <code>S</code> dimensions. Subsequent dimensions of <code>x</code> are not altered.</p><p>Either the <code>scale</code> factors or the final output <code>size</code> can be specified.</p><p>See also <a href="#NNlib.upsample_bilinear"><code>upsample_bilinear</code></a>, for two dimensions of an <code>N=4</code> array.</p><p><strong>Example</strong></p><pre><code class="language-julia-repl hljs">julia&gt; upsample_nearest([1 2 3; 4 5 6], (2, 3))
+4×9 Matrix{Int64}:
+ 1  1  1  2  2  2  3  3  3
+ 1  1  1  2  2  2  3  3  3
+ 4  4  4  5  5  5  6  6  6
+ 4  4  4  5  5  5  6  6  6
+
+julia&gt; ans == upsample_nearest([1 2 3; 4 5 6]; size=(4, 9))  # equivalent
+true
+
+julia&gt; upsample_nearest([1 2 3; 4 5 6], (2,))
+4×3 Matrix{Int64}:
+ 1  2  3
+ 1  2  3
+ 4  5  6
+ 4  5  6
+
+julia&gt; ans == upsample_nearest([1 2 3; 4 5 6], size=(4,))
+true</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.upsample_linear" href="#NNlib.upsample_linear"><code>NNlib.upsample_linear</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">upsample_linear(x::AbstractArray{T,3}, scale::Real; align_corners::Bool = true)
+upsample_linear(x::AbstractArray{T,3}; size::Integer, align_corners::Bool = true)</code></pre><p>Upsamples the first dimension of the array <code>x</code> by the upsample provided <code>scale</code>, using linear interpolation. As an alternative to using <code>scale</code>, the resulting array <code>size</code> can be directly specified with a keyword argument.</p><p>The size of the output is equal to <code>(scale*S1, S2, S3)</code>, where <code>S1, S2, S3 = size(x)</code>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.∇upsample_linear" href="#NNlib.∇upsample_linear"><code>NNlib.∇upsample_linear</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">∇upsample_linear(Δ::AbstractArray{T,3}; size::Integer, align_corners::Bool = true) where T</code></pre><p><strong>Arguments</strong></p><ul><li><code>Δ</code>: Incoming gradient array, backpropagated from downstream layers</li><li><code>size</code>: Size of the image upsampled in the first place</li></ul><p><strong>Outputs</strong></p><ul><li><code>dx</code>: Downsampled version of <code>Δ</code></li></ul></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.upsample_bilinear" href="#NNlib.upsample_bilinear"><code>NNlib.upsample_bilinear</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">upsample_bilinear(x::AbstractArray{T,4}, scale::NTuple{2,Real}; align_corners::Bool = true)
+upsample_bilinear(x::AbstractArray{T,4}; size::NTuple{2,Integer}, align_corners::Bool = true)</code></pre><p>Upsamples the first 2 dimensions of the array <code>x</code> by the upsample factors stored in <code>scale</code>, using bilinear interpolation. As an alternative to using <code>scale</code>, the resulting image <code>size</code> can be directly specified with a keyword argument.</p><p>The size of the output is equal to <code>(scale[1]*S1, scale[2]*S2, S3, S4)</code>, where <code>S1, S2, S3, S4 = size(x)</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = reshape(Float32[1 2 3; 4 5 6], (2,3,1,1))
+2×3×1×1 Array{Float32, 4}:
+[:, :, 1, 1] =
+ 1.0  2.0  3.0
+ 4.0  5.0  6.0
+
+julia&gt; upsample_bilinear(x, (2, 3))
+4×9×1×1 Array{Float32, 4}:
+[:, :, 1, 1] =
+ 1.0  1.25  1.5  1.75  2.0  2.25  2.5  2.75  3.0
+ 2.0  2.25  2.5  2.75  3.0  3.25  3.5  3.75  4.0
+ 3.0  3.25  3.5  3.75  4.0  4.25  4.5  4.75  5.0
+ 4.0  4.25  4.5  4.75  5.0  5.25  5.5  5.75  6.0
+
+julia&gt; ans == upsample_bilinear(x; size=(4, 9))  # specify ouput size instead
+true
+
+julia&gt; upsample_bilinear(x, (2.5, 3.5))  # non-integer scaling factors are allowed
+5×10×1×1 Array{Float32, 4}:
+[:, :, 1, 1] =
+ 1.0   1.22222  1.44444  1.66667  1.88889  …  2.33333  2.55556  2.77778  3.0
+ 1.75  1.97222  2.19444  2.41667  2.63889     3.08333  3.30556  3.52778  3.75
+ 2.5   2.72222  2.94444  3.16667  3.38889     3.83333  4.05556  4.27778  4.5
+ 3.25  3.47222  3.69444  3.91667  4.13889     4.58333  4.80556  5.02778  5.25
+ 4.0   4.22222  4.44444  4.66667  4.88889     5.33333  5.55556  5.77778  6.0</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.∇upsample_bilinear" href="#NNlib.∇upsample_bilinear"><code>NNlib.∇upsample_bilinear</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">∇upsample_bilinear(Δ::AbstractArray{T,4}; size::NTuple{2,Integer}, align_corners::Bool = true) where T</code></pre><p><strong>Arguments</strong></p><ul><li><code>Δ</code>: Incoming gradient array, backpropagated from downstream layers</li><li><code>size</code>: Lateral (W,H) size of the image upsampled in the first place</li></ul><p><strong>Outputs</strong></p><ul><li><code>dx</code>: Downsampled version of <code>Δ</code></li></ul></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.upsample_trilinear" href="#NNlib.upsample_trilinear"><code>NNlib.upsample_trilinear</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">upsample_trilinear(x::AbstractArray{T,5}, scale::NTuple{3,Real}; align_corners::Bool = true)
+upsample_trilinear(x::AbstractArray{T,5}; size::NTuple{3,Integer}, align_corners::Bool = true)</code></pre><p>Upsamples the first 3 dimensions of the array <code>x</code> by the upsample factors stored in <code>scale</code>, using trilinear interpolation. As an alternative to using <code>scale</code>, the resulting image <code>size</code> can be directly specified with a keyword argument.</p><p>The size of the output is equal to <code>(scale[1]*S1, scale[2]*S2, scale[3]*S3, S4, S5)</code>, where <code>S1, S2, S3, S4, S5 = size(x)</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">upsample_trilinear(x, (2, 3, 4))
+upsample_trilinear(x; size=(4, 9, 11))  # specify ouput size instead
+upsample_trilinear(x, (2.5, 3.5, pi))  # non-integer scaling factors are allowed</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.∇upsample_trilinear" href="#NNlib.∇upsample_trilinear"><code>NNlib.∇upsample_trilinear</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">∇upsample_trilinear(Δ::AbstractArray{T,5}; size::NTuple{3,Integer}, align_corners::Bool = true) where T</code></pre><p><strong>Arguments</strong></p><ul><li><code>Δ</code>: Incoming gradient array, backpropagated from downstream layers</li><li><code>size</code>: Lateral size &amp; depth (W,H,D) of the image upsampled in the first place</li></ul><p><strong>Outputs</strong></p><ul><li><code>dx</code>: Downsampled version of <code>Δ</code></li></ul></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.pixel_shuffle" href="#NNlib.pixel_shuffle"><code>NNlib.pixel_shuffle</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">pixel_shuffle(x, r::Integer)</code></pre><p>Pixel shuffling operation, upscaling by a factor <code>r</code>.</p><p>For 4-arrays representing <code>N</code> images, the operation converts input <code>size(x) == (W, H, r^2*C, N)</code> to output of size <code>(r*W, r*H, C, N)</code>. For <code>D</code>-dimensional data, it expects <code>ndims(x) == D+2</code> with channel and batch dimensions, and divides the number of channels by <code>r^D</code>.</p><p>Used in super-resolution networks to upsample towards high resolution features. Reference: Shi et. al., &quot;Real-Time Single Image and Video Super-Resolution ...&quot;, CVPR 2016, https://arxiv.org/abs/1609.05158</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; x = [10i + j + channel/10 for i in 1:2, j in 1:3, channel in 1:4, batch in 1:1]
+2×3×4×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 11.1  12.1  13.1
+ 21.1  22.1  23.1
+
+[:, :, 2, 1] =
+ 11.2  12.2  13.2
+ 21.2  22.2  23.2
+
+[:, :, 3, 1] =
+ 11.3  12.3  13.3
+ 21.3  22.3  23.3
+
+[:, :, 4, 1] =
+ 11.4  12.4  13.4
+ 21.4  22.4  23.4
+
+julia&gt; pixel_shuffle(x, 2)  # 4 channels used up as 2x upscaling of image dimensions
+4×6×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 11.1  11.3  12.1  12.3  13.1  13.3
+ 11.2  11.4  12.2  12.4  13.2  13.4
+ 21.1  21.3  22.1  22.3  23.1  23.3
+ 21.2  21.4  22.2  22.4  23.2  23.4
+
+julia&gt; y = [i + channel/10 for i in 1:3, channel in 1:6, batch in 1:1]
+3×6×1 Array{Float64, 3}:
+[:, :, 1] =
+ 1.1  1.2  1.3  1.4  1.5  1.6
+ 2.1  2.2  2.3  2.4  2.5  2.6
+ 3.1  3.2  3.3  3.4  3.5  3.6
+
+julia&gt; pixel_shuffle(y, 2)  # 1D image, with 6 channels reduced to 3
+6×3×1 Array{Float64, 3}:
+[:, :, 1] =
+ 1.1  1.3  1.5
+ 1.2  1.4  1.6
+ 2.1  2.3  2.5
+ 2.2  2.4  2.6
+ 3.1  3.3  3.5
+ 3.2  3.4  3.6</code></pre></div></section></article><h2 id="Batched-Operations"><a class="docs-heading-anchor" href="#Batched-Operations">Batched Operations</a><a id="Batched-Operations-1"></a><a class="docs-heading-anchor-permalink" href="#Batched-Operations" title="Permalink"></a></h2><p><code>Flux</code>&#39;s <a href="../layers/#Flux.Bilinear"><code>Flux.Bilinear</code></a> layer uses <a href="#NNlib.batched_mul"><code>NNlib.batched_mul</code></a> internally.</p><article class="docstring"><header><a class="docstring-binding" id="NNlib.batched_mul" href="#NNlib.batched_mul"><code>NNlib.batched_mul</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batched_mul(A, B) -&gt; C
+A ⊠ B  # \boxtimes</code></pre><p>Batched matrix multiplication. Result has <code>C[:,:,k...] == A[:,:,k...] * B[:,:,k...]</code> where <code>k...</code> represent  any indices in the last dimensions.</p><p>If <code>ndims(A) == ndims(B) == 3</code> and <code>size(B,3) == 1</code> then instead <code>C[:,:,k] == A[:,:,k] * B[:,:,1]</code>, and similarly for <code>A</code>.</p><p>To transpose each matrix, apply <code>batched_transpose</code> to the array, or <code>batched_adjoint</code> for conjugate-transpose:</p><pre><code class="language-julia-repl hljs">julia&gt; A, B = randn(2,5,17), randn(5,9,17);
+
+julia&gt; A ⊠ B |&gt; size
+(2, 9, 17)
+
+julia&gt; batched_adjoint(A) |&gt; size
+(5, 2, 17)
+
+julia&gt; batched_mul(A, batched_adjoint(randn(9,5,17))) |&gt; size
+(2, 9, 17)
+
+julia&gt; A ⊠ randn(5,9,1) |&gt; size
+(2, 9, 17)
+
+julia&gt; batched_transpose(A) == PermutedDimsArray(A, (2,1,3))
+true</code></pre><p>The equivalent <code>PermutedDimsArray</code> may be used in place of <code>batched_transpose</code>. Other permutations are also handled by BLAS, provided that the batch index <code>k</code> is not the first dimension of the underlying array. Thus <code>PermutedDimsArray(::Array, (1,3,2))</code> and <code>PermutedDimsArray(::Array, (3,1,2))</code> are fine.</p><p>However, <code>A = PermutedDimsArray(::Array, (3,2,1))</code> is not acceptable to BLAS, since the batch dimension is the contiguous one: <code>stride(A,3) == 1</code>. This will be copied, as doing so is faster than <code>batched_mul_generic!</code>.</p><p>Both this <code>copy</code> and <code>batched_mul_generic!</code> produce <code>@debug</code> messages, and setting for instance <code>ENV[&quot;JULIA_DEBUG&quot;] = NNlib</code> will display them.</p></div></section><section><div><pre><code class="nohighlight hljs">batched_mul(A::Array{T,3}, B::Matrix)
+batched_mul(A::Matrix, B::Array{T,3})
+A ⊠ B</code></pre><p>This is always matrix-matrix multiplication, but either <code>A</code> or <code>B</code> may lack a batch index.</p><ul><li><p>When <code>B</code> is a matrix, result has <code>C[:,:,k] == A[:,:,k] * B[:,:]</code> for all <code>k</code>.</p></li><li><p>When <code>A</code> is a matrix, then <code>C[:,:,k] == A[:,:] * B[:,:,k]</code>. This can also be done by reshaping and calling <code>*</code>, for instance <code>A ⊡ B</code> using TensorCore.jl, but is implemented here using <code>batched_gemm</code> instead of <code>gemm</code>.</p></li></ul><pre><code class="language-julia-repl hljs">julia&gt; randn(16,8,32) ⊠ randn(8,4) |&gt; size
+(16, 4, 32)
+
+julia&gt; randn(16,8,32) ⊠ randn(8,4,1) |&gt; size  # equivalent
+(16, 4, 32)
+
+julia&gt; randn(16,8) ⊠ randn(8,4,32) |&gt; size
+(16, 4, 32)</code></pre><p>See also <code>batched_vec</code> to regard <code>B</code> as a batch of vectors, <code>A[:,:,k] * B[:,k]</code>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.batched_mul!" href="#NNlib.batched_mul!"><code>NNlib.batched_mul!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batched_mul!(C, A, B) -&gt; C
+batched_mul!(C, A, B, α=1, β=0)</code></pre><p>In-place batched matrix multiplication, equivalent to <code>mul!(C[:,:,k], A[:,:,k], B[:,:,k], α, β)</code> for all <code>k</code>. If <code>size(B,3) == 1</code> then every batch uses <code>B[:,:,1]</code> instead.</p><p>This will call <code>batched_gemm!</code> whenever possible. For real arrays this means that, for <code>X ∈ [A,B,C]</code>, either <code>strides(X,1)==1</code> or <code>strides(X,2)==1</code>, the latter may be caused by <code>batched_transpose</code> or by for instance <code>PermutedDimsArray(::Array, (3,1,2))</code>. Unlike <code>batched_mul</code> this will never make a copy.</p><p>For complex arrays, the wrapper made by <code>batched_adjoint</code> must be outermost to be seen. In this case the strided accepted by BLAS are more restricted, if <code>stride(C,1)==1</code> then only <code>stride(AorB::BatchedAdjoint,2) == 1</code> is accepted.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.batched_adjoint" href="#NNlib.batched_adjoint"><code>NNlib.batched_adjoint</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batched_transpose(A::AbstractArray{T,3})
+batched_adjoint(A)</code></pre><p>Equivalent to applying <code>transpose</code> or <code>adjoint</code> to each matrix <code>A[:,:,k]</code>.</p><p>These exist to control how <code>batched_mul</code> behaves, as it operates on such matrix slices of an array with <code>ndims(A)==3</code>.</p><p><code>PermutedDimsArray(A, (2,1,3))</code> is equivalent to <code>batched_transpose(A)</code>, and is also understood by <code>batched_mul</code> (and more widely supported elsewhere).</p><pre><code class="nohighlight hljs">BatchedTranspose{T, S} &lt;: AbstractBatchedMatrix{T, 3}
+BatchedAdjoint{T, S}</code></pre><p>Lazy wrappers analogous to <code>Transpose</code> and <code>Adjoint</code>, returned by <code>batched_transpose</code> etc.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.batched_transpose" href="#NNlib.batched_transpose"><code>NNlib.batched_transpose</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batched_transpose(A::AbstractArray{T,3})
+batched_adjoint(A)</code></pre><p>Equivalent to applying <code>transpose</code> or <code>adjoint</code> to each matrix <code>A[:,:,k]</code>.</p><p>These exist to control how <code>batched_mul</code> behaves, as it operates on such matrix slices of an array with <code>ndims(A)==3</code>.</p><p><code>PermutedDimsArray(A, (2,1,3))</code> is equivalent to <code>batched_transpose(A)</code>, and is also understood by <code>batched_mul</code> (and more widely supported elsewhere).</p><pre><code class="nohighlight hljs">BatchedTranspose{T, S} &lt;: AbstractBatchedMatrix{T, 3}
+BatchedAdjoint{T, S}</code></pre><p>Lazy wrappers analogous to <code>Transpose</code> and <code>Adjoint</code>, returned by <code>batched_transpose</code> etc.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.batched_vec" href="#NNlib.batched_vec"><code>NNlib.batched_vec</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batched_vec(A::Array{T,3}, B::Matrix)
+batched_vec(A::Array{T,3}, b::Vector)</code></pre><p>Batched matrix-vector multiplication: the result has <code>C[:,:,k] == A[:,:,k] * B[:,k]</code> for all <code>k</code>, or else <code>C[:,:,k] == A[:,:,k] * b</code> for <code>b::Vector</code>.</p><p>With the same argument types, <code>batched_mul(A, B)</code> would regard <code>B</code> as a fixed matrix, not a batch of vectors. Both reshape and then call <code>batched_mul(::Array{T,3}, ::Array{T,3})</code>.</p><pre><code class="language-julia-repl hljs">julia&gt; A, B, b = randn(16,8,32), randn(8,32), randn(8);
+
+julia&gt; batched_vec(A,B) |&gt; size
+(16, 32)
+
+julia&gt; batched_vec(A,b) |&gt; size
+(16, 32)</code></pre></div></section></article><h2 id="Gather-and-Scatter"><a class="docs-heading-anchor" href="#Gather-and-Scatter">Gather and Scatter</a><a id="Gather-and-Scatter-1"></a><a class="docs-heading-anchor-permalink" href="#Gather-and-Scatter" title="Permalink"></a></h2><p><code>Flux</code>&#39;s <a href="../layers/#Flux.Embedding"><code>Embedding</code></a> layer uses <a href="#NNlib.gather"><code>NNlib.gather</code></a> as its backend.</p><article class="docstring"><header><a class="docstring-binding" id="NNlib.gather" href="#NNlib.gather"><code>NNlib.gather</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">NNlib.gather(src, idx) -&gt; dst</code></pre><p>Reverse operation of <a href="#NNlib.scatter"><code>scatter</code></a>. Gathers data from source <code>src</code> and writes it in a destination <code>dst</code> according to the index array <code>idx</code>. For each <code>k</code> in <code>CartesianIndices(idx)</code>, assign values to <code>dst</code> according to</p><pre><code class="nohighlight hljs">dst[:, ... , k] .= src[:, ... , idx[k]...]</code></pre><p>Notice that if <code>idx</code> is a vector containing integers and <code>src</code> is a matrix, previous expression simplifies to</p><pre><code class="nohighlight hljs">dst[:, k] .= src[:, idx[k]]</code></pre><p>and <code>k</code> will run over <code>1:length(idx)</code>.</p><p>The elements of <code>idx</code> can be integers or integer tuples and may be repeated. A single <code>src</code> column can end up being copied into zero, one, or multiple <code>dst</code> columns.</p><p>See <a href="#NNlib.gather!"><code>gather!</code></a> for an in-place version.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; NNlib.gather([1,20,300,4000], [2,4,2])
+3-element Vector{Int64}:
+   20
+ 4000
+   20
+
+julia&gt; NNlib.gather([1 2 3; 4 5 6], [1,3,1,3,1])
+2×5 Matrix{Int64}:
+ 1  3  1  3  1
+ 4  6  4  6  4</code></pre></div></section><section><div><pre><code class="nohighlight hljs">gather(src, IJK...)</code></pre><p>Convert the tuple of integer vectors <code>IJK</code> to a tuple of <code>CartesianIndex</code> and call <code>gather</code> on it: <code>gather(src, CartesianIndex.(IJK...))</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; src = reshape([1:15;], 3, 5)
+3×5 Matrix{Int64}:
+ 1  4  7  10  13
+ 2  5  8  11  14
+ 3  6  9  12  15
+
+julia&gt; NNlib.gather(src, [1, 2], [2, 4])
+2-element Vector{Int64}:
+  4
+ 11</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.gather!" href="#NNlib.gather!"><code>NNlib.gather!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">NNlib.gather!(dst, src, idx)</code></pre><p>Reverse operation of <a href="#NNlib.scatter!"><code>scatter!</code></a>. Gathers data from source <code>src</code> and writes it in destination <code>dst</code> according to the index array <code>idx</code>. For each <code>k</code> in <code>CartesianIndices(idx)</code>, assign values to <code>dst</code> according to</p><pre><code class="nohighlight hljs">dst[:, ... , k] .= src[:, ... , idx[k]...]</code></pre><p>Notice that if <code>idx</code> is a vector containing integers, and both <code>dst</code> and <code>src</code> are matrices, previous expression simplifies to</p><pre><code class="nohighlight hljs">dst[:, k] .= src[:, idx[k]]</code></pre><p>and <code>k</code> will run over <code>1:length(idx)</code>.</p><p>The elements of <code>idx</code> can be integers or integer tuples and may be repeated. A single <code>src</code> column can end up being copied into zero, one, or multiple <code>dst</code> columns.</p><p>See <a href="#NNlib.gather"><code>gather</code></a> for an allocating version.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.scatter" href="#NNlib.scatter"><code>NNlib.scatter</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">NNlib.scatter(op, src, idx; [init, dstsize])</code></pre><p>Scatter operation allocating a destination array <code>dst</code> and calling <code>scatter!(op, dst, src, idx)</code> on it.</p><ul><li><p>If keyword <code>init</code> is provided, it is used to initialize the content of <code>dst</code>. Otherwise, the init values is inferred from the reduction operator <code>op</code> for some common operators (e.g. <code>init = 0</code> for <code>op = +</code>).</p></li><li><p>If <code>dstsize</code> is provided, it will be used to define the size of destination array, otherwise it will be inferred by <code>src</code> and <code>idx</code>.</p></li></ul><p>See <a href="#NNlib.scatter!"><code>scatter!</code></a> for full details on how <code>idx</code> works.</p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; NNlib.scatter(+, [10,100,1000], [3,1,2])
+3-element Vector{Int64}:
+  100
+ 1000
+   10
+
+julia&gt; NNlib.scatter(+, [1 2 3 4; 5 6 7 8], [2,1,1,5])
+2×5 Matrix{Int64}:
+  5  1  0  0  4
+ 13  5  0  0  8
+
+julia&gt; NNlib.scatter(*, [10,200,3000], [1,4,2]; init = 10, dstsize = 6)
+6-element Vector{Int64}:
+   100
+ 30000
+    10
+  2000
+    10
+    10</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.scatter!" href="#NNlib.scatter!"><code>NNlib.scatter!</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">NNlib.scatter!(op, dst, src, idx)</code></pre><p>Scatter operation, which writes data in <code>src</code> into <code>dst</code> at locations <code>idx</code>. A binary reduction operator <code>op</code> is applied during the scatter. For each index <code>k</code> in <code>idx</code>, accumulates values in <code>dst</code> according to</p><pre><code class="nohighlight hljs">dst[:, ..., idx[k]...] = (op).(dst[:, ..., idx[k]...], src[:, ..., k...])</code></pre><p>See also <a href="#NNlib.scatter"><code>scatter</code></a>, <a href="#NNlib.gather"><code>gather</code></a>.</p><p><strong>Arguments</strong></p><ul><li><code>op</code>: Operations to be applied on <code>dst</code> and <code>src</code>, e.g. <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>max</code>, <code>min</code> and <code>mean</code>.</li><li><code>dst</code>: The destination for <code>src</code> to aggregate to. This argument will be mutated.</li><li><code>src</code>: The source data for aggregating.</li><li><code>idx</code>: The mapping for aggregation from source (index) to destination (value).        The <code>idx</code> array can contain either integers or tuples.</li></ul><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; NNlib.scatter!(+, ones(3), [10,100], [1,3])
+3-element Vector{Float64}:
+  11.0
+   1.0
+ 101.0
+
+julia&gt; NNlib.scatter!(*, fill(0.5, 2, 4), [1 10; 100 1000], [3,2])
+2×4 Matrix{Float64}:
+ 0.5    5.0   0.5  0.5
+ 0.5  500.0  50.0  0.5</code></pre></div></section></article><h2 id="Sampling"><a class="docs-heading-anchor" href="#Sampling">Sampling</a><a id="Sampling-1"></a><a class="docs-heading-anchor-permalink" href="#Sampling" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="NNlib.grid_sample" href="#NNlib.grid_sample"><code>NNlib.grid_sample</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">grid_sample(input::AbstractArray{T, 4}, grid::AbstractArray{T, 4}; padding_mode = :zeros)</code></pre><p>Given <code>input</code>, compute output by sampling <code>input</code> values at pixel locations from <code>grid</code>. Uses bilinear interpolation to calculate output values.</p><p>This implementation assumes the extrema (<code>-1</code> and <code>1</code>) are considered as referring to the center points of the input’s corner pixels (i.e. align corners is <code>true</code>).</p><p><strong>Arguments</strong></p><ul><li><p><code>input</code>: Input array in <code>(W_in, H_in, C, N)</code> shape.</p></li><li><p><code>grid</code>: Input grid in <code>(2, W_out, H_out, N)</code> shape.   Where for each <code>(W_out, H_out, N)</code> grid contains <code>(x, y)</code>   coordinates that specify sampling locations normalized by the <code>input</code> shape.</p><p>Therefore, <code>x</code> and <code>y</code> should have values in <code>[-1, 1]</code> range.   For example, <code>(x = -1, y = -1)</code> is the left-top pixel of <code>input</code>,   and <code>(x = 1, y = 1)</code> is the right-bottom pixel of <code>input</code>.</p><p>Out-of-bound values are handled according to the <code>padding_mode</code>.</p></li><li><p><code>padding_mode</code>: Out-of-bound padding.   <code>:zeros</code> to use <code>0</code> for out-of-bound grid locations.   <code>:border</code> to use border values for out-of-bound grid locations.   Default is <code>:zeros</code>.</p></li></ul><p><strong>Returns</strong></p><p><code>(W_out, H_out, C, N)</code> sampled grid from <code>input</code>.</p><p><strong>Examples</strong></p><p>In the example below, grid contains two out-of-bound sampling locations, which are handled differently, depending on the <code>padding_mode</code>.</p><pre><code class="language-julia-repl hljs">julia&gt; x = reshape(collect(1.0:4.0), (2, 2, 1, 1))
+2×2×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 1.0  3.0
+ 2.0  4.0
+
+julia&gt; grid = Array{Float64}(undef, 2, 3, 2, 1);
+
+julia&gt; grid[:, 1, 1, 1] .= (-3, -1);
+
+julia&gt; grid[:, 2, 1, 1] .= (0, -1);
+
+julia&gt; grid[:, 3, 1, 1] .= (1, -1);
+
+julia&gt; grid[:, 1, 2, 1] .= (-1, 1);
+
+julia&gt; grid[:, 2, 2, 1] .= (0, 1);
+
+julia&gt; grid[:, 3, 2, 1] .= (3, 1);
+
+julia&gt; grid_sample(x, grid; padding_mode=:zeros)
+3×2×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 0.0  3.0
+ 1.5  3.5
+ 2.0  0.0
+
+julia&gt; grid_sample(x, grid; padding_mode=:border)
+3×2×1×1 Array{Float64, 4}:
+[:, :, 1, 1] =
+ 1.0  3.0
+ 1.5  3.5
+ 2.0  4.0</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.∇grid_sample" href="#NNlib.∇grid_sample"><code>NNlib.∇grid_sample</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">∇grid_sample(Δ::AbstractArray{T, 4}, input::AbstractArray{T, 4}, grid::AbstractArray{T, 4}; padding_mode = :zeros) where T</code></pre><p><strong>Arguments</strong></p><ul><li><code>Δ</code>: Input gradient in <code>(W_out, H_out, C, N)</code> shape   (same as output of the primal computation).</li><li><code>input</code>: Input from primal computation in <code>(W_in, H_in, C, N)</code> shape.</li><li><code>grid</code>: Grid from primal computation in <code>(2, W_out, H_out, N)</code> shape.</li><li><code>padding_mode</code>: Out-of-bound padding.   <code>:zeros</code> to use <code>0</code> for out-of-bound grid locations.   <code>:border</code> to use border values for out-of-bound grid locations.   Should be the same as in primal computation.   Default is <code>:zeros</code>.</li></ul><p><strong>Returns</strong></p><p><code>dinput</code> (same shape as <code>input</code>) and <code>dgrid</code> (same shape as <code>grid</code>) gradients.</p></div></section></article><h2 id="Losses"><a class="docs-heading-anchor" href="#Losses">Losses</a><a id="Losses-1"></a><a class="docs-heading-anchor-permalink" href="#Losses" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="NNlib.ctc_loss" href="#NNlib.ctc_loss"><code>NNlib.ctc_loss</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">ctc_loss(ŷ, y)</code></pre><p>Computes the connectionist temporal classification loss between <code>ŷ</code> and <code>y</code>. <code>ŷ</code> must be a classes-by-time matrices, i.e., each row represents a class and each column represents a time step. Additionally, the <code>logsoftmax</code> function will be applied to <code>ŷ</code>, so <code>ŷ</code> must be the raw activation values from the neural network and not, for example, the activations after being passed through a <code>softmax</code> activation function. <code>y</code> must be a 1D array of the labels associated with <code>ŷ</code>. The blank label is assumed to be the last label category in <code>ŷ</code>, so it is equivalent to <code>size(ŷ, 1)</code>. Used for sequence-to-sequence classification problems such as speech recognition and handwriting recognition where the exact time-alignment of the output (e.g., letters) is not needed to solve the problem. See <a href="https://www.cs.toronto.edu/~graves/icml_2006.pdf">Graves et al. (2006)</a> or <a href="https://www.cs.toronto.edu/~graves/preprint.pdf#chapter.7">Graves (2012)</a> for mathematical details.</p></div></section></article><h2 id="Miscellaneous"><a class="docs-heading-anchor" href="#Miscellaneous">Miscellaneous</a><a id="Miscellaneous-1"></a><a class="docs-heading-anchor-permalink" href="#Miscellaneous" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="NNlib.logsumexp" href="#NNlib.logsumexp"><code>NNlib.logsumexp</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">logsumexp(x; dims = :)</code></pre><p>Computes <code>log.(sum(exp.(x); dims))</code> in a numerically stable way. Without <code>dims</code> keyword this returns a scalar.</p><p>See also <a href="#NNlib.logsoftmax"><code>logsoftmax</code></a>.</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="NNlib.glu" href="#NNlib.glu"><code>NNlib.glu</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">glu(x, dim = 1)</code></pre><p>The gated linear unit from the <a href="https://arxiv.org/abs/1612.08083">&quot;Language Modeling with Gated Convolutional Networks&quot;</a> paper.</p><p>Calculates <code>a .* sigmoid(b)</code>, where <code>x</code> is split in half along given dimension <code>dim</code> to form <code>a</code> and <code>b</code>.</p></div></section></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../data/onehot/">« OneHotArrays.jl</a><a class="docs-footer-nextpage" href="../functors/">Nested Structures – Functors.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 24 January 2024 04:44">Wednesday 24 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
