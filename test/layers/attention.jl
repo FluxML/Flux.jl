@@ -55,7 +55,8 @@
 
   @testset "gradient" begin
     function loss(m, q)
-      y, α = m(q)
+      # `local`, otherwise the outer `y`, `α` are captured and Enzyme returns zero gradients
+      local y, α = m(q)
       return sum(y.^2) + sum(α.^2)
     end
     test_gradients(mha, q; loss)

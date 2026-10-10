@@ -37,7 +37,7 @@ FLUX_TEST_ENZYME=false julia --project=test/ test/runtests.jl
 FLUX_TEST_REACTANT=false julia --project=test/ test/runtests.jl
 ```
 
-Test environment flags: `FLUX_TEST_CPU` (default true), `FLUX_TEST_CUDA`, `FLUX_TEST_AMDGPU`, `FLUX_TEST_METAL`, `FLUX_TEST_ENZYME` (default true on Julia < 1.12), `FLUX_TEST_REACTANT` (default true), `FLUX_TEST_DISTRIBUTED_MPI`, `FLUX_TEST_DISTRIBUTED_NCCL`.
+Test environment flags: `FLUX_TEST_CPU` (default true), `FLUX_TEST_CUDA`, `FLUX_TEST_AMDGPU`, `FLUX_TEST_METAL`, `FLUX_TEST_ENZYME` (default true), `FLUX_TEST_REACTANT` (default true), `FLUX_TEST_DISTRIBUTED_MPI`, `FLUX_TEST_DISTRIBUTED_NCCL`.
 
 ## Architecture
 
@@ -104,7 +104,7 @@ Optional backends live in `ext/` as Julia package extensions (weak dependencies)
 
 ### Test Layout
 
-Tests mirror the source structure. [test/test_utils.jl](test/test_utils.jl) provides `test_gradients`, which checks a layer's gradient against multiple AD backends. [test/testsuite/normalization.jl](test/testsuite/normalization.jl) is a reusable test suite run for each device backend.
+Tests mirror the source structure. [test/test_module.jl](test/test_module.jl) provides `test_gradients`, which checks a layer's gradient against a reference AD backend, on CPU or GPU. By default it compares Zygote and, for CPU calls unless `FLUX_TEST_ENZYME=false`, Enzyme; pass `compare=` to choose the backends (e.g. to split out a backend that is broken for one call). [test/testsuite/normalization.jl](test/testsuite/normalization.jl) is a reusable test suite run for each device backend.
 
 `ParallelTestRunner` runs each test file in an isolated anonymous module. Test files have **no imports of their own** — all names come from `init_code` in `runtests.jl`, which includes [test/test_module.jl](test/test_module.jl). Symbols that are `public` but not `export`ed in Flux (e.g. `outputsize`) are **not** brought into scope by `using Flux` alone; add them to the explicit `using Flux: ...` line in `test_module.jl` if a test file needs them.
 
@@ -114,6 +114,6 @@ Tests mirror the source structure. [test/test_utils.jl](test/test_utils.jl) prov
 
 **CI systems:**
 - **GitHub Actions** (`.github/workflows/ci.yml`): CPU tests on Julia 1.10 (minimum), latest stable, and nightly; platforms: Ubuntu x64, Windows x64, macOS aarch64.
-- **Buildkite** (`.buildkite/pipeline.yml`): GPU tests on JuliaGPU infrastructure — CUDA (Julia 1), Metal (macOS aarch64), AMDGPU (ROCm). These run with `FLUX_TEST_CPU=false` and the relevant GPU flag set to `true`.
+- **Buildkite** (`.buildkite/pipeline.yml`): GPU tests on JuliaGPU infrastructure — CUDA (Julia 1), Metal (macOS aarch64), AMDGPU (ROCm). These run with `FLUX_TEST_CPU=false` and the relevant GPU flag set to `true`; the CPU-only `ext_enzyme` and `ext_mooncake` files are skipped there. Enzyme gradients on GPU are checked only for CUDA, on a few layers ([test/ext_cuda/enzyme.jl](test/ext_cuda/enzyme.jl)).
 
 **PR checklist** (from open PRs convention): tests added, entry in `NEWS.md`, documentation updated if applicable.

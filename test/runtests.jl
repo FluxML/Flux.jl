@@ -57,7 +57,9 @@ delete!(testsuite, "test_common/gpu_recurrent")
 !FLUX_TEST_CUDA     && filter!(((k, _),) -> !startswith(k, "ext_cuda"),        testsuite)
 !FLUX_TEST_AMDGPU   && filter!(((k, _),) -> !startswith(k, "ext_amdgpu"),      testsuite)
 !FLUX_TEST_METAL    && filter!(((k, _),) -> !startswith(k, "ext_metal"),        testsuite)
-!FLUX_TEST_ENZYME   && filter!(((k, _),) -> !startswith(k, "ext_enzyme"),       testsuite)
+!FLUX_TEST_ENZYME   && filter!(((k, _),) -> !startswith(k, "ext_enzyme") && k != "ext_cuda/enzyme", testsuite)
+# These are CPU tests: don't repeat them in the GPU jobs.
+!FLUX_TEST_CPU      && filter!(((k, _),) -> !startswith(k, "ext_enzyme") && !startswith(k, "ext_mooncake"), testsuite)
 !FLUX_TEST_REACTANT && filter!(((k, _),) -> !startswith(k, "ext_reactant"),     testsuite)
 
 # Enable the dedicated distributed runner (its child files are never run
