@@ -18,7 +18,7 @@ jobs:
       FLUX_TEST_DISTRIBUTED_TIMEOUT: "900"
     steps:
       - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: '1'
       - name: Install MPI
@@ -58,7 +58,7 @@ jobs:
     # placement, and the test harness stays MPI-flavor-agnostic.
     steps:
       - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: '1'
       - name: Install MPI
