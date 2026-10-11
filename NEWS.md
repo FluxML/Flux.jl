@@ -33,6 +33,7 @@ See also [github's page](https://github.com/FluxML/Flux.jl/releases) for a compl
 - The convolution and pooling layers now accept `pad=:same` as a shorthand for same-size padding. `SamePad()` still works but is soft-deprecated in favour of the `:same` symbol ([#1917](https://github.com/FluxML/Flux.jl/issues/1917)).
 - **Fix, changed behavior:** for even-sized filters, `:same`/`SamePad()` now places the extra (odd) padding element on the right/bottom instead of the left/top, matching PyTorch and TensorFlow. This makes strided `Conv` and `ConvTranspose` proper adjoints of each other and produces reversal-symmetric outputs. Outputs of even-filter same-padded convolutions shift by one pixel compared to earlier versions ([#2431](https://github.com/FluxML/Flux.jl/issues/2431)).
 - `BatchNorm` in training mode now throws a clear error when a channel sees only a single value (e.g. batch size 1 with no spatial dimensions), instead of silently corrupting the running variance with `NaN`. The batch variance of a single value is undefined; this matches PyTorch's behavior (`testmode!` inference with batch size 1 is unaffected) ([#1992](https://github.com/FluxML/Flux.jl/issues/1992)).
+- Fix `using CUDA` sometimes not loading cuDNN on Julia 1.13, which made `gpu` and `gpu_device` fall back to the CPU with a "No functional GPU backend found" warning. It happened whenever Flux's CUDA extension was precompiled before cuDNN.
 
 ## v0.16.11 (6 August 2026)
 

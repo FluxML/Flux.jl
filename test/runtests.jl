@@ -77,6 +77,9 @@ init_code = quote
     # are ignored by Reactant); must be set before `using Reactant`.
     get!(ENV, "XLA_REACTANT_GPU_PREALLOCATE", "false")
     get!(ENV, "XLA_REACTANT_GPU_MEM_FRACTION", "0.25")
+    # XLA's GPU conv fusion turns scalar reductions of a conv output into max-abs and fails to
+    # compile some asymmetric paddings (EnzymeAD/Reactant.jl#3441). Also read before `using Reactant`.
+    ENV["XLA_FLAGS"] = get(ENV, "XLA_FLAGS", "") * " --xla_gpu_experimental_enable_conv_fusion=false"
     const FLUX_TEST_ENZYME = $FLUX_TEST_ENZYME
     using Random
     Random.seed!(0)
