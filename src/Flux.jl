@@ -47,7 +47,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool, MeanPool,
        Dropout, AlphaDropout,
        LayerNorm, BatchNorm, InstanceNorm, GroupNorm, WeightNorm,
-       MultiHeadAttention,
+       Attention, MultiHeadAttention,
        Upsample, PixelShuffle,
        fmap, cpu, gpu, f32, f64, f16, bf16, BFloat16, rand32, randn32, zeros32, ones32,
        testmode!, trainmode!
@@ -59,7 +59,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   Bilinear, Scale,
   # utils
   outputsize, state, create_bias, @layer, initialstates, normalise, loadmodel!,
-  activations, modules, flatten, rng_from_array, nfan,
+  activations, modules, flatten, rng_from_array, nfan, attention_scores,
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,
   # from Train

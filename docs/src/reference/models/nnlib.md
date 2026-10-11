@@ -9,11 +9,11 @@ Flux re-exports all of the functions exported by the [NNlib](https://github.com/
 
 ## Attention
 
-Primitives for the [`MultiHeadAttention`](@ref) layer.
+Primitives for the [`Attention`](@ref) layer.
 
 ```@docs
-NNlib.dot_product_attention
-NNlib.dot_product_attention_scores
+NNlib.scaled_dot_product_attention
+NNlib.scaled_dot_product_attention_scores
 NNlib.make_causal_mask
 ```
 

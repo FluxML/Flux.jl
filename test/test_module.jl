@@ -2,7 +2,7 @@ using BSON: BSON
 using FiniteDifferences: FiniteDifferences
 using Flux
 using Flux: OneHotArray, OneHotMatrix, OneHotVector,
-            onehotbatch, withgradient, pullback, outputsize
+            onehotbatch, withgradient, pullback, outputsize, attention_scores
 using Flux.Losses: xlogx, xlogy
 using Flux.Losses
 using Flux: gradient, withgradient # explicit import to avoid ambiguity with Zygote and Enzyme
@@ -60,7 +60,7 @@ const TEST_MODELS = [
     (ConvTranspose((3, 3), 3 => 2, stride=2), rand(Float32, 5, 5, 3, 1), "ConvTranspose"),
     (LayerNorm(2), randn(Float32, 2, 10), "LayerNorm"),
     (BatchNorm(2), randn(Float32, 2, 10), "BatchNorm"),
-    (first ∘ MultiHeadAttention(16), randn32(16, 20, 2), "MultiHeadAttention"),
+    (Attention(16), randn32(16, 20, 2), "Attention"),
     (RNN(3 => 2), randn(Float32, 3, 2), "RNN"), 
     (LSTM(3 => 5), randn(Float32, 3, 2), "LSTM"),
     (GRU(3 => 5), randn(Float32, 3, 10), "GRU"),
