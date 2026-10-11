@@ -154,6 +154,35 @@ end
     end
 end
 
+@testset "conv + BatchNorm trainstep! matches eager" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    cpu = cpu_device()
+
+    model0 = Chain(Conv((3, 3), 2 => 4, relu; pad=1), BatchNorm(4), Conv((3, 3), 4 => 2; pad=1))
+    X = randn(Float32, 8, 8, 2, 4)
+    Y = randn(Float32, 8, 8, 2, 4)
+    # reduces a conv output with many elements straight to a scalar
+    loss(m, a, b) = Flux.mse(m(a), b)
+
+    eager = trainmode!(deepcopy(model0))
+    model = trainmode!(deepcopy(model0)) |> dev
+    x, y = X |> dev, Y |> dev
+    # Descent rather than Adam: Adam turns numerical noise on exactly-zero gradients into full steps.
+    opt_eager = Flux.setup(Descent(1f-1), eager)
+    opt = Flux.setup(Descent(1f-1), model)
+
+    for _ in 1:5
+        l_eager = Flux.trainstep!(loss, eager, (X, Y), opt_eager)
+        l = Flux.trainstep!(loss, model, (x, y), opt)
+        @test l ≈ l_eager rtol=1e-3
+    end
+    for (p, q) in zip(Flux.trainables(model |> cpu), Flux.trainables(eager))
+        @test p ≈ q rtol=1e-3
+    end
+    @test Array(model[2].μ) ≈ eager[2].μ rtol=1e-3
+    @test Array(model[2].σ²) ≈ eager[2].σ² rtol=1e-3
+end
+
 @testset "Reactant compile-cache auto-eviction" begin
     dev = MLDataDevices.reactant_device(force=true)
     ext = Base.get_extension(Flux, :FluxReactantExt)

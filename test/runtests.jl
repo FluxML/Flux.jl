@@ -15,6 +15,7 @@ include(joinpath(@__DIR__, "test_utils_distributed.jl"))
 # ENV["FLUX_TEST_DISTRIBUTED_NCCL"] = "true"
 # ENV["FLUX_TEST_ENZYME"] = "false"
 # ENV["FLUX_TEST_REACTANT"] = "true"
+# ENV["FLUX_TEST_REACTANT_CUDA"] = "true"
 
 const FLUX_TEST_AMDGPU    = get(ENV, "FLUX_TEST_AMDGPU", "false") == "true"
 const FLUX_TEST_CPU       = get(ENV, "FLUX_TEST_CPU",    "true")  == "true"
@@ -24,6 +25,8 @@ const FLUX_TEST_DIST_NCCL = get(ENV, "FLUX_TEST_DISTRIBUTED_NCCL", "false") == "
 const FLUX_TEST_ENZYME    = get(ENV, "FLUX_TEST_ENZYME", "true") == "true"
 const FLUX_TEST_METAL     = get(ENV, "FLUX_TEST_METAL",  "false") == "true"
 const FLUX_TEST_REACTANT  = get(ENV, "FLUX_TEST_REACTANT", "true") == "true"
+# Require the Reactant tests to run on XLA's CUDA backend instead of whatever Reactant selects.
+const FLUX_TEST_REACTANT_CUDA = get(ENV, "FLUX_TEST_REACTANT_CUDA", "false") == "true"
 
 # --- Optional package installation (main process, before workers start) ---
 FLUX_TEST_AMDGPU   && Pkg.add("AMDGPU")
@@ -81,6 +84,7 @@ init_code = quote
     # compile some asymmetric paddings (EnzymeAD/Reactant.jl#3441). Also read before `using Reactant`.
     ENV["XLA_FLAGS"] = get(ENV, "XLA_FLAGS", "") * " --xla_gpu_experimental_enable_conv_fusion=false"
     const FLUX_TEST_ENZYME = $FLUX_TEST_ENZYME
+    const FLUX_TEST_REACTANT_CUDA = $FLUX_TEST_REACTANT_CUDA
     using Random
     Random.seed!(0)
     include($(joinpath(@__DIR__, "test_module.jl")))
