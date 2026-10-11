@@ -14,7 +14,28 @@ steps:
       FLUX_TEST_CUDA: "true"
       FLUX_TEST_CPU: "false"
       FLUX_TEST_ENZYME: "false"
+      FLUX_TEST_REACTANT: "false"
+    timeout_in_minutes: 60
+
+  # Separate from the CUDA.jl job: Reactant pins older versions of CUDA.jl's dependencies,
+  # and the two would compete for the memory of the same GPU.
+  - label: "Reactant CUDA - Julia 1"
+    plugins:
+      - JuliaCI/julia#v1:
+          version: "1"
+      - JuliaCI/julia-test#v1:
+          test_args: "ext_reactant"
+      - JuliaCI/julia-coverage#v1:
+          dirs:
+            - src
+            - ext
+    agents:
+      queue: "cuda"
+    env:
+      FLUX_TEST_CPU: "false"
+      FLUX_TEST_ENZYME: "false"
       FLUX_TEST_REACTANT: "true"
+      FLUX_TEST_REACTANT_CUDA: "true"
     timeout_in_minutes: 60
 
   - label: "AMDGPU - Julia 1"
