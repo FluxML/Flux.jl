@@ -73,19 +73,24 @@ end
 end
 
 @testset "Chain(Conv)" begin
-    m = Chain(Conv((3, 3), 3 => 3))
-    x = rand(Float32, 5, 5, 3, 2)
-    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+    # Conv weights are stored flipped on AMDGPU (see "Convolution" above), so the
+    # weight gradient computed on GPU is flipped too and can't go through `test_gradients`.
+    for layer in (Conv((3, 3), 3 => 3), ConvTranspose((3, 3), 3 => 3))
+        m = Chain(layer)
+        x = rand(Float32, 5, 5, 3, 2)
+        md, xd = Flux.gpu.((m, x))
+        loss(m, x) = mean(m(x))
 
-    md = m |> gpu |> cpu
-    @test md[1].weight ≈ m[1].weight atol=1f-3
+        @test loss(md, xd) ≈ loss(m, x) rtol=1f-4
 
-    m = Chain(ConvTranspose((3, 3), 3 => 3))
-    x = rand(Float32, 5, 5, 3, 2)
-    test_gradients(m, x, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+        gm, gx = gradient(loss, m, x)
+        gmd, gxd = gradient(loss, md, xd)
+        @test Array(gxd) ≈ gx rtol=1f-4 atol=1f-4
+        @test Array(gmd.layers[1].bias) ≈ gm.layers[1].bias rtol=1f-4 atol=1f-4
+        @test Array(gmd.layers[1].weight) ≈ reverse(gm.layers[1].weight; dims=(1, 2)) rtol=1f-4 atol=1f-4
 
-    md = m |> gpu |> cpu
-    @test md[1].weight ≈ m[1].weight atol=1f-3
+        @test cpu(md)[1].weight ≈ m[1].weight atol=1f-3
+    end
 end
 
 @testset "Cross-correlation" begin
