@@ -80,7 +80,17 @@ keys in other ways (e.g. rotary embeddings) or that cache keys and values can be
 # Examples
 
 ```julia
+# self-attention, the queries, keys and values all coming from `x`
 attn = Attention(64, nheads = 8)
+x = rand(Float32, (64, 10, 32))  # (features, seq_len, batch_size)
+y = attn(x)
+# [y] = [64, 10, 32]
+
+# in a model, with a residual connection
+model = Chain(SkipConnection(attn, +), LayerNorm(64))
+y = model(x)
+
+# cross-attention, the keys and values coming from another sequence
 q = rand(Float32, (64, 10, 32))
 k = rand(Float32, (64, 20, 32))
 v = rand(Float32, (64, 20, 32))
@@ -91,10 +101,10 @@ y = attn(q, k, v)
 y = attn(q, k, v; kv_lengths = [12; fill(20, 31)])
 
 attn = Attention(64 => 1024 => 1024, nheads = 8, is_causal = true)
-y = attn(q) # causal self-attention
+y = attn(x) # causal self-attention
 # [y] = [1024, 10, 32]
 
-y, α = Flux.attention_with_weights(attn, q)
+y, α = Flux.attention_with_weights(attn, x)
 # [α] = [10, 10, 8, 32]
 ```
 """
@@ -156,7 +166,9 @@ function normalize_mha_dims((in, (qkv, out))::Pair{<:IntOrDims{3}, <:Pair{<:IntO
   return (; q_in, k_in, v_in, qk, v, out)
 end
 
-function (m::Attention)(q_in::AbstractArray, k_in::AbstractArray = q_in, v_in::AbstractArray = k_in;
+function (m::Attention)(q_in::AbstractArray, 
+                        k_in::AbstractArray = q_in, 
+                        v_in::AbstractArray = k_in;
                         mask = nothing, bias = nothing, is_causal::Bool = m.is_causal,
                         q_lengths = nothing, kv_lengths = nothing)
   ## [q_in] = [q_in_dim, q_len, batch_size...]
