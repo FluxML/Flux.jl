@@ -2,13 +2,34 @@
 const A3{T} = AbstractArray{T, 3}
 const IntOrDims{N} = Union{Int, Dims{N}}
 
-"""
+@doc raw"""
     Attention(dims; [nheads, nkvheads, bias, init, dropout, qk_norm, is_causal])
 
 The multi-head scaled dot-product attention layer used in Transformer architectures [1].
 
-Returns the transformed input sequence. The attention weights are not computed by the
-forward pass, see [`Flux.attention_with_weights`](@ref) to obtain them.
+Given the columns ``x^q_i`` of the queries input and ``x^k_j``, ``x^v_j`` of the keys and values
+inputs (all from the same `x` in self-attention), the layer computes for each head ``h = 1, \dots, H``
+
+```math
+\begin{aligned}
+q^h_i &= N_q\big(W^h_q x^q_i\big), \qquad k^h_j = N_k\big(W^{g(h)}_k x^k_j\big), \qquad v^h_j = W^{g(h)}_v x^v_j \\
+\alpha^h_{ji} &= \operatorname{softmax}_j\Big(\frac{q^h_i \cdot k^h_j}{\sqrt{d}} + B^h_{ji}\Big) \\
+o^h_i &= \sum_j \alpha^h_{ji} \, v^h_j \\
+y_i &= W_o \, \big[o^1_i; \dots; o^H_i\big]
+\end{aligned}
+```
+
+and returns ``y``. Here ``W^h`` are the rows of a projection weight belonging to head ``h``,
+``d`` is the head dimension `qk_dim ÷ nheads`, and ``g(h)`` is the key/value head shared by the
+query head ``h`` (``g(h) = h`` unless `nkvheads < nheads`). ``N_q`` and ``N_k`` are the `qk_norm`
+layers, the identity by default. ``B`` is the optional `bias` of the forward pass, and the keys
+excluded by `mask`, `is_causal` or `kv_lengths` get ``\alpha^h_{ji} = 0``. With the constructor keyword `bias = true`,
+each projection also adds a bias vector. The attention dropout, when active, is applied to ``\alpha``.
+
+The layer computes only this: no residual connection, no normalization of its input or output,
+no activation function and no feed-forward block. A Transformer block composes these separately,
+see the examples below. The attention weights ``\alpha`` are not computed by the forward pass,
+see [`Flux.attention_with_weights`](@ref) to obtain them.
 
 [1] Vaswani et al. "Attention is all you need." Advances in Neural Information Processing Systems. 2017.
 
@@ -86,9 +107,11 @@ x = rand(Float32, (64, 10, 32))  # (features, seq_len, batch_size)
 y = attn(x)
 # [y] = [64, 10, 32]
 
-# in a model, with a residual connection
-model = Chain(SkipConnection(attn, +), LayerNorm(64))
-y = model(x)
+# a Transformer block, with the normalization, the residual connections and the
+# feed-forward network around the attention
+block = Chain(SkipConnection(Chain(LayerNorm(64), Attention(64, nheads = 8)), +),
+              SkipConnection(Chain(LayerNorm(64), Dense(64 => 256, gelu), Dense(256 => 64)), +))
+y = block(x)
 
 # cross-attention, the keys and values coming from another sequence
 q = rand(Float32, (64, 10, 32))
