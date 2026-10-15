@@ -231,7 +231,7 @@ end
     MultiHeadAttention(dims; [nheads, bias, init, dropout_prob])
 
 Deprecated: use [`Attention`](@ref) instead, which takes the same `dims` and returns only
-the transformed input sequence, and [`Flux.attention_scores`](@ref) for the attention scores.
+the transformed input sequence, and [`Flux.attention_weights`](@ref) for the attention scores.
 The keyword `dropout_prob` is called `dropout` there, and the attention `bias` is a keyword
 argument of the forward pass. `Attention(mha)` converts a `MultiHeadAttention` layer.
 
@@ -265,7 +265,7 @@ function MultiHeadAttention(dims;
                      dropout_prob = 0.0)
 
   Base.depwarn("`MultiHeadAttention` is deprecated, use `Attention` instead, which returns only \
-    the output and not the attention scores (see `Flux.attention_scores` for those).", :MultiHeadAttention)
+    the output and not the attention scores (see `Flux.attention_weights` for those).", :MultiHeadAttention)
   dims = normalize_mha_dims(dims)
   dims.qk % nheads == 0 || throw(ArgumentError("qk_dim = $(dims.qk) should be divisible by nheads = $(nheads)"))
   dims.v % nheads == 0 || throw(ArgumentError( "v_dim = $(dims.v) should be divisible by nheads = $(nheads)"))
@@ -288,10 +288,8 @@ function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3,
   q = _split_heads(mha.q_proj(q_in), mha.nheads)  # [q] = [qk_head_dim, nheads, q_len, batch_size]
   k = _split_heads(mha.k_proj(k_in), mha.nheads)  # [k] = [qk_head_dim, nheads, kv_len, batch_size]
   v = _split_heads(mha.v_proj(v_in), mha.nheads)  # [v] = [v_head_dim, nheads, kv_len, batch_size]
-  α = NNlib.scaled_dot_product_attention_scores(q, k, bias; mask, fdrop=mha.attn_drop)
+  x, α = NNlib.scaled_dot_product_attention_with_weights(q, k, v, bias; mask, fdrop=mha.attn_drop)
   # [α] = [kv_len, q_len, nheads, batch_size]
-  # x[d, h, i, b] = sum_j α[j, i, h, b] * v[d, h, j, b]
-  x = permutedims(batched_mul(permutedims(v, (1, 3, 2, 4)), α), (1, 3, 2, 4))
   x = mha.out_proj(reshape(x, :, size(x)[3:end]...))
   # [x] = [out_dim, q_len, batch_size]
   return x, α

@@ -13,7 +13,8 @@ Primitives for the [`Attention`](@ref) layer.
 
 ```@docs
 NNlib.scaled_dot_product_attention
-NNlib.scaled_dot_product_attention_scores
+NNlib.scaled_dot_product_attention_with_weights
+NNlib.is_fused_attention
 NNlib.make_causal_mask
 ```
 

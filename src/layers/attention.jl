@@ -7,8 +7,8 @@ const IntOrDims{N} = Union{Int, Dims{N}}
 
 The multi-head scaled dot-product attention layer used in Transformer architectures [1].
 
-Returns the transformed input sequence. The attention scores are not computed by the
-forward pass, see [`Flux.attention_scores`](@ref) to obtain them.
+Returns the transformed input sequence. The attention weights are not computed by the
+forward pass, see [`Flux.attention_weights`](@ref) to obtain them.
 
 [1] Vaswani et al. "Attention is all you need." Advances in Neural Information Processing Systems. 2017.
 
@@ -26,7 +26,7 @@ forward pass, see [`Flux.attention_scores`](@ref) to obtain them.
           by `nheads ÷ nkvheads` query heads (grouped-query attention). Default `nheads`.
 - `bias` : whether pointwise QKVO dense transforms use bias. Default `false`.
 - `init`: weight initializer for the Dense layers. Default `glorot_uniform`.
-- `dropout`: dropout probability for the attention scores. Default `0.0`.
+- `dropout`: dropout probability for the attention weights. Default `0.0`.
 - `qk_norm`: either `nothing` or a function `head_dim -> layer` constructing the normalization
           applied to the queries and to the keys of each head, e.g. `qk_norm = LayerNorm`.
           Default `nothing`.
@@ -35,32 +35,43 @@ forward pass, see [`Flux.attention_scores`](@ref) to obtain them.
 
 # Forward
 
-    (m::Attention)(q_in, k_in = q_in, v_in = k_in; [mask, bias, is_causal])
+    (m::Attention)(q_in, k_in = q_in, v_in = k_in; [mask, bias, is_causal, q_lengths, kv_lengths])
 
 The arguments of the forward pass are:
 
 - `q_in`: Input query array of size `(q_in_dim, q_len, batch_size...)`.
 - `k_in`: Input key array of size `(k_in_dim, kv_len, batch_size...)`. Default `q_in` (self-attention).
 - `v_in`: Input value array of size `(v_in_dim, kv_len, batch_size...)`. Default `k_in`.
-- `mask`: Boolean array broadcastable to size `(kv_len, q_len, nheads, batch_size)`,
+- `mask`: Boolean array broadcastable to size `(kv_len, q_len, nheads, batch_size...)`,
           with `false` marking the entries that cannot be attended.
-          For instance, padded keys are excluded by `reshape(keep, kv_len, 1, 1, batch_size)`,
-          where `keep` is a `(kv_len, batch_size)` boolean matrix. A query attending to no key
-          at all produces `NaN`s. Default `nothing`.
-- `bias`: Array broadcastable to size `(kv_len, q_len, nheads, batch_size)`,
-          added to the attention scores before the softmax. Default `nothing`.
+          A query attending to no key at all produces `NaN`s. Default `nothing`.
+- `bias`: Array broadcastable to size `(kv_len, q_len, nheads, batch_size...)`,
+          added to the attention logits before the softmax. Default `nothing`.
 - `is_causal`: overrides the `is_causal` setting of the layer.
+- `q_lengths`, `kv_lengths`: the number of valid positions of each query and of each key/value
+          sequence in the batch, the following ones being padding: an integer array with one
+          entry for each batch element, or an integer for all of them. The keys past `kv_lengths`
+          are not attended to, and the attention output is zero at the queries past `q_lengths`
+          (before the output projection). Default `nothing`.
+
+`mask`, `is_causal` and `kv_lengths` can be combined: a key is then attended to only where all
+of them allow it.
 
 The output has size `(out_dim, q_len, batch_size...)`.
 
 # Performance
 
+Unless the attention dropout is active, the layer takes a fused implementation of
+[`NNlib.scaled_dot_product_attention`](@ref), which does not materialize the attention weights,
+so that its memory grows linearly instead of quadratically with the sequence length. This is the
+case on the CPU and on GPUs, and for the gradient with Zygote and Enzyme as long as there is no
+`bias`; see the NNlib docstring for the details.
+
 With CUDA.jl and cuDNN.jl loaded, a layer converted with [`f16`](@ref Flux.f16) or
-[`bf16`](@ref Flux.bf16) uses a fused kernel that does not materialize the attention scores,
-so that its memory grows linearly instead of quadratically with the sequence length.
-This requires no `mask` and no `bias`, inactive dropout (`dropout = 0`, or test mode), a head
-dimension that is a multiple of 8 and at most 256, and `qk_dim == v_dim`. A causal layer should
-therefore use `is_causal = true` rather than a causal `mask`.
+[`bf16`](@ref Flux.bf16) uses instead cuDNN's fused kernel, which runs on tensor cores.
+This requires no `mask` and no `bias`, a head dimension that is a multiple of 8 and at most 256,
+and `qk_dim == v_dim`. A causal layer should therefore use `is_causal = true` rather than a
+causal `mask`, and a padded batch `kv_lengths` rather than a padding `mask`.
 
 This layer covers the standard attention block. Architectures that transform the queries and
 keys in other ways (e.g. rotary embeddings) or that cache keys and values can be built on
@@ -76,11 +87,14 @@ v = rand(Float32, (64, 20, 32))
 y = attn(q, k, v)
 # [y] = [64, 10, 32]
 
+# a padded batch, whose first key/value sequence has 12 valid positions out of 20
+y = attn(q, k, v; kv_lengths = [12; fill(20, 31)])
+
 attn = Attention(64 => 1024 => 1024, nheads = 8, is_causal = true)
 y = attn(q) # causal self-attention
 # [y] = [1024, 10, 32]
 
-α = Flux.attention_scores(attn, q)
+α = Flux.attention_weights(attn, q)
 # [α] = [10, 10, 8, 32]
 ```
 """
@@ -143,28 +157,31 @@ function normalize_mha_dims((in, (qkv, out))::Pair{<:IntOrDims{3}, <:Pair{<:IntO
 end
 
 function (m::Attention)(q_in::AbstractArray, k_in::AbstractArray = q_in, v_in::AbstractArray = k_in;
-                        mask = nothing, bias = nothing, is_causal::Bool = m.is_causal)
+                        mask = nothing, bias = nothing, is_causal::Bool = m.is_causal,
+                        q_lengths = nothing, kv_lengths = nothing)
   ## [q_in] = [q_in_dim, q_len, batch_size...]
   ## [k_in] = [k_in_dim, kv_len, batch_size...]
   ## [v_in] = [v_in_dim, kv_len, batch_size...]
   q, k = _project_qk(m, q_in, k_in)
   v = _split_heads(m.v_proj(v_in), m.nkvheads)  # [v] = [v_head_dim, nkvheads, kv_len, batch_size...]
-  mask, is_causal = _attention_mask(q, k, mask, is_causal)
-  # Without `fdrop`, half precision CuArrays can take the fused cuDNN kernel.
+  # Only without `fdrop` can NNlib take a fused implementation.
   x = if _dropout_active(m.attn_drop, q)
-    NNlib.scaled_dot_product_attention(q, k, v, bias; mask, is_causal, fdrop = m.attn_drop)
+    NNlib.scaled_dot_product_attention(q, k, v, bias; mask, is_causal, q_lengths, kv_lengths,
+                                       fdrop = m.attn_drop)
   else
-    NNlib.scaled_dot_product_attention(q, k, v, bias; mask, is_causal)
+    NNlib.scaled_dot_product_attention(q, k, v, bias; mask, is_causal, q_lengths, kv_lengths)
   end
   # [x] = [v_head_dim, nheads, q_len, batch_size...]
   return m.out_proj(reshape(x, :, size(x)[3:end]...))
 end
 
 """
-    attention_scores(m::Attention, q_in, k_in = q_in; [mask, bias, is_causal])
+    attention_weights(m::Attention, q_in, k_in = q_in; [mask, bias, is_causal, q_lengths, kv_lengths])
 
-Return the attention scores of the [`Attention`](@ref) layer `m`, an array of size
-`(kv_len, q_len, nheads, batch_size...)` whose columns sum to one.
+Return the attention weights of the [`Attention`](@ref) layer `m`, an array of size
+`(kv_len, q_len, nheads, batch_size...)`, `α[j, i, h, b...]` being the weight of the key `j`
+for the query `i` in the head `h`. Its columns sum to one, except at the queries past `q_lengths`
+where they are zero.
 The arguments are those of the forward pass of `m`. The attention dropout is not applied.
 
 # Examples
@@ -173,15 +190,18 @@ The arguments are those of the forward pass of `m`. The attention dropout is not
 attn = Attention(64, nheads = 8)
 q = rand(Float32, (64, 10, 32))
 k = rand(Float32, (64, 20, 32))
-α = Flux.attention_scores(attn, q, k)
+α = Flux.attention_weights(attn, q, k)
 # [α] = [20, 10, 8, 32]
 ```
 """
-function attention_scores(m::Attention, q_in::AbstractArray, k_in::AbstractArray = q_in;
-                          mask = nothing, bias = nothing, is_causal::Bool = m.is_causal)
+function attention_weights(m::Attention, q_in::AbstractArray, k_in::AbstractArray = q_in;
+                           mask = nothing, bias = nothing, is_causal::Bool = m.is_causal,
+                           q_lengths = nothing, kv_lengths = nothing)
   q, k = _project_qk(m, q_in, k_in)
-  mask, is_causal = _attention_mask(q, k, mask, is_causal)
-  return NNlib.scaled_dot_product_attention_scores(q, k, bias; mask, is_causal)
+  # The weights do not depend on the values, the keys stand in for them.
+  _, α = NNlib.scaled_dot_product_attention_with_weights(q, k, k, bias; mask, is_causal,
+                                                         q_lengths, kv_lengths)
+  return α
 end
 
 function _project_qk(m::Attention, q_in, k_in)
@@ -195,15 +215,6 @@ _split_heads(x, nheads) = reshape(x, :, nheads, size(x)[2:end]...)
 # This has to be differentiated through: `within_gradient` is true only inside its rrule.
 _dropout_active(d::Dropout, x) = d.p > 0 && _isactive(d, x)
 _dropout_active(d, x) = d !== identity
-
-# NNlib does not accept a `mask` together with `is_causal`, so the two are merged here.
-function _attention_mask(q, k, mask, is_causal::Bool)
-  (is_causal && mask !== nothing) || return mask, is_causal
-  causal = triu(fill!(similar(q, Bool, size(k, 3), size(q, 3)), true))
-  return mask .& causal, false
-end
-
-ChainRulesCore.@non_differentiable _attention_mask(::Any...)
 
 function Base.show(io::IO, m::Attention)
   qk, q_in = size(m.q_proj.weight)

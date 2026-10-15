@@ -351,9 +351,9 @@ end
   y_gpu = attn_gpu(x_gpu)
   @test y_gpu isa CuArray{Float32}
   @test Array(y_gpu) ≈ y_cpu atol=1e-4
-  α_gpu = attention_scores(attn_gpu, x_gpu)
+  α_gpu = attention_weights(attn_gpu, x_gpu)
   @test α_gpu isa CuArray{Float32}
-  @test Array(α_gpu) ≈ attention_scores(attn_cpu, x_cpu) atol=1e-4
+  @test Array(α_gpu) ≈ attention_weights(attn_cpu, x_cpu) atol=1e-4
 
   @testset "gradient ($(repr(m)))" for m in [attn_cpu,
                                              Attention(dim; nheads, is_causal=true),
@@ -362,25 +362,28 @@ end
     test_gradients(m, x_cpu; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
   end
 
-  @testset "mask" begin
+  @testset "mask and lengths" begin
     keep = trues(len, batch_size)
     keep[end, 1] = false
     mask = reshape(keep, len, 1, 1, batch_size)
     @test Array(attn_gpu(x_gpu; mask=gpu(mask))) ≈ attn_cpu(x_cpu; mask) atol=1e-4
     @test Array(attn_gpu(x_gpu; mask=gpu(mask), is_causal=true)) ≈ attn_cpu(x_cpu; mask, is_causal=true) atol=1e-4
+    kv_lengths = vec(sum(keep; dims=1))
+    @test Array(attn_gpu(x_gpu; kv_lengths)) ≈ attn_cpu(x_cpu; mask) atol=1e-4
+    @test Array(attn_gpu(x_gpu; kv_lengths=gpu(kv_lengths))) ≈ attn_cpu(x_cpu; mask) atol=1e-4
+    @test Array(attn_gpu(x_gpu; q_lengths=2)) ≈ attn_cpu(x_cpu; q_lengths=2) atol=1e-4
   end
 end
 
-# In half precision cuDNN's fused kernel does not materialize the attention scores,
-# which are by far the largest array of the generic implementation.
-@testset "Attention fused kernel ($cast)" for cast in (f16, bf16)
-  cast === bf16 && CUDA.capability(CUDA.device()) < v"8.0" && continue
-  T = cast === f16 ? Float16 : BFloat16
+# The fused implementations do not materialize the attention weights, which are by far
+# the largest array of the materialized one. In half precision, cuDNN's kernel is used.
+@testset "Attention fused implementation ($T)" for (T, cast) in ((Float32, f32), (Float16, f16), (BFloat16, bf16))
+  T === BFloat16 && CUDA.capability(CUDA.device()) < v"8.0" && continue
   dim = 64; nheads = 8; len = 512; batch_size = 2
-  scores_bytes = len^2 * nheads * batch_size * sizeof(T)
+  weights_bytes = len^2 * nheads * batch_size * sizeof(T)
   x_cpu = randn(Float32, (dim, len, batch_size))
   x_gpu = gpu(cast(x_cpu))
-  is_fused(m, x; kws...) = CUDA.@allocated(m(x; kws...)) < scores_bytes
+  is_fused(m, x; kws...) = CUDA.@allocated(m(x; kws...)) < weights_bytes
   sqloss(m, x) = sum(abs2, m(x))
 
   @testset "is_causal=$is_causal, nkvheads=$nkvheads" for is_causal in (false, true), nkvheads in (8, 2)
@@ -396,29 +399,35 @@ end
     @test g_gpu.q_proj.weight isa CuArray{T, 2}
     @test Float32.(Array(g_gpu.q_proj.weight)) ≈ g_cpu.q_proj.weight rtol=1f-1
     @test Float32.(Array(g_gpu.out_proj.weight)) ≈ g_cpu.out_proj.weight rtol=1f-1
+    @test CUDA.@allocated(gradient(sqloss, m_gpu, x_gpu)) < weights_bytes
   end
 
-  @testset "generic fallback" begin
+  @testset "mask, bias and lengths" begin
+    m_gpu = Attention(dim; nheads) |> cast |> gpu
+    mask = gpu(trues(len, len))
+    @test is_fused(m_gpu, x_gpu; mask)
+    @test is_fused(m_gpu, x_gpu; mask, is_causal=true)
+    @test is_fused(m_gpu, x_gpu; bias=CUDA.zeros(T, len, len))
+    @test is_fused(m_gpu, x_gpu; kv_lengths=[len, len ÷ 2])
+    # a head dimension that is not a multiple of 8, which cuDNN does not take
+    m_gpu = Attention(dim => 48 => dim; nheads) |> cast |> gpu
+    @test is_fused(m_gpu, x_gpu)
+  end
+
+  @testset "materialized with active dropout" begin
     m_gpu = Attention(dim; nheads, dropout=0.1) |> cast |> gpu
     @test is_fused(m_gpu, x_gpu)  # dropout is not active
-    mask = gpu(trues(len, len))
-    @test !is_fused(m_gpu, x_gpu; mask)
-    @test !is_fused(m_gpu, x_gpu; mask, is_causal=true)
-    @test !is_fused(m_gpu, x_gpu; bias=CUDA.zeros(T, len, len))
     Flux.trainmode!(m_gpu)
     @test !is_fused(m_gpu, x_gpu)
     Flux.testmode!(m_gpu)
     @test is_fused(m_gpu, x_gpu)
-    # a head dimension that is not a multiple of 8
-    m_gpu = Attention(dim => 48 => dim; nheads) |> cast |> gpu
-    @test !is_fused(m_gpu, x_gpu)
   end
 end
 
 if CUDA.capability(CUDA.device()) >= v"8.0"  # BFloat16 support
   @testset "Attention in half precision within a Float32 model" begin
     dim = 64; nheads = 8; len = 512; batch_size = 2
-    scores_bytes = len^2 * nheads * batch_size * sizeof(BFloat16)
+    weights_bytes = len^2 * nheads * batch_size * sizeof(BFloat16)
     x_cpu = randn(Float32, (dim, len, batch_size))
     x_gpu = gpu(x_cpu)
     m_cpu = Chain(Dense(dim => dim), SkipConnection(Attention(dim; nheads), +), Dense(dim => dim))
@@ -427,7 +436,7 @@ if CUDA.capability(CUDA.device()) >= v"8.0"  # BFloat16 support
     y = m_gpu(x_gpu)
     @test y isa CuArray{Float32, 3}
     @test Array(y) ≈ m_cpu(x_cpu) rtol=5f-2
-    @test CUDA.@allocated(m_gpu(x_gpu)) < scores_bytes
+    @test CUDA.@allocated(m_gpu(x_gpu)) < weights_bytes
 
     sqloss(m, x) = sum(abs2, m(x))
     g_cpu = gradient(sqloss, m_cpu, x_cpu)[1]

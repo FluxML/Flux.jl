@@ -188,7 +188,6 @@ distribution.
 
 This is internally used by the [`Conv`](@ref) layer.
 """
-
 function convfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
           init = glorot_uniform, groups = 1) where N
   cin, cout = ch

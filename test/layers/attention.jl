@@ -32,14 +32,14 @@
     @test_throws ArgumentError Attention(4; nheads = 4, nkvheads = 3)
   end
 
-  @testset "attention_scores" begin
-    α = attention_scores(attn, q, k)
+  @testset "attention_weights" begin
+    α = attention_weights(attn, q, k)
     @test α isa Array{Float32, 4}
     @test size(α) == (len + 1, len, nheads, batch_size)
     @test all(≈(1), sum(α; dims = 1))
-    @test attention_scores(attn, q) ≈ attention_scores(attn, q, q)
+    @test attention_weights(attn, q) ≈ attention_weights(attn, q, q)
 
-    # the output is the projection of the values averaged with the scores
+    # the output is the projection of the values averaged with the weights
     vh = reshape(attn.v_proj(v), :, nheads, len + 1, batch_size)
     x = permutedims(batched_mul(permutedims(vh, (1, 3, 2, 4)), α), (1, 3, 2, 4))
     @test attn.out_proj(reshape(x, :, len, batch_size)) ≈ y
@@ -53,7 +53,7 @@
     @test causal(q) ≈ attn(q; is_causal = true)
     @test causal(q; is_causal = false) ≈ attn(q)
 
-    α = attention_scores(causal, q)
+    α = attention_weights(causal, q)
     @test all(α[2, 1, :, :] .== 0)
     @test α[:, :, 1, 1] ≈ triu(α[:, :, 1, 1])
 
@@ -68,7 +68,7 @@
     keep[end, 1] = false
     pad = reshape(keep, len, 1, 1, batch_size)
     @test causal(q; mask = pad) ≈ attn(q; mask = pad .& mask)
-    @test attention_scores(causal, q; mask = pad) ≈ attention_scores(attn, q; mask = pad .& mask)
+    @test attention_weights(causal, q; mask = pad) ≈ attention_weights(attn, q; mask = pad .& mask)
   end
 
   @testset "mask" begin
@@ -76,7 +76,7 @@
     keep = trues(len + 1, batch_size)
     keep[end, :] .= false
     mask = reshape(keep, len + 1, 1, 1, batch_size)
-    α = attention_scores(attn, q, k; mask)
+    α = attention_weights(attn, q, k; mask)
     @test all(α[end, :, :, :] .== 0)
 
     k2, v2 = copy(k), copy(v)
@@ -86,6 +86,30 @@
     @test !(attn(q, k2, v2) ≈ attn(q, k, v))
   end
 
+  @testset "sequence lengths" begin
+    kv_lengths = [len + 1, len, 2, len + 1, 1]
+    mask = reshape((1:len + 1) .<= kv_lengths', len + 1, 1, 1, batch_size)
+    @test attn(q, k, v; kv_lengths) ≈ attn(q, k, v; mask)
+    @test attention_weights(attn, q, k; kv_lengths) ≈ attention_weights(attn, q, k; mask)
+    @test attn(q, k, v; kv_lengths = len) ≈ attn(q, k[:, 1:len, :], v[:, 1:len, :])
+
+    q_lengths = [len, 2, 1, len, len]
+    y = attn(q, k, v; q_lengths)
+    @test all(y[:, 3, 2] .== 0)
+    @test all(y[:, 2:3, 3] .== 0)
+    @test y[:, 1:2, 2] ≈ attn(q, k, v)[:, 1:2, 2]
+    α = attention_weights(attn, q, k; q_lengths)
+    @test all(α[:, 3, :, 2] .== 0)
+
+    causal = Attention(dim; nheads, is_causal = true)
+    lengths = [len, 2, 1, len, len]
+    causal_mask = NNlib.make_causal_mask(q; dims = 2)
+    pad = reshape((1:len) .<= lengths', len, 1, 1, batch_size)
+    @test causal(q; kv_lengths = lengths) ≈ causal(q; mask = pad .& causal_mask)
+
+    test_gradients(attn, q, k, v; loss = (m, q, k, v) -> mean(m(q, k, v; kv_lengths)))
+  end
+
   @testset "bias" begin
     # use bias to produce a causal mask
     b = fill(-Inf32, (len, len))
@@ -93,7 +117,7 @@
       b[i, j] = 0
     end
     @test attn(q; bias = b) ≈ attn(q; is_causal = true)
-    @test attention_scores(attn, q; bias = b) ≈ attention_scores(attn, q; is_causal = true)
+    @test attention_weights(attn, q; bias = b) ≈ attention_weights(attn, q; is_causal = true)
   end
 
   @testset "grouped-query attention" begin
@@ -103,7 +127,7 @@
     @test size(gqa.v_proj.weight) == (4, 8)
     x = rand(Float32, (8, len, batch_size))
     @test size(gqa(x)) == (8, len, batch_size)
-    @test size(attention_scores(gqa, x)) == (len, len, 4, batch_size)
+    @test size(attention_weights(gqa, x)) == (len, len, 4, batch_size)
 
     # same as full attention where each key/value head is repeated for its group of query heads
     full = Attention(8; nheads = 4)
@@ -113,7 +137,7 @@
     full.v_proj.weight .= repeat_heads(gqa.v_proj.weight)
     full.out_proj.weight .= gqa.out_proj.weight
     @test full(x) ≈ gqa(x)
-    @test attention_scores(full, x) ≈ attention_scores(gqa, x)
+    @test attention_weights(full, x) ≈ attention_weights(gqa, x)
   end
 
   @testset "qk_norm" begin
@@ -127,10 +151,10 @@
     x = rand(Float32, (8, len, batch_size))
     @test size(normed(x)) == (8, len, batch_size)
 
-    # the scores do not depend on the scale of the queries
-    α = attention_scores(normed, x)
+    # the weights do not depend on the scale of the queries
+    α = attention_weights(normed, x)
     normed.q_proj.weight .*= 3
-    @test attention_scores(normed, x) ≈ α rtol=1e-3
+    @test attention_weights(normed, x) ≈ α rtol=1e-3
     test_gradients(normed, x)
   end
 
@@ -138,11 +162,11 @@
     q2 = rand(Float32, (dim, len))
     k2 = rand(Float32, (dim, len + 1))
     @test attn(q2, k2) ≈ dropdims(attn(reshape(q2, dim, len, 1), reshape(k2, dim, len + 1, 1)); dims = 3)
-    @test size(attention_scores(attn, q2, k2)) == (len + 1, len, nheads)
+    @test size(attention_weights(attn, q2, k2)) == (len + 1, len, nheads)
 
     q4 = rand(Float32, (dim, len, 2, 3))
     @test attn(q4) ≈ reshape(attn(reshape(q4, dim, len, 6)), dim, len, 2, 3)
-    @test size(attention_scores(attn, q4)) == (len, len, nheads, 2, 3)
+    @test size(attention_weights(attn, q4)) == (len, len, nheads, 2, 3)
   end
 
   @testset "dropout" begin
@@ -248,7 +272,7 @@ end
     attn = Attention(mha)
     @test attn.q_proj === mha.q_proj
     @test attn(q, k, v) ≈ y0
-    @test attention_scores(attn, q, k) ≈ α0
+    @test attention_weights(attn, q, k) ≈ α0
 
     attn2 = Attention(dim; nheads)
     Flux.loadmodel!(attn2, mha)
