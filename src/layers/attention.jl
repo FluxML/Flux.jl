@@ -8,7 +8,7 @@ const IntOrDims{N} = Union{Int, Dims{N}}
 The multi-head scaled dot-product attention layer used in Transformer architectures [1].
 
 Returns the transformed input sequence. The attention weights are not computed by the
-forward pass, see [`Flux.attention_weights`](@ref) to obtain them.
+forward pass, see [`Flux.attention_with_weights`](@ref) to obtain them.
 
 [1] Vaswani et al. "Attention is all you need." Advances in Neural Information Processing Systems. 2017.
 
@@ -94,7 +94,7 @@ attn = Attention(64 => 1024 => 1024, nheads = 8, is_causal = true)
 y = attn(q) # causal self-attention
 # [y] = [1024, 10, 32]
 
-α = Flux.attention_weights(attn, q)
+y, α = Flux.attention_with_weights(attn, q)
 # [α] = [10, 10, 8, 32]
 ```
 """
@@ -162,8 +162,7 @@ function (m::Attention)(q_in::AbstractArray, k_in::AbstractArray = q_in, v_in::A
   ## [q_in] = [q_in_dim, q_len, batch_size...]
   ## [k_in] = [k_in_dim, kv_len, batch_size...]
   ## [v_in] = [v_in_dim, kv_len, batch_size...]
-  q, k = _project_qk(m, q_in, k_in)
-  v = _split_heads(m.v_proj(v_in), m.nkvheads)  # [v] = [v_head_dim, nkvheads, kv_len, batch_size...]
+  q, k, v = _project_qkv(m, q_in, k_in, v_in)
   # Only without `fdrop` can NNlib take a fused implementation.
   x = if _dropout_active(m.attn_drop, q)
     NNlib.scaled_dot_product_attention(q, k, v, bias; mask, is_causal, q_lengths, kv_lengths,
@@ -172,17 +171,22 @@ function (m::Attention)(q_in::AbstractArray, k_in::AbstractArray = q_in, v_in::A
     NNlib.scaled_dot_product_attention(q, k, v, bias; mask, is_causal, q_lengths, kv_lengths)
   end
   # [x] = [v_head_dim, nheads, q_len, batch_size...]
-  return m.out_proj(reshape(x, :, size(x)[3:end]...))
+  return m.out_proj(_merge_heads(x))
 end
 
 """
-    attention_weights(m::Attention, q_in, k_in = q_in; [mask, bias, is_causal, q_lengths, kv_lengths])
+    attention_with_weights(m::Attention, q_in, k_in = q_in, v_in = k_in; [mask, bias, is_causal, q_lengths, kv_lengths])
 
-Return the attention weights of the [`Attention`](@ref) layer `m`, an array of size
-`(kv_len, q_len, nheads, batch_size...)`, `α[j, i, h, b...]` being the weight of the key `j`
-for the query `i` in the head `h`. Its columns sum to one, except at the queries past `q_lengths`
-where they are zero.
-The arguments are those of the forward pass of `m`. The attention dropout is not applied.
+Return the output `y` of the [`Attention`](@ref) layer `m` together with the attention weights `α`
+it is computed from. The arguments are those of the forward pass of `m`, and `y` is the same as
+`m(q_in, k_in, v_in; kws...)`.
+
+The weights have size `(kv_len, q_len, nheads, batch_size...)`, with `α[j, i, h, b...]` the weight
+of the key `j` for the query `i` in the head `h`. They are taken after the attention dropout if
+it is active, and are zero at the queries past `q_lengths`.
+
+Returning the weights means materializing them, so this function never takes the fused
+implementation of the forward pass.
 
 # Examples
 
@@ -190,27 +194,30 @@ The arguments are those of the forward pass of `m`. The attention dropout is not
 attn = Attention(64, nheads = 8)
 q = rand(Float32, (64, 10, 32))
 k = rand(Float32, (64, 20, 32))
-α = Flux.attention_weights(attn, q, k)
+y, α = Flux.attention_with_weights(attn, q, k)
+# [y] = [64, 10, 32]
 # [α] = [20, 10, 8, 32]
 ```
 """
-function attention_weights(m::Attention, q_in::AbstractArray, k_in::AbstractArray = q_in;
-                           mask = nothing, bias = nothing, is_causal::Bool = m.is_causal,
-                           q_lengths = nothing, kv_lengths = nothing)
-  q, k = _project_qk(m, q_in, k_in)
-  # The weights do not depend on the values, the keys stand in for them.
-  _, α = NNlib.scaled_dot_product_attention_with_weights(q, k, k, bias; mask, is_causal,
-                                                         q_lengths, kv_lengths)
-  return α
+function attention_with_weights(m::Attention, q_in::AbstractArray, k_in::AbstractArray = q_in,
+                                v_in::AbstractArray = k_in;
+                                mask = nothing, bias = nothing, is_causal::Bool = m.is_causal,
+                                q_lengths = nothing, kv_lengths = nothing)
+  q, k, v = _project_qkv(m, q_in, k_in, v_in)
+  x, α = NNlib.scaled_dot_product_attention_with_weights(q, k, v, bias; mask, is_causal,
+                                                         q_lengths, kv_lengths, fdrop = m.attn_drop)
+  return m.out_proj(_merge_heads(x)), α
 end
 
-function _project_qk(m::Attention, q_in, k_in)
+function _project_qkv(m::Attention, q_in, k_in, v_in)
   q = m.q_norm(_split_heads(m.q_proj(q_in), m.nheads))    # [q] = [qk_head_dim, nheads, q_len, batch_size...]
   k = m.k_norm(_split_heads(m.k_proj(k_in), m.nkvheads))  # [k] = [qk_head_dim, nkvheads, kv_len, batch_size...]
-  return q, k
+  v = _split_heads(m.v_proj(v_in), m.nkvheads)            # [v] = [v_head_dim, nkvheads, kv_len, batch_size...]
+  return q, k, v
 end
 
 _split_heads(x, nheads) = reshape(x, :, nheads, size(x)[2:end]...)
+_merge_heads(x) = reshape(x, :, size(x)[3:end]...)
 
 # This has to be differentiated through: `within_gradient` is true only inside its rrule.
 _dropout_active(d::Dropout, x) = d.p > 0 && _isactive(d, x)

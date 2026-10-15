@@ -56,7 +56,7 @@ documented in NNlib's [Attention](@ref) section.
 
 ```@docs
 Attention
-Flux.attention_weights
+Flux.attention_with_weights
 MultiHeadAttention
 ```
 

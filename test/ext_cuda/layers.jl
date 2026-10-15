@@ -351,9 +351,10 @@ end
   y_gpu = attn_gpu(x_gpu)
   @test y_gpu isa CuArray{Float32}
   @test Array(y_gpu) ≈ y_cpu atol=1e-4
-  α_gpu = attention_weights(attn_gpu, x_gpu)
+  y2_gpu, α_gpu = attention_with_weights(attn_gpu, x_gpu)
+  @test Array(y2_gpu) ≈ y_cpu atol=1e-4
   @test α_gpu isa CuArray{Float32}
-  @test Array(α_gpu) ≈ attention_weights(attn_cpu, x_cpu) atol=1e-4
+  @test Array(α_gpu) ≈ last(attention_with_weights(attn_cpu, x_cpu)) atol=1e-4
 
   @testset "gradient ($(repr(m)))" for m in [attn_cpu,
                                              Attention(dim; nheads, is_causal=true),

@@ -231,7 +231,8 @@ end
     MultiHeadAttention(dims; [nheads, bias, init, dropout_prob])
 
 Deprecated: use [`Attention`](@ref) instead, which takes the same `dims` and returns only
-the transformed input sequence, and [`Flux.attention_weights`](@ref) for the attention scores.
+the transformed input sequence, and [`Flux.attention_with_weights`](@ref) to get the attention
+scores too.
 The keyword `dropout_prob` is called `dropout` there, and the attention `bias` is a keyword
 argument of the forward pass. `Attention(mha)` converts a `MultiHeadAttention` layer.
 
@@ -265,7 +266,7 @@ function MultiHeadAttention(dims;
                      dropout_prob = 0.0)
 
   Base.depwarn("`MultiHeadAttention` is deprecated, use `Attention` instead, which returns only \
-    the output and not the attention scores (see `Flux.attention_weights` for those).", :MultiHeadAttention)
+    the output and not the attention scores (see `Flux.attention_with_weights` for both).", :MultiHeadAttention)
   dims = normalize_mha_dims(dims)
   dims.qk % nheads == 0 || throw(ArgumentError("qk_dim = $(dims.qk) should be divisible by nheads = $(nheads)"))
   dims.v % nheads == 0 || throw(ArgumentError( "v_dim = $(dims.v) should be divisible by nheads = $(nheads)"))

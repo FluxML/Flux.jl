@@ -59,7 +59,7 @@ export Chain, Dense, Embedding, EmbeddingBag,
   Bilinear, Scale,
   # utils
   outputsize, state, create_bias, @layer, initialstates, normalise, loadmodel!,
-  activations, modules, flatten, rng_from_array, nfan, attention_weights,
+  activations, modules, flatten, rng_from_array, nfan, attention_with_weights,
   # from OneHotArrays.jl
   onehot, onehotbatch, onecold,
   # from Train
