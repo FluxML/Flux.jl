@@ -46,4 +46,5 @@ Flux.Losses.tversky_loss
 Flux.Losses.binary_focal_loss
 Flux.Losses.focal_loss
 Flux.Losses.siamese_contrastive_loss
+ctc_loss
 ```

@@ -17,6 +17,9 @@ Functions like [`softmax`](@ref) are sometimes described as activation functions
 celu
 elu
 gelu
+gelu_tanh
+gelu_sigmoid
+gelu_erf
 hardsigmoid
 hardswish
 hardtanh

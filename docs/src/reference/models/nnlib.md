@@ -24,7 +24,9 @@ NNlib.make_causal_mask
 
 ```@docs
 softmax
+softmax!
 logsoftmax
+logsoftmax!
 ```
 
 ## Pooling
@@ -60,6 +62,8 @@ ConvDims
 depthwiseconv
 DepthwiseConvDims
 DenseConvDims
+NNlib.unfold
+NNlib.fold
 ```
 
 ## Dropout
@@ -79,6 +83,7 @@ NNlib.batchnorm
 NNlib.instancenorm
 NNlib.groupnorm
 NNlib.layernorm
+NNlib.rmsnorm
 ```
 
 ## Upsampling
@@ -88,12 +93,15 @@ NNlib.layernorm
 ```@docs
 upsample_nearest
 upsample_linear
-∇upsample_linear
 upsample_bilinear
-∇upsample_bilinear
 upsample_trilinear
-∇upsample_trilinear
 pixel_shuffle
+```
+
+## Rotation
+
+```@docs
+imrotate
 ```
 
 ## Batched Operations
@@ -123,18 +131,26 @@ NNlib.scatter!
 
 ```@docs
 grid_sample
-∇grid_sample
 ```
 
-## Losses
+## Audio
+
+The spectral functions require the [FFTW](https://github.com/JuliaMath/FFTW.jl) package to be loaded.
 
 ```@docs
-ctc_loss
+hann_window
+hamming_window
+stft
+istft
+spectrogram
+melscale_filterbanks
 ```
 
 ## Miscellaneous
 
 ```@docs
-logsumexp
-NNlib.glu
+NNlib.logsumexp
+NNlib.NNlib.glu
+NNlib.NNlib.within_gradient
+NNlib.bias_act!
 ```
