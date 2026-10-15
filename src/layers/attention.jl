@@ -221,7 +221,6 @@ _merge_heads(x) = reshape(x, :, size(x)[3:end]...)
 
 # This has to be differentiated through: `within_gradient` is true only inside its rrule.
 _dropout_active(d::Dropout, x) = d.p > 0 && _isactive(d, x)
-_dropout_active(d, x) = d !== identity
 
 function Base.show(io::IO, m::Attention)
   qk, q_in = size(m.q_proj.weight)
