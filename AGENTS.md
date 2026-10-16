@@ -80,7 +80,7 @@ src/
 │   ├── conv.jl       # Conv, ConvTranspose, DepthwiseConv, pooling layers
 │   ├── recurrent.jl  # RNNCell/RNN, LSTMCell/LSTM, GRUCell/GRU, Recurrence
 │   ├── normalise.jl  # BatchNorm, LayerNorm, InstanceNorm, GroupNorm, WeightNorm
-│   ├── attention.jl  # MultiHeadAttention
+│   ├── attention.jl  # Attention
 │   └── upsample.jl   # Upsample, PixelShuffle
 ├── losses/
 │   └── functions.jl  # mse, crossentropy, focal_loss, kldivergence, …

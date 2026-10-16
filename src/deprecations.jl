@@ -225,3 +225,113 @@ function _rule_to_state(model, rule::Optimisers.AbstractRule)
     end
     return state
 end
+
+
+"""
+    MultiHeadAttention(dims; [nheads, bias, init, dropout_prob])
+
+Deprecated: use [`Attention`](@ref) instead, which takes the same `dims` and returns only
+the transformed input sequence, and [`Flux.attention_with_weights`](@ref) to get the attention
+scores too.
+The keyword `dropout_prob` is called `dropout` there, and the attention `bias` is a keyword
+argument of the forward pass. `Attention(mha)` converts a `MultiHeadAttention` layer.
+
+The multi-head dot-product attention layer used in Transformer architectures.
+Returns the transformed input sequence and the attention scores.
+
+# Forward
+
+    (mha::MultiHeadAttention)(q_in, k_in, v_in, [bias]; [mask])
+
+The inputs have size `(features, len, batch_size)`, while `bias` and `mask` are broadcastable
+to the size `(kv_len, q_len, nheads, batch_size)` of the returned attention scores.
+Alternative calling signatures are `mha(q_in)`, equivalent to `mha(q_in, q_in, q_in)`,
+and `mha(q_in, k_in)`, equivalent to `mha(q_in, k_in, k_in)`.
+"""
+struct MultiHeadAttention{P1, D, P2}
+  nheads::Int
+  q_proj::P1
+  k_proj::P1
+  v_proj::P1
+  attn_drop::D
+  out_proj::P2
+end
+
+@layer :noexpand MultiHeadAttention
+
+function MultiHeadAttention(dims; 
+                     nheads::Int = 8,
+                     bias::Bool = false,
+                     init = glorot_uniform,                    
+                     dropout_prob = 0.0)
+
+  Base.depwarn("`MultiHeadAttention` is deprecated, use `Attention` instead, which returns only \
+    the output and not the attention scores (see `Flux.attention_with_weights` for both).", :MultiHeadAttention)
+  dims = normalize_mha_dims(dims)
+  dims.qk % nheads == 0 || throw(ArgumentError("qk_dim = $(dims.qk) should be divisible by nheads = $(nheads)"))
+  dims.v % nheads == 0 || throw(ArgumentError( "v_dim = $(dims.v) should be divisible by nheads = $(nheads)"))
+  q_proj = Dense(dims.q_in => dims.qk; bias, init)
+  k_proj = Dense(dims.k_in => dims.qk; bias, init)
+  v_proj = Dense(dims.v_in => dims.v; bias, init)
+  attn_drop = Dropout(dropout_prob)
+  out_proj = Dense(dims.v => dims.out; bias, init)
+  return MultiHeadAttention(nheads, q_proj, k_proj, v_proj, attn_drop, out_proj)
+end
+
+# self-attention
+(mha::MultiHeadAttention)(qkv; kws...) = mha(qkv, qkv, qkv; kws...)
+
+# key and value are the same
+(mha::MultiHeadAttention)(q, kv; kws...) = mha(q, kv, kv; kws...)
+
+function (mha::MultiHeadAttention)(q_in::A3, k_in::A3, v_in::A3, 
+                                  bias=nothing; mask=nothing)
+  q = _split_heads(mha.q_proj(q_in), mha.nheads)  # [q] = [qk_head_dim, nheads, q_len, batch_size]
+  k = _split_heads(mha.k_proj(k_in), mha.nheads)  # [k] = [qk_head_dim, nheads, kv_len, batch_size]
+  v = _split_heads(mha.v_proj(v_in), mha.nheads)  # [v] = [v_head_dim, nheads, kv_len, batch_size]
+  x, α = NNlib.scaled_dot_product_attention_with_weights(q, k, v, bias; mask, fdrop=mha.attn_drop)
+  # [α] = [kv_len, q_len, nheads, batch_size]
+  x = mha.out_proj(reshape(x, :, size(x)[3:end]...))
+  # [x] = [out_dim, q_len, batch_size]
+  return x, α
+end
+
+function Base.show(io::IO, mha::MultiHeadAttention)
+  qk, q_in = size(mha.q_proj.weight)
+  qk, k_in = size(mha.k_proj.weight)
+  v, v_in = size(mha.v_proj.weight)
+  out, v = size(mha.out_proj.weight)
+  print(io, "MultiHeadAttention(")
+  if q_in == k_in == v_in == qk == v == out
+    print(io, q_in)
+  elseif q_in == k_in == v_in && qk == v
+    print(io, q_in, " => ", qk, " => ", out)
+  elseif q_in == k_in == v_in
+    print(io, q_in, " => (", qk, ", ", v,") => ", out)
+  else
+    print(io, "(", q_in, ", ", k_in, ", ", v_in, ") => (", qk, ", ", v,") => ", out)
+  end
+  print(io, "; nheads=", mha.nheads)
+  if mha.q_proj.bias !== false
+    print(io, ", bias=true")
+  end
+  if mha.attn_drop.p != 0
+    print(io, ", dropout_prob=", mha.attn_drop.p)
+  end
+  print(io, ")")
+end
+
+# The converted layer shares its parameters with `mha`.
+Attention(mha::MultiHeadAttention) =
+  Attention(mha.nheads, mha.nheads, mha.q_proj, mha.k_proj, mha.v_proj, identity, identity,
+            mha.attn_drop, mha.out_proj, false)
+
+# Allow loading a `MultiHeadAttention` layer or its `Flux.state` into an `Attention` layer.
+function loadmodel!(dst::Attention, src::NamedTuple{(:nheads, :q_proj, :k_proj, :v_proj, :attn_drop, :out_proj)}; kw...)
+  new_src = (; src.nheads, dst.nkvheads, src.q_proj, src.k_proj, src.v_proj, dst.q_norm, dst.k_norm,
+             src.attn_drop, src.out_proj, dst.is_causal)
+  loadmodel!(dst, new_src; kw...)
+end
+
+loadmodel!(dst::Attention, src::MultiHeadAttention; kw...) =
+  loadmodel!(dst, Functors.children(src); kw...)

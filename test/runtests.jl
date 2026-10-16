@@ -29,13 +29,18 @@ const FLUX_TEST_REACTANT  = get(ENV, "FLUX_TEST_REACTANT", "true") == "true"
 const FLUX_TEST_REACTANT_CUDA = get(ENV, "FLUX_TEST_REACTANT_CUDA", "false") == "true"
 
 # --- Optional package installation (main process, before workers start) ---
-FLUX_TEST_AMDGPU   && Pkg.add("AMDGPU")
-# (FLUX_TEST_ENZYME || FLUX_TEST_REACTANT) && Pkg.add("Enzyme") # Already installed
-FLUX_TEST_CUDA     && Pkg.add(["CUDA", "cuDNN"])
-FLUX_TEST_METAL    && Pkg.add("Metal")
-(FLUX_TEST_DIST_MPI || FLUX_TEST_DIST_NCCL) && Pkg.add("MPI")
-FLUX_TEST_DIST_NCCL && Pkg.add("NCCL")
-FLUX_TEST_REACTANT  && Pkg.add("Reactant")  # must come after CUDA
+# Precompile once at the end: on Julia 1.13.2, `Pkg.add` fails to auto-precompile an
+# indirect dependency whose version it changes (JuliaLang/Pkg.jl#4866).
+withenv("JULIA_PKG_PRECOMPILE_AUTO" => "0") do
+  FLUX_TEST_AMDGPU   && Pkg.add("AMDGPU")
+  # (FLUX_TEST_ENZYME || FLUX_TEST_REACTANT) && Pkg.add("Enzyme") # Already installed
+  FLUX_TEST_CUDA     && Pkg.add(["CUDA", "cuDNN"])
+  FLUX_TEST_METAL    && Pkg.add("Metal")
+  (FLUX_TEST_DIST_MPI || FLUX_TEST_DIST_NCCL) && Pkg.add("MPI")
+  FLUX_TEST_DIST_NCCL && Pkg.add("NCCL")
+  FLUX_TEST_REACTANT  && Pkg.add("Reactant")  # must come after CUDA
+end
+Pkg.precompile()
 
 # --- Auto-discover all .jl files (except runtests.jl) ---
 testsuite = find_tests(@__DIR__)

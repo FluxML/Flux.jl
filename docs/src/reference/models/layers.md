@@ -49,12 +49,14 @@ CrossCor
 DepthwiseConv
 ```
 
-## MultiHeadAttention
+## Attention Models
 
 The basic blocks needed to implement [Transformer](https://arxiv.org/abs/1706.03762) architectures. See also the functional counterparts
 documented in NNlib's [Attention](@ref) section.
 
 ```@docs
+Attention
+Flux.attention_with_weights
 MultiHeadAttention
 ```
 

@@ -265,6 +265,7 @@ autosizefor(::Type, x::AbstractArray) = size(x, max(1, ndims(x)-1))
 autosizefor(::Type{<:Dense}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:Embedding}, x::AbstractArray) = size(x, 1)
 autosizefor(::Type{<:LayerNorm}, x::AbstractArray) = size(x, 1)
+autosizefor(::Type{<:Attention}, x::AbstractArray) = size(x, 1)
 
 _replaceunderscore(e, s) = e === :_ ? s : e
 _replaceunderscore(ex::Expr, s) = Expr(ex.head, map(a -> _replaceunderscore(a, s), ex.args)...)

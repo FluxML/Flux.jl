@@ -340,9 +340,117 @@ end
   end
 end
 
-@testset "MultiHeadAttention" begin
+@testset "Attention" begin
+  dim = 16; nheads = 2; len = 3; batch_size = 5
+  attn_cpu = Attention(dim; nheads)
+  x_cpu = rand(Float32, (dim, len, batch_size))
+  y_cpu = attn_cpu(x_cpu)
+
+  attn_gpu = attn_cpu |> gpu
+  x_gpu = x_cpu |> gpu
+  y_gpu = attn_gpu(x_gpu)
+  @test y_gpu isa CuArray{Float32}
+  @test Array(y_gpu) ≈ y_cpu atol=1e-4
+  y2_gpu, α_gpu = attention_with_weights(attn_gpu, x_gpu)
+  @test Array(y2_gpu) ≈ y_cpu atol=1e-4
+  @test α_gpu isa CuArray{Float32}
+  @test Array(α_gpu) ≈ last(attention_with_weights(attn_cpu, x_cpu)) atol=1e-4
+
+  @testset "gradient ($(repr(m)))" for m in [attn_cpu,
+                                             Attention(dim; nheads, is_causal=true),
+                                             Attention(dim; nheads=4, nkvheads=2),
+                                             Attention(dim; nheads, qk_norm=LayerNorm)]
+    test_gradients(m, x_cpu; test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
+  end
+
+  @testset "mask and lengths" begin
+    keep = trues(len, batch_size)
+    keep[end, 1] = false
+    mask = reshape(keep, len, 1, 1, batch_size)
+    @test Array(attn_gpu(x_gpu; mask=gpu(mask))) ≈ attn_cpu(x_cpu; mask) atol=1e-4
+    @test Array(attn_gpu(x_gpu; mask=gpu(mask), is_causal=true)) ≈ attn_cpu(x_cpu; mask, is_causal=true) atol=1e-4
+    kv_lengths = vec(sum(keep; dims=1))
+    @test Array(attn_gpu(x_gpu; kv_lengths)) ≈ attn_cpu(x_cpu; mask) atol=1e-4
+    @test Array(attn_gpu(x_gpu; kv_lengths=gpu(kv_lengths))) ≈ attn_cpu(x_cpu; mask) atol=1e-4
+    @test Array(attn_gpu(x_gpu; q_lengths=2)) ≈ attn_cpu(x_cpu; q_lengths=2) atol=1e-4
+  end
+end
+
+# The fused implementations do not materialize the attention weights, which are by far
+# the largest array of the materialized one. In half precision, cuDNN's kernel is used.
+@testset "Attention fused implementation ($T)" for (T, cast) in ((Float32, f32), (Float16, f16), (BFloat16, bf16))
+  T === BFloat16 && CUDA.capability(CUDA.device()) < v"8.0" && continue
+  dim = 64; nheads = 8; len = 512; batch_size = 2
+  weights_bytes = len^2 * nheads * batch_size * sizeof(T)
+  x_cpu = randn(Float32, (dim, len, batch_size))
+  x_gpu = gpu(cast(x_cpu))
+  is_fused(m, x; kws...) = CUDA.@allocated(m(x; kws...)) < weights_bytes
+  sqloss(m, x) = sum(abs2, m(x))
+
+  @testset "is_causal=$is_causal, nkvheads=$nkvheads" for is_causal in (false, true), nkvheads in (8, 2)
+    m_cpu = Attention(dim; nheads, nkvheads, is_causal)
+    m_gpu = m_cpu |> cast |> gpu
+    y = m_gpu(x_gpu)
+    @test y isa CuArray{T, 3}
+    @test Float32.(Array(y)) ≈ m_cpu(x_cpu) rtol=5f-2
+    @test is_fused(m_gpu, x_gpu)
+
+    g_cpu = gradient(sqloss, m_cpu, x_cpu)[1]
+    g_gpu = gradient(sqloss, m_gpu, x_gpu)[1]
+    @test g_gpu.q_proj.weight isa CuArray{T, 2}
+    @test Float32.(Array(g_gpu.q_proj.weight)) ≈ g_cpu.q_proj.weight rtol=1f-1
+    @test Float32.(Array(g_gpu.out_proj.weight)) ≈ g_cpu.out_proj.weight rtol=1f-1
+    @test CUDA.@allocated(gradient(sqloss, m_gpu, x_gpu)) < weights_bytes
+  end
+
+  @testset "mask, bias and lengths" begin
+    m_gpu = Attention(dim; nheads) |> cast |> gpu
+    mask = gpu(trues(len, len))
+    @test is_fused(m_gpu, x_gpu; mask)
+    @test is_fused(m_gpu, x_gpu; mask, is_causal=true)
+    @test is_fused(m_gpu, x_gpu; bias=CUDA.zeros(T, len, len))
+    @test is_fused(m_gpu, x_gpu; kv_lengths=[len, len ÷ 2])
+    # a head dimension that is not a multiple of 8, which cuDNN does not take
+    m_gpu = Attention(dim => 48 => dim; nheads) |> cast |> gpu
+    @test is_fused(m_gpu, x_gpu)
+  end
+
+  @testset "materialized with active dropout" begin
+    m_gpu = Attention(dim; nheads, dropout=0.1) |> cast |> gpu
+    @test is_fused(m_gpu, x_gpu)  # dropout is not active
+    Flux.trainmode!(m_gpu)
+    @test !is_fused(m_gpu, x_gpu)
+    Flux.testmode!(m_gpu)
+    @test is_fused(m_gpu, x_gpu)
+  end
+end
+
+if CUDA.capability(CUDA.device()) >= v"8.0"  # BFloat16 support
+  @testset "Attention in half precision within a Float32 model" begin
+    dim = 64; nheads = 8; len = 512; batch_size = 2
+    weights_bytes = len^2 * nheads * batch_size * sizeof(BFloat16)
+    x_cpu = randn(Float32, (dim, len, batch_size))
+    x_gpu = gpu(x_cpu)
+    m_cpu = Chain(Dense(dim => dim), SkipConnection(Attention(dim; nheads), +), Dense(dim => dim))
+    m_gpu = Chain(m_cpu[1], SkipConnection(bf16(m_cpu[2].layers), +), m_cpu[3]) |> gpu
+    @test eltype(m_gpu[2].layers.q_proj.weight) == BFloat16
+    y = m_gpu(x_gpu)
+    @test y isa CuArray{Float32, 3}
+    @test Array(y) ≈ m_cpu(x_cpu) rtol=5f-2
+    @test CUDA.@allocated(m_gpu(x_gpu)) < weights_bytes
+
+    sqloss(m, x) = sum(abs2, m(x))
+    g_cpu = gradient(sqloss, m_cpu, x_cpu)[1]
+    g_gpu = gradient(sqloss, m_gpu, x_gpu)[1]
+    @test g_gpu.layers[1].weight isa CuArray{Float32, 2}
+    @test g_gpu.layers[2].layers.q_proj.weight isa CuArray{BFloat16, 2}
+    @test Array(g_gpu.layers[1].weight) ≈ g_cpu.layers[1].weight rtol=1f-1
+  end
+end
+
+@testset "MultiHeadAttention (deprecated)" begin
   dim = 4; nheads = 2; len = 3; batch_size = 5
-  mha_cpu = MultiHeadAttention(dim; nheads)
+  mha_cpu = @test_deprecated MultiHeadAttention(dim; nheads)
   x_cpu = rand(Float32, (dim, len, batch_size))
   y_cpu, α_cpu = mha_cpu(x_cpu)
 
