@@ -10,26 +10,6 @@ function scan(cell, x, state)
   return stack(y, dims = 2), state
 end
 
-# Like `chunk(x, n; dims = 1)` but type stable (JuliaML/MLUtils.jl#260), returning a tuple of views.
-function _chunk1(x::AbstractArray{T,N}, ::Val{n}) where {T,N,n}
-  k = size(x, 1) ÷ n
-  colons = ntuple(_ -> Colon(), Val(N - 1))
-  return ntuple(i -> view(x, (i - 1) * k + 1:i * k, colons...), Val(n))
-end
-
-function ChainRulesCore.rrule(::typeof(_chunk1), x::AbstractArray, vn::Val)
-  project = ProjectTo(x)
-  function _chunk1_pullback(dys)
-    dx = similar(x)
-    for (dxi, dyi) in zip(_chunk1(dx, vn), unthunk(dys))
-      dyi = unthunk(dyi)
-      dyi isa AbstractZero ? fill!(dxi, 0) : (dxi .= dyi)
-    end
-    return NoTangent(), project(dx), NoTangent()
-  end
-  return _chunk1(x, vn), _chunk1_pullback
-end
-
 """
     Recurrence(cell)
 
@@ -435,7 +415,7 @@ function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   _size_check(m, x, 1 => size(m.Wi, 2))
   b = m.bias
   g = m.Wi * x .+ m.Wh * h .+ b
-  input, forget, cell, output = _chunk1(g, Val(4))
+  input, forget, cell, output = chunk(g, 4; dims = 1)
   h, c = _lstm_update(input, forget, cell, output, c)
   return h, (h, c)
 end
@@ -642,12 +622,12 @@ end
 
 function (m::GRUCell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  gxs = _chunk1(m.Wi * x, Val(3))
-  ghs = _chunk1(m.Wh * h, Val(3))
+  gxs = chunk(m.Wi * x, 3, dims = 1)
+  ghs = chunk(m.Wh * h, 3, dims = 1)
   if m.b isa AbstractArray
-    bs = _chunk1(m.b, Val(3))
+    bs = chunk(m.b, 3, dims = 1)
   else # b == false
-    bs = (false, false, false)
+    bs = [false, false, false]
   end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
@@ -823,12 +803,12 @@ end
 
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  gxs = _chunk1(m.Wi * x, Val(3))
-  ghs = _chunk1(m.Wh * h, Val(3))
+  gxs = chunk(m.Wi * x, 3, dims = 1)
+  ghs = chunk(m.Wh * h, 3, dims = 1)
   if m.b isa AbstractArray
-    bs = _chunk1(m.b, Val(3))
+    bs = chunk(m.b, 3, dims = 1)
   else # m.b == false
-    bs = (false, false, false)
+    bs = [false, false, false]
   end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
