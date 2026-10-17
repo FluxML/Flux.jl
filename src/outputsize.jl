@@ -24,7 +24,7 @@ Base.float(::Type{Nil}) = Nil
 
 for f in [:copy, :zero, :one, :oneunit,
           :+, :-, :abs, :abs2, :inv,
-          :exp, :log, :log1p, :log2, :log10,
+          :exp, :expm1, :log, :log1p, :log2, :log10,
           :sqrt, :tanh, :conj]
   @eval Base.$f(::Nil) = nil
 end
