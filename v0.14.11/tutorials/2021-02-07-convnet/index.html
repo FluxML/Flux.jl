@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tutorial: A Simple ConvNet · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../models/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../models/overview/">Fitting a Line</a></li><li><a class="tocitem" href="../../models/basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li><li><a class="tocitem" href="../../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../models/layers/">Built-in Layers</a></li><li><a class="tocitem" href="../../models/activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../../training/reference/">Training API</a></li><li><a class="tocitem" href="../../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../../training/zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../../models/nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../../models/functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../../models/advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Tutorial: A Simple ConvNet</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tutorial: A Simple ConvNet</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/tutorials/2021-02-07-convnet.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="man-convnet-tutorial"><a class="docs-heading-anchor" href="#man-convnet-tutorial">Tutorial: A Simple ConvNet</a><a id="man-convnet-tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#man-convnet-tutorial" title="Permalink"></a></h1><p>In this tutorial, we build a simple Convolutional Neural Network (ConvNet) to classify the MNIST dataset. This model has a simple architecture with three feature detection layers (Conv -&gt; ReLU -&gt; MaxPool) followed by a final dense layer that classifies MNIST handwritten digits. Note that this model, while simple, should hit around 99% test accuracy after training for approximately 20 epochs.</p><p>This example writes out the saved model to the file <code>mnist_conv.bson</code>. Also, it demonstrates basic model construction, training, saving, conditional early-exit, and learning rate scheduling.</p><p>To run this example, we need the following packages:</p><pre><code class="language-julia hljs">using Flux, MLDatasets, Statistics
+using Flux: onehotbatch, onecold, logitcrossentropy, params
+using MLDatasets: MNIST
+using Base.Iterators: partition
+using Printf, BSON
+using CUDA
+CUDA.allowscalar(false)</code></pre><p>We set default values for learning rate, batch size, number of epochs, and path for saving the file <code>mnist_conv.bson</code>:</p><pre><code class="language-julia hljs">Base.@kwdef mutable struct TrainArgs
+   lr::Float64 = 3e-3
+   epochs::Int = 20
+   batch_size = 128
+   savepath::String = &quot;./&quot;
+end</code></pre><h2 id="Data"><a class="docs-heading-anchor" href="#Data">Data</a><a id="Data-1"></a><a class="docs-heading-anchor-permalink" href="#Data" title="Permalink"></a></h2><p>To train our model, we need to bundle images together with their labels and group them into mini-batches (makes the training process faster). We define the function <code>make_minibatch</code> that takes as inputs the images (<code>X</code>) and their labels (<code>Y</code>) as well as the indices for the mini-batches (<code>idx</code>):</p><pre><code class="language-julia hljs">function make_minibatch(X, Y, idxs)
+   X_batch = Array{Float32}(undef, size(X)[1:end-1]..., 1, length(idxs))
+   for i in 1:length(idxs)
+       X_batch[:, :, :, i] = Float32.(X[:,:,idxs[i]])
+   end
+   Y_batch = onehotbatch(Y[idxs], 0:9)
+   return (X_batch, Y_batch)
+end</code></pre><p><code>make_minibatch</code> takes the following steps:</p><ul><li>Creates the <code>X_batch</code> array of size <code>28x28x1x128</code> to store the mini-batches. </li><li>Stores the mini-batches in <code>X_batch</code>.</li><li>One hot encodes the labels of the images.</li><li>Stores the labels in <code>Y_batch</code>.</li></ul><p><code>get_processed_data</code> loads the train and test data from <code>Flux.Data.MNIST</code>. First, it loads the images and labels of the train data set, and creates an array that contains the indices of the train images that correspond to each mini-batch (of size <code>args.batch_size</code>). Then, it calls the <code>make_minibatch</code> function to create all of the train mini-batches. Finally, it loads the test images and creates one mini-batch that contains them all.</p><pre><code class="language-julia hljs">function get_processed_data(args)
+   # Load labels and images
+   train_imgs, train_labels = MNIST.traindata()
+   mb_idxs = partition(1:length(train_labels), args.batch_size)
+   train_set = [make_minibatch(train_imgs, train_labels, i) for i in mb_idxs]
+  
+   # Prepare test set as one giant minibatch:
+   test_imgs, test_labels = MNIST.testdata()
+   test_set = make_minibatch(test_imgs, test_labels, 1:length(test_labels))
+ 
+   return train_set, test_set
+ 
+end</code></pre><h2 id="Model"><a class="docs-heading-anchor" href="#Model">Model</a><a id="Model-1"></a><a class="docs-heading-anchor-permalink" href="#Model" title="Permalink"></a></h2><p>Now, we define the <code>build_model</code> function that creates a ConvNet model which is composed of <em>three</em> convolution layers (feature detection) and <em>one</em> classification layer. The input layer size is <code>28x28</code>. The images are grayscale, which means there is only <em>one</em> channel (compared to 3 for RGB) in every data point. Combined together, the convolutional layer structure would look like <code>Conv(kernel, input_channels =&gt; output_channels, ...)</code>. Each convolution layer reduces the size of the image by applying the Rectified Linear unit (ReLU) and MaxPool operations. On the other hand, the classification layer outputs a vector of 10 dimensions (a dense layer), that is, the number of classes that the model will be able to predict.</p><pre><code class="language-julia hljs">function build_model(args; imgsize = (28,28,1), nclasses = 10)
+   cnn_output_size = Int.(floor.([imgsize[1]/8,imgsize[2]/8,32])) 
+ 
+   return Chain(
+   # First convolution, operating upon a 28x28 image
+   Conv((3, 3), imgsize[3]=&gt;16, pad=(1,1), relu),
+   MaxPool((2,2)),
+ 
+   # Second convolution, operating upon a 14x14 image
+   Conv((3, 3), 16=&gt;32, pad=(1,1), relu),
+   MaxPool((2,2)),
+ 
+   # Third convolution, operating upon a 7x7 image
+   Conv((3, 3), 32=&gt;32, pad=(1,1), relu),
+   MaxPool((2,2)),
+ 
+   # Reshape 3d array into a 2d one using `Flux.flatten`, at this point it should be (3, 3, 32, N)
+   flatten,
+   Dense(prod(cnn_output_size), 10))
+end</code></pre><p>To chain the layers of a model we use the Flux function <a href="https://fluxml.ai/Flux.jl/stable/models/layers/#Flux.Chain">Chain</a>. It enables us to call the layers in sequence on a given input. Also, we use the function <a href="https://fluxml.ai/Flux.jl/stable/models/layers/#Flux.flatten">flatten</a> to reshape the output image from the last convolution layer. Finally, we call the <a href="https://fluxml.ai/Flux.jl/stable/models/layers/#Flux.Dense">Dense</a> function to create the classification layer.</p><h2 id="Training"><a class="docs-heading-anchor" href="#Training">Training</a><a id="Training-1"></a><a class="docs-heading-anchor-permalink" href="#Training" title="Permalink"></a></h2><p>Before training our model, we need to define a few functions that will be helpful for the process:</p><ul><li><code>augment</code> adds gaussian random noise to our image, to make it more robust:</li><li><code>anynan</code> checks whether any element of the params is NaN or not:</li><li><code>accuracy</code> computes the proportion of inputs <code>x</code> correctly classified by our ConvNet:</li></ul><pre><code class="language-julia hljs">augment(x) = x .+ gpu(0.1f0*randn(eltype(x), size(x)))
+anynan(x) = any(y -&gt; any(isnan, y), x)
+accuracy(x, y, model) = mean(onecold(cpu(model(x))) .== onecold(cpu(y)))</code></pre><p>Finally, we define the <code>train</code> function:</p><pre><code class="language-julia hljs">function train(; kws...)   
+   args = TrainArgs(; kws...)
+ 
+   @info(&quot;Loading data set&quot;)
+   train_set, test_set = get_processed_data(args)
+ 
+   # Define our model.  We will use a simple convolutional architecture with
+   # three iterations of Conv -&gt; ReLU -&gt; MaxPool, followed by a final Dense layer.
+   @info(&quot;Building model...&quot;)
+   model = build_model(args)
+ 
+   # Load model and datasets onto GPU, if enabled
+   train_set = gpu.(train_set)
+   test_set = gpu.(test_set)
+   model = gpu(model)
+  
+   # Make sure our model is nicely precompiled before starting our training loop
+   model(train_set[1][1])
+ 
+   # `loss()` calculates the crossentropy loss between our prediction `y_hat`
+   # (calculated from `model(x)`) and the ground truth `y`.  We augment the data
+   # a bit, adding gaussian random noise to our image to make it more robust.
+   function loss(x, y)   
+       x̂ = augment(x)
+       ŷ = model(x̂)
+       return logitcrossentropy(ŷ, y)
+   end
+  
+   # Train our model with the given training set using the Adam optimiser and
+   # printing out performance against the test set as we go.
+   opt = Adam(args.lr)
+  
+   @info(&quot;Beginning training loop...&quot;)
+   best_acc = 0.0
+   last_improvement = 0
+   for epoch_idx in 1:args.epochs
+       # Train for a single epoch
+       Flux.train!(loss, params(model), train_set, opt)
+      
+       # Terminate on NaN
+       if anynan(Flux.params(model))
+           @error &quot;NaN params&quot;
+           break
+       end
+  
+       # Calculate accuracy:
+       acc = accuracy(test_set..., model)
+      
+       @info(@sprintf(&quot;[%d]: Test accuracy: %.4f&quot;, epoch_idx, acc))
+       # If our accuracy is good enough, quit out.
+       if acc &gt;= 0.999
+           @info(&quot; -&gt; Early-exiting: We reached our target accuracy of 99.9%&quot;)
+           break
+       end
+  
+       # If this is the best accuracy we&#39;ve seen so far, save the model out
+       if acc &gt;= best_acc
+           @info(&quot; -&gt; New best accuracy! Saving model out to mnist_conv.bson&quot;)
+           BSON.@save joinpath(args.savepath, &quot;mnist_conv.bson&quot;) params=cpu.(params(model)) epoch_idx acc
+           best_acc = acc
+           last_improvement = epoch_idx
+       end
+  
+       # If we haven&#39;t seen improvement in 5 epochs, drop our learning rate:
+       if epoch_idx - last_improvement &gt;= 5 &amp;&amp; opt.eta &gt; 1e-6
+           opt.eta /= 10.0
+           @warn(&quot; -&gt; Haven&#39;t improved in a while, dropping learning rate to $(opt.eta)!&quot;)
+ 
+           # After dropping learning rate, give it a few epochs to improve
+           last_improvement = epoch_idx
+       end
+  
+       if epoch_idx - last_improvement &gt;= 10
+           @warn(&quot; -&gt; We&#39;re calling this converged.&quot;)
+           break
+       end
+   end
+end</code></pre><p><code>train</code> calls the functions we defined above and trains our model. It stops when the model achieves 99% accuracy (early-exiting) or after performing 20 steps. More specifically, it performs the following steps:</p><ul><li>Loads the MNIST dataset.</li><li>Builds our ConvNet model (as described above).</li><li>Loads the train and test data sets as well as our model onto a GPU (if available).</li><li>Defines a <code>loss</code> function that calculates the crossentropy between our prediction and the ground truth.</li><li>Sets the <a href="https://fluxml.ai/Flux.jl/stable/training/optimisers/#Flux.Optimise.Adam">Adam optimiser</a> to train the model with learning rate <code>args.lr</code>.</li><li>Runs the training loop. For each step (or epoch), it executes the following:<ul><li>Calls <code>Flux.train!</code> function to execute one training step.</li><li>If any of the parameters of our model is <code>NaN</code>, then the training process is terminated.</li><li>Calculates the model accuracy.</li><li>If the model accuracy is &gt;= 0.999, then early-exiting is executed.</li><li>If the actual accuracy is the best so far, then the model is saved to <code>mnist_conv.bson</code>. Also, the new best accuracy and the current epoch is saved.</li><li>If there has not been any improvement for the last 5 epochs, then the learning rate is dropped and the process waits a little longer for the accuracy to improve.</li><li>If the last improvement was more than 10 epochs ago, then the process is terminated.</li></ul></li></ul><h2 id="Testing"><a class="docs-heading-anchor" href="#Testing">Testing</a><a id="Testing-1"></a><a class="docs-heading-anchor-permalink" href="#Testing" title="Permalink"></a></h2><p>Finally, to test our model we define the <code>test</code> function: </p><pre><code class="language-julia hljs">function test(; kws...)
+   args = TrainArgs(; kws...)
+  
+   # Loading the test data
+   _,test_set = get_processed_data(args)
+  
+   # Re-constructing the model with random initial weights
+   model = build_model(args)
+  
+   # Loading the saved parameters
+   BSON.@load joinpath(args.savepath, &quot;mnist_conv.bson&quot;) params
+  
+   # Loading parameters onto the model
+   Flux.loadparams!(model, params)
+  
+   test_set = gpu.(test_set)
+   model = gpu(model)
+   @show accuracy(test_set...,model)
+end</code></pre><p><code>test</code> loads the MNIST test data set, reconstructs the model, and loads the saved parameters (in <code>mnist_conv.bson</code>) onto it. Finally, it computes our model&#39;s predictions for the test set and shows the test accuracy (around 99%).</p><p>To see the full version of this example, see <a href="https://github.com/FluxML/model-zoo/blob/master/vision/conv_mnist/conv_mnist.jl">Simple ConvNets - model-zoo</a>.</p><h2 id="Resources"><a class="docs-heading-anchor" href="#Resources">Resources</a><a id="Resources-1"></a><a class="docs-heading-anchor-permalink" href="#Resources" title="Permalink"></a></h2><ul><li><a href="https://youtu.be/Oxi0Pfmskus">Neural Networks in Flux.jl with Huda Nassar (working with the MNIST dataset)</a></li><li><a href="https://cs231n.github.io/convolutional-networks/">Convolutional Neural Networks (CNNs / ConvNets)</a>.</li><li><a href="https://adventuresinmachinelearning.com/convolutional-neural-networks-tutorial-in-pytorch/">Convolutional Neural Networks Tutorial in PyTorch</a>.</li></ul><div class="admonition is-info"><header class="admonition-header">Info</header><div class="admonition-body"><p>Originally published at <a href="https://fluxml.ai/tutorials/">fluxml.ai</a> on 7 February 2021. Written by Elliot Saba, Adarsh Kumar, Mike J Innes, Dhairya Gandhi, Sudhanshu Agrawal, Sambit Kumar Dash, fps.io, Carlo Lucibello, Andrew Dinhobl, Liliana Badillo</p></div></div></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 31 January 2024 01:06">Wednesday 31 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

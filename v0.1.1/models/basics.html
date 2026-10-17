@@ -1,0 +1,208 @@
+<!DOCTYPE html><HTML lang="en"><head><meta charset="UTF-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>
+Model Building Basics · Flux
+    </title><script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview');
+
+    </script><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Ubuntu+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><script>
+documenterBaseURL=".."
+    </script><script data-main="../assets/documenter.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js"></script><script src="../../versions.js"></script><link href="../../flux.css" rel="stylesheet" type="text/css"/><script data-outdated-warner="">function maybeAddWarning () {
+    const head = document.getElementsByTagName('head')[0];
+
+    // Add a noindex meta tag (unless one exists) so that search engines don't index this version of the docs.
+    if (document.body.querySelector('meta[name="robots"]') === null) {
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex';
+
+        head.appendChild(meta);
+    };
+
+    // Add a stylesheet to avoid inline styling
+    const style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode('.outdated-warning-overlay {  position: fixed;  top: 0;  left: 0;  right: 0;  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  z-index: 999;  background-color: #ffaba7;  color: rgba(0, 0, 0, 0.7);  border-bottom: 3px solid #da0b00;  padding: 10px 35px;  text-align: center;  font-size: 15px; }  .outdated-warning-overlay .outdated-warning-closer {    position: absolute;    top: calc(50% - 10px);    right: 18px;    cursor: pointer;    width: 12px; }  .outdated-warning-overlay a {    color: #2e63b8; }    .outdated-warning-overlay a:hover {      color: #363636; }'));
+    head.appendChild(style);
+
+    const div = document.createElement('div');
+    div.classList.add('outdated-warning-overlay');
+    const closer = document.createElement('div');
+    closer.classList.add('outdated-warning-closer');
+
+    // Icon by font-awesome (license: https://fontawesome.com/license, link: https://fontawesome.com/icons/times?style=solid)
+    closer.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
+    closer.addEventListener('click', function () {
+        document.body.removeChild(div);
+    });
+    let href = '/stable';
+    if (window.documenterBaseURL) {
+        href = window.documenterBaseURL + '/../stable';
+    }
+    div.innerHTML = 'This documentation is not for the latest version. <br> <a href="' + href + '">Go to the latest documentation</a>.';
+    div.appendChild(closer);
+    document.body.appendChild(div);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeAddWarning);
+} else {
+    maybeAddWarning();
+};
+</script></head><body><nav class="toc"><h1>
+Flux
+      </h1><form action="../search.html" class="search"><select id="version-selector" onchange="window.location.href=this.value"><option disabled="disabled" selected="selected" value="#">
+Version
+          </option></select><input id="search-query" name="q" placeholder="Search docs" type="text"/></form><ul><li><a class="toctext" href="../index.html">
+Home
+          </a></li><li><span class="toctext">
+Building Models
+          </span><ul><li class="current"><a class="toctext" href="basics.html">
+Model Building Basics
+              </a><ul class="internal"><li><a class="toctext" href="#The-Model-1">
+The Model
+                  </a></li><li><a class="toctext" href="#Combining-Models-1">
+Combining Models
+                  </a></li><li><a class="toctext" href="#A-Function-in-Model&#39;s-Clothing-1">
+A Function in Model's Clothing
+                  </a></li></ul></li><li><a class="toctext" href="templates.html">
+Model Templates
+              </a></li><li><a class="toctext" href="recurrent.html">
+Recurrence
+              </a></li><li><a class="toctext" href="debugging.html">
+Debugging
+              </a></li></ul></li><li><span class="toctext">
+Other APIs
+          </span><ul><li><a class="toctext" href="../apis/batching.html">
+Batching
+              </a></li><li><a class="toctext" href="../apis/backends.html">
+Backends
+              </a></li><li><a class="toctext" href="../apis/storage.html">
+Storing Models
+              </a></li></ul></li><li><span class="toctext">
+In Action
+          </span><ul><li><a class="toctext" href="../examples/logreg.html">
+Logistic Regression
+              </a></li><li><a class="toctext" href="../examples/char-rnn.html">
+Char RNN
+              </a></li></ul></li><li><a class="toctext" href="../contributing.html">
+Contributing &amp; Help
+          </a></li><li><a class="toctext" href="../internals.html">
+Internals
+          </a></li></ul></nav><article id="docs"><header><nav><ul><li>
+Building Models
+            </li><li><a href="basics.html">
+Model Building Basics
+              </a></li></ul><a class="edit-page" href="https://github.com/MikeInnes/Flux.jl/tree/854a1e18865742c59b6db6c58e16fee6ef9ef8ce/docs/src/models/basics.md"><span class="fa">
+
+            </span>
+ Edit on GitHub
+          </a></nav><hr/></header><h1><a class="nav-anchor" href="#Model-Building-Basics-1" id="Model-Building-Basics-1">
+Model Building Basics
+        </a></h1><h2><a class="nav-anchor" href="#The-Model-1" id="The-Model-1">
+The Model
+        </a></h2><p><em>
+... Initialising Photon Beams ...
+        </em></p><p>
+The core concept in Flux is the 
+        <em>
+model
+        </em>
+. A model (or "layer") is simply a function with parameters. For example, in plain Julia code, we could define the following function to represent a logistic regression (or simple neural network):
+      </p><pre><code class="language-julia">W = randn(3,5)
+b = randn(3)
+affine(x) = W * x + b
+
+x1 = rand(5) # [0.581466,0.606507,0.981732,0.488618,0.415414]
+y1 = softmax(affine(x1)) # [0.32676,0.0974173,0.575823]</code></pre><p><code>affine</code>
+ is simply a function which takes some vector 
+<code>x1</code>
+ and outputs a new one 
+<code>y1</code>
+. For example, 
+<code>x1</code>
+ could be data from an image and 
+<code>y1</code>
+ could be predictions about the content of that image. However, 
+<code>affine</code>
+ isn't static. It has 
+        <em>
+parameters
+        </em><code>W</code>
+ and 
+<code>b</code>
+, and if we tweak those parameters we'll tweak the result – hopefully to make the predictions more accurate.
+      </p><p>
+This is all well and good, but we usually want to have more than one affine layer in our network; writing out the above definition to create new sets of parameters every time would quickly become tedious. For that reason, we want to use a 
+        <em>
+template
+        </em>
+ which creates these functions for us:
+      </p><pre><code class="language-julia">affine1 = Affine(5, 5)
+affine2 = Affine(5, 5)
+
+softmax(affine1(x1)) # [0.167952, 0.186325, 0.176683, 0.238571, 0.23047]
+softmax(affine2(x1)) # [0.125361, 0.246448, 0.21966, 0.124596, 0.283935]</code></pre><p>
+We just created two separate 
+<code>Affine</code>
+ layers, and each contains its own (randomly initialised) version of 
+<code>W</code>
+ and 
+<code>b</code>
+, leading to a different result when called with our data. It's easy to define templates like 
+<code>Affine</code>
+ ourselves (see 
+        <a href="templates.html">
+templates
+        </a>
+), but Flux provides 
+<code>Affine</code>
+ out of the box, so we'll use that for now.
+      </p><h2><a class="nav-anchor" href="#Combining-Models-1" id="Combining-Models-1">
+Combining Models
+        </a></h2><p><em>
+... Inflating Graviton Zeppelins ...
+        </em></p><p>
+A more complex model usually involves many basic layers like 
+<code>affine</code>
+, where we use the output of one layer as the input to the next:
+      </p><pre><code class="language-julia">mymodel1(x) = softmax(affine2(σ(affine1(x))))
+mymodel1(x1) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]</code></pre><p>
+This syntax is again a little unwieldy for larger networks, so Flux provides another template of sorts to create the function for us:
+      </p><pre><code class="language-julia">mymodel2 = Chain(affine1, σ, affine2, softmax)
+mymodel2(x2) # [0.187935, 0.232237, 0.169824, 0.230589, 0.179414]</code></pre><p><code>mymodel2</code>
+ is exactly equivalent to 
+<code>mymodel1</code>
+ because it simply calls the provided functions in sequence. We don't have to predefine the affine layers and can also write this as:
+      </p><pre><code class="language-julia">mymodel3 = Chain(
+  Affine(5, 5), σ,
+  Affine(5, 5), softmax)</code></pre><p>
+You now know enough to take a look at the 
+        <a href="../examples/logreg.html">
+logistic regression
+        </a>
+ example, if you haven't already.
+      </p><h2><a class="nav-anchor" href="#A-Function-in-Model&#39;s-Clothing-1" id="A-Function-in-Model&#39;s-Clothing-1">
+A Function in Model's Clothing
+        </a></h2><p><em>
+... Booting Dark Matter Transmogrifiers ...
+        </em></p><p>
+We noted above that a "model" is a function with some number of trainable parameters. This goes both ways; a normal Julia function like 
+<code>exp</code>
+ is effectively a model with 0 parameters. Flux doesn't care, and anywhere that you use one, you can use the other. For example, 
+<code>Chain</code>
+ will happily work with regular functions:
+      </p><pre><code class="language-julia">foo = Chain(exp, sum, log)
+foo([1,2,3]) == 3.408 == log(sum(exp([1,2,3])))</code></pre><footer><hr/><a class="previous" href="../index.html"><span class="direction">
+Previous
+          </span><span class="title">
+Home
+          </span></a><a class="next" href="templates.html"><span class="direction">
+Next
+          </span><span class="title">
+Model Templates
+          </span></a></footer></article></body></HTML>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Recurrence · Flux</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36890222-9"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-36890222-9', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="Flux logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="Flux logo"/></a><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Welcome</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../quickstart/">Quick Start</a></li><li><a class="tocitem" href="../overview/">Fitting a Line</a></li><li><a class="tocitem" href="../basics/">Gradients and Layers</a></li><li><a class="tocitem" href="../../training/training/">Training</a></li><li class="is-active"><a class="tocitem" href>Recurrence</a><ul class="internal"><li><a class="tocitem" href="#Recurrent-cells"><span>Recurrent cells</span></a></li><li><a class="tocitem" href="#Stateful-Models"><span>Stateful Models</span></a></li><li><a class="tocitem" href="#Working-with-sequences"><span>Working with sequences</span></a></li></ul></li><li><a class="tocitem" href="../../gpu/">GPU Support</a></li><li><a class="tocitem" href="../../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../../performance/">Performance Tips</a></li></ul></li><li><a class="tocitem" href="../../ecosystem/">Ecosystem</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../layers/">Built-in Layers</a></li><li><a class="tocitem" href="../activation/">Activation Functions</a></li><li><a class="tocitem" href="../../utilities/">Weight Initialisation</a></li><li><a class="tocitem" href="../losses/">Loss Functions</a></li><li><a class="tocitem" href="../../training/reference/">Training API</a></li><li><a class="tocitem" href="../../training/optimisers/">Optimisation Rules</a></li><li><a class="tocitem" href="../../outputsize/">Shape Inference</a></li><li><a class="tocitem" href="../../destructure/">Flat vs. Nested</a></li><li><a class="tocitem" href="../../training/callbacks/">Callback Helpers</a></li><li><a class="tocitem" href="../../training/zygote/">Gradients – Zygote.jl</a></li><li><a class="tocitem" href="../../data/mlutils/">Batching Data – MLUtils.jl</a></li><li><a class="tocitem" href="../../data/onehot/">OneHotArrays.jl</a></li><li><a class="tocitem" href="../nnlib/">Low-level Operations – NNlib.jl</a></li><li><a class="tocitem" href="../functors/">Nested Structures – Functors.jl</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/linear_regression/">Linear Regression</a></li><li><a class="tocitem" href="../../tutorials/logistic_regression/">Logistic Regression</a></li><li><a class="tocitem" href="../advanced/">Custom Layers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>Recurrence</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Recurrence</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/models/recurrence.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Recurrent-Models"><a class="docs-heading-anchor" href="#Recurrent-Models">Recurrent Models</a><a id="Recurrent-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-Models" title="Permalink"></a></h1><h2 id="Recurrent-cells"><a class="docs-heading-anchor" href="#Recurrent-cells">Recurrent cells</a><a id="Recurrent-cells-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-cells" title="Permalink"></a></h2><p>To introduce Flux&#39;s recurrence functionalities, we will consider the following vanilla recurrent neural network structure:</p><p><img src="../../assets/rnn-basic.png" alt/></p><p>In the above, we have a sequence of length 3, where <code>x1</code> to <code>x3</code> represent the input at each step (could be a timestamp or a word in a sentence), and <code>y1</code> to <code>y3</code> are their respective outputs.</p><p>An aspect to recognize is that in such a model, the recurrent cells <code>A</code> all refer to the same structure. What distinguishes it from a simple dense layer is that the cell <code>A</code> is fed, in addition to an input <code>x</code>, with information from the previous state of the model (hidden state denoted as <code>h1</code> &amp; <code>h2</code> in the diagram).</p><p>In the most basic RNN case, cell A could be defined by the following: </p><pre><code class="language-julia hljs">output_size = 5
+input_size = 2
+Wxh = randn(Float32, output_size, input_size)
+Whh = randn(Float32, output_size, output_size)
+b   = randn(Float32, output_size)
+
+function rnn_cell(h, x)
+    h = tanh.(Wxh * x .+ Whh * h .+ b)
+    return h, h
+end
+
+x = rand(Float32, input_size) # dummy input data
+h = rand(Float32, output_size) # random initial hidden state
+
+h, y = rnn_cell(h, x)</code></pre><p>Notice how the above is essentially a <code>Dense</code> layer that acts on two inputs, <code>h</code> and <code>x</code>.</p><p>If you run the last line a few times, you&#39;ll notice the output <code>y</code> changing slightly even though the input <code>x</code> is the same.</p><p>There are various recurrent cells available in Flux, notably <code>RNNCell</code>, <code>LSTMCell</code> and <code>GRUCell</code>, which are documented in the <a href="../layers/">layer reference</a>. The hand-written example above can be replaced with:</p><pre><code class="language-julia hljs">using Flux
+
+rnn = Flux.RNNCell(2, 5)
+
+x = rand(Float32, 2) # dummy data
+h = rand(Float32, 5)  # initial hidden state
+
+h, y = rnn(h, x)</code></pre><h2 id="Stateful-Models"><a class="docs-heading-anchor" href="#Stateful-Models">Stateful Models</a><a id="Stateful-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Stateful-Models" title="Permalink"></a></h2><p>For the most part, we don&#39;t want to manage hidden states ourselves, but to treat our models as being stateful. Flux provides the <code>Recur</code> wrapper to do this.</p><pre><code class="language-julia hljs">x = rand(Float32, 2)
+h = rand(Float32, 5)
+
+m = Flux.Recur(rnn, h)
+
+y = m(x)</code></pre><p>The <code>Recur</code> wrapper stores the state between runs in the <code>m.state</code> field.</p><p>If we use the <code>RNN(2, 5)</code> constructor – as opposed to <code>RNNCell</code> – you&#39;ll see that it&#39;s simply a wrapped cell.</p><pre><code class="language-julia-repl hljs">julia&gt; using Flux
+
+julia&gt; RNN(2, 5)  # or equivalently RNN(2 =&gt; 5)
+Recur(
+  RNNCell(2 =&gt; 5, tanh),                # 45 parameters
+)         # Total: 4 trainable arrays, 45 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 412 bytes.</code></pre><p>Equivalent to the <code>RNN</code> stateful constructor, <code>LSTM</code> and <code>GRU</code> are also available. </p><p>Using these tools, we can now build the model shown in the above diagram with: </p><pre><code class="language-julia-repl hljs">julia&gt; m = Chain(RNN(2 =&gt; 5), Dense(5 =&gt; 1))
+Chain(
+  Recur(
+    RNNCell(2 =&gt; 5, tanh),              # 45 parameters
+  ),
+  Dense(5 =&gt; 1),                        # 6 parameters
+)         # Total: 6 trainable arrays, 51 parameters,
+          # plus 1 non-trainable, 5 parameters, summarysize 580 bytes.   </code></pre><p>In this example, each output has only one component.</p><h2 id="Working-with-sequences"><a class="docs-heading-anchor" href="#Working-with-sequences">Working with sequences</a><a id="Working-with-sequences-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-sequences" title="Permalink"></a></h2><p>Using the previously defined <code>m</code> recurrent model, we can now apply it to a single step from our sequence:</p><pre><code class="language-julia-repl hljs">julia&gt; x = rand(Float32, 2);
+
+julia&gt; m(x)
+1-element Vector{Float32}:
+ 0.45860028</code></pre><p>The <code>m(x)</code> operation would be represented by <code>x1 -&gt; A -&gt; y1</code> in our diagram. If we perform this operation a second time, it will be equivalent to <code>x2 -&gt; A -&gt; y2</code>  since the model <code>m</code> has stored the state resulting from the <code>x1</code> step.</p><p>Now, instead of computing a single step at a time, we can get the full <code>y1</code> to <code>y3</code> sequence in a single pass by  iterating the model on a sequence of data. </p><p>To do so, we&#39;ll need to structure the input data as a <code>Vector</code> of observations at each time step. This <code>Vector</code> will therefore be of <code>length = seq_length</code> and each of its elements will represent the input features for a given step. In our example, this translates into a <code>Vector</code> of length 3, where each element is a <code>Matrix</code> of size <code>(features, batch_size)</code>, or just a <code>Vector</code> of length <code>features</code> if dealing with a single observation.  </p><pre><code class="language-julia-repl hljs">julia&gt; x = [rand(Float32, 2) for i = 1:3];
+
+julia&gt; [m(xi) for xi in x]
+3-element Vector{Vector{Float32}}:
+ [0.36080405]
+ [-0.13914406]
+ [0.9310162]</code></pre><div class="admonition is-warning"><header class="admonition-header">Use of map and broadcast</header><div class="admonition-body"><p>Mapping and broadcasting operations with stateful layers such are discouraged, since the julia language doesn&#39;t guarantee a specific execution order. Therefore, avoid  </p><pre><code class="language-julia hljs">y = m.(x)
+# or 
+y = map(m, x)</code></pre><p>and use explicit loops </p><pre><code class="language-julia hljs">y = [m(x) for x in x]</code></pre></div></div><p>If for some reason one wants to exclude the first step of the RNN chain for the computation of the loss, that can be handled with:</p><pre><code class="language-julia hljs">using Flux.Losses: mse
+
+function loss(x, y)
+  m(x[1]) # ignores the output but updates the hidden states
+  sum(mse(m(xi), yi) for (xi, yi) in zip(x[2:end], y))
+end
+
+y = [rand(Float32, 1) for i=1:2]
+loss(x, y)</code></pre><p>In such a model, only the last two outputs are used to compute the loss, hence the target <code>y</code> being of length 2. This is a strategy that can be used to easily handle a <code>seq-to-one</code> kind of structure, compared to the <code>seq-to-seq</code> assumed so far.   </p><p>Alternatively, if one wants to perform some warmup of the sequence, it could be performed once, followed with a regular training where all the steps of the sequence would be considered for the gradient update:</p><pre><code class="language-julia hljs">function loss(x, y)
+  sum(mse(m(xi), yi) for (xi, yi) in zip(x, y))
+end
+
+seq_init = [rand(Float32, 2)]
+seq_1 = [rand(Float32, 2) for i = 1:3]
+seq_2 = [rand(Float32, 2) for i = 1:3]
+
+y1 = [rand(Float32, 1) for i = 1:3]
+y2 = [rand(Float32, 1) for i = 1:3]
+
+X = [seq_1, seq_2]
+Y = [y1, y2]
+data = zip(X,Y)
+
+Flux.reset!(m)
+[m(x) for x in seq_init]
+
+ps = Flux.params(m)
+opt= Adam(1e-3)
+Flux.train!(loss, ps, data, opt)</code></pre><p>In this previous example, model&#39;s state is first reset with <code>Flux.reset!</code>. Then, there&#39;s a warmup that is performed over a sequence of length 1 by feeding it with <code>seq_init</code>, resulting in a warmup state. The model can then be trained for 1 epoch, where 2 batches are provided (<code>seq_1</code> and <code>seq_2</code>) and all the timesteps outputs are considered for the loss.</p><p>In this scenario, it is important to note that a single continuous sequence is considered. Since the model state is not reset between the 2 batches, the state of the model flows through the batches, which only makes sense in the context where <code>seq_1</code> is the continuation of <code>seq_init</code> and so on.</p><p>Batch size would be 1 here as there&#39;s only a single sequence within each batch. If the model was to be trained on multiple independent sequences, then these sequences could be added to the input data as a second dimension. For example, in a language model, each batch would contain multiple independent sentences. In such scenario, if we set the batch size to 4, a single batch would be of the shape:</p><pre><code class="language-julia hljs">x = [rand(Float32, 2, 4) for i = 1:3]
+y = [rand(Float32, 1, 4) for i = 1:3]</code></pre><p>That would mean that we have 4 sentences (or samples), each with 2 features (let&#39;s say a very small embedding!) and each with a length of 3 (3 words per sentence). Computing <code>m(batch[1])</code>, would still represent <code>x1 -&gt; y1</code> in our diagram and returns the first word output, but now for each of the 4 independent sentences (second dimension of the input matrix). We do not need to use <code>Flux.reset!(m)</code> here; each sentence in the batch will output in its own &quot;column&quot;, and the outputs of the different sentences won&#39;t mix. </p><p>To illustrate, we go through an example of batching with our implementation of <code>rnn_cell</code>. The implementation doesn&#39;t need to change; the batching comes for &quot;free&quot; from the way Julia does broadcasting and the rules of matrix multiplication.</p><pre><code class="language-julia hljs">output_size = 5
+input_size = 2
+Wxh = randn(Float32, output_size, input_size)
+Whh = randn(Float32, output_size, output_size)
+b   = randn(Float32, output_size)
+
+function rnn_cell(h, x)
+    h = tanh.(Wxh * x .+ Whh * h .+ b)
+    return h, h
+end</code></pre><p>Here, we use the last dimension of the input and the hidden state as the batch dimension. I.e., <code>h[:, n]</code> would be the hidden state of the nth sentence in the batch.</p><pre><code class="language-julia hljs">batch_size = 4
+x = rand(Float32, input_size, batch_size) # dummy input data
+h = rand(Float32, output_size, batch_size) # random initial hidden state
+
+h, y = rnn_cell(h, x)</code></pre><pre><code class="language-julia hljs">julia&gt; size(h) == size(y) == (output_size, batch_size)
+true</code></pre><p>In many situations, such as when dealing with a language model, the sentences in each batch are independent (i.e. the last item of the first sentence of the first batch is independent from the first item of the first sentence of the second batch), so we cannot handle the model as if each batch was the direct continuation of the previous one. To handle such situations, we need to reset the state of the model between each batch, which can be conveniently performed within the loss function:</p><pre><code class="language-julia hljs">function loss(x, y)
+  Flux.reset!(m)
+  sum(mse(m(xi), yi) for (xi, yi) in zip(x, y))
+end</code></pre><p>A potential source of ambiguity with RNN in Flux can come from the different data layout compared to some common frameworks where data is typically a 3 dimensional array: <code>(features, seq length, samples)</code>. In Flux, those 3 dimensions are provided through a vector of seq length containing a matrix <code>(features, samples)</code>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../training/training/">« Training</a><a class="docs-footer-nextpage" href="../../gpu/">GPU Support »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 21 February 2024 19:51">Wednesday 21 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

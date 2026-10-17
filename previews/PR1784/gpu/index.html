@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>GPU Support · Flux</title><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-36890222-9', 'auto');
+ga('send', 'pageview', {'page': location.pathname + location.search + location.hash});
+</script><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/flux.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="Flux logo"/></a><div class="docs-package-name"><span class="docs-autofit">Flux</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><span class="tocitem">Building Models</span><ul><li><a class="tocitem" href="../models/overview/">Overview</a></li><li><a class="tocitem" href="../models/basics/">Basics</a></li><li><a class="tocitem" href="../models/recurrence/">Recurrence</a></li><li><a class="tocitem" href="../models/layers/">Model Reference</a></li><li><a class="tocitem" href="../models/losses/">Loss Functions</a></li><li><a class="tocitem" href="../models/regularisation/">Regularisation</a></li><li><a class="tocitem" href="../models/advanced/">Advanced Model Building</a></li><li><a class="tocitem" href="../models/nnlib/">NNlib</a></li><li><a class="tocitem" href="../models/functors/">Functors</a></li></ul></li><li><span class="tocitem">Handling Data</span><ul><li><a class="tocitem" href="../data/onehot/">One-Hot Encoding</a></li><li><a class="tocitem" href="../data/dataloader/">DataLoader</a></li></ul></li><li><span class="tocitem">Training Models</span><ul><li><a class="tocitem" href="../training/optimisers/">Optimisers</a></li><li><a class="tocitem" href="../training/training/">Training</a></li></ul></li><li class="is-active"><a class="tocitem" href>GPU Support</a><ul class="internal"><li><a class="tocitem" href="#Checking-GPU-Availability"><span>Checking GPU Availability</span></a></li><li><a class="tocitem" href="#GPU-Usage"><span>GPU Usage</span></a></li></ul></li><li><a class="tocitem" href="../saving/">Saving &amp; Loading</a></li><li><a class="tocitem" href="../ecosystem/">The Julia Ecosystem</a></li><li><a class="tocitem" href="../utilities/">Utility Functions</a></li><li><a class="tocitem" href="../performance/">Performance Tips</a></li><li><a class="tocitem" href="../datasets/">Datasets</a></li><li><a class="tocitem" href="../community/">Community</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>GPU Support</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>GPU Support</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/FluxML/Flux.jl/blob/master/docs/src/gpu.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="GPU-Support"><a class="docs-heading-anchor" href="#GPU-Support">GPU Support</a><a id="GPU-Support-1"></a><a class="docs-heading-anchor-permalink" href="#GPU-Support" title="Permalink"></a></h1><p>NVIDIA GPU support should work out of the box on systems with CUDA and CUDNN installed. For more details see the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA</a> readme.</p><h2 id="Checking-GPU-Availability"><a class="docs-heading-anchor" href="#Checking-GPU-Availability">Checking GPU Availability</a><a id="Checking-GPU-Availability-1"></a><a class="docs-heading-anchor-permalink" href="#Checking-GPU-Availability" title="Permalink"></a></h2><p>By default, Flux will run the checks on your system to see if it can support GPU functionality. You can check if Flux identified a valid GPU setup by typing the following:</p><pre><code class="language-julia">julia&gt; using CUDA
+
+julia&gt; CUDA.functional()
+true</code></pre><h2 id="GPU-Usage"><a class="docs-heading-anchor" href="#GPU-Usage">GPU Usage</a><a id="GPU-Usage-1"></a><a class="docs-heading-anchor-permalink" href="#GPU-Usage" title="Permalink"></a></h2><p>Support for array operations on other hardware backends, like GPUs, is provided by external packages like <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA</a>. Flux is agnostic to array types, so we simply need to move model weights and data to the GPU and Flux will handle it.</p><p>For example, we can use <code>CUDA.CuArray</code> (with the <code>cu</code> converter) to run our <a href="../models/basics/">basic example</a> on an NVIDIA GPU.</p><p>(Note that you need to have CUDA available to use CUDA.CuArray – please see the <a href="https://github.com/JuliaGPU/CUDA.jl">CUDA.jl</a> instructions for more details.)</p><pre><code class="language-julia">using CUDA
+
+W = cu(rand(2, 5)) # a 2×5 CuArray
+b = cu(rand(2))
+
+predict(x) = W*x .+ b
+loss(x, y) = sum((predict(x) .- y).^2)
+
+x, y = cu(rand(5)), cu(rand(2)) # Dummy data
+loss(x, y) # ~ 3</code></pre><p>Note that we convert both the parameters (<code>W</code>, <code>b</code>) and the data set (<code>x</code>, <code>y</code>) to cuda arrays. Taking derivatives and training works exactly as before.</p><p>If you define a structured model, like a <code>Dense</code> layer or <code>Chain</code>, you just need to convert the internal parameters. Flux provides <code>fmap</code>, which allows you to alter all parameters of a model at once.</p><pre><code class="language-julia">d = Dense(10, 5, σ)
+d = fmap(cu, d)
+d.weight # CuArray
+d(cu(rand(10))) # CuArray output
+
+m = Chain(Dense(10, 5, σ), Dense(5, 2), softmax)
+m = fmap(cu, m)
+d(cu(rand(10)))</code></pre><p>As a convenience, Flux provides the <code>gpu</code> function to convert models and data to the GPU if one is available. By default, it&#39;ll do nothing, but loading <code>CUDA</code> will cause it to move data to the GPU instead.</p><pre><code class="language-julia">julia&gt; using Flux, CUDA
+
+julia&gt; m = Dense(10,5) |&gt; gpu
+Dense(10, 5)
+
+julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32,1}:
+ 0.800225
+ ⋮
+ 0.511655
+
+julia&gt; m(x)
+5-element CuArray{Float32,1}:
+ -0.30535
+ ⋮
+ -0.618002</code></pre><p>The analogue <code>cpu</code> is also available for moving models and data back off of the GPU.</p><pre><code class="language-julia">julia&gt; x = rand(10) |&gt; gpu
+10-element CuArray{Float32,1}:
+ 0.235164
+ ⋮
+ 0.192538
+
+julia&gt; x |&gt; cpu
+10-element Array{Float32,1}:
+ 0.235164
+ ⋮
+ 0.192538</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../training/training/">« Training</a><a class="docs-footer-nextpage" href="../saving/">Saving &amp; Loading »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 26 November 2021 15:10">Friday 26 November 2021</span>. Using Julia version 1.6.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
