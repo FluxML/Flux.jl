@@ -99,12 +99,18 @@ end
 
 _default_fdm() = FiniteDifferences.central_fdm(5, 1, max_range=1e-2)
 
+# Enzyme is compared by default only when the Enzyme tests are enabled.
+_default_compare() = FLUX_TEST_ENZYME ? [AutoZygote(), AutoEnzyme()] : [AutoZygote()]
+
 """
-Compare the `reference` and `compare` AD backends on the gradients of `f` at `xs...`.
+Compare the `reference` AD backend with the `compare` AD backends on the gradients of `f` at `xs...`.
 The loss function can be customized (default is mean over outputs).
 
-- If `test_gpu` is true, the `compare` backend is tested on GPU.
-- If `test_cpu` is true, the `compare` backend is tested on CPU.
+`compare` can be a single AD backend or a list of them. It defaults to Zygote and,
+unless `FLUX_TEST_ENZYME` is false, Enzyme. With `compare=nothing` the `reference` backend is used.
+
+- If `test_gpu` is true, the `compare` backends are tested on GPU.
+- If `test_cpu` is true, the `compare` backends are tested on CPU.
 - If `test_reactant` is true, the Enzyme backend is tested with Reactant.
   Depending on the platform, this may run on CPU or GPU.
 """
@@ -116,7 +122,7 @@ function test_gradients(
             test_cpu = true,
             test_reactant = false,
             reference = AutoFiniteDifferences(; fdm = _default_fdm()),
-            compare = AutoZygote(),
+            compare = _default_compare(),
             loss = (f, xs...) -> mean(f(xs...)),
             test_mode = false,
             )
@@ -124,6 +130,7 @@ function test_gradients(
     @assert reference !== nothing "reference AD backend must be provided"
     @assert compare !== nothing || test_gpu "compare AD backend must be provided if test_gpu=false"
     compare = compare === nothing ? reference : compare
+    backends = compare isa Union{Tuple, AbstractVector} ? compare : (compare,)
 
     if test_mode
         Flux.testmode!(f)
@@ -155,18 +162,22 @@ function test_gradients(
     @test l ≈ y rtol=rtol atol=atol
 
     if test_cpu
-        y2, gs2 = Flux.withgradient(loss, compare, f, xs...)
-        @test l ≈ y2 rtol=rtol atol=atol
-        check_equal_leaves(gs, gs2; rtol, atol)
+        for backend in backends
+            y2, gs2 = Flux.withgradient(loss, backend, f, xs...)
+            @test l ≈ y2 rtol=rtol atol=atol
+            check_equal_leaves(gs, gs2; rtol, atol)
+        end
     end
 
     if test_gpu
         l_gpu = loss(f_gpu, xs_gpu...)
         @test l_gpu isa Number
 
-        y_gpu, gs_gpu = Flux.withgradient(loss, compare, f_gpu, xs_gpu...)
-        @test l_gpu ≈ y_gpu rtol=rtol atol=atol
-        check_equal_leaves(gs, gs_gpu |> cpu_dev; rtol, atol)  
+        for backend in backends
+            y_gpu, gs_gpu = Flux.withgradient(loss, backend, f_gpu, xs_gpu...)
+            @test l_gpu ≈ y_gpu rtol=rtol atol=atol
+            check_equal_leaves(gs, gs_gpu |> cpu_dev; rtol, atol)
+        end
     end
 
     if test_reactant
