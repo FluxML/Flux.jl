@@ -1,10 +1,33 @@
 function scan(cell, x, state)
-  y = []
-  for x_t in eachslice(x, dims = 2)
+  xs = eachslice(x, dims = 2)
+  # the first step is peeled off to give `y` a concrete element type
+  yt, state = cell(first(xs), state)
+  y = [yt]
+  for x_t in Iterators.drop(xs, 1)
     yt, state = cell(x_t, state)
     y = vcat(y, [yt])
   end
   return stack(y, dims = 2), state
+end
+
+# Like `chunk(x, n; dims = 1)` but type stable (JuliaML/MLUtils.jl#260), returning a tuple of views.
+function _chunk1(x::AbstractArray{T,N}, ::Val{n}) where {T,N,n}
+  k = size(x, 1) ÷ n
+  colons = ntuple(_ -> Colon(), Val(N - 1))
+  return ntuple(i -> view(x, (i - 1) * k + 1:i * k, colons...), Val(n))
+end
+
+function ChainRulesCore.rrule(::typeof(_chunk1), x::AbstractArray, vn::Val)
+  project = ProjectTo(x)
+  function _chunk1_pullback(dys)
+    dx = similar(x)
+    for (dxi, dyi) in zip(_chunk1(dx, vn), unthunk(dys))
+      dyi = unthunk(dyi)
+      dyi isa AbstractZero ? fill!(dxi, 0) : (dxi .= dyi)
+    end
+    return NoTangent(), project(dx), NoTangent()
+  end
+  return _chunk1(x, vn), _chunk1_pullback
 end
 
 """
@@ -412,10 +435,16 @@ function (m::LSTMCell)(x::AbstractVecOrMat, (h, c))
   _size_check(m, x, 1 => size(m.Wi, 2))
   b = m.bias
   g = m.Wi * x .+ m.Wh * h .+ b
-  input, forget, cell, output = chunk(g, 4; dims = 1)
+  input, forget, cell, output = _chunk1(g, Val(4))
+  h, c = _lstm_update(input, forget, cell, output, c)
+  return h, (h, c)
+end
+
+# Function barrier: inlined into the cell, these broadcasts are not vectorized.
+@noinline function _lstm_update(input, forget, cell, output, c)
   c = @. sigmoid_fast(forget) * c + sigmoid_fast(input) * tanh_fast(cell)
   h = @. sigmoid_fast(output) * tanh_fast(c)
-  return h, (h, c)
+  return h, c
 end
 
 Base.show(io::IO, m::LSTMCell) =
@@ -613,12 +642,12 @@ end
 
 function (m::GRUCell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  gxs = chunk(m.Wi * x, 3, dims = 1)
-  ghs = chunk(m.Wh * h, 3, dims = 1)
+  gxs = _chunk1(m.Wi * x, Val(3))
+  ghs = _chunk1(m.Wh * h, Val(3))
   if m.b isa AbstractArray
-    bs = chunk(m.b, 3, dims = 1)
+    bs = _chunk1(m.b, Val(3))
   else # b == false
-    bs = [false, false, false]
+    bs = (false, false, false)
   end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])
@@ -794,12 +823,12 @@ end
 
 function (m::GRUv3Cell)(x::AbstractVecOrMat, h)
   _size_check(m, x, 1 => size(m.Wi, 2))
-  gxs = chunk(m.Wi * x, 3, dims = 1)
-  ghs = chunk(m.Wh * h, 3, dims = 1)
+  gxs = _chunk1(m.Wi * x, Val(3))
+  ghs = _chunk1(m.Wh * h, Val(3))
   if m.b isa AbstractArray
-    bs = chunk(m.b, 3, dims = 1)
+    bs = _chunk1(m.b, Val(3))
   else # m.b == false
-    bs = [false, false, false]
+    bs = (false, false, false)
   end
   r = @. sigmoid_fast(gxs[1] + ghs[1] + bs[1])
   z = @. sigmoid_fast(gxs[2] + ghs[2] + bs[2])

@@ -354,3 +354,13 @@ end
         end
     end
 end
+
+@testset "type stability" begin
+    for rnn in [RNN(2 => 3), LSTM(2 => 3), GRU(2 => 3), GRUv3(2 => 3)]
+        @inferred rnn.cell(rand(Float32, 2, 4))
+        @inferred rnn.cell(rand(Float32, 2))
+        @inferred rnn(rand(Float32, 2, 5, 4))
+        @inferred rnn(rand(Float32, 2, 5))
+        @inferred Recurrence(rnn.cell)(rand(Float32, 2, 5, 4))
+    end
+end
