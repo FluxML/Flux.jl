@@ -106,4 +106,19 @@ end
     @test Flux.gradient(|>, z, Const(sum ∘ LayerNorm(3)))[2] === nothing
     @test Flux.withgradient(sum ∘ LayerNorm(3), z).grad[1] ≈ [0.0, 0.0, 0.0]
     @test Flux.withgradient(|>, z, _duplicated(sum ∘ LayerNorm(3))).grad[1] ≈ [0.0, 0.0, 0.0]
+
+    # type instability of the recurrent layers broke the split mode (EnzymeAD/Enzyme.jl#2897)
+    rnnloss(m, x) = sum(m(x))
+    x = randn(Float32, 3, 4, 2)
+    @testset "split mode $(nameof(typeof(rnn)))" for rnn in [RNN(3 => 2), LSTM(3 => 2), GRU(3 => 2), GRUv3(3 => 2)]
+        drnn = _duplicated(rnn)
+        forward, reverse = Enzyme.autodiff_thunk(ReverseSplitWithPrimal, Const{typeof(rnnloss)}, Active,
+                                                 typeof(drnn), Const{typeof(x)})
+        tape, primal, _ = forward(Const(rnnloss), drnn, Const(x))
+        reverse(Const(rnnloss), drnn, Const(x), 1f0, tape)
+        gz = Flux.gradient(m -> rnnloss(m, x), AutoZygote(), rnn)[1]
+        @test primal ≈ rnnloss(rnn, x)
+        @test drnn.dval.cell.Wi ≈ gz.cell.Wi
+        @test drnn.dval.cell.Wh ≈ gz.cell.Wh
+    end
 end
