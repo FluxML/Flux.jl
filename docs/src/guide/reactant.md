@@ -20,6 +20,9 @@ using Flux, Reactant
 
 Reactant automatically selects a GPU backend if one is available, falling back to the CPU otherwise. See the [Reactant GPU configuration docs](https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration) for how to control this.
 
+!!! note "Reactant and CUDA.jl in the same environment"
+    Reactant does not need CUDA.jl to run on an NVIDIA GPU, and for now the two are best kept in separate environments. Reactant currently requires GPUCompiler 1.x and LLVM.jl 9.x, so an environment with CUDA.jl, cuDNN and Reactant is held back to CUDA.jl and cuDNN 6.2 and NNlib ≤ 0.9.45, and therefore cannot install Flux releases that need NNlib ≥ 0.9.48. This will be fixed by [EnzymeAD/Reactant.jl#3384](https://github.com/EnzymeAD/Reactant.jl/pull/3384).
+
 ## Moving data and models to the device
 
 Just like `gpu`/`cpu`, Flux provides a device object that moves a model (or any nested structure of arrays) onto the Reactant device, converting its arrays into Reactant's `ConcreteRArray`s:
@@ -36,7 +39,7 @@ model_re = model |> dev   # a copy of the model with Reactant arrays
 x_re     = x     |> dev
 ```
 
-As with the GPU adaptors, `dev` recurses into structures, so `(x, y) |> dev` moves both, and it uses `Float32` by default. Everything you feed to a compiled function must already live on the device.
+As with the GPU adaptors, `dev` recurses into structures, so `(x, y) |> dev` moves both. It keeps the element type, so `Float64` arrays stay `Float64`: call [`f32`](@ref Flux.f32) first, or use `reactant_device(Float32)`, to convert them. Everything you feed to a compiled function must already live on the device.
 
 ## 1. A manually compiled example
 
@@ -142,7 +145,7 @@ function loss(m, x, y)
     Flux.mse(ŷ, y), (; acc = mean(onecold(ŷ) .== onecold(y)))
 end
 
-l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l == (loss, stats); stats.acc read to host
+l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l is the loss, stats.acc the accuracy, both on the host
 ```
 
 ## 3. The `train!` API
@@ -173,9 +176,22 @@ Flux.train!(loss, model, data, opt_state)
 
 - **`setup` after moving to the device.** Always `model |> reactant_device()` *before* `Flux.setup`, so the optimiser state is created from Reactant arrays (this keeps stateful rules like `Adam`'s bias-correction term on the device).
 - **Device-resident data.** Every input to a compiled step must already live on the device. Move batches with `|> reactant_device()`; a common pattern is to wrap a `DataLoader` with the device so batches are moved lazily.
+- **Scalars in the batch.** A plain number in the batch, such as `λ` in `(x, y, λ)`, is compiled into the step as a constant, so each distinct value compiles a new step. Pass a varying scalar as a 0-dimensional array instead, `(x, y, fill(λ)) |> dev`, and read it with `λ[]` in the loss. Device numbers (`Reactant.ConcreteRNumber`, or `reactant_device(; track_numbers = Number)`) don't help: currently each one compiles a new step, even for the same value.
 - **Compilation is keyed on shape.** The first call for each distinct batch shape compiles; subsequent calls reuse the executable. Keeping batch sizes fixed (or accepting one extra compile for a smaller final batch) avoids repeated compilation.
 - **Watch the compile cache.** Flux caches one executable per distinct `(model, optimiser, loss, batch-shape)`. Values that are compiled into the step as constants are part of the cache key too, so switching a layer with `trainmode!`/`testmode!`, freezing parameters with `freeze!`/`thaw!`, passing the same array twice in a batch, or redefining the loss function compiles a new step instead of reusing a stale one. If you rebuild the model or optimiser every iteration, each iteration compiles a fresh step — Flux warns when the cache grows past a handful of entries. Entries are freed automatically when their model is garbage-collected.
 - **Reading results back.** `trainstep!`/`train!` return host-side numbers already. For a manually compiled function, move device arrays back with `cpu` (or `Reactant.to_number` for a scalar).
 - **AD backend.** On a Reactant device training differentiates with Enzyme by default. Passing an explicit `adtype` such as `AutoZygote()` or `AutoMooncake()` compilation is likely to fail. `Duplicated` models are not supported here — pass the plain model that already lives on the device.
+
+!!! tip "Precision on GPU"
+    On CUDA, Reactant's default precision for `Float32` matrix multiplications and convolutions behaves like TF32, trading accuracy for speed. On an RTX 5090 the gradient of a small MLP differed from the `Float64` one by 6e-4 (relative error), and that of a small CNN by 3e-3, against under 4e-7 at full precision. To get full `Float32` precision, compile the step inside `Reactant.with_config`:
+
+    ```julia
+    Reactant.with_config(; dot_general_precision = PrecisionConfig.HIGHEST,
+                           convolution_precision = PrecisionConfig.HIGHEST) do
+        Flux.trainstep!(loss, model, (x, y), opt_state)
+    end
+    ```
+
+    The setting is read when the step is compiled, i.e. on the first `trainstep!` call for a given model, optimiser, loss and batch shape, so wrap that call (or the whole training loop). A step that is already compiled keeps its precision: calling it inside `with_config` later has no effect, and a step compiled with `HIGHEST` keeps it outside.
 
 See also the [`resnet_tinyimagenet` example](https://github.com/FluxML/Flux.jl/tree/master/examples/resnet_tinyimagenet) for a complete Reactant training script, including compiling a separate evaluation executable per batch shape.

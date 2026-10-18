@@ -36,13 +36,13 @@
 #      no single axis sees both. The eager backends (Zygote, `train!`) allocate through CUDA.jl's
 #      pool, which grows the driver reservation on demand, so *device-level* used memory
 #      (`CUDA.memory_info`, driver total−free), sampled from a background task, tracks their
-#      working set. Reactant allocates through XLA's BFC pool, which grabs a big slab up front and
-#      sub-allocates inside it — device-level memory stays pinned at the slab size and reports ~0
-#      change — so we read XLA's *own* allocator high-water mark (`Reactant.XLA.allocatorstats`,
+#      working set. Reactant allocates through XLA's BFC pool, which sub-allocates inside slabs it
+#      reserves from the driver and keeps — device-level memory tracks the pool, not the working
+#      set — so we read XLA's *own* allocator high-water mark (`Reactant.XLA.allocatorstats`,
 #      `peak_bytes_in_use`). Both are baselined to the increase over what was resident before the
-#      timed run. (Even with `XLA_PYTHON_CLIENT_PREALLOCATE=false`, XLA still reserves ~75 % of the
-#      card as its pool; the allocator-stats path measures the true working set regardless.) See
-#      the "GPU memory helpers" section.
+#      timed run. (By default Reactant preallocates 75 % of the card as its pool; we turn that off
+#      below, but the allocator-stats path measures the true working set either way.) See the
+#      "GPU memory helpers" section.
 #
 # Run with:
 #
@@ -56,11 +56,11 @@
 # CPU too); only the timings are meaningful there, and the memory columns read "n/a".
 
 # --- XLA/Reactant memory knobs: must be set before Reactant initialises its client ---------
-# Keep XLA from eagerly pre-grabbing most of the card. `MEM_FRACTION` caps how much XLA may grow
-# into. (XLA still reserves a large pool; the per-backend memory measurement reads XLA's own
-# allocator counters rather than device-level memory, so this no longer affects the reported peak.)
-get!(ENV, "XLA_PYTHON_CLIENT_PREALLOCATE", "false")
-get!(ENV, "XLA_PYTHON_CLIENT_MEM_FRACTION", "0.9")
+# Keep XLA from eagerly pre-grabbing most of the card (Reactant preallocates 75 % by default).
+# `MEM_FRACTION` caps how much XLA may grow into. (The per-backend memory measurement reads XLA's own
+# allocator counters rather than device-level memory, so this doesn't affect the reported peak.)
+get!(ENV, "XLA_REACTANT_GPU_PREALLOCATE", "false")
+get!(ENV, "XLA_REACTANT_GPU_MEM_FRACTION", "0.9")
 
 using Flux
 using Reactant
@@ -83,11 +83,10 @@ const HAS_GPU = CUDA.functional()
 #   * Zygote / `train!` allocate through CUDA.jl's pool, which grows its driver reservation on
 #     demand — so device-level used memory (driver `total − free`) tracks their working set, and
 #     `with_peak_mem` samples it. (See `zygote_backend` / `train_zygote_backend`.)
-#   * Reactant allocates through XLA's BFC pool, which grabs a big slab from the driver *up front*
-#     and then sub-allocates inside it without further driver calls. Device-level used memory
-#     therefore stays pinned at the reserved-slab size and reports ~0 change no matter how much
-#     XLA actually uses — so we read XLA's own allocator high-water mark instead. (See
-#     `reactant_backend`.)
+#   * Reactant allocates through XLA's BFC pool, which reserves large regions from the driver and
+#     sub-allocates inside them without further driver calls or releases. Device-level used memory
+#     therefore tracks the pool's reservation, not how much XLA actually uses — so we read XLA's own
+#     allocator high-water mark instead. (See `reactant_backend`.)
 #
 # Each backend exposes a `peakmem(f)` that runs `f()` and returns `(result, peak_bytes)`, where
 # the peak is baselined to the *increase* over what was already resident when `f` started (model
@@ -133,7 +132,7 @@ end
     reactant_peak_mem(f)
 
 Run `f()` and return `(result, peak_bytes)` using XLA's *own* BFC-allocator counters rather than
-device-level memory (which can't see inside XLA's pre-grabbed pool). `peak_bytes_in_use` is a
+device-level memory (which can't see inside XLA's pool). `peak_bytes_in_use` is a
 lifetime high-water mark; we baseline it against `bytes_in_use` sampled just before `f` (the
 resident model / optimiser / constants after warm-up) so the result is the timed run's working-
 set increase — the same "transient over resident" quantity `with_peak_mem` reports for the eager
