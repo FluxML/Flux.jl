@@ -262,3 +262,39 @@ end
     @test Flux.loadmodel!(Conv((3,3),2=>4,relu), Flux.state(c)) isa Conv
   end
 end
+
+@testset "loadmodel! of an optimiser state" begin
+  loss(m, x, y) = Flux.mse(m(x), y)
+  model0 = Chain(Dense(2 => 3, tanh), Dense(3 => 1))
+  batches = [(randn(Float32, 2, 4), randn(Float32, 1, 4)) for _ in 1:6]
+  model = deepcopy(model0)
+  opt = Flux.setup(Adam(0.1f0), model)
+  for b in batches[1:3]
+    Flux.trainstep!(loss, model, b, opt)
+  end
+  saved_model, saved_opt = deepcopy(model), deepcopy(opt)
+  for b in batches[4:6]
+    Flux.trainstep!(loss, model, b, opt)
+  end
+
+  for src in (saved_opt, Flux.state(saved_opt))
+    m = deepcopy(saved_model)
+    o = Flux.setup(Adam(0.1f0), m)
+    @test Flux.loadmodel!(o, src) === o
+    @test o.layers[1].weight.state[3] == saved_opt.layers[1].weight.state[3]  # Adam's βt
+    for b in batches[4:6]
+      Flux.trainstep!(loss, m, b, o)
+    end
+    @test Flux.trainables(m) ≈ Flux.trainables(model)
+  end
+
+  # The rule is kept, the frozen flag is loaded.
+  Flux.freeze!(saved_opt.layers[2])
+  o = Flux.setup(Adam(0.5f0), saved_model)
+  Flux.loadmodel!(o, saved_opt)
+  @test o.layers[1].weight.rule.eta == 0.5f0
+  @test o.layers[2].weight.frozen && !o.layers[1].weight.frozen
+
+  @test_throws ArgumentError Flux.loadmodel!(o, Flux.setup(Momentum(), saved_model))
+  @test_throws ArgumentError Flux.loadmodel!(o.layers[1].weight, saved_model[1].weight)
+end

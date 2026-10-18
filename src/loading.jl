@@ -47,6 +47,12 @@ Non-array elements (such as activation functions) are not copied and need not ma
 Zero bias vectors and `bias=false` are considered equivalent
 (see extended help for more details).
 
+`dst` can also be an optimiser state from [`Flux.setup`](@ref), and `src` a saved one
+(or its [`Flux.state`](@ref)), to resume training from a checkpoint. Each `Optimisers.Leaf`
+then receives the saved running state, including scalars such as `Adam`'s bias-correction terms,
+and the `frozen` flag, but keeps its own rule. This also loads a state saved on the host into one
+set up for a model on a device, such as a Reactant device.
+
 See also [`Flux.state`](@ref).
 
 # Examples
@@ -108,6 +114,33 @@ function loadmodel!(dst, src; filter = _ -> true, cache = Base.IdSet())
 
   return dst
 end
+
+# The state's scalars (e.g. Adam's βt) are immutable, so the state is rebuilt rather than copied
+# into, with `dst`'s types: Reactant's tracked numbers stay tracked. The rule isn't loaded, as a
+# rule set up for a Reactant model is wrapped and has its hyperparameters on the device.
+function loadmodel!(dst::Optimisers.Leaf, src; kw...)
+  state, frozen = _leaf_parts(src)
+  dst.state = _loadstate(dst.state, state)
+  dst.frozen = frozen
+  return dst
+end
+
+_leaf_parts(src::Optimisers.Leaf) = (src.state, src.frozen)
+_leaf_parts(src::NamedTuple{(:rule, :state, :frozen)}) = (src.state, src.frozen)  # from `state`
+_leaf_parts(src) = throw(ArgumentError("Tried to load $(typeof(src)) into an optimiser `Leaf`."))
+
+_loadstate(dst::AbstractArray, src::AbstractArray) = loadleaf!(dst, src)
+_loadstate(dst::Number, src::Number) = _loadscalar(dst, src)
+function _loadstate(dst, src)
+  Functors.isleaf(dst) && return loadleaf!(dst, src)
+  ldsts, re = Functors.functor(dst)
+  lsrcs = Functors.children(src)
+  keys(ldsts) == keys(lsrcs) || throw(ArgumentError(
+    "Tried to load optimiser state of type $(typeof(src)) into $(typeof(dst)) but the structures do not match."))
+  return re(map(_loadstate, ldsts, lsrcs))
+end
+
+_loadscalar(dst, src) = oftype(dst, src)
 
 """
     state(x)
