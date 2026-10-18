@@ -117,8 +117,11 @@ end
 # executable). Recursing through the functor leaves handles any batch the loss accepts — not just
 # arrays, but named tuples, `@functor` structs such as graphs, etc. Non-array leaves are kept as-is,
 # matching the constants Reactant bakes in. The array method is a fast path for the common case.
+# Device numbers are runtime inputs like arrays, so only their type matters (they hash by identity).
 _shape_signature(x::AbstractArray) = size(x)
-_shape_signature(x) = fmapstructure(a -> a isa AbstractArray ? size(a) : a, x)
+_shape_signature(x::Reactant.RNumber) = typeof(x)
+_shape_signature(x) = fmapstructure(_shape_leaf, x; exclude = a -> isleaf(a) || a isa Reactant.RNumber)
+_shape_leaf(a) = a isa AbstractArray ? size(a) : a isa Reactant.RNumber ? typeof(a) : a
 
 # Reactant passes device arrays and numbers as runtime inputs, but bakes every other value it meets
 # while tracing into the executable. For the model these are e.g. the `active` flag that
@@ -136,7 +139,7 @@ _frozen_signature(x, h::UInt = zero(UInt)) = h
 
 # Reactant traces an array passed twice as a single input, so a step compiled for `(x, x)` must not
 # be reused for `(x, y)`: record which batch arrays are the same object.
-_collect_arrays!(acc, x::AbstractArray{<:Number}) = push!(acc, x)
+_collect_arrays!(acc, x::_DeviceLeaf) = push!(acc, x)
 _collect_arrays!(acc, x) = (isleaf(x) || foreach(c -> _collect_arrays!(acc, c), Functors.children(x)); acc)
 function _alias_signature(dtuple::Tuple)
     arrays = foldl(_collect_arrays!, dtuple; init = Any[])
