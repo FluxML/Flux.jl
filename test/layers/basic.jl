@@ -381,7 +381,9 @@
       @test all(gradient(m -> sum(m(pad)), m)[1].weight .== 0)
 
       # AD backends (incl. finite-difference reference) agree on the masked gradient
-      test_gradients(m, x)
+      test_gradients(m, x; compare=AutoZygote())
+      # Enzyme errors on integer indices unless they are passed as `Const`
+      FLUX_TEST_ENZYME && @test_broken test_gradients(m, x; compare=AutoEnzyme())
       test_gradients(m, Flux.onehotbatch(x, 1:vocab_size))
 
       # the padding row stays fixed at zero through training
