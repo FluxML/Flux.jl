@@ -38,7 +38,8 @@
             Flux.trainstep!(loss, model, b |> dev, opt)
         end
         same = all(isapprox(p, q; rtol=1e-3) for (p, q) in zip(Flux.trainables(model |> cpu), Flux.trainables(eager)))
-        # Optimisers' `adjust!` doesn't reach the rules inside a chain set up for Reactant.
+        # Optimisers' `adjust!` doesn't reach the rules inside a chain set up for Reactant
+        # (https://github.com/FluxML/Optimisers.jl/issues/240).
         rule isa OptimiserChain ? (@test_broken same) : (@test same)
     end
 end
