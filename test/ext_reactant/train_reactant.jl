@@ -295,3 +295,61 @@ end
     @test_throws ArgumentError Flux.trainstep_withgradient!(loss, dmodel, (x, y), opt)
     @test_throws ArgumentError Flux.train!(loss, dmodel, [(x, y)], opt)
 end
+
+@testset "cached step is not reused when traced constants change" begin
+    dev = MLDataDevices.reactant_device(force=true)
+    X, Y = randn(Float32, 4, 16), randn(Float32, 2, 16)
+    x, y = X |> dev, Y |> dev
+    loss(m, a, b) = Flux.mse(m(a), b)
+    mk() = Chain(Dense(4 => 8, tanh), Dense(8 => 2)) |> dev
+    weight(m) = Array(m.layers[1].weight)
+
+    @testset "freeze! and thaw! after compiling" begin
+        m = mk()
+        opt = Flux.setup(Adam(1f-2), m)
+        Flux.trainstep!(loss, m, (x, y), opt)
+        Flux.freeze!(opt.layers[1])
+        w = weight(m)
+        Flux.trainstep!(loss, m, (x, y), opt)
+        @test weight(m) == w
+        Flux.thaw!(opt.layers[1])
+        Flux.trainstep!(loss, m, (x, y), opt)
+        @test weight(m) != w
+    end
+
+    @testset "testmode! after compiling" begin
+        m = Chain(Dense(4 => 4), BatchNorm(4)) |> dev
+        trainmode!(m)
+        opt = Flux.setup(Descent(0f0), m)
+        sq(m, a) = sum(abs2, m(a))
+        Flux.trainstep!(sq, m, (x,), opt)
+        μ = Array(m[2].μ)
+        testmode!(m)
+        Flux.trainstep!(sq, m, (x,), opt)
+        @test Array(m[2].μ) == μ   # running stats are not updated in test mode
+    end
+
+    @testset "aliased batch arrays" begin
+        m = Dense(4 => 4) |> dev
+        opt = Flux.setup(Descent(0f0), m)
+        Y4 = randn(Float32, 4, 16)
+        Flux.trainstep!(loss, m, (x, x), opt)
+        @test Flux.trainstep!(loss, m, (x, Y4 |> dev), opt) ≈ Flux.mse((m |> cpu_device())(X), Y4)
+    end
+
+    @testset "redefined loss" begin
+        m = mk()
+        opt = Flux.setup(Descent(0f0), m)
+        @eval redefined_loss(m, a, b) = Flux.mse(m(a), b)
+        l = Base.invokelatest(Flux.trainstep!, redefined_loss, m, (x, y), opt)
+        @eval redefined_loss(m, a, b) = 2 * Flux.mse(m(a), b)
+        @test Base.invokelatest(Flux.trainstep!, redefined_loss, m, (x, y), opt) ≈ 2l
+    end
+
+    @testset "array-valued loss is an error" begin
+        m = mk()
+        opt = Flux.setup(Descent(0f0), m)
+        @test_throws ArgumentError Flux.trainstep!((m, a, b) -> m(a) .- b, m, (x, y), opt)
+        @test_throws ArgumentError Flux.trainstep!((m, a, b) -> (m(a) .- b, 1), m, (x, y), opt)
+    end
+end
