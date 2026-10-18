@@ -44,7 +44,9 @@ for act in ACTIVATIONS
   gpu_gradtest("Convolution with $act", conv_layers, r, (2,2), 1=>3, act)
 
   groupedconv = [GroupedConv, GroupedConvTranspose]
-  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act)
+  # with 100 channels cuDNN may pick a TF32 kernel, accurate to about 1e-3
+  gpu_gradtest("GroupedConvolution with $act", groupedconv, rand(Float32, 28, 28, 100, 2), (3,3), 100 => 25, act,
+    rtol=1e-3)
 
   batch_norm = [BatchNorm, BatchNormNoTrackStats]
   gpu_gradtest("BatchNorm 1 with $act", batch_norm, rand(Float32, 28,28,3,4), 3, act, atol=1e-3)
