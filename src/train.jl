@@ -168,7 +168,8 @@ Iterates through `data` once, evaluating for each `d in data` either
 The optional argument `adtype` selects an automatic differentiation engine among the ones supported by
 [`gradient`](@ref). If no `adtype` is given, Enzyme is used when `model` is a `Duplicated` from Enzyme.jl
 or lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, and Zygote is used otherwise.
-An explicitly-passed `adtype` is always respected, including on a Reactant device (see [`trainstep!`](@ref Flux.trainstep!)).
+On a Reactant device only Enzyme is supported, and any other `adtype` throws an `ArgumentError`
+(see [`trainstep!`](@ref Flux.trainstep!)).
 
 For example, with these definitions...
 ```
@@ -189,7 +190,9 @@ You can also write this loop yourself, if you need more flexibility.
 For this reason `train!` is not highly extensible.
 It adds only a few features to the loop above:
 
-* Stop with a `DomainError` if the loss is infinite or `NaN` at any point.
+* Stop with a `DomainError` if the loss is infinite or `NaN` at any point. The update for that
+  batch is skipped, so the parameters and `opt_state` keep their values from before it, also on a
+  Reactant device.
 
 * Show a progress bar using [`@withprogress`](https://github.com/JuliaLogging/ProgressLogging.jl).
 
@@ -238,9 +241,9 @@ function train!(loss, adtype::Union{Nothing, AbstractADType}, model, data, opt_s
         end
 
         # `trainstep!` mutates `model`/`opt_state` in place and skips the update itself on a
-        # non-finite loss, so the model is intact here when we stop. (On a Reactant device the update
-        # is fused into the executable and already applied; this only halts further steps.) `l` is the
-        # loss value, or `(loss, aux...)` when the loss returns auxiliary outputs — guard on the scalar.
+        # non-finite loss (inside the compiled step on a Reactant device), so the model is intact here
+        # when we stop. `l` is the loss value, or `(loss, aux...)` when the loss returns auxiliary
+        # outputs — guard on the scalar.
         ls = _loss_scalar(l)
         isfinite(ls) || throw(DomainError(lazy"Loss is $ls on data item $i, stopping training"))
 
@@ -269,7 +272,8 @@ evaluated as `loss(model, batch...)`; any other `batch` is passed as-is, i.e. `l
 
 The optional `adtype` selects the automatic differentiation engine among the ones supported by
 [`gradient`](@ref). If omitted, Enzyme is used when `model` is a `Duplicated` from Enzyme.jl or lives
-on a Reactant device, and Zygote is used otherwise. An explicitly-passed `adtype` is always respected.
+on a Reactant device, and Zygote is used otherwise. On a Reactant device only Enzyme is supported,
+and any other `adtype` throws an `ArgumentError`.
 
 Use [`trainstep_withgradient!`](@ref Flux.trainstep_withgradient!) instead
 if you also need the gradient.
@@ -293,18 +297,19 @@ l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l == (loss, stats
 
 ## Non-finite loss
 
-If the (scalar) loss comes out non-finite the update is skipped, leaving `model` unchanged (`train!`
-turns this into a `DomainError`). On a Reactant device this guard does not apply, as the update is
-fused into the compiled step.
+If the (scalar) loss comes out non-finite the update is skipped, leaving `model` and `opt_state`
+unchanged (`train!` turns this into a `DomainError`). The loss value, and with
+[`trainstep_withgradient!`](@ref Flux.trainstep_withgradient!) the gradient, are still returned.
+On a Reactant device the check runs inside the compiled step.
 
 ## Reactant
 
 When the `model` lives on a [Reactant](https://github.com/EnzymeAD/Reactant.jl) device, the whole step
 (forward pass, reverse pass and optimiser update) is compiled into a single XLA executable, cached and
 reused across calls with the same model, optimiser, loss, backend and batch shape. The returned
-value — the loss, or `(loss, aux...)` — is read back to the host. By default differentiation uses
-Enzyme; passing an explicit `adtype` such as `AutoZygote()` or `AutoMooncake()`
-makes Flux instead attempt to compile the step through that backend.
+value — the loss, or `(loss, aux...)` — is read back to the host. Differentiation uses Enzyme, the
+only backend supported there: any other `adtype`, such as `AutoZygote()` or `AutoMooncake()`, throws
+an `ArgumentError`.
 
 # Example
 ```julia
@@ -407,15 +412,18 @@ end
 # Resolve the AD backend and the Reactant flag in a single pass, computing `_on_reactant` exactly once
 # per top-level call. When `adtype === nothing` (the caller passed no backend) the default is Enzyme
 # for a `Duplicated` model or a Reactant-resident model, and Zygote otherwise; an explicit `adtype` is
-# returned unchanged and honoured downstream (on Reactant it is threaded into the compiled step). The
-# model's device is the canonical Reactant signal (it's what `train!` keys on too); the extension then
-# checks the batch is device-resident, so keying on the model here keeps the "host-resident data"
-# error meaningful.
+# returned unchanged. The compiled Reactant step differentiates with Enzyme only, so any other backend
+# is rejected here, before anything is traced. The model's device is the canonical Reactant signal
+# (it's what `train!` keys on too); the extension then checks the batch is device-resident, so keying
+# on the model here keeps the "host-resident data" error meaningful.
 function _resolve_backend(model, adtype::Union{Nothing, AbstractADType})
     on_reactant = _on_reactant(model)
     model isa Duplicated && on_reactant && throw(ArgumentError(
         "`Duplicated` models are not supported on Reactant devices; pass the plain model \
          that already lives on the Reactant device."))
+    on_reactant && !(adtype === nothing || adtype isa AutoEnzyme) && throw(ArgumentError(
+        "Training a model on a Reactant device supports only the Enzyme AD backend, got `$adtype`. \
+         Pass `AutoEnzyme()` or omit the `adtype` argument."))
     resolved = adtype === nothing ?
         ((on_reactant || model isa Duplicated) ? AutoEnzyme() : AutoZygote()) :
         adtype

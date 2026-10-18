@@ -167,7 +167,7 @@ data = [(X[:, i:i+15], Y[:, i:i+15]) |> dev for i in 1:16:128]
 Flux.train!(loss, model, data, opt_state)
 ```
 
-`train!` runs a single step per batch, shows a progress bar, and stops with a `DomainError` if the loss becomes non-finite. Because the compiled step is cached and keyed on the batch shape, multi-epoch training does not recompile, and a smaller final batch simply compiles one additional executable that is then reused.
+`train!` runs a single step per batch, shows a progress bar, and stops with a `DomainError` if the loss becomes non-finite. As in eager mode, the compiled step skips the update when the loss is non-finite, so the parameters and optimiser state keep their values from before that batch. Because the compiled step is cached and keyed on the batch shape, multi-epoch training does not recompile, and a smaller final batch simply compiles one additional executable that is then reused.
 
 ## Tips and gotchas
 
@@ -176,6 +176,6 @@ Flux.train!(loss, model, data, opt_state)
 - **Compilation is keyed on shape.** The first call for each distinct batch shape compiles; subsequent calls reuse the executable. Keeping batch sizes fixed (or accepting one extra compile for a smaller final batch) avoids repeated compilation.
 - **Watch the compile cache.** Flux caches one executable per distinct `(model, optimiser, loss, batch-shape)`. Values that are compiled into the step as constants are part of the cache key too, so switching a layer with `trainmode!`/`testmode!`, freezing parameters with `freeze!`/`thaw!`, passing the same array twice in a batch, or redefining the loss function compiles a new step instead of reusing a stale one. If you rebuild the model or optimiser every iteration, each iteration compiles a fresh step — Flux warns when the cache grows past a handful of entries. Entries are freed automatically when their model is garbage-collected.
 - **Reading results back.** `trainstep!`/`train!` return host-side numbers already. For a manually compiled function, move device arrays back with `cpu` (or `Reactant.to_number` for a scalar).
-- **AD backend.** On a Reactant device training differentiates with Enzyme by default. Passing an explicit `adtype` such as `AutoZygote()` or `AutoMooncake()` compilation is likely to fail. `Duplicated` models are not supported here — pass the plain model that already lives on the device.
+- **AD backend.** On a Reactant device training differentiates with Enzyme, the only supported backend: passing any other `adtype`, such as `AutoZygote()` or `AutoMooncake()`, throws an `ArgumentError`. `Duplicated` models are not supported here — pass the plain model that already lives on the device.
 
 See also the [`resnet_tinyimagenet` example](https://github.com/FluxML/Flux.jl/tree/master/examples/resnet_tinyimagenet) for a complete Reactant training script, including compiling a separate evaluation executable per batch shape.

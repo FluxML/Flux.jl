@@ -3,7 +3,7 @@ module FluxReactantExt
 using Flux: Flux, Train, cpu
 using Optimisers: Optimisers
 using Functors: Functors, fmapstructure, isleaf
-using ADTypes: AbstractADType, AutoEnzyme
+using ADTypes: AutoEnzyme
 import Reactant
 using Reactant: Enzyme
 
@@ -30,14 +30,13 @@ end
 _reactant_grad(dmodel) =
     fmapstructure(x -> Optimisers.isnumeric(x) ? x : nothing, dmodel; prune=nothing)
 
-# Compute the full loss value (loss + any aux) and the gradient of the scalar loss w.r.t. the model.
-# The AD backend is selected by `adtype`.
+# Compute the full loss value (loss + any aux) and the gradient of the scalar loss w.r.t. the model,
+# with Enzyme (other backends are rejected by `Train._resolve_backend` before tracing).
 #
-# Default / `AutoEnzyme`: Enzyme's reverse mode returns only the scalar primal, so Flux's eager
-# `withgradient` smuggles aux out through a mutable wrapper as a side effect — which does NOT survive
-# Reactant's tracing (the aux would be silently dropped). Instead we differentiate `_reactant_objective`
-# under Enzyme's Reactant ABI, which returns the aux as a real primal output of the one differentiated
-# forward.
+# Enzyme's reverse mode returns only the scalar primal, so Flux's eager `withgradient` smuggles aux
+# out through a mutable wrapper as a side effect — which does NOT survive Reactant's tracing (the aux
+# would be silently dropped). Instead we differentiate `_reactant_objective` under Enzyme's Reactant
+# ABI, which returns the aux as a real primal output of the one differentiated forward.
 function _reactant_valgrad(loss, ::AutoEnzyme, model, data::Tuple)
     dmodel = Enzyme.make_zero(model)
     ad = Enzyme.set_abi(Enzyme.ReverseWithPrimal, Reactant.ReactantABI)
@@ -47,25 +46,27 @@ function _reactant_valgrad(loss, ::AutoEnzyme, model, data::Tuple)
     return v, _reactant_grad(dmodel)
 end
 
-# Any other backend (Zygote, Mooncake, …): trace `Flux.withgradient` through the compiled step. Unlike
-# Enzyme's low-level `autodiff` above, `withgradient` for these backends already returns the full loss
-# value (`res.val`, including any aux) as a genuine output, so it survives tracing without the
-# `_reactant_objective`/`ignore_derivatives` machinery. Whether XLA can actually trace the backend is
-# up to Reactant's op coverage — this makes the attempt reachable per the honour-explicit-adtype rule.
-function _reactant_valgrad(loss, adtype::AbstractADType, model, data::Tuple)
-    res = Flux.withgradient(m -> loss(m, data...), adtype, model)
-    return res.val, res.grad[1]
+# Like the eager step, skip the update on a non-finite loss so `model` and `opt_state` stay intact.
+# A traced conditional keeps the update in place; selecting between old and new values instead makes
+# XLA copy the optimiser state every step. `track_numbers=false` keeps plain fields such as
+# `Leaf.frozen::Bool` untraced.
+function _reactant_update!(opt_state, model, v, g)
+    l = _reactant_loss_scalar(v)
+    Reactant.@trace track_numbers=false if isfinite(l)
+        Optimisers.update!(opt_state, model, g)
+    end
+    return nothing
 end
 
 function _reactant_step!(loss, adtype, model, data::Tuple, opt_state)
     v, g = _reactant_valgrad(loss, adtype, model, data)
-    Optimisers.update!(opt_state, model, g)
+    _reactant_update!(opt_state, model, v, g)
     return v
 end
 
 function _reactant_step_withgradient!(loss, adtype, model, data::Tuple, opt_state)
     v, g = _reactant_valgrad(loss, adtype, model, data)
-    Optimisers.update!(opt_state, model, g)
+    _reactant_update!(opt_state, model, v, g)
     return v, g
 end
 
@@ -152,8 +153,7 @@ _loss_world(loss) = maximum(m -> m.primary_world, methods(loss); init = zero(UIn
 
 # `withgradient` selects the loss-only executable or the one that also returns the gradient, and is
 # part of the key so the two variants for the same model are cached separately. `typeof(adtype)` is
-# in the key too: the compiled HLO is specialised to the differentiation path (Enzyme+ReactantABI vs
-# a traced Zygote/Mooncake pass), so mixing backends on the same model/shapes must not alias.
+# in the key too, as `adtype` is an argument of the executable.
 function _compiled_step(loss, adtype, model, dtuple, opt_state, withgradient::Bool)
     key = (withgradient, typeof(adtype), objectid(model), typeof(model), typeof(opt_state),
            objectid(loss), _loss_world(loss), map(typeof, dtuple), map(_shape_signature, dtuple),
