@@ -82,6 +82,9 @@ end
 # model — it hashes by parameter *contents*, which change every in-place update — nor weak-reference
 # the immutable model directly, hence the parameter array as the lifetime handle.
 const COMPILE_CACHE = Dict{Any, Tuple{WeakRef, Any}}()
+# Guards `COMPILE_CACHE` against concurrent `trainstep!` calls from several threads. Held while
+# compiling, so two tasks never compile the same step twice.
+const COMPILE_CACHE_LOCK = ReentrantLock()
 
 # Warn once the number of live cached executables passes this, on each further addition: a healthy
 # training loop reuses a handful of steps, so unbounded growth usually means a new model/optimiser
@@ -149,25 +152,28 @@ _loss_world(loss) = maximum(m -> m.primary_world, methods(loss); init = zero(UIn
 # in the key too: the compiled HLO is specialised to the differentiation path (Enzyme+ReactantABI vs
 # a traced Zygote/Mooncake pass), so mixing backends on the same model/shapes must not alias.
 function _compiled_step(loss, adtype, model, dtuple, opt_state, withgradient::Bool)
-    _prune_compile_cache!()
     key = (withgradient, typeof(adtype), objectid(model), typeof(model), typeof(opt_state),
            objectid(loss), _loss_world(loss), map(typeof, dtuple), map(_shape_signature, dtuple),
            _alias_signature(dtuple), _static_signature(model), _frozen_signature(opt_state))
-    entry = get(COMPILE_CACHE, key, nothing)
-    entry === nothing || return entry[2]
-    exe = withgradient ?
-        Reactant.@compile(_reactant_step_withgradient!(loss, adtype, model, dtuple, opt_state)) :
-        Reactant.@compile(_reactant_step!(loss, adtype, model, dtuple, opt_state))
-    handle = _evict_handle(model)
-    # A param-less model has nothing to weak-reference; fall back to the executable itself (which the
-    # entry keeps alive) so such an entry is simply never pruned.
-    COMPILE_CACHE[key] = (WeakRef(handle === nothing ? exe : handle), exe)
-    length(COMPILE_CACHE) > COMPILE_CACHE_WARN && @warn(
-        "Flux's Reactant training-step cache now holds $(length(COMPILE_CACHE)) compiled executables. \
-         Each distinct (model, optimiser, loss, batch-shape) combination compiles and caches its own \
-         step; steady growth usually means one of these changes every iteration (e.g. a freshly built \
-         model or optimiser). Entries are freed automatically once their model is garbage-collected.")
-    return exe
+    @lock COMPILE_CACHE_LOCK begin
+        _prune_compile_cache!()
+        entry = get(COMPILE_CACHE, key, nothing)
+        entry === nothing || return entry[2]
+        exe = withgradient ?
+            Reactant.@compile(_reactant_step_withgradient!(loss, adtype, model, dtuple, opt_state)) :
+            Reactant.@compile(_reactant_step!(loss, adtype, model, dtuple, opt_state))
+        handle = _evict_handle(model)
+        # A param-less model has nothing to weak-reference; fall back to the executable itself (which
+        # the entry keeps alive) so such an entry is simply never pruned.
+        COMPILE_CACHE[key] = (WeakRef(handle === nothing ? exe : handle), exe)
+        length(COMPILE_CACHE) > COMPILE_CACHE_WARN && @warn(
+            "Flux's Reactant training-step cache now holds $(length(COMPILE_CACHE)) compiled \
+             executables. Each distinct (model, optimiser, loss, batch-shape) combination compiles and \
+             caches its own step; steady growth usually means one of these changes every iteration \
+             (e.g. a freshly built model or optimiser). Entries are freed automatically once their \
+             model is garbage-collected.")
+        return exe
+    end
 end
 
 _require_device_batch(batch) =
