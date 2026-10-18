@@ -161,12 +161,7 @@ end
     xp = padfun(x, ntuple(_ -> 1, 2nd); dims=(nd == 1 ? 1 : ntuple(identity, nd)))
     @test l(x) ≈ l0(xp)
     @test size(l(x))[1:nd] == size(x)[1:nd]  # pad=1 keeps spatial size for kernel 3
-    if pad_mode == :replicate
-      # Enzyme crashes julia (illegal instruction) on `pad_repeat`, so it can't even be marked broken
-      test_gradients(l, x; compare=AutoZygote())
-    else
-      test_gradients(l, x)
-    end
+    test_gradients(l, x)
   end
 end end
 
