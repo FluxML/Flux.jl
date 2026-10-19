@@ -469,21 +469,23 @@
 end
 
 @testset "second derivatives" begin
+  # ForwardDiff.hessian as the reference: Zygote.hessian_reverse takes minutes to compile
   m1 = Chain(Dense(3 => 4,tanh; bias=false), Dense(4 => 2))
-  @test Zygote.hessian_dual(sum∘m1, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1, [1,2,3])
+  @test Zygote.hessian_dual(sum∘m1, [1,2,3]) ≈ ForwardDiff.hessian(sum∘m1, [1,2,3])
 
   m1v = Chain([m1[1], m1[2]])  # vector of layers
   @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_dual(sum∘m1, [1,2,3])
-  @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m1v, [1,2,3])
+  @test Zygote.hessian_dual(sum∘m1v, [1,2,3]) ≈ ForwardDiff.hessian(sum∘m1v, [1,2,3])
 
-  # NNlib's softmax gradient writes in-place
+  # NNlib's softmax gradient writes in-place. Not `sum∘m2`: a sum of softmax is constant.
   m2 = Chain(Dense(3 => 4, tanh), Dense(4 => 2), softmax)
-  @test_broken Zygote.hessian_dual(sum∘m2, [1,2,3]) ≈ Zygote.hessian_reverse(sum∘m2, [1,2,3])
+  f2 = x -> sum(abs2, m2(x))
+  @test Zygote.hessian_dual(f2, [1,2,3]) ≈ ForwardDiff.hessian(f2, [1,2,3])
 
   # https://github.com/FluxML/NNlib.jl/issues/362
   m3 = Chain(Conv((3,), 2 => 3, relu), Dense(2 => 2))
   x3 = cat(Float32[1 2; 3 4; 5 6; 7 8]; dims=3)
-  @test Zygote.hessian_dual(sum∘m3, x3) ≈ Zygote.hessian_reverse(sum∘m3, x3)
+  @test Zygote.hessian_dual(sum∘m3, x3) ≈ ForwardDiff.hessian(sum∘m3, x3)
 end
 
 @testset "gradients of Chain{Vector}" begin

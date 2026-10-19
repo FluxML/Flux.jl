@@ -54,6 +54,9 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
         env:
           PTR_NUM_JOBS: ${{ matrix.ptr_jobs }}
+          # runtests.jl precompiles once it has added Reactant, which changes some versions;
+          # Pkg.test's own precompile beforehand would be wasted
+          JULIA_PKG_PRECOMPILE_AUTO: 0
         with:
           # print when each test starts, so a stalled test can be identified
           test_args: '--verbose'
