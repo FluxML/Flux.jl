@@ -30,9 +30,8 @@ function test_reactant_gradients(cases)
     end
 end
 
-reactant_on_cuda() = Reactant.XLA.platform_name(Reactant.XLA.default_backend()) == "cuda"
-
-# Train the same MLP with `rule` eagerly and with `trainstep!` on the Reactant device. Returns the
+# Train the same MLP with `rule` eagerly and with `trainstep!` on the Reactant device, compiled at full
+# precision: sign-based rules like `Rprop` amplify TF32 rounding into a different trajectory. Returns the
 # largest relative difference over the per-step losses and the final parameters.
 function reactant_trajectory_error(rule; steps = 8)
     dev = MLDataDevices.reactant_device(force = true)
@@ -44,15 +43,14 @@ function reactant_trajectory_error(rule; steps = 8)
     x, y = (X, Y) |> dev
     opt_eager, opt_re = Flux.setup(rule, eager), Flux.setup(rule, re)
     err = 0.0
-    for _ in 1:steps
-        l_eager = Flux.trainstep!(loss, eager, (X, Y), opt_eager)
-        l_re = Flux.trainstep!(loss, re, (x, y), opt_re)
-        err = max(err, abs(l_re - l_eager) / l_eager)
+    reactant_full_precision() do
+        for _ in 1:steps
+            l_eager = Flux.trainstep!(loss, eager, (X, Y), opt_eager)
+            l_re = Flux.trainstep!(loss, re, (x, y), opt_re)
+            err = max(err, abs(l_re - l_eager) / l_eager)
+        end
     end
     flat(m) = reduce(vcat, vec.(Flux.trainables(m)))
     p_eager, p_re = flat(eager), flat(re |> cpu_device())
     return max(err, norm(p_re - p_eager) / norm(p_eager))
 end
-
-# `trainstep!` compiles at XLA's default precision, which is TF32-like for Float32 on CUDA.
-reactant_trajectory_rtol() = reactant_on_cuda() ? 1e-3 : 1e-5

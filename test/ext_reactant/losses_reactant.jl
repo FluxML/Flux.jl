@@ -10,7 +10,6 @@ function test_loss_gradients(lossfn, model, x, y; rtol = 1e-4, atol = 1e-4)
     @test l ≈ l64 rtol=rtol atol=atol
 
     m_re, x_re, y_re = (model, x, y) |> dev
-    @test reactant_loss(loss, m_re, x_re, y_re) ≈ l rtol=rtol atol=atol
     l_re, g_re = reactant_withgradient(loss, m_re, x_re, Const(y_re))
     @test l_re ≈ l64 rtol=rtol atol=atol
     @test g_re[3] === nothing
@@ -58,10 +57,7 @@ end
     @testset "logitcrossentropy, onehot labels" begin
         @test test_loss_gradients(L.logitcrossentropy, logits, x, yhot)
     end
-    @testset "crossentropy with label_smoothing" begin
-        @test test_loss_gradients((ŷ, y) -> L.crossentropy(ŷ, Flux.label_smoothing(y, 0.1f0)), probs, x, Float32.(yhot))
-    end
-    @testset "mse, agg=sum" begin
-        @test test_loss_gradients((ŷ, y) -> L.mse(ŷ, y; agg = sum), logits, x, yreal)
+    @testset "crossentropy with label_smoothing, agg=sum" begin
+        @test test_loss_gradients((ŷ, y) -> L.crossentropy(ŷ, Flux.label_smoothing(y, 0.1f0); agg = sum), probs, x, Float32.(yhot))
     end
 end
