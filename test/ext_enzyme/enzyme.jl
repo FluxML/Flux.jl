@@ -2,7 +2,10 @@
 
 @testset "enzyme gradients" begin
     BROKEN_TESTS = []
+    # test_gradients already compares these against Enzyme in their own layer tests
+    CHECKED_ELSEWHERE = ("Attention", "RNN", "LSTM", "GRU")
     for (model, x, name) in TEST_MODELS
+        name in CHECKED_ELSEWHERE && continue
         @testset "Enzyme grad check $name" begin
             @test test_gradients(model, x; reference=AutoZygote(), compare=AutoEnzyme()) broken=(name ∈ BROKEN_TESTS)
         end

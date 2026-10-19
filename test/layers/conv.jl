@@ -152,7 +152,8 @@ end
 
   @testset "$ltype $(nd)D" for ltype in (Conv, CrossCor, DepthwiseConv), nd in (1, 2, 3)
     kernel = ntuple(_ -> 3, nd)
-    x = randn(Float32, ntuple(_ -> 8, nd)..., 2, 3)
+    # small input: test_gradients' finite-difference reference scales with its length
+    x = randn(Float32, ntuple(_ -> 5, nd)..., 2, 1)
     l = ltype(kernel, 2=>2; pad=1, pad_mode)
     # a non-zero pad_mode == prepadding the input then convolving with pad=0
     l0 = l isa CrossCor ?

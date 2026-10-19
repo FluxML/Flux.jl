@@ -1,6 +1,4 @@
 using Pkg
-using Flux
-using ParallelTestRunner
 
 include(joinpath(@__DIR__, "test_utils_distributed.jl"))
 
@@ -41,6 +39,11 @@ withenv("JULIA_PKG_PRECOMPILE_AUTO" => "0") do
   FLUX_TEST_REACTANT  && Pkg.add("Reactant")  # must come after CUDA
 end
 Pkg.precompile()
+
+# Load only now: adding Reactant changes versions of some of Flux's dependencies, and loading
+# Flux earlier would compile it a second time, against the versions that get replaced.
+using Flux
+using ParallelTestRunner
 
 # --- Auto-discover all .jl files (except runtests.jl) ---
 testsuite = find_tests(@__DIR__)
