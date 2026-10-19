@@ -34,11 +34,6 @@ $ julia --project=. resnet_tinyimagenet.jl --epochs 5     # override the epoch c
 $ julia --project=. resnet_tinyimagenet.jl --help         # list all options
 ```
 
-> **Note:** the environment currently does not resolve. Flux needs NNlib ≥ 0.9.48, whose cuDNN
-> extension needs cuDNN/CUDA.jl ≥ 6.3, while Reactant still requires GPUCompiler 1.x, which caps
-> CUDA.jl at 6.2. The upstream fix is
-> [EnzymeAD/Reactant.jl#3384](https://github.com/EnzymeAD/Reactant.jl/pull/3384) (GPUCompiler 2 support).
-
 Command-line options (parsed with [ArgParse.jl](https://github.com/carlobaldassi/ArgParse.jl) —
 run with `--help` for the full list): `--epochs`, `--batchsize`, `--lr`, `--weight-decay`,
 `--num-workers`, `--seed`, and `--clip-norm`. The learning rate is cosine-annealed
