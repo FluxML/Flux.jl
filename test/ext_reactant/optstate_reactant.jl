@@ -8,7 +8,7 @@ Reactant.with_config(; dot_general_precision = Reactant.PrecisionConfig.HIGHEST)
         model0 = Chain(Dense(4 => 8, tanh), Dense(8 => 2))
         batches = [(randn(Float32, 4, 16), randn(Float32, 2, 16)) for _ in 1:10]
 
-        # Not `ClipNorm`, which Optimisers 0.4.10 can't `adjust!` on Reactant.
+        # Not `ClipNorm`, which Optimisers 0.4.10 can't `adjust!` on Reactant (FluxML/Optimisers.jl#242).
         @testset "$rule" for rule in (Adam(0.01f0), AdamW(0.01f0, (0.9, 0.999), 0.01f0), Momentum(0.01f0),
                                       RAdam(0.01f0), OptimiserChain(ClipGrad(0.1f0), Adam(0.01f0)))
             eager = deepcopy(model0)
