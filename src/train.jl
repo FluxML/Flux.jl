@@ -181,7 +181,7 @@ opt_state = Flux.setup(Adam(), model)   # explicit setup of optimiser momenta
 ...calling `Flux.train!(loss3, model, data, opt_state)` runs a loop much like this:
 ```
 for d in data
-    l, ∂L∂m = Flux.trainstep!(loss3, model, d, opt_state)
+    l = Flux.trainstep!(loss3, model, d, opt_state)
 end
 ```
 where each iteration is a single call to [`trainstep!`](@ref Flux.trainstep!).
@@ -288,7 +288,7 @@ function loss(m, x, y)
     ŷ = m(x)
     Flux.mse(ŷ, y), (; acc = mean(onecold(ŷ) .== onecold(y)))
 end
-l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l == (loss, stats); stats.acc
+l, stats = Flux.trainstep!(loss, model, (x, y), opt_state)   # l is the loss, stats.acc the accuracy
 ```
 
 ## Non-finite loss
