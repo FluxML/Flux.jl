@@ -313,6 +313,7 @@ end
   @test eltype(gm2(gx)) == BFloat16
   @test Float32.(gm2(gx)) ≈ f32(gm2)(f32(gx))  rtol=0.1
 
+  if CUDA.capability(CUDA.device()) >= v"8.0"  # cuDNN has no BFloat16 kernels before sm_80
   # BatchNorm, InstanceNorm and GroupNorm are converted in mixed precision: statistics
   # and affine parameters stay Float32 while the data flows in bf16, so they dispatch to
   # NNlib's (cuDNN) half-precision kernels.
@@ -339,6 +340,7 @@ end
   xp = gpu(bf16(randn(Float32, 6, 4, 1)))
   for pool in [MaxPool((2,)), MeanPool((2,))]
     @test eltype(pool(xp)) == BFloat16
+  end
   end
 end
 
