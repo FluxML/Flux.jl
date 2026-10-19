@@ -1,0 +1,25 @@
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+HuggingFaceDatasets = "d94b9a45-fdf5-4270-b024-5cbb9ef7117d"
+HuggingFaceTokenizers = "a6888d44-1185-43bb-bd0f-7806f9976d18"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+Mmap = "a63ad114-7e13-5084-954f-fe012c677804"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[sources]
+Flux = {path = "../.."}
+
+[compat]
+ArgParse = "1"
+Flux = "0.16.13"
+HuggingFaceDatasets = "0.4.2"
+HuggingFaceTokenizers = "0.1"
+JLD2 = "0.6"
+PythonCall = "0.9"
+Reactant = "0.2.295"
+julia = "1.12"
