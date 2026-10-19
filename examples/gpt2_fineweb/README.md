@@ -69,19 +69,18 @@ each), `--precision` (see below), `--resume`, `--seed`, `--data-dir`, `--log-dir
 
 Measured on an **RTX 5090 (32 GB)**, Julia 1.13, Flux 0.16, Reactant 0.2.295.
 
-**`tinystories`** — with `Float32` parameters and bfloat16 matrix multiplications, 29 minutes of training (0.24 s per step, ~290k tokens/s, ~57 TFLOPS) after
-~3 minutes of compilation. The validation loss goes 3.27 → 2.01 → 1.67 → **1.49** at steps
-250, 1000, 3000 and 7232, and the samples are fluent:
+**`tinystories`** — 22 minutes of training (0.18 s per step, ~365k tokens/s) after ~3 minutes of
+compilation. The validation loss goes 3.21 → 2.01 → 1.67 → **1.488** at steps 250, 1000, 3000 and
+7232 (1.486 with `Float32` parameters, which took 29 minutes), and the samples are fluent:
 
-> Hello, I'm a language model, but I can read many languages. Do you want to learn my language?"
-> the person says. Tom and Lily look at the violin. They think it…
+> Hello, I'm a language model, Ben. You can talk or sing or laugh. That is nice. Can you teach
+> me?" Anna said, "Yes, I can. I can…
 
-**`fineweb`** — at `--batchsize 16`, with `Float32` parameters and bfloat16 matrix multiplications
-(measured before `--precision bf16`, which makes the forward and backward pass 1.9× faster:
-127k vs 68k tokens/s at batch size 8): 64k tokens/s, 8.2 s per step of 2^19 tokens, i.e. ~43 hours
-for the full run. The first step compiles for ~10 minutes. With the same (materialized) attention,
-PyTorch is within 5% of this; with flash attention it is 2.4× faster — see [`pytorch/`](pytorch/).
-In this configuration attention takes 26% of the forward and backward pass.
+**`fineweb`** — 111k tokens/s (~95 TFLOPS) at the default `--batchsize 16`, i.e. 4.7 s per step of
+2^19 tokens and ~25 hours for the full run, after ~12 minutes of compilation; with `Float32`
+parameters (and bfloat16 matrix multiplications) it is 1.7× slower. PyTorch's port runs at 158k
+tokens/s with flash attention, and at 67k with the same materialized attention as Flux — see
+[`pytorch/`](pytorch/).
 
 The HellaSwag evaluation reproduces build-nanogpt's numbers for OpenAI's GPT-2 (124M) weights
 loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.2955).
@@ -100,8 +99,9 @@ loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.29
   for traced arrays yet ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)).
   This bounds the micro-batch size and costs speed; the example uses `Attention(...; is_causal=true)`,
   so it will benefit from a fused implementation without changes.
-- **Compilation.** The first training step compiles and autotunes the XLA program, which takes a
-  few minutes; the validation loss and HellaSwag scoring are compiled once each too.
+- **Compilation.** The first training step compiles and autotunes the XLA program: ~3 minutes for
+  `tinystories` and ~12 for `fineweb` on the RTX 5090. The validation loss and HellaSwag scoring are
+  compiled once each too.
 - **Memory.** XLA preallocates a fraction of the GPU memory; the script raises it from 0.75 to 0.9
   (`XLA_REACTANT_GPU_MEM_FRACTION`).
 - **Gradient clipping** uses `ClipNorm(1.0)`, which clips each parameter array separately rather than
