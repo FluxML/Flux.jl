@@ -20,9 +20,6 @@ using Flux, Reactant
 
 Reactant automatically selects a GPU backend if one is available, falling back to the CPU otherwise. See the [Reactant GPU configuration docs](https://enzymead.github.io/Reactant.jl/dev/api/config#GPU-Configuration) for how to control this.
 
-!!! note "Reactant and CUDA.jl in the same environment"
-    Reactant does not need CUDA.jl to run on an NVIDIA GPU, and for now the two are best kept in separate environments. Reactant currently requires GPUCompiler 1.x and LLVM.jl 9.x, so an environment with CUDA.jl, cuDNN and Reactant is held back to CUDA.jl and cuDNN 6.2 and NNlib ≤ 0.9.45, and therefore cannot install Flux releases that need NNlib ≥ 0.9.48. This will be fixed by [EnzymeAD/Reactant.jl#3384](https://github.com/EnzymeAD/Reactant.jl/pull/3384).
-
 ## Moving data and models to the device
 
 Just like `gpu`/`cpu`, Flux provides a device object that moves a model (or any nested structure of arrays) onto the Reactant device, converting its arrays into Reactant's `ConcreteRArray`s:
