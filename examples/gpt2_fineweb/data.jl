@@ -16,13 +16,13 @@ const DATASETS = Dict(
 gpt2_tokenizer() = from_pretrained(Tokenizer, "openai-community/gpt2")
 
 # The "text" column of `split`, streamed in batches of `batch_size` documents. Streaming reads the
-# parquet files as it goes, so nothing is converted to Arrow on disk. The batches stay Python lists
-# of strings (`with_format(nothing)`): HuggingFaceDatasets' default format would turn each into a
-# fixed-width numpy string array, as wide as its longest document (several GB per batch here).
+# parquet files as it goes, so nothing is converted to Arrow on disk. The batches are iterated in
+# Python without formatting, so they stay Python lists of strings that go to the Rust tokenizer
+# without a round trip through Julia.
 function text_batches(spec, split; batch_size)
     args = spec.name === nothing ? (spec.path,) : (spec.path, spec.name)
-    ds = load_dataset(args...; split, streaming=true)
-    return ds.py.with_format(nothing).select_columns(pylist(["text"])).iter(; batch_size)
+    ds = with_format(load_dataset(args...; split, streaming=true), nothing)
+    return ds.py.select_columns("text").iter(; batch_size)
 end
 
 # The ids of a batch of documents, each prefixed with <|endoftext|>, as one numpy array.

@@ -17,7 +17,7 @@ Flux = {path = "../.."}
 [compat]
 ArgParse = "1"
 Flux = "0.16.13"
-HuggingFaceDatasets = "0.4.2"
+HuggingFaceDatasets = "0.4.3"
 HuggingFaceTokenizers = "0.1"
 JLD2 = "0.6"
 PythonCall = "0.9"

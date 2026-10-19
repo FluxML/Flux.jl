@@ -14,7 +14,8 @@ using Flux, HuggingFaceDatasets, Reactant, Statistics
 # the inputs and next-token targets, and `mask` selects the target positions inside the ending.
 function hellaswag_data(tok; split="validation", group=16, pad_multiple=32)
     ds = load_dataset("Rowan/hellaswag"; split)
-    ctxs, endings, labels = ds["ctx"], ds["endings"], parse.(Int, ds["label"]) .+ 1
+    ctxs, endings = collect(ds["ctx"]), collect(ds["endings"])
+    labels = parse.(Int, collect(ds["label"])) .+ 1
     rows = Vector{Int}[]
     masks = Vector{Bool}[]
     for (ctx, ends) in zip(ctxs, endings)
