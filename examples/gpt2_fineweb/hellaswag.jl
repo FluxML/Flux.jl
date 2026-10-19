@@ -4,6 +4,7 @@
 
 if abspath(PROGRAM_FILE) == @__FILE__
     get!(ENV, "TF_CPP_MIN_LOG_LEVEL", "1")
+    using PythonCall   # before Flux, see train.jl
     include("model.jl")
     include("data.jl")
 end
@@ -19,9 +20,9 @@ function hellaswag_data(tok; split="validation", group=16, pad_multiple=32)
     rows = Vector{Int}[]
     masks = Vector{Bool}[]
     for (ctx, ends) in zip(ctxs, endings)
-        c = encode(tok, ctx).ids
+        c = tokenize(tok, ctx)
         for e in ends
-            ids = encode(tok, " " * e).ids
+            ids = tokenize(tok, " " * e)
             push!(rows, vcat(c, ids))
             push!(masks, vcat(falses(length(c)), trues(length(ids))))
         end
@@ -29,10 +30,10 @@ function hellaswag_data(tok; split="validation", group=16, pad_multiple=32)
     n = length(labels)
     nex = cld(n, group) * group      # pad the example count to whole groups
     Tmax = cld(maximum(length, rows), pad_multiple) * pad_multiple
-    tokens = fill(EOT + 1, Tmax, 4nex)
+    tokens = fill(EOT, Tmax, 4nex)
     mask = zeros(Float32, Tmax, 4nex)
     for (j, (r, m)) in enumerate(zip(rows, masks))
-        tokens[1:length(r), j] .= r .+ 1
+        tokens[1:length(r), j] .= r
         mask[1:length(m), j] .= m
     end
     return (; x=tokens[1:end-1, :], y=tokens[2:end, :], mask=mask[2:end, :], labels, n, group)

@@ -3,7 +3,10 @@
 
 using HuggingFaceDatasets, HuggingFaceTokenizers, PythonCall, Mmap, Printf
 
-const EOT = 50256   # <|endoftext|>, 0-based; prepended to every document
+# Token ids are 1-based in Julia, but 0-based in the tokenizer and in the .bin files, which are
+# shared with the PyTorch port. The conversions are all in this file: `tokenize`, `detokenize`,
+# `tokenize_batch` and `getbatch`.
+const EOT = 50257   # <|endoftext|>, prepended to every document
 
 const DATASETS = Dict(
     # FineWeb-Edu has only a train split: its first `val_tokens` tokens become the validation set.
@@ -15,24 +18,26 @@ const DATASETS = Dict(
 
 gpt2_tokenizer() = from_pretrained(Tokenizer, "openai-community/gpt2")
 
-# The "text" column of `split`, streamed in batches of `batch_size` documents. Streaming reads the
-# parquet files as it goes, so nothing is converted to Arrow on disk. The batches are iterated in
-# Python without formatting, so they stay Python lists of strings that go to the Rust tokenizer
-# without a round trip through Julia.
+tokenize(tok, text::AbstractString) = encode(tok, text).ids .+ 1
+detokenize(tok, ids::AbstractVector{<:Integer}) = decode(tok, ids .- 1)
+
+# The "text" column of `split`, streamed in batches of `batch_size` documents, each a
+# `Vector{String}`. Streaming reads the parquet files as it goes, so nothing is converted to Arrow
+# on disk. Converting each batch to Julia lets the GC free it, Python memory included.
 function text_batches(spec, split; batch_size)
     args = spec.name === nothing ? (spec.path,) : (spec.path, spec.name)
-    ds = with_format(load_dataset(args...; split, streaming=true), nothing)
-    return ds.py.select_columns("text").iter(; batch_size)
+    ds = load_dataset(args...; split, streaming=true).select_columns("text")
+    return (py2jl(batch)["text"] for batch in ds.py.iter(; batch_size))
 end
 
-# The ids of a batch of documents, each prefixed with <|endoftext|>, as one numpy array.
+# The 0-based ids of a batch of documents, each prefixed with <|endoftext|>, as one numpy array.
 # `encode_batch_fast` runs in parallel in Rust, and scales well only with large batches. The ids
 # are collected in Python, so that no Julia wrapper keeps a per-document `Encoding` alive.
 const ENCODE_BATCH = pyeval("""lambda tok, texts, eot, np: np.concatenate(
     [np.asarray([eot] + e.ids, dtype=np.uint16) for e in tok.encode_batch_fast(texts)])""", @__MODULE__)
 
-function tokenize_batch(tok, texts::Py)
-    arr = ENCODE_BATCH(tok.py_tokenizer, texts, EOT, pyimport("numpy"))
+function tokenize_batch(tok, texts)
+    arr = ENCODE_BATCH(tok.py_tokenizer, texts, EOT - 1, pyimport("numpy"))
     ids = pyconvert(Vector{UInt16}, arr)
     PythonCall.pydel!(arr)
     return ids
@@ -63,17 +68,13 @@ function write_split(tok, batches, dir; val_tokens, max_docs=typemax(Int))
     ios = Dict(name => open(path * ".tmp", "w") for (name, path) in files)
     ntok = Dict("val" => 0, "train" => 0)
     ndocs, t0, last_log = 0, time(), 0
-    for batch in batches
+    for texts in batches
         ndocs >= max_docs && break
-        texts = batch["text"]
         ids = tokenize_batch(tok, texts)
         name = ntok["val"] < val_tokens ? "val" : "train"
         write(ios[name], ids)
         ntok[name] += length(ids)
         ndocs += length(texts)
-        # Python's memory is released only when these wrappers are, and Julia's GC can't see it.
-        PythonCall.pydel!(texts)
-        PythonCall.pydel!(batch)
         total = ntok["val"] + ntok["train"]
         if total - last_log >= 100_000_000
             last_log = total
@@ -90,7 +91,7 @@ function write_split(tok, batches, dir; val_tokens, max_docs=typemax(Int))
 end
 
 # Batches of `B` sequences of `T` tokens read sequentially from a token file, with the targets
-# shifted by one. Ids are returned 1-based for Julia indexing.
+# shifted by one.
 struct TokenLoader
     tokens::Vector{UInt16}
     B::Int

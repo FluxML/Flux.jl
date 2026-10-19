@@ -6,6 +6,10 @@
 get!(ENV, "XLA_REACTANT_GPU_MEM_FRACTION", "0.9")
 get!(ENV, "TF_CPP_MIN_LOG_LEVEL", "1")
 
+# Before Flux: CondaPkg resolves the Python environment when PythonCall loads, capping libstdc++ at
+# Julia's, which Julia 1.13 fails to detect once CompilerSupportLibraries_jll is loaded
+# (JuliaLang/julia#63967). Without the cap, the environment differs from data.jl's and re-resolves.
+using PythonCall
 using Printf, Random, Statistics
 using ArgParse
 using Flux
@@ -13,8 +17,6 @@ using Flux: Functors
 using JLD2
 
 include("model.jl")
-# Loads PythonCall, whose Python environment is resolved from the libstdc++ loaded at that point:
-# before Reactant, as when data.jl runs alone, so that the two scripts share one environment.
 include("data.jl")
 
 using Reactant
@@ -85,7 +87,7 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
     train_loader = TokenLoader(joinpath(data_dir, p.dataset, "train.bin"), B, T)
     val_loader = TokenLoader(joinpath(data_dir, p.dataset, "val.bin"), B, T)
     tok = gpt2_tokenizer()
-    prompt = encode(tok, "Hello, I'm a language model,").ids
+    prompt = tokenize(tok, "Hello, I'm a language model,")
     hellaswag = p.hellaswag_every > 0 ? hellaswag_data(tok) : nothing
 
     model = GPT(cfg)
@@ -146,7 +148,7 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
                 vl = mean(Float32(val_loss(model, x, y)) for (x, y) in val_batches)
                 logmsg(@sprintf("[eval] step=%d val_loss=%.4f", step, vl))
                 for (i, s) in enumerate(generate(Flux.f32(cpu(model)), prompt))
-                    logmsg("[sample $i] " * repr(decode(tok, s)))
+                    logmsg("[sample $i] " * repr(detokenize(tok, s)))
                 end
             end
             if eval_hellaswag !== nothing && (step % p.hellaswag_every == 0 || last)
@@ -165,7 +167,7 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
 end
 
 function parse_cli(args)
-    s = ArgParseSettings(description="Pretrain GPT-2 with Flux and Reactant.")
+    s = ArgParseSettings(description="Pretrain GPT-2 with Flux and Reactant.", autofix_names=true)
     @add_arg_table! s begin
         "--preset"
             help = "fineweb (GPT-2 124M on FineWeb-Edu 10B) or tinystories (small model, ~30 min)"
@@ -207,14 +209,10 @@ function parse_cli(args)
             help = "peak matmul TFLOPS of the GPU, to report the model FLOPs utilization"
             arg_type = Float64
     end
-    return parse_args(args, s)
+    return parse_args(args, s; as_symbols=true)
 end
 
 function (@main)(args)
-    o = parse_cli(args)
-    main(; preset=o["preset"], data_dir=o["data-dir"], log_dir=o["log-dir"], precision=o["precision"],
-         resume=o["resume"], seed=o["seed"], peak_tflops=o["peak-tflops"],
-         batchsize=o["batchsize"], steps=o["steps"], lr=o["lr"], eval_every=o["eval-every"],
-         hellaswag_every=o["hellaswag-every"], ckpt_every=o["ckpt-every"])
+    main(; parse_cli(args)...)
     return nothing
 end

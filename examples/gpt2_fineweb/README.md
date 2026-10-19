@@ -110,5 +110,6 @@ loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.29
 - **Gradient clipping** uses `ClipNorm(1.0)`, which clips each parameter array separately rather than
   the global norm as build-nanogpt does. The PyTorch port clips per parameter too.
 - **Python.** HuggingFaceDatasets.jl and HuggingFaceTokenizers.jl run the Python `datasets` and
-  `tokenizers` packages, installed automatically by CondaPkg in `.CondaPkg/`. The text stays in
-  Python (`with_format(nothing)`) and only the token ids are converted to Julia.
+  `tokenizers` packages, installed automatically by CondaPkg in `.CondaPkg/`. The scripts load
+  PythonCall before Flux, as on Julia 1.13 the Python environment otherwise resolves differently
+  ([JuliaLang/julia#63967](https://github.com/JuliaLang/julia/issues/63967)).

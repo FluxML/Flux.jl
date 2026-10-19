@@ -68,20 +68,20 @@ function lm_loss(model, x, y)
     return mean(logsumexp(logits; dims=1)) - mean(target_logits)
 end
 
-# Sample `n` continuations of `prompt` (0-based ids) with top-k sampling. Runs eagerly, so pass a
-# CPU copy of the model. There is no KV cache: each new token re-runs the whole context, which is
-# cheap for the short samples logged during training.
+# Sample `n` continuations of `prompt` with top-k sampling. Runs eagerly, so pass a CPU copy of
+# the model. There is no KV cache: each new token re-runs the whole context, which is cheap for the
+# short samples logged during training.
 function generate(model, prompt::AbstractVector{<:Integer}; n=4, len=32, topk=50,
                   rng=Random.default_rng())
     block_size = size(model.wpe.weight, 2)
-    x = repeat(prompt .+ 1, 1, n)
+    x = repeat(prompt, 1, n)
     for _ in 1:len
         ctx = x[max(1, end - block_size + 1):end, :]
         logits = reshape(model(ctx), :, size(ctx)...)[1:NTOKENS, end, :]
         next = [sample_topk(rng, logits[:, j], topk) for j in 1:n]
         x = vcat(x, permutedims(next))
     end
-    return [x[:, j] .- 1 for j in 1:n]
+    return [x[:, j] for j in 1:n]
 end
 
 function sample_topk(rng, logits, k)
