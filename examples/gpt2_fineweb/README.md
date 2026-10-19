@@ -99,9 +99,12 @@ loaded into this model: acc = 0.2861, acc_norm = 0.2956 (reference: 0.2859, 0.29
   for traced arrays yet ([Reactant.jl#3510](https://github.com/EnzymeAD/Reactant.jl/issues/3510)).
   This bounds the micro-batch size and costs speed; the example uses `Attention(...; is_causal=true)`,
   so it will benefit from a fused implementation without changes.
-- **Compilation.** The first training step compiles and autotunes the XLA program: ~3 minutes for
-  `tinystories` and ~12 for `fineweb` on the RTX 5090. The validation loss and HellaSwag scoring are
-  compiled once each too.
+- **Compilation.** The first training step takes ~3 minutes for `tinystories` and ~12 for `fineweb`
+  on the RTX 5090, but MLIR and XLA account for only about a minute of it. The rest is Julia
+  compiling Reactant's tracing code and the function that calls the compiled step, whose compile
+  time grows quadratically with the number of parameter and optimizer-state arrays
+  ([Reactant.jl#3511](https://github.com/EnzymeAD/Reactant.jl/issues/3511)). The validation loss
+  and HellaSwag scoring are compiled once each too.
 - **Memory.** XLA preallocates a fraction of the GPU memory; the script raises it from 0.75 to 0.9
   (`XLA_REACTANT_GPU_MEM_FRACTION`).
 - **Gradient clipping** uses `ClipNorm(1.0)`, which clips each parameter array separately rather than
