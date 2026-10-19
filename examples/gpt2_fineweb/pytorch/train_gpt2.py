@@ -1,8 +1,9 @@
 """PyTorch port of the Flux GPT-2 example in the parent directory (../train.jl).
 
 Adapted from Andrej Karpathy's build-nanogpt (https://github.com/karpathy/build-nanogpt, MIT
-license). It reads the token files written by ../data.jl and uses the same presets,
-hyperparameters, and logging as the Flux script, so the two can be compared on the same data.
+license). It tokenizes the data as ../data.jl does, into the same cached dataset (whichever script
+runs first writes it), and uses the same presets, hyperparameters, and logging as the Flux
+script, so the two can be compared on the same data.
 Differences from build-nanogpt, to match Flux: gradients are clipped per parameter (Flux's
 `ClipNorm`), not by their global norm, and `--attn math` selects materialized attention (what
 Flux runs under Reactant) instead of flash attention.
@@ -18,6 +19,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from datasets import Dataset, load_dataset
+from tokenizers import Tokenizer
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 GPT2_SMALL = dict(vocab_size=50304, block_size=1024, n_layer=12, n_head=12, n_embd=768)
@@ -106,19 +109,35 @@ def learning_rate(step, p):
     return p["lr"] / 10 + (p["lr"] - p["lr"] / 10) * (1 + math.cos(math.pi * progress)) / 2
 
 
-class TokenLoader:
-    def __init__(self, path, B, T):
-        self.tokens = np.memmap(path, dtype=np.uint16, mode="r")
-        self.B, self.T = B, T
+DATASETS = {
+    "fineweb": dict(path=("HuggingFaceFW/fineweb-edu", "sample-10BT"),
+                    train=("train", lambda s: s.skip(100_000)), val=("train", lambda s: s.take(100_000))),
+    "tinystories": dict(path=("roneneldan/TinyStories",),
+                        train=("train", lambda s: s), val=("validation", lambda s: s)),
+}
 
-    def getbatch(self, pos):
-        n = self.B * self.T
-        if pos + n + 1 > len(self.tokens):
-            pos = 0
-        buf = torch.from_numpy(self.tokens[pos:pos + n + 1].astype(np.int64))
-        x = buf[:-1].view(self.B, self.T)
-        y = buf[1:].view(self.B, self.T)
-        return (x, y), pos + n
+
+def token_blocks(dataset, split, block_size, data_dir, tok):
+    """Rows of block_size + 1 token ids, cached in data_dir as by token_blocks in ../data.jl."""
+    hfsplit, select = DATASETS[dataset][split]
+    stream = select(load_dataset(*DATASETS[dataset]["path"], split=hfsplit, streaming=True).select_columns("text"))
+    n = block_size + 1
+
+    def pack(b):
+        ids = np.concatenate([np.asarray([EOT] + e.ids, dtype=np.uint16) for e in tok.encode_batch_fast(b["text"])])
+        return {"ids": ids[:len(ids) // n * n].reshape(-1, n)}
+
+    blocks = stream.map(pack, batched=True, batch_size=10_000, remove_columns=["text"])
+    ds = Dataset.from_generator(lambda: iter(blocks), fingerprint=f"{dataset}-{split}-gpt2-{n}",
+                                cache_dir=os.path.join(data_dir, dataset))
+    return ds.with_format("torch")
+
+
+def getbatch(ds, i, B):
+    if i + B > len(ds):
+        i = 0
+    ids = ds[i:i + B]["ids"]
+    return (ids[:, :-1], ids[:, 1:]), i + B
 
 
 @torch.no_grad()
@@ -133,7 +152,6 @@ def generate(model, prompt, n=4, length=32, topk=50, device="cuda"):
 
 
 def hellaswag_data(tok):
-    from datasets import load_dataset
     ds = load_dataset("Rowan/hellaswag", split="validation")
     examples = []
     for ex in ds:
@@ -203,11 +221,9 @@ def main():
     if args.precision != "bf16" and args.attn == "flash":
         attn_backend = SDPBackend.EFFICIENT_ATTENTION  # flash attention needs half precision
 
-    data = os.path.join(args.data_dir, p["dataset"])
-    train_loader = TokenLoader(os.path.join(data, "train.bin"), B, T)
-    val_loader = TokenLoader(os.path.join(data, "val.bin"), B, T)
-    from tokenizers import Tokenizer
     tok = Tokenizer.from_pretrained("openai-community/gpt2")
+    train_data = token_blocks(p["dataset"], "train", T, args.data_dir, tok)
+    val_data = token_blocks(p["dataset"], "val", T, args.data_dir, tok)
     prompt = tok.encode("Hello, I'm a language model,").ids
     hellaswag = hellaswag_data(tok) if p["hellaswag_every"] > 0 else None
 
@@ -231,7 +247,7 @@ def main():
     logmsg(f"[setup] preset={args.preset} params={nparams / 1e6:.1f}M batch={B}×{T} accum={accum} "
            f"tokens/step={p['total_batch']} precision={args.precision} attn={args.attn} steps={p['steps']}")
 
-    val_batches = [val_loader.getbatch(i * B * T)[0] for i in range(p["val_steps"])]
+    val_batches = [getbatch(val_data, i * B, B)[0] for i in range(p["val_steps"])]
     pos = 0
     with sdpa_kernel(attn_backend):
         for step in range(1, p["steps"] + 1):
@@ -242,7 +258,7 @@ def main():
             opt.zero_grad(set_to_none=True)
             loss_acc = 0.0
             for _ in range(accum):
-                (x, y), pos = train_loader.getbatch(pos)
+                (x, y), pos = getbatch(train_data, pos, B)
                 x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
                 with autocast:
                     loss = lm_loss(fwd, x, y) / accum

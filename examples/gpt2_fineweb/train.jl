@@ -1,5 +1,5 @@
 # Pretrain GPT-2 with Flux, compiling the training step with Reactant (XLA).
-# Run `julia --project=. data.jl <dataset>` first to tokenize the data.
+# The first run for a dataset streams and tokenizes it into `data_dir` (see data.jl).
 
 # Read when Reactant initializes. XLA reserves 75% of the GPU memory by default; the INFO logs it
 # would print include a register-spill note for every matmul kernel it autotunes.
@@ -8,7 +8,7 @@ get!(ENV, "TF_CPP_MIN_LOG_LEVEL", "1")
 
 # Before Flux: CondaPkg resolves the Python environment when PythonCall loads, capping libstdc++ at
 # Julia's, which Julia 1.13 fails to detect once CompilerSupportLibraries_jll is loaded
-# (JuliaLang/julia#63967). Without the cap, the environment differs from data.jl's and re-resolves.
+# (JuliaLang/julia#63967). Without the cap, the environment re-resolves whenever the load order changes.
 using PythonCall
 using Printf, Random, Statistics
 using ArgParse
@@ -84,8 +84,8 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
 
     dev = reactant_device()
     Random.seed!(seed)
-    train_loader = TokenLoader(joinpath(data_dir, p.dataset, "train.bin"), B, T)
-    val_loader = TokenLoader(joinpath(data_dir, p.dataset, "val.bin"), B, T)
+    train_data = token_blocks(p.dataset, :train; block_size=T, data_dir)
+    val_data = token_blocks(p.dataset, :val; block_size=T, data_dir)
     tok = gpt2_tokenizer()
     prompt = tokenize(tok, "Hello, I'm a language model,")
     hellaswag = p.hellaswag_every > 0 ? hellaswag_data(tok) : nothing
@@ -96,7 +96,7 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
     if precision == "bf16"
         rule = MixedPrecision(Float32, rule)
     end
-    step0, pos = 0, 0
+    step0, pos = 0, 1
     if resume !== nothing
         ckpt = JLD2.load(resume)
         Flux.loadmodel!(model, ckpt["model_state"])
@@ -121,7 +121,7 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
                  precision, p.steps))
 
     Reactant.with_config(; precision_config(precision)...) do
-        val_batches = [dev(getbatch(val_loader, (i - 1) * B * T)[1]) for i in 1:p.val_steps]
+        val_batches = [dev(getbatch(val_data, (i - 1) * B + 1, B)[1]) for i in 1:p.val_steps]
         val_loss = Reactant.@compile lm_loss(model, val_batches[1]...)
         eval_hellaswag = hellaswag === nothing ? nothing : hellaswag_evaluator(model, hellaswag; device=dev)
 
@@ -131,7 +131,7 @@ function main(; preset="tinystories", data_dir=joinpath(@__DIR__, "data"),
             Flux.adjust!(opt_state, lr)
             loss = 0.0
             for _ in 1:accum
-                batch, pos = getbatch(train_loader, pos)
+                batch, pos = getbatch(train_data, pos, B)
                 loss += Flux.trainstep!(lm_loss, model, dev(batch), opt_state)
             end
             loss /= accum
@@ -173,7 +173,7 @@ function parse_cli(args)
             help = "fineweb (GPT-2 124M on FineWeb-Edu 10B) or tinystories (small model, ~30 min)"
             default = "tinystories"
         "--data-dir"
-            help = "directory holding <dataset>/{train,val}.bin, written by data.jl"
+            help = "directory for the tokenized datasets, written on the first run"
             default = joinpath(@__DIR__, "data")
         "--log-dir"
             help = "directory for log.txt and checkpoints"

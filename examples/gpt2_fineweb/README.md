@@ -11,7 +11,7 @@ needed; the data comes from the HuggingFace Hub through
 
 | file | what |
 | --- | --- |
-| [`data.jl`](data.jl) | streams a dataset from the Hub and tokenizes it into flat `UInt16` token files; the batch loader |
+| [`data.jl`](data.jl) | streams a dataset from the Hub and tokenizes it into a cached dataset of token blocks; the batch loader |
 | [`model.jl`](model.jl) | the GPT-2 model, the loss, and sampling |
 | [`train.jl`](train.jl) | the training script: presets, gradient accumulation, evaluation, checkpoints |
 | [`hellaswag.jl`](hellaswag.jl) | [HellaSwag](https://rowanzellers.com/hellaswag) accuracy, during training or for a saved checkpoint |
@@ -21,9 +21,10 @@ needed; the data comes from the HuggingFace Hub through
 ## What it does
 
 - **Data** — the documents are streamed from the Hub and tokenized with GPT-2's BPE (the
-  `openai-community/gpt2` tokenizer), each prefixed with `<|endoftext|>`. The token ids are written
-  to `data/<dataset>/{train,val}.bin` (2 bytes per token) and memory-mapped during training, which
-  reads them sequentially in windows of `block_size + 1` tokens.
+  `openai-community/gpt2` tokenizer), each prefixed with `<|endoftext|>`, and the token ids are
+  packed into rows of `block_size + 1` tokens. On the first run, `Dataset.from_generator` writes
+  the rows to `data/<dataset>/` (2 bytes per token), which later runs load; `datasets` memory-maps
+  them, and training reads them sequentially.
 - **Model** — GPT-2: token and learned position embeddings, a stack of pre-LayerNorm transformer
   blocks (causal `Attention` with 12 heads, GELU MLP), a final LayerNorm, and an output layer
   tied to the token embedding. The vocabulary is padded from 50257 to 50304 tokens. Weights are
@@ -49,14 +50,14 @@ Two presets:
 $ cd examples/gpt2_fineweb
 $ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
-$ julia --project=. data.jl tinystories             # ~1 min, 0.95 GB
 $ julia --project=. train.jl --preset tinystories   # ~30 min on an RTX 5090
-
-$ julia --project=. data.jl fineweb                 # ~25 min, 28.5 GB download, 20 GB of tokens
 $ julia --project=. train.jl --preset fineweb
 $ julia --project=. train.jl --preset fineweb --resume log/checkpoint_05000.jld2
 $ julia --project=. hellaswag.jl log/checkpoint_19073.jld2
 ```
+
+The first run with a preset streams and tokenizes its dataset into `data/<dataset>/`: ~1 min and
+0.95 GB for TinyStories, ~30 min (28.5 GB streamed) and 20 GB for FineWeb-Edu.
 
 Options (`--help` lists them all): `--batchsize` is the number of sequences per micro-batch (the
 preset's tokens per step are reached by accumulating gradients, so it only trades speed for

@@ -2,9 +2,10 @@
 
 A PyTorch version of the Flux example in the parent directory ([`../train.jl`](../train.jl)),
 adapted from Karpathy's [build-nanogpt](https://github.com/karpathy/build-nanogpt) (MIT license)
-to match it: it reads the token files written by [`../data.jl`](../data.jl), and has the same
-presets, model, initialization, optimizer, schedule, evaluation and log format, so the two can be
-compared on the same GPU and the same tokens.
+to match it: it tokenizes the data as [`../data.jl`](../data.jl) does, into the same cached
+dataset in `../data/` (whichever script runs first writes it, the other loads it), and has the
+same presets, model, initialization, optimizer, schedule, evaluation and log format, so the two
+can be compared on the same GPU and the same tokens.
 
 Two choices follow Flux rather than build-nanogpt: gradients are clipped per parameter (Flux's
 `ClipNorm`) instead of by their global norm, and `--attn math` selects materialized attention —
@@ -13,9 +14,7 @@ what Flux runs under Reactant — instead of flash attention, for a like-for-lik
 ## Running
 
 ```console
-$ cd examples/gpt2_fineweb
-$ julia --project=. data.jl tinystories      # the token files are shared with the Flux script
-$ cd pytorch
+$ cd examples/gpt2_fineweb/pytorch
 $ uv sync                                     # torch (CUDA 13.0 wheels), tokenizers, datasets
 $ uv run python train_gpt2.py --preset tinystories
 $ uv run python train_gpt2.py --preset fineweb --attn math --steps 200 --eval-every 0 --hellaswag-every 0
