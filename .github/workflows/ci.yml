@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}${{ matrix.group == 'reactant' && ' - Reactant' || '' }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }}${{ matrix.group == 'reactant' && ' - Reactant' || '' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 180
     strategy:
@@ -33,29 +33,24 @@ jobs:
           # - 'pre'  # latest stable prerelease
           - 'nightly' # latest nightly release
         os: [ubuntu-latest]
-        arch: [x64]
         group: [core]
         include:
           - os: windows-latest
             version: '1'
-            arch: x64
           - os: macOS-latest
             version: '1'
-            arch: aarch64
             # The 7 GB runner can't fit two test workers: it swaps, GC thrashes, and the job stalls for hours.
             ptr_jobs: 1
           # The Reactant tests get their own job, the only one that installs Reactant: it is slow
           # to test, and it holds back versions of some dependencies.
           - os: ubuntu-latest
             version: '1'
-            arch: x64
             group: reactant
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
