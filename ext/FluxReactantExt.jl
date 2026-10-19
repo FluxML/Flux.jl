@@ -185,7 +185,8 @@ end
 
 # `setup` on a Reactant model wraps each rule in Optimisers' `ReactantOptimiser`, which keeps the
 # hyperparameters and scalar state (e.g. Adam's βt) on the device. A state set up on the host instead
-# fails to compile, or bakes its hyperparameters into the executable so that `adjust!` is ignored.
+# fails to compile, or bakes its scalars into the executable, so that `adjust!` is ignored and
+# RAdam's step counter never advances.
 # Checked only when compiling, as the rule type is part of the cache key.
 function _check_opt_state(opt_state)
     ext = Base.get_extension(Optimisers, :OptimisersReactantMLDataDevicesExt)

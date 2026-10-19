@@ -6,8 +6,9 @@
     model0 = Chain(Dense(4 => 8, tanh), Dense(8 => 2))
     batches = [(randn(Float32, 4, 16), randn(Float32, 2, 16)) for _ in 1:10]
 
+    # Not `ClipNorm`, which Optimisers 0.4.10 can't `adjust!` on Reactant.
     @testset "$rule" for rule in (Adam(0.01f0), AdamW(0.01f0, (0.9, 0.999), 0.01f0), Momentum(0.01f0),
-                                  OptimiserChain(ClipNorm(1f0), Adam(0.01f0)))
+                                  RAdam(0.01f0), OptimiserChain(ClipGrad(0.1f0), Adam(0.01f0)))
         eager = deepcopy(model0)
         opt_eager = Flux.setup(rule, eager)
         for b in batches[1:5]
@@ -37,10 +38,9 @@
             Flux.trainstep!(loss, eager, b, opt_eager)
             Flux.trainstep!(loss, model, b |> dev, opt)
         end
-        same = all(isapprox(p, q; rtol=1e-3) for (p, q) in zip(Flux.trainables(model |> cpu), Flux.trainables(eager)))
-        # Optimisers' `adjust!` doesn't reach the rules inside a chain set up for Reactant
-        # (https://github.com/FluxML/Optimisers.jl/issues/240).
-        rule isa OptimiserChain ? (@test_broken same) : (@test same)
+        for (p, q) in zip(Flux.trainables(model |> cpu), Flux.trainables(eager))
+            @test p ≈ q rtol=1e-3
+        end
     end
 end
 
@@ -49,34 +49,38 @@ end
     loss(m, x, y) = Flux.mse(m(x), y)
     model0 = Chain(Dense(4 => 8, tanh), Dense(8 => 2))
     batches = [(randn(Float32, 4, 16), randn(Float32, 2, 16)) for _ in 1:10]
-    eager = deepcopy(model0)
-    opt_eager = Flux.setup(Adam(0.01f0), eager)
-    for b in batches
-        Flux.trainstep!(loss, eager, b, opt_eager)
-    end
 
-    model = model0 |> dev
-    opt = Flux.setup(Adam(0.01f0), model)
-    for b in batches[1:5]
-        Flux.trainstep!(loss, model, b |> dev, opt)
-    end
-    # A checkpoint saved from the device, then resumed on the device and on the host.
-    model_state, opt_state = cpu(Flux.state(model)), cpu(Flux.state(opt))
+    # RAdam's step counter is an `Int` on the host, a tracked `Float32` on the device.
+    @testset "$rule" for rule in (Adam(0.01f0), RAdam(0.01f0))
+        eager = deepcopy(model0)
+        opt_eager = Flux.setup(rule, eager)
+        for b in batches
+            Flux.trainstep!(loss, eager, b, opt_eager)
+        end
 
-    model2 = Flux.loadmodel!(deepcopy(model0), model_state) |> dev
-    opt2 = Flux.setup(Adam(0.01f0), model2)
-    Flux.loadmodel!(opt2, opt_state)
-    model3 = Flux.loadmodel!(deepcopy(model0), model_state)
-    opt3 = Flux.setup(Adam(0.01f0), model3)
-    Flux.loadmodel!(opt3, opt)
-    @test opt3.layers[1].weight.state[3] isa Tuple{Float32, Float32}
-    for b in batches[6:10]
-        Flux.trainstep!(loss, model2, b |> dev, opt2)
-        Flux.trainstep!(loss, model3, b, opt3)
-    end
-    for (p, q, r) in zip(Flux.trainables(model2 |> cpu), Flux.trainables(model3), Flux.trainables(eager))
-        @test p ≈ r rtol=1e-3
-        @test q ≈ r rtol=1e-3
+        model = model0 |> dev
+        opt = Flux.setup(rule, model)
+        for b in batches[1:5]
+            Flux.trainstep!(loss, model, b |> dev, opt)
+        end
+        # A checkpoint saved from the device, then resumed on the device and on the host.
+        model_state, opt_state = cpu(Flux.state(model)), cpu(Flux.state(opt))
+
+        model2 = Flux.loadmodel!(deepcopy(model0), model_state) |> dev
+        opt2 = Flux.setup(rule, model2)
+        Flux.loadmodel!(opt2, opt_state)
+        model3 = Flux.loadmodel!(deepcopy(model0), model_state)
+        opt3 = Flux.setup(rule, model3)
+        Flux.loadmodel!(opt3, opt)
+        @test typeof(opt3) == typeof(opt_eager)
+        for b in batches[6:10]
+            Flux.trainstep!(loss, model2, b |> dev, opt2)
+            Flux.trainstep!(loss, model3, b, opt3)
+        end
+        for (p, q, r) in zip(Flux.trainables(model2 |> cpu), Flux.trainables(model3), Flux.trainables(eager))
+            @test p ≈ r rtol=1e-3
+            @test q ≈ r rtol=1e-3
+        end
     end
 end
 
