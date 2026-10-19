@@ -113,7 +113,7 @@ Tests mirror the source structure. [test/test_module.jl](test/test_module.jl) pr
 **Repo:** https://github.com/FluxML/Flux.jl (under the `FluxML` org)
 
 **CI systems:**
-- **GitHub Actions** (`.github/workflows/ci.yml`): CPU tests on Julia 1.10 (minimum), latest stable, and nightly; platforms: Ubuntu x64, Windows x64, macOS aarch64.
+- **GitHub Actions** (`.github/workflows/ci.yml`): CPU tests on Julia 1.10 (minimum), latest stable, and nightly; platforms: Ubuntu x64, Windows x64, macOS aarch64. These run with `FLUX_TEST_REACTANT=false`; the Reactant tests (`ext_reactant`) run in a separate job on Ubuntu x64, Julia latest stable, the only job that installs Reactant.
 - **Buildkite** (`.buildkite/pipeline.yml`): GPU tests on JuliaGPU infrastructure — CUDA (Julia 1), Reactant on CUDA (Julia 1, a separate job running only `ext_reactant`), Metal (macOS aarch64), AMDGPU (ROCm). These run with `FLUX_TEST_CPU=false` and the relevant GPU flag set to `true`.
 
 **PR checklist** (from open PRs convention): tests added, entry in `NEWS.md`, documentation updated if applicable.
