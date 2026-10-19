@@ -12,6 +12,8 @@
         (Parallel(vcat, Dense(3 => 4), Dense(2 => 4, tanh)), (r(3, 5), r(2, 5)), "Parallel(vcat), 2 inputs", (;)),
         (PairwiseFusion(+, Dense(3 => 3), Dense(3 => 3)), (r(3, 4), r(3, 4)), "PairwiseFusion",
          (; loss = (m, xs...) -> mean(sum(m(xs...))))),
+        # A 2-D onehot input: reshaping a traced N-d one fails
+        # (https://github.com/EnzymeAD/Reactant.jl/issues/3504).
         (Parallel(vcat, Chain(Embedding(10 => 4), Flux.flatten), Embedding(10 => 4)),
          (rand(1:10, 3, 5), onehotbatch(rand(1:10, 5), 1:10)), "Embedding, Int matrix and onehot inputs", (;)),
         # Only in test mode: the train-mode masks are random, see dropout_reactant.jl.
