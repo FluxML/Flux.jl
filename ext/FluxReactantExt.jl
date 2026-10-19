@@ -39,7 +39,10 @@ _reactant_grad(dmodel) =
 # under Enzyme's Reactant ABI, which returns the aux as a real primal output of the one differentiated
 # forward.
 function _reactant_valgrad(loss, ::AutoEnzyme, model, data::Tuple)
-    dmodel = Enzyme.make_zero(model)
+    # `Val(true)`: copy inactive (integer) arrays into the shadow rather than sharing them. Reactant's
+    # `autodiff` writes a (zero) gradient into the shadow of each such array, which would otherwise
+    # reset a Dropout RNG seed after every step and freeze the mask.
+    dmodel = Enzyme.make_zero(model, Val(true))
     ad = Enzyme.set_abi(Enzyme.ReverseWithPrimal, Reactant.ReactantABI)
     _, (_, v) = Enzyme.autodiff(ad, Enzyme.Const(_reactant_objective),
                                 Enzyme.Duplicated, Enzyme.Const(loss),
