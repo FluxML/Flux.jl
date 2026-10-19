@@ -165,6 +165,7 @@ function _compiled_step(loss, adtype, model, dtuple, opt_state, withgradient::Bo
         _prune_compile_cache!()
         entry = get(COMPILE_CACHE, key, nothing)
         entry === nothing || return entry[2]
+        _check_opt_state(opt_state)
         exe = withgradient ?
             Reactant.@compile(_reactant_step_withgradient!(loss, adtype, model, dtuple, opt_state)) :
             Reactant.@compile(_reactant_step!(loss, adtype, model, dtuple, opt_state))
@@ -181,6 +182,30 @@ function _compiled_step(loss, adtype, model, dtuple, opt_state, withgradient::Bo
         return exe
     end
 end
+
+# `setup` on a Reactant model wraps each rule in Optimisers' `ReactantOptimiser`, which keeps the
+# hyperparameters and scalar state (e.g. Adam's βt) on the device. A state set up on the host instead
+# fails to compile, or bakes its scalars into the executable, so that `adjust!` is ignored and
+# RAdam's step counter never advances.
+# Checked only when compiling, as the rule type is part of the cache key.
+function _check_opt_state(opt_state)
+    ext = Base.get_extension(Optimisers, :OptimisersReactantMLDataDevicesExt)
+    (ext === nothing || !isdefined(ext, :ReactantOptimiser)) && return nothing
+    for ℓ in Functors.fleaves(opt_state; exclude = x -> x isa Optimisers.Leaf)
+        ℓ isa Optimisers.Leaf && !(ℓ.rule isa ext.ReactantOptimiser) && throw(ArgumentError(
+            "The optimiser state was not set up for this Reactant model (found rule $(ℓ.rule)). \
+             Call `opt_state = Flux.setup(rule, model)` after moving the model to the device; to \
+             resume from a saved optimiser state, then load it with \
+             `Flux.loadmodel!(opt_state, saved_opt_state)`."))
+    end
+    return nothing
+end
+
+# `loadmodel!` into an optimiser state rebuilds its scalars (e.g. Adam's βt): keep them on `dst`'s
+# client and device, as the default `oftype` would put them on Reactant's default device.
+Flux._loadscalar(dst::Reactant.ConcretePJRTNumber{T}, src::Number) where {T} =
+    Reactant.ConcretePJRTNumber{T}(src; client = Reactant.XLA.client(dst),
+                                   device = Reactant.XLA.device(dst), sharding = dst.sharding)
 
 _require_device_batch(batch) =
     Flux.get_device_type(batch) <: Flux.ReactantDevice || throw(ArgumentError(

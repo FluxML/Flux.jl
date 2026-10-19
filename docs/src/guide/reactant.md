@@ -169,9 +169,24 @@ Flux.train!(loss, model, data, opt_state)
 
 `train!` runs a single step per batch, shows a progress bar, and stops with a `DomainError` if the loss becomes non-finite. As in eager mode, the compiled step skips the update when the loss is non-finite, so the parameters and optimiser state keep their values from before that batch. Because the compiled step is cached and keyed on the batch shape, multi-epoch training does not recompile, and a smaller final batch simply compiles one additional executable that is then reused.
 
+### Resuming training from a checkpoint
+
+An optimiser state saved on the host (see [Checkpointing](@ref)) can't be moved to the device with `|> dev`. Instead, set up a new state for the model on the device, then load the saved one into it with [`loadmodel!`](@ref Flux.loadmodel!):
+
+```julia
+using JLD2
+ckpt = JLD2.load("checkpoint.jld2")   # saved with jldsave("checkpoint.jld2"; model_state, opt_state)
+
+model = Flux.loadmodel!(MyModel(), ckpt["model_state"]) |> dev
+opt_state = Flux.setup(Adam(1f-2), model)
+Flux.loadmodel!(opt_state, ckpt["opt_state"])
+```
+
+`loadmodel!` copies the optimiser's running state, such as `Adam`'s moments and bias-correction terms, but keeps the rule from `setup`, whose hyperparameters live on the device so that [`adjust!`](@ref Flux.adjust!) keeps working. To save a checkpoint from the device, move the states to the host first: `jldsave("checkpoint.jld2"; model_state = cpu(Flux.state(model)), opt_state = cpu(Flux.state(opt_state)))`.
+
 ## Tips and gotchas
 
-- **`setup` after moving to the device.** Always `model |> reactant_device()` *before* `Flux.setup`, so the optimiser state is created from Reactant arrays (this keeps stateful rules like `Adam`'s bias-correction term on the device).
+- **`setup` after moving to the device.** Always `model |> reactant_device()` *before* `Flux.setup`, so the optimiser state is created from Reactant arrays (this keeps stateful rules like `Adam`'s bias-correction term on the device). `trainstep!` and `train!` reject a state set up on the host; to resume from a saved one, see [Resuming training from a checkpoint](@ref).
 - **Device-resident data.** Every input to a compiled step must already live on the device. Move batches with `|> reactant_device()`; a common pattern is to wrap a `DataLoader` with the device so batches are moved lazily.
 - **Scalars in the batch.** A plain number in the batch, such as `λ` in `(x, y, λ)`, is compiled into the step as a constant, so each distinct value compiles a new step. Pass a varying scalar as a 0-dimensional array instead, `(x, y, fill(λ)) |> dev`, and read it with `λ[]` in the loss.
 - **Compilation is keyed on shape.** The first call for each distinct batch shape compiles; subsequent calls reuse the executable. Keeping batch sizes fixed (or accepting one extra compile for a smaller final batch) avoids repeated compilation.
