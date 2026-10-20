@@ -216,6 +216,9 @@ Flux.Losses._check_label_values(::Reactant.AnyTracedRArray, C) = nothing
 # Reactant's `NNlib.gather` rejects the lazy `vec` of a traced array; indexing traces to the same
 # `stablehlo.gather`.
 Flux.Losses._gather(x::Reactant.AnyTracedRArray, idx::AbstractArray) = x[idx]
+# A traced array has eltype `TracedRNumber{T}`. Enzyme converts the gradient of the upcast back to `T`.
+Flux.Losses._upcast(x::Reactant.AnyTracedRArray{<:Flux.Losses.LowPrecision}) = Float32.(x)
+Flux.Losses._upcasttype(::Type{Reactant.TracedRNumber{T}}) where {T <: Flux.Losses.LowPrecision} = Float32
 
 _require_device_batch(batch) =
     Flux.get_device_type(batch) <: Flux.ReactantDevice || throw(ArgumentError(

@@ -69,4 +69,18 @@ end
     @testset "crossentropy with label_smoothing, agg=sum" begin
         @test test_loss_gradients((ŷ, y) -> L.crossentropy(ŷ, Flux.label_smoothing(y, 0.1f0); agg = sum), probs, x, Float32.(yhot))
     end
+    @testset "BFloat16 is computed in Float32: $name" for (name, lossfn, y) in (
+            ("logitcrossentropy, labels", L.logitcrossentropy, rand(1:3, 6)),
+            ("logitcrossentropy, onehot", L.logitcrossentropy, yhot),
+            ("mse", L.mse, bf16(yreal)),
+            ("crossentropy", (ŷ, y) -> L.crossentropy(softmax(ŷ), y), bf16(yprob)))
+        loss(m, x, y) = lossfn(m(x), y)
+        model, xb = bf16(logits), bf16(x)
+        l = loss(model, xb, y)
+        m_re, x_re, y_re = (model, xb, y) |> MLDataDevices.reactant_device(force = true)
+        l_re, g_re = reactant_withgradient(loss, m_re, x_re, Const(y_re))
+        @test l_re isa Reactant.ConcreteRNumber{Float32}
+        @test l_re ≈ l rtol=1e-2
+        @test eltype(g_re[1].weight) == BFloat16
+    end
 end

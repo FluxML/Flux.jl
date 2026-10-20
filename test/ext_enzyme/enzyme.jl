@@ -23,6 +23,20 @@ end
     end
 end
 
+@testset "loss gradients, Float16 and BFloat16" begin
+    # Before Julia 1.11, `BFloat16` isn't `Core.BFloat16`, and Enzyme can't differentiate its arithmetic.
+    lowprecs = isdefined(Core, :BFloat16) ? ((Float16, f16), (BFloat16, bf16)) : ((Float16, f16),)
+    @testset "Enzyme grad check $loss, $T" for loss in ALL_LOSSES, (T, lowprec) in lowprecs
+        ŷ = lowprec(0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4))
+        y = lowprec(0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4))
+
+        gz = only(Flux.gradient(ŷ -> loss(ŷ, y), AutoZygote(), ŷ))
+        ge = first(Flux.gradient(loss, AutoEnzyme(), ŷ, Const(y)))
+        @test eltype(ge) == T
+        @test ge ≈ gz
+    end
+end
+
 @testset "loss gradients, class labels" begin
     C = 4
     cases = [(randn(Float32, C, 5), rand(1:C, 5), 1),

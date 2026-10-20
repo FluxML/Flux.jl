@@ -29,7 +29,7 @@ end
             # and β₂ = 0.999 rounds to 1 in BFloat16.
             opt = Flux.setup(Descent(0.1f0), model)
             l0 = Flux.trainstep!(loss, model, (x, y), opt)
-            @test l0 isa T
+            @test l0 isa Float32  # losses upcast low-precision inputs
             @test l0 ≈ l32 rtol=2e-2
             l = l0
             for _ in 1:20

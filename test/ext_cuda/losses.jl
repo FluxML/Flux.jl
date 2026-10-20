@@ -32,12 +32,15 @@ y = [1  0  0  0  1
 
   test_gradients(loss, x, y, test_gpu=true, test_cpu=false, reference=AutoZygote(), compare=nothing)
 
-  # Float16 tests
-  @test loss(f16(x), f16(y)) ≈ loss(gpu(f16(x)), gpu(f16(y)))
-  @test loss(f16(x), f16(y)) ≈ Float16(loss(x, y))  rtol=0.1  # no GPU in fact
-
-  g16 = gradient(loss, f16(x), f16(y))[1]
-  @test g16 ≈ cpu(gradient(loss, f16(gpu(x)), f16(gpu(y)))[1])
+  @testset "$lowprec" for lowprec in (f16, bf16)
+    x16, y16 = lowprec(x), lowprec(y)
+    l = loss(gpu(x16), gpu(y16))
+    @test l isa Float32
+    @test l ≈ loss(x16, y16)
+    g = gradient(loss, gpu(x16), gpu(y16))[1]
+    @test g isa CuArray{eltype(x16)}
+    @test cpu(g) ≈ gradient(loss, x16, y16)[1]
+  end
 end
 
 @testset "GPU: $loss with class labels" for loss in (crossentropy, logitcrossentropy)
