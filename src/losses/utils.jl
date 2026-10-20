@@ -27,6 +27,28 @@ end
 ChainRulesCore.@scalar_rule xlogy(x, y) (log(y), x/y)  # should help Diffractor's broadcasting
 ChainRulesCore.@scalar_rule xlogx(x) (log(y) + true)
 
+const LowPrecision = Union{Float16, BFloat16}
+
+# Losses compute in Float32 for Float16/BFloat16 inputs, as low-precision sums stall or overflow.
+# The pullback converts the gradient back, so that the model's backward pass stays in low precision.
+_upcast(x) = x
+_upcast(x::LowPrecision) = Float32(x)
+_upcast(x::AbstractArray{<:LowPrecision}) = Float32.(x)
+
+function ChainRulesCore.rrule(::typeof(_upcast), x::Union{LowPrecision, AbstractArray{<:LowPrecision}})
+  T = eltype(x)
+  _upcast_back(Δ) = (NoTangent(), _downcast(T, unthunk(Δ)))
+  return _upcast(x), _upcast_back
+end
+
+_downcast(::Type{T}, Δ::Union{Real, AbstractArray{<:Real}}) where {T} = T.(Δ)
+_downcast(::Type{BFloat16}, Δ::Union{Real, AbstractArray{<:Real}}) = _to_bf16(Δ)
+_downcast(::Type, Δ) = Δ
+
+# The eltype that `_upcast` converts to, for the defaults of keywords such as `eps`.
+_upcasttype(::Type{T}) where {T} = T
+_upcasttype(::Type{<:LowPrecision}) = Float32
+
 function _check_sizes(ŷ::AbstractArray, y::AbstractArray)
   for d in 1:max(ndims(ŷ), ndims(y)) 
    size(ŷ,d) == size(y,d) || throw(DimensionMismatch(

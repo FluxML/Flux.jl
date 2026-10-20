@@ -238,6 +238,40 @@ end
   end
 end
 
+@testset "Float16 and BFloat16 inputs are computed in Float32" begin
+  ŷ32 = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+  y32 = 0.1f0 .+ 0.8f0 .* rand(Float32, 3, 4)
+  @testset "$T, $f" for (T, lowprec) in ((Float16, f16), (BFloat16, bf16)), f in ALL_LOSSES
+    ŷ, y = lowprec(ŷ32), lowprec(y32)
+    l, (dŷ, dy) = withgradient(f, ŷ, y)
+    l32, (dŷ32, dy32) = withgradient(f, Float32.(ŷ), Float32.(y))
+    @test l isa Float32
+    @test l ≈ l32
+    @test eltype(dŷ) == eltype(dy) == T
+    @test dŷ ≈ lowprec(dŷ32)
+    @test dy ≈ lowprec(dy32)
+  end
+
+  @testset "sums don't stall" begin
+    x = randn(Float32, 100, 4096)
+    labels = rand(1:100, 4096)
+    for lowprec in (f16, bf16)
+      x16 = lowprec(x)
+      @test logitcrossentropy(x16, labels) ≈ logitcrossentropy(Float32.(x16), labels)
+      @test logitcrossentropy(x16, onehotbatch(labels, 1:100)) ≈ logitcrossentropy(Float32.(x16), labels)
+      @test crossentropy(softmax(x16), labels) ≈ crossentropy(Float32.(softmax(x16)), labels)
+    end
+    @test mse(fill(Float16(300), 10), zeros(Float16, 10)) == 90000
+  end
+
+  @testset "$T model keeps $T gradients" for (T, lowprec) in ((Float16, f16), (BFloat16, bf16))
+    m = lowprec(Dense(3 => 4))
+    x = lowprec(rand(Float32, 3, 5))
+    g = gradient(m -> logitcrossentropy(m(x), rand(1:4, 5)), m)[1]
+    @test eltype(g.weight) == eltype(g.bias) == T
+  end
+end
+
 @testset "binary_focal_loss" begin
     y = [0  1  0
          1  0  1]
