@@ -189,6 +189,13 @@ as would be the case with the output of a [softmax](@ref Softmax) operation.
 For numerical stability, it is recommended to use [`logitcrossentropy`](@ref)
 rather than `softmax` followed by `crossentropy` .
 
+`y` can also hold integer class labels in `1:size(ŷ, dims)`, with the size of `ŷ` without
+dimension `dims`, e.g. a vector of length `size(ŷ, 2)` for a matrix `ŷ` and `dims = 1`.
+The loss is then `agg(-log.(ŷ[y] .+ ϵ))`, where `ŷ[y]` are the entries of `ŷ` picked along `dims`
+by the labels, which `agg = identity` returns with the size of `y`.
+This gives the same loss as the one-hot encoding of `y`, without building it.
+Labels out of range throw an error, except on Reactant, where they are not checked.
+
 Use [`label_smoothing`](@ref) to smooth the true labels as preprocessing before
 computing the loss.
 
@@ -226,9 +233,13 @@ julia> y_smooth = Flux.label_smoothing(y_label, 0.15f0)
 
 julia> Flux.crossentropy(y_model, y_smooth)
 1.5776052f0
+
+julia> Flux.crossentropy(y_model, [1, 2, 3, 2, 1])  # integer class labels
+1.6076053f0
 ```
 """
 function crossentropy(ŷ, y; dims = 1, agg = mean, eps::Real = epseltype(ŷ))
+  _islabels(ŷ, y, dims) && return agg(.-log.(_gather_labels(ŷ, y, dims) .+ eps))
   _check_sizes(ŷ, y)
   agg(.-sum(xlogy.(y, ŷ .+ eps); dims = dims))
 end
@@ -243,6 +254,13 @@ Return the cross entropy calculated by
 This is mathematically equivalent to `crossentropy(softmax(ŷ), y)`,
 but is more numerically stable than using functions [`crossentropy`](@ref)
 and [softmax](@ref Softmax) separately.
+
+As for [`crossentropy`](@ref), `y` can also hold integer class labels in `1:size(ŷ, dims)`,
+with the size of `ŷ` without dimension `dims`. The loss is then
+`agg(logsumexp(ŷ; dims) .- ŷ[y])`, with `ŷ[y]` the entries of `ŷ` picked along `dims` by the labels,
+and has the size of `y` for `agg = identity`.
+This avoids building a one-hot array of the size of `ŷ`, which matters for many classes,
+e.g. for language models. A `y::OneHotArray` uses its labels in the same way.
 
 See also: [`binarycrossentropy`](@ref), [`logitbinarycrossentropy`](@ref), [`label_smoothing`](@ref).
 
@@ -265,9 +283,16 @@ julia> Flux.logitcrossentropy(y_model, y_label)
 
 julia> Flux.crossentropy(softmax(y_model), y_label)
 1.5791197f0
+
+julia> Flux.logitcrossentropy(y_model, [1, 2, 3, 1, 2, 1, 1])  # integer class labels
+1.5791205f0
 ```
 """
 function logitcrossentropy(ŷ, y; dims = 1, agg = mean)
+  if _islabels(ŷ, y, dims)
+    ŷy = _gather_labels(ŷ, y, dims)
+    return agg(reshape(logsumexp(ŷ; dims), size(ŷy)) .- ŷy)
+  end
   _check_sizes(ŷ, y)
   agg(.-sum(y .* logsoftmax(ŷ; dims = dims); dims = dims))
 end

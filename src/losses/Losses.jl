@@ -7,7 +7,8 @@ using ChainRulesCore
 # using ..Flux: ofeltype, epseltype
 ofeltype(x, y) = convert(float(eltype(x)), y)
 epseltype(x) = eps(float(eltype(x)))
-using NNlib: logsoftmax, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
+using NNlib: NNlib, logsoftmax, logsumexp, logσ, ctc_loss, ctc_alpha, ∇ctc_loss
+using OneHotArrays: OneHotArray, _indices
 import Base.Broadcast: broadcasted
 
 export mse, mae, msle,

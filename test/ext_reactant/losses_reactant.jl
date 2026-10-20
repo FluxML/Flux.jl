@@ -57,6 +57,15 @@ end
     @testset "logitcrossentropy, onehot labels" begin
         @test test_loss_gradients(L.logitcrossentropy, logits, x, yhot)
     end
+    @testset "$lossfn, integer labels" for (lossfn, model) in ((L.logitcrossentropy, logits), (L.crossentropy, probs))
+        @test test_loss_gradients(lossfn, model, x, rand(1:3, 6))
+        @test test_loss_gradients((ŷ, y) -> lossfn(ŷ, y; agg = sum), model, x, rand(1:3, 6))
+        @test test_loss_gradients((ŷ, y) -> lossfn(permutedims(ŷ), y; dims = 2), model, x, rand(1:3, 6))
+    end
+    @testset "onehot labels are gathered, not materialized" begin
+        ŷ_re, yhot_re = (r(3, 6), yhot) |> MLDataDevices.reactant_device(force = true)
+        @test !occursin("scatter", repr(Reactant.@code_hlo L.logitcrossentropy(ŷ_re, yhot_re)))
+    end
     @testset "crossentropy with label_smoothing, agg=sum" begin
         @test test_loss_gradients((ŷ, y) -> L.crossentropy(ŷ, Flux.label_smoothing(y, 0.1f0); agg = sum), probs, x, Float32.(yhot))
     end

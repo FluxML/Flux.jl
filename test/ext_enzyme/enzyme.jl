@@ -23,6 +23,19 @@ end
     end
 end
 
+@testset "loss gradients, class labels" begin
+    C = 4
+    cases = [(randn(Float32, C, 5), rand(1:C, 5), 1),
+             (randn(Float32, 3, C, 5), rand(1:C, 3, 5), 2),
+             (randn(Float32, C, 5), onehotbatch(rand(1:C, 5), 1:C), 1)]
+    @testset "$loss, $(typeof(y)), dims = $dims" for loss in (logitcrossentropy, crossentropy), (x, y, dims) in cases
+        x = loss === crossentropy ? softmax(x; dims) : x
+        gz = only(Flux.gradient(x -> loss(x, y; dims), AutoZygote(), x))
+        ge = first(Flux.gradient((x, y) -> loss(x, y; dims), AutoEnzyme(), x, Const(y)))
+        @test ge ≈ gz rtol=1e-4 atol=1e-4
+    end
+end
+
 @testset "gradient, withgradient, Duplicated" begin
     # Tests above are about how Enzyme digests Flux layers.
     # Tests here are just the interface Flux.gradient(f, Duplicated(model)) etc.
