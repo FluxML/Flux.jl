@@ -22,9 +22,9 @@ needed; the data comes from the HuggingFace Hub through
 
 - **Data** — the documents are streamed from the Hub and tokenized with GPT-2's BPE (the
   `openai-community/gpt2` tokenizer), each prefixed with `<|endoftext|>`, and the token ids are
-  packed into rows of `block_size + 1` tokens. On the first run, `Dataset.from_generator` writes
-  the rows to `data/<dataset>/` (2 bytes per token), which later runs load; `datasets` memory-maps
-  them, and training reads them sequentially.
+  packed into rows of `block_size + 1` tokens. On the first run, `Dataset(stream; fingerprint)`
+  writes the rows to `data/<dataset>/` (2 bytes per token), which later runs load; `datasets`
+  memory-maps them, and training reads them sequentially.
 - **Model** — GPT-2: token and learned position embeddings, a stack of pre-LayerNorm transformer
   blocks (causal `Attention` with 12 heads, GELU MLP), a final LayerNorm, and an output layer
   tied to the token embedding. The vocabulary is padded from 50257 to 50304 tokens. Weights are
@@ -34,7 +34,7 @@ needed; the data comes from the HuggingFace Hub through
   `AccumGrad` to reach 2^19 tokens per optimizer step. Each micro-batch is one `Flux.trainstep!`;
   the first call compiles the whole step (forward, backward and optimizer update).
 - **Evaluation** — validation loss, text samples from the prompt *"Hello, I'm a language model,"*
-  and, for FineWeb-Edu, HellaSwag accuracy, every 250 steps; checkpoints with the model and
+  (top-k sampling with MLUtils' `sample_logits`) and, for FineWeb-Edu, HellaSwag accuracy, every 250 steps; checkpoints with the model and
   optimizer state to resume from.
 
 Two presets:

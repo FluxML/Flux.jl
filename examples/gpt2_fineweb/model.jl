@@ -2,6 +2,7 @@
 # head tied to the token embedding.
 
 using Flux, Random, Statistics
+using MLUtils: sample_logits
 
 # The two variants trained in this example. `vocab_size` pads GPT-2's 50257 tokens to a multiple of
 # 64 (faster matmuls); the padding tokens never occur in the data and are excluded when sampling.
@@ -78,14 +79,7 @@ function generate(model, prompt::AbstractVector{<:Integer}; n=4, len=32, topk=50
     for _ in 1:len
         ctx = x[max(1, end - block_size + 1):end, :]
         logits = reshape(model(ctx), :, size(ctx)...)[1:NTOKENS, end, :]
-        next = [sample_topk(rng, logits[:, j], topk) for j in 1:n]
-        x = vcat(x, permutedims(next))
+        x = vcat(x, sample_logits(rng, logits; k=topk))
     end
     return [x[:, j] for j in 1:n]
-end
-
-function sample_topk(rng, logits, k)
-    idx = partialsortperm(logits, 1:k; rev=true)
-    p = softmax(logits[idx])
-    return idx[something(findfirst(≥(rand(rng)), cumsum(p)), k)]
 end
